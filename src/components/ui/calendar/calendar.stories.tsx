@@ -1,6 +1,6 @@
-import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { addDays, subDays } from "date-fns";
+import React from "react";
 import { Calendar } from "./calendar";
 
 const meta: Meta<typeof Calendar> = {
@@ -24,7 +24,14 @@ const meta: Meta<typeof Calendar> = {
     },
     buttonVariant: {
       control: "select",
-      options: ["default", "destructive", "outline", "secondary", "ghost", "link"],
+      options: [
+        "default",
+        "destructive",
+        "outline",
+        "secondary",
+        "ghost",
+        "link",
+      ],
     },
     disabled: {
       control: "boolean",

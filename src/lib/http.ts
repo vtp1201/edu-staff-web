@@ -45,10 +45,10 @@ http.interceptors.response.use(
     }
 
     // Xử lý lỗi chung (hiển thị Toast message)
-    if (typeof window !== "undefined") {
-      const msg = (error.response?.data as any)?.message || "Có lỗi xảy ra";
-      // message.error(msg);
-    }
+    // if (typeof window !== "undefined") {
+    //   const msg = (error.response?.data as Record<string, string>)?.message || "Có lỗi xảy ra";
+    //   message.error(msg);
+    // }
 
     return Promise.reject(error);
   },

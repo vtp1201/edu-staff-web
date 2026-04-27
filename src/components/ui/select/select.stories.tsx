@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from "@storybook/react";
 import {
   Select,
   SelectContent,
@@ -8,27 +8,27 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from './select'
+} from "./select";
 
 const meta = {
-  title: 'UI/Select',
+  title: "UI/Select",
   component: Select,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     disabled: {
-      control: 'boolean',
+      control: "boolean",
     },
     required: {
-      control: 'boolean',
+      control: "boolean",
     },
   },
-} satisfies Meta<typeof Select>
+} satisfies Meta<typeof Select>;
 
-export default meta
-type Story = StoryObj<typeof meta>
+export default meta;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
@@ -45,7 +45,7 @@ export const Default: Story = {
       </SelectContent>
     </Select>
   ),
-}
+};
 
 export const WithPlaceholder: Story = {
   render: () => (
@@ -60,7 +60,7 @@ export const WithPlaceholder: Story = {
       </SelectContent>
     </Select>
   ),
-}
+};
 
 export const WithDefaultValue: Story = {
   render: () => (
@@ -77,7 +77,7 @@ export const WithDefaultValue: Story = {
       </SelectContent>
     </Select>
   ),
-}
+};
 
 export const WithGroups: Story = {
   render: () => (
@@ -105,7 +105,7 @@ export const WithGroups: Story = {
       </SelectContent>
     </Select>
   ),
-}
+};
 
 export const Disabled: Story = {
   render: () => (
@@ -120,15 +120,20 @@ export const Disabled: Story = {
       </SelectContent>
     </Select>
   ),
-}
+};
 
 export const Sizes: Story = {
   render: () => (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium mb-2 block">Small size</label>
+        <label
+          htmlFor="select-small"
+          className="text-sm font-medium mb-2 block"
+        >
+          Small size
+        </label>
         <Select>
-          <SelectTrigger className="w-[180px]" size="sm">
+          <SelectTrigger id="select-small" className="w-[180px]" size="sm">
             <SelectValue placeholder="Small select" />
           </SelectTrigger>
           <SelectContent>
@@ -139,9 +144,14 @@ export const Sizes: Story = {
         </Select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block">Default size</label>
+        <label
+          htmlFor="select-default"
+          className="text-sm font-medium mb-2 block"
+        >
+          Default size
+        </label>
         <Select>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger id="select-default" className="w-[180px]">
             <SelectValue placeholder="Default select" />
           </SelectTrigger>
           <SelectContent>
@@ -153,7 +163,7 @@ export const Sizes: Story = {
       </div>
     </div>
   ),
-}
+};
 
 export const WithLabel: Story = {
   render: () => (
@@ -177,7 +187,7 @@ export const WithLabel: Story = {
       </Select>
     </div>
   ),
-}
+};
 
 export const WithError: Story = {
   render: () => (
@@ -199,7 +209,7 @@ export const WithError: Story = {
       <p className="text-sm text-red-500">Please select a priority level</p>
     </div>
   ),
-}
+};
 
 export const LongList: Story = {
   render: () => (
@@ -208,12 +218,12 @@ export const LongList: Story = {
         <SelectValue placeholder="Select a number" />
       </SelectTrigger>
       <SelectContent>
-        {Array.from({ length: 50 }, (_, i) => (
-          <SelectItem key={i} value={`item-${i}`}>
-            Item {i + 1}
+        {Array.from({ length: 50 }, (_, i) => `item-${i + 1}`).map((value) => (
+          <SelectItem key={value} value={value}>
+            {value.replace("item-", "Item ")}
           </SelectItem>
         ))}
       </SelectContent>
     </Select>
   ),
-}
+};
