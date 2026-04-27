@@ -61,6 +61,8 @@ chore(deps): bump next to 16.0.10
 
 Use `bun cz` for an interactive prompt (powered by [czg](https://cz-git.qbb.sh/)).
 
+> **Tip**: chạy `git commit -m ""` (message rỗng) cũng sẽ tự động bật UI czg interactive — tiện khi bạn quên dùng `bun cz`. Yêu cầu TTY (terminal), sẽ skip khi chạy từ GUI client / CI.
+
 ### Branch Naming
 
 `<type>/<short-desc>` — e.g. `feat/dark-theme`, `fix/login-bug`. Same type list as commits. `main`, `dev`, `develop` exempt.
@@ -69,11 +71,12 @@ Use `bun cz` for an interactive prompt (powered by [czg](https://cz-git.qbb.sh/)
 
 Auto-installed via `prepare` script on `bun install`.
 
-| Hook         | Runs                                                          |
-| ------------ | ------------------------------------------------------------- |
-| `pre-commit` | Biome (auto-fix staged) · `tsc --noEmit` · `vitest related`   |
-| `commit-msg` | commitlint (Conventional Commits rules)                       |
-| `pre-push`   | branch-name check · `vitest run` · `next build`               |
+| Hook                 | Runs                                                          |
+| -------------------- | ------------------------------------------------------------- |
+| `pre-commit`         | Biome (auto-fix staged) · `tsc --noEmit` · `vitest related`   |
+| `prepare-commit-msg` | Auto-launch czg UI khi `git commit -m ""` (empty message)     |
+| `commit-msg`         | commitlint (Conventional Commits rules)                       |
+| `pre-push`           | branch-name check · `vitest run` · `next build`               |
 
 Bypass with `git commit --no-verify` / `git push --no-verify` when truly needed (WIP, hotfix).
 

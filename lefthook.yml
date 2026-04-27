@@ -12,10 +12,40 @@ pre-commit:
       glob: "*.{ts,tsx}"
       run: bunx vitest related --run {staged_files}
 
+prepare-commit-msg:
+  jobs:
+    - name: cz-on-empty
+      interactive: true
+      run: |
+        source="{2}"
+        # Chỉ intercept khi user dùng -m (source=message); bỏ qua merge/squash/template/rebase
+        if [ "$source" != "message" ]; then
+          exit 0
+        fi
+        # Check message rỗng (sau khi strip comments + blank lines)
+        msg=$(grep -v '^#' "{1}" | sed '/^[[:space:]]*$/d' | head -c 1)
+        if [ -n "$msg" ]; then
+          exit 0
+        fi
+        # Cần TTY (skip nếu chạy từ GUI client / CI)
+        if [ ! -e /dev/tty ]; then
+          echo "✗ Empty commit message and no TTY available. Use 'bun cz' instead."
+          exit 1
+        fi
+        # Launch czg trực tiếp trong hook mode để ghi message vào file {1}
+        exec < /dev/tty && GIT_PARAMS="{1}" bunx czg --hook || exit 1
+
 commit-msg:
   jobs:
     - name: commitlint
-      run: bunx commitlint --edit {1}
+      run: |
+        msg=$(grep -v '^#' {1} | sed '/^[[:space:]]*$/d' | head -c 1)
+        if [ -z "$msg" ]; then
+          echo "✗ Commit message rỗng. Format: <type>(<scope>): <subject>"
+          echo "  Tip: gõ 'git commit -m \"\"' để mở UI czg, hoặc 'bun cz'."
+          exit 1
+        fi
+        bunx commitlint --edit {1}
 
 pre-push:
   parallel: false
