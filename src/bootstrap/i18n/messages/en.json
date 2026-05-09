@@ -33,5 +33,44 @@
       "student": "Student",
       "parent": "Parent"
     }
+  },
+  "attendance": {
+    "title": "Attendance",
+    "filters": {
+      "class": "Class",
+      "date": "Date",
+      "period": "Period",
+      "selectClass": "Select class",
+      "selectPeriod": "Select period"
+    },
+    "status": {
+      "present": "Present",
+      "excused": "Excused",
+      "absent": "Absent"
+    },
+    "actions": {
+      "allPresent": "All present",
+      "save": "Save attendance",
+      "saving": "Saving...",
+      "saved": "Attendance saved",
+      "saveFailed": "Save failed"
+    },
+    "summary": {
+      "total": "Total",
+      "present": "Present",
+      "absent": "Absent",
+      "rate": "Rate"
+    },
+    "tabs": {
+      "today": "Today",
+      "history": "History"
+    },
+    "history": {
+      "date": "Date",
+      "period": "Period",
+      "subject": "Subject",
+      "empty": "No attendance history"
+    },
+    "empty": "Pick class/date/period to start"
   }
 }

@@ -33,5 +33,44 @@
       "student": "Học sinh",
       "parent": "Phụ huynh"
     }
+  },
+  "attendance": {
+    "title": "Điểm danh",
+    "filters": {
+      "class": "Lớp",
+      "date": "Ngày",
+      "period": "Tiết",
+      "selectClass": "Chọn lớp",
+      "selectPeriod": "Chọn tiết"
+    },
+    "status": {
+      "present": "Có mặt",
+      "excused": "Vắng phép",
+      "absent": "Vắng KP"
+    },
+    "actions": {
+      "allPresent": "Tất cả có mặt",
+      "save": "Lưu điểm danh",
+      "saving": "Đang lưu...",
+      "saved": "Đã lưu điểm danh",
+      "saveFailed": "Lưu thất bại"
+    },
+    "summary": {
+      "total": "Sĩ số",
+      "present": "Có mặt",
+      "absent": "Vắng",
+      "rate": "Tỷ lệ"
+    },
+    "tabs": {
+      "today": "Hôm nay",
+      "history": "Lịch sử"
+    },
+    "history": {
+      "date": "Ngày",
+      "period": "Tiết",
+      "subject": "Môn",
+      "empty": "Chưa có lịch sử điểm danh"
+    },
+    "empty": "Chưa chọn lớp/ngày/tiết"
   }
 }
