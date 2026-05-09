@@ -49,3 +49,4 @@ storybook-static
 /src/stories
 
 .claude
+.vscode

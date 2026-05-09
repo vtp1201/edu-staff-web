@@ -1,0 +1,367 @@
+// EduPortal Design Spec
+// Source: design_handoff_eduportal (Claude Design)
+// Reference: open design_src/EduPortal.html in a browser for the live prototype
+{
+  "meta": {
+    "product": "EduPortal",
+    "version": "1.0",
+    "fidelity": "high — pixel-accurate, recreate exactly",
+    "font": "Plus Jakarta Sans",
+    "framework": "Next.js 16 + shadcn/ui + Tailwind CSS v4"
+  },
+
+  // ─────────────────────────────────────────────
+  // LAYOUT SHELL
+  // ─────────────────────────────────────────────
+  "layout": {
+    "sidebar": {
+      "widthExpanded": 260,
+      "widthCollapsed": 72,
+      "background": "#FFFFFF",
+      "borderRight": "1px solid #E5EAF2",
+      "collapseTransition": "width 0.25s ease",
+      "collapseStateStorage": "localStorage",
+      "toggleButton": {
+        "size": 24,
+        "shape": "circle",
+        "position": { "right": -12, "top": 18 },
+        "shadow": "0 2px 8px rgba(0,0,0,0.08)"
+      },
+      "navItem": {
+        "active": {
+          "background": "primaryColor + '12'", // 8% opacity tint
+          "textColor": "primary",
+          "fontWeight": 700,
+          "accentBar": {
+            "width": 3,
+            "position": "left",
+            "topBottom": "20%",
+            "borderRadius": "0 3px 3px 0",
+            "color": "primary"
+          }
+        },
+        "inactive": {
+          "background": "transparent",
+          "textColor": "#5A6A85",
+          "fontWeight": 500,
+          "hoverBackground": "#F5F7FA"
+        }
+      }
+    },
+    "header": {
+      "height": 64,
+      "background": "#FFFFFF",
+      "borderBottom": "1px solid #E5EAF2",
+      "search": {
+        "width": 220,
+        "background": "#F5F7FA",
+        "borderRadius": 8,
+        "fontSize": 13
+      },
+      "notificationBell": {
+        "size": 38,
+        "borderRadius": 10,
+        "background": "#F5F7FA",
+        "badge": {
+          "size": 18,
+          "background": "#FA896B",
+          "fontSize": 10,
+          "fontWeight": 700,
+          "offset": { "top": -4, "right": -4 }
+        }
+      }
+    }
+  },
+
+  // ─────────────────────────────────────────────
+  // SCREENS
+  // ─────────────────────────────────────────────
+  "screens": {
+    "login": {
+      "route": "/login",
+      "layout": "two-column full-viewport",
+      "left": {
+        "width": "42%",
+        "background": "linear-gradient(150deg, #5D87FF 0%, #5D87FFCC 55%, #13DEB988 100%)",
+        "content": ["logo", "tagline", "3 feature bullets"]
+      },
+      "right": {
+        "flex": 1,
+        "maxWidth": 400,
+        "content": {
+          "title": { "text": "Đăng nhập", "size": 26, "fontWeight": 800 },
+          "ssoButtons": {
+            "count": 3,
+            "providers": ["Google", "Facebook", "VneID"],
+            "width": "100%",
+            "gap": 10,
+            "hover": { "borderColor": "primary", "shadow": "primary/10" }
+          },
+          "divider": "hoặc đăng nhập bằng email",
+          "emailInput": { "icon": "Mail", "iconOffset": 38 },
+          "passwordInput": { "icon": "Lock", "showHideToggle": true },
+          "forgotLink": { "align": "right" },
+          "submitButton": {
+            "width": "100%",
+            "background": "primary",
+            "borderRadius": 12,
+            "fontSize": 14,
+            "fontWeight": 700
+          },
+          "demoHint": { "background": "infoLight", "borderRadius": 9 }
+        }
+      }
+    },
+
+    "selectRole": {
+      "route": "/select-role",
+      "layout": "centered single-column",
+      "maxWidth": 480,
+      "roleCard": {
+        "iconBox": { "size": 48, "borderRadius": 12 },
+        "roleName": { "size": 15, "fontWeight": 800 },
+        "tenantName": { "size": 12, "color": "textMuted" },
+        "hover": {
+          "borderColor": "roleColor",
+          "shadow": "roleColor/13%",
+          "translateY": -1
+        },
+        "trailingIcon": "ChevronRight"
+      },
+      "roleColors": {
+        "teacher": "#5D87FF",
+        "principal": "#13DEB9",
+        "student": "#FFAE1F",
+        "parent": "#7B5EA7"
+      }
+    },
+
+    "teacherDashboard": {
+      "route": "/teacher",
+      "statsRow": {
+        "columns": 4,
+        "gap": 16,
+        "component": "StatCard"
+      },
+      "scheduleTable": {
+        "liveRowBorderLeft": "3px solid #13DEB9",
+        "statusBadges": {
+          "done": "muted",
+          "live": "success",
+          "upcoming": "warning"
+        }
+      }
+    },
+
+    "gradeBook": {
+      "route": "/teacher/grades",
+      "classSelectorStyle": "pill buttons",
+      "activePill": { "background": "primary", "color": "white" },
+      "inactivePill": {
+        "background": "transparent",
+        "border": true,
+        "color": "textSecondary"
+      },
+      "tableHead": { "background": "#F5F7FA" },
+      "scoreColors": {
+        "gte8": "#13DEB9",
+        "lt5": "#FA896B",
+        "default": "#2A3547"
+      },
+      "rankBadges": {
+        "gte8_5": { "label": "Giỏi", "color": "#13DEB9" },
+        "gte7_0": { "label": "Khá", "color": "#5D87FF" },
+        "default": { "label": "TB", "color": "#FFAE1F" }
+      }
+    },
+
+    "schedule": {
+      "route": "/teacher/schedule",
+      "grid": "Mon–Sat × 5 time slots",
+      "filledCell": {
+        "background": "primaryColor/15",
+        "border": "primaryColor/30",
+        "leftBorder": "3px solid primary"
+      },
+      "emptyCell": {
+        "background": "#F5F7FA",
+        "border": "1px dashed #E5EAF2"
+      }
+    },
+
+    "studentHome": {
+      "route": "/student",
+      "layout": "stats row + two columns (1.4fr / 1fr)",
+      "courseProgress": {
+        "colorDot": 8,
+        "progressBar": { "height": 5, "borderRadius": 99 }
+      }
+    },
+
+    "courseDetail": {
+      "route": "/student/courses/[id]",
+      "headerCard": {
+        "background": "course color gradient",
+        "textColor": "white",
+        "badge": { "background": "white/20", "text": "Đang học" }
+      },
+      "videoPlaceholder": {
+        "background": "#0f1117",
+        "aspectRatio": "16:9",
+        "playButton": { "size": 60, "background": "white/15", "blur": true }
+      },
+      "tabs": ["Bài học", "Tài liệu", "Kiểm tra"]
+    },
+
+    "assignments": {
+      "route": "/student/assignments",
+      "filters": ["Tất cả", "Chưa nộp", "Đã nộp", "Đã chấm"],
+      "card": {
+        "iconBox": { "size": 44, "borderRadius": 10 },
+        "daysLeftBadge": {
+          "lte1day": "error",
+          "lte3days": "warning",
+          "gt3days": "success"
+        },
+        "overdue": { "borderColor": "error/40" }
+      }
+    },
+
+    "exams": {
+      "route": "/student/exams",
+      "subScreens": ["list", "briefing", "taking", "result"],
+      "examTaking": {
+        "timer": {
+          "normal": "success",
+          "warning": "warning (< 5min)",
+          "critical": "error"
+        },
+        "questionNavigator": {
+          "states": ["answered", "flagged", "current", "blank"]
+        },
+        "autoSubmitOnTimeout": true
+      },
+      "result": {
+        "hero": "score circle (PASSED / FAILED)",
+        "stats": ["correct", "incorrect", "skipped"],
+        "reviewFilters": true
+      }
+    },
+
+    "profile": {
+      "route": "/profile",
+      "leftColumn": {
+        "width": 260,
+        "cover": { "height": 72, "background": "primary gradient" },
+        "avatar": { "size": 72, "border": "4px white", "marginTop": -32 }
+      },
+      "tabs": ["Thông tin cá nhân", "Bảo mật", "Phiên đăng nhập"],
+      "security": {
+        "passwordStrength": {
+          "segments": 4,
+          "colors": { "weak": "error", "fair": "warning", "strong": "success" }
+        },
+        "checklist": ["≥8 ký tự", "Chữ hoa", "Số", "Ký tự đặc biệt"]
+      },
+      "sessions": {
+        "thisDeviceBadge": "success",
+        "perSessionLogout": true,
+        "bulkLogout": true
+      }
+    },
+
+    "forgotPassword": {
+      "route": "/forgot-password",
+      "maxWidth": 420,
+      "steps": [
+        "email input → Gửi mã OTP",
+        "6-cell OTP input → Xác nhận",
+        "new password + confirm + strength → Đặt lại",
+        "success illustration → Quay lại đăng nhập"
+      ],
+      "otpSlot": {
+        "width": 46,
+        "height": 52,
+        "fontSize": 20,
+        "fontWeight": 800,
+        "borderRadius": 10
+      }
+    },
+
+    "messaging": {
+      "route": "/messages",
+      "layout": "two-pane (convo list + chat window)",
+      "features": [
+        "Direct / Groups tabs",
+        "unread badges",
+        "online indicators",
+        "typing dots",
+        "date dividers"
+      ],
+      "input": { "enterToSend": true, "attachments": true, "emoji": true }
+    },
+
+    "discipline": {
+      "teacher": "/teacher/discipline",
+      "principal": "/principal/discipline",
+      "student": "/student/conduct",
+      "tabs": ["Violations", "Conduct (Hạnh kiểm)", "Leave Management"],
+      "conductThresholds": {
+        "Tốt": 90,
+        "Khá": 70,
+        "TB": 50,
+        "Yếu": 0
+      },
+      "violationStatus": ["recorded", "notified", "parent_notified", "resolved"]
+    },
+
+    "attendance": {
+      "route": "/teacher/attendance",
+      "states": ["Có mặt", "Vắng phép", "Vắng KP"],
+      "features": [
+        "class/date/period selectors",
+        "search + filter",
+        "summary panel",
+        "history tab"
+      ]
+    }
+  },
+
+  // ─────────────────────────────────────────────
+  // SHARED COMPONENTS
+  // ─────────────────────────────────────────────
+  "components": {
+    "StatCard": {
+      "padding": "20px 24px",
+      "background": "white",
+      "border": "1px solid #E5EAF2",
+      "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+      "borderRadius": 12,
+      "iconBox": {
+        "size": 52,
+        "borderRadius": 12,
+        "background": "iconColor + '18'"
+      },
+      "value": { "size": 26, "fontWeight": 800 },
+      "trend": {
+        "size": 12,
+        "fontWeight": 700,
+        "up": "#13DEB9",
+        "down": "#FA896B"
+      }
+    },
+    "Badge": {
+      "padding": "3px 10px",
+      "borderRadius": 20,
+      "fontSize": 11,
+      "fontWeight": 600,
+      "backgroundDefault": "color + '18'"
+    },
+    "ProgressBar": {
+      "track": "#E5EAF2",
+      "defaultHeight": 6,
+      "borderRadius": 99,
+      "transition": "width 0.6s ease"
+    }
+  }
+}

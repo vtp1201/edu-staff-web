@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-45">
         <SelectValue placeholder="Select a fruit" />
       </SelectTrigger>
       <SelectContent>
@@ -50,7 +50,7 @@ export const Default: Story = {
 export const WithPlaceholder: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[250px]">
+      <SelectTrigger className="w-62.5">
         <SelectValue placeholder="Choose an option..." />
       </SelectTrigger>
       <SelectContent>
@@ -65,7 +65,7 @@ export const WithPlaceholder: Story = {
 export const WithDefaultValue: Story = {
   render: () => (
     <Select defaultValue="banana">
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-45">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -82,7 +82,7 @@ export const WithDefaultValue: Story = {
 export const WithGroups: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[250px]">
+      <SelectTrigger className="w-62.5">
         <SelectValue placeholder="Select a food" />
       </SelectTrigger>
       <SelectContent>
@@ -110,7 +110,7 @@ export const WithGroups: Story = {
 export const Disabled: Story = {
   render: () => (
     <Select disabled>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-45">
         <SelectValue placeholder="Disabled select" />
       </SelectTrigger>
       <SelectContent>
@@ -133,7 +133,7 @@ export const Sizes: Story = {
           Small size
         </label>
         <Select>
-          <SelectTrigger id="select-small" className="w-[180px]" size="sm">
+          <SelectTrigger id="select-small" className="w-45" size="sm">
             <SelectValue placeholder="Small select" />
           </SelectTrigger>
           <SelectContent>
@@ -151,7 +151,7 @@ export const Sizes: Story = {
           Default size
         </label>
         <Select>
-          <SelectTrigger id="select-default" className="w-[180px]">
+          <SelectTrigger id="select-default" className="w-45">
             <SelectValue placeholder="Default select" />
           </SelectTrigger>
           <SelectContent>
@@ -172,7 +172,7 @@ export const WithLabel: Story = {
         Country
       </label>
       <Select>
-        <SelectTrigger className="w-[250px]">
+        <SelectTrigger className="w-62.5">
           <SelectValue placeholder="Select your country" />
         </SelectTrigger>
         <SelectContent>
@@ -196,7 +196,7 @@ export const WithError: Story = {
         Priority
       </label>
       <Select>
-        <SelectTrigger className="w-[250px] border-red-500">
+        <SelectTrigger className="w-62.5 border-red-500">
           <SelectValue placeholder="Select priority" />
         </SelectTrigger>
         <SelectContent>
@@ -214,7 +214,7 @@ export const WithError: Story = {
 export const LongList: Story = {
   render: () => (
     <Select>
-      <SelectTrigger className="w-[300px]">
+      <SelectTrigger className="w-75">
         <SelectValue placeholder="Select a number" />
       </SelectTrigger>
       <SelectContent>
