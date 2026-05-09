@@ -1,1 +1,37 @@
-{ "Common": { "hello": "Hello" } }
+{
+  "Common": { "hello": "Hello" },
+  "shell": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "classes": "Classes",
+      "attendance": "Attendance",
+      "classLog": "Class Log",
+      "grades": "Grades",
+      "schedule": "Schedule",
+      "students": "Students",
+      "courses": "Courses",
+      "assignments": "Assignments",
+      "exams": "Exams",
+      "resources": "Resources",
+      "messages": "Messages",
+      "profile": "Profile",
+      "teachers": "Teachers",
+      "reports": "Reports",
+      "overview": "Overview",
+      "children": "My Children"
+    },
+    "header": {
+      "searchPlaceholder": "Search...",
+      "notifications": "Notifications",
+      "switchRole": "Switch role",
+      "logout": "Log out",
+      "profile": "Profile"
+    },
+    "roles": {
+      "teacher": "Teacher",
+      "principal": "Principal",
+      "student": "Student",
+      "parent": "Parent"
+    }
+  }
+}

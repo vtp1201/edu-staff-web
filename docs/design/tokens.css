@@ -24,6 +24,11 @@
   --edu-error: #fa896b;
   --edu-error-light: #fff5f2;
 
+  /* ── Foreground colors for status backgrounds ───── */
+  --edu-success-foreground: #ffffff;
+  --edu-warning-foreground: #2a3547;
+  --edu-error-foreground: #ffffff;
+
   --edu-info: #539bff;
   --edu-info-light: #ebf3fe;
 

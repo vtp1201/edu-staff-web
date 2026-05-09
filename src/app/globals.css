@@ -1,45 +1,82 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../../docs/design/tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Font families */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  /* shadcn semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* EduPortal palette as Tailwind classes */
+  --color-edu-primary: var(--edu-primary);
+  --color-edu-primary-light: var(--edu-primary-light);
+  --color-edu-primary-dark: var(--edu-primary-dark);
+  --color-edu-success: var(--edu-success);
+  --color-edu-success-light: var(--edu-success-light);
+  --color-edu-success-foreground: var(--edu-success-foreground);
+  --color-edu-warning: var(--edu-warning);
+  --color-edu-warning-light: var(--edu-warning-light);
+  --color-edu-warning-foreground: var(--edu-warning-foreground);
+  --color-edu-error: var(--edu-error);
+  --color-edu-error-light: var(--edu-error-light);
+  --color-edu-error-foreground: var(--edu-error-foreground);
+  --color-edu-info: var(--edu-info);
+  --color-edu-info-light: var(--edu-info-light);
+  --color-edu-purple: var(--edu-purple);
+  --color-edu-purple-light: var(--edu-purple-light);
+  --color-edu-teal: var(--edu-teal);
+  --color-edu-teal-light: var(--edu-teal-light);
+  --color-edu-text-primary: var(--edu-text-primary);
+  --color-edu-text-secondary: var(--edu-text-secondary);
+  --color-edu-text-muted: var(--edu-text-muted);
+  --color-edu-bg: var(--edu-bg);
+  --color-edu-card: var(--edu-card);
+  --color-edu-border: var(--edu-border);
+  --color-edu-role-teacher: var(--edu-role-teacher);
+  --color-edu-role-principal: var(--edu-role-principal);
+  --color-edu-role-student: var(--edu-role-student);
+  --color-edu-role-parent: var(--edu-role-parent);
+
+  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -47,90 +84,82 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --radius: 0.625rem;
+
+  /* Shadows */
+  --shadow-card: var(--edu-shadow-card);
+  --shadow-card-hover: var(--edu-shadow-card-hover);
+  --shadow-toggle: var(--edu-shadow-toggle);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.1884 0.0128 248.5103);
-  --card: oklch(0.9784 0.0011 197.1387);
-  --card-foreground: oklch(0.1884 0.0128 248.5103);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1884 0.0128 248.5103);
-  --primary: oklch(0.6723 0.1606 244.9955);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.1884 0.0128 248.5103);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.9222 0.0013 286.3737);
-  --muted-foreground: oklch(0.1884 0.0128 248.5103);
-  --accent: oklch(0.9392 0.0166 250.8453);
-  --accent-foreground: oklch(0.6723 0.1606 244.9955);
-  --destructive: oklch(0.6188 0.2376 25.7658);
-  --border: oklch(0.9317 0.0118 231.6594);
-  --input: oklch(0.9809 0.0025 228.7836);
-  --ring: oklch(0.6818 0.1584 243.354);
-  --chart-1: oklch(0.6723 0.1606 244.9955);
-  --chart-2: oklch(0.6907 0.1554 160.3454);
-  --chart-3: oklch(0.8214 0.16 82.5337);
-  --chart-4: oklch(0.7064 0.1822 151.7125);
-  --chart-5: oklch(0.5919 0.2186 10.5826);
-  --sidebar: oklch(0.9784 0.0011 197.1387);
-  --sidebar-foreground: oklch(0.1884 0.0128 248.5103);
-  --sidebar-primary: oklch(0.6723 0.1606 244.9955);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.9392 0.0166 250.8453);
-  --sidebar-accent-foreground: oklch(0.6723 0.1606 244.9955);
-  --sidebar-border: oklch(0.9271 0.0101 238.5177);
-  --sidebar-ring: oklch(0.6818 0.1584 243.354);
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+  --radius: var(--edu-radius-card);
+
+  --background: var(--edu-bg);
+  --foreground: var(--edu-text-primary);
+  --card: var(--edu-card);
+  --card-foreground: var(--edu-text-primary);
+  --popover: var(--edu-card);
+  --popover-foreground: var(--edu-text-primary);
+
+  --primary: var(--edu-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--edu-primary-light);
+  --secondary-foreground: var(--edu-primary-dark);
+
+  --muted: var(--edu-bg);
+  --muted-foreground: var(--edu-text-muted);
+
+  --accent: var(--edu-primary-light);
+  --accent-foreground: var(--edu-primary-dark);
+
+  --destructive: var(--edu-error);
+  --border: var(--edu-border);
+  --input: var(--edu-border);
+  --ring: var(--edu-primary);
+
+  --chart-1: var(--edu-primary);
+  --chart-2: var(--edu-success);
+  --chart-3: var(--edu-warning);
+  --chart-4: var(--edu-info);
+  --chart-5: var(--edu-purple);
+
+  --sidebar: var(--edu-card);
+  --sidebar-foreground: var(--edu-text-primary);
+  --sidebar-primary: var(--edu-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--edu-primary-light);
+  --sidebar-accent-foreground: var(--edu-primary-dark);
+  --sidebar-border: var(--edu-border);
+  --sidebar-ring: var(--edu-primary);
 }
 
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.9328 0.0025 228.7857);
-  --card: oklch(0.2097 0.008 274.5332);
-  --card-foreground: oklch(0.8853 0 0);
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(0.9328 0.0025 228.7857);
-  --primary: oklch(0.6692 0.1607 245.011);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.9622 0.0035 219.5331);
-  --secondary-foreground: oklch(0.1884 0.0128 248.5103);
-  --muted: oklch(0.209 0 0);
-  --muted-foreground: oklch(0.5637 0.0078 247.9662);
-  --accent: oklch(0.1928 0.0331 242.5459);
-  --accent-foreground: oklch(0.6692 0.1607 245.011);
-  --destructive: oklch(0.6188 0.2376 25.7658);
-  --border: oklch(0.2674 0.0047 248.0045);
-  --input: oklch(0.302 0.0288 244.8244);
-  --ring: oklch(0.6818 0.1584 243.354);
-  --chart-1: oklch(0.6723 0.1606 244.9955);
-  --chart-2: oklch(0.6907 0.1554 160.3454);
-  --chart-3: oklch(0.8214 0.16 82.5337);
-  --chart-4: oklch(0.7064 0.1822 151.7125);
-  --chart-5: oklch(0.5919 0.2186 10.5826);
-  --sidebar: oklch(0.2097 0.008 274.5332);
-  --sidebar-foreground: oklch(0.8853 0 0);
-  --sidebar-primary: oklch(0.6818 0.1584 243.354);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.1928 0.0331 242.5459);
-  --sidebar-accent-foreground: oklch(0.6692 0.1607 245.011);
-  --sidebar-border: oklch(0.3795 0.022 240.5943);
-  --sidebar-ring: oklch(0.6818 0.1584 243.354);
-  --radius: 0.625rem;
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
+  --background: #0b1020;
+  --foreground: #e5eaf2;
+  --card: #131a2e;
+  --card-foreground: #e5eaf2;
+  --popover: #131a2e;
+  --popover-foreground: #e5eaf2;
+  --primary: var(--edu-primary);
+  --primary-foreground: #ffffff;
+  --secondary: #1c2541;
+  --secondary-foreground: #e5eaf2;
+  --muted: #1c2541;
+  --muted-foreground: #8898a9;
+  --accent: #1c2541;
+  --accent-foreground: var(--edu-primary);
+  --destructive: var(--edu-error);
+  --border: #232b45;
+  --input: #232b45;
+  --ring: var(--edu-primary);
+  --sidebar: #131a2e;
+  --sidebar-foreground: #e5eaf2;
+  --sidebar-primary: var(--edu-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1c2541;
+  --sidebar-accent-foreground: var(--edu-primary);
+  --sidebar-border: #232b45;
+  --sidebar-ring: var(--edu-primary);
 }
 
 @layer base {

@@ -52,6 +52,9 @@ const font = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400','500','600',
 | `bg` | `#F5F7FA` | Page background |
 | `card` | `#FFFFFF` | Card surfaces |
 | `border` | `#E5EAF2` | Borders, dividers |
+| `successForeground` | `#FFFFFF` | Text on `bg-edu-success` |
+| `warningForeground` | `#2A3547` | Text on `bg-edu-warning` (dark vì warning vàng) |
+| `errorForeground` | `#FFFFFF` | Text on `bg-edu-error` |
 
 ### Role → Color Mapping
 

@@ -1,1 +1,37 @@
-{ "Common": { "hello": "Xin chào" } }
+{
+  "Common": { "hello": "Xin chào" },
+  "shell": {
+    "nav": {
+      "dashboard": "Tổng quan",
+      "classes": "Lớp học",
+      "attendance": "Điểm danh",
+      "classLog": "Sổ đầu bài",
+      "grades": "Bảng điểm",
+      "schedule": "Lịch dạy",
+      "students": "Học sinh",
+      "courses": "Khoá học",
+      "assignments": "Bài tập",
+      "exams": "Bài thi",
+      "resources": "Tài liệu",
+      "messages": "Nhắn tin",
+      "profile": "Hồ sơ",
+      "teachers": "Giáo viên",
+      "reports": "Báo cáo",
+      "overview": "Tổng quan",
+      "children": "Con của tôi"
+    },
+    "header": {
+      "searchPlaceholder": "Tìm kiếm...",
+      "notifications": "Thông báo",
+      "switchRole": "Chuyển vai trò",
+      "logout": "Đăng xuất",
+      "profile": "Hồ sơ"
+    },
+    "roles": {
+      "teacher": "Giáo viên",
+      "principal": "Hiệu trưởng",
+      "student": "Học sinh",
+      "parent": "Phụ huynh"
+    }
+  }
+}
