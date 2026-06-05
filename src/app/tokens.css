@@ -1,0 +1,77 @@
+/**
+ * EduPortal Design Tokens — runtime source of truth.
+ *
+ * Provenance: design_handoff_eduportal (legacy visual spec — decision 0011).
+ * Relocated here from the deleted docs/design/tokens.css (decision 0010);
+ * imported by globals.css and mapped to shadcn semantic vars in its @theme block.
+ *
+ * EDU-prefixed to avoid colliding with shadcn/ui CSS vars.
+ * Per-tenant theming overrides --edu-primary (decision 0007, path-first tenancy).
+ */
+
+:root {
+  /* ── Brand / Accent ─────────────────────────────── */
+  --edu-primary: #5d87ff;
+  --edu-primary-light: #ecf2ff;
+  --edu-primary-dark: #4570ea;
+
+  --edu-success: #13deb9;
+  --edu-success-light: #e6fffa;
+
+  --edu-warning: #ffae1f;
+  --edu-warning-light: #fef5e5;
+
+  --edu-error: #fa896b;
+  --edu-error-light: #fff5f2;
+
+  /* ── Foreground colors for status backgrounds ───── */
+  --edu-success-foreground: #ffffff;
+  --edu-warning-foreground: #2a3547;
+  --edu-error-foreground: #ffffff;
+
+  --edu-info: #539bff;
+  --edu-info-light: #ebf3fe;
+
+  --edu-purple: #7b5ea7;
+  --edu-purple-light: #f0ebf9;
+
+  --edu-teal: #00b8a9;
+  --edu-teal-light: #e0f7f5;
+
+  /* ── Text ───────────────────────────────────────── */
+  --edu-text-primary: #2a3547;
+  --edu-text-secondary: #5a6a85;
+  --edu-text-muted: #8898a9;
+
+  /* ── Surfaces ───────────────────────────────────── */
+  --edu-bg: #f5f7fa;
+  --edu-card: #ffffff;
+  --edu-border: #e5eaf2;
+
+  /* ── Layout ─────────────────────────────────────── */
+  --edu-sidebar-width: 260px;
+  --edu-sidebar-width-collapsed: 72px;
+  --edu-header-height: 64px;
+
+  /* ── Border Radius ──────────────────────────────── */
+  --edu-radius-btn: 8px;
+  --edu-radius-card: 12px;
+  --edu-radius-role-icon: 16px;
+  --edu-radius-badge: 20px;
+  --edu-radius-otp: 10px;
+
+  /* ── Shadows ─────────────────────────────────────── */
+  --edu-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
+  --edu-shadow-card-hover: 0 8px 28px rgba(0, 0, 0, 0.1);
+  --edu-shadow-toggle: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  /* ── Role Colors ─────────────────────────────────── */
+  --edu-role-teacher: #5d87ff;
+  --edu-role-principal: #13deb9;
+  --edu-role-student: #ffae1f;
+  --edu-role-parent: #7b5ea7;
+
+  /* ── Tenant-overridable primary ──────────────────── */
+  /* Middleware/layout injects per-tenant value here (decision 0007). */
+  --color-primary: var(--edu-primary);
+}

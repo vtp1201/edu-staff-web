@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "../../docs/design/tokens.css";
+@import "./tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -168,5 +168,24 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Accessibility: respect reduced-motion (decision 0013, rules/accessibility.md).
+   Near-instant any animation/transition for users who opted out.
+   !important is required: the universal selector has specificity 0 and must
+   still override component-level animation/transition declarations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: a11y reduced-motion reset must override component animations */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: a11y reduced-motion reset must override component animations */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: a11y reduced-motion reset must override component transitions */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: a11y reduced-motion reset must override component scroll-behavior */
+    scroll-behavior: auto !important;
   }
 }
