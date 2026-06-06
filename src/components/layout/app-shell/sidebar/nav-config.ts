@@ -13,12 +13,16 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
+import type messages from "@/bootstrap/i18n/messages/vi.json";
 
 export type Role = "teacher" | "principal" | "student" | "parent";
 
+/** i18n keys under the `shell.nav` namespace — checked against messages. */
+export type NavLabelKey = keyof (typeof messages)["shell"]["nav"];
+
 export type NavItem = {
   href: string;
-  labelKey: string;
+  labelKey: NavLabelKey;
   icon: LucideIcon;
 };
 
@@ -74,7 +78,10 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
 };
 
-export const ROLE_LABEL_KEY: Record<Role, string> = {
+export const ROLE_LABEL_KEY: Record<
+  Role,
+  keyof (typeof messages)["shell"]["roles"]
+> = {
   teacher: "teacher",
   principal: "principal",
   student: "student",

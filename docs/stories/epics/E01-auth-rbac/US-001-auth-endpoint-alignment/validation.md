@@ -26,9 +26,25 @@ Story xong khi: signin/refresh/signout gọi đúng endpoint IAM; token shape ma
 ## Commands
 
 ```text
-TBD — bun vitest run ; bun build
+bun vitest run        # 27 pass / 9 files
+bunx tsc --noEmit     # clean
+bun run build         # green
 ```
 
 ## Acceptance Evidence
 
-Add results after verification.
+Verified 2026-06-06 (decision `0019`):
+
+- **Unit**: `auth.mapper` (tokens/profile/session), `auth-failure.mapper`
+  (error.code → AuthFailure + network/unknown), `login`/`refresh`/`logout`
+  use-cases (validate + forward), `jwt` (decodeJwtExp + isAccessExpired,
+  nowMs injected → deterministic).
+- **Integration**: `auth.repository` — signin posts `/auth/signin` then GETs
+  `/users/me` with fresh bearer; refresh posts `/auth/refresh` and returns
+  rotated triple; signout posts `/auth/signout` (no body) + swallows revoke
+  errors; error envelope → typed failure.
+- **Platform**: `bun run build` green; `tsc --noEmit` clean.
+- **Deferred**: E2E browser flow + reactive 401/single-flight refresh
+  (follow-up story); needs live IAM or mock harness.
+- Vitest aliases `server-only` → stub (`src/test/server-only-stub.ts`) so the
+  server-only repository is testable in node env.
