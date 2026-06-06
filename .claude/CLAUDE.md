@@ -221,6 +221,9 @@ CSS variables defined in `src/app/globals.css` drive the entire design system. P
 - **Branch format:** `<type>/<short-desc>` e.g. `feat/dark-theme`, `fix/login-bug`.
 - `main` and `dev`/`develop` are exempt from branch naming validation.
 - Pre-push hook runs the full test suite and `bun build` — do not bypass with `--no-verify`.
+- **Merge workflow:** khi story xong, **push branch rồi merge thẳng vào `main`**
+  (push + merge) — **KHÔNG tạo Pull Request**. Vẫn chỉ push/merge khi người dùng
+  yêu cầu; pre-push hook (test + build) phải xanh trước khi merge.
 
 ### Pre-commit Hooks (Lefthook)
 Three jobs run in parallel on staged `*.ts(x)` files:
