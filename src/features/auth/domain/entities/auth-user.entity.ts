@@ -14,7 +14,17 @@ export interface AuthUser {
   roles: UserTenantRole[];
 }
 
-export interface AuthSession {
-  user: AuthUser;
+/**
+ * Token bundle returned by IAM `TokenResponse` (signin/refresh/social).
+ * Wire shape is camelCase (decision `0017` / api-integration rule).
+ */
+export interface AuthTokens {
   accessToken: string;
+  refreshToken: string;
+  sessionId: string;
+}
+
+/** Full session = identity + tokens. Built from signin + `GET /users/me`. */
+export interface AuthSession extends AuthTokens {
+  user: AuthUser;
 }

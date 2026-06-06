@@ -23,9 +23,10 @@ export function createHttpClient(token?: string) {
   instance.interceptors.response.use(
     (response) => response.data,
     (error: AxiosError) => {
-      if (error.response?.status === 401) {
-        // TODO: refresh token or redirect to /login
-      }
+      // Token refresh is handled SERVER-side and proactively (decision `0018`):
+      // httpOnly cookies can't be rewritten from this interceptor during RSC
+      // render. See `ensureFreshSession()` in `bootstrap/di/auth.di.ts`. A
+      // reactive 401→refresh→retry safety net is deferred to a follow-up story.
       return Promise.reject(error);
     },
   );

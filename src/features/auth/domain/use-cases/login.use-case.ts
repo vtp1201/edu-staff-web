@@ -10,6 +10,6 @@ export class LoginUseCase {
     if (!email.trim() || !password) {
       return { error: { type: "invalid-credentials" } };
     }
-    return this.repo.login(email, password);
+    return this.repo.signin(email, password);
   }
 }

@@ -1,6 +1,9 @@
+/** IAM endpoints — names aligned to `edu-api/services/iam/docs/INTEGRATION.md`. */
 export const AUTH_EP = {
-  login: "/auth/login",
-  logout: "/auth/logout",
-  refresh: "/auth/token/refresh",
-  me: "/auth/me",
+  register: "/auth/register",
+  signin: "/auth/signin",
+  social: "/auth/social",
+  refresh: "/auth/refresh",
+  signout: "/auth/signout",
+  me: "/users/me",
 } as const;

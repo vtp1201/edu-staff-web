@@ -82,18 +82,12 @@ protected: Authorization: Bearer <accessToken>
 signout → revoke session (server đọc session từ token; không gửi trong body)
 ```
 
-> ⚠️ **Mismatch hiện tại** — `bootstrap/endpoint/auth.endpoint.ts` đang lệch tên
-> với IAM `INTEGRATION.md`:
-> | Web hiện tại | IAM thật |
-> |---|---|
-> | `/auth/login` | `/auth/signin` |
-> | `/auth/logout` | `/auth/signout` |
-> | `/auth/token/refresh` | `/auth/refresh` |
-> | `/auth/me` | `/users/me` |
-> | (thiếu) | `/auth/register`, `/auth/social` |
->
-> Web bọc accessToken vào cookie httpOnly (server-side). Refresh-token rotation
-> CHƯA wiring (interceptor mới chỉ có TODO ở 401). Đồng bộ khi chạm auth thật.
+> ✅ **Đã đồng bộ** (US-E01.1, decision `0019`) — `AUTH_EP` khớp IAM:
+> `register`, `signin`, `social`, `refresh`, `signout`, `me` (`/users/me`).
+> `signin` trả `TokenResponse` (không có user) → repo chain `GET /users/me`.
+> Web lưu access + refresh + sessionId trong cookie httpOnly riêng, cộng sibling
+> `auth_token_exp`. Rotation chạy **proactive server-side** (`ensureFreshSession`);
+> reactive 401-interceptor refresh **defer** (follow-up). Xem `docs/product/auth.md`.
 
 ### Token hết hạn — Hybrid (decision `0018`)
 
@@ -109,6 +103,11 @@ Token nằm trong cookie httpOnly → **chỉ check được exp ở server**, c
   nếu sắp hết hạn để tránh round-trip 401 thừa.
 - Refresh phải **single-flight** (gộp request đồng thời vào 1 refresh) tránh
   rotation đá nhau. KHÔNG check exp ở client; KHÔNG lưu token/exp nơi client đọc.
+
+> Trạng thái (US-E01.1, decision `0019`): **proactive** đã wiring
+> (`bootstrap/lib/auth-token.server.ts` + `ensureFreshSession` trong
+> `bootstrap/di/auth.di.ts`). **Reactive** + **single-flight** còn defer
+> (follow-up) — httpOnly cookie không ghi được trong RSC render.
 
 ## Headers nên gửi
 
