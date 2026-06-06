@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
@@ -28,15 +29,18 @@ function initials(name: string) {
 }
 
 export function AttendanceRosterTable({ records, onChange }: Props) {
+  const t = useTranslations("attendance.roster");
   return (
     <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-12">#</TableHead>
-            <TableHead>Học sinh</TableHead>
-            <TableHead className="w-24">Mã</TableHead>
-            <TableHead className="w-[18rem] text-right">Trạng thái</TableHead>
+            <TableHead>{t("student")}</TableHead>
+            <TableHead className="w-24">{t("code")}</TableHead>
+            <TableHead className="w-[18rem] text-right">
+              {t("status")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

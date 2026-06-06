@@ -203,9 +203,15 @@ Each shadcn/ui component lives in its own folder with an `index.ts` re-export an
 - `shared/utils.ts` — `cn()` (clsx + tailwind-merge). Dùng ở mọi layer kể cả UI components.
 
 ### Internationalization
-- Tất cả strings phải vào `src/bootstrap/i18n/messages/{vi,en}.json`.
-- Dùng `useTranslations()` trong Client Components; `getTranslations()` trong Server Components.
-- Thêm translation ở cả `vi.json` và `en.json` cùng lúc.
+Xem `.claude/rules/i18n.md` (decision `0020`). Tóm tắt cứng:
+- Tất cả UI strings phải vào `src/bootstrap/i18n/messages/{vi,en}.json` (vi = nguồn
+  key duy nhất; en mirror). Thêm key ở cả hai file cùng lúc.
+- **Typed**: `messages.d.ts` augment `AppConfig.Messages = typeof vi.json` → `t("key")`
+  check compile-time (key sai = fail build). KHÔNG dùng const literal chứa chuỗi.
+- **Dịch ở presentation**: `useTranslations()` (client) / `getTranslations()` (server).
+  Server Action/use-case/repo trả **key ổn định** (vd `errorKey: Failure["type"]`),
+  KHÔNG dịch ở server boundary.
+- Mock/seed data + brand noun (`EduPortal`) KHÔNG đưa vào messages.
 
 ### Theming
 CSS variables defined in `src/app/globals.css` drive the entire design system. Prefer `bg-background`, `text-foreground`, etc. over raw color values. Theme toggling is handled by `next-themes` via `ThemeProvider` in the root layout.

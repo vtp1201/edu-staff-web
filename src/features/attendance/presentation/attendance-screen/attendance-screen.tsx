@@ -118,7 +118,8 @@ export function AttendanceScreen({
                 <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
                   <div className="text-sm text-muted-foreground">
                     {roster.period.className} · {roster.period.subject} ·{" "}
-                    {roster.period.date} · Tiết {roster.period.period}
+                    {roster.period.date} · {t("filters.period")}{" "}
+                    {roster.period.period}
                   </div>
                   <div className="flex gap-2">
                     <Button

@@ -1,5 +1,26 @@
 {
   "Common": { "hello": "Xin chào" },
+  "auth": {
+    "brand": { "name": "EduPortal", "tagline": "Hệ thống quản lý giáo dục" },
+    "login": {
+      "title": "Đăng nhập",
+      "subtitle": "Nhập thông tin để truy cập hệ thống",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập..."
+    },
+    "errors": {
+      "invalid-credentials": "Email hoặc mật khẩu không đúng",
+      "account-suspended": "Tài khoản đã bị tạm ngừng",
+      "email-already-exists": "Email đã được đăng ký",
+      "token-expired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+      "invalid-token": "Phiên không hợp lệ, vui lòng đăng nhập lại",
+      "unauthorized": "Bạn không có quyền truy cập",
+      "network-error": "Không thể kết nối đến máy chủ",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại"
+    }
+  },
   "shell": {
     "nav": {
       "dashboard": "Tổng quan",
@@ -71,6 +92,11 @@
       "subject": "Môn",
       "empty": "Chưa có lịch sử điểm danh"
     },
-    "empty": "Chưa chọn lớp/ngày/tiết"
+    "empty": "Chưa chọn lớp/ngày/tiết",
+    "roster": {
+      "student": "Học sinh",
+      "code": "Mã",
+      "status": "Trạng thái"
+    }
   }
 }

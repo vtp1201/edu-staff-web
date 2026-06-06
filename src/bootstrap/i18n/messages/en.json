@@ -1,5 +1,26 @@
 {
   "Common": { "hello": "Hello" },
+  "auth": {
+    "brand": { "name": "EduPortal", "tagline": "Education management system" },
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Enter your details to access the system",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in..."
+    },
+    "errors": {
+      "invalid-credentials": "Incorrect email or password",
+      "account-suspended": "Your account has been suspended",
+      "email-already-exists": "Email is already registered",
+      "token-expired": "Your session has expired, please sign in again",
+      "invalid-token": "Invalid session, please sign in again",
+      "unauthorized": "You do not have access",
+      "network-error": "Cannot connect to the server",
+      "unknown": "Something went wrong, please try again"
+    }
+  },
   "shell": {
     "nav": {
       "dashboard": "Dashboard",
@@ -71,6 +92,11 @@
       "subject": "Subject",
       "empty": "No attendance history"
     },
-    "empty": "Pick class/date/period to start"
+    "empty": "Pick class/date/period to start",
+    "roster": {
+      "student": "Student",
+      "code": "Code",
+      "status": "Status"
+    }
   }
 }
