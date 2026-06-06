@@ -24,7 +24,7 @@ export function LoginForm({ isLoading, errorKey, onSubmit }: LoginFormVM) {
         onChange={(e) => setEmail(e.target.value)}
         placeholder={t("email")}
         required
-        className="rounded-lg border border-[#E5EAF2] px-4 py-3 text-sm outline-none focus:border-[#5D87FF]"
+        className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-primary"
       />
       <input
         type="password"
@@ -32,15 +32,15 @@ export function LoginForm({ isLoading, errorKey, onSubmit }: LoginFormVM) {
         onChange={(e) => setPassword(e.target.value)}
         placeholder={t("password")}
         required
-        className="rounded-lg border border-[#E5EAF2] px-4 py-3 text-sm outline-none focus:border-[#5D87FF]"
+        className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-primary"
       />
       {errorKey && (
-        <p className="text-sm text-[#FA896B]">{tErrors(errorKey)}</p>
+        <p className="text-sm text-destructive">{tErrors(errorKey)}</p>
       )}
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full rounded-[12px] bg-[#5D87FF] py-3 text-sm font-bold text-white disabled:opacity-60"
+        className="w-full rounded-lg bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
       >
         {isLoading ? t("submitting") : t("submit")}
       </button>
