@@ -224,6 +224,9 @@ CSS variables defined in `src/app/globals.css` drive the entire design system. P
 - **Merge workflow:** khi story xong, **push branch rồi merge thẳng vào `main`**
   (push + merge) — **KHÔNG tạo Pull Request**. Vẫn chỉ push/merge khi người dùng
   yêu cầu; pre-push hook (test + build) phải xanh trước khi merge.
+- **Merge commit:** commitlint chặn message "Merge ..." mặc định → merge bằng
+  `git merge --no-ff` rồi commit với format conventional
+  `chore(<scope>): merge <branch> (<story-ids>)`.
 
 ### Pre-commit Hooks (Lefthook)
 Three jobs run in parallel on staged `*.ts(x)` files:
