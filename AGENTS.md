@@ -7,8 +7,9 @@
 ## Trước khi làm việc (project)
 
 - **Intake mọi prompt** qua `docs/FEATURE_INTAKE.md` → chọn lane (tiny/normal/high-risk).
-- **Rules bắt buộc** (`.claude/rules/`): `design-system.md`, `accessibility.md`,
-  `tailwind-v4.md`, `api-integration.md` (contract BE), `impeccable.md`.
+- **Rules bắt buộc** (`.claude/rules/`): `tdd.md` (TDD, decision `0016`),
+  `design-system.md`, `accessibility.md`, `tailwind-v4.md`, `api-integration.md`
+  (contract BE + service map `0017` + token hybrid `0018`), `impeccable.md`.
 - **Story UI** phải qua design-review gate `docs/DESIGN_REVIEW.md` trước khi đóng.
 - **Design**: token runtime `src/app/tokens.css`; spec màn `docs/product/design-spec.jsonc`
   + `docs/product/screens.md`; legacy = visual spec, không phải kiến trúc (decision `0011`).

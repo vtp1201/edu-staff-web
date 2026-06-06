@@ -15,6 +15,24 @@ lý lỗi, TUÂN THEO contract dưới đây.
 Mỗi service có một `INTEGRATION.md`. **Trước khi wiring một feature với BE, đọc
 `INTEGRATION.md` + `openapi.yaml` của service đó.**
 
+## Service map (5 service — decision `0017`)
+
+BE tách 5 microservice; web đặt `endpoint`/`di`/feature folder theo service đích.
+Tên service chuẩn theo `edu-api` — **`chat` (gọi nội bộ) map → `social`**.
+
+| Service BE | Bounded context | Web tiêu thụ |
+| --- | --- | --- |
+| `iam` | user, member, tenant, auth | auth, tenant, member, profile |
+| `core` | school, class, conduct, academic records | dữ liệu gv/hs/hiệu trưởng, lớp, hạnh kiểm, học bạ |
+| `lms` | dạy học số | bài giảng, assignment, nội dung học |
+| `noti` | event fan-out + delivery (email, push) | thông báo/realtime (SSE proxy — decision `0009`) |
+| `social` | messaging + social network | chat/tin nhắn, social feed |
+
+- Một service ↔ một nhóm endpoint; repository KHÔNG gộp nhiều service (ghép
+  cross-service ở tầng use-case/presentation).
+- BE mới có `iam` + `notification`; `core`/`lms`/`social` **chưa tồn tại** →
+  mock-first (decision `0014`) hoặc contract-first (như `0009`) tới khi service lên.
+
 ## Response envelope (BẮT BUỘC)
 
 Mọi response `/api/v1` bọc trong envelope ổn định — `success`, `data`, `error`,
@@ -76,6 +94,21 @@ signout → revoke session (server đọc session từ token; không gửi trong
 >
 > Web bọc accessToken vào cookie httpOnly (server-side). Refresh-token rotation
 > CHƯA wiring (interceptor mới chỉ có TODO ở 401). Đồng bộ khi chạm auth thật.
+
+### Token hết hạn — Hybrid (decision `0018`)
+
+Token nằm trong cookie httpOnly → **chỉ check được exp ở server**, client không
+đọc được. Chiến lược **hybrid**:
+
+- **Reactive (BẮT BUỘC):** interceptor `http.ts` bắt `401` `TOKEN_EXPIRED` →
+  `/auth/refresh` → **retry đúng 1 lần** với token mới. Safety net không bỏ được
+  (session có thể revoke sớm theo BE reuse-detection + clock skew).
+- **Proactive (tối ưu, server-side):** set sibling cookie `auth_token_exp` khi
+  set `auth_token`; helper `bootstrap/lib/auth-token.server.ts` →
+  `getAccessToken()` + `isAccessExpired(exp, skew = 30)`; DI factory pre-refresh
+  nếu sắp hết hạn để tránh round-trip 401 thừa.
+- Refresh phải **single-flight** (gộp request đồng thời vào 1 refresh) tránh
+  rotation đá nhau. KHÔNG check exp ở client; KHÔNG lưu token/exp nơi client đọc.
 
 ## Headers nên gửi
 
