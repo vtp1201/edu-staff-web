@@ -11,7 +11,8 @@ export async function saveAttendanceAction(
   try {
     const useCase = await makeSaveAttendanceUseCase();
     await useCase.execute(periodId, records);
-    revalidatePath("/teacher/attendance");
+    // Tenant-scoped route (US-E05.1); revalidate the attendance page template.
+    revalidatePath("/[locale]/t/[tenant]/(app)/teacher/attendance", "page");
     return { ok: true };
   } catch (err) {
     return {

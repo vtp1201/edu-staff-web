@@ -8,7 +8,7 @@ import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-
 
 type Props = {
   memberships: TenantMembership[];
-  onSelect: (tenantId: string) => Promise<void>;
+  onSelect: (tenantId: string, role: string) => Promise<void>;
 };
 
 export function SelectTenant({ memberships, onSelect }: Props) {
@@ -38,7 +38,9 @@ export function SelectTenant({ memberships, onSelect }: Props) {
           <Button
             size="sm"
             disabled={isPending}
-            onClick={() => startTransition(() => onSelect(m.tenantId))}
+            onClick={() =>
+              startTransition(() => onSelect(m.tenantId, m.roles[0] ?? ""))
+            }
           >
             {isPending ? t("switching") : t("enter")}
           </Button>

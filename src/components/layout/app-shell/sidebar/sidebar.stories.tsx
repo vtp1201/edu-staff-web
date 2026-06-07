@@ -20,17 +20,19 @@ const meta: Meta<typeof Sidebar> = {
 export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
-export const Teacher: Story = { args: { role: "teacher" } };
-export const Principal: Story = { args: { role: "principal" } };
-export const Student: Story = { args: { role: "student" } };
-export const Parent: Story = { args: { role: "parent" } };
+const tenantId = "tenant-acme";
+
+export const Teacher: Story = { args: { tenantId, role: "teacher" } };
+export const Principal: Story = { args: { tenantId, role: "principal" } };
+export const Student: Story = { args: { tenantId, role: "student" } };
+export const Parent: Story = { args: { tenantId, role: "parent" } };
 
 /** Collapsed rail (72px): icon-only, labels move into hover/focus tooltips. */
 export const Collapsed: Story = {
-  args: { role: "teacher", collapsed: true, onToggle: () => {} },
+  args: { tenantId, role: "teacher", collapsed: true, onToggle: () => {} },
 };
 
 /** Expanded with the collapse toggle rendered (footer control). */
 export const WithToggle: Story = {
-  args: { role: "teacher", collapsed: false, onToggle: () => {} },
+  args: { tenantId, role: "teacher", collapsed: false, onToggle: () => {} },
 };

@@ -65,8 +65,21 @@ Proof:
 - Platform: **85 vitest pass**, `tsc --noEmit` clean, `next build` green
   (routes `/select-tenant`, `/t/[tenant]`); next-intl matcher intact.
 
-Remaining (follow-up):
-- Route-move the role dashboards under `/t/{tenantId}/{role}` + wire the in-shell
-  role/tenant switcher to call `switch-tenant`; migrate URL tenantId→slug when BE
-  exposes a slug. E2E (login → switch → land in tenant; cross-tenant URL blocked)
-  after the route-move.
+Done — route-move + flow (closing the story):
+- Workspace moved under `app/[locale]/t/[tenant]/(app)/` (teacher/principal/
+  student/parent/profile/attendance); tenant-aware layout passes `tenantId` to
+  `AppShell`. Sidebar builds hrefs via `tenantUrl(tenantId, …)` and matches
+  active against them; in-shell role switch navigates within the tenant.
+- Flow: login → `/select-tenant` (lists memberships) → switch (mints
+  tenant-scoped token, sets cookies) → `/t/{tenantId}/{role}`. Middleware blocks
+  cross-tenant URLs (claim ≠ URL → `/select-tenant`).
+- Platform: **85 vitest pass**, `tsc --noEmit` clean (fresh `.next` types),
+  `next build` green — routes `/t/[tenant]/{teacher,principal,student,parent,
+  profile,teacher/attendance}`.
+
+Remaining (enhancements, not blockers):
+- Migrate URL tenant UUID → slug when BE exposes a slug (guard keys on tenantId).
+- Dedicated in-shell TENANT switcher (re-calls `switch-tenant`); today switching
+  tenant goes via `/select-tenant`. Role derivation from the token `memberRoles`
+  claim is the separate role-guard story (layout role still hardcoded).
+- Automated E2E once an e2e harness exists (flow is build-verified for now).

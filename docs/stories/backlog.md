@@ -16,7 +16,7 @@ Xem chi tiết ở `docs/product/spec-intake.md`.
 | E02 | Teacher · Attendance | sliced |
 | E03 | Principal dashboard | unsliced |
 | E04 | Student & Parent portal | unsliced |
-| E05 | Multi-tenancy (path-first, decision 0007) | sliced |
+| E05 | Multi-tenancy (path-first, decision 0007) | implemented (phase 1) |
 | E06 | BE Integration Foundation (envelope, SSE) | sliced |
 | E07 | Design System Foundation (tokens, a11y, impeccable gate) | sliced |
 | E08 | App Shell & Navigation | sliced |
@@ -30,7 +30,7 @@ Xem chi tiết ở `docs/product/spec-intake.md`.
 | --- | --- | --- |
 | `epics/E01-auth-rbac/US-001-auth-endpoint-alignment/` | high-risk | planned |
 | `epics/E02-teacher-attendance/US-001-teacher-attendance.md` | normal | implemented |
-| `epics/E05-multi-tenancy/US-001-tenant-path-resolver/` | high-risk | in_progress (resolver+helper+middleware done; enforcing guard deferred — BE membership blocker) |
+| `epics/E05-multi-tenancy/US-001-tenant-path-resolver/` | high-risk | implemented (enforcement + route-move; slug migrate later) |
 | `epics/E06-be-integration/US-001-response-envelope-parser.md` | normal | implemented |
 | `epics/E06-be-integration/US-002-sse-realtime-foundation.md` | normal | implemented (contract-first, mock upstream) |
 | `epics/E07-design-system/US-001-design-system-foundation.md` | normal | implemented (build green) |
