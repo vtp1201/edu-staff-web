@@ -24,3 +24,13 @@ export const Teacher: Story = { args: { role: "teacher" } };
 export const Principal: Story = { args: { role: "principal" } };
 export const Student: Story = { args: { role: "student" } };
 export const Parent: Story = { args: { role: "parent" } };
+
+/** Collapsed rail (72px): icon-only, labels move into hover/focus tooltips. */
+export const Collapsed: Story = {
+  args: { role: "teacher", collapsed: true, onToggle: () => {} },
+};
+
+/** Expanded with the collapse toggle rendered (footer control). */
+export const WithToggle: Story = {
+  args: { role: "teacher", collapsed: false, onToggle: () => {} },
+};

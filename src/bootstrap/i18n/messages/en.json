@@ -1,7 +1,12 @@
 {
-  "Common": { "hello": "Hello" },
+  "Common": {
+    "hello": "Hello"
+  },
   "auth": {
-    "brand": { "name": "EduPortal", "tagline": "Education management system" },
+    "brand": {
+      "name": "EduPortal",
+      "tagline": "Education management system"
+    },
     "login": {
       "title": "Sign in",
       "subtitle": "Enter your details to access the system",
@@ -39,7 +44,9 @@
       "teachers": "Teachers",
       "reports": "Reports",
       "overview": "Overview",
-      "children": "My Children"
+      "children": "My Children",
+      "expandSidebar": "Expand sidebar",
+      "collapseSidebar": "Collapse sidebar"
     },
     "header": {
       "searchPlaceholder": "Search...",

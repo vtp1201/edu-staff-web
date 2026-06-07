@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -13,8 +13,8 @@ normal
 Khung dùng chung cho mọi workspace role: Sidebar (collapsible) + Header (search,
 notifications, role-switcher, profile menu) + main outlet, theo design-spec
 (`docs/product/design-spec.jsonc` → `layout`). Nav data-driven theo role; phân
-biệt role qua color accent (decision `0013`). Nguồn: trích brainstorm
-`.harness-backup/.../sprint1.md` (decision `0014`).
+biệt role qua color accent (decision `0013`). Nguồn: app-shell plan trích từ
+brainstorm sprint1, ghi durable ở decision `0014` (backup gốc đã xóa).
 
 ## Relevant Product Docs
 
@@ -61,4 +61,35 @@ Trích app-shell plan từ brainstorm (decision `0014`) thành story để khôn
 
 ## Evidence
 
-Add after implementation.
+- `components/layout/app-shell/`: `app-shell.tsx` (holds role + collapse state;
+  role-switch via next-intl `useRouter.push('/{role}')` → client nav, no full
+  reload), `sidebar/sidebar.tsx` (collapse 260↔72px, `transition-[width] 250ms`,
+  icon-only + Radix tooltip labels when collapsed, footer toggle), `nav-config.ts`
+  (data-driven per role), `header/` (header + role-switcher).
+- Collapse persistence: `sidebar/sidebar-collapse.ts` (pure, storage-injected) +
+  `use-sidebar-collapsed.ts` hook (hydrate after mount → no SSR mismatch);
+  key `eduportal:sidebar-collapsed`.
+- New primitive `components/ui/tooltip/` (Radix umbrella) + story.
+- i18n: added `shell.nav.expandSidebar` / `collapseSidebar` (vi + en).
+- Active item conforms to design-spec: `bg-primary/12` + 3px left accent bar.
+- Proof: **48 vitest pass** (10 new: `nav-config.test.ts` ×6, `sidebar-collapse.test.ts` ×4),
+  `tsc --noEmit` clean, `bun run build` green. Storybook: Sidebar (per-role +
+  Collapsed + WithToggle), Header, Tooltip stories.
+
+### Design review: pass
+
+- design-system: conform — semantic tokens only (`bg-sidebar`, `border-border`,
+  `bg-primary/12`, `--edu-sidebar-width*`, `--edu-radius-*`); no raw color; sidebar
+  pattern reused per spec; roles differ only by accent color (`--edu-role-*`).
+- a11y: `aria-current="page"` on active link, `aria-label`+`aria-pressed` on
+  toggle, collapsed labels exposed via keyboard-focusable tooltip, `SheetTitle`
+  sr-only for mobile drawer; reduced-motion globally gated (globals.css); focus
+  ring preserved (Radix/shadcn untouched).
+- impeccable audit: automated flow deferred — project intentionally has no
+  PRODUCT.md/DESIGN.md (`.claude/rules/impeccable.md`, scope decision `0012`), so
+  ran the `DESIGN_REVIEW.md` checklist manually. One conflict: impeccable bans
+  side-stripe borders >1px; EduPortal design-spec mandates the 3px active accent
+  bar → **design system wins** (documented), kept as spec.
+- states: shell chrome — nav active/hover/focus states present; collapsed +
+  expanded + per-role covered in Storybook; responsive: mobile `Sheet` drawer
+  (<lg), no break at 320px; dark mode via existing theme tokens.
