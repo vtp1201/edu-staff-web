@@ -22,7 +22,7 @@ thêm reference gãy (giống bug `docs/design/tokens.css` ở decision `0010`).
 | `docs/design/design-spec.jsonc` | **Keep → relocate** | Spec layout per-screen (login, dashboards, exam, profile, discipline…) rất chi tiết. Chuyển → `docs/product/design-spec.jsonc`, normative cho layout (decision `0011`). Tham chiếu từ `.claude/rules/design-system.md` + `screens.md`. |
 | `docs/design/{design-system.md,design.md,tokens.css}` | Đã xử lý ở `0010` | tokens.css → `src/app/tokens.css`; nội dung → rules + product docs. |
 | `docs/features.md` | **Discard** | Rỗng (0 nội dung); thay bằng `docs/product/*` + `screens.md`. |
-| `docs/brainstorms/…sprint1.md` | **Extract, leave in backup** | `docs/brainstorms` bị `.gitignore` (commit `c1c0629`). Trích giá trị durable (dưới); file gốc để lại trong backup làm tham khảo. |
+| `docs/brainstorms/…sprint1.md` | **Extract** | `docs/brainstorms` bị `.gitignore` (commit `c1c0629`). Giá trị durable đã trích (dưới) vào decision này + story E08.1; backup đã xóa. |
 
 ### Mock-first pattern (trích từ brainstorm — đã wired thật)
 
@@ -47,9 +47,12 @@ Positive:
 
 Tradeoffs:
 
-- `.harness-backup/` vẫn giữ (không xóa) để có thể tra lại; có thể dọn sau.
+- `.harness-backup/` đã xóa sau khi mọi item durable được restore/relocate/extract;
+  không còn bản tra lại offline (lịch sử nằm ở git + các decision liên quan).
 
 ## Follow-Up
 
 - ✅ Restore scripts, relocate design-spec, document mock-first, tạo E08.1.
-- Cân nhắc xóa `.harness-backup/` sau khi commit ổn định (story riêng nếu cần).
+- ✅ Xóa `.harness-backup/` (mọi giá trị đã migrate; verify file đích tồn tại
+  trước khi xóa: `scripts/ui-add.sh`, `scripts/generate-story.ts`,
+  `docs/product/design-spec.jsonc`, `src/app/tokens.css`).

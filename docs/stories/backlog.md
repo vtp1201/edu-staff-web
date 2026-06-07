@@ -29,8 +29,8 @@ Xem chi tiết ở `docs/product/spec-intake.md`.
 | Story | Lane | Status |
 | --- | --- | --- |
 | `epics/E01-auth-rbac/US-001-auth-endpoint-alignment/` | high-risk | planned |
-| `epics/E05-multi-tenancy/US-001-tenant-path-resolver/` | high-risk | planned (BE dependency mở) |
-| `epics/E06-be-integration/US-001-response-envelope-parser.md` | normal | planned |
-| `epics/E06-be-integration/US-002-sse-realtime-foundation.md` | normal | planned (contract-first) |
+| `epics/E05-multi-tenancy/US-001-tenant-path-resolver/` | high-risk | in_progress (resolver+helper+middleware done; enforcing guard deferred — BE membership blocker) |
+| `epics/E06-be-integration/US-001-response-envelope-parser.md` | normal | implemented |
+| `epics/E06-be-integration/US-002-sse-realtime-foundation.md` | normal | implemented (contract-first, mock upstream) |
 | `epics/E07-design-system/US-001-design-system-foundation.md` | normal | implemented (build green) |
-| `epics/E08-app-shell/US-001-app-shell.md` | normal | planned |
+| `epics/E08-app-shell/US-001-app-shell.md` | normal | implemented |
