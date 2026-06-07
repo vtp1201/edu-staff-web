@@ -1,7 +1,6 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
 import { AUTH_EP } from "@/bootstrap/endpoint/auth.endpoint";
-import type { ApiEnvelope } from "@/bootstrap/lib/api-envelope";
 import type {
   AuthResult,
   IAuthRepository,
@@ -17,17 +16,16 @@ export class AuthRepository implements IAuthRepository {
 
   async signin(email: string, password: string): Promise<AuthResult> {
     try {
-      const tokenEnv = (await this.http.post(AUTH_EP.signin, {
+      // Interceptor unwraps the envelope → repo receives the payload directly.
+      const tokens = (await this.http.post(AUTH_EP.signin, {
         email,
         password,
-      })) as unknown as ApiEnvelope<TokenResponseDto>;
-      const tokens = tokenEnv.data as TokenResponseDto;
+      })) as unknown as TokenResponseDto;
 
       // TokenResponse has no profile → fetch identity with the fresh token.
-      const profileEnv = (await this.http.get(AUTH_EP.me, {
+      const profile = (await this.http.get(AUTH_EP.me, {
         headers: { Authorization: `Bearer ${tokens.accessToken}` },
-      })) as unknown as ApiEnvelope<UserProfileResponseDto>;
-      const profile = profileEnv.data as UserProfileResponseDto;
+      })) as unknown as UserProfileResponseDto;
 
       return { data: mapSession(tokens, profile) };
     } catch (err: unknown) {
@@ -37,10 +35,10 @@ export class AuthRepository implements IAuthRepository {
 
   async refresh(refreshToken: string): Promise<RefreshResult> {
     try {
-      const env = (await this.http.post(AUTH_EP.refresh, {
+      const tokens = (await this.http.post(AUTH_EP.refresh, {
         refreshToken,
-      })) as unknown as ApiEnvelope<TokenResponseDto>;
-      return { data: mapTokens(env.data as TokenResponseDto) };
+      })) as unknown as TokenResponseDto;
+      return { data: mapTokens(tokens) };
     } catch (err: unknown) {
       return { error: mapAuthError(err) };
     }

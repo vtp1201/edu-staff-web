@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -54,4 +54,15 @@ khi xong).
 
 ## Evidence
 
-Add after validation.
+- `bootstrap/lib/api-envelope.ts`: `ApiEnvelope<T>` / `ApiErrorShape` / `Pagination`
+  types + class `ApiError` (code/message/retryable/status/requestId/fields) +
+  pure helpers `unwrapResponse` (success→`envelope.data`, raw passthrough,
+  success:false→throw), `normalizeError` (non-2xx/transport→`ApiError`),
+  `errorCodeOf`/`statusOf` (ApiError + raw axios fallback), `parseEnvelope`
+  (list `meta.pagination`).
+- `bootstrap/lib/http.ts` interceptor delegates to those helpers; `{ raw: true }`
+  + `/health` + jwks bypass unwrap (axios `AxiosRequestConfig.raw` augmented).
+- `auth.repository.ts` migrated: receives payload directly, maps `ApiError`→
+  `AuthFailure` via existing mapper.
+- Proof: 11 new unit (`api-envelope.test.ts`) + auth repo integration updated;
+  **38 vitest pass**, `tsc --noEmit` clean, `bun run build` green.
