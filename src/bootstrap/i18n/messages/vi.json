@@ -105,5 +105,19 @@
       "code": "Mã",
       "status": "Trạng thái"
     }
+  },
+  "tenant": {
+    "select": {
+      "title": "Chọn không gian làm việc",
+      "subtitle": "Bạn là thành viên của các tổ chức sau",
+      "enter": "Vào",
+      "switching": "Đang chuyển…",
+      "empty": "Bạn chưa thuộc tổ chức nào",
+      "roles": "Vai trò"
+    },
+    "home": {
+      "title": "Không gian làm việc",
+      "body": "Bạn đang ở trong không gian của tổ chức này."
+    }
   }
 }

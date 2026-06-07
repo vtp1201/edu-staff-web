@@ -105,5 +105,19 @@
       "code": "Code",
       "status": "Status"
     }
+  },
+  "tenant": {
+    "select": {
+      "title": "Choose a workspace",
+      "subtitle": "You belong to these organizations",
+      "enter": "Enter",
+      "switching": "Switching…",
+      "empty": "You do not belong to any organization yet",
+      "roles": "Roles"
+    },
+    "home": {
+      "title": "Workspace",
+      "body": "You are inside this organization workspace."
+    }
   }
 }

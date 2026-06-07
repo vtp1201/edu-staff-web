@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeJwtExp, isAccessExpired } from "./jwt";
+import { decodeJwtExp, decodeTenantId, isAccessExpired } from "./jwt";
 
 function makeJwt(payload: Record<string, unknown>): string {
   const b64 = (o: unknown) =>
@@ -37,5 +37,19 @@ describe("isAccessExpired", () => {
 
   it("is valid when comfortably ahead of skew", () => {
     expect(isAccessExpired(1_000_060, 30, now)).toBe(false);
+  });
+});
+
+describe("decodeTenantId", () => {
+  it("reads the tenantId claim from a tenant-scoped token", () => {
+    expect(decodeTenantId(makeJwt({ tenantId: "t-acme" }))).toBe("t-acme");
+  });
+
+  it("returns null when there is no tenantId claim", () => {
+    expect(decodeTenantId(makeJwt({ exp: 1 }))).toBeNull();
+  });
+
+  it("returns null for a malformed token", () => {
+    expect(decodeTenantId("nope")).toBeNull();
   });
 });

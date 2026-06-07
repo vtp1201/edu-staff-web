@@ -1,3 +1,7 @@
+export {
+  evaluateTenantAccess,
+  type TenantAccessVerdict,
+} from "./access-guard";
 export { hasTenantMembership, rolesInTenant } from "./membership";
 export {
   type ResolvedTenant,
