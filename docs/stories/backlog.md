@@ -13,7 +13,7 @@ Xem chi tiết ở `docs/product/spec-intake.md`.
 | Epic | Description | Status |
 | --- | --- | --- |
 | E01 | Auth & RBAC | partial |
-| E02 | Teacher · Attendance | in-progress |
+| E02 | Teacher · Attendance | sliced |
 | E03 | Principal dashboard | unsliced |
 | E04 | Student & Parent portal | unsliced |
 | E05 | Multi-tenancy (path-first, decision 0007) | sliced |
@@ -29,6 +29,7 @@ Xem chi tiết ở `docs/product/spec-intake.md`.
 | Story | Lane | Status |
 | --- | --- | --- |
 | `epics/E01-auth-rbac/US-001-auth-endpoint-alignment/` | high-risk | planned |
+| `epics/E02-teacher-attendance/US-001-teacher-attendance.md` | normal | implemented |
 | `epics/E05-multi-tenancy/US-001-tenant-path-resolver/` | high-risk | in_progress (resolver+helper+middleware done; enforcing guard deferred — BE membership blocker) |
 | `epics/E06-be-integration/US-001-response-envelope-parser.md` | normal | implemented |
 | `epics/E06-be-integration/US-002-sse-realtime-foundation.md` | normal | implemented (contract-first, mock upstream) |
