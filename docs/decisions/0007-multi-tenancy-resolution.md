@@ -67,6 +67,19 @@ Tradeoffs:
 - Giai đoạn 1 (story E05.1): `resolveTenant()` + middleware rewrite path-based;
   `tenantUrl()` helper; auth guard theo tenant scope
   (`docs/product/roles-permissions.md`).
+- ✅ **URL shape chốt = B**: `/{locale}/t/{slug}/...` (locale ngoài cùng,
+  next-intl matcher giữ nguyên; `/t/` tách tenant khỏi reserved route).
+- ✅ **Implemented (phần unblocked, US-E05.1)**: `bootstrap/tenant/` —
+  `resolveTenant` (host→null phase 1, path đọc slug sau `/t/`), `tenantUrl`,
+  `hasTenantMembership`/`rolesInTenant` (pure, tested). Middleware compose
+  next-intl → `resolveTenant` → set `x-tenant-slug` + trace requestId
+  (RESOLVE + observe, **chưa enforce**). 13 unit, build green.
+- ⛔ **Deferred — BE blocker (hard gate Authorization)**: IAM chưa có endpoint
+  trả membership `slug → { tenantId, role }`; `UserTenantRole` chỉ có
+  `tenantName` (không slug). Vì vậy **enforcing guard** (map slug→tenantId +
+  check `AuthUser.roles` → 403/redirect) và **route-move** dưới
+  `app/[locale]/t/[tenant]/` hoãn tới khi BE expose memberships; khi có, ghi
+  decision bổ sung + bật enforcement trong middleware.
 - Giai đoạn 2 (sau, khi có tenant cần custom domain): tenant registry
   `host → tenantId`, cookie parent-domain, decision bổ sung cho cookie/auth đa
   miền.
