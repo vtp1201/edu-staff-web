@@ -8,19 +8,35 @@ function base64UrlDecode(segment: string): string {
   const padded = segment.replace(/-/g, "+").replace(/_/g, "/");
   const pad =
     padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
-  return Buffer.from(padded + pad, "base64").toString("utf8");
+  const b64 = padded + pad;
+  // Edge-safe: middleware runs in the edge runtime where `Buffer` is absent but
+  // `atob` exists; fall back to `Buffer` for the node/test runtime.
+  if (typeof atob === "function") return atob(b64);
+  return Buffer.from(b64, "base64").toString("utf8");
+}
+
+/** Decode the JWT payload claims, or `null` if unreadable. */
+export function decodeJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const claims = JSON.parse(base64UrlDecode(parts[1]));
+    return typeof claims === "object" && claims !== null ? claims : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Returns the `exp` claim (seconds since epoch) or `null` if unreadable. */
 export function decodeJwtExp(token: string): number | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const payload = JSON.parse(base64UrlDecode(parts[1])) as { exp?: unknown };
-    return typeof payload.exp === "number" ? payload.exp : null;
-  } catch {
-    return null;
-  }
+  const exp = decodeJwtClaims(token)?.exp;
+  return typeof exp === "number" ? exp : null;
+}
+
+/** Returns the tenant-scoped `tenantId` claim (after switch-tenant) or `null`. */
+export function decodeTenantId(token: string): string | null {
+  const tenantId = decodeJwtClaims(token)?.tenantId;
+  return typeof tenantId === "string" ? tenantId : null;
 }
 
 /**

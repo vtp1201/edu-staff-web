@@ -31,24 +31,42 @@ TBD — bun vitest run (unit/integration), bun build (platform)
 
 ## Acceptance Evidence
 
-Status: **in_progress** — unblocked primitives done; enforcing guard deferred
-(BE membership blocker, hard gate Authorization).
+Status: **in_progress** — enforcement live; route-move of dashboards under the
+tenant segment + URL slug migration remain.
 
-Done:
-- `bootstrap/tenant/resolve-tenant.ts` (`resolveTenant`, shape B), `tenant-url.ts`
-  (`tenantUrl`), `membership.ts` (`hasTenantMembership`/`rolesInTenant`).
-- `bootstrap/i18n/locales.ts` extracted (so resolver/middleware avoid pulling
-  next/navigation); `routing.ts` reuses it.
-- `middleware.ts`: next-intl → `resolveTenant` → `x-tenant-slug` header + dev
-  trace `slug/mode/requestId` (RESOLVE + observe; no enforcement).
-- Unit: 13 cases (`tenant.test.ts`) — path resolve / missing-`/t/` → null /
-  unknown locale → null / missing slug → null / host → null (phase 1);
-  `tenantUrl` path-form; membership pass/block + `rolesInTenant`.
-- Platform: **74 vitest pass**, `tsc --noEmit` clean, `next build` green,
-  next-intl matcher intact.
+URL shape: **B `/{locale}/t/{tenantId}`**. ⚠️ INTERIM tenant **UUID** in URL (BE
+has no slug yet); migrate to slug when IAM exposes it — guard already keys on
+`tenantId` so only `resolveFromPath`/`tenantUrl` change.
 
-Deferred (BE dependency — decision `0007` follow-up):
-- Integration guard (slug→tenantId map + `AuthUser.roles` check → 403/redirect)
-  and route-move under `app/[locale]/t/[tenant]/`. Blocked: IAM exposes no
-  membership endpoint and `UserTenantRole` lacks `slug`. Re-open when BE ships
-  memberships; flip middleware from observe → enforce, add integration + e2e.
+Done — primitives + guard:
+- `bootstrap/tenant/`: `resolveTenant` (host→null phase 1; path reads tenantId
+  after `/t/`), `tenantUrl(tenantId,path)`, `evaluateTenantAccess` (allowed /
+  no-active-tenant / tenant-mismatch), `hasTenantMembership`/`rolesInTenant`.
+- `bootstrap/lib/jwt.ts`: `decodeJwtClaims` + `decodeTenantId` edge-safe (`atob`
+  fallback) so middleware can read the claim in the edge runtime.
+- `bootstrap/i18n/locales.ts` extracted (resolver/middleware avoid next/navigation).
+- `middleware.ts`: next-intl → `resolveTenant` → **enforce** claim match on
+  `/t/{tenantId}`; mismatch/no-scope → redirect `/{locale}/select-tenant?from=…`;
+  sets `x-tenant-id`. Round-trip-free (token claim, not a per-request BE call).
+
+Done — BE integration (US-020) + UI:
+- `features/tenant/`: entity `TenantMembership` (+`isSwitchable`), `i-tenant.repository`,
+  DTOs/mapper, real `TenantRepository` (`GET /members/me/tenants`,
+  `POST /members/switch-tenant` with `clientId`), `MockTenantRepository`
+  (mints a fake JWT carrying the `tenantId` claim so the dev flow works), DI
+  (mock-first), use-cases `ListMyMemberships` + `SwitchTenant`.
+- `(auth)/select-tenant` page + `switchTenantAction` (switch → `setAuthCookies`
+  → redirect into tenant) + tenant home `t/[tenant]` (guarded landing).
+- i18n `tenant.*` (vi + en).
+
+Proof:
+- Unit/integration: `tenant.test.ts` (15 — resolve/url/guard/membership),
+  `jwt.test.ts` (+3 decodeTenantId), `tenant.use-cases.test.ts` (3).
+- Platform: **85 vitest pass**, `tsc --noEmit` clean, `next build` green
+  (routes `/select-tenant`, `/t/[tenant]`); next-intl matcher intact.
+
+Remaining (follow-up):
+- Route-move the role dashboards under `/t/{tenantId}/{role}` + wire the in-shell
+  role/tenant switcher to call `switch-tenant`; migrate URL tenantId→slug when BE
+  exposes a slug. E2E (login → switch → land in tenant; cross-tenant URL blocked)
+  after the route-move.

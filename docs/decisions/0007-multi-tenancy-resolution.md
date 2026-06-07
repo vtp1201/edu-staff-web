@@ -67,19 +67,26 @@ Tradeoffs:
 - Giai đoạn 1 (story E05.1): `resolveTenant()` + middleware rewrite path-based;
   `tenantUrl()` helper; auth guard theo tenant scope
   (`docs/product/roles-permissions.md`).
-- ✅ **URL shape chốt = B**: `/{locale}/t/{slug}/...` (locale ngoài cùng,
+- ✅ **URL shape chốt = B**: `/{locale}/t/{tenantId}/...` (locale ngoài cùng,
   next-intl matcher giữ nguyên; `/t/` tách tenant khỏi reserved route).
-- ✅ **Implemented (phần unblocked, US-E05.1)**: `bootstrap/tenant/` —
-  `resolveTenant` (host→null phase 1, path đọc slug sau `/t/`), `tenantUrl`,
-  `hasTenantMembership`/`rolesInTenant` (pure, tested). Middleware compose
-  next-intl → `resolveTenant` → set `x-tenant-slug` + trace requestId
-  (RESOLVE + observe, **chưa enforce**). 13 unit, build green.
-- ⛔ **Deferred — BE blocker (hard gate Authorization)**: IAM chưa có endpoint
-  trả membership `slug → { tenantId, role }`; `UserTenantRole` chỉ có
-  `tenantName` (không slug). Vì vậy **enforcing guard** (map slug→tenantId +
-  check `AuthUser.roles` → 403/redirect) và **route-move** dưới
-  `app/[locale]/t/[tenant]/` hoãn tới khi BE expose memberships; khi có, ghi
-  decision bổ sung + bật enforcement trong middleware.
+  ⚠️ **INTERIM tenantId-in-URL → migrate slug sau**: BE IAM định danh tenant
+  bằng **UUID** (không có field `slug` trên `MembershipSummary`/`TenantResponse`,
+  iam openapi). Path segment mang UUID tạm; khi BE thêm slug → đổi `resolveFromPath`
+  (slug→id) + `tenantUrl`, guard đã key theo `tenantId` nên không đổi.
+- ✅ **BE blocker GỠ** (BE US-020 implemented): IAM giờ có
+  `GET /members/me/tenants` (memberships `{tenantId, roles[], status}`) +
+  `POST /members/switch-tenant` (mint token **tenant-scoped**, claim `tenantId`,
+  403 nếu non-member/suspended).
+- ✅ **Enforcement implemented (US-E05.1)**: guard claim-based round-trip-free —
+  URL tenantId phải khớp claim `tenantId` của access token; lệch/thiếu →
+  redirect `/select-tenant`. `bootstrap/tenant/` (`resolveTenant`(tenantId),
+  `tenantUrl`, `evaluateTenantAccess`, `hasTenantMembership`); `jwt.decodeTenantId`
+  edge-safe (atob); middleware enforce trên `/t/{tenantId}`. Data layer
+  `features/tenant/` (memberships + switch-tenant, real+mock, DI, use-cases).
+  Màn `/select-tenant` (list + switch) + tenant home `/t/[tenant]`. 27 unit, build green.
+- ⏭ **Remaining (follow-up)**: route-move các dashboard role hiện tại dưới
+  `/t/{tenantId}/{role}` + wire in-shell role/tenant switcher gọi `switch-tenant`;
+  migrate URL tenantId→slug khi BE expose slug.
 - Giai đoạn 2 (sau, khi có tenant cần custom domain): tenant registry
   `host → tenantId`, cookie parent-domain, decision bổ sung cho cookie/auth đa
   miền.
