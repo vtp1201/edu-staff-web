@@ -2,14 +2,10 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogOverlay,
-  AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./alert-dialog";
@@ -21,10 +17,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof AlertDialog>;
+} satisfies Meta<typeof AlertDialog>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (

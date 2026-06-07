@@ -8,10 +8,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Textarea>;
+} satisfies Meta<typeof Textarea>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {},

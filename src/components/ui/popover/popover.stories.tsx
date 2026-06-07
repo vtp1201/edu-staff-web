@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   Popover,
-  PopoverAnchor,
   PopoverContent,
   PopoverDescription,
   PopoverHeader,
@@ -16,10 +15,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Popover>;
+} satisfies Meta<typeof Popover>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (

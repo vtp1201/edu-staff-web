@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -17,10 +16,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Sheet>;
+} satisfies Meta<typeof Sheet>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (

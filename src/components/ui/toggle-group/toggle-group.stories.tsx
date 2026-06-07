@@ -8,12 +8,13 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof ToggleGroup>;
+} satisfies Meta<typeof ToggleGroup>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  args: { type: "single" },
   render: () => (
     <ToggleGroup type="single" defaultValue="a">
       <ToggleGroupItem value="a">A</ToggleGroupItem>

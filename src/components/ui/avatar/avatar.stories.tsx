@@ -1,12 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Avatar,
-  AvatarBadge,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-  AvatarImage,
-} from "./avatar";
+import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "./avatar";
 
 const meta = {
   title: "UI/Avatar",
@@ -15,10 +8,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Avatar>;
+} satisfies Meta<typeof Avatar>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
