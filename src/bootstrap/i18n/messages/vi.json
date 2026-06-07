@@ -1,7 +1,12 @@
 {
-  "Common": { "hello": "Xin chào" },
+  "Common": {
+    "hello": "Xin chào"
+  },
   "auth": {
-    "brand": { "name": "EduPortal", "tagline": "Hệ thống quản lý giáo dục" },
+    "brand": {
+      "name": "EduPortal",
+      "tagline": "Hệ thống quản lý giáo dục"
+    },
     "login": {
       "title": "Đăng nhập",
       "subtitle": "Nhập thông tin để truy cập hệ thống",
@@ -39,7 +44,9 @@
       "teachers": "Giáo viên",
       "reports": "Báo cáo",
       "overview": "Tổng quan",
-      "children": "Con của tôi"
+      "children": "Con của tôi",
+      "expandSidebar": "Mở rộng thanh bên",
+      "collapseSidebar": "Thu gọn thanh bên"
     },
     "header": {
       "searchPlaceholder": "Tìm kiếm...",

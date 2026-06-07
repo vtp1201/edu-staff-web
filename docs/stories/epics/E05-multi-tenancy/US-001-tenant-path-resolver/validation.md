@@ -31,4 +31,24 @@ TBD — bun vitest run (unit/integration), bun build (platform)
 
 ## Acceptance Evidence
 
-Add results after verification.
+Status: **in_progress** — unblocked primitives done; enforcing guard deferred
+(BE membership blocker, hard gate Authorization).
+
+Done:
+- `bootstrap/tenant/resolve-tenant.ts` (`resolveTenant`, shape B), `tenant-url.ts`
+  (`tenantUrl`), `membership.ts` (`hasTenantMembership`/`rolesInTenant`).
+- `bootstrap/i18n/locales.ts` extracted (so resolver/middleware avoid pulling
+  next/navigation); `routing.ts` reuses it.
+- `middleware.ts`: next-intl → `resolveTenant` → `x-tenant-slug` header + dev
+  trace `slug/mode/requestId` (RESOLVE + observe; no enforcement).
+- Unit: 13 cases (`tenant.test.ts`) — path resolve / missing-`/t/` → null /
+  unknown locale → null / missing slug → null / host → null (phase 1);
+  `tenantUrl` path-form; membership pass/block + `rolesInTenant`.
+- Platform: **74 vitest pass**, `tsc --noEmit` clean, `next build` green,
+  next-intl matcher intact.
+
+Deferred (BE dependency — decision `0007` follow-up):
+- Integration guard (slug→tenantId map + `AuthUser.roles` check → 403/redirect)
+  and route-move under `app/[locale]/t/[tenant]/`. Blocked: IAM exposes no
+  membership endpoint and `UserTenantRole` lacks `slug`. Re-open when BE ships
+  memberships; flip middleware from observe → enforce, add integration + e2e.

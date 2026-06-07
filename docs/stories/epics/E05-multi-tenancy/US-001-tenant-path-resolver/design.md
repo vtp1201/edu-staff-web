@@ -26,12 +26,19 @@ ResolvedTenant = { tenantId, slug, mode: "path" | "host" }
 
 ## Interface Contract
 
-- **URL shape** (chốt 1 trong 2 ở Discovery):
-  - A. `/{tenant}/{locale}/...` (tenant ngoài cùng)
-  - B. `/{locale}/t/{slug}/...` (giữ locale ngoài, tenant có prefix `/t/`)
-- `tenantUrl(tenant, path)` — sinh URL theo `mode`; phase này luôn ra path-form.
-- Middleware compose: `resolveTenant` → set header/context tenant → `next-intl`.
-- Cập nhật `middleware.ts` matcher để cover segment tenant.
+- **URL shape — CHỐT = B**: `/{locale}/t/{slug}/...` (giữ locale ngoài cùng,
+  next-intl matcher không đổi; `/t/` tách tenant khỏi reserved route). Phương án
+  A (`/{tenant}/{locale}`) bị bỏ vì phải wrap lại next-intl middleware. Khớp
+  decision `0007` (`/t/{slug}` phase 1).
+- `tenantUrl(slug, path)` — sinh path locale-relative `/t/{slug}{path}`
+  (next-intl `Link`/router tự thêm prefix locale).
+- Middleware compose: `next-intl` → `resolveTenant` → set header `x-tenant-slug`
+  + trace requestId. Matcher `/(vi|en)/:path*` đã cover `/t/{slug}` (nằm trong
+  locale) → không cần đổi.
+- ⛔ **Enforcing guard + route-move hoãn** (BE blocker, hard gate): cần
+  membership `slug → { tenantId, role }` từ IAM (chưa có) để map slug→tenantId
+  và check `AuthUser.roles`. Đã implement predicate `hasTenantMembership` (pure,
+  tested), chỉ thiếu nguồn dữ liệu BE để wiring enforcement.
 
 ## Data Model
 

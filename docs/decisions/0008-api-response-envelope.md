@@ -69,8 +69,9 @@ Tradeoffs:
 
 - ✅ `.claude/rules/api-integration.md` tạo (hoá rule contract BE cho web).
 - ✅ `docs/product/api-conventions.md` cập nhật theo envelope thật.
-- **Mismatch cần xử lý** (đã ghi trong rule): interceptor `bootstrap/lib/http.ts`
-  mới unwrap `response.data` (axios) — chưa unwrap `envelope.data` / chưa đọc
-  `envelope.error`. Cần một parser envelope dùng chung ở `bootstrap/lib/http`
-  trước khi wiring real repo. → ứng viên story riêng (normal).
+- ✅ **Mismatch đã xử lý** (US-E06.1): parser dùng chung `bootstrap/lib/api-envelope.ts`
+  (`unwrapResponse`/`normalizeError`/`parseEnvelope` + class `ApiError`); interceptor
+  `bootstrap/lib/http.ts` unwrap success → `envelope.data` và normalise mọi lỗi
+  thành `ApiError`. Auth repo migrate (nhận payload trực tiếp). 11 unit + auth repo
+  integration pass, tsc + build green.
 - ✅ Durable row: `harness-cli decision add`.

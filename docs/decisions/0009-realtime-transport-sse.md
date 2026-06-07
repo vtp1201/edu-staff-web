@@ -79,6 +79,14 @@ follow**: frame format, event taxonomy, auth/lifecycle được chốt ở
 
 - ✅ Contract `docs/product/realtime-events.md` (web-defined).
 - ✅ Story scaffold `docs/stories/epics/E06-be-integration/US-002-sse-realtime-foundation.md`.
+- ✅ **Scaffold implemented** (US-E06.2): route proxy `app/[locale]/api/stream/route.ts`
+  (cookie auth → mock upstream khi `USE_MOCK`/thiếu `NOTI_SERVICE_URL`, else proxy
+  Bearer + `Last-Event-ID`); typed event union + `parseEvent`/`shouldHandle`
+  (tenant drop) + `queryKeysFor` taxonomy + `toSseFrame`; client hook
+  `useRealtimeEvents` (listener theo từng type → invalidate TanStack Query;
+  `session.revoked` → callback ép logout). 13 unit pass, build green. Interim:
+  tenant đọc từ `?tenant=` (fallback cookie `tenant_id`) tới khi E05.1 wiring
+  tenant segment.
 - Auth-over-stream chi tiết (refresh khi stream sống lâu) — hard gate, decision
   bổ sung khi wiring thật (liên quan US-E01.1).
 - Ảnh hưởng **deployment** (open decision): host phải hỗ trợ long-lived

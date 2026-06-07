@@ -56,14 +56,18 @@ Mọi response `/api/v1` bọc trong envelope ổn định — `success`, `data`
 
 ### Hệ quả cho web HTTP client
 
-> ⚠️ **Mismatch hiện tại**: `bootstrap/lib/http.ts` interceptor chỉ unwrap
-> `response.data` (lớp axios) → repository nhận **cả envelope** `{success, data,
-> error, meta}`, KHÔNG phải payload. Khi wiring real repo với BE:
-> - unwrap đúng tới `envelope.data` cho success;
-> - đọc `envelope.error` (branch theo `error.code`, KHÔNG theo `message`) và map
->   về failure union của feature;
-> - tôn trọng HTTP status cho category; chỉ retry khi `error.retryable === true`
->   (408/429/502/503/504).
+> ✅ **Đã đồng bộ** (US-E06.1): `bootstrap/lib/http.ts` interceptor unwrap tới
+> `envelope.data` cho success qua `bootstrap/lib/api-envelope.ts`. Repository
+> nhận **payload** trực tiếp (không phải envelope). Quy tắc khi viết repo:
+> - success → http call trả thẳng payload (`as unknown as <Dto>`, không đọc `.data`);
+> - mọi lỗi (non-2xx / `success:false` / transport) được chuẩn hoá thành
+>   `ApiError` mang `code` (UPPER_SNAKE) / `message` / `retryable` / `fields?` /
+>   `requestId` / `status`; map về failure union bằng `errorCodeOf`/`statusOf`
+>   (branch theo `error.code`, KHÔNG theo `message`);
+> - chỉ retry khi `error.retryable === true` (408/429/502/503/504);
+> - list endpoint cần phân trang: gọi với `{ raw: true }` rồi `parseEnvelope()`
+>   để đọc `meta.pagination` (`nextCursor`, `hasMore`);
+> - raw endpoint (`/health`, `/.well-known/jwks.json`) tự động bỏ qua unwrap.
 
 ## camelCase (BẮT BUỘC)
 

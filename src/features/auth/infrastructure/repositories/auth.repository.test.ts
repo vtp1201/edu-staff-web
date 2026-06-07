@@ -1,10 +1,14 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { AUTH_EP } from "@/bootstrap/endpoint/auth.endpoint";
+import { ApiError } from "@/bootstrap/lib/api-envelope";
 import { AuthRepository } from "./auth.repository";
 
-function envelope<T>(data: T) {
-  return { success: true, data, error: null, meta: {} };
+// The http interceptor already unwraps the envelope (US-E06.1), so the repo's
+// `http` resolves to the payload directly and rejects with a normalised
+// ApiError. Tests mock at that boundary.
+function apiError(code: string, status: number) {
+  return new ApiError({ code, message: code, retryable: false, status });
 }
 
 const tokenData = {
@@ -29,8 +33,8 @@ function makeHttp(over: Partial<AxiosInstance> = {}) {
 describe("AuthRepository.signin", () => {
   it("posts /auth/signin then GETs /users/me with the fresh bearer token", async () => {
     const http = makeHttp({
-      post: vi.fn().mockResolvedValue(envelope(tokenData)),
-      get: vi.fn().mockResolvedValue(envelope(profileData)),
+      post: vi.fn().mockResolvedValue(tokenData),
+      get: vi.fn().mockResolvedValue(profileData),
     });
     const repo = new AuthRepository(http);
 
@@ -59,12 +63,9 @@ describe("AuthRepository.signin", () => {
 
   it("maps an error envelope to a typed failure", async () => {
     const http = makeHttp({
-      post: vi.fn().mockRejectedValue({
-        response: {
-          status: 401,
-          data: { error: { code: "USER_INVALID_CREDENTIALS" } },
-        },
-      }),
+      post: vi
+        .fn()
+        .mockRejectedValue(apiError("USER_INVALID_CREDENTIALS", 401)),
     });
     const result = await new AuthRepository(http).signin("a@school.vn", "bad");
     expect(result.error).toEqual({ type: "invalid-credentials" });
@@ -80,7 +81,7 @@ describe("AuthRepository.refresh", () => {
       refreshToken: "ref-2",
     };
     const http = makeHttp({
-      post: vi.fn().mockResolvedValue(envelope(rotated)),
+      post: vi.fn().mockResolvedValue(rotated),
     });
     const result = await new AuthRepository(http).refresh("ref-1");
 
@@ -96,9 +97,7 @@ describe("AuthRepository.refresh", () => {
 
   it("maps a rotated-token reuse rejection to invalid-token", async () => {
     const http = makeHttp({
-      post: vi.fn().mockRejectedValue({
-        response: { status: 401, data: { error: { code: "INVALID_TOKEN" } } },
-      }),
+      post: vi.fn().mockRejectedValue(apiError("INVALID_TOKEN", 401)),
     });
     const result = await new AuthRepository(http).refresh("stale");
     expect(result.error).toEqual({ type: "invalid-token" });
@@ -107,7 +106,7 @@ describe("AuthRepository.refresh", () => {
 
 describe("AuthRepository.signout", () => {
   it("posts /auth/signout without a body", async () => {
-    const http = makeHttp({ post: vi.fn().mockResolvedValue(envelope(null)) });
+    const http = makeHttp({ post: vi.fn().mockResolvedValue(null) });
     await new AuthRepository(http).signout();
     expect(http.post).toHaveBeenCalledWith(AUTH_EP.signout);
   });
