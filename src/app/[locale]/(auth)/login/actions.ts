@@ -25,8 +25,10 @@ export async function loginAction(
 
   await setAuthCookies(result.data);
 
-  const { roles } = result.data.user;
-  redirect(roles.length === 1 ? `/${roles[0].role}` : "/select-role");
+  // Signin issues a NON-tenant token; the user picks a tenant next, which mints
+  // a tenant-scoped token (US-E05.1). Workspace routes live under /t/{tenantId}
+  // and the middleware guard redirects here until a tenant is active.
+  redirect("/select-tenant");
 }
 
 export async function logoutAction(): Promise<void> {

@@ -11,11 +11,15 @@ import { tenantUrl } from "@/bootstrap/tenant";
  * `/members/switch-tenant`, persist it in the httpOnly cookies, then land in
  * the guarded tenant workspace. BE rejects non-members with 403.
  */
-export async function switchTenantAction(tenantId: string): Promise<void> {
+export async function switchTenantAction(
+  tenantId: string,
+  role: string,
+): Promise<void> {
   const useCase = await makeSwitchTenantUseCase();
   const tokens = await useCase.execute(tenantId);
   await setAuthCookies(tokens);
 
   const locale = await getLocale();
-  redirect({ href: tenantUrl(tenantId), locale });
+  // Land in the chosen tenant's workspace at the membership's first role.
+  redirect({ href: tenantUrl(tenantId, role ? `/${role}` : "/"), locale });
 }

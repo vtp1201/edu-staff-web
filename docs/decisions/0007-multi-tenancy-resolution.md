@@ -84,9 +84,14 @@ Tradeoffs:
   edge-safe (atob); middleware enforce trên `/t/{tenantId}`. Data layer
   `features/tenant/` (memberships + switch-tenant, real+mock, DI, use-cases).
   Màn `/select-tenant` (list + switch) + tenant home `/t/[tenant]`. 27 unit, build green.
-- ⏭ **Remaining (follow-up)**: route-move các dashboard role hiện tại dưới
-  `/t/{tenantId}/{role}` + wire in-shell role/tenant switcher gọi `switch-tenant`;
-  migrate URL tenantId→slug khi BE expose slug.
+- ✅ **Route-move xong (đóng story)**: workspace chuyển dưới
+  `app/[locale]/t/[tenant]/(app)/`; layout tenant-aware truyền `tenantId` vào
+  `AppShell`; Sidebar build href + active-match qua `tenantUrl`; role-switch
+  điều hướng trong tenant. Flow: login → `/select-tenant` → switch (mint token
+  tenant-scoped) → `/t/{tenantId}/{role}`; middleware chặn cross-tenant.
+- ⏭ **Enhancement (không chặn)**: migrate URL tenantId→slug khi BE expose slug
+  (guard key theo `tenantId`); in-shell TENANT switcher riêng (re-call
+  `switch-tenant`); derive role từ claim `memberRoles` (role-guard — story riêng).
 - Giai đoạn 2 (sau, khi có tenant cần custom domain): tenant registry
   `host → tenantId`, cookie parent-domain, decision bổ sung cho cookie/auth đa
   miền.

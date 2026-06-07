@@ -3,6 +3,7 @@
 import { ChevronLeft, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/bootstrap/i18n/routing";
+import { tenantUrl } from "@/bootstrap/tenant";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -13,6 +14,8 @@ import { cn } from "@/shared/utils";
 import { NAV_BY_ROLE, type NavItem, type Role } from "./nav-config";
 
 type SidebarProps = {
+  /** Active tenant — nav hrefs are built as `/t/{tenantId}{item.href}`. */
+  tenantId: string;
   role: Role;
   collapsed?: boolean;
   onToggle?: () => void;
@@ -20,6 +23,7 @@ type SidebarProps = {
 };
 
 export function Sidebar({
+  tenantId,
   role,
   collapsed = false,
   onToggle,
@@ -60,18 +64,22 @@ export function Sidebar({
 
       <ScrollArea className="flex-1">
         <nav className="flex flex-col gap-1 p-3">
-          {items.map((item) => (
-            <NavLink
-              key={item.href}
-              item={item}
-              label={t(item.labelKey)}
-              collapsed={collapsed}
-              active={
-                pathname === item.href ||
-                (pathname?.startsWith(`${item.href}/`) ?? false)
-              }
-            />
-          ))}
+          {items.map((item) => {
+            const href = tenantUrl(tenantId, item.href);
+            return (
+              <NavLink
+                key={item.href}
+                item={item}
+                href={href}
+                label={t(item.labelKey)}
+                collapsed={collapsed}
+                active={
+                  pathname === href ||
+                  (pathname?.startsWith(`${href}/`) ?? false)
+                }
+              />
+            );
+          })}
         </nav>
       </ScrollArea>
 
@@ -103,11 +111,13 @@ export function Sidebar({
 
 function NavLink({
   item,
+  href,
   label,
   active,
   collapsed,
 }: {
   item: NavItem;
+  href: string;
   label: string;
   active: boolean;
   collapsed: boolean;
@@ -115,7 +125,7 @@ function NavLink({
   const Icon = item.icon;
   const link = (
     <Link
-      href={item.href}
+      href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 rounded-[var(--edu-radius-btn)] py-2 text-sm font-medium transition-colors",
