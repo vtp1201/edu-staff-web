@@ -37,9 +37,9 @@ export function createHttpClient(token?: string) {
     // endpoints (`/health`, jwks) and `{ raw: true }` calls pass through.
     (response) => unwrapResponse(response) as unknown as AxiosResponse,
     (error: unknown) => {
-      // Normalise every failure (non-2xx / success:false / transport) into an
+      // Normalize every failure (non-2xx / success:false / transport) into an
       // ApiError carrying code/retryable/fields/requestId/status; branch on
-      // `error.code`, never the localised message.
+      // `error.code`, never the localized message.
       //
       // Token refresh stays SERVER-side and proactive (decision `0018`):
       // httpOnly cookies can't be rewritten from this interceptor during RSC

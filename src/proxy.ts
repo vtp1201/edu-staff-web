@@ -23,7 +23,7 @@ const intlMiddleware = createMiddleware(routing);
  * `resolve-tenant.ts`. Route-move of the role dashboards under `/t/{tenantId}`
  * and the in-shell switcher wiring are the remaining follow-ups.
  */
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const response = intlMiddleware(request);
   const { pathname } = request.nextUrl;
   const tenant = resolveTenant({ pathname });

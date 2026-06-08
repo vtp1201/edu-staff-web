@@ -1,14 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./table";
+import { Table, TableBody, TableFooter, TableHeader } from "./table";
 
 const meta = {
   title: "UI/Table",
@@ -17,10 +8,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Table>;
+} satisfies Meta<typeof Table>;
 
 export default meta;
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (

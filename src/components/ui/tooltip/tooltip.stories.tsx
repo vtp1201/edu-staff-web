@@ -9,11 +9,10 @@ const meta = {
     layout: "centered",
   },
   tags: ["autodocs"],
-} as Meta<typeof Tooltip>;
+} satisfies Meta<typeof Tooltip>;
 
 export default meta;
-// biome-ignore lint/suspicious/noExplicitAny: storybook render-only story
-type Story = StoryObj<any>;
+type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   render: () => (
