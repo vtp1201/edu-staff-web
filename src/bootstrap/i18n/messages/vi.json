@@ -119,5 +119,58 @@
       "title": "Không gian làm việc",
       "body": "Bạn đang ở trong không gian của tổ chức này."
     }
+  },
+  "dashboard": {
+    "common": {
+      "viewAll": "Xem tất cả"
+    },
+    "teacher": {
+      "title": "Tổng quan",
+      "greeting": "Chào buổi sáng, thầy/cô",
+      "stats": {
+        "classes": "Lớp giảng dạy",
+        "students": "Học sinh",
+        "attendance": "Tỉ lệ điểm danh",
+        "pending": "Việc cần làm"
+      },
+      "scheduleTitle": "Lịch dạy hôm nay",
+      "status": {
+        "done": "Đã dạy",
+        "live": "Đang diễn ra",
+        "upcoming": "Sắp tới"
+      }
+    },
+    "principal": {
+      "title": "Tổng quan trường",
+      "stats": {
+        "teachers": "Giáo viên",
+        "students": "Học sinh",
+        "classes": "Lớp học",
+        "attendance": "Tỉ lệ chuyên cần"
+      },
+      "alertsTitle": "Cần chú ý",
+      "reportsTitle": "Báo cáo nhanh"
+    },
+    "student": {
+      "title": "Tổng quan",
+      "stats": {
+        "courses": "Khoá học",
+        "assignments": "Bài tập",
+        "avgScore": "Điểm TB",
+        "attendance": "Chuyên cần"
+      },
+      "coursesTitle": "Khoá học của tôi",
+      "deadlinesTitle": "Hạn nộp sắp tới"
+    },
+    "parent": {
+      "title": "Tổng quan con em",
+      "childrenTitle": "Con của tôi",
+      "stats": {
+        "avgScore": "Điểm TB",
+        "attendance": "Chuyên cần",
+        "conduct": "Hạnh kiểm"
+      },
+      "viewChild": "Xem chi tiết"
+    }
   }
 }

@@ -1,3 +1,5 @@
-export default function ParentOverviewPage() {
-  return <h1 className="text-2xl font-semibold">Parent Overview</h1>;
+import { ParentDashboard } from "@/features/parent/presentation/parent-dashboard";
+
+export default function ParentDashboardPage() {
+  return <ParentDashboard />;
 }
