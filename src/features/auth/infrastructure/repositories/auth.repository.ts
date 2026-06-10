@@ -5,6 +5,7 @@ import type {
   AuthResult,
   IAuthRepository,
   RefreshResult,
+  VoidResult,
 } from "../../domain/repositories/i-auth.repository";
 import type { TokenResponseDto } from "../dtos/token-response.dto";
 import type { UserProfileResponseDto } from "../dtos/user-profile-response.dto";
@@ -50,6 +51,29 @@ export class AuthRepository implements IAuthRepository {
       await this.http.post(AUTH_EP.signout);
     } catch {
       // session may already be gone / network down — ignore.
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<VoidResult> {
+    // Enumeration-safe: BE always 200s. Only transport/422/429 surface as errors.
+    try {
+      await this.http.post(AUTH_EP.forgotPassword, { email });
+      return { ok: true };
+    } catch (err: unknown) {
+      return { error: mapAuthError(err) };
+    }
+  }
+
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+  ): Promise<VoidResult> {
+    try {
+      await this.http.post(AUTH_EP.resetPassword, { email, otp, newPassword });
+      return { ok: true };
+    } catch (err: unknown) {
+      return { error: mapAuthError(err) };
     }
   }
 }

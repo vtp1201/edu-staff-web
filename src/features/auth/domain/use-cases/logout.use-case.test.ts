@@ -8,6 +8,8 @@ describe("LogoutUseCase", () => {
       signin: vi.fn(),
       refresh: vi.fn(),
       signout: vi.fn().mockResolvedValue(undefined),
+      requestPasswordReset: vi.fn(),
+      resetPassword: vi.fn(),
     };
     await new LogoutUseCase(repo).execute();
     expect(repo.signout).toHaveBeenCalledOnce();

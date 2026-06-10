@@ -11,7 +11,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 | --- | --- | --- | --- |
 | Login (email + SSO Google/FB/VneID) | `(auth)/login` | `features/auth/presentation/login-form` | 🟡 (email có; SSO ⬜) |
 | Select role/tenant (multi-role) | `(auth)/select-role` | `features/auth/presentation` | ⬜ |
-| Forgot password (email→OTP→new pw→done) | `(auth)/forgot-password` | `features/auth/presentation` | ⬜ |
+| Forgot password (email→OTP→new pw→done) | `(auth)/forgot-password` | `features/auth/presentation` | ✅ (BE-wired US-030) |
 
 ## All roles (Epic E08 shell + E10 messaging)
 
