@@ -172,5 +172,44 @@
       },
       "viewChild": "Xem chi tiết"
     }
+  },
+  "profile": {
+    "tabs": {
+      "personal": "Thông tin cá nhân",
+      "security": "Bảo mật",
+      "sessions": "Phiên đăng nhập"
+    },
+    "personal": {
+      "fullName": "Họ và tên",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "role": "Vai trò",
+      "save": "Lưu thay đổi"
+    },
+    "security": {
+      "title": "Đổi mật khẩu",
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "confirm": "Xác nhận mật khẩu",
+      "update": "Cập nhật mật khẩu",
+      "strength": {
+        "weak": "Yếu",
+        "fair": "Trung bình",
+        "strong": "Mạnh"
+      },
+      "rules": {
+        "length": "Ít nhất 8 ký tự",
+        "upper": "Có chữ hoa",
+        "number": "Có chữ số",
+        "special": "Có ký tự đặc biệt"
+      }
+    },
+    "sessions": {
+      "title": "Phiên đang hoạt động",
+      "thisDevice": "Thiết bị này",
+      "logout": "Đăng xuất",
+      "logoutAll": "Đăng xuất tất cả phiên khác",
+      "lastActive": "Hoạt động"
+    }
   }
 }

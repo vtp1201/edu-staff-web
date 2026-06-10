@@ -18,7 +18,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
-| Profile (info / security / sessions) | `(app)/(shared)/profile` | `features/user/presentation` | 🟡 (khung) |
+| Profile (info / security / sessions) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ (UI mock-first) |
 | Notifications | `(app)/(shared)/notifications` | `features/notification` | ⬜ (gắn SSE, decision 0009) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | ⬜ (Epic E10) |
 
