@@ -6,4 +6,6 @@ export const AUTH_EP = {
   refresh: "/auth/refresh",
   signout: "/auth/signout",
   me: "/users/me",
+  forgotPassword: "/auth/password/forgot",
+  resetPassword: "/auth/password/reset",
 } as const;

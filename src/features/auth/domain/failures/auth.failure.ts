@@ -9,5 +9,8 @@ export type AuthFailure =
   | { type: "token-expired" }
   | { type: "invalid-token" }
   | { type: "unauthorized" }
+  | { type: "invalid-otp" }
+  | { type: "otp-expired" }
+  | { type: "too-many-requests" }
   | { type: "network-error" }
   | { type: "unknown"; message: string };

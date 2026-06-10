@@ -1,9 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LoginFormContainer } from "@/features/auth/presentation/login-form/login-form";
 import { loginAction } from "./actions";
 
 export default async function LoginPage() {
   const t = await getTranslations("auth");
+  const locale = await getLocale();
 
   return (
     <div className="flex h-screen">
@@ -31,6 +32,12 @@ export default async function LoginPage() {
             {t("login.subtitle")}
           </p>
           <LoginFormContainer action={loginAction} />
+          <a
+            href={`/${locale}/forgot-password`}
+            className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
+          >
+            {t("forgot.linkFromLogin")}
+          </a>
         </div>
       </div>
     </div>

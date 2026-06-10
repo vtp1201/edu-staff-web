@@ -9,11 +9,23 @@ import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { LoginUseCase } from "@/features/auth/domain/use-cases/login.use-case";
 import { LogoutUseCase } from "@/features/auth/domain/use-cases/logout.use-case";
 import { RefreshSessionUseCase } from "@/features/auth/domain/use-cases/refresh-session.use-case";
+import { RequestPasswordResetUseCase } from "@/features/auth/domain/use-cases/request-password-reset.use-case";
+import { ResetPasswordUseCase } from "@/features/auth/domain/use-cases/reset-password.use-case";
 import { AuthRepository } from "@/features/auth/infrastructure/repositories/auth.repository";
 
 export async function makeLoginUseCase() {
   const http = await createServerHttpClient();
   return new LoginUseCase(new AuthRepository(http));
+}
+
+export async function makeRequestPasswordResetUseCase() {
+  const http = await createServerHttpClient();
+  return new RequestPasswordResetUseCase(new AuthRepository(http));
+}
+
+export async function makeResetPasswordUseCase() {
+  const http = await createServerHttpClient();
+  return new ResetPasswordUseCase(new AuthRepository(http));
 }
 
 export async function makeRefreshSessionUseCase() {

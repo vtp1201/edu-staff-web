@@ -3,7 +3,14 @@ import type { IAuthRepository } from "../repositories/i-auth.repository";
 import { RefreshSessionUseCase } from "./refresh-session.use-case";
 
 function makeRepo(over: Partial<IAuthRepository> = {}): IAuthRepository {
-  return { signin: vi.fn(), refresh: vi.fn(), signout: vi.fn(), ...over };
+  return {
+    signin: vi.fn(),
+    refresh: vi.fn(),
+    signout: vi.fn(),
+    requestPasswordReset: vi.fn(),
+    resetPassword: vi.fn(),
+    ...over,
+  };
 }
 
 describe("RefreshSessionUseCase", () => {

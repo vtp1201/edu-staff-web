@@ -23,7 +23,39 @@
       "invalid-token": "Invalid session, please sign in again",
       "unauthorized": "You do not have access",
       "network-error": "Cannot connect to the server",
-      "unknown": "Something went wrong, please try again"
+      "unknown": "Something went wrong, please try again",
+      "invalid-otp": "The code is incorrect or already used.",
+      "otp-expired": "The code has expired, request a new one.",
+      "too-many-requests": "Too many requests, please try again later."
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "linkFromLogin": "Forgot password?",
+      "backToLogin": "Back to login",
+      "step1": {
+        "subtitle": "Enter your email to get a reset code.",
+        "email": "Email",
+        "submit": "Send OTP",
+        "sending": "Sending…"
+      },
+      "step2": {
+        "subtitle": "Enter the 6-digit code sent to your email.",
+        "submit": "Confirm",
+        "resend": "Resend code"
+      },
+      "step3": {
+        "subtitle": "Set a new password for your account.",
+        "new": "New password",
+        "confirm": "Confirm password",
+        "mismatch": "Passwords do not match.",
+        "submit": "Reset password",
+        "submitting": "Resetting…"
+      },
+      "step4": {
+        "title": "Password reset",
+        "subtitle": "You can sign in with your new password.",
+        "cta": "Sign in"
+      }
     }
   },
   "shell": {
