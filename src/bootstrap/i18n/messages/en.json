@@ -119,5 +119,58 @@
       "title": "Workspace",
       "body": "You are inside this organization workspace."
     }
+  },
+  "dashboard": {
+    "common": {
+      "viewAll": "View all"
+    },
+    "teacher": {
+      "title": "Overview",
+      "greeting": "Good morning",
+      "stats": {
+        "classes": "Classes",
+        "students": "Students",
+        "attendance": "Attendance rate",
+        "pending": "To-dos"
+      },
+      "scheduleTitle": "Today’s schedule",
+      "status": {
+        "done": "Done",
+        "live": "Live",
+        "upcoming": "Upcoming"
+      }
+    },
+    "principal": {
+      "title": "School overview",
+      "stats": {
+        "teachers": "Teachers",
+        "students": "Students",
+        "classes": "Classes",
+        "attendance": "Attendance"
+      },
+      "alertsTitle": "Needs attention",
+      "reportsTitle": "Quick reports"
+    },
+    "student": {
+      "title": "Overview",
+      "stats": {
+        "courses": "Courses",
+        "assignments": "Assignments",
+        "avgScore": "Avg score",
+        "attendance": "Attendance"
+      },
+      "coursesTitle": "My courses",
+      "deadlinesTitle": "Upcoming deadlines"
+    },
+    "parent": {
+      "title": "Children overview",
+      "childrenTitle": "My children",
+      "stats": {
+        "avgScore": "Avg score",
+        "attendance": "Attendance",
+        "conduct": "Conduct"
+      },
+      "viewChild": "View details"
+    }
   }
 }

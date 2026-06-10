@@ -1,3 +1,5 @@
+import { TeacherDashboard } from "@/features/teacher/presentation/teacher-dashboard";
+
 export default function TeacherDashboardPage() {
-  return <h1 className="text-2xl font-semibold">Teacher Dashboard</h1>;
+  return <TeacherDashboard />;
 }

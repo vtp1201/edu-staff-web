@@ -2,7 +2,7 @@
 
 Map ~30 màn từ legacy handoff → route + feature theo kiến trúc thật (decision
 `0011`: lấy UX/visual, bỏ kiến trúc của handoff). Route theo
-`app/[locale]/(app)/<role>/...` (tenant segment thêm khi E05 — decision `0007`).
+`app/[locale]/t/[tenant]/(app)/<role>/...` (tenant segment live — E05.1, decision `0007`).
 Status: ✅ done · 🟡 partial · ⬜ planned.
 
 ## Auth (Epic E01)
@@ -26,7 +26,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Dashboard | `(app)/teacher` | `features/teacher/presentation` | 🟡 (page khung) |
+| Dashboard | `(app)/teacher` | `features/teacher/presentation` | ✅ (UI mock-first) |
 | Attendance (điểm danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ |
 | Class Log (sổ đầu bài + submit) | `(app)/teacher/class-log` | `features/class-log` | ⬜ (E02) |
 | Discipline (vi phạm/hạnh kiểm/nghỉ phép) | `(app)/teacher/discipline` | `features/discipline` | ⬜ (E09) |
@@ -38,7 +38,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| School overview dashboard | `(app)/principal` | `features/principal` | 🟡 (khung) |
+| School overview dashboard | `(app)/principal` | `features/principal` | ✅ (UI mock-first) |
 | Teachers / Classes | `(app)/principal/teachers`,`/classes` | `features/principal` | ⬜ |
 | Class Log review/approve | `(app)/principal/class-log` | `features/class-log` | ⬜ (E02) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `features/discipline` | ⬜ (E09) |
@@ -48,7 +48,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Overview | `(app)/student` | `features/student` | 🟡 (khung) |
+| Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
 | Courses + lesson player | `(app)/student/courses`,`/courses/[id]` | `features/lms` | ⬜ (E11) |
 | Assignments | `(app)/student/assignments` | `features/lms` | ⬜ (E11) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ⬜ (E11) |
@@ -60,7 +60,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned.
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Children overview | `(app)/parent` | `features/parent` | 🟡 (khung) |
+| Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | Grades (per child) / Schedule | `(app)/parent/grades`,`/schedule` | `features/grades`,`schedule` | ⬜ |
 
 ## Ghi chú
