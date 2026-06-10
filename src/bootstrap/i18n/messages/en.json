@@ -172,5 +172,44 @@
       },
       "viewChild": "View details"
     }
+  },
+  "profile": {
+    "tabs": {
+      "personal": "Personal info",
+      "security": "Security",
+      "sessions": "Sessions"
+    },
+    "personal": {
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "role": "Role",
+      "save": "Save changes"
+    },
+    "security": {
+      "title": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm password",
+      "update": "Update password",
+      "strength": {
+        "weak": "Weak",
+        "fair": "Fair",
+        "strong": "Strong"
+      },
+      "rules": {
+        "length": "At least 8 characters",
+        "upper": "An uppercase letter",
+        "number": "A number",
+        "special": "A special character"
+      }
+    },
+    "sessions": {
+      "title": "Active sessions",
+      "thisDevice": "This device",
+      "logout": "Log out",
+      "logoutAll": "Log out all other sessions",
+      "lastActive": "Active"
+    }
   }
 }
