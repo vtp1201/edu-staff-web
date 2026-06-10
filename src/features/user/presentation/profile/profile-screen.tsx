@@ -10,13 +10,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/shared/utils";
 import {
   checkRules,
   type StrengthLevel,
   strengthLevel,
   strengthScore,
-} from "./password-strength";
+} from "@/shared/password-strength";
+import { cn } from "@/shared/utils";
 import type { ProfileScreenVM } from "./profile-screen.i-vm";
 
 const LEVEL_COLOR: Record<Exclude<StrengthLevel, "empty">, string> = {
