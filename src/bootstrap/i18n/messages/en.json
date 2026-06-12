@@ -77,6 +77,13 @@
       "reports": "Reports",
       "overview": "Overview",
       "children": "My Children",
+      "schoolSetup": "School Setup",
+      "academicCalendar": "Academic Calendar",
+      "subjectDepartments": "Subject Departments",
+      "subjects": "Subjects",
+      "studentRoster": "Student Roster",
+      "timetable": "Timetable",
+      "assessmentScheme": "Assessment Scheme",
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"
     },
@@ -91,7 +98,80 @@
       "teacher": "Teacher",
       "principal": "Principal",
       "student": "Student",
-      "parent": "Parent"
+      "parent": "Parent",
+      "admin": "Admin"
+    }
+  },
+  "adminSchoolSetup": {
+    "title": "School Setup",
+    "subtitle": "Foundational parameters that make EduPortal work for your school.",
+    "saved": "Saved",
+    "guide": {
+      "title": "Initial Setup",
+      "stepsComplete": "steps complete",
+      "subtitle": "Complete the steps below in order to start using EduPortal.",
+      "hide": "Hide guide",
+      "hideAriaLabel": "Hide setup guide",
+      "progressAriaLabel": "Setup progress",
+      "done": "Done",
+      "configure": "Configure",
+      "setupGuideTitle": "Setup Guide",
+      "setupGuideSubtitle": "Recommended configuration order per ADR 0035.",
+      "open": "Open",
+      "configureAriaLabel": "Configure: {step}",
+      "openAriaLabel": "Open settings: {step}"
+    },
+    "steps": {
+      "stepGradeLevels": "Grade levels",
+      "stepAcademicCalendar": "Academic year",
+      "stepSubjects": "Subjects",
+      "stepAssessmentScheme": "Assessment scheme",
+      "stepClasses": "Classes"
+    },
+    "gradeRange": {
+      "title": "Grade Level Range",
+      "subtitle": "Defines which grade levels exist at your school. Classes can only be created within this range.",
+      "minLabel": "Min grade",
+      "maxLabel": "Max grade",
+      "hint": "Examples: High School → 10–12 | Lower Sec. → 6–9 | Primary → 1–5. Platform limit: 1 ≤ min ≤ max ≤ 13.",
+      "presetsLabel": "Quick presets",
+      "currentRange": "Current range:",
+      "gradeLabel": "Grade ",
+      "activeClasses": "active classes",
+      "unconfiguredTitle": "Grade levels not yet configured",
+      "unconfiguredBody": "Classes cannot be created until this step is complete.",
+      "narrowingTitle": "Narrowing range:",
+      "narrowingBody": "Narrowing will be blocked if there are classes outside the new range. Please archive those classes before changing.",
+      "save": "Save grade range",
+      "saving": "Saving..."
+    },
+    "presets": {
+      "presetPrimary": "Primary",
+      "presetSecondary": "Lower Sec.",
+      "presetHighSchool": "High School",
+      "presetK12": "K–12"
+    },
+    "publishMode": {
+      "title": "Grade Publish Workflow",
+      "subtitle": "Choose how teachers publish grades to students and parents.",
+      "legendSr": "Select grade publish mode",
+      "selfPublish": "Self-publish",
+      "selfPublishDesc": "Teacher submits → published immediately.",
+      "adminApproval": "Admin approval",
+      "adminApprovalDesc": "Teacher submits → admin reviews & approves.",
+      "save": "Save setting",
+      "saving": "Saving..."
+    },
+    "validation": {
+      "required": "Both min and max grades are required.",
+      "notInteger": "Grade levels must be integers.",
+      "outOfRange": "Grade levels must be between 1 and 13.",
+      "minExceedsMax": "Min grade must not exceed max grade."
+    },
+    "errors": {
+      "network-error": "Could not reach the server, please try again.",
+      "unauthorized": "You do not have permission to perform this action.",
+      "unknown": "Something went wrong, please try again."
     }
   },
   "attendance": {
@@ -242,6 +322,51 @@
       "logout": "Log out",
       "logoutAll": "Log out all other sessions",
       "lastActive": "Active"
+    }
+  },
+  "calendar": {
+    "title": "Academic Calendar",
+    "subtitle": "Manage academic years and terms for your school",
+    "addYear": {
+      "title": "Add new academic year",
+      "subtitle": "Once created, expand the year card to configure its terms.",
+      "label": "Year label",
+      "placeholder": "e.g. 2026–2027",
+      "setActive": "Set as current academic year",
+      "submit": "Create year",
+      "submitting": "Creating..."
+    },
+    "year": {
+      "active": "Active",
+      "noTerms": "No terms configured",
+      "termCount": "{count} terms"
+    },
+    "term": {
+      "name": "Term name",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "actions": "Actions",
+      "graded": "Graded",
+      "defaultName": "Term {n}",
+      "addTerm": "Add term",
+      "noTerms": "No terms configured for this academic year yet.",
+      "deleteBlocked": "Term has grade entries — cannot delete",
+      "edit": "Edit term",
+      "delete": "Delete term",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "empty": {
+      "title": "No academic years yet",
+      "subtitle": "Create your first academic year to start configuring terms, teaching schedules and exam periods.",
+      "cta": "Create your first academic year"
+    },
+    "errors": {
+      "date-order": "Start date must be before end date",
+      "date-overlap": "Term overlaps with another term in this year",
+      "graded-term-delete": "Cannot delete a term that has grade entries",
+      "network-error": "Cannot connect to the server",
+      "unknown": "Something went wrong, please try again"
     }
   }
 }
