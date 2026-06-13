@@ -38,9 +38,13 @@
 
   --edu-purple: #7b5ea7;
   --edu-purple-light: #f0ebf9;
+  /** AA-compliant text on white (8.47:1) / purple/15 (6.91:1). US-E12.3. */
+  --edu-purple-text: #5b3d8a;
 
   --edu-teal: #00b8a9;
   --edu-teal-light: #e0f7f5;
+  /** AA-compliant text on white (6.61:1) / teal/15 (5.71:1). US-E12.3. */
+  --edu-teal-text: #00695c;
 
   /* ── Text ───────────────────────────────────────── */
   --edu-text-primary: #2a3547;
@@ -74,6 +78,12 @@
   --edu-role-principal: #13deb9;
   --edu-role-student: #ffae1f;
   --edu-role-parent: #7b5ea7;
+
+  /* ── Gender Indicator (US-E12.4, decision 0028) ─── */
+  --edu-gender-female: #d6336c;
+  --edu-gender-female-light: #ffe6f1;
+  --edu-gender-male: #3b7bd9;
+  --edu-gender-male-light: #e6f0ff;
 
   /* ── Tenant-overridable primary ──────────────────── */
   /* Middleware/layout injects per-tenant value here (decision 0007). */
