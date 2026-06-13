@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -136,9 +136,14 @@ track (flag as design-needed).
 
 ## Harness Delta
 
-TEST_MATRIX row to be added as `planned`.
-Screen entries to be added to `docs/product/screens.md` as `planned`.
+TEST_MATRIX row updated to `implemented`.
+Screen entries added to `docs/product/screens.md` as `planned`.
 
 ## Evidence
 
-Add after implementation.
+32 new tests: 18 use-case unit tests (6 use-cases × guard + happy-path branches) + 14
+repository integration tests (error-code mapping for all 10 error codes + generic
+403/404 + NETWORK_ERROR + retryable + catch-all). 284/284 total pass (52 files).
+`tsc --noEmit` clean. `bun build` green.
+
+Commit: `feat(staffing): wire staffing domain + repository to real BE (US-E06.8)`
