@@ -303,6 +303,17 @@
       "status": "Trạng thái"
     }
   },
+  "iamMember": {
+    "errors": {
+      "forbidden": "Không có quyền thực hiện thao tác này",
+      "not-found": "Không tìm thấy thành viên hoặc lời mời",
+      "email-exists": "Email đã tồn tại trong hệ thống",
+      "invitation-not-found": "Lời mời không tồn tại hoặc đã hết hạn",
+      "last-admin": "Không thể xóa admin cuối cùng của tổ chức",
+      "network-error": "Lỗi kết nối, vui lòng thử lại",
+      "unknown": "Đã có lỗi xảy ra"
+    }
+  },
   "tenant": {
     "select": {
       "title": "Chọn không gian làm việc",
