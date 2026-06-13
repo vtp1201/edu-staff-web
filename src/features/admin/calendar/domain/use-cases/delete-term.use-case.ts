@@ -15,7 +15,7 @@ export class DeleteTermUseCase {
         message: "cannot delete a term that has grade entries",
       });
     }
-    await this.repo.deleteTerm(yearId, termId);
+    await this.repo.archiveTerm(yearId, termId);
     return ok(undefined);
   }
 }

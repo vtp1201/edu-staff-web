@@ -249,6 +249,11 @@
       "minExceedsMax": "Khối tối thiểu không được lớn hơn khối tối đa."
     },
     "errors": {
+      "not-found": "Không tìm thấy cơ sở",
+      "already-exists": "Cơ sở đã tồn tại",
+      "forbidden": "Không có quyền thực hiện",
+      "grade-level-range-invalid": "Khoảng lớp không hợp lệ",
+      "narrowing-blocked": "Không thể thu hẹp — có lớp đang hoạt động trong vùng này",
       "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
       "unauthorized": "Bạn không có quyền thực hiện thao tác này.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
@@ -445,6 +450,11 @@
       "date-order": "Ngày bắt đầu phải trước ngày kết thúc",
       "date-overlap": "Học kỳ bị trùng với học kỳ khác trong năm",
       "graded-term-delete": "Không thể xoá học kỳ đã có dữ liệu điểm",
+      "not-found-year": "Không tìm thấy năm học",
+      "not-found-term": "Không tìm thấy học kỳ",
+      "year-label-exists": "Nhãn năm học đã tồn tại",
+      "active-year-exists": "Đã có năm học đang hoạt động",
+      "year-archived": "Năm học đã được lưu trữ",
       "network-error": "Không thể kết nối đến máy chủ",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại"
     }

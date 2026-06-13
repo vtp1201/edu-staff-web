@@ -4,6 +4,8 @@
  * → Kong strips `/core` → core receives `/api/v1/...`.
  */
 export const SCHOOL_SETUP_EP = {
+  schools: "/core/api/v1/schools",
+  currentSchool: "/core/api/v1/schools/current",
   config: "/core/api/v1/config/school",
   setupStatus: "/core/api/v1/config/school/setup-status",
   gradeLevels: "/core/api/v1/config/school/grade-levels",
