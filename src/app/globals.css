@@ -65,8 +65,10 @@
   --color-edu-info-light: var(--edu-info-light);
   --color-edu-purple: var(--edu-purple);
   --color-edu-purple-light: var(--edu-purple-light);
+  --color-edu-purple-text: var(--edu-purple-text);
   --color-edu-teal: var(--edu-teal);
   --color-edu-teal-light: var(--edu-teal-light);
+  --color-edu-teal-text: var(--edu-teal-text);
   --color-edu-text-primary: var(--edu-text-primary);
   --color-edu-text-secondary: var(--edu-text-secondary);
   --color-edu-text-muted: var(--edu-text-muted);
@@ -77,6 +79,12 @@
   --color-edu-role-principal: var(--edu-role-principal);
   --color-edu-role-student: var(--edu-role-student);
   --color-edu-role-parent: var(--edu-role-parent);
+
+  /* Gender indicator (decision 0028) */
+  --color-edu-gender-female: var(--edu-gender-female);
+  --color-edu-gender-female-light: var(--edu-gender-female-light);
+  --color-edu-gender-male: var(--edu-gender-male);
+  --color-edu-gender-male-light: var(--edu-gender-male-light);
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
