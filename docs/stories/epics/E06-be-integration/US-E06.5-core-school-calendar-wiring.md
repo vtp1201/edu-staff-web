@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -137,4 +137,10 @@ TEST_MATRIX row to be added as `planned`.
 
 ## Evidence
 
-Add after implementation.
+- **Commit**: `6b96138` on `feat/us-e06.5-core-school-calendar-wiring`
+- **Unit**: 13 new integration-level tests (8 CalendarRepository + 5 SchoolConfigRepository) — 223 total passed (43 files)
+- **Integration**: CalendarRepository error-code mapping, cursor-paginated listYears with `{ raw: true }` + `parseEnvelope`, SchoolConfigRepository error-code mapping
+- **E2E**: — (no new screen; existing mock-first screen via USE_MOCK)
+- **tsc --noEmit**: clean (0 errors)
+- **bun build**: green (19 routes)
+- **Key changes**: CalendarRepository aligned to activate/archive contract; SchoolConfigRepository lifted from generic catch to errorCodeOf mapping; CalendarFailure + SchoolSetupFailure failure unions expanded; new endpoints activeYear, activateYear, archiveYear, archiveTerm, schools, currentSchool; calendar DI adds makeActivateYearUseCase, makeArchiveYearUseCase
