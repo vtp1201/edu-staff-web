@@ -35,3 +35,20 @@ export const WithTrendDown: Story = {
     trend: { dir: "down", value: "-0.5%" },
   },
 };
+
+export const Compact: Story = {
+  args: { label: "Có mặt", value: "28", variant: "compact", tone: "success" },
+};
+
+export const CompactMuted: Story = {
+  args: { label: "Tổng", value: "30", variant: "compact", tone: "muted" },
+};
+
+export const Mini: Story = {
+  args: {
+    label: "Điểm TB",
+    value: "8.6",
+    variant: "mini",
+    icon: <Trophy className="size-4 text-edu-success" />,
+  },
+};

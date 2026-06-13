@@ -1,5 +1,6 @@
 import { CalendarCheck, ShieldCheck, Trophy } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { StatCard } from "@/components/shared/stat-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -55,17 +56,26 @@ export async function ParentDashboard() {
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <ChildStat
-                    icon={<Trophy className="size-4 text-edu-success" />}
+                  <StatCard
+                    variant="mini"
+                    icon={
+                      // text-edu-success-text (#007A6E) = 5.4:1 on muted/50 bg — A11Y-004 / Decision 0027.
+                      <Trophy className="size-4 text-edu-success-text" />
+                    }
                     label={t("stats.avgScore")}
                     value={c.avgScore}
                   />
-                  <ChildStat
-                    icon={<CalendarCheck className="size-4 text-edu-info" />}
+                  <StatCard
+                    variant="mini"
+                    icon={
+                      // text-primary (#4570EA) = 4.56:1 on muted/50 bg — A11Y-005 / Decision 0027.
+                      <CalendarCheck className="size-4 text-primary" />
+                    }
                     label={t("stats.attendance")}
                     value={c.attendance}
                   />
-                  <ChildStat
+                  <StatCard
+                    variant="mini"
                     icon={<ShieldCheck className="size-4 text-edu-purple" />}
                     label={t("stats.conduct")}
                     value={c.conduct}
@@ -76,24 +86,6 @@ export async function ParentDashboard() {
           ))}
         </div>
       </section>
-    </div>
-  );
-}
-
-function ChildStat({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-[var(--edu-radius-btn)] bg-muted/50 p-2">
-      <div className="flex justify-center">{icon}</div>
-      <div className="mt-1 text-sm font-bold text-foreground">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
     </div>
   );
 }
