@@ -1,4 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { NextIntlClientProvider } from "next-intl";
+import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { Subject } from "../../domain/entities/subject.entity";
 import { SubjectsScreen } from "./subjects-screen";
 import type { ParentWithSubjectsVM } from "./subjects-screen.i-vm";
@@ -61,6 +63,13 @@ const meta: Meta<typeof SubjectsScreen> = {
   title: "Admin/SubjectCatalogue/SubjectsScreen",
   component: SubjectsScreen,
   parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <NextIntlClientProvider locale="vi" messages={messages}>
+        <Story />
+      </NextIntlClientProvider>
+    ),
+  ],
   args: {
     onCreateParent: async (data) => ({
       ok: true as const,

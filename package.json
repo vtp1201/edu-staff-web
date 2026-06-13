@@ -76,5 +76,8 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"
+  },
+  "patchedDependencies": {
+    "@storybook/nextjs-vite@10.4.2": "patches/@storybook%2Fnextjs-vite@10.4.2.patch"
   }
 }

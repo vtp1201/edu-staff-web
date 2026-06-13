@@ -109,12 +109,11 @@ export const Empty: Story = {
     await expect(
       canvas.getByRole("button", { name: messages.calendar.empty.cta }),
     ).toBeInTheDocument();
-    // No year card buttons should exist
+    // No year accordion buttons should exist (they'd have aria-expanded)
     const yearButtons = canvas.queryAllByRole("button", {
       expanded: false,
     });
-    // The only button in the left column is the empty-state CTA
-    await expect(yearButtons.length).toBeGreaterThanOrEqual(1);
+    await expect(yearButtons.length).toBe(0);
   },
 };
 
