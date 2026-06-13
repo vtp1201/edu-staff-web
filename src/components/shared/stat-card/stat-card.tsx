@@ -31,9 +31,13 @@ const TONE: Record<StatTone, { box: string; icon: string }> = {
 export function compactToneClass(tone: StatTone | undefined): string {
   switch (tone) {
     case "success":
-      return "text-edu-success";
+      // text-edu-success (#13DEB9) fails AA on white (1.74:1).
+      // text-edu-success-text (#007A6E) = 5.4:1 — passes. Decision 0027.
+      return "text-edu-success-text";
     case "error":
-      return "text-edu-error";
+      // text-edu-error (#FA896B) fails AA on white (2.36:1).
+      // text-edu-error-text (#C0392B) = 5.1:1 — passes. Decision 0027.
+      return "text-edu-error-text";
     case "primary":
       return "text-primary";
     default:
@@ -144,7 +148,8 @@ function CompactStatCard({
   return (
     <Card className={className}>
       <CardContent className="p-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
+        {/* text-edu-text-secondary (#5A6A85) = 5.9:1 on white — AA for normal text. A11Y-001 / Decision 0027. */}
+        <div className="text-xs text-edu-text-secondary">{label}</div>
         <div
           className={cn("mt-1 text-2xl font-semibold", compactToneClass(tone))}
         >
@@ -165,7 +170,8 @@ function MiniStatCard({ label, value, icon, className }: StatCardMiniProps) {
     >
       <div className="flex justify-center">{icon}</div>
       <div className="mt-1 text-sm font-bold text-foreground">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      {/* text-edu-text-secondary (#5A6A85) = 5.9:1 on muted/50 bg — AA for normal text. A11Y-001 / Decision 0027. */}
+      <div className="text-[10px] text-edu-text-secondary">{label}</div>
     </div>
   );
 }

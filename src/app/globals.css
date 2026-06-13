@@ -53,12 +53,14 @@
   --color-edu-success: var(--edu-success);
   --color-edu-success-light: var(--edu-success-light);
   --color-edu-success-foreground: var(--edu-success-foreground);
+  --color-edu-success-text: var(--edu-success-text);
   --color-edu-warning: var(--edu-warning);
   --color-edu-warning-light: var(--edu-warning-light);
   --color-edu-warning-foreground: var(--edu-warning-foreground);
   --color-edu-error: var(--edu-error);
   --color-edu-error-light: var(--edu-error-light);
   --color-edu-error-foreground: var(--edu-error-foreground);
+  --color-edu-error-text: var(--edu-error-text);
   --color-edu-info: var(--edu-info);
   --color-edu-info-light: var(--edu-info-light);
   --color-edu-purple: var(--edu-purple);

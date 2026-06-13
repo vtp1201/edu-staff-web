@@ -17,12 +17,16 @@
 
   --edu-success: #13deb9;
   --edu-success-light: #e6fffa;
+  /** AA-compliant text on white/light surface (5.4:1). Decision 0027. */
+  --edu-success-text: #007a6e;
 
   --edu-warning: #ffae1f;
   --edu-warning-light: #fef5e5;
 
   --edu-error: #fa896b;
   --edu-error-light: #fff5f2;
+  /** AA-compliant text on white/light surface (5.1:1). Decision 0027. */
+  --edu-error-text: #c0392b;
 
   /* ── Foreground colors for status backgrounds ───── */
   --edu-success-foreground: #ffffff;

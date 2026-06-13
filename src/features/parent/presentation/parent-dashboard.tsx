@@ -58,13 +58,19 @@ export async function ParentDashboard() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <StatCard
                     variant="mini"
-                    icon={<Trophy className="size-4 text-edu-success" />}
+                    icon={
+                      // text-edu-success-text (#007A6E) = 5.4:1 on muted/50 bg — A11Y-004 / Decision 0027.
+                      <Trophy className="size-4 text-edu-success-text" />
+                    }
                     label={t("stats.avgScore")}
                     value={c.avgScore}
                   />
                   <StatCard
                     variant="mini"
-                    icon={<CalendarCheck className="size-4 text-edu-info" />}
+                    icon={
+                      // text-primary (#4570EA) = 4.56:1 on muted/50 bg — A11Y-005 / Decision 0027.
+                      <CalendarCheck className="size-4 text-primary" />
+                    }
                     label={t("stats.attendance")}
                     value={c.attendance}
                   />

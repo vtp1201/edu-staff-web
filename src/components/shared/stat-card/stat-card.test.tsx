@@ -10,12 +10,14 @@ import { compactToneClass } from "./stat-card";
  * CompactMuted, Mini).
  */
 describe("StatCard compact tone mapping", () => {
-  it("maps tone='success' to text-edu-success", () => {
-    expect(compactToneClass("success")).toBe("text-edu-success");
+  // Decision 0027: use accessible dark text tokens (5.4:1 / 5.1:1) instead of
+  // vibrant hue tokens (#13DEB9 / #FA896B) which fail AA on white backgrounds.
+  it("maps tone='success' to text-edu-success-text (AA-compliant, decision 0027)", () => {
+    expect(compactToneClass("success")).toBe("text-edu-success-text");
   });
 
-  it("maps tone='error' to text-edu-error", () => {
-    expect(compactToneClass("error")).toBe("text-edu-error");
+  it("maps tone='error' to text-edu-error-text (AA-compliant, decision 0027)", () => {
+    expect(compactToneClass("error")).toBe("text-edu-error-text");
   });
 
   it("maps tone='primary' to text-primary", () => {
