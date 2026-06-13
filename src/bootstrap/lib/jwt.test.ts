@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { decodeJwtExp, decodeTenantId, isAccessExpired } from "./jwt";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  decodeJwtExp,
+  decodeRoleClaim,
+  decodeTenantId,
+  isAccessExpired,
+} from "./jwt";
 
 function makeJwt(payload: Record<string, unknown>): string {
   const b64 = (o: unknown) =>
@@ -51,5 +56,71 @@ describe("decodeTenantId", () => {
 
   it("returns null for a malformed token", () => {
     expect(decodeTenantId("nope")).toBeNull();
+  });
+});
+
+describe("decodeRoleClaim", () => {
+  const b64url = (payload: Record<string, unknown>): string =>
+    btoa(JSON.stringify(payload))
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+  const makeToken = (payload: Record<string, unknown>): string =>
+    `eyJhbGciOiJIUzI1NiJ9.${b64url(payload)}.fakesig`;
+
+  const adminToken = makeToken({
+    role: "admin",
+    tenantId: "t-1",
+    exp: 9999999999,
+  });
+  const teacherToken = makeToken({
+    role: "teacher",
+    tenantId: "t-1",
+    exp: 9999999999,
+  });
+  const memberRolesToken = makeToken({
+    memberRoles: ["principal"],
+    exp: 9999999999,
+  });
+  const unknownRoleToken = makeToken({ role: "superhero" });
+  const malformedToken = "not.a.jwt";
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 'admin' for a token with role: 'admin' (mock=false)", () => {
+    expect(decodeRoleClaim(adminToken)).toBe("admin");
+  });
+
+  it("returns 'teacher' for a token with role: 'teacher'", () => {
+    expect(decodeRoleClaim(teacherToken)).toBe("teacher");
+  });
+
+  it("returns 'principal' from memberRoles[0] when role is absent", () => {
+    expect(decodeRoleClaim(memberRolesToken)).toBe("principal");
+  });
+
+  it("returns null for an unknown role value", () => {
+    expect(decodeRoleClaim(unknownRoleToken)).toBeNull();
+  });
+
+  it("returns null for a malformed token", () => {
+    expect(decodeRoleClaim(malformedToken)).toBeNull();
+  });
+
+  it("returns null for an empty string", () => {
+    expect(decodeRoleClaim("")).toBeNull();
+  });
+
+  it("returns 'admin' when mock flag is on for any non-empty string", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "true");
+    expect(decodeRoleClaim("anything")).toBe("admin");
+    expect(decodeRoleClaim(teacherToken)).toBe("admin");
+  });
+
+  it("returns null when mock flag is on but token is empty", () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "true");
+    expect(decodeRoleClaim("")).toBeNull();
   });
 });
