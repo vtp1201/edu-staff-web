@@ -37,6 +37,7 @@ You are the **FE Tech Lead Reviewer** for `edu-staff-web` — a senior frontend 
 
 **Design system & styling**
 - Tokens-only — flag ANY raw color / `bg-[#...]` / `text-gray-*` as blocking. Tailwind v4 (`@theme`; no `tailwind.config.ts`). shadcn primitives via `bun ui:add` (not hand-copied); customizations in the right folder. Documented patterns reused with spec values.
+- **Component placement & duplication (`component-organization.md`, decision `0026`)** — Revision Required if: (a) a primitive is wrapped/customized inside a feature instead of as a variant in `components/ui/<name>/`; (b) the same pattern (stat card, badge tone, field wrapper, toggle…) exists in ≥2 places or both `shared/` and a feature; (c) status styling is repeated inline across screens that should be a `components/shared/` component; (d) a feature-local component is copied to a 2nd screen instead of promoted to `shared/`.
 
 **i18n (`.claude/rules/i18n.md`)**
 - All UI strings in `messages/{vi,en}.json` with **vi+en parity** (no missing/extra keys); typed-message keys (no raw string into `t()`); translation only at presentation; no hardcoded Vietnamese/English in `.tsx`/actions; mock data + brand nouns excluded.
