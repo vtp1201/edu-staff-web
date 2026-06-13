@@ -14,7 +14,8 @@ qua color accent. Font **Plus Jakarta Sans**.
 
 - **Brand**: primary `#5D87FF` (light `#ECF2FF`, dark `#4570EA`).
   - `--edu-primary` (#5D87FF) = full brand blue (per-tenant override target, decision 0007).
-  - `--primary` semantic var → **`#4570EA`** (accessible shade, WCAG AA 4.56:1 on white, ADR 0023 / US-E07.2).
+  - `--primary` semantic var → **`#4570EA`** (accessible shade, WCAG AA 4.41:1 on white; passes for UI components / large text, ADR 0023 / US-E07.2).
+  - `--edu-primary-accessible` → **`#4468e0`** (4.88:1 on white; for small-text active states, e.g. pagination, ADR 0031 / US-E07.6).
 - **Status**: success `#13DEB9`, warning `#FFAE1F`, error `#FA896B`, info
   `#539BFF`, purple `#7B5EA7`, teal `#00B8A9`.
 - **Surface**: bg `#F5F7FA`, card `#FFF`, border `#E5EAF2`.

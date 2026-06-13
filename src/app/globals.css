@@ -50,6 +50,7 @@
   --color-edu-primary: var(--edu-primary);
   --color-edu-primary-light: var(--edu-primary-light);
   --color-edu-primary-dark: var(--edu-primary-dark);
+  --color-edu-primary-accessible: var(--edu-primary-accessible);
   --color-edu-success: var(--edu-success);
   --color-edu-success-light: var(--edu-success-light);
   --color-edu-success-foreground: var(--edu-success-foreground);

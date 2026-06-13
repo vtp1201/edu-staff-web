@@ -14,6 +14,8 @@
   --edu-primary: #5d87ff;
   --edu-primary-light: #ecf2ff;
   --edu-primary-dark: #4570ea;
+  /** AA-compliant on white for small text (4.88:1). Use for active pagination. Decision 0031. */
+  --edu-primary-accessible: #4468e0;
 
   --edu-success: #13deb9;
   --edu-success-light: #e6fffa;

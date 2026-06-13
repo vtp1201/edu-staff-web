@@ -32,7 +32,7 @@ const pageBtn = (active: boolean, disabled: boolean) =>
     "inline-flex h-[30px] min-w-[30px] items-center justify-center rounded-[7px] border px-2 font-bold text-xs",
     "motion-safe:transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
     active
-      ? "border-primary bg-primary text-primary-foreground"
+      ? "border-edu-primary-accessible bg-edu-primary-accessible text-white"
       : "border-edu-border text-edu-text-secondary hover:bg-edu-bg",
     disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
   );
