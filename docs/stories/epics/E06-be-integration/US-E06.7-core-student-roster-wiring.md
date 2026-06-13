@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -119,4 +119,19 @@ TEST_MATRIX row to be added as `planned`.
 
 ## Evidence
 
-Add after implementation.
+- Integration tests: 14 new/updated tests in `roster.repository.test.ts`:
+  paginated getClasses + getClassRoster, academicYear param, CLASS_NOT_FOUND,
+  UNAUTHORIZED, ROSTER_ACCESS_FORBIDDEN, enrollStudent with studentMemberId body,
+  ROSTER_STUDENT_ALREADY_ENROLLED (transfer-warning signal),
+  CLASS_ARCHIVED, ROSTER_MEMBER_NOT_STUDENT_ROLE, ROSTER_STUDENT_NOT_ENROLLED
+  (silent success on delete), two-step transfer (DELETE+POST), idempotent source 404.
+- 252/252 total Vitest pass (45 files); `tsc --noEmit` clean; `bun run build` green.
+- RosterFailure union expanded: already-enrolled, member-not-student, class-archived,
+  forbidden (TR-034).
+- ROSTER_EP: `transfer` removed; unenroll uses `studentMemberId` (TR-032); search pool
+  retained with mock-only note (TR-033, decision 0014).
+- i18n: 4 new error keys (already-enrolled, member-not-student, class-archived, forbidden)
+  in vi.json + en.json (adminRoster.errors).
+- DI factory: already has USE_MOCK + makeRosterRepository — search pool mock routing
+  enforced at this layer (TR-033).
+- Transfer = unenroll(fromClass) + enroll(toClass); source 404 is idempotent (TR-032, TR-034).
