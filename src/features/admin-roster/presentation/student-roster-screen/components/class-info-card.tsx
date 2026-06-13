@@ -56,10 +56,10 @@ export function ClassInfoCard({
       </div>
       <div className="flex shrink-0 gap-2.5">
         <div className="min-w-[100px] rounded-[10px] border border-edu-success/30 bg-edu-success/10 px-4 py-2.5">
-          <div className="font-bold text-[10px] text-edu-success uppercase tracking-wider">
+          <div className="font-bold text-[10px] text-edu-success-text uppercase tracking-wider">
             {t("classInfo.active")}
           </div>
-          <div className="font-extrabold text-2xl text-edu-success leading-tight tabular-nums">
+          <div className="font-extrabold text-2xl text-edu-success-text leading-tight tabular-nums">
             {activeCount}
           </div>
         </div>

@@ -82,8 +82,12 @@
   /* ── Gender Indicator (US-E12.4, decision 0028) ─── */
   --edu-gender-female: #d6336c;
   --edu-gender-female-light: #ffe6f1;
+  /** AA-compliant text on female-light #FFE6F1 (6.73:1). Decision 0029. */
+  --edu-gender-female-text: #9b1b4a;
   --edu-gender-male: #3b7bd9;
   --edu-gender-male-light: #e6f0ff;
+  /** AA-compliant text on male-light #E6F0FF (7.08:1). Decision 0029. */
+  --edu-gender-male-text: #1b4d9b;
 
   /* ── Tenant-overridable primary ──────────────────── */
   /* Middleware/layout injects per-tenant value here (decision 0007). */

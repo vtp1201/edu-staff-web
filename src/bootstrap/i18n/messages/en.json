@@ -132,9 +132,14 @@
       "removeFromClass": "Remove from class",
       "selected": "{count} students selected",
       "clearSelection": "Clear",
+      "clearSearch": "Clear search",
+      "actions": "Actions",
       "showing": "Showing {from}–{to} of {total} students",
       "selectAll": "Select all students on this page",
       "selectStudent": "Select student {name}"
+    },
+    "pagination": {
+      "nav": "Pagination"
     },
     "status": {
       "active": "Active",

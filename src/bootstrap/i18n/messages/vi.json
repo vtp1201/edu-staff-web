@@ -132,9 +132,14 @@
       "removeFromClass": "Xoá khỏi lớp",
       "selected": "Đã chọn {count} học sinh",
       "clearSelection": "Bỏ chọn",
+      "clearSearch": "Xóa tìm kiếm",
+      "actions": "Hành động",
       "showing": "Hiển thị {from}–{to} / {total} học sinh",
       "selectAll": "Chọn tất cả học sinh trên trang",
       "selectStudent": "Chọn học sinh {name}"
+    },
+    "pagination": {
+      "nav": "Phân trang"
     },
     "status": {
       "active": "Đang học",

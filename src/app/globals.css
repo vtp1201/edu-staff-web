@@ -80,11 +80,13 @@
   --color-edu-role-student: var(--edu-role-student);
   --color-edu-role-parent: var(--edu-role-parent);
 
-  /* Gender indicator (decision 0028) */
+  /* Gender indicator (decision 0028, AA text tokens decision 0029) */
   --color-edu-gender-female: var(--edu-gender-female);
   --color-edu-gender-female-light: var(--edu-gender-female-light);
+  --color-edu-gender-female-text: var(--edu-gender-female-text);
   --color-edu-gender-male: var(--edu-gender-male);
   --color-edu-gender-male-light: var(--edu-gender-male-light);
+  --color-edu-gender-male-text: var(--edu-gender-male-text);
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);

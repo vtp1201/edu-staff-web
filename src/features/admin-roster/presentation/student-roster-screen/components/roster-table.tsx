@@ -96,13 +96,13 @@ export function RosterTable({
   };
 
   const th =
-    "px-4 py-2.5 text-left font-bold text-[10.5px] text-edu-text-muted uppercase tracking-wider whitespace-nowrap";
+    "px-4 py-2.5 text-left font-bold text-[10.5px] text-edu-text-secondary uppercase tracking-wider whitespace-nowrap";
 
   return (
     <div className="overflow-hidden rounded-xl border border-edu-border bg-edu-card shadow-card">
       {/* Toolbar */}
       <div className="flex items-center gap-2.5 border-edu-border border-b px-5 py-4">
-        <label className="flex flex-1 items-center gap-2 rounded-lg border border-edu-border bg-edu-bg px-3 py-2">
+        <label className="flex flex-1 items-center gap-2 rounded-lg border border-edu-border bg-edu-bg px-3 py-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
           <Search className="size-3.5 text-edu-text-muted" aria-hidden="true" />
           <span className="sr-only">{t("table.searchPlaceholder")}</span>
           <input
@@ -115,9 +115,9 @@ export function RosterTable({
           {search && (
             <button
               type="button"
-              aria-label={t("table.clearSelection")}
+              aria-label={t("table.clearSearch")}
               onClick={() => setSearch("")}
-              className="flex size-[44px] items-center justify-center text-edu-text-muted"
+              className="flex size-[44px] items-center justify-center rounded text-edu-text-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="size-3" aria-hidden="true" />
             </button>
@@ -158,7 +158,7 @@ export function RosterTable({
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-edu-bg">
-              <th className="w-[38px] py-2.5 pr-2 pl-5">
+              <th scope="col" className="w-[38px] py-2.5 pr-2 pl-5">
                 <Checkbox
                   ref={headerCheckboxRef}
                   aria-label={t("table.selectAll")}
@@ -173,13 +173,29 @@ export function RosterTable({
                   disabled={pageRowIds.length === 0}
                 />
               </th>
-              <th className={cn(th, "w-9")}>#</th>
-              <th className={th}>{t("table.name")}</th>
-              <th className={th}>{t("table.studentId")}</th>
-              <th className={th}>{t("table.dob")}</th>
-              <th className={cn(th, "text-center")}>{t("table.gender")}</th>
-              <th className={th}>{t("table.status")}</th>
-              <th className={cn(th, "text-right")} />
+              <th scope="col" className={cn(th, "w-9")}>
+                #
+              </th>
+              <th scope="col" className={th}>
+                {t("table.name")}
+              </th>
+              <th scope="col" className={th}>
+                {t("table.studentId")}
+              </th>
+              <th scope="col" className={th}>
+                {t("table.dob")}
+              </th>
+              <th scope="col" className={cn(th, "text-center")}>
+                {t("table.gender")}
+              </th>
+              <th scope="col" className={th}>
+                {t("table.status")}
+              </th>
+              <th
+                scope="col"
+                aria-label={t("table.actions")}
+                className={cn(th, "text-right")}
+              />
             </tr>
           </thead>
           <tbody>
@@ -187,7 +203,7 @@ export function RosterTable({
               <tr>
                 <td
                   colSpan={8}
-                  className="px-5 py-8 text-center text-edu-text-muted text-sm"
+                  className="px-5 py-8 text-center text-edu-text-secondary text-sm"
                 >
                   {t("table.noMatch")}
                 </td>
@@ -212,7 +228,7 @@ export function RosterTable({
                         onCheckedChange={() => toggleOne(s.id)}
                       />
                     </td>
-                    <td className="px-4 py-3 align-middle text-edu-text-muted text-xs tabular-nums">
+                    <td className="px-4 py-3 align-middle text-edu-text-secondary text-xs tabular-nums">
                       {absoluteIndex}
                     </td>
                     <td className="px-4 py-3 align-middle">
@@ -226,7 +242,7 @@ export function RosterTable({
                           className={cn(
                             "font-semibold text-sm",
                             isTransferred
-                              ? "text-edu-text-muted line-through"
+                              ? "text-edu-text-secondary line-through"
                               : "text-edu-text-primary",
                           )}
                         >

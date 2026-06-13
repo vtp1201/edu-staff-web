@@ -66,6 +66,26 @@ Pattern: `bg-muted text-muted-foreground` used for "done" status badges = #8898A
 Fix: Use `text-foreground` (#2A3547) on muted background for badge content.
 Seen in: US-E07.4 teacher-dashboard.tsx (done period status).
 
+## Focus — Search input outline-none without label focus-within ring
+Pattern: Raw `<input type="search" className="...outline-none">` inside a styled `<label>` wrapper. The `outline-none` removes the browser default focus ring; the label wrapper has no `focus-within:ring-2` class either. Keyboard users get no visible focus indicator on the search field.
+Fix: Add `has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring` to the label wrapper, OR remove `outline-none` from the input and add `focus-visible:ring-0` (to let the label handle it). Never use `outline-none` on an interactive element without a replacement ring.
+Seen in: US-E12.4 (roster-table.tsx search, add-student-panel.tsx search).
+
+## Semantic — Search clear button aria-label reuses wrong i18n key
+Pattern: X button inside search input reuses `table.clearSelection` ("Bỏ chọn") which is the checkbox deselect action. Screen reader announces "Bỏ chọn" for a search-clear action — confusing context switch.
+Fix: Add a dedicated `adminRoster.table.clearSearch` key = "Xóa tìm kiếm" and use it for the search clear button aria-label.
+Seen in: US-E12.4 (roster-table.tsx line 118).
+
+## Semantic — Pagination nav aria-label reuses breadcrumb key
+Pattern: `<nav aria-label={t("breadcrumb.roster")}>` on the pagination nav = "Danh sách học sinh". A screen reader announces the pagination landmark as "Danh sách học sinh navigation" — same as the page section. Should be "Phân trang" or "Điều hướng trang".
+Fix: Add dedicated `adminRoster.pagination.nav` = "Phân trang" key and use it.
+Seen in: US-E12.4 (roster-pagination.tsx line 57).
+
+## Table — th elements missing scope="col"
+Pattern: `<th>` elements in data tables rendered without `scope="col"` attribute. Screen readers can still infer column headers from position, but explicit `scope` is required by WCAG 1.3.1 for complex tables.
+Fix: Add `scope="col"` to all `<th>` elements in `<thead>`.
+Seen in: US-E12.4 (roster-table.tsx, all 8 th elements).
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.

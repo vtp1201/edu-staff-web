@@ -20,8 +20,8 @@ export function GenderBadge({ gender }: GenderBadgeProps) {
       className={cn(
         "inline-flex size-[22px] items-center justify-center rounded-full font-extrabold text-[10.5px]",
         gender === "F"
-          ? "bg-edu-gender-female-light text-edu-gender-female"
-          : "bg-edu-gender-male-light text-edu-gender-male",
+          ? "bg-edu-gender-female-light text-edu-gender-female-text"
+          : "bg-edu-gender-male-light text-edu-gender-male-text",
       )}
     >
       {gender}

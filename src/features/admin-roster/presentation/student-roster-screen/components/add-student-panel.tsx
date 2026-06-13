@@ -63,7 +63,7 @@ export function AddStudentPanel({
             </div>
           </div>
         </div>
-        <label className="mt-3 flex items-center gap-2 rounded-lg border border-edu-border bg-edu-bg px-3 py-2">
+        <label className="mt-3 flex items-center gap-2 rounded-lg border border-edu-border bg-edu-bg px-3 py-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
           <Search className="size-3.5 text-edu-text-muted" aria-hidden="true" />
           <span className="sr-only">{t("addPanel.searchPlaceholder")}</span>
           <input
@@ -140,10 +140,12 @@ export function AddStudentPanel({
                       disabled={disabled}
                       onClick={() => onRequestEnroll(s)}
                       className={cn(
-                        "inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2.5 font-bold text-white text-xs",
+                        "inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2.5 font-bold text-xs",
                         "motion-safe:transition-opacity hover:opacity-85",
                         "outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-                        conflictClass ? "bg-edu-warning" : "bg-edu-primary",
+                        conflictClass
+                          ? "bg-edu-warning text-edu-warning-foreground"
+                          : "bg-edu-primary text-white",
                       )}
                     >
                       <Plus className="size-3" aria-hidden="true" />

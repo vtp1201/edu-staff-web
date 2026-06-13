@@ -54,7 +54,7 @@ export function RosterPagination({
 
   return (
     <nav
-      aria-label={t("breadcrumb.roster")}
+      aria-label={t("pagination.nav")}
       className="flex flex-wrap items-center gap-2.5 border-edu-border border-t px-5 py-3"
     >
       <div className="flex-1 text-edu-text-muted text-xs tabular-nums">
