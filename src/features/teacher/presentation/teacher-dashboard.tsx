@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { StatCard } from "@/components/shared/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/shared/utils";
 
@@ -55,10 +55,10 @@ const SCHEDULE: {
   },
 ];
 
-const STATUS_TONE: Record<PeriodStatus, string> = {
-  done: "bg-muted text-muted-foreground",
-  live: "bg-edu-success/15 text-edu-success",
-  upcoming: "bg-edu-warning/15 text-edu-warning-foreground",
+const STATUS_TONE: Record<PeriodStatus, StatusTone> = {
+  done: "muted",
+  live: "success",
+  upcoming: "warning",
 };
 
 export async function TeacherDashboard() {
@@ -126,9 +126,9 @@ export async function TeacherDashboard() {
                     {p.className} · {p.subject}
                   </div>
                 </div>
-                <Badge className={cn("border-0", STATUS_TONE[p.status])}>
+                <StatusBadge tone={STATUS_TONE[p.status]}>
                   {t(`status.${p.status}`)}
-                </Badge>
+                </StatusBadge>
               </li>
             ))}
           </ul>

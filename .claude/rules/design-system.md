@@ -61,7 +61,7 @@ Radius: btn 8px, card 12px, role-icon 16px, badge full, otp 10px. Shadow:
 
 - `StatCard`: white card, icon box 52×52 (`bg = iconColor/18`, radius 12), value
   26px/800, trend ↑green/↓red.
-- `Badge`: padding 3px 10px, radius full, 11px/600, `bg = color/18`.
+- `Badge`: padding 3px 10px, radius full, 11px/600, `bg = color/15` (canonical — legacy spec said `/18`; runtime `StatusBadge` uses `/15`, US-E07.4).
 - `ProgressBar`: track `--edu-border`, fill color prop, `transition width .6s`.
 - `Sidebar`: active item `bg primary/12` + 3px left accent bar, fw700;
   collapse persist localStorage.
