@@ -303,6 +303,17 @@
       "status": "Status"
     }
   },
+  "iamMember": {
+    "errors": {
+      "forbidden": "You do not have permission to perform this action",
+      "not-found": "Member or invitation not found",
+      "email-exists": "Email already exists in the system",
+      "invitation-not-found": "Invitation not found or has expired",
+      "last-admin": "Cannot remove the last admin of the organization",
+      "network-error": "Connection error, please try again",
+      "unknown": "An unexpected error occurred"
+    }
+  },
   "tenant": {
     "select": {
       "title": "Choose a workspace",
