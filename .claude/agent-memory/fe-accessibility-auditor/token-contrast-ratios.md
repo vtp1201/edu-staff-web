@@ -39,6 +39,19 @@ Surface tokens resolved: bg=#f5f7fa (--edu-bg), card=#fff (--edu-card).
 | white (#fff) on --edu-success (#13deb9) icon | 1.72:1 | FAIL icon 3:1 — use edu-text-primary on success |
 | --edu-text-muted (#8898a9) on edu-primary/15 (#e7edff) | 2.53:1 | FAIL — avoid muted on tinted bg |
 
+## StatusBadge tone contrast (text on /15 tinted bg, blended on white card)
+All computed with WCAG ^2.4 gamma linearization. Blended bg = token × 0.15 + #FFF × 0.85.
+| Tone | Text token | Text hex | Blended bg | Ratio | WCAG AA |
+|---|---|---|---|---|---|
+| success | text-edu-success-text | #007A6E | #DCFAF5 | 4.70:1 | PASS |
+| error | text-edu-error-text | #C0392B | #FEE8E2 | 5.10:1 | PASS |
+| warning | text-edu-warning-foreground | #2A3547 | #FFF1D7 | ~11:1 | PASS |
+| primary | text-primary (--edu-primary-dark) | #4570EA | #E5ECFF | 4.56:1 | PASS |
+| info | text-edu-info | #539BFF | #E5F0FF | 2.43:1 | FAIL |
+| purple | text-edu-purple | #7B5EA7 | #EBE7F2 | 4.32:1 | FAIL (just under) |
+| teal | text-edu-teal | #00B8A9 | #D9F4F2 | 2.15:1 | FAIL |
+| muted | text-muted-foreground | #8898A9 | #F5F7FA | 2.76:1 | FAIL (content text) |
+
 ## Key rules derived
 - Never use text-edu-success on any background (1.72:1 on white — fails both 4.5 and 3:1).
 - Never use white icon/text on edu-success backgrounds (1.72:1 — fails 3:1 icon minimum).
@@ -47,3 +60,6 @@ Surface tokens resolved: bg=#f5f7fa (--edu-bg), card=#fff (--edu-card).
 - Primary button text: white fails (3.29) for normal text sizes; use dark text or ensure ≥18px.
 - edu-error as text color on error-light fails (2.21); use edu-text-primary instead.
 - edu-primary as text on edu-primary/15 bg fails (2.82); use edu-text-primary.
+- info/teal tones: self-color text on own /15 tint fails badly (2.43 / 2.15). Fix: use edu-text-primary.
+- purple tone: 4.32:1 — just under AA threshold. Fix: use --edu-purple-dark or edu-text-primary.
+- muted tone for badges: 2.76:1 — fails for badge text. Fix: use text-foreground or text-edu-text-secondary.

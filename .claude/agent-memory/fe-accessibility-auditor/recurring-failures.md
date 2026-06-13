@@ -46,6 +46,26 @@ Pattern: Multiple identical button texts ("Cài đặt", "Mở") rendered for ea
 Fix: Add `aria-label={t("guide.configureAriaLabel", { step: tSteps(step.labelKey) })}` to each button; add matching i18n key.
 Seen in: School Setup screen (Configure + Open buttons in step lists).
 
+## Forms — Label not programmatically linked to Input
+Pattern: `Field` helper component renders `<Label>{label}</Label><Input />` with no `htmlFor`/`id` pairing.
+Fix: Generate or accept an `id` prop; set `<Label htmlFor={id}>` and `<Input id={id}>`.
+Seen in: US-E07.4 profile-screen.tsx (all personal info fields, current/new/confirm password).
+
+## Contrast — info/teal tones: self-color text on own /15 tint
+Pattern: `bg-edu-info/15 text-edu-info` (#539BFF on #E5F0FF = 2.43:1) and `bg-edu-teal/15 text-edu-teal` (#00B8A9 on #D9F4F2 = 2.15:1) both fail AA.
+Fix: Use `text-edu-text-primary` (#2A3547) for badge text on info/teal tinted backgrounds.
+Seen in: US-E07.4 StatusBadge TONE_CLASS map (info and teal entries).
+
+## Contrast — purple tone just misses AA
+Pattern: `bg-edu-purple/15 text-edu-purple` (#7B5EA7 on #EBE7F2 = 4.32:1) — 0.18 below the 4.5:1 threshold.
+Fix: Use `text-edu-text-primary` (#2A3547) or add a `--edu-purple-text` dark variant (~#5B3D8A, needs verification).
+Seen in: US-E07.4 StatusBadge TONE_CLASS map (purple entry).
+
+## Contrast — muted badge text fails
+Pattern: `bg-muted text-muted-foreground` used for "done" status badges = #8898A9 on #F5F7FA = 2.76:1 — fails AA for badge text.
+Fix: Use `text-foreground` (#2A3547) on muted background for badge content.
+Seen in: US-E07.4 teacher-dashboard.tsx (done period status).
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.

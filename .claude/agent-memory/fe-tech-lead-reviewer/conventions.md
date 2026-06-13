@@ -24,6 +24,11 @@ Confirmed facts (verify before citing if stale):
   URL path (accumulated), not just their own segment. So a layout at `[locale]/t/[tenant]/(app)/admin/`
   legitimately receives `{ locale, tenant }`. Route groups `(app)`/`(auth)` add NO param segment.
   Don't flag a nested layout reading parent `[locale]`/`[tenant]` params as wrong — it's correct.
+- No `@testing-library/react` is installed. DOM/render coverage for components is done via Storybook
+  interaction stories (browser mode), and pure logic is unit-tested as exported helpers in node env.
+  So extracting a pure helper (e.g. `compactToneClass`) + Vitest on it, plus stories covering each
+  variant/state, is the ACCEPTED proof shape — don't demand an RTL render test that the toolchain
+  can't run. Composed components in `components/shared/<name>/` need an `index.ts` re-export + stories.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
