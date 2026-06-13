@@ -5,7 +5,10 @@ Map màn hình từ design handoff → route + feature theo kiến trúc thật 
 `app/[locale]/t/[tenant]/(app)/<role>/...` (tenant segment live — E05.1, decision `0007`).
 
 **Design source (normative):** `design_src/EduPortal.html` + component files
-(clone từ `design_handoff_eduportal2_1206`, xem decision `0021`).
+(1406 handoff = current; `design_src/edu/*.jsx` is canonical — see decision `0034`).
+`design-spec.jsonc` re-baselined to 1406 (2026-06-14, ADR 0034): sections login,
+selectRole, teacherDashboard, teacherScheduleFull, principalTeachers, profile
+(incl. linkedAccounts + accountRequests) and layout shell navMap now reflect 1406.
 Design hoàn chỉnh đến: NEW-02 (Grade Scale & Assessment Scheme Config).
 
 Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design, chưa impl).
@@ -14,8 +17,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Login (email + SSO Google/FB/VneID) | `(auth)/login` | `features/auth/presentation/login-form` | 🟡 (email có; SSO ⬜) |
-| Select role/tenant (multi-role) | `(auth)/select-role` | `features/auth/presentation` | ⬜ |
+| Login (email + SSO Google/VNeID) | `(auth)/login` | `features/auth/presentation/login-form` | 🟡 (email done; SSO 🎨 US-E01.2) |
+| Select role/tenant (multi-role) | `(auth)/select-role` | `features/auth/presentation` | 🎨 design-ready (US-E01.2) |
 | Forgot password (email→OTP→new pw→done) | `(auth)/forgot-password` | `features/auth/presentation` | ✅ (BE-wired US-030) |
 
 ## All roles (Epic E08 shell + E10 messaging)
@@ -23,7 +26,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
-| Profile (info / security / sessions) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ (UI mock-first) |
+| Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | 🟡 (base ✅; Linked Accounts + Account Requests ⬜ US-E08.5) |
 | Notifications | `(app)/(shared)/notifications` | `features/notification` | ⬜ (gắn SSE, decision 0009) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | ⬜ (Epic E10) |
 
@@ -31,7 +34,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Dashboard | `(app)/teacher` | `features/teacher/presentation` | ✅ (UI mock-first) |
+| Dashboard (TeacherDashboardHome — StatCards + TKB tiết + pending grades) | `(app)/teacher` | `features/teacher/presentation` | 🎨 design-ready (US-E13.4; existing mock-first placeholder needs replacement) |
 | Attendance (điểm danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ |
 | Class Log (sổ đầu bài + submit) | `(app)/teacher/class-log` | `features/class-log` | ⬜ (E02) |
 | Discipline (vi phạm/hạnh kiểm/nghỉ phép) | `(app)/teacher/discipline` | `features/discipline` | ⬜ (E09) |
@@ -45,8 +48,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 | Screen | Route | Design file | Feature | Status |
 | --- | --- | --- | --- | --- |
-| School overview dashboard | `(app)/principal` | `teacher.jsx` (role=principal) | `features/principal` | ✅ (UI mock-first) |
-| Teachers / Classes | `(app)/principal/teachers`,`/classes` | `teacher.jsx` | `features/principal` | ⬜ |
+| School overview dashboard | `(app)/principal` | `teacher.jsx` (PrincipalDashboardHome) | `features/principal` | ✅ (UI mock-first) |
+| Teachers (GVCN/GVBM assignment sheet) | `(app)/principal/teachers` | `teacher.jsx` (PrincipalTeachersScreen + AssignmentSheet) | `features/principal` | 🎨 design-ready (US-E13.5; real BE: homeroom-teacher + class-subjects endpoints; NOT `/teaching-assignments`) |
+| Classes | `(app)/principal/classes` | `teacher.jsx` | `features/principal` | ⬜ |
 | Class Log review/approve | `(app)/principal/class-log` | `classops.jsx` | `features/class-log` | ⬜ (E02) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | ⬜ (E09) |
 | Reports | `(app)/principal/reports` | — | `features/principal` | ⬜ |
@@ -88,12 +92,15 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 - Spec layout/giá trị từng màn (normative): `docs/product/design-spec.jsonc`
   (relocate từ backup — decision `0014`).
 - **Design source chuẩn**: `design_src/EduPortal.html` (mở trong browser) —
-  quyết định sử dụng nguồn này theo decision `0021`.
+  quyết định sử dụng nguồn này theo decision `0021`. Current version = 1406 (ADR 0034).
+  - `design_src/edu/login.jsx` — Login SSO + multi-role select (US-E01.2; design-spec.jsonc updated 2026-06-14)
+  - `design_src/edu/teacher.jsx` — Teacher Dashboard Home + Principal Teachers Management (US-E13.4, US-E13.5; design-spec.jsonc updated 2026-06-14)
+  - `design_src/edu/profile.jsx` — Profile + Linked Accounts + Account Requests (US-E08.5; design-spec.jsonc updated 2026-06-14)
   - `design_src/edu/school-setup.jsx` — Admin school setup (US-049/ADR 0035)
   - `design_src/edu/calendar.jsx` — Academic calendar (US-042)
   - `design_src/edu/subjects.jsx` + `subject-detail.jsx` + `subjects-dialogs.jsx` + `subjects-data.jsx` — Subject catalogue (US-048)
   - `design_src/edu/subject-parents.jsx` — SubjectParent departments
   - `design_src/edu/roster.jsx` — Student roster / enrollment (US-043)
   - `design_src/edu/timetable.jsx` — Timetable builder (US-045)
-  - `design_src/edu/calendar.jsx` — Academic calendar
+  - `design_src/edu/classops.jsx` — Class Log (E13.3)
 - Chi tiết pixel cũ (reference only): file `untitled.pen` (mở bằng Pencil MCP).

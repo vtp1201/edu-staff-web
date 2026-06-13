@@ -1,70 +1,127 @@
 // EduPortal Design Spec
-// Source: design_handoff_eduportal (Claude Design)
+// Source: design_handoff_eduportal2_1406 (re-baseline 2026-06-14, ADR 0034)
 // Reference: open design_src/EduPortal.html in a browser for the live prototype
+// Canonical source files: design_src/edu/*.jsx (1406 = current)
 {
   "meta": {
     "product": "EduPortal",
-    "version": "1.0",
+    "version": "1.1",
     "fidelity": "high — pixel-accurate, recreate exactly",
     "font": "Plus Jakarta Sans",
-    "framework": "Next.js 16 + shadcn/ui + Tailwind CSS v4"
+    "framework": "Next.js 16 + shadcn/ui + Tailwind CSS v4",
+    "rebaselineNote": "Sections login, selectRole, teacherDashboard, principalTeachers, profile regenerated from design_src/edu 1406. Other sections unchanged from v1.0."
   },
 
   // ─────────────────────────────────────────────
   // LAYOUT SHELL
+  // Source: design_src/edu/app.jsx (1406)
   // ─────────────────────────────────────────────
   "layout": {
     "sidebar": {
       "widthExpanded": 260,
       "widthCollapsed": 72,
-      "background": "#FFFFFF",
-      "borderRight": "1px solid #E5EAF2",
+      "background": "var(--edu-card)",
+      "borderRight": "1px solid var(--edu-border)",
       "collapseTransition": "width 0.25s ease",
       "collapseStateStorage": "localStorage",
       "toggleButton": {
         "size": 24,
         "shape": "circle",
         "position": { "right": -12, "top": 18 },
-        "shadow": "0 2px 8px rgba(0,0,0,0.08)"
+        "shadow": "var(--edu-shadow-toggle)"
       },
       "navItem": {
         "active": {
-          "background": "primaryColor + '12'", // 8% opacity tint
-          "textColor": "primary",
+          "background": "var(--edu-primary) + '12'", // 8% opacity tint
+          "textColor": "var(--edu-primary)",
           "fontWeight": 700,
           "accentBar": {
             "width": 3,
             "position": "left",
             "topBottom": "20%",
             "borderRadius": "0 3px 3px 0",
-            "color": "primary"
+            "color": "var(--edu-primary)"
           }
         },
         "inactive": {
           "background": "transparent",
-          "textColor": "#5A6A85",
+          "textColor": "var(--edu-text-secondary)",
           "fontWeight": 500,
-          "hoverBackground": "#F5F7FA"
+          "hoverBackground": "var(--edu-bg)"
         }
+      },
+      // Nav sections per role (from app.jsx getHeaderTitle map — 1406)
+      "navMap": {
+        "teacher": [
+          "dashboard",
+          "attendance",
+          "classlog",
+          "discipline",
+          "grades",
+          "schedule",
+          "students",
+          "messaging",
+          "notifications",
+          "settings",
+          "profile"
+        ],
+        "principal": [
+          "dashboard",
+          "school-setup",
+          "subject-parents",
+          "subjects",
+          "teachers",
+          "classes",
+          "roster",
+          "timetable",
+          "classlog",
+          "discipline",
+          "reports",
+          "calendar",
+          "messaging",
+          "notifications",
+          "settings",
+          "profile"
+        ],
+        "student": [
+          "home",
+          "courses",
+          "assignments",
+          "exams",
+          "grades",
+          "discipline",
+          "schedule",
+          "resources",
+          "messaging",
+          "profile"
+        ],
+        "parent": [
+          "children",
+          "grades",
+          "schedule",
+          "messaging",
+          "notifications",
+          "profile"
+        ]
       }
     },
     "header": {
       "height": 64,
-      "background": "#FFFFFF",
-      "borderBottom": "1px solid #E5EAF2",
+      "background": "var(--edu-card)",
+      "borderBottom": "1px solid var(--edu-border)",
       "search": {
         "width": 220,
-        "background": "#F5F7FA",
+        "background": "var(--edu-bg)",
         "borderRadius": 8,
         "fontSize": 13
       },
       "notificationBell": {
         "size": 38,
         "borderRadius": 10,
-        "background": "#F5F7FA",
+        "background": "var(--edu-bg)",
         "badge": {
           "size": 18,
-          "background": "#FA896B",
+          "background": "var(--edu-error)",
           "fontSize": 10,
           "fontWeight": 700,
           "offset": { "top": -4, "right": -4 }
@@ -78,78 +135,530 @@
   // ─────────────────────────────────────────────
   "screens": {
     "login": {
+      // Source: design_src/edu/login.jsx — LoginScreen (1406)
       "route": "/login",
       "layout": "two-column full-viewport",
       "left": {
         "width": "42%",
-        "background": "linear-gradient(150deg, #5D87FF 0%, #5D87FFCC 55%, #13DEB988 100%)",
-        "content": ["logo", "tagline", "3 feature bullets"]
+        // token: bg-edu-primary gradient; hex exact from jsx: pColor (--edu-primary) + CC + #13DEB988
+        "background": "linear-gradient(150deg, var(--edu-primary) 0%, var(--edu-primary)CC 55%, var(--edu-success)88 100%)",
+        "padding": 52,
+        "logo": {
+          "iconBox": {
+            "size": 76,
+            "borderRadius": 22,
+            "background": "rgba(255,255,255,0.18)",
+            "border": "2px solid rgba(255,255,255,0.28)",
+            "backdropFilter": "blur(8px)"
+          },
+          "icon": "school",
+          "iconSize": 38,
+          "iconColor": "#fff"
+        },
+        "brandName": {
+          "text": "EduPortal",
+          "size": 30,
+          "fontWeight": 800,
+          "letterSpacing": "-0.02em"
+        },
+        "tagline": { "size": 14, "opacity": 0.85, "fontWeight": 500 },
+        "bullets": {
+          "count": 3,
+          "items": [
+            "Đa vai trò — Giáo viên, Học sinh, Phụ huynh",
+            "Đa trường học (multi-tenant)",
+            "Theo dõi tiến độ & điểm số theo thời gian thực"
+          ],
+          "bulletIcon": {
+            "size": 20,
+            "borderRadius": 6,
+            "background": "rgba(255,255,255,0.22)"
+          }
+        },
+        // decorative circles: 3 circles with blur/opacity, positioned absolutely
+        "decorativeCircles": [
+          { "size": 340, "x": -100, "y": -100, "opacity": 0.07 },
+          { "size": 220, "x": 80, "y": 80, "opacity": 0.05 },
+          { "size": 170, "x": -50, "y": 320, "opacity": 0.06 }
+        ]
       },
       "right": {
         "flex": 1,
+        "padding": 48,
         "maxWidth": 400,
         "content": {
-          "title": { "text": "Đăng nhập", "size": 26, "fontWeight": 800 },
-          "ssoButtons": {
-            "count": 3,
-            "providers": ["Google", "Facebook", "VneID"],
-            "width": "100%",
-            "gap": 10,
-            "hover": { "borderColor": "primary", "shadow": "primary/10" }
+          "title": {
+            "text": "Đăng nhập",
+            "size": 26,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
           },
-          "divider": "hoặc đăng nhập bằng email",
-          "emailInput": { "icon": "Mail", "iconOffset": 38 },
-          "passwordInput": { "icon": "Lock", "showHideToggle": true },
-          "forgotLink": { "align": "right" },
+          "subtitle": {
+            "text": "Chào mừng đến với EduPortal",
+            "size": 13.5,
+            "color": "var(--edu-text-muted)"
+          },
+          // SSO: 2 buttons in 1406 — Google + VNeID (Facebook removed vs original spec)
+          "ssoButtons": {
+            "count": 2,
+            "providers": ["Google", "VNeID"],
+            "order": ["google", "vneid"],
+            "style": {
+              "width": "100%",
+              "padding": "11px 20px",
+              "border": "1.5px solid var(--edu-border)",
+              "borderRadius": 10,
+              "background": "var(--edu-card)",
+              "fontSize": 13.5,
+              "fontWeight": 600,
+              "gap": 10
+            },
+            "gap": 10,
+            "hover": {
+              "borderColor": "var(--edu-primary)",
+              "shadow": "var(--edu-primary)18"
+            }
+          },
+          "divider": {
+            "text": "hoặc đăng nhập bằng email",
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)"
+          },
+          "emailInput": {
+            "icon": "mail",
+            "iconSize": 15,
+            "iconLeft": 12,
+            "padding": "10px 14px 10px 38px",
+            "borderRadius": 9,
+            "border": "1.5px solid var(--edu-border)",
+            "fontSize": 13.5,
+            "focusBorderColor": "var(--edu-primary)"
+          },
+          "passwordInput": {
+            "icon": "lock",
+            "iconSize": 15,
+            "iconLeft": 12,
+            "showHideToggle": true,
+            "padding": "10px 14px 10px 38px",
+            "borderRadius": 9,
+            "border": "1.5px solid var(--edu-border)",
+            "fontSize": 13.5
+          },
+          "forgotLink": {
+            "align": "right",
+            "color": "var(--edu-primary)",
+            "fontSize": 12,
+            "fontWeight": 600
+          },
+          "errorBanner": {
+            "background": "var(--edu-error-light)",
+            "border": "1px solid var(--edu-error)22",
+            "borderRadius": 8,
+            "icon": "info",
+            "fontSize": 12
+          },
           "submitButton": {
             "width": "100%",
-            "background": "primary",
-            "borderRadius": 12,
+            "padding": "12px",
+            "background": "var(--edu-primary)",
+            "disabledBackground": "var(--edu-text-muted)",
+            "borderRadius": 10,
             "fontSize": 14,
-            "fontWeight": 700
+            "fontWeight": 700,
+            "color": "#fff"
           },
-          "demoHint": { "background": "infoLight", "borderRadius": 9 }
+          "demoHint": {
+            "marginTop": 20,
+            "padding": "12px 14px",
+            "background": "var(--edu-info-light)",
+            "border": "1px solid var(--edu-info)28",
+            "borderRadius": 9,
+            "titleFontSize": 11.5,
+            "titleColor": "var(--edu-info)",
+            "titleFontWeight": 700,
+            "bodyFontSize": 11,
+            "bodyColor": "var(--edu-text-secondary)"
+          }
         }
       }
     },
 
     "selectRole": {
+      // Source: design_src/edu/login.jsx — select-role step (1406)
+      // Shown after login when account has multiple roles (step='select-role')
       "route": "/select-role",
       "layout": "centered single-column",
+      "background": "var(--edu-bg)",
       "maxWidth": 480,
+      "padding": "0 24px",
+      "header": {
+        "logoBox": {
+          "size": 60,
+          "borderRadius": 16,
+          "background": "var(--edu-primary)",
+          "icon": "school",
+          "iconSize": 28,
+          "iconColor": "#fff"
+        },
+        "eyebrow": {
+          "text": "Đăng nhập với tư cách",
+          "size": 11,
+          "fontWeight": 700,
+          "color": "var(--edu-text-muted)",
+          "textTransform": "uppercase",
+          "letterSpacing": "0.08em"
+        },
+        "name": {
+          "size": 22,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)"
+        },
+        "roleSummary": { "size": 13, "color": "var(--edu-text-muted)" }
+      },
       "roleCard": {
-        "iconBox": { "size": 48, "borderRadius": 12 },
-        "roleName": { "size": 15, "fontWeight": 800 },
-        "tenantName": { "size": 12, "color": "textMuted" },
+        "display": "flex",
+        "padding": "16px 20px",
+        "background": "var(--edu-card)",
+        "border": "1.5px solid var(--edu-border)",
+        "borderRadius": 14,
+        "shadow": "0 2px 8px rgba(0,0,0,0.04)",
+        "gap": 16,
+        "iconBox": {
+          "size": 48,
+          "borderRadius": 12,
+          // background = roleColor + '18' (12% opacity tint)
+          "background": "roleColor + '18'"
+        },
+        "icon": { "size": 22, "strokeWidth": 1.7 },
+        "roleName": {
+          "size": 15,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)"
+        },
+        "enumBadge": {
+          "fontSize": 10,
+          "background": "var(--edu-bg)",
+          "color": "var(--edu-text-muted)",
+          "border": "1px solid var(--edu-border)",
+          "borderRadius": 4,
+          "padding": "1px 6px",
+          "fontWeight": 700,
+          "letterSpacing": "0.05em"
+        },
+        "tenantName": {
+          "size": 12,
+          "color": "var(--edu-text-muted)",
+          "icon": "school",
+          "iconSize": 12
+        },
+        "tenantCodeBadge": {
+          "fontSize": 10,
+          "background": "var(--edu-bg)",
+          "border": "1px solid var(--edu-border)",
+          "borderRadius": 4,
+          "padding": "1px 6px",
+          "fontWeight": 600,
+          "letterSpacing": "0.03em"
+        },
+        "trailingIcon": "chevronRight",
         "hover": {
           "borderColor": "roleColor",
-          "shadow": "roleColor/13%",
+          "shadow": "roleColor + '22' (13% opacity)",
           "translateY": -1
-        },
-        "trailingIcon": "ChevronRight"
+        }
       },
-      "roleColors": {
-        "teacher": "#5D87FF",
-        "principal": "#13DEB9",
-        "student": "#FFAE1F",
-        "parent": "#7B5EA7"
+      // 6 roles defined in ROLE_META (1406 — expanded from original 4)
+      "roleMeta": {
+        "teacher": {
+          "labelVi": "Giáo viên",
+          "labelEn": "Teacher",
+          "icon": "userCheck",
+          "color": "var(--edu-role-teacher)",
+          "enum": "TEACHER",
+          "appRole": "teacher"
+        },
+        "admin": {
+          "labelVi": "Ban giám hiệu (BGH)",
+          "labelEn": "Board of Directors",
+          "icon": "school",
+          "color": "var(--edu-role-principal)",
+          "enum": "ADMIN",
+          "appRole": "principal"
+        },
+        "manager": {
+          "labelVi": "Phó Hiệu trưởng / BGH",
+          "labelEn": "Vice Principal",
+          "icon": "school",
+          "color": "var(--edu-role-principal)",
+          "enum": "MANAGER",
+          "appRole": "principal"
+        },
+        "staff": {
+          "labelVi": "Nhân viên",
+          "labelEn": "Staff",
+          "icon": "briefcase",
+          "color": "var(--edu-purple)",
+          "enum": "STAFF",
+          "appRole": "teacher"
+        },
+        "student": {
+          "labelVi": "Học sinh",
+          "labelEn": "Student",
+          "icon": "bookOpen",
+          "color": "var(--edu-role-student)",
+          "enum": "STUDENT",
+          "appRole": "student"
+        },
+        "parent": {
+          "labelVi": "Phụ huynh",
+          "labelEn": "Parent",
+          "icon": "users",
+          "color": "var(--edu-role-parent)",
+          "enum": "PARENT",
+          "appRole": "parent"
+        }
+      },
+      "backButton": {
+        "width": "100%",
+        "padding": "10px",
+        "border": "1px solid var(--edu-border)",
+        "borderRadius": 10,
+        "fontSize": 13,
+        "fontWeight": 600,
+        "color": "var(--edu-text-muted)",
+        "icon": "chevronLeft"
       }
     },
 
     "teacherDashboard": {
+      // Source: design_src/edu/teacher.jsx — TeacherDashboardHome (1406)
       "route": "/teacher",
+      "layout": "flex column, gap 24",
+      "contentMaxWidth": 1200,
+      "contentPadding": "28px 32px",
       "statsRow": {
-        "columns": 4,
+        // 5 StatCards in 1406 (was 4 in original spec — added "Điểm chờ duyệt" card)
+        "count": 5,
+        "gridTemplateColumns": "repeat(auto-fit, minmax(180px, 1fr))",
         "gap": 16,
-        "component": "StatCard"
+        "component": "StatCard",
+        "cards": [
+          {
+            "icon": "users",
+            "iconColor": "var(--edu-primary)",
+            "labelVi": "Tổng học sinh",
+            "labelEn": "Total Students",
+            "showTrend": true
+          },
+          {
+            "icon": "clock",
+            "iconColor": "var(--edu-success)",
+            "labelVi": "Tiết học hôm nay",
+            "labelEn": "Classes Today",
+            "showTrend": false
+          },
+          {
+            "icon": "clipboard",
+            "iconColor": "var(--edu-warning)",
+            "labelVi": "Chờ chấm điểm",
+            "labelEn": "Pending Grades",
+            "showTrend": true
+          },
+          // "Điểm chờ duyệt" — ADMIN_APPROVAL grade-publish mode only (DRAFT→PUBLISHED→LOCKED)
+          {
+            "icon": "clock",
+            "iconColor": "var(--edu-warning)",
+            "labelVi": "Điểm chờ duyệt",
+            "labelEn": "Grades Awaiting Approval",
+            "showTrend": false,
+            "note": "ADMIN_APPROVAL mode"
+          },
+          {
+            "icon": "message",
+            "iconColor": "var(--edu-purple)",
+            "labelVi": "Tin nhắn mới",
+            "labelEn": "New Messages",
+            "showTrend": false
+          }
+        ]
       },
-      "scheduleTable": {
-        "liveRowBorderLeft": "3px solid #13DEB9",
-        "statusBadges": {
-          "done": "muted",
-          "live": "success",
-          "upcoming": "warning"
+      "bodyGrid": {
+        "gridTemplateColumns": "1.4fr 1fr",
+        "gap": 20
+      },
+      "scheduleCard": {
+        // Left column — schedule list (not weekly grid — that is TeacherScheduleFull)
+        "padding": { "header": "18px 24px 14px", "rows": "12px 24px" },
+        "header": {
+          "title": {
+            "fontSize": 15,
+            "fontWeight": 700,
+            "color": "var(--edu-text-primary)"
+          },
+          "dayBadge": { "component": "Badge", "color": "var(--edu-primary)" }
+        },
+        "row": {
+          "borderLeft": {
+            "live": "3px solid var(--edu-success)",
+            "default": "3px solid transparent"
+          },
+          "periodCell": {
+            "width": 80,
+            "periodLabel": {
+              "fontSize": 12.5,
+              "fontWeight": 800,
+              "color": "var(--edu-text-primary)",
+              "lineHeight": 1.15
+            },
+            // period 1–5 = Buổi sáng; period 6–10 = Buổi chiều
+            "sessionLabel": { "fontSize": 10, "color": "var(--edu-text-muted)" }
+          },
+          "subjectCell": {
+            "subjectName": {
+              "fontSize": 13.5,
+              "fontWeight": 700,
+              "color": "var(--edu-text-primary)"
+            },
+            "classRoom": {
+              "fontSize": 12,
+              "color": "var(--edu-text-muted)",
+              "marginTop": 2
+            }
+          },
+          "statusBadge": {
+            "done": {
+              "color": "var(--edu-text-muted)",
+              "background": "var(--edu-bg)",
+              "labelVi": "Hoàn thành",
+              "labelEn": "Done"
+            },
+            "live": {
+              "color": "var(--edu-success)",
+              "background": "var(--edu-success-light)",
+              "labelVi": "Đang dạy",
+              "labelEn": "Live"
+            },
+            "upcoming": {
+              "color": "var(--edu-warning)",
+              "background": "var(--edu-warning-light)",
+              "labelVi": "Sắp tới",
+              "labelEn": "Upcoming"
+            }
+          }
         }
+      },
+      "pendingGradesCard": {
+        "padding": { "header": "14px 20px 10px", "rows": "10px 20px" },
+        "header": {
+          "title": {
+            "fontSize": 14,
+            "fontWeight": 700,
+            "color": "var(--edu-text-primary)"
+          },
+          "countBadge": { "component": "Badge", "color": "var(--edu-warning)" }
+        },
+        "row": {
+          "avatar": { "size": 30, "color": "var(--edu-primary)" },
+          "studentName": {
+            "fontSize": 12.5,
+            "fontWeight": 600,
+            "color": "var(--edu-text-primary)",
+            "overflow": "ellipsis"
+          },
+          "typeClass": { "fontSize": 11, "color": "var(--edu-text-muted)" },
+          // CTA button navigates to /teacher/grades
+          "ctaButton": {
+            "label": "Nhập điểm",
+            "route": "grades",
+            "background": "var(--edu-primary)",
+            "color": "#fff",
+            "borderRadius": 6,
+            "padding": "5px 11px",
+            "fontSize": 11,
+            "fontWeight": 700,
+            "icon": "penLine",
+            "iconSize": 11
+          }
+        }
+      },
+      "notificationsCard": {
+        "padding": { "header": "14px 20px 10px", "rows": "10px 20px" },
+        "header": {
+          "title": {
+            "fontSize": 14,
+            "fontWeight": 700,
+            "color": "var(--edu-text-primary)"
+          }
+        },
+        "row": {
+          "iconBox": {
+            "size": 28,
+            "borderRadius": 8,
+            "background": "iconColor + '18'"
+          },
+          "message": {
+            "fontSize": 12,
+            "color": "var(--edu-text-primary)",
+            "lineHeight": 1.4
+          },
+          "time": {
+            "fontSize": 11,
+            "color": "var(--edu-text-muted)",
+            "marginTop": 2
+          }
+        }
+      }
+    },
+
+    "teacherScheduleFull": {
+      // Source: design_src/edu/teacher.jsx — TeacherScheduleFull (1406)
+      // Weekly timetable grid: Mon–Sat × 5 time slots
+      "route": "/teacher/schedule",
+      "grid": "5 time slots × 6 days (Mon–Sat)",
+      "timeSlots": ["07:00", "08:30", "10:00", "13:00", "14:30"],
+      "days": ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"],
+      "header": { "periodColWidth": 70, "fontSize": 11, "fontWeight": 600 },
+      "filledCell": {
+        "background": "var(--edu-primary) + '15'",
+        "border": "1px solid var(--edu-primary) + '30'",
+        "borderLeft": "3px solid var(--edu-primary)",
+        "borderRadius": 8,
+        "padding": "8px 10px",
+        "className": {
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "var(--edu-primary)"
+        },
+        "room": {
+          "fontSize": 10,
+          "color": "var(--edu-text-muted)",
+          "marginTop": 1
+        },
+        "subject": {
+          "fontSize": 10,
+          "color": "var(--edu-text-muted)",
+          "overflow": "ellipsis"
+        }
+      },
+      "conflictCell": {
+        // Shown when API flags conflict=true (double-booked period)
+        "background": "var(--edu-error-light)",
+        "border": "1px solid var(--edu-error) + '55'",
+        "borderLeft": "3px solid var(--edu-error)",
+        "className": { "color": "var(--edu-error)" },
+        "alertIcon": {
+          "name": "alertTriangle",
+          "size": 12,
+          "color": "var(--edu-error)",
+          "position": "absolute top-6 right-6"
+        },
+        "tooltip": "Xung đột lịch dạy — giáo viên đã có lịch tiết này"
+      },
+      "emptyCell": {
+        "height": 46,
+        "borderRadius": 8,
+        "background": "var(--edu-bg)",
+        "border": "1px dashed var(--edu-border)"
       }
     },
 
@@ -249,24 +758,687 @@
     },
 
     "profile": {
+      // Source: design_src/edu/profile.jsx — ProfileScreen (1406)
       "route": "/profile",
+      "layout": "two-column grid: 260px left + 1fr right",
+      "contentMaxWidth": 1000,
+      "contentPadding": "28px 32px",
+      "pageTitle": {
+        "text": "Hồ sơ cá nhân",
+        "size": 22,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)"
+      },
       "leftColumn": {
         "width": 260,
-        "cover": { "height": 72, "background": "primary gradient" },
-        "avatar": { "size": 72, "border": "4px white", "marginTop": -32 }
-      },
-      "tabs": ["Thông tin cá nhân", "Bảo mật", "Phiên đăng nhập"],
-      "security": {
-        "passwordStrength": {
-          "segments": 4,
-          "colors": { "weak": "error", "fair": "warning", "strong": "success" }
+        "gap": 16,
+        "avatarCard": {
+          "background": "var(--edu-card)",
+          "borderRadius": 14,
+          "border": "1px solid var(--edu-border)",
+          "shadow": "var(--edu-shadow-card)",
+          "cover": {
+            "height": 72,
+            "background": "linear-gradient(135deg, roleColor 0%, roleColor + '99' 100%)",
+            "decorativeIcon": {
+              "name": "school",
+              "size": 40,
+              "color": "#fff",
+              "opacity": 0.2,
+              "position": "absolute right-10 bottom-10"
+            }
+          },
+          "avatar": {
+            "size": 72,
+            "borderRadius": "50%",
+            "border": "4px solid var(--edu-card)",
+            "background": "roleColor + '25'",
+            "fontSize": 24,
+            "fontWeight": 800,
+            "marginTop": -32,
+            "editButton": {
+              "size": 22,
+              "borderRadius": "50%",
+              "background": "roleColor",
+              "border": "2px solid var(--edu-card)",
+              "icon": "plus",
+              "iconSize": 10
+            }
+          },
+          "name": {
+            "fontSize": 15,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)",
+            "marginBottom": 4
+          },
+          "roleBadge": { "component": "Badge", "color": "roleColor" },
+          "school": { "fontSize": 12, "color": "var(--edu-text-muted)" },
+          "infoRows": {
+            "padding": "14px 20px",
+            "borderTop": "1px solid var(--edu-border)",
+            "icons": ["mail", "clock", "calendar"],
+            "fontSize": 12,
+            "color": "var(--edu-text-secondary)"
+          }
         },
-        "checklist": ["≥8 ký tự", "Chữ hoa", "Số", "Ký tự đặc biệt"]
+        // Account Requests card — NEW in 1406 (deactivation is ADMIN-only)
+        "accountRequestsCard": {
+          "background": "var(--edu-card)",
+          "borderRadius": 14,
+          "border": "1px solid var(--edu-border)",
+          "shadow": "var(--edu-shadow-card)",
+          "padding": 16,
+          "label": {
+            "text": "Yêu cầu tài khoản",
+            "fontSize": 12,
+            "fontWeight": 700,
+            "color": "var(--edu-text-muted)",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.06em"
+          },
+          "body": {
+            "fontSize": 11.5,
+            "color": "var(--edu-text-muted)",
+            "lineHeight": 1.55,
+            "marginBottom": 10
+          },
+          "contactButton": {
+            "display": "flex",
+            "padding": "8px",
+            "border": "1px solid var(--edu-border)",
+            "borderRadius": 8,
+            "background": "var(--edu-bg)",
+            "color": "var(--edu-text-secondary)",
+            "fontSize": 12,
+            "fontWeight": 700,
+            "icon": "mail",
+            "iconSize": 13
+          }
+        }
+      },
+      "tabs": [
+        {
+          "id": "info",
+          "labelVi": "Thông tin cá nhân",
+          "labelEn": "Personal Info",
+          "icon": "user"
+        },
+        {
+          "id": "security",
+          "labelVi": "Bảo mật & Mật khẩu",
+          "labelEn": "Security & Password",
+          "icon": "lock"
+        },
+        {
+          "id": "sessions",
+          "labelVi": "Phiên đăng nhập",
+          "labelEn": "Active Sessions",
+          "icon": "eye"
+        }
+      ],
+      "tabBar": {
+        "activeTab": {
+          "fontWeight": 700,
+          "color": "roleColor",
+          "borderBottom": "2px solid roleColor"
+        },
+        "inactiveTab": {
+          "fontWeight": 500,
+          "color": "var(--edu-text-muted)",
+          "borderBottom": "2px solid transparent"
+        }
+      },
+      "infoTab": {
+        "grid": "1fr 1fr, gap 18",
+        "fullWidthFields": ["fullName"],
+        "fields": [
+          "fullName",
+          "dob",
+          "gender",
+          "phone",
+          "email (disabled)",
+          "cccd",
+          "address (textarea)",
+          "dept (teacher/principal only)",
+          "school (disabled)"
+        ],
+        "genderToggle": {
+          "border": "1.5px solid roleColor (active) / var(--edu-border) (inactive)",
+          "background": "roleColor + '12' (active) / transparent (inactive)",
+          "color": "roleColor (active) / var(--edu-text-secondary) (inactive)"
+        },
+        "editActions": ["Chỉnh sửa", "Lưu thay đổi", "Huỷ"],
+        "successToast": {
+          "background": "var(--edu-success-light)",
+          "border": "var(--edu-success) + '40'",
+          "color": "var(--edu-success)"
+        }
+      },
+      "security": {
+        "changePassword": {
+          "maxWidth": 440,
+          "fields": ["current password", "new password", "confirm password"],
+          "passwordStrength": {
+            "segments": 4,
+            "segmentHeight": 4,
+            "borderRadius": 2,
+            "levels": [
+              { "score": 0, "label": "Rất yếu", "color": "var(--edu-error)" },
+              { "score": 1, "label": "Yếu", "color": "var(--edu-error)" },
+              {
+                "score": 2,
+                "label": "Trung bình",
+                "color": "var(--edu-warning)"
+              },
+              { "score": 3, "label": "Mạnh", "color": "var(--edu-success)" },
+              { "score": 4, "label": "Rất mạnh", "color": "var(--edu-success)" }
+            ]
+          },
+          "checklist": [
+            "Ít nhất 8 ký tự",
+            "Có chữ hoa (A–Z)",
+            "Có chữ số (0–9)",
+            "Có ký tự đặc biệt"
+          ],
+          "checklistIcon": { "pass": "check", "fail": "x", "size": 12 }
+        },
+        "twoFactor": {
+          "iconBox": {
+            "size": 42,
+            "borderRadius": 10,
+            "background": "var(--edu-warning) + '18'",
+            "icon": "lock",
+            "iconSize": 20,
+            "iconColor": "var(--edu-warning)"
+          },
+          "title": "Ứng dụng xác thực",
+          "subtitle": "Chưa được bật — Google Authenticator, Authy...",
+          "ctaButton": "Bật 2FA"
+        },
+        // Linked Accounts — NEW in 1406 (was absent in original spec)
+        "linkedAccounts": {
+          "sectionTitle": {
+            "text": "Liên kết tài khoản",
+            "fontSize": 15,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          "sectionSubtitle": {
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)"
+          },
+          "row": {
+            "padding": "14px 18px",
+            "background": "var(--edu-bg)",
+            "borderRadius": 10,
+            "border": "1px solid var(--edu-border)",
+            "gap": 16,
+            "iconBox": {
+              "size": 42,
+              "borderRadius": 10,
+              "background": "#fff",
+              "border": "1px solid var(--edu-border)"
+            },
+            "providerName": {
+              "fontSize": 13.5,
+              "fontWeight": 700,
+              "color": "var(--edu-text-primary)"
+            },
+            "linkedBadge": {
+              "linked": {
+                "text": "Đã liên kết",
+                "fontSize": 10,
+                "fontWeight": 700,
+                "background": "var(--edu-success-light)",
+                "color": "var(--edu-success)",
+                "border": "1px solid var(--edu-success) + '33'",
+                "borderRadius": 4,
+                "padding": "2px 7px"
+              },
+              "unlinked": {
+                "text": "Chưa liên kết",
+                "fontSize": 10,
+                "fontWeight": 700,
+                "background": "var(--edu-card)",
+                "color": "var(--edu-text-muted)",
+                "border": "1px solid var(--edu-border)",
+                "borderRadius": 4,
+                "padding": "2px 7px"
+              }
+            },
+            "desc": {
+              "fontSize": 11.5,
+              "color": "var(--edu-text-muted)",
+              "overflow": "ellipsis"
+            },
+            "unlinkButton": {
+              "padding": "7px 14px",
+              "border": "1px solid var(--edu-border)",
+              "borderRadius": 8,
+              "background": "transparent",
+              "color": "var(--edu-text-secondary)",
+              "fontSize": 12,
+              "fontWeight": 700,
+              "labelVi": "Hủy liên kết",
+              "labelEn": "Unlink"
+            },
+            "linkButton": {
+              "padding": "7px 14px",
+              "border": "none",
+              "borderRadius": 8,
+              "background": "var(--edu-primary)",
+              "color": "#fff",
+              "fontSize": 12,
+              "fontWeight": 700,
+              "labelVi": "Liên kết ngay",
+              "labelEn": "Link Now"
+            }
+          },
+          "providers": [
+            {
+              "key": "vneid",
+              "name": "VNeID",
+              "descVi": "Định danh điện tử quốc gia",
+              "descEn": "Vietnam National e-ID"
+            },
+            {
+              "key": "google",
+              "name": "Google",
+              "descVi": "email (khi đã liên kết)",
+              "descEn": "email (when linked)"
+            }
+          ]
+        }
       },
       "sessions": {
+        "padding": 28,
+        "row": {
+          "padding": "14px 18px",
+          "border": "1.5px solid roleColor + '40' (current) / var(--edu-border) (other)",
+          "background": "roleColor + '06' (current) / var(--edu-card) (other)",
+          "borderRadius": 10,
+          "iconBox": {
+            "size": 42,
+            "borderRadius": 10,
+            "background": "(current: roleColor + '14') / (other: textMuted + '14')"
+          },
+          "deviceName": {
+            "fontSize": 13.5,
+            "fontWeight": 700,
+            "color": "var(--edu-text-primary)"
+          },
+          "thisDeviceBadge": {
+            "component": "Badge",
+            "color": "var(--edu-success)",
+            "fontSize": 10
+          },
+          "location": { "fontSize": 11.5, "color": "var(--edu-text-muted)" },
+          "logoutButton": {
+            "padding": "6px 14px",
+            "border": "1px solid var(--edu-error) + '40'",
+            "borderRadius": 7,
+            "background": "var(--edu-error-light)",
+            "color": "var(--edu-error)",
+            "fontSize": 12,
+            "fontWeight": 700
+          }
+        },
+        "bulkLogout": {
+          "marginTop": 16,
+          "padding": "10px 20px",
+          "border": "1px solid var(--edu-error) + '40'",
+          "borderRadius": 9,
+          "background": "var(--edu-error-light)",
+          "color": "var(--edu-error)",
+          "fontSize": 13,
+          "fontWeight": 700
+        },
         "thisDeviceBadge": "success",
-        "perSessionLogout": true,
-        "bulkLogout": true
+        "perSessionLogout": true
+      }
+    },
+
+    "principalTeachers": {
+      // Source: design_src/edu/teacher.jsx — PrincipalTeachersScreen + TeacherAssignmentSheet (1406)
+      // Route: /principal/teachers (principal section)
+      "route": "/principal/teachers",
+      "layout": "single column",
+      "contentMaxWidth": 1200,
+      "contentPadding": "28px 32px",
+      "listCard": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "shadow": "var(--edu-shadow-card)",
+        "header": {
+          "padding": "18px 24px",
+          "borderBottom": "1px solid var(--edu-border)",
+          "title": {
+            "fontSize": 15,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          "subtitle": {
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)",
+            "marginTop": 2
+          },
+          "countChip": {
+            "display": "inline-flex",
+            "padding": "6px 12px",
+            "background": "var(--edu-bg)",
+            "borderRadius": 8,
+            "border": "1px solid var(--edu-border)",
+            "icon": "userCheck",
+            "iconSize": 13,
+            "iconColor": "var(--edu-primary)",
+            "fontSize": 12,
+            "fontWeight": 700
+          },
+          "addButton": {
+            "icon": "plus",
+            "label": "Thêm giáo viên",
+            "size": "sm"
+          }
+        },
+        "table": {
+          "head": {
+            "background": "var(--edu-bg)",
+            "columns": [
+              "Giáo viên",
+              "Môn chính",
+              "GVCN",
+              "Phân công bộ môn",
+              "Trạng thái",
+              "Actions"
+            ],
+            "fontSize": 11,
+            "fontWeight": 700,
+            "color": "var(--edu-text-muted)",
+            "textTransform": "uppercase",
+            "letterSpacing": "0.06em"
+          },
+          "row": {
+            "padding": "12px 20px",
+            "hoverBackground": "var(--edu-bg)",
+            "borderTop": "1px solid var(--edu-border)"
+          },
+          "cells": {
+            "teacher": {
+              "avatar": { "size": 32, "color": "var(--edu-primary)" },
+              "name": {
+                "fontSize": 13.5,
+                "fontWeight": 700,
+                "color": "var(--edu-text-primary)"
+              },
+              "students": { "fontSize": 11, "color": "var(--edu-text-muted)" }
+            },
+            "subject": { "fontSize": 13, "color": "var(--edu-text-secondary)" },
+            "gvcn": {
+              // Assigned homeroom
+              "assignedBadge": {
+                "display": "inline-flex",
+                "alignItems": "center",
+                "gap": 5,
+                "fontSize": 11,
+                "fontWeight": 700,
+                "padding": "3px 9px",
+                "borderRadius": 4,
+                "background": "var(--edu-success) + '15'",
+                "color": "var(--edu-success)",
+                "border": "1px solid var(--edu-success) + '33'",
+                "icon": "users",
+                "iconSize": 11
+              },
+              "unassignedLabel": {
+                "fontSize": 12,
+                "color": "var(--edu-text-muted)",
+                "fontStyle": "italic",
+                "text": "Chưa phân công"
+              }
+            },
+            "assignments": {
+              "badge": {
+                "component": "Badge",
+                "color": "var(--edu-primary)",
+                "fontSize": 10
+              },
+              "overflowBadge": {
+                "component": "Badge",
+                "color": "var(--edu-text-muted)",
+                "fontSize": 10
+              },
+              "emptyLabel": {
+                "fontSize": 12,
+                "color": "var(--edu-text-muted)",
+                "fontStyle": "italic",
+                "text": "Chưa có"
+              }
+            },
+            "status": {
+              "active": {
+                "component": "Badge",
+                "color": "var(--edu-success)",
+                "labelVi": "Đang dạy",
+                "labelEn": "Active"
+              },
+              "leave": {
+                "component": "Badge",
+                "color": "var(--edu-warning)",
+                "labelVi": "Nghỉ phép",
+                "labelEn": "On Leave"
+              }
+            },
+            "actions": {
+              "assignButton": {
+                "padding": "6px 12px",
+                "borderRadius": 7,
+                "border": "1.5px solid var(--edu-primary)",
+                "background": "transparent",
+                "color": "var(--edu-primary)",
+                "fontSize": 12,
+                "fontWeight": 700,
+                "icon": "users",
+                "iconSize": 11,
+                "labelVi": "Phân công lớp",
+                "labelEn": "Assign classes",
+                "hover": { "background": "var(--edu-primary) + '12'" }
+              },
+              "detailButton": {
+                "padding": "6px 12px",
+                "borderRadius": 7,
+                "border": "1px solid var(--edu-border)",
+                "background": "transparent",
+                "color": "var(--edu-text-secondary)",
+                "fontSize": 12,
+                "fontWeight": 700,
+                "icon": "eye",
+                "iconSize": 11,
+                "labelVi": "Chi tiết",
+                "labelEn": "Details",
+                "hover": {
+                  "borderColor": "var(--edu-primary)",
+                  "color": "var(--edu-primary)"
+                }
+              }
+            }
+          }
+        }
+      },
+      "assignmentSheet": {
+        // Side sheet (drawer) opened by "Phân công lớp" button
+        "width": 480,
+        "position": "fixed right-0 top-0 bottom-0",
+        "background": "var(--edu-card)",
+        "shadow": "-12px 0 40px rgba(0,0,0,0.18)",
+        "zIndex": 1001,
+        "backdrop": { "background": "rgba(20,30,50,0.45)", "zIndex": 1000 },
+        "header": {
+          "padding": "20px 24px",
+          "borderBottom": "1px solid var(--edu-border)",
+          "avatar": { "size": 42, "color": "var(--edu-primary)" },
+          "teacherName": {
+            "fontSize": 16,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          "subtitle": { "fontSize": 12, "color": "var(--edu-text-muted)" },
+          "closeButton": {
+            "size": 16,
+            "color": "var(--edu-text-muted)",
+            "hoverBackground": "var(--edu-bg)"
+          },
+          "summaryChips": {
+            "marginTop": 14,
+            "gvcnChip": {
+              "fontSize": 11.5,
+              "labelColor": "var(--edu-text-secondary)",
+              "fontWeight": 700
+            },
+            "assignCountChip": {
+              "fontSize": 11.5,
+              "labelColor": "var(--edu-text-secondary)",
+              "fontWeight": 700
+            }
+          }
+        },
+        "body": {
+          "padding": "22px 24px",
+          "gvcnSection": {
+            "iconBox": {
+              "size": 28,
+              "borderRadius": 8,
+              "background": "var(--edu-success) + '18'",
+              "icon": "users",
+              "iconSize": 14,
+              "iconColor": "var(--edu-success)"
+            },
+            "title": {
+              "fontSize": 13.5,
+              "fontWeight": 800,
+              "color": "var(--edu-text-primary)"
+            },
+            "subtitle": { "fontSize": 11, "color": "var(--edu-text-muted)" },
+            "select": {
+              "width": "100%",
+              "padding": "11px 36px 11px 14px",
+              "borderRadius": 9,
+              "border": "1.5px solid var(--edu-border)",
+              "fontSize": 13.5,
+              "appearance": "none",
+              "trailingIcon": "chevronDown",
+              "constraint": "1 teacher = max 1 homeroom class"
+            }
+          },
+          "gvbmSection": {
+            "iconBox": {
+              "size": 28,
+              "borderRadius": 8,
+              "background": "var(--edu-primary) + '18'",
+              "icon": "bookOpen",
+              "iconSize": 14,
+              "iconColor": "var(--edu-primary)"
+            },
+            "title": {
+              "fontSize": 13.5,
+              "fontWeight": 800,
+              "color": "var(--edu-text-primary)"
+            },
+            "subtitle": { "fontSize": 11, "color": "var(--edu-text-muted)" },
+            "emptyState": {
+              "padding": "24px 16px",
+              "border": "1.5px dashed var(--edu-border)",
+              "borderRadius": 10,
+              "background": "var(--edu-bg)",
+              "icon": "bookOpen",
+              "iconSize": 22,
+              "title": { "fontSize": 12.5, "fontWeight": 700 },
+              "subtitle": { "fontSize": 11.5, "color": "var(--edu-text-muted)" }
+            },
+            "addRowButton": {
+              "border": "1px dashed var(--edu-primary)",
+              "background": "var(--edu-primary) + '08'",
+              "color": "var(--edu-primary)",
+              "borderRadius": 8,
+              "fontSize": 12.5,
+              "fontWeight": 700,
+              "icon": "plus",
+              "iconSize": 13,
+              "hover": { "background": "var(--edu-primary) + '14'" }
+            }
+          },
+          "assignmentRow": {
+            "grid": "1fr 1fr 30px, gap 8",
+            "padding": 10,
+            "background": "var(--edu-bg)",
+            "borderRadius": 10,
+            "border": "1px solid var(--edu-border)",
+            "classPicker": {
+              // Custom dropdown — groups by grade, shows grade badge
+              "label": {
+                "fontSize": 10,
+                "fontWeight": 700,
+                "textTransform": "uppercase",
+                "letterSpacing": "0.06em"
+              },
+              "button": {
+                "padding": "8px 11px",
+                "borderRadius": 8,
+                "border": "1.5px solid var(--edu-border)",
+                "fontSize": 12.5
+              }
+            },
+            "subjectPicker": {
+              // Custom grouped dropdown — subjects greyed out (opacity 0.45) if no ClassSubject row for selected class
+              "disabledOpacity": 0.45,
+              "disabledCursor": "not-allowed",
+              "disabledTooltip": "Chưa có tiết học — thêm môn vào lớp trước.",
+              "groupHeader": {
+                "fontSize": 10,
+                "fontWeight": 700,
+                "color": "var(--edu-text-muted)",
+                "textTransform": "uppercase",
+                "background": "var(--edu-bg)",
+                "borderTop": "1px solid var(--edu-border)"
+              },
+              // Grade mismatch soft warning
+              "gradeMismatchWarning": {
+                "icon": "alertTriangle",
+                "iconSize": 11,
+                "color": "var(--edu-warning)",
+                "fontSize": 10.5,
+                "fontWeight": 600
+              }
+            },
+            "pickerMenu": {
+              "position": "absolute top-calc(100%+4px)",
+              "background": "#fff",
+              "border": "1px solid var(--edu-border)",
+              "borderRadius": 9,
+              "shadow": "0 8px 24px rgba(0,0,0,0.12)",
+              "maxHeight": 240,
+              "overflowY": "auto"
+            },
+            "deleteButton": {
+              "size": 30,
+              "borderRadius": 7,
+              "border": "1px solid var(--edu-border)",
+              "background": "transparent",
+              "color": "var(--edu-text-muted)",
+              "hoverBorder": "var(--edu-error)",
+              "hoverColor": "var(--edu-error)",
+              "hoverBackground": "var(--edu-error-light)",
+              "icon": "x",
+              "iconSize": 13
+            }
+          }
+        },
+        "footer": {
+          "padding": "14px 24px",
+          "borderTop": "1px solid var(--edu-border)",
+          "background": "var(--edu-bg)",
+          "actions": ["Hủy (ghost)", "Lưu phân công (primary, icon check)"]
+        }
       }
     },
 
