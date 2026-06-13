@@ -1,20 +1,33 @@
 ---
 name: project-e12-admin-core
-description: E12 Admin Core epic status — School Setup (US-E12.1) implemented; remaining US-E12.2..E12.6 planned
+description: E12 Admin Core epic status — US-E12.1 through US-E12.4 implemented; US-E12.5 + US-E12.6 planned
 metadata:
   type: project
 ---
 
-E12 Admin Core epic is the admin-facing configuration flow. Entry point story US-E12.1 (School Setup) implemented 2026-06-13.
+E12 Admin Core epic is the admin-facing configuration flow.
 
-Feature folder: `src/features/admin-school-setup/` (note: NOT `admin/school-setup` — it's a top-level feature name)
+**Implemented:**
+- US-E12.1 School Setup — `src/features/admin-school-setup/`
+- US-E12.2 Academic Calendar — `src/features/calendar/` (admin route `/admin/calendar`)
+- US-E12.3 Subject Catalogue — `src/features/admin/subject-catalogue/` (routes /admin/subjects, /admin/subject-departments)
+- US-E12.4 Student Roster — `src/features/admin-roster/` (route /admin/roster, 2026-06-13)
+  - Decisions: 0028 (gender indicator tokens), 0029 (gender AA text tokens)
+  - DI: `bootstrap/di/admin-roster.di.ts`, endpoint: `bootstrap/endpoint/admin-roster.endpoint.ts`
+  - MockRosterRepository seeded with 4 classes + 32 students in 10A1
 
-Onboarding order: US-E12.1 → US-E12.2 (calendar) → US-E12.3 (subjects) → US-E12.4 (roster) → US-E12.5 (timetable) → US-E12.6 (assessment)
+**Planned:** US-E12.5 (timetable), US-E12.6 (assessment scheme)
 
-**Why:** All admin routes under `/admin/*` are role-guarded to `admin` role (decision 0022). Core service is mock-first (decision 0014) — MockSchoolConfigRepository seeded with THPT (10-12) config.
+**Why:** All admin routes are role-guarded server-side via `admin/layout.tsx` (decision 0022). Core service is mock-first (decision 0014).
+
+**Recurring a11y pattern for admin screens:**
+- text-edu-text-muted (#8898A9) = 2.9:1 on white — FAILS AA for body text. Use text-edu-text-secondary (#5A6A85 = 5.48:1) for all data content.
+- text-edu-success (#13DEB9) on success/10 bg = ~1.6:1 — always use text-edu-success-text (#007A6E, decision 0027) instead.
+- text-white on bg-edu-warning = 1.85:1 — always use text-edu-warning-foreground (#2A3547).
+- Compact form inputs (outline-none) need has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring on the label wrapper div.
+- th elements need scope="col"; empty th needs aria-label.
 
 **Open items:**
-- Route role-guard story needed (priority raised: first destructive admin surface is live)
-- ADR for `--edu-role-admin` token needed
 - PRODUCT.md for impeccable /init needed (separate Harness item)
-- Real SchoolConfigRepository needs richer error mapping when core service goes live
+- Real repositories need richer error mapping when core service goes live
+- Storybook vitest runner blocked env-wide (ERR_REQUIRE_ESM in vite-plugin-storybook-nextjs) — pre-existing issue, separate follow-up
