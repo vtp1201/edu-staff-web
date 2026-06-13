@@ -20,3 +20,12 @@ Confirmed facts (verify before citing if stale):
 - Server actions return stable `errorKey: Failure["type"]`; presentation translates via
   `t.errors.<type>`. Failure union doubles as the i18n error catalogue (keys `errors.<type>` in both
   vi+en). When reviewing: every failure `type` MUST have a matching `errors.<type>` key in both files.
+- Next.js App Router nested `layout`/`page` `params` include ALL dynamic segments above them in the
+  URL path (accumulated), not just their own segment. So a layout at `[locale]/t/[tenant]/(app)/admin/`
+  legitimately receives `{ locale, tenant }`. Route groups `(app)`/`(auth)` add NO param segment.
+  Don't flag a nested layout reading parent `[locale]`/`[tenant]` params as wrong — it's correct.
+- `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
+  `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
+  lucide icon components as values but those are isomorphic, so it's safe to import from a server
+  module. Still a layer-direction smell (bootstrap→components); the clean fix is to move shared
+  routing constants (`DEFAULT_ROUTE`, `Role`) to `bootstrap/tenant` or a domain location.
