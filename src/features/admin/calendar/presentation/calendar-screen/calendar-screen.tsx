@@ -506,7 +506,7 @@ export function CalendarScreen({ initialData, actions }: CalendarScreenProps) {
                             variant="ghost"
                             onClick={() => addTerm(year)}
                             disabled={isPending}
-                            className="h-9 text-edu-primary hover:bg-edu-primary/[0.12] hover:text-edu-primary"
+                            className="h-9 text-edu-primary-dark hover:bg-edu-primary/[0.12] hover:text-edu-primary-dark"
                           >
                             <Plus className="size-3.5" aria-hidden="true" />
                             {t("term.addTerm")}
