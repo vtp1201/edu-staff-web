@@ -1,7 +1,10 @@
-/** Tenant/membership endpoints (IAM, BE US-020). camelCase wire (decision 0017). */
+/**
+ * Tenant/membership endpoints (IAM, BE US-020) — routed through Kong gateway
+ * (ADR 0030 / US-E06.3). camelCase wire (decision 0017).
+ */
 export const TENANT_EP = {
-  myTenants: "/members/me/tenants",
-  switchTenant: "/members/switch-tenant",
+  myTenants: "/iam/api/v1/members/me/tenants",
+  switchTenant: "/iam/api/v1/members/switch-tenant",
 } as const;
 
 /** OAuth client id sent on token-minting calls (switch-tenant). */

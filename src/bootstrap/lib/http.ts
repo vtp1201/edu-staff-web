@@ -12,8 +12,11 @@ declare module "axios" {
   }
 }
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
+// Kong gateway (ADR 0030 / US-E06.3). No `/api/v1` suffix — each endpoint
+// constant already encodes the full external path including service prefix and
+// `/api/v1` segment (e.g. `/iam/api/v1/auth/signin`).
+// Override for direct-service debug: NEXT_PUBLIC_API_URL=http://localhost:8080
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export function createHttpClient(token?: string) {
   const instance = axios.create({
