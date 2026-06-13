@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+#
+# fe-worktree — git worktree helper for PARALLEL /fe sessions.
+#
+# Why: decision 0025 (parallel branch workflow) isolates work per US by BRANCH,
+# but multiple /fe sessions sharing ONE working tree still share HEAD + index.
+# A `git commit` in session B while session A has just switched branches lands
+# B's commit on A's branch (observed 2026-06-14: US-E06.8's 32-file commit landed
+# on an unrelated chore branch). Stashes pile up the same way. A dedicated git
+# worktree per US gives each session its own working dir + HEAD + index (sharing
+# only .git), eliminating the whole race class. See ADR 0033 (amends 0025) and
+# .claude/rules/parallel-workflow.md.
+#
+# Scope: use ONLY when sessions run in parallel (another in-flight remote branch
+# exists, or the user says so). Solo work stays in the main checkout — no overhead.
+#
+# Usage:
+#   scripts/bin/fe-worktree add <US-ID> <slug>   # branch from origin/main + worktree + deps + early-push claim
+#   scripts/bin/fe-worktree rm  <US-ID>          # remove worktree + delete branch (local + remote) after merge
+#   scripts/bin/fe-worktree list                 # list active worktrees
+#   scripts/bin/fe-worktree path <US-ID>         # print the worktree path for a US
+#
+# Example (US-E06.6 Subject Catalogue):
+#   scripts/bin/fe-worktree add US-E06.6 core-subject-catalogue-wiring
+#   cd ../edu-staff-web-trees/us-e06.6   # work here: TDD, gate, merge --no-ff to main
+#   scripts/bin/fe-worktree rm US-E06.6  # after the branch is merged to main
+#
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+REPO_NAME="$(basename "$REPO_ROOT")"
+TREES_DIR="$(dirname "$REPO_ROOT")/${REPO_NAME}-trees"
+
+die() { printf 'fe-worktree: %s\n' "$1" >&2; exit 1; }
+
+lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
+
+# US-E06.6 -> us-e06.6 ; slug "core-subject" -> feat/us-e06.6-core-subject
+branch_for() {
+  local us_id slug
+  us_id="$(lower "$1")"
+  slug="$2"
+  printf 'feat/%s-%s' "$us_id" "$slug"
+}
+
+wt_path_for() { printf '%s/%s' "$TREES_DIR" "$(lower "$1")"; }
+
+cmd_add() {
+  [ "$#" -eq 2 ] || die "usage: fe-worktree add <US-ID> <slug>"
+  local us_id="$1" slug="$2"
+  local branch wt
+  branch="$(branch_for "$us_id" "$slug")"
+  wt="$(wt_path_for "$us_id")"
+
+  [ -e "$wt" ] && die "worktree already exists: $wt"
+
+  echo "→ fetch --prune (sync claim state)"
+  git -C "$REPO_ROOT" fetch --prune origin
+
+  # Claim check: refuse if the branch is already claimed on the remote.
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    die "branch $branch already claimed on origin — another session owns this US"
+  fi
+
+  echo "→ create branch $branch from origin/main (does NOT touch main checkout HEAD)"
+  git -C "$REPO_ROOT" branch "$branch" origin/main
+
+  echo "→ add worktree at $wt"
+  mkdir -p "$TREES_DIR"
+  git -C "$REPO_ROOT" worktree add "$wt" "$branch"
+
+  echo "→ install deps in the worktree (node_modules is NOT shared across worktrees)"
+  ( cd "$wt" && bun install )
+
+  echo "→ early push = claim (remote branch is the lock, decision 0025)"
+  git -C "$wt" push -u origin "$branch"
+
+  echo ""
+  echo "✓ ready: $wt  (branch $branch)"
+  echo "  cd \"$wt\"   # do all work here, then merge --no-ff into main"
+}
+
+cmd_rm() {
+  [ "$#" -eq 1 ] || die "usage: fe-worktree rm <US-ID>"
+  local us_id="$1" wt branch
+  wt="$(wt_path_for "$us_id")"
+  [ -d "$wt" ] || die "no worktree at $wt"
+  branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD)"
+
+  echo "→ remove worktree $wt"
+  git -C "$REPO_ROOT" worktree remove "$wt" || die "worktree not clean — commit/merge first, or use: git worktree remove --force \"$wt\""
+
+  echo "→ delete local branch $branch"
+  git -C "$REPO_ROOT" branch -d "$branch" 2>/dev/null \
+    || die "branch $branch not fully merged — merge it to main before rm (or: git branch -D $branch)"
+
+  echo "→ delete remote branch $branch"
+  git -C "$REPO_ROOT" push origin --delete "$branch" 2>/dev/null || echo "  (remote branch already gone)"
+
+  # remove the parent trees dir if no worktrees remain (rmdir only succeeds when empty)
+  rmdir "$TREES_DIR" 2>/dev/null || true
+
+  echo "✓ cleaned $us_id"
+}
+
+cmd_list() { git -C "$REPO_ROOT" worktree list; }
+
+cmd_path() {
+  [ "$#" -eq 1 ] || die "usage: fe-worktree path <US-ID>"
+  wt_path_for "$1"
+}
+
+[ "$#" -ge 1 ] || die "usage: fe-worktree {add|rm|list|path} ..."
+sub="$1"; shift
+case "$sub" in
+  add)  cmd_add "$@" ;;
+  rm)   cmd_rm "$@" ;;
+  list) cmd_list "$@" ;;
+  path) cmd_path "$@" ;;
+  *)    die "unknown command: $sub (use add|rm|list|path)" ;;
+esac
