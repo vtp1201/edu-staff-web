@@ -1,14 +1,18 @@
-/** core service — student roster / class enrollment endpoints (mock-first, decision 0014/0017). */
+/**
+ * core service — student roster / class enrollment endpoints (mock-first, decision 0014/0017).
+ * Routed through Kong gateway (ADR 0030 / US-E06.3): `/core/api/v1/...`
+ * → Kong strips `/core` → core receives `/api/v1/...`.
+ */
 export const ROSTER_EP = {
-  classes: "/core/classes",
+  classes: "/core/api/v1/classes",
   /** GET enrolled students; POST to enroll. `:classId` substituted at call site. */
-  classStudents: "/core/classes/:classId/students",
+  classStudents: "/core/api/v1/classes/:classId/students",
   /** DELETE one student from a class. `:classId` / `:studentId` substituted. */
-  unenroll: "/core/classes/:classId/students/:studentId",
+  unenroll: "/core/api/v1/classes/:classId/students/:studentId",
   /** POST transfer { fromClassId, toClassId }. `:studentId` substituted. */
-  transfer: "/core/students/:studentId/transfer",
+  transfer: "/core/api/v1/students/:studentId/transfer",
   /** GET candidate pool for the Add panel (students not in the target class). */
-  searchPool: "/core/students/unassigned",
+  searchPool: "/core/api/v1/students/unassigned",
 } as const;
 
 export function classStudentsPath(classId: string): string {

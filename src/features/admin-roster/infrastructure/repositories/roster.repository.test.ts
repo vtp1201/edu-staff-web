@@ -83,9 +83,12 @@ describe("RosterRepository", () => {
     const repo = new RosterRepository(makeHttp({ post }));
     const res = await repo.enrollStudent("cls-10a1", "HS25201");
     expect(res.ok).toBe(true);
-    expect(post).toHaveBeenCalledWith("/core/classes/cls-10a1/students", {
-      studentId: "HS25201",
-    });
+    expect(post).toHaveBeenCalledWith(
+      "/core/api/v1/classes/cls-10a1/students",
+      {
+        studentId: "HS25201",
+      },
+    );
   });
 
   it("transferStudent posts fromClassId/toClassId", async () => {
@@ -93,9 +96,12 @@ describe("RosterRepository", () => {
     const repo = new RosterRepository(makeHttp({ post }));
     const res = await repo.transferStudent("HS25202", "cls-10a2", "cls-10a1");
     expect(res.ok).toBe(true);
-    expect(post).toHaveBeenCalledWith("/core/students/HS25202/transfer", {
-      fromClassId: "cls-10a2",
-      toClassId: "cls-10a1",
-    });
+    expect(post).toHaveBeenCalledWith(
+      "/core/api/v1/students/HS25202/transfer",
+      {
+        fromClassId: "cls-10a2",
+        toClassId: "cls-10a1",
+      },
+    );
   });
 });

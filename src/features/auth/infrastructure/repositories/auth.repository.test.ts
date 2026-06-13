@@ -31,7 +31,7 @@ function makeHttp(over: Partial<AxiosInstance> = {}) {
 }
 
 describe("AuthRepository.signin", () => {
-  it("posts /auth/signin then GETs /users/me with the fresh bearer token", async () => {
+  it("posts AUTH_EP.signin then GETs AUTH_EP.me with the fresh bearer token", async () => {
     const http = makeHttp({
       post: vi.fn().mockResolvedValue(tokenData),
       get: vi.fn().mockResolvedValue(profileData),

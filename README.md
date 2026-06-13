@@ -40,8 +40,13 @@ Copy env file và điền API URL:
 
 ```bash
 cp .env.example .env.local
-# NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+# NEXT_PUBLIC_API_URL=http://localhost:8000  # Kong gateway (default for local dev — requires docker-compose up gateway)
+# NEXT_PUBLIC_API_URL=http://localhost:8080  # Direct IAM bypass (debug only, skips Kong edge-auth)
 ```
+
+> **Kong gateway** (ADR 0030): Kong listens on port 8000 and routes by service prefix
+> (`/iam/...` → IAM on 8080, `/core/...` → core on 8081). All endpoint constants already
+> encode the full external path including the service prefix and `/api/v1` segment.
 
 ---
 
