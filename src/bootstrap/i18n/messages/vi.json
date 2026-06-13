@@ -628,6 +628,7 @@
     "importTimetable": "Import TKB",
     "importTimetableToast": "Tính năng import TKB sẽ sớm có.",
     "classConflictCount": "{count} xung đột ở lớp này",
+    "gridScrollHint": "Cuộn ngang để xem thêm ngày trong tuần",
     "slotEditor": {
       "title": "Chỉnh sửa tiết",
       "subject": "Môn học",
@@ -649,7 +650,8 @@
       "hint": "Bấm vào một xung đột để xem ô liên quan.",
       "validHint": "TKB hợp lệ trên toàn trường.",
       "conflictsWith": "trùng với lớp {classes}",
-      "resolve": "Giải quyết"
+      "resolve": "Giải quyết",
+      "jumpedTo": "Đã chuyển đến ô xung đột"
     },
     "errors": {
       "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",

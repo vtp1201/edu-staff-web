@@ -48,6 +48,8 @@ export interface SlotEditorDialogProps {
   /** School-wide conflicts — used to warn if a candidate teacher is busy. */
   conflicts: ConflictInfo[];
   submitting: boolean;
+  /** Server-side save error, shown inside the dialog as an alert. */
+  errorMsg?: string;
   onSave: (data: {
     subjectId: string;
     teacherId: string;
@@ -65,6 +67,7 @@ export function SlotEditorDialog({
   dayLabel,
   conflicts,
   submitting,
+  errorMsg,
   onSave,
   onClear,
 }: SlotEditorDialogProps) {
@@ -122,13 +125,13 @@ export function SlotEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogDescription className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            {tCommon("classLabel")} {className}
-          </DialogDescription>
           <DialogTitle>
             {t("title")}: {dayLabel}
             {target ? ` — ${tCommon("periodN", { n: target.period })}` : ""}
           </DialogTitle>
+          <DialogDescription className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {tCommon("classLabel")} {className}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
@@ -137,7 +140,7 @@ export function SlotEditorDialog({
               {t("subject")} <span className="text-edu-error-text">*</span>
             </Label>
             <Select value={subjectId} onValueChange={handleSubjectChange}>
-              <SelectTrigger id={subjectId_}>
+              <SelectTrigger id={subjectId_} aria-required="true">
                 <SelectValue placeholder={t("subjectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
@@ -214,6 +217,7 @@ export function SlotEditorDialog({
               onChange={(e) => setRoom(e.target.value)}
               placeholder={t("roomPlaceholder")}
               maxLength={32}
+              autoComplete="off"
             />
           </div>
         </div>
@@ -253,6 +257,15 @@ export function SlotEditorDialog({
             </Button>
           </div>
         </DialogFooter>
+
+        {errorMsg && (
+          <p
+            role="alert"
+            className="mt-2 text-xs font-semibold text-edu-error-text"
+          >
+            {errorMsg}
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useId, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -76,7 +77,12 @@ export function TimetableScreen({
 
   const [editing, setEditing] = useState<SlotEditorTarget | null>(null);
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
+  const [jumpAnnounce, setJumpAnnounce] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [pending, startTransition] = useTransition();
+
+  const yearSelectId = useId();
+  const classSelectId = useId();
 
   const dayLabel = (idx: number) => {
     const d = vm.days[idx];
@@ -108,9 +114,12 @@ export function TimetableScreen({
         data,
       );
       if (res.ok) {
+        setSaveError("");
         setEditing(null);
       } else {
-        toast.error(tErrors(res.errorKey));
+        const msg = tErrors(res.errorKey);
+        toast.error(msg);
+        setSaveError(msg);
       }
     });
   };
@@ -144,9 +153,14 @@ export function TimetableScreen({
     }
     setHighlightKey(key);
     window.setTimeout(() => {
-      document
-        .querySelector(`[data-slot-key="${CSS.escape(key)}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const cell = document.querySelector<HTMLElement>(
+        `[data-slot-key="${CSS.escape(key)}"]`,
+      );
+      const btn = cell?.querySelector<HTMLButtonElement>("button") ?? null;
+      cell?.scrollIntoView({ behavior: "smooth", block: "center" });
+      btn?.focus();
+      setJumpAnnounce(t("conflicts.jumpedTo"));
+      window.setTimeout(() => setJumpAnnounce(""), 1000);
     }, 60);
   };
 
@@ -177,11 +191,14 @@ export function TimetableScreen({
       {/* Top bar: selectors + export/import */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4 shadow-card">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          <Label
+            htmlFor={yearSelectId}
+            className="text-[10px] font-bold uppercase tracking-wide text-foreground"
+          >
             {t("yearLabel")}
-          </span>
+          </Label>
           <Select value={vm.yearId} onValueChange={selectYear}>
-            <SelectTrigger className="min-w-48">
+            <SelectTrigger id={yearSelectId} className="min-w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -194,11 +211,14 @@ export function TimetableScreen({
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          <Label
+            htmlFor={classSelectId}
+            className="text-[10px] font-bold uppercase tracking-wide text-foreground"
+          >
             {t("classLabel")}
-          </span>
+          </Label>
           <Select value={vm.classId} onValueChange={selectClass}>
-            <SelectTrigger className="min-w-48">
+            <SelectTrigger id={classSelectId} className="min-w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -231,7 +251,14 @@ export function TimetableScreen({
 
       {/* Weekly grid */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
-        <div className="overflow-x-auto">
+        {/* biome-ignore lint/a11y/useSemanticElements: a scrollable labelled region intentionally stays a div to avoid an extra <section> landmark */}
+        <div
+          className="overflow-x-auto"
+          role="region"
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: scrollable region must be keyboard-focusable so keyboard users can pan it (WCAG 2.1.1)
+          tabIndex={0}
+          aria-label={t("gridScrollHint")}
+        >
           <table className="w-full min-w-[920px] border-separate border-spacing-1 p-3">
             <caption className="sr-only">
               {t("titleForClass", { class: className })}
@@ -260,7 +287,7 @@ export function TimetableScreen({
                     <tr key="recess">
                       <td
                         colSpan={vm.days.length + 1}
-                        className="rounded-md border border-dashed border-border bg-muted px-3 py-2 text-center text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                        className="rounded-md border border-dashed border-border bg-muted px-3 py-2 text-center text-[11px] font-bold uppercase tracking-widest text-foreground"
                       >
                         {t("recessLabel")}
                       </td>
@@ -313,7 +340,10 @@ export function TimetableScreen({
       <SlotEditorDialog
         open={editing !== null}
         onOpenChange={(o) => {
-          if (!o) setEditing(null);
+          if (!o) {
+            setEditing(null);
+            setSaveError("");
+          }
         }}
         classId={vm.classId}
         target={editing}
@@ -321,9 +351,14 @@ export function TimetableScreen({
         dayLabel={editing ? dayLabel(editing.day) : ""}
         conflicts={vm.conflicts}
         submitting={pending}
+        errorMsg={saveError}
         onSave={handleSave}
         onClear={handleClear}
       />
+
+      <div role="status" aria-live="polite" className="sr-only">
+        {jumpAnnounce}
+      </div>
     </main>
   );
 }
@@ -376,9 +411,8 @@ function SlotCell({
       <div
         className={cn(
           "pr-4 text-xs font-bold leading-tight",
-          conflict ? "text-edu-error-text" : "",
+          conflict ? "text-edu-error-text" : "text-foreground",
         )}
-        style={conflict ? undefined : { color: slot.subjectColor }}
       >
         {slot.subjectShort}
       </div>

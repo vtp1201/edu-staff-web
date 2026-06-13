@@ -628,6 +628,7 @@
     "importTimetable": "Import",
     "importTimetableToast": "Timetable import is coming soon.",
     "classConflictCount": "{count} conflicts in this class",
+    "gridScrollHint": "Scroll horizontally to see more days",
     "slotEditor": {
       "title": "Edit slot",
       "subject": "Subject",
@@ -649,7 +650,8 @@
       "hint": "Click a conflict to highlight the cell.",
       "validHint": "Timetable is valid across the school.",
       "conflictsWith": "conflicts with class {classes}",
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "jumpedTo": "Moved to conflict slot"
     },
     "errors": {
       "fetch-failed": "Could not load the timetable. Please try again.",
