@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -115,4 +115,14 @@ TEST_MATRIX row to be added as `planned`.
 
 ## Evidence
 
-Add after implementation.
+- Unit + integration: 12 new tests in `subject-catalogue.repository.test.ts`
+  covering error-code mapping (SUBJECT_PARENT_IN_USE, SUBJECT_IN_USE,
+  SUBJECT_GRADE_LEVEL_OUTSIDE_TENANT_RANGE, SUBJECT_PARENT_NOT_ACTIVE,
+  SUBJECT_PARENT_ALREADY_EXISTS, SUBJECT_ALREADY_EXISTS, SUBJECT_PARENT_NOT_FOUND,
+  SUBJECT_PARENT_FORBIDDEN, CLASS_SUBJECT_LOCKED_FIELD_UPDATE, NETWORK_ERROR) +
+  paginated list via envelope.
+- 245/245 total Vitest pass (45 files); `tsc --noEmit` clean; `bun run build` green.
+- SubjectCatalogueFailure union expanded with 10 new variants (TR-026).
+- i18n: 10 new error keys added to vi.json + en.json (TR-029).
+- listParents + listSubjects use `{ raw: true }` + `parseEnvelope()` (TR-026).
+- DI factory: already had USE_MOCK toggle (TR-027); verified in place.

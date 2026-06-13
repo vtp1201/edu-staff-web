@@ -607,8 +607,18 @@
     "errors": {
       "code-format": "Invalid subject code. Use uppercase A–Z and digits 0–9, up to 16 characters.",
       "archive-blocked-parent": "Cannot archive a department with active subjects.",
-      "archive-blocked-subject": "Cannot archive a subject that is currently in use.",
+      "archive-blocked-subject": "Cannot archive a subject that is assigned to a teacher.",
+      "already-exists": "Already exists. Please check again.",
+      "parent-in-use": "Department has active subjects and cannot be archived.",
+      "parent-archived": "Department has already been archived.",
+      "parent-forbidden": "You do not have permission to perform this action.",
+      "grade-level-out-of-range": "Grade level is outside this school's configured range.",
+      "parent-not-active": "Department is no longer active.",
+      "class-subject-already-exists": "Subject is already assigned to this class.",
+      "class-subject-locked-field-update": "Cannot modify a locked field — this is a master curriculum value.",
+      "class-subject-in-use": "Cannot archive — subject is in active use in this class.",
       "not-found": "Not found.",
+      "forbidden": "You do not have access.",
       "network-error": "Connection error. Please try again.",
       "unknown": "An error occurred. Please try again."
     }
