@@ -8,11 +8,15 @@ function makeRepo(
   return {
     listYears: vi.fn(),
     createYear: vi.fn(),
-    patchYear: vi.fn(),
-    deleteYear: vi.fn(),
+    getActiveYear: vi.fn(),
+    getYear: vi.fn(),
+    activateYear: vi.fn(),
+    archiveYear: vi.fn(),
     createTerm: vi.fn(),
-    patchTerm: vi.fn(),
-    deleteTerm: vi.fn(),
+    listTerms: vi.fn(),
+    getTerm: vi.fn(),
+    updateTerm: vi.fn(),
+    archiveTerm: vi.fn(),
     ...overrides,
   };
 }
@@ -26,17 +30,17 @@ describe("DeleteTermUseCase", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.failure.type).toBe("graded-term-delete");
-    expect(repo.deleteTerm).not.toHaveBeenCalled();
+    expect(repo.archiveTerm).not.toHaveBeenCalled();
   });
 
-  it("deletes the term when hasGrades is false", async () => {
-    const deleteTerm = vi.fn().mockResolvedValue(undefined);
-    const repo = makeRepo({ deleteTerm });
+  it("archives the term when hasGrades is false", async () => {
+    const archiveTerm = vi.fn().mockResolvedValue(undefined);
+    const repo = makeRepo({ archiveTerm });
     const uc = new DeleteTermUseCase(repo);
 
     const result = await uc.execute("ay2025", "t1", false);
 
-    expect(deleteTerm).toHaveBeenCalledWith("ay2025", "t1");
+    expect(archiveTerm).toHaveBeenCalledWith("ay2025", "t1");
     expect(result.ok).toBe(true);
   });
 });

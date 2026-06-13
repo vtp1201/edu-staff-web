@@ -9,11 +9,15 @@ function makeRepo(
   return {
     listYears: vi.fn(),
     createYear: vi.fn(),
-    patchYear: vi.fn(),
-    deleteYear: vi.fn(),
+    getActiveYear: vi.fn(),
+    getYear: vi.fn(),
+    activateYear: vi.fn(),
+    archiveYear: vi.fn(),
     createTerm: vi.fn(),
-    patchTerm: vi.fn(),
-    deleteTerm: vi.fn(),
+    listTerms: vi.fn(),
+    getTerm: vi.fn(),
+    updateTerm: vi.fn(),
+    archiveTerm: vi.fn(),
     ...overrides,
   };
 }
@@ -58,7 +62,7 @@ describe("UpdateTermUseCase", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.failure.type).toBe("date-order");
-    expect(repo.patchTerm).not.toHaveBeenCalled();
+    expect(repo.updateTerm).not.toHaveBeenCalled();
   });
 
   it("returns date-overlap failure when updated term overlaps a different term", async () => {
@@ -77,12 +81,12 @@ describe("UpdateTermUseCase", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.failure.type).toBe("date-overlap");
-    expect(repo.patchTerm).not.toHaveBeenCalled();
+    expect(repo.updateTerm).not.toHaveBeenCalled();
   });
 
   it("does not flag overlap with self", async () => {
-    const patchTerm = vi.fn().mockResolvedValue(patchedTerm);
-    const repo = makeRepo({ patchTerm });
+    const updateTerm = vi.fn().mockResolvedValue(patchedTerm);
+    const repo = makeRepo({ updateTerm });
     const uc = new UpdateTermUseCase(repo);
 
     // Updating t1 to a range that overlaps its own old range only — must not flag
@@ -96,12 +100,12 @@ describe("UpdateTermUseCase", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(patchTerm).toHaveBeenCalled();
+    expect(updateTerm).toHaveBeenCalled();
   });
 
   it("patches the term on the happy path", async () => {
-    const patchTerm = vi.fn().mockResolvedValue(patchedTerm);
-    const repo = makeRepo({ patchTerm });
+    const updateTerm = vi.fn().mockResolvedValue(patchedTerm);
+    const repo = makeRepo({ updateTerm });
     const uc = new UpdateTermUseCase(repo);
 
     const result = await uc.execute({
@@ -113,7 +117,7 @@ describe("UpdateTermUseCase", () => {
       existingTerms: [term1, term2],
     });
 
-    expect(patchTerm).toHaveBeenCalledWith("ay2025", "t1", {
+    expect(updateTerm).toHaveBeenCalledWith("ay2025", "t1", {
       name: "Học kỳ 1 (sửa)",
       startDate: "2025-09-10",
       endDate: "2026-01-10",

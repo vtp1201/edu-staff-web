@@ -3,6 +3,8 @@ import "server-only";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ICalendarRepository } from "@/features/admin/calendar/domain/repositories/i-calendar.repository";
+import { ActivateYearUseCase } from "@/features/admin/calendar/domain/use-cases/activate-year.use-case";
+import { ArchiveYearUseCase } from "@/features/admin/calendar/domain/use-cases/archive-year.use-case";
 import { CreateTermUseCase } from "@/features/admin/calendar/domain/use-cases/create-term.use-case";
 import { CreateYearUseCase } from "@/features/admin/calendar/domain/use-cases/create-year.use-case";
 import { DeleteTermUseCase } from "@/features/admin/calendar/domain/use-cases/delete-term.use-case";
@@ -34,4 +36,12 @@ export async function makeUpdateTermUseCase() {
 
 export async function makeDeleteTermUseCase() {
   return new DeleteTermUseCase(await makeRepo());
+}
+
+export async function makeActivateYearUseCase() {
+  return new ActivateYearUseCase(await makeRepo());
+}
+
+export async function makeArchiveYearUseCase() {
+  return new ArchiveYearUseCase(await makeRepo());
 }

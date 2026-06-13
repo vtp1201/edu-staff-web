@@ -38,7 +38,7 @@ export class UpdateTermUseCase {
       });
     }
 
-    const term = await this.repo.patchTerm(yearId, termId, {
+    const term = await this.repo.updateTerm(yearId, termId, {
       name,
       startDate,
       endDate,

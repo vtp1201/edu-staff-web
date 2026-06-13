@@ -9,11 +9,15 @@ function makeRepo(
   return {
     listYears: vi.fn(),
     createYear: vi.fn(),
-    patchYear: vi.fn(),
-    deleteYear: vi.fn(),
+    getActiveYear: vi.fn(),
+    getYear: vi.fn(),
+    activateYear: vi.fn(),
+    archiveYear: vi.fn(),
     createTerm: vi.fn(),
-    patchTerm: vi.fn(),
-    deleteTerm: vi.fn(),
+    listTerms: vi.fn(),
+    getTerm: vi.fn(),
+    updateTerm: vi.fn(),
+    archiveTerm: vi.fn(),
     ...overrides,
   };
 }

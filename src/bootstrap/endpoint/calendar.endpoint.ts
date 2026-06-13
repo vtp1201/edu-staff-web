@@ -5,8 +5,13 @@
  */
 export const CALENDAR_EP = {
   years: "/core/api/v1/academic-years",
+  activeYear: "/core/api/v1/academic-years/active",
   year: (id: string) => `/core/api/v1/academic-years/${id}`,
+  activateYear: (id: string) => `/core/api/v1/academic-years/${id}/activate`,
+  archiveYear: (id: string) => `/core/api/v1/academic-years/${id}/archive`,
   terms: (yearId: string) => `/core/api/v1/academic-years/${yearId}/terms`,
   term: (yearId: string, termId: string) =>
     `/core/api/v1/academic-years/${yearId}/terms/${termId}`,
+  archiveTerm: (yearId: string, termId: string) =>
+    `/core/api/v1/academic-years/${yearId}/terms/${termId}/archive`,
 } as const;

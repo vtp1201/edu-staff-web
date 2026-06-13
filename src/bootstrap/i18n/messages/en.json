@@ -249,6 +249,11 @@
       "minExceedsMax": "Min grade must not exceed max grade."
     },
     "errors": {
+      "not-found": "School not found",
+      "already-exists": "School already exists",
+      "forbidden": "You do not have permission to perform this action",
+      "grade-level-range-invalid": "Invalid grade-level range",
+      "narrowing-blocked": "Cannot narrow — active classes exist in this range",
       "network-error": "Could not reach the server, please try again.",
       "unauthorized": "You do not have permission to perform this action.",
       "unknown": "Something went wrong, please try again."
@@ -445,6 +450,11 @@
       "date-order": "Start date must be before end date",
       "date-overlap": "Term overlaps with another term in this year",
       "graded-term-delete": "Cannot delete a term that has grade entries",
+      "not-found-year": "Academic year not found",
+      "not-found-term": "Term not found",
+      "year-label-exists": "Academic year label already exists",
+      "active-year-exists": "An active academic year already exists",
+      "year-archived": "This academic year has been archived",
       "network-error": "Cannot connect to the server",
       "unknown": "Something went wrong, please try again"
     }
