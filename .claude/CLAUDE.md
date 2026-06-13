@@ -296,6 +296,7 @@ Three jobs run in parallel on staged `*.ts(x)` files:
 
 - **TDD** red→green→refactor; no story `implemented` without real proof (`tdd.md`).
 - **Tokens-only** design system — never raw color; new token needs an ADR first (`design-system.md`, `tailwind-v4.md`, `src/app/tokens.css`).
+- **Component placement** — one component, one canonical home; no duplication. Primitive variant → edit `components/ui/<name>/`; composed reused by ≥2 screens → `components/shared/<name>/`; single-screen → `features/<x>/presentation/` then promote (move, never copy) on 2nd use (`component-organization.md`, decision `0026`).
 - **WCAG 2.1 AA** is a "done" criterion, not optional (`accessibility.md`).
 - **i18n** — all UI strings in `messages/{vi,en}.json` (vi source + en mirror), typed, translated at presentation only (`i18n.md`).
 - **Commits & merge**: conventional `<type>(<scope>): <subject>`; 1 US = 1 branch claimed by early push; auto-merge to `main` via `git merge --no-ff` on gate-green then delete the branch (no PR); never `--no-verify` (`parallel-workflow.md`, decision `0025`, §Commits & Branches).

@@ -65,8 +65,11 @@ Radius: btn 8px, card 12px, role-icon 16px, badge full, otp 10px. Shadow:
 - `ProgressBar`: track `--edu-border`, fill color prop, `transition width .6s`.
 - `Sidebar`: active item `bg primary/12` + 3px left accent bar, fw700;
   collapse persist localStorage.
-- Primitives qua `bun ui:add <name>` (KHÔNG copy-paste shadcn web). Composed
-  component để `components/shared/` hoặc `features/<x>/presentation/`.
+- Primitives qua `bun ui:add <name>` (KHÔNG copy-paste shadcn web). Variant của
+  primitive sửa thẳng trong `components/ui/<name>/`; composed dùng ≥2 screen để
+  `components/shared/<name>/`, chỉ 1 screen tạm để `features/<x>/presentation/`
+  rồi promote. **Một component = một nơi, cấm trùng lặp** — xem
+  `.claude/rules/component-organization.md` (decision `0026`).
 
 ## Status / badge mappings
 
