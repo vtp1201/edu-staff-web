@@ -23,6 +23,7 @@ implemented until tests or validation evidence exist.
 | US-E12.1 | Admin role enabler: nav-config admin 7 items + DEFAULT_ROUTE + UserRole "admin" | yes | yes | no | yes | implemented | validate-grade-range.use-case.test.ts (13), get-setup-progress.use-case.test.ts (4), nav-config.test.ts admin block; mock repo; bun build clean |
 | US-E12.1 | School Setup screen: grade range form (1≤min≤max≤13), narrowing warning, publish mode radio, onboarding progress, collapsible guide | yes | yes | no | yes | implemented | domain unit tests; mock repository integration; bun build + tsc clean; design-review pass |
 | US-E12.2 | Academic Calendar: year/term CRUD, date-order validation, date-overlap validation, graded-term delete block, mock-first DI, accordion UI | yes | yes | no | yes | implemented | create-term (5), update-term (4), delete-term (3), create-year (4) unit tests (16 total); mock repository integration; bun build + tsc clean; a11y blocking issues fixed; design-review pass |
+| US-E07.2 | --primary semantic var → --edu-primary-dark (#4570EA); WCAG AA 4.56:1 on white; all bg-primary/text-primary-foreground fixed globally via token remap | no | no | no | yes | implemented | No domain logic — pure CSS token change. tsc --noEmit clean (0 errors); bun build green; biome 0 issues; 130/130 Vitest tests pass; contrast ratio 4.56:1 verified (≥4.5:1 AA). ADR 0023 Accepted. |
 
 ## Evidence Rules
 
