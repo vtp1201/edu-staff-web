@@ -77,6 +77,13 @@
       "reports": "Báo cáo",
       "overview": "Tổng quan",
       "children": "Con của tôi",
+      "schoolSetup": "Thiết lập trường học",
+      "academicCalendar": "Lịch học",
+      "subjectDepartments": "Tổ bộ môn",
+      "subjects": "Môn học",
+      "studentRoster": "Danh sách học sinh",
+      "timetable": "Thời khoá biểu",
+      "assessmentScheme": "Khung đánh giá",
       "expandSidebar": "Mở rộng thanh bên",
       "collapseSidebar": "Thu gọn thanh bên"
     },
@@ -91,7 +98,8 @@
       "teacher": "Giáo viên",
       "principal": "Hiệu trưởng",
       "student": "Học sinh",
-      "parent": "Phụ huynh"
+      "parent": "Phụ huynh",
+      "admin": "Quản trị viên"
     }
   },
   "attendance": {

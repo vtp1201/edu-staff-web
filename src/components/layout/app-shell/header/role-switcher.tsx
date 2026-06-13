@@ -17,6 +17,9 @@ const ROLE_DOT: Record<Role, string> = {
   principal: "bg-edu-role-principal",
   student: "bg-edu-role-student",
   parent: "bg-edu-role-parent",
+  // No dedicated --edu-role-admin token yet (would need an ADR). Admin is a
+  // platform/system role → reuse the brand primary token meanwhile.
+  admin: "bg-edu-primary",
 };
 
 type RoleSwitcherProps = {

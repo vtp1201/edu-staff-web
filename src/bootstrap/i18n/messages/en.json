@@ -77,6 +77,13 @@
       "reports": "Reports",
       "overview": "Overview",
       "children": "My Children",
+      "schoolSetup": "School Setup",
+      "academicCalendar": "Academic Calendar",
+      "subjectDepartments": "Subject Departments",
+      "subjects": "Subjects",
+      "studentRoster": "Student Roster",
+      "timetable": "Timetable",
+      "assessmentScheme": "Assessment Scheme",
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"
     },
@@ -91,7 +98,8 @@
       "teacher": "Teacher",
       "principal": "Principal",
       "student": "Student",
-      "parent": "Parent"
+      "parent": "Parent",
+      "admin": "Admin"
     }
   },
   "attendance": {
