@@ -130,6 +130,10 @@ function SecurityTab() {
     { key: "number", label: t("rules.number") },
     { key: "special", label: t("rules.special") },
   ];
+  // useId() links <Label htmlFor> to <Input id> for the new-password field —
+  // cannot use <Field> here because the strength meter lives between label+input.
+  // WCAG 1.3.1 / 4.1.2 (A11Y-003). Decision 0027.
+  const newPwId = useId();
 
   return (
     <Card>
@@ -137,8 +141,9 @@ function SecurityTab() {
         <h2 className="font-bold text-foreground">{t("title")}</h2>
         <Field label={t("current")} type="password" />
         <div className="space-y-1.5">
-          <Label>{t("new")}</Label>
+          <Label htmlFor={newPwId}>{t("new")}</Label>
           <Input
+            id={newPwId}
             type="password"
             value={pw}
             onChange={(e) => setPw(e.target.value)}

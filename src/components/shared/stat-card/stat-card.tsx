@@ -25,6 +25,15 @@ const TONE: Record<StatTone, { box: string; icon: string }> = {
 };
 
 /**
+ * Trend chip text color (default variant). Uses AA-compliant text tokens so
+ * small text (text-xs, ~12px) meets WCAG 1.4.3 4.5:1 on white card background.
+ * Raw hues (#13DEB9 / #FA896B) fail (1.74:1 / 2.36:1). Decision 0027.
+ */
+export function trendColorClass(dir: "up" | "down"): string {
+  return dir === "up" ? "text-edu-success-text" : "text-edu-error-text";
+}
+
+/**
  * Compact variant colors ONLY the value text. Tones without a dedicated
  * compact color (and the default/undefined case) fall back to text-foreground.
  */
@@ -128,7 +137,7 @@ function DefaultStatCard({
         <span
           className={cn(
             "inline-flex items-center gap-0.5 text-xs font-bold",
-            trend.dir === "up" ? "text-edu-success" : "text-edu-error",
+            trendColorClass(trend.dir),
           )}
         >
           <TrendIcon className="size-3.5" />
