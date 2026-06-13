@@ -607,8 +607,18 @@
     "errors": {
       "code-format": "Mã môn không hợp lệ. Chỉ dùng chữ hoa A–Z và chữ số 0–9, tối đa 16 ký tự.",
       "archive-blocked-parent": "Không thể lưu trữ bộ môn khi còn môn học đang hoạt động.",
-      "archive-blocked-subject": "Không thể lưu trữ môn học đang được sử dụng.",
+      "archive-blocked-subject": "Môn học đang có GVBM, không thể lưu trữ.",
+      "already-exists": "Đã tồn tại. Vui lòng kiểm tra lại.",
+      "parent-in-use": "Bộ môn đang có môn học hoạt động, không thể lưu trữ.",
+      "parent-archived": "Bộ môn đã được lưu trữ.",
+      "parent-forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi của trường.",
+      "parent-not-active": "Bộ môn không còn hoạt động.",
+      "class-subject-already-exists": "Môn học đã được phân công cho lớp này.",
+      "class-subject-locked-field-update": "Không thể thay đổi trường khoá — đây là chuẩn chương trình.",
+      "class-subject-in-use": "Không thể lưu trữ — môn học đang được sử dụng trong lớp.",
       "not-found": "Không tìm thấy.",
+      "forbidden": "Bạn không có quyền truy cập.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     }

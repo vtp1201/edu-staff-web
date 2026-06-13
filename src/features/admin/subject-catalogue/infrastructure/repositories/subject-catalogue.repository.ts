@@ -1,6 +1,12 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
 import { SUBJECT_CATALOGUE_EP } from "@/bootstrap/endpoint/subject-catalogue.endpoint";
+import {
+  type ApiEnvelope,
+  errorCodeOf,
+  parseEnvelope,
+  statusOf,
+} from "@/bootstrap/lib/api-envelope";
 import type { ClassSubject } from "../../domain/entities/class-subject.entity";
 import type {
   CreateSubjectInput,
@@ -20,17 +26,85 @@ import type { SubjectParentResponseDto } from "../dtos/subject-parent-response.d
 import type { SubjectResponseDto } from "../dtos/subject-response.dto";
 import { SubjectCatalogueMapper } from "../mappers/subject-catalogue.mapper";
 
+/**
+ * Map a normalised ApiError to the subject-catalogue failure union.
+ * Branch on error.code (UPPER_SNAKE), never on message (TR-026, US-E06.6).
+ */
 function toFailure(err: unknown): SubjectCatalogueFailure {
-  if (err && typeof err === "object" && "code" in err) {
-    const code = (err as { code: string }).code;
-    if (code === "SUBJECT_PARENT_HAS_ACTIVE_CHILDREN")
-      return { type: "archive-blocked-parent" };
-    if (code === "SUBJECT_IN_USE") return { type: "archive-blocked-subject" };
-    if (code === "INVALID_SUBJECT_CODE") return { type: "code-format" };
-    if (code === "NOT_FOUND") return { type: "not-found" };
-    if ((err as { retryable?: boolean }).retryable)
-      return { type: "network-error" };
+  const code = errorCodeOf(err);
+  const status = statusOf(err);
+
+  // Network/transport error
+  if (code === "NETWORK_ERROR" || status === undefined) {
+    return { type: "network-error" };
   }
+
+  // SubjectParent error codes
+  if (
+    code === "SUBJECT_PARENT_NOT_FOUND" ||
+    code === "SUBJECT_NOT_FOUND" ||
+    code === "CLASS_SUBJECT_NOT_FOUND" ||
+    status === 404
+  ) {
+    return { type: "not-found" };
+  }
+  if (
+    code === "SUBJECT_PARENT_ALREADY_EXISTS" ||
+    code === "SUBJECT_ALREADY_EXISTS"
+  ) {
+    return { type: "already-exists" };
+  }
+  if (code === "SUBJECT_PARENT_IN_USE") {
+    return { type: "parent-in-use" };
+  }
+  if (code === "SUBJECT_PARENT_ARCHIVED") {
+    return { type: "parent-archived" };
+  }
+  if (
+    code === "SUBJECT_PARENT_FORBIDDEN" ||
+    code === "ROSTER_ACCESS_FORBIDDEN"
+  ) {
+    return { type: "parent-forbidden" };
+  }
+  if (status === 403) {
+    return { type: "forbidden" };
+  }
+
+  // Subject error codes
+  if (code === "SUBJECT_IN_USE") {
+    return { type: "archive-blocked-subject" };
+  }
+  // Legacy code kept for backwards compat with mock
+  if (code === "SUBJECT_PARENT_HAS_ACTIVE_CHILDREN") {
+    return { type: "archive-blocked-parent" };
+  }
+  if (code === "SUBJECT_GRADE_LEVEL_OUTSIDE_TENANT_RANGE") {
+    return { type: "grade-level-out-of-range" };
+  }
+  if (code === "SUBJECT_PARENT_NOT_ACTIVE") {
+    return { type: "parent-not-active" };
+  }
+
+  // ClassSubject error codes
+  if (code === "CLASS_SUBJECT_ALREADY_EXISTS") {
+    return { type: "class-subject-already-exists" };
+  }
+  if (code === "CLASS_SUBJECT_LOCKED_FIELD_UPDATE") {
+    return { type: "class-subject-locked-field-update" };
+  }
+  if (code === "CLASS_SUBJECT_IN_USE") {
+    return { type: "class-subject-in-use" };
+  }
+
+  // Code/format validation
+  if (code === "INVALID_SUBJECT_CODE") {
+    return { type: "code-format" };
+  }
+
+  // Retryable errors (network-level, decision 0008)
+  const isRetryable = (err as { retryable?: boolean })?.retryable;
+  if (isRetryable) return { type: "network-error" };
+
   return { type: "unknown" };
 }
 
@@ -41,9 +115,11 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     Result<SubjectParent[], SubjectCatalogueFailure>
   > {
     try {
-      const data = (await this.http.get(
-        SUBJECT_CATALOGUE_EP.parents,
-      )) as unknown as SubjectParentResponseDto[];
+      // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
+      const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.parents, {
+        params: { raw: true },
+      })) as unknown as ApiEnvelope<SubjectParentResponseDto[]>;
+      const { data } = parseEnvelope(envelope);
       return ok(data.map(SubjectCatalogueMapper.toSubjectParent));
     } catch (err) {
       return fail(toFailure(err));
@@ -105,9 +181,11 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     parentId: string,
   ): Promise<Result<Subject[], SubjectCatalogueFailure>> {
     try {
-      const data = (await this.http.get(SUBJECT_CATALOGUE_EP.subjects, {
-        params: { parentId },
-      })) as unknown as SubjectResponseDto[];
+      // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
+      const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.subjects, {
+        params: { parentId, raw: true },
+      })) as unknown as ApiEnvelope<SubjectResponseDto[]>;
+      const { data } = parseEnvelope(envelope);
       return ok(data.map(SubjectCatalogueMapper.toSubject));
     } catch (err) {
       return fail(toFailure(err));
