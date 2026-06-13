@@ -5,3 +5,4 @@
 - [E12 Admin Core epic](project-e12-admin-core.md) — US-E12.1 + US-E12.8 implemented; US-E12.2 implemented; remaining US-E12.3..E12.6 planned
 - [Admin role guard pattern](project-admin-role-guard.md) — RSC layout guard pattern for namespace-level RBAC; decodeRoleClaim in jwt.ts; evaluateAdminAccess in bootstrap/tenant/role-guard.ts
 - [Parallel branch workflow](project-parallel-branch-workflow.md) — decision 0025: claim via remote branch early-push, dependency check, auto-merge to main on gate-green, delete branch local+remote
+- [Storybook runner fix](project-storybook-esm-fix.md) — bun patch @storybook/nextjs-vite@10.4.2 (preset.js require→dynamic import), postcss.config.js CJS, story appDirectory param; ADR 0032; next Storybook upgrade must re-check patch
