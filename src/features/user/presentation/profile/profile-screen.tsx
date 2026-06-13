@@ -2,7 +2,7 @@
 
 import { Check, LogOut, Monitor, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -107,10 +107,13 @@ function Field({
   label,
   ...props
 }: { label: string } & React.ComponentProps<typeof Input>) {
+  // useId() links <Label htmlFor> to <Input id> — WCAG 1.3.1 / 4.1.2 (A11Y-003).
+  const autoId = useId();
+  const id = (props as { id?: string }).id ?? autoId;
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
-      <Input {...props} />
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} {...props} />
     </div>
   );
 }
@@ -170,9 +173,9 @@ function SecurityTab() {
               )}
             >
               {rules[r.key] ? (
-                <Check className="size-3.5" />
+                <Check className="size-3.5" aria-hidden="true" />
               ) : (
-                <X className="size-3.5" />
+                <X className="size-3.5" aria-hidden="true" />
               )}
               {r.label}
             </li>

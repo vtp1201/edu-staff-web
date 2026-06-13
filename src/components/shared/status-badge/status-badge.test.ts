@@ -35,19 +35,29 @@ describe("StatusBadge tone mapping", () => {
     );
   });
 
-  it("maps tone='info' to bg-edu-info/15 text-edu-info", () => {
-    expect(statusToneClass("info")).toBe("bg-edu-info/15 text-edu-info");
+  // info/teal/purple vibrant hues fail AA on their own tinted bg (A11Y-001/002).
+  // text-edu-text-primary (#2A3547) = 11.5:1 — guaranteed AA pass.
+  it("maps tone='info' to text-edu-text-primary (AA fix, A11Y-001)", () => {
+    expect(statusToneClass("info")).toBe(
+      "bg-edu-info/15 text-edu-text-primary",
+    );
   });
 
-  it("maps tone='purple' to bg-edu-purple/15 text-edu-purple", () => {
-    expect(statusToneClass("purple")).toBe("bg-edu-purple/15 text-edu-purple");
+  it("maps tone='purple' to text-edu-text-primary (AA fix, A11Y-002)", () => {
+    expect(statusToneClass("purple")).toBe(
+      "bg-edu-purple/15 text-edu-text-primary",
+    );
   });
 
-  it("maps tone='teal' to bg-edu-teal/15 text-edu-teal", () => {
-    expect(statusToneClass("teal")).toBe("bg-edu-teal/15 text-edu-teal");
+  it("maps tone='teal' to text-edu-text-primary (AA fix, A11Y-001)", () => {
+    expect(statusToneClass("teal")).toBe(
+      "bg-edu-teal/15 text-edu-text-primary",
+    );
   });
 
-  it("maps tone='muted' to bg-muted text-muted-foreground", () => {
-    expect(statusToneClass("muted")).toBe("bg-muted text-muted-foreground");
+  // muted: text-muted-foreground (#8898A9) = 2.76:1 on bg — fails AA (A11Y-004).
+  // text-foreground (#2A3547) = 11.5:1.
+  it("maps tone='muted' to bg-muted text-foreground (AA fix, A11Y-004)", () => {
+    expect(statusToneClass("muted")).toBe("bg-muted text-foreground");
   });
 });

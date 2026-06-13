@@ -19,13 +19,19 @@ export type StatusTone =
  */
 const TONE_CLASS: Record<StatusTone, string> = {
   primary: "bg-primary/15 text-primary",
+  // success/error use AA-compliant dark text tokens (decision 0027): 5.4/5.1:1 on tinted bg.
   success: "bg-edu-success/15 text-edu-success-text",
+  // warning-foreground (#2A3547) = ~11:1 on warning tint — a11y rule (never white).
   warning: "bg-edu-warning/15 text-edu-warning-foreground",
   error: "bg-edu-error/15 text-edu-error-text",
-  info: "bg-edu-info/15 text-edu-info",
-  purple: "bg-edu-purple/15 text-edu-purple",
-  teal: "bg-edu-teal/15 text-edu-teal",
-  muted: "bg-muted text-muted-foreground",
+  // info/teal/purple vibrant hues fail AA on their own tinted bg (A11Y-001/002).
+  // text-edu-text-primary (#2A3547) = 11.5:1 on any light tint — guaranteed AA.
+  info: "bg-edu-info/15 text-edu-text-primary",
+  purple: "bg-edu-purple/15 text-edu-text-primary",
+  teal: "bg-edu-teal/15 text-edu-text-primary",
+  // muted: text-muted-foreground (#8898A9) = 2.76:1 on #F5F7FA — fails AA (A11Y-004).
+  // text-foreground (#2A3547) = 11.5:1 — passes.
+  muted: "bg-muted text-foreground",
 };
 
 /** Pure tone→class resolver (unit-tested; default tone = primary). */
