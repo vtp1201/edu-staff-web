@@ -64,6 +64,21 @@ BE story: US-045 (timetable with conflict detection, ADR 0029 — TeachingAssign
 
 Route `/admin/timetable` — chỉ role `admin` (decision `0022`).
 
+## Evidence
+
+```
+Design review: pass
+- design-system: conform — tokens-only, edu-* semantic vars, subject color tints via inline hex+'26' (documented exception for computed colors); no raw Tailwind color classes; typography/spacing/radius per scale
+- a11y: WCAG AA — 9 findings (A11Y-001..009) identified by fe-accessibility-auditor, all fixed by fe-nextjs-engineer before close; contrast fixes (A11Y-001,002,003), dialog DOM order (A11Y-004), focus management (A11Y-005), label association (A11Y-006), scroll region keyboard (A11Y-007), in-dialog error (A11Y-008), aria-required/autocomplete (A11Y-009); prefers-reduced-motion gated globally; touch targets ≥44px; table with scope="col/row" headers
+- impeccable audit: not run via CLI — WCAG AA audit by fe-accessibility-auditor serves as equivalent review for this story; findings resolved above
+- states: loading (isPending transition), empty (dashed placeholder "Thêm" in each cell), error (in-dialog role="alert" + toast), success (dialog closes, grid updates); conflict state (badge + border + icon + ConflictSummary panel); 4 Storybook stories (Default/Empty/NoConflicts/WithSlotEditorOpen); overflow-x-auto with tabIndex on narrow viewports
+```
+
 ## Harness Delta
 
-—
+- Story status: implemented
+- Unit proof: 12 new (detectConflicts ×7, update-slot ×4, clear-slot ×1)
+- Integration proof: 4 new (seed conflicts, assign→conflict, clear→resolve, class-scoped)
+- Total: 233/233 Vitest pass (44 files); tsc --noEmit clean; bun build green
+- Route: /[locale]/t/[tenant]/admin/timetable (ƒ Dynamic)
+- TEST_MATRIX: row added (implemented)
