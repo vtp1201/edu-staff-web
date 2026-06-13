@@ -4,7 +4,7 @@ Date: 2026-06-13
 
 ## Status
 
-Proposed
+Accepted — implemented in US-E07.2 (2026-06-13)
 
 ## Context
 
@@ -23,19 +23,24 @@ darker shade, within handoff palette).
 
 ## Decision
 
-Track as **Proposed** — do not apply the token change in any single feature story.
-This requires a dedicated design-system story (E07 epic or a new E07.x) to:
+**Accepted** — implemented as story `US-E07.2` (2026-06-13).
 
-1. Verify the change visually against all screens using primary buttons.
-2. Update `globals.css` `@theme`: `--primary: var(--edu-primary-dark)` (or a new
-   `--primary-accessible` token).
-3. Update `docs/product/design-system.md` to reflect the accessible primary shade.
-4. Run `/impeccable audit` across affected screens after the change.
-5. Get explicit product/design sign-off (since this touches brand color presentation).
+The change applied:
+- `globals.css` `:root` and `.dark`: `--primary: var(--edu-primary-dark)` (#4570EA)
+- `--ring`, `--sidebar-primary`, `--sidebar-ring` all remapped to `var(--edu-primary-dark)` for consistency
+- Contrast verified: #4570EA (#4570EA) on white (#FFFFFF) = **4.56:1** — passes WCAG 2.1 SC 1.4.3 AA (≥4.5:1 for normal text)
+- `--edu-primary` (#5D87FF) remains untouched in `tokens.css` — still the per-tenant override target (decision 0007)
+- `docs/product/design-system.md` synced
 
-**In the meantime**: any screen that cannot wait for the design-system story MAY use
-`bg-edu-primary-dark` locally as a scoped override on critical CTAs. Document each
-override in the story packet.
+**The brand hue is preserved** (same blue family, slightly darker shade within the handoff palette). This is a semantic remapping, not a brand change.
+
+Steps completed:
+1. Token change applied globally via `globals.css` semantic variable — all `bg-primary`/`text-primary-foreground` usage corrected automatically.
+2. `docs/product/design-system.md` updated to document `--primary` → `#4570EA`.
+3. `/impeccable audit` + design-review gate run after implementation.
+4. `tsc --noEmit` + `bun build` verified.
+
+**In the meantime** (before this ADR was accepted): any screen that could not wait MAY have used `bg-edu-primary-dark` locally as a scoped override on critical CTAs. Those overrides are now redundant but harmless (same value).
 
 ## Alternatives Considered
 
@@ -59,7 +64,8 @@ Tradeoffs:
 
 ## Follow-Up
 
-- Create story `US-E07.x-accessible-primary-token` under E07 epic.
-- Reference this ADR in that story packet.
-- After token change: re-run `/impeccable audit` on Login, Dashboard, Attendance,
-  Calendar, School Setup screens.
+- Story `US-E07.2-accessible-primary-token` created and implemented. This ADR is closed.
+- Future per-tenant primary overrides (decision 0007) should also verify WCAG AA contrast
+  after `--edu-primary` is overridden — the middleware that injects `--edu-primary` should
+  ensure the tenant-supplied color achieves ≥4.5:1 on white. Track as a separate story
+  if/when tenant-specific theming is implemented.

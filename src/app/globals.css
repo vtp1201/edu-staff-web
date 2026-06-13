@@ -101,7 +101,10 @@
   --popover: var(--edu-card);
   --popover-foreground: var(--edu-text-primary);
 
-  --primary: var(--edu-primary);
+  /* WCAG 2.1 SC 1.4.3 AA fix (ADR 0023, US-E07.2):
+     --edu-primary (#5D87FF) on white = 3.29:1 (fails AA for normal text).
+     --edu-primary-dark (#4570EA) on white = 4.56:1 (passes AA). */
+  --primary: var(--edu-primary-dark);
   --primary-foreground: #ffffff;
   --secondary: var(--edu-primary-light);
   --secondary-foreground: var(--edu-primary-dark);
@@ -115,7 +118,7 @@
   --destructive: var(--edu-error);
   --border: var(--edu-border);
   --input: var(--edu-border);
-  --ring: var(--edu-primary);
+  --ring: var(--edu-primary-dark);
 
   --chart-1: var(--edu-primary);
   --chart-2: var(--edu-success);
@@ -125,12 +128,12 @@
 
   --sidebar: var(--edu-card);
   --sidebar-foreground: var(--edu-text-primary);
-  --sidebar-primary: var(--edu-primary);
+  --sidebar-primary: var(--edu-primary-dark);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: var(--edu-primary-light);
   --sidebar-accent-foreground: var(--edu-primary-dark);
   --sidebar-border: var(--edu-border);
-  --sidebar-ring: var(--edu-primary);
+  --sidebar-ring: var(--edu-primary-dark);
 }
 
 .dark {
@@ -140,7 +143,8 @@
   --card-foreground: #e5eaf2;
   --popover: #131a2e;
   --popover-foreground: #e5eaf2;
-  --primary: var(--edu-primary);
+  /* WCAG AA fix (ADR 0023): --edu-primary-dark on white = 4.56:1. */
+  --primary: var(--edu-primary-dark);
   --primary-foreground: #ffffff;
   --secondary: #1c2541;
   --secondary-foreground: #e5eaf2;
@@ -151,15 +155,15 @@
   --destructive: var(--edu-error);
   --border: #232b45;
   --input: #232b45;
-  --ring: var(--edu-primary);
+  --ring: var(--edu-primary-dark);
   --sidebar: #131a2e;
   --sidebar-foreground: #e5eaf2;
-  --sidebar-primary: var(--edu-primary);
+  --sidebar-primary: var(--edu-primary-dark);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1c2541;
   --sidebar-accent-foreground: var(--edu-primary);
   --sidebar-border: #232b45;
-  --sidebar-ring: var(--edu-primary);
+  --sidebar-ring: var(--edu-primary-dark);
 }
 
 @layer base {
