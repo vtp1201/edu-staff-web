@@ -38,9 +38,11 @@ Design source (normative): `design_src/` — clone từ
 | `epics/E06-be-integration/US-001-response-envelope-parser.md` | normal | implemented |
 | `epics/E06-be-integration/US-002-sse-realtime-foundation.md` | normal | implemented (contract-first, mock upstream) |
 | `epics/E07-design-system/US-001-design-system-foundation.md` | normal | implemented (build green) |
+| `epics/E07-design-system/US-E07.2-accessible-primary-token.md` | normal | planned |
 | `epics/E08-app-shell/US-001-app-shell.md` | normal | implemented |
 | `epics/E12-admin-core/US-E12.1-school-setup.md` | normal | planned |
 | `epics/E12-admin-core/US-E12.2-academic-calendar.md` | normal | planned |
 | `epics/E12-admin-core/US-E12.3-subject-catalogue.md` | normal | planned |
 | `epics/E12-admin-core/US-E12.4-student-roster.md` | normal | planned |
 | `epics/E12-admin-core/US-E12.5-timetable-builder.md` | normal | planned |
+| `epics/E12-admin-core/US-E12.6-assessment-scheme.md` | normal | planned |
