@@ -57,6 +57,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Subject Detail (master editor)** | `(app)/admin/subjects/[id]` | `subject-detail.jsx` (US-048, ADR 0036) | `features/admin/subjects` | 🎨 (design done NEW-02) |
 | **Student Roster / Enrollment** | `(app)/admin/roster` | `roster.jsx` (US-043) | `features/admin/roster` | 🎨 (design done) |
 | **Timetable Builder** | `(app)/admin/timetable` | `timetable.jsx` (US-045) | `features/admin/timetable` | 🎨 (design done) |
+| **Staffing — Departments** | `(app)/admin/staffing/departments` | — (US-E06.8) | `features/admin/staffing` | ⬜ planned (BE wiring done US-E06.8; no UI yet) |
+| **Staffing — Position Titles** | `(app)/admin/staffing/position-titles` | — (US-E06.8) | `features/admin/staffing` | ⬜ planned (BE wiring done US-E06.8; no UI yet) |
+| **Staffing — Position Assignments** | `(app)/admin/staffing/assignments` | — (US-E06.8) | `features/admin/staffing` | ⬜ planned (BE wiring done US-E06.8; no UI yet) |
 
 ## Student (Epic E11 LMS + Exams, E09 conduct)
 
