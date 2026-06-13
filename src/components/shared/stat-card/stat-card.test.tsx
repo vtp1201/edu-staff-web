@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactToneClass } from "./stat-card";
+import { compactToneClass, trendColorClass } from "./stat-card";
 
 /**
  * StatCard variant logic is unit-tested at the pure-helper level (node env),
@@ -9,6 +9,19 @@ import { compactToneClass } from "./stat-card";
  * stat-card.stories.tsx (Primary, WithTrendUp, WithTrendDown, Compact,
  * CompactMuted, Mini).
  */
+describe("StatCard trend chip color — WCAG 1.4.3 AA (decision 0027)", () => {
+  // text-xs (≈12px) = small text → 4.5:1 required. Raw status hues fail:
+  // #13DEB9 (1.74:1) / #FA896B (2.36:1). AA-compliant replacements:
+  // text-edu-success-text (#007A6E = 5.4:1), text-edu-error-text (#C0392B = 5.1:1).
+  it("up direction uses text-edu-success-text (5.4:1 on white, passes AA)", () => {
+    expect(trendColorClass("up")).toBe("text-edu-success-text");
+  });
+
+  it("down direction uses text-edu-error-text (5.1:1 on white, passes AA)", () => {
+    expect(trendColorClass("down")).toBe("text-edu-error-text");
+  });
+});
+
 describe("StatCard compact tone mapping", () => {
   // Decision 0027: use accessible dark text tokens (5.4:1 / 5.1:1) instead of
   // vibrant hue tokens (#13DEB9 / #FA896B) which fail AA on white backgrounds.
