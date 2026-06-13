@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -299,10 +299,13 @@ export function CalendarScreen({ initialData, actions }: CalendarScreenProps) {
                             {year.label}
                           </span>
                           {year.isActive && (
-                            <Badge className="gap-1.5 border-transparent bg-edu-success/[0.18] text-edu-text-primary">
-                              <span className="size-1.5 rounded-full bg-edu-success" />
+                            <StatusBadge tone="success" className="gap-1.5">
+                              <span
+                                aria-hidden="true"
+                                className="size-1.5 rounded-full bg-edu-success"
+                              />
                               {t("year.active")}
-                            </Badge>
+                            </StatusBadge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
