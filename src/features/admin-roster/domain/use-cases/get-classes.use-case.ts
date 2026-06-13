@@ -6,7 +6,7 @@ import type {
 
 export function getClasses(
   repo: IRosterRepository,
-  params: { yearId?: string } = {},
+  params: { academicYear?: string } = {},
 ): Promise<Result<ClassSummary[]>> {
   return repo.getClasses(params);
 }

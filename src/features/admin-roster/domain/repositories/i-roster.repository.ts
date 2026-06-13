@@ -14,7 +14,11 @@ export type VoidResult =
   | { ok: false; error: RosterFailure };
 
 export interface IRosterRepository {
-  getClasses(params: { yearId?: string }): Promise<Result<ClassSummary[]>>;
+  /** List classes. In the real repo, uses `academicYear` label (e.g. "2025-2026").
+   *  TR-031: core API uses `?academicYear=2025-2026`. */
+  getClasses(params: {
+    academicYear?: string;
+  }): Promise<Result<ClassSummary[]>>;
   getClassRoster(classId: string): Promise<Result<RosterStudent[]>>;
   getSearchPool(classId: string): Promise<Result<SearchStudent[]>>;
   enrollStudent(classId: string, studentId: string): Promise<VoidResult>;

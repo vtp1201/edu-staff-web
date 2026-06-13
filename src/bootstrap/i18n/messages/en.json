@@ -178,7 +178,11 @@
     "errors": {
       "network-error": "Could not reach the server",
       "unauthorized": "You do not have access",
+      "forbidden": "You do not have permission to perform this action.",
       "not-found": "Data not found",
+      "already-enrolled": "Student is already enrolled in another class for this year.",
+      "member-not-student": "The member does not have the student role.",
+      "class-archived": "Class has been archived and cannot accept enrollment.",
       "unknown": "Something went wrong, please try again"
     }
   },

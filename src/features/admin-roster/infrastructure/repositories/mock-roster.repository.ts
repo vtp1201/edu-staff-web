@@ -365,7 +365,9 @@ function classNameOf(id: string): string | null {
 }
 
 export class MockRosterRepository implements IRosterRepository {
-  async getClasses(): Promise<Result<ClassSummary[]>> {
+  async getClasses(
+    _params: { academicYear?: string } = {},
+  ): Promise<Result<ClassSummary[]>> {
     await mockDelay(300);
     return { ok: true, data: structuredClone(state.classes) };
   }

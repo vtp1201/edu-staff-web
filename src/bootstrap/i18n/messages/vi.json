@@ -178,7 +178,11 @@
     "errors": {
       "network-error": "Không thể kết nối đến máy chủ",
       "unauthorized": "Bạn không có quyền truy cập",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "not-found": "Không tìm thấy dữ liệu",
+      "already-enrolled": "Học sinh đã thuộc một lớp khác trong năm học này.",
+      "member-not-student": "Thành viên không có vai trò học sinh.",
+      "class-archived": "Lớp đã bị lưu trữ, không thể ghi danh.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại"
     }
   },
