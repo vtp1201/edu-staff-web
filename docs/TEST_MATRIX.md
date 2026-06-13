@@ -20,6 +20,8 @@ implemented until tests or validation evidence exist.
 | Story | Contract | Unit | Integration | E2E | Platform | Status | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | TBD | Add rows when story packets are created | no | no | no | no | planned | none |
+| US-E12.1 | Admin role enabler: nav-config admin 7 items + DEFAULT_ROUTE + UserRole "admin" | yes | yes | no | yes | implemented | validate-grade-range.use-case.test.ts (13), get-setup-progress.use-case.test.ts (4), nav-config.test.ts admin block; mock repo; bun build clean |
+| US-E12.1 | School Setup screen: grade range form (1≤min≤max≤13), narrowing warning, publish mode radio, onboarding progress, collapsible guide | yes | yes | no | yes | implemented | domain unit tests; mock repository integration; bun build + tsc clean; design-review pass |
 
 ## Evidence Rules
 

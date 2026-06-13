@@ -102,6 +102,78 @@
       "admin": "Quản trị viên"
     }
   },
+  "adminSchoolSetup": {
+    "title": "Thiết lập trường học",
+    "subtitle": "Các thông số nền tảng để vận hành EduPortal cho trường của bạn.",
+    "saved": "Đã lưu",
+    "guide": {
+      "title": "Thiết lập ban đầu",
+      "stepsComplete": "bước hoàn thành",
+      "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để bắt đầu sử dụng EduPortal.",
+      "hide": "Ẩn hướng dẫn",
+      "hideAriaLabel": "Ẩn hướng dẫn thiết lập",
+      "progressAriaLabel": "Tiến trình thiết lập",
+      "done": "Hoàn thành",
+      "configure": "Cài đặt",
+      "setupGuideTitle": "Hướng dẫn thiết lập",
+      "setupGuideSubtitle": "Thứ tự cấu hình các thực thể nền tảng theo ADR 0035.",
+      "open": "Mở",
+      "configureAriaLabel": "Cài đặt: {step}",
+      "openAriaLabel": "Mở cài đặt: {step}"
+    },
+    "steps": {
+      "stepGradeLevels": "Khối lớp",
+      "stepAcademicCalendar": "Năm học",
+      "stepSubjects": "Bộ môn & Môn học",
+      "stepAssessmentScheme": "Thang điểm & Khung ĐG",
+      "stepClasses": "Lớp học"
+    },
+    "gradeRange": {
+      "title": "Phạm vi khối lớp",
+      "subtitle": "Xác định các khối lớp tồn tại tại trường. Chỉ có thể tạo lớp học trong phạm vi này.",
+      "minLabel": "Khối tối thiểu",
+      "maxLabel": "Khối tối đa",
+      "hint": "Ví dụ: THPT → 10–12 | THCS → 6–9 | Tiểu học → 1–5. Giới hạn hệ thống: 1 ≤ tối thiểu ≤ tối đa ≤ 13.",
+      "presetsLabel": "Mẫu nhanh",
+      "currentRange": "Phạm vi hiện tại:",
+      "gradeLabel": "Khối ",
+      "activeClasses": "lớp đang hoạt động",
+      "unconfiguredTitle": "Khối lớp chưa được cấu hình",
+      "unconfiguredBody": "Lớp học không thể tạo cho đến khi hoàn thành bước này.",
+      "narrowingTitle": "Cảnh báo thu hẹp phạm vi:",
+      "narrowingBody": "Thu hẹp phạm vi sẽ bị chặn nếu có lớp học ở các khối ngoài phạm vi mới. Vui lòng lưu trữ lớp học trước khi thay đổi.",
+      "save": "Lưu phạm vi khối lớp",
+      "saving": "Đang lưu..."
+    },
+    "presets": {
+      "presetPrimary": "Tiểu học",
+      "presetSecondary": "THCS",
+      "presetHighSchool": "THPT",
+      "presetK12": "K–12"
+    },
+    "publishMode": {
+      "title": "Quy trình nộp điểm",
+      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
+      "legendSr": "Chọn chế độ công bố điểm",
+      "selfPublish": "Tự công bố",
+      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay.",
+      "adminApproval": "Duyệt bởi BGH",
+      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt.",
+      "save": "Lưu cài đặt",
+      "saving": "Đang lưu..."
+    },
+    "validation": {
+      "required": "Vui lòng nhập cả khối tối thiểu và tối đa.",
+      "notInteger": "Khối lớp phải là số nguyên.",
+      "outOfRange": "Khối lớp phải nằm trong khoảng 1 đến 13.",
+      "minExceedsMax": "Khối tối thiểu không được lớn hơn khối tối đa."
+    },
+    "errors": {
+      "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    }
+  },
   "attendance": {
     "title": "Điểm danh",
     "filters": {
