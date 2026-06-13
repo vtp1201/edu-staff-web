@@ -3,8 +3,8 @@
 import { Check, LogOut, Monitor, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,9 +58,9 @@ export function ProfileScreen({
             </AvatarFallback>
           </Avatar>
           <div className="mt-3 font-bold text-foreground">{fullName}</div>
-          <Badge className="mt-1 border-0 bg-primary/12 text-primary">
+          <StatusBadge tone="primary" className="mt-1">
             {role}
-          </Badge>
+          </StatusBadge>
           <div className="mt-2 text-xs text-muted-foreground">{email}</div>
         </CardContent>
       </Card>
@@ -205,9 +205,7 @@ function SessionsTab({ sessions }: { sessions: ProfileScreenVM["sessions"] }) {
                 </div>
               </div>
               {s.current ? (
-                <Badge className="border-0 bg-edu-success/15 text-edu-success">
-                  {t("thisDevice")}
-                </Badge>
+                <StatusBadge tone="success">{t("thisDevice")}</StatusBadge>
               ) : (
                 <Button variant="ghost" size="sm" className="text-edu-error">
                   <LogOut className="mr-1 size-3.5" />
