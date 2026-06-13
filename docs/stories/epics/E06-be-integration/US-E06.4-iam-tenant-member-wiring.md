@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -135,4 +135,11 @@ TEST_MATRIX row to be added as `planned`.
 
 ## Evidence
 
-Add after implementation.
+- **Commit**: `e7b85e9` on `feat/us-e06.4-iam-tenant-member-wiring`
+- **Unit**: 10 new integration-level tests (8 failure-code mapping + 2 happy paths) — 233 total passed (44 files)
+- **Integration**: IamMemberRepository error-code mapping (FORBIDDEN_ACTION, USER_EMAIL_ALREADY_EXISTS, INVITATION_NOT_FOUND, INVITATION_EXPIRED, LAST_ADMIN_INVARIANT_VIOLATION, RESOURCE_NOT_FOUND, NETWORK_ERROR); switchTenant token mapping via mapTokens
+- **E2E**: — (no new screen; consuming Server Actions call setAuthCookies after switch-tenant)
+- **tsc --noEmit**: clean (0 errors)
+- **bun build**: green (19 routes)
+- **HIGH-RISK items**: token rotation — IamMemberRepository.switchTenant returns AuthTokens; Server Action layer (out of scope) calls setAuthCookies. SUPER_ADMIN/ADMIN guard — FORBIDDEN_ACTION maps to typed failure; JWT claim decoding in bootstrap/tenant/role-guard.ts unchanged.
+- **Key files**: IamMemberRepository, IamMemberFailure, IIamMemberRepository, iam-member.endpoint.ts, iam-member.di.ts, iamMember i18n namespace
