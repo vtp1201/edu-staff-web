@@ -21,6 +21,13 @@ Pass to `fe-lead`:
   next-intl typed messages (vi source + en mirror), BE contract (envelope/camelCase/service map/
   token hybrid), design-review gate (`docs/DESIGN_REVIEW.md` + `/impeccable`).
 
+Remind `fe-lead` of the **parallel branch workflow** (decision `0025`, `.claude/rules/parallel-workflow.md`):
+before any code — `git fetch --prune`, run the **claim check** (remote `feat/us-*` branches = US other
+teams are working on) and **dependency check**; if the requested US is claimed or constrained by an
+in-flight US, pick an alternative and explain why. Claim the US by creating its branch and pushing it
+immediately (early push). When the US is done and the gate is green, **auto-merge `--no-ff` into `main`**
+(no PR) and **delete the branch local + remote** — without waiting for a per-US merge request.
+
 Scope guard: this is **frontend implementation**. Pure requirements analysis / specification
 belongs to the BA team (`/ba`) — `fe-lead` should hand such requests back. Backend Go code
 belongs to edu-api's BE team — never touch it; consume its contracts instead.

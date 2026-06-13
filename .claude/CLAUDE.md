@@ -218,12 +218,18 @@ CSS variables defined in `src/app/globals.css` drive the entire design system. P
 
 ### Commits & Branches
 - **Commit format:** `<type>(<scope>): <subject>` — enforced by commitlint + Lefthook.
-- **Branch format:** `<type>/<short-desc>` e.g. `feat/dark-theme`, `fix/login-bug`.
+- **Branch format:** `<type>/<short-desc>` — 1 US = 1 branch `feat/us-eXX.Y-<slug>`
+  (xem `.claude/rules/parallel-workflow.md`). VD `feat/us-e12.4-student-roster`.
 - `main` and `dev`/`develop` are exempt from branch naming validation.
 - Pre-push hook runs the full test suite and `bun build` — do not bypass with `--no-verify`.
-- **Merge workflow:** khi story xong, **push branch rồi merge thẳng vào `main`**
-  (push + merge) — **KHÔNG tạo Pull Request**. Vẫn chỉ push/merge khi người dùng
-  yêu cầu; pre-push hook (test + build) phải xanh trước khi merge.
+- **Parallel branch workflow (decision `0025`):** nhiều phiên `/fe` chạy song song.
+  Mỗi US: `git fetch --prune` → claim check + dependency check → tạo branch từ `main`
+  rồi **push ngay (early push = claim)** → dev + test trên branch → khi xong & gate
+  xanh **auto-merge vào `main`** → **xóa branch (local + remote)**. Chi tiết enforceable:
+  `.claude/rules/parallel-workflow.md`.
+- **Merge workflow:** auto-merge khi US xong và pre-push gate (test + build) xanh —
+  **KHÔNG cần chờ user yêu cầu từng lần** (đổi so với trước, decision `0025`), **KHÔNG
+  tạo Pull Request**. Merge `--no-ff` vào `main` rồi xóa branch.
 - **Merge commit:** commitlint chặn message "Merge ..." mặc định → merge bằng
   `git merge --no-ff` rồi commit với format conventional
   `chore(<scope>): merge <branch> (<story-ids>)`.
