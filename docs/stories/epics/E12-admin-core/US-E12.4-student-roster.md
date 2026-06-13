@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -62,7 +62,16 @@ Route `/admin/roster` — chỉ role `admin` (decision `0022`).
 
 ## Harness Delta
 
-—
+Decision 0028: gender indicator tokens (--edu-gender-female/male + light variants).
+Decision 0029: AA-compliant gender text tokens (--edu-gender-female-text / --edu-gender-male-text).
+
+## Evidence
+
+Design review: pass
+- design-system: conform (tokens-only, no raw hex, StatusBadge reused, typography/spacing/radius from tokens.css)
+- a11y: WCAG AA pass after fixes — A11Y-001 (warning button foreground), A11Y-002 (success text token), A11Y-003 (gender AA text tokens decision 0029), A11Y-004 (muted→secondary on table headers/content), A11Y-008 (search focus rings), A11Y-009 (clear button aria-label), A11Y-010 (th scope="col"); A11Y-011 (pagination nav label); motion-safe transitions; touch targets ≥44px on remove/action buttons; Radix dialog/dropdown keyboard semantics intact; status not by color alone
+- impeccable audit: skipped (/impeccable init deferred per rule impeccable.md + no PRODUCT.md); design system is source of truth
+- states: loading (RosterSkeleton/Suspense), empty (RosterEmptyState — 0 students), error (toast via sonner), success (populated table + AddPanel), transfer-warning, bulk-selected — all 6 Storybook stories; responsive grid with minmax()
 
 ---
 
