@@ -601,5 +601,49 @@
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     }
+  },
+  "timetable": {
+    "title": "Thời khoá biểu",
+    "titleForClass": "Thời khoá biểu — Lớp {class}",
+    "subtitle": "Bấm vào ô để chỉnh sửa. Xung đột giáo viên được phát hiện tự động trên toàn trường.",
+    "yearLabel": "Năm học",
+    "classLabel": "Lớp",
+    "periodColHeader": "Tiết học",
+    "periodN": "Tiết {n}",
+    "recessLabel": "☕ Giải lao trưa",
+    "addSlot": "Thêm",
+    "exportPdf": "Xuất TKB (PDF)",
+    "exportPdfToast": "Tính năng xuất PDF sẽ sớm có.",
+    "importTimetable": "Import TKB",
+    "importTimetableToast": "Tính năng import TKB sẽ sớm có.",
+    "classConflictCount": "{count} xung đột ở lớp này",
+    "slotEditor": {
+      "title": "Chỉnh sửa tiết",
+      "subject": "Môn học",
+      "subjectPlaceholder": "— Chọn môn học —",
+      "teacher": "Giáo viên",
+      "pickSubjectFirst": "Chọn môn học trước để xem danh sách giáo viên.",
+      "noEligibleTeacher": "Không có giáo viên dạy môn này cho lớp đã chọn.",
+      "teacherBusy": "Đã có lịch tiết này",
+      "room": "Phòng học",
+      "roomPlaceholder": "VD: P.201, P.LAB1, Sân TD…",
+      "save": "Lưu",
+      "clear": "Xoá tiết",
+      "cancel": "Huỷ"
+    },
+    "conflicts": {
+      "title": "Tổng hợp xung đột",
+      "count": "{count} xung đột phát hiện",
+      "noConflicts": "Không có xung đột",
+      "hint": "Bấm vào một xung đột để xem ô liên quan.",
+      "validHint": "TKB hợp lệ trên toàn trường.",
+      "conflictsWith": "trùng với lớp {classes}",
+      "resolve": "Giải quyết"
+    },
+    "errors": {
+      "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",
+      "save-failed": "Không lưu được tiết học. Vui lòng thử lại.",
+      "slot-not-found": "Không tìm thấy tiết học."
+    }
   }
 }

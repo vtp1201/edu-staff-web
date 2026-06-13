@@ -601,5 +601,49 @@
       "network-error": "Connection error. Please try again.",
       "unknown": "An error occurred. Please try again."
     }
+  },
+  "timetable": {
+    "title": "Timetable",
+    "titleForClass": "Timetable — Class {class}",
+    "subtitle": "Click a cell to edit. Teacher conflicts are detected automatically across the school.",
+    "yearLabel": "Academic Year",
+    "classLabel": "Class",
+    "periodColHeader": "Period",
+    "periodN": "Period {n}",
+    "recessLabel": "☕ Lunch break",
+    "addSlot": "Add",
+    "exportPdf": "Export PDF",
+    "exportPdfToast": "PDF export is coming soon.",
+    "importTimetable": "Import",
+    "importTimetableToast": "Timetable import is coming soon.",
+    "classConflictCount": "{count} conflicts in this class",
+    "slotEditor": {
+      "title": "Edit slot",
+      "subject": "Subject",
+      "subjectPlaceholder": "— Select subject —",
+      "teacher": "Teacher",
+      "pickSubjectFirst": "Pick a subject first to see eligible teachers.",
+      "noEligibleTeacher": "No teacher is assigned to teach this subject in this class.",
+      "teacherBusy": "Already busy this period",
+      "room": "Room",
+      "roomPlaceholder": "e.g. P.201, P.LAB1, Gym…",
+      "save": "Save",
+      "clear": "Delete slot",
+      "cancel": "Cancel"
+    },
+    "conflicts": {
+      "title": "Conflict summary",
+      "count": "{count} conflicts detected",
+      "noConflicts": "No conflicts",
+      "hint": "Click a conflict to highlight the cell.",
+      "validHint": "Timetable is valid across the school.",
+      "conflictsWith": "conflicts with class {classes}",
+      "resolve": "Resolve"
+    },
+    "errors": {
+      "fetch-failed": "Could not load the timetable. Please try again.",
+      "save-failed": "Could not save the slot. Please try again.",
+      "slot-not-found": "Slot not found."
+    }
   }
 }
