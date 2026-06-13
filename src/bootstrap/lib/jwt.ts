@@ -4,6 +4,16 @@
  * Token is httpOnly cookie → exp is checked SERVER-side only (decision `0018`).
  */
 
+import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
+
+const VALID_ROLES: readonly UserRole[] = [
+  "teacher",
+  "principal",
+  "student",
+  "parent",
+  "admin",
+];
+
 function base64UrlDecode(segment: string): string {
   const padded = segment.replace(/-/g, "+").replace(/_/g, "/");
   const pad =
@@ -25,6 +35,37 @@ export function decodeJwtClaims(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Decodes the scalar `role` claim from the JWT payload.
+ * Mock-first (decision 0014/0024): when NEXT_PUBLIC_USE_MOCK=true, returns
+ * "admin" for any non-empty token — unblocks local dev before IAM US-049 ships.
+ * No `server-only` guard (pure + testable like the other jwt helpers).
+ */
+export function decodeRoleClaim(token: string): UserRole | null {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_USE_MOCK === "true" &&
+    token.length > 0
+  )
+    return "admin";
+
+  const claims = decodeJwtClaims(token);
+  if (claims === null) return null;
+
+  const role = claims.role;
+  if (typeof role === "string" && (VALID_ROLES as string[]).includes(role)) {
+    return role as UserRole;
+  }
+
+  const memberRoles = claims.memberRoles;
+  if (Array.isArray(memberRoles) && typeof memberRoles[0] === "string") {
+    const first = memberRoles[0];
+    if ((VALID_ROLES as string[]).includes(first)) return first as UserRole;
+  }
+
+  return null;
 }
 
 /** Returns the `exp` claim (seconds since epoch) or `null` if unreadable. */

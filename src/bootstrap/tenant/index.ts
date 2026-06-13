@@ -8,4 +8,9 @@ export {
   resolveTenant,
   TENANT_SEGMENT,
 } from "./resolve-tenant";
+export {
+  type AdminAccessResult,
+  type AdminAccessVerdict,
+  evaluateAdminAccess,
+} from "./role-guard";
 export { tenantUrl } from "./tenant-url";

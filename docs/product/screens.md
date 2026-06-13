@@ -41,6 +41,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 ## Principal / Admin (E03, E09, E12 Admin Core)
 
+> **Admin namespace guard (US-E12.8):** `(app)/admin/layout.tsx` enforces `role === "admin"` server-side (RSC). Non-admin users are redirected to their default route; unauthenticated users to select-tenant. Mock-first: `NEXT_PUBLIC_USE_MOCK=true` + `NODE_ENV!==production` bypasses the real claim check (decision 0024). ADR 0022.
+
 | Screen | Route | Design file | Feature | Status |
 | --- | --- | --- | --- | --- |
 | School overview dashboard | `(app)/principal` | `teacher.jsx` (role=principal) | `features/principal` | ✅ (UI mock-first) |
