@@ -19,7 +19,18 @@ This repo runs on **Harness**. Read `AGENTS.md`, `.claude/CLAUDE.md`, `docs/HARN
 2. **Story packet is the workspace.** Stories live at `docs/stories/epics/E<NN>-<domain>/US-E<NN>.<n>-<slug>/`. Normal lane = single file from `docs/templates/story.md`; high-risk = the `docs/templates/high-risk-story/` folder. Plan phases go in the packet — NEVER a top-level `plans/`, NEVER `docs/<discipline>/`. Register: `scripts/bin/harness-cli story add --id US-EXX.Y --lane <lane> ...`. Point every specialist at the packet path.
 3. **Decisions are ADRs.** Any architecture / auth / token / data-contract / **design-system token** decision a specialist flags → `docs/decisions/NNNN-*.md` (next `NNNN` = highest in `docs/decisions/` + 1, currently ≥ **0023**; template `docs/templates/decision.md`), registered via `scripts/bin/harness-cli decision add`. You create/register the ADR — specialists only flag.
 4. **Keep Harness truthful.** On completion: `scripts/bin/harness-cli story update --id US-EXX.Y --status implemented --unit 0/1 --integration 0/1 --e2e 0/1 ...` — flags must reflect REAL proof reported by `fe-nextjs-engineer` / `fe-qa-playwright`. Never mark `implemented` without it. Mirror into `docs/TEST_MATRIX.md`.
-5. **Repo rules are law.** All work obeys `.claude/rules/*`: TDD (`tdd.md`), Clean Architecture per-feature + layer directives (`.claude/CLAUDE.md`), design system tokens-only (`design-system.md` + `src/app/tokens.css`), `accessibility.md`, `tailwind-v4.md`, BE contract (`api-integration.md`), i18n typed messages (`i18n.md`), design-review gate (`impeccable.md`).
+5. **Repo rules are law.** All work obeys `.claude/rules/*`: TDD (`tdd.md`), Clean Architecture per-feature + layer directives (`.claude/CLAUDE.md`), design system tokens-only (`design-system.md` + `src/app/tokens.css`), `accessibility.md`, `tailwind-v4.md`, BE contract (`api-integration.md`), i18n typed messages (`i18n.md`), design-review gate (`impeccable.md`), **parallel branch workflow (`parallel-workflow.md`, decision `0025`)**.
+
+## ⚠️ PARALLEL BRANCH WORKFLOW (decision `0025`) — DO THIS BEFORE ANY CODE
+
+Multiple `/fe` sessions run in parallel. You own the claim + branch lifecycle for every US (full enforceable detail in `.claude/rules/parallel-workflow.md`):
+
+1. **Sync + claim check.** `git fetch --prune`. Every remote branch `feat/us-eXX.Y-*` / `fix/*` that still exists = a US **another team has claimed** (in-flight). If the requested US is already claimed → **STOP, tell the user** it's in progress elsewhere; do not double-work.
+2. **Dependency check.** Read the target packet's `## Dependencies`. A conflict exists if the target depends-on/blocks an in-flight US, shares a feature module (`src/features/<x>/…`), touches a common file/contract (DTO/endpoint/use-case/component), or introduces the same new design-system token. On conflict → **pick an alternative US** that is `planned` + unclaimed + independent of all in-flight US, and **explain to the user** why you skipped the original (which constraint, vs which in-flight US) and why you chose the alternative. Do not silently switch.
+3. **Claim by early push.** `git checkout main && git pull --ff-only` → `git checkout -b feat/us-eXX.Y-<slug>` → `git push -u origin HEAD`. The remote branch IS the lock — created BEFORE writing code. Set story `## Status` → `in-progress`.
+4. **Dev + test on the branch** (the pipeline below). Never on `main`.
+5. **Finish → auto-merge.** When the US is done and the pre-push gate (full test suite + `bun build`) is green: `git fetch origin && git merge --no-ff origin/main` (resolve drift, re-run gate) → update Harness proof → `git checkout main && git pull --ff-only && git merge --no-ff feat/us-eXX.Y-<slug>` (`chore(<scope>): merge <branch> (<US-id>)`) → `git push origin main`. **No PR.** This is automatic on gate-green — you no longer wait for an explicit per-US merge request (decision `0025`).
+6. **Delete the branch (local + remote).** `git branch -d feat/us-eXX.Y-<slug>` + `git push origin --delete feat/us-eXX.Y-<slug>` so the remote branch list stays equal to the in-flight US set.
 
 ## Your Team Pipeline
 
@@ -85,9 +96,9 @@ Set the task `in_progress` before spawning, `completed` only after you validate 
 4. **Harness state** — story status + flags set via `harness-cli`; TEST_MATRIX synced.
 5. **Open issues / next steps**.
 
-## Commits & Merge (only when the user asks)
+## Commits & Merge (auto-merge per US — decision `0025`)
 
-Conventional commits (`feat:`/`fix:`/`a11y:`/`style:`/`chore:` + scope), branch `<type>/<short-desc>`. Pre-push runs the full test suite + `bun build` — never bypass with `--no-verify`. When a story is done: push branch, then `git merge --no-ff` into `main` with `chore(<scope>): merge <branch> (<story-ids>)` — **NO Pull Request** (per `.claude/CLAUDE.md`).
+Conventional commits (`feat:`/`fix:`/`a11y:`/`style:`/`chore:` + scope). 1 US = 1 branch `feat/us-eXX.Y-<slug>`, claimed by early push. Pre-push runs the full test suite + `bun build` — never bypass with `--no-verify`. When a US is done **and the gate is green, auto-merge** `--no-ff` into `main` (`chore(<scope>): merge <branch> (<US-id>)`) then **delete the branch local + remote** — **NO Pull Request**, no waiting for a per-US merge request. See the PARALLEL BRANCH WORKFLOW section above + `.claude/rules/parallel-workflow.md`.
 
 ## Team Mode (as Lead)
 

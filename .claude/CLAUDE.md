@@ -12,6 +12,52 @@ hook (decision `0015`); `.claude/rules/*` tự load. Trước khi làm:
 - **Intake mọi prompt** qua `docs/FEATURE_INTAKE.md`; ghi durable bằng
   `scripts/bin/harness-cli` (story/decision). Story UI qua `docs/DESIGN_REVIEW.md`.
 
+## Agent Teams
+
+Two Harness-bound teams live in `.claude/agents/`. Always enter through a **lead** (via its
+slash command); never invoke individual specialists directly.
+
+### Frontend Developer Team — `/fe` → `fe-lead` (`.claude/agents/fe/`)
+Implements all frontend work. Pipeline:
+```
+Feature Intake → fe-planner → [fe-component-architect + fe-state-engineer] (parallel, when needed)
+   → fe-nextjs-engineer (TDD) → [fe-tech-lead-reviewer + fe-accessibility-auditor] (parallel)
+   → design-review gate (docs/DESIGN_REVIEW.md + /impeccable) → fe-qa-playwright → Harness proof
+```
+- `fe-lead` *(sonnet)* — entry point; owns intake, story packet, pipeline, gates, **parallel branch workflow (decision `0025`)**.
+- `fe-planner` *(sonnet)* — phased plan in the packet (no code).
+- `fe-component-architect` *(sonnet)* — component tree + ViewModel/prop contracts.
+- `fe-state-engineer` *(sonnet)* — TanStack Query keys/invalidation, RSC↔client boundary (no global store).
+- `fe-nextjs-engineer` *(opus)* — the SOLE implementer; Clean-Arch layers, shadcn/Tailwind v4, i18n, strict TDD.
+- `fe-tech-lead-reviewer` *(opus)* — mandatory quality gate (layers, types, tokens, i18n, security, tests).
+- `fe-accessibility-auditor` *(sonnet)* — WCAG 2.1 AA audit (parallel with reviewer).
+- `fe-qa-playwright` *(sonnet)* — Storybook interaction + Playwright E2E, Go/No-Go.
+- `fe-debugger` *(sonnet)* — RCA for render/hydration/RSC/cache/build issues.
+
+### Business Analyst Team (UI-focused) — `/ba` → `ba-lead` (`.claude/agents/ba/`)
+Produces engineering-ready specs the FE team builds from; stops before code. Pipeline:
+```
+Feature Intake → ba-requirements-analyst → [ba-integration-analyst] → ba-use-case-modeler → ba-spec-writer
+```
+- `ba-lead` *(sonnet)* — entry point; intake + story packet + handoff to `fe-lead`.
+- `ba-requirements-analyst` *(sonnet)* — TR-XXX requirements, actors/roles, scope.
+- `ba-integration-analyst` *(sonnet)* — maps edu-api endpoints the screen consumes (service map; mock-first when absent).
+- `ba-use-case-modeler` *(sonnet)* — use cases + Given/When/Then AC (loading/empty/error/success + role variants).
+- `ba-spec-writer` *(sonnet)* — consolidated engineering-ready spec + traceability matrix.
+
+### Model rationale (resource ↔ capability)
+`opus` for the two highest-leverage, correctness-critical roles — `fe-nextjs-engineer` (the sole
+implementer) and `fe-tech-lead-reviewer` (the last gate before merge). `sonnet` for orchestration,
+planning, design, analysis, audit, QA, and debugging (strong reasoning at lower cost; these run
+many turns). No `haiku` — even the checklist roles (a11y, QA) need nuance over JSX/tokens. Mirrors
+edu-api's convention (heavy implementer = opus; leads/specialists = sonnet).
+
+## Sibling repo
+
+Backend is **edu-api** (Go microservices) with its own `/ba` and `/be` teams. This web team
+**consumes** edu-api's REST contracts (`.claude/rules/api-integration.md` + the service's
+`openapi.yaml`/`INTEGRATION.md`) — it never writes Go.
+
 ## Commands
 
 ```bash
@@ -218,12 +264,18 @@ CSS variables defined in `src/app/globals.css` drive the entire design system. P
 
 ### Commits & Branches
 - **Commit format:** `<type>(<scope>): <subject>` — enforced by commitlint + Lefthook.
-- **Branch format:** `<type>/<short-desc>` e.g. `feat/dark-theme`, `fix/login-bug`.
+- **Branch format:** `<type>/<short-desc>` — 1 US = 1 branch `feat/us-eXX.Y-<slug>`
+  (xem `.claude/rules/parallel-workflow.md`). VD `feat/us-e12.4-student-roster`.
 - `main` and `dev`/`develop` are exempt from branch naming validation.
 - Pre-push hook runs the full test suite and `bun build` — do not bypass with `--no-verify`.
-- **Merge workflow:** khi story xong, **push branch rồi merge thẳng vào `main`**
-  (push + merge) — **KHÔNG tạo Pull Request**. Vẫn chỉ push/merge khi người dùng
-  yêu cầu; pre-push hook (test + build) phải xanh trước khi merge.
+- **Parallel branch workflow (decision `0025`):** nhiều phiên `/fe` chạy song song.
+  Mỗi US: `git fetch --prune` → claim check + dependency check → tạo branch từ `main`
+  rồi **push ngay (early push = claim)** → dev + test trên branch → khi xong & gate
+  xanh **auto-merge vào `main`** → **xóa branch (local + remote)**. Chi tiết enforceable:
+  `.claude/rules/parallel-workflow.md`.
+- **Merge workflow:** auto-merge khi US xong và pre-push gate (test + build) xanh —
+  **KHÔNG cần chờ user yêu cầu từng lần** (đổi so với trước, decision `0025`), **KHÔNG
+  tạo Pull Request**. Merge `--no-ff` vào `main` rồi xóa branch.
 - **Merge commit:** commitlint chặn message "Merge ..." mặc định → merge bằng
   `git merge --no-ff` rồi commit với format conventional
   `chore(<scope>): merge <branch> (<story-ids>)`.
@@ -239,3 +291,14 @@ Three jobs run in parallel on staged `*.ts(x)` files:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api/v1` | Backend API base URL |
+
+## Hard Rules (enforceable detail in `.claude/rules/`)
+
+- **TDD** red→green→refactor; no story `implemented` without real proof (`tdd.md`).
+- **Tokens-only** design system — never raw color; new token needs an ADR first (`design-system.md`, `tailwind-v4.md`, `src/app/tokens.css`).
+- **WCAG 2.1 AA** is a "done" criterion, not optional (`accessibility.md`).
+- **i18n** — all UI strings in `messages/{vi,en}.json` (vi source + en mirror), typed, translated at presentation only (`i18n.md`).
+- **Commits & merge**: conventional `<type>(<scope>): <subject>`; 1 US = 1 branch claimed by early push; auto-merge to `main` via `git merge --no-ff` on gate-green then delete the branch (no PR); never `--no-verify` (`parallel-workflow.md`, decision `0025`, §Commits & Branches).
+- **Security**: no secrets/PII client-side; no `dangerouslySetInnerHTML`/`eval` on unsanitized input; role-gated destructive UI; validated redirects; tokens stay in httpOnly cookies (server-only), never readable by client.
+
+On any conflict, this file, `.claude/rules/*`, and `src/app/tokens.css` win over docs and prose.
