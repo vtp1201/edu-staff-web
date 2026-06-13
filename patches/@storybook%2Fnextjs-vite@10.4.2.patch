@@ -1,0 +1,24 @@
+diff --git a/dist/preset.js b/dist/preset.js
+index ec6050e5e28afba61f32b4e4871758837e692847..566ce44e66a293aeae28cfe622ebcef26133c99f 100644
+--- a/dist/preset.js
++++ b/dist/preset.js
+@@ -1944,7 +1944,10 @@ var importMetaResolve = (...args) => typeof import.meta.resolve != "function" &&
+ var getNextjsVersion = () => JSON.parse(readFileSync(join2(resolvePackageDir("next"), "package.json"), "utf8")).version;
+ 
+ // src/preset.ts
+-var require3 = createRequire3(import.meta.url), vitePluginStorybookNextjs = require3("vite-plugin-storybook-nextjs"), core = {
++// NOTE (patch 0032): removed synchronous require3("vite-plugin-storybook-nextjs") from module
++// init — vite@8+ and vite-tsconfig-paths@5+ are ESM-only, so require() throws ERR_REQUIRE_ESM.
++// Load the plugin via dynamic import() inside the async viteFinal instead.
++var core = {
+   builder: import.meta.resolve("@storybook/builder-vite"),
+   renderer: import.meta.resolve("@storybook/react/preset")
+ }, previewAnnotations = (entry = []) => {
+@@ -1960,6 +1963,7 @@ var require3 = createRequire3(import.meta.url), vitePluginStorybookNextjs = requ
+   "@storybook/nextjs-vite > styled-jsx/style",
+   "@opentelemetry/api"
+ ], viteFinal = async (config2, options) => {
++  const { default: vitePluginStorybookNextjs } = await import("vite-plugin-storybook-nextjs");
+   let reactConfig = await reactViteFinal(config2, options), inlineOptions = config2.css?.postcss, searchPath = typeof inlineOptions == "string" ? inlineOptions : config2.root;
+   searchPath && await normalizePostCssConfig(searchPath);
+   let { nextConfigPath, image = {} } = await options.presets.apply("frameworkOptions"), nextDir = nextConfigPath ? dirname2(nextConfigPath) : void 0, vitePluginOptions = {

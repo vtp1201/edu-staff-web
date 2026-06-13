@@ -1,4 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { NextIntlClientProvider } from "next-intl";
+import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   SchoolConfig,
   SetupStatus,
@@ -32,7 +34,14 @@ const noOp = async () => ({ ok: true as const });
 const meta: Meta<typeof SchoolSetupScreen> = {
   title: "Admin/SchoolSetupScreen",
   component: SchoolSetupScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
+  decorators: [
+    (Story) => (
+      <NextIntlClientProvider locale="vi" messages={messages}>
+        <Story />
+      </NextIntlClientProvider>
+    ),
+  ],
 };
 export default meta;
 type Story = StoryObj<typeof SchoolSetupScreen>;

@@ -96,7 +96,7 @@ const handlers = {
 const meta: Meta<typeof StudentRosterScreen> = {
   title: "Admin/StudentRosterScreen",
   component: StudentRosterScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>

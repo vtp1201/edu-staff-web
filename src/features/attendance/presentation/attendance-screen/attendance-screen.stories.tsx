@@ -46,7 +46,7 @@ const saveAction = () => Promise.resolve({ ok: true } as const);
 const meta: Meta<typeof AttendanceScreen> = {
   title: "Attendance/AttendanceScreen",
   component: AttendanceScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
