@@ -4,7 +4,7 @@ Map màn hình từ design handoff → route + feature theo kiến trúc thật 
 `0011`: lấy UX/visual, bỏ kiến trúc của handoff). Route theo
 `app/[locale]/t/[tenant]/(app)/<role>/...` (tenant segment live — E05.1, decision `0007`).
 
-**Design source (normative):** `design_src/edu/EduPortal.html` + component files
+**Design source (normative):** `design_src/EduPortal.html` + component files
 (clone từ `design_handoff_eduportal2_1206`, xem decision `0021`).
 Design hoàn chỉnh đến: NEW-02 (Grade Scale & Assessment Scheme Config).
 
@@ -48,7 +48,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Class Log review/approve | `(app)/principal/class-log` | `classops.jsx` | `features/class-log` | ⬜ (E02) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | ⬜ (E09) |
 | Reports | `(app)/principal/reports` | — | `features/principal` | ⬜ |
-| **School Setup (grade range + settings)** | `(app)/admin/school-setup` | `school-setup.jsx` (US-049, ADR 0035) | `features/admin/school-setup` | 🎨 (design done NEW-01) |
+| **School Setup (grade range + settings)** | `(app)/admin/school-setup` | `school-setup.jsx` (US-049, ADR 0035) | `features/admin-school-setup` | ✅ implemented US-E12.1 (2026-06-13) |
 | **Academic Calendar config** | `(app)/admin/calendar` | `calendar.jsx` (US-042) | `features/admin/calendar` | 🎨 (design done) |
 | **Subject Departments (SubjectParent)** | `(app)/admin/subject-departments` | `subject-parents.jsx` (US-048) | `features/admin/subjects` | 🎨 (design done) |
 | **Subject Catalogue (grade-scoped)** | `(app)/admin/subjects` | `subjects.jsx` + `subjects-dialogs.jsx` | `features/admin/subjects` | 🎨 (design done) |
@@ -82,7 +82,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   per-feature khi epic vào implementation (dùng skill `add-feature`).
 - Spec layout/giá trị từng màn (normative): `docs/product/design-spec.jsonc`
   (relocate từ backup — decision `0014`).
-- **Design source chuẩn**: `design_src/edu/EduPortal.html` (mở trong browser) —
+- **Design source chuẩn**: `design_src/EduPortal.html` (mở trong browser) —
   quyết định sử dụng nguồn này theo decision `0021`.
   - `design_src/edu/school-setup.jsx` — Admin school setup (US-049/ADR 0035)
   - `design_src/edu/calendar.jsx` — Academic calendar (US-042)

@@ -1,21 +1,26 @@
 import {
+  BarChart2,
   BarChart3,
   BookOpen,
   CalendarDays,
+  CalendarRange,
   ClipboardList,
   FileText,
   GraduationCap,
+  Grid3x3,
+  Layers,
   type LucideIcon,
   MessageSquare,
   NotebookPen,
   School,
+  Settings2,
   User,
   UserCog,
   Users,
 } from "lucide-react";
 import type messages from "@/bootstrap/i18n/messages/vi.json";
 
-export type Role = "teacher" | "principal" | "student" | "parent";
+export type Role = "teacher" | "principal" | "student" | "parent" | "admin";
 
 /** i18n keys under the `shell.nav` namespace — checked against messages. */
 export type NavLabelKey = keyof (typeof messages)["shell"]["nav"];
@@ -76,6 +81,35 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/parent/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
+  admin: [
+    { href: "/admin/school-setup", labelKey: "schoolSetup", icon: Settings2 },
+    {
+      href: "/admin/calendar",
+      labelKey: "academicCalendar",
+      icon: CalendarRange,
+    },
+    {
+      href: "/admin/subject-departments",
+      labelKey: "subjectDepartments",
+      icon: Layers,
+    },
+    { href: "/admin/subjects", labelKey: "subjects", icon: BookOpen },
+    { href: "/admin/roster", labelKey: "studentRoster", icon: ClipboardList },
+    { href: "/admin/timetable", labelKey: "timetable", icon: Grid3x3 },
+    {
+      href: "/admin/assessment",
+      labelKey: "assessmentScheme",
+      icon: BarChart2,
+    },
+  ],
+};
+
+export const DEFAULT_ROUTE: Record<Role, string> = {
+  teacher: "/teacher",
+  principal: "/principal",
+  student: "/student",
+  parent: "/parent",
+  admin: "/admin/school-setup",
 };
 
 export const ROLE_LABEL_KEY: Record<
@@ -86,4 +120,5 @@ export const ROLE_LABEL_KEY: Record<
   principal: "principal",
   student: "student",
   parent: "parent",
+  admin: "admin",
 };

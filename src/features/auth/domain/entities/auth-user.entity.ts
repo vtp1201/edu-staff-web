@@ -1,4 +1,6 @@
-export type UserRole = "teacher" | "principal" | "student" | "parent";
+// NOTE: "admin" claim from IAM is mock-first (decision 0014/0022).
+// BE dependency: IAM must issue role: "admin" in JWT claim (US-049).
+export type UserRole = "teacher" | "principal" | "student" | "parent" | "admin";
 
 export interface UserTenantRole {
   role: UserRole;
