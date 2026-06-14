@@ -59,6 +59,7 @@ export function StaffingPositionTitlesScreen({
 }: StaffingPositionTitlesScreenProps) {
   const t = useTranslations("staffing.positionTitles");
   const searchId = useId();
+  const blockedHintId = useId();
 
   const [titles, setTitles] = useState<PositionTitle[]>(initialPositionTitles);
   const [filter, setFilter] = useState<PositionTitleStatusFilter>("ALL");
@@ -166,7 +167,7 @@ export function StaffingPositionTitlesScreen({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <fieldset className="flex flex-wrap gap-2 border-0 p-0">
-            <legend className="sr-only">{t("filterAll")}</legend>
+            <legend className="sr-only">{t("filterGroupLabel")}</legend>
             {FILTERS.map((f) => {
               const active = filter === f;
               return (
@@ -331,11 +332,20 @@ export function StaffingPositionTitlesScreen({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="inline-flex">
+                                    <span
+                                      id={`${blockedHintId}-${title.id}`}
+                                      className="sr-only"
+                                    >
+                                      {t("archiveBlockedTooltip", {
+                                        count: title.activeAssignmentCount,
+                                      })}
+                                    </span>
                                     <Button
                                       variant="ghost"
                                       size="icon-lg"
                                       aria-label={t("archiveButton")}
                                       aria-disabled="true"
+                                      aria-describedby={`${blockedHintId}-${title.id}`}
                                       className="cursor-not-allowed opacity-50"
                                       onClick={(e) => e.preventDefault()}
                                     >
@@ -413,7 +423,7 @@ export function StaffingPositionTitlesScreen({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancelButton")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-edu-error-text text-white hover:bg-edu-error-text/90"
+              className="bg-edu-error-text text-edu-error-foreground hover:bg-edu-error-text/90"
               onClick={() => archiveTarget && handleArchive(archiveTarget)}
             >
               {t("archiveConfirmButton")}

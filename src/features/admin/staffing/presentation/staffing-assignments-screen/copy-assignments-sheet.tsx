@@ -124,15 +124,16 @@ export function CopyAssignmentsSheet({
             )}
           </div>
 
-          {result && (
-            <div
-              role="status"
-              className="flex flex-col gap-1 rounded-[var(--edu-radius-card)] bg-edu-success/15 p-3 text-sm text-edu-success-text"
-            >
-              <span>{t("resultCopied", { count: result.copiedCount })}</span>
-              <span>{t("resultSkipped", { count: result.skippedCount })}</span>
-            </div>
-          )}
+          <div role="status" aria-live="polite">
+            {result && (
+              <div className="flex flex-col gap-1 rounded-[var(--edu-radius-card)] bg-edu-success/15 p-3 text-sm text-edu-success-text">
+                <span>{t("resultCopied", { count: result.copiedCount })}</span>
+                <span>
+                  {t("resultSkipped", { count: result.skippedCount })}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         <SheetFooter>

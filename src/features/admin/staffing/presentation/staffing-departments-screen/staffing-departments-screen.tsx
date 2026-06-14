@@ -49,6 +49,7 @@ export function StaffingDepartmentsScreen({
 }: StaffingDepartmentsScreenProps) {
   const t = useTranslations("staffing.departments");
   const searchId = useId();
+  const blockedHintId = useId();
 
   const [departments, setDepartments] =
     useState<Department[]>(initialDepartments);
@@ -155,7 +156,7 @@ export function StaffingDepartmentsScreen({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <fieldset className="flex flex-wrap gap-2 border-0 p-0">
-            <legend className="sr-only">{t("filterAll")}</legend>
+            <legend className="sr-only">{t("filterGroupLabel")}</legend>
             {FILTERS.map((f) => {
               const active = filter === f;
               return (
@@ -288,11 +289,20 @@ export function StaffingDepartmentsScreen({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <span className="inline-flex">
+                                    <span
+                                      id={`${blockedHintId}-${dep.id}`}
+                                      className="sr-only"
+                                    >
+                                      {t("archiveBlockedTooltip", {
+                                        count: dep.activeAssignmentCount,
+                                      })}
+                                    </span>
                                     <Button
                                       variant="ghost"
                                       size="icon-lg"
                                       aria-label={t("archiveButton")}
                                       aria-disabled="true"
+                                      aria-describedby={`${blockedHintId}-${dep.id}`}
                                       className="cursor-not-allowed opacity-50"
                                       onClick={(e) => e.preventDefault()}
                                     >
@@ -370,7 +380,7 @@ export function StaffingDepartmentsScreen({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancelButton")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-edu-error-text text-white hover:bg-edu-error-text/90"
+              className="bg-edu-error-text text-edu-error-foreground hover:bg-edu-error-text/90"
               onClick={() => archiveTarget && handleArchive(archiveTarget)}
             >
               {t("archiveConfirmButton")}

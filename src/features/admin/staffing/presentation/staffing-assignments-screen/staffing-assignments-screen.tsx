@@ -149,7 +149,7 @@ export function StaffingAssignmentsScreen({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <fieldset className="flex flex-wrap gap-2 border-0 p-0">
-          <legend className="sr-only">{t("filterAll")}</legend>
+          <legend className="sr-only">{t("filterGroupLabel")}</legend>
           {FILTERS.map((f) => {
             const active = filter === f;
             return (
@@ -323,7 +323,7 @@ export function StaffingAssignmentsScreen({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancelButton")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-edu-error-text text-white hover:bg-edu-error-text/90"
+              className="bg-edu-error-text text-edu-error-foreground hover:bg-edu-error-text/90"
               onClick={() => revokeTarget && handleRevoke(revokeTarget)}
             >
               {t("revokeConfirmButton")}

@@ -128,6 +128,7 @@ export function AssignPositionSheet({
             <Select value={positionTitleId} onValueChange={setPositionTitleId}>
               <SelectTrigger
                 id={titleField}
+                aria-required="true"
                 aria-invalid={titleError || undefined}
                 aria-describedby={titleError ? titleErrorId : undefined}
               >
