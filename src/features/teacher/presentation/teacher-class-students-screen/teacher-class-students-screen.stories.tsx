@@ -71,11 +71,18 @@ export const WithStudents: Story = {
 };
 
 export const ErrorState: Story = {
-  args: { vm: { ...base, status: "error", students: [] } },
+  args: {
+    vm: { ...base, status: "error", errorKey: "not-found", students: [] },
+  },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("alert")).toHaveTextContent(
-      messages.teacherClasses.studentPage.errorRetry,
+      messages.teacherClasses.errors["not-found"],
     );
+    await expect(
+      c.getByRole("button", {
+        name: messages.teacherClasses.studentPage.errorRetryAction,
+      }),
+    ).toBeInTheDocument();
   },
 };

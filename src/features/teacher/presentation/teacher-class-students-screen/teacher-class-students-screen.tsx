@@ -19,6 +19,7 @@ interface Props {
 
 export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
   const t = useTranslations("teacherClasses.studentPage");
+  const tRoot = useTranslations("teacherClasses");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
 
@@ -74,16 +75,32 @@ export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {query.trim().length > 0
+          ? t("filteredCount", { count: filtered.length })
+          : null}
+      </div>
+
+      <section
+        aria-label={t("studentListSection")}
+        className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card"
+      >
         {loading ? (
           <TableSkeleton />
         ) : vm.status === "error" ? (
-          <p
+          <div
             role="alert"
-            className="px-6 py-12 text-center text-sm text-edu-error-text"
+            className="flex flex-col items-center gap-4 px-6 py-12 text-center text-sm text-edu-error-text"
           >
-            {t("errorRetry")}
-          </p>
+            <p>{tRoot(`errors.${vm.errorKey ?? "unknown"}`)}</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--edu-radius-btn)] bg-edu-primary-accessible px-4 py-2 font-bold text-primary-foreground outline-none motion-safe:transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            >
+              {t("errorRetryAction")}
+            </button>
+          </div>
         ) : vm.students.length === 0 ? (
           <p className="px-6 py-16 text-center text-sm text-edu-text-secondary">
             {t("empty")}
@@ -118,19 +135,30 @@ function Breadcrumb({
   className: string;
 }) {
   const t = useTranslations("teacherClasses.studentPage");
+  const tRoot = useTranslations("teacherClasses");
   return (
-    <nav
-      aria-label={t("breadcrumbClasses")}
-      className="flex flex-wrap items-center gap-1.5 text-sm text-edu-text-muted"
-    >
-      <Link
-        href={classesHref}
-        className="rounded-md px-1 font-medium outline-none hover:text-edu-text-primary focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {t("breadcrumbClasses")}
-      </Link>
-      <ChevronRight className="size-3.5" aria-hidden="true" />
-      <span className="font-semibold text-edu-text-secondary">{className}</span>
+    <nav aria-label={tRoot("breadcrumbLabel")}>
+      <ol className="flex flex-wrap items-center gap-1.5 text-sm text-edu-text-secondary">
+        <li>
+          <Link
+            href={classesHref}
+            className="rounded-md px-1 font-medium outline-none hover:text-edu-text-primary focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t("breadcrumbClasses")}
+          </Link>
+        </li>
+        <li aria-hidden="true">
+          <ChevronRight className="size-3.5" />
+        </li>
+        <li>
+          <span
+            aria-current="page"
+            className="font-semibold text-edu-text-secondary"
+          >
+            {className}
+          </span>
+        </li>
+      </ol>
     </nav>
   );
 }
@@ -166,7 +194,7 @@ function Pagination({
 
   return (
     <nav
-      aria-label={t("breadcrumbClasses")}
+      aria-label={t("paginationNav")}
       className="flex flex-wrap items-center gap-2.5 border-t border-edu-border px-5 py-3"
     >
       <div className="flex-1 text-xs text-edu-text-muted tabular-nums">
@@ -182,7 +210,11 @@ function Pagination({
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
         </button>
-        <span className="px-2 text-xs font-bold text-edu-text-secondary tabular-nums">
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className="px-2 text-xs font-bold text-edu-text-secondary tabular-nums"
+        >
           {page} / {totalPages}
         </span>
         <button
@@ -205,7 +237,7 @@ function TableSkeleton() {
       {Array.from({ length: 6 }, (_, i) => i).map((i) => (
         <div
           key={i}
-          className="h-11 animate-pulse rounded-[var(--edu-radius-btn)] bg-muted/50"
+          className="h-11 rounded-[var(--edu-radius-btn)] bg-muted/50 motion-safe:animate-pulse"
         />
       ))}
     </div>

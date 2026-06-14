@@ -92,7 +92,7 @@ function ComingSoonAction({
           onClick={(e) => e.preventDefault()}
           className={cn(
             "inline-flex min-h-[44px] cursor-not-allowed items-center gap-1.5 rounded-[var(--edu-radius-btn)]",
-            "border border-border px-3.5 py-2 text-[13px] font-bold text-edu-text-muted",
+            "border border-border px-3.5 py-2 text-[13px] font-bold text-edu-text-secondary",
             "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
           )}
         >

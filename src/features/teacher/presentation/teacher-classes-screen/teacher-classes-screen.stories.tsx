@@ -86,11 +86,16 @@ export const WithClasses: Story = {
 };
 
 export const ErrorState: Story = {
-  args: { vm: { status: "error", classes: [] } },
+  args: { vm: { status: "error", errorKey: "network-error", classes: [] } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     await expect(c.getByRole("alert")).toHaveTextContent(
-      messages.teacherClasses.errorRetry,
+      messages.teacherClasses.errors["network-error"],
     );
+    await expect(
+      c.getByRole("button", {
+        name: messages.teacherClasses.errorRetryAction,
+      }),
+    ).toBeInTheDocument();
   },
 };

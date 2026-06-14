@@ -53,7 +53,7 @@ export function TeacherDashboardHomeClient({ vm }: { vm: TeacherDashboardVM }) {
           label={t("stats.totalClasses")}
           value={vm.totalClasses === null ? "—" : String(vm.totalClasses)}
           icon={BookOpen}
-          tone="primary"
+          tone="warning"
         />
         <StatCard
           label={t("stats.classesToday")}

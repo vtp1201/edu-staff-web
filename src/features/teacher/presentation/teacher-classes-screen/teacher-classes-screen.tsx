@@ -26,15 +26,24 @@ export function TeacherClassesScreen({
       {loading ? (
         <ClassGridSkeleton />
       ) : vm.status === "error" ? (
-        <ErrorState message={t("errorRetry")} />
+        <ErrorState
+          message={t(`errors.${vm.errorKey ?? "unknown"}`)}
+          retryLabel={t("errorRetryAction")}
+        />
       ) : vm.classes.length === 0 ? (
         <EmptyState message={t("empty")} />
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+        <ul
+          // biome-ignore lint/a11y/noRedundantRoles: VoiceOver drops list semantics when list-style is removed by the grid layout; keep explicit.
+          role="list"
+          className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4"
+        >
           {vm.classes.map((cls) => (
-            <ClassCard key={cls.id} vm={cls} />
+            <li key={cls.id}>
+              <ClassCard vm={cls} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -49,7 +58,7 @@ function ClassGridSkeleton() {
       {Array.from({ length: 4 }, (_, i) => i).map((i) => (
         <div
           key={i}
-          className="h-[196px] animate-pulse rounded-[var(--edu-radius-card)] border border-border bg-muted/50"
+          className="h-[196px] rounded-[var(--edu-radius-card)] border border-border bg-muted/50 motion-safe:animate-pulse"
         />
       ))}
     </div>
@@ -67,13 +76,26 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({
+  message,
+  retryLabel,
+}: {
+  message: string;
+  retryLabel: string;
+}) {
   return (
     <div
       role="alert"
-      className="rounded-[var(--edu-radius-card)] border border-edu-error/30 bg-edu-error/15 px-6 py-10 text-center text-sm text-edu-error-text"
+      className="flex flex-col items-center gap-4 rounded-[var(--edu-radius-card)] border border-edu-error/30 bg-edu-error/15 px-6 py-10 text-center text-sm text-edu-error-text"
     >
-      {message}
+      <p>{message}</p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--edu-radius-btn)] bg-edu-primary-accessible px-4 py-2 font-bold text-primary-foreground outline-none motion-safe:transition-colors hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+      >
+        {retryLabel}
+      </button>
     </div>
   );
 }

@@ -31,9 +31,9 @@ export function TeacherRosterTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>{t("columns.name")}</TableHead>
-          <TableHead>{t("columns.code")}</TableHead>
-          <TableHead>{t("columns.status")}</TableHead>
+          <TableHead scope="col">{t("columns.name")}</TableHead>
+          <TableHead scope="col">{t("columns.code")}</TableHead>
+          <TableHead scope="col">{t("columns.status")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
