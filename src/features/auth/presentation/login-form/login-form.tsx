@@ -70,7 +70,7 @@ export function LoginForm({
           {!vneidEnabled ? (
             <span
               id="vneid-coming-soon"
-              className="ml-1 rounded-full border border-border bg-[var(--edu-bg)] px-2 py-px font-semibold text-[10px] text-muted-foreground"
+              className="ml-1 rounded-full border border-border bg-edu-bg px-2 py-px font-semibold text-[10px] text-edu-text-secondary"
             >
               {tSso("vneidComingSoon")}
             </span>
@@ -104,7 +104,7 @@ export function LoginForm({
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t("email")}
             required
-            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-primary"
+            className="rounded-lg border border-border px-4 py-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -118,11 +118,11 @@ export function LoginForm({
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t("password")}
             required
-            className="rounded-lg border border-border px-4 py-3 text-sm outline-none focus:border-primary"
+            className="rounded-lg border border-border px-4 py-3 text-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         {errorKey && (
-          <p className="text-sm text-destructive" role="alert">
+          <p className="text-sm text-edu-error-text" role="alert">
             {tErrors(errorKey)}
           </p>
         )}

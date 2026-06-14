@@ -26,6 +26,7 @@ function RoleCard({
   return (
     <button
       type="button"
+      aria-label={`${tRoles(labelKey)} — ${card.tenantName}`}
       onClick={onSelect}
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
@@ -61,17 +62,20 @@ function RoleCard({
           <span className="truncate font-extrabold text-[15px] text-foreground">
             {tRoles(labelKey)}
           </span>
-          <span className="rounded-[4px] border border-border bg-[var(--edu-bg)] px-1.5 py-px font-bold text-[10px] tracking-[0.05em] text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className="rounded-[4px] border border-border bg-edu-bg px-1.5 py-px font-bold text-[10px] tracking-[0.05em] text-edu-text-secondary"
+          >
             {card.roleEnum}
           </span>
         </span>
         <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+          <span className="flex items-center gap-1 text-[12px] text-edu-text-secondary">
             <School size={12} aria-hidden="true" />
             <span className="truncate">{card.tenantName}</span>
           </span>
           {card.tenantCode ? (
-            <span className="rounded-[4px] border border-border bg-[var(--edu-bg)] px-1.5 py-px font-semibold text-[10px] tracking-[0.03em] text-muted-foreground">
+            <span className="rounded-[4px] border border-border bg-edu-bg px-1.5 py-px font-semibold text-[10px] tracking-[0.03em] text-edu-text-secondary">
               {card.tenantCode}
             </span>
           ) : null}
@@ -106,7 +110,7 @@ export function RoleSelectScreen({
           <span className="grid size-15 place-items-center rounded-[16px] bg-primary text-primary-foreground">
             <School size={28} aria-hidden="true" />
           </span>
-          <p className="mt-4 font-bold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="mt-4 font-bold text-[11px] uppercase tracking-[0.08em] text-edu-text-secondary">
             {t("eyebrow")}
           </p>
           <h1 className="mt-1 font-extrabold text-[22px] text-foreground">
@@ -118,7 +122,10 @@ export function RoleSelectScreen({
         </div>
 
         {errorKey ? (
-          <p className="mb-3 text-center text-sm text-destructive" role="alert">
+          <p
+            className="mb-3 text-center text-sm text-edu-error-text"
+            role="alert"
+          >
             {tErrors(errorKey)}
           </p>
         ) : null}
