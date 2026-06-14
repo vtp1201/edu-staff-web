@@ -64,6 +64,12 @@ All computed with WCAG ^2.4 gamma linearization. Blended bg = token × 0.15 + #F
 - purple tone: 4.32:1 — just under AA threshold. Fix: use --edu-purple-dark or edu-text-primary.
 - muted tone for badges: 2.76:1 — fails for badge text. Fix: use text-foreground or text-edu-text-secondary.
 
+## Additional ratios confirmed (US-E01.2 audit)
+- `#8898a9` on `#f5f7fa` (muted text on edu-bg) — corrected measured value: ~3.07:1 (FAIL normal text including 10px bold)
+- `#fa896b` on `#ffffff` (destructive on card) — ~2.46:1 (FAIL) per US-E01.2 error message usage
+- `#fa896b` on `#f5f7fa` (destructive on page bg) — ~2.38:1 (FAIL)
+- `#4570ea` on `#ffffff` (primary-dark on card) — 4.56:1 (PASS, per ADR 0023); also confirmed for white-on-primary 4.56:1
+
 ## Additional ratios confirmed (US-E12.4 audit, US-E13.4 audit)
 - --edu-primary-dark (#4570EA) on white: 4.41:1 — BARELY FAILS AA for ≤12px normal text (globals.css comment claims 4.56 — incorrect; this is a measurement discrepancy to note)
 - --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS for small text buttons. Use for any button with text-[11px] or smaller.

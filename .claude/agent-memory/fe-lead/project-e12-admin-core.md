@@ -1,6 +1,6 @@
 ---
 name: project-e12-admin-core
-description: E12 Admin Core epic status — US-E12.1 through US-E12.4 implemented; US-E12.5 + US-E12.6 planned
+description: E12 Admin Core epic status — US-E12.1–E12.4 + E12.10 implemented; US-E12.5 + US-E12.6 planned
 metadata:
   type: project
 ---
@@ -15,6 +15,11 @@ E12 Admin Core epic is the admin-facing configuration flow.
   - Decisions: 0028 (gender indicator tokens), 0029 (gender AA text tokens)
   - DI: `bootstrap/di/admin-roster.di.ts`, endpoint: `bootstrap/endpoint/admin-roster.endpoint.ts`
   - MockRosterRepository seeded with 4 classes + 32 students in 10A1
+- US-E12.10 Class Management UI — `src/features/admin/class-management/` (route /admin/classes, 2026-06-14)
+  - Create/rename/archive classes, assign homeroom teacher (GVCN)
+  - Mock-first (core service + IAM teacher list); 304 tests; 10 Storybook play tests
+  - DI: `bootstrap/di/class-management.di.ts`, endpoint: `bootstrap/endpoint/class.endpoint.ts`
+  - Nav entry: admin.classManagement added to nav-config.ts
 
 **Planned:** US-E12.5 (timetable), US-E12.6 (assessment scheme)
 

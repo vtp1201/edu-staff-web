@@ -96,6 +96,21 @@ Pattern: `bg-primary text-primary-foreground` on buttons with `text-[11px]` or s
 Fix: Use `bg-edu-primary-accessible` (#4468E0, 4.88:1) for small-text buttons instead of `bg-primary`. The token already exists (decision 0031). Do not change `--primary` globally.
 Seen in: US-E13.4 "Nhập điểm" button (text-[11px] font-bold).
 
+## Contrast — text-destructive (#fa896b) as error text on light surfaces
+Pattern: `<p role="alert" className="text-sm text-destructive">` where `--destructive` resolves to `--edu-error` = `#fa896b`. On `bg-card` (white) = ~2.46:1; on `bg-background` (#f5f7fa) = ~2.38:1. Both fail SC 1.4.3 for normal text.
+Fix: Use `text-edu-error-text` (`--edu-error-text: #c0392b`) which gives 5.1:1 on white. Apply globally wherever `text-destructive` is used for error message paragraphs (not icons/borders).
+Seen in: US-E01.2 login-form.tsx line 125, role-select.tsx line 121.
+
+## Contrast — Tiny badge text at 10px on muted-foreground
+Pattern: Role enum badge (`card.roleEnum`) and VNeID "coming soon" badge use `text-muted-foreground` (#8898a9) at `text-[10px]` on `bg-[var(--edu-bg)]` (#f5f7fa). WCAG "large text" starts at 18px (or 14px bold); 10px bold is normal text. Ratio ~3.07:1 fails 4.5:1 required.
+Fix: Use `text-foreground` (#2a3547) or `text-edu-text-secondary` (#5a6a85, 5.1:1 on light surfaces) for 10px badge content.
+Seen in: US-E01.2 role-select.tsx line 64, login-form.tsx line 73.
+
+## Heading — login page uses h2 as page title (no h1)
+Pattern: Login RSC wraps the form in a `<div>` with `<h2>` for the login title, and the two-column brand panel has the only `<h1>` (which is hidden on mobile via `hidden lg:flex`). On mobile the h1 is absent from the accessibility tree; the first heading visible to screen readers is the h2 login title.
+Fix: Either make the login title an `<h1>`, or add a visually-hidden `<h1>` matching the page title for all viewport sizes.
+Seen in: US-E01.2 login/page.tsx lines 18–29.
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.

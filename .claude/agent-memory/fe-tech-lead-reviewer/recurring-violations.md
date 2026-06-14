@@ -26,6 +26,19 @@ Watch for these (each has bitten a story here):
   user-editable default but note it (the value becomes a real-clock dependency in any test).
 - **Duplicate/placeholder i18n copy** — same message reused for two distinct slots (e.g. an info
   callout reusing `addYear.subtitle`) usually signals a missing dedicated key.
+- **Dead i18n keys that PASS parity** — keys present in both vi+en (so the parity diff is clean) but
+  never referenced in any `.tsx` (e.g. `table.loadMore`, `homeroomSheet.loading`, duplicate
+  `actions.confirm`/`cancel` when the dialog uses scoped `archiveDialog.confirm`). Parity check alone
+  won't catch them — grep each leaf key against presentation. Often signals a half-wired feature (a
+  VM carrying `hasMore`/`nextCursor` with no load-more control rendered). SHOULD-FIX. (US-E12.10.)
+- **One action bypassing its use-case** — when 3 of 4 server actions call `new XUseCase(repo).execute()`
+  but one calls `repo.method()` directly (leaving the use-case as dead code). Pattern-inconsistency,
+  not a correctness bug, but flag it — the bypassed use-case usually existed for a reason (validation
+  that silently won't run). Cross-check every action wires through its use-case. (US-E12.10 archive.)
+- **Bare `status === NNN` fallback in failure mapping** — `toFailure` branching `status === 422 →
+  grade-out-of-range` after the code branch means ANY 422 (generic validation) gets mislabeled. Prefer
+  letting non-matched codes fall through to `unknown`; status fallback should only cover transport
+  categories (network/forbidden), not domain-specific 422/409. (US-E12.10.)
 
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
