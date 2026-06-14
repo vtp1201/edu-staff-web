@@ -385,6 +385,41 @@
       "viewChild": "Xem chi tiết"
     }
   },
+  "teacherDashboard": {
+    "pageTitle": "Tổng quan",
+    "stats": {
+      "totalStudents": "Tổng học sinh",
+      "classesToday": "Tiết học hôm nay",
+      "pendingGrades": "Chờ chấm điểm",
+      "pendingApproval": "Điểm chờ duyệt",
+      "newMessages": "Tin nhắn mới",
+      "vsPrevMonth": "so tháng trước",
+      "vsPrevWeek": "so tuần trước",
+      "adminApprovalMode": "Chế độ ADMIN_APPROVAL"
+    },
+    "schedule": {
+      "title": "Lịch dạy hôm nay",
+      "dayLabel": "Thứ Tư",
+      "morning": "Buổi sáng",
+      "afternoon": "Buổi chiều",
+      "period": "Tiết {period}",
+      "empty": "Không có lịch dạy hôm nay",
+      "classRoom": "Lớp {className} · {room}"
+    },
+    "scheduleStatus": {
+      "done": "Hoàn thành",
+      "live": "Đang dạy",
+      "upcoming": "Sắp tới"
+    },
+    "pendingGrades": {
+      "title": "Chờ chấm điểm",
+      "enterGrades": "Nhập điểm",
+      "assessmentType": "{type} · {className}"
+    },
+    "notifications": {
+      "title": "Thông báo"
+    }
+  },
   "profile": {
     "tabs": {
       "personal": "Thông tin cá nhân",

@@ -385,6 +385,41 @@
       "viewChild": "View details"
     }
   },
+  "teacherDashboard": {
+    "pageTitle": "Overview",
+    "stats": {
+      "totalStudents": "Total Students",
+      "classesToday": "Classes Today",
+      "pendingGrades": "Pending Grades",
+      "pendingApproval": "Grades Awaiting Approval",
+      "newMessages": "New Messages",
+      "vsPrevMonth": "vs last month",
+      "vsPrevWeek": "vs last week",
+      "adminApprovalMode": "ADMIN_APPROVAL mode"
+    },
+    "schedule": {
+      "title": "Today's Schedule",
+      "dayLabel": "Wednesday",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "period": "Period {period}",
+      "empty": "No classes today",
+      "classRoom": "Class {className} · {room}"
+    },
+    "scheduleStatus": {
+      "done": "Done",
+      "live": "Live",
+      "upcoming": "Upcoming"
+    },
+    "pendingGrades": {
+      "title": "Pending Grades",
+      "enterGrades": "Enter grades",
+      "assessmentType": "{type} · {className}"
+    },
+    "notifications": {
+      "title": "Notifications"
+    }
+  },
   "profile": {
     "tabs": {
       "personal": "Personal info",

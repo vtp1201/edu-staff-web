@@ -6,4 +6,5 @@ export * from "./calendar.endpoint";
 export * from "./noti.endpoint";
 export * from "./staffing.endpoint";
 export * from "./subject-catalogue.endpoint";
+export * from "./teacher.endpoint";
 export * from "./tenant.endpoint";

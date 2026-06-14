@@ -5,3 +5,4 @@ export * from "./auth.di";
 export * from "./calendar.di";
 export * from "./staffing.di";
 export * from "./subject-catalogue.di";
+export * from "./teacher-dashboard.di";

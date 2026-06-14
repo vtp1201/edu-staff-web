@@ -1,139 +1,81 @@
-import {
-  BookOpenCheck,
-  CalendarClock,
-  ClipboardList,
-  Users,
-} from "lucide-react";
-import { getTranslations } from "next-intl/server";
-import { StatCard } from "@/components/shared/stat-card";
-import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/shared/utils";
+import { makeGetTeacherDashboardUseCase } from "@/bootstrap/di/teacher-dashboard.di";
+import { TeacherDashboardHomeClient } from "./teacher-dashboard-home/teacher-dashboard-home";
+import type { TeacherDashboardVM } from "./teacher-dashboard-home/teacher-dashboard-home.i-vm";
 
-type PeriodStatus = "done" | "live" | "upcoming";
-const SCHEDULE: {
-  period: number;
-  time: string;
-  className: string;
-  subject: string;
-  status: PeriodStatus;
-}[] = [
-  {
-    period: 1,
-    time: "07:15",
-    className: "10A1",
-    subject: "Toán",
-    status: "done",
-  },
-  {
-    period: 2,
-    time: "08:05",
-    className: "11B2",
-    subject: "Toán",
-    status: "done",
-  },
-  {
-    period: 3,
-    time: "09:10",
-    className: "10A1",
-    subject: "Toán",
-    status: "live",
-  },
-  {
-    period: 4,
-    time: "10:00",
-    className: "12C1",
-    subject: "Toán",
-    status: "upcoming",
-  },
-  {
-    period: 5,
-    time: "10:55",
-    className: "11B2",
-    subject: "Toán",
-    status: "upcoming",
-  },
-];
+/** Periods 1–5 = morning, 6+ = afternoon (presentation-local; mirrors the mapper). */
+function sessionKey(period: number): "morning" | "afternoon" {
+  return period <= 5 ? "morning" : "afternoon";
+}
 
-const STATUS_TONE: Record<PeriodStatus, StatusTone> = {
-  done: "muted",
-  live: "success",
-  upcoming: "warning",
+/** Notification tone key → design-system CSS variable (resolved at presentation). */
+const NOTIF_COLOR_VAR: Record<string, string> = {
+  primary: "var(--edu-primary)",
+  success: "var(--edu-success)",
+  warning: "var(--edu-warning)",
+  error: "var(--edu-error)",
+  info: "var(--edu-info)",
+  purple: "var(--edu-purple)",
 };
 
-export async function TeacherDashboard() {
-  const t = await getTranslations("dashboard.teacher");
-
+/** Vietnamese-aware initials (first letter of last two words). */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-extrabold text-foreground">
-          {t("title")}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("greeting")}</p>
-      </header>
+    parts[parts.length - 2].charAt(0) + parts[parts.length - 1].charAt(0)
+  ).toUpperCase();
+}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t("stats.classes")}
-          value="6"
-          icon={BookOpenCheck}
-          tone="primary"
-        />
-        <StatCard
-          label={t("stats.students")}
-          value="214"
-          icon={Users}
-          tone="info"
-          trend={{ dir: "up", value: "+3" }}
-        />
-        <StatCard
-          label={t("stats.attendance")}
-          value="97%"
-          icon={ClipboardList}
-          tone="success"
-          trend={{ dir: "up", value: "+1.2%" }}
-        />
-        <StatCard
-          label={t("stats.pending")}
-          value="4"
-          icon={CalendarClock}
-          tone="warning"
-        />
-      </div>
+/**
+ * RSC wrapper — resolves the use-case server-side, maps the domain result to a
+ * ViewModel, and renders the client dashboard. Failure → null stats + empty
+ * lists so the client renders its loading/empty states (no throw).
+ */
+export async function TeacherDashboard() {
+  const useCase = await makeGetTeacherDashboardUseCase();
+  const result = await useCase.execute();
 
-      <Card>
-        <CardHeader className="pb-3">
-          <h2 className="text-[15px] font-bold text-foreground">
-            {t("scheduleTitle")}
-          </h2>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ul className="divide-y divide-border">
-            {SCHEDULE.map((p) => (
-              <li
-                key={p.period}
-                className={cn(
-                  "flex items-center gap-4 px-6 py-3",
-                  p.status === "live" && "border-l-[3px] border-edu-success",
-                )}
-              >
-                <span className="w-12 text-sm font-bold text-muted-foreground">
-                  {p.time}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">
-                    {p.className} · {p.subject}
-                  </div>
-                </div>
-                <StatusBadge tone={STATUS_TONE[p.status]}>
-                  {t(`status.${p.status}`)}
-                </StatusBadge>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const vm: TeacherDashboardVM = result.ok
+    ? {
+        totalStudents: result.data.stats.totalStudents,
+        classesToday: result.data.stats.classesToday,
+        pendingGradesCount: result.data.stats.pendingGradesCount,
+        pendingApprovalCount: result.data.stats.pendingApprovalCount,
+        newMessagesCount: result.data.stats.newMessagesCount,
+        scheduleItems: result.data.scheduleItems.map((s) => ({
+          period: s.period,
+          sessionKey: sessionKey(s.period),
+          subject: s.subject,
+          className: s.className,
+          room: s.room,
+          status: s.status,
+        })),
+        pendingGradeItems: result.data.pendingGradeItems.map((g) => ({
+          studentName: g.studentName,
+          initials: initialsOf(g.studentName),
+          assessmentType: g.assessmentType,
+          className: g.className,
+        })),
+        notifications: result.data.notifications.map((n) => ({
+          icon: n.icon,
+          colorVar: NOTIF_COLOR_VAR[n.color] ?? "var(--edu-primary)",
+          message: n.message,
+          timeAgo: n.timeAgo,
+        })),
+        gradesPath: "grades",
+      }
+    : {
+        totalStudents: null,
+        classesToday: 0,
+        pendingGradesCount: 0,
+        pendingApprovalCount: 0,
+        newMessagesCount: 0,
+        scheduleItems: [],
+        pendingGradeItems: [],
+        notifications: [],
+        gradesPath: "grades",
+      };
+
+  return <TeacherDashboardHomeClient vm={vm} />;
 }

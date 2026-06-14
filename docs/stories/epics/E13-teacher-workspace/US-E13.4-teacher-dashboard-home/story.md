@@ -2,7 +2,18 @@
 
 ## Status
 
-planned
+implemented
+
+## Evidence
+
+Design review: pass
+- design-system: conform (tokens-only — `bg-card`, `border-border`, `shadow-card`, `text-foreground`, `text-edu-text-secondary` for small text, `bg-edu-primary-accessible` for CTA; no raw color; StatCard + StatusBadge reused)
+- a11y: WCAG AA OK (small text → `text-edu-text-secondary` #5a6a85 5.9:1; CTA → `bg-edu-primary-accessible` #4468e0 4.88:1; `min-h-[44px]` touch target; `aria-label` on CTAs; `aria-hidden` decorative; focus-visible outline; `<h1 class="sr-only">` page title; status not color-only)
+- impeccable audit: manual pass — no spacing inconsistency, typography hierarchy clear, all states present
+- states: loading (totalStudents=null→"—") / empty (scheduleItems.length===0) / error (RSC failure→null VM) / success OK; responsive `grid-cols-1 lg:grid-cols-[1.4fr_1fr]`; dark mode via semantic tokens
+
+Commits: f8abde0 (implementation), a9d7a8e (a11y+CTA+pagination fixes)
+Branch: feat/us-e13.4-teacher-dashboard-home → merged to main
 
 ## Lane
 
