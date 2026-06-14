@@ -298,6 +298,70 @@
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
     }
   },
+  "classLog": {
+    "pageTitle": "Sổ đầu bài",
+    "teacherSubtitle": "Ghi lại nội dung từng tiết dạy để BGH phê duyệt",
+    "principalSubtitle": "Xem xét và phê duyệt sổ đầu bài của giáo viên",
+    "newEntry": "Ghi tiết mới",
+    "stats": {
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "draft": "Nháp",
+      "rejected": "Từ chối"
+    },
+    "status": {
+      "DRAFT": "Nháp",
+      "SUBMITTED": "Chờ duyệt",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Từ chối"
+    },
+    "form": {
+      "title": "Ghi sổ đầu bài",
+      "subtitle": "Ghi lại nội dung tiết học để BGH phê duyệt",
+      "entryDate": "Ngày",
+      "summary": "Nội dung bài học / Nội dung tiết dạy",
+      "summaryPlaceholder": "VD: Đạo hàm và ứng dụng — Bài 3: Cực trị hàm số",
+      "summaryRequired": "Nội dung bài học là bắt buộc",
+      "notableEvents": "Ghi chú (tùy chọn)",
+      "notableEventsPlaceholder": "Nhận xét, tình hình đặc biệt trong tiết học...",
+      "saveDraft": "Lưu nháp",
+      "submit": "Gửi BGH phê duyệt",
+      "submitting": "Đang gửi...",
+      "saved": "Đã ghi sổ thành công!",
+      "back": "Quay lại"
+    },
+    "list": {
+      "title": "Danh sách sổ đầu bài",
+      "empty": "Không có mục nào",
+      "filterAll": "Tất cả"
+    },
+    "detail": {
+      "back": "Quay lại danh sách",
+      "bghReview": "Phê duyệt của BGH",
+      "approve": "Phê duyệt",
+      "approving": "Đang phê...",
+      "reject": "Từ chối",
+      "rejectReason": "Lý do từ chối",
+      "rejectReasonPlaceholder": "VD: Thiếu nội dung bài tập về nhà...",
+      "confirmReject": "Xác nhận từ chối",
+      "cancelReject": "Huỷ",
+      "approvedBy": "Bởi BGH",
+      "approvedLabel": "Đã phê duyệt",
+      "rejectedLabel": "Đã từ chối",
+      "rejectionReason": "Lý do từ chối:",
+      "teacherSignature": "Giáo viên ký tên",
+      "noClassSelected": "Chọn một lớp để xem sổ đầu bài"
+    },
+    "errors": {
+      "not-found": "Không tìm thấy bản ghi",
+      "already-submitted": "Bản ghi đã được gửi",
+      "not-submitted": "Bản ghi chưa được gửi để phê duyệt",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
+      "duplicate-date": "Đã có bản ghi cho ngày này",
+      "network-error": "Lỗi kết nối mạng",
+      "unknown": "Đã xảy ra lỗi không xác định"
+    }
+  },
   "attendance": {
     "title": "Điểm danh",
     "filters": {

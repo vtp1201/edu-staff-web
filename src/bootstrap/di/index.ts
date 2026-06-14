@@ -3,6 +3,7 @@ export * from "./admin-school-setup.di";
 export * from "./attendance.di";
 export * from "./auth.di";
 export * from "./calendar.di";
+export * from "./class-log.di";
 export * from "./class-management.di";
 export * from "./principal-teachers.di";
 export * from "./staffing.di";

@@ -1572,6 +1572,87 @@
   },
 
   // ─────────────────────────────────────────────
+  // CLASS LOG — Sổ đầu bài (US-E13.3)
+  // Derived from design_src/edu/classops.jsx ClassLogScreen; aligned to the
+  // REAL core homeroom-entries contract (summary + notableEvents only).
+  // ─────────────────────────────────────────────
+  "class-log": {
+    "statusBadgeTones": {
+      "DRAFT": "muted",
+      "SUBMITTED": "warning",
+      "APPROVED": "success",
+      "REJECTED": "error"
+    },
+    "teacherScreen": {
+      "route": "/teacher/class-log?classId=<id>",
+      "pageTitle": "Sổ đầu bài",
+      "subtitle": "Ghi lại nội dung từng tiết dạy để BGH phê duyệt",
+      "newEntryButton": "Ghi tiết mới",
+      "statsRow": [
+        {
+          "label": "Chờ duyệt",
+          "tone": "warning",
+          "source": "SUBMITTED count"
+        },
+        { "label": "Đã duyệt", "tone": "success", "source": "APPROVED count" },
+        { "label": "Nháp", "tone": "muted", "source": "DRAFT count" }
+      ],
+      "listRow": {
+        "statusBar": "3px (w-1) left bar colored by status (bg-edu-* token)",
+        "columns": ["entryDate", "summary excerpt", "status badge"],
+        "card": "white card, radius 12, shadow-card, hover shadow-card-hover"
+      },
+      "entryForm": {
+        "maxWidth": 720,
+        "title": "Ghi sổ đầu bài",
+        "fields": [
+          { "name": "entryDate", "type": "date", "required": true },
+          {
+            "name": "summary",
+            "type": "textarea",
+            "required": true,
+            "ariaRequired": true,
+            "maps": "API summary (lesson content)"
+          },
+          {
+            "name": "notableEvents",
+            "type": "textarea",
+            "required": false,
+            "maps": "API notableEvents (class notes)"
+          }
+        ],
+        "actions": ["Lưu nháp (outline)", "Gửi BGH phê duyệt (primary)"]
+      },
+      "detail": {
+        "header": "primary band, summary title + entryDate + status badge",
+        "readonlyAfterSubmit": true,
+        "teacherSubmitAction": "visible when status DRAFT or REJECTED"
+      }
+    },
+    "principalScreen": {
+      "route": "/principal/class-log?classId=<id>",
+      "pageTitle": "Sổ đầu bài",
+      "subtitle": "Xem xét và phê duyệt sổ đầu bài của giáo viên",
+      "noCreateButton": true,
+      "statsRow": [
+        {
+          "label": "Chờ duyệt",
+          "tone": "warning",
+          "source": "SUBMITTED count"
+        },
+        { "label": "Đã duyệt", "tone": "success", "source": "APPROVED count" },
+        { "label": "Từ chối", "tone": "error", "source": "REJECTED count" }
+      ],
+      "filterChips": ["Tất cả", "Nháp", "Chờ duyệt", "Đã duyệt", "Từ chối"],
+      "approvalActions": {
+        "shownWhen": "status === SUBMITTED",
+        "approve": "Phê duyệt (bg-edu-success)",
+        "reject": "Từ chối → inline reason textarea → Xác nhận từ chối (destructive)"
+      }
+    }
+  },
+
+  // ─────────────────────────────────────────────
   // SHARED COMPONENTS
   // ─────────────────────────────────────────────
   "components": {

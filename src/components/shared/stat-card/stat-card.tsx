@@ -123,7 +123,7 @@ function DefaultStatCard({
           t.box,
         )}
       >
-        <Icon className={cn("size-6", t.icon)} />
+        <Icon className={cn("size-6", t.icon)} aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-xs font-medium text-muted-foreground">
@@ -140,7 +140,7 @@ function DefaultStatCard({
             trendColorClass(trend.dir),
           )}
         >
-          <TrendIcon className="size-3.5" />
+          <TrendIcon className="size-3.5" aria-hidden="true" />
           {trend.value}
         </span>
       )}
