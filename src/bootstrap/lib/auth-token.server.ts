@@ -1,15 +1,22 @@
 import "server-only";
 import { cookies } from "next/headers";
-import type { AuthTokens } from "@/features/auth/domain/entities/auth-user.entity";
+import type {
+  AuthTokens,
+  AuthUser,
+  UserTenantRole,
+} from "@/features/auth/domain/entities/auth-user.entity";
 import { decodeJwtExp, isAccessExpired } from "./jwt";
 
 export const AUTH_COOKIE = "auth_token";
 export const REFRESH_COOKIE = "refresh_token";
 export const ACCESS_EXP_COOKIE = "auth_token_exp";
 export const SESSION_COOKIE = "session_id";
+/** Short-lived bridge cookie carrying role choices for the select-role step. */
+export const PENDING_ROLES_COOKIE = "pending_roles";
 
 const ACCESS_MAX_AGE = 60 * 60 * 24 * 7; // 7d
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 30; // 30d
+const PENDING_ROLES_MAX_AGE = 60 * 10; // 10m — just enough to pick a role
 
 function baseOptions() {
   return {
@@ -66,6 +73,39 @@ export async function setAuthCookies(tokens: AuthTokens): Promise<void> {
   }
 }
 
+/** Minimal payload the select-role screen needs (no token, no PII beyond name). */
+export interface PendingRoles {
+  userName: string;
+  roles: UserTenantRole[];
+}
+
+/**
+ * Stash the user's name + tenant roles in a short-lived httpOnly cookie so the
+ * `/select-role` RSC page can render the choices. No tokens here; the session
+ * cookies are already set. Read server-side only.
+ */
+export async function setPendingRolesCookie(user: AuthUser): Promise<void> {
+  const payload: PendingRoles = { userName: user.name, roles: user.roles };
+  (await cookies()).set(PENDING_ROLES_COOKIE, JSON.stringify(payload), {
+    ...baseOptions(),
+    maxAge: PENDING_ROLES_MAX_AGE,
+  });
+}
+
+export async function getPendingRolesCookie(): Promise<PendingRoles | null> {
+  const raw = (await cookies()).get(PENDING_ROLES_COOKIE)?.value;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PendingRoles;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingRolesCookie(): Promise<void> {
+  (await cookies()).delete(PENDING_ROLES_COOKIE);
+}
+
 export async function clearAuthCookies(): Promise<void> {
   const store = await cookies();
   for (const name of [
@@ -73,6 +113,7 @@ export async function clearAuthCookies(): Promise<void> {
     REFRESH_COOKIE,
     ACCESS_EXP_COOKIE,
     SESSION_COOKIE,
+    PENDING_ROLES_COOKIE,
   ]) {
     store.delete(name);
   }

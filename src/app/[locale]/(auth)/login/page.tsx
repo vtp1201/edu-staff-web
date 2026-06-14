@@ -1,6 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { LoginFormContainer } from "@/features/auth/presentation/login-form/login-form";
-import { loginAction } from "./actions";
+import { GoogleAuthWrapper } from "@/features/auth/presentation/login-form/google-auth-wrapper";
+import { loginAction, socialSigninAction } from "./actions";
 
 export default async function LoginPage() {
   const t = await getTranslations("auth");
@@ -31,7 +31,11 @@ export default async function LoginPage() {
           <p className="mb-6 text-[13.5px] text-muted-foreground">
             {t("login.subtitle")}
           </p>
-          <LoginFormContainer action={loginAction} />
+          <GoogleAuthWrapper
+            clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}
+            action={loginAction}
+            socialAction={socialSigninAction}
+          />
           <a
             href={`/${locale}/forgot-password`}
             className="mt-4 inline-block text-sm font-medium text-primary hover:underline"

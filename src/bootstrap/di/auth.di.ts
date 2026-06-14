@@ -11,11 +11,17 @@ import { LogoutUseCase } from "@/features/auth/domain/use-cases/logout.use-case"
 import { RefreshSessionUseCase } from "@/features/auth/domain/use-cases/refresh-session.use-case";
 import { RequestPasswordResetUseCase } from "@/features/auth/domain/use-cases/request-password-reset.use-case";
 import { ResetPasswordUseCase } from "@/features/auth/domain/use-cases/reset-password.use-case";
+import { SocialAuthUseCase } from "@/features/auth/domain/use-cases/social-auth.use-case";
 import { AuthRepository } from "@/features/auth/infrastructure/repositories/auth.repository";
 
 export async function makeLoginUseCase() {
   const http = await createServerHttpClient();
   return new LoginUseCase(new AuthRepository(http));
+}
+
+export async function makeSocialAuthUseCase() {
+  const http = await createServerHttpClient();
+  return new SocialAuthUseCase(new AuthRepository(http));
 }
 
 export async function makeRequestPasswordResetUseCase() {
