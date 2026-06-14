@@ -298,6 +298,70 @@
       "unknown": "Something went wrong, please try again."
     }
   },
+  "classLog": {
+    "pageTitle": "Class Log",
+    "teacherSubtitle": "Record each lesson's content for BGH approval",
+    "principalSubtitle": "Review and approve teachers' class logs",
+    "newEntry": "New entry",
+    "stats": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "draft": "Draft",
+      "rejected": "Rejected"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "form": {
+      "title": "New Class Log Entry",
+      "subtitle": "Record lesson details for BGH review",
+      "entryDate": "Date",
+      "summary": "Lesson content",
+      "summaryPlaceholder": "e.g. Derivatives and applications — Lesson 3: Extrema",
+      "summaryRequired": "Lesson content is required",
+      "notableEvents": "Notes (optional)",
+      "notableEventsPlaceholder": "Remarks, notable events during the lesson...",
+      "saveDraft": "Save draft",
+      "submit": "Submit for approval",
+      "submitting": "Submitting...",
+      "saved": "Log entry saved!",
+      "back": "Back"
+    },
+    "list": {
+      "title": "Class log entries",
+      "empty": "No entries",
+      "filterAll": "All"
+    },
+    "detail": {
+      "back": "Back to list",
+      "bghReview": "BGH Review",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "reject": "Reject",
+      "rejectReason": "Rejection reason",
+      "rejectReasonPlaceholder": "e.g. Missing homework details...",
+      "confirmReject": "Confirm rejection",
+      "cancelReject": "Cancel",
+      "approvedBy": "by BGH",
+      "approvedLabel": "Approved",
+      "rejectedLabel": "Rejected",
+      "rejectionReason": "Rejection reason:",
+      "teacherSignature": "Teacher signature",
+      "noClassSelected": "Select a class to view its log"
+    },
+    "errors": {
+      "not-found": "Entry not found",
+      "already-submitted": "Entry has already been submitted",
+      "not-submitted": "Entry has not been submitted for approval",
+      "unauthorized": "You are not allowed to perform this action",
+      "duplicate-date": "An entry already exists for this date",
+      "network-error": "Network error",
+      "unknown": "An unknown error occurred"
+    }
+  },
   "attendance": {
     "title": "Attendance",
     "filters": {

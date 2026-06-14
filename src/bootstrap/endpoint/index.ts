@@ -4,6 +4,7 @@ export * from "./attendance.endpoint";
 export * from "./auth.endpoint";
 export * from "./calendar.endpoint";
 export * from "./class.endpoint";
+export * from "./class-log.endpoint";
 export * from "./noti.endpoint";
 export * from "./staffing.endpoint";
 export * from "./subject-catalogue.endpoint";

@@ -51,6 +51,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   principal: [
     { href: "/principal", labelKey: "dashboard", icon: BarChart3 },
     { href: "/principal/teachers", labelKey: "teachers", icon: UserCog },
+    { href: "/principal/class-log", labelKey: "classLog", icon: NotebookPen },
     { href: "/principal/students", labelKey: "students", icon: Users },
     { href: "/principal/classes", labelKey: "classes", icon: School },
     { href: "/principal/schedule", labelKey: "schedule", icon: CalendarDays },

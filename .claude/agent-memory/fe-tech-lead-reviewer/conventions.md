@@ -45,6 +45,13 @@ Confirmed facts (verify before citing if stale):
   interceptor unwraps before parseEnvelope. Since it's universal precedent, do NOT block a single
   new repo that copies it — route to fe-lead as a cross-cutting ADR. A new repo following this
   pattern is CONSISTENT, not a regression.
+- **Role boundary via per-route action shadowing** (confirmed US-E13.3 class-log): one shared
+  presentation screen (`ClassLogScreen`) takes all 4 actions as props; the teacher route's
+  `actions.ts` wires create/submit to real use-cases but stubs approve/reject to
+  `{ ok:false, errorKey:"unauthorized" }`, and the principal route does the inverse (stubs
+  create/submit, wires approve/reject). This is sound server-side defense-in-depth — the privileged
+  use-case is never reachable from the wrong role's route. ACCEPTED pattern; don't flag the "stub"
+  actions as dead code — they enforce the boundary.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

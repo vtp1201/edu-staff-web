@@ -121,6 +121,16 @@ Pattern: Login RSC wraps the form in a `<div>` with `<h2>` for the login title, 
 Fix: Either make the login title an `<h1>`, or add a visually-hidden `<h1>` matching the page title for all viewport sizes.
 Seen in: US-E01.2 login/page.tsx lines 18–29.
 
+## Contrast — Approve button: bg-edu-success + text-white fails badly
+Pattern: `className="bg-edu-success text-white"` on a primary action button. `--edu-success: #13DEB9` on white = 1.72:1 — catastrophic failure (need 4.5:1 for text-sm).
+Fix: Use `text-edu-warning-foreground` (#2A3547, 7.17:1) OR `text-edu-text-primary` instead of `text-white` on any bg-edu-success button. Never pair white text with edu-success background.
+Seen in: US-E13.3 class-log-entry-detail.tsx (Approve button).
+
+## Focus — View transitions (SPA-style) without focus management
+Pattern: Single-page view toggle (list/new/detail state with useState) renders new content without moving focus. When keyboard user activates "New Entry" button, the form mounts but focus stays at the now-removed button position. Screen reader does not announce the view change.
+Fix: In the root orchestrator, add a `useRef` on the new view's heading/back-button and a `useEffect` that fires when `view` changes to call `.focus()` on that ref. Both `ClassLogEntryForm` and `ClassLogEntryDetail` should have their back-button or h2 receive focus on mount.
+Seen in: US-E13.3 class-log-screen.tsx (view state transitions).
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.
