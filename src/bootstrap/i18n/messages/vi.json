@@ -458,7 +458,8 @@
   "teacherClasses": {
     "pageTitle": "Lớp học của tôi",
     "empty": "Bạn chưa được phân công lớp nào.",
-    "errorRetry": "Không thể tải danh sách lớp. Vui lòng thử lại.",
+    "errorRetryAction": "Thử lại",
+    "breadcrumbLabel": "Điều hướng lớp học",
     "gradeLevel": "Khối {grade}",
     "students": "học sinh",
     "homeroomBadge": "GVCN",
@@ -469,10 +470,13 @@
       "comingSoon": "Sắp có"
     },
     "studentPage": {
-      "pageTitle": "Danh sách học sinh",
       "breadcrumbClasses": "Lớp học",
       "empty": "Lớp này chưa có học sinh nào.",
-      "errorRetry": "Không thể tải danh sách học sinh.",
+      "errorRetryAction": "Thử lại",
+      "retryButton": "Thử lại",
+      "studentListSection": "Danh sách học sinh",
+      "paginationNav": "Phân trang danh sách học sinh",
+      "filteredCount": "Tìm thấy {count} học sinh",
       "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
       "columns": {
         "name": "Học sinh",

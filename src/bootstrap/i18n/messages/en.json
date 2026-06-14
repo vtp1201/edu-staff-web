@@ -458,7 +458,8 @@
   "teacherClasses": {
     "pageTitle": "My Classes",
     "empty": "You have not been assigned to any class.",
-    "errorRetry": "Unable to load class list. Please try again.",
+    "errorRetryAction": "Try again",
+    "breadcrumbLabel": "Class navigation",
     "gradeLevel": "Grade {grade}",
     "students": "students",
     "homeroomBadge": "Homeroom",
@@ -469,10 +470,13 @@
       "comingSoon": "Coming soon"
     },
     "studentPage": {
-      "pageTitle": "Student List",
       "breadcrumbClasses": "Classes",
       "empty": "This class has no students yet.",
-      "errorRetry": "Unable to load student list.",
+      "errorRetryAction": "Try again",
+      "retryButton": "Try again",
+      "studentListSection": "Student list",
+      "paginationNav": "Student list pagination",
+      "filteredCount": "Found {count} students",
       "searchPlaceholder": "Search by name or student code...",
       "columns": {
         "name": "Student",

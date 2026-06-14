@@ -18,7 +18,7 @@ export default async function TeacherClassesPage() {
           studentsHref: `classes/${cls.id}/students`,
         })),
       }
-    : { status: "error", classes: [] };
+    : { status: "error", errorKey: result.error.type, classes: [] };
 
   return <TeacherClassesScreen vm={vm} />;
 }

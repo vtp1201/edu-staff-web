@@ -36,6 +36,7 @@ export default async function TeacherClassStudentsPage({
       }
     : {
         status: "error",
+        errorKey: studentsResult.error.type,
         className,
         classesHref: "../..",
         students: [],

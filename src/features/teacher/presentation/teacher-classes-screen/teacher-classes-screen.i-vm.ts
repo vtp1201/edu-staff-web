@@ -1,3 +1,5 @@
+import type { TeacherClassFailure } from "../../domain/failures/teacher-class.failure";
+
 /** ViewModel for one class card. `studentsHref` is app-relative (rendered as a Link). */
 export interface TeacherClassVM {
   id: string;
@@ -11,7 +13,9 @@ export interface TeacherClassVM {
 
 export interface TeacherClassesScreenVM {
   /** "ready" → render `classes` (possibly empty → empty state).
-   *  "error" → render the error message + retry hint (RSC: no client refetch). */
+   *  "error" → render the typed `errorKey` message + retry button. */
   status: "ready" | "error";
+  /** Present when status === "error"; maps to `teacherClasses.errors.<type>`. */
+  errorKey?: TeacherClassFailure["type"];
   classes: TeacherClassVM[];
 }
