@@ -795,6 +795,7 @@
     "teacherCount": "{count} giáo viên",
     "assignClass": "Phân công lớp",
     "detail": "Chi tiết",
+    "retry": "Thử lại",
     "table": {
       "teacher": "Giáo viên",
       "primarySubject": "Môn chính",

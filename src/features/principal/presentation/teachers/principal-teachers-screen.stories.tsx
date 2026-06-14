@@ -101,6 +101,49 @@ const TEACHERS: PrincipalTeacher[] = [
     ],
     status: "ON_LEAVE",
   },
+  {
+    teacherId: "t-004",
+    displayName: "Phạm Văn Đức",
+    email: "duc@edu.vn",
+    primarySubjectName: "Hóa học",
+    homeroomClassId: null,
+    homeroomClassName: null,
+    subjectAssignments: [
+      {
+        classSubjectId: "cs-a",
+        classId: "c-10a1",
+        className: "10A1",
+        subjectId: "s-hoa",
+        subjectName: "Hóa học",
+        hasConflict: false,
+      },
+      {
+        classSubjectId: "cs-b",
+        classId: "c-10a2",
+        className: "10A2",
+        subjectId: "s-hoa",
+        subjectName: "Hóa học",
+        hasConflict: false,
+      },
+      {
+        classSubjectId: "cs-c",
+        classId: "c-11b1",
+        className: "11B1",
+        subjectId: "s-hoa",
+        subjectName: "Hóa học",
+        hasConflict: false,
+      },
+      {
+        classSubjectId: "cs-d",
+        classId: "c-12c2",
+        className: "12C2",
+        subjectId: "s-hoa",
+        subjectName: "Hóa học",
+        hasConflict: false,
+      },
+    ],
+    status: "ACTIVE",
+  },
 ];
 
 const ok = async () => ({ errorKey: null });
@@ -135,6 +178,14 @@ export const TeacherList_Loading: Story = {
     fetchError: null,
     loading: true,
     ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // While loading, skeleton rows render and no row action buttons appear.
+    const assignButtons = canvas.queryAllByRole("button", {
+      name: messages.principalTeachers.assignClass,
+    });
+    expect(assignButtons).toHaveLength(0);
   },
 };
 
@@ -173,10 +224,14 @@ export const AssignmentSheet_Open: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const buttons = await canvas.findAllByRole("button", {
+    // Open the sheet for Nguyễn Thị Lan (t-001) — her row owns the second
+    // assign button (vi sort: Lê, Nguyễn, Phạm, Trần).
+    const lanRow = (await canvas.findByText("Nguyễn Thị Lan")).closest("tr");
+    expect(lanRow).not.toBeNull();
+    const assignBtn = within(lanRow as HTMLElement).getByRole("button", {
       name: messages.principalTeachers.assignClass,
     });
-    await userEvent.click(buttons[0]);
+    await userEvent.click(assignBtn);
     await waitFor(() =>
       expect(
         document.body.textContent?.includes(
@@ -184,6 +239,13 @@ export const AssignmentSheet_Open: Story = {
         ),
       ).toBe(true),
     );
+    // DEF-004: the GVCN Select pre-selects the teacher's current homeroom class.
+    // t-001 has homeroomClassId "c-10a1" → the trigger displays "10A1".
+    const gvcnSelect = await within(document.body).findByRole("combobox", {
+      name: messages.principalTeachers.sheet.classPicker,
+    });
+    expect(gvcnSelect).toBeInTheDocument();
+    expect(gvcnSelect.textContent).toMatch(/10A1/);
   },
 };
 
@@ -215,5 +277,65 @@ export const AssignmentSheet_WithConflict: Story = {
         ),
       ).toBe(true),
     );
+  },
+};
+
+export const TeacherList_Error: Story = {
+  args: {
+    teachers: [],
+    fetchError: "network-error",
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Error message renders inside an alert region.
+    const alert = await canvas.findByRole("alert");
+    expect(alert).toBeInTheDocument();
+    // AC-4: an interactive retry button is offered alongside the message.
+    const retryBtn = within(alert).getByRole("button", {
+      name: messages.principalTeachers.retry,
+    });
+    expect(retryBtn).toBeInTheDocument();
+  },
+};
+
+export const AssignmentSheet_Save_Loading: Story = {
+  args: {
+    teachers: TEACHERS,
+    fetchError: null,
+    ...handlers,
+    // Never resolves — keeps the save transition pending so the loading state
+    // is observable.
+    onAssignHomeroom: () => new Promise<{ errorKey: null }>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Open the sheet for Nguyễn Thị Lan (t-001) — she has a homeroom to save.
+    const lanRow = (await canvas.findByText("Nguyễn Thị Lan")).closest("tr");
+    expect(lanRow).not.toBeNull();
+    const assignBtn = within(lanRow as HTMLElement).getByRole("button", {
+      name: messages.principalTeachers.assignClass,
+    });
+    await userEvent.click(assignBtn);
+
+    const sheet = within(document.body);
+    // Change the GVCN selection so handleSave dispatches the (pending) op.
+    const gvcnSelect = await sheet.findByRole("combobox", {
+      name: messages.principalTeachers.sheet.classPicker,
+    });
+    await userEvent.click(gvcnSelect);
+    const option = await sheet.findByRole("option", { name: "11B1" });
+    await userEvent.click(option);
+
+    const saveBtn = await sheet.findByRole("button", {
+      name: messages.principalTeachers.sheet.save,
+    });
+    await userEvent.click(saveBtn);
+
+    // The save button switches to the disabled loading state.
+    const savingBtn = await sheet.findByRole("button", {
+      name: messages.principalTeachers.sheet.saving,
+    });
+    expect(savingBtn).toBeDisabled();
   },
 };

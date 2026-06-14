@@ -1,6 +1,7 @@
 "use client";
 
 import { TriangleAlertIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
@@ -59,6 +60,7 @@ export function PrincipalTeachersScreen({
   onGetClassSubjects,
 }: PrincipalTeachersVM) {
   const t = useTranslations("principalTeachers");
+  const router = useRouter();
   const [activeTeacher, setActiveTeacher] = useState<PrincipalTeacher | null>(
     null,
   );
@@ -86,7 +88,15 @@ export function PrincipalTeachersScreen({
           role="alert"
           className="rounded-card border border-edu-error/30 bg-edu-error/10 p-6 text-center text-edu-error-text text-sm"
         >
-          {t(`errors.${fetchError}`)}
+          <p>{t(`errors.${fetchError}`)}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.refresh()}
+            className="mt-3"
+          >
+            {t("retry")}
+          </Button>
         </div>
       </section>
     );

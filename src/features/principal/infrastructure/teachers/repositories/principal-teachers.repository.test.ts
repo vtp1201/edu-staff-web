@@ -115,6 +115,16 @@ describe("PrincipalTeachersRepository", () => {
       expect(res.ok).toBe(false);
       if (!res.ok) expect(res.failure.type).toBe("forbidden");
     });
+
+    it("maps TIMETABLE_CONFLICT code → conflict-exists failure", async () => {
+      const put = vi
+        .fn()
+        .mockRejectedValue(apiError("TIMETABLE_CONFLICT", 409));
+      const repo = new PrincipalTeachersRepository(makeHttp({ put }));
+      const res = await repo.assignSubjectTeacher("c-10a1", "s-toan", "t-001");
+      expect(res.ok).toBe(false);
+      if (!res.ok) expect(res.failure.type).toBe("conflict-exists");
+    });
   });
 
   describe("listTeachers", () => {
