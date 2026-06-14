@@ -9,3 +9,4 @@
 - [Parallel branch workflow](project-parallel-branch-workflow.md) — decision 0025: claim via remote branch early-push, dependency check, auto-merge to main on gate-green, delete branch local+remote
 - [Storybook runner fix](project-storybook-esm-fix.md) — bun patch @storybook/nextjs-vite@10.4.2 (preset.js require→dynamic import), postcss.config.js CJS, story appDirectory param; ADR 0032; next Storybook upgrade must re-check patch
 - [E13 Teacher Workspace epic](project-e13-teacher-workspace.md) — US-E13.4 TeacherDashboardHome implemented; real BE for total-students (paginated classes+roster); rest mock-first; 291 tests pass
+- [E01 Auth RBAC epic](project-e01-auth.md) — US-E01.1 email+token done; US-E01.2 SSO+multi-role done (ADR 0035 VNeID, ADR 0036 roleEnum); 304 tests
