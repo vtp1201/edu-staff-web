@@ -39,6 +39,12 @@ Confirmed facts (verify before citing if stale):
 - **Paginated count via roster `.length`:** counting students by `roster.length` on a single `{limit:N}`
   page (teacher-dashboard `getTotalStudents`) silently undercounts when `meta.pagination.hasMore` is true.
   Flag any "sum/count from a list endpoint" that doesn't follow `nextCursor`.
+- **`{raw:true}` trap is REPO-WIDE precedent** (confirmed US-E13.1): calendar, subject-catalogue,
+  class-management, staffing, admin-roster, teacher-dashboard, teacher-class ALL pass
+  `{ params: {..., raw: true } }` (raw nested in params, not config-level). So at runtime the
+  interceptor unwraps before parseEnvelope. Since it's universal precedent, do NOT block a single
+  new repo that copies it — route to fe-lead as a cross-cutting ADR. A new repo following this
+  pattern is CONSISTENT, not a regression.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
