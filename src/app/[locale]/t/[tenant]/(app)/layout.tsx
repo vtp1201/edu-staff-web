@@ -1,3 +1,4 @@
+import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell, type Role } from "@/components/layout/app-shell";
 
 // TODO role-guard (separate story): derive role from the tenant-scoped token's
@@ -15,7 +16,7 @@ export default async function AppLayout({
   const { tenant } = await params;
   return (
     <AppShell tenantId={tenant} role={HARDCODED_ROLE} userName="Nguyen Van A">
-      {children}
+      <ReactQueryProvider>{children}</ReactQueryProvider>
     </AppShell>
   );
 }

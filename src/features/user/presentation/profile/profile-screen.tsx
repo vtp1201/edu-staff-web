@@ -10,6 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type {
+  LinkedAccount,
+  SocialProvider,
+} from "@/features/user/domain/entities/linked-account.entity";
+import type { LinkedAccountResult } from "@/features/user/domain/repositories/i-linked-accounts.repository";
 import {
   checkRules,
   type StrengthLevel,
@@ -17,7 +22,15 @@ import {
   strengthScore,
 } from "@/shared/password-strength";
 import { cn } from "@/shared/utils";
+import { AccountRequestsCard } from "./account-requests-card";
+import { LinkedAccountsSection } from "./linked-accounts-section";
 import type { ProfileScreenVM } from "./profile-screen.i-vm";
+
+export interface ProfileScreenProps extends ProfileScreenVM {
+  onLinkAccount: (provider: SocialProvider) => Promise<LinkedAccountResult>;
+  onUnlinkAccount: (provider: SocialProvider) => Promise<LinkedAccountResult>;
+  onFetchLinkedAccounts?: () => Promise<LinkedAccount[]>;
+}
 
 const LEVEL_COLOR: Record<Exclude<StrengthLevel, "empty">, string> = {
   weak: "bg-edu-error",
@@ -31,7 +44,11 @@ export function ProfileScreen({
   phone,
   role,
   sessions,
-}: ProfileScreenVM) {
+  linkedAccounts,
+  onLinkAccount,
+  onUnlinkAccount,
+  onFetchLinkedAccounts,
+}: ProfileScreenProps) {
   const t = useTranslations("profile");
   const initials = fullName
     .split(" ")
@@ -43,27 +60,31 @@ export function ProfileScreen({
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
       {/* Identity column */}
-      <Card className="h-fit overflow-hidden p-0">
-        <div
-          className="h-18"
-          style={{
-            background:
-              "linear-gradient(120deg, var(--edu-primary), color-mix(in srgb, var(--edu-primary) 70%, var(--edu-success)))",
-          }}
-        />
-        <CardContent className="flex flex-col items-center px-5 pb-5 text-center">
-          <Avatar className="-mt-8 size-18 border-4 border-card">
-            <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="mt-3 font-bold text-foreground">{fullName}</div>
-          <StatusBadge tone="primary" className="mt-1">
-            {role}
-          </StatusBadge>
-          <div className="mt-2 text-xs text-muted-foreground">{email}</div>
-        </CardContent>
-      </Card>
+      <div className="flex h-fit flex-col gap-6">
+        <Card className="overflow-hidden p-0">
+          <div
+            className="h-18"
+            style={{
+              background:
+                "linear-gradient(120deg, var(--edu-primary), color-mix(in srgb, var(--edu-primary) 70%, var(--edu-success)))",
+            }}
+          />
+          <CardContent className="flex flex-col items-center px-5 pb-5 text-center">
+            <Avatar className="-mt-8 size-18 border-4 border-card">
+              <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="mt-3 font-bold text-foreground">{fullName}</div>
+            <StatusBadge tone="primary" className="mt-1">
+              {role}
+            </StatusBadge>
+            <div className="mt-2 text-xs text-muted-foreground">{email}</div>
+          </CardContent>
+        </Card>
+
+        <AccountRequestsCard />
+      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="personal">
@@ -91,8 +112,14 @@ export function ProfileScreen({
           </Card>
         </TabsContent>
 
-        <TabsContent value="security">
+        <TabsContent value="security" className="space-y-6">
           <SecurityTab />
+          <LinkedAccountsSection
+            initialData={linkedAccounts}
+            onFetch={onFetchLinkedAccounts}
+            onLink={onLinkAccount}
+            onUnlink={onUnlinkAccount}
+          />
         </TabsContent>
 
         <TabsContent value="sessions">
