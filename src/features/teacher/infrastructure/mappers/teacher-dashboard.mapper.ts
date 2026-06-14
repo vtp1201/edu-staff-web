@@ -1,16 +1,23 @@
 import type { TeacherClass } from "../../domain/entities/teacher-class.entity";
 import type { TeacherClassResponseDto } from "../dtos/teacher-class-response.dto";
 
-/** Maps a class DTO + its computed enrollment count to the TeacherClass entity. */
+/** Maps a class DTO + its computed enrollment count to the TeacherClass entity.
+ *  `currentUserId` (from JWT `sub`) drives the GVCN flag; null → non-homeroom. */
 export function toTeacherClass(
   dto: TeacherClassResponseDto,
   studentCount: number,
+  currentUserId: string | null,
 ): TeacherClass {
   return {
     id: dto.classId,
     name: dto.name,
     gradeLevel: dto.gradeLevel,
     studentCount,
+    isHomeroom:
+      currentUserId != null &&
+      dto.homeroomTeacherId != null &&
+      dto.homeroomTeacherId === currentUserId,
+    academicYearLabel: dto.academicYearLabel,
   };
 }
 

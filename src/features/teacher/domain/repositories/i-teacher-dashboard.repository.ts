@@ -11,6 +11,7 @@ export type Result<T> =
 
 export interface ITeacherDashboardRepository {
   getTotalStudents(): Promise<Result<number>>;
+  getTotalClasses(): Promise<Result<number>>;
   getScheduleItems(): Promise<Result<ScheduleItem[]>>;
   getPendingGradeItems(): Promise<Result<PendingGradeItem[]>>;
   getDashboardStats(): Promise<Result<TeacherDashboardStats>>;

@@ -7,6 +7,9 @@ export interface TeacherClassResponseDto {
   gradeLevel: number;
   academicYearLabel: string;
   status: string;
+  /** Homeroom teacher (GVCN) member id. May be absent in early BE wire format
+   *  (mock-first): when omitted, the mapper treats the class as non-homeroom. */
+  homeroomTeacherId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

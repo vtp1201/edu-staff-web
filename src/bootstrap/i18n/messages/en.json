@@ -429,7 +429,8 @@
       "newMessages": "New Messages",
       "vsPrevMonth": "vs last month",
       "vsPrevWeek": "vs last week",
-      "adminApprovalMode": "ADMIN_APPROVAL mode"
+      "adminApprovalMode": "ADMIN_APPROVAL mode",
+      "totalClasses": "My Classes"
     },
     "schedule": {
       "title": "Today's Schedule",
@@ -452,6 +453,42 @@
     },
     "notifications": {
       "title": "Notifications"
+    }
+  },
+  "teacherClasses": {
+    "pageTitle": "My Classes",
+    "empty": "You have not been assigned to any class.",
+    "errorRetry": "Unable to load class list. Please try again.",
+    "gradeLevel": "Grade {grade}",
+    "students": "students",
+    "homeroomBadge": "Homeroom",
+    "actions": {
+      "viewStudents": "View Students",
+      "attendance": "Attendance",
+      "classLog": "Class Log",
+      "comingSoon": "Coming soon"
+    },
+    "studentPage": {
+      "pageTitle": "Student List",
+      "breadcrumbClasses": "Classes",
+      "empty": "This class has no students yet.",
+      "errorRetry": "Unable to load student list.",
+      "searchPlaceholder": "Search by name or student code...",
+      "columns": {
+        "name": "Student",
+        "code": "Student Code",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Enrolled",
+        "transferred": "Transferred"
+      }
+    },
+    "errors": {
+      "network-error": "Connection error. Please check your network.",
+      "unauthorized": "You do not have permission to view this.",
+      "not-found": "Class not found.",
+      "unknown": "An error occurred. Please try again."
     }
   },
   "profile": {
