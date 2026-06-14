@@ -2,7 +2,7 @@
 
 import { Archive, Pencil, Plus, UserCog } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,8 @@ export function ClassManagementScreen({
   onAssignHomeroom,
 }: ClassManagementScreenProps) {
   const t = useTranslations("classManagement");
+  const yearFilterId = useId();
+  const gradeFilterId = useId();
 
   const [classes, setClasses] = useState<Class[]>(vm.classes);
   const [yearFilter, setYearFilter] = useState("");
@@ -168,23 +170,29 @@ export function ClassManagementScreen({
 
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor={yearFilterId}
+              className="text-xs font-bold uppercase tracking-wide text-foreground"
+            >
               {t("filterByYear")}
-            </span>
+            </label>
             <Input
+              id={yearFilterId}
               value={yearFilter}
               onChange={(e) => setYearFilter(e.target.value)}
               placeholder="2025-2026"
-              aria-label={t("filterByYear")}
               className="w-48"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor={gradeFilterId}
+              className="text-xs font-bold uppercase tracking-wide text-foreground"
+            >
               {t("filterByGrade")}
-            </span>
+            </label>
             <Select value={gradeFilter} onValueChange={setGradeFilter}>
-              <SelectTrigger className="w-48" aria-label={t("filterByGrade")}>
+              <SelectTrigger id={gradeFilterId} className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -200,7 +208,7 @@ export function ClassManagementScreen({
         </div>
 
         <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
-          <Table>
+          <Table aria-label={t("table.caption")}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("table.name")}</TableHead>
@@ -331,7 +339,7 @@ function RowAction({
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
+          size="icon-lg"
           onClick={onClick}
           disabled={disabled}
           aria-label={label}

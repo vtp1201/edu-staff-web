@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -56,6 +57,9 @@ export function HomeroomPickerSheet({
       <SheetContent className="flex flex-col gap-4">
         <SheetHeader>
           <SheetTitle>{t("title")}</SheetTitle>
+          <SheetDescription className="sr-only">
+            {t("description")}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-3 px-4">

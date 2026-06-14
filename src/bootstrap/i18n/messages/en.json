@@ -726,7 +726,7 @@
       "actions": "Actions",
       "unassigned": "Unassigned",
       "noClasses": "No classes yet.",
-      "loadMore": "Load more"
+      "caption": "Class list"
     },
     "status": {
       "ACTIVE": "Active",
@@ -735,12 +735,15 @@
     "actions": {
       "rename": "Rename",
       "archive": "Archive",
-      "assignHomeroom": "Assign homeroom",
-      "confirm": "Confirm",
-      "cancel": "Cancel"
+      "assignHomeroom": "Assign homeroom"
+    },
+    "formErrors": {
+      "nameRequired": "Please enter a class name.",
+      "yearRequired": "Please enter an academic year."
     },
     "createSheet": {
       "title": "Create a class",
+      "description": "Fill in the details to create a new class.",
       "nameLabel": "Class name",
       "namePlaceholder": "e.g. 10A1",
       "gradeLabel": "Grade level",
@@ -750,6 +753,7 @@
     },
     "renameSheet": {
       "title": "Rename class",
+      "description": "Update the name or grade of the class.",
       "nameLabel": "New class name",
       "gradeLabel": "Grade level",
       "submit": "Save changes"
@@ -763,11 +767,11 @@
     },
     "homeroomSheet": {
       "title": "Assign homeroom teacher",
+      "description": "Pick a teacher to assign as the homeroom teacher.",
       "searchPlaceholder": "Search teachers by name...",
       "currentHomeroom": "Current homeroom teacher",
       "noTeachers": "No teachers found.",
-      "assign": "Assign",
-      "loading": "Loading..."
+      "assign": "Assign"
     },
     "errors": {
       "duplicate-class": "A class with this name already exists for this academic year.",

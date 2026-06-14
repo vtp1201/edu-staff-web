@@ -726,7 +726,7 @@
       "actions": "Hành động",
       "unassigned": "Chưa phân công",
       "noClasses": "Chưa có lớp học nào.",
-      "loadMore": "Tải thêm"
+      "caption": "Danh sách lớp học"
     },
     "status": {
       "ACTIVE": "Đang hoạt động",
@@ -735,12 +735,15 @@
     "actions": {
       "rename": "Đổi tên",
       "archive": "Lưu trữ",
-      "assignHomeroom": "Gán GVCN",
-      "confirm": "Xác nhận",
-      "cancel": "Hủy"
+      "assignHomeroom": "Gán GVCN"
+    },
+    "formErrors": {
+      "nameRequired": "Vui lòng nhập tên lớp.",
+      "yearRequired": "Vui lòng nhập năm học."
     },
     "createSheet": {
       "title": "Tạo lớp mới",
+      "description": "Điền thông tin để tạo lớp học mới.",
       "nameLabel": "Tên lớp",
       "namePlaceholder": "Ví dụ: 10A1",
       "gradeLabel": "Khối lớp",
@@ -750,6 +753,7 @@
     },
     "renameSheet": {
       "title": "Đổi tên lớp",
+      "description": "Cập nhật tên hoặc khối của lớp học.",
       "nameLabel": "Tên lớp mới",
       "gradeLabel": "Khối lớp",
       "submit": "Lưu thay đổi"
@@ -763,11 +767,11 @@
     },
     "homeroomSheet": {
       "title": "Gán giáo viên chủ nhiệm",
+      "description": "Chọn giáo viên để phân công làm giáo viên chủ nhiệm.",
       "searchPlaceholder": "Tìm giáo viên theo tên...",
       "currentHomeroom": "GVCN hiện tại",
       "noTeachers": "Không tìm thấy giáo viên.",
-      "assign": "Gán",
-      "loading": "Đang tải..."
+      "assign": "Gán"
     },
     "errors": {
       "duplicate-class": "Lớp đã tồn tại trong năm học này.",

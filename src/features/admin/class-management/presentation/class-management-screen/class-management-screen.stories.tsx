@@ -38,6 +38,22 @@ const handlers = {
   onListTeachers: async () => ({ ok: true, data: teachers }),
 };
 
+const failResult = async (): Promise<ClassActionResult> => ({
+  ok: false,
+  errorKey: "network-error",
+});
+
+const failingHandlers = {
+  onCreateClass: failResult,
+  onRenameClass: failResult,
+  onArchiveClass: failResult,
+  onAssignHomeroom: failResult,
+  onListTeachers: async () => ({
+    ok: false as const,
+    errorKey: "network-error" as const,
+  }),
+};
+
 const meta: Meta<typeof ClassManagementScreen> = {
   title: "Admin/ClassManagement/ClassManagementScreen",
   component: ClassManagementScreen,
@@ -121,6 +137,32 @@ export const WithHomeroomAssigned: Story = {
       teachers,
     },
     ...handlers,
+  },
+};
+
+/**
+ * Error state: every mutation fails (e.g. backend/network down). The screen
+ * surfaces the failure via an error toast and keeps the existing rows intact so
+ * the admin can retry.
+ */
+export const ActionError: Story = {
+  name: "Error",
+  args: {
+    vm: {
+      classes: [
+        mkClass({
+          id: "c-err",
+          name: "10A1",
+          gradeLevel: 10,
+          studentCount: 32,
+        }),
+      ],
+      nextCursor: null,
+      hasMore: false,
+      gradeRange: { minGrade: 10, maxGrade: 12 },
+      teachers,
+    },
+    ...failingHandlers,
   },
 };
 

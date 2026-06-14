@@ -6,6 +6,7 @@ import type {
   CreateClassInput,
   RenameClassInput,
 } from "@/features/admin/class-management/domain/entities/class.entity";
+import { ArchiveClassUseCase } from "@/features/admin/class-management/domain/use-cases/archive-class.use-case";
 import { AssignHomeroomTeacherUseCase } from "@/features/admin/class-management/domain/use-cases/assign-homeroom-teacher.use-case";
 import { CreateClassUseCase } from "@/features/admin/class-management/domain/use-cases/create-class.use-case";
 import { RenameClassUseCase } from "@/features/admin/class-management/domain/use-cases/rename-class.use-case";
@@ -55,7 +56,8 @@ export async function archiveClassAction(
   classId: string,
 ): Promise<ClassActionResult> {
   const repo = await makeClassManagementRepository();
-  const result = await repo.archiveClass(classId);
+  const useCase = new ArchiveClassUseCase(repo);
+  const result = await useCase.execute(classId);
   if (!result.ok) return { ok: false, errorKey: result.failure.type };
   return { ok: true };
 }
