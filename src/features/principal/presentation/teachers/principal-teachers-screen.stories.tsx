@@ -3,8 +3,54 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import type { Class } from "@/features/admin/class-management/domain/entities/class.entity";
+import type { PrincipalClassSubject } from "@/features/principal/domain/teachers/entities/class-subject.entity";
 import type { PrincipalTeacher } from "@/features/principal/domain/teachers/entities/principal-teacher.entity";
 import { PrincipalTeachersScreen } from "./principal-teachers-screen";
+
+const CLASSES: Class[] = [
+  {
+    id: "c-10a1",
+    name: "10A1",
+    gradeLevel: 10,
+    status: "ACTIVE",
+    academicYear: "2025-2026",
+    studentCount: 32,
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
+  },
+  {
+    id: "c-11b1",
+    name: "11B1",
+    gradeLevel: 11,
+    status: "ACTIVE",
+    academicYear: "2025-2026",
+    studentCount: 30,
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
+  },
+  {
+    id: "c-12c2",
+    name: "12C2",
+    gradeLevel: 12,
+    status: "ACTIVE",
+    academicYear: "2025-2026",
+    studentCount: 29,
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
+  },
+];
+
+const CLASS_SUBJECTS: PrincipalClassSubject[] = [
+  {
+    id: "cs-toan",
+    classId: "c-10a1",
+    subjectId: "s-toan",
+    subjectName: "Toán",
+    teacherId: null,
+    teacherName: null,
+  },
+];
 
 const TEACHERS: PrincipalTeacher[] = [
   {
@@ -60,8 +106,10 @@ const TEACHERS: PrincipalTeacher[] = [
 const ok = async () => ({ errorKey: null });
 
 const handlers = {
+  classes: CLASSES,
   onAssignHomeroom: ok,
   onAssignSubjectTeacher: ok,
+  onGetClassSubjects: async () => CLASS_SUBJECTS,
 };
 
 const meta: Meta<typeof PrincipalTeachersScreen> = {
@@ -147,11 +195,18 @@ export const AssignmentSheet_WithConflict: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Lê Thị Hoa (t-003) has a conflicting subject assignment.
+    // Lê Thị Hoa (t-003) has a conflicting subject assignment — the conflict
+    // indicator renders in her table row badge (role=img + aria-label).
+    const conflictWarning = await canvas.findByRole("img", {
+      name: messages.principalTeachers.sheet.conflictWarning,
+    });
+    await expect(conflictWarning).toBeInTheDocument();
+
+    // Opening her sheet (vi sort: Lê, Nguyễn, Trần → first row) surfaces the
+    // conflicting GVBM row with its own keyboard-focusable conflict indicator.
     const buttons = await canvas.findAllByRole("button", {
       name: messages.principalTeachers.assignClass,
     });
-    // third row → Lê Thị Hoa after vi sort: Lê, Nguyễn, Trần
     await userEvent.click(buttons[0]);
     await waitFor(() =>
       expect(

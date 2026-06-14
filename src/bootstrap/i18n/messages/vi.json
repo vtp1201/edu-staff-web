@@ -805,7 +805,8 @@
       "unassigned": "Chưa phân công",
       "noTeachers": "Chưa có giáo viên nào.",
       "caption": "Danh sách giáo viên",
-      "overflowBadges": "+{n} môn"
+      "overflowBadges": "+{n} môn",
+      "loading": "Đang tải danh sách giáo viên..."
     },
     "status": {
       "ACTIVE": "Đang dạy",
@@ -824,8 +825,7 @@
       "saving": "Đang lưu...",
       "cancel": "Hủy",
       "conflictWarning": "Có xung đột thời khóa biểu",
-      "saveSuccess": "Đã lưu phân công thành công",
-      "saveError": "Lưu phân công thất bại. Vui lòng thử lại."
+      "saveSuccess": "Đã lưu phân công thành công"
     },
     "errors": {
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",

@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -43,7 +42,7 @@ function Avatar({ name }: { name: string }) {
   return (
     <span
       aria-hidden="true"
-      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary text-xs"
+      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-edu-text-primary text-xs"
     >
       {initials(name)}
     </span>
@@ -52,13 +51,14 @@ function Avatar({ name }: { name: string }) {
 
 export function PrincipalTeachersScreen({
   teachers,
+  classes,
   fetchError,
   loading = false,
   onAssignHomeroom,
   onAssignSubjectTeacher,
+  onGetClassSubjects,
 }: PrincipalTeachersVM) {
   const t = useTranslations("principalTeachers");
-  const queryClient = useQueryClient();
   const [activeTeacher, setActiveTeacher] = useState<PrincipalTeacher | null>(
     null,
   );
@@ -72,10 +72,6 @@ export function PrincipalTeachersScreen({
   );
 
   const isLoading = loading;
-
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["principal", "teachers"] });
-  }
 
   if (fetchError) {
     return (
@@ -105,7 +101,15 @@ export function PrincipalTeachersScreen({
         subtitle={t("subtitle")}
       />
 
-      <div className="overflow-hidden rounded-card border border-border bg-card shadow-card">
+      <div
+        aria-busy={isLoading}
+        className="overflow-hidden rounded-card border border-border bg-card shadow-card"
+      >
+        {isLoading && (
+          <span role="status" className="sr-only">
+            {t("table.loading")}
+          </span>
+        )}
         <Table>
           <TableCaption className="sr-only">{t("table.caption")}</TableCaption>
           <TableHeader>
@@ -127,7 +131,7 @@ export function PrincipalTeachersScreen({
                   colSpan={6}
                   className="py-10 text-center text-muted-foreground text-sm"
                 >
-                  {t("table.noTeachers")}
+                  <span role="status">{t("table.noTeachers")}</span>
                 </TableCell>
               </TableRow>
             ) : (
@@ -188,10 +192,16 @@ export function PrincipalTeachersScreen({
                               )}
                             >
                               {a.hasConflict && (
-                                <TriangleAlertIcon
-                                  className="size-3"
+                                <span
+                                  role="img"
                                   aria-label={t("sheet.conflictWarning")}
-                                />
+                                  className="inline-flex items-center"
+                                >
+                                  <TriangleAlertIcon
+                                    className="size-3"
+                                    aria-hidden="true"
+                                  />
+                                </span>
                               )}
                               {a.className} · {a.subjectName}
                             </StatusBadge>
@@ -229,12 +239,11 @@ export function PrincipalTeachersScreen({
       {activeTeacher && (
         <TeacherAssignmentSheet
           teacher={activeTeacher}
+          classes={classes}
           onAssignHomeroom={onAssignHomeroom}
           onAssignSubjectTeacher={onAssignSubjectTeacher}
-          onClose={() => {
-            setActiveTeacher(null);
-            invalidate();
-          }}
+          onGetClassSubjects={onGetClassSubjects}
+          onClose={() => setActiveTeacher(null)}
         />
       )}
     </section>

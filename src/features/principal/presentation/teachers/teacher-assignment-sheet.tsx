@@ -1,6 +1,7 @@
 "use client";
 
 import { PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -27,67 +28,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Class } from "@/features/admin/class-management/domain/entities/class.entity";
+import type { PrincipalClassSubject } from "@/features/principal/domain/teachers/entities/class-subject.entity";
 import type {
   AssignResult,
   TeacherAssignmentSheetVM,
 } from "./principal-teachers-screen.i-vm";
-
-// Mock class options for the pickers (mock-first: the core class list endpoint is
-// not yet consumed here; the sheet falls back to this bundled list, decision 0014).
-const FALLBACK_CLASSES: Class[] = [
-  {
-    id: "c-10a1",
-    name: "10A1",
-    gradeLevel: 10,
-    status: "ACTIVE",
-    academicYear: "2025-2026",
-    studentCount: 32,
-    homeroomTeacherId: null,
-    homeroomTeacherName: null,
-  },
-  {
-    id: "c-10a2",
-    name: "10A2",
-    gradeLevel: 10,
-    status: "ACTIVE",
-    academicYear: "2025-2026",
-    studentCount: 28,
-    homeroomTeacherId: null,
-    homeroomTeacherName: null,
-  },
-  {
-    id: "c-11b1",
-    name: "11B1",
-    gradeLevel: 11,
-    status: "ACTIVE",
-    academicYear: "2025-2026",
-    studentCount: 30,
-    homeroomTeacherId: null,
-    homeroomTeacherName: null,
-  },
-  {
-    id: "c-12c2",
-    name: "12C2",
-    gradeLevel: 12,
-    status: "ACTIVE",
-    academicYear: "2025-2026",
-    studentCount: 29,
-    homeroomTeacherId: null,
-    homeroomTeacherName: null,
-  },
-];
-
-// Mock subject options (subject catalogue endpoint is mock-first).
-const MOCK_SUBJECTS_FOR_PICKER = [
-  { id: "s-toan", name: "Toán" },
-  { id: "s-ly", name: "Vật lý" },
-  { id: "s-hoa", name: "Hóa học" },
-  { id: "s-van", name: "Ngữ văn" },
-  { id: "s-su", name: "Lịch sử" },
-  { id: "s-dia", name: "Địa lý" },
-  { id: "s-anh", name: "Tiếng Anh" },
-] as const;
 
 interface SubjectRow {
   key: string;
@@ -104,12 +49,14 @@ function newRowKey(): string {
 
 export function TeacherAssignmentSheet({
   teacher,
-  classes = FALLBACK_CLASSES,
+  classes,
   onAssignHomeroom,
   onAssignSubjectTeacher,
+  onGetClassSubjects,
   onClose,
 }: TeacherAssignmentSheetVM) {
   const t = useTranslations("principalTeachers");
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const [homeroomClassId, setHomeroomClassId] = useState<string>(
@@ -123,6 +70,11 @@ export function TeacherAssignmentSheet({
       hasConflict: a.hasConflict,
     })),
   );
+  // Per-row class-subject options, keyed by row key. Populated when a class is
+  // selected in that row (driven by the onGetClassSubjects server action).
+  const [rowSubjects, setRowSubjects] = useState<
+    Record<string, PrincipalClassSubject[]>
+  >({});
 
   function addRow() {
     setRows((prev) => [
@@ -133,12 +85,23 @@ export function TeacherAssignmentSheet({
 
   function removeRow(key: string) {
     setRows((prev) => prev.filter((r) => r.key !== key));
+    setRowSubjects((prev) => {
+      const { [key]: _removed, ...rest } = prev;
+      return rest;
+    });
   }
 
   function updateRow(key: string, patch: Partial<SubjectRow>) {
     setRows((prev) =>
       prev.map((r) => (r.key === key ? { ...r, ...patch } : r)),
     );
+  }
+
+  async function handleClassChange(key: string, classId: string) {
+    // Changing the class resets the chosen subject and loads the class-subjects.
+    updateRow(key, { classId, subjectId: "" });
+    const subjects = await onGetClassSubjects(classId);
+    setRowSubjects((prev) => ({ ...prev, [key]: subjects }));
   }
 
   function handleSave() {
@@ -165,6 +128,7 @@ export function TeacherAssignmentSheet({
         return;
       }
       toast.success(t("sheet.saveSuccess"));
+      router.refresh();
       onClose();
     });
   }
@@ -175,10 +139,7 @@ export function TeacherAssignmentSheet({
 
   return (
     <Sheet open onOpenChange={handleOpenChange}>
-      <SheetContent
-        className="w-full gap-0 sm:max-w-lg"
-        aria-describedby={undefined}
-      >
+      <SheetContent className="w-full gap-0 sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>
             {t("sheet.title", { name: teacher.displayName })}
@@ -218,88 +179,111 @@ export function TeacherAssignmentSheet({
               {t("sheet.gvbmSection")}
             </legend>
             <div className="space-y-3">
-              {rows.map((row, idx) => (
-                <div key={row.key} className="flex items-end gap-2">
-                  <div className="flex-1 space-y-1.5">
-                    <Label
-                      htmlFor={`${row.key}-class`}
-                      className={idx === 0 ? undefined : "sr-only"}
-                    >
-                      {t("sheet.classPicker")}
-                    </Label>
-                    <Select
-                      value={row.classId}
-                      onValueChange={(v) => updateRow(row.key, { classId: v })}
-                    >
-                      <SelectTrigger id={`${row.key}-class`} className="w-full">
-                        <SelectValue placeholder={t("sheet.classPicker")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classes.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <Label
-                      htmlFor={`${row.key}-subject`}
-                      className={idx === 0 ? undefined : "sr-only"}
-                    >
-                      {t("sheet.subjectPicker")}
-                    </Label>
-                    <Select
-                      value={row.subjectId}
-                      onValueChange={(v) =>
-                        updateRow(row.key, { subjectId: v })
-                      }
-                    >
-                      <SelectTrigger
-                        id={`${row.key}-subject`}
-                        className="w-full"
+              {rows.map((row, idx) => {
+                const subjects = rowSubjects[row.key] ?? [];
+                return (
+                  <div key={row.key} className="flex items-end gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <Label
+                        htmlFor={`${row.key}-class`}
+                        className={idx === 0 ? undefined : "sr-only"}
                       >
-                        <SelectValue placeholder={t("sheet.subjectPicker")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MOCK_SUBJECTS_FOR_PICKER.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        {t("sheet.classPicker")}
+                      </Label>
+                      <Select
+                        value={row.classId}
+                        onValueChange={(v) => handleClassChange(row.key, v)}
+                      >
+                        <SelectTrigger
+                          id={`${row.key}-class`}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder={t("sheet.classPicker")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <Label
+                        htmlFor={`${row.key}-subject`}
+                        className={idx === 0 ? undefined : "sr-only"}
+                      >
+                        {t("sheet.subjectPicker")}
+                      </Label>
+                      <Select
+                        value={row.subjectId}
+                        onValueChange={(v) =>
+                          updateRow(row.key, { subjectId: v })
+                        }
+                        disabled={!row.classId}
+                      >
+                        <SelectTrigger
+                          id={`${row.key}-subject`}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder={t("sheet.subjectPicker")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjects.map((s) => (
+                            <SelectItem
+                              key={s.id}
+                              value={s.subjectId}
+                              // AC-9: a subject already held by another teacher
+                              // cannot be reassigned from here.
+                              disabled={
+                                s.teacherId !== null &&
+                                s.teacherId !== teacher.teacherId
+                              }
+                            >
+                              {s.subjectName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {row.hasConflict && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              role="img"
+                              // A11Y-006: make the conflict indicator keyboard-focusable so
+                              // sighted keyboard users can surface the tooltip explanation.
+                              // biome-ignore lint/a11y/noNoninteractiveTabindex: intentional focusable tooltip trigger (A11Y-006)
+                              tabIndex={0}
+                              className="flex h-9 items-center rounded-sm text-edu-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              aria-label={t("sheet.conflictWarning")}
+                            >
+                              <TriangleAlertIcon
+                                className="size-4"
+                                aria-hidden="true"
+                              />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {t("sheet.conflictWarning")}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t("sheet.deleteRow")}
+                      onClick={() => removeRow(row.key)}
+                    >
+                      <Trash2Icon className="size-4" />
+                    </Button>
                   </div>
-                  {row.hasConflict && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            role="img"
-                            className="flex h-9 items-center text-edu-error"
-                            aria-label={t("sheet.conflictWarning")}
-                          >
-                            <TriangleAlertIcon className="size-4" />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t("sheet.conflictWarning")}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t("sheet.deleteRow")}
-                    onClick={() => removeRow(row.key)}
-                  >
-                    <Trash2Icon className="size-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <Button type="button" variant="outline" size="sm" onClick={addRow}>
               <PlusIcon className="size-4" />

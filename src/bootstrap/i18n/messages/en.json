@@ -805,7 +805,8 @@
       "unassigned": "Unassigned",
       "noTeachers": "No teachers found.",
       "caption": "Teacher list",
-      "overflowBadges": "+{n} more"
+      "overflowBadges": "+{n} more",
+      "loading": "Loading teacher list..."
     },
     "status": {
       "ACTIVE": "Active",
@@ -824,8 +825,7 @@
       "saving": "Saving...",
       "cancel": "Cancel",
       "conflictWarning": "Timetable conflict exists",
-      "saveSuccess": "Assignments saved successfully",
-      "saveError": "Failed to save. Please try again."
+      "saveSuccess": "Assignments saved successfully"
     },
     "errors": {
       "network-error": "Connection error. Please try again.",

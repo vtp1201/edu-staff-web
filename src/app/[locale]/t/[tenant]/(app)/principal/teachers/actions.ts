@@ -3,7 +3,9 @@
 import {
   makeAssignHomeroomTeacherUseCase,
   makeAssignSubjectTeacherUseCase,
+  makeGetClassSubjectsUseCase,
 } from "@/bootstrap/di";
+import type { PrincipalClassSubject } from "@/features/principal/domain/teachers/entities/class-subject.entity";
 import type { PrincipalTeachersFailure } from "@/features/principal/domain/teachers/failures/principal-teachers.failure";
 
 export async function assignHomeroomTeacherAction(
@@ -25,4 +27,12 @@ export async function assignSubjectTeacherAction(
   const result = await useCase.execute(classId, subjectId, teacherId);
   if (!result.ok) return { errorKey: result.failure.type };
   return { errorKey: null };
+}
+
+export async function getClassSubjectsAction(
+  classId: string,
+): Promise<PrincipalClassSubject[]> {
+  const useCase = await makeGetClassSubjectsUseCase(classId);
+  const result = await useCase.execute();
+  return result.ok ? result.value : [];
 }
