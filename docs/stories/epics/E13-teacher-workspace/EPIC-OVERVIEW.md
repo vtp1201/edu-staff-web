@@ -16,11 +16,12 @@ Tất cả stories trong E13 derive từ `design_src/edu/teacher.jsx` **phiên b
 
 | US | Screen | BE readiness | Design source |
 | --- | --- | --- | --- |
-| E13.1 | Teacher class view (danh sách lớp + học sinh assigned) | core REAL | `teacher.jsx` — `TeacherClasses`, `TeacherStudents` |
-| E13.2 | Attendance BE wiring (điểm danh → core API) | mock-first (BE US-046 planned) | existing UI — wiring only |
-| E13.3 | Class Log screen (sổ đầu bài) | mock-first (BE US-044 planned) | `classops.jsx` |
-| E13.4 | Teacher Dashboard Home (StatCards + TKB theo tiết + pending grades) | partial REAL (student count); rest mock-first | `teacher.jsx` — `TeacherDashboardHome` |
-| E13.5 | Principal Teachers Management (GVCN/GVBM assignment sheet + conflict detection) | mock-first (teaching-assignments API planned) | `teacher.jsx` — `PrincipalTeachersScreen` + `TeacherAssignmentSheet` |
+| E13.1 | Teacher class view (danh sach lop + hoc sinh assigned) | core REAL | `teacher.jsx` — TeacherClasses, TeacherStudents |
+| E13.2 | Attendance BE wiring (diem danh -> core API) | mock-first (BE US-046 planned) | existing UI — wiring only |
+| E13.3 | Class Log screen (so dau bai) | mock-first (BE US-044 planned) | `classops.jsx` |
+| E13.4 | Teacher Dashboard Home (StatCards + TKB theo tiet + pending grades) | partial REAL (student count); rest mock-first | `teacher.jsx` — TeacherDashboardHome |
+| E13.5 | Principal Teachers Management (GVCN/GVBM assignment sheet + conflict detection) | mock-first (teaching-assignments API planned) | `teacher.jsx` — PrincipalTeachersScreen + TeacherAssignmentSheet |
+| E13.6 | Grade Book screen (multi-role read: teacher/principal/student/parent) | mock-first (BE US-060 planned) | `gradebook.jsx` (1506) |
 
 ## BE Dependencies
 

@@ -28,28 +28,25 @@ Hai phần chính:
 BE stories tương ứng: US-056 (grade scale config), US-057/058 (assessment scheme
 — xem ADR 0037/0038 nếu có).
 
-## Design Dependency
+## Design Status
 
-**Design file chưa tồn tại** — màn hình này là NEW-02 theo lộ trình design
-(`/admin/assessment`, `target: 'assessment'` trong `design_src/edu/school-setup.jsx`).
-Designer cần build `.jsx` file này trước khi implement.
+**Design file da co (1506 handoff)** — `design_src/edu/assessment.jsx` da ship trong
+1506 handoff (2026-06-15). Status chuyen tu design-pending (DR-001) sang design-ready.
 
-Design request: `docs/design-requests/DR-001-assessment-scheme.md`
-
-Khi designer hoàn thành, cập nhật Relevant Product Docs dưới đây.
+Design request DR-001 da duoc giai quyet boi 1506 handoff.
 
 ## Relevant Product Docs
 
-- `docs/product/screens.md` — mục "Assessment Scheme Config"
+- `docs/product/screens.md` — muc "Assessment Scheme Config"
+- `design_src/edu/assessment.jsx` — AssessmentSchemeScreen (1506 handoff — DESIGN NOW AVAILABLE)
 - `design_src/edu/school-setup.jsx` — onboarding step 4 links `/admin/assessment`
 - `design_src/edu/subject-detail.jsx` — locked fields `requiredAssessmentCount`
-  (số bài kiểm tra / kỳ) là input của scheme này
-- `docs/design-requests/DR-001-assessment-scheme.md` — design prompt cho designer
-- BE API (mock-first — cần xác nhận với BE team):
-  - `GET    /api/v1/core/config/grade-scale`
-  - `PUT    /api/v1/core/config/grade-scale`
-  - `GET    /api/v1/core/assessment-schemes?subjectId=&gradeLevel=`
-  - `PUT    /api/v1/core/assessment-schemes/:subjectId/:gradeLevel`
+  (so bai kiem tra / ky) la input cua scheme nay
+- BE API (REAL — US-059 live):
+  - `GET  /core/api/v1/config/grade-scale`
+  - `PUT  /core/api/v1/config/grade-scale`
+  - `GET  /core/api/v1/subjects/:subjectId/assessment-schemes/:yearLabel`
+  - `PUT  /core/api/v1/subjects/:subjectId/assessment-schemes/:yearLabel`
 
 ## Acceptance Criteria
 
@@ -69,10 +66,13 @@ Khi designer hoàn thành, cập nhật Relevant Product Docs dưới đây.
 
 ## Design Notes
 
-- **Chưa có design file** — xem `docs/design-requests/DR-001-assessment-scheme.md`.
-- Khi designer deliver file, update section này với path `design_src/edu/<file>.jsx`.
-- Reference visual: màn school-setup step 4 indicator; subject-detail locked field
-  `requiredAssessmentCount` là constraint số bài KT / kỳ phải khớp.
+- Design file: `design_src/edu/assessment.jsx` — AssessmentSchemeScreen (1506 handoff, DR-001 resolved).
+- Presets grade scale: Thang 10 (VN default, Thong tu 22/2021), GPA 4.0, Letter grades.
+- Presets assessment scheme: Thong tu 22/2021 (TX x2 20%, GK x1 30%, CK x1 50%), Thong tu 26 THCS, Custom.
+- Subject picker: 2-level (grade level -> moi mon hoc cua grade do tu subject catalogue).
+- Grade scale bands: tu-de-them/xoa/chinh sua; validate no overlap, continuous coverage from 0 to max.
+- Column types: TX (primary tint), GK (warning tint), CK (error tint).
+- Reference visual: school-setup step 4 indicator; subject-detail locked field `requiredAssessmentCount` la constraint so bai KT / ky phai khop.
 
 ## Role Guard
 
@@ -91,5 +91,6 @@ BE dependency: IAM claim `role: "admin"` required.
 
 ## Harness Delta
 
-Story packet tạo mới. Blocked on designer delivering `design_src/edu/assessment.jsx`
-(hoặc tên tương đương). Tracking via `docs/design-requests/DR-001-assessment-scheme.md`.
+Story packet da co. Design unblocked: `design_src/edu/assessment.jsx` da ship trong
+1506 handoff (2026-06-15). DR-001 resolved. Status chuyen sang design-ready.
+docs/TEST_MATRIX.md row US-E12.6: cap nhat status tu planned sang design-ready khi implement.

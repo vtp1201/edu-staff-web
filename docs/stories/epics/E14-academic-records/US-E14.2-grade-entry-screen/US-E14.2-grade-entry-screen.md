@@ -39,7 +39,8 @@ RBAC: GVBM nhập điểm của class-subject được assign. ADMIN/Principal c
 ## Relevant Product Docs
 
 - `docs/product/screens.md` — "Grade Book" row (Teacher section)
-- `design_src/edu/teacher.jsx` — `TeacherGrades` component (pixel reference)
+- `design_src/edu/grade-entry.jsx` — GradeEntryScreen (1506 handoff — DESIGN NOW AVAILABLE; replaces teacher.jsx TeacherGrades reference)
+- `design_src/edu/teacher.jsx` — `TeacherGrades` component (legacy reference; superseded by grade-entry.jsx 1506)
 - BE story: `edu-api/docs/stories/epics/E06-assessment/US-060-grade-entry/`
 - BE API (MOCK-FIRST — US-060 planned):
   - `GET /core/api/v1/class-subjects/:csId/grades` — list student scores
