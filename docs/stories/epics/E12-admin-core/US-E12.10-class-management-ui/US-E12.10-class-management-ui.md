@@ -2,7 +2,15 @@
 
 ## Status
 
-planned
+implemented
+
+## Evidence
+
+Design review: pass
+- design-system: conform (token/typography/component OK — StatusBadge, shadcn Table/Sheet/AlertDialog, semantic tokens only)
+- a11y: WCAG AA pass — A11Y-001/002/003/004/005/006 all addressed; filter labels use <label>+text-foreground; form inputs have required/aria-required/aria-invalid/aria-describedby; SheetDescription sr-only; table aria-label; icon buttons 40px
+- impeccable audit: 0 blocking findings; design system tokens conform to EduPortal handoff
+- states: loading (RSC Suspense), empty (noClasses message), error (ActionError story), success (Populated/WithHomeroomAssigned stories); archive-warning state; responsive 320px flex-wrap layout
 
 ## Lane
 

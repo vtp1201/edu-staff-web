@@ -82,6 +82,7 @@
       "subjectDepartments": "Tổ bộ môn",
       "subjects": "Môn học",
       "studentRoster": "Danh sách học sinh",
+      "classManagement": "Quản lý lớp học",
       "timetable": "Thời khoá biểu",
       "assessmentScheme": "Khung đánh giá",
       "expandSidebar": "Mở rộng thanh bên",
@@ -706,6 +707,85 @@
       "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",
       "save-failed": "Không lưu được tiết học. Vui lòng thử lại.",
       "slot-not-found": "Không tìm thấy tiết học."
+    }
+  },
+  "classManagement": {
+    "title": "Quản lý lớp học",
+    "subtitle": "Tạo, đổi tên, lưu trữ lớp học và phân công giáo viên chủ nhiệm.",
+    "createClass": "Tạo lớp mới",
+    "filterByYear": "Lọc theo năm học",
+    "filterByGrade": "Lọc theo khối",
+    "allGrades": "Tất cả khối",
+    "gradeN": "Khối {n}",
+    "table": {
+      "name": "Tên lớp",
+      "grade": "Khối",
+      "homeroom": "GVCN",
+      "status": "Trạng thái",
+      "studentCount": "Học sinh",
+      "actions": "Hành động",
+      "unassigned": "Chưa phân công",
+      "noClasses": "Chưa có lớp học nào.",
+      "caption": "Danh sách lớp học"
+    },
+    "status": {
+      "ACTIVE": "Đang hoạt động",
+      "ARCHIVED": "Đã lưu trữ"
+    },
+    "actions": {
+      "rename": "Đổi tên",
+      "archive": "Lưu trữ",
+      "assignHomeroom": "Gán GVCN"
+    },
+    "formErrors": {
+      "nameRequired": "Vui lòng nhập tên lớp.",
+      "yearRequired": "Vui lòng nhập năm học."
+    },
+    "createSheet": {
+      "title": "Tạo lớp mới",
+      "description": "Điền thông tin để tạo lớp học mới.",
+      "nameLabel": "Tên lớp",
+      "namePlaceholder": "Ví dụ: 10A1",
+      "gradeLabel": "Khối lớp",
+      "yearLabel": "Năm học",
+      "yearPlaceholder": "Ví dụ: 2025-2026",
+      "submit": "Tạo lớp"
+    },
+    "renameSheet": {
+      "title": "Đổi tên lớp",
+      "description": "Cập nhật tên hoặc khối của lớp học.",
+      "nameLabel": "Tên lớp mới",
+      "gradeLabel": "Khối lớp",
+      "submit": "Lưu thay đổi"
+    },
+    "archiveDialog": {
+      "title": "Lưu trữ lớp học",
+      "description": "Bạn có chắc muốn lưu trữ lớp {name}?",
+      "warningWithStudents": "Lớp này đang có {count} học sinh đã ghi danh. Vẫn lưu trữ?",
+      "confirm": "Lưu trữ",
+      "cancel": "Hủy"
+    },
+    "homeroomSheet": {
+      "title": "Gán giáo viên chủ nhiệm",
+      "description": "Chọn giáo viên để phân công làm giáo viên chủ nhiệm.",
+      "searchPlaceholder": "Tìm giáo viên theo tên...",
+      "currentHomeroom": "GVCN hiện tại",
+      "noTeachers": "Không tìm thấy giáo viên.",
+      "assign": "Gán"
+    },
+    "errors": {
+      "duplicate-class": "Lớp đã tồn tại trong năm học này.",
+      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi đã cấu hình. Vui lòng kiểm tra lại Thiết lập trường học.",
+      "not-found": "Không tìm thấy lớp học.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
+    },
+    "toast": {
+      "createSuccess": "Tạo lớp thành công.",
+      "renameSuccess": "Đổi tên lớp thành công.",
+      "archiveSuccess": "Lưu trữ lớp thành công.",
+      "assignHomeroomSuccess": "Phân công giáo viên chủ nhiệm thành công."
     }
   }
 }

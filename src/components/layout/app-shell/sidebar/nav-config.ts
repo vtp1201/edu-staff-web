@@ -95,6 +95,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     },
     { href: "/admin/subjects", labelKey: "subjects", icon: BookOpen },
     { href: "/admin/roster", labelKey: "studentRoster", icon: ClipboardList },
+    { href: "/admin/classes", labelKey: "classManagement", icon: School },
     { href: "/admin/timetable", labelKey: "timetable", icon: Grid3x3 },
     {
       href: "/admin/assessment",
