@@ -26,7 +26,8 @@
       "unknown": "Something went wrong, please try again",
       "invalid-otp": "The code is incorrect or already used.",
       "otp-expired": "The code has expired, request a new one.",
-      "too-many-requests": "Too many requests, please try again later."
+      "too-many-requests": "Too many requests, please try again later.",
+      "sso-unavailable": "Social sign-in is not yet available"
     },
     "forgot": {
       "title": "Forgot password",
@@ -55,6 +56,38 @@
         "title": "Password reset",
         "subtitle": "You can sign in with your new password.",
         "cta": "Sign in"
+      }
+    },
+    "sso": {
+      "continueWithGoogle": "Continue with Google",
+      "loginWithVneID": "Sign in with VNeID",
+      "divider": "or sign in with email",
+      "vneidComingSoon": "Coming soon",
+      "googleLoading": "Signing in with Google..."
+    },
+    "selectRole": {
+      "eyebrow": "Sign in as",
+      "roleSummary": "{count} roles available",
+      "backLink": "Sign in with a different account"
+    },
+    "roles": {
+      "TEACHER": {
+        "label": "Teacher"
+      },
+      "ADMIN": {
+        "label": "Board of Directors"
+      },
+      "MANAGER": {
+        "label": "Vice Principal"
+      },
+      "STAFF": {
+        "label": "Staff"
+      },
+      "STUDENT": {
+        "label": "Student"
+      },
+      "PARENT": {
+        "label": "Parent"
       }
     }
   },
