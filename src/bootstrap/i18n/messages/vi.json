@@ -530,6 +530,27 @@
         "upper": "Có chữ hoa",
         "number": "Có chữ số",
         "special": "Có ký tự đặc biệt"
+      },
+      "linkedAccounts": {
+        "title": "Liên kết tài khoản",
+        "description": "Kết nối tài khoản bên ngoài để đăng nhập nhanh hơn.",
+        "providers": {
+          "vneId": "VNeID",
+          "google": "Google"
+        },
+        "linked": "Đã liên kết",
+        "notLinked": "Chưa liên kết",
+        "linkedDescription": "Đã kết nối với {email}",
+        "vneIdDescription": "Kết nối với VNeID để xác thực danh tính.",
+        "googleDescription": "Kết nối với Google để đăng nhập nhanh.",
+        "link": "Liên kết ngay",
+        "unlink": "Hủy liên kết",
+        "linking": "Đang liên kết...",
+        "unlinking": "Đang hủy...",
+        "linkSuccess": "Liên kết thành công",
+        "unlinkSuccess": "Đã hủy liên kết",
+        "linkError": "Liên kết thất bại, vui lòng thử lại.",
+        "unlinkError": "Hủy liên kết thất bại, vui lòng thử lại."
       }
     },
     "sessions": {
@@ -538,6 +559,11 @@
       "logout": "Đăng xuất",
       "logoutAll": "Đăng xuất tất cả phiên khác",
       "lastActive": "Hoạt động"
+    },
+    "accountRequests": {
+      "title": "Yêu cầu tài khoản",
+      "description": "Để vô hiệu hóa hoặc xóa tài khoản, vui lòng liên hệ quản trị viên nhà trường.",
+      "contact": "Liên hệ quản trị viên"
     }
   },
   "calendar": {

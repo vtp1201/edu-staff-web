@@ -1,4 +1,9 @@
 import { ProfileScreen } from "@/features/user/presentation/profile";
+import {
+  getLinkedAccountsAction,
+  linkAccountAction,
+  unlinkAccountAction,
+} from "./actions";
 
 // Mock VM — wire to GET /users/me + sessions when the BE profile slice lands.
 const MOCK = {
@@ -22,6 +27,15 @@ const MOCK = {
   ],
 };
 
-export default function ProfilePage() {
-  return <ProfileScreen {...MOCK} />;
+export default async function ProfilePage() {
+  const linkedAccounts = await getLinkedAccountsAction();
+  return (
+    <ProfileScreen
+      {...MOCK}
+      linkedAccounts={linkedAccounts}
+      onLinkAccount={linkAccountAction}
+      onUnlinkAccount={unlinkAccountAction}
+      onFetchLinkedAccounts={getLinkedAccountsAction}
+    />
+  );
 }

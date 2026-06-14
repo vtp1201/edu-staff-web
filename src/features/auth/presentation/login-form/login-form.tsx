@@ -3,10 +3,10 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { GoogleIcon, VneidIcon } from "@/components/shared/sso-icons";
 import type { AuthFailure } from "@/features/auth/domain/failures/auth.failure";
 import { cn } from "@/shared/utils";
 import type { LoginFormVM } from "./login-form.i-vm";
-import { GoogleIcon, VneidIcon } from "./sso-icons";
 
 const SSO_BTN = cn(
   "flex min-h-11 w-full items-center justify-center gap-2.5 rounded-lg border-[1.5px] border-border bg-card px-4 py-3",

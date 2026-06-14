@@ -530,6 +530,27 @@
         "upper": "An uppercase letter",
         "number": "A number",
         "special": "A special character"
+      },
+      "linkedAccounts": {
+        "title": "Linked accounts",
+        "description": "Connect external accounts for faster sign-in.",
+        "providers": {
+          "vneId": "VNeID",
+          "google": "Google"
+        },
+        "linked": "Linked",
+        "notLinked": "Not linked",
+        "linkedDescription": "Connected with {email}",
+        "vneIdDescription": "Connect with VNeID to verify your identity.",
+        "googleDescription": "Connect with Google for faster sign-in.",
+        "link": "Link now",
+        "unlink": "Unlink",
+        "linking": "Linking...",
+        "unlinking": "Unlinking...",
+        "linkSuccess": "Linked successfully",
+        "unlinkSuccess": "Unlinked",
+        "linkError": "Linking failed, please try again.",
+        "unlinkError": "Unlinking failed, please try again."
       }
     },
     "sessions": {
@@ -538,6 +559,11 @@
       "logout": "Log out",
       "logoutAll": "Log out all other sessions",
       "lastActive": "Active"
+    },
+    "accountRequests": {
+      "title": "Account requests",
+      "description": "To deactivate or delete your account, please contact your school administrator.",
+      "contact": "Contact administrator"
     }
   },
   "calendar": {
