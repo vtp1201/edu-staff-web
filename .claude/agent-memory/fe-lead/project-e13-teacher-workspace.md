@@ -17,10 +17,12 @@ metadata:
 ### Implemented (cont.)
 - **US-E13.5**: Principal Teachers Management — teacher-list table (GVCN badge, subject-assignment badges, status), TeacherAssignmentSheet (GVCN picker, GVBM rows with per-class subject availability, conflict indicator). 5 use-cases, 22 unit tests, 11 repo integration tests, 5 action tests, 7 Storybook stories, 379/379 pass; build green. WCAG A11Y-001–006 all fixed including StatusBadge primary tone (`text-edu-text-primary`), TableHead `scope="col"` global fix, conflict icon `role="img"`.
 
+### Implemented (cont.)
+- **US-E13.3**: Class Log Screen (Sổ Đầu Bài) — REAL core homeroom-entries API wired (not mock-first; BE US-044 shipped in core openapi.yaml). Teacher screen (list+stats+entry form, save draft/submit), Principal screen (review all, approve/reject with reason). Role boundary enforced server-side. 6 unit + 11 integration + 7 Storybook stories, 397/397 pass. Routes: /teacher/class-log, /principal/class-log. A11Y: text-edu-warning-foreground on bg-edu-success (approve button), text-edu-text-secondary replaces text-muted-foreground on informational text, autoFocus on back button for view transitions, bg-edu-primary-accessible for active filter chip.
+
 ### Remaining (all planned)
 - **US-E13.1**: Teacher Class View (shares classes API)
 - **US-E13.2**: Attendance BE Wiring (mock-first, BE US-046 pending)
-- **US-E13.3**: Class Log Screen (mock-first, BE US-044 pending)
 
 ### A11y lessons from E13.4
 - `text-muted-foreground` (#8898a9 = 2.95:1) fails WCAG for text ≤12px → use `text-edu-text-secondary` (#5a6a85 = 5.9:1)
