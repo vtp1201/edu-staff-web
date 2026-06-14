@@ -95,26 +95,54 @@ const meta: Meta<typeof TeacherDashboardHomeClient> = {
 export default meta;
 type Story = StoryObj<typeof TeacherDashboardHomeClient>;
 
+// AC-1, AC-2, AC-9, AC-11, AC-6, AC-7, AC-8
 export const Default: Story = {
   args: { vm: baseVm },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // AC-2: total students value from BE (mock 140)
     await expect(canvas.getByText("140")).toBeInTheDocument();
+    // AC-9: schedule section label
     await expect(canvas.getByText("Lịch dạy hôm nay")).toBeInTheDocument();
+    // AC-11: CTA present for each pending grade item
     await expect(canvas.getAllByText("Nhập điểm")).toHaveLength(3);
+    // AC-6: morning/afternoon session indicators
+    await expect(canvas.getAllByText("Buổi sáng")).toHaveLength(2);
+    await expect(canvas.getByText("Buổi chiều")).toBeInTheDocument();
+    // AC-8: all three status badge labels present
+    await expect(canvas.getByText("Hoàn thành")).toBeInTheDocument();
+    await expect(canvas.getByText("Đang dạy")).toBeInTheDocument();
+    await expect(canvas.getByText("Sắp tới")).toBeInTheDocument();
+    // AC-7: live row has left green accent (border-edu-success class)
+    const liveRow = canvasElement.querySelector("li.border-edu-success");
+    await expect(liveRow).not.toBeNull();
+    // AC-9: 3 schedule rows rendered
+    const scheduleList = canvasElement.querySelectorAll(
+      "section ul li.border-l-\\[3px\\]",
+    );
+    await expect(scheduleList.length).toBe(3);
   },
 };
 
+// AC-1, AC-3, AC-4, AC-5, AC-18
 export const AllStats: Story = {
   args: { vm: baseVm },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // AC-1/AC-3: all 5 stat card labels present
     await expect(canvas.getByText("Tổng học sinh")).toBeInTheDocument();
     await expect(canvas.getByText("Tiết học hôm nay")).toBeInTheDocument();
+    await expect(canvas.getByText("Chờ chấm điểm")).toBeInTheDocument();
+    await expect(canvas.getByText("Điểm chờ duyệt")).toBeInTheDocument();
     await expect(canvas.getByText("Tin nhắn mới")).toBeInTheDocument();
+    // AC-4: ADMIN_APPROVAL annotation text visible beneath the card
+    await expect(canvas.getByText("Chế độ ADMIN_APPROVAL")).toBeInTheDocument();
+    // AC-5: trend arrow label present (pending grades stat has trend)
+    await expect(canvas.getByText("so tuần trước")).toBeInTheDocument();
   },
 };
 
+// AC-15: empty state text when no schedule items
 export const EmptySchedule: Story = {
   args: { vm: { ...baseVm, scheduleItems: [] } },
   play: async ({ canvasElement }) => {
@@ -122,9 +150,12 @@ export const EmptySchedule: Story = {
     await expect(
       canvas.getAllByText("Không có lịch dạy hôm nay").length,
     ).toBeGreaterThan(0);
+    // Schedule section still renders (no throw)
+    await expect(canvas.getByText("Lịch dạy hôm nay")).toBeInTheDocument();
   },
 };
 
+// AC-16: totalStudents null renders em dash; rest of dashboard still shows
 export const Loading: Story = {
   args: {
     vm: {
@@ -137,6 +168,57 @@ export const Loading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // AC-16: null totalStudents shows "—"
     await expect(canvas.getByText("—")).toBeInTheDocument();
+    // Other stat cards still render with zero values
+    await expect(canvas.getByText("Tổng học sinh")).toBeInTheDocument();
+    await expect(canvas.getByText("Lịch dạy hôm nay")).toBeInTheDocument();
+    // Empty state text for schedule and pending grades
+    await expect(
+      canvas.getAllByText("Không có lịch dạy hôm nay").length,
+    ).toBeGreaterThan(0);
+  },
+};
+
+// AC-10, AC-12: avatar initials, student names, assessment types, header badge count
+export const PendingGradesDetail: Story = {
+  args: { vm: baseVm },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // AC-12: header badge shows pendingGradesCount
+    await expect(canvas.getByText("23")).toBeInTheDocument();
+    // AC-10: avatar initials for each item
+    await expect(canvas.getByText("VA")).toBeInTheDocument();
+    await expect(canvas.getByText("TB")).toBeInTheDocument();
+    await expect(canvas.getByText("HC")).toBeInTheDocument();
+    // AC-10: student names visible
+    await expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
+    await expect(canvas.getByText("Trần Thị Bình")).toBeInTheDocument();
+    await expect(canvas.getByText("Lê Hoàng Cường")).toBeInTheDocument();
+    // AC-11: CTA links have accessible aria-label
+    const ctaLinks = canvasElement.querySelectorAll(
+      "a[aria-label*='Nhập điểm']",
+    );
+    await expect(ctaLinks.length).toBe(3);
+  },
+};
+
+// AC-13, AC-14: notifications with icon boxes, content text, timestamps
+export const NotificationsDetail: Story = {
+  args: { vm: baseVm },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // AC-13: section title
+    await expect(canvas.getByText("Thông báo")).toBeInTheDocument();
+    // AC-13/AC-14: notification content text
+    await expect(
+      canvas.getByText("Họp hội đồng giáo viên lúc 15:00 hôm nay"),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByText("3 học sinh vắng mặt lớp 10A1"),
+    ).toBeInTheDocument();
+    // AC-13: relative timestamps present
+    await expect(canvas.getByText("30 phút trước")).toBeInTheDocument();
+    await expect(canvas.getByText("1 giờ trước")).toBeInTheDocument();
   },
 };
