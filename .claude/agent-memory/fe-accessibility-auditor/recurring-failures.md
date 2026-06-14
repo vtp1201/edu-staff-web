@@ -86,6 +86,16 @@ Pattern: `<th>` elements in data tables rendered without `scope="col"` attribute
 Fix: Add `scope="col"` to all `<th>` elements in `<thead>`.
 Seen in: US-E12.4 (roster-table.tsx, all 8 th elements).
 
+## Heading hierarchy — page h2 sections with no h1
+Pattern: Feature pages render `<h2>` section headings (stat cards, schedule, pending grades, notifications) but no `<h1>` in the page or its RSC wrapper. AppShell injects `<main>` but no heading. Screen reader heading navigation finds no h1.
+Fix: Add `<h1 className="sr-only">{t("pageTitle")}</h1>` at the top of the client component root, with a matching i18n key in both `vi.json` and `en.json` under the feature namespace.
+Seen in: US-E13.4 teacher-dashboard-home.tsx.
+
+## Contrast — Small action buttons: bg-primary on 11px text fails by margin
+Pattern: `bg-primary text-primary-foreground` on buttons with `text-[11px]` or smaller. `--primary: --edu-primary-dark: #4570EA` on white = 4.41:1 — barely below the 4.5:1 threshold for normal text.
+Fix: Use `bg-edu-primary-accessible` (#4468E0, 4.88:1) for small-text buttons instead of `bg-primary`. The token already exists (decision 0031). Do not change `--primary` globally.
+Seen in: US-E13.4 "Nhập điểm" button (text-[11px] font-bold).
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.
