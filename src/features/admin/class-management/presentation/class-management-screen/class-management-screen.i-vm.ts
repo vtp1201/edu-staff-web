@@ -22,12 +22,6 @@ export interface ClassActionResult {
   data?: Class;
 }
 
-export interface TeacherListActionResult {
-  ok: boolean;
-  data?: TeacherMember[];
-  errorKey?: ClassManagementFailure["type"];
-}
-
 export interface ClassManagementScreenProps {
   vm: ClassManagementScreenVm;
   onCreateClass: (input: CreateClassInput) => Promise<ClassActionResult>;
@@ -40,5 +34,4 @@ export interface ClassManagementScreenProps {
     classId: string,
     teacherUserId: string,
   ) => Promise<ClassActionResult>;
-  onListTeachers: (search?: string) => Promise<TeacherListActionResult>;
 }

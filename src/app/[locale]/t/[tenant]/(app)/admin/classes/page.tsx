@@ -5,7 +5,6 @@ import {
   archiveClassAction,
   assignHomeroomAction,
   createClassAction,
-  listTeachersAction,
   renameClassAction,
 } from "./actions";
 
@@ -42,7 +41,6 @@ export default async function ClassesPage() {
       onRenameClass={renameClassAction}
       onArchiveClass={archiveClassAction}
       onAssignHomeroom={assignHomeroomAction}
-      onListTeachers={listTeachersAction}
     />
   );
 }

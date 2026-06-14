@@ -36,7 +36,6 @@ const handlers = {
   onRenameClass: async () => ({ ok: true, data: mkClass({}) }),
   onArchiveClass: okResult,
   onAssignHomeroom: okResult,
-  onListTeachers: async () => ({ ok: true, data: teachers }),
 };
 
 const failResult = async (): Promise<ClassActionResult> => ({
@@ -49,10 +48,6 @@ const failingHandlers = {
   onRenameClass: failResult,
   onArchiveClass: failResult,
   onAssignHomeroom: failResult,
-  onListTeachers: async () => ({
-    ok: false as const,
-    errorKey: "network-error" as const,
-  }),
 };
 
 const meta: Meta<typeof ClassManagementScreen> = {
@@ -510,7 +505,6 @@ export const CreateClassDuplicateError: Story = {
     onRenameClass: handlers.onRenameClass,
     onArchiveClass: handlers.onArchiveClass,
     onAssignHomeroom: handlers.onAssignHomeroom,
-    onListTeachers: handlers.onListTeachers,
   },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);
@@ -560,7 +554,6 @@ export const CreateClassGradeOutOfRange: Story = {
     onRenameClass: handlers.onRenameClass,
     onArchiveClass: handlers.onArchiveClass,
     onAssignHomeroom: handlers.onAssignHomeroom,
-    onListTeachers: handlers.onListTeachers,
   },
   play: async ({ canvasElement, step }) => {
     const canvas = within(canvasElement);

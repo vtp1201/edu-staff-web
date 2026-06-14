@@ -10,10 +10,7 @@ import { ArchiveClassUseCase } from "@/features/admin/class-management/domain/us
 import { AssignHomeroomTeacherUseCase } from "@/features/admin/class-management/domain/use-cases/assign-homeroom-teacher.use-case";
 import { CreateClassUseCase } from "@/features/admin/class-management/domain/use-cases/create-class.use-case";
 import { RenameClassUseCase } from "@/features/admin/class-management/domain/use-cases/rename-class.use-case";
-import type {
-  ClassActionResult,
-  TeacherListActionResult,
-} from "@/features/admin/class-management/presentation/class-management-screen/class-management-screen.i-vm";
+import type { ClassActionResult } from "@/features/admin/class-management/presentation/class-management-screen/class-management-screen.i-vm";
 
 async function resolveGradeRange(): Promise<{
   minGrade: number;
@@ -71,13 +68,4 @@ export async function assignHomeroomAction(
   const result = await useCase.execute(classId, teacherUserId);
   if (!result.ok) return { ok: false, errorKey: result.failure.type };
   return { ok: true };
-}
-
-export async function listTeachersAction(
-  search?: string,
-): Promise<TeacherListActionResult> {
-  const repo = await makeClassManagementRepository();
-  const result = await repo.listTeachers({ search });
-  if (!result.ok) return { ok: false, errorKey: result.failure.type };
-  return { ok: true, data: result.value };
 }
