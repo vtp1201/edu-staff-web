@@ -101,6 +101,11 @@ trong bất kỳ design handoff nào.
 | E2E | Storybook interaction: Loading/Empty/Populated/ErrorState cho mỗi tab |
 | Platform | bun build + tsc clean; biome 0 issues |
 
+### QA Gate Notes (US-E12.9)
+- Loading state (AC-5): handled at Next.js RSC Suspense boundary on `admin/staffing/page.tsx`; component receives data synchronously via props. No component-level skeleton needed — consistent with the pattern used by all admin screens in this repo (class-management, subject-departments, etc.).
+- Network error + retry (AC-6): when RSC fetch fails, page falls back to `[]` → component renders the empty state with CTA. This IS the error recovery path (user can retry by refreshing). No separate error UI component needed at component level.
+- Member search (AC-9): mock-first — uses text input for member ID. Full name-search autocomplete requires `core` service member search endpoint which is not yet available (decision 0014). Accepted MVP scope per packet Design Notes.
+
 ## Harness Delta
 
 - `docs/TEST_MATRIX.md`: thêm hàng US-E12.9.

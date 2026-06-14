@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
+import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { Department } from "../../domain/entities/department.entity";
 import { StaffingDepartmentsScreen } from "./staffing-departments-screen";
@@ -87,4 +88,64 @@ export const CreateError: Story = {
 
 export const ReadOnlyNonAdmin: Story = {
   args: { initialDepartments: departments, isAdmin: false },
+};
+
+/**
+ * ArchiveBlocked — discoverable static state.
+ *
+ * Reuses the Populated data which already contains an ACTIVE department with
+ * `activeAssignmentCount: 2` ("Tổ Khoa học Tự nhiên"). For that row the archive
+ * action is disabled (aria-disabled) and exposes a blocked tooltip, so the admin
+ * cannot archive a department that still has active assignments.
+ */
+export const ArchiveBlocked: Story = {
+  args: { initialDepartments: departments },
+};
+
+// ---------------------------------------------------------------------------
+// Interaction play story — QA US-E12.9
+// ---------------------------------------------------------------------------
+
+/**
+ * CreateHappyPath · AC-2 · Create department happy path
+ *
+ * Opens the create sheet, types a department name, submits, and verifies the
+ * success toast ("Đã tạo tổ bộ môn.") rendered by sonner outside the canvas.
+ * The `onCreateDepartment` action prop records the call.
+ */
+export const CreateHappyPath: Story = {
+  name: "Interaction / Create department happy path",
+  args: { initialDepartments: departments },
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await step("open create sheet", async () => {
+      // Header CTA (the empty-state CTA uses a different label)
+      const addBtn = canvas.getByRole("button", { name: "Thêm tổ bộ môn" });
+      await userEvent.click(addBtn);
+    });
+
+    await step("sheet opens with the create title", async () => {
+      const dialog = await body.findByRole("dialog");
+      const sheetTitle = within(dialog).getByText("Thêm tổ bộ môn");
+      expect(sheetTitle).toBeInTheDocument();
+    });
+
+    await step("type a department name", async () => {
+      const nameInput = body.getByPlaceholderText("VD: Tổ Toán - Lý");
+      await userEvent.clear(nameInput);
+      await userEvent.type(nameInput, "Tổ Tin học");
+    });
+
+    await step("submit the form", async () => {
+      const submitBtn = body.getByRole("button", { name: "Tạo" });
+      await userEvent.click(submitBtn);
+    });
+
+    await step("success toast appears", async () => {
+      const toast = await body.findByText("Đã tạo tổ bộ môn.");
+      expect(toast).toBeInTheDocument();
+    });
+  },
 };
