@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
@@ -38,6 +39,7 @@ export function TeacherDashboardHomeClient({ vm }: { vm: TeacherDashboardVM }) {
 
   return (
     <div className="space-y-5">
+      <h1 className="sr-only">{t("pageTitle")}</h1>
       {/* ── Stats grid ─────────────────────────────────── */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
         <StatCard
@@ -68,7 +70,7 @@ export function TeacherDashboardHomeClient({ vm }: { vm: TeacherDashboardVM }) {
             icon={Clock}
             tone="warning"
           />
-          <p className="mt-1 text-center text-[10px] font-medium text-muted-foreground">
+          <p className="mt-1 text-center text-[10px] font-medium text-edu-text-secondary">
             {t("stats.adminApprovalMode")}
           </p>
         </div>
@@ -104,7 +106,7 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
         <StatusBadge tone="primary">{t("schedule.dayLabel")}</StatusBadge>
       </header>
       {vm.scheduleItems.length === 0 ? (
-        <p className="px-6 pb-6 text-center text-sm text-muted-foreground">
+        <p className="px-6 pb-6 text-center text-sm text-edu-text-secondary">
           {t("schedule.empty")}
         </p>
       ) : (
@@ -123,7 +125,7 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
                 <div className="text-[12.5px] font-extrabold text-foreground">
                   {t("schedule.period", { period: item.period })}
                 </div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-[10px] text-edu-text-secondary">
                   {t(`schedule.${item.sessionKey}`)}
                 </div>
               </div>
@@ -131,7 +133,7 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
                 <div className="truncate text-[13.5px] font-bold text-foreground">
                   {item.subject}
                 </div>
-                <div className="truncate text-[12px] text-muted-foreground">
+                <div className="truncate text-[12px] text-edu-text-secondary">
                   {t("schedule.classRoom", {
                     className: item.className,
                     room: item.room,
@@ -162,7 +164,7 @@ function PendingGradesCard({ vm }: { vm: TeacherDashboardVM }) {
         </StatusBadge>
       </header>
       {vm.pendingGradeItems.length === 0 ? (
-        <p className="px-5 pb-5 text-center text-sm text-muted-foreground">
+        <p className="px-5 pb-5 text-center text-sm text-edu-text-secondary">
           {t("schedule.empty")}
         </p>
       ) : (
@@ -182,20 +184,20 @@ function PendingGradesCard({ vm }: { vm: TeacherDashboardVM }) {
                 <div className="truncate text-[12.5px] font-bold text-foreground">
                   {item.studentName}
                 </div>
-                <div className="truncate text-[11px] text-muted-foreground">
+                <div className="truncate text-[11px] text-edu-text-secondary">
                   {t("pendingGrades.assessmentType", {
                     type: item.assessmentType,
                     className: item.className,
                   })}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={vm.onNavigateToGrades}
-                className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-[var(--edu-radius-btn)] bg-primary px-[11px] py-[5px] text-[11px] font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              <Link
+                href={vm.gradesPath}
+                aria-label={`${t("pendingGrades.enterGrades")} - ${item.studentName}`}
+                className="inline-flex min-h-[44px] shrink-0 items-center gap-1 whitespace-nowrap rounded-[var(--edu-radius-btn)] bg-edu-primary-accessible px-[11px] py-[5px] text-[11px] font-bold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {t("pendingGrades.enterGrades")}
-              </button>
+              </Link>
             </li>
           ))}
         </ul>
@@ -214,7 +216,7 @@ function NotificationsCard({ vm }: { vm: TeacherDashboardVM }) {
         </h2>
       </header>
       {vm.notifications.length === 0 ? (
-        <p className="px-5 pb-5 text-center text-sm text-muted-foreground">
+        <p className="px-5 pb-5 text-center text-sm text-edu-text-secondary">
           {t("schedule.empty")}
         </p>
       ) : (
@@ -243,7 +245,7 @@ function NotificationRow({ n }: { n: NotificationVM }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12px] text-foreground">{n.message}</p>
-        <p className="text-[11px] text-muted-foreground">{n.timeAgo}</p>
+        <p className="text-[11px] text-edu-text-secondary">{n.timeAgo}</p>
       </div>
     </li>
   );

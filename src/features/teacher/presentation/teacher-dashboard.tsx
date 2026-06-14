@@ -1,7 +1,11 @@
 import { makeGetTeacherDashboardUseCase } from "@/bootstrap/di/teacher-dashboard.di";
-import { periodSessionKey } from "@/features/teacher/infrastructure/mappers/teacher-dashboard.mapper";
 import { TeacherDashboardHomeClient } from "./teacher-dashboard-home/teacher-dashboard-home";
 import type { TeacherDashboardVM } from "./teacher-dashboard-home/teacher-dashboard-home.i-vm";
+
+/** Periods 1–5 = morning, 6+ = afternoon (presentation-local; mirrors the mapper). */
+function sessionKey(period: number): "morning" | "afternoon" {
+  return period <= 5 ? "morning" : "afternoon";
+}
 
 /** Notification tone key → design-system CSS variable (resolved at presentation). */
 const NOTIF_COLOR_VAR: Record<string, string> = {
@@ -41,7 +45,7 @@ export async function TeacherDashboard() {
         newMessagesCount: result.data.stats.newMessagesCount,
         scheduleItems: result.data.scheduleItems.map((s) => ({
           period: s.period,
-          sessionKey: periodSessionKey(s.period),
+          sessionKey: sessionKey(s.period),
           subject: s.subject,
           className: s.className,
           room: s.room,
@@ -59,6 +63,7 @@ export async function TeacherDashboard() {
           message: n.message,
           timeAgo: n.timeAgo,
         })),
+        gradesPath: "grades",
       }
     : {
         totalStudents: null,
@@ -69,6 +74,7 @@ export async function TeacherDashboard() {
         scheduleItems: [],
         pendingGradeItems: [],
         notifications: [],
+        gradesPath: "grades",
       };
 
   return <TeacherDashboardHomeClient vm={vm} />;

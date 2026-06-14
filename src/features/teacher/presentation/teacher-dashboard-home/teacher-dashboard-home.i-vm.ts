@@ -34,5 +34,6 @@ export interface TeacherDashboardVM {
   scheduleItems: ScheduleItemVM[];
   pendingGradeItems: PendingGradeVM[];
   notifications: NotificationVM[];
-  onNavigateToGrades?: () => void;
+  /** App-relative route to the grade-entry screen (rendered as a Link). */
+  gradesPath: string;
 }

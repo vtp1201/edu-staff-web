@@ -386,6 +386,7 @@
     }
   },
   "teacherDashboard": {
+    "pageTitle": "Overview",
     "stats": {
       "totalStudents": "Total Students",
       "classesToday": "Classes Today",

@@ -77,6 +77,7 @@ const baseVm: TeacherDashboardVM = {
       timeAgo: "2 giờ trước",
     },
   ],
+  gradesPath: "grades",
 };
 
 const meta: Meta<typeof TeacherDashboardHomeClient> = {

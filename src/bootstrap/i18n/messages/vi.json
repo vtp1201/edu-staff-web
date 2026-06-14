@@ -386,6 +386,7 @@
     }
   },
   "teacherDashboard": {
+    "pageTitle": "Tổng quan",
     "stats": {
       "totalStudents": "Tổng học sinh",
       "classesToday": "Tiết học hôm nay",
