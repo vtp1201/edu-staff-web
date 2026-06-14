@@ -39,6 +39,7 @@ export async function TeacherDashboard() {
   const vm: TeacherDashboardVM = result.ok
     ? {
         totalStudents: result.data.stats.totalStudents,
+        totalClasses: result.data.stats.totalClasses,
         classesToday: result.data.stats.classesToday,
         pendingGradesCount: result.data.stats.pendingGradesCount,
         pendingApprovalCount: result.data.stats.pendingApprovalCount,
@@ -67,6 +68,7 @@ export async function TeacherDashboard() {
       }
     : {
         totalStudents: null,
+        totalClasses: null,
         classesToday: 0,
         pendingGradesCount: 0,
         pendingApprovalCount: 0,
