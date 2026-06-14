@@ -73,6 +73,46 @@ describe("AuthRepository.signin", () => {
   });
 });
 
+describe("AuthRepository.socialSignin", () => {
+  it("posts AUTH_EP.social then GETs AUTH_EP.me with the fresh bearer token", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockResolvedValue(tokenData),
+      get: vi.fn().mockResolvedValue(profileData),
+    });
+    const repo = new AuthRepository(http);
+
+    const result = await repo.socialSignin("google", "id-token-1");
+
+    expect(http.post).toHaveBeenCalledWith(AUTH_EP.social, {
+      provider: "google",
+      token: "id-token-1",
+    });
+    expect(http.get).toHaveBeenCalledWith(AUTH_EP.me, {
+      headers: { Authorization: "Bearer acc-1" },
+    });
+    expect(result.data?.user.roles).toEqual([
+      { role: "teacher", tenantId: "t1", tenantName: "THPT A" },
+    ]);
+  });
+
+  it("maps an UNAUTHORIZED rejection to a typed failure", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(apiError("UNAUTHORIZED_ACCESS", 401)),
+    });
+    const result = await new AuthRepository(http).socialSignin("google", "bad");
+    expect(result.error).toEqual({ type: "unauthorized" });
+    expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it("maps a transport failure (no status) to network-error", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+    });
+    const result = await new AuthRepository(http).socialSignin("google", "tok");
+    expect(result.error).toEqual({ type: "network-error" });
+  });
+});
+
 describe("AuthRepository.refresh", () => {
   it("posts /auth/refresh and returns the rotated token triple", async () => {
     const rotated = {

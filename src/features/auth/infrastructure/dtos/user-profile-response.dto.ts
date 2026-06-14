@@ -8,5 +8,6 @@ export interface UserProfileResponseDto {
     role: string;
     tenantId: string;
     tenantName: string;
+    tenantCode?: string;
   }>;
 }

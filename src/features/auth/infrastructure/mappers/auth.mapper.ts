@@ -21,7 +21,14 @@ export function mapProfile(dto: UserProfileResponseDto): AuthUser {
     email: dto.email,
     name: dto.name,
     avatar: dto.avatar,
-    roles: dto.roles as UserTenantRole[],
+    roles: dto.roles.map(
+      (r): UserTenantRole => ({
+        role: r.role as UserTenantRole["role"],
+        tenantId: r.tenantId,
+        tenantName: r.tenantName,
+        tenantCode: r.tenantCode,
+      }),
+    ),
   };
 }
 
