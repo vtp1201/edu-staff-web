@@ -1,11 +1,11 @@
 ---
 name: story-play-gap-pattern
-description: Dashboard stories commonly miss AC-annotation text, trend label, and session key assertions in Default/AllStats stories
+description: List-screen stories (staffing, dashboard) have no play() functions — only static prop variants; recurring gaps are Loading/Error/ArchiveBlocked/CopyYear stories
 metadata:
   type: feedback
 ---
 
-When reviewing Storybook story `play()` functions for dashboard screens, the most common gaps are:
+When reviewing Storybook story `play()` functions for dashboard/list screens, the most common gaps are:
 
 1. Default story covers visible data value + section title + CTA count, but misses:
    - Annotation text below stat cards (e.g. ADMIN_APPROVAL label)
@@ -19,6 +19,12 @@ When reviewing Storybook story `play()` functions for dashboard screens, the mos
 
 3. Loading story checks null → "—" but misses asserting the rest of the dashboard still renders.
 
-**Why:** Engineers write minimal play assertions to prove the component mounts; QA's job is to extend them to cover every AC.
+**Staffing UI (US-E12.9) pattern:** Stories cover Populated/Empty/CreateError/ReadOnlyNonAdmin per screen but are missing:
+   - LoadingSkeleton story (AC-5 skeleton state) — no story exports this state in any of the 4 story files
+   - NetworkError story (AC-6 error + retry) — no story with network-error prop variant
+   - ArchiveBlocked named story (AC-4 tooltip state) — data exists in Populated fixture but not an explicit story
+   - CopyYear open state story (AC-11) — no story opens CopyAssignmentsSheet
 
-**How to apply:** For every dashboard story, diff each AC against the play assertions. Add assertions for: annotation sub-text, trend label text, session key text, CSS class for accent borders, badge count string, avatar initials, aria-label on CTAs.
+**Why:** Engineers write minimal prop-variant stories to prove the component mounts; static stories without play() cannot exercise interaction flows (open sheet, submit form, trigger confirm dialog).
+
+**How to apply:** For every list screen, check these named stories exist: Populated, Empty, CreateError/ActionError, ReadOnlyNonAdmin, LoadingSkeleton, NetworkError. Flag missing Loading and Error as MAJOR (the repo's accepted proof shape allows static stories, but loading/error states are explicitly required by AC).

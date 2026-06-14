@@ -82,14 +82,24 @@ Fix: Add dedicated `adminRoster.pagination.nav` = "Phân trang" key and use it.
 Seen in: US-E12.4 (roster-pagination.tsx line 57).
 
 ## Table — th elements missing scope="col"
-Pattern: `<th>` elements in data tables rendered without `scope="col"` attribute. Screen readers can still infer column headers from position, but explicit `scope` is required by WCAG 1.3.1 for complex tables.
-Fix: Add `scope="col"` to all `<th>` elements in `<thead>`.
-Seen in: US-E12.4 (roster-table.tsx, all 8 th elements).
+Pattern: `<th>` elements in data tables rendered without `scope="col"` attribute. Screen readers can still infer column headers from position, but explicit `scope` is required by WCAG 1.3.1 for complex tables. Root cause: shadcn `TableHead` component (`components/ui/table/table.tsx`) does not inject `scope` automatically; callers must pass it explicitly or the component must add a default.
+Fix: Add `scope="col"` to all `<th>` elements in `<thead>`, or add `scope="col"` as a default prop in `TableHead` to fix it globally for the entire app.
+Seen in: US-E12.4 (roster-table.tsx, all 8 th elements), US-E13.5 (principal-teachers-screen.tsx, all 6 th elements).
 
 ## Heading hierarchy — page h2 sections with no h1
 Pattern: Feature pages render `<h2>` section headings (stat cards, schedule, pending grades, notifications) but no `<h1>` in the page or its RSC wrapper. AppShell injects `<main>` but no heading. Screen reader heading navigation finds no h1.
 Fix: Add `<h1 className="sr-only">{t("pageTitle")}</h1>` at the top of the client component root, with a matching i18n key in both `vi.json` and `en.json` under the feature namespace.
 Seen in: US-E13.4 teacher-dashboard-home.tsx.
+
+## Radix Sheet — aria-describedby={undefined} silences SheetDescription
+Pattern: Passing `aria-describedby={undefined}` on `SheetContent` overrides Radix's automatic wiring of `SheetDescription` text to the dialog's `aria-describedby`. The description is still visible but programmatically silenced. This occurs when developer wants to suppress the "Missing Description" warning without removing the visible description element.
+Fix: Remove `aria-describedby={undefined}`. Radix wires `SheetDescription` automatically; no override needed. If no description element is present, use `<SheetDescription className="sr-only">` with meaningful context for screen readers.
+Seen in: US-E13.5 teacher-assignment-sheet.tsx (teacher email as SheetDescription).
+
+## Lucide SVG icon aria-label: unreliable without role="img"
+Pattern: `<TriangleAlertIcon aria-label="..." />` — lucide-react renders SVGs with `aria-hidden="true" focusable="false"` by default. An `aria-label` on an `aria-hidden` element is ignored by screen readers.
+Fix: Never rely on `aria-label` alone on a lucide SVG. For an accessible icon, use a sibling `<span className="sr-only">label text</span>`, or wrap in a `<span role="img" aria-label="...">`. Lucide also accepts `role="img"` directly: `<TriangleAlertIcon role="img" aria-label="..." aria-hidden={false} />` — this removes aria-hidden and adds the role, making it announced. The sheet conflict icon pattern (span role="img" + aria-label) is correct; replicate it in the table badge conflict icon.
+Seen in: US-E13.5 principal-teachers-screen.tsx TriangleAlertIcon inside StatusBadge (table column).
 
 ## Contrast — Small action buttons: bg-primary on 11px text fails by margin
 Pattern: `bg-primary text-primary-foreground` on buttons with `text-[11px]` or smaller. `--primary: --edu-primary-dark: #4570EA` on white = 4.41:1 — barely below the 4.5:1 threshold for normal text.

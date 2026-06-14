@@ -40,6 +40,15 @@ Watch for these (each has bitten a story here):
   letting non-matched codes fall through to `unknown`; status fallback should only cover transport
   categories (network/forbidden), not domain-specific 422/409. (US-E12.10.)
 
+- **Repo methods implemented but never wired = dead AC** — a repo interface method (e.g.
+  `listClasses`, `getClassSubjects`) implemented in BOTH real + mock repos but never exposed via a
+  use-case/DI factory/action/page, while the screen instead uses a hardcoded `FALLBACK_*` /
+  `MOCK_*_FOR_PICKER` const inside the `'use client'` file. Two violations at once: (a) the data-AC
+  (picker fed by real list, availability filter) is unimplemented; (b) mock data lives in a
+  production client code path (not a `*.mock.*`/server-only mock repo). tsc/tests stay green because
+  the dead methods still type-check and the const renders. Cross-check: every repo interface method
+  must trace to a consumer; grep `methodName` outside the repo impl/interface/test. (US-E13.5.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

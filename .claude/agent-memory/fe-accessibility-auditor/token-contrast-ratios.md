@@ -43,14 +43,16 @@ Surface tokens resolved: bg=#f5f7fa (--edu-bg), card=#fff (--edu-card).
 All computed with WCAG ^2.4 gamma linearization. Blended bg = token × 0.15 + #FFF × 0.85.
 | Tone | Text token | Text hex | Blended bg | Ratio | WCAG AA |
 |---|---|---|---|---|---|
-| success | text-edu-success-text | #007A6E | #DCFAF5 | 4.70:1 | PASS |
-| error | text-edu-error-text | #C0392B | #FEE8E2 | 5.10:1 | PASS |
-| warning | text-edu-warning-foreground | #2A3547 | #FFF1D7 | ~11:1 | PASS |
-| primary | text-primary (--edu-primary-dark) | #4570EA | #E5ECFF | 4.56:1 | PASS |
-| info | text-edu-info | #539BFF | #E5F0FF | 2.43:1 | FAIL |
-| purple | text-edu-purple | #7B5EA7 | #EBE7F2 | 4.32:1 | FAIL (just under) |
-| teal | text-edu-teal | #00B8A9 | #D9F4F2 | 2.15:1 | FAIL |
-| muted | text-muted-foreground | #8898A9 | #F5F7FA | 2.76:1 | FAIL (content text) |
+| success | text-edu-success-text | #007A6E | #DBFAF4 | 4.74:1 | PASS |
+| error | text-edu-error-text | #C0392B | #FEEDE8 | 4.79:1 | PASS |
+| warning | text-edu-warning-foreground | #2A3547 | #FFF2DD | 11.18:1 | PASS |
+| primary | text-primary (--edu-primary-dark) | #4570EA | #E3EAFC | **3.65:1** | **FAIL** — badge text (11px) fails 4.5:1; 4.56:1 was text on plain white (not badge bg) |
+| info | text-edu-text-primary (fixed) | #2A3547 | #E5F0FF | 11.5:1 | PASS (fixed in StatusBadge) |
+| purple | text-edu-text-primary (fixed) | #2A3547 | #EBE7F2 | 11.5:1 | PASS (fixed in StatusBadge) |
+| teal | text-edu-text-primary (fixed) | #2A3547 | #D9F4F2 | 11.5:1 | PASS (fixed in StatusBadge) |
+| muted | text-foreground (#2A3547) (fixed) | #2A3547 | #F5F7FA | 11.52:1 | PASS (fixed in StatusBadge) |
+
+NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-primary-accessible (#4468E0) on badge bg #E3EAFC = 4.02:1 — still marginal; consider using text-edu-text-primary (#2A3547) on primary badges for guaranteed pass.
 
 ## Key rules derived
 - Never use text-edu-success on any background (1.72:1 on white — fails both 4.5 and 3:1).
