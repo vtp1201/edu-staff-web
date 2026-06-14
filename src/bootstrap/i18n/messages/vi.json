@@ -27,7 +27,7 @@
       "invalid-otp": "Mã OTP không đúng hoặc đã dùng.",
       "otp-expired": "Mã OTP đã hết hạn, hãy yêu cầu mã mới.",
       "too-many-requests": "Quá nhiều yêu cầu, vui lòng thử lại sau.",
-      "sso-unavailable": "Đăng nhập qua mạng xã hội hiện chưa khả dụng"
+      "sso-unavailable": "Đăng nhập qua mạng xã hội hiện chưa khả dụng. Vui lòng dùng email và mật khẩu bên dưới."
     },
     "forgot": {
       "title": "Quên mật khẩu",
