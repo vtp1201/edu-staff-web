@@ -1,3 +1,5 @@
+import type { LinkedAccount } from "@/features/user/domain/entities/linked-account.entity";
+
 export interface ProfileSession {
   id: string;
   device: string;
@@ -11,4 +13,5 @@ export interface ProfileScreenVM {
   phone: string;
   role: string;
   sessions: ProfileSession[];
+  linkedAccounts: LinkedAccount[];
 }
