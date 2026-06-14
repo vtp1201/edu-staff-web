@@ -82,6 +82,7 @@
       "subjectDepartments": "Subject Departments",
       "subjects": "Subjects",
       "studentRoster": "Student Roster",
+      "classManagement": "Class Management",
       "timetable": "Timetable",
       "assessmentScheme": "Assessment Scheme",
       "expandSidebar": "Expand sidebar",
@@ -706,6 +707,81 @@
       "fetch-failed": "Could not load the timetable. Please try again.",
       "save-failed": "Could not save the slot. Please try again.",
       "slot-not-found": "Slot not found."
+    }
+  },
+  "classManagement": {
+    "title": "Class Management",
+    "subtitle": "Create, rename, archive classes and assign homeroom teachers.",
+    "createClass": "Create Class",
+    "filterByYear": "Filter by academic year",
+    "filterByGrade": "Filter by grade",
+    "allGrades": "All grades",
+    "gradeN": "Grade {n}",
+    "table": {
+      "name": "Class name",
+      "grade": "Grade",
+      "homeroom": "Homeroom teacher",
+      "status": "Status",
+      "studentCount": "Students",
+      "actions": "Actions",
+      "unassigned": "Unassigned",
+      "noClasses": "No classes yet.",
+      "loadMore": "Load more"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived"
+    },
+    "actions": {
+      "rename": "Rename",
+      "archive": "Archive",
+      "assignHomeroom": "Assign homeroom",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "createSheet": {
+      "title": "Create a class",
+      "nameLabel": "Class name",
+      "namePlaceholder": "e.g. 10A1",
+      "gradeLabel": "Grade level",
+      "yearLabel": "Academic year",
+      "yearPlaceholder": "e.g. 2025-2026",
+      "submit": "Create class"
+    },
+    "renameSheet": {
+      "title": "Rename class",
+      "nameLabel": "New class name",
+      "gradeLabel": "Grade level",
+      "submit": "Save changes"
+    },
+    "archiveDialog": {
+      "title": "Archive class",
+      "description": "Are you sure you want to archive class {name}?",
+      "warningWithStudents": "This class has {count} enrolled students. Archive anyway?",
+      "confirm": "Archive",
+      "cancel": "Cancel"
+    },
+    "homeroomSheet": {
+      "title": "Assign homeroom teacher",
+      "searchPlaceholder": "Search teachers by name...",
+      "currentHomeroom": "Current homeroom teacher",
+      "noTeachers": "No teachers found.",
+      "assign": "Assign",
+      "loading": "Loading..."
+    },
+    "errors": {
+      "duplicate-class": "A class with this name already exists for this academic year.",
+      "grade-level-out-of-range": "The grade level is outside the configured range. Please check School Setup.",
+      "not-found": "Class not found.",
+      "forbidden": "You do not have permission to perform this action.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "toast": {
+      "createSuccess": "Class created successfully.",
+      "renameSuccess": "Class renamed successfully.",
+      "archiveSuccess": "Class archived successfully.",
+      "assignHomeroomSuccess": "Homeroom teacher assigned successfully."
     }
   }
 }

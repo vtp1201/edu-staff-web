@@ -48,14 +48,20 @@ describe("NAV_BY_ROLE", () => {
 });
 
 describe("admin role", () => {
-  it("returns exactly 7 nav items for admin", () => {
-    expect(NAV_BY_ROLE.admin.length).toBe(7);
+  it("returns exactly 8 nav items for admin", () => {
+    expect(NAV_BY_ROLE.admin.length).toBe(8);
   });
 
   it("all admin hrefs start with /admin", () => {
     for (const item of NAV_BY_ROLE.admin) {
       expect(item.href.startsWith("/admin")).toBe(true);
     }
+  });
+
+  it("includes the class management nav item", () => {
+    expect(
+      NAV_BY_ROLE.admin.some((item) => item.href === "/admin/classes"),
+    ).toBe(true);
   });
 
   it("DEFAULT_ROUTE.admin is /admin/school-setup", () => {
