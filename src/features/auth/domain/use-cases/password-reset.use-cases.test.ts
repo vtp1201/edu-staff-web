@@ -6,6 +6,7 @@ import { ResetPasswordUseCase } from "./reset-password.use-case";
 function repo(over: Partial<IAuthRepository> = {}): IAuthRepository {
   return {
     signin: vi.fn(),
+    socialSignin: vi.fn(),
     refresh: vi.fn(),
     signout: vi.fn(),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
