@@ -12,9 +12,13 @@ import { statusToneClass } from "./status-badge";
  * tokens which fail AA on light tinted backgrounds.
  */
 describe("StatusBadge tone mapping", () => {
-  it("defaults to primary (bg-primary/15 text-primary)", () => {
-    expect(statusToneClass()).toBe("bg-primary/15 text-primary");
-    expect(statusToneClass("primary")).toBe("bg-primary/15 text-primary");
+  // primary text on its own tint = 3.65:1 (fails AA, A11Y-001) →
+  // text-edu-text-primary (11.52:1) — guaranteed AA pass.
+  it("defaults to primary (bg-primary/15 text-edu-text-primary)", () => {
+    expect(statusToneClass()).toBe("bg-primary/15 text-edu-text-primary");
+    expect(statusToneClass("primary")).toBe(
+      "bg-primary/15 text-edu-text-primary",
+    );
   });
 
   it("maps tone='success' to AA text token (decision 0027)", () => {

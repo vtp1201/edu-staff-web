@@ -9,4 +9,9 @@ export const CLASS_EP = {
   classArchive: (classId: string) => `/core/api/v1/classes/${classId}/archive`,
   classHomeroomTeacher: (classId: string) =>
     `/core/api/v1/classes/${classId}/homeroom-teacher`,
+  classSubjects: (classId: string) =>
+    `/core/api/v1/classes/${classId}/subjects`,
+  classSubjectTeacher: (classId: string, subjectId: string) =>
+    `/core/api/v1/classes/${classId}/subjects/${subjectId}/teacher`,
+  principalTeachers: "/core/api/v1/teachers",
 } as const;

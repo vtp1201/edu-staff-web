@@ -4,6 +4,7 @@ export * from "./attendance.di";
 export * from "./auth.di";
 export * from "./calendar.di";
 export * from "./class-management.di";
+export * from "./principal-teachers.di";
 export * from "./staffing.di";
 export * from "./subject-catalogue.di";
 export * from "./teacher-class.di";

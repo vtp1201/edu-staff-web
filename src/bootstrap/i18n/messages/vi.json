@@ -814,6 +814,54 @@
       "slot-not-found": "Không tìm thấy tiết học."
     }
   },
+  "principalTeachers": {
+    "title": "Quản lý giáo viên",
+    "subtitle": "Phân công GVCN và giáo viên bộ môn cho các lớp.",
+    "addTeacher": "Thêm giáo viên",
+    "teacherCount": "{count} giáo viên",
+    "assignClass": "Phân công lớp",
+    "detail": "Chi tiết",
+    "retry": "Thử lại",
+    "table": {
+      "teacher": "Giáo viên",
+      "primarySubject": "Môn chính",
+      "homeroom": "GVCN",
+      "subjectAssignments": "Phân công bộ môn",
+      "status": "Trạng thái",
+      "actions": "Hành động",
+      "unassigned": "Chưa phân công",
+      "noTeachers": "Chưa có giáo viên nào.",
+      "caption": "Danh sách giáo viên",
+      "overflowBadges": "+{n} môn",
+      "loading": "Đang tải danh sách giáo viên..."
+    },
+    "status": {
+      "ACTIVE": "Đang dạy",
+      "ON_LEAVE": "Nghỉ phép"
+    },
+    "sheet": {
+      "title": "Phân công: {name}",
+      "gvcnSection": "Giáo viên chủ nhiệm (GVCN)",
+      "gvcnPlaceholder": "Chọn lớp",
+      "gvbmSection": "Giáo viên bộ môn (GVBM)",
+      "addRow": "Thêm hàng",
+      "classPicker": "Lớp",
+      "subjectPicker": "Môn học",
+      "deleteRow": "Xóa hàng",
+      "save": "Lưu phân công",
+      "saving": "Đang lưu...",
+      "cancel": "Hủy",
+      "conflictWarning": "Có xung đột thời khóa biểu",
+      "saveSuccess": "Đã lưu phân công thành công"
+    },
+    "errors": {
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "forbidden": "Bạn không có quyền truy cập.",
+      "not-found": "Không tìm thấy dữ liệu.",
+      "conflict-exists": "Giáo viên đã có xung đột lịch dạy.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    }
+  },
   "classManagement": {
     "title": "Quản lý lớp học",
     "subtitle": "Tạo, đổi tên, lưu trữ lớp học và phân công giáo viên chủ nhiệm.",

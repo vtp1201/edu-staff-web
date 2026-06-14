@@ -814,6 +814,54 @@
       "slot-not-found": "Slot not found."
     }
   },
+  "principalTeachers": {
+    "title": "Teacher Management",
+    "subtitle": "Assign homeroom (GVCN) and subject teachers (GVBM) to classes.",
+    "addTeacher": "Add Teacher",
+    "teacherCount": "{count} teachers",
+    "assignClass": "Assign Classes",
+    "detail": "Detail",
+    "retry": "Retry",
+    "table": {
+      "teacher": "Teacher",
+      "primarySubject": "Primary Subject",
+      "homeroom": "Homeroom",
+      "subjectAssignments": "Subject Assignments",
+      "status": "Status",
+      "actions": "Actions",
+      "unassigned": "Unassigned",
+      "noTeachers": "No teachers found.",
+      "caption": "Teacher list",
+      "overflowBadges": "+{n} more",
+      "loading": "Loading teacher list..."
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ON_LEAVE": "On Leave"
+    },
+    "sheet": {
+      "title": "Assign: {name}",
+      "gvcnSection": "Homeroom Teacher (GVCN)",
+      "gvcnPlaceholder": "Select class",
+      "gvbmSection": "Subject Teachers (GVBM)",
+      "addRow": "Add Row",
+      "classPicker": "Class",
+      "subjectPicker": "Subject",
+      "deleteRow": "Delete row",
+      "save": "Save Assignments",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "conflictWarning": "Timetable conflict exists",
+      "saveSuccess": "Assignments saved successfully"
+    },
+    "errors": {
+      "network-error": "Connection error. Please try again.",
+      "forbidden": "You do not have permission.",
+      "not-found": "Data not found.",
+      "conflict-exists": "Teacher has a scheduling conflict.",
+      "unknown": "An unexpected error occurred."
+    }
+  },
   "classManagement": {
     "title": "Class Management",
     "subtitle": "Create, rename, archive classes and assign homeroom teachers.",
