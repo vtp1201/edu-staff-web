@@ -29,6 +29,16 @@ Confirmed facts (verify before citing if stale):
   So extracting a pure helper (e.g. `compactToneClass`) + Vitest on it, plus stories covering each
   variant/state, is the ACCEPTED proof shape — don't demand an RTL render test that the toolchain
   can't run. Composed components in `components/shared/<name>/` need an `index.ts` re-export + stories.
+- **`{ raw: true }` placement trap (api-envelope.ts):** the http interceptor's `isRawCall` reads
+  **config-level** `config.raw` (declared on `AxiosRequestConfig`), but repos (roster, teacher-dashboard)
+  pass `{ params: { raw: true } }` — `raw` nested in `params` does NOT set `config.raw`, so at RUNTIME
+  the interceptor unwraps the envelope before `parseEnvelope` sees it. Unit tests miss this because they
+  mock `http.get` to return a full envelope, bypassing the interceptor. Cross-cutting (shared with roster
+  precedent) → route to fe-lead, not a single-story block. Correct form is config-level
+  `{ params: {...}, raw: true }`. Candidate ADR.
+- **Paginated count via roster `.length`:** counting students by `roster.length` on a single `{limit:N}`
+  page (teacher-dashboard `getTotalStudents`) silently undercounts when `meta.pagination.hasMore` is true.
+  Flag any "sum/count from a list endpoint" that doesn't follow `nextCursor`.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
