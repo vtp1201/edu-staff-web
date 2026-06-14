@@ -1152,6 +1152,11 @@
       "borderRadius": 14,
       "title": {
         "text": "Yêu cầu tài khoản",
+        // INTENTIONAL a11y override (US-E08.5, DEF-03): AC-2 / legacy entry
+        // accountRequestsCard.label.color (line ~835) says --edu-text-muted, but
+        // muted (#8898A9) fails WCAG 1.4.3 (2.95:1 on white). The a11y auditor
+        // chose --edu-text-primary (text-foreground) as the AA-safe value.
+        // Accessibility rule wins over design prose — this is the source of truth.
         "color": "var(--edu-text-primary)",
         "textTransform": "uppercase"
       },

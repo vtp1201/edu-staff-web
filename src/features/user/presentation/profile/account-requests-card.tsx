@@ -13,6 +13,9 @@ export function AccountRequestsCard() {
   const t = useTranslations("profile.accountRequests");
   return (
     <div className="rounded-[14px] border border-border bg-card p-4">
+      {/* text-foreground instead of text-muted-foreground: AC-2 says muted, but
+          muted (#8898A9) fails WCAG 1.4.3 (2.95:1 on white). text-foreground is
+          the AA-safe intentional override. Accessibility rule wins over design prose. */}
       <h2 className="font-bold text-[12px] uppercase tracking-wider text-foreground">
         {t("title")}
       </h2>
