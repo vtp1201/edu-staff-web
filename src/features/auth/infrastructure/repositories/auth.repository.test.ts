@@ -23,7 +23,7 @@ const profileData = {
   email: "a@school.vn",
   name: "An",
   avatar: null,
-  roles: [{ role: "teacher", tenantId: "t1", tenantName: "THPT A" }],
+  roles: [{ role: "TEACHER", tenantId: "t1", tenantName: "THPT A" }],
 };
 
 function makeHttp(over: Partial<AxiosInstance> = {}) {
@@ -56,7 +56,14 @@ describe("AuthRepository.signin", () => {
         email: "a@school.vn",
         name: "An",
         avatar: null,
-        roles: [{ role: "teacher", tenantId: "t1", tenantName: "THPT A" }],
+        roles: [
+          {
+            role: "teacher",
+            roleEnum: "TEACHER",
+            tenantId: "t1",
+            tenantName: "THPT A",
+          },
+        ],
       },
     });
   });
@@ -91,7 +98,12 @@ describe("AuthRepository.socialSignin", () => {
       headers: { Authorization: "Bearer acc-1" },
     });
     expect(result.data?.user.roles).toEqual([
-      { role: "teacher", tenantId: "t1", tenantName: "THPT A" },
+      {
+        role: "teacher",
+        roleEnum: "TEACHER",
+        tenantId: "t1",
+        tenantName: "THPT A",
+      },
     ]);
   });
 

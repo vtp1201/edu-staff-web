@@ -27,13 +27,13 @@ export async function selectRoleAction(
     return { errorKey: "unauthorized" };
   }
 
-  const selection = new RoleSelectUseCase().execute(roleEnum, pending.roles);
+  const selection = new RoleSelectUseCase().execute(
+    roleEnum,
+    tenantId,
+    pending.roles,
+  );
   if (selection.error) {
     return { errorKey: selection.error.type };
-  }
-  // Guard against a tampered tenantId not matching the resolved role.
-  if (selection.data.tenantId !== tenantId) {
-    return { errorKey: "unauthorized" };
   }
 
   const tokens = await (await makeSwitchTenantUseCase()).execute(tenantId);

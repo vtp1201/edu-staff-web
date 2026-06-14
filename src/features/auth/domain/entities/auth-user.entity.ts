@@ -3,7 +3,12 @@
 export type UserRole = "teacher" | "principal" | "student" | "parent" | "admin";
 
 export interface UserTenantRole {
+  /** appRole used for routing/landing (collapsed from the BE enum). */
   role: UserRole;
+  /** Raw BE role enum ("TEACHER" | "ADMIN" | "MANAGER" | "STAFF" | …). Kept so
+   * a user holding two enums that collapse to the same appRole (or the same
+   * appRole across tenants) stays distinguishable (ADR 0036). */
+  roleEnum: string;
   tenantId: string;
   tenantName: string;
   /** BE `tenantCode` from `/users/me` (e.g. "THPT-A"); optional until BE emits it. */

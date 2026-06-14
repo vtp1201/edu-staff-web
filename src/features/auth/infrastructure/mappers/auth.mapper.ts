@@ -4,6 +4,7 @@ import type {
   AuthUser,
   UserTenantRole,
 } from "../../domain/entities/auth-user.entity";
+import { appRoleOf } from "../../domain/entities/role-meta";
 import type { TokenResponseDto } from "../dtos/token-response.dto";
 import type { UserProfileResponseDto } from "../dtos/user-profile-response.dto";
 
@@ -23,7 +24,10 @@ export function mapProfile(dto: UserProfileResponseDto): AuthUser {
     avatar: dto.avatar,
     roles: dto.roles.map(
       (r): UserTenantRole => ({
-        role: r.role as UserTenantRole["role"],
+        // BE enum → appRole for routing; fall back defensively to "teacher" on
+        // an unknown enum so a new BE role never hard-crashes login (ADR 0036).
+        role: appRoleOf(r.role) ?? "teacher",
+        roleEnum: r.role, // preserve the raw BE enum (ADR 0036)
         tenantId: r.tenantId,
         tenantName: r.tenantName,
         tenantCode: r.tenantCode,

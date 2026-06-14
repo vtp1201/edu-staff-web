@@ -1,5 +1,4 @@
 import type { UserRole, UserTenantRole } from "../entities/auth-user.entity";
-import { appRoleOf } from "../entities/role-meta";
 import type { AuthFailure } from "../failures/auth.failure";
 
 export interface RoleSelection {
@@ -14,20 +13,25 @@ export type RoleSelectResult =
   | { data?: never; error: AuthFailure };
 
 /**
- * Resolve a chosen BE role enum to the matching tenant role the user actually
- * holds. Pure — no side effects; the action layer persists the choice.
+ * Resolve a chosen (BE role enum + tenant) pair to the exact tenant role the
+ * user actually holds. Matching on `roleEnum` AND `tenantId` keeps two enums
+ * that collapse to the same appRole — and the same appRole across two tenants —
+ * distinguishable (ADR 0036). Pure — no side effects; the action layer persists.
  */
 export class RoleSelectUseCase {
-  execute(roleEnum: string, roles: UserTenantRole[]): RoleSelectResult {
-    const appRole = appRoleOf(roleEnum);
-    if (!appRole) return { error: { type: "unauthorized" } };
-
-    const match = roles.find((r) => r.role === appRole);
+  execute(
+    roleEnum: string,
+    tenantId: string,
+    roles: UserTenantRole[],
+  ): RoleSelectResult {
+    const match = roles.find(
+      (r) => r.roleEnum === roleEnum && r.tenantId === tenantId,
+    );
     if (!match) return { error: { type: "unauthorized" } };
 
     return {
       data: {
-        appRole,
+        appRole: match.role,
         tenantId: match.tenantId,
         tenantName: match.tenantName,
         tenantCode: match.tenantCode,
