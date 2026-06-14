@@ -18,7 +18,9 @@ export type StatusTone =
  *  never white (a11y rule).
  */
 const TONE_CLASS: Record<StatusTone, string> = {
-  primary: "bg-primary/15 text-primary",
+  // primary text on its own tinted bg = 3.65:1 (fails AA, A11Y-001) →
+  // text-edu-text-primary (#2A3547) = 11.52:1 on the tint, guaranteed AA.
+  primary: "bg-primary/15 text-edu-text-primary",
   // success/error use AA-compliant dark text tokens (decision 0027): 5.4/5.1:1 on tinted bg.
   success: "bg-edu-success/15 text-edu-success-text",
   // warning-foreground (#2A3547) = ~11:1 on warning tint — a11y rule (never white).
