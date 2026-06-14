@@ -6,6 +6,8 @@ export interface UserTenantRole {
   role: UserRole;
   tenantId: string;
   tenantName: string;
+  /** BE `tenantCode` from `/users/me` (e.g. "THPT-A"); optional until BE emits it. */
+  tenantCode?: string;
 }
 
 export interface AuthUser {
