@@ -6,4 +6,5 @@ export * from "./calendar.di";
 export * from "./class-management.di";
 export * from "./staffing.di";
 export * from "./subject-catalogue.di";
+export * from "./teacher-class.di";
 export * from "./teacher-dashboard.di";

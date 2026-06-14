@@ -44,6 +44,18 @@ export class TeacherDashboardRepository implements ITeacherDashboardRepository {
     }
   }
 
+  /** Count of the teacher's assigned classes (cursor-paginated list length). */
+  async getTotalClasses(): Promise<Result<number>> {
+    try {
+      const classes = await this.fetchAllPages<TeacherClassesResponseDto>(
+        TEACHER_EP.classes,
+      );
+      return { ok: true, data: classes.length };
+    } catch (err) {
+      return { ok: false, error: toTeacherDashboardFailure(err) };
+    }
+  }
+
   /** Drain a cursor-paginated list endpoint into a single array. */
   private async fetchAllPages<T extends unknown[]>(
     url: string,
@@ -80,6 +92,7 @@ export class TeacherDashboardRepository implements ITeacherDashboardRepository {
       ok: true,
       data: {
         totalStudents: 0,
+        totalClasses: 0,
         classesToday: 0,
         pendingGradesCount: 0,
         pendingApprovalCount: 0,

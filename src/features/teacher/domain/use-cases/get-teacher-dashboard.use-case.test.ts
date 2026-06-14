@@ -11,6 +11,7 @@ import { GetTeacherDashboardUseCase } from "./get-teacher-dashboard.use-case";
 
 const STATS: TeacherDashboardStats = {
   totalStudents: 0,
+  totalClasses: 0,
   classesToday: 3,
   pendingGradesCount: 23,
   pendingApprovalCount: 4,
@@ -50,6 +51,7 @@ function makeRepo(
 ): ITeacherDashboardRepository {
   return {
     getTotalStudents: vi.fn().mockResolvedValue(ok(140)),
+    getTotalClasses: vi.fn().mockResolvedValue(ok(6)),
     getScheduleItems: vi.fn().mockResolvedValue(ok(SCHEDULE)),
     getPendingGradeItems: vi.fn().mockResolvedValue(ok(GRADES)),
     getDashboardStats: vi.fn().mockResolvedValue(ok(STATS)),
@@ -63,6 +65,7 @@ describe("GetTeacherDashboardUseCase", () => {
     const repo = makeRepo();
     await new GetTeacherDashboardUseCase(repo).execute();
     expect(repo.getTotalStudents).toHaveBeenCalledOnce();
+    expect(repo.getTotalClasses).toHaveBeenCalledOnce();
     expect(repo.getScheduleItems).toHaveBeenCalledOnce();
     expect(repo.getPendingGradeItems).toHaveBeenCalledOnce();
     expect(repo.getDashboardStats).toHaveBeenCalledOnce();
@@ -75,6 +78,7 @@ describe("GetTeacherDashboardUseCase", () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.data.stats.totalStudents).toBe(140);
+      expect(res.data.stats.totalClasses).toBe(6);
       expect(res.data.stats.classesToday).toBe(3);
       expect(res.data.scheduleItems).toEqual(SCHEDULE);
       expect(res.data.pendingGradeItems).toEqual(GRADES);

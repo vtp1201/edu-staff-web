@@ -7,6 +7,7 @@ import type { TeacherDashboardVM } from "./teacher-dashboard-home.i-vm";
 
 const baseVm: TeacherDashboardVM = {
   totalStudents: 140,
+  totalClasses: 4,
   classesToday: 3,
   pendingGradesCount: 23,
   pendingApprovalCount: 4,

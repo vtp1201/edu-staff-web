@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpen,
   Calendar,
   ClipboardList,
   Clock,
@@ -47,6 +48,12 @@ export function TeacherDashboardHomeClient({ vm }: { vm: TeacherDashboardVM }) {
           value={vm.totalStudents === null ? "—" : String(vm.totalStudents)}
           icon={Users}
           tone="primary"
+        />
+        <StatCard
+          label={t("stats.totalClasses")}
+          value={vm.totalClasses === null ? "—" : String(vm.totalClasses)}
+          icon={BookOpen}
+          tone="warning"
         />
         <StatCard
           label={t("stats.classesToday")}

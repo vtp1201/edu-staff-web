@@ -21,17 +21,25 @@ export class GetTeacherDashboardUseCase {
   constructor(private readonly repo: ITeacherDashboardRepository) {}
 
   async execute(): Promise<Result<TeacherDashboardData>> {
-    const [totalStudents, schedule, pendingGrades, stats, notifications] =
-      await Promise.all([
-        this.repo.getTotalStudents(),
-        this.repo.getScheduleItems(),
-        this.repo.getPendingGradeItems(),
-        this.repo.getDashboardStats(),
-        this.repo.getNotifications(),
-      ]);
+    const [
+      totalStudents,
+      totalClasses,
+      schedule,
+      pendingGrades,
+      stats,
+      notifications,
+    ] = await Promise.all([
+      this.repo.getTotalStudents(),
+      this.repo.getTotalClasses(),
+      this.repo.getScheduleItems(),
+      this.repo.getPendingGradeItems(),
+      this.repo.getDashboardStats(),
+      this.repo.getNotifications(),
+    ]);
 
     const firstFailure = firstError([
       totalStudents,
+      totalClasses,
       schedule,
       pendingGrades,
       stats,
@@ -42,6 +50,7 @@ export class GetTeacherDashboardUseCase {
     // All ok past the guard above — narrow with non-null assertions guarded by it.
     if (
       !totalStudents.ok ||
+      !totalClasses.ok ||
       !schedule.ok ||
       !pendingGrades.ok ||
       !stats.ok ||
@@ -53,7 +62,11 @@ export class GetTeacherDashboardUseCase {
     return {
       ok: true,
       data: {
-        stats: { ...stats.data, totalStudents: totalStudents.data },
+        stats: {
+          ...stats.data,
+          totalStudents: totalStudents.data,
+          totalClasses: totalClasses.data,
+        },
         scheduleItems: schedule.data,
         pendingGradeItems: pendingGrades.data,
         notifications: notifications.data,

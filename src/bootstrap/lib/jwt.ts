@@ -74,6 +74,12 @@ export function decodeJwtExp(token: string): number | null {
   return typeof exp === "number" ? exp : null;
 }
 
+/** Returns the subject (`sub`) claim — the authenticated user/member id — or `null`. */
+export function decodeSubClaim(token: string): string | null {
+  const sub = decodeJwtClaims(token)?.sub;
+  return typeof sub === "string" ? sub : null;
+}
+
 /** Returns the tenant-scoped `tenantId` claim (after switch-tenant) or `null`. */
 export function decodeTenantId(token: string): string | null {
   const tenantId = decodeJwtClaims(token)?.tenantId;

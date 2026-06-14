@@ -429,7 +429,8 @@
       "newMessages": "New Messages",
       "vsPrevMonth": "vs last month",
       "vsPrevWeek": "vs last week",
-      "adminApprovalMode": "ADMIN_APPROVAL mode"
+      "adminApprovalMode": "ADMIN_APPROVAL mode",
+      "totalClasses": "My Classes"
     },
     "schedule": {
       "title": "Today's Schedule",
@@ -452,6 +453,51 @@
     },
     "notifications": {
       "title": "Notifications"
+    }
+  },
+  "teacherClasses": {
+    "pageTitle": "My Classes",
+    "empty": "You have not been assigned to any class.",
+    "errorRetryAction": "Try again",
+    "breadcrumbLabel": "Class navigation",
+    "gradeLevel": "Grade {grade}",
+    "students": "students",
+    "homeroomBadge": "Homeroom",
+    "actions": {
+      "viewStudents": "View Students",
+      "attendance": "Attendance",
+      "classLog": "Class Log",
+      "comingSoon": "Coming soon"
+    },
+    "studentPage": {
+      "breadcrumbClasses": "Classes",
+      "empty": "This class has no students yet.",
+      "errorRetryAction": "Try again",
+      "retryButton": "Try again",
+      "studentListSection": "Student list",
+      "paginationNav": "Student list pagination",
+      "filteredCount": "Found {count} students",
+      "searchPlaceholder": "Search by name or student code...",
+      "columns": {
+        "name": "Student",
+        "code": "Student Code",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Enrolled",
+        "transferred": "Transferred"
+      },
+      "resultCount": "{count} students",
+      "showing": "Showing {from}–{to} of {total}",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "noSearchResults": "No matching students found."
+    },
+    "errors": {
+      "network-error": "Connection error. Please check your network.",
+      "unauthorized": "You do not have permission to view this.",
+      "not-found": "Class not found.",
+      "unknown": "An error occurred. Please try again."
     }
   },
   "profile": {

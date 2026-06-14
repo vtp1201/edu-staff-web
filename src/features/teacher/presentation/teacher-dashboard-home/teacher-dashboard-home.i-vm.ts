@@ -27,6 +27,8 @@ export interface NotificationVM {
 export interface TeacherDashboardVM {
   /** null = total unavailable (loading/error) → render an em dash. */
   totalStudents: number | null;
+  /** null = total unavailable (loading/error) → render an em dash. */
+  totalClasses: number | null;
   classesToday: number;
   pendingGradesCount: number;
   pendingApprovalCount: number;

@@ -429,7 +429,8 @@
       "newMessages": "Tin nhắn mới",
       "vsPrevMonth": "so tháng trước",
       "vsPrevWeek": "so tuần trước",
-      "adminApprovalMode": "Chế độ ADMIN_APPROVAL"
+      "adminApprovalMode": "Chế độ ADMIN_APPROVAL",
+      "totalClasses": "Lớp học"
     },
     "schedule": {
       "title": "Lịch dạy hôm nay",
@@ -452,6 +453,51 @@
     },
     "notifications": {
       "title": "Thông báo"
+    }
+  },
+  "teacherClasses": {
+    "pageTitle": "Lớp học của tôi",
+    "empty": "Bạn chưa được phân công lớp nào.",
+    "errorRetryAction": "Thử lại",
+    "breadcrumbLabel": "Điều hướng lớp học",
+    "gradeLevel": "Khối {grade}",
+    "students": "học sinh",
+    "homeroomBadge": "GVCN",
+    "actions": {
+      "viewStudents": "Xem học sinh",
+      "attendance": "Điểm danh",
+      "classLog": "Sổ đầu bài",
+      "comingSoon": "Sắp có"
+    },
+    "studentPage": {
+      "breadcrumbClasses": "Lớp học",
+      "empty": "Lớp này chưa có học sinh nào.",
+      "errorRetryAction": "Thử lại",
+      "retryButton": "Thử lại",
+      "studentListSection": "Danh sách học sinh",
+      "paginationNav": "Phân trang danh sách học sinh",
+      "filteredCount": "Tìm thấy {count} học sinh",
+      "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
+      "columns": {
+        "name": "Học sinh",
+        "code": "Mã HS",
+        "status": "Trạng thái"
+      },
+      "status": {
+        "active": "Đang học",
+        "transferred": "Đã chuyển"
+      },
+      "resultCount": "{count} học sinh",
+      "showing": "Hiển thị {from}–{to} trên {total}",
+      "prevPage": "Trang trước",
+      "nextPage": "Trang sau",
+      "noSearchResults": "Không tìm thấy học sinh phù hợp."
+    },
+    "errors": {
+      "network-error": "Lỗi kết nối, vui lòng kiểm tra mạng.",
+      "unauthorized": "Bạn không có quyền xem thông tin này.",
+      "not-found": "Không tìm thấy lớp học.",
+      "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
     }
   },
   "profile": {

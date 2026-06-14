@@ -10,9 +10,11 @@ import type {
 
 /** Mock data mirrors the 1406 teacher.jsx handoff constants (not i18n — seed data). */
 const TOTAL_STUDENTS = 140;
+const TOTAL_CLASSES = 4;
 
 const STATS: TeacherDashboardStats = {
   totalStudents: TOTAL_STUDENTS,
+  totalClasses: TOTAL_CLASSES,
   classesToday: 3,
   pendingGradesCount: 23,
   pendingApprovalCount: 4,
@@ -87,6 +89,10 @@ export class MockTeacherDashboardRepository
 {
   async getTotalStudents(): Promise<Result<number>> {
     return { ok: true, data: TOTAL_STUDENTS };
+  }
+
+  async getTotalClasses(): Promise<Result<number>> {
+    return { ok: true, data: TOTAL_CLASSES };
   }
 
   async getScheduleItems(): Promise<Result<ScheduleItem[]>> {
