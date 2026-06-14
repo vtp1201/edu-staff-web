@@ -482,7 +482,12 @@
       "status": {
         "active": "Enrolled",
         "transferred": "Transferred"
-      }
+      },
+      "resultCount": "{count} students",
+      "showing": "Showing {from}–{to} of {total}",
+      "prevPage": "Previous page",
+      "nextPage": "Next page",
+      "noSearchResults": "No matching students found."
     },
     "errors": {
       "network-error": "Connection error. Please check your network.",

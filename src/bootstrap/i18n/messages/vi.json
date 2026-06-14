@@ -482,7 +482,12 @@
       "status": {
         "active": "Đang học",
         "transferred": "Đã chuyển"
-      }
+      },
+      "resultCount": "{count} học sinh",
+      "showing": "Hiển thị {from}–{to} trên {total}",
+      "prevPage": "Trang trước",
+      "nextPage": "Trang sau",
+      "noSearchResults": "Không tìm thấy học sinh phù hợp."
     },
     "errors": {
       "network-error": "Lỗi kết nối, vui lòng kiểm tra mạng.",
