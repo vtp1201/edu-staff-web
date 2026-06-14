@@ -13,10 +13,10 @@ export function AccountRequestsCard() {
   const t = useTranslations("profile.accountRequests");
   return (
     <div className="rounded-[14px] border border-border bg-card p-4">
-      <h2 className="font-bold text-[12px] uppercase tracking-wider text-muted-foreground">
+      <h2 className="font-bold text-[12px] uppercase tracking-wider text-foreground">
         {t("title")}
       </h2>
-      <p className="mt-2 text-[11.5px] leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-[11.5px] leading-relaxed text-edu-text-secondary">
         {t("description")}
       </p>
       <a

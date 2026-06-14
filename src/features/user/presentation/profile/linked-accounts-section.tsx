@@ -91,13 +91,12 @@ const PROVIDER_DESC_KEY = {
 } as const;
 
 function ProviderIcon({ provider }: { provider: SocialProvider }) {
-  const label = provider === "vneId" ? "VNeID" : "Google";
   return (
     <span className="grid size-[42px] place-items-center rounded-[10px] border border-border bg-card">
       {provider === "vneId" ? (
-        <VneidIcon className="size-5" aria-label={label} />
+        <VneidIcon className="size-5" />
       ) : (
-        <GoogleIcon className="size-5" aria-label={label} />
+        <GoogleIcon className="size-5" />
       )}
     </span>
   );
@@ -130,14 +129,14 @@ function LinkedAccountRow({
       onOptimistic(provider, next);
       return { previous: linked };
     },
-    onSuccess: (result, next) => {
+    onSuccess: (result, next, context) => {
       if (!result.success) {
-        onRollback(provider, !next);
+        onRollback(provider, context.previous);
         setError(next ? t("linkError") : t("unlinkError"));
       }
     },
-    onError: (_err, next) => {
-      onRollback(provider, !next);
+    onError: (_err, next, context) => {
+      onRollback(provider, context?.previous ?? !next);
       setError(next ? t("linkError") : t("unlinkError"));
     },
     onSettled,
@@ -147,7 +146,7 @@ function LinkedAccountRow({
   const providerName = t(`providers.${provider}`);
 
   return (
-    <div className="flex flex-col gap-2 rounded-[10px] border border-border bg-background p-[14px_18px]">
+    <div className="flex flex-col gap-2 rounded-[10px] border border-border bg-background px-[18px] py-[14px]">
       <div className="flex items-center gap-4">
         <ProviderIcon provider={provider} />
         <div className="min-w-0 flex-1">
@@ -156,16 +155,16 @@ function LinkedAccountRow({
               {providerName}
             </span>
             {linked ? (
-              <span className="rounded-full border border-edu-success/30 bg-edu-success/15 px-2.5 py-0.5 text-[10px] font-bold text-edu-success">
+              <span className="rounded-full border border-edu-success/30 bg-edu-success/15 px-2.5 py-0.5 text-[10px] font-bold text-edu-success-text">
                 {t("linked")}
               </span>
             ) : (
-              <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+              <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[10px] font-bold text-edu-text-secondary">
                 {t("notLinked")}
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          <p className="mt-0.5 truncate text-xs text-edu-text-secondary">
             {linked && email
               ? t("linkedDescription", { email })
               : t(PROVIDER_DESC_KEY[provider])}
@@ -175,8 +174,15 @@ function LinkedAccountRow({
           <Button
             variant="outline"
             size="sm"
-            disabled={pending}
-            onClick={() => mutation.mutate(false)}
+            className="min-h-[44px]"
+            aria-busy={pending}
+            aria-disabled={pending}
+            aria-label={
+              pending ? t("unlinking") : `${t("unlink")} ${providerName}`
+            }
+            onClick={() => {
+              if (!pending) mutation.mutate(false);
+            }}
           >
             {pending && (
               <Loader2 className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none" />
@@ -186,8 +192,13 @@ function LinkedAccountRow({
         ) : (
           <Button
             size="sm"
-            disabled={pending}
-            onClick={() => mutation.mutate(true)}
+            className="min-h-[44px]"
+            aria-busy={pending}
+            aria-disabled={pending}
+            aria-label={pending ? t("linking") : `${t("link")} ${providerName}`}
+            onClick={() => {
+              if (!pending) mutation.mutate(true);
+            }}
           >
             {pending && (
               <Loader2 className="mr-1.5 size-3.5 animate-spin motion-reduce:animate-none" />
@@ -197,7 +208,10 @@ function LinkedAccountRow({
         )}
       </div>
       {error && (
-        <p role="alert" className={cn("text-xs text-edu-error", "pl-[58px]")}>
+        <p
+          role="alert"
+          className={cn("text-xs text-edu-error-text", "pl-[58px]")}
+        >
           {error}
         </p>
       )}

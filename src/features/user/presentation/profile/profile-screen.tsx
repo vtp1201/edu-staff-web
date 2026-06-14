@@ -189,11 +189,14 @@ function SecurityTab() {
               />
             ))}
           </div>
-          {level !== "empty" && (
-            <p className="text-xs font-medium text-muted-foreground">
-              {t(`strength.${level}`)}
-            </p>
-          )}
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-xs font-medium text-muted-foreground"
+          >
+            {level !== "empty" ? t(`strength.${level}`) : ""}
+          </p>
         </div>
         <ul className="space-y-1">
           {ruleList.map((r) => (
@@ -201,7 +204,9 @@ function SecurityTab() {
               key={r.key}
               className={cn(
                 "flex items-center gap-2 text-xs",
-                rules[r.key] ? "text-edu-success" : "text-muted-foreground",
+                rules[r.key]
+                  ? "text-edu-success-text"
+                  : "text-muted-foreground",
               )}
             >
               {rules[r.key] ? (
@@ -242,7 +247,12 @@ function SessionsTab({ sessions }: { sessions: ProfileScreenVM["sessions"] }) {
               {s.current ? (
                 <StatusBadge tone="success">{t("thisDevice")}</StatusBadge>
               ) : (
-                <Button variant="ghost" size="sm" className="text-edu-error">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-edu-error-text"
+                  aria-label={`${t("logout")} ${s.device}`}
+                >
                   <LogOut className="mr-1 size-3.5" />
                   {t("logout")}
                 </Button>
@@ -251,7 +261,7 @@ function SessionsTab({ sessions }: { sessions: ProfileScreenVM["sessions"] }) {
           ))}
         </ul>
         <div className="border-t border-border p-4">
-          <Button variant="outline" size="sm" className="text-edu-error">
+          <Button variant="outline" size="sm" className="text-edu-error-text">
             {t("logoutAll")}
           </Button>
         </div>

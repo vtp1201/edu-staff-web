@@ -1098,6 +1098,73 @@
       }
     },
 
+    // US-E08.5 implementation anchors — discrete screen-anchor entries for the
+    // two components shipped in the profile screen (cross-ref profile.security
+    // .linkedAccounts and profile.leftColumn.accountRequestsCard above).
+    "#profile-linked-accounts": {
+      // Source: features/user/presentation/profile/linked-accounts-section.tsx
+      "context": "Section inside the profile Security tab (#profile security)",
+      "purpose": "Link/unlink third-party identity providers to the account",
+      "providers": [
+        {
+          "key": "vneId",
+          "name": "VNeID",
+          "descVi": "Định danh điện tử quốc gia"
+        },
+        { "key": "google", "name": "Google", "descVi": "Tài khoản Google" }
+      ],
+      "rowStates": {
+        "linked": {
+          "badge": {
+            "text": "Đã liên kết",
+            "color": "var(--edu-success-text)",
+            "background": "var(--edu-success) + '15'"
+          },
+          "action": {
+            "labelVi": "Hủy liên kết",
+            "variant": "outline",
+            "minTouchTarget": 44
+          }
+        },
+        "unlinked": {
+          "badge": {
+            "text": "Chưa liên kết",
+            "color": "var(--edu-text-secondary)",
+            "background": "var(--edu-card)"
+          },
+          "action": {
+            "labelVi": "Liên kết ngay",
+            "variant": "primary",
+            "minTouchTarget": 44
+          }
+        },
+        "pending": "spinner + aria-busy; button stays in tab order (aria-disabled, guarded onClick)",
+        "error": "role=alert text in var(--edu-error-text), description below the row"
+      },
+      "behavior": "optimistic toggle via TanStack Query setQueryData; rollback to previous on failure; mock-first write (no HTTP service yet)",
+      "a11y": "provider-specific aria-label on action buttons; provider icon decorative (aria-hidden, has adjacent text); contrast tokens *-text variants"
+    },
+    "#profile-account-requests": {
+      // Source: features/user/presentation/profile/account-requests-card.tsx
+      "context": "Card in the profile left sidebar column",
+      "purpose": "Informational — account deactivation/deletion is admin-only",
+      "padding": 16,
+      "borderRadius": 14,
+      "title": {
+        "text": "Yêu cầu tài khoản",
+        "color": "var(--edu-text-primary)",
+        "textTransform": "uppercase"
+      },
+      "body": { "color": "var(--edu-text-secondary)", "fontSize": 11.5 },
+      "contactButton": {
+        "type": "mailto link",
+        "minTouchTarget": 44,
+        "color": "var(--edu-text-secondary)",
+        "icon": "mail"
+      },
+      "behavior": "no write API call (AC-5); single mailto affordance to admin contact"
+    },
+
     "principalTeachers": {
       // Source: design_src/edu/teacher.jsx — PrincipalTeachersScreen + TeacherAssignmentSheet (1406)
       // Route: /principal/teachers (principal section)
