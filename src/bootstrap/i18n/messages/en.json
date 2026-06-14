@@ -118,6 +118,7 @@
       "classManagement": "Class Management",
       "timetable": "Timetable",
       "assessmentScheme": "Assessment Scheme",
+      "staffing": "Staffing",
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"
     },
@@ -865,6 +866,231 @@
       "renameSuccess": "Class renamed successfully.",
       "archiveSuccess": "Class archived successfully.",
       "assignHomeroomSuccess": "Homeroom teacher assigned successfully."
+    }
+  },
+  "staffing": {
+    "departments": {
+      "title": "Departments / Subject Teams",
+      "subtitle": "Manage the school's subject teams and departments.",
+      "addButton": "Add department",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterArchived": "Archived",
+      "searchPlaceholder": "Search departments...",
+      "clearSearch": "Clear search",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "editButton": "Edit",
+      "archiveButton": "Archive",
+      "archiveBlockedTooltip": "{count} active assignment(s)",
+      "archiveConfirmTitle": "Archive department",
+      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"? This action cannot be undone.",
+      "archiveConfirmButton": "Archive",
+      "cancelButton": "Cancel",
+      "emptyTitle": "No departments yet",
+      "emptySubtitle": "Create your first department to start managing staff.",
+      "emptyCreateButton": "Create department",
+      "filteredEmptyTitle": "No results found",
+      "filteredEmptySubtitle": "Try changing the filter or search term.",
+      "clearFilters": "Clear filters",
+      "assignmentCount": "{count} assignment(s)",
+      "createSheet": {
+        "title": "Add department",
+        "description": "Enter the new department name.",
+        "nameLabel": "Department name",
+        "namePlaceholder": "e.g. Math - Physics Team",
+        "submit": "Create",
+        "editTitle": "Edit department"
+      },
+      "formErrors": {
+        "nameRequired": "Name is required.",
+        "nameTooLong": "Name must not exceed 100 characters."
+      },
+      "errors": {
+        "already-exists": "Name already exists. Please choose another.",
+        "not-found": "Department not found.",
+        "has-active-assignments": "Department still has active assignments.",
+        "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "member-not-teacher": "This member is not a teacher.",
+        "academic-year-not-active": "Academic year is invalid.",
+        "scope-entity-not-found": "Scope entity does not exist.",
+        "forbidden": "You do not have permission to perform this action.",
+        "network-error": "Connection error. Please try again.",
+        "unknown": "An unknown error occurred."
+      },
+      "table": {
+        "name": "Name",
+        "status": "Status",
+        "assignments": "Assignments",
+        "actions": "Actions",
+        "caption": "Department list"
+      },
+      "toast": {
+        "createSuccess": "Department created.",
+        "editSuccess": "Department updated.",
+        "archiveSuccess": "Department archived."
+      }
+    },
+    "positionTitles": {
+      "title": "Position Titles",
+      "subtitle": "Manage the position titles in the school.",
+      "addButton": "Add position title",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterArchived": "Archived",
+      "searchPlaceholder": "Search position titles...",
+      "clearSearch": "Clear search",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "editButton": "Edit",
+      "archiveButton": "Archive",
+      "archiveBlockedTooltip": "{count} active assignment(s)",
+      "archiveConfirmTitle": "Archive position title",
+      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"?",
+      "archiveConfirmButton": "Archive",
+      "cancelButton": "Cancel",
+      "emptyTitle": "No position titles yet",
+      "emptySubtitle": "Create your first position title.",
+      "emptyCreateButton": "Create position title",
+      "filteredEmptyTitle": "No results found",
+      "filteredEmptySubtitle": "Try changing the filter.",
+      "clearFilters": "Clear filters",
+      "assignmentCount": "{count} assignment(s)",
+      "scopeTypeSubjectParent": "Subject team",
+      "scopeTypeDepartment": "Department",
+      "permManageSubjectContent": "Manage content",
+      "permManageSchedule": "Manage schedule",
+      "permManageConduct": "Manage conduct",
+      "permViewReports": "View reports",
+      "createSheet": {
+        "title": "Add position title",
+        "description": "Enter the new position title details.",
+        "nameLabel": "Position title name",
+        "namePlaceholder": "e.g. Subject Team Head",
+        "scopeTypeLabel": "Scope",
+        "permissionsLabel": "Permissions",
+        "submit": "Create",
+        "editTitle": "Edit position title",
+        "editSubmit": "Update"
+      },
+      "formErrors": {
+        "nameRequired": "Name is required.",
+        "nameTooLong": "Name must not exceed 100 characters.",
+        "scopeTypeRequired": "Please select a scope."
+      },
+      "errors": {
+        "already-exists": "Position title name already exists.",
+        "not-found": "Position title not found.",
+        "has-active-assignments": "Position title still has active assignments.",
+        "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "member-not-teacher": "This member is not a teacher.",
+        "academic-year-not-active": "Academic year is invalid.",
+        "scope-entity-not-found": "Scope entity does not exist.",
+        "forbidden": "You do not have permission to perform this action.",
+        "network-error": "Connection error. Please try again.",
+        "unknown": "An unknown error occurred."
+      },
+      "table": {
+        "name": "Name",
+        "scopeType": "Scope",
+        "permissions": "Permissions",
+        "status": "Status",
+        "assignments": "Assignments",
+        "actions": "Actions",
+        "caption": "Position title list"
+      },
+      "toast": {
+        "createSuccess": "Position title created.",
+        "editSuccess": "Position title updated.",
+        "archiveSuccess": "Position title archived."
+      }
+    },
+    "assignments": {
+      "title": "Position Assignments",
+      "subtitle": "Assign teachers to position titles by academic year.",
+      "assignButton": "Assign",
+      "copyYearButton": "Copy to another year",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterRevoked": "Revoked",
+      "searchPlaceholder": "Search teachers...",
+      "clearSearch": "Clear search",
+      "statusActive": "Active",
+      "statusRevoked": "Revoked",
+      "revokeButton": "Revoke",
+      "revokeConfirmTitle": "Revoke assignment",
+      "revokeConfirmBody": "Are you sure you want to revoke the assignment of \"{name}\"?",
+      "revokeConfirmButton": "Revoke",
+      "cancelButton": "Cancel",
+      "emptyTitle": "No assignments yet",
+      "emptySubtitle": "Start by assigning a position to a teacher.",
+      "emptyAssignButton": "Assign now",
+      "filteredEmptyTitle": "No results found",
+      "filteredEmptySubtitle": "Try changing the filter.",
+      "clearFilters": "Clear filters",
+      "noScopeEntity": "—",
+      "assignSheet": {
+        "title": "Assign position",
+        "description": "Assign a teacher to a position title.",
+        "memberIdLabel": "Teacher ID",
+        "memberIdPlaceholder": "e.g. m-101",
+        "positionTitleLabel": "Position title",
+        "positionTitlePlaceholder": "Select position title",
+        "scopeEntityLabel": "Scope entity (optional)",
+        "scopeEntityPlaceholder": "e.g. sp-math",
+        "academicYearLabel": "Academic year",
+        "academicYearPlaceholder": "e.g. 2025-2026",
+        "submit": "Assign"
+      },
+      "copySheet": {
+        "title": "Copy assignments",
+        "description": "Copy all assignments from one academic year to another.",
+        "sourceYearLabel": "Source academic year",
+        "sourceYearPlaceholder": "e.g. 2024-2025",
+        "targetYearLabel": "Target academic year",
+        "targetYearPlaceholder": "e.g. 2025-2026",
+        "submit": "Copy",
+        "resultCopied": "Copied {count} assignment(s).",
+        "resultSkipped": "Skipped {count} existing assignment(s)."
+      },
+      "formErrors": {
+        "memberIdRequired": "Teacher ID is required.",
+        "positionTitleRequired": "Please select a position title.",
+        "academicYearRequired": "Academic year is required.",
+        "sourceYearRequired": "Source academic year is required.",
+        "targetYearRequired": "Target academic year is required."
+      },
+      "errors": {
+        "already-exists": "This assignment already exists.",
+        "not-found": "Assignment not found.",
+        "has-active-assignments": "Still has active assignments.",
+        "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "member-not-teacher": "This member is not a teacher.",
+        "academic-year-not-active": "Academic year is invalid.",
+        "scope-entity-not-found": "Scope entity does not exist.",
+        "forbidden": "You do not have permission to perform this action.",
+        "network-error": "Connection error. Please try again.",
+        "unknown": "An unknown error occurred."
+      },
+      "table": {
+        "member": "Teacher",
+        "positionTitle": "Position title",
+        "scopeEntity": "Scope",
+        "academicYear": "Academic year",
+        "status": "Status",
+        "actions": "Actions",
+        "caption": "Position assignment list"
+      },
+      "toast": {
+        "assignSuccess": "Assigned successfully.",
+        "revokeSuccess": "Assignment revoked.",
+        "copySuccess": "Assignments copied."
+      }
+    },
+    "tabs": {
+      "departments": "Departments",
+      "positionTitles": "Position Titles",
+      "assignments": "Assignments"
     }
   }
 }

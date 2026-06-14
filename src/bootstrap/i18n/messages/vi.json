@@ -118,6 +118,7 @@
       "classManagement": "Quản lý lớp học",
       "timetable": "Thời khoá biểu",
       "assessmentScheme": "Khung đánh giá",
+      "staffing": "Phân công chức vụ",
       "expandSidebar": "Mở rộng thanh bên",
       "collapseSidebar": "Thu gọn thanh bên"
     },
@@ -865,6 +866,231 @@
       "renameSuccess": "Đổi tên lớp thành công.",
       "archiveSuccess": "Lưu trữ lớp thành công.",
       "assignHomeroomSuccess": "Phân công giáo viên chủ nhiệm thành công."
+    }
+  },
+  "staffing": {
+    "departments": {
+      "title": "Khoa / Tổ bộ môn",
+      "subtitle": "Quản lý các tổ chuyên môn, phòng ban của trường.",
+      "addButton": "Thêm tổ bộ môn",
+      "filterAll": "Tất cả",
+      "filterActive": "Đang hoạt động",
+      "filterArchived": "Đã lưu trữ",
+      "searchPlaceholder": "Tìm kiếm tổ bộ môn...",
+      "clearSearch": "Xóa tìm kiếm",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Lưu trữ",
+      "editButton": "Sửa",
+      "archiveButton": "Lưu trữ",
+      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
+      "archiveConfirmTitle": "Lưu trữ tổ bộ môn",
+      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"? Hành động này không thể hoàn tác.",
+      "archiveConfirmButton": "Lưu trữ",
+      "cancelButton": "Hủy",
+      "emptyTitle": "Chưa có tổ bộ môn nào",
+      "emptySubtitle": "Tạo tổ bộ môn đầu tiên để bắt đầu quản lý nhân sự.",
+      "emptyCreateButton": "Tạo tổ bộ môn",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
+      "clearFilters": "Xóa bộ lọc",
+      "assignmentCount": "{count} phân công",
+      "createSheet": {
+        "title": "Thêm tổ bộ môn",
+        "description": "Nhập tên tổ bộ môn mới.",
+        "nameLabel": "Tên tổ bộ môn",
+        "namePlaceholder": "VD: Tổ Toán - Lý",
+        "submit": "Tạo",
+        "editTitle": "Sửa tổ bộ môn"
+      },
+      "formErrors": {
+        "nameRequired": "Tên không được để trống.",
+        "nameTooLong": "Tên không được vượt quá 100 ký tự."
+      },
+      "errors": {
+        "already-exists": "Tên đã tồn tại. Vui lòng chọn tên khác.",
+        "not-found": "Không tìm thấy tổ bộ môn.",
+        "has-active-assignments": "Tổ bộ môn còn phân công đang hoạt động.",
+        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "member-not-teacher": "Thành viên này không phải giáo viên.",
+        "academic-year-not-active": "Năm học không hợp lệ.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "unknown": "Đã xảy ra lỗi không xác định."
+      },
+      "table": {
+        "name": "Tên",
+        "status": "Trạng thái",
+        "assignments": "Phân công",
+        "actions": "Thao tác",
+        "caption": "Danh sách tổ bộ môn"
+      },
+      "toast": {
+        "createSuccess": "Đã tạo tổ bộ môn.",
+        "editSuccess": "Đã cập nhật tổ bộ môn.",
+        "archiveSuccess": "Đã lưu trữ tổ bộ môn."
+      }
+    },
+    "positionTitles": {
+      "title": "Chức danh",
+      "subtitle": "Quản lý các chức danh trong nhà trường.",
+      "addButton": "Thêm chức danh",
+      "filterAll": "Tất cả",
+      "filterActive": "Đang hoạt động",
+      "filterArchived": "Đã lưu trữ",
+      "searchPlaceholder": "Tìm kiếm chức danh...",
+      "clearSearch": "Xóa tìm kiếm",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Lưu trữ",
+      "editButton": "Sửa",
+      "archiveButton": "Lưu trữ",
+      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
+      "archiveConfirmTitle": "Lưu trữ chức danh",
+      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"?",
+      "archiveConfirmButton": "Lưu trữ",
+      "cancelButton": "Hủy",
+      "emptyTitle": "Chưa có chức danh nào",
+      "emptySubtitle": "Tạo chức danh đầu tiên.",
+      "emptyCreateButton": "Tạo chức danh",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
+      "clearFilters": "Xóa bộ lọc",
+      "assignmentCount": "{count} phân công",
+      "scopeTypeSubjectParent": "Tổ chuyên môn",
+      "scopeTypeDepartment": "Phòng ban",
+      "permManageSubjectContent": "Quản lý nội dung",
+      "permManageSchedule": "Quản lý lịch",
+      "permManageConduct": "Quản lý hạnh kiểm",
+      "permViewReports": "Xem báo cáo",
+      "createSheet": {
+        "title": "Thêm chức danh",
+        "description": "Nhập thông tin chức danh mới.",
+        "nameLabel": "Tên chức danh",
+        "namePlaceholder": "VD: Tổ trưởng chuyên môn",
+        "scopeTypeLabel": "Phạm vi",
+        "permissionsLabel": "Quyền hạn",
+        "submit": "Tạo",
+        "editTitle": "Sửa chức danh",
+        "editSubmit": "Cập nhật"
+      },
+      "formErrors": {
+        "nameRequired": "Tên không được để trống.",
+        "nameTooLong": "Tên không được vượt quá 100 ký tự.",
+        "scopeTypeRequired": "Vui lòng chọn phạm vi."
+      },
+      "errors": {
+        "already-exists": "Tên chức danh đã tồn tại.",
+        "not-found": "Không tìm thấy chức danh.",
+        "has-active-assignments": "Chức danh còn phân công đang hoạt động.",
+        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "member-not-teacher": "Thành viên này không phải giáo viên.",
+        "academic-year-not-active": "Năm học không hợp lệ.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "unknown": "Đã xảy ra lỗi không xác định."
+      },
+      "table": {
+        "name": "Tên",
+        "scopeType": "Phạm vi",
+        "permissions": "Quyền",
+        "status": "Trạng thái",
+        "assignments": "Phân công",
+        "actions": "Thao tác",
+        "caption": "Danh sách chức danh"
+      },
+      "toast": {
+        "createSuccess": "Đã tạo chức danh.",
+        "editSuccess": "Đã cập nhật chức danh.",
+        "archiveSuccess": "Đã lưu trữ chức danh."
+      }
+    },
+    "assignments": {
+      "title": "Phân công chức vụ",
+      "subtitle": "Gán giáo viên vào các chức danh theo năm học.",
+      "assignButton": "Phân công",
+      "copyYearButton": "Sao chép sang năm khác",
+      "filterAll": "Tất cả",
+      "filterActive": "Đang hoạt động",
+      "filterRevoked": "Đã thu hồi",
+      "searchPlaceholder": "Tìm kiếm giáo viên...",
+      "clearSearch": "Xóa tìm kiếm",
+      "statusActive": "Hoạt động",
+      "statusRevoked": "Thu hồi",
+      "revokeButton": "Thu hồi",
+      "revokeConfirmTitle": "Thu hồi phân công",
+      "revokeConfirmBody": "Bạn có chắc muốn thu hồi phân công của \"{name}\"?",
+      "revokeConfirmButton": "Thu hồi",
+      "cancelButton": "Hủy",
+      "emptyTitle": "Chưa có phân công nào",
+      "emptySubtitle": "Bắt đầu bằng cách phân công chức vụ cho giáo viên.",
+      "emptyAssignButton": "Phân công ngay",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
+      "clearFilters": "Xóa bộ lọc",
+      "noScopeEntity": "—",
+      "assignSheet": {
+        "title": "Phân công chức vụ",
+        "description": "Gán giáo viên vào chức danh.",
+        "memberIdLabel": "Mã giáo viên",
+        "memberIdPlaceholder": "VD: m-101",
+        "positionTitleLabel": "Chức danh",
+        "positionTitlePlaceholder": "Chọn chức danh",
+        "scopeEntityLabel": "Đơn vị phạm vi (tuỳ chọn)",
+        "scopeEntityPlaceholder": "VD: sp-math",
+        "academicYearLabel": "Năm học",
+        "academicYearPlaceholder": "VD: 2025-2026",
+        "submit": "Phân công"
+      },
+      "copySheet": {
+        "title": "Sao chép phân công",
+        "description": "Sao chép tất cả phân công từ một năm học sang năm khác.",
+        "sourceYearLabel": "Năm học nguồn",
+        "sourceYearPlaceholder": "VD: 2024-2025",
+        "targetYearLabel": "Năm học đích",
+        "targetYearPlaceholder": "VD: 2025-2026",
+        "submit": "Sao chép",
+        "resultCopied": "Đã sao chép {count} phân công.",
+        "resultSkipped": "Bỏ qua {count} phân công đã tồn tại."
+      },
+      "formErrors": {
+        "memberIdRequired": "Mã giáo viên không được để trống.",
+        "positionTitleRequired": "Vui lòng chọn chức danh.",
+        "academicYearRequired": "Năm học không được để trống.",
+        "sourceYearRequired": "Năm học nguồn không được để trống.",
+        "targetYearRequired": "Năm học đích không được để trống."
+      },
+      "errors": {
+        "already-exists": "Phân công này đã tồn tại.",
+        "not-found": "Không tìm thấy phân công.",
+        "has-active-assignments": "Còn phân công đang hoạt động.",
+        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "member-not-teacher": "Thành viên này không phải giáo viên.",
+        "academic-year-not-active": "Năm học không hợp lệ.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "unknown": "Đã xảy ra lỗi không xác định."
+      },
+      "table": {
+        "member": "Giáo viên",
+        "positionTitle": "Chức danh",
+        "scopeEntity": "Phạm vi",
+        "academicYear": "Năm học",
+        "status": "Trạng thái",
+        "actions": "Thao tác",
+        "caption": "Danh sách phân công chức vụ"
+      },
+      "toast": {
+        "assignSuccess": "Đã phân công thành công.",
+        "revokeSuccess": "Đã thu hồi phân công.",
+        "copySuccess": "Đã sao chép phân công."
+      }
+    },
+    "tabs": {
+      "departments": "Tổ bộ môn",
+      "positionTitles": "Chức danh",
+      "assignments": "Phân công"
     }
   }
 }

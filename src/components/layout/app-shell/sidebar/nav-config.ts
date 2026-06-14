@@ -17,6 +17,7 @@ import {
   User,
   UserCog,
   Users,
+  Users2,
 } from "lucide-react";
 import type messages from "@/bootstrap/i18n/messages/vi.json";
 
@@ -102,6 +103,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       labelKey: "assessmentScheme",
       icon: BarChart2,
     },
+    { href: "/admin/staffing", labelKey: "staffing", icon: Users2 },
   ],
 };
 
