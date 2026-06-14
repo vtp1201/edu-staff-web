@@ -17,6 +17,11 @@ export type VoidResult =
 export interface IAuthRepository {
   /** `POST /auth/signin` then `GET /users/me` → full session. */
   signin(email: string, password: string): Promise<AuthResult>;
+  /** `POST /auth/social` (provider token) then `GET /users/me` → full session. */
+  socialSignin(
+    provider: "google" | "vneid",
+    token: string,
+  ): Promise<AuthResult>;
   /** `POST /auth/refresh` with refresh token → rotated token pair. */
   refresh(refreshToken: string): Promise<RefreshResult>;
   /** `POST /auth/signout` — server revokes session from bearer token. */

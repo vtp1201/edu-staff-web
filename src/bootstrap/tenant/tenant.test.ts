@@ -70,8 +70,18 @@ describe("evaluateTenantAccess (claim guard)", () => {
 
 describe("hasTenantMembership / rolesInTenant", () => {
   const roles: UserTenantRole[] = [
-    { role: "teacher", tenantId: "t-acme", tenantName: "Acme" },
-    { role: "parent", tenantId: "t-beta", tenantName: "Beta" },
+    {
+      role: "teacher",
+      roleEnum: "TEACHER",
+      tenantId: "t-acme",
+      tenantName: "Acme",
+    },
+    {
+      role: "parent",
+      roleEnum: "PARENT",
+      tenantId: "t-beta",
+      tenantName: "Beta",
+    },
   ];
 
   it("passes when the user holds a role in the tenant", () => {
@@ -84,7 +94,12 @@ describe("hasTenantMembership / rolesInTenant", () => {
 
   it("lists the roles held within a tenant", () => {
     expect(rolesInTenant(roles, "t-acme")).toEqual([
-      { role: "teacher", tenantId: "t-acme", tenantName: "Acme" },
+      {
+        role: "teacher",
+        roleEnum: "TEACHER",
+        tenantId: "t-acme",
+        tenantName: "Acme",
+      },
     ]);
   });
 });

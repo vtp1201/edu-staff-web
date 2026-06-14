@@ -34,6 +34,27 @@ export class AuthRepository implements IAuthRepository {
     }
   }
 
+  async socialSignin(
+    provider: "google" | "vneid",
+    token: string,
+  ): Promise<AuthResult> {
+    try {
+      // Exchange the provider token for an IAM session (envelope unwrapped).
+      const tokens = (await this.http.post(AUTH_EP.social, {
+        provider,
+        token,
+      })) as unknown as TokenResponseDto;
+
+      const profile = (await this.http.get(AUTH_EP.me, {
+        headers: { Authorization: `Bearer ${tokens.accessToken}` },
+      })) as unknown as UserProfileResponseDto;
+
+      return { data: mapSession(tokens, profile) };
+    } catch (err: unknown) {
+      return { error: mapAuthError(err) };
+    }
+  }
+
   async refresh(refreshToken: string): Promise<RefreshResult> {
     try {
       const tokens = (await this.http.post(AUTH_EP.refresh, {

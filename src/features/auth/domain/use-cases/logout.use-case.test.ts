@@ -6,6 +6,7 @@ describe("LogoutUseCase", () => {
   it("calls repo.signout", async () => {
     const repo: IAuthRepository = {
       signin: vi.fn(),
+      socialSignin: vi.fn(),
       refresh: vi.fn(),
       signout: vi.fn().mockResolvedValue(undefined),
       requestPasswordReset: vi.fn(),

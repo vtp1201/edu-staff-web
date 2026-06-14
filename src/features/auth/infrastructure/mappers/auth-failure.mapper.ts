@@ -10,6 +10,9 @@ const CODE_MAP: Record<string, AuthFailure> = {
   TOKEN_EXPIRED: { type: "token-expired" },
   INVALID_TOKEN: { type: "invalid-token" },
   UNAUTHORIZED_ACCESS: { type: "unauthorized" },
+  // SSO provider not supported / not configured at IAM (US-E01.2).
+  SOCIAL_PROVIDER_UNAVAILABLE: { type: "sso-unavailable" },
+  SOCIAL_PROVIDER_NOT_SUPPORTED: { type: "sso-unavailable" },
   // OTP / rate-limit (US-030; BE emits lowercase per ERROR_CODES.md — map both).
   USER_INVALID_OTP: { type: "invalid-otp" },
   user_invalid_otp: { type: "invalid-otp" },

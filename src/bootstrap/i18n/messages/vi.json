@@ -26,7 +26,8 @@
       "unknown": "Có lỗi xảy ra, vui lòng thử lại",
       "invalid-otp": "Mã OTP không đúng hoặc đã dùng.",
       "otp-expired": "Mã OTP đã hết hạn, hãy yêu cầu mã mới.",
-      "too-many-requests": "Quá nhiều yêu cầu, vui lòng thử lại sau."
+      "too-many-requests": "Quá nhiều yêu cầu, vui lòng thử lại sau.",
+      "sso-unavailable": "Đăng nhập qua mạng xã hội hiện chưa khả dụng. Vui lòng dùng email và mật khẩu bên dưới."
     },
     "forgot": {
       "title": "Quên mật khẩu",
@@ -55,6 +56,38 @@
         "title": "Đã đặt lại mật khẩu",
         "subtitle": "Bạn có thể đăng nhập bằng mật khẩu mới.",
         "cta": "Đăng nhập"
+      }
+    },
+    "sso": {
+      "continueWithGoogle": "Tiếp tục với Google",
+      "loginWithVneID": "Đăng nhập VNeID",
+      "divider": "hoặc đăng nhập bằng email",
+      "vneidComingSoon": "Sắp ra mắt",
+      "googleLoading": "Đang đăng nhập với Google..."
+    },
+    "selectRole": {
+      "eyebrow": "Đăng nhập với tư cách",
+      "roleSummary": "{count} vai trò khả dụng",
+      "backLink": "Đăng nhập tài khoản khác"
+    },
+    "roles": {
+      "TEACHER": {
+        "label": "Giáo viên"
+      },
+      "ADMIN": {
+        "label": "Ban giám hiệu (BGH)"
+      },
+      "MANAGER": {
+        "label": "Phó Hiệu trưởng / BGH"
+      },
+      "STAFF": {
+        "label": "Nhân viên"
+      },
+      "STUDENT": {
+        "label": "Học sinh"
+      },
+      "PARENT": {
+        "label": "Phụ huynh"
       }
     }
   },

@@ -12,5 +12,6 @@ export type AuthFailure =
   | { type: "invalid-otp" }
   | { type: "otp-expired" }
   | { type: "too-many-requests" }
+  | { type: "sso-unavailable" }
   | { type: "network-error" }
   | { type: "unknown"; message: string };
