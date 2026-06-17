@@ -7,6 +7,7 @@ export * from "./class-log.di";
 export * from "./class-management.di";
 export * from "./notification.di";
 export * from "./principal-teachers.di";
+export * from "./staff-leave.di";
 export * from "./staffing.di";
 export * from "./subject-catalogue.di";
 export * from "./teacher-class.di";
