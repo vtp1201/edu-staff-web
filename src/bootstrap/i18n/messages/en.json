@@ -453,7 +453,8 @@
       "overrideNoteLabel": "Override note",
       "save": "Save",
       "saved": "Saved",
-      "allClasses": "All Classes"
+      "allClasses": "All Classes",
+      "empty": "No conduct data available"
     },
     "leave": {
       "title": "Leave Requests",

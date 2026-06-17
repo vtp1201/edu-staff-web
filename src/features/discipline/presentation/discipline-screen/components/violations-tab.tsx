@@ -136,10 +136,11 @@ export function ViolationsTab({
         return;
       }
       // Optimistic prepend (mock-first; no real id returned via this contract).
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       setList((prev) => [
         {
-          id: `temp-${Date.now()}`,
-          studentId: `temp-${Date.now()}`,
+          id: tempId,
+          studentId: tempId,
           studentName: input.studentName,
           initials: input.studentName.slice(0, 2).toUpperCase(),
           avatarTone: "primary",

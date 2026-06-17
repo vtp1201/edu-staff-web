@@ -65,6 +65,18 @@ export const ViolationsTab_Teacher: Story = {
     ).toBeInTheDocument();
     // High-severity label present (Nặng).
     await expect(canvas.getAllByText("Nặng").length).toBeGreaterThan(0);
+    // Open the record form and exercise its controls (AC-4).
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Nhập vi phạm mới" }),
+    );
+    await expect(canvas.getByLabelText(/Tên học sinh/i)).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("switch", { name: /Thông báo phụ huynh/i }),
+    ).toBeInTheDocument();
+    // Submit stays disabled while the student name is empty.
+    await expect(
+      canvas.getByRole("button", { name: /Ghi nhận vi phạm/i }),
+    ).toBeDisabled();
   },
 };
 

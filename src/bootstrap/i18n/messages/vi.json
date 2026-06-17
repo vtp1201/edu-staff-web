@@ -453,7 +453,8 @@
       "overrideNoteLabel": "Ghi chú override",
       "save": "Lưu",
       "saved": "Đã lưu",
-      "allClasses": "Tất cả lớp"
+      "allClasses": "Tất cả lớp",
+      "empty": "Chưa có dữ liệu hạnh kiểm"
     },
     "leave": {
       "title": "Yêu cầu nghỉ phép",
