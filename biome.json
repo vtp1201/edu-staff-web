@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!design_src"
+      "!design_src",
+      "!.impeccable"
     ]
   },
   "formatter": {

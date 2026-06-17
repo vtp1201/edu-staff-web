@@ -23,7 +23,26 @@ roster: (classId: string) => ['featureName', 'roster', classId] as const,
 
 ## Cache durations (confirmed in codebase)
 
-No confirmed `staleTime`/`gcTime` defaults yet established for this repo (as of US-E13.1 — first story where TanStack Query was evaluated and deferred). When the first client-side query is added, establish and record here.
+Global default (`react-query-provider.tsx`): `staleTime: 60_000` (1 min), `retry: 1`, `refetchOnWindowFocus: false`.
+
+Per-feature overrides established for US-E09.1 (discipline screen — first full client-query feature):
+- violations list: `staleTime: 120_000` (2 min), `gcTime: 300_000` (5 min)
+- conduct list: `staleTime: 180_000` (3 min), `gcTime: 600_000` (10 min) — derived scores, lower churn
+- leave requests: stay at global default 1 min / 5 min — most time-sensitive of the three
+
+Multi-subtree key pattern (when a feature has 3+ independent resource types under one root):
+```ts
+disciplineKeys = {
+  all:          () => ['discipline']                                      as const,
+  violations:   () => ['discipline', 'violations']                        as const,
+  violationList: (f) => ['discipline', 'violations', 'list', f]          as const,
+  conduct:      () => ['discipline', 'conduct']                           as const,
+  conductList:  (f) => ['discipline', 'conduct', 'list', f]              as const,
+  leave:        () => ['discipline', 'leave']                             as const,
+  leaveList:    (f) => ['discipline', 'leave', 'list', f]                as const,
+}
+```
+Bust all variants of a subtree with `invalidateQueries({ queryKey: disciplineKeys.violations() })`.
 
 ## Invalidation pattern
 

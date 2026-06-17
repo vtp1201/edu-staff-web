@@ -29,3 +29,8 @@ Sidebar, Header, DashboardLayout — shell components.
 - `avatar` is present — Avatar + AvatarFallback usable without installation.
 - `pagination` primitive exists at `ui/pagination/` — but admin-roster uses its own
   `RosterPagination` pattern (coupled to adminRoster i18n). Do not confuse.
+- `StatusBadge` does NOT have a `destructive` tone. Design-spec uses `#B91C1C` for
+  severity=high violations. Current fallback: use `error` tone and flag at design-review
+  gate. A new `destructive` tone on StatusBadge needs ADR ≥ 0023.
+- `StatCard variant="compact"` is the right pattern for conduct-grade summary counts
+  (no new shared component needed — 4-up grid of compact cards).

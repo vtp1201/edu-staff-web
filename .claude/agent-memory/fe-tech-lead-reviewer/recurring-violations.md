@@ -49,6 +49,15 @@ Watch for these (each has bitten a story here):
   the dead methods still type-check and the const renders. Cross-check: every repo interface method
   must trace to a consumer; grep `methodName` outside the repo impl/interface/test. (US-E13.5.)
 
+- **Dead interactive button (no onClick)** — a per-row `<Button>` rendered with an `aria-label`
+  + label but NO handler, when the real action lives elsewhere (e.g. discipline "Thông báo phụ huynh"
+  per-row button while parent notification actually fires from the form's `notifyParent` toggle). A
+  focusable control that does nothing = a11y/UX defect. SHOULD-FIX: wire it or remove it. Cross-check
+  every `<Button>`/clickable for an `onClick`/`type=submit`/`asChild` link. (US-E09.1.)
+- **`text-white` on `bg-edu-error` (count badge / chip)** — token violation; `--edu-error-foreground`
+  (#fff) exists → fix `text-edu-error-foreground`. SHOULD-FIX when value is identical (coral, contrast
+  fine); only the warning-yellow variant is a hard gate. (US-E09.1 tab count badge.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

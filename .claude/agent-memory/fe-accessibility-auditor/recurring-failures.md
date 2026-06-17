@@ -121,6 +121,21 @@ Pattern: Login RSC wraps the form in a `<div>` with `<h2>` for the login title, 
 Fix: Either make the login title an `<h1>`, or add a visually-hidden `<h1>` matching the page title for all viewport sizes.
 Seen in: US-E01.2 login/page.tsx lines 18–29.
 
+## Contrast — Tab count badge: white text on colored badge pill
+Pattern: `<span className="bg-primary text-primary-foreground">` (active) or `bg-edu-error text-white` (inactive) for count badges inside `TabsTrigger`. Badge text is `text-[10px]` — not large text — needs 4.5:1. Primary: 3.29:1. edu-error: 2.37:1. Both fail.
+Fix: Active badge → `bg-primary/15 text-edu-text-primary` (dark text on tinted bg). Inactive badge → `bg-edu-error-dark-light text-edu-error-dark` (matches high-severity pattern, 5.30:1).
+Seen in: US-E09.1 discipline-screen.tsx (violations + leave count badges).
+
+## A11y — aria-invalid without aria-describedby on textarea validation
+Pattern: `<Textarea aria-invalid={tooShort} />` with no `aria-describedby` linking to an error message. SR user is told field is invalid but receives no reason or fix guidance.
+Fix: Render `<p id="fieldname-error" className="text-edu-error-text text-xs">{t("minLengthError")}</p>` when invalid, and add `aria-describedby="fieldname-error"` to the textarea.
+Seen in: US-E09.1 reject-leave-dialog.tsx.
+
+## A11y — Ghost cancel button using symbol text (✕) without aria-label
+Pattern: `<Button variant="ghost" onClick={cancel}>✕</Button>` — Unicode ✕ character without aria-label. Screen reader announces "multiplication sign" or similar.
+Fix: Add `aria-label={t("cancelEdit")}` and render a sr-only span or use the `X` lucide icon with `aria-hidden="true"` + visible label.
+Seen in: US-E09.1 conduct-tab.tsx inline edit cancel button.
+
 ## Contrast — Approve button: bg-edu-success + text-white fails badly
 Pattern: `className="bg-edu-success text-white"` on a primary action button. `--edu-success: #13DEB9` on white = 1.72:1 — catastrophic failure (need 4.5:1 for text-sm).
 Fix: Use `text-edu-warning-foreground` (#2A3547, 7.17:1) OR `text-edu-text-primary` instead of `text-white` on any bg-edu-success button. Never pair white text with edu-success background.
