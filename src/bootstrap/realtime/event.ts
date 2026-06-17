@@ -19,6 +19,28 @@ export type RealtimeEvent =
       };
     }
   | {
+      /**
+       * US-E10.2 — enriched notification event; carries full localised copy so
+       * the client can prepend the item and show a Sonner toast without a round-trip.
+       * Payload mirrors the REST DTO for NotificationResponseDto.
+       */
+      type: "notification.new";
+      eventId: string;
+      tenantId: string;
+      occurredAt: string;
+      payload: {
+        notificationId: string;
+        /** Notification category: grade | attendance | discipline | announcement | system */
+        type: string;
+        titleVi: string;
+        titleEn: string;
+        bodyVi: string;
+        bodyEn: string;
+        /** ISO 8601 timestamp */
+        ts: string;
+      };
+    }
+  | {
       type: "attendance.updated";
       eventId: string;
       tenantId: string;
@@ -43,6 +65,7 @@ export type RealtimeEventType = RealtimeEvent["type"];
 /** All known event names — also the set of SSE `event:` listeners to register. */
 export const REALTIME_EVENT_TYPES: readonly RealtimeEventType[] = [
   "notification.created",
+  "notification.new",
   "attendance.updated",
   "session.revoked",
 ];

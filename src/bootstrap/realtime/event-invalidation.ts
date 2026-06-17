@@ -14,6 +14,16 @@ export function queryKeysFor(event: RealtimeEvent): QueryKey[] {
   switch (event.type) {
     case "notification.created":
       return [["notifications"]];
+    case "notification.new":
+      // Invalidate ALL notification list variants + unread count.
+      // The container also subscribes directly via useNotificationNewEvent to
+      // prepend the item optimistically and show a Sonner toast (US-E10.2 AC-7).
+      return [
+        ["notifications", "list", "all"],
+        ["notifications", "list", "unread"],
+        ["notifications", "list", event.payload.type],
+        ["notifications", "unread-count"],
+      ];
     case "attendance.updated":
       return [
         ["attendance", "roster", event.payload.classId],

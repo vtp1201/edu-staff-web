@@ -1427,5 +1427,45 @@
       "positionTitles": "Position Titles",
       "assignments": "Assignments"
     }
+  },
+  "notifications": {
+    "title": "Notification Center",
+    "subtitle": "View and manage all your notifications.",
+    "markAllRead": "Mark all as read",
+    "markAllReadAriaLabel": "Mark all notifications as read",
+    "markAllReadToast": "All notifications marked as read",
+    "toastClose": "Close",
+    "loading": "Loading...",
+    "loadMore": "Show {count} more notifications",
+    "loadMoreAriaLabel": "Show {count} more notifications",
+    "allLoaded": "All notifications shown",
+    "filterLabel": "Filter notifications",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "filterGrade": "Grades",
+    "filterAttendance": "Attendance",
+    "filterDiscipline": "Discipline",
+    "filterAnnouncement": "Announcements",
+    "unreadCountAriaLabel": "{count} unread notifications",
+    "listAriaLabel": "Notifications list",
+    "rowAriaLabel": "{title} — {read}",
+    "ariaRead": "read",
+    "ariaUnread": "unread",
+    "type_grade": "Grades",
+    "type_attendance": "Attendance",
+    "type_discipline": "Discipline",
+    "type_announcement": "Announcement",
+    "type_system": "System",
+    "emptyUnreadTitle": "All caught up",
+    "emptyUnreadBody": "You have read all your notifications.",
+    "emptyAllTitle": "No notifications yet",
+    "emptyAllBody": "Notifications will appear here when there is new activity.",
+    "errorTitle": "Could not load notifications",
+    "errors": {
+      "not-found": "Notification not found.",
+      "unauthorized": "You do not have access.",
+      "network-error": "Cannot connect to the server.",
+      "unknown": "Something went wrong, please try again."
+    }
   }
 }
