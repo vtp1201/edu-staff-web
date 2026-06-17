@@ -5,3 +5,4 @@
 - [RosterTable is not shareable yet](project-roster-table-not-shared.md) — admin RosterTable coupled to unenroll actions; defer promotion until read-only variant also needed by admin
 - [GenderBadge promotion trigger](project-gender-badge-promotion.md) — GenderBadge lives in admin-roster; promote to shared when teacher roster uses it (component-organization rule)
 - [Discipline feature E09.1 base](project-discipline-e091-base.md) — existing entities, repo interface, mock+fixtures, DI shape for the discipline feature; E09.2 extends without forking
+- [Staff leave US-E09.3 plan](project-staff-leave-e093-plan.md) — phase breakdown, conflicts (AC-4/5/9 vs design inline reject), key open questions (avatar tone, errorLight token, CalendarClock icon)

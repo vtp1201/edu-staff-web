@@ -34,3 +34,8 @@ Sidebar, Header, DashboardLayout — shell components.
   gate. A new `destructive` tone on StatusBadge needs ADR ≥ 0023.
 - `StatCard variant="compact"` is the right pattern for conduct-grade summary counts
   (no new shared component needed — 4-up grid of compact cards).
+- `sonner` primitive exists at `ui/sonner/` — use `toast()` from the `sonner` package
+  directly (provider already wired in dashboard layout). Do NOT add a custom `useState toast`
+  pattern in new screens; prefer `toast()` call (US-E09.3 decision).
+- `StatusBadge` covers all leave-type tones (annual=primary, sick=warning, personal=muted,
+  family=purple) and actor-role tones (teacher=primary, staff=muted) — no new tones needed.

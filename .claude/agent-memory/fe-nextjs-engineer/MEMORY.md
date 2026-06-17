@@ -10,3 +10,5 @@
 - [Throwing-repo failure idiom](pattern-throwing-repo-failure.md) — when packet repo returns Promise<Entity> (throws Failure), action is catch boundary→errorKey; role-boundary guard actions
 - [RSC-props + local-state screen](pattern-rsc-props-local-state-screen.md) — mock-first multi-tab action screens: RSC prefetch→VM props→useState+useTransition, NOT client TanStack Query
 - [Biome role-prop + impeccable cache](gotcha-biome-role-prop-and-impeccable-cache.md) — `role=` prop flagged as ARIA (use viewerRole); .impeccable cache breaks lint (add !.impeccable to biome.json)
+- [Result-repo vs throwing-repo](pattern-result-repo-vs-throwing.md) — two repo error conventions coexist; follow the packet's IXxxRepository signature
+- [Filter pills a11y](gotcha-filter-pills-a11y.md) — Biome rejects role=radio/group on div/button + ignored noAutofocus suppression; use aria-pressed buttons in fieldset/legend + ref+useEffect focus
