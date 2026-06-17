@@ -1505,5 +1505,53 @@
       "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại."
     }
+  },
+  "messaging": {
+    "title": "Tin nhắn",
+    "tabs": {
+      "direct": "Trực tiếp",
+      "groups": "Nhóm"
+    },
+    "search": {
+      "placeholder": "Tìm kiếm...",
+      "noResults": "Không tìm thấy",
+      "noGroups": "Không có nhóm"
+    },
+    "newMessage": {
+      "button": "Tin nhắn mới",
+      "title": "Tin nhắn mới",
+      "searchPlaceholder": "Tìm kiếm người dùng...",
+      "suggestions": "Gợi ý"
+    },
+    "chat": {
+      "members": "{count} thành viên",
+      "online": "Đang online",
+      "placeholder": "Nhập tin nhắn... (Enter để gửi)",
+      "send": "Gửi",
+      "attach": "Đính kèm",
+      "history": "Lịch sử trò chuyện",
+      "backToList": "Quay lại danh sách",
+      "loadMore": "Tải thêm tin nhắn"
+    },
+    "openConversation": "Mở cuộc trò chuyện với {name}",
+    "totalUnread": "{count} tin nhắn chưa đọc",
+    "empty": {
+      "title": "Chọn một cuộc trò chuyện",
+      "subtitle": "Nhấn vào một cuộc trò chuyện để bắt đầu nhắn tin",
+      "cta": "Bắt đầu cuộc hội thoại"
+    },
+    "errors": {
+      "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
+      "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
+      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại.",
+      "create-conversation-failed": "Không thể tạo cuộc hội thoại. Vui lòng thử lại."
+    },
+    "date": {
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua"
+    },
+    "skeleton": {
+      "loading": "Đang tải tin nhắn..."
+    }
   }
 }

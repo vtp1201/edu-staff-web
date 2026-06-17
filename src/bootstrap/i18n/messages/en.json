@@ -1505,5 +1505,53 @@
       "missing-reject-reason": "Please enter a rejection reason.",
       "network-error": "Connection error. Please try again."
     }
+  },
+  "messaging": {
+    "title": "Messages",
+    "tabs": {
+      "direct": "Direct",
+      "groups": "Groups"
+    },
+    "search": {
+      "placeholder": "Search...",
+      "noResults": "No results",
+      "noGroups": "No groups"
+    },
+    "newMessage": {
+      "button": "New message",
+      "title": "New message",
+      "searchPlaceholder": "Search users...",
+      "suggestions": "Suggestions"
+    },
+    "chat": {
+      "members": "{count} members",
+      "online": "Online",
+      "placeholder": "Type a message... (Enter to send)",
+      "send": "Send",
+      "attach": "Attach",
+      "history": "Chat history",
+      "backToList": "Back to list",
+      "loadMore": "Load more messages"
+    },
+    "openConversation": "Open conversation with {name}",
+    "totalUnread": "{count} unread messages",
+    "empty": {
+      "title": "Select a conversation",
+      "subtitle": "Click a conversation to start messaging",
+      "cta": "Start a conversation"
+    },
+    "errors": {
+      "load-conversations-failed": "Could not load conversations. Please try again.",
+      "load-messages-failed": "Could not load messages. Please try again.",
+      "send-message-failed": "Could not send the message. Please try again.",
+      "create-conversation-failed": "Could not create the conversation. Please try again."
+    },
+    "date": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "skeleton": {
+      "loading": "Loading messages..."
+    }
   }
 }
