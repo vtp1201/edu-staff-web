@@ -522,6 +522,7 @@
         "submit": "Gửi đơn",
         "submitting": "Đang gửi...",
         "success": "Đã gửi đơn thành công!",
+        "close": "Đóng",
         "types": {
           "medical": "Nghỉ bệnh / khám",
           "personal": "Việc cá nhân / gia đình",
@@ -540,7 +541,8 @@
         "rejected": "Từ chối"
       },
       "retry": "Thử lại",
-      "loadError": "Không tải được dữ liệu hành kiểm"
+      "loadError": "Không tải được dữ liệu hành kiểm",
+      "loading": "Đang tải dữ liệu hành kiểm..."
     },
     "errors": {
       "missing-student": "Vui lòng nhập tên học sinh",

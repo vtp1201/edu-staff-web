@@ -64,10 +64,7 @@ export function LeaveHistoryList({
                 </div>
                 <p className="text-foreground text-sm">{req.reason}</p>
                 {req.status === "rejected" && req.rejectionReason && (
-                  <p
-                    role="alert"
-                    className="mt-2 rounded-md border border-edu-error/20 bg-edu-error/10 px-3 py-2 text-edu-error-text text-xs"
-                  >
+                  <p className="mt-2 rounded-md border border-edu-error/20 bg-edu-error/10 px-3 py-2 text-edu-error-text text-xs">
                     <span className="font-bold">{t("rejectionReason")}</span>{" "}
                     {req.rejectionReason}
                   </p>

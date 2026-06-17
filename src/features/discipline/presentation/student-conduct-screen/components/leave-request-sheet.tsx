@@ -146,7 +146,10 @@ export function LeaveRequestSheet({
           {t("button")}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-md">
+      <SheetContent
+        className="w-full gap-0 overflow-y-auto sm:max-w-md"
+        closeLabel={t("close")}
+      >
         <SheetHeader>
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>{t("reasonPlaceholder")}</SheetDescription>
@@ -154,7 +157,14 @@ export function LeaveRequestSheet({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, () => {
+              const firstError = (
+                Object.keys(form.formState.errors) as Array<
+                  keyof LeaveFormValues
+                >
+              )[0];
+              if (firstError) form.setFocus(firstError);
+            })}
             className="flex flex-col gap-4 px-4 py-2"
             aria-describedby={serverErrorKey ? formErrorId : undefined}
           >

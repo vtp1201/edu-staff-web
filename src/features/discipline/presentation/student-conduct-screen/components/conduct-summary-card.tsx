@@ -23,8 +23,11 @@ export function ConductSummaryCard({
   return (
     <section
       className="rounded-[var(--edu-radius-card)] border border-border bg-card p-5 shadow-card sm:p-6"
-      aria-label={t("points")}
+      aria-labelledby="conduct-summary-heading"
     >
+      <h2 id="conduct-summary-heading" className="sr-only">
+        {t("points")}
+      </h2>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-baseline gap-3">
           <span
@@ -42,7 +45,7 @@ export function ConductSummaryCard({
             {points}
           </span>
           <div className="flex flex-col gap-1">
-            <span className="font-bold text-[0.6875rem] text-muted-foreground uppercase tracking-wide">
+            <span className="font-bold text-[0.6875rem] text-[color:var(--edu-text-secondary)] uppercase tracking-wide">
               {t("points")}
             </span>
             <StatusBadge tone={CONDUCT_GRADE_TONE[grade]}>
@@ -63,7 +66,7 @@ export function ConductSummaryCard({
               <span className="font-extrabold text-foreground text-lg tabular-nums">
                 {violationCount}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-[color:var(--edu-text-secondary)] text-xs">
                 {t("violations")}
               </span>
             </div>
@@ -80,7 +83,7 @@ export function ConductSummaryCard({
               <span className="font-extrabold text-foreground text-lg tabular-nums">
                 {unexcusedAbsences}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-[color:var(--edu-text-secondary)] text-xs">
                 {t("absences")}
               </span>
             </div>
@@ -97,7 +100,7 @@ export function ConductSummaryCard({
           aria-valuenow={points}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={t("points")}
+          aria-label={`${t("points")}: ${points}/100`}
         >
           <div
             className={cn(

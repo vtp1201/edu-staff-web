@@ -522,6 +522,7 @@
         "submit": "Submit Request",
         "submitting": "Submitting...",
         "success": "Leave request submitted successfully!",
+        "close": "Close",
         "types": {
           "medical": "Medical / Checkup",
           "personal": "Personal / Family",
@@ -540,7 +541,8 @@
         "rejected": "Rejected"
       },
       "retry": "Try again",
-      "loadError": "Could not load conduct data"
+      "loadError": "Could not load conduct data",
+      "loading": "Loading conduct data..."
     },
     "errors": {
       "missing-student": "Please enter the student name",
