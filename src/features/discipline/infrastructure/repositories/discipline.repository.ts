@@ -6,7 +6,10 @@ import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../../domain/entities/conduct-summary.entity";
-import type { LeaveRequestEntity } from "../../domain/entities/leave-request.entity";
+import type {
+  LeaveRequestEntity,
+  SubmitLeaveRequestInput,
+} from "../../domain/entities/leave-request.entity";
 import type {
   RecordViolationInput,
   ViolationEntity,
@@ -145,6 +148,58 @@ export class DisciplineRepository implements IDisciplineRepository {
       const dto = (await this.http.put(DISCIPLINE_EP.rejectLeave(id), {
         reason,
       })) as unknown as LeaveRequestResponseDto;
+      return DisciplineMapper.toLeaveRequest(dto);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  // --- Student / parent self-service (US-E09.2) ---
+
+  async getMyConductSummary(
+    studentId: string,
+    semester?: string,
+  ): Promise<ConductSummaryEntity> {
+    try {
+      const dto = (await this.http.get(DISCIPLINE_EP.myConduct, {
+        params: { studentId, semester },
+      })) as unknown as ConductResponseDto;
+      return DisciplineMapper.toConductSummary(dto);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async getMyViolations(studentId: string): Promise<ViolationEntity[]> {
+    try {
+      const dtos = (await this.http.get(DISCIPLINE_EP.myViolations, {
+        params: { studentId },
+      })) as unknown as ViolationResponseDto[];
+      return (dtos ?? []).map(DisciplineMapper.toViolation);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async getMyLeaveRequests(studentId: string): Promise<LeaveRequestEntity[]> {
+    try {
+      const dtos = (await this.http.get(DISCIPLINE_EP.myLeaveRequests, {
+        params: { studentId },
+      })) as unknown as LeaveRequestResponseDto[];
+      return (dtos ?? []).map(DisciplineMapper.toLeaveRequest);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async submitLeaveRequest(
+    input: SubmitLeaveRequestInput,
+  ): Promise<LeaveRequestEntity> {
+    try {
+      const dto = (await this.http.post(
+        DISCIPLINE_EP.submitLeaveRequest,
+        input,
+      )) as unknown as LeaveRequestResponseDto;
       return DisciplineMapper.toLeaveRequest(dto);
     } catch (err) {
       throw toFailure(err);

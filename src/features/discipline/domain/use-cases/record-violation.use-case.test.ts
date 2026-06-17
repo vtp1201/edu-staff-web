@@ -35,6 +35,10 @@ function makeRepo(
     getLeaveRequests: vi.fn(),
     approveLeave: vi.fn(),
     rejectLeave: vi.fn(),
+    getMyConductSummary: vi.fn(),
+    getMyViolations: vi.fn(),
+    getMyLeaveRequests: vi.fn(),
+    submitLeaveRequest: vi.fn(),
     ...over,
   };
 }

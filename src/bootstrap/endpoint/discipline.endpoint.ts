@@ -13,4 +13,9 @@ export const DISCIPLINE_EP = {
     `/core/api/v1/discipline/leave-requests/${id}/approve`,
   rejectLeave: (id: string) =>
     `/core/api/v1/discipline/leave-requests/${id}/reject`,
+  // Student / parent self-service (US-E09.2)
+  myConduct: "/core/api/v1/discipline/my-conduct",
+  myViolations: "/core/api/v1/discipline/my-violations",
+  myLeaveRequests: "/core/api/v1/discipline/my-leave-requests",
+  submitLeaveRequest: "/core/api/v1/discipline/leave-requests",
 } as const;

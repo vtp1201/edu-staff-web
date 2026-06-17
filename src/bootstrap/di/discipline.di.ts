@@ -5,10 +5,14 @@ import type { IDisciplineRepository } from "@/features/discipline/domain/reposit
 import { ApproveLeaveUseCase } from "@/features/discipline/domain/use-cases/approve-leave.use-case";
 import { GetConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-conduct-summary.use-case";
 import { GetLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-leave-requests.use-case";
+import { GetMyConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-my-conduct-summary.use-case";
+import { GetMyLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-my-leave-requests.use-case";
+import { GetMyViolationsUseCase } from "@/features/discipline/domain/use-cases/get-my-violations.use-case";
 import { GetViolationsUseCase } from "@/features/discipline/domain/use-cases/get-violations.use-case";
 import { OverrideConductGradeUseCase } from "@/features/discipline/domain/use-cases/override-conduct-grade.use-case";
 import { RecordViolationUseCase } from "@/features/discipline/domain/use-cases/record-violation.use-case";
 import { RejectLeaveUseCase } from "@/features/discipline/domain/use-cases/reject-leave.use-case";
+import { SubmitLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-leave-request.use-case";
 import { DisciplineRepository } from "@/features/discipline/infrastructure/repositories/discipline.repository";
 import { MockDisciplineRepository } from "@/features/discipline/infrastructure/repositories/mocks/discipline.mock.repository";
 
@@ -47,4 +51,22 @@ export async function makeApproveLeaveUseCase() {
 
 export async function makeRejectLeaveUseCase() {
   return new RejectLeaveUseCase(await makeRepo());
+}
+
+// --- Student / parent self-service (US-E09.2) ---
+
+export async function makeGetMyConductSummaryUseCase() {
+  return new GetMyConductSummaryUseCase(await makeRepo());
+}
+
+export async function makeGetMyViolationsUseCase() {
+  return new GetMyViolationsUseCase(await makeRepo());
+}
+
+export async function makeGetMyLeaveRequestsUseCase() {
+  return new GetMyLeaveRequestsUseCase(await makeRepo());
+}
+
+export async function makeSubmitLeaveRequestUseCase() {
+  return new SubmitLeaveRequestUseCase(await makeRepo());
 }

@@ -268,3 +268,107 @@ export const MOCK_LEAVE_REQUESTS: LeaveRequestEntity[] = [
     rejectionReason: null,
   },
 ];
+
+/**
+ * Student-scoped fixtures for US-E09.2 (student = s-1, Trần Văn Bình). These are
+ * *data*, not UI copy — intentionally not i18n.
+ */
+export const MOCK_STUDENT_ID = "s-1";
+
+export const MOCK_MY_CONDUCT: ConductSummaryEntity = {
+  studentId: "s-1",
+  studentName: "Trần Văn Bình",
+  initials: "TB",
+  avatarTone: "teal",
+  classId: "11B2",
+  className: "11B2",
+  violationCount: 2,
+  unexcusedAbsences: 3,
+  points: 78,
+  grade: "good",
+  isOverridden: false,
+  overrideNote: null,
+  semester: "HK1",
+};
+
+/** Two violations attributed to s-1 (richer history than the global list). */
+export const MOCK_MY_VIOLATIONS: ViolationEntity[] = [
+  {
+    id: "mv-1",
+    studentId: "s-1",
+    studentName: "Trần Văn Bình",
+    initials: "TB",
+    avatarTone: "teal",
+    classId: "11B2",
+    className: "11B2",
+    type: "late",
+    date: "2026-04-29",
+    period: 1,
+    description: "Vào lớp muộn 15 phút không có lý do chính đáng",
+    severity: "low",
+    handledBy: "Nguyễn Thị Hương",
+    status: "recorded",
+  },
+  {
+    id: "mv-2",
+    studentId: "s-1",
+    studentName: "Trần Văn Bình",
+    initials: "TB",
+    avatarTone: "teal",
+    classId: "11B2",
+    className: "11B2",
+    type: "uniform",
+    date: "2026-04-22",
+    period: null,
+    description: "Không đeo phù hiệu theo quy định",
+    severity: "low",
+    handledBy: "Trần Văn Minh",
+    status: "notified",
+  },
+];
+
+/** Leave history for s-1: one pending + one approved (variety for the screen). */
+export const MOCK_MY_LEAVE_REQUESTS: LeaveRequestEntity[] = [
+  {
+    id: "ml-1",
+    studentId: "s-1",
+    studentName: "Trần Văn Bình",
+    initials: "TB",
+    avatarTone: "teal",
+    classId: "11B2",
+    className: "11B2",
+    submittedBy: "student",
+    submitterName: "Trần Văn Bình (Học sinh)",
+    reason: "Khám sức khỏe định kỳ tại bệnh viện tỉnh",
+    startDate: "10/05/2026",
+    endDate: "10/05/2026",
+    dayCount: 1,
+    type: "medical",
+    status: "pending",
+    submittedAt: "08/05/2026 19:00",
+    approvedBy: null,
+    rejectedBy: null,
+    rejectionReason: null,
+  },
+  {
+    id: "ml-2",
+    studentId: "s-1",
+    studentName: "Trần Văn Bình",
+    initials: "TB",
+    avatarTone: "teal",
+    classId: "11B2",
+    className: "11B2",
+    submittedBy: "parent",
+    submitterName: "Trần Văn Hải (Phụ huynh)",
+    reason: "Về quê dự đám giỗ cùng gia đình",
+    startDate: "02/05/2026",
+    endDate: "03/05/2026",
+    dayCount: 2,
+    type: "personal",
+    status: "approved",
+    submittedAt: "28/04/2026 20:00",
+    approvedBy: "Nguyễn Thị Hương",
+    rejectedBy: null,
+    rejectionReason: null,
+  },
+];
