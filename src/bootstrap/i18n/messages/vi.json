@@ -121,6 +121,7 @@
       "timetable": "Thời khoá biểu",
       "assessmentScheme": "Khung đánh giá",
       "staffing": "Phân công chức vụ",
+      "staffLeave": "Nghỉ phép nhân sự",
       "expandSidebar": "Mở rộng thanh bên",
       "collapseSidebar": "Thu gọn thanh bên"
     },
@@ -1426,6 +1427,82 @@
       "departments": "Tổ bộ môn",
       "positionTitles": "Chức danh",
       "assignments": "Phân công"
+    }
+  },
+  "staffLeave": {
+    "title": "Quản lý nghỉ phép nhân sự",
+    "subtitle": "Xem xét và phê duyệt đơn xin nghỉ phép của giáo viên và nhân viên",
+    "retry": "Thử lại",
+    "error": "Không thể tải danh sách đơn nghỉ phép.",
+    "stats": {
+      "pending": "Đang chờ duyệt",
+      "approvedThisMonth": "Đã duyệt tháng này",
+      "totalDays": "Tổng ngày nghỉ"
+    },
+    "filters": {
+      "all": "Tất cả",
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "rejected": "Từ chối",
+      "dateFrom": "Từ ngày",
+      "dateTo": "Đến ngày"
+    },
+    "card": {
+      "days": "{count} ngày",
+      "submittedAt": "Nộp {at}",
+      "reason": "Lý do",
+      "showMore": "Xem thêm",
+      "showLess": "Thu gọn",
+      "approvedBy": "Phê duyệt bởi",
+      "rejectedBy": "Từ chối bởi",
+      "rejectionReason": "Lý do từ chối:"
+    },
+    "actions": {
+      "approve": "Phê duyệt",
+      "reject": "Từ chối",
+      "cancel": "Huỷ",
+      "confirmReject": "Xác nhận từ chối",
+      "approving": "Đang phê duyệt...",
+      "rejecting": "Đang từ chối..."
+    },
+    "rejectDialog": {
+      "title": "Lý do từ chối",
+      "placeholder": "Giải thích ngắn gọn lý do từ chối để gửi đến nhân sự…",
+      "minLength": "Tối thiểu 10 ký tự.",
+      "ready": "Có thể gửi."
+    },
+    "status": {
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "rejected": "Từ chối"
+    },
+    "leaveType": {
+      "annual": "Nghỉ phép năm",
+      "sick": "Nghỉ ốm",
+      "personal": "Nghỉ cá nhân",
+      "family": "Nghỉ việc riêng"
+    },
+    "staffRole": {
+      "teacher": "Giáo viên",
+      "staff": "Nhân viên"
+    },
+    "empty": {
+      "all": "Không có đơn xin nghỉ nào.",
+      "pending": "Không có đơn chờ duyệt nào.",
+      "approved": "Không có đơn đã duyệt nào.",
+      "rejected": "Không có đơn từ chối nào.",
+      "description": "Khi có đơn mới, hệ thống sẽ thông báo cho bạn."
+    },
+    "toast": {
+      "approved": "Đã phê duyệt đơn nghỉ phép.",
+      "rejected": "Đã từ chối đơn nghỉ phép."
+    },
+    "errors": {
+      "not-found": "Không tìm thấy đơn nghỉ phép.",
+      "already-processed": "Đơn đã được xử lý trước đó.",
+      "reason-too-short": "Lý do từ chối phải có ít nhất 10 ký tự.",
+      "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại."
     }
   }
 }
