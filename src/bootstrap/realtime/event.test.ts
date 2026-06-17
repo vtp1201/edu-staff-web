@@ -75,4 +75,72 @@ describe("queryKeysFor (taxonomy)", () => {
     ) as RealtimeEvent;
     expect(queryKeysFor(e)).toEqual([]);
   });
+
+  // US-E10.2: notification.new invalidates list variants + unread count
+  it("invalidates all/unread list caches and unread-count on notification.new", () => {
+    const e = parseEvent(
+      frame({
+        type: "notification.new",
+        payload: {
+          notificationId: "n-99",
+          type: "grade",
+          titleVi: "Điểm mới",
+          titleEn: "New grade",
+          bodyVi: "Điểm đã cập nhật",
+          bodyEn: "Score updated",
+          ts: "2025-11-20T09:00:00.000Z",
+        },
+      }),
+    ) as RealtimeEvent;
+    const keys = queryKeysFor(e);
+    expect(keys).toContainEqual(["notifications", "list", "all"]);
+    expect(keys).toContainEqual(["notifications", "list", "unread"]);
+    expect(keys).toContainEqual(["notifications", "list", "grade"]);
+    expect(keys).toContainEqual(["notifications", "unread-count"]);
+  });
+});
+
+describe("parseEvent — notification.new", () => {
+  function newFrame(over: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      type: "notification.new",
+      eventId: "evt-new-1",
+      tenantId: "school-a",
+      occurredAt: "2025-11-20T09:00:00.000Z",
+      payload: {
+        notificationId: "n-99",
+        type: "grade",
+        titleVi: "Điểm mới",
+        titleEn: "New grade",
+        bodyVi: "Điểm đã cập nhật",
+        bodyEn: "Score updated",
+        ts: "2025-11-20T09:00:00.000Z",
+      },
+      ...over,
+    });
+  }
+
+  it("parses a well-formed notification.new frame", () => {
+    const e = parseEvent(newFrame());
+    expect(e?.type).toBe("notification.new");
+    expect(e?.tenantId).toBe("school-a");
+  });
+
+  it("carries the enriched payload fields", () => {
+    const e = parseEvent(newFrame()) as RealtimeEvent;
+    if (e?.type !== "notification.new") throw new Error("wrong type");
+    expect(e.payload.notificationId).toBe("n-99");
+    expect(e.payload.titleVi).toBe("Điểm mới");
+    expect(e.payload.type).toBe("grade");
+  });
+
+  it("returns null when the payload is missing", () => {
+    expect(parseEvent(newFrame({ payload: undefined }))).toBeNull();
+  });
+
+  it("tenant-scoping: drops event from a different tenant", () => {
+    const e = parseEvent(newFrame()) as RealtimeEvent;
+    expect(shouldHandle(e, "school-b")).toBe(false);
+    expect(shouldHandle(e, "school-a")).toBe(true);
+  });
 });
