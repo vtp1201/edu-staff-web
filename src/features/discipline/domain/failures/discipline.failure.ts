@@ -10,4 +10,6 @@ export type DisciplineFailure =
   | { type: "already-processed" }
   | { type: "invalid-severity" }
   | { type: "invalid-conduct-grade" }
+  | { type: "invalid-date" }
+  | { type: "reason-too-short" }
   | { type: "network-error" };

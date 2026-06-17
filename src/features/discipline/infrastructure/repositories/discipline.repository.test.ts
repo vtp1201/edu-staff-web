@@ -73,6 +73,55 @@ describe("MockDisciplineRepository", () => {
     expect(updated.isOverridden).toBe(true);
     expect(updated.overrideNote).toBe("Đã có tiến bộ");
   });
+
+  // --- Student / parent self-service (US-E09.2) ---
+
+  it("getMyConductSummary returns the student's own summary", async () => {
+    const repo = new MockDisciplineRepository();
+    const summary = await repo.getMyConductSummary("s-1", "HK1");
+    expect(summary.studentId).toBe("s-1");
+    expect(summary.grade).toBe("good");
+  });
+
+  it("getMyConductSummary falls back for an unknown student", async () => {
+    const repo = new MockDisciplineRepository();
+    const summary = await repo.getMyConductSummary("s-unknown");
+    expect(summary).toHaveProperty("points");
+    expect(summary).toHaveProperty("grade");
+  });
+
+  it("getMyViolations only returns the student's own violations", async () => {
+    const repo = new MockDisciplineRepository();
+    const violations = await repo.getMyViolations("s-1");
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations.every((v) => v.studentId === "s-1")).toBe(true);
+  });
+
+  it("getMyLeaveRequests only returns the student's own requests", async () => {
+    const repo = new MockDisciplineRepository();
+    const leave = await repo.getMyLeaveRequests("s-1");
+    expect(leave.length).toBeGreaterThan(0);
+    expect(leave.every((l) => l.studentId === "s-1")).toBe(true);
+  });
+
+  it("submitLeaveRequest prepends a pending request to the student's history", async () => {
+    const repo = new MockDisciplineRepository();
+    const before = await repo.getMyLeaveRequests("s-1");
+    const created = await repo.submitLeaveRequest({
+      studentId: "s-1",
+      startDate: "2026-06-20",
+      endDate: "2026-06-21",
+      type: "medical",
+      reason: "Khám sức khỏe định kỳ tại bệnh viện",
+      submittedBy: "student",
+    });
+    expect(created.status).toBe("pending");
+    expect(created.dayCount).toBe(2);
+    expect(created.startDate).toBe("20/06/2026");
+    const after = await repo.getMyLeaveRequests("s-1");
+    expect(after.length).toBe(before.length + 1);
+    expect(after[0].id).toBe(created.id);
+  });
 });
 
 function makeHttp(over: Partial<AxiosInstance> = {}) {

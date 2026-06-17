@@ -98,6 +98,7 @@
       "attendance": "Attendance",
       "classLog": "Class Log",
       "discipline": "Discipline",
+      "conduct": "Conduct",
       "grades": "Grades",
       "schedule": "Schedule",
       "students": "Students",
@@ -494,6 +495,53 @@
         "rejected": "Rejected"
       }
     },
+    "studentConduct": {
+      "title": "My Conduct",
+      "subtitle": "View conduct score and submit leave requests",
+      "parentTitle": "Student Conduct",
+      "parentSubtitle": "View conduct and submit leave requests on behalf of your child",
+      "childInfo": "{name} — Class {class}",
+      "conductCard": {
+        "points": "Conduct Score",
+        "grade": "Grade",
+        "violations": "Violations",
+        "absences": "Unexcused Absences"
+      },
+      "myViolations": {
+        "title": "Violation History",
+        "empty": "No violations recorded"
+      },
+      "leaveRequest": {
+        "title": "Submit Leave Request",
+        "button": "Request Leave",
+        "startDate": "Start Date *",
+        "endDate": "End Date *",
+        "type": "Leave Type *",
+        "reason": "Reason *",
+        "reasonPlaceholder": "Enter reason for leave (at least 10 characters)...",
+        "submit": "Submit Request",
+        "submitting": "Submitting...",
+        "success": "Leave request submitted successfully!",
+        "types": {
+          "medical": "Medical / Checkup",
+          "personal": "Personal / Family",
+          "event": "Event",
+          "other": "Other"
+        }
+      },
+      "leaveHistory": {
+        "title": "Leave Request History",
+        "empty": "No leave requests submitted",
+        "rejectionReason": "Rejection reason:"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "retry": "Try again",
+      "loadError": "Could not load conduct data"
+    },
     "errors": {
       "missing-student": "Please enter the student name",
       "missing-description": "Please enter a violation description",
@@ -501,6 +549,8 @@
       "already-processed": "This request has already been processed",
       "invalid-severity": "Invalid violation severity",
       "invalid-conduct-grade": "Invalid conduct grade",
+      "invalid-date": "Leave start date must be today or later",
+      "reason-too-short": "Reason must be at least 10 characters",
       "network-error": "Connection error, please try again"
     }
   },

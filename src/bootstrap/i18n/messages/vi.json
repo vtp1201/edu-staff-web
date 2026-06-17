@@ -98,6 +98,7 @@
       "attendance": "Điểm danh",
       "classLog": "Sổ đầu bài",
       "discipline": "Kỷ luật",
+      "conduct": "Hành kiểm",
       "grades": "Bảng điểm",
       "schedule": "Lịch dạy",
       "students": "Học sinh",
@@ -494,6 +495,53 @@
         "rejected": "Từ chối"
       }
     },
+    "studentConduct": {
+      "title": "Hành kiểm của tôi",
+      "subtitle": "Xem điểm hạnh kiểm và gửi đơn xin nghỉ",
+      "parentTitle": "Hành kiểm học sinh",
+      "parentSubtitle": "Xem hành kiểm và gửi đơn nghỉ thay con",
+      "childInfo": "{name} — Lớp {class}",
+      "conductCard": {
+        "points": "Điểm hành kiểm",
+        "grade": "Xếp loại",
+        "violations": "Vi phạm",
+        "absences": "Nghỉ không phép"
+      },
+      "myViolations": {
+        "title": "Lịch sử vi phạm",
+        "empty": "Chưa có vi phạm nào"
+      },
+      "leaveRequest": {
+        "title": "Gửi đơn xin nghỉ",
+        "button": "Xin nghỉ phép",
+        "startDate": "Ngày bắt đầu *",
+        "endDate": "Ngày kết thúc *",
+        "type": "Loại nghỉ *",
+        "reason": "Lý do *",
+        "reasonPlaceholder": "Nhập lý do nghỉ phép (tối thiểu 10 ký tự)...",
+        "submit": "Gửi đơn",
+        "submitting": "Đang gửi...",
+        "success": "Đã gửi đơn thành công!",
+        "types": {
+          "medical": "Nghỉ bệnh / khám",
+          "personal": "Việc cá nhân / gia đình",
+          "event": "Tham gia sự kiện",
+          "other": "Lý do khác"
+        }
+      },
+      "leaveHistory": {
+        "title": "Lịch sử đơn xin nghỉ",
+        "empty": "Chưa có đơn xin nghỉ nào",
+        "rejectionReason": "Lý do từ chối:"
+      },
+      "status": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối"
+      },
+      "retry": "Thử lại",
+      "loadError": "Không tải được dữ liệu hành kiểm"
+    },
     "errors": {
       "missing-student": "Vui lòng nhập tên học sinh",
       "missing-description": "Vui lòng nhập mô tả vi phạm",
@@ -501,6 +549,8 @@
       "already-processed": "Yêu cầu này đã được xử lý",
       "invalid-severity": "Mức độ vi phạm không hợp lệ",
       "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
+      "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
+      "reason-too-short": "Lý do phải có ít nhất 10 ký tự",
       "network-error": "Lỗi kết nối, vui lòng thử lại"
     }
   },

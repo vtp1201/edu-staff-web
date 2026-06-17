@@ -2,7 +2,10 @@ import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../entities/conduct-summary.entity";
-import type { LeaveRequestEntity } from "../entities/leave-request.entity";
+import type {
+  LeaveRequestEntity,
+  SubmitLeaveRequestInput,
+} from "../entities/leave-request.entity";
 import type {
   RecordViolationInput,
   ViolationEntity,
@@ -32,4 +35,15 @@ export interface IDisciplineRepository {
   getLeaveRequests(params: { classId?: string }): Promise<LeaveRequestEntity[]>;
   approveLeave(id: string): Promise<LeaveRequestEntity>;
   rejectLeave(id: string, reason: string): Promise<LeaveRequestEntity>;
+
+  // --- Student / parent self-service (US-E09.2) ---
+  getMyConductSummary(
+    studentId: string,
+    semester?: string,
+  ): Promise<ConductSummaryEntity>;
+  getMyViolations(studentId: string): Promise<ViolationEntity[]>;
+  getMyLeaveRequests(studentId: string): Promise<LeaveRequestEntity[]>;
+  submitLeaveRequest(
+    input: SubmitLeaveRequestInput,
+  ): Promise<LeaveRequestEntity>;
 }
