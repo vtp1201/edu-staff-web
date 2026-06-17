@@ -1440,6 +1440,7 @@
       "totalDays": "Total leave days"
     },
     "filters": {
+      "statusGroup": "Filter by status",
       "all": "All",
       "pending": "Pending",
       "approved": "Approved",
@@ -1466,7 +1467,7 @@
       "rejecting": "Rejecting..."
     },
     "rejectDialog": {
-      "title": "Rejection reason",
+      "title": "Rejection reason (required)",
       "placeholder": "Briefly explain why this request is being rejected…",
       "minLength": "Minimum 10 characters.",
       "ready": "Ready to send."

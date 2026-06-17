@@ -1440,6 +1440,7 @@
       "totalDays": "Tổng ngày nghỉ"
     },
     "filters": {
+      "statusGroup": "Lọc theo trạng thái",
       "all": "Tất cả",
       "pending": "Chờ duyệt",
       "approved": "Đã duyệt",
@@ -1466,7 +1467,7 @@
       "rejecting": "Đang từ chối..."
     },
     "rejectDialog": {
-      "title": "Lý do từ chối",
+      "title": "Lý do từ chối (bắt buộc)",
       "placeholder": "Giải thích ngắn gọn lý do từ chối để gửi đến nhân sự…",
       "minLength": "Tối thiểu 10 ký tự.",
       "ready": "Có thể gửi."

@@ -41,7 +41,7 @@ export function StaffLeaveFilters({
   return (
     <div className="flex flex-col gap-3 rounded-[var(--edu-radius-card)] border border-border bg-card p-4 shadow-card">
       <fieldset className="flex flex-wrap items-center gap-2 border-0 p-0">
-        <legend className="sr-only">{t("all")}</legend>
+        <legend className="sr-only">{t("statusGroup")}</legend>
         {FILTERS.map((f) => {
           const active = statusFilter === f;
           return (
@@ -64,7 +64,7 @@ export function StaffLeaveFilters({
                   "rounded-full px-2 text-xs font-extrabold tabular-nums",
                   active
                     ? "bg-background/60"
-                    : "bg-muted text-muted-foreground",
+                    : "bg-muted text-edu-text-secondary",
                 )}
               >
                 {counts[f]}
@@ -76,7 +76,7 @@ export function StaffLeaveFilters({
 
       <div className="flex flex-wrap items-end gap-3 border-t border-dashed border-border pt-3">
         <label htmlFor={fromId} className="flex flex-col gap-1">
-          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-bold uppercase tracking-wide text-edu-text-secondary">
             {t("dateFrom")}
           </span>
           <input
@@ -88,7 +88,7 @@ export function StaffLeaveFilters({
           />
         </label>
         <label htmlFor={toId} className="flex flex-col gap-1">
-          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-bold uppercase tracking-wide text-edu-text-secondary">
             {t("dateTo")}
           </span>
           <input

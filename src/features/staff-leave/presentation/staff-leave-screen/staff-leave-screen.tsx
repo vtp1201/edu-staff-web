@@ -155,7 +155,7 @@ export function StaffLeaveScreen({
           <h1 className="text-2xl font-extrabold text-foreground">
             {t("title")}
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-sm text-edu-text-secondary">
             {t("subtitle")}
           </p>
         </div>
@@ -234,22 +234,26 @@ export function StaffLeaveScreen({
         </div>
       )}
 
-      {/* Toast */}
-      {toast && (
-        <output
-          aria-live="polite"
-          className={cn(
-            "fixed bottom-7 left-1/2 z-[9000] flex -translate-x-1/2 items-center gap-2.5",
-            "rounded-[var(--edu-radius-card)] bg-foreground px-4 py-2.5 text-sm font-semibold text-background shadow-card-hover",
-          )}
-        >
-          <CheckCircle2
-            className="size-5 text-edu-success"
-            aria-hidden="true"
-          />
-          {toast.message}
-        </output>
-      )}
+      {/* Toast — always mounted so SR announces content inserted post-mount. */}
+      <output
+        aria-live="polite"
+        aria-atomic="true"
+        className={cn(
+          "fixed bottom-7 left-1/2 z-[9000] flex -translate-x-1/2 items-center gap-2.5",
+          "rounded-[var(--edu-radius-card)] bg-foreground px-4 py-2.5 text-sm font-semibold text-background shadow-card-hover",
+          !toast && "pointer-events-none sr-only",
+        )}
+      >
+        {toast && (
+          <>
+            <CheckCircle2
+              className="size-5 text-edu-success"
+              aria-hidden="true"
+            />
+            {toast.message}
+          </>
+        )}
+      </output>
     </div>
   );
 }

@@ -54,12 +54,27 @@ export function StaffLeaveRequestCard({
   const tDialog = useTranslations("staffLeave.rejectDialog");
   const [expanded, setExpanded] = useState(false);
   const reasonHintId = useId();
+  const reasonBodyId = useId();
   const rejectFieldId = useId();
   const rejectFieldRef = useRef<HTMLTextAreaElement>(null);
+  const rejectTriggerRef = useRef<HTMLButtonElement>(null);
+  const didRejectRef = useRef(false);
 
   // Move focus to the reason field when the editor opens (AC-9 focus mgmt).
   useEffect(() => {
     if (isRejecting) rejectFieldRef.current?.focus();
+  }, [isRejecting]);
+
+  // Return focus to the reject trigger when the inline panel closes (WCAG 2.4.3).
+  useEffect(() => {
+    if (isRejecting) {
+      didRejectRef.current = true;
+      return;
+    }
+    if (didRejectRef.current) {
+      rejectTriggerRef.current?.focus();
+      didRejectRef.current = false;
+    }
   }, [isRejecting]);
 
   const { status } = request;
@@ -109,9 +124,9 @@ export function StaffLeaveRequestCard({
         <div className="min-w-0 flex-1">
           {/* Header line */}
           <div className="mb-1 flex flex-wrap items-center gap-2">
-            <span className="text-[15px] font-extrabold text-foreground">
+            <h3 className="text-[15px] font-extrabold text-foreground">
               {request.staffName}
-            </span>
+            </h3>
             <StatusBadge tone={ROLE_TONE[request.staffRole]}>
               {t(`staffRole.${request.staffRole}`)}
             </StatusBadge>
@@ -131,7 +146,7 @@ export function StaffLeaveRequestCard({
           <div className="mb-2.5 inline-flex items-center gap-2 rounded-[var(--edu-radius-btn)] border border-border bg-muted px-2.5 py-1 text-xs font-bold text-edu-text-secondary">
             <Calendar className="size-3.5" aria-hidden="true" />
             <span className="font-mono">{dateRange}</span>
-            <span className="text-muted-foreground">·</span>
+            <span className="text-edu-text-secondary">·</span>
             <span className="font-extrabold text-foreground">
               {tCard("days", { count: request.days })}
             </span>
@@ -139,6 +154,7 @@ export function StaffLeaveRequestCard({
 
           {/* Reason */}
           <div
+            id={reasonBodyId}
             className={cn(
               "rounded-lg border-l-[3px] bg-muted px-3 py-2.5 text-sm leading-relaxed text-foreground",
               STATUS_REASON_BORDER[status],
@@ -152,6 +168,8 @@ export function StaffLeaveRequestCard({
               <button
                 type="button"
                 onClick={() => setExpanded((e) => !e)}
+                aria-expanded={expanded}
+                aria-controls={reasonBodyId}
                 className="ml-1.5 font-bold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {expanded ? tCard("showLess") : tCard("showMore")}
@@ -229,7 +247,7 @@ export function StaffLeaveRequestCard({
                     "flex-1 text-xs",
                     rejectValid
                       ? "text-edu-success-text"
-                      : "text-muted-foreground",
+                      : "text-edu-text-secondary",
                   )}
                 >
                   {rejectValid ? tDialog("ready") : tDialog("minLength")}
@@ -262,13 +280,14 @@ export function StaffLeaveRequestCard({
             <StatusIcon className="size-3" aria-hidden="true" />
             {t(`status.${status}`)}
           </StatusBadge>
-          <span className="text-[11px] text-muted-foreground sm:text-right">
+          <span className="text-[11px] text-edu-text-secondary sm:text-right">
             {tCard("submittedAt", { at: request.submittedAt })}
           </span>
 
           {status === "pending" && !isRejecting && (
             <div className="flex gap-2">
               <Button
+                ref={rejectTriggerRef}
                 type="button"
                 variant="outline"
                 onClick={onStartReject}
@@ -284,7 +303,7 @@ export function StaffLeaveRequestCard({
                 onClick={onApprove}
                 disabled={isBusy}
                 aria-label={`${tActions("approve")} — ${request.staffName}`}
-                className="bg-edu-success text-edu-success-foreground hover:bg-edu-success/90"
+                className="bg-edu-success text-edu-warning-foreground hover:bg-edu-success/90"
               >
                 <Check className="size-4" aria-hidden="true" />
                 {isBusy ? tActions("approving") : tActions("approve")}
