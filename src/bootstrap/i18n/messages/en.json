@@ -97,6 +97,7 @@
       "classes": "Classes",
       "attendance": "Attendance",
       "classLog": "Class Log",
+      "discipline": "Discipline",
       "grades": "Grades",
       "schedule": "Schedule",
       "students": "Students",
@@ -360,6 +361,145 @@
       "duplicate-date": "An entry already exists for this date",
       "network-error": "Network error",
       "unknown": "An unknown error occurred"
+    }
+  },
+  "discipline": {
+    "title": "Administration & Discipline",
+    "subtitle": "Manage student violations, conduct grades and leave requests",
+    "retry": "Retry",
+    "tabs": {
+      "violations": "Violations",
+      "conduct": "Conduct",
+      "leave": "Leave"
+    },
+    "violations": {
+      "title": "Violation Records",
+      "addNew": "Record New Violation",
+      "record": "Record Violation",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "success": "Violation recorded successfully!",
+      "formTitle": "Record New Violation",
+      "formSubtitle": "Log a student violation into the system",
+      "form": {
+        "student": "Student Name *",
+        "studentPlaceholder": "Student name...",
+        "class": "Class",
+        "date": "Date",
+        "type": "Violation Type *",
+        "severity": "Severity",
+        "description": "Description *",
+        "descriptionPlaceholder": "Describe the violation in detail...",
+        "notifyParent": "Notify parent"
+      },
+      "severity": {
+        "all": "All",
+        "low": "Minor",
+        "medium": "Moderate",
+        "high": "Serious"
+      },
+      "status": {
+        "recorded": "Recorded",
+        "notified": "Parent Notified",
+        "parent_confirmed": "Parent Confirmed"
+      },
+      "types": {
+        "late": "Late to school",
+        "uniform": "Incorrect uniform",
+        "phone": "Phone use in class",
+        "fight": "Fighting",
+        "skip": "Skipping class",
+        "cheat": "Cheating in exam",
+        "disrespect": "Disrespecting teacher",
+        "noise": "Making noise in class",
+        "other": "Other"
+      },
+      "notifyParent": "Notify Parent",
+      "notifyParentLabel": "Notify parent of {student}",
+      "allClasses": "All Classes",
+      "period": "Period {period}",
+      "recordedBy": "Recorded by: {handler}",
+      "empty": "No violations found!",
+      "stats": {
+        "thisWeek": "This Week",
+        "minor": "Minor",
+        "moderateSevere": "Moderate/Serious",
+        "pendingNotify": "Pending Notify"
+      }
+    },
+    "conduct": {
+      "title": "Conduct Grades",
+      "tableTitle": "Conduct Grades — {semester}",
+      "semester": "Semester",
+      "grade": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "average": "Average",
+        "poor": "Poor"
+      },
+      "columns": {
+        "student": "Student",
+        "class": "Class",
+        "violations": "Violations",
+        "absences": "Unexcused",
+        "points": "Points",
+        "conduct": "Conduct",
+        "action": "Action"
+      },
+      "override": "Override",
+      "edit": "Edit",
+      "editLabel": "Edit conduct of {student}",
+      "overrideNote": "Note...",
+      "overrideNoteLabel": "Override note",
+      "save": "Save",
+      "saved": "Saved",
+      "allClasses": "All Classes"
+    },
+    "leave": {
+      "title": "Leave Requests",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "type": {
+        "medical": "Medical",
+        "personal": "Personal / Family",
+        "event": "Event / Competition",
+        "other": "Other"
+      },
+      "filterAll": "All",
+      "reasonLabel": "Reason:",
+      "approve": "Approve",
+      "approveLabel": "Approve leave request of {student}",
+      "reject": "Reject",
+      "rejectLabel": "Reject leave request of {student}",
+      "rejectDialog": {
+        "title": "Rejection Reason",
+        "description": "Please provide a reason to notify the parent/student.",
+        "reason": "Enter rejection reason (minimum 10 characters)",
+        "reasonPlaceholder": "Reason...",
+        "confirm": "Confirm Reject",
+        "cancel": "Cancel"
+      },
+      "submittedBy": "Submitted by",
+      "days": "{count} day(s)",
+      "empty": "No leave requests yet",
+      "rejectedReason": "Rejection reason:",
+      "stats": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "errors": {
+      "missing-student": "Please enter the student name",
+      "missing-description": "Please enter a violation description",
+      "missing-reject-reason": "Please enter a rejection reason (minimum 10 characters)",
+      "already-processed": "This request has already been processed",
+      "invalid-severity": "Invalid violation severity",
+      "invalid-conduct-grade": "Invalid conduct grade",
+      "network-error": "Connection error, please try again"
     }
   },
   "attendance": {

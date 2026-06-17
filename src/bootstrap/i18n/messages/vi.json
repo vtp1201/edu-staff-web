@@ -97,6 +97,7 @@
       "classes": "Lớp học",
       "attendance": "Điểm danh",
       "classLog": "Sổ đầu bài",
+      "discipline": "Kỷ luật",
       "grades": "Bảng điểm",
       "schedule": "Lịch dạy",
       "students": "Học sinh",
@@ -360,6 +361,145 @@
       "duplicate-date": "Đã có bản ghi cho ngày này",
       "network-error": "Lỗi kết nối mạng",
       "unknown": "Đã xảy ra lỗi không xác định"
+    }
+  },
+  "discipline": {
+    "title": "Hành chính & Kỷ luật",
+    "subtitle": "Quản lý vi phạm, hạnh kiểm và nghỉ phép học sinh",
+    "retry": "Thử lại",
+    "tabs": {
+      "violations": "Vi phạm",
+      "conduct": "Hạnh kiểm",
+      "leave": "Nghỉ phép"
+    },
+    "violations": {
+      "title": "Danh sách vi phạm",
+      "addNew": "Nhập vi phạm mới",
+      "record": "Ghi nhận vi phạm",
+      "cancel": "Huỷ",
+      "saving": "Đang lưu...",
+      "success": "Đã ghi nhận vi phạm thành công!",
+      "formTitle": "Nhập vi phạm mới",
+      "formSubtitle": "Ghi nhận vi phạm của học sinh vào hệ thống",
+      "form": {
+        "student": "Tên học sinh *",
+        "studentPlaceholder": "Nguyễn Văn A...",
+        "class": "Lớp",
+        "date": "Ngày",
+        "type": "Loại vi phạm *",
+        "severity": "Mức độ",
+        "description": "Mô tả vi phạm *",
+        "descriptionPlaceholder": "Mô tả chi tiết hành vi vi phạm...",
+        "notifyParent": "Thông báo phụ huynh"
+      },
+      "severity": {
+        "all": "Tất cả",
+        "low": "Nhẹ",
+        "medium": "Vừa",
+        "high": "Nặng"
+      },
+      "status": {
+        "recorded": "Đã ghi nhận",
+        "notified": "Đã thông báo PH",
+        "parent_confirmed": "PH đã xác nhận"
+      },
+      "types": {
+        "late": "Đi học muộn",
+        "uniform": "Không đúng đồng phục",
+        "phone": "Sử dụng điện thoại",
+        "fight": "Gây gổ đánh nhau",
+        "skip": "Trốn học",
+        "cheat": "Gian lận kiểm tra",
+        "disrespect": "Vô lễ với giáo viên",
+        "noise": "Làm ồn trong lớp",
+        "other": "Khác"
+      },
+      "notifyParent": "Thông báo PH",
+      "notifyParentLabel": "Thông báo phụ huynh của {student}",
+      "allClasses": "Tất cả lớp",
+      "period": "Tiết {period}",
+      "recordedBy": "Ghi bởi: {handler}",
+      "empty": "Không có vi phạm nào!",
+      "stats": {
+        "thisWeek": "Vi phạm tuần này",
+        "minor": "Mức nhẹ",
+        "moderateSevere": "Mức vừa/nặng",
+        "pendingNotify": "Chờ thông báo PH"
+      }
+    },
+    "conduct": {
+      "title": "Bảng xếp loại hạnh kiểm",
+      "tableTitle": "Bảng xếp loại hạnh kiểm — {semester}",
+      "semester": "Học kỳ",
+      "grade": {
+        "excellent": "Tốt",
+        "good": "Khá",
+        "average": "Trung bình",
+        "poor": "Yếu"
+      },
+      "columns": {
+        "student": "Học sinh",
+        "class": "Lớp",
+        "violations": "Vi phạm",
+        "absences": "Nghỉ KP",
+        "points": "Điểm HK",
+        "conduct": "Hạnh kiểm",
+        "action": "Thao tác"
+      },
+      "override": "Sửa thủ công",
+      "edit": "Sửa",
+      "editLabel": "Sửa hạnh kiểm của {student}",
+      "overrideNote": "Ghi chú...",
+      "overrideNoteLabel": "Ghi chú override",
+      "save": "Lưu",
+      "saved": "Đã lưu",
+      "allClasses": "Tất cả lớp"
+    },
+    "leave": {
+      "title": "Yêu cầu nghỉ phép",
+      "status": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối"
+      },
+      "type": {
+        "medical": "Nghỉ bệnh / khám",
+        "personal": "Việc cá nhân / gia đình",
+        "event": "Tham gia sự kiện",
+        "other": "Lý do khác"
+      },
+      "filterAll": "Tất cả",
+      "reasonLabel": "Lý do:",
+      "approve": "Duyệt",
+      "approveLabel": "Duyệt đơn nghỉ của {student}",
+      "reject": "Từ chối",
+      "rejectLabel": "Từ chối đơn nghỉ của {student}",
+      "rejectDialog": {
+        "title": "Lý do từ chối",
+        "description": "Vui lòng nhập lý do từ chối để thông báo phụ huynh/học sinh.",
+        "reason": "Nhập lý do từ chối (tối thiểu 10 ký tự)",
+        "reasonPlaceholder": "Lý do...",
+        "confirm": "Xác nhận từ chối",
+        "cancel": "Huỷ"
+      },
+      "submittedBy": "Người gửi",
+      "days": "{count} ngày",
+      "empty": "Chưa có yêu cầu nghỉ phép",
+      "rejectedReason": "Lý do từ chối:",
+      "stats": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối"
+      }
+    },
+    "errors": {
+      "missing-student": "Vui lòng nhập tên học sinh",
+      "missing-description": "Vui lòng nhập mô tả vi phạm",
+      "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
+      "already-processed": "Yêu cầu này đã được xử lý",
+      "invalid-severity": "Mức độ vi phạm không hợp lệ",
+      "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
+      "network-error": "Lỗi kết nối, vui lòng thử lại"
     }
   },
   "attendance": {

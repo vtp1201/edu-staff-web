@@ -1,0 +1,50 @@
+import "server-only";
+import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { USE_MOCK } from "@/bootstrap/lib/mock";
+import type { IDisciplineRepository } from "@/features/discipline/domain/repositories/i-discipline.repository";
+import { ApproveLeaveUseCase } from "@/features/discipline/domain/use-cases/approve-leave.use-case";
+import { GetConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-conduct-summary.use-case";
+import { GetLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-leave-requests.use-case";
+import { GetViolationsUseCase } from "@/features/discipline/domain/use-cases/get-violations.use-case";
+import { OverrideConductGradeUseCase } from "@/features/discipline/domain/use-cases/override-conduct-grade.use-case";
+import { RecordViolationUseCase } from "@/features/discipline/domain/use-cases/record-violation.use-case";
+import { RejectLeaveUseCase } from "@/features/discipline/domain/use-cases/reject-leave.use-case";
+import { DisciplineRepository } from "@/features/discipline/infrastructure/repositories/discipline.repository";
+import { MockDisciplineRepository } from "@/features/discipline/infrastructure/repositories/mocks/discipline.mock.repository";
+
+async function makeRepo(): Promise<IDisciplineRepository> {
+  if (USE_MOCK) return new MockDisciplineRepository();
+  return new DisciplineRepository(await createServerHttpClient());
+}
+
+export async function makeDisciplineRepository(): Promise<IDisciplineRepository> {
+  return makeRepo();
+}
+
+export async function makeGetViolationsUseCase() {
+  return new GetViolationsUseCase(await makeRepo());
+}
+
+export async function makeRecordViolationUseCase() {
+  return new RecordViolationUseCase(await makeRepo());
+}
+
+export async function makeGetConductSummaryUseCase() {
+  return new GetConductSummaryUseCase(await makeRepo());
+}
+
+export async function makeOverrideConductGradeUseCase() {
+  return new OverrideConductGradeUseCase(await makeRepo());
+}
+
+export async function makeGetLeaveRequestsUseCase() {
+  return new GetLeaveRequestsUseCase(await makeRepo());
+}
+
+export async function makeApproveLeaveUseCase() {
+  return new ApproveLeaveUseCase(await makeRepo());
+}
+
+export async function makeRejectLeaveUseCase() {
+  return new RejectLeaveUseCase(await makeRepo());
+}

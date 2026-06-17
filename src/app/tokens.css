@@ -29,6 +29,9 @@
   --edu-error-light: #fff5f2;
   /** AA-compliant text on white/light surface (5.1:1). Decision 0027. */
   --edu-error-text: #c0392b;
+  /** "Nặng" (high/serious) violation severity. AA on white (8.2:1). Decision 0040. */
+  --edu-error-dark: #b91c1c;
+  --edu-error-dark-light: #fee2e2;
 
   /* ── Foreground colors for status backgrounds ───── */
   --edu-success-foreground: #ffffff;

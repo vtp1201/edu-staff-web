@@ -62,6 +62,9 @@
   --color-edu-error-light: var(--edu-error-light);
   --color-edu-error-foreground: var(--edu-error-foreground);
   --color-edu-error-text: var(--edu-error-text);
+  /* "Nặng" severity dark red — AA on white (8.2:1). Decision 0040. */
+  --color-edu-error-dark: var(--edu-error-dark);
+  --color-edu-error-dark-light: var(--edu-error-dark-light);
   --color-edu-info: var(--edu-info);
   --color-edu-info-light: var(--edu-info-light);
   --color-edu-purple: var(--edu-purple);
