@@ -11,4 +11,4 @@
 - [E13 Teacher Workspace epic](project-e13-teacher-workspace.md) — US-E13.4 + US-E13.5 implemented; E13.5 = Principal Teachers Management (teachers table + assignment sheet, 379 tests, A11Y-001–006 fixed); remaining: E13.1/E13.2/E13.3
 - [E01 Auth RBAC epic](project-e01-auth.md) — US-E01.1 email+token done; US-E01.2 SSO+multi-role done (ADR 0035 VNeID, ADR 0036 roleEnum); 304 tests
 - [E08 App Shell epic](project-e08-app-shell.md) — US-E08.5 Profile Linked Accounts (VNeID+Google) implemented; SSO icons promoted to components/shared/sso-icons/; ReactQueryProvider added to (app)/layout; mock-first all 3 BE endpoints; 341 tests
-- [E09 Discipline epic](project-e09-discipline.md) — US-E09.1 Discipline Screen (teacher/principal) implemented; 3-tab (Violations+Conduct+Leave); ADR 0040 edu-error-dark token; 425 tests; next: E09.2 (student conduct — depends on E09.1), E09.3 (staff leave)
+- [E09 Discipline epic](project-e09-discipline.md) — US-E09.1 (teacher/principal, 425 tests) + US-E09.2 (student+parent conduct, 436 tests) implemented; A11Y-001–007 fixed (contrast, form focus, min-h-11, Sheet i18n); remaining: E09.3 (staff leave — new feature, independent)
