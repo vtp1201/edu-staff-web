@@ -128,7 +128,7 @@ export function LeaveTab({
               className="mx-auto size-9 text-edu-success"
               aria-hidden="true"
             />
-            <p className="mt-2.5 font-semibold text-edu-success text-sm">
+            <p className="mt-2.5 font-semibold text-edu-success-text text-sm">
               {t("empty")}
             </p>
           </div>
@@ -165,7 +165,7 @@ export function LeaveTab({
                     <span className="font-semibold">{t("reasonLabel")}</span>{" "}
                     {req.reason}
                   </p>
-                  <div className="flex flex-wrap gap-4 text-edu-text-muted text-xs">
+                  <div className="flex flex-wrap gap-4 text-edu-text-secondary text-xs">
                     <span className="inline-flex items-center gap-1">
                       <Calendar className="size-3" aria-hidden="true" />
                       {req.startDate}

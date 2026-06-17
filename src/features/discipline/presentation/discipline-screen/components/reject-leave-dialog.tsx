@@ -51,10 +51,22 @@ export function RejectLeaveDialog({
             rows={3}
             value={reason}
             aria-required="true"
-            aria-invalid={tooShort}
+            aria-invalid={tooShort && reason.length > 0}
+            aria-describedby={
+              tooShort && reason.length > 0 ? "reject-reason-error" : undefined
+            }
             onChange={(e) => setReason(e.target.value)}
             placeholder={t("reasonPlaceholder")}
           />
+          {tooShort && reason.length > 0 && (
+            <p
+              id="reject-reason-error"
+              className="text-edu-error-text text-xs"
+              role="alert"
+            >
+              {t("reasonMinLength")}
+            </p>
+          )}
         </div>
 
         <DialogFooter>

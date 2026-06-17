@@ -8,3 +8,5 @@
 - [Client searchParams nav](pattern-client-searchparams-nav.md) — selector screen drives RSC re-fetch via searchParams; optional onSelect override props for Storybook; pure build-*-vm.ts
 - [Result shape + dynamic i18n errors](gotcha-result-shape-and-dynamic-i18n.md) — Result is {ok,value}/{ok,failure} not .error; dynamic t(`errors.${key}`) needs ALL union keys in every namespace
 - [Throwing-repo failure idiom](pattern-throwing-repo-failure.md) — when packet repo returns Promise<Entity> (throws Failure), action is catch boundary→errorKey; role-boundary guard actions
+- [RSC-props + local-state screen](pattern-rsc-props-local-state-screen.md) — mock-first multi-tab action screens: RSC prefetch→VM props→useState+useTransition, NOT client TanStack Query
+- [Biome role-prop + impeccable cache](gotcha-biome-role-prop-and-impeccable-cache.md) — `role=` prop flagged as ARIA (use viewerRole); .impeccable cache breaks lint (add !.impeccable to biome.json)

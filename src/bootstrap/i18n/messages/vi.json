@@ -414,8 +414,6 @@
         "noise": "Làm ồn trong lớp",
         "other": "Khác"
       },
-      "notifyParent": "Thông báo PH",
-      "notifyParentLabel": "Thông báo phụ huynh của {student}",
       "allClasses": "Tất cả lớp",
       "period": "Tiết {period}",
       "recordedBy": "Ghi bởi: {handler}",
@@ -449,6 +447,8 @@
       "override": "Sửa thủ công",
       "edit": "Sửa",
       "editLabel": "Sửa hạnh kiểm của {student}",
+      "cancelEdit": "Hủy chỉnh sửa",
+      "pointsProgress": "Điểm hạnh kiểm của {student}: {points}/100",
       "overrideNote": "Ghi chú...",
       "overrideNoteLabel": "Ghi chú override",
       "save": "Lưu",
@@ -479,6 +479,7 @@
         "description": "Vui lòng nhập lý do từ chối để thông báo phụ huynh/học sinh.",
         "reason": "Nhập lý do từ chối (tối thiểu 10 ký tự)",
         "reasonPlaceholder": "Lý do...",
+        "reasonMinLength": "Vui lòng nhập ít nhất 10 ký tự",
         "confirm": "Xác nhận từ chối",
         "cancel": "Huỷ"
       },

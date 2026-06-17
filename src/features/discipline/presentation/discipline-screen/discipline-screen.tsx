@@ -49,7 +49,7 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
   const header = (
     <header>
       <h1 className="font-extrabold text-2xl text-foreground">{t("title")}</h1>
-      <p className="mt-1 text-edu-text-muted text-sm">{t("subtitle")}</p>
+      <p className="mt-1 text-edu-text-secondary text-sm">{t("subtitle")}</p>
     </header>
   );
 
@@ -112,8 +112,8 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
                   className={cn(
                     "ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-extrabold text-[10px]",
                     tab === id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-edu-error text-white",
+                      ? "bg-primary/15 text-edu-text-primary"
+                      : "bg-edu-error-dark-light text-edu-error-dark",
                   )}
                 >
                   {badge}

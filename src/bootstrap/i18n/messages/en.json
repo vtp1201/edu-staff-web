@@ -414,8 +414,6 @@
         "noise": "Making noise in class",
         "other": "Other"
       },
-      "notifyParent": "Notify Parent",
-      "notifyParentLabel": "Notify parent of {student}",
       "allClasses": "All Classes",
       "period": "Period {period}",
       "recordedBy": "Recorded by: {handler}",
@@ -449,6 +447,8 @@
       "override": "Override",
       "edit": "Edit",
       "editLabel": "Edit conduct of {student}",
+      "cancelEdit": "Cancel editing",
+      "pointsProgress": "Conduct score for {student}: {points}/100",
       "overrideNote": "Note...",
       "overrideNoteLabel": "Override note",
       "save": "Save",
@@ -479,6 +479,7 @@
         "description": "Please provide a reason to notify the parent/student.",
         "reason": "Enter rejection reason (minimum 10 characters)",
         "reasonPlaceholder": "Reason...",
+        "reasonMinLength": "Please enter at least 10 characters",
         "confirm": "Confirm Reject",
         "cancel": "Cancel"
       },

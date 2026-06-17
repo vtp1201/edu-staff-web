@@ -72,6 +72,16 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - `#fa896b` on `#f5f7fa` (destructive on page bg) — ~2.38:1 (FAIL)
 - `#4570ea` on `#ffffff` (primary-dark on card) — 4.56:1 (PASS, per ADR 0023); also confirmed for white-on-primary 4.56:1
 
+## Additional ratios confirmed (US-E09.1 discipline-screen audit, 2026-06-17)
+- white on bg-edu-error (#fa896b): 2.37:1 — FAIL (tab count badge inactive state in discipline-screen.tsx)
+- white on bg-primary (#5d87ff): 3.29:1 — FAIL for 10px text (tab count badge active state)
+- edu-text-muted (#8898a9) on white: 2.95:1 — FAIL for 14px subtitle normal weight (discipline-screen.tsx h1 subtitle)
+- edu-success (#13deb9) on white: 1.72:1 — FAIL for empty-state text labels (violations-tab + leave-tab)
+- edu-error-dark (#b91c1c) on edu-error-dark-light (#fee2e2): 5.30:1 — PASS (high-severity badge, ADR 0040 confirmed)
+- edu-error-text (#c0392b) on edu-error/10 bg: 5.01:1 — PASS (error banner)
+- edu-warning-foreground (#2a3547) on warning/15 bg: 11.25:1 — PASS (badge pattern correct)
+- edu-text-secondary (#5a6a85) on white: 5.48:1 — PASS (fieldset legend in severity selector)
+
 ## Additional ratios confirmed (US-E12.4 audit, US-E13.4 audit)
 - --edu-primary-dark (#4570EA) on white: 4.41:1 — BARELY FAILS AA for ≤12px normal text (globals.css comment claims 4.56 — incorrect; this is a measurement discrepancy to note)
 - --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS for small text buttons. Use for any button with text-[11px] or smaller.

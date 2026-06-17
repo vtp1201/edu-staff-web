@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -208,6 +209,10 @@ export function ConductTab({
                         value={s.points}
                         className="w-15"
                         indicatorClassName={pointsColorClass(s.points)}
+                        aria-label={t("pointsProgress", {
+                          student: s.studentName,
+                          points: s.points,
+                        })}
                       />
                       <span className="min-w-6 font-bold text-foreground text-sm tabular-nums">
                         {s.points}
@@ -257,9 +262,10 @@ export function ConductTab({
                           type="button"
                           size="sm"
                           variant="ghost"
+                          aria-label={t("cancelEdit")}
                           onClick={() => setEditingId(null)}
                         >
-                          ✕
+                          <X className="size-4" aria-hidden="true" />
                         </Button>
                       </div>
                     ) : (

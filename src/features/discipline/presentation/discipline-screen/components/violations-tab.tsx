@@ -382,7 +382,7 @@ export function ViolationsTab({
               className="mx-auto size-9 text-edu-success"
               aria-hidden="true"
             />
-            <p className="mt-2.5 font-semibold text-edu-success text-sm">
+            <p className="mt-2.5 font-semibold text-edu-success-text text-sm">
               {t("empty")}
             </p>
           </div>
@@ -428,7 +428,7 @@ export function ViolationsTab({
                     {" — "}
                     {v.description}
                   </p>
-                  <p className="text-edu-text-muted text-xs">
+                  <p className="text-edu-text-secondary text-xs">
                     {v.date}
                     {v.period ? ` · ${t("period", { period: v.period })}` : ""}{" "}
                     · {t("recordedBy", { handler: v.handledBy })}
@@ -438,18 +438,6 @@ export function ViolationsTab({
                   <StatusBadge tone={VIOLATION_STATUS_TONE[v.status]}>
                     {t(`status.${v.status}`)}
                   </StatusBadge>
-                  {isTeacher && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label={t("notifyParentLabel", {
-                        student: v.studentName,
-                      })}
-                    >
-                      {t("notifyParent")}
-                    </Button>
-                  )}
                 </div>
               </li>
             ))}
