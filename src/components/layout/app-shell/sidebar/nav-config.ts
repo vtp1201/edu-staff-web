@@ -2,6 +2,7 @@ import {
   BarChart2,
   BarChart3,
   BookOpen,
+  CalendarClock,
   CalendarDays,
   CalendarRange,
   ClipboardList,
@@ -110,6 +111,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       icon: BarChart2,
     },
     { href: "/admin/staffing", labelKey: "staffing", icon: Users2 },
+    { href: "/admin/staff-leave", labelKey: "staffLeave", icon: CalendarClock },
   ],
 };
 

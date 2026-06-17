@@ -121,6 +121,7 @@
       "timetable": "Timetable",
       "assessmentScheme": "Assessment Scheme",
       "staffing": "Staffing",
+      "staffLeave": "Staff Leave",
       "expandSidebar": "Expand sidebar",
       "collapseSidebar": "Collapse sidebar"
     },
@@ -1426,6 +1427,83 @@
       "departments": "Departments",
       "positionTitles": "Position Titles",
       "assignments": "Assignments"
+    }
+  },
+  "staffLeave": {
+    "title": "Staff Leave Management",
+    "subtitle": "Review and approve leave requests from teachers and staff",
+    "retry": "Retry",
+    "error": "Unable to load leave requests.",
+    "stats": {
+      "pending": "Pending review",
+      "approvedThisMonth": "Approved this month",
+      "totalDays": "Total leave days"
+    },
+    "filters": {
+      "statusGroup": "Filter by status",
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "dateFrom": "From",
+      "dateTo": "To"
+    },
+    "card": {
+      "days": "{count} days",
+      "submittedAt": "Submitted {at}",
+      "reason": "Reason",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "approvedBy": "Approved by",
+      "rejectedBy": "Rejected by",
+      "rejectionReason": "Rejection reason:"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "confirmReject": "Confirm reject",
+      "approving": "Approving...",
+      "rejecting": "Rejecting..."
+    },
+    "rejectDialog": {
+      "title": "Rejection reason (required)",
+      "placeholder": "Briefly explain why this request is being rejected…",
+      "minLength": "Minimum 10 characters.",
+      "ready": "Ready to send."
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "leaveType": {
+      "annual": "Annual leave",
+      "sick": "Sick leave",
+      "personal": "Personal leave",
+      "family": "Family leave"
+    },
+    "staffRole": {
+      "teacher": "Teacher",
+      "staff": "Staff"
+    },
+    "empty": {
+      "all": "No leave requests yet.",
+      "pending": "No pending requests.",
+      "approved": "No approved requests.",
+      "rejected": "No rejected requests.",
+      "description": "You'll be notified when a new request arrives."
+    },
+    "toast": {
+      "approved": "Leave request approved.",
+      "rejected": "Leave request rejected."
+    },
+    "errors": {
+      "not-found": "Leave request not found.",
+      "already-processed": "This request has already been processed.",
+      "reason-too-short": "Rejection reason must be at least 10 characters.",
+      "missing-reject-reason": "Please enter a rejection reason.",
+      "network-error": "Connection error. Please try again."
     }
   }
 }
