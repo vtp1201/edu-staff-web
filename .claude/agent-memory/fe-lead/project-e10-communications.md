@@ -1,6 +1,6 @@
 ---
 name: project-e10-communications
-description: E10 Communications epic — US-E10.1 Messaging 2-pane inbox implemented; US-E10.2 planned
+description: E10 Communications epic — US-E10.1 Messaging + US-E10.2 Notifications + US-E10.3 Announcements all implemented; E10 COMPLETE
 metadata:
   type: project
 ---

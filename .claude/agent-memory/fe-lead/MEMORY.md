@@ -13,3 +13,4 @@
 - [E08 App Shell epic](project-e08-app-shell.md) — US-E08.5 Profile Linked Accounts (VNeID+Google) implemented; SSO icons promoted to components/shared/sso-icons/; ReactQueryProvider added to (app)/layout; mock-first all 3 BE endpoints; 341 tests
 - [E09 Discipline epic](project-e09-discipline.md) — ALL 3 US implemented; E09.3 Staff Leave (admin, 448 tests, A11Y-008–016 fixed, card layout + inline reject, destructive btn now bg-edu-error-dark); E09 COMPLETE
 - [E10 Communications epic](project-e10-communications.md) — US-E10.1 Messaging 2-pane inbox implemented (532 tests, ADR 0041 SSE-in-presentation, ADR 0042 contacts deferred); US-E10.2 planned
+- [E11 LMS Exams epic](project-e11-lms-exams.md) — US-E11.1 Student Exam (list→briefing→taking→result) implemented; mock-first (lms not built); 564 tests total; 10 a11y findings fixed; merged main
