@@ -59,7 +59,6 @@ type Story = StoryObj<typeof ConversationList>;
 export const Loading: Story = {
   args: { isLoading: true, conversations: [] },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
     // Skeleton items rendered — verify loading state by checking skeleton elements exist
     const skeletons = canvasElement.querySelectorAll(
       "[data-slot='skeleton'], .animate-pulse",
