@@ -2,6 +2,124 @@
   "Common": {
     "hello": "Xin chào"
   },
+  "exam": {
+    "page": {
+      "title": "Bài kiểm tra",
+      "subtitle": "Danh sách các bài kiểm tra của bạn"
+    },
+    "stats": {
+      "available": "Có thể làm",
+      "completed": "Đã hoàn thành",
+      "avgScore": "Điểm trung bình"
+    },
+    "filter": {
+      "all": "Tất cả",
+      "available": "Có thể làm",
+      "completed": "Đã xong",
+      "expired": "Hết hạn",
+      "groupLabel": "Lọc bài kiểm tra"
+    },
+    "card": {
+      "duration": "{minutes} phút",
+      "questions": "{count} câu",
+      "deadline": "Hạn nộp: {date}",
+      "teacher": "GV: {name}"
+    },
+    "status": {
+      "available": "Có thể làm",
+      "completed": "Đã xong",
+      "expired": "Hết hạn"
+    },
+    "cta": {
+      "start": "Bắt đầu làm bài",
+      "viewResult": "Xem kết quả",
+      "expired": "Hết hạn"
+    },
+    "briefing": {
+      "title": "Thông tin bài kiểm tra",
+      "duration": "Thời gian",
+      "questions": "Số câu hỏi",
+      "type": "Loại bài",
+      "typeValue": "Trắc nghiệm",
+      "rulesTitle": "Quy định thi",
+      "rules": {
+        "rule1": "Không được sử dụng tài liệu trong quá trình làm bài.",
+        "rule2": "Không thoát khỏi trang thi khi đang làm bài.",
+        "rule3": "Bài thi sẽ tự động nộp khi hết thời gian.",
+        "rule4": "Mỗi câu hỏi chỉ được chọn một đáp án.",
+        "rule5": "Không được quay lại sau khi đã nộp bài."
+      },
+      "agreeLabel": "Tôi đã đọc và đồng ý với các quy định thi",
+      "startCta": "Bắt đầu làm bài ngay"
+    },
+    "taking": {
+      "progress": "{answered}/{total} câu đã trả lời",
+      "submitBtn": "Nộp bài",
+      "flagBtn": "Đánh dấu",
+      "unflagBtn": "Bỏ đánh dấu",
+      "prevBtn": "Câu trước",
+      "nextBtn": "Câu tiếp",
+      "questionLabel": "Câu {index}",
+      "optionLabel": "Chọn đáp án {option}",
+      "navigatorLabel": "Câu {index}",
+      "navigatorTitle": "Bảng câu hỏi",
+      "timerLabel": "Thời gian còn lại",
+      "timerAnnounce": "Còn lại {time}",
+      "progressLabel": "Tiến độ trả lời",
+      "legend": {
+        "current": "Đang xem",
+        "answered": "Đã trả lời",
+        "flagged": "Đánh dấu",
+        "unanswered": "Chưa trả lời"
+      }
+    },
+    "submitModal": {
+      "title": "Xác nhận nộp bài",
+      "answered": "Đã trả lời",
+      "total": "Tổng số câu",
+      "unanswered": "Chưa trả lời",
+      "warningText": "{count} câu chưa được trả lời.",
+      "reviewBtn": "Xem lại",
+      "confirmBtn": "Nộp bài ngay"
+    },
+    "result": {
+      "title": "Kết quả bài kiểm tra",
+      "scoreLabel": "Điểm số",
+      "outOf": "/10",
+      "passed": "ĐẠT",
+      "failed": "CHƯA ĐẠT",
+      "rank": "Xếp hạng",
+      "percentile": "Phần trăm",
+      "timeTaken": "Thời gian làm bài",
+      "correct": "Câu đúng",
+      "incorrect": "Câu sai",
+      "skipped": "Bỏ qua",
+      "reviewTitle": "Xem lại câu hỏi",
+      "filterAll": "Tất cả",
+      "filterCorrect": "Đúng",
+      "filterIncorrect": "Sai",
+      "filterSkipped": "Bỏ qua",
+      "filterGroupLabel": "Lọc kết quả",
+      "correctAnswer": "Đáp án đúng",
+      "yourAnswer": "Đáp án của bạn",
+      "backToList": "Quay lại danh sách"
+    },
+    "empty": {
+      "title": "Không có bài kiểm tra",
+      "subtitle": "Hiện tại không có bài kiểm tra nào phù hợp với bộ lọc."
+    },
+    "errors": {
+      "not-found": "Không tìm thấy bài kiểm tra.",
+      "max-attempts-exceeded": "Bạn đã làm bài kiểm tra này rồi.",
+      "after-deadline": "Bài kiểm tra đã hết hạn.",
+      "already-submitted": "Bài kiểm tra đã được nộp.",
+      "network-error": "Lỗi kết nối, vui lòng thử lại.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    },
+    "skeleton": {
+      "loading": "Đang tải danh sách bài kiểm tra..."
+    }
+  },
   "auth": {
     "brand": {
       "name": "EduPortal",
