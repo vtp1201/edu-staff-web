@@ -420,6 +420,50 @@
       "unknown": "Something went wrong, please try again."
     }
   },
+  "adminSettings": {
+    "title": "Operational Settings",
+    "subtitle": "Manage the grade submission workflow and config links.",
+    "publishMode": {
+      "title": "Grade Submission Workflow",
+      "subtitle": "Choose how teachers publish grades to students and parents.",
+      "legendSr": "Select grade publish mode",
+      "selfPublish": "Self-publish",
+      "selfPublishDesc": "Teacher submits grades → published immediately. No admin approval needed.",
+      "adminApproval": "Admin approval",
+      "adminApprovalDesc": "Teacher submits grades → admin approves before publishing.",
+      "warningNote": "Changing the grade submission workflow applies immediately to all teachers. Grades currently in the Pending state are not affected.",
+      "warningNoteLabel": "Note:",
+      "save": "Save settings",
+      "saving": "Saving...",
+      "readOnlyHint": "Only administrators can change this setting."
+    },
+    "confirmDialog": {
+      "title": "Switch to Self-publish?",
+      "description": "Grade batches awaiting approval will be published automatically and immediately. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "shortcuts": {
+      "title": "Configuration Links",
+      "subtitle": "Jump to the dedicated configuration screens.",
+      "calendar": "Academic Calendar",
+      "calendarDesc": "Manage the school year and terms.",
+      "assessment": "Grading Scale & Assessment",
+      "assessmentDesc": "Configure the grading scale and assessment criteria.",
+      "open": "Open"
+    },
+    "toast": {
+      "saveSuccess": "Settings updated",
+      "saveError": "Save failed, please try again"
+    },
+    "loading": "Loading settings...",
+    "errors": {
+      "not-found": "Configuration not found",
+      "forbidden": "You do not have permission",
+      "network-error": "Cannot reach the server, please try again.",
+      "unknown": "Something went wrong, please try again."
+    }
+  },
   "classLog": {
     "pageTitle": "Class Log",
     "teacherSubtitle": "Record each lesson's content for BGH approval",
