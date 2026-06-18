@@ -147,7 +147,9 @@ export function BatchReviewSheet({
                         {row.average ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {t(BAND_LABEL_KEY[row.gradeBandKey])}
+                        {row.gradeBandKey !== null
+                          ? t(BAND_LABEL_KEY[row.gradeBandKey])
+                          : "—"}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -34,8 +34,8 @@ describe("gradeBandKey", () => {
     expect(gradeBandKey(0)).toBe("poor");
   });
 
-  it("returns poor for null", () => {
-    expect(gradeBandKey(null)).toBe("poor");
+  it("returns null for null (score not yet entered)", () => {
+    expect(gradeBandKey(null)).toBeNull();
   });
 });
 
@@ -76,6 +76,6 @@ describe("mapBatchDetail", () => {
     expect(counts.poor).toBe(0);
 
     expect(detail.previewRows[0]?.gradeBandKey).toBe("excellent");
-    expect(detail.previewRows[3]?.gradeBandKey).toBe("poor");
+    expect(detail.previewRows[3]?.gradeBandKey).toBeNull(); // null average → null band key
   });
 });

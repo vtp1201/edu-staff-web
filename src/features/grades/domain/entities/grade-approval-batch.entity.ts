@@ -27,8 +27,9 @@ export interface BatchScorePreviewRow {
   studentName: string;
   studentCode: string;
   average: number | null;
-  /** Stable band key (excellent…poor) — derived from `average`, translated at render. */
-  gradeBandKey: GradeBandKey;
+  /** Stable band key (excellent…poor) — derived from `average`, translated at render.
+   *  `null` when `average` is null (score not yet entered). */
+  gradeBandKey: GradeBandKey | null;
 }
 
 export interface GradeApprovalBatchDetail extends GradeApprovalBatch {

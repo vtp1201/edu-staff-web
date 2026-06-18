@@ -20,9 +20,11 @@ const BANDS: { key: GradeBandKey; min: number }[] = [
   { key: "poor", min: 0 },
 ];
 
-/** Map an average score to its stable performance-band key. */
-export function gradeBandKey(avg: number | null): GradeBandKey {
-  if (avg === null || avg < 3.5) return "poor";
+/** Map an average score to its stable performance-band key.
+ *  Returns `null` when `avg` is null (score not yet entered). */
+export function gradeBandKey(avg: number | null): GradeBandKey | null {
+  if (avg === null) return null;
+  if (avg < 3.5) return "poor";
   if (avg < 5) return "weak";
   if (avg < 7) return "average";
   if (avg < 8.5) return "good";
