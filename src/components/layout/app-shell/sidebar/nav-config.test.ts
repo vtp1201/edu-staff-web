@@ -23,9 +23,11 @@ describe("NAV_BY_ROLE", () => {
   });
 
   it("scopes every non-shared href under its role segment", () => {
+    // Routes living under the (shared) group — accessible to all roles (US-E10.1).
+    const SHARED_HREFS = new Set(["/profile", "/messages"]);
     for (const role of ROLES) {
       for (const item of NAV_BY_ROLE[role]) {
-        if (item.href === "/profile") continue; // shared route
+        if (SHARED_HREFS.has(item.href)) continue;
         expect(item.href.startsWith(`/${role}`)).toBe(true);
       }
     }

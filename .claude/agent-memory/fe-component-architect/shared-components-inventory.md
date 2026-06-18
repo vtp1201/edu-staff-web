@@ -39,3 +39,5 @@ Sidebar, Header, DashboardLayout — shell components.
   pattern in new screens; prefer `toast()` call (US-E09.3 decision).
 - `StatusBadge` covers all leave-type tones (annual=primary, sick=warning, personal=muted,
   family=purple) and actor-role tones (teacher=primary, staff=muted) — no new tones needed.
+- `scroll-area` is confirmed present — use `<ScrollArea>` for chat window + conversation list in messaging (US-E10.1).
+- Messaging feature (US-E10.1): all 10 components are feature-local in `features/messaging/presentation/`. None promoted to shared yet (first screen). Promote if a second screen reuses any pattern.

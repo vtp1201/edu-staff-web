@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+import type { ContactResponseDto } from "../dtos/contact-response.dto";
+import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
+import type { MessageResponseDto } from "../dtos/message-response.dto";
+import {
+  toContactEntity,
+  toConversationEntity,
+  toMessageEntity,
+} from "./messaging.mapper";
+
+describe("messaging.mapper", () => {
+  describe("toConversationEntity", () => {
+    it("maps all fields for a direct conversation", () => {
+      const dto: ConversationResponseDto = {
+        id: "u1",
+        type: "direct",
+        name: "Trần Minh Quân",
+        avatarInitials: "TQ",
+        color: "success",
+        lastMessage: "Chào cô",
+        lastMessageTime: "10:15",
+        unreadCount: 1,
+        isOnline: true,
+      };
+
+      expect(toConversationEntity(dto)).toEqual({
+        id: "u1",
+        type: "direct",
+        name: "Trần Minh Quân",
+        avatarInitials: "TQ",
+        color: "success",
+        lastMessage: "Chào cô",
+        lastMessageTime: "10:15",
+        unreadCount: 1,
+        isOnline: true,
+        memberCount: undefined,
+      });
+    });
+
+    it("maps a group conversation with memberCount and no online flag", () => {
+      const dto: ConversationResponseDto = {
+        id: "g1",
+        type: "group",
+        name: "Lớp 11B2 — Toán",
+        avatarInitials: "11B2",
+        color: "primary",
+        lastMessage: "Bài tập trang 87",
+        lastMessageTime: "08:15",
+        unreadCount: 3,
+        memberCount: 33,
+      };
+
+      const entity = toConversationEntity(dto);
+      expect(entity.type).toBe("group");
+      expect(entity.memberCount).toBe(33);
+      expect(entity.isOnline).toBeUndefined();
+    });
+  });
+
+  describe("toMessageEntity", () => {
+    it("maps an own message with optional fields absent", () => {
+      const dto: MessageResponseDto = {
+        id: "m1",
+        conversationId: "u1",
+        from: "me",
+        text: "Dạ thầy",
+        time: "08:45",
+        date: "Hôm nay",
+      };
+
+      expect(toMessageEntity(dto)).toEqual({
+        id: "m1",
+        conversationId: "u1",
+        from: "me",
+        text: "Dạ thầy",
+        time: "08:45",
+        date: "Hôm nay",
+        senderName: undefined,
+        senderInitials: undefined,
+        senderColor: undefined,
+      });
+    });
+
+    it("maps a group 'other' message including sender fields", () => {
+      const dto: MessageResponseDto = {
+        id: "m2",
+        conversationId: "g1",
+        from: "other",
+        text: "Cô ơi",
+        time: "07:30",
+        date: "Hôm nay",
+        senderName: "Trần Văn Bình",
+        senderInitials: "TB",
+        senderColor: "teal",
+      };
+
+      const entity = toMessageEntity(dto);
+      expect(entity.from).toBe("other");
+      expect(entity.senderName).toBe("Trần Văn Bình");
+      expect(entity.senderColor).toBe("teal");
+    });
+  });
+
+  describe("toContactEntity", () => {
+    it("maps all contact fields", () => {
+      const dto: ContactResponseDto = {
+        id: "u1",
+        name: "Trần Minh Quân",
+        role: "Hiệu trưởng",
+        avatarInitials: "TQ",
+        color: "success",
+        isOnline: true,
+      };
+
+      expect(toContactEntity(dto)).toEqual({
+        id: "u1",
+        name: "Trần Minh Quân",
+        role: "Hiệu trưởng",
+        avatarInitials: "TQ",
+        color: "success",
+        isOnline: true,
+      });
+    });
+  });
+});

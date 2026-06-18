@@ -48,7 +48,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/teacher/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/teacher/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/teacher/students", labelKey: "students", icon: Users },
-    { href: "/teacher/messages", labelKey: "messages", icon: MessageSquare },
+    { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
   principal: [
@@ -60,7 +60,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/principal/classes", labelKey: "classes", icon: School },
     { href: "/principal/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/principal/reports", labelKey: "reports", icon: FileText },
-    { href: "/principal/messages", labelKey: "messages", icon: MessageSquare },
+    { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
   student: [
@@ -76,7 +76,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/student/conduct", labelKey: "conduct", icon: Scale },
     { href: "/student/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/student/resources", labelKey: "resources", icon: FileText },
-    { href: "/student/messages", labelKey: "messages", icon: MessageSquare },
+    { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
   parent: [
@@ -86,7 +86,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/parent/attendance", labelKey: "attendance", icon: ClipboardList },
     { href: "/parent/conduct", labelKey: "conduct", icon: Scale },
     { href: "/parent/schedule", labelKey: "schedule", icon: CalendarDays },
-    { href: "/parent/messages", labelKey: "messages", icon: MessageSquare },
+    { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
   admin: [

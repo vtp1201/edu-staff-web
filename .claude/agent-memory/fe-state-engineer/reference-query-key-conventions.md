@@ -54,4 +54,24 @@ Only retry when `error.retryable === true` (from `ApiError`). Never retry 401/40
 
 List endpoints use `meta.pagination.nextCursor` / `hasMore`. Model with `useInfiniteQuery` on the client if pagination is needed client-side. For server-side full drain, use `fetchAllPages()` helper (exists in `TeacherDashboardRepository`).
 
+## Real-time / chat feature pattern (US-E10.1)
+
+For chat-like features (real-time, cursor-paginated messages per entity):
+
+```ts
+messagingKeys = {
+  all:           ()                       => ['messaging']                             as const,
+  conversations: ()                       => ['messaging', 'conversations']            as const,
+  messages:      (conversationId: string) => ['messaging', 'messages', conversationId] as const,
+  contacts:      (query: string)          => ['messaging', 'contacts', query]         as const,
+}
+```
+
+Cache overrides for messaging:
+- conversations: `staleTime: 30_000`, `gcTime: 120_000`, `refetchOnWindowFocus: true`
+- messages (infinite): `staleTime: 10_000`, `gcTime: 60_000`, `refetchOnWindowFocus: false`
+- contacts (modal search): `staleTime: 60_000`, `gcTime: 180_000`, `enabled: isModalOpen && query.length >= 1`
+
+SSE mock updates cache via `setQueryData` (no invalidation round-trip). `onSettled` invalidation after mutations reconciles server truth.
+
 **See also:** [[rsc-readonly-pattern]]
