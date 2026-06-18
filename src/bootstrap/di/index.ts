@@ -5,6 +5,7 @@ export * from "./auth.di";
 export * from "./calendar.di";
 export * from "./class-log.di";
 export * from "./class-management.di";
+export * from "./lesson-bank.di";
 export * from "./notification.di";
 export * from "./principal-teachers.di";
 export * from "./staff-leave.di";
