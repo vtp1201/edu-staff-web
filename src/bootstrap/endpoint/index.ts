@@ -13,4 +13,5 @@ export * from "./notification.endpoint";
 export * from "./staffing.endpoint";
 export * from "./subject-catalogue.endpoint";
 export * from "./teacher.endpoint";
+export * from "./teaching-plan.endpoint";
 export * from "./tenant.endpoint";
