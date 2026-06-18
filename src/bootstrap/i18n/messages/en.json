@@ -1545,5 +1545,104 @@
       "missing-reject-reason": "Please enter a rejection reason.",
       "network-error": "Connection error. Please try again."
     }
+  },
+  "lessonBank": {
+    "title": "Lesson Bank",
+    "subtitle": "Upload and manage your lessons.",
+    "subtitlePrincipal": "Browse the school-wide lesson bank.",
+    "uploadButton": "Upload lesson",
+    "toast": {
+      "uploaded": "Lesson uploaded.",
+      "deleted": "Lesson deleted."
+    },
+    "visibility": {
+      "private": "Private",
+      "dept": "Department",
+      "school": "School-wide"
+    },
+    "filter": {
+      "searchPlaceholder": "Search by title...",
+      "searchAriaLabel": "Search lessons",
+      "subjectAriaLabel": "Filter by subject",
+      "allSubjects": "All subjects",
+      "departmentAriaLabel": "Filter by department",
+      "allDepartments": "All departments",
+      "visibilityAriaLabel": "Filter by visibility",
+      "allVisibility": "All visibility",
+      "sortAriaLabel": "Sort",
+      "sort": {
+        "newest": "Newest",
+        "most-viewed": "Most viewed",
+        "title-asc": "Title A-Z"
+      },
+      "layoutAriaLabel": "Layout",
+      "layoutGrid": "Grid",
+      "layoutList": "List"
+    },
+    "empty": {
+      "title": "No lessons yet",
+      "body": "Upload your first lesson to start building the bank.",
+      "cta": "Upload lesson",
+      "noMatch": "No lessons found",
+      "noMatchBody": "Try adjusting your filters or search terms."
+    },
+    "detail": {
+      "title": "Lesson details",
+      "author": "Uploaded by",
+      "department": "Department",
+      "subject": "Subject",
+      "fileType": "File type",
+      "uploadedAt": "Uploaded on",
+      "views": "Views",
+      "visibility": "Visibility",
+      "download": "Download",
+      "open": "Open link",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "confirmCancel": "Cancel",
+      "confirmDelete": "Delete",
+      "confirmDeleteTitle": "Delete lesson?",
+      "confirmDeleteBody": "This action cannot be undone. The lesson will be permanently removed."
+    },
+    "upload": {
+      "title": "Upload lesson",
+      "titleField": "Title",
+      "titlePlaceholder": "Enter the lesson title",
+      "description": "Description",
+      "descriptionPlaceholder": "Briefly describe the content (optional)",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "department": "Department",
+      "departmentPlaceholder": "Select a department",
+      "fileType": "File type",
+      "fileTypePlaceholder": "Select a file type",
+      "file": "File",
+      "linkUrl": "Link URL",
+      "visibility": "Visibility",
+      "submit": "Upload",
+      "submitting": "Uploading...",
+      "cancel": "Cancel",
+      "dropZoneAriaLabel": "File upload area",
+      "dropZoneTitle": "Drag and drop a file here",
+      "dropZoneHint": "or click to select a file",
+      "errors": {
+        "titleRequired": "Please enter a title.",
+        "fileTypeRequired": "Please select a file type.",
+        "urlRequired": "Please enter a URL.",
+        "urlInvalid": "The URL is not valid."
+      }
+    },
+    "errors": {
+      "missing-title": "Please enter a lesson title.",
+      "invalid-url": "The link URL is not valid.",
+      "unsupported-type": "This file type is not supported.",
+      "file-too-large": "The file exceeds the size limit.",
+      "not-found": "Lesson not found.",
+      "forbidden": "You do not have permission for this action.",
+      "unauthorized": "You do not have access.",
+      "network-error": "Cannot connect to the server.",
+      "unknown": "Something went wrong, please try again."
+    }
   }
 }

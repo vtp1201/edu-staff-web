@@ -1545,5 +1545,104 @@
       "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại."
     }
+  },
+  "lessonBank": {
+    "title": "Kho bài giảng",
+    "subtitle": "Tải lên và quản lý bài giảng của bạn.",
+    "subtitlePrincipal": "Xem kho bài giảng toàn trường.",
+    "uploadButton": "Tải lên bài giảng",
+    "toast": {
+      "uploaded": "Đã tải lên bài giảng.",
+      "deleted": "Đã xoá bài giảng."
+    },
+    "visibility": {
+      "private": "Cá nhân",
+      "dept": "Bộ môn",
+      "school": "Toàn trường"
+    },
+    "filter": {
+      "searchPlaceholder": "Tìm theo tiêu đề...",
+      "searchAriaLabel": "Tìm kiếm bài giảng",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "allSubjects": "Tất cả môn học",
+      "departmentAriaLabel": "Lọc theo bộ môn",
+      "allDepartments": "Tất cả bộ môn",
+      "visibilityAriaLabel": "Lọc theo phạm vi",
+      "allVisibility": "Tất cả phạm vi",
+      "sortAriaLabel": "Sắp xếp",
+      "sort": {
+        "newest": "Mới nhất",
+        "most-viewed": "Xem nhiều nhất",
+        "title-asc": "Tên A-Z"
+      },
+      "layoutAriaLabel": "Kiểu hiển thị",
+      "layoutGrid": "Dạng lưới",
+      "layoutList": "Dạng danh sách"
+    },
+    "empty": {
+      "title": "Chưa có bài giảng",
+      "body": "Tải lên bài giảng đầu tiên để bắt đầu xây dựng kho.",
+      "cta": "Tải lên bài giảng",
+      "noMatch": "Không tìm thấy bài giảng",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "detail": {
+      "title": "Chi tiết bài giảng",
+      "author": "Người tải lên",
+      "department": "Bộ môn",
+      "subject": "Môn học",
+      "fileType": "Loại tệp",
+      "uploadedAt": "Ngày tải lên",
+      "views": "Lượt xem",
+      "visibility": "Phạm vi",
+      "download": "Tải xuống",
+      "open": "Mở liên kết",
+      "edit": "Chỉnh sửa",
+      "delete": "Xoá",
+      "deleting": "Đang xoá...",
+      "confirmCancel": "Huỷ",
+      "confirmDelete": "Xoá",
+      "confirmDeleteTitle": "Xoá bài giảng?",
+      "confirmDeleteBody": "Hành động này không thể hoàn tác. Bài giảng sẽ bị xoá vĩnh viễn."
+    },
+    "upload": {
+      "title": "Tải lên bài giảng",
+      "titleField": "Tiêu đề",
+      "titlePlaceholder": "Nhập tiêu đề bài giảng",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Mô tả ngắn gọn nội dung (không bắt buộc)",
+      "subject": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "department": "Bộ môn",
+      "departmentPlaceholder": "Chọn bộ môn",
+      "fileType": "Loại tệp",
+      "fileTypePlaceholder": "Chọn loại tệp",
+      "file": "Tệp",
+      "linkUrl": "Đường dẫn liên kết",
+      "visibility": "Phạm vi hiển thị",
+      "submit": "Tải lên",
+      "submitting": "Đang tải lên...",
+      "cancel": "Huỷ",
+      "dropZoneAriaLabel": "Khu vực tải tệp lên",
+      "dropZoneTitle": "Kéo thả tệp vào đây",
+      "dropZoneHint": "hoặc nhấn để chọn tệp",
+      "errors": {
+        "titleRequired": "Vui lòng nhập tiêu đề.",
+        "fileTypeRequired": "Vui lòng chọn loại tệp.",
+        "urlRequired": "Vui lòng nhập đường dẫn.",
+        "urlInvalid": "Đường dẫn không hợp lệ."
+      }
+    },
+    "errors": {
+      "missing-title": "Vui lòng nhập tiêu đề bài giảng.",
+      "invalid-url": "Đường dẫn liên kết không hợp lệ.",
+      "unsupported-type": "Loại tệp không được hỗ trợ.",
+      "file-too-large": "Tệp vượt quá dung lượng cho phép.",
+      "not-found": "Không tìm thấy bài giảng.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "unauthorized": "Bạn không có quyền truy cập.",
+      "network-error": "Không thể kết nối đến máy chủ.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    }
   }
 }
