@@ -420,6 +420,50 @@
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
     }
   },
+  "adminSettings": {
+    "title": "Cài đặt vận hành",
+    "subtitle": "Quản lý quy trình nộp điểm và liên kết cấu hình.",
+    "publishMode": {
+      "title": "Quy trình nộp điểm",
+      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
+      "legendSr": "Chọn chế độ công bố điểm",
+      "selfPublish": "Tự công bố",
+      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay. Không cần BGH duyệt.",
+      "adminApproval": "Duyệt bởi BGH",
+      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt trước khi công bố.",
+      "warningNote": "Thay đổi quy trình nộp điểm sẽ áp dụng ngay cho tất cả giáo viên. Điểm đang ở trạng thái Chờ duyệt sẽ không bị ảnh hưởng.",
+      "warningNoteLabel": "Lưu ý:",
+      "save": "Lưu cài đặt",
+      "saving": "Đang lưu...",
+      "readOnlyHint": "Chỉ quản trị viên mới có thể thay đổi cài đặt này."
+    },
+    "confirmDialog": {
+      "title": "Chuyển sang Tự công bố?",
+      "description": "Các lô điểm đang chờ duyệt sẽ được tự động công bố ngay. Hành động này không thể hoàn tác.",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
+    "shortcuts": {
+      "title": "Liên kết cấu hình",
+      "subtitle": "Chuyển đến các màn hình cấu hình chuyên biệt.",
+      "calendar": "Lịch học",
+      "calendarDesc": "Quản lý năm học và kỳ học.",
+      "assessment": "Thang điểm & Khung đánh giá",
+      "assessmentDesc": "Cấu hình thang điểm và tiêu chí đánh giá.",
+      "open": "Xem"
+    },
+    "toast": {
+      "saveSuccess": "Đã cập nhật cài đặt",
+      "saveError": "Lưu không thành công, vui lòng thử lại"
+    },
+    "loading": "Đang tải cài đặt...",
+    "errors": {
+      "not-found": "Không tìm thấy cấu hình",
+      "forbidden": "Không có quyền thực hiện",
+      "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    }
+  },
   "classLog": {
     "pageTitle": "Sổ đầu bài",
     "teacherSubtitle": "Ghi lại nội dung từng tiết dạy để BGH phê duyệt",
