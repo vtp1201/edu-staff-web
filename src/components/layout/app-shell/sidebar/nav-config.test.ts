@@ -50,13 +50,19 @@ describe("NAV_BY_ROLE", () => {
 });
 
 describe("admin role", () => {
-  it("returns exactly 10 nav items for admin", () => {
-    expect(NAV_BY_ROLE.admin.length).toBe(10);
+  it("returns exactly 11 nav items for admin", () => {
+    expect(NAV_BY_ROLE.admin.length).toBe(11);
   });
 
   it("includes the staff-leave nav item", () => {
     expect(
       NAV_BY_ROLE.admin.some((item) => item.href === "/admin/staff-leave"),
+    ).toBe(true);
+  });
+
+  it("includes the announcements nav item", () => {
+    expect(
+      NAV_BY_ROLE.admin.some((item) => item.href === "/admin/announcements"),
     ).toBe(true);
   });
 

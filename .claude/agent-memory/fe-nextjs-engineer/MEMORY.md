@@ -12,3 +12,5 @@
 - [Biome role-prop + impeccable cache](gotcha-biome-role-prop-and-impeccable-cache.md) — `role=` prop flagged as ARIA (use viewerRole); .impeccable cache breaks lint (add !.impeccable to biome.json)
 - [Result-repo vs throwing-repo](pattern-result-repo-vs-throwing.md) — two repo error conventions coexist; follow the packet's IXxxRepository signature
 - [Filter pills a11y](gotcha-filter-pills-a11y.md) — Biome rejects role=radio/group on div/button + ignored noAutofocus suppression; use aria-pressed buttons in fieldset/legend + ref+useEffect focus
+- [Server-action-as-prop step machine](pattern-server-action-as-prop-step-machine.md) — [id] route: RSC page imports action + passes as prop to client step-machine container (not client-imported)
+- [Storybook TanStack decorator](pattern-storybook-tanstack-decorator.md) — screen owning query hooks needs per-story QueryClientProvider; portal content via within(document.body); no rounded-card/button token
