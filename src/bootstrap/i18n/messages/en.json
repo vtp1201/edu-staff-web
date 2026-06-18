@@ -2,6 +2,39 @@
   "Common": {
     "hello": "Hello"
   },
+  "gradeEntry": {
+    "title": "Grade Entry",
+    "selectClass": "Select class - subject",
+    "selectTerm": "Select term",
+    "termHK1": "Semester 1",
+    "termHK2": "Semester 2",
+    "columnHeader": "{label} ({weight}%)",
+    "averageColumn": "Average",
+    "studentName": "Full name",
+    "studentCode": "Student ID",
+    "tableCaption": "Grade entry table by student and assessment column",
+    "tableLockedNotice": "Grade sheet is locked, read-only.",
+    "noSelection": "Select a class and term to view the grade sheet",
+    "emptyClass": "No students enrolled in this class",
+    "publishButton": "Publish Grades",
+    "publishConfirmTitle": "Confirm Grade Publication",
+    "publishConfirmDescription": "Published grades cannot be edited. Continue?",
+    "publishConfirmOk": "Publish",
+    "publishConfirmCancel": "Cancel",
+    "pendingApproval": "Pending Approval",
+    "published": "Published",
+    "cellLabel": "{column} score for {student}",
+    "errorOutOfRange": "Score must be between 0 and {max}",
+    "errorAlreadyPublished": "This grade sheet has already been published",
+    "errorIncompleteScores": "All columns must have scores before publishing",
+    "errorForbidden": "You do not have permission to enter grades for this class",
+    "errorNetworkError": "Connection error, please try again",
+    "errorUnknown": "An unknown error occurred",
+    "saveSuccess": "Saved",
+    "publishSuccess": "Grades published successfully",
+    "publishPendingApproval": "Grades submitted for principal approval",
+    "loading": "Loading grade sheet..."
+  },
   "exam": {
     "page": {
       "title": "Exams",
@@ -417,6 +450,50 @@
       "narrowing-blocked": "Cannot narrow — active classes exist in this range",
       "network-error": "Could not reach the server, please try again.",
       "unauthorized": "You do not have permission to perform this action.",
+      "unknown": "Something went wrong, please try again."
+    }
+  },
+  "adminSettings": {
+    "title": "Operational Settings",
+    "subtitle": "Manage the grade submission workflow and config links.",
+    "publishMode": {
+      "title": "Grade Submission Workflow",
+      "subtitle": "Choose how teachers publish grades to students and parents.",
+      "legendSr": "Select grade publish mode",
+      "selfPublish": "Self-publish",
+      "selfPublishDesc": "Teacher submits grades → published immediately. No admin approval needed.",
+      "adminApproval": "Admin approval",
+      "adminApprovalDesc": "Teacher submits grades → admin approves before publishing.",
+      "warningNote": "Changing the grade submission workflow applies immediately to all teachers. Grades currently in the Pending state are not affected.",
+      "warningNoteLabel": "Note:",
+      "save": "Save settings",
+      "saving": "Saving...",
+      "readOnlyHint": "Only administrators can change this setting."
+    },
+    "confirmDialog": {
+      "title": "Switch to Self-publish?",
+      "description": "Grade batches awaiting approval will be published automatically and immediately. This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "shortcuts": {
+      "title": "Configuration Links",
+      "subtitle": "Jump to the dedicated configuration screens.",
+      "calendar": "Academic Calendar",
+      "calendarDesc": "Manage the school year and terms.",
+      "assessment": "Grading Scale & Assessment",
+      "assessmentDesc": "Configure the grading scale and assessment criteria.",
+      "open": "Open"
+    },
+    "toast": {
+      "saveSuccess": "Settings updated",
+      "saveError": "Save failed, please try again"
+    },
+    "loading": "Loading settings...",
+    "errors": {
+      "not-found": "Configuration not found",
+      "forbidden": "You do not have permission",
+      "network-error": "Cannot reach the server, please try again.",
       "unknown": "Something went wrong, please try again."
     }
   },
@@ -1893,5 +1970,155 @@
       "network-error": "Unable to reach the server.",
       "unknown": "Something went wrong, please try again."
     }
+  },
+  "teachingPlan": {
+    "pageTitle": "Teaching Plan (PPCT)",
+    "teacherSubtitle": "Compose a weekly teaching plan per subject / class / term",
+    "principalSubtitle": "Review and approve teachers' teaching plans",
+    "selector": {
+      "subject": "Subject",
+      "class": "Class",
+      "term": "Term",
+      "subjectPlaceholder": "Select subject",
+      "classPlaceholder": "Select class",
+      "termPlaceholder": "Select term"
+    },
+    "grid": {
+      "weekLabel": "Week {week}",
+      "periodLabel": "Period {period}",
+      "addCell": "Add content for Week {week} Period {period}",
+      "emptyState": "No plan content yet",
+      "emptyStateCta": "Start entering the teaching plan"
+    },
+    "cell": {
+      "title": "Lesson title",
+      "titlePlaceholder": "e.g. Derivatives — finding extrema",
+      "titleRequired": "Lesson title is required",
+      "learningObjective": "Learning objective",
+      "learningObjectivePlaceholder": "Students will be able to...",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes...",
+      "save": "Save cell",
+      "cancel": "Cancel"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "actions": {
+      "saveDraft": "Save draft",
+      "submit": "Submit for approval",
+      "submitting": "Submitting...",
+      "submitSuccess": "Plan submitted for approval",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "approveSuccess": "Plan approved",
+      "reject": "Return",
+      "rejecting": "Processing...",
+      "rejectSuccess": "Plan returned"
+    },
+    "approve": {
+      "confirmTitle": "Confirm approval",
+      "confirmDescription": "Are you sure you want to approve this teaching plan?",
+      "confirm": "Approve",
+      "cancel": "Cancel"
+    },
+    "reject": {
+      "title": "Return plan",
+      "reasonLabel": "Reason for return",
+      "reasonPlaceholder": "State the reason for returning the plan...",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "confirm": "Confirm return",
+      "cancel": "Cancel"
+    },
+    "rejection": {
+      "bannerTitle": "Plan was returned",
+      "reason": "Reason: {reason}",
+      "editHint": "You can edit and resubmit"
+    },
+    "principal": {
+      "filterTeacher": "Teacher",
+      "filterSubject": "Subject",
+      "filterClass": "Class",
+      "allTeachers": "All teachers",
+      "allSubjects": "All subjects",
+      "allClasses": "All classes",
+      "emptyPending": "No plans pending approval",
+      "submittedBy": "Teacher: {name}",
+      "submittedAt": "Submitted: {date}"
+    },
+    "errors": {
+      "not-found": "Plan not found",
+      "not-draft": "Plan is not in draft status",
+      "not-submitted": "Plan has not been submitted for approval",
+      "insufficient-cells": "Fill in at least 50% of the plan cells before submitting",
+      "invalid-rejection-reason": "Return reason must be at least 10 characters",
+      "unauthorized": "You are not authorised to perform this action",
+      "network-error": "Network connection error",
+      "unknown": "An unknown error occurred"
+    }
+  },
+  "assessmentScheme": {
+    "title": "Grade Scale & Assessment Scheme",
+    "subtitle": "Configure the grading scale and component score columns per subject.",
+    "gradeScaleSection": "Grade Scale (Classification)",
+    "gradeScaleSectionSubtitle": "Define the school's grade classification bands.",
+    "presetThang10": "Scale 10",
+    "presetThang4": "Scale 4.0",
+    "presetLetter": "Letter (A–F)",
+    "applyPreset": "Apply preset",
+    "addBand": "Add band",
+    "saveBands": "Save grade scale",
+    "bandLabel": "Label",
+    "bandMinThreshold": "Min score",
+    "bandColor": "Color",
+    "deleteBand": "Delete band",
+    "errorLowestBandNotZero": "The lowest band must start at 0.",
+    "errorOverlappingThresholds": "Grade bands overlap.",
+    "errorGapsInCoverage": "There are gaps between grade bands.",
+    "errorEmptyBands": "At least one band is required.",
+    "assessmentSchemeSection": "Assessment Scheme",
+    "assessmentSchemeSectionSubtitle": "Configure component score columns and weights for each subject.",
+    "gradeLevelLabel": "Grade level",
+    "gradeLevelPlaceholder": "Select grade level",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "Select subject",
+    "gradePrefix": "Grade",
+    "noSubjectsForGrade": "No subjects for this grade level.",
+    "columnType": "Type",
+    "columnLabel": "Column name",
+    "columnCount": "Count",
+    "columnWeight": "Weight (%)",
+    "weightSumLabel": "Total weight",
+    "weightSumTarget": "/ 100%",
+    "addColumn": "Add column",
+    "deleteColumn": "Delete column",
+    "saveScheme": "Save assessment scheme",
+    "presetTT22": "TT22/2021 preset",
+    "applyPresetTT22": "Apply TT22/2021",
+    "errorEmptyColumns": "At least one column is required.",
+    "errorWeightSumNot100": "Total weight must equal 100%.",
+    "errorInvalidCount": "Assessment count must be ≥ 1.",
+    "saveSuccess": "Saved successfully.",
+    "saveError": "Save failed. Please try again.",
+    "loading": "Loading...",
+    "errorNotFound": "Data not found.",
+    "errorForbidden": "You are not authorised to perform this action.",
+    "errorNetwork": "Connection error. Please try again.",
+    "errorUnknown": "An unknown error occurred.",
+    "colorSuccess": "Green (Excellent)",
+    "colorPrimary": "Blue (Good)",
+    "colorWarning": "Yellow (Average)",
+    "colorError": "Red (Weak)",
+    "columnTypeTX": "Regular",
+    "columnTypeGK": "Midterm",
+    "columnTypeCK": "Final",
+    "yearLabel": "Academic year",
+    "yearLabelPlaceholder": "2024-2025",
+    "weightSumInvalid": "Total weight: {value}% — not 100% yet",
+    "weightSumValid": "Total weight: {value}% — valid",
+    "weightSumInvalidSR": "— not 100% yet"
   }
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -89,8 +89,54 @@ BE dependency: IAM claim `role: "admin"` required.
 | Platform | `bun build` xanh |
 | Release | design-review gate pass (after designer delivers) |
 
+## Evidence
+
+### Implementation (2026-06-18)
+
+**Deliverables:**
+- `src/features/assessment-scheme/` — new feature module (domain + infra + presentation)
+- `src/bootstrap/endpoint/assessment-scheme.endpoint.ts`
+- `src/bootstrap/di/assessment-scheme.di.ts` (mock-first, `USE_MOCK` guard)
+- `src/app/[locale]/t/[tenant]/(app)/admin/assessment/page.tsx` + `actions.ts`
+- `src/bootstrap/i18n/messages/{vi,en}.json` — `assessmentScheme` namespace (59 keys)
+- 6 Storybook stories (loading/empty/error/grade-scale-editor/scheme-editor/weight-error)
+
+**Gate results:**
+- `bunx tsc --noEmit` → 0 errors
+- `bun lint` → exit 0 (1 pre-existing warning in unrelated file)
+- `bun vitest run` → 127 files / 651 tests passed (23 new assessment-scheme tests)
+- `bun run build` → clean; route `/[locale]/t/[tenant]/admin/assessment` present
+
+**Tech-lead review:** APPROVED (2026-06-18)
+
+**A11y audit:** A11Y-041–046 found, all resolved in fix commit `2ce0954`:
+- A11Y-041 (blocking): weight-sum live region — FIXED
+- A11Y-042 (critical): count input aria-describedby — FIXED
+- A11Y-043 (critical): loading skeleton accessible name — FIXED
+- A11Y-044 (major): touch targets 44px — FIXED (button.tsx sm+icon variants)
+- A11Y-045 (major): focus management on add/delete row — FIXED
+- A11Y-046 (minor): empty-state live region — FIXED
+
+**Design review: PASS**
+- design-system: conform — semantic tokens only (`edu-*`, `bg-card`, `text-foreground`, `shadow-card`);
+  TX/GK/CK column tints use `bg-edu-*/15` + AA-compliant text tokens per design-system.md;
+  StatusBadge reused from `components/shared/status-badge/` (no duplication).
+- a11y: WCAG AA — all 6 findings resolved; contrast verified (TX 10.27:1, GK 11.25:1, CK 4.79:1);
+  keyboard-operable; focus management on add/delete; live regions for dynamic content.
+- impeccable audit: 0 anti-patterns found by hook on all edited files.
+- states: loading (skeleton + sr-only), empty (no subjects), error (network), success (save toast),
+  weight-validation (inline + live region), grade-scale-validation (alert + aria-describedby).
+- responsive: flex-wrap layout, 320px safe.
+- No new design tokens needed — all column tints and band colors use existing `edu-*` tokens.
+
+**Open follow-ups (non-blocking):**
+- `yearLabel` is fixed to `DEFAULT_YEAR = "2024-2025"` — year selector tied to school academic year
+  config is a deferred follow-up.
+- 4 dead i18n keys (`applyPreset`, `presetTT22`, `yearLabel`, `yearLabelPlaceholder`) — unused but
+  harmless; can be pruned in a chore.
+
 ## Harness Delta
 
 Story packet da co. Design unblocked: `design_src/edu/assessment.jsx` da ship trong
-1506 handoff (2026-06-15). DR-001 resolved. Status chuyen sang design-ready.
-docs/TEST_MATRIX.md row US-E12.6: cap nhat status tu planned sang design-ready khi implement.
+1506 handoff (2026-06-15). DR-001 resolved.
+Status: implemented (2026-06-18). TEST_MATRIX row US-E12.6: unit=1, integration=1, e2e=0.

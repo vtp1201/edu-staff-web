@@ -2,6 +2,39 @@
   "Common": {
     "hello": "Xin chào"
   },
+  "gradeEntry": {
+    "title": "Nhập điểm",
+    "selectClass": "Chọn lớp - môn",
+    "selectTerm": "Chọn học kỳ",
+    "termHK1": "Học kỳ 1",
+    "termHK2": "Học kỳ 2",
+    "columnHeader": "{label} ({weight}%)",
+    "averageColumn": "Điểm TB",
+    "studentName": "Họ tên",
+    "studentCode": "Mã HS",
+    "tableCaption": "Bảng nhập điểm theo học sinh và cột đánh giá",
+    "tableLockedNotice": "Bảng điểm đã khóa, chỉ xem.",
+    "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
+    "emptyClass": "Chưa có học sinh trong lớp này",
+    "publishButton": "Công bố điểm",
+    "publishConfirmTitle": "Xác nhận công bố điểm",
+    "publishConfirmDescription": "Điểm sau khi công bố không thể sửa. Tiếp tục?",
+    "publishConfirmOk": "Công bố",
+    "publishConfirmCancel": "Huỷ",
+    "pendingApproval": "Chờ duyệt",
+    "published": "Đã công bố",
+    "cellLabel": "Điểm {column} của {student}",
+    "errorOutOfRange": "Điểm phải từ 0 đến {max}",
+    "errorAlreadyPublished": "Bảng điểm đã được công bố",
+    "errorIncompleteScores": "Cần nhập đủ điểm các cột trước khi công bố",
+    "errorForbidden": "Bạn không có quyền nhập điểm lớp này",
+    "errorNetworkError": "Lỗi kết nối, thử lại sau",
+    "errorUnknown": "Đã xảy ra lỗi không xác định",
+    "saveSuccess": "Đã lưu",
+    "publishSuccess": "Điểm đã được công bố thành công",
+    "publishPendingApproval": "Điểm đã gửi chờ hiệu trưởng duyệt",
+    "loading": "Đang tải bảng điểm..."
+  },
   "exam": {
     "page": {
       "title": "Bài kiểm tra",
@@ -417,6 +450,50 @@
       "narrowing-blocked": "Không thể thu hẹp — có lớp đang hoạt động trong vùng này",
       "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
       "unauthorized": "Bạn không có quyền thực hiện thao tác này.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    }
+  },
+  "adminSettings": {
+    "title": "Cài đặt vận hành",
+    "subtitle": "Quản lý quy trình nộp điểm và liên kết cấu hình.",
+    "publishMode": {
+      "title": "Quy trình nộp điểm",
+      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
+      "legendSr": "Chọn chế độ công bố điểm",
+      "selfPublish": "Tự công bố",
+      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay. Không cần BGH duyệt.",
+      "adminApproval": "Duyệt bởi BGH",
+      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt trước khi công bố.",
+      "warningNote": "Thay đổi quy trình nộp điểm sẽ áp dụng ngay cho tất cả giáo viên. Điểm đang ở trạng thái Chờ duyệt sẽ không bị ảnh hưởng.",
+      "warningNoteLabel": "Lưu ý:",
+      "save": "Lưu cài đặt",
+      "saving": "Đang lưu...",
+      "readOnlyHint": "Chỉ quản trị viên mới có thể thay đổi cài đặt này."
+    },
+    "confirmDialog": {
+      "title": "Chuyển sang Tự công bố?",
+      "description": "Các lô điểm đang chờ duyệt sẽ được tự động công bố ngay. Hành động này không thể hoàn tác.",
+      "cancel": "Hủy",
+      "confirm": "Xác nhận"
+    },
+    "shortcuts": {
+      "title": "Liên kết cấu hình",
+      "subtitle": "Chuyển đến các màn hình cấu hình chuyên biệt.",
+      "calendar": "Lịch học",
+      "calendarDesc": "Quản lý năm học và kỳ học.",
+      "assessment": "Thang điểm & Khung đánh giá",
+      "assessmentDesc": "Cấu hình thang điểm và tiêu chí đánh giá.",
+      "open": "Xem"
+    },
+    "toast": {
+      "saveSuccess": "Đã cập nhật cài đặt",
+      "saveError": "Lưu không thành công, vui lòng thử lại"
+    },
+    "loading": "Đang tải cài đặt...",
+    "errors": {
+      "not-found": "Không tìm thấy cấu hình",
+      "forbidden": "Không có quyền thực hiện",
+      "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
     }
   },
@@ -1893,5 +1970,155 @@
       "network-error": "Không thể kết nối đến máy chủ.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
     }
+  },
+  "teachingPlan": {
+    "pageTitle": "Kế hoạch bài dạy (PPCT)",
+    "teacherSubtitle": "Soạn kế hoạch bài dạy theo tuần cho từng môn học / lớp / học kỳ",
+    "principalSubtitle": "Xem xét và phê duyệt kế hoạch bài dạy của giáo viên",
+    "selector": {
+      "subject": "Môn học",
+      "class": "Lớp",
+      "term": "Học kỳ",
+      "subjectPlaceholder": "Chọn môn",
+      "classPlaceholder": "Chọn lớp",
+      "termPlaceholder": "Chọn học kỳ"
+    },
+    "grid": {
+      "weekLabel": "Tuần {week}",
+      "periodLabel": "Tiết {period}",
+      "addCell": "Thêm nội dung Tuần {week} Tiết {period}",
+      "emptyState": "Chưa có nội dung kế hoạch",
+      "emptyStateCta": "Bắt đầu nhập kế hoạch bài dạy"
+    },
+    "cell": {
+      "title": "Tiêu đề bài dạy",
+      "titlePlaceholder": "VD: Đạo hàm — ứng dụng tính cực trị",
+      "titleRequired": "Tiêu đề bài dạy là bắt buộc",
+      "learningObjective": "Mục tiêu học tập",
+      "learningObjectivePlaceholder": "Học sinh nắm được...",
+      "notes": "Ghi chú",
+      "notesPlaceholder": "Ghi chú bổ sung...",
+      "save": "Lưu ô",
+      "cancel": "Huỷ"
+    },
+    "status": {
+      "DRAFT": "Nháp",
+      "SUBMITTED": "Chờ duyệt",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Đã từ chối"
+    },
+    "actions": {
+      "saveDraft": "Lưu nháp",
+      "submit": "Gửi phê duyệt",
+      "submitting": "Đang gửi...",
+      "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
+      "approve": "Phê duyệt",
+      "approving": "Đang duyệt...",
+      "approveSuccess": "Đã phê duyệt kế hoạch",
+      "reject": "Trả lại",
+      "rejecting": "Đang xử lý...",
+      "rejectSuccess": "Đã trả lại kế hoạch"
+    },
+    "approve": {
+      "confirmTitle": "Xác nhận phê duyệt",
+      "confirmDescription": "Bạn có chắc chắn muốn phê duyệt kế hoạch bài dạy này không?",
+      "confirm": "Phê duyệt",
+      "cancel": "Huỷ"
+    },
+    "reject": {
+      "title": "Trả lại kế hoạch",
+      "reasonLabel": "Lý do trả lại",
+      "reasonPlaceholder": "Nêu rõ lý do trả lại kế hoạch...",
+      "reasonMinLength": "Lý do phải có ít nhất 10 ký tự",
+      "confirm": "Xác nhận trả lại",
+      "cancel": "Huỷ"
+    },
+    "rejection": {
+      "bannerTitle": "Kế hoạch đã bị trả lại",
+      "reason": "Lý do: {reason}",
+      "editHint": "Bạn có thể chỉnh sửa và gửi lại"
+    },
+    "principal": {
+      "filterTeacher": "Giáo viên",
+      "filterSubject": "Môn học",
+      "filterClass": "Lớp",
+      "allTeachers": "Tất cả GV",
+      "allSubjects": "Tất cả môn",
+      "allClasses": "Tất cả lớp",
+      "emptyPending": "Không có kế hoạch nào chờ duyệt",
+      "submittedBy": "GV: {name}",
+      "submittedAt": "Ngày gửi: {date}"
+    },
+    "errors": {
+      "not-found": "Không tìm thấy kế hoạch",
+      "not-draft": "Kế hoạch không ở trạng thái nháp",
+      "not-submitted": "Kế hoạch chưa được gửi để phê duyệt",
+      "insufficient-cells": "Cần điền ít nhất 50% ô trong kế hoạch trước khi gửi",
+      "invalid-rejection-reason": "Lý do trả lại phải có ít nhất 10 ký tự",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
+      "network-error": "Lỗi kết nối mạng",
+      "unknown": "Đã xảy ra lỗi không xác định"
+    }
+  },
+  "assessmentScheme": {
+    "title": "Thang điểm & Khung đánh giá",
+    "subtitle": "Cấu hình thang điểm và các cột điểm thành phần theo môn học.",
+    "gradeScaleSection": "Thang điểm (Xếp loại)",
+    "gradeScaleSectionSubtitle": "Định nghĩa các mức xếp loại điểm cho trường.",
+    "presetThang10": "Thang 10",
+    "presetThang4": "Thang 4.0",
+    "presetLetter": "Chữ (A–F)",
+    "applyPreset": "Áp dụng mẫu",
+    "addBand": "Thêm mức",
+    "saveBands": "Lưu thang điểm",
+    "bandLabel": "Nhãn",
+    "bandMinThreshold": "Điểm tối thiểu",
+    "bandColor": "Màu",
+    "deleteBand": "Xóa mức",
+    "errorLowestBandNotZero": "Mức thấp nhất phải bắt đầu từ 0.",
+    "errorOverlappingThresholds": "Các mức điểm bị trùng nhau.",
+    "errorGapsInCoverage": "Còn khoảng trống giữa các mức điểm.",
+    "errorEmptyBands": "Cần ít nhất một mức điểm.",
+    "assessmentSchemeSection": "Khung đánh giá",
+    "assessmentSchemeSectionSubtitle": "Cấu hình cột điểm thành phần và trọng số cho từng môn học.",
+    "gradeLevelLabel": "Khối lớp",
+    "gradeLevelPlaceholder": "Chọn khối lớp",
+    "subjectLabel": "Môn học",
+    "subjectPlaceholder": "Chọn môn học",
+    "gradePrefix": "Lớp",
+    "noSubjectsForGrade": "Không có môn học nào cho khối này.",
+    "columnType": "Loại",
+    "columnLabel": "Tên cột",
+    "columnCount": "Số lần",
+    "columnWeight": "Trọng số (%)",
+    "weightSumLabel": "Tổng trọng số",
+    "weightSumTarget": "/ 100%",
+    "addColumn": "Thêm cột",
+    "deleteColumn": "Xóa cột",
+    "saveScheme": "Lưu khung đánh giá",
+    "presetTT22": "Mẫu TT22/2021",
+    "applyPresetTT22": "Áp dụng TT22/2021",
+    "errorEmptyColumns": "Cần ít nhất một cột điểm.",
+    "errorWeightSumNot100": "Tổng trọng số phải bằng 100%.",
+    "errorInvalidCount": "Số lần kiểm tra phải ≥ 1.",
+    "saveSuccess": "Đã lưu thành công.",
+    "saveError": "Lưu thất bại. Vui lòng thử lại.",
+    "loading": "Đang tải...",
+    "errorNotFound": "Không tìm thấy dữ liệu.",
+    "errorForbidden": "Bạn không có quyền thực hiện thao tác này.",
+    "errorNetwork": "Lỗi kết nối. Vui lòng thử lại.",
+    "errorUnknown": "Đã xảy ra lỗi không xác định.",
+    "colorSuccess": "Xanh (Giỏi)",
+    "colorPrimary": "Xanh dương (Khá)",
+    "colorWarning": "Vàng (Trung bình)",
+    "colorError": "Đỏ (Yếu)",
+    "columnTypeTX": "Thường xuyên",
+    "columnTypeGK": "Giữa kỳ",
+    "columnTypeCK": "Cuối kỳ",
+    "yearLabel": "Năm học",
+    "yearLabelPlaceholder": "2024-2025",
+    "weightSumInvalid": "Tổng trọng số: {value}% — chưa đủ 100%",
+    "weightSumValid": "Tổng trọng số: {value}% — hợp lệ",
+    "weightSumInvalidSR": "— chưa đủ 100%"
   }
 }

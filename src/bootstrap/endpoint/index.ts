@@ -1,5 +1,6 @@
 export * from "./admin-roster.endpoint";
 export * from "./admin-school-setup.endpoint";
+export * from "./assessment-scheme.endpoint";
 export * from "./attendance.endpoint";
 export * from "./auth.endpoint";
 export * from "./calendar.endpoint";
@@ -13,4 +14,5 @@ export * from "./notification.endpoint";
 export * from "./staffing.endpoint";
 export * from "./subject-catalogue.endpoint";
 export * from "./teacher.endpoint";
+export * from "./teaching-plan.endpoint";
 export * from "./tenant.endpoint";
