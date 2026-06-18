@@ -2083,6 +2083,9 @@
     "columnTypeGK": "Giữa kỳ",
     "columnTypeCK": "Cuối kỳ",
     "yearLabel": "Năm học",
-    "yearLabelPlaceholder": "2024-2025"
+    "yearLabelPlaceholder": "2024-2025",
+    "weightSumInvalid": "Tổng trọng số: {value}% — chưa đủ 100%",
+    "weightSumValid": "Tổng trọng số: {value}% — hợp lệ",
+    "weightSumInvalidSR": "— chưa đủ 100%"
   }
 }

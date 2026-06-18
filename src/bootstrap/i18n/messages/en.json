@@ -2083,6 +2083,9 @@
     "columnTypeGK": "Midterm",
     "columnTypeCK": "Final",
     "yearLabel": "Academic year",
-    "yearLabelPlaceholder": "2024-2025"
+    "yearLabelPlaceholder": "2024-2025",
+    "weightSumInvalid": "Total weight: {value}% — not 100% yet",
+    "weightSumValid": "Total weight: {value}% — valid",
+    "weightSumInvalidSR": "— not 100% yet"
   }
 }

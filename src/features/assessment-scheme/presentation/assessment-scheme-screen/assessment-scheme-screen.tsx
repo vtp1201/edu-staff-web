@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,13 +77,13 @@ const FAILURE_KEY: Record<string, string> = {
 let bandSeq = 0;
 function newBandId(): string {
   bandSeq += 1;
-  return `band-${Date.now()}-${bandSeq}`;
+  return `band-${bandSeq}`;
 }
 
 let columnSeq = 0;
 function newColumnId(): string {
   columnSeq += 1;
-  return `col-${Date.now()}-${columnSeq}`;
+  return `col-${columnSeq}`;
 }
 
 export function AssessmentSchemeScreen({
@@ -146,6 +146,10 @@ function GradeScaleEditor({
     text: string;
   } | null>(null);
 
+  // A11Y-045: focus management — track newly added band id for auto-focus
+  const newBandIdRef = useRef<string | null>(null);
+  const addButtonRef = useRef<HTMLButtonElement | null>(null);
+
   const validationError = validateGradeScale(scale.bands, scale.maxScore);
 
   function applyPreset(type: GradeScaleType) {
@@ -162,16 +166,13 @@ function GradeScaleEditor({
   }
 
   function addBand() {
+    const id = newBandId();
+    newBandIdRef.current = id;
     setScale((prev) => ({
       ...prev,
       bands: [
         ...prev.bands,
-        {
-          id: newBandId(),
-          label: "",
-          minThreshold: 0,
-          colorToken: "primary",
-        },
+        { id, label: "", minThreshold: 0, colorToken: "primary" },
       ],
     }));
     setSaveMessage(null);
@@ -183,6 +184,8 @@ function GradeScaleEditor({
       bands: prev.bands.filter((b) => b.id !== id),
     }));
     setSaveMessage(null);
+    // Return focus to the add button after row removal
+    addButtonRef.current?.focus();
   }
 
   async function handleSave() {
@@ -265,6 +268,17 @@ function GradeScaleEditor({
                 id={`band-label-${band.id}`}
                 value={band.label}
                 aria-label={t("bandLabel")}
+                // A11Y-045: auto-focus the label input of the newly added band
+                ref={
+                  band.id === newBandIdRef.current
+                    ? (el) => {
+                        if (el) {
+                          el.focus();
+                          newBandIdRef.current = null;
+                        }
+                      }
+                    : undefined
+                }
                 onChange={(e) => updateBand(band.id, { label: e.target.value })}
                 className="w-36"
               />
@@ -351,7 +365,13 @@ function GradeScaleEditor({
       ) : null}
 
       <div className="mt-4 flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={addBand}>
+        <Button
+          ref={addButtonRef}
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addBand}
+        >
           <Plus className="size-4" />
           {t("addBand")}
         </Button>
@@ -396,6 +416,10 @@ function SchemeEditor({
     text: string;
   } | null>(null);
 
+  // A11Y-045: focus management for newly added column
+  const newColumnIdRef = useRef<string | null>(null);
+  const addColumnButtonRef = useRef<HTMLButtonElement | null>(null);
+
   const subjectsQuery = useQuery({
     queryKey: ["assessment-subjects", gradeLevel],
     queryFn: () => onLoadSubjectsForGrade(gradeLevel as number),
@@ -427,9 +451,11 @@ function SchemeEditor({
   }
 
   function addColumn() {
+    const id = newColumnId();
+    newColumnIdRef.current = id;
     setColumns((prev) => [
       ...prev,
-      { id: newColumnId(), type: "TX", label: "", count: 1, weight: 0 },
+      { id, type: "TX", label: "", count: 1, weight: 0 },
     ]);
     setSaveMessage(null);
   }
@@ -437,6 +463,8 @@ function SchemeEditor({
   function deleteColumn(id: string) {
     setColumns((prev) => prev.filter((c) => c.id !== id));
     setSaveMessage(null);
+    // A11Y-045: return focus to add-column button after row removal
+    addColumnButtonRef.current?.focus();
   }
 
   function applyTT22() {
@@ -524,23 +552,47 @@ function SchemeEditor({
         </div>
       </div>
 
+      {/* A11Y-046: live region so SR announces when no subjects found after grade selection */}
       {gradeLevel !== null &&
       !subjectsQuery.isLoading &&
       subjects.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
+        <p
+          className="text-muted-foreground text-sm"
+          role="status"
+          aria-live="polite"
+        >
           {t("noSubjectsForGrade")}
         </p>
       ) : null}
 
+      {/* A11Y-043: skeleton loading state — accessible name + aria-hidden bones */}
       {subjectId && schemeQuery.isLoading ? (
-        <div className="flex flex-col gap-2" aria-busy="true">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+        <div
+          className="flex flex-col gap-2"
+          role="status"
+          aria-label={t("loading")}
+          aria-busy="true"
+        >
+          <Skeleton className="h-12 w-full" aria-hidden="true" />
+          <Skeleton className="h-12 w-full" aria-hidden="true" />
+          <Skeleton className="h-12 w-full" aria-hidden="true" />
+          <span className="sr-only">{t("loading")}</span>
         </div>
       ) : null}
 
-      {subjectId && !schemeQuery.isLoading ? (
+      {subjectId && subjectsQuery.isError ? (
+        <p role="alert" className="text-sm text-edu-error-text">
+          {t("errorNetwork")}
+        </p>
+      ) : null}
+
+      {subjectId && schemeQuery.isError ? (
+        <p role="alert" className="text-sm text-edu-error-text">
+          {t("errorNetwork")}
+        </p>
+      ) : null}
+
+      {subjectId && !schemeQuery.isLoading && !schemeQuery.isError ? (
         <>
           <div className="mb-3">
             <Button
@@ -586,10 +638,21 @@ function SchemeEditor({
                   <Label htmlFor={`col-label-${col.id}`} className="text-xs">
                     {t("columnLabel")}
                   </Label>
+                  {/* A11Y-045: auto-focus label input of newly added column */}
                   <Input
                     id={`col-label-${col.id}`}
                     value={col.label}
                     aria-label={t("columnLabel")}
+                    ref={
+                      col.id === newColumnIdRef.current
+                        ? (el) => {
+                            if (el) {
+                              el.focus();
+                              newColumnIdRef.current = null;
+                            }
+                          }
+                        : undefined
+                    }
                     onChange={(e) =>
                       updateColumn(col.id, { label: e.target.value })
                     }
@@ -600,6 +663,7 @@ function SchemeEditor({
                   <Label htmlFor={`col-count-${col.id}`} className="text-xs">
                     {t("columnCount")}
                   </Label>
+                  {/* A11Y-042: per-column count error with aria-describedby */}
                   <Input
                     id={`col-count-${col.id}`}
                     type="number"
@@ -607,11 +671,23 @@ function SchemeEditor({
                     value={col.count}
                     aria-label={t("columnCount")}
                     aria-invalid={col.count < 1}
+                    aria-describedby={
+                      col.count < 1 ? `col-count-error-${col.id}` : undefined
+                    }
                     onChange={(e) =>
                       updateColumn(col.id, { count: Number(e.target.value) })
                     }
                     className="w-24"
                   />
+                  {col.count < 1 ? (
+                    <p
+                      id={`col-count-error-${col.id}`}
+                      className="text-edu-error-text text-xs"
+                      role="alert"
+                    >
+                      {t("errorInvalidCount")}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor={`col-weight-${col.id}`} className="text-xs">
@@ -645,11 +721,19 @@ function SchemeEditor({
             ))}
           </div>
 
+          {/* A11Y-041: weight-sum live region — announces changes to SR + icon for non-color signal */}
           <div className="mt-3 flex items-center gap-2 text-sm">
             <span className="font-semibold text-foreground">
               {t("weightSumLabel")}:
             </span>
             <span
+              role="status"
+              aria-live="polite"
+              aria-label={
+                Math.abs(weightSum - 100) > 0.01
+                  ? t("weightSumInvalid", { value: weightSum })
+                  : t("weightSumValid", { value: weightSum })
+              }
               className={
                 Math.abs(weightSum - 100) > 0.01
                   ? "font-bold text-edu-error-text"
@@ -657,6 +741,9 @@ function SchemeEditor({
               }
             >
               {weightSum}
+              {Math.abs(weightSum - 100) > 0.01 ? (
+                <span className="sr-only">{t("weightSumInvalidSR")}</span>
+              ) : null}
             </span>
             <span className="text-muted-foreground">
               {t("weightSumTarget")}
@@ -688,6 +775,7 @@ function SchemeEditor({
 
           <div className="mt-4 flex gap-2">
             <Button
+              ref={addColumnButtonRef}
               type="button"
               variant="outline"
               size="sm"
