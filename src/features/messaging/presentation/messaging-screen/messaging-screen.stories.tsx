@@ -199,6 +199,22 @@ type Story = StoryObj<typeof MessagingScreen>;
 
 export const DirectTabPopulated: Story = {};
 
+/** AC-2: Groups tab — rounded-xl avatar, member-count subtitle, per-sender names in chat */
+export const GroupTabPopulated: Story = {
+  args: {
+    initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Lớp 11B2 — Toán")).toBeInTheDocument();
+    // Member-count subtitle via t("chat.members")
+    await waitFor(() =>
+      expect(canvas.getByText(/thành viên/i)).toBeInTheDocument(),
+    );
+  },
+};
+
 export const ChatWindowOpen: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
