@@ -45,6 +45,7 @@ export function ConversationList({
   }, [conversations, tab, search]);
 
   const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
+  const panelId = `${searchId}-panel`;
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden border-border border-r bg-card md:w-[300px] md:flex-shrink-0">
@@ -102,9 +103,10 @@ export function ConversationList({
             type="button"
             role="tab"
             aria-selected={tab === id}
+            aria-controls={panelId}
             onClick={() => setTab(id)}
             className={cn(
-              "-mb-px flex-1 border-b-2 py-2.5 text-sm transition-colors",
+              "-mb-px flex-1 border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tab === id
                 ? "border-primary font-bold text-primary"
                 : "border-transparent font-medium text-muted-foreground hover:text-foreground",
@@ -115,7 +117,7 @@ export function ConversationList({
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div id={panelId} role="tabpanel" className="flex-1 overflow-y-auto">
         {loadError ? (
           <div
             role="alert"

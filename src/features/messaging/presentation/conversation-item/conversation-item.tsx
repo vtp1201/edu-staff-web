@@ -89,7 +89,10 @@ export function ConversationItem({
             {lastMessage}
           </span>
           {hasUnread && (
-            <span className="ml-1 flex min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground">
+            <span
+              aria-hidden="true"
+              className="ml-1 flex min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground"
+            >
               {unreadCount}
             </span>
           )}

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
@@ -30,6 +31,7 @@ export function MessagingScreen({
   createConversationAction,
   getMessagesAction,
 }: MessagingScreenProps) {
+  const t = useTranslations("messaging");
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams?.get("conversation") ?? null;
@@ -89,7 +91,7 @@ export function MessagingScreen({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        date: "Hôm nay",
+        date: t("date.today"),
         isPending: true,
       };
       queryClient.setQueryData<MessageEntity[]>(key, [...previous, optimistic]);
