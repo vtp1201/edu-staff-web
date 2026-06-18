@@ -66,7 +66,7 @@ const filledQuestion: ExamBankDetail["questions"][number] = {
 const meta: Meta<typeof ExamBuilderScreen> = {
   title: "Features/ExamBank/ExamBuilderScreen",
   component: ExamBuilderScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>

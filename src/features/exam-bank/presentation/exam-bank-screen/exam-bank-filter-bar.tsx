@@ -28,7 +28,10 @@ type ExamBankFilterBarProps = {
   onFilterChange: (patch: Partial<ExamBankFilterState>) => void;
 };
 
-const STATUS_OPTIONS: (ExamBankStatus | "")[] = ["", "draft", "published"];
+const STATUS_OPTIONS: ExamBankStatus[] = ["draft", "published"];
+
+// Radix Select forbids an empty-string item value; use a sentinel for "all".
+const ALL = "__all__";
 
 export function ExamBankFilterBar({
   filters,
@@ -61,8 +64,10 @@ export function ExamBankFilterBar({
 
       {/* Subject filter */}
       <Select
-        value={filters.subjectId ?? ""}
-        onValueChange={(v) => onFilterChange({ subjectId: v || undefined })}
+        value={filters.subjectId ?? ALL}
+        onValueChange={(v) =>
+          onFilterChange({ subjectId: v === ALL ? undefined : v })
+        }
       >
         <SelectTrigger
           className="w-40"
@@ -71,7 +76,7 @@ export function ExamBankFilterBar({
           <SelectValue placeholder={t("filter.allSubjects")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{t("filter.allSubjects")}</SelectItem>
+          <SelectItem value={ALL}>{t("filter.allSubjects")}</SelectItem>
           {subjects.map((s) => (
             <SelectItem key={s.id} value={s.id}>
               {s.name}
@@ -82,9 +87,11 @@ export function ExamBankFilterBar({
 
       {/* Status filter */}
       <Select
-        value={filters.status ?? ""}
+        value={filters.status ?? ALL}
         onValueChange={(v) =>
-          onFilterChange({ status: (v as ExamBankStatus) || undefined })
+          onFilterChange({
+            status: v === ALL ? undefined : (v as ExamBankStatus),
+          })
         }
       >
         <SelectTrigger
@@ -94,9 +101,10 @@ export function ExamBankFilterBar({
           <SelectValue placeholder={t("filter.allStatuses")} />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value={ALL}>{t("filter.allStatuses")}</SelectItem>
           {STATUS_OPTIONS.map((s) => (
-            <SelectItem key={s === "" ? "__all__" : s} value={s}>
-              {s === "" ? t("filter.allStatuses") : t(`status.${s}`)}
+            <SelectItem key={s} value={s}>
+              {t(`status.${s}`)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -105,8 +113,10 @@ export function ExamBankFilterBar({
       {/* Teacher filter (admin only) */}
       {showTeacherFilter && (
         <Select
-          value={filters.teacherId ?? ""}
-          onValueChange={(v) => onFilterChange({ teacherId: v || undefined })}
+          value={filters.teacherId ?? ALL}
+          onValueChange={(v) =>
+            onFilterChange({ teacherId: v === ALL ? undefined : v })
+          }
         >
           <SelectTrigger
             className="w-44"
@@ -115,7 +125,7 @@ export function ExamBankFilterBar({
             <SelectValue placeholder={t("filter.allTeachers")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("filter.allTeachers")}</SelectItem>
+            <SelectItem value={ALL}>{t("filter.allTeachers")}</SelectItem>
             {teachers.map((te) => (
               <SelectItem key={te.id} value={te.id}>
                 {te.name}
