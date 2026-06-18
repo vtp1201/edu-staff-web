@@ -2,6 +2,107 @@
   "Common": {
     "hello": "Xin chào"
   },
+  "examBank": {
+    "title": "Kho đề thi",
+    "subtitle": "Tạo, chỉnh sửa và publish đề thi trắc nghiệm cho học sinh.",
+    "subtitleAdmin": "Xem toàn bộ đề thi trắc nghiệm của trường.",
+    "createButton": "Tạo đề thi mới",
+    "loading": "Đang tải...",
+    "loadingAriaLabel": "Đang tải danh sách đề thi",
+    "filter": {
+      "searchPlaceholder": "Tìm theo tiêu đề...",
+      "searchAriaLabel": "Tìm kiếm đề thi theo tiêu đề",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "allSubjects": "Tất cả môn học",
+      "statusAriaLabel": "Lọc theo trạng thái",
+      "allStatuses": "Tất cả trạng thái",
+      "teacherAriaLabel": "Lọc theo giáo viên",
+      "allTeachers": "Tất cả giáo viên"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã publish"
+    },
+    "card": {
+      "menuAriaLabel": "Mở menu thao tác đề thi",
+      "edit": "Chỉnh sửa",
+      "publish": "Publish",
+      "delete": "Xoá",
+      "questionCount": "{count} câu hỏi",
+      "createdAt": "Tạo ngày {date}"
+    },
+    "empty": {
+      "title": "Chưa có đề thi nào",
+      "body": "Bắt đầu bằng cách tạo đề thi trắc nghiệm đầu tiên của bạn.",
+      "cta": "Tạo đề thi đầu tiên",
+      "noMatch": "Không tìm thấy đề thi",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "publishDialog": {
+      "title": "Publish đề thi này?",
+      "body": "Đề thi sẽ xuất hiện trong danh sách bài thi của học sinh và có thể được làm bài.",
+      "confirm": "Publish",
+      "publishing": "Đang publish...",
+      "cancel": "Huỷ"
+    },
+    "deleteDialog": {
+      "title": "Xoá đề thi này?",
+      "body": "Thao tác này không thể hoàn tác. Chỉ đề thi ở trạng thái nháp mới có thể xoá.",
+      "confirm": "Xoá",
+      "deleting": "Đang xoá...",
+      "cancel": "Huỷ"
+    },
+    "builder": {
+      "titleLabel": "Tiêu đề đề thi",
+      "titlePlaceholder": "Nhập tiêu đề đề thi",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "durationLabel": "Thời lượng (phút)",
+      "maxAttemptsLabel": "Số lần làm",
+      "questionsHeading": "Câu hỏi ({count})",
+      "addQuestion": "Thêm câu",
+      "newQuestionPlaceholder": "Câu hỏi mới",
+      "questionHasError": "Câu hỏi này còn thiếu thông tin",
+      "noSelection": "Chọn câu hỏi để chỉnh sửa",
+      "contentLabel": "Nội dung câu hỏi",
+      "contentPlaceholder": "Nhập nội dung câu hỏi",
+      "optionsLabel": "Các phương án",
+      "optionPlaceholder": "Nội dung phương án {option}",
+      "correctAnswerAriaLabel": "Chọn đáp án đúng",
+      "correctOptionAriaLabel": "Đánh dấu phương án {option} là đáp án đúng",
+      "difficultyLabel": "Độ khó",
+      "back": "Quay lại",
+      "backAriaLabel": "Quay lại kho đề thi",
+      "saveDraft": "Lưu nháp",
+      "saving": "Đang lưu...",
+      "publish": "Publish"
+    },
+    "difficulty": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó"
+    },
+    "toast": {
+      "draftSaved": "Đã lưu nháp",
+      "published": "Đã publish đề thi",
+      "deleted": "Đã xoá đề thi"
+    },
+    "moveUpAriaLabel": "Di chuyển câu hỏi {index} lên trên",
+    "moveDownAriaLabel": "Di chuyển câu hỏi {index} xuống dưới",
+    "removeQuestionAriaLabel": "Xoá câu hỏi {index}",
+    "errors": {
+      "not-found": "Không tìm thấy đề thi.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "cannot-delete-published": "Không thể xoá đề thi đã publish.",
+      "missing-title": "Vui lòng nhập tiêu đề đề thi.",
+      "no-questions": "Đề thi cần ít nhất một câu hỏi.",
+      "question-empty-content": "Câu hỏi chưa có nội dung.",
+      "question-missing-answer": "Câu hỏi chưa chọn đáp án đúng.",
+      "insufficient-options": "Mỗi câu hỏi cần ít nhất 2 phương án.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    }
+  },
   "gradeEntry": {
     "title": "Nhập điểm",
     "selectClass": "Chọn lớp - môn",

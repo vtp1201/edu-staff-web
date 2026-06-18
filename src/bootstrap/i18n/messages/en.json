@@ -2,6 +2,107 @@
   "Common": {
     "hello": "Hello"
   },
+  "examBank": {
+    "title": "Exam Bank",
+    "subtitle": "Create, edit and publish multiple-choice exams for students.",
+    "subtitleAdmin": "View all multiple-choice exams across the school.",
+    "createButton": "Create new exam",
+    "loading": "Loading...",
+    "loadingAriaLabel": "Loading exam list",
+    "filter": {
+      "searchPlaceholder": "Search by title...",
+      "searchAriaLabel": "Search exams by title",
+      "subjectAriaLabel": "Filter by subject",
+      "allSubjects": "All subjects",
+      "statusAriaLabel": "Filter by status",
+      "allStatuses": "All statuses",
+      "teacherAriaLabel": "Filter by teacher",
+      "allTeachers": "All teachers"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "card": {
+      "menuAriaLabel": "Open exam actions menu",
+      "edit": "Edit",
+      "publish": "Publish",
+      "delete": "Delete",
+      "questionCount": "{count} questions",
+      "createdAt": "Created on {date}"
+    },
+    "empty": {
+      "title": "No exams yet",
+      "body": "Start by creating your first multiple-choice exam.",
+      "cta": "Create first exam",
+      "noMatch": "No exams found",
+      "noMatchBody": "Try changing the filters or search keyword."
+    },
+    "publishDialog": {
+      "title": "Publish this exam?",
+      "body": "The exam will appear in students' exam list and become available to take.",
+      "confirm": "Publish",
+      "publishing": "Publishing...",
+      "cancel": "Cancel"
+    },
+    "deleteDialog": {
+      "title": "Delete this exam?",
+      "body": "This action cannot be undone. Only draft exams can be deleted.",
+      "confirm": "Delete",
+      "deleting": "Deleting...",
+      "cancel": "Cancel"
+    },
+    "builder": {
+      "titleLabel": "Exam title",
+      "titlePlaceholder": "Enter exam title",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Select subject",
+      "durationLabel": "Duration (minutes)",
+      "maxAttemptsLabel": "Max attempts",
+      "questionsHeading": "Questions ({count})",
+      "addQuestion": "Add question",
+      "newQuestionPlaceholder": "New question",
+      "questionHasError": "This question is missing information",
+      "noSelection": "Select a question to edit",
+      "contentLabel": "Question content",
+      "contentPlaceholder": "Enter question content",
+      "optionsLabel": "Options",
+      "optionPlaceholder": "Option {option} text",
+      "correctAnswerAriaLabel": "Select the correct answer",
+      "correctOptionAriaLabel": "Mark option {option} as the correct answer",
+      "difficultyLabel": "Difficulty",
+      "back": "Back",
+      "backAriaLabel": "Back to exam bank",
+      "saveDraft": "Save draft",
+      "saving": "Saving...",
+      "publish": "Publish"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "toast": {
+      "draftSaved": "Draft saved",
+      "published": "Exam published",
+      "deleted": "Exam deleted"
+    },
+    "moveUpAriaLabel": "Move question {index} up",
+    "moveDownAriaLabel": "Move question {index} down",
+    "removeQuestionAriaLabel": "Delete question {index}",
+    "errors": {
+      "not-found": "Exam not found.",
+      "forbidden": "You don't have permission for this action.",
+      "cannot-delete-published": "Cannot delete a published exam.",
+      "missing-title": "Please enter an exam title.",
+      "no-questions": "An exam needs at least one question.",
+      "question-empty-content": "Question content is empty.",
+      "question-missing-answer": "Question is missing a correct answer.",
+      "insufficient-options": "Each question needs at least 2 options.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "An unknown error occurred."
+    }
+  },
   "gradeEntry": {
     "title": "Grade Entry",
     "selectClass": "Select class - subject",
