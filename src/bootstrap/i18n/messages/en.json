@@ -1893,5 +1893,94 @@
       "network-error": "Unable to reach the server.",
       "unknown": "Something went wrong, please try again."
     }
+  },
+  "teachingPlan": {
+    "pageTitle": "Teaching Plan (PPCT)",
+    "teacherSubtitle": "Compose a weekly teaching plan per subject / class / term",
+    "principalSubtitle": "Review and approve teachers' teaching plans",
+    "selector": {
+      "subject": "Subject",
+      "class": "Class",
+      "term": "Term",
+      "subjectPlaceholder": "Select subject",
+      "classPlaceholder": "Select class",
+      "termPlaceholder": "Select term"
+    },
+    "grid": {
+      "weekLabel": "Week {week}",
+      "periodLabel": "Period {period}",
+      "addCell": "Add content for Week {week} Period {period}",
+      "emptyState": "No plan content yet",
+      "emptyStateCta": "Start entering the teaching plan"
+    },
+    "cell": {
+      "title": "Lesson title",
+      "titlePlaceholder": "e.g. Derivatives — finding extrema",
+      "titleRequired": "Lesson title is required",
+      "learningObjective": "Learning objective",
+      "learningObjectivePlaceholder": "Students will be able to...",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes...",
+      "save": "Save cell",
+      "cancel": "Cancel"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "actions": {
+      "saveDraft": "Save draft",
+      "submit": "Submit for approval",
+      "submitting": "Submitting...",
+      "submitSuccess": "Plan submitted for approval",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "approveSuccess": "Plan approved",
+      "reject": "Return",
+      "rejecting": "Processing...",
+      "rejectSuccess": "Plan returned"
+    },
+    "approve": {
+      "confirmTitle": "Confirm approval",
+      "confirmDescription": "Are you sure you want to approve this teaching plan?",
+      "confirm": "Approve",
+      "cancel": "Cancel"
+    },
+    "reject": {
+      "title": "Return plan",
+      "reasonLabel": "Reason for return",
+      "reasonPlaceholder": "State the reason for returning the plan...",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "confirm": "Confirm return",
+      "cancel": "Cancel"
+    },
+    "rejection": {
+      "bannerTitle": "Plan was returned",
+      "reason": "Reason: {reason}",
+      "editHint": "You can edit and resubmit"
+    },
+    "principal": {
+      "filterTeacher": "Teacher",
+      "filterSubject": "Subject",
+      "filterClass": "Class",
+      "allTeachers": "All teachers",
+      "allSubjects": "All subjects",
+      "allClasses": "All classes",
+      "emptyPending": "No plans pending approval",
+      "submittedBy": "Teacher: {name}",
+      "submittedAt": "Submitted: {date}"
+    },
+    "errors": {
+      "not-found": "Plan not found",
+      "not-draft": "Plan is not in draft status",
+      "not-submitted": "Plan has not been submitted for approval",
+      "insufficient-cells": "Fill in at least 50% of the plan cells before submitting",
+      "invalid-rejection-reason": "Return reason must be at least 10 characters",
+      "unauthorized": "You are not authorised to perform this action",
+      "network-error": "Network connection error",
+      "unknown": "An unknown error occurred"
+    }
   }
 }

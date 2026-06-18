@@ -1893,5 +1893,94 @@
       "network-error": "Không thể kết nối đến máy chủ.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
     }
+  },
+  "teachingPlan": {
+    "pageTitle": "Kế hoạch bài dạy (PPCT)",
+    "teacherSubtitle": "Soạn kế hoạch bài dạy theo tuần cho từng môn học / lớp / học kỳ",
+    "principalSubtitle": "Xem xét và phê duyệt kế hoạch bài dạy của giáo viên",
+    "selector": {
+      "subject": "Môn học",
+      "class": "Lớp",
+      "term": "Học kỳ",
+      "subjectPlaceholder": "Chọn môn",
+      "classPlaceholder": "Chọn lớp",
+      "termPlaceholder": "Chọn học kỳ"
+    },
+    "grid": {
+      "weekLabel": "Tuần {week}",
+      "periodLabel": "Tiết {period}",
+      "addCell": "Thêm nội dung Tuần {week} Tiết {period}",
+      "emptyState": "Chưa có nội dung kế hoạch",
+      "emptyStateCta": "Bắt đầu nhập kế hoạch bài dạy"
+    },
+    "cell": {
+      "title": "Tiêu đề bài dạy",
+      "titlePlaceholder": "VD: Đạo hàm — ứng dụng tính cực trị",
+      "titleRequired": "Tiêu đề bài dạy là bắt buộc",
+      "learningObjective": "Mục tiêu học tập",
+      "learningObjectivePlaceholder": "Học sinh nắm được...",
+      "notes": "Ghi chú",
+      "notesPlaceholder": "Ghi chú bổ sung...",
+      "save": "Lưu ô",
+      "cancel": "Huỷ"
+    },
+    "status": {
+      "DRAFT": "Nháp",
+      "SUBMITTED": "Chờ duyệt",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Đã từ chối"
+    },
+    "actions": {
+      "saveDraft": "Lưu nháp",
+      "submit": "Gửi phê duyệt",
+      "submitting": "Đang gửi...",
+      "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
+      "approve": "Phê duyệt",
+      "approving": "Đang duyệt...",
+      "approveSuccess": "Đã phê duyệt kế hoạch",
+      "reject": "Trả lại",
+      "rejecting": "Đang xử lý...",
+      "rejectSuccess": "Đã trả lại kế hoạch"
+    },
+    "approve": {
+      "confirmTitle": "Xác nhận phê duyệt",
+      "confirmDescription": "Bạn có chắc chắn muốn phê duyệt kế hoạch bài dạy này không?",
+      "confirm": "Phê duyệt",
+      "cancel": "Huỷ"
+    },
+    "reject": {
+      "title": "Trả lại kế hoạch",
+      "reasonLabel": "Lý do trả lại",
+      "reasonPlaceholder": "Nêu rõ lý do trả lại kế hoạch...",
+      "reasonMinLength": "Lý do phải có ít nhất 10 ký tự",
+      "confirm": "Xác nhận trả lại",
+      "cancel": "Huỷ"
+    },
+    "rejection": {
+      "bannerTitle": "Kế hoạch đã bị trả lại",
+      "reason": "Lý do: {reason}",
+      "editHint": "Bạn có thể chỉnh sửa và gửi lại"
+    },
+    "principal": {
+      "filterTeacher": "Giáo viên",
+      "filterSubject": "Môn học",
+      "filterClass": "Lớp",
+      "allTeachers": "Tất cả GV",
+      "allSubjects": "Tất cả môn",
+      "allClasses": "Tất cả lớp",
+      "emptyPending": "Không có kế hoạch nào chờ duyệt",
+      "submittedBy": "GV: {name}",
+      "submittedAt": "Ngày gửi: {date}"
+    },
+    "errors": {
+      "not-found": "Không tìm thấy kế hoạch",
+      "not-draft": "Kế hoạch không ở trạng thái nháp",
+      "not-submitted": "Kế hoạch chưa được gửi để phê duyệt",
+      "insufficient-cells": "Cần điền ít nhất 50% ô trong kế hoạch trước khi gửi",
+      "invalid-rejection-reason": "Lý do trả lại phải có ít nhất 10 ký tự",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
+      "network-error": "Lỗi kết nối mạng",
+      "unknown": "Đã xảy ra lỗi không xác định"
+    }
   }
 }
