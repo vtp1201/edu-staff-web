@@ -2,6 +2,124 @@
   "Common": {
     "hello": "Hello"
   },
+  "exam": {
+    "page": {
+      "title": "Exams",
+      "subtitle": "Your list of exams"
+    },
+    "stats": {
+      "available": "Available",
+      "completed": "Completed",
+      "avgScore": "Average score"
+    },
+    "filter": {
+      "all": "All",
+      "available": "Available",
+      "completed": "Done",
+      "expired": "Expired",
+      "groupLabel": "Filter exams"
+    },
+    "card": {
+      "duration": "{minutes} min",
+      "questions": "{count} questions",
+      "deadline": "Due: {date}",
+      "teacher": "Teacher: {name}"
+    },
+    "status": {
+      "available": "Available",
+      "completed": "Done",
+      "expired": "Expired"
+    },
+    "cta": {
+      "start": "Start exam",
+      "viewResult": "View result",
+      "expired": "Expired"
+    },
+    "briefing": {
+      "title": "Exam information",
+      "duration": "Duration",
+      "questions": "Questions",
+      "type": "Type",
+      "typeValue": "Multiple choice",
+      "rulesTitle": "Exam rules",
+      "rules": {
+        "rule1": "Do not use any materials during the exam.",
+        "rule2": "Do not leave the exam page while taking it.",
+        "rule3": "The exam auto-submits when time runs out.",
+        "rule4": "Only one answer can be chosen per question.",
+        "rule5": "You cannot return after submitting."
+      },
+      "agreeLabel": "I have read and agree to the exam rules",
+      "startCta": "Start the exam now"
+    },
+    "taking": {
+      "progress": "{answered}/{total} answered",
+      "submitBtn": "Submit",
+      "flagBtn": "Flag",
+      "unflagBtn": "Unflag",
+      "prevBtn": "Previous",
+      "nextBtn": "Next",
+      "questionLabel": "Question {index}",
+      "optionLabel": "Choose answer {option}",
+      "navigatorLabel": "Question {index}",
+      "navigatorTitle": "Question Navigator",
+      "timerLabel": "Time remaining",
+      "timerAnnounce": "Time remaining: {time}",
+      "progressLabel": "Answer Progress",
+      "legend": {
+        "current": "Current",
+        "answered": "Answered",
+        "flagged": "Flagged",
+        "unanswered": "Unanswered"
+      }
+    },
+    "submitModal": {
+      "title": "Confirm submission",
+      "answered": "Answered",
+      "total": "Total questions",
+      "unanswered": "Unanswered",
+      "warningText": "{count} questions have not been answered.",
+      "reviewBtn": "Review",
+      "confirmBtn": "Submit now"
+    },
+    "result": {
+      "title": "Exam result",
+      "scoreLabel": "Score",
+      "outOf": "/10",
+      "passed": "PASSED",
+      "failed": "NOT PASSED",
+      "rank": "Rank",
+      "percentile": "Percentile",
+      "timeTaken": "Time taken",
+      "correct": "Correct",
+      "incorrect": "Incorrect",
+      "skipped": "Skipped",
+      "reviewTitle": "Review questions",
+      "filterAll": "All",
+      "filterCorrect": "Correct",
+      "filterIncorrect": "Incorrect",
+      "filterSkipped": "Skipped",
+      "filterGroupLabel": "Filter results",
+      "correctAnswer": "Correct answer",
+      "yourAnswer": "Your answer",
+      "backToList": "Back to list"
+    },
+    "empty": {
+      "title": "No exams",
+      "subtitle": "There are no exams matching this filter."
+    },
+    "errors": {
+      "not-found": "Exam not found.",
+      "max-attempts-exceeded": "You have already taken this exam.",
+      "after-deadline": "The exam has expired.",
+      "already-submitted": "The exam has already been submitted.",
+      "network-error": "Connection error, please try again.",
+      "unknown": "Something went wrong, please try again."
+    },
+    "skeleton": {
+      "loading": "Loading exams..."
+    }
+  },
   "auth": {
     "brand": {
       "name": "EduPortal",
