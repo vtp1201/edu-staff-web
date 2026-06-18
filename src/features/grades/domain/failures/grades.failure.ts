@@ -5,4 +5,9 @@ export type GradesFailure =
   | { type: "already-published" }
   | { type: "incomplete-scores" }
   | { type: "network-error" }
-  | { type: "unknown" };
+  | { type: "unknown" }
+  // US-E14.4 — grade approval pipeline:
+  | { type: "not-pending-approval" }
+  | { type: "not-published" }
+  | { type: "invalid-revision-note" }
+  | { type: "batch-locked" };

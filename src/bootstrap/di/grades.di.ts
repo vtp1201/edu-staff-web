@@ -5,12 +5,18 @@ import type { GradePublishMode } from "@/features/admin-school-setup/domain/enti
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import { TT22_PRESET } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
+import type { IGradeApprovalRepository } from "@/features/grades/domain/repositories/i-grade-approval.repository";
 import type { IGradesRepository } from "@/features/grades/domain/repositories/i-grades.repository";
+import { ApproveGradeBatchUseCase } from "@/features/grades/domain/use-cases/approve-grade-batch.use-case";
+import { BulkLockBatchesUseCase } from "@/features/grades/domain/use-cases/bulk-lock-batches.use-case";
 import { GetGradeSheetUseCase } from "@/features/grades/domain/use-cases/get-grade-sheet.use-case";
 import { PublishGradesUseCase } from "@/features/grades/domain/use-cases/publish-grades.use-case";
+import { RequestGradeRevisionUseCase } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
 import { SaveScoreUseCase } from "@/features/grades/domain/use-cases/save-score.use-case";
+import { GradeApprovalRepository } from "@/features/grades/infrastructure/repositories/grade-approval.repository";
 import { GradesRepository } from "@/features/grades/infrastructure/repositories/grades.repository";
 import { MOCK_CLASS_SUBJECTS } from "@/features/grades/infrastructure/repositories/mocks/fixtures";
+import { MockGradeApprovalRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-approval.mock.repository";
 import { MockGradesRepository } from "@/features/grades/infrastructure/repositories/mocks/grades.mock.repository";
 import { makeAdminSettingsRepository } from "./admin-settings.di";
 import { makeAssessmentSchemeRepository } from "./assessment-scheme.di";
@@ -84,6 +90,34 @@ export async function makePublishGradesUseCase(
   yearLabel = "2024-2025",
 ) {
   return new PublishGradesUseCase(await makeRepo(subjectId, yearLabel));
+}
+
+// ─── US-E14.4 — grade approval pipeline (admin) ──────────────────────────────
+
+/** Approval repo only needs http (no scheme / publish-mode). Mock-first. */
+async function makeApprovalRepo(): Promise<IGradeApprovalRepository> {
+  if (USE_MOCK) {
+    return new MockGradeApprovalRepository();
+  }
+  const http = await createServerHttpClient();
+  return new GradeApprovalRepository(http);
+}
+
+/** List / detail have no domain rules → the RSC page can call the repo directly. */
+export async function makeGradeApprovalRepository(): Promise<IGradeApprovalRepository> {
+  return makeApprovalRepo();
+}
+
+export async function makeApproveGradeBatchUseCase() {
+  return new ApproveGradeBatchUseCase(await makeApprovalRepo());
+}
+
+export async function makeRequestGradeRevisionUseCase() {
+  return new RequestGradeRevisionUseCase(await makeApprovalRepo());
+}
+
+export async function makeBulkLockBatchesUseCase() {
+  return new BulkLockBatchesUseCase(await makeApprovalRepo());
 }
 
 export type { GradesFailure };
