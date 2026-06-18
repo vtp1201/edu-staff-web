@@ -32,7 +32,7 @@ const baseProps: ExamBankScreenVM = {
   viewerRole: "teacher",
   currentTeacherId: "u-teacher-1",
   createPath: "/teacher/exam-bank/create",
-  editPathOf: (id) => `/teacher/exam-bank/${id}/edit`,
+  editPathPrefix: "/teacher/exam-bank",
   publishAction,
   deleteAction,
 };

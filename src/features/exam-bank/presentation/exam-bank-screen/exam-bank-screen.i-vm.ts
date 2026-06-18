@@ -35,7 +35,9 @@ export interface ExamBankScreenVM {
   viewerRole: "teacher" | "admin";
   currentTeacherId: string;
   createPath: string;
-  editPathOf: (id: string) => string;
+  /** Path prefix for edit routes; client builds `${editPathPrefix}/${id}/edit`.
+   *  A string (not a function) so it serializes across the RSC→client boundary. */
+  editPathPrefix: string;
   publishAction(id: string): Promise<ActionResult>;
   deleteAction(id: string): Promise<ActionResult>;
 }

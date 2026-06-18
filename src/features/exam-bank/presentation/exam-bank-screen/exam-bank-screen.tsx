@@ -51,7 +51,7 @@ function toCardVM(
   exam: ExamBankSummary,
   viewerRole: "teacher" | "admin",
   currentTeacherId: string,
-  editPathOf: (id: string) => string,
+  editPathPrefix: string,
 ): ExamCardVM {
   const isOwner =
     viewerRole === "teacher" && exam.teacherId === currentTeacherId;
@@ -65,7 +65,7 @@ function toCardVM(
     canEdit: isOwner,
     canDelete: isOwner && exam.status === "draft",
     canPublish: isOwner && exam.status === "draft",
-    editPath: editPathOf(exam.id),
+    editPath: `${editPathPrefix}/${exam.id}/edit`,
   };
 }
 
@@ -76,7 +76,7 @@ export function ExamBankScreen({
   viewerRole,
   currentTeacherId,
   createPath,
-  editPathOf,
+  editPathPrefix,
   publishAction,
   deleteAction,
   isLoading = false,
@@ -99,9 +99,9 @@ export function ExamBankScreen({
   const cards = useMemo(
     () =>
       displayed.map((e) =>
-        toCardVM(e, viewerRole, currentTeacherId, editPathOf),
+        toCardVM(e, viewerRole, currentTeacherId, editPathPrefix),
       ),
-    [displayed, viewerRole, currentTeacherId, editPathOf],
+    [displayed, viewerRole, currentTeacherId, editPathPrefix],
   );
   const activeFilter = hasActiveFilter(filters);
 
