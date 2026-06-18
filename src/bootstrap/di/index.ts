@@ -1,6 +1,7 @@
 export * from "./admin-roster.di";
 export * from "./admin-school-setup.di";
 export * from "./admin-settings.di";
+export * from "./assessment-scheme.di";
 export * from "./attendance.di";
 export * from "./auth.di";
 export * from "./calendar.di";
