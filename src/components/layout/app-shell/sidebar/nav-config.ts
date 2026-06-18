@@ -11,6 +11,7 @@ import {
   Grid3x3,
   Layers,
   type LucideIcon,
+  Megaphone,
   MessageSquare,
   NotebookPen,
   Scale,
@@ -112,6 +113,11 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     },
     { href: "/admin/staffing", labelKey: "staffing", icon: Users2 },
     { href: "/admin/staff-leave", labelKey: "staffLeave", icon: CalendarClock },
+    {
+      href: "/admin/announcements",
+      labelKey: "announcements",
+      icon: Megaphone,
+    },
   ],
 };
 

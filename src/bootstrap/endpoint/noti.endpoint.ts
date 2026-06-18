@@ -9,3 +9,17 @@ export const NOTI_EP = {
   /** Upstream SSE event stream proxied by `app/[locale]/api/stream`. */
   stream: "/events/stream",
 } as const;
+
+/**
+ * Announcements REST endpoints (US-E10.3 — noti service, mock-first).
+ * Real wiring lands when the noti HTTP surface exists; until then the DI
+ * factory selects the mock repo via NEXT_PUBLIC_USE_MOCK.
+ */
+export const ANNOUNCEMENTS_EP = {
+  list: "/noti/api/v1/announcements",
+  create: "/noti/api/v1/announcements",
+  update: (id: string) => `/noti/api/v1/announcements/${id}`,
+  delete: (id: string) => `/noti/api/v1/announcements/${id}`,
+  recipients: (id: string) => `/noti/api/v1/announcements/${id}/recipients`,
+  remind: (id: string) => `/noti/api/v1/announcements/${id}/remind`,
+} as const;
