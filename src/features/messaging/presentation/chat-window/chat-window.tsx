@@ -24,6 +24,8 @@ export interface ChatWindowProps {
   onSend: (text: string) => void;
   /** Mobile only — back to the conversation list. */
   onBack?: () => void;
+  /** Mobile focus management — focus the composer when the chat pane opens. */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 type Row =
@@ -36,6 +38,7 @@ export function ChatWindow({
   isLoading,
   onSend,
   onBack,
+  inputRef,
 }: ChatWindowProps) {
   const t = useTranslations("messaging");
   const inputId = useId();
@@ -116,10 +119,13 @@ export function ChatWindow({
             {conversation.avatarInitials}
           </span>
           {!isGroup && conversation.isOnline && (
-            <span
-              aria-hidden="true"
-              className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-            />
+            <>
+              <span
+                aria-hidden="true"
+                className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
+              />
+              <span className="sr-only">{t("chat.online")}</span>
+            </>
           )}
         </span>
         <div className="min-w-0 flex-1">
@@ -181,7 +187,8 @@ export function ChatWindow({
             onKeyDown={handleKeyDown}
             placeholder={t("chat.placeholder")}
             rows={1}
-            className="max-h-[120px] flex-1 resize-none rounded-[22px] border-[1.5px] border-border bg-background px-3.5 py-2.5 text-foreground text-sm leading-relaxed outline-none focus:border-primary"
+            ref={inputRef}
+            className="max-h-[120px] flex-1 resize-none rounded-[22px] border-[1.5px] border-border bg-background px-3.5 py-2.5 text-foreground text-sm leading-relaxed outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           />
           <button
             type="button"

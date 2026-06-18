@@ -57,13 +57,13 @@ export function NewConversationModal({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("newMessage.searchPlaceholder")}
-            className="w-full rounded-lg border-[1.5px] border-border bg-background py-2 pr-2.5 pl-8 text-foreground text-sm outline-none focus:border-primary"
+            className="w-full rounded-lg border-[1.5px] border-border bg-background py-2 pr-2.5 pl-8 text-foreground text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           />
         </div>
         <p className="mb-1 font-bold text-[11px] text-muted-foreground uppercase tracking-wider">
           {t("newMessage.suggestions")}
         </p>
-        <ul>
+        <ul aria-label={t("newMessage.suggestions")}>
           {filtered.map((c) => (
             <li key={c.id}>
               <button
@@ -81,10 +81,13 @@ export function NewConversationModal({
                     {c.avatarInitials}
                   </span>
                   {c.isOnline && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-                    />
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
+                      />
+                      <span className="sr-only">{t("chat.online")}</span>
+                    </>
                   )}
                 </span>
                 <span className="min-w-0 flex-1">

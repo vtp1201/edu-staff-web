@@ -87,7 +87,7 @@ export function ConversationList({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("search.placeholder")}
-            className="w-full rounded-lg border-[1.5px] border-border bg-background py-2 pr-2.5 pl-8 text-foreground text-sm outline-none focus:border-primary"
+            className="w-full rounded-lg border-[1.5px] border-border bg-background py-2 pr-2.5 pl-8 text-foreground text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           />
         </div>
       </div>

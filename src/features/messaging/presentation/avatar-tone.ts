@@ -16,3 +16,22 @@ const TONE_CLASSES: Record<string, string> = {
 export function avatarToneClasses(color: string): string {
   return TONE_CLASSES[color] ?? TONE_CLASSES.primary;
 }
+
+/**
+ * The foreground `text-edu-*` token for a tone, without the tinted background.
+ * Mirrors the `text-*` half of {@link TONE_CLASSES} — used where only the
+ * coloured text is wanted (e.g. group sender name in a chat bubble).
+ */
+const TONE_TEXT_CLASSES: Record<string, string> = {
+  primary: "text-edu-primary",
+  success: "text-edu-success-text",
+  warning: "text-edu-warning-foreground",
+  error: "text-edu-error-text",
+  info: "text-edu-info",
+  purple: "text-edu-purple-text",
+  teal: "text-edu-teal-text",
+};
+
+export function avatarToneTextClass(color: string): string {
+  return TONE_TEXT_CLASSES[color] ?? TONE_TEXT_CLASSES.primary;
+}

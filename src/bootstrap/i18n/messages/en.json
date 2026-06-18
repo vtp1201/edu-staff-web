@@ -1531,7 +1531,8 @@
       "attach": "Attach",
       "history": "Chat history",
       "backToList": "Back to list",
-      "loadMore": "Load more messages"
+      "loadMore": "Load more messages",
+      "typing": "Typing a message..."
     },
     "openConversation": "Open conversation with {name}",
     "totalUnread": "{count} unread messages",

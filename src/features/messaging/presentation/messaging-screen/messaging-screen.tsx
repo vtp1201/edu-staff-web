@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
@@ -22,6 +22,7 @@ export interface MessagingScreenProps
     MessagingScreenActions {}
 
 const messagesKey = (id: string) => ["messaging", "messages", id] as const;
+const conversationsKey = () => ["messaging", "conversations"] as const;
 
 export function MessagingScreen({
   initialConversations,
@@ -36,8 +37,11 @@ export function MessagingScreen({
   const searchParams = useSearchParams();
   const deepLinkId = searchParams?.get("conversation") ?? null;
 
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const listPaneRef = useRef<HTMLDivElement>(null);
+
   const { data: conversations = initialConversations, isLoading } = useQuery({
-    queryKey: ["messaging", "conversations"],
+    queryKey: conversationsKey(),
     queryFn: async () => initialConversations,
     initialData: initialConversations,
   });
@@ -110,6 +114,16 @@ export function MessagingScreen({
   const handleSelect = (id: string) => {
     setActiveId(id);
     setMobilePane("chat");
+    requestAnimationFrame(() => chatInputRef.current?.focus());
+  };
+
+  const handleBack = () => {
+    setMobilePane("list");
+    requestAnimationFrame(() =>
+      listPaneRef.current
+        ?.querySelector<HTMLButtonElement>('[role="tab"], button')
+        ?.focus(),
+    );
   };
 
   const handleSelectContact = async (contact: ContactEntity) => {
@@ -117,7 +131,7 @@ export function MessagingScreen({
     const res = await createConversationAction([contact.id]);
     if (res.ok) {
       queryClient.setQueryData<ConversationEntity[]>(
-        ["messaging", "conversations"],
+        conversationsKey(),
         (old = []) => [res.value, ...old.filter((c) => c.id !== res.value.id)],
       );
       handleSelect(res.value.id);
@@ -132,6 +146,7 @@ export function MessagingScreen({
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden">
       <div
+        ref={listPaneRef}
         className={cn(
           "w-full md:flex md:w-[300px]",
           mobilePane === "chat" ? "hidden md:flex" : "flex",
@@ -159,7 +174,8 @@ export function MessagingScreen({
             messages={messages}
             isLoading={messagesLoading}
             onSend={handleSend}
-            onBack={() => setMobilePane("list")}
+            onBack={handleBack}
+            inputRef={chatInputRef}
           />
         ) : (
           <EmptyMessagingState onStart={() => setModalOpen(true)} />

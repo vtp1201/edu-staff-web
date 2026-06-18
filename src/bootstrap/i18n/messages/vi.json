@@ -1531,7 +1531,8 @@
       "attach": "Đính kèm",
       "history": "Lịch sử trò chuyện",
       "backToList": "Quay lại danh sách",
-      "loadMore": "Tải thêm tin nhắn"
+      "loadMore": "Tải thêm tin nhắn",
+      "typing": "Đang nhập tin nhắn..."
     },
     "openConversation": "Mở cuộc trò chuyện với {name}",
     "totalUnread": "{count} tin nhắn chưa đọc",

@@ -1,7 +1,10 @@
 "use client";
 
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
-import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
+import {
+  avatarToneClasses,
+  avatarToneTextClass,
+} from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 
 export interface ChatBubbleProps {
@@ -25,7 +28,7 @@ export function ChatBubble({ message, isGroup, showSender }: ChatBubbleProps) {
   if (from === "system") {
     return (
       <div className="py-1 text-center">
-        <span className="inline-block rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground">
+        <span className="inline-block rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-edu-text-secondary">
           {text}
         </span>
       </div>
@@ -65,7 +68,7 @@ export function ChatBubble({ message, isGroup, showSender }: ChatBubbleProps) {
           <span
             className={cn(
               "mb-0.5 ml-1 text-[11px] font-bold",
-              avatarToneClasses(senderColor ?? "primary").split(" ")[1],
+              avatarToneTextClass(senderColor ?? "primary"),
             )}
           >
             {senderName}
@@ -98,7 +101,7 @@ export function DateDivider({ label }: DateDividerProps) {
   return (
     <div className="my-1 flex items-center gap-2.5 py-1.5">
       <span className="h-px flex-1 bg-border" />
-      <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground">
+      <span className="whitespace-nowrap text-[11px] font-semibold text-edu-text-secondary">
         {label}
       </span>
       <span className="h-px flex-1 bg-border" />

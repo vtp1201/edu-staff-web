@@ -56,10 +56,13 @@ export function ConversationItem({
           {avatarInitials}
         </span>
         {!isGroup && isOnline && (
-          <span
-            aria-hidden="true"
-            className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-          />
+          <>
+            <span
+              aria-hidden="true"
+              className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
+            />
+            <span className="sr-only">{t("chat.online")}</span>
+          </>
         )}
       </span>
 
