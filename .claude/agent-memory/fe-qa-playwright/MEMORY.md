@@ -7,3 +7,4 @@
 - [US-E09.1 QA patterns](us-e09.1-qa-patterns.md) — discipline screen: notifyParent toggle not exercised in play(); ConductTab_Empty story missing; AC-9 student-route guard untested; Loading story weak assertion
 - [US-E09.3 QA patterns](us-e09.3-qa-patterns.md) — staff leave: failure type split (missing-reject-reason + reason-too-short vs spec's single missing-reason); 7 stories not 8; dates stored as DD/MM/YYYY not ISO; custom toast not sonner
 - [US-E10.1 QA patterns](us-e10.1-qa-patterns.md) — messaging: Radix Dialog portal query via ownerDocument.body; multi-node text pitfall (name in list + header); AC-3 needs g1 fixture override; Loading story skeleton not assertable in headless
+- [US-E10.3 QA patterns](us-e10.3-qa-patterns.md) — announcements: 12 gap stories added (AC-3/5/6/7/8/10/11 needed interaction-to-completion, not just open; char count + filter tabs always need explicit assertion)
