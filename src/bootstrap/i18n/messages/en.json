@@ -2,6 +2,37 @@
   "Common": {
     "hello": "Hello"
   },
+  "gradeEntry": {
+    "title": "Grade Entry",
+    "selectClass": "Select class - subject",
+    "selectTerm": "Select term",
+    "termHK1": "Semester 1",
+    "termHK2": "Semester 2",
+    "columnHeader": "{label} ({weight}%)",
+    "averageColumn": "Average",
+    "studentName": "Full name",
+    "studentCode": "Student ID",
+    "noSelection": "Select a class and term to view the grade sheet",
+    "emptyClass": "No students enrolled in this class",
+    "publishButton": "Publish Grades",
+    "publishConfirmTitle": "Confirm Grade Publication",
+    "publishConfirmDescription": "Published grades cannot be edited. Continue?",
+    "publishConfirmOk": "Publish",
+    "publishConfirmCancel": "Cancel",
+    "pendingApproval": "Pending Approval",
+    "published": "Published",
+    "draft": "Draft",
+    "cellLabel": "{column} score for {student}",
+    "errorOutOfRange": "Score must be between 0 and {max}",
+    "errorAlreadyPublished": "This grade sheet has already been published",
+    "errorForbidden": "You do not have permission to enter grades for this class",
+    "errorNetworkError": "Connection error, please try again",
+    "errorUnknown": "An unknown error occurred",
+    "saveSuccess": "Saved",
+    "publishSuccess": "Grades published successfully",
+    "publishPendingApproval": "Grades submitted for principal approval",
+    "loading": "Loading grade sheet..."
+  },
   "exam": {
     "page": {
       "title": "Exams",
