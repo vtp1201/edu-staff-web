@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-const MIN_NOTE = 10;
+import { MIN_REVISION_NOTE_LENGTH } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
 
 type Props = {
   open: boolean;
@@ -34,7 +33,7 @@ export function RevisionRequestDialog({
   const [note, setNote] = useState("");
   const [showError, setShowError] = useState(false);
 
-  const invalid = note.trim().length < MIN_NOTE;
+  const invalid = note.trim().length < MIN_REVISION_NOTE_LENGTH;
 
   const handleConfirm = () => {
     if (invalid) {

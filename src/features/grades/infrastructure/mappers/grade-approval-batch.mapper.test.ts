@@ -4,7 +4,7 @@ import type {
   GradeApprovalBatchDto,
 } from "../dtos/grade-approval-batch-response.dto";
 import {
-  gradeLabel,
+  gradeBandKey,
   mapBatch,
   mapBatchDetail,
 } from "./grade-approval-batch.mapper";
@@ -20,22 +20,22 @@ const BATCH_DTO: GradeApprovalBatchDto = {
   updatedAt: "2025-05-01T10:00:00Z",
 };
 
-describe("gradeLabel", () => {
-  it("maps boundary values to the correct band", () => {
-    expect(gradeLabel(10)).toBe("Giỏi");
-    expect(gradeLabel(8.5)).toBe("Giỏi");
-    expect(gradeLabel(8.49)).toBe("Khá");
-    expect(gradeLabel(7)).toBe("Khá");
-    expect(gradeLabel(6.99)).toBe("Trung bình");
-    expect(gradeLabel(5)).toBe("Trung bình");
-    expect(gradeLabel(4.9)).toBe("Yếu");
-    expect(gradeLabel(3.5)).toBe("Yếu");
-    expect(gradeLabel(3.49)).toBe("Kém");
-    expect(gradeLabel(0)).toBe("Kém");
+describe("gradeBandKey", () => {
+  it("maps boundary values to the correct band key", () => {
+    expect(gradeBandKey(10)).toBe("excellent");
+    expect(gradeBandKey(8.5)).toBe("excellent");
+    expect(gradeBandKey(8.49)).toBe("good");
+    expect(gradeBandKey(7)).toBe("good");
+    expect(gradeBandKey(6.99)).toBe("average");
+    expect(gradeBandKey(5)).toBe("average");
+    expect(gradeBandKey(4.9)).toBe("weak");
+    expect(gradeBandKey(3.5)).toBe("weak");
+    expect(gradeBandKey(3.49)).toBe("poor");
+    expect(gradeBandKey(0)).toBe("poor");
   });
 
-  it("returns dash for null", () => {
-    expect(gradeLabel(null)).toBe("—");
+  it("returns poor for null", () => {
+    expect(gradeBandKey(null)).toBe("poor");
   });
 });
 
@@ -67,15 +67,15 @@ describe("mapBatchDetail", () => {
 
     expect(detail.averageScore).toBe(7.5);
     const counts = Object.fromEntries(
-      detail.distribution.map((d) => [d.label, d.count]),
+      detail.distribution.map((d) => [d.key, d.count]),
     );
-    expect(counts.Giỏi).toBe(1);
-    expect(counts.Khá).toBe(1);
-    expect(counts["Trung bình"]).toBe(1);
-    expect(counts.Yếu).toBe(0);
-    expect(counts.Kém).toBe(0);
+    expect(counts.excellent).toBe(1);
+    expect(counts.good).toBe(1);
+    expect(counts.average).toBe(1);
+    expect(counts.weak).toBe(0);
+    expect(counts.poor).toBe(0);
 
-    expect(detail.previewRows[0]?.gradeLabel).toBe("Giỏi");
-    expect(detail.previewRows[3]?.gradeLabel).toBe("—");
+    expect(detail.previewRows[0]?.gradeBandKey).toBe("excellent");
+    expect(detail.previewRows[3]?.gradeBandKey).toBe("poor");
   });
 });

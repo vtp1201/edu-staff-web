@@ -53,7 +53,8 @@
       "colStudent": "Student",
       "colCode": "Code",
       "colAverage": "Average",
-      "colGradeLabel": "Grade"
+      "colGradeLabel": "Grade",
+      "previewTableAriaLabel": "Student grade table"
     },
     "emptyState": "No grade batches awaiting approval",
     "emptyStateAll": "No grade batches",
@@ -68,7 +69,15 @@
     "errorForbidden": "You do not have permission",
     "errorNetworkError": "Connection error, please try again",
     "errorUnknown": "An unexpected error occurred",
-    "loading": "Loading grade batches..."
+    "loading": "Loading grade batches...",
+    "tableAriaLabel": "Grade batch list",
+    "closeSheet": "Close",
+    "filterGroupLabel": "Filter by status",
+    "bandExcellent": "Excellent",
+    "bandGood": "Good",
+    "bandAverage": "Average",
+    "bandWeak": "Weak",
+    "bandPoor": "Poor"
   },
   "gradeEntry": {
     "title": "Grade Entry",

@@ -3,6 +3,7 @@ import type {
   BatchStatus,
   GradeApprovalBatch,
   GradeApprovalBatchDetail,
+  GradeBandKey,
 } from "../../domain/entities/grade-approval-batch.entity";
 import type {
   BatchScorePreviewRowDto,
@@ -10,20 +11,22 @@ import type {
   GradeApprovalBatchDto,
 } from "../dtos/grade-approval-batch-response.dto";
 
-/** Performance bands (SCALE_10) — single source for label + distribution. */
-const BANDS: { label: string; min: number; max: number }[] = [
-  { label: "Giỏi", min: 8.5, max: 10.01 },
-  { label: "Khá", min: 7, max: 8.5 },
-  { label: "Trung bình", min: 5, max: 7 },
-  { label: "Yếu", min: 3.5, max: 5 },
-  { label: "Kém", min: 0, max: 3.5 },
+/** Performance bands (SCALE_10) — single source for band key + distribution. */
+const BANDS: { key: GradeBandKey; min: number }[] = [
+  { key: "excellent", min: 8.5 },
+  { key: "good", min: 7 },
+  { key: "average", min: 5 },
+  { key: "weak", min: 3.5 },
+  { key: "poor", min: 0 },
 ];
 
-/** Map an average score to its Vietnamese performance label. */
-export function gradeLabel(average: number | null): string {
-  if (average === null) return "—";
-  const band = BANDS.find((b) => average >= b.min && average < b.max);
-  return band?.label ?? "Kém";
+/** Map an average score to its stable performance-band key. */
+export function gradeBandKey(avg: number | null): GradeBandKey {
+  if (avg === null || avg < 3.5) return "poor";
+  if (avg < 5) return "weak";
+  if (avg < 7) return "average";
+  if (avg < 8.5) return "good";
+  return "excellent";
 }
 
 export function mapBatch(dto: GradeApprovalBatchDto): GradeApprovalBatch {
@@ -41,12 +44,14 @@ export function mapBatch(dto: GradeApprovalBatchDto): GradeApprovalBatch {
 
 function buildDistribution(
   rows: BatchScorePreviewRowDto[],
-): { label: string; count: number }[] {
-  return BANDS.map((b) => ({
-    label: b.label,
-    count: rows.filter(
-      (r) => r.average !== null && r.average >= b.min && r.average < b.max,
-    ).length,
+): { key: GradeBandKey; count: number }[] {
+  return BANDS.map((b, i) => ({
+    key: b.key,
+    count: rows.filter((r) => {
+      if (r.average === null) return false;
+      const next = BANDS[i - 1];
+      return r.average >= b.min && (next === undefined || r.average < next.min);
+    }).length,
   }));
 }
 
@@ -55,7 +60,7 @@ function mapPreviewRow(dto: BatchScorePreviewRowDto): BatchScorePreviewRow {
     studentName: dto.studentName,
     studentCode: dto.studentCode,
     average: dto.average,
-    gradeLabel: gradeLabel(dto.average),
+    gradeBandKey: gradeBandKey(dto.average),
   };
 }
 

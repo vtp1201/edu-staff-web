@@ -53,7 +53,8 @@
       "colStudent": "Học sinh",
       "colCode": "Mã HS",
       "colAverage": "Điểm TB",
-      "colGradeLabel": "Xếp loại"
+      "colGradeLabel": "Xếp loại",
+      "previewTableAriaLabel": "Bảng điểm học sinh"
     },
     "emptyState": "Không có lô điểm nào đang chờ phê duyệt",
     "emptyStateAll": "Không có lô điểm nào",
@@ -68,7 +69,15 @@
     "errorForbidden": "Bạn không có quyền thao tác",
     "errorNetworkError": "Lỗi kết nối, thử lại sau",
     "errorUnknown": "Đã xảy ra lỗi không xác định",
-    "loading": "Đang tải danh sách lô điểm..."
+    "loading": "Đang tải danh sách lô điểm...",
+    "tableAriaLabel": "Danh sách lô điểm",
+    "closeSheet": "Đóng",
+    "filterGroupLabel": "Lọc theo trạng thái",
+    "bandExcellent": "Giỏi",
+    "bandGood": "Khá",
+    "bandAverage": "Trung bình",
+    "bandWeak": "Yếu",
+    "bandPoor": "Kém"
   },
   "gradeEntry": {
     "title": "Nhập điểm",

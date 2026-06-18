@@ -20,17 +20,20 @@ export interface GradeApprovalBatch {
   updatedAt: string;
 }
 
+/** Stable performance-band key — translated at presentation, never on the wire. */
+export type GradeBandKey = "excellent" | "good" | "average" | "weak" | "poor";
+
 export interface BatchScorePreviewRow {
   studentName: string;
   studentCode: string;
   average: number | null;
-  /** Giỏi / Khá / Trung bình / Yếu / Kém — derived from `average`. */
-  gradeLabel: string;
+  /** Stable band key (excellent…poor) — derived from `average`, translated at render. */
+  gradeBandKey: GradeBandKey;
 }
 
 export interface GradeApprovalBatchDetail extends GradeApprovalBatch {
   averageScore: number | null;
   /** 5 performance bands, count of students in each. */
-  distribution: { label: string; count: number }[];
+  distribution: { key: GradeBandKey; count: number }[];
   previewRows: BatchScorePreviewRow[];
 }

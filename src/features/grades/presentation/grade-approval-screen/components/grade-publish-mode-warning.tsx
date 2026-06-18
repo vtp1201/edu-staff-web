@@ -11,7 +11,7 @@ export function GradePublishModeWarning() {
       className="flex items-start gap-3 rounded-[var(--edu-radius-card)] border border-edu-info/30 bg-edu-info/10 p-4 text-sm text-foreground"
     >
       <Info
-        className="mt-0.5 size-5 shrink-0 text-edu-info"
+        className="mt-0.5 size-5 shrink-0 text-foreground"
         aria-hidden="true"
       />
       <p>{t("selfPublishModeWarning")}</p>

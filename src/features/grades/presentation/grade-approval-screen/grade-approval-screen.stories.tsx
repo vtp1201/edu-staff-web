@@ -63,30 +63,30 @@ const DETAIL: GradeApprovalBatchDetail = {
   updatedAt: "2025-05-01T10:00:00Z",
   averageScore: 8.2,
   distribution: [
-    { label: "Giỏi", count: 1 },
-    { label: "Khá", count: 1 },
-    { label: "Trung bình", count: 1 },
-    { label: "Yếu", count: 0 },
-    { label: "Kém", count: 0 },
+    { key: "excellent", count: 1 },
+    { key: "good", count: 1 },
+    { key: "average", count: 1 },
+    { key: "weak", count: 0 },
+    { key: "poor", count: 0 },
   ],
   previewRows: [
     {
       studentName: "Nguyễn Văn An",
       studentCode: "HS001",
       average: 8.6,
-      gradeLabel: "Giỏi",
+      gradeBandKey: "excellent",
     },
     {
       studentName: "Trần Thị Bình",
       studentCode: "HS002",
       average: 7.2,
-      gradeLabel: "Khá",
+      gradeBandKey: "good",
     },
     {
       studentName: "Lê Hoàng Cường",
       studentCode: "HS003",
       average: 5.5,
-      gradeLabel: "Trung bình",
+      gradeBandKey: "average",
     },
   ],
 };

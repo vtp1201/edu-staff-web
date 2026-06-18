@@ -15,7 +15,7 @@ const TONE = {
     labelKey: "statusPublished",
   },
   LOCKED: {
-    cls: "bg-muted text-muted-foreground",
+    cls: "bg-muted text-foreground",
     labelKey: "statusLocked",
   },
 } as const;

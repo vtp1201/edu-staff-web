@@ -68,7 +68,7 @@ export function GradeApprovalScreen({ vm }: { vm: GradeApprovalScreenVM }) {
 
       {/* Status filter pills */}
       <fieldset className="flex flex-wrap gap-2 border-0 p-0">
-        <legend className="sr-only">{t("title")}</legend>
+        <legend className="sr-only">{t("filterGroupLabel")}</legend>
         {FILTERS.map((f) => {
           const active = vm.statusFilter === f.value;
           return (
@@ -117,7 +117,7 @@ export function GradeApprovalScreen({ vm }: { vm: GradeApprovalScreenVM }) {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-[var(--edu-radius-card)] border border-border bg-card">
-          <Table>
+          <Table aria-label={t("tableAriaLabel")}>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">

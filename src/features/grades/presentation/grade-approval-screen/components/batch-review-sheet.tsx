@@ -20,12 +20,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/shared/utils";
-import type { GradeApprovalBatchDetail } from "../../../domain/entities/grade-approval-batch.entity";
+import type {
+  GradeApprovalBatchDetail,
+  GradeBandKey,
+} from "../../../domain/entities/grade-approval-batch.entity";
 import { getScoreColorClass } from "../../grade-entry-screen/score-color";
 import { BatchStatusBadge } from "./batch-status-badge";
 import { GradeDistributionChart } from "./grade-distribution-chart";
 
 const SCALE_MAX = 10;
+
+/** Stable band key → i18n label key under `gradeApproval`. */
+const BAND_LABEL_KEY: Record<
+  GradeBandKey,
+  "bandExcellent" | "bandGood" | "bandAverage" | "bandWeak" | "bandPoor"
+> = {
+  excellent: "bandExcellent",
+  good: "bandGood",
+  average: "bandAverage",
+  weak: "bandWeak",
+  poor: "bandPoor",
+};
 
 type Props = {
   open: boolean;
@@ -55,7 +70,10 @@ export function BatchReviewSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-xl">
+      <SheetContent
+        className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-xl"
+        closeLabel={t("closeSheet")}
+      >
         <SheetHeader>
           <SheetTitle>{tSheet("title")}</SheetTitle>
           <SheetDescription>
@@ -76,7 +94,7 @@ export function BatchReviewSheet({
           <div className="flex flex-1 flex-col gap-5 px-4">
             <div className="flex items-center justify-between">
               <BatchStatusBadge status={detail.status} />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-edu-text-secondary">
                 {tSheet("averageScore")}:{" "}
                 <span
                   className={cn(
@@ -90,17 +108,17 @@ export function BatchReviewSheet({
             </div>
 
             <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-edu-text-secondary">
                 {tSheet("distribution")}
               </h3>
               <GradeDistributionChart distribution={detail.distribution} />
             </section>
 
             <section className="flex flex-col gap-2">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-edu-text-secondary">
                 {tSheet("previewTable")}
               </h3>
-              <Table>
+              <Table aria-label={tSheet("previewTableAriaLabel")}>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tSheet("colStudent")}</TableHead>
@@ -129,7 +147,7 @@ export function BatchReviewSheet({
                         {row.average ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {row.gradeLabel}
+                        {t(BAND_LABEL_KEY[row.gradeBandKey])}
                       </TableCell>
                     </TableRow>
                   ))}
