@@ -22,6 +22,8 @@ export interface ChatWindowProps {
   messages: MessageEntity[];
   isLoading: boolean;
   onSend: (text: string) => void;
+  /** Show the typing indicator. False by default (mock-first: no real SSE signal yet). */
+  isTyping?: boolean;
   /** Mobile only — back to the conversation list. */
   onBack?: () => void;
   /** Mobile focus management — focus the composer when the chat pane opens. */
@@ -36,6 +38,7 @@ export function ChatWindow({
   conversation,
   messages,
   isLoading,
+  isTyping = false,
   onSend,
   onBack,
   inputRef,
@@ -165,7 +168,7 @@ export function ChatWindow({
                 />
               ),
             )}
-            {!isGroup && conversation.isOnline && (
+            {!isGroup && isTyping && (
               <TypingIndicator
                 initials={conversation.avatarInitials}
                 color={conversation.color}

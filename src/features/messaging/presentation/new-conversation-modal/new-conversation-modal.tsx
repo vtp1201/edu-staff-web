@@ -6,6 +6,7 @@ import { useId, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -42,6 +43,9 @@ export function NewConversationModal({
       <DialogContent className="max-w-[380px]">
         <DialogHeader>
           <DialogTitle>{t("newMessage.title")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("newMessage.searchPlaceholder")}
+          </DialogDescription>
         </DialogHeader>
         <div className="relative mb-2">
           <Search
