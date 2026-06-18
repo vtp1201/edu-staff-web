@@ -30,13 +30,15 @@ export function SwitchConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("title")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("description")}</AlertDialogDescription>
+          <AlertDialogDescription className="text-foreground">
+            {t("description")}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-edu-error text-edu-error-foreground hover:bg-edu-error/90"
+            className="bg-edu-error-text text-white hover:bg-edu-error-text/90"
           >
             {t("confirm")}
           </AlertDialogAction>

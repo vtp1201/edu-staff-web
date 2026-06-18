@@ -89,6 +89,7 @@ export function AdminSettingsScreen({
   const [saving, setSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingMode, setPendingMode] = useState<GradePublishMode | null>(null);
+  const [srAnnouncement, setSrAnnouncement] = useState("");
 
   const isDirty = draftMode !== savedMode;
   const canSave = isDirty && !saving && !isReadOnly;
@@ -100,8 +101,10 @@ export function AdminSettingsScreen({
     if (result.ok) {
       setSavedMode(mode);
       setDraftMode(mode);
+      setSrAnnouncement(tToast("saveSuccess"));
       toast.success(tToast("saveSuccess"));
     } else {
+      setSrAnnouncement(tToast("saveError"));
       toast.error(tToast("saveError"));
     }
   }
@@ -137,6 +140,14 @@ export function AdminSettingsScreen({
 
   return (
     <div className="flex-1 overflow-y-auto p-7 lg:px-8">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {srAnnouncement}
+      </div>
       <div className="mx-auto max-w-[900px]">
         {/* Page title */}
         <div className="mb-6 flex items-center gap-3.5">
@@ -196,7 +207,7 @@ export function AdminSettingsScreen({
                     <label
                       key={opt.id}
                       className={cn(
-                        "relative flex rounded-xl border-[1.5px] p-[18px] text-left transition-all focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                        "relative flex rounded-xl border-[1.5px] p-[18px] text-left transition-all motion-reduce:transition-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                         isReadOnly
                           ? "cursor-not-allowed opacity-70"
                           : "cursor-pointer",
@@ -205,6 +216,7 @@ export function AdminSettingsScreen({
                           : "border-border bg-card hover:border-edu-primary/50",
                       )}
                     >
+                      {/* sr-only preserves focus; ring is via focus-within on label — verified pattern */}
                       <input
                         type="radio"
                         name="gradePublishMode"
@@ -213,6 +225,7 @@ export function AdminSettingsScreen({
                         disabled={isReadOnly}
                         onChange={() => setDraftMode(opt.id)}
                         className="sr-only"
+                        aria-describedby={`radio-desc-${opt.id}`}
                       />
                       <div className="flex items-start gap-3">
                         <div
@@ -235,7 +248,10 @@ export function AdminSettingsScreen({
                             />
                             {tMode(opt.labelKey)}
                           </p>
-                          <p className="mt-1 text-[12.5px] leading-[1.55] text-edu-text-secondary">
+                          <p
+                            id={`radio-desc-${opt.id}`}
+                            className="mt-1 text-[12.5px] leading-[1.55] text-edu-text-secondary"
+                          >
                             {tMode(opt.descKey)}
                           </p>
                         </div>
@@ -250,10 +266,11 @@ export function AdminSettingsScreen({
             <div
               className="mb-4 flex items-start gap-2.5 rounded-[10px] border border-edu-warning/40 bg-edu-warning/10 px-3.5 py-3"
               role="note"
+              aria-label="Lưu ý"
             >
               <Info
                 size={16}
-                className="mt-0.5 shrink-0 text-edu-warning"
+                className="mt-0.5 shrink-0 text-edu-warning-foreground"
                 aria-hidden
               />
               <p className="text-[12.5px] leading-[1.6] text-edu-text-secondary">
@@ -275,8 +292,7 @@ export function AdminSettingsScreen({
                 type="button"
                 onClick={handleSave}
                 disabled={!canSave}
-                aria-disabled={!canSave}
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-edu-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-edu-primary-dark px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition-opacity motion-reduce:transition-none hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Check size={15} strokeWidth={2.4} aria-hidden />
                 {saving ? tMode("saving") : tMode("save")}
@@ -308,7 +324,7 @@ export function AdminSettingsScreen({
                   <Link
                     key={sc.href}
                     href={sc.href}
-                    className="group flex items-center gap-3.5 rounded-xl border border-border bg-card p-4 transition-all hover:border-edu-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="group flex items-center gap-3.5 rounded-xl border border-border bg-card p-4 transition-all motion-reduce:transition-none hover:border-edu-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-edu-primary/10">
                       <ScIcon
