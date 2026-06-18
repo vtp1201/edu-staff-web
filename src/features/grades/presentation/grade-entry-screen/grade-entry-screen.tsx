@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +36,7 @@ import { GradeEntryTable } from "./grade-entry-table";
 type ErrorMsgKey =
   | "errorOutOfRange"
   | "errorAlreadyPublished"
+  | "errorIncompleteScores"
   | "errorForbidden"
   | "errorNetworkError"
   | "errorUnknown";
@@ -45,6 +46,7 @@ const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   forbidden: "errorForbidden",
   "score-out-of-range": "errorOutOfRange",
   "already-published": "errorAlreadyPublished",
+  "incomplete-scores": "errorIncompleteScores",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
 };
@@ -73,7 +75,6 @@ export function GradeEntryScreen({
   const [, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
-  const publishTitleId = useId();
 
   // Local working copy of the sheet so optimistic edits render immediately.
   const [sheet, setSheet] = useState<GradeSheet | null>(vm.sheet);
@@ -129,6 +130,14 @@ export function GradeEntryScreen({
       }
       return { prev };
     },
+    onSuccess: (result, _vars, ctx) => {
+      if (result.ok) {
+        setBanner(t("saveSuccess"));
+      } else {
+        if (ctx?.prev) setSheet(ctx.prev); // rollback failed save
+        setBanner(errorMessage(result.errorKey));
+      }
+    },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) setSheet(ctx.prev); // rollback
       setBanner(t("errorNetworkError"));
@@ -144,11 +153,11 @@ export function GradeEntryScreen({
 
   const publishMutation = useMutation({
     mutationFn: async () => {
-      if (!(vm.selectedCsId && vm.selectedTerm)) {
+      if (!(vm.selectedCsId && vm.selectedTerm && sheet)) {
         const fail: ActionResult = { ok: false, errorKey: "unknown" };
         return fail;
       }
-      return vm.publishAction(vm.selectedCsId, vm.selectedTerm);
+      return vm.publishAction(vm.selectedCsId, vm.selectedTerm, sheet.rows);
     },
     onSuccess: (result) => {
       setConfirmOpen(false);
@@ -200,7 +209,9 @@ export function GradeEntryScreen({
           </Button>
         ) : null}
         {pending ? (
-          <Badge variant="secondary">{t("pendingApproval")}</Badge>
+          <Badge variant="secondary" className="text-edu-text-primary">
+            {t("pendingApproval")}
+          </Badge>
         ) : null}
         {publishedDone ? <Badge>{t("published")}</Badge> : null}
       </header>
@@ -279,11 +290,9 @@ export function GradeEntryScreen({
       )}
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent aria-labelledby={publishTitleId}>
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle id={publishTitleId}>
-              {t("publishConfirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("publishConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("publishConfirmDescription")}
             </AlertDialogDescription>

@@ -81,7 +81,7 @@ const baseVM: GradeEntryScreenVM = {
   sheet: sheet(POPULATED),
   error: null,
   saveScoreAction: async () => ({ ok: true }),
-  publishAction: async () => ({ ok: true }),
+  publishAction: async () => ({ ok: true as const }),
 };
 
 const meta: Meta<typeof GradeEntryScreen> = {

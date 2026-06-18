@@ -1,4 +1,7 @@
-import type { GradeSheet } from "../../domain/entities/grade-sheet.entity";
+import type {
+  GradeSheet,
+  StudentScoreRow,
+} from "../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 
 export interface ClassSubjectOption {
@@ -24,5 +27,9 @@ export interface GradeEntryScreenVM {
     columnId: string,
     value: number,
   ) => Promise<ActionResult>;
-  publishAction: (csId: string, term: string) => Promise<ActionResult>;
+  publishAction: (
+    csId: string,
+    term: string,
+    rows: StudentScoreRow[],
+  ) => Promise<ActionResult>;
 }

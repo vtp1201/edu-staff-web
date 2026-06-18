@@ -5,6 +5,7 @@ import {
   makePublishGradesUseCase,
   makeSaveScoreUseCase,
 } from "@/bootstrap/di/grades.di";
+import type { StudentScoreRow } from "@/features/grades/domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
 
 const GRADES_PATH = "/[locale]/t/[tenant]/(app)/teacher/grades";
@@ -42,9 +43,10 @@ export async function saveScoreAction(
 export async function publishGradesAction(
   csId: string,
   term: string,
+  rows: StudentScoreRow[],
 ): Promise<ActionResult> {
   const useCase = await makePublishGradesUseCase();
-  const result = await useCase.execute(csId, term);
+  const result = await useCase.execute(csId, term, rows);
   if ("ok" in result && result.ok) {
     revalidatePath(GRADES_PATH, "page");
     return { ok: true };

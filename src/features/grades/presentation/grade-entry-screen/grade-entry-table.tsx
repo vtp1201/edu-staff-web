@@ -39,7 +39,8 @@ function ScoreCell({ row, col, maxScore, readOnly, onSaveScore }: CellProps) {
 
   if (readOnly) {
     return (
-      <td className="px-3 py-2 text-center text-sm">
+      // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-readonly marks the locked cell intent (A11Y-048); the table-level role="note" notice is the primary lock signal
+      <td aria-readonly="true" className="px-3 py-2 text-center text-sm">
         <span className={getScoreColorClass(current ?? null, maxScore)}>
           {current ?? "—"}
         </span>
@@ -85,7 +86,7 @@ function ScoreCell({ row, col, maxScore, readOnly, onSaveScore }: CellProps) {
           }
         }}
         className={cn(
-          "h-9 w-16 rounded-[8px] border border-border bg-background px-2 text-center text-sm",
+          "h-9 min-h-[44px] w-16 rounded-[8px] border border-border bg-background px-2 text-center text-sm",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           hasError && "border-destructive ring-1 ring-destructive",
         )}
@@ -110,25 +111,41 @@ export function GradeEntryTable({
 
   return (
     <div className="overflow-x-auto rounded-card border border-border bg-card shadow-card">
-      {/* biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: editable score grid uses grid semantics intentionally (WCAG, cells are inputs) */}
-      <table role="grid" className="w-full border-collapse text-sm">
+      {readOnly && (
+        <p className="sr-only" role="note">
+          {t("tableLockedNotice")}
+        </p>
+      )}
+      <table className="w-full border-collapse text-sm">
+        <caption className="sr-only">{t("tableCaption")}</caption>
         <thead className="sticky top-0 z-10 bg-muted">
           <tr>
-            <th className="px-3 py-2.5 text-left font-bold text-xs uppercase tracking-wide text-muted-foreground">
-              #
+            <th
+              scope="col"
+              className="px-3 py-2.5 text-left font-bold text-xs uppercase tracking-wide text-muted-foreground"
+            >
+              <span aria-hidden="true">#</span>
+              <span className="sr-only">{t("studentCode")}</span>
             </th>
-            <th className="px-3 py-2.5 text-left font-bold text-xs uppercase tracking-wide text-muted-foreground">
+            <th
+              scope="col"
+              className="px-3 py-2.5 text-left font-bold text-xs uppercase tracking-wide text-muted-foreground"
+            >
               {t("studentName")}
             </th>
             {columns.map((col) => (
               <th
                 key={col.id}
+                scope="col"
                 className="px-3 py-2.5 text-center font-bold text-xs uppercase tracking-wide text-muted-foreground"
               >
                 {t("columnHeader", { label: col.label, weight: col.weight })}
               </th>
             ))}
-            <th className="px-3 py-2.5 text-center font-bold text-xs uppercase tracking-wide text-muted-foreground">
+            <th
+              scope="col"
+              className="px-3 py-2.5 text-center font-bold text-xs uppercase tracking-wide text-muted-foreground"
+            >
               {t("averageColumn")}
             </th>
           </tr>
