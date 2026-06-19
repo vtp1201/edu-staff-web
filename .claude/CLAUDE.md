@@ -14,8 +14,9 @@ hook (decision `0015`); `.claude/rules/*` tự load. Trước khi làm:
 
 ## Agent Teams
 
-Two Harness-bound teams live in `.claude/agents/`. Always enter through a **lead** (via its
-slash command); never invoke individual specialists directly.
+Three Harness-bound teams live in `.claude/agents/`. Always enter through a **lead** (via its
+slash command); never invoke individual specialists directly. Delivery chain (upstream → down):
+**`/uiux` (design) → `/ba` (engineering spec) → `/fe` (implementation)**.
 
 ### Frontend Developer Team — `/fe` → `fe-lead` (`.claude/agents/fe/`)
 Implements all frontend work. Pipeline:
@@ -44,6 +45,28 @@ Feature Intake → ba-requirements-analyst → [ba-integration-analyst] → ba-u
 - `ba-integration-analyst` *(sonnet)* — maps edu-api endpoints the screen consumes (service map; mock-first when absent).
 - `ba-use-case-modeler` *(sonnet)* — use cases + Given/When/Then AC (loading/empty/error/success + role variants).
 - `ba-spec-writer` *(sonnet)* — consolidated engineering-ready spec + traceability matrix.
+
+### UI/UX Design Team — `/uiux` → `uiux-lead` (`.claude/agents/uiux/`)
+Upstream design-authoring; produces design artifacts the FE team builds from; stops before code.
+Deliverables on the **existing** surface: `docs/design-requests/DR-NNN-<slug>.md` + reference
+mockup `design_src/edu/<slug>.jsx` + entry in `docs/product/design-spec.jsonc` + UX copy as i18n
+keys. Pipeline:
+```
+Feature Intake → [uiux-product-manager] → [uiux-researcher + uiux-wireframe-designer] (parallel)
+   → uiux-brainstormer → [uiux-design-system-builder] (token ADR) → uiux-designer (+ uiux-ux-writer)
+   → uiux-docs-manager → design-review gate (/impeccable) → handoff to /ba then /fe
+```
+- `uiux-lead` *(sonnet)* — entry point; intake, Design Request packet, design-system supremacy, design-review gate, multi-team claim workflow.
+- `uiux-product-manager` *(sonnet)* — lightweight PRD for net-new features (what/why); skips for redesigns. Distinct from `ba-requirements-analyst` (how/AC).
+- `uiux-researcher` *(sonnet)* — UX patterns, edu-domain references, a11y standards (read-only).
+- `uiux-wireframe-designer` *(sonnet)* — IA map + low-fi wireframes + states + responsive notes.
+- `uiux-brainstormer` *(sonnet)* — evaluates 2–3 directions, recommends one.
+- `uiux-design-system-builder` *(sonnet)* — audits/extends the system; proposes token additions to `src/app/tokens.css` + flags an ADR (no parallel token YAML).
+- `uiux-designer` *(sonnet)* — CORE: high-fidelity reference mockup as `design_src/edu/<slug>.jsx` + design-spec entry (tokens-only, WCAG AA). Figma/Pencil MCP = exploration only.
+- `uiux-ux-writer` *(sonnet)* — UI copy as i18n keys for `messages/{vi,en}.json` (vi source + en mirror); no standalone catalogue.
+- `uiux-docs-manager` *(sonnet)* — syncs `screens.md` / `design-system.md` / DR README + `docs/design-changelog.md`; no new doc trees.
+
+Rules: design system is supreme (decisions `0011`/`0012`/`0044`); workflow in `.claude/rules/uiux-workflow.md`.
 
 ### Model rationale (resource ↔ capability)
 `opus` for the two highest-leverage, correctness-critical roles — `fe-nextjs-engineer` (the sole
