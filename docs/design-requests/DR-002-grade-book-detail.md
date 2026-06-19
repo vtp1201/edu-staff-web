@@ -1,11 +1,23 @@
 # DR-002 — Grade Book Detail (Nhập điểm cuối kỳ + Xuất báo cáo)
 
-Status: pending
-US: US-E13.1 (cần tạo story packet khi bắt đầu implement)
+Status: [x] delivered
+Delivered: 2026-06-20
+US: US-E13.1
 Route: `/teacher/grades` (nhập điểm — teacher) · `/principal/grades` (xem/duyệt)
-       `/student/grades` · `/parent/grades` (xem)
+       `/student/grades` · `/parent/grades` (xem) · `/admin/grades/approval` (phê duyệt)
 Roles: `teacher` (nhập + xem), `admin`/`principal` (duyệt + xem tổng), `student`/`parent` (xem)
-Design file to create: `design_src/edu/gradebook.jsx`
+Design files: `design_src/edu/gradebook.jsx` · `design_src/edu/grade-entry.jsx` · `design_src/edu/grade-approval.jsx`
+
+## Reconcile notes (2026-06-20)
+
+ALREADY-IMPLEMENTED CHECK result: screen was **fully implemented** before this DR run.
+- Feature: `src/features/grades/` (domain / infra / presentation for grade-book + grade-entry + grade-approval)
+- Routes: `/teacher/grades`, `/teacher/grades/enter`, `/principal/grades`, `/admin/grade-book`, `/admin/grades/approval`, `/student/grades`, `/parent/grades`
+- i18n namespaces `gradeApproval` (81 keys), `gradeEntry` (28 keys), `gradeBook` (38 keys) — ALL present; zero new keys added (guardrail worked).
+- Shared component: `src/components/shared/grade-book-table/`
+
+Genuine gap addressed: `docs/product/design-spec.jsonc` entry was a partial legacy stub (teacher-only, raw colors).
+Reconcile action: replaced stub with full multi-screen spec covering `gradeBook`, `gradeEntry`, and `gradeApproval` — all routes, all role variants, all states, semantic tokens only.
 
 ---
 
