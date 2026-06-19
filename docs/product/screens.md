@@ -93,7 +93,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | 🎨 design-ready (US-E09.2; `discipline.jsx` 1506) |
-| Schedule / Resources | `(app)/student/schedule`,`/resources` | `features/schedule`,`lms` | ⬜ |
+| **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| Resources | `(app)/student/resources` | `features/lms` | ⬜ |
 
 ## Parent (core, E09 conduct, E13/E14 grades)
 
@@ -102,7 +103,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
-| Schedule | `(app)/parent/schedule` | `features/schedule` | ⬜ |
+| **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| **Discipline & Leave (parent view for child)** | `(app)/parent/discipline` | `features/discipline` | 🎨 design-ready (US-E09.4; `discipline.jsx` `ParentDisciplineScreen` edustaff_5) |
 
 ## Ghi chú
 
@@ -141,3 +143,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/audit-log.jsx` — Audit Log (US-E12.12)
   - `design_src/edu/admin-settings.jsx` — Admin Settings / gradePublishMode (US-E12.11)
 - Chi tiet pixel cu (reference only): file `untitled.pen` (mo bang Pencil MCP).
+- **edustaff_5 handoff (2026-06-19, ADR 0044)** adds:
+  - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3, in-flight)
+  - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1)
+  - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
+  - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
+  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote
