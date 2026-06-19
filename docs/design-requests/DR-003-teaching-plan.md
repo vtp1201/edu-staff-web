@@ -1,7 +1,15 @@
 # DR-003 — Teaching Plan / PPCT (Kế hoạch giảng dạy / Phân phối chương trình)
 
-Status: pending
-US: US-E13.2 (cần tạo story packet khi bắt đầu implement)
+Status: [x] delivered (2026-06-20 — reconcile, not net-new)
+US: US-E11.4 (implemented — DR header had stale US-E13.2; actual Harness story is US-E11.4)
+
+## Reconcile verdict
+
+Screen ALREADY IMPLEMENTED (src/features/teaching-plan/ + design_src/edu/teaching-plan.jsx exists).
+Deliverable added: docs/product/design-spec.jsonc entry "teachingPlan" — full normative spec for
+both role variants (teacher-edit + principal-review), all states (loading/empty/error/draft/
+submitted/approved/rejected-with-comments), layout tokens, component list, BE data shape, a11y notes.
+i18n: ZERO new keys added — all 52 existing teachingPlan.* keys reused (no drift).
 Route: `/teacher/teaching-plan` (edit) · `/principal/teaching-plan` (review)
 Roles: `teacher` (soạn + submit), `principal`/`admin` (xem + duyệt)
 Design file to create: `design_src/edu/teaching-plan.jsx`
