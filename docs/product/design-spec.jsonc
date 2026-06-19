@@ -1688,5 +1688,884 @@
       "borderRadius": 99,
       "transition": "width 0.6s ease"
     }
+  },
+
+  // ─────────────────────────────────────────────
+  // ASSESSMENT SCHEME CONFIG
+  // Source: design_src/edu/assessment.jsx (1506 handoff)
+  // Route: /admin/assessment — ADMIN role only — US-E12.6
+  // ─────────────────────────────────────────────
+  "assessmentScheme": {
+    "route": "(app)/admin/assessment",
+    "role": "admin",
+    "us": "US-E12.6",
+    "designFile": "design_src/edu/assessment.jsx",
+
+    // ── Page container ────────────────────────────────────────────────────────
+    // AssessmentSchemeScreen: flex:1, overflowY:auto, padding:28px 32px
+    // maxWidth 1280, margin 0 auto (inner wrapper)
+    "layout": {
+      "pageContainer": {
+        "flex": 1,
+        "overflowY": "auto",
+        "padding": "28px 32px"
+      },
+      "innerWrapper": {
+        "maxWidth": 1280,
+        "margin": "0 auto"
+      },
+      // Two-column grid: 40% left (Grade Scale) | 60% right (Assessment Scheme)
+      // Component: direct child of inner wrapper after header
+      "twoColumnGrid": {
+        "display": "grid",
+        "gridTemplateColumns": "minmax(0, 4fr) minmax(0, 6fr)",
+        "gap": 18,
+        "alignItems": "start"
+      }
+    },
+
+    // ── Breadcrumb ────────────────────────────────────────────────────────────
+    // fontSize 12.5, color textMuted, marginBottom 12, gap 6
+    // Links: Home (home icon 12px) → Thiết lập trường → Thang điểm & Khung ĐG (active, textPrimary/700)
+    // chevronRight icon 11px between segments
+    "breadcrumb": {
+      "fontSize": 12.5,
+      "color": "var(--edu-text-muted)",
+      "marginBottom": 12,
+      "gap": 6,
+      "items": [
+        {
+          "label": "Trang chủ / Home",
+          "icon": "home",
+          "size": 12,
+          "nav": "dashboard"
+        },
+        { "label": "Thiết lập trường / School setup", "nav": "school-setup" },
+        {
+          "label": "Thang điểm & Khung ĐG / Assessment Scheme",
+          "active": true,
+          "color": "textPrimary",
+          "fontWeight": 700
+        }
+      ]
+    },
+
+    // ── Page header ───────────────────────────────────────────────────────────
+    // Component: title row div — display:flex, alignItems:center, gap:14, marginBottom:22
+    "pageHeader": {
+      // Icon box: 44×44, radius 12, bg pColor+'18', icon "percent" 22px pColor strokeWidth 1.8
+      "iconBox": {
+        "width": 44,
+        "height": 44,
+        "borderRadius": 12,
+        "background": "pColor + '18'",
+        "icon": "percent",
+        "iconSize": 22,
+        "iconStrokeWidth": 1.8
+      },
+      // Title: 22px/800, textPrimary
+      "title": {
+        "vi": "Thang điểm & Khung đánh giá",
+        "en": "Grade Scale & Assessment Scheme",
+        "fontSize": 22,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)"
+      },
+      // Step badge: pill next to title — bg pColor+'14', border pColor+'33', color pColor
+      // "sparkles" icon 10px, 11px/800, letterSpacing 0.04em
+      "stepBadge": {
+        "vi": "Bước 4/5 · Onboarding",
+        "en": "Step 4/5 · Onboarding",
+        "padding": "3px 10px",
+        "borderRadius": 99,
+        "background": "pColor + '14'",
+        "border": "1px solid pColor + '33'",
+        "color": "pColor",
+        "fontSize": 11,
+        "fontWeight": 800,
+        "icon": "sparkles",
+        "iconSize": 10
+      },
+      // Subtitle: 13px textMuted, marginTop 2
+      "subtitle": {
+        "fontSize": 13,
+        "color": "var(--edu-text-muted)",
+        "marginTop": 2
+      },
+      // ADMIN badge: right side — Badge component, color T.error, icon "shield" 11px
+      "adminBadge": {
+        "label": "ADMIN",
+        "color": "var(--edu-error)",
+        "icon": "shield",
+        "iconSize": 11
+      }
+    },
+
+    // ── Section card (AsCard) ─────────────────────────────────────────────────
+    // Shared wrapper for both columns
+    // bg T.card (#FFF), radius 14, border 1px T.border, shadow '0 2px 12px rgba(0,0,0,0.04)', padding 24
+    "sectionCard": {
+      "background": "var(--edu-card)",
+      "borderRadius": 14,
+      "border": "1px solid var(--edu-border)",
+      "boxShadow": "0 2px 12px rgba(0,0,0,0.04)",
+      "padding": 24
+    },
+
+    // ── Section header (AsSectionHeader) ─────────────────────────────────────
+    // display:flex, alignItems:flex-start, gap:14, marginBottom:20
+    // Icon box: 40×40, radius 10, bg iconColor+'18'; icon 20px iconColor strokeWidth 1.8
+    // Title: 16px/800 textPrimary
+    // Unsaved indicator pill (when dirty): bg warningLight, 10.5px/800 warning, 6px dot, padding 2px 8px radius 99
+    "sectionHeader": {
+      "display": "flex",
+      "alignItems": "flex-start",
+      "gap": 14,
+      "marginBottom": 20,
+      "iconBox": {
+        "width": 40,
+        "height": 40,
+        "borderRadius": 10,
+        "background": "iconColor + '18'"
+      },
+      "iconSize": 20,
+      "iconStrokeWidth": 1.8,
+      "titleFontSize": 16,
+      "titleFontWeight": 800,
+      "subtitleFontSize": 12.5,
+      "subtitleColor": "var(--edu-text-muted)",
+      // Unsaved indicator — shown when dirty===true
+      "unsavedIndicator": {
+        "display": "inline-flex",
+        "alignItems": "center",
+        "gap": 5,
+        "fontSize": 10.5,
+        "fontWeight": 800,
+        "color": "var(--edu-warning)",
+        "background": "var(--edu-warning-light)",
+        "padding": "2px 8px",
+        "borderRadius": 99,
+        "dot": {
+          "width": 6,
+          "height": 6,
+          "borderRadius": "50%",
+          "background": "var(--edu-warning)"
+        }
+      }
+    },
+
+    // ── States ────────────────────────────────────────────────────────────────
+    "states": {
+      // NoSubjectsBanner — shown when allSubjects.length === 0 (no active subjects in catalogue)
+      // Shown above the two-column grid, marginBottom 18
+      "noSubjects": {
+        "component": "NoSubjectsBanner",
+        "container": {
+          "padding": "14px 18px",
+          "marginBottom": 18,
+          "background": "var(--edu-warning-light)",
+          "border": "1px solid var(--edu-warning) + '44'",
+          "borderRadius": 12,
+          "display": "flex",
+          "alignItems": "center",
+          "gap": 14
+        },
+        // Warning icon box: 36×36 radius 10, bg warning+'22'
+        "iconBox": {
+          "width": 36,
+          "height": 36,
+          "borderRadius": 10,
+          "background": "T.warning + '22'",
+          "icon": "alertTriangle",
+          "iconSize": 17
+        },
+        "title": {
+          "vi": "Cần thiết lập danh mục môn học trước",
+          "en": "Subject catalogue must be configured first",
+          "fontSize": 14,
+          "fontWeight": 800,
+          // WCAG note: use #9A6A0F (--edu-warning-foreground), NOT white — contrast on warningLight bg
+          "color": "#9A6A0F"
+        },
+        "body": {
+          "fontSize": 12.5,
+          "color": "var(--edu-text-secondary)",
+          "marginTop": 2
+        },
+        "cta": {
+          "label": {
+            "vi": "Đến Danh mục môn học",
+            "en": "Open Subject catalogue"
+          },
+          "variant": "secondary",
+          "icon": "arrowRight",
+          "navigatesTo": "subjects"
+        }
+      },
+
+      // NoSubjectPicked — right column body when no subject is selected in the picker
+      // Component: NoSubjectPicked
+      "noSubjectPicked": {
+        "component": "NoSubjectPicked",
+        "container": {
+          "background": "var(--edu-bg)",
+          "borderRadius": 12,
+          "border": "1px dashed var(--edu-border)",
+          "padding": "36px 22px",
+          "textAlign": "center"
+        },
+        "icon": {
+          "name": "bookOpen",
+          "size": 30,
+          "color": "T.border",
+          "strokeWidth": 1.6
+        },
+        "title": {
+          "vi": "Chọn khối và môn học để bắt đầu",
+          "en": "Pick a grade and subject to begin",
+          "fontSize": 13,
+          "fontWeight": 700,
+          "color": "var(--edu-text-secondary)",
+          "marginTop": 8
+        },
+        "body": { "fontSize": 11.5, "marginTop": 4 }
+      },
+
+      // NoSchemeYet — right column body when subject picked but no scheme configured
+      // Component: NoSchemeYet
+      "noSchemeYet": {
+        "component": "NoSchemeYet",
+        "container": {
+          "background": "var(--edu-bg)",
+          "borderRadius": 12,
+          "border": "1px dashed var(--edu-border)",
+          "padding": "32px 22px",
+          "textAlign": "center"
+        },
+        "icon": {
+          "name": "clipboardList",
+          "size": 30,
+          "color": "T.border",
+          "strokeWidth": 1.6
+        },
+        "title": {
+          "vi": "Chưa có khung đánh giá cho môn học này.",
+          "en": "No assessment scheme for this subject yet.",
+          "fontSize": 14,
+          "fontWeight": 800,
+          "color": "var(--edu-text-secondary)",
+          "marginTop": 8
+        },
+        "body": { "fontSize": 12, "marginBottom": 16 },
+        // Inline preset buttons: border pColor+'55', bg T.card, color pColor, 12.5px/800 radius 8
+        "presetButtons": {
+          "display": "inline-flex",
+          "flexWrap": "wrap",
+          "gap": 8,
+          "justifyContent": "center",
+          "button": {
+            "padding": "8px 14px",
+            "borderRadius": 8,
+            "border": "1.5px solid pColor + '55'",
+            "background": "T.card",
+            "color": "pColor",
+            "fontSize": 12.5,
+            "fontWeight": 800
+          }
+        }
+      }
+    },
+
+    // ── Left column — Grade Scale (GradeScaleSection) ─────────────────────────
+    "leftColumn": {
+      "widthFraction": "4fr (≈40%)",
+      // Section header: icon "percent", iconColor pColor, title "Thang điểm / Grade Scale"
+      "sectionHeader": {
+        "icon": "percent",
+        "iconColor": "pColor",
+        "titleVi": "Thang điểm",
+        "titleEn": "Grade Scale",
+        "subtitleVi": "Áp dụng cho toàn trường. Xếp loại sẽ hiển thị trên học bạ & báo cáo.",
+        "subtitleEn": "Applied school-wide. Ranks appear on transcripts and reports."
+      },
+
+      // Preset pills (AsPill): flexWrap, gap 8, marginBottom 18
+      // Three presets: vn10 / gpa4 / letter
+      // Active pill: border pColor, bg pColor+'14', color pColor
+      // Inactive: border T.border, bg T.card, color textSecondary
+      // Pill layout: flexDirection column, gap 2; title 12.5px/800, subtitle 10.5px/600
+      "presetPills": {
+        "gap": 8,
+        "flexWrap": "wrap",
+        "marginBottom": 18,
+        "pillPadding": "8px 14px",
+        "pillBorderRadius": 9,
+        "pillActiveBorder": "1.5px solid pColor",
+        "pillActiveBackground": "pColor + '14'",
+        "pillInactiveBorder": "1.5px solid T.border",
+        "pillInactiveBackground": "T.card",
+        "titleFontSize": 12.5,
+        "titleFontWeight": 800,
+        "subtitleFontSize": 10.5,
+        "subtitleFontWeight": 600,
+        "presets": [
+          {
+            "id": "vn10",
+            "vi": "Thang 10",
+            "en": "Scale 10",
+            "descVi": "Mặc định Việt Nam · Thông tư 22/2021"
+          },
+          {
+            "id": "gpa4",
+            "vi": "Thang 4.0",
+            "en": "Scale 4.0 (GPA)",
+            "descVi": "GPA chuẩn quốc tế"
+          },
+          {
+            "id": "letter",
+            "vi": "Xếp loại chữ",
+            "en": "Letter grades",
+            "descVi": "Quy đổi từ phần trăm"
+          }
+        ]
+      },
+
+      // Band list container: bg T.bg, radius 10, border 1px T.border, padding 10, marginBottom 14
+      "bandListContainer": {
+        "background": "var(--edu-bg)",
+        "borderRadius": 10,
+        "border": "1px solid var(--edu-border)",
+        "padding": 10,
+        "marginBottom": 14
+      },
+
+      // Band list header row (column labels)
+      // Grid: 14px | 1.4fr | 0.85fr | 0.85fr | 1fr | 26px | 26px
+      // 9.5px/800 textMuted uppercase letterSpacing 0.08em, padding 6px 8px
+      "bandListHeader": {
+        "gridTemplateColumns": "14px minmax(0, 1.4fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1fr) 26px 26px",
+        "gap": 8,
+        "padding": "6px 8px",
+        "fontSize": 9.5,
+        "fontWeight": 800,
+        "color": "var(--edu-text-muted)",
+        "letterSpacing": "0.08em",
+        "textTransform": "uppercase",
+        "columns": [
+          "(swatch)",
+          "Xếp loại / Rank",
+          "Từ / From",
+          "Đến / To",
+          "Màu / Color",
+          "(move)",
+          "(delete)"
+        ]
+      },
+
+      // BandRow — one row per band, same grid template as header
+      // Component: BandRow
+      "bandRow": {
+        "gridTemplateColumns": "14px minmax(0, 1.4fr) minmax(0, 0.85fr) minmax(0, 0.85fr) minmax(0, 1fr) 26px 26px",
+        "gap": 8,
+        "padding": "6px 8px",
+        "borderBottom": "1px dashed T.border",
+        "colorSwatch": {
+          "width": 12,
+          "height": 12,
+          "borderRadius": 3,
+          "border": "1px solid T.border"
+        },
+        "labelInput": {
+          "padding": "6px 8px",
+          "borderRadius": 6,
+          "border": "1px solid T.border",
+          "fontSize": 12.5,
+          "fontWeight": 700,
+          "color": "var(--edu-text-primary)"
+        },
+        // Live rank badge next to input (shown when labelVi non-empty)
+        "rankBadge": {
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "color": "band.color",
+          "background": "band.color + '20'",
+          "padding": "2px 7px",
+          "borderRadius": 4
+        },
+        "numberInput": {
+          "padding": "6px 8px",
+          "borderRadius": 6,
+          "border": "1px solid T.border",
+          "fontSize": 12.5,
+          "fontWeight": 700,
+          "fontFamily": "ui-monospace, Menlo, monospace",
+          "fontVariantNumeric": "tabular-nums"
+        },
+        // Color picker: native <input type="color"> 28×26 radius 5
+        // Hex label: 10px monospace textMuted
+        "colorPicker": { "width": 28, "height": 26, "borderRadius": 5 },
+        "hexLabel": {
+          "fontSize": 10,
+          "fontFamily": "ui-monospace",
+          "color": "var(--edu-text-muted)"
+        },
+        // Move up/down buttons: 22×12 each, stacked, iconBtn style, disabled opacity 0.35
+        "moveButtons": {
+          "width": 22,
+          "height": 12,
+          "borderRadius": 4,
+          "disabledOpacity": 0.35
+        },
+        // Delete button: 24×24 radius 6, hover bg errorLight border error
+        "deleteButton": { "width": 24, "height": 24, "borderRadius": 6 }
+      },
+
+      // Add band button: dashed border, width 100%, marginTop 8, pColor, 12.5px/800
+      "addBandButton": {
+        "width": "100%",
+        "marginTop": 8,
+        "padding": "8px 10px",
+        "borderRadius": 7,
+        "border": "1.5px dashed T.border",
+        "color": "pColor",
+        "fontSize": 12.5,
+        "fontWeight": 800,
+        "icon": "plus",
+        "iconSize": 13
+      },
+
+      // Callout component — used for validation warnings/errors
+      // Component: Callout (shared by both left and right columns)
+      "callout": {
+        "marginTop": 10,
+        "padding": "11px 14px",
+        "borderRadius": 10,
+        "display": "flex",
+        "gap": 10,
+        "icon": "alertTriangle",
+        "iconSize": 14,
+        "titleFontSize": 12.5,
+        "titleFontWeight": 800,
+        "bodyFontSize": 11.5,
+        "bodyColor": "var(--edu-text-secondary)",
+        "kinds": {
+          "warning": {
+            "background": "var(--edu-warning-light)",
+            "border": "var(--edu-warning) + '44'",
+            "color": "var(--edu-warning)"
+          },
+          "error": {
+            "background": "var(--edu-error-light)",
+            "border": "var(--edu-error) + '44'",
+            "color": "var(--edu-error)"
+          }
+        }
+      },
+
+      // Validation states (shown inline below band list)
+      "validation": {
+        "gapWarning": {
+          "trigger": "bands don't fully cover domain.min → domain.max",
+          "calloutKind": "warning",
+          "titleVi": "Các ngưỡng chưa phủ kín từ {min} đến {max}{unit}"
+        },
+        "overlapError": {
+          "trigger": "two or more bands share score ranges",
+          "calloutKind": "error",
+          "titleVi": "Các ngưỡng bị chồng lấn"
+        }
+      },
+
+      // Save row: marginTop 16, flex, gap 10
+      // Button: variant=primary icon="check" label "Lưu thang điểm / Save grade scale", disabled when !dirty
+      // Success toast: inline pill successLight bg, success color, check icon 11px, 11.5px/800
+      //   animation: as-fadein 0.2s (from opacity 0 translateY(-2px) to opacity 1 translateY(0))
+      "saveRow": {
+        "marginTop": 16,
+        "gap": 10,
+        "saveButton": {
+          "variant": "primary",
+          "icon": "check",
+          "labelVi": "Lưu thang điểm",
+          "labelEn": "Save grade scale",
+          "disabledWhen": "!dirty"
+        },
+        "unsavedHint": {
+          "fontSize": 11.5,
+          "color": "var(--edu-text-muted)",
+          "fontWeight": 600
+        },
+        "successToast": {
+          "display": "inline-flex",
+          "padding": "5px 10px",
+          "borderRadius": 99,
+          "background": "var(--edu-success-light)",
+          "color": "var(--edu-success)",
+          "fontSize": 11.5,
+          "fontWeight": 800,
+          "icon": "check",
+          "iconSize": 11,
+          "animation": "as-fadein 0.2s ease-out",
+          "autoDismissMs": 2400
+        }
+      }
+    },
+
+    // ── Right column — Assessment Scheme (AssessmentSchemeSection) ────────────
+    "rightColumn": {
+      "widthFraction": "6fr (≈60%)",
+      // Section header: icon "bookOpen", iconColor T.teal (#00B8A9)
+      "sectionHeader": {
+        "icon": "bookOpen",
+        "iconColor": "#00B8A9",
+        "iconColorToken": "T.teal",
+        "titleVi": "Khung đánh giá môn học",
+        "titleEn": "Per-subject Assessment Scheme",
+        "subtitleVi": "Cấu trúc cột điểm cho từng môn theo khối. Tổng trọng số bắt buộc bằng 100%.",
+        "subtitleEn": "Grade-book column structure per grade-scoped subject. Weights must total 100%."
+      },
+
+      // Subject picker — two-level (SelectField × 2)
+      // Grid: 1fr | 2fr, gap 12, marginBottom 18
+      "subjectPicker": {
+        "gridTemplateColumns": "minmax(0, 1fr) minmax(0, 2fr)",
+        "gap": 12,
+        "marginBottom": 18,
+        "select": {
+          "padding": "9px 32px 9px 12px",
+          "borderRadius": 8,
+          "border": "1.5px solid T.border",
+          "background": "T.card (disabled: T.bg)",
+          "fontSize": 13.5,
+          "fontWeight": 700,
+          "backgroundImage": "chevron SVG data-uri at right 10px center",
+          "disabledOpacity": 0.6
+        },
+        "label": {
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "color": "var(--edu-text-muted)",
+          "textTransform": "uppercase",
+          "letterSpacing": "0.08em"
+        },
+        "fields": [
+          {
+            "id": "grade",
+            "labelVi": "Khối lớp",
+            "labelEn": "Grade level",
+            "disabledWhen": "never"
+          },
+          {
+            "id": "subject",
+            "labelVi": "Môn học",
+            "labelEn": "Subject",
+            "disabledWhen": "!grade"
+          }
+        ]
+      },
+
+      // Scheme editor — shown when subject is picked AND scheme exists
+      "schemeEditor": {
+        // Subject heading tile
+        // Component: top block inside SchemeEditor
+        // bg pColor+'0A', border pColor+'33', radius 12, padding 14 16, display flex gap 14 flexWrap
+        "subjectHeading": {
+          "background": "pColor + '0A'",
+          "border": "1px solid pColor + '33'",
+          "borderRadius": 12,
+          "padding": "14px 16px",
+          "marginBottom": 14,
+          "display": "flex",
+          "alignItems": "center",
+          "gap": 14,
+          "flexWrap": "wrap",
+          // Grade icon box: 40×40 radius 10, bg pColor+'22', color pColor
+          // "LỚP" label 9px/800 letterSpacing 0.06em + grade number 14px/900 tabular-nums
+          "gradeIconBox": {
+            "width": 40,
+            "height": 40,
+            "borderRadius": 10,
+            "background": "pColor + '22'",
+            "color": "pColor",
+            "flexDirection": "column",
+            "labelFontSize": 9,
+            "labelFontWeight": 800,
+            "numberFontSize": 14,
+            "numberFontWeight": 900
+          },
+          // Title: "Khung đánh giá — {subjectName}" 15px/800 textPrimary
+          "title": {
+            "fontSize": 15,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          // Code: "{subjectId} · {subjectCode}" 11px monospace textMuted, marginTop 2
+          "code": {
+            "fontSize": 11,
+            "fontFamily": "ui-monospace, Menlo, monospace",
+            "color": "var(--edu-text-muted)"
+          },
+          // LockedMeta tiles: flexDirection column, gap 2, padding 6px 10px, radius 8, bg T.bg, border T.border
+          // Label: 9.5px/800 textMuted uppercase lock icon 9px; Value: 13px/800 textPrimary tabular-nums
+          "lockedMetaTile": {
+            "padding": "6px 10px",
+            "borderRadius": 8,
+            "background": "var(--edu-bg)",
+            "border": "1px solid var(--edu-border)",
+            "labelFontSize": 9.5,
+            "labelFontWeight": 800,
+            "labelIcon": "lock",
+            "labelIconSize": 9,
+            "valueFontSize": 13,
+            "valueFontWeight": 800,
+            "fields": [
+              "Số tiết / năm (Periods / year)",
+              "Số bài KT / kỳ (Required exams / term)"
+            ]
+          }
+        },
+
+        // Preset pills for scheme (AsPill, same component as grade scale)
+        // display flex, gap 10, marginBottom 14, flexWrap
+        // Label prefix: "Khung mẫu / Preset" 10.5px/800 textMuted uppercase
+        "presetPills": {
+          "gap": 10,
+          "marginBottom": 14,
+          "labelFontSize": 10.5,
+          "labelFontWeight": 800,
+          "labelColor": "var(--edu-text-muted)",
+          "presets": [
+            {
+              "id": "tt22",
+              "vi": "Theo Thông tư 22/2021",
+              "en": "Per Circular 22/2021",
+              "descVi": "Áp dụng cho THPT"
+            },
+            {
+              "id": "tt26",
+              "vi": "THCS Thông tư 26",
+              "en": "Circular 26 · Lower secondary",
+              "descVi": "Áp dụng cho THCS"
+            },
+            {
+              "id": "custom",
+              "vi": "Tùy chỉnh",
+              "en": "Custom",
+              "descVi": "Tự định nghĩa cột & trọng số"
+            }
+          ]
+        },
+
+        // Column table: bg T.card, border T.border, radius 12, overflow hidden, marginBottom 14
+        "columnTable": {
+          "background": "var(--edu-card)",
+          "border": "1px solid var(--edu-border)",
+          "borderRadius": 12,
+          "overflow": "hidden",
+          "marginBottom": 14,
+
+          // Table header: bg T.bg, borderBottom T.border, padding 10 14
+          // 10.5px/800 textMuted uppercase letterSpacing 0.06em
+          // gridTemplateColumns: 2.2fr | 0.7fr | 0.9fr | 26px
+          "header": {
+            "background": "var(--edu-bg)",
+            "borderBottom": "1px solid var(--edu-border)",
+            "padding": "10px 14px",
+            "fontSize": 10.5,
+            "fontWeight": 800,
+            "color": "var(--edu-text-muted)",
+            "letterSpacing": "0.06em",
+            "textTransform": "uppercase",
+            "gridTemplateColumns": "minmax(0, 2.2fr) minmax(0, 0.7fr) minmax(0, 0.9fr) 26px",
+            "columns": [
+              "Cột điểm / Column",
+              "Số lần / Times",
+              "Trọng số / Weight",
+              "(delete)"
+            ]
+          },
+
+          // ColumnRow — one per column
+          // Same grid template as header, padding 10px 14px, borderBottom T.border
+          "columnRow": {
+            "gridTemplateColumns": "minmax(0, 2.2fr) minmax(0, 0.7fr) minmax(0, 0.9fr) 26px",
+            "padding": "10px 14px",
+            "borderBottom": "1px solid T.border",
+            // Kind select: colored badge style — bg km.color+'14', border km.color+'55', color km.color
+            // 10.5px/800, padding 5px 24px 5px 8px, radius 6, appearance none, chevron data-uri
+            "kindSelect": {
+              "padding": "5px 24px 5px 8px",
+              "borderRadius": 6,
+              "fontSize": 10.5,
+              "fontWeight": 800,
+              "background": "km.color + '14'",
+              "border": "1.5px solid km.color + '55'",
+              "color": "km.color",
+              "kinds": {
+                "TX": "T.primary (#5D87FF)",
+                "GK": "T.warning (#FFAE1F)",
+                "CK": "T.error (#FA896B)"
+              }
+            },
+            // Label input: flex 1, padding 6px 10px, radius 6, border T.border, 13px/700
+            "labelInput": {
+              "padding": "6px 10px",
+              "borderRadius": 6,
+              "fontSize": 13,
+              "fontWeight": 700
+            },
+            // Times input: width 56px, center, monospace tabular-nums
+            "timesInput": { "width": 56, "textAlign": "center", "prefix": "×" },
+            // Weight input: width 64px, center, suffix "%"
+            "weightInput": {
+              "width": 64,
+              "textAlign": "center",
+              "suffix": "%"
+            },
+            // Delete button: 24×24 radius 6, error icon, disabled when columns.length === 1
+            "deleteButton": {
+              "width": 24,
+              "height": 24,
+              "borderRadius": 6,
+              "disabledOpacity": 0.35
+            }
+          },
+
+          // Total row: double top border (2px solid T.border)
+          // bg: isHundred → successLight+'88'; else → errorLight+'88'
+          // Weight total: 16px/900 tabular-nums; color success or error
+          // Icon: check (success) or alertTriangle (error), 12px
+          "totalRow": {
+            "gridTemplateColumns": "minmax(0, 2.2fr) minmax(0, 0.7fr) minmax(0, 0.9fr) 26px",
+            "padding": "12px 14px",
+            "borderTop": "2px solid var(--edu-border)",
+            "backgroundSuccess": "var(--edu-success-light) + '88'",
+            "backgroundError": "var(--edu-error-light) + '88'",
+            "labelFontSize": 11.5,
+            "labelFontWeight": 800,
+            "totalFontSize": 16,
+            "totalFontWeight": 900,
+            "colorSuccess": "var(--edu-success)",
+            "colorError": "var(--edu-error)"
+          },
+
+          // Progress bar: height 5px, bg T.bg
+          // Fill: success (#13DEB9) when total===100 | error (#FA896B) when >100 | warning (#FFAE1F) when <100
+          // transition: width 0.3s, background 0.2s
+          "progressBar": {
+            "height": 5,
+            "background": "var(--edu-bg)",
+            "fillSuccess": "var(--edu-success)",
+            "fillWarning": "var(--edu-warning)",
+            "fillError": "var(--edu-error)",
+            "transition": "width 0.3s, background 0.2s",
+            "widthCalc": "Math.min(total, 200)%"
+          },
+
+          // Add column button: full width, dashed top border, bg T.card, color pColor
+          // padding 10px, 12.5px/800, icon "plus" 13px
+          "addColumnButton": {
+            "width": "100%",
+            "padding": "10px",
+            "borderTop": "1px dashed var(--edu-border)",
+            "background": "var(--edu-card)",
+            "color": "pColor",
+            "fontSize": 12.5,
+            "fontWeight": 800,
+            "icon": "plus",
+            "iconSize": 13
+          }
+        },
+
+        // Weight ≠ 100 callout (Callout kind="error")
+        // Shown below columnTable when !isHundred
+        "weightValidation": {
+          "trigger": "total weight !== 100",
+          "calloutKind": "error",
+          "titleVi": "Tổng trọng số phải bằng 100% (hiện tại {total}%)",
+          "titleEn": "Total must equal 100% (currently {total}%)"
+        },
+
+        // Save row: marginTop 14, flex, gap 10
+        // Button: variant=primary, disabled when !dirty OR !isHundred
+        // Same success toast as grade scale section
+        "saveRow": {
+          "marginTop": 14,
+          "gap": 10,
+          "saveButton": {
+            "variant": "primary",
+            "icon": "check",
+            "labelVi": "Lưu khung đánh giá",
+            "labelEn": "Save scheme",
+            "disabledWhen": "!dirty || !isHundred"
+          },
+          "successToast": {
+            "samePatternAs": "leftColumn.saveRow.successToast",
+            "labelVi": "Đã lưu khung đánh giá.",
+            "labelEn": "Assessment scheme saved."
+          }
+        }
+      }
+    },
+
+    // ── Token notes ───────────────────────────────────────────────────────────
+    "tokens": {
+      // T.teal = #00B8A9 — used as iconColor for AssessmentScheme section header
+      // No new token needed; map to --edu-teal in tokens.css
+      "tealIcon": "#00B8A9 (T.teal — AssessmentScheme section icon, --edu-teal)",
+      // WCAG note: warning text on warningLight bg MUST use --edu-warning-foreground (#9A6A0F), NOT white
+      "warningForeground": "#9A6A0F (noSubjects banner title — WCAG 4.5:1 on warningLight bg)",
+      // Progress bar fill is conditional: success=100% | error>100% | warning<100%
+      "progressFill": "conditional: success | warning | error based on weight sum vs 100"
+    },
+
+    // ── Responsive ────────────────────────────────────────────────────────────
+    "responsive": {
+      // 1024px+: two-column grid (4fr | 6fr) as designed
+      // 768px (tablet): single column, leftColumn above rightColumn
+      // 375px (mobile): single column, padding reduce to 16px 12px, pill rows scroll-x
+      "breakpoints": {
+        "1024": "grid 4fr/6fr — default",
+        "768": "grid collapses to 1fr (stacked); left col above right col",
+        "375": "padding: 16px 12px; preset pill rows: overflow-x: auto; min-width: 0 on pills"
+      }
+    },
+
+    // ── Developer annotations ─────────────────────────────────────────────────
+    "developerNotes": {
+      // Components to reuse from design system / shared:
+      "reuse": [
+        "StatCard — not used here",
+        "StatusBadge — not used here (badges are inline custom in this screen)",
+        "ProgressBar — progress bar pattern matches shared ProgressBar but this instance is 5px height, inline in table",
+        "Button (variant=primary/secondary) — reuse from components/ui/button",
+        "Badge — reuse from components/ui/badge for ADMIN label"
+      ],
+      // New screen-local components (feature/presentation):
+      "screenLocal": [
+        "AsCard — section card wrapper (bg card, radius 14, shadow)",
+        "AsSectionHeader — icon box + title + unsaved indicator",
+        "AsPill — preset pill (active/inactive, title+subtitle)",
+        "GradeScaleSection — left column; manages bands state",
+        "BandRow — one grade band row in the band list",
+        "AssessmentSchemeSection — right column; manages scheme state per subjectId",
+        "SelectField — labeled select with chevron bg-image",
+        "SchemeEditor — shown when subject+scheme exist; contains ColumnRow, totalRow, progressBar",
+        "ColumnRow — one assessment column row",
+        "LockedMeta — locked info tile (periods/year, exams/term)",
+        "Callout — warning/error callout (gap/overlap/weight validation)",
+        "NoSubjectsBanner — full-width warning when no subjects in catalogue",
+        "NoSubjectPicked — empty state right col — no subject selected",
+        "NoSchemeYet — empty state right col — no scheme for picked subject"
+      ],
+      // BE data shape consumed (mock-first per decision 0014 — core service not yet built):
+      "beDataShape": {
+        "subjectParents": "window.SM_SEED_PARENTS (shared from subjects screen) — list of {id, name, status, subjects: [{id, name, code, gradeLevel, periodCount, requiredAssessmentCount, status}]}",
+        "gradeScale": "POST /admin/grade-scale — { presetId, bands: [{id, labelVi, labelEn, from, to, color}], domain }",
+        "assessmentScheme": "POST /admin/assessment-scheme/{subjectId} — { presetId, columns: [{id, labelVi, labelEn, times, weight, kind}] }"
+      },
+      // Copy keys (i18n):
+      "copyKeys": "assessmentScheme.* namespace — titles, labels, validation messages, CTA labels, preset descriptions"
+    }
   }
 }
