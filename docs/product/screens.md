@@ -28,6 +28,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
+| SSE Disconnect Banner + Pending-Message Pill | shell-level (DashboardLayout) | `components/shared/sse-status/` | ⬜ US-E08.6 |
 | Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 |
 | Notifications Center | `(app)/(shared)/notifications` | `features/notification` | 🎨 design-ready (US-E10.2; `notifications.jsx` 1506; SSE decision 0009) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1; `messaging.jsx` 1506) |
@@ -87,9 +88,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
-| Courses + lesson player | `(app)/student/courses`,`/courses/[id]` | `features/lms` | ⬜ (E11) |
+| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ⬜ US-E11.6 (design-ready; `student.jsx` edustaff_5) |
 | Assignments | `(app)/student/assignments` | `features/lms` | ⬜ (E11) |
-| Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | 🎨 design-ready (US-E11.1; `exam.jsx` 1506) |
+| Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | 🎨 design-ready (US-E09.2; `discipline.jsx` 1506) |
