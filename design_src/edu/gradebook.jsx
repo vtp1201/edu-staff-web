@@ -9,7 +9,7 @@
 //          by teacher; LOCKED — admin-locked, not editable.
 //          gradePublishMode is a tenant setting:
 //            'AUTO'           — saved cell auto-published.
-//            'ADMIN_APPROVAL' — students/parents see "chua cong bo" banner
+//            'ADMIN_APPROVAL' — students/parents see "chưa công bố" banner
 //                               until admin approves the batch.
 
 // ── Shared lookups ──────────────────────────────────────────────────────────
@@ -17,14 +17,14 @@
 // Five-band rank scale from DR-001 (Thang 10). Used for both row TB rank and
 // summary distribution. Bands order matters: [from, to, label, color].
 const GB_SCALE = [
-  { id: 'xs', vi: 'Xuat sac',   en: 'Outstanding', from: 9.5, to: 10,  color: T.success },
-  { id: 'gi', vi: 'Gioi',       en: 'Excellent',   from: 8.0, to: 9.4, color: T.primary },
-  { id: 'kh', vi: 'Kha',        en: 'Good',        from: 6.5, to: 7.9, color: T.warning },
-  { id: 'tb', vi: 'Trung binh', en: 'Average',     from: 5.0, to: 6.4, color: T.textMuted },
-  { id: 'ye', vi: 'Yeu',        en: 'Poor',        from: 0,   to: 4.9, color: T.error },
+  { id: 'xs', vi: 'Xuất sắc',  en: 'Outstanding', from: 9.5, to: 10,  color: T.success },
+  { id: 'gi', vi: 'Giỏi',      en: 'Excellent',   from: 8.0, to: 9.4, color: T.primary },
+  { id: 'kh', vi: 'Khá',       en: 'Good',        from: 6.5, to: 7.9, color: T.warning },
+  { id: 'tb', vi: 'Trung bình', en: 'Average',    from: 5.0, to: 6.4, color: T.textMuted },
+  { id: 'ye', vi: 'Yếu',       en: 'Poor',        from: 0,   to: 4.9, color: T.error },
 ];
 
-const GB_CONDUCT = { vi: 'Tot', en: 'Excellent', color: T.success };
+const GB_CONDUCT = { vi: 'Tốt', en: 'Excellent', color: T.success };
 
 const GB_KIND_META = {
   TX: { color: T.primary, vi: 'TX', en: 'TX' },
@@ -32,15 +32,15 @@ const GB_KIND_META = {
   CK: { color: T.error,   vi: 'CK', en: 'CK' },
 };
 
-// AssessmentScheme — mirrors DR-001 default (Thong tu 22/2021).
+// AssessmentScheme — mirrors DR-001 default (Thông tư 22/2021).
 // Each component (kind, count, weight) expands into `count` editable columns;
 // each column inherits the component's per-cell weight = weight / count.
 const GB_DEFAULT_SCHEME = {
-  presetVi: 'Thong tu 22/2021', presetEn: 'Circular 22/2021',
+  presetVi: 'Thông tư 22/2021', presetEn: 'Circular 22/2021',
   components: [
-    { id: 'cp-tx', kind: 'TX', labelVi: 'Diem thuong xuyen', labelEn: 'Continuous', count: 2, weight: 20 },
-    { id: 'cp-gk', kind: 'GK', labelVi: 'Giua ky',           labelEn: 'Midterm',    count: 1, weight: 30 },
-    { id: 'cp-ck', kind: 'CK', labelVi: 'Cuoi ky',           labelEn: 'Final',      count: 1, weight: 50 },
+    { id: 'cp-tx', kind: 'TX', labelVi: 'Điểm thường xuyên', labelEn: 'Continuous', count: 2, weight: 20 },
+    { id: 'cp-gk', kind: 'GK', labelVi: 'Giữa kỳ',           labelEn: 'Midterm',    count: 1, weight: 30 },
+    { id: 'cp-ck', kind: 'CK', labelVi: 'Cuối kỳ',           labelEn: 'Final',      count: 1, weight: 50 },
   ],
 };
 
@@ -64,16 +64,16 @@ const GB_PUBLISH_MODE = 'ADMIN_APPROVAL';
 
 // Teacher subject offerings (which classes a teacher teaches).
 const GB_TEACHER_OFFERINGS = [
-  { subjectId: 'sub-math-10', subjectVi: 'Toan lop 10', subjectEn: 'Math · G10', classKeys: ['cls-10a1', 'cls-10a2'] },
-  { subjectId: 'sub-math-11', subjectVi: 'Toan lop 11', subjectEn: 'Math · G11', classKeys: ['cls-11b2'] },
+  { subjectId: 'sub-math-10', subjectVi: 'Toán lớp 10', subjectEn: 'Math · G10', classKeys: ['cls-10a1', 'cls-10a2'] },
+  { subjectId: 'sub-math-11', subjectVi: 'Toán lớp 11', subjectEn: 'Math · G11', classKeys: ['cls-11b2'] },
 ];
 const GB_TERMS = [
-  { id: 'HK1', vi: 'Hoc ky 1', en: 'Term 1' },
-  { id: 'HK2', vi: 'Hoc ky 2', en: 'Term 2' },
+  { id: 'HK1', vi: 'Học kỳ 1', en: 'Term 1' },
+  { id: 'HK2', vi: 'Học kỳ 2', en: 'Term 2' },
 ];
 
-// Seed grades for (classKey, subjectId, term) — studentId — cells map.
-// `cells[colKey] = { value, state }`. State in DRAFT | PUBLISHED | LOCKED.
+// Seed grades for (classKey, subjectId, term) → studentId → cells map.
+// `cells[colKey] = { value, state }`. State ∈ DRAFT | PUBLISHED | LOCKED.
 const gbSeed = (() => {
   const roster = (window.ROSTER_BY_CLASS || {})['cls-10a1'] || [];
   const columns = gbExpandColumns(GB_DEFAULT_SCHEME);
@@ -169,7 +169,7 @@ const TeacherGradeBook = ({ t, pColor, onNavigate }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedKey]);
 
-  // Resolve a row's cells = persisted + draft overrides.
+  // Resolve a row's cells = persisted ∪ draft overrides.
   const cellsFor = (studentId) => {
     const base = persisted[studentId] || {};
     const ovr  = draft[studentId] || {};
@@ -210,6 +210,9 @@ const TeacherGradeBook = ({ t, pColor, onNavigate }) => {
       Object.entries(draft).forEach(([sid, row]) => {
         next[sid] = { ...(next[sid] || {}) };
         Object.entries(row).forEach(([col, cell]) => {
+          // Saved cell transitions DRAFT → PUBLISHED (per gradePublishMode = AUTO
+          // would be PUBLISHED immediately; under ADMIN_APPROVAL it stays
+          // PUBLISHED but is hidden from parents/students until approved).
           if (cell.value === '') delete next[sid][col];
           else next[sid][col] = { value: cell.value, state: 'PUBLISHED' };
         });
@@ -225,7 +228,7 @@ const TeacherGradeBook = ({ t, pColor, onNavigate }) => {
     <div style={{ flex: 1, overflowY: 'auto', position: 'relative', paddingBottom: 96 }}>
       <div style={{ padding: '28px 32px 0', maxWidth: 1280, margin: '0 auto' }}>
         <TitleRow t={t} pColor={pColor} role="teacher"
-          subtitle={t('Nhap diem theo cot danh gia. Luu de cong bo theo cau hinh cua truong.',
+          subtitle={t('Nhập điểm theo cột đánh giá. Lưu để công bố theo cấu hình của trường.',
                       'Enter grades per assessment column. Save to publish per school policy.')}
           right={hasUnsaved && <UnsavedDot t={t} />}
         />
@@ -305,12 +308,12 @@ const PrincipalGradeBook = ({ t, pColor, onNavigate }) => {
     <div style={{ flex: 1, overflowY: 'auto' }}>
       <div style={{ padding: '28px 32px', maxWidth: 1280, margin: '0 auto' }}>
         <TitleRow t={t} pColor={pColor} role="principal"
-          subtitle={t('Tong hop bang diem cac lop. Duyet & khoa tai man rieng.',
+          subtitle={t('Tổng hợp bảng điểm các lớp. Duyệt & khoá tại màn riêng.',
                       'Aggregate view of class grade books. Approve & lock on the dedicated screen.')}
           right={
             <Button variant="secondary" icon="arrowRight"
               onClick={() => onNavigate && onNavigate('grades-approval')}>
-              {t('Mo man Duyet & khoa', 'Open Approval & Lock')}
+              {t('Mở màn Duyệt & khoá', 'Open Approval & Lock')}
             </Button>
           }
         />
@@ -351,28 +354,56 @@ const PrincipalGradeBook = ({ t, pColor, onNavigate }) => {
 
 // ── STUDENT / PARENT VIEW ────────────────────────────────────────────────────
 
-const VIEWER_SUBJECTS = [
-  { id: 'sub-math-10', vi: 'Toan', en: 'Math',       teacher: 'Nguyen Thi Huong' },
-  { id: 'sub-lit-10',  vi: 'Ngu Van', en: 'Literature', teacher: 'Pham Quoc Bao' },
-  { id: 'sub-eng-10',  vi: 'Tieng Anh', en: 'English', teacher: 'Do Thi Mai' },
-  { id: 'sub-phy-10',  vi: 'Vat Ly', en: 'Physics',  teacher: 'Tran Van Minh' },
-  { id: 'sub-chem-10', vi: 'Hoa Hoc', en: 'Chemistry', teacher: 'Le Thi Hoa' },
-  { id: 'sub-his-10',  vi: 'Lich Su', en: 'History', teacher: 'Nguyen Van Phuc' },
-];
-
-// Per-subject cells for the viewer (same 4 columns as the default scheme).
-const VIEWER_CELLS = {
-  'sub-math-10':  { 'cp-tx-1': 9,  'cp-tx-2': 8,  'cp-gk': 8.5, 'cp-ck': 9 },
-  'sub-lit-10':   { 'cp-tx-1': 7,  'cp-tx-2': 8,  'cp-gk': 7.5, 'cp-ck': 8 },
-  'sub-eng-10':   { 'cp-tx-1': 9,  'cp-tx-2': 9,  'cp-gk': 9,   'cp-ck': 9.5 },
-  'sub-phy-10':   { 'cp-tx-1': 8,  'cp-tx-2': 9,  'cp-gk': 8.5, 'cp-ck': 9 },
-  'sub-chem-10':  { 'cp-tx-1': 7,  'cp-tx-2': 7,  'cp-gk': 8,   'cp-ck': 8 },
-  'sub-his-10':   { 'cp-tx-1': 8,  'cp-tx-2': 8,  'cp-gk': null, 'cp-ck': null }, // pending publish
+// Per-child grade book seed. Each child has their own subject list + per-subject
+// cell scores (4-column scheme: cp-tx-1, cp-tx-2, cp-gk, cp-ck). Switching the
+// `ChildSwitcher` picks a key here; the table + GPA summary recompute from it.
+//
+// Child 0 — Nguyễn Minh Khoa, 11A2 (grade 11, strong student, full HK1).
+// Child 1 — Nguyễn Thu Hà,  8B1   (grade 8, fewer subjects, slightly easier curriculum,
+//                                  higher absolute GPA — matches ParentScreen seed 9.1).
+//
+// One row per child has `cp-gk`/`cp-ck` still null to exercise the "chưa công bố"
+// pending-publish state in the read-only viewer.
+const VIEWER_DATA_BY_CHILD = {
+  0: {
+    subjects: [
+      { id: 'sub-math-11', vi: 'Toán',      en: 'Math',       teacher: 'Nguyễn Thị Hương' },
+      { id: 'sub-lit-11',  vi: 'Ngữ Văn',   en: 'Literature', teacher: 'Phạm Quốc Bảo' },
+      { id: 'sub-eng-11',  vi: 'Tiếng Anh', en: 'English',    teacher: 'Đỗ Thị Mai' },
+      { id: 'sub-phy-11',  vi: 'Vật Lý',    en: 'Physics',    teacher: 'Trần Văn Minh' },
+      { id: 'sub-chem-11', vi: 'Hoá Học',   en: 'Chemistry',  teacher: 'Lê Thị Hoa' },
+      { id: 'sub-his-11',  vi: 'Lịch Sử',   en: 'History',    teacher: 'Vũ Văn Tài' },
+    ],
+    cells: {
+      'sub-math-11': { 'cp-tx-1': 9,   'cp-tx-2': 8,   'cp-gk': 8.5, 'cp-ck': 9   },
+      'sub-lit-11':  { 'cp-tx-1': 7,   'cp-tx-2': 8,   'cp-gk': 7.5, 'cp-ck': 8   },
+      'sub-eng-11':  { 'cp-tx-1': 9,   'cp-tx-2': 9,   'cp-gk': 9,   'cp-ck': 9.5 },
+      'sub-phy-11':  { 'cp-tx-1': 8,   'cp-tx-2': 9,   'cp-gk': 8.5, 'cp-ck': 9   },
+      'sub-chem-11': { 'cp-tx-1': 7,   'cp-tx-2': 7,   'cp-gk': 8,   'cp-ck': 8   },
+      'sub-his-11':  { 'cp-tx-1': 8,   'cp-tx-2': 8,   'cp-gk': null,'cp-ck': null }, // pending publish
+    },
+  },
+  1: {
+    subjects: [
+      { id: 'sub-math-8',  vi: 'Toán',      en: 'Math',       teacher: 'Phan Thị Lan' },
+      { id: 'sub-lit-8',   vi: 'Ngữ Văn',   en: 'Literature', teacher: 'Trần Bích Vân' },
+      { id: 'sub-eng-8',   vi: 'Tiếng Anh', en: 'English',    teacher: 'Bùi Quang Huy' },
+      { id: 'sub-bio-8',   vi: 'Sinh Học',  en: 'Biology',    teacher: 'Nguyễn Hồng Vân' },
+      { id: 'sub-his-8',   vi: 'Lịch Sử',   en: 'History',    teacher: 'Đào Thuỳ Linh' },
+    ],
+    cells: {
+      'sub-math-8':  { 'cp-tx-1': 9.5, 'cp-tx-2': 9,   'cp-gk': 9,   'cp-ck': 9.5 },
+      'sub-lit-8':   { 'cp-tx-1': 9,   'cp-tx-2': 8.5, 'cp-gk': 9,   'cp-ck': 9   },
+      'sub-eng-8':   { 'cp-tx-1': 10,  'cp-tx-2': 9.5, 'cp-gk': 9.5, 'cp-ck': 9.5 },
+      'sub-bio-8':   { 'cp-tx-1': 9,   'cp-tx-2': 9,   'cp-gk': 8.5, 'cp-ck': 9   },
+      'sub-his-8':   { 'cp-tx-1': 9,   'cp-tx-2': 8,   'cp-gk': null,'cp-ck': null }, // pending publish
+    },
+  },
 };
 
 const VIEWER_CHILDREN = [
-  { id: 'c1', name: 'Nguyen Minh Khoa', avatar: 'NK', color: T.primary, classId: '11A2' },
-  { id: 'c2', name: 'Nguyen Phuong Linh', avatar: 'NL', color: T.purple, classId: '9A1'  },
+  { id: 'c1', name: 'Nguyễn Minh Khoa', avatar: 'NK', color: T.primary, classId: '11A2' },
+  { id: 'c2', name: 'Nguyễn Thu Hà',    avatar: 'NH', color: T.success, classId: '8B1'  },
 ];
 
 const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
@@ -382,10 +413,15 @@ const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
 
   const columns = React.useMemo(() => gbExpandColumns(GB_DEFAULT_SCHEME), []);
 
-  // Build subject rows.
-  const rows = VIEWER_SUBJECTS.map(s => {
+  // STUDENT views child 0 (their own record — Nguyễn Minh Khoa).
+  // PARENT swaps datasets via childIdx.
+  const activeIdx = isParent ? childIdx : 0;
+  const dataset   = VIEWER_DATA_BY_CHILD[activeIdx] || VIEWER_DATA_BY_CHILD[0];
+
+  // Build subject rows from the SELECTED child's data.
+  const rows = dataset.subjects.map(s => {
     const cells = {};
-    Object.entries(VIEWER_CELLS[s.id] || {}).forEach(([k, v]) => {
+    Object.entries(dataset.cells[s.id] || {}).forEach(([k, v]) => {
       cells[k] = { value: v, state: 'PUBLISHED' };
     });
     return { subject: s, cells };
@@ -399,7 +435,7 @@ const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
     : null;
   const rank = gbRank(gpa);
 
-  // Publish gate: any row with null values & ADMIN_APPROVAL mode — "chua cong bo".
+  // Publish gate: any row with null values & ADMIN_APPROVAL mode → "chưa công bố".
   const allPublished = subjectAvgs.every(a => a != null);
   const isLocked = GB_PUBLISH_MODE === 'ADMIN_APPROVAL' && !allPublished;
 
@@ -408,9 +444,9 @@ const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
       <div style={{ padding: '28px 32px', maxWidth: 1100, margin: '0 auto' }}>
         <TitleRow t={t} pColor={pColor} role={role}
           subtitle={isParent
-            ? t('Bang diem cua con ban theo tung hoc ky. Ban co the nhan tin truc tiep voi giao vien bo mon.',
+            ? t('Bảng điểm của con bạn theo từng học kỳ. Bạn có thể nhắn tin trực tiếp với giáo viên bộ môn.',
                 "Your child's grades by term. Message subject teachers directly.")
-            : t('Bang diem ca nhan theo hoc ky.', 'Personal grade book by term.')
+            : t('Bảng điểm cá nhân theo học kỳ.', 'Personal grade book by term.')
           }
           right={null}
         />
@@ -451,12 +487,12 @@ const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
             fontSize: 12.5, color: T.textSecondary,
           }}>
             <Icon name="message" size={14} color={pColor} />
-            {t('Co thac mac ve diem? Lien he giao vien bo mon qua tin nhan.',
+            {t('Có thắc mắc về điểm? Liên hệ giáo viên bộ môn qua tin nhắn.',
                'Questions about a grade? Reach out to subject teachers via messaging.')}
             <span style={{ flex: 1 }} />
             <Button variant="secondary" icon="message"
               onClick={() => onNavigate && onNavigate('messaging')}>
-              {t('Lien he giao vien', 'Contact teachers')}
+              {t('Liên hệ giáo viên', 'Contact teachers')}
             </Button>
           </div>
         )}
@@ -468,9 +504,9 @@ const ViewerGradeBook = ({ t, pColor, role, onNavigate }) => {
 // ── Title row ────────────────────────────────────────────────────────────────
 
 const TitleRow = ({ t, pColor, role, subtitle, right }) => {
-  const titleVi = role === 'teacher'   ? 'Bang diem — Nhap diem'
-              : role === 'principal' ? 'Bang diem — Tong hop'
-              :                        'Bang diem';
+  const titleVi = role === 'teacher'   ? 'Bảng điểm — Nhập điểm'
+              : role === 'principal' ? 'Bảng điểm — Tổng hợp'
+              :                        'Bảng điểm';
   const titleEn = role === 'teacher'   ? 'Grade Book — Entry'
               : role === 'principal' ? 'Grade Book — Aggregate'
               :                        'Grade Book';
@@ -478,7 +514,7 @@ const TitleRow = ({ t, pColor, role, subtitle, right }) => {
                        : role === 'teacher'   ? pColor
                        : role === 'parent'    ? T.purple
                        :                        T.success;
-  const roleVi = ({ teacher: 'TEACHER · GVBM', principal: 'ADMIN · BGH', student: 'HOC SINH', parent: 'PHU HUYNH' })[role];
+  const roleVi = ({ teacher: 'TEACHER · GVBM', principal: 'ADMIN · BGH', student: 'HỌC SINH', parent: 'PHỤ HUYNH' })[role];
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
       <div style={{
@@ -503,7 +539,7 @@ const TitleRow = ({ t, pColor, role, subtitle, right }) => {
 };
 
 const UnsavedDot = ({ t }) => (
-  <span title={t('Co thay doi chua luu', 'Unsaved changes')} style={{
+  <span title={t('Có thay đổi chưa lưu', 'Unsaved changes')} style={{
     display: 'inline-flex', alignItems: 'center', gap: 7,
     padding: '5px 12px', borderRadius: 99,
     background: T.warningLight, color: '#9A6A0F',
@@ -511,7 +547,7 @@ const UnsavedDot = ({ t }) => (
     fontSize: 11.5, fontWeight: 800, letterSpacing: '0.04em',
   }}>
     <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.warning, animation: 'gb-pulse 1.4s ease-in-out infinite' }} />
-    {t('Co thay doi chua luu', 'Unsaved changes')}
+    {t('Có thay đổi chưa lưu', 'Unsaved changes')}
     <style>{`@keyframes gb-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
   </span>
 );
@@ -545,17 +581,17 @@ const FilterBar = ({ t, pColor, offerings, offering, subjectId, setSubjectId, cl
       padding: '16px 20px', marginBottom: 16,
       display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 14, alignItems: 'end',
     }}>
-      <Field label={t('Mon (theo khoi)', 'Subject (grade-scoped)')}>
+      <Field label={t('Môn (theo khối)', 'Subject (grade-scoped)')}>
         <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} style={selectStyle}>
           {offerings.map(o => <option key={o.subjectId} value={o.subjectId}>{t(o.subjectVi, o.subjectEn)}</option>)}
         </select>
       </Field>
-      <Field label={t('Lop', 'Class')}>
+      <Field label={t('Lớp', 'Class')}>
         <select value={classKey} onChange={(e) => setClassKey(e.target.value)} style={selectStyle}>
           {offering.classKeys.map(k => <option key={k} value={k}>{classLabel(k)}</option>)}
         </select>
       </Field>
-      <Field label={t('Hoc ky', 'Term')}>
+      <Field label={t('Học kỳ', 'Term')}>
         <select value={term} onChange={(e) => setTerm(e.target.value)} style={selectStyle}>
           {GB_TERMS.map(o => <option key={o.id} value={o.id}>{t(o.vi, o.en)}</option>)}
         </select>
@@ -577,7 +613,7 @@ const GradeTable = ({ t, pColor, roster, columns, cellsFor, draft, onChange, edi
           <tr>
             <th style={gbTh}>{t('STT', '#')}</th>
             <th style={{ ...gbTh, textAlign: 'left', paddingLeft: 16, minWidth: 200 }}>
-              {t('Ho ten hoc sinh', 'Student name')}
+              {t('Họ tên học sinh', 'Student name')}
             </th>
             {columns.map(c => {
               const km = GB_KIND_META[c.kind];
@@ -594,7 +630,7 @@ const GradeTable = ({ t, pColor, roster, columns, cellsFor, draft, onChange, edi
                       letterSpacing: '0.06em',
                     }}>{c.labelVi}</span>
                     <span style={{ fontSize: 9.5, color: T.textMuted, fontFamily: 'ui-monospace, Menlo, monospace' }}>
-                      x{(c.coefficient).toFixed(1)}
+                      ×{(c.coefficient).toFixed(1)}
                     </span>
                   </div>
                 </th>
@@ -604,7 +640,7 @@ const GradeTable = ({ t, pColor, roster, columns, cellsFor, draft, onChange, edi
               {t('TB', 'Avg')}
             </th>
             <th style={{ ...gbTh, background: T.bg, borderBottom: `2px solid ${T.border}`, minWidth: 90 }}>
-              {t('Xep loai', 'Rank')}
+              {t('Xếp loại', 'Rank')}
             </th>
           </tr>
         </thead>
@@ -722,7 +758,7 @@ const GradeCell = ({ cell, onChange, editable, pColor }) => {
           }}
           style={{
             width: 56, padding: '6px 8px', textAlign: 'center',
-            border: `1.5px solid ${focused ? pColor : T.border}`,
+            border: `1.5px solid ${focused ? pColor : (v == null || v === '' ? T.border : T.border)}`,
             borderRadius: 6,
             background: state === 'DRAFT' ? '#FFFBEB' : T.card,
             fontSize: 13.5, fontWeight: 700,
@@ -780,10 +816,10 @@ const SummaryPanel = ({ t, pColor, roster, columns, cellsFor, open, setOpen, alw
         <Icon name="chart" size={16} color={pColor} strokeWidth={2.2} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: T.textPrimary }}>
-            {t('Tong quan xep loai', 'Rank distribution')}
+            {t('Tổng quan xếp loại', 'Rank distribution')}
           </div>
           <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 1 }}>
-            {t(`Dua tren ${count} hoc sinh co du diem.`, `Based on ${count} students with complete grades.`)}
+            {t(`Dựa trên ${count} học sinh có đủ điểm.`, `Based on ${count} students with complete grades.`)}
           </div>
         </div>
         {!alwaysOpen && <Icon name={isOpen ? 'chevronUp' : 'chevronDown'} size={14} color={T.textMuted} />}
@@ -801,7 +837,7 @@ const SummaryPanel = ({ t, pColor, roster, columns, cellsFor, open, setOpen, alw
               letterSpacing: '0.08em', textTransform: 'uppercase',
               marginBottom: 10,
             }}>
-              {t('Phan bo xep loai', 'Distribution')}
+              {t('Phân bố xếp loại', 'Distribution')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               {dist.map(b => (
@@ -834,16 +870,16 @@ const SummaryPanel = ({ t, pColor, roster, columns, cellsFor, open, setOpen, alw
 
           {/* Aggregate stats */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <StatBox label={t('TB lop', 'Class average')}
+            <StatBox label={t('TB lớp', 'Class average')}
               value={classAvg != null ? classAvg.toFixed(2) : '—'}
               color={gbRank(classAvg)?.color || T.textMuted}
               icon="chart"
             />
-            <StatBox label={t('Cao nhat', 'Highest')}
+            <StatBox label={t('Cao nhất', 'Highest')}
               value={highest ? highest.avg.toFixed(2) : '—'}
               caption={highest?.name} color={T.success} icon="trendUp"
             />
-            <StatBox label={t('Thap nhat', 'Lowest')}
+            <StatBox label={t('Thấp nhất', 'Lowest')}
               value={lowest ? lowest.avg.toFixed(2) : '—'}
               caption={lowest?.name} color={T.error} icon="trendDown"
             />
@@ -903,29 +939,29 @@ const StickyActions = ({ t, pColor, hasUnsaved, enteredCount, totalCount, comple
       }}>
         <Icon name="userCheck" size={13} color={pColor} />
         <span style={{ fontSize: 12.5, fontWeight: 700, color: T.textSecondary, fontVariantNumeric: 'tabular-nums' }}>
-          {t('Da nhap', 'Entered')}{' '}
+          {t('Đã nhập', 'Entered')}{' '}
           <strong style={{ color: T.textPrimary, fontWeight: 800 }}>
             {enteredCount}
           </strong>
-          {' / '}{totalCount}{' '}{t('hoc sinh', 'students')}
+          {' / '}{totalCount}{' '}{t('học sinh', 'students')}
         </span>
       </div>
       <span style={{ fontSize: 12, color: T.textMuted }}>
         <strong style={{ color: T.success, fontWeight: 800 }}>{completeRows}</strong>{' '}
-        {t('hang du diem', 'complete rows')}
+        {t('hàng đủ điểm', 'complete rows')}
       </span>
 
       <span style={{ flex: 1 }} />
 
       <Button variant="ghost" icon="fileText" onClick={onExportPdf}
         style={{ border: `1px solid ${T.border}`, color: T.textSecondary }}>
-        {t('Xuat PDF bao cao', 'Export PDF report')}
+        {t('Xuất PDF báo cáo', 'Export PDF report')}
       </Button>
       <Button variant="secondary" icon="download" onClick={onExportExcel}>
-        {t('Xuat Excel', 'Export Excel')}
+        {t('Xuất Excel', 'Export Excel')}
       </Button>
       <Button variant="primary" icon="check" onClick={onSave} disabled={!hasUnsaved}>
-        {t('Luu tat ca', 'Save all')}
+        {t('Lưu tất cả', 'Save all')}
       </Button>
     </div>
   </div>
@@ -935,9 +971,9 @@ const StickyActions = ({ t, pColor, hasUnsaved, enteredCount, totalCount, comple
 
 const GBToast = ({ t, kind }) => {
   const map = {
-    saved: { color: T.success, icon: 'check', vi: 'Da luu tat ca thay doi.', en: 'All changes saved.' },
-    xlsx:  { color: T.primary, icon: 'download', vi: 'Dang chuan bi file Excel...', en: 'Preparing Excel file...' },
-    pdf:   { color: T.warning, icon: 'fileText', vi: 'Dang tao bao cao PDF...', en: 'Generating PDF report...' },
+    saved: { color: T.success, icon: 'check', vi: 'Đã lưu tất cả thay đổi.', en: 'All changes saved.' },
+    xlsx:  { color: T.primary, icon: 'download', vi: 'Đang chuẩn bị file Excel…', en: 'Preparing Excel file…' },
+    pdf:   { color: T.warning, icon: 'fileText', vi: 'Đang tạo báo cáo PDF…', en: 'Generating PDF report…' },
   };
   const m = map[kind] || map.saved;
   return (
@@ -971,14 +1007,14 @@ const EmptyRosterCard = ({ t, pColor, className, onNavigate }) => (
   }}>
     <Icon name="users" size={36} color={T.border} strokeWidth={1.6} />
     <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, color: T.textSecondary }}>
-      {t(`Lop ${className} chua co danh sach hoc sinh.`, `Class ${className} has no student roster yet.`)}
+      {t(`Lớp ${className} chưa có danh sách học sinh.`, `Class ${className} has no student roster yet.`)}
     </div>
     <div style={{ marginTop: 4, fontSize: 12, marginBottom: 16 }}>
-      {t('Ban can them hoc sinh vao lop truoc khi nhap diem.',
+      {t('Bạn cần thêm học sinh vào lớp trước khi nhập điểm.',
          'Add students to the class before entering grades.')}
     </div>
     <Button variant="primary" icon="arrowRight" onClick={onNavigate}>
-      {t('Den Danh sach lop', 'Go to Class Roster')}
+      {t('Đến Danh sách lớp', 'Go to Class Roster')}
     </Button>
   </div>
 );
@@ -1001,7 +1037,7 @@ const ViewerSummaryCard = ({ t, pColor, gpa, rank, term, isLocked }) => (
     </div>
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        {t('GPA hoc ky', 'Term GPA')} · {term}
+        {t('GPA học kỳ', 'Term GPA')} · {term}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{
@@ -1016,11 +1052,11 @@ const ViewerSummaryCard = ({ t, pColor, gpa, rank, term, isLocked }) => (
     </div>
     <div style={{ flex: 1 }} />
     <div style={{ display: 'flex', gap: 10 }}>
-      <ViewerChip label={t('Xep loai hoc luc', 'Academic rank')}
+      <ViewerChip label={t('Xếp loại học lực', 'Academic rank')}
         value={isLocked ? '—' : (rank ? t(rank.vi, rank.en) : '—')}
         color={isLocked ? T.textMuted : (rank?.color || T.textMuted)}
       />
-      <ViewerChip label={t('Hanh kiem', 'Conduct')}
+      <ViewerChip label={t('Hạnh kiểm', 'Conduct')}
         value={t(GB_CONDUCT.vi, GB_CONDUCT.en)} color={GB_CONDUCT.color}
       />
     </div>
@@ -1049,7 +1085,7 @@ const ChildSwitcher = ({ t, pColor, children, activeIdx, onChange }) => (
     padding: 12, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180,
   }}>
     <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-      {t('Chon con', 'Pick child')}
+      {t('Chọn con', 'Pick child')}
     </div>
     {children.map((c, i) => {
       const active = i === activeIdx;
@@ -1080,7 +1116,7 @@ const TermPicker = ({ t, pColor, term, setTerm }) => (
     padding: 12, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 140,
   }}>
     <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-      {t('Hoc ky', 'Term')}
+      {t('Học kỳ', 'Term')}
     </div>
     {GB_TERMS.map(o => {
       const active = term === o.id;
@@ -1116,11 +1152,11 @@ const LockedBanner = ({ t }) => (
     </div>
     <div style={{ flex: 1 }}>
       <div style={{ fontSize: 13.5, fontWeight: 800, color: '#9A6A0F' }}>
-        {t('Diem hoc ky nay chua duoc cong bo',
+        {t('Điểm học kỳ này chưa được công bố',
            'Grades for this term have not been published yet')}
       </div>
       <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>
-        {t('Mot so mon dang cho BGH duyet. Ban se nhan duoc thong bao khi diem duoc cong bo.',
+        {t('Một số môn đang chờ BGH duyệt. Bạn sẽ nhận được thông báo khi điểm được công bố.',
            "Some subjects are awaiting admin approval. You'll be notified once grades go live.")}
       </div>
     </div>
@@ -1138,7 +1174,7 @@ const ViewerSubjectTable = ({ t, pColor, rows, columns, masked }) => (
       <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
         <thead>
           <tr>
-            <th style={{ ...gbTh, textAlign: 'left', paddingLeft: 18, minWidth: 200 }}>{t('Mon hoc', 'Subject')}</th>
+            <th style={{ ...gbTh, textAlign: 'left', paddingLeft: 18, minWidth: 200 }}>{t('Môn học', 'Subject')}</th>
             {columns.map(c => {
               const km = GB_KIND_META[c.kind];
               return (
@@ -1149,7 +1185,7 @@ const ViewerSubjectTable = ({ t, pColor, rows, columns, masked }) => (
               );
             })}
             <th style={{ ...gbTh, background: T.bg }}>{t('TB', 'Avg')}</th>
-            <th style={{ ...gbTh, background: T.bg }}>{t('Xep loai', 'Rank')}</th>
+            <th style={{ ...gbTh, background: T.bg }}>{t('Xếp loại', 'Rank')}</th>
           </tr>
         </thead>
         <tbody>

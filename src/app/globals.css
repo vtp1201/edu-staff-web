@@ -57,6 +57,7 @@
   --color-edu-success-text: var(--edu-success-text);
   --color-edu-warning: var(--edu-warning);
   --color-edu-warning-light: var(--edu-warning-light);
+  --color-edu-warning-text: var(--edu-warning-text);
   --color-edu-warning-foreground: var(--edu-warning-foreground);
   --color-edu-error: var(--edu-error);
   --color-edu-error-light: var(--edu-error-light);

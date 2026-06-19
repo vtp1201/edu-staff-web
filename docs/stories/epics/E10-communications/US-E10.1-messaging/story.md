@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -41,6 +41,20 @@ moi vao cua so chat dang mo (mock-first: setTimeout simulation trong design).
 
 RBAC: Tat ca roles co quyen nhan tin. [ASSUMPTION] Admin co the xem tat ca nhom.
 BE mock-first: `social` service chua ship (decision 0017).
+
+**DR-008 enhancements → ĐÃ TÁCH sang US-E10.4** (quyết định 2026-06-19): group
+creation modal 2 bước, group info panel, context menu (reply/pin/copy/delete),
+reply/quote, per-role group seeding. Toàn bộ scope DR-008 nằm ở
+`docs/stories/epics/E10-communications/US-E10.4-messaging-enhancements/story.md`.
+
+**Lý do split 2 phase:** US-E10.1 (base messaging) đã `implemented` với proof
+unit/integ/e2e. DR-008 là lớp tính năng bổ sung đáng kể (group lifecycle + message
+interactions) — gộp vào một story đã đóng sẽ làm mờ ranh giới proof và phình scope.
+Tách thành **US-E10.4** giữ US-E10.1 ở trạng thái `implemented` ổn định, và cho FE
+team một story độc lập để build DR-008 sau (1 US = 1 branch — `parallel-workflow.md`).
+
+**Note về status:** Story này (US-E10.1 base) giữ `implemented` dựa trên TEST_MATRIX
+row (unit/integ/e2e proof). DR-008 không thuộc phạm vi đóng của US-E10.1.
 
 ## Relevant Product Docs
 

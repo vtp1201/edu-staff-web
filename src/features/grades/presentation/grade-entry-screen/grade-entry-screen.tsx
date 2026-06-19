@@ -49,6 +49,12 @@ const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "incomplete-scores": "errorIncompleteScores",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
+  // US-E14.4 approval-pipeline failures are not reachable in grade-entry,
+  // but the shared GradesFailure union now includes them.
+  "not-pending-approval": "errorUnknown",
+  "not-published": "errorUnknown",
+  "invalid-revision-note": "errorUnknown",
+  "batch-locked": "errorUnknown",
 };
 
 const TERMS = ["HK1", "HK2"] as const;

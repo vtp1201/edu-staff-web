@@ -2,435 +2,154 @@
   "Common": {
     "hello": "Xin chào"
   },
-  "examBank": {
-    "title": "Kho đề thi",
-    "subtitle": "Tạo, chỉnh sửa và publish đề thi trắc nghiệm cho học sinh.",
-    "subtitleAdmin": "Xem toàn bộ đề thi trắc nghiệm của trường.",
-    "createButton": "Tạo đề thi mới",
-    "loading": "Đang tải...",
-    "loadingAriaLabel": "Đang tải danh sách đề thi",
-    "resultsHeading": "{count} đề thi",
-    "filter": {
-      "searchPlaceholder": "Tìm theo tiêu đề...",
-      "searchAriaLabel": "Tìm kiếm đề thi theo tiêu đề",
-      "subjectAriaLabel": "Lọc theo môn học",
-      "allSubjects": "Tất cả môn học",
-      "statusAriaLabel": "Lọc theo trạng thái",
-      "allStatuses": "Tất cả trạng thái",
-      "teacherAriaLabel": "Lọc theo giáo viên",
-      "allTeachers": "Tất cả giáo viên"
+  "academicRecord": {
+    "breadcrumb": {
+      "home": "Trang chủ",
+      "record": "Học bạ",
+      "students": "Học sinh"
     },
-    "status": {
-      "draft": "Nháp",
-      "published": "Đã publish"
-    },
-    "card": {
-      "menuAriaLabel": "Mở menu thao tác đề thi",
-      "edit": "Chỉnh sửa",
-      "publish": "Publish",
-      "delete": "Xoá",
-      "questionCount": "{count} câu hỏi",
-      "createdAt": "Tạo ngày {date}"
+    "conduct": {
+      "Kha": "Khá",
+      "Tot": "Tốt",
+      "TrungBinh": "Trung Bình",
+      "Yeu": "Yếu"
     },
     "empty": {
-      "title": "Chưa có đề thi nào",
-      "body": "Bắt đầu bằng cách tạo đề thi trắc nghiệm đầu tiên của bạn.",
-      "cta": "Tạo đề thi đầu tiên",
-      "noMatch": "Không tìm thấy đề thi",
-      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+      "description": "Chưa có bản ghi học bạ nào cho năm học này.",
+      "title": "Không có dữ liệu học bạ"
     },
-    "publishDialog": {
-      "title": "Publish đề thi này?",
-      "body": "Đề thi sẽ xuất hiện trong danh sách bài thi của học sinh và có thể được làm bài.",
-      "confirm": "Publish",
-      "publishing": "Đang publish...",
-      "cancel": "Huỷ"
-    },
-    "deleteDialog": {
-      "title": "Xoá đề thi này?",
-      "body": "Thao tác này không thể hoàn tác. Chỉ đề thi ở trạng thái nháp mới có thể xoá.",
-      "confirm": "Xoá",
-      "deleting": "Đang xoá...",
-      "cancel": "Huỷ"
-    },
-    "builder": {
-      "editTitle": "Chỉnh sửa đề thi",
-      "createTitle": "Tạo đề thi mới",
-      "titleLabel": "Tiêu đề đề thi",
-      "titlePlaceholder": "Nhập tiêu đề đề thi",
-      "subjectLabel": "Môn học",
-      "subjectPlaceholder": "Chọn môn học",
-      "durationLabel": "Thời lượng (phút)",
-      "maxAttemptsLabel": "Số lần làm",
-      "questionsHeading": "Câu hỏi ({count})",
-      "addQuestion": "Thêm câu",
-      "newQuestionPlaceholder": "Câu hỏi mới",
-      "questionHasError": "Câu hỏi này còn thiếu thông tin",
-      "noSelection": "Chọn câu hỏi để chỉnh sửa",
-      "contentLabel": "Nội dung câu hỏi",
-      "contentPlaceholder": "Nhập nội dung câu hỏi",
-      "optionsLabel": "Các phương án",
-      "optionPlaceholder": "Nội dung phương án {option}",
-      "correctAnswerAriaLabel": "Chọn đáp án đúng",
-      "correctOptionAriaLabel": "Đánh dấu phương án {option} là đáp án đúng",
-      "difficultyLabel": "Độ khó",
-      "back": "Quay lại",
-      "backAriaLabel": "Quay lại kho đề thi",
-      "saveDraft": "Lưu nháp",
-      "saving": "Đang lưu...",
-      "publish": "Publish"
-    },
-    "difficulty": {
-      "easy": "Dễ",
-      "medium": "Trung bình",
-      "hard": "Khó"
-    },
-    "toast": {
-      "draftSaved": "Đã lưu nháp",
-      "published": "Đã publish đề thi",
-      "deleted": "Đã xoá đề thi"
-    },
-    "moveUpAriaLabel": "Di chuyển câu hỏi {index} lên trên",
-    "moveDownAriaLabel": "Di chuyển câu hỏi {index} xuống dưới",
-    "removeQuestionAriaLabel": "Xoá câu hỏi {index}",
-    "errors": {
-      "not-found": "Không tìm thấy đề thi.",
-      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-      "cannot-delete-published": "Không thể xoá đề thi đã publish.",
-      "missing-title": "Vui lòng nhập tiêu đề đề thi.",
-      "no-questions": "Đề thi cần ít nhất một câu hỏi.",
-      "question-empty-content": "Câu hỏi chưa có nội dung.",
-      "question-missing-answer": "Câu hỏi chưa chọn đáp án đúng.",
-      "insufficient-options": "Mỗi câu hỏi cần ít nhất 2 phương án.",
+    "error": {
+      "forbidden": "Bạn không có quyền xem học bạ này.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "unknown": "Đã xảy ra lỗi không xác định."
-    }
-  },
-  "gradeEntry": {
-    "title": "Nhập điểm",
-    "selectClass": "Chọn lớp - môn",
-    "selectTerm": "Chọn học kỳ",
-    "termHK1": "Học kỳ 1",
-    "termHK2": "Học kỳ 2",
-    "columnHeader": "{label} ({weight}%)",
-    "averageColumn": "Điểm TB",
-    "studentName": "Họ tên",
-    "studentCode": "Mã HS",
-    "tableCaption": "Bảng nhập điểm theo học sinh và cột đánh giá",
-    "tableLockedNotice": "Bảng điểm đã khóa, chỉ xem.",
-    "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
-    "emptyClass": "Chưa có học sinh trong lớp này",
-    "publishButton": "Công bố điểm",
-    "publishConfirmTitle": "Xác nhận công bố điểm",
-    "publishConfirmDescription": "Điểm sau khi công bố không thể sửa. Tiếp tục?",
-    "publishConfirmOk": "Công bố",
-    "publishConfirmCancel": "Huỷ",
-    "pendingApproval": "Chờ duyệt",
-    "published": "Đã công bố",
-    "cellLabel": "Điểm {column} của {student}",
-    "errorOutOfRange": "Điểm phải từ 0 đến {max}",
-    "errorAlreadyPublished": "Bảng điểm đã được công bố",
-    "errorIncompleteScores": "Cần nhập đủ điểm các cột trước khi công bố",
-    "errorForbidden": "Bạn không có quyền nhập điểm lớp này",
-    "errorNetworkError": "Lỗi kết nối, thử lại sau",
-    "errorUnknown": "Đã xảy ra lỗi không xác định",
-    "saveSuccess": "Đã lưu",
-    "publishSuccess": "Điểm đã được công bố thành công",
-    "publishPendingApproval": "Điểm đã gửi chờ hiệu trưởng duyệt",
-    "loading": "Đang tải bảng điểm..."
-  },
-  "exam": {
-    "page": {
-      "title": "Bài kiểm tra",
-      "subtitle": "Danh sách các bài kiểm tra của bạn"
+      "not-found": "Không tìm thấy học bạ của học sinh này.",
+      "retry": "Thử lại",
+      "title": "Không thể tải học bạ",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
     },
-    "stats": {
-      "available": "Có thể làm",
-      "completed": "Đã hoàn thành",
-      "avgScore": "Điểm trung bình"
+    "pageSubtitle": "Lịch sử học bạ đã ký theo từng năm học và học kỳ. Mỗi bản ghi là ảnh chụp điểm tại thời điểm ký.",
+    "pageTitle": "Học bạ học sinh",
+    "pending": {
+      "description": "Bản ghi học bạ sẽ xuất hiện ở đây sau khi điểm được khoá và ký.",
+      "title": "Học kỳ chưa được ký"
     },
-    "filter": {
-      "all": "Tất cả",
-      "available": "Có thể làm",
-      "completed": "Đã xong",
-      "expired": "Hết hạn",
-      "groupLabel": "Lọc bài kiểm tra"
+    "printButton": "In học bạ",
+    "printButtonComingSoon": "Tính năng in sẽ sớm ra mắt",
+    "rankBand": {
+      "gioi": "Giỏi",
+      "kha": "Khá",
+      "trung-binh": "Trung Bình",
+      "xuat-sac": "Xuất Sắc",
+      "yeu": "Yếu"
     },
-    "card": {
-      "duration": "{minutes} phút",
-      "questions": "{count} câu",
-      "deadline": "Hạn nộp: {date}",
-      "teacher": "GV: {name}"
+    "roleBadge": {
+      "ADMIN": "Toàn quyền xem",
+      "PARENT": "Xem học bạ con đã liên kết",
+      "STUDENT": "Xem học bạ của chính mình",
+      "TEACHER": "Xem học sinh trong lớp"
     },
-    "status": {
-      "available": "Có thể làm",
-      "completed": "Đã xong",
-      "expired": "Hết hạn"
+    "sealStatus": {
+      "ariaSealed": "Học bạ đã niêm phong",
+      "ariaUnsealed": "Học bạ chưa niêm phong",
+      "sealed": "Đã niêm phong",
+      "unsealed": "Chưa niêm phong"
     },
-    "cta": {
-      "start": "Bắt đầu làm bài",
-      "viewResult": "Xem kết quả",
-      "expired": "Hết hạn"
+    "student": {
+      "code": "Mã HS",
+      "currentClass": "Lớp hiện tại",
+      "currentYear": "Năm học hiện tại",
+      "dob": "Ngày sinh"
     },
-    "briefing": {
-      "title": "Thông tin bài kiểm tra",
-      "duration": "Thời gian",
-      "questions": "Số câu hỏi",
-      "type": "Loại bài",
-      "typeValue": "Trắc nghiệm",
-      "rulesTitle": "Quy định thi",
-      "rules": {
-        "rule1": "Không được sử dụng tài liệu trong quá trình làm bài.",
-        "rule2": "Không thoát khỏi trang thi khi đang làm bài.",
-        "rule3": "Bài thi sẽ tự động nộp khi hết thời gian.",
-        "rule4": "Mỗi câu hỏi chỉ được chọn một đáp án.",
-        "rule5": "Không được quay lại sau khi đã nộp bài."
-      },
-      "agreeLabel": "Tôi đã đọc và đồng ý với các quy định thi",
-      "startCta": "Bắt đầu làm bài ngay"
+    "table": {
+      "caption": "Bảng điểm học kỳ",
+      "conduct": "Hạnh Kiểm",
+      "final": "Cuối Kỳ",
+      "gpa": "GPA",
+      "midterm": "Giữa Kỳ",
+      "rank": "Xếp Loại",
+      "subject": "Môn học",
+      "termAvg": "TB Kỳ",
+      "termSummary": "Tổng kết kỳ",
+      "tx1": "TX1",
+      "tx2": "TX2"
     },
-    "taking": {
-      "progress": "{answered}/{total} câu đã trả lời",
-      "submitBtn": "Nộp bài",
-      "flagBtn": "Đánh dấu",
-      "unflagBtn": "Bỏ đánh dấu",
-      "prevBtn": "Câu trước",
-      "nextBtn": "Câu tiếp",
-      "questionLabel": "Câu {index}",
-      "optionLabel": "Chọn đáp án {option}",
-      "navigatorLabel": "Câu {index}",
-      "navigatorTitle": "Bảng câu hỏi",
-      "timerLabel": "Thời gian còn lại",
-      "timerAnnounce": "Còn lại {time}",
-      "progressLabel": "Tiến độ trả lời",
-      "legend": {
-        "current": "Đang xem",
-        "answered": "Đã trả lời",
-        "flagged": "Đánh dấu",
-        "unanswered": "Chưa trả lời"
-      }
+    "termSection": {
+      "class": "Lớp",
+      "sealedOn": "Đã ký ngày",
+      "signedBy": "Người ký",
+      "term1": "Học kỳ 1",
+      "term2": "Học kỳ 2",
+      "unsealedBanner": "Học bạ đã được mở",
+      "unsealedOn": "Mở ngày"
     },
-    "submitModal": {
-      "title": "Xác nhận nộp bài",
-      "answered": "Đã trả lời",
-      "total": "Tổng số câu",
-      "unanswered": "Chưa trả lời",
-      "warningText": "{count} câu chưa được trả lời.",
-      "reviewBtn": "Xem lại",
-      "confirmBtn": "Nộp bài ngay"
+    "termStatus": {
+      "PENDING": "Chưa ký",
+      "SEALED": "Đã ký",
+      "UNSEALED": "Đã mở"
     },
-    "result": {
-      "title": "Kết quả bài kiểm tra",
-      "scoreLabel": "Điểm số",
-      "outOf": "/10",
-      "passed": "ĐẠT",
-      "failed": "CHƯA ĐẠT",
-      "rank": "Xếp hạng",
-      "percentile": "Phần trăm",
-      "timeTaken": "Thời gian làm bài",
-      "correct": "Câu đúng",
-      "incorrect": "Câu sai",
-      "skipped": "Bỏ qua",
-      "reviewTitle": "Xem lại câu hỏi",
-      "filterAll": "Tất cả",
-      "filterCorrect": "Đúng",
-      "filterIncorrect": "Sai",
-      "filterSkipped": "Bỏ qua",
-      "filterGroupLabel": "Lọc kết quả",
-      "correctAnswer": "Đáp án đúng",
-      "yourAnswer": "Đáp án của bạn",
-      "backToList": "Quay lại danh sách"
+    "yearStatus": {
+      "all_sealed": "Đã ký đủ",
+      "none": "Chưa có học bạ",
+      "partial": "Ký một phần",
+      "unsealed_in_year": "Có học bạ đã mở"
     },
-    "empty": {
-      "title": "Không có bài kiểm tra",
-      "subtitle": "Hiện tại không có bài kiểm tra nào phù hợp với bộ lọc."
-    },
-    "errors": {
-      "not-found": "Không tìm thấy bài kiểm tra.",
-      "max-attempts-exceeded": "Bạn đã làm bài kiểm tra này rồi.",
-      "after-deadline": "Bài kiểm tra đã hết hạn.",
-      "already-submitted": "Bài kiểm tra đã được nộp.",
-      "network-error": "Lỗi kết nối, vui lòng thử lại.",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
-    },
-    "skeleton": {
-      "loading": "Đang tải danh sách bài kiểm tra..."
-    }
-  },
-  "auth": {
-    "brand": {
-      "name": "EduPortal",
-      "tagline": "Hệ thống quản lý giáo dục"
-    },
-    "login": {
-      "title": "Đăng nhập",
-      "subtitle": "Nhập thông tin để truy cập hệ thống",
-      "email": "Email",
-      "password": "Mật khẩu",
-      "submit": "Đăng nhập",
-      "submitting": "Đang đăng nhập..."
-    },
-    "errors": {
-      "invalid-credentials": "Email hoặc mật khẩu không đúng",
-      "account-suspended": "Tài khoản đã bị tạm ngừng",
-      "email-already-exists": "Email đã được đăng ký",
-      "token-expired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
-      "invalid-token": "Phiên không hợp lệ, vui lòng đăng nhập lại",
-      "unauthorized": "Bạn không có quyền truy cập",
-      "network-error": "Không thể kết nối đến máy chủ",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại",
-      "invalid-otp": "Mã OTP không đúng hoặc đã dùng.",
-      "otp-expired": "Mã OTP đã hết hạn, hãy yêu cầu mã mới.",
-      "too-many-requests": "Quá nhiều yêu cầu, vui lòng thử lại sau.",
-      "sso-unavailable": "Đăng nhập qua mạng xã hội hiện chưa khả dụng. Vui lòng dùng email và mật khẩu bên dưới."
-    },
-    "forgot": {
-      "title": "Quên mật khẩu",
-      "linkFromLogin": "Quên mật khẩu?",
-      "backToLogin": "Quay lại đăng nhập",
-      "step1": {
-        "subtitle": "Nhập email để nhận mã đặt lại.",
-        "email": "Email",
-        "submit": "Gửi mã OTP",
-        "sending": "Đang gửi…"
-      },
-      "step2": {
-        "subtitle": "Nhập mã 6 số đã gửi tới email của bạn.",
-        "submit": "Xác nhận",
-        "resend": "Gửi lại mã"
-      },
-      "step3": {
-        "subtitle": "Đặt mật khẩu mới cho tài khoản.",
-        "new": "Mật khẩu mới",
-        "confirm": "Xác nhận mật khẩu",
-        "mismatch": "Mật khẩu xác nhận không khớp.",
-        "submit": "Đặt lại mật khẩu",
-        "submitting": "Đang đặt lại…"
-      },
-      "step4": {
-        "title": "Đã đặt lại mật khẩu",
-        "subtitle": "Bạn có thể đăng nhập bằng mật khẩu mới.",
-        "cta": "Đăng nhập"
-      }
-    },
-    "sso": {
-      "continueWithGoogle": "Tiếp tục với Google",
-      "loginWithVneID": "Đăng nhập VNeID",
-      "divider": "hoặc đăng nhập bằng email",
-      "vneidComingSoon": "Sắp ra mắt",
-      "googleLoading": "Đang đăng nhập với Google..."
-    },
-    "selectRole": {
-      "eyebrow": "Đăng nhập với tư cách",
-      "roleSummary": "{count} vai trò khả dụng",
-      "backLink": "Đăng nhập tài khoản khác"
-    },
-    "roles": {
-      "TEACHER": {
-        "label": "Giáo viên"
-      },
-      "ADMIN": {
-        "label": "Ban giám hiệu (BGH)"
-      },
-      "MANAGER": {
-        "label": "Phó Hiệu trưởng / BGH"
-      },
-      "STAFF": {
-        "label": "Nhân viên"
-      },
-      "STUDENT": {
-        "label": "Học sinh"
-      },
-      "PARENT": {
-        "label": "Phụ huynh"
-      }
-    }
-  },
-  "shell": {
-    "nav": {
-      "dashboard": "Tổng quan",
-      "classes": "Lớp học",
-      "attendance": "Điểm danh",
-      "classLog": "Sổ đầu bài",
-      "discipline": "Kỷ luật",
-      "conduct": "Hành kiểm",
-      "grades": "Bảng điểm",
-      "schedule": "Lịch dạy",
-      "students": "Học sinh",
-      "courses": "Khoá học",
-      "assignments": "Bài tập",
-      "exams": "Bài thi",
-      "resources": "Tài liệu",
-      "messages": "Nhắn tin",
-      "profile": "Hồ sơ",
-      "teachers": "Giáo viên",
-      "reports": "Báo cáo",
-      "overview": "Tổng quan",
-      "children": "Con của tôi",
-      "schoolSetup": "Thiết lập trường học",
-      "academicCalendar": "Lịch học",
-      "subjectDepartments": "Tổ bộ môn",
-      "subjects": "Môn học",
-      "studentRoster": "Danh sách học sinh",
-      "classManagement": "Quản lý lớp học",
-      "timetable": "Thời khoá biểu",
-      "assessmentScheme": "Khung đánh giá",
-      "staffing": "Phân công chức vụ",
-      "staffLeave": "Nghỉ phép nhân sự",
-      "expandSidebar": "Mở rộng thanh bên",
-      "collapseSidebar": "Thu gọn thanh bên",
-      "announcements": "Thông báo"
-    },
-    "header": {
-      "searchPlaceholder": "Tìm kiếm...",
-      "notifications": "Thông báo",
-      "switchRole": "Chuyển vai trò",
-      "logout": "Đăng xuất",
-      "profile": "Hồ sơ"
-    },
-    "roles": {
-      "teacher": "Giáo viên",
-      "principal": "Hiệu trưởng",
-      "student": "Học sinh",
-      "parent": "Phụ huynh",
-      "admin": "Quản trị viên"
+    "yearTimeline": {
+      "ariaLabel": "Chọn năm học",
+      "currentBadge": "Năm hiện tại"
     }
   },
   "adminRoster": {
-    "title": "Danh sách học sinh",
-    "subtitle": "Quản lý ghi danh học sinh — điều kiện bắt buộc trước khi nhập điểm và điểm danh.",
+    "actions": {
+      "exportList": "Xuất danh sách",
+      "importCsv": "Import CSV"
+    },
+    "addPanel": {
+      "add": "Thêm vào lớp",
+      "importCsv": "Import từ CSV",
+      "inClass": "Đã trong lớp",
+      "noResults": "Không tìm thấy học sinh.",
+      "searchPlaceholder": "Tên hoặc mã học sinh...",
+      "subtitle": "Tìm và thêm học sinh vào lớp này.",
+      "title": "Thêm học sinh",
+      "transfer": "Chuyển lớp",
+      "transferWarning": "Học sinh đang trong lớp {className} — thêm vào lớp này sẽ chuyển lớp.",
+      "unassigned": "Chưa thuộc lớp nào"
+    },
     "breadcrumb": {
       "classes": "Lớp học",
       "roster": "Danh sách học sinh"
     },
     "classInfo": {
-      "homeroom": "GVCN",
-      "unassigned": "Chưa phân công",
-      "grade": "Khối {level}",
-      "class": "Lớp {name}",
       "active": "Đang học",
+      "class": "Lớp {name}",
+      "grade": "Khối {level}",
+      "homeroom": "GVCN",
       "transferred": "Đã chuyển",
+      "unassigned": "Chưa phân công",
       "year": "Năm học"
     },
-    "table": {
-      "name": "Họ và tên",
-      "studentId": "Mã học sinh",
-      "dob": "Ngày sinh",
-      "gender": "Giới tính",
-      "genderFemale": "Nữ",
-      "genderMale": "Nam",
-      "status": "Trạng thái",
-      "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
-      "noMatch": "Không tìm thấy học sinh nào khớp.",
-      "exportCsv": "Xuất CSV",
-      "removeFromClass": "Xoá khỏi lớp",
-      "selected": "Đã chọn {count} học sinh",
-      "clearSelection": "Bỏ chọn",
-      "clearSearch": "Xóa tìm kiếm",
-      "actions": "Hành động",
-      "showing": "Hiển thị {from}–{to} / {total} học sinh",
-      "selectAll": "Chọn tất cả học sinh trên trang",
-      "selectStudent": "Chọn học sinh {name}"
+    "confirm": {
+      "cancel": "Hủy",
+      "confirm": "Xác nhận",
+      "transferBody": "{name} sẽ được chuyển từ lớp {fromClass} sang lớp này.",
+      "transferTitle": "Xác nhận chuyển lớp",
+      "unenrollBody": "{count} học sinh sẽ bị xoá khỏi lớp này. Không thể hoàn tác.",
+      "unenrollTitle": "Xoá khỏi lớp?"
+    },
+    "empty": {
+      "addFirst": "Thêm học sinh đầu tiên cho lớp này",
+      "body": "Hãy thêm học sinh để bắt đầu nhập điểm và điểm danh cho lớp này.",
+      "importCsv": "Import từ CSV",
+      "title": "Lớp chưa có học sinh"
+    },
+    "errors": {
+      "already-enrolled": "Học sinh đã thuộc một lớp khác trong năm học này.",
+      "class-archived": "Lớp đã bị lưu trữ, không thể ghi danh.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "member-not-student": "Thành viên không có vai trò học sinh.",
+      "network-error": "Không thể kết nối đến máy chủ",
+      "not-found": "Không tìm thấy dữ liệu",
+      "unauthorized": "Bạn không có quyền truy cập",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại"
     },
     "pagination": {
       "nav": "Phân trang"
@@ -439,426 +158,361 @@
       "active": "Đang học",
       "transferred": "Đã chuyển lớp"
     },
-    "addPanel": {
-      "title": "Thêm học sinh",
-      "subtitle": "Tìm và thêm học sinh vào lớp này.",
-      "searchPlaceholder": "Tên hoặc mã học sinh...",
-      "noResults": "Không tìm thấy học sinh.",
-      "inClass": "Đã trong lớp",
-      "add": "Thêm vào lớp",
-      "transfer": "Chuyển lớp",
-      "unassigned": "Chưa thuộc lớp nào",
-      "transferWarning": "Học sinh đang trong lớp {className} — thêm vào lớp này sẽ chuyển lớp.",
-      "importCsv": "Import từ CSV"
+    "subtitle": "Quản lý ghi danh học sinh — điều kiện bắt buộc trước khi nhập điểm và điểm danh.",
+    "table": {
+      "actions": "Hành động",
+      "clearSearch": "Xóa tìm kiếm",
+      "clearSelection": "Bỏ chọn",
+      "dob": "Ngày sinh",
+      "exportCsv": "Xuất CSV",
+      "gender": "Giới tính",
+      "genderFemale": "Nữ",
+      "genderMale": "Nam",
+      "name": "Họ và tên",
+      "noMatch": "Không tìm thấy học sinh nào khớp.",
+      "removeFromClass": "Xoá khỏi lớp",
+      "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
+      "selectAll": "Chọn tất cả học sinh trên trang",
+      "selectStudent": "Chọn học sinh {name}",
+      "selected": "Đã chọn {count} học sinh",
+      "showing": "Hiển thị {from}–{to} / {total} học sinh",
+      "status": "Trạng thái",
+      "studentId": "Mã học sinh"
     },
-    "empty": {
-      "title": "Lớp chưa có học sinh",
-      "body": "Hãy thêm học sinh để bắt đầu nhập điểm và điểm danh cho lớp này.",
-      "addFirst": "Thêm học sinh đầu tiên cho lớp này",
-      "importCsv": "Import từ CSV"
-    },
-    "actions": {
-      "importCsv": "Import CSV",
-      "exportList": "Xuất danh sách"
-    },
-    "confirm": {
-      "unenrollTitle": "Xoá khỏi lớp?",
-      "unenrollBody": "{count} học sinh sẽ bị xoá khỏi lớp này. Không thể hoàn tác.",
-      "transferTitle": "Xác nhận chuyển lớp",
-      "transferBody": "{name} sẽ được chuyển từ lớp {fromClass} sang lớp này.",
-      "cancel": "Hủy",
-      "confirm": "Xác nhận"
-    },
-    "errors": {
-      "network-error": "Không thể kết nối đến máy chủ",
-      "unauthorized": "Bạn không có quyền truy cập",
-      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-      "not-found": "Không tìm thấy dữ liệu",
-      "already-enrolled": "Học sinh đã thuộc một lớp khác trong năm học này.",
-      "member-not-student": "Thành viên không có vai trò học sinh.",
-      "class-archived": "Lớp đã bị lưu trữ, không thể ghi danh.",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại"
-    }
+    "title": "Danh sách học sinh"
   },
   "adminSchoolSetup": {
-    "title": "Thiết lập trường học",
-    "subtitle": "Các thông số nền tảng để vận hành EduPortal cho trường của bạn.",
-    "saved": "Đã lưu",
-    "guide": {
-      "title": "Thiết lập ban đầu",
-      "stepsComplete": "bước hoàn thành",
-      "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để bắt đầu sử dụng EduPortal.",
-      "hide": "Ẩn hướng dẫn",
-      "hideAriaLabel": "Ẩn hướng dẫn thiết lập",
-      "progressAriaLabel": "Tiến trình thiết lập",
-      "done": "Hoàn thành",
-      "configure": "Cài đặt",
-      "setupGuideTitle": "Hướng dẫn thiết lập",
-      "setupGuideSubtitle": "Thứ tự cấu hình các thực thể nền tảng theo ADR 0035.",
-      "open": "Mở",
-      "configureAriaLabel": "Cài đặt: {step}",
-      "openAriaLabel": "Mở cài đặt: {step}"
-    },
-    "steps": {
-      "stepGradeLevels": "Khối lớp",
-      "stepAcademicCalendar": "Năm học",
-      "stepSubjects": "Bộ môn & Môn học",
-      "stepAssessmentScheme": "Thang điểm & Khung ĐG",
-      "stepClasses": "Lớp học"
-    },
-    "gradeRange": {
-      "title": "Phạm vi khối lớp",
-      "subtitle": "Xác định các khối lớp tồn tại tại trường. Chỉ có thể tạo lớp học trong phạm vi này.",
-      "minLabel": "Khối tối thiểu",
-      "maxLabel": "Khối tối đa",
-      "hint": "Ví dụ: THPT → 10–12 | THCS → 6–9 | Tiểu học → 1–5. Giới hạn hệ thống: 1 ≤ tối thiểu ≤ tối đa ≤ 13.",
-      "presetsLabel": "Mẫu nhanh",
-      "currentRange": "Phạm vi hiện tại:",
-      "gradeLabel": "Khối ",
-      "activeClasses": "lớp đang hoạt động",
-      "unconfiguredTitle": "Khối lớp chưa được cấu hình",
-      "unconfiguredBody": "Lớp học không thể tạo cho đến khi hoàn thành bước này.",
-      "narrowingTitle": "Cảnh báo thu hẹp phạm vi:",
-      "narrowingBody": "Thu hẹp phạm vi sẽ bị chặn nếu có lớp học ở các khối ngoài phạm vi mới. Vui lòng lưu trữ lớp học trước khi thay đổi.",
-      "save": "Lưu phạm vi khối lớp",
-      "saving": "Đang lưu..."
-    },
-    "presets": {
-      "presetPrimary": "Tiểu học",
-      "presetSecondary": "THCS",
-      "presetHighSchool": "THPT",
-      "presetK12": "K–12"
-    },
-    "publishMode": {
-      "title": "Quy trình nộp điểm",
-      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
-      "legendSr": "Chọn chế độ công bố điểm",
-      "selfPublish": "Tự công bố",
-      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay.",
-      "adminApproval": "Duyệt bởi BGH",
-      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt.",
-      "save": "Lưu cài đặt",
-      "saving": "Đang lưu..."
-    },
-    "validation": {
-      "required": "Vui lòng nhập cả khối tối thiểu và tối đa.",
-      "notInteger": "Khối lớp phải là số nguyên.",
-      "outOfRange": "Khối lớp phải nằm trong khoảng 1 đến 13.",
-      "minExceedsMax": "Khối tối thiểu không được lớn hơn khối tối đa."
-    },
     "errors": {
-      "not-found": "Không tìm thấy cơ sở",
       "already-exists": "Cơ sở đã tồn tại",
       "forbidden": "Không có quyền thực hiện",
       "grade-level-range-invalid": "Khoảng lớp không hợp lệ",
       "narrowing-blocked": "Không thể thu hẹp — có lớp đang hoạt động trong vùng này",
       "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
+      "not-found": "Không tìm thấy cơ sở",
       "unauthorized": "Bạn không có quyền thực hiện thao tác này.",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    },
+    "gradeRange": {
+      "activeClasses": "lớp đang hoạt động",
+      "currentRange": "Phạm vi hiện tại:",
+      "gradeLabel": "Khối ",
+      "hint": "Ví dụ: THPT → 10–12 | THCS → 6–9 | Tiểu học → 1–5. Giới hạn hệ thống: 1 ≤ tối thiểu ≤ tối đa ≤ 13.",
+      "maxLabel": "Khối tối đa",
+      "minLabel": "Khối tối thiểu",
+      "narrowingBody": "Thu hẹp phạm vi sẽ bị chặn nếu có lớp học ở các khối ngoài phạm vi mới. Vui lòng lưu trữ lớp học trước khi thay đổi.",
+      "narrowingTitle": "Cảnh báo thu hẹp phạm vi:",
+      "presetsLabel": "Mẫu nhanh",
+      "save": "Lưu phạm vi khối lớp",
+      "saving": "Đang lưu...",
+      "subtitle": "Xác định các khối lớp tồn tại tại trường. Chỉ có thể tạo lớp học trong phạm vi này.",
+      "title": "Phạm vi khối lớp",
+      "unconfiguredBody": "Lớp học không thể tạo cho đến khi hoàn thành bước này.",
+      "unconfiguredTitle": "Khối lớp chưa được cấu hình"
+    },
+    "guide": {
+      "configure": "Cài đặt",
+      "configureAriaLabel": "Cài đặt: {step}",
+      "done": "Hoàn thành",
+      "hide": "Ẩn hướng dẫn",
+      "hideAriaLabel": "Ẩn hướng dẫn thiết lập",
+      "open": "Mở",
+      "openAriaLabel": "Mở cài đặt: {step}",
+      "progressAriaLabel": "Tiến trình thiết lập",
+      "setupGuideSubtitle": "Thứ tự cấu hình các thực thể nền tảng theo ADR 0035.",
+      "setupGuideTitle": "Hướng dẫn thiết lập",
+      "stepsComplete": "bước hoàn thành",
+      "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để bắt đầu sử dụng EduPortal.",
+      "title": "Thiết lập ban đầu"
+    },
+    "presets": {
+      "presetHighSchool": "THPT",
+      "presetK12": "K–12",
+      "presetPrimary": "Tiểu học",
+      "presetSecondary": "THCS"
+    },
+    "publishMode": {
+      "adminApproval": "Duyệt bởi BGH",
+      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt.",
+      "legendSr": "Chọn chế độ công bố điểm",
+      "save": "Lưu cài đặt",
+      "saving": "Đang lưu...",
+      "selfPublish": "Tự công bố",
+      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay.",
+      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
+      "title": "Quy trình nộp điểm"
+    },
+    "saved": "Đã lưu",
+    "steps": {
+      "stepAcademicCalendar": "Năm học",
+      "stepAssessmentScheme": "Thang điểm & Khung ĐG",
+      "stepClasses": "Lớp học",
+      "stepGradeLevels": "Khối lớp",
+      "stepSubjects": "Bộ môn & Môn học"
+    },
+    "subtitle": "Các thông số nền tảng để vận hành EduPortal cho trường của bạn.",
+    "title": "Thiết lập trường học",
+    "validation": {
+      "minExceedsMax": "Khối tối thiểu không được lớn hơn khối tối đa.",
+      "notInteger": "Khối lớp phải là số nguyên.",
+      "outOfRange": "Khối lớp phải nằm trong khoảng 1 đến 13.",
+      "required": "Vui lòng nhập cả khối tối thiểu và tối đa."
     }
   },
   "adminSettings": {
-    "title": "Cài đặt vận hành",
-    "subtitle": "Quản lý quy trình nộp điểm và liên kết cấu hình.",
-    "publishMode": {
-      "title": "Quy trình nộp điểm",
-      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
-      "legendSr": "Chọn chế độ công bố điểm",
-      "selfPublish": "Tự công bố",
-      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay. Không cần BGH duyệt.",
-      "adminApproval": "Duyệt bởi BGH",
-      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt trước khi công bố.",
-      "warningNote": "Thay đổi quy trình nộp điểm sẽ áp dụng ngay cho tất cả giáo viên. Điểm đang ở trạng thái Chờ duyệt sẽ không bị ảnh hưởng.",
-      "warningNoteLabel": "Lưu ý:",
-      "save": "Lưu cài đặt",
-      "saving": "Đang lưu...",
-      "readOnlyHint": "Chỉ quản trị viên mới có thể thay đổi cài đặt này."
-    },
     "confirmDialog": {
-      "title": "Chuyển sang Tự công bố?",
-      "description": "Các lô điểm đang chờ duyệt sẽ được tự động công bố ngay. Hành động này không thể hoàn tác.",
       "cancel": "Hủy",
-      "confirm": "Xác nhận"
+      "confirm": "Xác nhận",
+      "description": "Các lô điểm đang chờ duyệt sẽ được tự động công bố ngay. Hành động này không thể hoàn tác.",
+      "title": "Chuyển sang Tự công bố?"
     },
-    "shortcuts": {
-      "title": "Liên kết cấu hình",
-      "subtitle": "Chuyển đến các màn hình cấu hình chuyên biệt.",
-      "calendar": "Lịch học",
-      "calendarDesc": "Quản lý năm học và kỳ học.",
-      "assessment": "Thang điểm & Khung đánh giá",
-      "assessmentDesc": "Cấu hình thang điểm và tiêu chí đánh giá.",
-      "open": "Xem"
-    },
-    "toast": {
-      "saveSuccess": "Đã cập nhật cài đặt",
-      "saveError": "Lưu không thành công, vui lòng thử lại"
-    },
-    "loading": "Đang tải cài đặt...",
     "errors": {
-      "not-found": "Không tìm thấy cấu hình",
       "forbidden": "Không có quyền thực hiện",
       "network-error": "Không thể kết nối đến máy chủ, vui lòng thử lại.",
+      "not-found": "Không tìm thấy cấu hình",
       "unknown": "Có lỗi xảy ra, vui lòng thử lại."
-    }
-  },
-  "classLog": {
-    "pageTitle": "Sổ đầu bài",
-    "teacherSubtitle": "Ghi lại nội dung từng tiết dạy để BGH phê duyệt",
-    "principalSubtitle": "Xem xét và phê duyệt sổ đầu bài của giáo viên",
-    "newEntry": "Ghi tiết mới",
-    "stats": {
-      "pending": "Chờ duyệt",
-      "approved": "Đã duyệt",
-      "draft": "Nháp",
-      "rejected": "Từ chối"
     },
-    "status": {
-      "DRAFT": "Nháp",
-      "SUBMITTED": "Chờ duyệt",
-      "APPROVED": "Đã duyệt",
-      "REJECTED": "Từ chối"
-    },
-    "form": {
-      "title": "Ghi sổ đầu bài",
-      "subtitle": "Ghi lại nội dung tiết học để BGH phê duyệt",
-      "entryDate": "Ngày",
-      "summary": "Nội dung bài học / Nội dung tiết dạy",
-      "summaryPlaceholder": "VD: Đạo hàm và ứng dụng — Bài 3: Cực trị hàm số",
-      "summaryRequired": "Nội dung bài học là bắt buộc",
-      "notableEvents": "Ghi chú (tùy chọn)",
-      "notableEventsPlaceholder": "Nhận xét, tình hình đặc biệt trong tiết học...",
-      "saveDraft": "Lưu nháp",
-      "submit": "Gửi BGH phê duyệt",
-      "submitting": "Đang gửi...",
-      "saved": "Đã ghi sổ thành công!",
-      "back": "Quay lại"
-    },
-    "list": {
-      "title": "Danh sách sổ đầu bài",
-      "empty": "Không có mục nào",
-      "filterAll": "Tất cả"
-    },
-    "detail": {
-      "back": "Quay lại danh sách",
-      "bghReview": "Phê duyệt của BGH",
-      "approve": "Phê duyệt",
-      "approving": "Đang phê...",
-      "reject": "Từ chối",
-      "rejectReason": "Lý do từ chối",
-      "rejectReasonPlaceholder": "VD: Thiếu nội dung bài tập về nhà...",
-      "confirmReject": "Xác nhận từ chối",
-      "cancelReject": "Huỷ",
-      "approvedBy": "Bởi BGH",
-      "approvedLabel": "Đã phê duyệt",
-      "rejectedLabel": "Đã từ chối",
-      "rejectionReason": "Lý do từ chối:",
-      "teacherSignature": "Giáo viên ký tên",
-      "noClassSelected": "Chọn một lớp để xem sổ đầu bài"
-    },
-    "errors": {
-      "not-found": "Không tìm thấy bản ghi",
-      "already-submitted": "Bản ghi đã được gửi",
-      "not-submitted": "Bản ghi chưa được gửi để phê duyệt",
-      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
-      "duplicate-date": "Đã có bản ghi cho ngày này",
-      "network-error": "Lỗi kết nối mạng",
-      "unknown": "Đã xảy ra lỗi không xác định"
-    }
-  },
-  "discipline": {
-    "title": "Hành chính & Kỷ luật",
-    "subtitle": "Quản lý vi phạm, hạnh kiểm và nghỉ phép học sinh",
-    "retry": "Thử lại",
-    "tabs": {
-      "violations": "Vi phạm",
-      "conduct": "Hạnh kiểm",
-      "leave": "Nghỉ phép"
-    },
-    "violations": {
-      "title": "Danh sách vi phạm",
-      "addNew": "Nhập vi phạm mới",
-      "record": "Ghi nhận vi phạm",
-      "cancel": "Huỷ",
+    "loading": "Đang tải cài đặt...",
+    "publishMode": {
+      "adminApproval": "Duyệt bởi BGH",
+      "adminApprovalDesc": "Giáo viên nộp điểm → BGH phê duyệt trước khi công bố.",
+      "legendSr": "Chọn chế độ công bố điểm",
+      "readOnlyHint": "Chỉ quản trị viên mới có thể thay đổi cài đặt này.",
+      "save": "Lưu cài đặt",
       "saving": "Đang lưu...",
-      "success": "Đã ghi nhận vi phạm thành công!",
-      "formTitle": "Nhập vi phạm mới",
-      "formSubtitle": "Ghi nhận vi phạm của học sinh vào hệ thống",
-      "form": {
-        "student": "Tên học sinh *",
-        "studentPlaceholder": "Nguyễn Văn A...",
-        "class": "Lớp",
-        "date": "Ngày",
-        "type": "Loại vi phạm *",
-        "severity": "Mức độ",
-        "description": "Mô tả vi phạm *",
-        "descriptionPlaceholder": "Mô tả chi tiết hành vi vi phạm...",
-        "notifyParent": "Thông báo phụ huynh"
-      },
-      "severity": {
-        "all": "Tất cả",
-        "low": "Nhẹ",
-        "medium": "Vừa",
-        "high": "Nặng"
-      },
-      "status": {
-        "recorded": "Đã ghi nhận",
-        "notified": "Đã thông báo PH",
-        "parent_confirmed": "PH đã xác nhận"
-      },
-      "types": {
-        "late": "Đi học muộn",
-        "uniform": "Không đúng đồng phục",
-        "phone": "Sử dụng điện thoại",
-        "fight": "Gây gổ đánh nhau",
-        "skip": "Trốn học",
-        "cheat": "Gian lận kiểm tra",
-        "disrespect": "Vô lễ với giáo viên",
-        "noise": "Làm ồn trong lớp",
-        "other": "Khác"
-      },
-      "allClasses": "Tất cả lớp",
-      "period": "Tiết {period}",
-      "recordedBy": "Ghi bởi: {handler}",
-      "empty": "Không có vi phạm nào!",
-      "stats": {
-        "thisWeek": "Vi phạm tuần này",
-        "minor": "Mức nhẹ",
-        "moderateSevere": "Mức vừa/nặng",
-        "pendingNotify": "Chờ thông báo PH"
-      }
+      "selfPublish": "Tự công bố",
+      "selfPublishDesc": "Giáo viên nộp điểm → công bố ngay. Không cần BGH duyệt.",
+      "subtitle": "Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh.",
+      "title": "Quy trình nộp điểm",
+      "warningNote": "Thay đổi quy trình nộp điểm sẽ áp dụng ngay cho tất cả giáo viên. Điểm đang ở trạng thái Chờ duyệt sẽ không bị ảnh hưởng.",
+      "warningNoteLabel": "Lưu ý:"
     },
-    "conduct": {
-      "title": "Bảng xếp loại hạnh kiểm",
-      "tableTitle": "Bảng xếp loại hạnh kiểm — {semester}",
-      "semester": "Học kỳ",
-      "grade": {
-        "excellent": "Tốt",
-        "good": "Khá",
-        "average": "Trung bình",
-        "poor": "Yếu"
-      },
-      "columns": {
-        "student": "Học sinh",
-        "class": "Lớp",
-        "violations": "Vi phạm",
-        "absences": "Nghỉ KP",
-        "points": "Điểm HK",
-        "conduct": "Hạnh kiểm",
-        "action": "Thao tác"
-      },
-      "override": "Sửa thủ công",
-      "edit": "Sửa",
-      "editLabel": "Sửa hạnh kiểm của {student}",
-      "cancelEdit": "Hủy chỉnh sửa",
-      "pointsProgress": "Điểm hạnh kiểm của {student}: {points}/100",
-      "overrideNote": "Ghi chú...",
-      "overrideNoteLabel": "Ghi chú override",
-      "save": "Lưu",
-      "saved": "Đã lưu",
-      "allClasses": "Tất cả lớp",
-      "empty": "Chưa có dữ liệu hạnh kiểm"
+    "shortcuts": {
+      "assessment": "Thang điểm & Khung đánh giá",
+      "assessmentDesc": "Cấu hình thang điểm và tiêu chí đánh giá.",
+      "calendar": "Lịch học",
+      "calendarDesc": "Quản lý năm học và kỳ học.",
+      "open": "Xem",
+      "subtitle": "Chuyển đến các màn hình cấu hình chuyên biệt.",
+      "title": "Liên kết cấu hình"
     },
-    "leave": {
-      "title": "Yêu cầu nghỉ phép",
-      "status": {
-        "pending": "Chờ duyệt",
-        "approved": "Đã duyệt",
-        "rejected": "Từ chối"
-      },
-      "type": {
-        "medical": "Nghỉ bệnh / khám",
-        "personal": "Việc cá nhân / gia đình",
-        "event": "Tham gia sự kiện",
-        "other": "Lý do khác"
-      },
-      "filterAll": "Tất cả",
-      "reasonLabel": "Lý do:",
-      "approve": "Duyệt",
-      "approveLabel": "Duyệt đơn nghỉ của {student}",
-      "reject": "Từ chối",
-      "rejectLabel": "Từ chối đơn nghỉ của {student}",
-      "rejectDialog": {
-        "title": "Lý do từ chối",
-        "description": "Vui lòng nhập lý do từ chối để thông báo phụ huynh/học sinh.",
-        "reason": "Nhập lý do từ chối (tối thiểu 10 ký tự)",
-        "reasonPlaceholder": "Lý do...",
-        "reasonMinLength": "Vui lòng nhập ít nhất 10 ký tự",
-        "confirm": "Xác nhận từ chối",
-        "cancel": "Huỷ"
-      },
-      "submittedBy": "Người gửi",
-      "days": "{count} ngày",
-      "empty": "Chưa có yêu cầu nghỉ phép",
-      "rejectedReason": "Lý do từ chối:",
-      "stats": {
-        "pending": "Chờ duyệt",
-        "approved": "Đã duyệt",
-        "rejected": "Từ chối"
-      }
-    },
-    "studentConduct": {
-      "title": "Hành kiểm của tôi",
-      "subtitle": "Xem điểm hạnh kiểm và gửi đơn xin nghỉ",
-      "parentTitle": "Hành kiểm học sinh",
-      "parentSubtitle": "Xem hành kiểm và gửi đơn nghỉ thay con",
-      "childInfo": "{name} — Lớp {class}",
-      "conductCard": {
-        "points": "Điểm hành kiểm",
-        "grade": "Xếp loại",
-        "violations": "Vi phạm",
-        "absences": "Nghỉ không phép"
-      },
-      "myViolations": {
-        "title": "Lịch sử vi phạm",
-        "empty": "Chưa có vi phạm nào"
-      },
-      "leaveRequest": {
-        "title": "Gửi đơn xin nghỉ",
-        "button": "Xin nghỉ phép",
-        "startDate": "Ngày bắt đầu *",
-        "endDate": "Ngày kết thúc *",
-        "type": "Loại nghỉ *",
-        "reason": "Lý do *",
-        "reasonPlaceholder": "Nhập lý do nghỉ phép (tối thiểu 10 ký tự)...",
-        "submit": "Gửi đơn",
-        "submitting": "Đang gửi...",
-        "success": "Đã gửi đơn thành công!",
-        "close": "Đóng",
-        "types": {
-          "medical": "Nghỉ bệnh / khám",
-          "personal": "Việc cá nhân / gia đình",
-          "event": "Tham gia sự kiện",
-          "other": "Lý do khác"
-        }
-      },
-      "leaveHistory": {
-        "title": "Lịch sử đơn xin nghỉ",
-        "empty": "Chưa có đơn xin nghỉ nào",
-        "rejectionReason": "Lý do từ chối:"
-      },
-      "status": {
-        "pending": "Chờ duyệt",
-        "approved": "Đã duyệt",
-        "rejected": "Từ chối"
-      },
-      "retry": "Thử lại",
-      "loadError": "Không tải được dữ liệu hành kiểm",
-      "loading": "Đang tải dữ liệu hành kiểm..."
-    },
-    "errors": {
-      "missing-student": "Vui lòng nhập tên học sinh",
-      "missing-description": "Vui lòng nhập mô tả vi phạm",
-      "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
-      "already-processed": "Yêu cầu này đã được xử lý",
-      "invalid-severity": "Mức độ vi phạm không hợp lệ",
-      "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
-      "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
-      "reason-too-short": "Lý do phải có ít nhất 10 ký tự",
-      "network-error": "Lỗi kết nối, vui lòng thử lại"
+    "subtitle": "Quản lý quy trình nộp điểm và liên kết cấu hình.",
+    "title": "Cài đặt vận hành",
+    "toast": {
+      "saveError": "Lưu không thành công, vui lòng thử lại",
+      "saveSuccess": "Đã cập nhật cài đặt"
     }
+  },
+  "announcements": {
+    "actionDelete": "Xóa",
+    "actionEdit": "Chỉnh sửa",
+    "actionView": "Xem chi tiết",
+    "audienceAll": "Tất cả",
+    "audienceParents": "Phụ huynh",
+    "audienceStudents": "Học sinh",
+    "audienceTeachers": "Giáo viên",
+    "btnCancel": "Hủy",
+    "btnClose": "Đóng",
+    "btnDelete": "Xóa",
+    "btnRemind": "Gửi nhắc chưa đọc",
+    "btnSaveDraft": "Lưu nháp",
+    "btnSchedule": "Lên lịch",
+    "btnSendNow": "Gửi ngay",
+    "charCount": "{current}/{max}",
+    "createButton": "Tạo thông báo",
+    "deleteDescription": "Bạn có chắc muốn xóa thông báo này? Hành động này không thể hoàn tác.",
+    "deleteTitle": "Xóa thông báo",
+    "deleteToast": "Đã xóa thông báo",
+    "detailAuthor": "Tác giả",
+    "detailSentAt": "Thời gian gửi",
+    "detailTitle": "Chi tiết thông báo",
+    "draftToast": "Đã lưu nháp",
+    "drawerCreateTitle": "Tạo thông báo",
+    "drawerEditTitle": "Chỉnh sửa thông báo",
+    "emptyBody": "Tạo thông báo đầu tiên của bạn.",
+    "emptyTitle": "Chưa có thông báo",
+    "errors": {
+      "body-too-short": "Nội dung phải có ít nhất 10 ký tự.",
+      "network-error": "Không thể kết nối đến máy chủ.",
+      "no-audience": "Vui lòng chọn ít nhất một đối tượng.",
+      "not-found": "Không tìm thấy thông báo.",
+      "schedule-past-date": "Thời gian lên lịch phải là tương lai.",
+      "title-too-short": "Tiêu đề phải có ít nhất 5 ký tự.",
+      "unauthorized": "Bạn không có quyền thực hiện.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    },
+    "estimatedRecipients": "Ước tính {count} người nhận",
+    "fieldAudience": "Đối tượng",
+    "fieldBody": "Nội dung",
+    "fieldBodyPlaceholder": "Nhập nội dung thông báo...",
+    "fieldGradeFilter": "Lọc theo khối",
+    "fieldPriority": "Mức độ ưu tiên",
+    "fieldScheduledAt": "Thời gian lên lịch",
+    "fieldSendMode": "Thời gian gửi",
+    "fieldTitle": "Tiêu đề",
+    "fieldTitlePlaceholder": "Nhập tiêu đề thông báo...",
+    "filterAll": "Tất cả",
+    "filterDraft": "Nháp",
+    "filterScheduled": "Đã lên lịch",
+    "filterSent": "Đã gửi",
+    "loadError": "Không thể tải danh sách thông báo.",
+    "loadingAriaLabel": "Đang tải danh sách thông báo",
+    "loadingRecipientsAriaLabel": "Đang tải danh sách người nhận...",
+    "pageTitle": "Thông báo",
+    "previewHeading": "Bản xem trước",
+    "previewToggle": "Xem trước",
+    "priorityImportant": "Quan trọng",
+    "priorityNormal": "Thường",
+    "priorityUrgent": "Khẩn",
+    "readProgressLabel": "Tỷ lệ đã đọc: {pct}%",
+    "readRatio": "{read}/{total} đã đọc",
+    "recipientCount": "{count} người nhận",
+    "recipientFilterAll": "Tất cả",
+    "recipientFilterRead": "Đã đọc",
+    "recipientFilterUnread": "Chưa đọc",
+    "recipientStatusRead": "Đã đọc",
+    "recipientStatusUnread": "Chưa đọc",
+    "recipientsEmpty": "Không có người nhận phù hợp.",
+    "remindToast": "Đã gửi nhắc đến {count} người chưa đọc",
+    "scheduleToast": "Đã lên lịch thông báo",
+    "sendModeNow": "Gửi ngay",
+    "sendModeSchedule": "Lên lịch",
+    "sendToast": "Đã gửi thông báo",
+    "statusDraft": "Nháp",
+    "statusScheduled": "Đã lên lịch",
+    "statusSent": "Đã gửi",
+    "subtitle": "Tạo và quản lý thông báo gửi tới giáo viên, phụ huynh và học sinh.",
+    "urgentCardAriaLabel": "Thông báo khẩn cấp: {title}"
+  },
+  "assessmentScheme": {
+    "addBand": "Thêm mức",
+    "addBandLabel": "Thêm mức điểm",
+    "addColumn": "Thêm cột",
+    "addColumnLabel": "Thêm cột điểm",
+    "applyPreset": "Áp dụng mẫu",
+    "applyPresetTT22": "Áp dụng TT22/2021",
+    "assessmentSchemePerSubjectSubtitle": "Cấu trúc cột điểm cho từng môn theo khối. Tổng trọng số bắt buộc bằng 100%.",
+    "assessmentSchemePerSubjectTitle": "Khung đánh giá môn học",
+    "assessmentSchemeSection": "Khung đánh giá",
+    "assessmentSchemeSectionSubtitle": "Cấu hình cột điểm thành phần và trọng số cho từng môn học.",
+    "bandColor": "Màu",
+    "bandColorHeader": "Màu",
+    "bandFromHeader": "Từ",
+    "bandLabel": "Nhãn",
+    "bandLabelPlaceholder": "Tên xếp loại",
+    "bandMinThreshold": "Điểm tối thiểu",
+    "bandMoveDown": "Di chuyển xuống",
+    "bandMoveUp": "Di chuyển lên",
+    "bandRankHeader": "Xếp loại",
+    "bandToHeader": "Đến",
+    "breadcrumbAssessment": "Thang điểm & Khung ĐG",
+    "breadcrumbSchoolSetup": "Thiết lập trường",
+    "colorError": "Đỏ (Yếu)",
+    "colorPrimary": "Xanh dương (Khá)",
+    "colorSuccess": "Xanh (Giỏi)",
+    "colorWarning": "Vàng (Trung bình)",
+    "columnCount": "Số lần",
+    "columnHeader": "Cột điểm",
+    "columnKindLabel": "Loại cột",
+    "columnLabel": "Tên cột",
+    "columnNamePlaceholder": "Tên cột",
+    "columnPlaceholder": "Cột mới",
+    "columnTimesHeader": "Số lần",
+    "columnType": "Loại",
+    "columnTypeCK": "Cuối kỳ",
+    "columnTypeGK": "Giữa kỳ",
+    "columnTypeTX": "Thường xuyên",
+    "columnWeight": "Trọng số (%)",
+    "columnWeightHeader": "Trọng số",
+    "createSchemeWithPreset": "Tạo khung đánh giá · {presetName}",
+    "deleteBand": "Xóa mức",
+    "deleteColumn": "Xóa cột",
+    "errorEmptyBands": "Cần ít nhất một mức điểm.",
+    "errorEmptyColumns": "Cần ít nhất một cột điểm.",
+    "errorForbidden": "Bạn không có quyền thực hiện thao tác này.",
+    "errorGapsInCoverage": "Còn khoảng trống giữa các mức điểm.",
+    "errorInvalidCount": "Số lần kiểm tra phải ≥ 1.",
+    "errorLowestBandNotZero": "Mức thấp nhất phải bắt đầu từ 0.",
+    "errorNetwork": "Lỗi kết nối. Vui lòng thử lại.",
+    "errorNotFound": "Không tìm thấy dữ liệu.",
+    "errorOverlappingThresholds": "Các mức điểm bị trùng nhau.",
+    "errorUnknown": "Đã xảy ra lỗi không xác định.",
+    "errorWeightSumNot100": "Tổng trọng số phải bằng 100%.",
+    "goToSubjectCatalogue": "Đến Danh mục môn học",
+    "gradeLevelHeader": "LỚP",
+    "gradeLevelLabel": "Khối lớp",
+    "gradeLevelPlaceholder": "Chọn khối lớp",
+    "gradePrefix": "Lớp",
+    "gradeScaleSection": "Thang điểm (Xếp loại)",
+    "gradeScaleSectionSubtitle": "Định nghĩa các mức xếp loại điểm cho trường.",
+    "gradeScaleSubtitle": "Áp dụng cho toàn trường. Xếp loại sẽ hiển thị trên học bạ & báo cáo.",
+    "gradeScaleTitle": "Thang điểm",
+    "loading": "Đang tải...",
+    "lockedFieldTooltip": "Khoá theo Subject master — chỉ chỉnh tại Danh mục môn học",
+    "noSchemeBody": "Hãy chọn một preset để khởi tạo nhanh.",
+    "noSchemeTitle": "Chưa có khung đánh giá cho môn học này.",
+    "noSubjectPickedBody": "Khung đánh giá được cấu hình riêng cho từng môn × năm học.",
+    "noSubjectPickedTitle": "Chọn khối và môn học để bắt đầu",
+    "noSubjectsBannerBody": "Khung đánh giá phụ thuộc vào danh mục môn học theo khối lớp. Hãy thêm môn học trước khi cấu hình khung đánh giá.",
+    "noSubjectsBannerTitle": "Cần thiết lập danh mục môn học trước",
+    "noSubjectsForGrade": "Không có môn học nào cho khối này.",
+    "overlapCalloutBody": "Hai ngưỡng có khoảng điểm trùng nhau — vui lòng điều chỉnh để mỗi điểm chỉ thuộc một mức.",
+    "overlapCalloutTitle": "Các ngưỡng bị chồng lấn",
+    "pageSubtitle": "Khung xếp loại học sinh & cấu trúc cột điểm theo môn (ADR 0036/0037).",
+    "pageTitle": "Thang điểm & Khung đánh giá",
+    "periodsPerYear": "Số tiết / năm",
+    "pickGrade": "— Chọn khối —",
+    "pickGradeFirst": "Chọn khối trước",
+    "pickSubject": "— Chọn môn —",
+    "presetCustom": "Tùy chỉnh",
+    "presetCustomDesc": "Tự định nghĩa cột & trọng số",
+    "presetGPA4Desc": "GPA chuẩn quốc tế",
+    "presetLetter": "Chữ (A–F)",
+    "presetLetterDesc": "Quy đổi từ phần trăm",
+    "presetTT22": "Mẫu TT22/2021",
+    "presetTT26": "THCS Thông tư 26",
+    "presetTT26Desc": "Áp dụng cho THCS",
+    "presetThang10": "Thang 10",
+    "presetThang10Desc": "Mặc định Việt Nam · Thông tư 22/2021",
+    "presetThang4": "Thang 4.0",
+    "removeBand": "Xoá mức điểm",
+    "removeColumnLabel": "Xoá cột",
+    "removeColumnMinOne": "Cần ít nhất 1 cột",
+    "requiredExamsPerTerm": "Số bài KT / kỳ",
+    "saveBands": "Lưu thang điểm",
+    "saveError": "Lưu thất bại. Vui lòng thử lại.",
+    "saveScheme": "Lưu khung đánh giá",
+    "saveSuccess": "Đã lưu thành công.",
+    "scaleSavedToast": "Đã lưu thang điểm.",
+    "schemeHeadingLabel": "Khung đánh giá — ",
+    "schemePresetsLabel": "Khung mẫu",
+    "schemeSavedToast": "Đã lưu khung đánh giá.",
+    "step4Badge": "Bước 4/5 · Onboarding",
+    "subjectLabel": "Môn học",
+    "subjectPlaceholder": "Chọn môn học",
+    "subtitle": "Cấu hình thang điểm và các cột điểm thành phần theo môn học.",
+    "title": "Thang điểm & Khung đánh giá",
+    "totalWeightLabel": "Tổng trọng số",
+    "unsavedChangesBody": "Có thay đổi chưa lưu.",
+    "unsavedLabel": "Chưa lưu",
+    "weightNotHundredBody": "Học bạ sẽ không lưu được khung này cho đến khi trọng số tổng đúng bằng 100%.",
+    "weightNotHundredTitle": "Tổng trọng số phải bằng 100% (hiện tại {value}%)",
+    "weightSumInvalid": "Tổng trọng số: {value}% — chưa đủ 100%",
+    "weightSumInvalidSR": "— chưa đủ 100%",
+    "weightSumLabel": "Tổng trọng số",
+    "weightSumTarget": "/ 100%",
+    "weightSumValid": "Tổng trọng số: {value}% — hợp lệ",
+    "yearLabel": "Năm học",
+    "yearLabelPlaceholder": "2024-2025"
   },
   "attendance": {
-    "title": "Điểm danh",
+    "actions": {
+      "allPresent": "Tất cả có mặt",
+      "save": "Lưu điểm danh",
+      "saveFailed": "Lưu thất bại",
+      "saved": "Đã lưu điểm danh",
+      "saving": "Đang lưu..."
+    },
+    "empty": "Chưa chọn lớp/ngày/tiết",
     "filters": {
       "class": "Lớp",
       "date": "Ngày",
@@ -866,807 +520,1378 @@
       "selectClass": "Chọn lớp",
       "selectPeriod": "Chọn tiết"
     },
-    "status": {
-      "present": "Có mặt",
-      "excused": "Vắng phép",
-      "absent": "Vắng KP"
-    },
-    "actions": {
-      "allPresent": "Tất cả có mặt",
-      "save": "Lưu điểm danh",
-      "saving": "Đang lưu...",
-      "saved": "Đã lưu điểm danh",
-      "saveFailed": "Lưu thất bại"
-    },
-    "summary": {
-      "total": "Sĩ số",
-      "present": "Có mặt",
-      "absent": "Vắng",
-      "rate": "Tỷ lệ"
-    },
-    "tabs": {
-      "today": "Hôm nay",
-      "history": "Lịch sử"
-    },
     "history": {
       "date": "Ngày",
+      "empty": "Chưa có lịch sử điểm danh",
       "period": "Tiết",
-      "subject": "Môn",
-      "empty": "Chưa có lịch sử điểm danh"
+      "subject": "Môn"
     },
-    "empty": "Chưa chọn lớp/ngày/tiết",
     "roster": {
-      "student": "Học sinh",
       "code": "Mã",
-      "status": "Trạng thái"
-    }
-  },
-  "iamMember": {
-    "errors": {
-      "forbidden": "Không có quyền thực hiện thao tác này",
-      "not-found": "Không tìm thấy thành viên hoặc lời mời",
-      "email-exists": "Email đã tồn tại trong hệ thống",
-      "invitation-not-found": "Lời mời không tồn tại hoặc đã hết hạn",
-      "last-admin": "Không thể xóa admin cuối cùng của tổ chức",
-      "network-error": "Lỗi kết nối, vui lòng thử lại",
-      "unknown": "Đã có lỗi xảy ra"
-    }
-  },
-  "tenant": {
-    "select": {
-      "title": "Chọn không gian làm việc",
-      "subtitle": "Bạn là thành viên của các tổ chức sau",
-      "enter": "Vào",
-      "switching": "Đang chuyển…",
-      "empty": "Bạn chưa thuộc tổ chức nào",
-      "roles": "Vai trò"
+      "status": "Trạng thái",
+      "student": "Học sinh"
     },
-    "home": {
-      "title": "Không gian làm việc",
-      "body": "Bạn đang ở trong không gian của tổ chức này."
+    "status": {
+      "absent": "Vắng KP",
+      "excused": "Vắng phép",
+      "present": "Có mặt"
+    },
+    "summary": {
+      "absent": "Vắng",
+      "present": "Có mặt",
+      "rate": "Tỷ lệ",
+      "total": "Sĩ số"
+    },
+    "tabs": {
+      "history": "Lịch sử",
+      "today": "Hôm nay"
+    },
+    "title": "Điểm danh"
+  },
+  "auth": {
+    "brand": {
+      "name": "EduPortal",
+      "tagline": "Hệ thống quản lý giáo dục"
+    },
+    "errors": {
+      "account-suspended": "Tài khoản đã bị tạm ngừng",
+      "email-already-exists": "Email đã được đăng ký",
+      "invalid-credentials": "Email hoặc mật khẩu không đúng",
+      "invalid-otp": "Mã OTP không đúng hoặc đã dùng.",
+      "invalid-token": "Phiên không hợp lệ, vui lòng đăng nhập lại",
+      "network-error": "Không thể kết nối đến máy chủ",
+      "otp-expired": "Mã OTP đã hết hạn, hãy yêu cầu mã mới.",
+      "sso-unavailable": "Đăng nhập qua mạng xã hội hiện chưa khả dụng. Vui lòng dùng email và mật khẩu bên dưới.",
+      "token-expired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
+      "too-many-requests": "Quá nhiều yêu cầu, vui lòng thử lại sau.",
+      "unauthorized": "Bạn không có quyền truy cập",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại"
+    },
+    "forgot": {
+      "backToLogin": "Quay lại đăng nhập",
+      "linkFromLogin": "Quên mật khẩu?",
+      "step1": {
+        "email": "Email",
+        "sending": "Đang gửi…",
+        "submit": "Gửi mã OTP",
+        "subtitle": "Nhập email để nhận mã đặt lại."
+      },
+      "step2": {
+        "resend": "Gửi lại mã",
+        "submit": "Xác nhận",
+        "subtitle": "Nhập mã 6 số đã gửi tới email của bạn."
+      },
+      "step3": {
+        "confirm": "Xác nhận mật khẩu",
+        "mismatch": "Mật khẩu xác nhận không khớp.",
+        "new": "Mật khẩu mới",
+        "submit": "Đặt lại mật khẩu",
+        "submitting": "Đang đặt lại…",
+        "subtitle": "Đặt mật khẩu mới cho tài khoản."
+      },
+      "step4": {
+        "cta": "Đăng nhập",
+        "subtitle": "Bạn có thể đăng nhập bằng mật khẩu mới.",
+        "title": "Đã đặt lại mật khẩu"
+      },
+      "title": "Quên mật khẩu"
+    },
+    "login": {
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập...",
+      "subtitle": "Nhập thông tin để truy cập hệ thống",
+      "title": "Đăng nhập"
+    },
+    "roles": {
+      "ADMIN": {
+        "label": "Ban giám hiệu (BGH)"
+      },
+      "MANAGER": {
+        "label": "Phó Hiệu trưởng / BGH"
+      },
+      "PARENT": {
+        "label": "Phụ huynh"
+      },
+      "STAFF": {
+        "label": "Nhân viên"
+      },
+      "STUDENT": {
+        "label": "Học sinh"
+      },
+      "TEACHER": {
+        "label": "Giáo viên"
+      }
+    },
+    "selectRole": {
+      "backLink": "Đăng nhập tài khoản khác",
+      "eyebrow": "Đăng nhập với tư cách",
+      "roleSummary": "{count} vai trò khả dụng"
+    },
+    "sso": {
+      "continueWithGoogle": "Tiếp tục với Google",
+      "divider": "hoặc đăng nhập bằng email",
+      "googleLoading": "Đang đăng nhập với Google...",
+      "loginWithVneID": "Đăng nhập VNeID",
+      "vneidComingSoon": "Sắp ra mắt"
+    }
+  },
+  "calendar": {
+    "addYear": {
+      "label": "Nhãn năm học",
+      "placeholder": "VD: 2026–2027",
+      "setActive": "Đặt làm năm học hiện tại",
+      "submit": "Tạo năm học",
+      "submitting": "Đang tạo...",
+      "subtitle": "Sau khi tạo, mở thẻ năm học để cấu hình các học kỳ.",
+      "title": "Thêm năm học mới"
+    },
+    "empty": {
+      "cta": "Bắt đầu tạo năm học đầu tiên",
+      "subtitle": "Tạo năm học đầu tiên để bắt đầu cấu hình học kỳ, lịch giảng dạy và lịch thi.",
+      "title": "Chưa có năm học nào"
+    },
+    "errors": {
+      "active-year-exists": "Đã có năm học đang hoạt động",
+      "date-order": "Ngày bắt đầu phải trước ngày kết thúc",
+      "date-overlap": "Học kỳ bị trùng với học kỳ khác trong năm",
+      "graded-term-delete": "Không thể xoá học kỳ đã có dữ liệu điểm",
+      "network-error": "Không thể kết nối đến máy chủ",
+      "not-found-term": "Không tìm thấy học kỳ",
+      "not-found-year": "Không tìm thấy năm học",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại",
+      "year-archived": "Năm học đã được lưu trữ",
+      "year-label-exists": "Nhãn năm học đã tồn tại"
+    },
+    "subtitle": "Quản lý năm học và các học kỳ của trường",
+    "term": {
+      "actions": "Thao tác",
+      "addTerm": "Thêm học kỳ",
+      "cancel": "Huỷ",
+      "defaultName": "Học kỳ {n}",
+      "delete": "Xoá học kỳ",
+      "deleteBlocked": "Học kỳ có dữ liệu điểm, không thể xoá",
+      "edit": "Sửa học kỳ",
+      "endDate": "Ngày kết thúc",
+      "graded": "Có điểm",
+      "name": "Tên học kỳ",
+      "noTerms": "Chưa có học kỳ nào trong năm học này.",
+      "save": "Lưu",
+      "startDate": "Ngày bắt đầu"
+    },
+    "title": "Cấu hình năm học",
+    "year": {
+      "active": "Đang hoạt động",
+      "noTerms": "Chưa có học kỳ",
+      "termCount": "{count} học kỳ"
+    }
+  },
+  "classLog": {
+    "detail": {
+      "approve": "Phê duyệt",
+      "approvedBy": "Bởi BGH",
+      "approvedLabel": "Đã phê duyệt",
+      "approving": "Đang phê...",
+      "back": "Quay lại danh sách",
+      "bghReview": "Phê duyệt của BGH",
+      "cancelReject": "Huỷ",
+      "confirmReject": "Xác nhận từ chối",
+      "noClassSelected": "Chọn một lớp để xem sổ đầu bài",
+      "reject": "Từ chối",
+      "rejectReason": "Lý do từ chối",
+      "rejectReasonPlaceholder": "VD: Thiếu nội dung bài tập về nhà...",
+      "rejectedLabel": "Đã từ chối",
+      "rejectionReason": "Lý do từ chối:",
+      "teacherSignature": "Giáo viên ký tên"
+    },
+    "errors": {
+      "already-submitted": "Bản ghi đã được gửi",
+      "duplicate-date": "Đã có bản ghi cho ngày này",
+      "network-error": "Lỗi kết nối mạng",
+      "not-found": "Không tìm thấy bản ghi",
+      "not-submitted": "Bản ghi chưa được gửi để phê duyệt",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
+      "unknown": "Đã xảy ra lỗi không xác định"
+    },
+    "form": {
+      "back": "Quay lại",
+      "entryDate": "Ngày",
+      "notableEvents": "Ghi chú (tùy chọn)",
+      "notableEventsPlaceholder": "Nhận xét, tình hình đặc biệt trong tiết học...",
+      "saveDraft": "Lưu nháp",
+      "saved": "Đã ghi sổ thành công!",
+      "submit": "Gửi BGH phê duyệt",
+      "submitting": "Đang gửi...",
+      "subtitle": "Ghi lại nội dung tiết học để BGH phê duyệt",
+      "summary": "Nội dung bài học / Nội dung tiết dạy",
+      "summaryPlaceholder": "VD: Đạo hàm và ứng dụng — Bài 3: Cực trị hàm số",
+      "summaryRequired": "Nội dung bài học là bắt buộc",
+      "title": "Ghi sổ đầu bài"
+    },
+    "list": {
+      "empty": "Không có mục nào",
+      "filterAll": "Tất cả",
+      "title": "Danh sách sổ đầu bài"
+    },
+    "newEntry": "Ghi tiết mới",
+    "pageTitle": "Sổ đầu bài",
+    "principalSubtitle": "Xem xét và phê duyệt sổ đầu bài của giáo viên",
+    "stats": {
+      "approved": "Đã duyệt",
+      "draft": "Nháp",
+      "pending": "Chờ duyệt",
+      "rejected": "Từ chối"
+    },
+    "status": {
+      "APPROVED": "Đã duyệt",
+      "DRAFT": "Nháp",
+      "REJECTED": "Từ chối",
+      "SUBMITTED": "Chờ duyệt"
+    },
+    "teacherSubtitle": "Ghi lại nội dung từng tiết dạy để BGH phê duyệt"
+  },
+  "classManagement": {
+    "actions": {
+      "archive": "Lưu trữ",
+      "assignHomeroom": "Gán GVCN",
+      "rename": "Đổi tên"
+    },
+    "allGrades": "Tất cả khối",
+    "archiveDialog": {
+      "cancel": "Hủy",
+      "confirm": "Lưu trữ",
+      "description": "Bạn có chắc muốn lưu trữ lớp {name}?",
+      "title": "Lưu trữ lớp học",
+      "warningWithStudents": "Lớp này đang có {count} học sinh đã ghi danh. Vẫn lưu trữ?"
+    },
+    "createClass": "Tạo lớp mới",
+    "createSheet": {
+      "description": "Điền thông tin để tạo lớp học mới.",
+      "gradeLabel": "Khối lớp",
+      "nameLabel": "Tên lớp",
+      "namePlaceholder": "Ví dụ: 10A1",
+      "submit": "Tạo lớp",
+      "title": "Tạo lớp mới",
+      "yearLabel": "Năm học",
+      "yearPlaceholder": "Ví dụ: 2025-2026"
+    },
+    "errors": {
+      "duplicate-class": "Lớp đã tồn tại trong năm học này.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi đã cấu hình. Vui lòng kiểm tra lại Thiết lập trường học.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy lớp học.",
+      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
+    },
+    "filterByGrade": "Lọc theo khối",
+    "filterByYear": "Lọc theo năm học",
+    "formErrors": {
+      "nameRequired": "Vui lòng nhập tên lớp.",
+      "yearRequired": "Vui lòng nhập năm học."
+    },
+    "gradeN": "Khối {n}",
+    "homeroomSheet": {
+      "assign": "Gán",
+      "currentHomeroom": "GVCN hiện tại",
+      "description": "Chọn giáo viên để phân công làm giáo viên chủ nhiệm.",
+      "noTeachers": "Không tìm thấy giáo viên.",
+      "searchPlaceholder": "Tìm giáo viên theo tên...",
+      "title": "Gán giáo viên chủ nhiệm"
+    },
+    "renameSheet": {
+      "description": "Cập nhật tên hoặc khối của lớp học.",
+      "gradeLabel": "Khối lớp",
+      "nameLabel": "Tên lớp mới",
+      "submit": "Lưu thay đổi",
+      "title": "Đổi tên lớp"
+    },
+    "status": {
+      "ACTIVE": "Đang hoạt động",
+      "ARCHIVED": "Đã lưu trữ"
+    },
+    "subtitle": "Tạo, đổi tên, lưu trữ lớp học và phân công giáo viên chủ nhiệm.",
+    "table": {
+      "actions": "Hành động",
+      "caption": "Danh sách lớp học",
+      "grade": "Khối",
+      "homeroom": "GVCN",
+      "name": "Tên lớp",
+      "noClasses": "Chưa có lớp học nào.",
+      "status": "Trạng thái",
+      "studentCount": "Học sinh",
+      "unassigned": "Chưa phân công"
+    },
+    "title": "Quản lý lớp học",
+    "toast": {
+      "archiveSuccess": "Lưu trữ lớp thành công.",
+      "assignHomeroomSuccess": "Phân công giáo viên chủ nhiệm thành công.",
+      "createSuccess": "Tạo lớp thành công.",
+      "renameSuccess": "Đổi tên lớp thành công."
     }
   },
   "dashboard": {
     "common": {
       "viewAll": "Xem tất cả"
     },
-    "teacher": {
-      "title": "Tổng quan",
-      "greeting": "Chào buổi sáng, thầy/cô",
+    "parent": {
+      "childrenTitle": "Con của tôi",
       "stats": {
-        "classes": "Lớp giảng dạy",
-        "students": "Học sinh",
-        "attendance": "Tỉ lệ điểm danh",
-        "pending": "Việc cần làm"
+        "attendance": "Chuyên cần",
+        "avgScore": "Điểm TB",
+        "conduct": "Hạnh kiểm"
       },
+      "title": "Tổng quan con em",
+      "viewChild": "Xem chi tiết"
+    },
+    "principal": {
+      "alertsTitle": "Cần chú ý",
+      "reportsTitle": "Báo cáo nhanh",
+      "stats": {
+        "attendance": "Tỉ lệ chuyên cần",
+        "classes": "Lớp học",
+        "students": "Học sinh",
+        "teachers": "Giáo viên"
+      },
+      "title": "Tổng quan trường"
+    },
+    "student": {
+      "coursesTitle": "Khoá học của tôi",
+      "deadlinesTitle": "Hạn nộp sắp tới",
+      "stats": {
+        "assignments": "Bài tập",
+        "attendance": "Chuyên cần",
+        "avgScore": "Điểm TB",
+        "courses": "Khoá học"
+      },
+      "title": "Tổng quan"
+    },
+    "teacher": {
+      "greeting": "Chào buổi sáng, thầy/cô",
       "scheduleTitle": "Lịch dạy hôm nay",
+      "stats": {
+        "attendance": "Tỉ lệ điểm danh",
+        "classes": "Lớp giảng dạy",
+        "pending": "Việc cần làm",
+        "students": "Học sinh"
+      },
       "status": {
         "done": "Đã dạy",
         "live": "Đang diễn ra",
         "upcoming": "Sắp tới"
-      }
-    },
-    "principal": {
-      "title": "Tổng quan trường",
-      "stats": {
-        "teachers": "Giáo viên",
-        "students": "Học sinh",
-        "classes": "Lớp học",
-        "attendance": "Tỉ lệ chuyên cần"
       },
-      "alertsTitle": "Cần chú ý",
-      "reportsTitle": "Báo cáo nhanh"
-    },
-    "student": {
-      "title": "Tổng quan",
-      "stats": {
-        "courses": "Khoá học",
-        "assignments": "Bài tập",
-        "avgScore": "Điểm TB",
-        "attendance": "Chuyên cần"
-      },
-      "coursesTitle": "Khoá học của tôi",
-      "deadlinesTitle": "Hạn nộp sắp tới"
-    },
-    "parent": {
-      "title": "Tổng quan con em",
-      "childrenTitle": "Con của tôi",
-      "stats": {
-        "avgScore": "Điểm TB",
-        "attendance": "Chuyên cần",
-        "conduct": "Hạnh kiểm"
-      },
-      "viewChild": "Xem chi tiết"
+      "title": "Tổng quan"
     }
   },
-  "teacherDashboard": {
-    "pageTitle": "Tổng quan",
-    "stats": {
-      "totalStudents": "Tổng học sinh",
-      "classesToday": "Tiết học hôm nay",
-      "pendingGrades": "Chờ chấm điểm",
-      "pendingApproval": "Điểm chờ duyệt",
-      "newMessages": "Tin nhắn mới",
-      "vsPrevMonth": "so tháng trước",
-      "vsPrevWeek": "so tuần trước",
-      "adminApprovalMode": "Chế độ ADMIN_APPROVAL",
-      "totalClasses": "Lớp học"
-    },
-    "schedule": {
-      "title": "Lịch dạy hôm nay",
-      "dayLabel": "Thứ Tư",
-      "morning": "Buổi sáng",
-      "afternoon": "Buổi chiều",
-      "period": "Tiết {period}",
-      "empty": "Không có lịch dạy hôm nay",
-      "classRoom": "Lớp {className} · {room}"
-    },
-    "scheduleStatus": {
-      "done": "Hoàn thành",
-      "live": "Đang dạy",
-      "upcoming": "Sắp tới"
-    },
-    "pendingGrades": {
-      "title": "Chờ chấm điểm",
-      "enterGrades": "Nhập điểm",
-      "assessmentType": "{type} · {className}"
-    },
-    "notifications": {
-      "title": "Thông báo"
-    }
-  },
-  "teacherClasses": {
-    "pageTitle": "Lớp học của tôi",
-    "empty": "Bạn chưa được phân công lớp nào.",
-    "errorRetryAction": "Thử lại",
-    "breadcrumbLabel": "Điều hướng lớp học",
-    "gradeLevel": "Khối {grade}",
-    "students": "học sinh",
-    "homeroomBadge": "GVCN",
-    "actions": {
-      "viewStudents": "Xem học sinh",
-      "attendance": "Điểm danh",
-      "classLog": "Sổ đầu bài",
-      "comingSoon": "Sắp có"
-    },
-    "studentPage": {
-      "breadcrumbClasses": "Lớp học",
-      "empty": "Lớp này chưa có học sinh nào.",
-      "errorRetryAction": "Thử lại",
-      "retryButton": "Thử lại",
-      "studentListSection": "Danh sách học sinh",
-      "paginationNav": "Phân trang danh sách học sinh",
-      "filteredCount": "Tìm thấy {count} học sinh",
-      "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
+  "discipline": {
+    "conduct": {
+      "allClasses": "Tất cả lớp",
+      "cancelEdit": "Hủy chỉnh sửa",
       "columns": {
-        "name": "Học sinh",
-        "code": "Mã HS",
-        "status": "Trạng thái"
+        "absences": "Nghỉ KP",
+        "action": "Thao tác",
+        "class": "Lớp",
+        "conduct": "Hạnh kiểm",
+        "points": "Điểm HK",
+        "student": "Học sinh",
+        "violations": "Vi phạm"
+      },
+      "edit": "Sửa",
+      "editLabel": "Sửa hạnh kiểm của {student}",
+      "empty": "Chưa có dữ liệu hạnh kiểm",
+      "grade": {
+        "average": "Trung bình",
+        "excellent": "Tốt",
+        "good": "Khá",
+        "poor": "Yếu"
+      },
+      "override": "Sửa thủ công",
+      "overrideNote": "Ghi chú...",
+      "overrideNoteLabel": "Ghi chú override",
+      "pointsProgress": "Điểm hạnh kiểm của {student}: {points}/100",
+      "save": "Lưu",
+      "saved": "Đã lưu",
+      "semester": "Học kỳ",
+      "tableTitle": "Bảng xếp loại hạnh kiểm — {semester}",
+      "title": "Bảng xếp loại hạnh kiểm"
+    },
+    "errors": {
+      "already-processed": "Yêu cầu này đã được xử lý",
+      "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
+      "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
+      "invalid-severity": "Mức độ vi phạm không hợp lệ",
+      "missing-description": "Vui lòng nhập mô tả vi phạm",
+      "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
+      "missing-student": "Vui lòng nhập tên học sinh",
+      "network-error": "Lỗi kết nối, vui lòng thử lại",
+      "reason-too-short": "Lý do phải có ít nhất 10 ký tự"
+    },
+    "leave": {
+      "approve": "Duyệt",
+      "approveLabel": "Duyệt đơn nghỉ của {student}",
+      "days": "{count} ngày",
+      "empty": "Chưa có yêu cầu nghỉ phép",
+      "filterAll": "Tất cả",
+      "reasonLabel": "Lý do:",
+      "reject": "Từ chối",
+      "rejectDialog": {
+        "cancel": "Huỷ",
+        "confirm": "Xác nhận từ chối",
+        "description": "Vui lòng nhập lý do từ chối để thông báo phụ huynh/học sinh.",
+        "reason": "Nhập lý do từ chối (tối thiểu 10 ký tự)",
+        "reasonMinLength": "Vui lòng nhập ít nhất 10 ký tự",
+        "reasonPlaceholder": "Lý do...",
+        "title": "Lý do từ chối"
+      },
+      "rejectLabel": "Từ chối đơn nghỉ của {student}",
+      "rejectedReason": "Lý do từ chối:",
+      "stats": {
+        "approved": "Đã duyệt",
+        "pending": "Chờ duyệt",
+        "rejected": "Từ chối"
       },
       "status": {
-        "active": "Đang học",
-        "transferred": "Đã chuyển"
+        "approved": "Đã duyệt",
+        "pending": "Chờ duyệt",
+        "rejected": "Từ chối"
       },
-      "resultCount": "{count} học sinh",
-      "showing": "Hiển thị {from}–{to} trên {total}",
-      "prevPage": "Trang trước",
-      "nextPage": "Trang sau",
-      "noSearchResults": "Không tìm thấy học sinh phù hợp."
-    },
-    "errors": {
-      "network-error": "Lỗi kết nối, vui lòng kiểm tra mạng.",
-      "unauthorized": "Bạn không có quyền xem thông tin này.",
-      "not-found": "Không tìm thấy lớp học.",
-      "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
-    }
-  },
-  "profile": {
-    "tabs": {
-      "personal": "Thông tin cá nhân",
-      "security": "Bảo mật",
-      "sessions": "Phiên đăng nhập"
-    },
-    "personal": {
-      "fullName": "Họ và tên",
-      "email": "Email",
-      "phone": "Số điện thoại",
-      "role": "Vai trò",
-      "save": "Lưu thay đổi"
-    },
-    "security": {
-      "title": "Đổi mật khẩu",
-      "current": "Mật khẩu hiện tại",
-      "new": "Mật khẩu mới",
-      "confirm": "Xác nhận mật khẩu",
-      "update": "Cập nhật mật khẩu",
-      "strength": {
-        "weak": "Yếu",
-        "fair": "Trung bình",
-        "strong": "Mạnh"
-      },
-      "rules": {
-        "length": "Ít nhất 8 ký tự",
-        "upper": "Có chữ hoa",
-        "number": "Có chữ số",
-        "special": "Có ký tự đặc biệt"
-      },
-      "linkedAccounts": {
-        "title": "Liên kết tài khoản",
-        "description": "Kết nối tài khoản bên ngoài để đăng nhập nhanh hơn.",
-        "providers": {
-          "vneId": "VNeID",
-          "google": "Google"
-        },
-        "linked": "Đã liên kết",
-        "notLinked": "Chưa liên kết",
-        "linkedDescription": "Đã kết nối với {email}",
-        "vneIdDescription": "Kết nối với VNeID để xác thực danh tính.",
-        "googleDescription": "Kết nối với Google để đăng nhập nhanh.",
-        "link": "Liên kết ngay",
-        "unlink": "Hủy liên kết",
-        "linking": "Đang liên kết...",
-        "unlinking": "Đang hủy...",
-        "linkSuccess": "Liên kết thành công",
-        "unlinkSuccess": "Đã hủy liên kết",
-        "linkError": "Liên kết thất bại, vui lòng thử lại.",
-        "unlinkError": "Hủy liên kết thất bại, vui lòng thử lại."
+      "submittedBy": "Người gửi",
+      "title": "Yêu cầu nghỉ phép",
+      "type": {
+        "event": "Tham gia sự kiện",
+        "medical": "Nghỉ bệnh / khám",
+        "other": "Lý do khác",
+        "personal": "Việc cá nhân / gia đình"
       }
     },
-    "sessions": {
-      "title": "Phiên đang hoạt động",
-      "thisDevice": "Thiết bị này",
-      "logout": "Đăng xuất",
-      "logoutAll": "Đăng xuất tất cả phiên khác",
-      "lastActive": "Hoạt động"
+    "retry": "Thử lại",
+    "studentConduct": {
+      "childInfo": "{name} — Lớp {class}",
+      "conductCard": {
+        "absences": "Nghỉ không phép",
+        "grade": "Xếp loại",
+        "points": "Điểm hành kiểm",
+        "violations": "Vi phạm"
+      },
+      "leaveHistory": {
+        "empty": "Chưa có đơn xin nghỉ nào",
+        "rejectionReason": "Lý do từ chối:",
+        "title": "Lịch sử đơn xin nghỉ"
+      },
+      "leaveRequest": {
+        "button": "Xin nghỉ phép",
+        "close": "Đóng",
+        "endDate": "Ngày kết thúc *",
+        "reason": "Lý do *",
+        "reasonPlaceholder": "Nhập lý do nghỉ phép (tối thiểu 10 ký tự)...",
+        "startDate": "Ngày bắt đầu *",
+        "submit": "Gửi đơn",
+        "submitting": "Đang gửi...",
+        "success": "Đã gửi đơn thành công!",
+        "title": "Gửi đơn xin nghỉ",
+        "type": "Loại nghỉ *",
+        "types": {
+          "event": "Tham gia sự kiện",
+          "medical": "Nghỉ bệnh / khám",
+          "other": "Lý do khác",
+          "personal": "Việc cá nhân / gia đình"
+        }
+      },
+      "loadError": "Không tải được dữ liệu hành kiểm",
+      "loading": "Đang tải dữ liệu hành kiểm...",
+      "myViolations": {
+        "empty": "Chưa có vi phạm nào",
+        "title": "Lịch sử vi phạm"
+      },
+      "parentSubtitle": "Xem hành kiểm và gửi đơn nghỉ thay con",
+      "parentTitle": "Hành kiểm học sinh",
+      "retry": "Thử lại",
+      "status": {
+        "approved": "Đã duyệt",
+        "pending": "Chờ duyệt",
+        "rejected": "Từ chối"
+      },
+      "subtitle": "Xem điểm hạnh kiểm và gửi đơn xin nghỉ",
+      "title": "Hành kiểm của tôi"
     },
-    "accountRequests": {
-      "title": "Yêu cầu tài khoản",
-      "description": "Để vô hiệu hóa hoặc xóa tài khoản, vui lòng liên hệ quản trị viên nhà trường.",
-      "contact": "Liên hệ quản trị viên"
+    "subtitle": "Quản lý vi phạm, hạnh kiểm và nghỉ phép học sinh",
+    "tabs": {
+      "conduct": "Hạnh kiểm",
+      "leave": "Nghỉ phép",
+      "violations": "Vi phạm"
+    },
+    "title": "Hành chính & Kỷ luật",
+    "violations": {
+      "addNew": "Nhập vi phạm mới",
+      "allClasses": "Tất cả lớp",
+      "cancel": "Huỷ",
+      "empty": "Không có vi phạm nào!",
+      "form": {
+        "class": "Lớp",
+        "date": "Ngày",
+        "description": "Mô tả vi phạm *",
+        "descriptionPlaceholder": "Mô tả chi tiết hành vi vi phạm...",
+        "notifyParent": "Thông báo phụ huynh",
+        "severity": "Mức độ",
+        "student": "Tên học sinh *",
+        "studentPlaceholder": "Nguyễn Văn A...",
+        "type": "Loại vi phạm *"
+      },
+      "formSubtitle": "Ghi nhận vi phạm của học sinh vào hệ thống",
+      "formTitle": "Nhập vi phạm mới",
+      "period": "Tiết {period}",
+      "record": "Ghi nhận vi phạm",
+      "recordedBy": "Ghi bởi: {handler}",
+      "saving": "Đang lưu...",
+      "severity": {
+        "all": "Tất cả",
+        "high": "Nặng",
+        "low": "Nhẹ",
+        "medium": "Vừa"
+      },
+      "stats": {
+        "minor": "Mức nhẹ",
+        "moderateSevere": "Mức vừa/nặng",
+        "pendingNotify": "Chờ thông báo PH",
+        "thisWeek": "Vi phạm tuần này"
+      },
+      "status": {
+        "notified": "Đã thông báo PH",
+        "parent_confirmed": "PH đã xác nhận",
+        "recorded": "Đã ghi nhận"
+      },
+      "success": "Đã ghi nhận vi phạm thành công!",
+      "title": "Danh sách vi phạm",
+      "types": {
+        "cheat": "Gian lận kiểm tra",
+        "disrespect": "Vô lễ với giáo viên",
+        "fight": "Gây gổ đánh nhau",
+        "late": "Đi học muộn",
+        "noise": "Làm ồn trong lớp",
+        "other": "Khác",
+        "phone": "Sử dụng điện thoại",
+        "skip": "Trốn học",
+        "uniform": "Không đúng đồng phục"
+      }
     }
   },
-  "calendar": {
-    "title": "Cấu hình năm học",
-    "subtitle": "Quản lý năm học và các học kỳ của trường",
-    "addYear": {
-      "title": "Thêm năm học mới",
-      "subtitle": "Sau khi tạo, mở thẻ năm học để cấu hình các học kỳ.",
-      "label": "Nhãn năm học",
-      "placeholder": "VD: 2026–2027",
-      "setActive": "Đặt làm năm học hiện tại",
-      "submit": "Tạo năm học",
-      "submitting": "Đang tạo..."
+  "exam": {
+    "briefing": {
+      "agreeLabel": "Tôi đã đọc và đồng ý với các quy định thi",
+      "duration": "Thời gian",
+      "questions": "Số câu hỏi",
+      "rules": {
+        "rule1": "Không được sử dụng tài liệu trong quá trình làm bài.",
+        "rule2": "Không thoát khỏi trang thi khi đang làm bài.",
+        "rule3": "Bài thi sẽ tự động nộp khi hết thời gian.",
+        "rule4": "Mỗi câu hỏi chỉ được chọn một đáp án.",
+        "rule5": "Không được quay lại sau khi đã nộp bài."
+      },
+      "rulesTitle": "Quy định thi",
+      "startCta": "Bắt đầu làm bài ngay",
+      "title": "Thông tin bài kiểm tra",
+      "type": "Loại bài",
+      "typeValue": "Trắc nghiệm"
     },
-    "year": {
-      "active": "Đang hoạt động",
-      "noTerms": "Chưa có học kỳ",
-      "termCount": "{count} học kỳ"
+    "card": {
+      "deadline": "Hạn nộp: {date}",
+      "duration": "{minutes} phút",
+      "questions": "{count} câu",
+      "teacher": "GV: {name}"
     },
-    "term": {
-      "name": "Tên học kỳ",
-      "startDate": "Ngày bắt đầu",
-      "endDate": "Ngày kết thúc",
-      "actions": "Thao tác",
-      "graded": "Có điểm",
-      "defaultName": "Học kỳ {n}",
-      "addTerm": "Thêm học kỳ",
-      "noTerms": "Chưa có học kỳ nào trong năm học này.",
-      "deleteBlocked": "Học kỳ có dữ liệu điểm, không thể xoá",
-      "edit": "Sửa học kỳ",
-      "delete": "Xoá học kỳ",
-      "save": "Lưu",
-      "cancel": "Huỷ"
+    "cta": {
+      "expired": "Hết hạn",
+      "start": "Bắt đầu làm bài",
+      "viewResult": "Xem kết quả"
     },
     "empty": {
-      "title": "Chưa có năm học nào",
-      "subtitle": "Tạo năm học đầu tiên để bắt đầu cấu hình học kỳ, lịch giảng dạy và lịch thi.",
-      "cta": "Bắt đầu tạo năm học đầu tiên"
+      "subtitle": "Hiện tại không có bài kiểm tra nào phù hợp với bộ lọc.",
+      "title": "Không có bài kiểm tra"
     },
     "errors": {
-      "date-order": "Ngày bắt đầu phải trước ngày kết thúc",
-      "date-overlap": "Học kỳ bị trùng với học kỳ khác trong năm",
-      "graded-term-delete": "Không thể xoá học kỳ đã có dữ liệu điểm",
-      "not-found-year": "Không tìm thấy năm học",
-      "not-found-term": "Không tìm thấy học kỳ",
-      "year-label-exists": "Nhãn năm học đã tồn tại",
-      "active-year-exists": "Đã có năm học đang hoạt động",
-      "year-archived": "Năm học đã được lưu trữ",
-      "network-error": "Không thể kết nối đến máy chủ",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại"
-    }
-  },
-  "subjectCatalogue": {
-    "departments": {
-      "title": "Bộ môn / Tổ chuyên môn",
-      "subtitle": "Nhóm môn học theo chuyên ngành. Bộ môn là nền tảng để phân công giáo viên và quản lý chức danh.",
-      "addButton": "Thêm bộ môn",
+      "after-deadline": "Bài kiểm tra đã hết hạn.",
+      "already-submitted": "Bài kiểm tra đã được nộp.",
+      "max-attempts-exceeded": "Bạn đã làm bài kiểm tra này rồi.",
+      "network-error": "Lỗi kết nối, vui lòng thử lại.",
+      "not-found": "Không tìm thấy bài kiểm tra.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    },
+    "filter": {
+      "all": "Tất cả",
+      "available": "Có thể làm",
+      "completed": "Đã xong",
+      "expired": "Hết hạn",
+      "groupLabel": "Lọc bài kiểm tra"
+    },
+    "page": {
+      "subtitle": "Danh sách các bài kiểm tra của bạn",
+      "title": "Bài kiểm tra"
+    },
+    "result": {
+      "backToList": "Quay lại danh sách",
+      "correct": "Câu đúng",
+      "correctAnswer": "Đáp án đúng",
+      "failed": "CHƯA ĐẠT",
       "filterAll": "Tất cả",
-      "filterActive": "Đang hoạt động",
-      "filterArchived": "Đã lưu trữ",
-      "searchPlaceholder": "Tìm bộ môn…",
-      "clearSearch": "Xoá tìm kiếm",
-      "emptyTitle": "Chưa có bộ môn nào",
-      "emptySubtitle": "Tạo bộ môn đầu tiên để bắt đầu xây dựng danh mục môn học.",
-      "emptyCreateButton": "Tạo bộ môn đầu tiên",
-      "filteredEmptyTitle": "Không tìm thấy bộ môn phù hợp",
-      "filteredEmptySubtitle": "Thử thay đổi bộ lọc hoặc xoá từ khoá tìm kiếm.",
-      "clearFilters": "Xoá bộ lọc",
-      "subjectUnit": "môn học",
-      "cardActive": "hoạt động",
-      "statusActive": "Hoạt động",
-      "statusArchived": "Đã lưu trữ",
-      "editButton": "Chỉnh sửa",
-      "archiveButton": "Lưu trữ",
-      "restoreButton": "Khôi phục",
-      "archiveBlockedTooltip": "Không thể lưu trữ: còn {count} môn học đang hoạt động.",
-      "archiveConfirmTitle": "Lưu trữ bộ môn?",
-      "archiveConfirmBody": "Lưu trữ \"{name}\"? Hành động này sẽ ẩn bộ môn khỏi các tùy chọn phân công mới. Các dữ liệu hiện có không bị xoá.",
-      "archiveConfirmButton": "Lưu trữ",
-      "cancelButton": "Hủy"
+      "filterCorrect": "Đúng",
+      "filterGroupLabel": "Lọc kết quả",
+      "filterIncorrect": "Sai",
+      "filterSkipped": "Bỏ qua",
+      "incorrect": "Câu sai",
+      "outOf": "/10",
+      "passed": "ĐẠT",
+      "percentile": "Phần trăm",
+      "rank": "Xếp hạng",
+      "reviewTitle": "Xem lại câu hỏi",
+      "scoreLabel": "Điểm số",
+      "skipped": "Bỏ qua",
+      "timeTaken": "Thời gian làm bài",
+      "title": "Kết quả bài kiểm tra",
+      "yourAnswer": "Đáp án của bạn"
     },
-    "createParentDialog": {
-      "createTitle": "Thêm bộ môn mới",
-      "createSubtitle": "Tạo nhóm môn học mới cho trường.",
-      "editTitle": "Chỉnh sửa bộ môn",
-      "editSubtitle": "Cập nhật tên và nhãn phân loại.",
-      "nameLabel": "Tên bộ môn",
-      "namePlaceholder": "VD: Toán học, Ngoại ngữ, …",
-      "nameHint": "1–128 ký tự",
-      "conceptLabel": "Nhãn phân loại",
-      "conceptOptional": "không bắt buộc",
-      "conceptHint": "Nhãn hiển thị trong giao diện (không ảnh hưởng chức năng).",
-      "conceptBomon": "Bộ môn",
-      "conceptTo": "Tổ",
-      "conceptKhoa": "Khoa",
-      "conceptCustom": "Tùy chỉnh",
-      "customLabelPlaceholder": "Nhập nhãn tuỳ chỉnh (VD: Trung tâm, Phòng…)",
-      "customLabelRequired": "Vui lòng nhập nhãn tuỳ chỉnh.",
-      "saveButton": "Lưu",
-      "createButton": "Tạo bộ môn",
-      "cancelButton": "Hủy"
+    "skeleton": {
+      "loading": "Đang tải danh sách bài kiểm tra..."
     },
-    "subjects": {
-      "title": "Danh mục môn học",
-      "subtitle": "Bộ môn và môn học theo khối lớp",
-      "addDepartmentButton": "Thêm bộ môn",
-      "addSubjectButton": "Thêm môn học",
-      "noDepartments": "Chưa có bộ môn nào",
-      "noDepartmentsSubtitle": "Tạo bộ môn đầu tiên để bắt đầu thêm môn học.",
-      "addFirstDepartment": "Thêm bộ môn đầu tiên",
-      "selectDepartment": "Chọn một bộ môn để xem các môn học.",
-      "gradeRangeInfo": "Phạm vi khối lớp của trường:",
-      "gradeRangeNote": "Môn học mới phải nằm trong phạm vi này.",
-      "subjectUnit": "môn học",
-      "gradeRange": "lớp {range}",
-      "gradeScopedTitle": "Môn học theo khối",
-      "gradeScopedBreadcrumb": "Các môn học",
-      "breadcrumbLabel": "Vị trí hiện tại",
-      "noSubjects": "Chưa có môn học",
-      "noSubjectsSubtitle": "Thêm môn học đầu tiên cho \"{name}\".",
-      "addFirstSubject": "Thêm môn học đầu tiên",
-      "colName": "Tên môn",
-      "colGrade": "Lớp",
-      "colCode": "Mã",
-      "colStatus": "Trạng thái",
-      "colActions": "Thao tác",
-      "gradeLabel": "Lớp {level}",
-      "inUseLabel": "Đang sử dụng",
-      "viewEditButton": "Xem / Sửa",
-      "archiveButton": "Lưu trữ",
-      "archivedLabel": "Đã lưu trữ",
-      "archiveBlockedTooltip": "Môn học đang được sử dụng, không thể lưu trữ",
-      "archiveConfirmTitle": "Lưu trữ môn học?",
-      "archiveConfirmBody": "Lưu trữ \"{name}\"? Môn học sẽ bị ẩn khỏi danh sách tạo lớp mới. Các dữ liệu hiện có không bị xoá.",
-      "archiveConfirmButton": "Lưu trữ",
-      "cancelButton": "Hủy",
-      "statusActive": "Hoạt động",
-      "statusArchived": "Lưu trữ",
-      "noGradeRangeTitle": "Phạm vi khối lớp chưa được cấu hình",
-      "noGradeRangeBody": "Vui lòng hoàn thành bước thiết lập khối lớp trước khi thêm môn học."
+    "stats": {
+      "available": "Có thể làm",
+      "avgScore": "Điểm trung bình",
+      "completed": "Đã hoàn thành"
     },
-    "createSubjectDialog": {
-      "title": "Thêm môn học",
-      "subtitle": "Môn học gắn với một khối lớp cụ thể.",
-      "departmentLabel": "Bộ môn",
-      "changeButton": "Thay đổi",
-      "nameLabel": "Tên môn học",
-      "namePlaceholder": "VD: Toán lớp 10",
-      "gradeLabel": "Khối lớp",
-      "gradeHint": "Khối lớp hợp lệ: {min}–{max}",
-      "codeLabel": "Mã môn",
-      "codeOptional": "không bắt buộc",
-      "codePlaceholder": "MATH10",
-      "codeHint": "A–Z, 0–9, ≤16 ký tự",
-      "createButton": "Tạo môn học",
-      "cancelButton": "Hủy"
+    "status": {
+      "available": "Có thể làm",
+      "completed": "Đã xong",
+      "expired": "Hết hạn"
     },
-    "subjectDetail": {
-      "basicInfoSection": "Thông tin cơ bản",
-      "nameLabel": "Tên môn học",
-      "nameHint": "1–128 ký tự",
-      "codeLabel": "Mã môn",
-      "codeOptional": "không bắt buộc",
-      "codeHint": "Chữ hoa & chữ số, tối đa 16 ký tự.",
-      "curriculumSection": "Chuẩn chương trình",
-      "lockedBadge": "Khoá ở cấp lớp",
-      "lockedBanner": "Các trường này là chuẩn chương trình — không thể thay đổi ở cấp lớp. Giáo viên sẽ thấy các thông số này khi nhập điểm.",
-      "lockedTooltip": "Giá trị này sẽ hiển thị ở cấp lớp và không thể thay đổi bởi giáo viên.",
-      "fieldPeriodCount": "Số tiết",
-      "fieldPeriodCountHint": "/ năm",
-      "fieldAssessmentCount": "Yêu cầu số bài kiểm tra",
-      "fieldAssessmentCountHint": "/ kỳ",
-      "fieldOutcomeTargets": "Chỉ tiêu đầu ra",
-      "fieldMasterSyllabus": "Giáo án gốc",
-      "fieldExerciseBank": "Kho bài tập chung",
-      "fieldExamBank": "Kho đề kiểm tra chung",
-      "classOfferingsSection": "Lớp học sử dụng",
-      "classOfferingsEmpty": "Chưa có lớp nào sử dụng môn học này.",
-      "offeringColClass": "Lớp",
-      "offeringColYear": "Năm học",
-      "offeringColTeacher": "Giáo viên",
-      "offeringColStudents": "Học sinh",
-      "closeButton": "Đóng",
-      "saveButton": "Lưu thay đổi",
-      "savedFeedback": "Đã lưu"
+    "submitModal": {
+      "answered": "Đã trả lời",
+      "confirmBtn": "Nộp bài ngay",
+      "reviewBtn": "Xem lại",
+      "title": "Xác nhận nộp bài",
+      "total": "Tổng số câu",
+      "unanswered": "Chưa trả lời",
+      "warningText": "{count} câu chưa được trả lời."
     },
-    "errors": {
-      "code-format": "Mã môn không hợp lệ. Chỉ dùng chữ hoa A–Z và chữ số 0–9, tối đa 16 ký tự.",
-      "archive-blocked-parent": "Không thể lưu trữ bộ môn khi còn môn học đang hoạt động.",
-      "archive-blocked-subject": "Môn học đang có GVBM, không thể lưu trữ.",
-      "already-exists": "Đã tồn tại. Vui lòng kiểm tra lại.",
-      "parent-in-use": "Bộ môn đang có môn học hoạt động, không thể lưu trữ.",
-      "parent-archived": "Bộ môn đã được lưu trữ.",
-      "parent-forbidden": "Bạn không có quyền thực hiện thao tác này.",
-      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi của trường.",
-      "parent-not-active": "Bộ môn không còn hoạt động.",
-      "class-subject-already-exists": "Môn học đã được phân công cho lớp này.",
-      "class-subject-locked-field-update": "Không thể thay đổi trường khoá — đây là chuẩn chương trình.",
-      "class-subject-in-use": "Không thể lưu trữ — môn học đang được sử dụng trong lớp.",
-      "not-found": "Không tìm thấy.",
-      "forbidden": "Bạn không có quyền truy cập.",
-      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
+    "taking": {
+      "flagBtn": "Đánh dấu",
+      "legend": {
+        "answered": "Đã trả lời",
+        "current": "Đang xem",
+        "flagged": "Đánh dấu",
+        "unanswered": "Chưa trả lời"
+      },
+      "navigatorLabel": "Câu {index}",
+      "navigatorTitle": "Bảng câu hỏi",
+      "nextBtn": "Câu tiếp",
+      "optionLabel": "Chọn đáp án {option}",
+      "prevBtn": "Câu trước",
+      "progress": "{answered}/{total} câu đã trả lời",
+      "progressLabel": "Tiến độ trả lời",
+      "questionLabel": "Câu {index}",
+      "submitBtn": "Nộp bài",
+      "timerAnnounce": "Còn lại {time}",
+      "timerLabel": "Thời gian còn lại",
+      "unflagBtn": "Bỏ đánh dấu"
     }
   },
-  "timetable": {
-    "title": "Thời khoá biểu",
-    "titleForClass": "Thời khoá biểu — Lớp {class}",
-    "subtitle": "Bấm vào ô để chỉnh sửa. Xung đột giáo viên được phát hiện tự động trên toàn trường.",
-    "yearLabel": "Năm học",
-    "classLabel": "Lớp",
-    "periodColHeader": "Tiết học",
-    "periodN": "Tiết {n}",
-    "recessLabel": "☕ Giải lao trưa",
-    "addSlot": "Thêm",
-    "exportPdf": "Xuất TKB (PDF)",
-    "exportPdfToast": "Tính năng xuất PDF sẽ sớm có.",
-    "importTimetable": "Import TKB",
-    "importTimetableToast": "Tính năng import TKB sẽ sớm có.",
-    "classConflictCount": "{count} xung đột ở lớp này",
-    "gridScrollHint": "Cuộn ngang để xem thêm ngày trong tuần",
-    "slotEditor": {
-      "title": "Chỉnh sửa tiết",
-      "subject": "Môn học",
-      "subjectPlaceholder": "— Chọn môn học —",
-      "teacher": "Giáo viên",
-      "pickSubjectFirst": "Chọn môn học trước để xem danh sách giáo viên.",
-      "noEligibleTeacher": "Không có giáo viên dạy môn này cho lớp đã chọn.",
-      "teacherBusy": "Đã có lịch tiết này",
-      "room": "Phòng học",
-      "roomPlaceholder": "VD: P.201, P.LAB1, Sân TD…",
-      "save": "Lưu",
-      "clear": "Xoá tiết",
-      "cancel": "Huỷ"
+  "examBank": {
+    "builder": {
+      "addQuestion": "Thêm câu",
+      "back": "Quay lại",
+      "backAriaLabel": "Quay lại kho đề thi",
+      "contentLabel": "Nội dung câu hỏi",
+      "contentPlaceholder": "Nhập nội dung câu hỏi",
+      "correctAnswerAriaLabel": "Chọn đáp án đúng",
+      "correctOptionAriaLabel": "Đánh dấu phương án {option} là đáp án đúng",
+      "createTitle": "Tạo đề thi mới",
+      "difficultyLabel": "Độ khó",
+      "durationLabel": "Thời lượng (phút)",
+      "editTitle": "Chỉnh sửa đề thi",
+      "maxAttemptsLabel": "Số lần làm",
+      "newQuestionPlaceholder": "Câu hỏi mới",
+      "noSelection": "Chọn câu hỏi để chỉnh sửa",
+      "optionPlaceholder": "Nội dung phương án {option}",
+      "optionsLabel": "Các phương án",
+      "publish": "Publish",
+      "questionHasError": "Câu hỏi này còn thiếu thông tin",
+      "questionsHeading": "Câu hỏi ({count})",
+      "saveDraft": "Lưu nháp",
+      "saving": "Đang lưu...",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "titleLabel": "Tiêu đề đề thi",
+      "titlePlaceholder": "Nhập tiêu đề đề thi"
     },
-    "conflicts": {
-      "title": "Tổng hợp xung đột",
-      "count": "{count} xung đột phát hiện",
-      "noConflicts": "Không có xung đột",
-      "hint": "Bấm vào một xung đột để xem ô liên quan.",
-      "validHint": "TKB hợp lệ trên toàn trường.",
-      "conflictsWith": "trùng với lớp {classes}",
-      "resolve": "Giải quyết",
-      "jumpedTo": "Đã chuyển đến ô xung đột"
+    "card": {
+      "createdAt": "Tạo ngày {date}",
+      "delete": "Xoá",
+      "edit": "Chỉnh sửa",
+      "menuAriaLabel": "Mở menu thao tác đề thi",
+      "publish": "Publish",
+      "questionCount": "{count} câu hỏi"
+    },
+    "createButton": "Tạo đề thi mới",
+    "deleteDialog": {
+      "body": "Thao tác này không thể hoàn tác. Chỉ đề thi ở trạng thái nháp mới có thể xoá.",
+      "cancel": "Huỷ",
+      "confirm": "Xoá",
+      "deleting": "Đang xoá...",
+      "title": "Xoá đề thi này?"
+    },
+    "difficulty": {
+      "easy": "Dễ",
+      "hard": "Khó",
+      "medium": "Trung bình"
+    },
+    "empty": {
+      "body": "Bắt đầu bằng cách tạo đề thi trắc nghiệm đầu tiên của bạn.",
+      "cta": "Tạo đề thi đầu tiên",
+      "noMatch": "Không tìm thấy đề thi",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
+      "title": "Chưa có đề thi nào"
     },
     "errors": {
-      "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",
-      "save-failed": "Không lưu được tiết học. Vui lòng thử lại.",
-      "slot-not-found": "Không tìm thấy tiết học."
+      "cannot-delete-published": "Không thể xoá đề thi đã publish.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "insufficient-options": "Mỗi câu hỏi cần ít nhất 2 phương án.",
+      "missing-title": "Vui lòng nhập tiêu đề đề thi.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "no-questions": "Đề thi cần ít nhất một câu hỏi.",
+      "not-found": "Không tìm thấy đề thi.",
+      "question-empty-content": "Câu hỏi chưa có nội dung.",
+      "question-missing-answer": "Câu hỏi chưa chọn đáp án đúng.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    },
+    "filter": {
+      "allStatuses": "Tất cả trạng thái",
+      "allSubjects": "Tất cả môn học",
+      "allTeachers": "Tất cả giáo viên",
+      "searchAriaLabel": "Tìm kiếm đề thi theo tiêu đề",
+      "searchPlaceholder": "Tìm theo tiêu đề...",
+      "statusAriaLabel": "Lọc theo trạng thái",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "teacherAriaLabel": "Lọc theo giáo viên"
+    },
+    "loading": "Đang tải...",
+    "loadingAriaLabel": "Đang tải danh sách đề thi",
+    "moveDownAriaLabel": "Di chuyển câu hỏi {index} xuống dưới",
+    "moveUpAriaLabel": "Di chuyển câu hỏi {index} lên trên",
+    "publishDialog": {
+      "body": "Đề thi sẽ xuất hiện trong danh sách bài thi của học sinh và có thể được làm bài.",
+      "cancel": "Huỷ",
+      "confirm": "Publish",
+      "publishing": "Đang publish...",
+      "title": "Publish đề thi này?"
+    },
+    "removeQuestionAriaLabel": "Xoá câu hỏi {index}",
+    "resultsHeading": "{count} đề thi",
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã publish"
+    },
+    "subtitle": "Tạo, chỉnh sửa và publish đề thi trắc nghiệm cho học sinh.",
+    "subtitleAdmin": "Xem toàn bộ đề thi trắc nghiệm của trường.",
+    "title": "Kho đề thi",
+    "toast": {
+      "deleted": "Đã xoá đề thi",
+      "draftSaved": "Đã lưu nháp",
+      "published": "Đã publish đề thi"
     }
+  },
+  "gradeApproval": {
+    "actionApprove": "Phê duyệt & Công bố",
+    "actionBulkLock": "Khóa điểm",
+    "actionRequestRevision": "Yêu cầu chỉnh sửa",
+    "actionView": "Xem",
+    "approveDialog": {
+      "cancel": "Huỷ",
+      "confirm": "Công bố",
+      "description": "Sau khi công bố, học sinh và phụ huynh có thể xem điểm. Tiếp tục?",
+      "title": "Xác nhận công bố điểm"
+    },
+    "approveSuccess": "Đã công bố điểm {subject} {class}",
+    "bandAverage": "Trung bình",
+    "bandExcellent": "Giỏi",
+    "bandGood": "Khá",
+    "bandPoor": "Kém",
+    "bandWeak": "Yếu",
+    "bulkLockDialog": {
+      "cancel": "Huỷ",
+      "confirm": "Khóa điểm",
+      "description": "Sau khi khóa, điểm không thể chỉnh sửa. Xác nhận khóa {count} lô điểm?",
+      "title": "Khóa điểm"
+    },
+    "bulkLockSuccess": "Đã khóa {count} lô điểm",
+    "bulkLockToolbar": "Đã chọn {count} lô",
+    "closeSheet": "Đóng",
+    "colClass": "Lớp",
+    "colStatus": "Trạng thái",
+    "colStudentCount": "Số HS",
+    "colSubject": "Môn học",
+    "colTeacher": "Giáo viên",
+    "colTerm": "Học kỳ",
+    "colUpdated": "Cập nhật",
+    "detailSheet": {
+      "averageScore": "Điểm TB lớp",
+      "colAverage": "Điểm TB",
+      "colCode": "Mã HS",
+      "colGradeLabel": "Xếp loại",
+      "colStudent": "Học sinh",
+      "distribution": "Phân bổ xếp loại",
+      "previewTable": "Bảng điểm",
+      "previewTableAriaLabel": "Bảng điểm học sinh",
+      "title": "Chi tiết lô điểm"
+    },
+    "emptyState": "Không có lô điểm nào đang chờ phê duyệt",
+    "emptyStateAll": "Không có lô điểm nào",
+    "errorBatchLocked": "Lô điểm đã bị khóa",
+    "errorForbidden": "Bạn không có quyền thao tác",
+    "errorNetworkError": "Lỗi kết nối, thử lại sau",
+    "errorNotPendingApproval": "Lô điểm không ở trạng thái chờ duyệt",
+    "errorNotPublished": "Lô điểm chưa được công bố",
+    "errorUnknown": "Đã xảy ra lỗi không xác định",
+    "filterAll": "Tất cả",
+    "filterGroupLabel": "Lọc theo trạng thái",
+    "filterLocked": "Đã khóa",
+    "filterPending": "Chờ duyệt",
+    "filterPublished": "Đã công bố",
+    "loading": "Đang tải danh sách lô điểm...",
+    "revisionDialog": {
+      "cancel": "Huỷ",
+      "confirm": "Gửi yêu cầu",
+      "noteLabel": "Ghi chú cho giáo viên",
+      "noteMinLength": "Ghi chú phải có ít nhất 10 ký tự",
+      "notePlaceholder": "Nêu rõ nội dung cần chỉnh sửa...",
+      "title": "Yêu cầu chỉnh sửa"
+    },
+    "revisionSuccess": "Đã gửi yêu cầu chỉnh sửa",
+    "selectAllLabel": "Chọn tất cả lô điểm",
+    "selectBatchLabel": "Chọn lô điểm {id}",
+    "selfPublishModeWarning": "Trường đang dùng chế độ tự động công bố; hàng đợi phê duyệt trống.",
+    "statusDraft": "Bản nháp",
+    "statusLocked": "Đã khóa",
+    "statusPendingApproval": "Chờ duyệt",
+    "statusPublished": "Đã công bố",
+    "tableAriaLabel": "Danh sách lô điểm",
+    "title": "Phê duyệt lô điểm"
+  },
+  "gradeBook": {
+    "bandHeaderCK": "Cuối kỳ",
+    "bandHeaderGK": "Giữa kỳ",
+    "bandHeaderTX": "Thường xuyên",
+    "colAverage": "Điểm TB",
+    "colCode": "Mã HS",
+    "colConduct": "Hạnh kiểm",
+    "colGroup": "{label} ({weight}%)",
+    "colStudent": "Học sinh",
+    "conductKha": "Khá",
+    "conductTB": "Trung bình",
+    "conductTot": "Tốt",
+    "conductYeu": "Yếu",
+    "emptyState": "Chưa có điểm",
+    "enterGradesCta": "Nhập điểm",
+    "errorForbidden": "Bạn không có quyền xem bảng điểm này",
+    "errorNetworkError": "Lỗi kết nối, thử lại sau",
+    "errorNotFound": "Không tìm thấy bảng điểm",
+    "errorUnknown": "Đã xảy ra lỗi không xác định",
+    "loading": "Đang tải bảng điểm...",
+    "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
+    "notPublishedBanner": "Điểm chưa được công bố",
+    "notPublishedDescription": "Điểm sẽ hiển thị sau khi được giáo viên / quản trị công bố.",
+    "rankDistributionTitle": "Phân bố xếp loại",
+    "rankGioi": "Giỏi",
+    "rankKha": "Khá",
+    "rankTrungBinh": "Trung bình",
+    "rankXuatSac": "Xuất sắc",
+    "rankYeu": "Yếu",
+    "retry": "Thử lại",
+    "scoreNotEntered": "Chưa nhập điểm",
+    "scoreNotPublished": "Chưa công bố",
+    "selectClass": "Chọn lớp - môn",
+    "selectTerm": "Chọn học kỳ",
+    "tableCaption": "Bảng điểm học sinh",
+    "tableLockedNotice": "Bảng điểm đã khóa, chỉ xem.",
+    "termHK1": "Học kỳ 1",
+    "termHK2": "Học kỳ 2",
+    "title": "Bảng điểm"
+  },
+  "gradeEntry": {
+    "averageColumn": "Điểm TB",
+    "cellLabel": "Điểm {column} của {student}",
+    "columnHeader": "{label} ({weight}%)",
+    "emptyClass": "Chưa có học sinh trong lớp này",
+    "errorAlreadyPublished": "Bảng điểm đã được công bố",
+    "errorForbidden": "Bạn không có quyền nhập điểm lớp này",
+    "errorIncompleteScores": "Cần nhập đủ điểm các cột trước khi công bố",
+    "errorNetworkError": "Lỗi kết nối, thử lại sau",
+    "errorOutOfRange": "Điểm phải từ 0 đến {max}",
+    "errorUnknown": "Đã xảy ra lỗi không xác định",
+    "loading": "Đang tải bảng điểm...",
+    "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
+    "pendingApproval": "Chờ duyệt",
+    "publishButton": "Công bố điểm",
+    "publishConfirmCancel": "Huỷ",
+    "publishConfirmDescription": "Điểm sau khi công bố không thể sửa. Tiếp tục?",
+    "publishConfirmOk": "Công bố",
+    "publishConfirmTitle": "Xác nhận công bố điểm",
+    "publishPendingApproval": "Điểm đã gửi chờ hiệu trưởng duyệt",
+    "publishSuccess": "Điểm đã được công bố thành công",
+    "published": "Đã công bố",
+    "saveSuccess": "Đã lưu",
+    "selectClass": "Chọn lớp - môn",
+    "selectTerm": "Chọn học kỳ",
+    "studentCode": "Mã HS",
+    "studentName": "Họ tên",
+    "tableCaption": "Bảng nhập điểm theo học sinh và cột đánh giá",
+    "tableLockedNotice": "Bảng điểm đã khóa, chỉ xem.",
+    "termHK1": "Học kỳ 1",
+    "termHK2": "Học kỳ 2",
+    "title": "Nhập điểm"
+  },
+  "iamMember": {
+    "errors": {
+      "email-exists": "Email đã tồn tại trong hệ thống",
+      "forbidden": "Không có quyền thực hiện thao tác này",
+      "invitation-not-found": "Lời mời không tồn tại hoặc đã hết hạn",
+      "last-admin": "Không thể xóa admin cuối cùng của tổ chức",
+      "network-error": "Lỗi kết nối, vui lòng thử lại",
+      "not-found": "Không tìm thấy thành viên hoặc lời mời",
+      "unknown": "Đã có lỗi xảy ra"
+    }
+  },
+  "lessonBank": {
+    "detail": {
+      "author": "Người tải lên",
+      "confirmCancel": "Huỷ",
+      "confirmDelete": "Xoá",
+      "confirmDeleteBody": "Hành động này không thể hoàn tác. Bài giảng sẽ bị xoá vĩnh viễn.",
+      "confirmDeleteTitle": "Xoá bài giảng?",
+      "delete": "Xoá",
+      "deleting": "Đang xoá...",
+      "department": "Bộ môn",
+      "download": "Tải xuống",
+      "edit": "Chỉnh sửa",
+      "fileType": "Loại tệp",
+      "open": "Mở liên kết",
+      "subject": "Môn học",
+      "title": "Chi tiết bài giảng",
+      "uploadedAt": "Ngày tải lên",
+      "views": "Lượt xem",
+      "visibility": "Phạm vi"
+    },
+    "empty": {
+      "body": "Tải lên bài giảng đầu tiên để bắt đầu xây dựng kho.",
+      "cta": "Tải lên bài giảng",
+      "noMatch": "Không tìm thấy bài giảng",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
+      "title": "Chưa có bài giảng"
+    },
+    "errors": {
+      "file-too-large": "Tệp vượt quá dung lượng cho phép.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "invalid-url": "Đường dẫn liên kết không hợp lệ.",
+      "missing-title": "Vui lòng nhập tiêu đề bài giảng.",
+      "network-error": "Không thể kết nối đến máy chủ.",
+      "not-found": "Không tìm thấy bài giảng.",
+      "unauthorized": "Bạn không có quyền truy cập.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại.",
+      "unsupported-type": "Loại tệp không được hỗ trợ."
+    },
+    "filter": {
+      "allDepartments": "Tất cả bộ môn",
+      "allSubjects": "Tất cả môn học",
+      "allVisibility": "Tất cả phạm vi",
+      "departmentAriaLabel": "Lọc theo bộ môn",
+      "layoutAriaLabel": "Kiểu hiển thị",
+      "layoutGrid": "Dạng lưới",
+      "layoutList": "Dạng danh sách",
+      "searchAriaLabel": "Tìm kiếm bài giảng",
+      "searchPlaceholder": "Tìm theo tiêu đề...",
+      "sort": {
+        "most-viewed": "Xem nhiều nhất",
+        "newest": "Mới nhất",
+        "title-asc": "Tên A-Z"
+      },
+      "sortAriaLabel": "Sắp xếp",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "visibilityAriaLabel": "Lọc theo phạm vi"
+    },
+    "subtitle": "Tải lên và quản lý bài giảng của bạn.",
+    "subtitlePrincipal": "Xem kho bài giảng toàn trường.",
+    "title": "Kho bài giảng",
+    "toast": {
+      "deleted": "Đã xoá bài giảng.",
+      "uploaded": "Đã tải lên bài giảng."
+    },
+    "upload": {
+      "cancel": "Huỷ",
+      "department": "Bộ môn",
+      "departmentPlaceholder": "Chọn bộ môn",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Mô tả ngắn gọn nội dung (không bắt buộc)",
+      "dropZoneAriaLabel": "Khu vực tải tệp lên",
+      "dropZoneHint": "hoặc nhấn để chọn tệp",
+      "dropZoneTitle": "Kéo thả tệp vào đây",
+      "errors": {
+        "fileTypeRequired": "Vui lòng chọn loại tệp.",
+        "titleRequired": "Vui lòng nhập tiêu đề.",
+        "urlInvalid": "Đường dẫn không hợp lệ.",
+        "urlRequired": "Vui lòng nhập đường dẫn."
+      },
+      "file": "Tệp",
+      "fileType": "Loại tệp",
+      "fileTypePlaceholder": "Chọn loại tệp",
+      "linkUrl": "Đường dẫn liên kết",
+      "subject": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "submit": "Tải lên",
+      "submitting": "Đang tải lên...",
+      "title": "Tải lên bài giảng",
+      "titleField": "Tiêu đề",
+      "titlePlaceholder": "Nhập tiêu đề bài giảng",
+      "visibility": "Phạm vi hiển thị"
+    },
+    "uploadButton": "Tải lên bài giảng",
+    "visibility": {
+      "dept": "Bộ môn",
+      "private": "Cá nhân",
+      "school": "Toàn trường"
+    }
+  },
+  "messaging": {
+    "chat": {
+      "attach": "Đính kèm",
+      "backToList": "Quay lại danh sách",
+      "history": "Lịch sử trò chuyện",
+      "loadMore": "Tải thêm tin nhắn",
+      "members": "{count} thành viên",
+      "online": "Đang online",
+      "placeholder": "Nhập tin nhắn... (Enter để gửi)",
+      "send": "Gửi",
+      "typing": "Đang nhập tin nhắn..."
+    },
+    "date": {
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua"
+    },
+    "empty": {
+      "cta": "Bắt đầu cuộc hội thoại",
+      "subtitle": "Nhấn vào một cuộc trò chuyện để bắt đầu nhắn tin",
+      "title": "Chọn một cuộc trò chuyện"
+    },
+    "errors": {
+      "create-conversation-failed": "Không thể tạo cuộc hội thoại. Vui lòng thử lại.",
+      "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
+      "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
+      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
+    },
+    "newMessage": {
+      "button": "Tin nhắn mới",
+      "searchPlaceholder": "Tìm kiếm người dùng...",
+      "suggestions": "Gợi ý",
+      "title": "Tin nhắn mới"
+    },
+    "openConversation": "Mở cuộc trò chuyện với {name}",
+    "search": {
+      "noGroups": "Không có nhóm",
+      "noResults": "Không tìm thấy",
+      "placeholder": "Tìm kiếm..."
+    },
+    "skeleton": {
+      "loading": "Đang tải tin nhắn..."
+    },
+    "tabs": {
+      "direct": "Trực tiếp",
+      "groups": "Nhóm"
+    },
+    "title": "Tin nhắn",
+    "totalUnread": "{count} tin nhắn chưa đọc"
+  },
+  "notifications": {
+    "allLoaded": "Đã hiển thị tất cả",
+    "ariaRead": "đã đọc",
+    "ariaUnread": "chưa đọc",
+    "emptyAllBody": "Thông báo sẽ xuất hiện ở đây khi có hoạt động mới.",
+    "emptyAllTitle": "Chưa có thông báo",
+    "emptyUnreadBody": "Bạn đã đọc hết tất cả thông báo.",
+    "emptyUnreadTitle": "Tất cả đã đọc",
+    "errorTitle": "Không thể tải thông báo",
+    "errors": {
+      "network-error": "Không thể kết nối đến máy chủ.",
+      "not-found": "Không tìm thấy thông báo.",
+      "unauthorized": "Bạn không có quyền truy cập.",
+      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+    },
+    "filterAll": "Tất cả",
+    "filterAnnouncement": "Thông báo trường",
+    "filterAttendance": "Điểm danh",
+    "filterDiscipline": "Kỷ luật",
+    "filterGrade": "Điểm số",
+    "filterLabel": "Lọc thông báo",
+    "filterUnread": "Chưa đọc",
+    "listAriaLabel": "Danh sách thông báo",
+    "loadMore": "Xem thêm {count} thông báo",
+    "loadMoreAriaLabel": "Xem thêm {count} thông báo",
+    "loading": "Đang tải...",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "markAllReadAriaLabel": "Đánh dấu tất cả thông báo là đã đọc",
+    "markAllReadToast": "Đã đánh dấu tất cả là đã đọc",
+    "rowAriaLabel": "{title} — {read}",
+    "subtitle": "Xem và quản lý tất cả thông báo của bạn.",
+    "title": "Trung tâm thông báo",
+    "toastClose": "Đóng",
+    "type_announcement": "Thông báo trường",
+    "type_attendance": "Điểm danh",
+    "type_discipline": "Kỷ luật",
+    "type_grade": "Điểm số",
+    "type_system": "Hệ thống",
+    "unreadCountAriaLabel": "{count} thông báo chưa đọc"
   },
   "principalTeachers": {
-    "title": "Quản lý giáo viên",
-    "subtitle": "Phân công GVCN và giáo viên bộ môn cho các lớp.",
     "addTeacher": "Thêm giáo viên",
-    "teacherCount": "{count} giáo viên",
     "assignClass": "Phân công lớp",
     "detail": "Chi tiết",
+    "errors": {
+      "conflict-exists": "Giáo viên đã có xung đột lịch dạy.",
+      "forbidden": "Bạn không có quyền truy cập.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy dữ liệu.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    },
     "retry": "Thử lại",
-    "table": {
-      "teacher": "Giáo viên",
-      "primarySubject": "Môn chính",
-      "homeroom": "GVCN",
-      "subjectAssignments": "Phân công bộ môn",
-      "status": "Trạng thái",
-      "actions": "Hành động",
-      "unassigned": "Chưa phân công",
-      "noTeachers": "Chưa có giáo viên nào.",
-      "caption": "Danh sách giáo viên",
-      "overflowBadges": "+{n} môn",
-      "loading": "Đang tải danh sách giáo viên..."
+    "sheet": {
+      "addRow": "Thêm hàng",
+      "cancel": "Hủy",
+      "classPicker": "Lớp",
+      "conflictWarning": "Có xung đột thời khóa biểu",
+      "deleteRow": "Xóa hàng",
+      "gvbmSection": "Giáo viên bộ môn (GVBM)",
+      "gvcnPlaceholder": "Chọn lớp",
+      "gvcnSection": "Giáo viên chủ nhiệm (GVCN)",
+      "save": "Lưu phân công",
+      "saveSuccess": "Đã lưu phân công thành công",
+      "saving": "Đang lưu...",
+      "subjectPicker": "Môn học",
+      "title": "Phân công: {name}"
     },
     "status": {
       "ACTIVE": "Đang dạy",
       "ON_LEAVE": "Nghỉ phép"
     },
-    "sheet": {
-      "title": "Phân công: {name}",
-      "gvcnSection": "Giáo viên chủ nhiệm (GVCN)",
-      "gvcnPlaceholder": "Chọn lớp",
-      "gvbmSection": "Giáo viên bộ môn (GVBM)",
-      "addRow": "Thêm hàng",
-      "classPicker": "Lớp",
-      "subjectPicker": "Môn học",
-      "deleteRow": "Xóa hàng",
-      "save": "Lưu phân công",
-      "saving": "Đang lưu...",
-      "cancel": "Hủy",
-      "conflictWarning": "Có xung đột thời khóa biểu",
-      "saveSuccess": "Đã lưu phân công thành công"
+    "subtitle": "Phân công GVCN và giáo viên bộ môn cho các lớp.",
+    "table": {
+      "actions": "Hành động",
+      "caption": "Danh sách giáo viên",
+      "homeroom": "GVCN",
+      "loading": "Đang tải danh sách giáo viên...",
+      "noTeachers": "Chưa có giáo viên nào.",
+      "overflowBadges": "+{n} môn",
+      "primarySubject": "Môn chính",
+      "status": "Trạng thái",
+      "subjectAssignments": "Phân công bộ môn",
+      "teacher": "Giáo viên",
+      "unassigned": "Chưa phân công"
     },
-    "errors": {
-      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "forbidden": "Bạn không có quyền truy cập.",
-      "not-found": "Không tìm thấy dữ liệu.",
-      "conflict-exists": "Giáo viên đã có xung đột lịch dạy.",
-      "unknown": "Đã xảy ra lỗi không xác định."
+    "teacherCount": "{count} giáo viên",
+    "title": "Quản lý giáo viên"
+  },
+  "profile": {
+    "accountRequests": {
+      "contact": "Liên hệ quản trị viên",
+      "description": "Để vô hiệu hóa hoặc xóa tài khoản, vui lòng liên hệ quản trị viên nhà trường.",
+      "title": "Yêu cầu tài khoản"
+    },
+    "personal": {
+      "email": "Email",
+      "fullName": "Họ và tên",
+      "phone": "Số điện thoại",
+      "role": "Vai trò",
+      "save": "Lưu thay đổi"
+    },
+    "security": {
+      "confirm": "Xác nhận mật khẩu",
+      "current": "Mật khẩu hiện tại",
+      "linkedAccounts": {
+        "description": "Kết nối tài khoản bên ngoài để đăng nhập nhanh hơn.",
+        "googleDescription": "Kết nối với Google để đăng nhập nhanh.",
+        "link": "Liên kết ngay",
+        "linkError": "Liên kết thất bại, vui lòng thử lại.",
+        "linkSuccess": "Liên kết thành công",
+        "linked": "Đã liên kết",
+        "linkedDescription": "Đã kết nối với {email}",
+        "linking": "Đang liên kết...",
+        "notLinked": "Chưa liên kết",
+        "providers": {
+          "google": "Google",
+          "vneId": "VNeID"
+        },
+        "title": "Liên kết tài khoản",
+        "unlink": "Hủy liên kết",
+        "unlinkError": "Hủy liên kết thất bại, vui lòng thử lại.",
+        "unlinkSuccess": "Đã hủy liên kết",
+        "unlinking": "Đang hủy...",
+        "vneIdDescription": "Kết nối với VNeID để xác thực danh tính."
+      },
+      "new": "Mật khẩu mới",
+      "rules": {
+        "length": "Ít nhất 8 ký tự",
+        "number": "Có chữ số",
+        "special": "Có ký tự đặc biệt",
+        "upper": "Có chữ hoa"
+      },
+      "strength": {
+        "fair": "Trung bình",
+        "strong": "Mạnh",
+        "weak": "Yếu"
+      },
+      "title": "Đổi mật khẩu",
+      "update": "Cập nhật mật khẩu"
+    },
+    "sessions": {
+      "lastActive": "Hoạt động",
+      "logout": "Đăng xuất",
+      "logoutAll": "Đăng xuất tất cả phiên khác",
+      "thisDevice": "Thiết bị này",
+      "title": "Phiên đang hoạt động"
+    },
+    "tabs": {
+      "personal": "Thông tin cá nhân",
+      "security": "Bảo mật",
+      "sessions": "Phiên đăng nhập"
     }
   },
-  "classManagement": {
-    "title": "Quản lý lớp học",
-    "subtitle": "Tạo, đổi tên, lưu trữ lớp học và phân công giáo viên chủ nhiệm.",
-    "createClass": "Tạo lớp mới",
-    "filterByYear": "Lọc theo năm học",
-    "filterByGrade": "Lọc theo khối",
-    "allGrades": "Tất cả khối",
-    "gradeN": "Khối {n}",
-    "table": {
-      "name": "Tên lớp",
-      "grade": "Khối",
-      "homeroom": "GVCN",
-      "status": "Trạng thái",
-      "studentCount": "Học sinh",
-      "actions": "Hành động",
-      "unassigned": "Chưa phân công",
-      "noClasses": "Chưa có lớp học nào.",
-      "caption": "Danh sách lớp học"
+  "shell": {
+    "header": {
+      "logout": "Đăng xuất",
+      "notifications": "Thông báo",
+      "profile": "Hồ sơ",
+      "searchPlaceholder": "Tìm kiếm...",
+      "switchRole": "Chuyển vai trò"
+    },
+    "nav": {
+      "academicCalendar": "Lịch học",
+      "announcements": "Thông báo",
+      "assessmentScheme": "Khung đánh giá",
+      "assignments": "Bài tập",
+      "attendance": "Điểm danh",
+      "children": "Con của tôi",
+      "classLog": "Sổ đầu bài",
+      "classManagement": "Quản lý lớp học",
+      "classes": "Lớp học",
+      "collapseSidebar": "Thu gọn thanh bên",
+      "conduct": "Hành kiểm",
+      "courses": "Khoá học",
+      "dashboard": "Tổng quan",
+      "discipline": "Kỷ luật",
+      "exams": "Bài thi",
+      "expandSidebar": "Mở rộng thanh bên",
+      "grades": "Bảng điểm",
+      "messages": "Nhắn tin",
+      "overview": "Tổng quan",
+      "profile": "Hồ sơ",
+      "reports": "Báo cáo",
+      "resources": "Tài liệu",
+      "schedule": "Lịch dạy",
+      "schoolSetup": "Thiết lập trường học",
+      "staffLeave": "Nghỉ phép nhân sự",
+      "staffing": "Phân công chức vụ",
+      "studentRoster": "Danh sách học sinh",
+      "students": "Học sinh",
+      "subjectDepartments": "Tổ bộ môn",
+      "subjects": "Môn học",
+      "teachers": "Giáo viên",
+      "timetable": "Thời khoá biểu"
+    },
+    "roles": {
+      "admin": "Quản trị viên",
+      "parent": "Phụ huynh",
+      "principal": "Hiệu trưởng",
+      "student": "Học sinh",
+      "teacher": "Giáo viên"
+    }
+  },
+  "staffLeave": {
+    "actions": {
+      "approve": "Phê duyệt",
+      "approving": "Đang phê duyệt...",
+      "cancel": "Huỷ",
+      "confirmReject": "Xác nhận từ chối",
+      "reject": "Từ chối",
+      "rejecting": "Đang từ chối..."
+    },
+    "card": {
+      "approvedBy": "Phê duyệt bởi",
+      "days": "{count} ngày",
+      "reason": "Lý do",
+      "rejectedBy": "Từ chối bởi",
+      "rejectionReason": "Lý do từ chối:",
+      "showLess": "Thu gọn",
+      "showMore": "Xem thêm",
+      "submittedAt": "Nộp {at}"
+    },
+    "empty": {
+      "all": "Không có đơn xin nghỉ nào.",
+      "approved": "Không có đơn đã duyệt nào.",
+      "description": "Khi có đơn mới, hệ thống sẽ thông báo cho bạn.",
+      "pending": "Không có đơn chờ duyệt nào.",
+      "rejected": "Không có đơn từ chối nào."
+    },
+    "error": "Không thể tải danh sách đơn nghỉ phép.",
+    "errors": {
+      "already-processed": "Đơn đã được xử lý trước đó.",
+      "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy đơn nghỉ phép.",
+      "reason-too-short": "Lý do từ chối phải có ít nhất 10 ký tự."
+    },
+    "filters": {
+      "all": "Tất cả",
+      "approved": "Đã duyệt",
+      "dateFrom": "Từ ngày",
+      "dateTo": "Đến ngày",
+      "pending": "Chờ duyệt",
+      "rejected": "Từ chối",
+      "statusGroup": "Lọc theo trạng thái"
+    },
+    "leaveType": {
+      "annual": "Nghỉ phép năm",
+      "family": "Nghỉ việc riêng",
+      "personal": "Nghỉ cá nhân",
+      "sick": "Nghỉ ốm"
+    },
+    "rejectDialog": {
+      "minLength": "Tối thiểu 10 ký tự.",
+      "placeholder": "Giải thích ngắn gọn lý do từ chối để gửi đến nhân sự…",
+      "ready": "Có thể gửi.",
+      "title": "Lý do từ chối (bắt buộc)"
+    },
+    "retry": "Thử lại",
+    "staffRole": {
+      "staff": "Nhân viên",
+      "teacher": "Giáo viên"
+    },
+    "stats": {
+      "approvedThisMonth": "Đã duyệt tháng này",
+      "pending": "Đang chờ duyệt",
+      "totalDays": "Tổng ngày nghỉ"
     },
     "status": {
-      "ACTIVE": "Đang hoạt động",
-      "ARCHIVED": "Đã lưu trữ"
+      "approved": "Đã duyệt",
+      "pending": "Chờ duyệt",
+      "rejected": "Từ chối"
     },
-    "actions": {
-      "rename": "Đổi tên",
-      "archive": "Lưu trữ",
-      "assignHomeroom": "Gán GVCN"
-    },
-    "formErrors": {
-      "nameRequired": "Vui lòng nhập tên lớp.",
-      "yearRequired": "Vui lòng nhập năm học."
-    },
-    "createSheet": {
-      "title": "Tạo lớp mới",
-      "description": "Điền thông tin để tạo lớp học mới.",
-      "nameLabel": "Tên lớp",
-      "namePlaceholder": "Ví dụ: 10A1",
-      "gradeLabel": "Khối lớp",
-      "yearLabel": "Năm học",
-      "yearPlaceholder": "Ví dụ: 2025-2026",
-      "submit": "Tạo lớp"
-    },
-    "renameSheet": {
-      "title": "Đổi tên lớp",
-      "description": "Cập nhật tên hoặc khối của lớp học.",
-      "nameLabel": "Tên lớp mới",
-      "gradeLabel": "Khối lớp",
-      "submit": "Lưu thay đổi"
-    },
-    "archiveDialog": {
-      "title": "Lưu trữ lớp học",
-      "description": "Bạn có chắc muốn lưu trữ lớp {name}?",
-      "warningWithStudents": "Lớp này đang có {count} học sinh đã ghi danh. Vẫn lưu trữ?",
-      "confirm": "Lưu trữ",
-      "cancel": "Hủy"
-    },
-    "homeroomSheet": {
-      "title": "Gán giáo viên chủ nhiệm",
-      "description": "Chọn giáo viên để phân công làm giáo viên chủ nhiệm.",
-      "searchPlaceholder": "Tìm giáo viên theo tên...",
-      "currentHomeroom": "GVCN hiện tại",
-      "noTeachers": "Không tìm thấy giáo viên.",
-      "assign": "Gán"
-    },
-    "errors": {
-      "duplicate-class": "Lớp đã tồn tại trong năm học này.",
-      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi đã cấu hình. Vui lòng kiểm tra lại Thiết lập trường học.",
-      "not-found": "Không tìm thấy lớp học.",
-      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
-    },
+    "subtitle": "Xem xét và phê duyệt đơn xin nghỉ phép của giáo viên và nhân viên",
+    "title": "Quản lý nghỉ phép nhân sự",
     "toast": {
-      "createSuccess": "Tạo lớp thành công.",
-      "renameSuccess": "Đổi tên lớp thành công.",
-      "archiveSuccess": "Lưu trữ lớp thành công.",
-      "assignHomeroomSuccess": "Phân công giáo viên chủ nhiệm thành công."
+      "approved": "Đã phê duyệt đơn nghỉ phép.",
+      "rejected": "Đã từ chối đơn nghỉ phép."
     }
   },
   "staffing": {
-    "departments": {
-      "title": "Khoa / Tổ bộ môn",
-      "subtitle": "Quản lý các tổ chuyên môn, phòng ban của trường.",
-      "addButton": "Thêm tổ bộ môn",
-      "filterGroupLabel": "Lọc theo trạng thái",
-      "filterAll": "Tất cả",
-      "filterActive": "Đang hoạt động",
-      "filterArchived": "Đã lưu trữ",
-      "searchPlaceholder": "Tìm kiếm tổ bộ môn...",
-      "clearSearch": "Xóa tìm kiếm",
-      "statusActive": "Hoạt động",
-      "statusArchived": "Lưu trữ",
-      "editButton": "Sửa",
-      "archiveButton": "Lưu trữ",
-      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
-      "archiveConfirmTitle": "Lưu trữ tổ bộ môn",
-      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"? Hành động này không thể hoàn tác.",
-      "archiveConfirmButton": "Lưu trữ",
-      "cancelButton": "Hủy",
-      "emptyTitle": "Chưa có tổ bộ môn nào",
-      "emptySubtitle": "Tạo tổ bộ môn đầu tiên để bắt đầu quản lý nhân sự.",
-      "emptyCreateButton": "Tạo tổ bộ môn",
-      "filteredEmptyTitle": "Không tìm thấy kết quả",
-      "filteredEmptySubtitle": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
-      "clearFilters": "Xóa bộ lọc",
-      "assignmentCount": "{count} phân công",
-      "createSheet": {
-        "title": "Thêm tổ bộ môn",
-        "description": "Nhập tên tổ bộ môn mới.",
-        "nameLabel": "Tên tổ bộ môn",
-        "namePlaceholder": "VD: Tổ Toán - Lý",
-        "submit": "Tạo",
-        "editTitle": "Sửa tổ bộ môn"
-      },
-      "formErrors": {
-        "nameRequired": "Tên không được để trống.",
-        "nameTooLong": "Tên không được vượt quá 100 ký tự."
-      },
-      "errors": {
-        "already-exists": "Tên đã tồn tại. Vui lòng chọn tên khác.",
-        "not-found": "Không tìm thấy tổ bộ môn.",
-        "has-active-assignments": "Tổ bộ môn còn phân công đang hoạt động.",
-        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
-        "member-not-teacher": "Thành viên này không phải giáo viên.",
-        "academic-year-not-active": "Năm học không hợp lệ.",
-        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-        "unknown": "Đã xảy ra lỗi không xác định."
-      },
-      "table": {
-        "name": "Tên",
-        "status": "Trạng thái",
-        "assignments": "Phân công",
-        "actions": "Thao tác",
-        "caption": "Danh sách tổ bộ môn"
-      },
-      "toast": {
-        "createSuccess": "Đã tạo tổ bộ môn.",
-        "editSuccess": "Đã cập nhật tổ bộ môn.",
-        "archiveSuccess": "Đã lưu trữ tổ bộ môn."
-      }
-    },
-    "positionTitles": {
-      "title": "Chức danh",
-      "subtitle": "Quản lý các chức danh trong nhà trường.",
-      "addButton": "Thêm chức danh",
-      "filterGroupLabel": "Lọc theo trạng thái",
-      "filterAll": "Tất cả",
-      "filterActive": "Đang hoạt động",
-      "filterArchived": "Đã lưu trữ",
-      "searchPlaceholder": "Tìm kiếm chức danh...",
-      "clearSearch": "Xóa tìm kiếm",
-      "statusActive": "Hoạt động",
-      "statusArchived": "Lưu trữ",
-      "editButton": "Sửa",
-      "archiveButton": "Lưu trữ",
-      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
-      "archiveConfirmTitle": "Lưu trữ chức danh",
-      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"?",
-      "archiveConfirmButton": "Lưu trữ",
-      "cancelButton": "Hủy",
-      "emptyTitle": "Chưa có chức danh nào",
-      "emptySubtitle": "Tạo chức danh đầu tiên.",
-      "emptyCreateButton": "Tạo chức danh",
-      "filteredEmptyTitle": "Không tìm thấy kết quả",
-      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
-      "clearFilters": "Xóa bộ lọc",
-      "assignmentCount": "{count} phân công",
-      "scopeTypeSubjectParent": "Tổ chuyên môn",
-      "scopeTypeDepartment": "Phòng ban",
-      "permManageSubjectContent": "Quản lý nội dung",
-      "permManageSchedule": "Quản lý lịch",
-      "permManageConduct": "Quản lý hạnh kiểm",
-      "permViewReports": "Xem báo cáo",
-      "createSheet": {
-        "title": "Thêm chức danh",
-        "description": "Nhập thông tin chức danh mới.",
-        "nameLabel": "Tên chức danh",
-        "namePlaceholder": "VD: Tổ trưởng chuyên môn",
-        "scopeTypeLabel": "Phạm vi",
-        "permissionsLabel": "Quyền hạn",
-        "submit": "Tạo",
-        "editTitle": "Sửa chức danh",
-        "editSubmit": "Cập nhật"
-      },
-      "formErrors": {
-        "nameRequired": "Tên không được để trống.",
-        "nameTooLong": "Tên không được vượt quá 100 ký tự.",
-        "scopeTypeRequired": "Vui lòng chọn phạm vi."
-      },
-      "errors": {
-        "already-exists": "Tên chức danh đã tồn tại.",
-        "not-found": "Không tìm thấy chức danh.",
-        "has-active-assignments": "Chức danh còn phân công đang hoạt động.",
-        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
-        "member-not-teacher": "Thành viên này không phải giáo viên.",
-        "academic-year-not-active": "Năm học không hợp lệ.",
-        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-        "unknown": "Đã xảy ra lỗi không xác định."
-      },
-      "table": {
-        "name": "Tên",
-        "scopeType": "Phạm vi",
-        "permissions": "Quyền",
-        "status": "Trạng thái",
-        "assignments": "Phân công",
-        "actions": "Thao tác",
-        "caption": "Danh sách chức danh"
-      },
-      "toast": {
-        "createSuccess": "Đã tạo chức danh.",
-        "editSuccess": "Đã cập nhật chức danh.",
-        "archiveSuccess": "Đã lưu trữ chức danh."
-      }
-    },
     "assignments": {
-      "title": "Phân công chức vụ",
-      "subtitle": "Gán giáo viên vào các chức danh theo năm học.",
       "assignButton": "Phân công",
-      "copyYearButton": "Sao chép sang năm khác",
-      "filterGroupLabel": "Lọc theo trạng thái",
-      "filterAll": "Tất cả",
-      "filterActive": "Đang hoạt động",
-      "filterRevoked": "Đã thu hồi",
-      "searchPlaceholder": "Tìm kiếm giáo viên...",
-      "clearSearch": "Xóa tìm kiếm",
-      "statusActive": "Hoạt động",
-      "statusRevoked": "Thu hồi",
-      "revokeButton": "Thu hồi",
-      "revokeConfirmTitle": "Thu hồi phân công",
-      "revokeConfirmBody": "Bạn có chắc muốn thu hồi phân công của \"{name}\"?",
-      "revokeConfirmButton": "Thu hồi",
-      "cancelButton": "Hủy",
-      "emptyTitle": "Chưa có phân công nào",
-      "emptySubtitle": "Bắt đầu bằng cách phân công chức vụ cho giáo viên.",
-      "emptyAssignButton": "Phân công ngay",
-      "filteredEmptyTitle": "Không tìm thấy kết quả",
-      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
-      "clearFilters": "Xóa bộ lọc",
-      "noScopeEntity": "—",
       "assignSheet": {
-        "title": "Phân công chức vụ",
+        "academicYearLabel": "Năm học",
+        "academicYearPlaceholder": "VD: 2025-2026",
         "description": "Gán giáo viên vào chức danh.",
         "memberIdLabel": "Mã giáo viên",
         "memberIdPlaceholder": "VD: m-101",
@@ -1674,555 +1899,602 @@
         "positionTitlePlaceholder": "Chọn chức danh",
         "scopeEntityLabel": "Đơn vị phạm vi (tuỳ chọn)",
         "scopeEntityPlaceholder": "VD: sp-math",
-        "academicYearLabel": "Năm học",
-        "academicYearPlaceholder": "VD: 2025-2026",
-        "submit": "Phân công"
+        "submit": "Phân công",
+        "title": "Phân công chức vụ"
       },
+      "cancelButton": "Hủy",
+      "clearFilters": "Xóa bộ lọc",
+      "clearSearch": "Xóa tìm kiếm",
       "copySheet": {
-        "title": "Sao chép phân công",
         "description": "Sao chép tất cả phân công từ một năm học sang năm khác.",
+        "resultCopied": "Đã sao chép {count} phân công.",
+        "resultSkipped": "Bỏ qua {count} phân công đã tồn tại.",
         "sourceYearLabel": "Năm học nguồn",
         "sourceYearPlaceholder": "VD: 2024-2025",
+        "submit": "Sao chép",
         "targetYearLabel": "Năm học đích",
         "targetYearPlaceholder": "VD: 2025-2026",
-        "submit": "Sao chép",
-        "resultCopied": "Đã sao chép {count} phân công.",
-        "resultSkipped": "Bỏ qua {count} phân công đã tồn tại."
+        "title": "Sao chép phân công"
       },
-      "formErrors": {
-        "memberIdRequired": "Mã giáo viên không được để trống.",
-        "positionTitleRequired": "Vui lòng chọn chức danh.",
-        "academicYearRequired": "Năm học không được để trống.",
-        "sourceYearRequired": "Năm học nguồn không được để trống.",
-        "targetYearRequired": "Năm học đích không được để trống."
-      },
+      "copyYearButton": "Sao chép sang năm khác",
+      "emptyAssignButton": "Phân công ngay",
+      "emptySubtitle": "Bắt đầu bằng cách phân công chức vụ cho giáo viên.",
+      "emptyTitle": "Chưa có phân công nào",
       "errors": {
+        "academic-year-not-active": "Năm học không hợp lệ.",
         "already-exists": "Phân công này đã tồn tại.",
-        "not-found": "Không tìm thấy phân công.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
         "has-active-assignments": "Còn phân công đang hoạt động.",
         "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
         "member-not-teacher": "Thành viên này không phải giáo viên.",
-        "academic-year-not-active": "Năm học không hợp lệ.",
-        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
         "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "not-found": "Không tìm thấy phân công.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
         "unknown": "Đã xảy ra lỗi không xác định."
       },
+      "filterActive": "Đang hoạt động",
+      "filterAll": "Tất cả",
+      "filterGroupLabel": "Lọc theo trạng thái",
+      "filterRevoked": "Đã thu hồi",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "formErrors": {
+        "academicYearRequired": "Năm học không được để trống.",
+        "memberIdRequired": "Mã giáo viên không được để trống.",
+        "positionTitleRequired": "Vui lòng chọn chức danh.",
+        "sourceYearRequired": "Năm học nguồn không được để trống.",
+        "targetYearRequired": "Năm học đích không được để trống."
+      },
+      "noScopeEntity": "—",
+      "revokeButton": "Thu hồi",
+      "revokeConfirmBody": "Bạn có chắc muốn thu hồi phân công của \"{name}\"?",
+      "revokeConfirmButton": "Thu hồi",
+      "revokeConfirmTitle": "Thu hồi phân công",
+      "searchPlaceholder": "Tìm kiếm giáo viên...",
+      "statusActive": "Hoạt động",
+      "statusRevoked": "Thu hồi",
+      "subtitle": "Gán giáo viên vào các chức danh theo năm học.",
       "table": {
+        "academicYear": "Năm học",
+        "actions": "Thao tác",
+        "caption": "Danh sách phân công chức vụ",
         "member": "Giáo viên",
         "positionTitle": "Chức danh",
         "scopeEntity": "Phạm vi",
-        "academicYear": "Năm học",
-        "status": "Trạng thái",
-        "actions": "Thao tác",
-        "caption": "Danh sách phân công chức vụ"
+        "status": "Trạng thái"
       },
+      "title": "Phân công chức vụ",
       "toast": {
         "assignSuccess": "Đã phân công thành công.",
-        "revokeSuccess": "Đã thu hồi phân công.",
-        "copySuccess": "Đã sao chép phân công."
+        "copySuccess": "Đã sao chép phân công.",
+        "revokeSuccess": "Đã thu hồi phân công."
       }
     },
-    "tabs": {
-      "departments": "Tổ bộ môn",
-      "positionTitles": "Chức danh",
-      "assignments": "Phân công"
-    }
-  },
-  "notifications": {
-    "title": "Trung tâm thông báo",
-    "subtitle": "Xem và quản lý tất cả thông báo của bạn.",
-    "markAllRead": "Đánh dấu tất cả đã đọc",
-    "markAllReadAriaLabel": "Đánh dấu tất cả thông báo là đã đọc",
-    "markAllReadToast": "Đã đánh dấu tất cả là đã đọc",
-    "toastClose": "Đóng",
-    "loading": "Đang tải...",
-    "loadMore": "Xem thêm {count} thông báo",
-    "loadMoreAriaLabel": "Xem thêm {count} thông báo",
-    "allLoaded": "Đã hiển thị tất cả",
-    "filterLabel": "Lọc thông báo",
-    "filterAll": "Tất cả",
-    "filterUnread": "Chưa đọc",
-    "filterGrade": "Điểm số",
-    "filterAttendance": "Điểm danh",
-    "filterDiscipline": "Kỷ luật",
-    "filterAnnouncement": "Thông báo trường",
-    "unreadCountAriaLabel": "{count} thông báo chưa đọc",
-    "listAriaLabel": "Danh sách thông báo",
-    "rowAriaLabel": "{title} — {read}",
-    "ariaRead": "đã đọc",
-    "ariaUnread": "chưa đọc",
-    "type_grade": "Điểm số",
-    "type_attendance": "Điểm danh",
-    "type_discipline": "Kỷ luật",
-    "type_announcement": "Thông báo trường",
-    "type_system": "Hệ thống",
-    "emptyUnreadTitle": "Tất cả đã đọc",
-    "emptyUnreadBody": "Bạn đã đọc hết tất cả thông báo.",
-    "emptyAllTitle": "Chưa có thông báo",
-    "emptyAllBody": "Thông báo sẽ xuất hiện ở đây khi có hoạt động mới.",
-    "errorTitle": "Không thể tải thông báo",
-    "errors": {
-      "not-found": "Không tìm thấy thông báo.",
-      "unauthorized": "Bạn không có quyền truy cập.",
-      "network-error": "Không thể kết nối đến máy chủ.",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
-    }
-  },
-  "staffLeave": {
-    "title": "Quản lý nghỉ phép nhân sự",
-    "subtitle": "Xem xét và phê duyệt đơn xin nghỉ phép của giáo viên và nhân viên",
-    "retry": "Thử lại",
-    "error": "Không thể tải danh sách đơn nghỉ phép.",
-    "stats": {
-      "pending": "Đang chờ duyệt",
-      "approvedThisMonth": "Đã duyệt tháng này",
-      "totalDays": "Tổng ngày nghỉ"
-    },
-    "filters": {
-      "statusGroup": "Lọc theo trạng thái",
-      "all": "Tất cả",
-      "pending": "Chờ duyệt",
-      "approved": "Đã duyệt",
-      "rejected": "Từ chối",
-      "dateFrom": "Từ ngày",
-      "dateTo": "Đến ngày"
-    },
-    "card": {
-      "days": "{count} ngày",
-      "submittedAt": "Nộp {at}",
-      "reason": "Lý do",
-      "showMore": "Xem thêm",
-      "showLess": "Thu gọn",
-      "approvedBy": "Phê duyệt bởi",
-      "rejectedBy": "Từ chối bởi",
-      "rejectionReason": "Lý do từ chối:"
-    },
-    "actions": {
-      "approve": "Phê duyệt",
-      "reject": "Từ chối",
-      "cancel": "Huỷ",
-      "confirmReject": "Xác nhận từ chối",
-      "approving": "Đang phê duyệt...",
-      "rejecting": "Đang từ chối..."
-    },
-    "rejectDialog": {
-      "title": "Lý do từ chối (bắt buộc)",
-      "placeholder": "Giải thích ngắn gọn lý do từ chối để gửi đến nhân sự…",
-      "minLength": "Tối thiểu 10 ký tự.",
-      "ready": "Có thể gửi."
-    },
-    "status": {
-      "pending": "Chờ duyệt",
-      "approved": "Đã duyệt",
-      "rejected": "Từ chối"
-    },
-    "leaveType": {
-      "annual": "Nghỉ phép năm",
-      "sick": "Nghỉ ốm",
-      "personal": "Nghỉ cá nhân",
-      "family": "Nghỉ việc riêng"
-    },
-    "staffRole": {
-      "teacher": "Giáo viên",
-      "staff": "Nhân viên"
-    },
-    "empty": {
-      "all": "Không có đơn xin nghỉ nào.",
-      "pending": "Không có đơn chờ duyệt nào.",
-      "approved": "Không có đơn đã duyệt nào.",
-      "rejected": "Không có đơn từ chối nào.",
-      "description": "Khi có đơn mới, hệ thống sẽ thông báo cho bạn."
-    },
-    "toast": {
-      "approved": "Đã phê duyệt đơn nghỉ phép.",
-      "rejected": "Đã từ chối đơn nghỉ phép."
-    },
-    "errors": {
-      "not-found": "Không tìm thấy đơn nghỉ phép.",
-      "already-processed": "Đơn đã được xử lý trước đó.",
-      "reason-too-short": "Lý do từ chối phải có ít nhất 10 ký tự.",
-      "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
-      "network-error": "Lỗi kết nối. Vui lòng thử lại."
-    }
-  },
-  "lessonBank": {
-    "title": "Kho bài giảng",
-    "subtitle": "Tải lên và quản lý bài giảng của bạn.",
-    "subtitlePrincipal": "Xem kho bài giảng toàn trường.",
-    "uploadButton": "Tải lên bài giảng",
-    "toast": {
-      "uploaded": "Đã tải lên bài giảng.",
-      "deleted": "Đã xoá bài giảng."
-    },
-    "visibility": {
-      "private": "Cá nhân",
-      "dept": "Bộ môn",
-      "school": "Toàn trường"
-    },
-    "filter": {
-      "searchPlaceholder": "Tìm theo tiêu đề...",
-      "searchAriaLabel": "Tìm kiếm bài giảng",
-      "subjectAriaLabel": "Lọc theo môn học",
-      "allSubjects": "Tất cả môn học",
-      "departmentAriaLabel": "Lọc theo bộ môn",
-      "allDepartments": "Tất cả bộ môn",
-      "visibilityAriaLabel": "Lọc theo phạm vi",
-      "allVisibility": "Tất cả phạm vi",
-      "sortAriaLabel": "Sắp xếp",
-      "sort": {
-        "newest": "Mới nhất",
-        "most-viewed": "Xem nhiều nhất",
-        "title-asc": "Tên A-Z"
+    "departments": {
+      "addButton": "Thêm tổ bộ môn",
+      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
+      "archiveButton": "Lưu trữ",
+      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"? Hành động này không thể hoàn tác.",
+      "archiveConfirmButton": "Lưu trữ",
+      "archiveConfirmTitle": "Lưu trữ tổ bộ môn",
+      "assignmentCount": "{count} phân công",
+      "cancelButton": "Hủy",
+      "clearFilters": "Xóa bộ lọc",
+      "clearSearch": "Xóa tìm kiếm",
+      "createSheet": {
+        "description": "Nhập tên tổ bộ môn mới.",
+        "editTitle": "Sửa tổ bộ môn",
+        "nameLabel": "Tên tổ bộ môn",
+        "namePlaceholder": "VD: Tổ Toán - Lý",
+        "submit": "Tạo",
+        "title": "Thêm tổ bộ môn"
       },
-      "layoutAriaLabel": "Kiểu hiển thị",
-      "layoutGrid": "Dạng lưới",
-      "layoutList": "Dạng danh sách"
-    },
-    "empty": {
-      "title": "Chưa có bài giảng",
-      "body": "Tải lên bài giảng đầu tiên để bắt đầu xây dựng kho.",
-      "cta": "Tải lên bài giảng",
-      "noMatch": "Không tìm thấy bài giảng",
-      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
-    },
-    "detail": {
-      "title": "Chi tiết bài giảng",
-      "author": "Người tải lên",
-      "department": "Bộ môn",
-      "subject": "Môn học",
-      "fileType": "Loại tệp",
-      "uploadedAt": "Ngày tải lên",
-      "views": "Lượt xem",
-      "visibility": "Phạm vi",
-      "download": "Tải xuống",
-      "open": "Mở liên kết",
-      "edit": "Chỉnh sửa",
-      "delete": "Xoá",
-      "deleting": "Đang xoá...",
-      "confirmCancel": "Huỷ",
-      "confirmDelete": "Xoá",
-      "confirmDeleteTitle": "Xoá bài giảng?",
-      "confirmDeleteBody": "Hành động này không thể hoàn tác. Bài giảng sẽ bị xoá vĩnh viễn."
-    },
-    "upload": {
-      "title": "Tải lên bài giảng",
-      "titleField": "Tiêu đề",
-      "titlePlaceholder": "Nhập tiêu đề bài giảng",
-      "description": "Mô tả",
-      "descriptionPlaceholder": "Mô tả ngắn gọn nội dung (không bắt buộc)",
-      "subject": "Môn học",
-      "subjectPlaceholder": "Chọn môn học",
-      "department": "Bộ môn",
-      "departmentPlaceholder": "Chọn bộ môn",
-      "fileType": "Loại tệp",
-      "fileTypePlaceholder": "Chọn loại tệp",
-      "file": "Tệp",
-      "linkUrl": "Đường dẫn liên kết",
-      "visibility": "Phạm vi hiển thị",
-      "submit": "Tải lên",
-      "submitting": "Đang tải lên...",
-      "cancel": "Huỷ",
-      "dropZoneAriaLabel": "Khu vực tải tệp lên",
-      "dropZoneTitle": "Kéo thả tệp vào đây",
-      "dropZoneHint": "hoặc nhấn để chọn tệp",
+      "editButton": "Sửa",
+      "emptyCreateButton": "Tạo tổ bộ môn",
+      "emptySubtitle": "Tạo tổ bộ môn đầu tiên để bắt đầu quản lý nhân sự.",
+      "emptyTitle": "Chưa có tổ bộ môn nào",
       "errors": {
-        "titleRequired": "Vui lòng nhập tiêu đề.",
-        "fileTypeRequired": "Vui lòng chọn loại tệp.",
-        "urlRequired": "Vui lòng nhập đường dẫn.",
-        "urlInvalid": "Đường dẫn không hợp lệ."
+        "academic-year-not-active": "Năm học không hợp lệ.",
+        "already-exists": "Tên đã tồn tại. Vui lòng chọn tên khác.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "has-active-assignments": "Tổ bộ môn còn phân công đang hoạt động.",
+        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "member-not-teacher": "Thành viên này không phải giáo viên.",
+        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "not-found": "Không tìm thấy tổ bộ môn.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
+        "unknown": "Đã xảy ra lỗi không xác định."
+      },
+      "filterActive": "Đang hoạt động",
+      "filterAll": "Tất cả",
+      "filterArchived": "Đã lưu trữ",
+      "filterGroupLabel": "Lọc theo trạng thái",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "formErrors": {
+        "nameRequired": "Tên không được để trống.",
+        "nameTooLong": "Tên không được vượt quá 100 ký tự."
+      },
+      "searchPlaceholder": "Tìm kiếm tổ bộ môn...",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Lưu trữ",
+      "subtitle": "Quản lý các tổ chuyên môn, phòng ban của trường.",
+      "table": {
+        "actions": "Thao tác",
+        "assignments": "Phân công",
+        "caption": "Danh sách tổ bộ môn",
+        "name": "Tên",
+        "status": "Trạng thái"
+      },
+      "title": "Khoa / Tổ bộ môn",
+      "toast": {
+        "archiveSuccess": "Đã lưu trữ tổ bộ môn.",
+        "createSuccess": "Đã tạo tổ bộ môn.",
+        "editSuccess": "Đã cập nhật tổ bộ môn."
       }
     },
-    "errors": {
-      "missing-title": "Vui lòng nhập tiêu đề bài giảng.",
-      "invalid-url": "Đường dẫn liên kết không hợp lệ.",
-      "unsupported-type": "Loại tệp không được hỗ trợ.",
-      "file-too-large": "Tệp vượt quá dung lượng cho phép.",
-      "not-found": "Không tìm thấy bài giảng.",
-      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
-      "unauthorized": "Bạn không có quyền truy cập.",
-      "network-error": "Không thể kết nối đến máy chủ.",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
-    }
-  },
-  "messaging": {
-    "title": "Tin nhắn",
+    "positionTitles": {
+      "addButton": "Thêm chức danh",
+      "archiveBlockedTooltip": "Có {count} phân công đang hoạt động",
+      "archiveButton": "Lưu trữ",
+      "archiveConfirmBody": "Bạn có chắc muốn lưu trữ \"{name}\"?",
+      "archiveConfirmButton": "Lưu trữ",
+      "archiveConfirmTitle": "Lưu trữ chức danh",
+      "assignmentCount": "{count} phân công",
+      "cancelButton": "Hủy",
+      "clearFilters": "Xóa bộ lọc",
+      "clearSearch": "Xóa tìm kiếm",
+      "createSheet": {
+        "description": "Nhập thông tin chức danh mới.",
+        "editSubmit": "Cập nhật",
+        "editTitle": "Sửa chức danh",
+        "nameLabel": "Tên chức danh",
+        "namePlaceholder": "VD: Tổ trưởng chuyên môn",
+        "permissionsLabel": "Quyền hạn",
+        "scopeTypeLabel": "Phạm vi",
+        "submit": "Tạo",
+        "title": "Thêm chức danh"
+      },
+      "editButton": "Sửa",
+      "emptyCreateButton": "Tạo chức danh",
+      "emptySubtitle": "Tạo chức danh đầu tiên.",
+      "emptyTitle": "Chưa có chức danh nào",
+      "errors": {
+        "academic-year-not-active": "Năm học không hợp lệ.",
+        "already-exists": "Tên chức danh đã tồn tại.",
+        "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+        "has-active-assignments": "Chức danh còn phân công đang hoạt động.",
+        "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "member-not-teacher": "Thành viên này không phải giáo viên.",
+        "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+        "not-found": "Không tìm thấy chức danh.",
+        "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
+        "unknown": "Đã xảy ra lỗi không xác định."
+      },
+      "filterActive": "Đang hoạt động",
+      "filterAll": "Tất cả",
+      "filterArchived": "Đã lưu trữ",
+      "filterGroupLabel": "Lọc theo trạng thái",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc.",
+      "filteredEmptyTitle": "Không tìm thấy kết quả",
+      "formErrors": {
+        "nameRequired": "Tên không được để trống.",
+        "nameTooLong": "Tên không được vượt quá 100 ký tự.",
+        "scopeTypeRequired": "Vui lòng chọn phạm vi."
+      },
+      "permManageConduct": "Quản lý hạnh kiểm",
+      "permManageSchedule": "Quản lý lịch",
+      "permManageSubjectContent": "Quản lý nội dung",
+      "permViewReports": "Xem báo cáo",
+      "scopeTypeDepartment": "Phòng ban",
+      "scopeTypeSubjectParent": "Tổ chuyên môn",
+      "searchPlaceholder": "Tìm kiếm chức danh...",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Lưu trữ",
+      "subtitle": "Quản lý các chức danh trong nhà trường.",
+      "table": {
+        "actions": "Thao tác",
+        "assignments": "Phân công",
+        "caption": "Danh sách chức danh",
+        "name": "Tên",
+        "permissions": "Quyền",
+        "scopeType": "Phạm vi",
+        "status": "Trạng thái"
+      },
+      "title": "Chức danh",
+      "toast": {
+        "archiveSuccess": "Đã lưu trữ chức danh.",
+        "createSuccess": "Đã tạo chức danh.",
+        "editSuccess": "Đã cập nhật chức danh."
+      }
+    },
     "tabs": {
-      "direct": "Trực tiếp",
-      "groups": "Nhóm"
-    },
-    "search": {
-      "placeholder": "Tìm kiếm...",
-      "noResults": "Không tìm thấy",
-      "noGroups": "Không có nhóm"
-    },
-    "newMessage": {
-      "button": "Tin nhắn mới",
-      "title": "Tin nhắn mới",
-      "searchPlaceholder": "Tìm kiếm người dùng...",
-      "suggestions": "Gợi ý"
-    },
-    "chat": {
-      "members": "{count} thành viên",
-      "online": "Đang online",
-      "placeholder": "Nhập tin nhắn... (Enter để gửi)",
-      "send": "Gửi",
-      "attach": "Đính kèm",
-      "history": "Lịch sử trò chuyện",
-      "backToList": "Quay lại danh sách",
-      "loadMore": "Tải thêm tin nhắn",
-      "typing": "Đang nhập tin nhắn..."
-    },
-    "openConversation": "Mở cuộc trò chuyện với {name}",
-    "totalUnread": "{count} tin nhắn chưa đọc",
-    "empty": {
-      "title": "Chọn một cuộc trò chuyện",
-      "subtitle": "Nhấn vào một cuộc trò chuyện để bắt đầu nhắn tin",
-      "cta": "Bắt đầu cuộc hội thoại"
-    },
-    "errors": {
-      "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
-      "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
-      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại.",
-      "create-conversation-failed": "Không thể tạo cuộc hội thoại. Vui lòng thử lại."
-    },
-    "date": {
-      "today": "Hôm nay",
-      "yesterday": "Hôm qua"
-    },
-    "skeleton": {
-      "loading": "Đang tải tin nhắn..."
+      "assignments": "Phân công",
+      "departments": "Tổ bộ môn",
+      "positionTitles": "Chức danh"
     }
   },
-  "announcements": {
-    "pageTitle": "Thông báo",
-    "subtitle": "Tạo và quản lý thông báo gửi tới giáo viên, phụ huynh và học sinh.",
-    "createButton": "Tạo thông báo",
-    "filterAll": "Tất cả",
-    "filterSent": "Đã gửi",
-    "filterScheduled": "Đã lên lịch",
-    "filterDraft": "Nháp",
-    "priorityNormal": "Thường",
-    "priorityImportant": "Quan trọng",
-    "priorityUrgent": "Khẩn",
-    "statusDraft": "Nháp",
-    "statusScheduled": "Đã lên lịch",
-    "statusSent": "Đã gửi",
-    "audienceAll": "Tất cả",
-    "audienceTeachers": "Giáo viên",
-    "audienceParents": "Phụ huynh",
-    "audienceStudents": "Học sinh",
-    "recipientCount": "{count} người nhận",
-    "readRatio": "{read}/{total} đã đọc",
-    "emptyTitle": "Chưa có thông báo",
-    "emptyBody": "Tạo thông báo đầu tiên của bạn.",
-    "drawerCreateTitle": "Tạo thông báo",
-    "drawerEditTitle": "Chỉnh sửa thông báo",
-    "fieldTitle": "Tiêu đề",
-    "fieldTitlePlaceholder": "Nhập tiêu đề thông báo...",
-    "fieldBody": "Nội dung",
-    "fieldBodyPlaceholder": "Nhập nội dung thông báo...",
-    "fieldAudience": "Đối tượng",
-    "fieldGradeFilter": "Lọc theo khối",
-    "fieldPriority": "Mức độ ưu tiên",
-    "fieldSendMode": "Thời gian gửi",
-    "sendModeNow": "Gửi ngay",
-    "sendModeSchedule": "Lên lịch",
-    "fieldScheduledAt": "Thời gian lên lịch",
-    "estimatedRecipients": "Ước tính {count} người nhận",
-    "previewToggle": "Xem trước",
-    "previewHeading": "Bản xem trước",
-    "charCount": "{current}/{max}",
-    "btnCancel": "Hủy",
-    "btnSaveDraft": "Lưu nháp",
-    "btnSchedule": "Lên lịch",
-    "btnSendNow": "Gửi ngay",
-    "detailTitle": "Chi tiết thông báo",
-    "detailAuthor": "Tác giả",
-    "detailSentAt": "Thời gian gửi",
-    "recipientFilterAll": "Tất cả",
-    "recipientFilterRead": "Đã đọc",
-    "recipientFilterUnread": "Chưa đọc",
-    "recipientStatusRead": "Đã đọc",
-    "recipientStatusUnread": "Chưa đọc",
-    "recipientsEmpty": "Không có người nhận phù hợp.",
-    "btnRemind": "Gửi nhắc chưa đọc",
-    "remindToast": "Đã gửi nhắc đến {count} người chưa đọc",
-    "deleteTitle": "Xóa thông báo",
-    "deleteDescription": "Bạn có chắc muốn xóa thông báo này? Hành động này không thể hoàn tác.",
-    "btnDelete": "Xóa",
-    "deleteToast": "Đã xóa thông báo",
-    "sendToast": "Đã gửi thông báo",
-    "draftToast": "Đã lưu nháp",
-    "scheduleToast": "Đã lên lịch thông báo",
-    "loadingAriaLabel": "Đang tải danh sách thông báo",
-    "loadError": "Không thể tải danh sách thông báo.",
-    "actionView": "Xem chi tiết",
-    "actionEdit": "Chỉnh sửa",
-    "actionDelete": "Xóa",
-    "readProgressLabel": "Tỷ lệ đã đọc: {pct}%",
-    "urgentCardAriaLabel": "Thông báo khẩn cấp: {title}",
-    "btnClose": "Đóng",
-    "loadingRecipientsAriaLabel": "Đang tải danh sách người nhận...",
+  "subjectCatalogue": {
+    "createParentDialog": {
+      "cancelButton": "Hủy",
+      "conceptBomon": "Bộ môn",
+      "conceptCustom": "Tùy chỉnh",
+      "conceptHint": "Nhãn hiển thị trong giao diện (không ảnh hưởng chức năng).",
+      "conceptKhoa": "Khoa",
+      "conceptLabel": "Nhãn phân loại",
+      "conceptOptional": "không bắt buộc",
+      "conceptTo": "Tổ",
+      "createButton": "Tạo bộ môn",
+      "createSubtitle": "Tạo nhóm môn học mới cho trường.",
+      "createTitle": "Thêm bộ môn mới",
+      "customLabelPlaceholder": "Nhập nhãn tuỳ chỉnh (VD: Trung tâm, Phòng…)",
+      "customLabelRequired": "Vui lòng nhập nhãn tuỳ chỉnh.",
+      "editSubtitle": "Cập nhật tên và nhãn phân loại.",
+      "editTitle": "Chỉnh sửa bộ môn",
+      "nameHint": "1–128 ký tự",
+      "nameLabel": "Tên bộ môn",
+      "namePlaceholder": "VD: Toán học, Ngoại ngữ, …",
+      "saveButton": "Lưu"
+    },
+    "createSubjectDialog": {
+      "cancelButton": "Hủy",
+      "changeButton": "Thay đổi",
+      "codeHint": "A–Z, 0–9, ≤16 ký tự",
+      "codeLabel": "Mã môn",
+      "codeOptional": "không bắt buộc",
+      "codePlaceholder": "MATH10",
+      "createButton": "Tạo môn học",
+      "departmentLabel": "Bộ môn",
+      "gradeHint": "Khối lớp hợp lệ: {min}–{max}",
+      "gradeLabel": "Khối lớp",
+      "nameLabel": "Tên môn học",
+      "namePlaceholder": "VD: Toán lớp 10",
+      "subtitle": "Môn học gắn với một khối lớp cụ thể.",
+      "title": "Thêm môn học"
+    },
+    "departments": {
+      "addButton": "Thêm bộ môn",
+      "archiveBlockedTooltip": "Không thể lưu trữ: còn {count} môn học đang hoạt động.",
+      "archiveButton": "Lưu trữ",
+      "archiveConfirmBody": "Lưu trữ \"{name}\"? Hành động này sẽ ẩn bộ môn khỏi các tùy chọn phân công mới. Các dữ liệu hiện có không bị xoá.",
+      "archiveConfirmButton": "Lưu trữ",
+      "archiveConfirmTitle": "Lưu trữ bộ môn?",
+      "cancelButton": "Hủy",
+      "cardActive": "hoạt động",
+      "clearFilters": "Xoá bộ lọc",
+      "clearSearch": "Xoá tìm kiếm",
+      "editButton": "Chỉnh sửa",
+      "emptyCreateButton": "Tạo bộ môn đầu tiên",
+      "emptySubtitle": "Tạo bộ môn đầu tiên để bắt đầu xây dựng danh mục môn học.",
+      "emptyTitle": "Chưa có bộ môn nào",
+      "filterActive": "Đang hoạt động",
+      "filterAll": "Tất cả",
+      "filterArchived": "Đã lưu trữ",
+      "filteredEmptySubtitle": "Thử thay đổi bộ lọc hoặc xoá từ khoá tìm kiếm.",
+      "filteredEmptyTitle": "Không tìm thấy bộ môn phù hợp",
+      "restoreButton": "Khôi phục",
+      "searchPlaceholder": "Tìm bộ môn…",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Đã lưu trữ",
+      "subjectUnit": "môn học",
+      "subtitle": "Nhóm môn học theo chuyên ngành. Bộ môn là nền tảng để phân công giáo viên và quản lý chức danh.",
+      "title": "Bộ môn / Tổ chuyên môn"
+    },
     "errors": {
-      "title-too-short": "Tiêu đề phải có ít nhất 5 ký tự.",
-      "body-too-short": "Nội dung phải có ít nhất 10 ký tự.",
-      "no-audience": "Vui lòng chọn ít nhất một đối tượng.",
-      "schedule-past-date": "Thời gian lên lịch phải là tương lai.",
-      "not-found": "Không tìm thấy thông báo.",
-      "unauthorized": "Bạn không có quyền thực hiện.",
-      "network-error": "Không thể kết nối đến máy chủ.",
-      "unknown": "Có lỗi xảy ra, vui lòng thử lại."
+      "already-exists": "Đã tồn tại. Vui lòng kiểm tra lại.",
+      "archive-blocked-parent": "Không thể lưu trữ bộ môn khi còn môn học đang hoạt động.",
+      "archive-blocked-subject": "Môn học đang có GVBM, không thể lưu trữ.",
+      "class-subject-already-exists": "Môn học đã được phân công cho lớp này.",
+      "class-subject-in-use": "Không thể lưu trữ — môn học đang được sử dụng trong lớp.",
+      "class-subject-locked-field-update": "Không thể thay đổi trường khoá — đây là chuẩn chương trình.",
+      "code-format": "Mã môn không hợp lệ. Chỉ dùng chữ hoa A–Z và chữ số 0–9, tối đa 16 ký tự.",
+      "forbidden": "Bạn không có quyền truy cập.",
+      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi của trường.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy.",
+      "parent-archived": "Bộ môn đã được lưu trữ.",
+      "parent-forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "parent-in-use": "Bộ môn đang có môn học hoạt động, không thể lưu trữ.",
+      "parent-not-active": "Bộ môn không còn hoạt động.",
+      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
+    },
+    "subjectDetail": {
+      "basicInfoSection": "Thông tin cơ bản",
+      "classOfferingsEmpty": "Chưa có lớp nào sử dụng môn học này.",
+      "classOfferingsSection": "Lớp học sử dụng",
+      "closeButton": "Đóng",
+      "codeHint": "Chữ hoa & chữ số, tối đa 16 ký tự.",
+      "codeLabel": "Mã môn",
+      "codeOptional": "không bắt buộc",
+      "curriculumSection": "Chuẩn chương trình",
+      "fieldAssessmentCount": "Yêu cầu số bài kiểm tra",
+      "fieldAssessmentCountHint": "/ kỳ",
+      "fieldExamBank": "Kho đề kiểm tra chung",
+      "fieldExerciseBank": "Kho bài tập chung",
+      "fieldMasterSyllabus": "Giáo án gốc",
+      "fieldOutcomeTargets": "Chỉ tiêu đầu ra",
+      "fieldPeriodCount": "Số tiết",
+      "fieldPeriodCountHint": "/ năm",
+      "lockedBadge": "Khoá ở cấp lớp",
+      "lockedBanner": "Các trường này là chuẩn chương trình — không thể thay đổi ở cấp lớp. Giáo viên sẽ thấy các thông số này khi nhập điểm.",
+      "lockedTooltip": "Giá trị này sẽ hiển thị ở cấp lớp và không thể thay đổi bởi giáo viên.",
+      "nameHint": "1–128 ký tự",
+      "nameLabel": "Tên môn học",
+      "offeringColClass": "Lớp",
+      "offeringColStudents": "Học sinh",
+      "offeringColTeacher": "Giáo viên",
+      "offeringColYear": "Năm học",
+      "saveButton": "Lưu thay đổi",
+      "savedFeedback": "Đã lưu"
+    },
+    "subjects": {
+      "addDepartmentButton": "Thêm bộ môn",
+      "addFirstDepartment": "Thêm bộ môn đầu tiên",
+      "addFirstSubject": "Thêm môn học đầu tiên",
+      "addSubjectButton": "Thêm môn học",
+      "archiveBlockedTooltip": "Môn học đang được sử dụng, không thể lưu trữ",
+      "archiveButton": "Lưu trữ",
+      "archiveConfirmBody": "Lưu trữ \"{name}\"? Môn học sẽ bị ẩn khỏi danh sách tạo lớp mới. Các dữ liệu hiện có không bị xoá.",
+      "archiveConfirmButton": "Lưu trữ",
+      "archiveConfirmTitle": "Lưu trữ môn học?",
+      "archivedLabel": "Đã lưu trữ",
+      "breadcrumbLabel": "Vị trí hiện tại",
+      "cancelButton": "Hủy",
+      "colActions": "Thao tác",
+      "colCode": "Mã",
+      "colGrade": "Lớp",
+      "colName": "Tên môn",
+      "colStatus": "Trạng thái",
+      "gradeLabel": "Lớp {level}",
+      "gradeRange": "lớp {range}",
+      "gradeRangeInfo": "Phạm vi khối lớp của trường:",
+      "gradeRangeNote": "Môn học mới phải nằm trong phạm vi này.",
+      "gradeScopedBreadcrumb": "Các môn học",
+      "gradeScopedTitle": "Môn học theo khối",
+      "inUseLabel": "Đang sử dụng",
+      "noDepartments": "Chưa có bộ môn nào",
+      "noDepartmentsSubtitle": "Tạo bộ môn đầu tiên để bắt đầu thêm môn học.",
+      "noGradeRangeBody": "Vui lòng hoàn thành bước thiết lập khối lớp trước khi thêm môn học.",
+      "noGradeRangeTitle": "Phạm vi khối lớp chưa được cấu hình",
+      "noSubjects": "Chưa có môn học",
+      "noSubjectsSubtitle": "Thêm môn học đầu tiên cho \"{name}\".",
+      "selectDepartment": "Chọn một bộ môn để xem các môn học.",
+      "statusActive": "Hoạt động",
+      "statusArchived": "Lưu trữ",
+      "subjectUnit": "môn học",
+      "subtitle": "Bộ môn và môn học theo khối lớp",
+      "title": "Danh mục môn học",
+      "viewEditButton": "Xem / Sửa"
+    }
+  },
+  "teacherClasses": {
+    "actions": {
+      "attendance": "Điểm danh",
+      "classLog": "Sổ đầu bài",
+      "comingSoon": "Sắp có",
+      "viewStudents": "Xem học sinh"
+    },
+    "breadcrumbLabel": "Điều hướng lớp học",
+    "empty": "Bạn chưa được phân công lớp nào.",
+    "errorRetryAction": "Thử lại",
+    "errors": {
+      "network-error": "Lỗi kết nối, vui lòng kiểm tra mạng.",
+      "not-found": "Không tìm thấy lớp học.",
+      "unauthorized": "Bạn không có quyền xem thông tin này.",
+      "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
+    },
+    "gradeLevel": "Khối {grade}",
+    "homeroomBadge": "GVCN",
+    "pageTitle": "Lớp học của tôi",
+    "studentPage": {
+      "breadcrumbClasses": "Lớp học",
+      "columns": {
+        "code": "Mã HS",
+        "name": "Học sinh",
+        "status": "Trạng thái"
+      },
+      "empty": "Lớp này chưa có học sinh nào.",
+      "errorRetryAction": "Thử lại",
+      "filteredCount": "Tìm thấy {count} học sinh",
+      "nextPage": "Trang sau",
+      "noSearchResults": "Không tìm thấy học sinh phù hợp.",
+      "paginationNav": "Phân trang danh sách học sinh",
+      "prevPage": "Trang trước",
+      "resultCount": "{count} học sinh",
+      "retryButton": "Thử lại",
+      "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
+      "showing": "Hiển thị {from}–{to} trên {total}",
+      "status": {
+        "active": "Đang học",
+        "transferred": "Đã chuyển"
+      },
+      "studentListSection": "Danh sách học sinh"
+    },
+    "students": "học sinh"
+  },
+  "teacherDashboard": {
+    "notifications": {
+      "title": "Thông báo"
+    },
+    "pageTitle": "Tổng quan",
+    "pendingGrades": {
+      "assessmentType": "{type} · {className}",
+      "enterGrades": "Nhập điểm",
+      "title": "Chờ chấm điểm"
+    },
+    "schedule": {
+      "afternoon": "Buổi chiều",
+      "classRoom": "Lớp {className} · {room}",
+      "dayLabel": "Thứ Tư",
+      "empty": "Không có lịch dạy hôm nay",
+      "morning": "Buổi sáng",
+      "period": "Tiết {period}",
+      "title": "Lịch dạy hôm nay"
+    },
+    "scheduleStatus": {
+      "done": "Hoàn thành",
+      "live": "Đang dạy",
+      "upcoming": "Sắp tới"
+    },
+    "stats": {
+      "adminApprovalMode": "Chế độ ADMIN_APPROVAL",
+      "classesToday": "Tiết học hôm nay",
+      "newMessages": "Tin nhắn mới",
+      "pendingApproval": "Điểm chờ duyệt",
+      "pendingGrades": "Chờ chấm điểm",
+      "totalClasses": "Lớp học",
+      "totalStudents": "Tổng học sinh",
+      "vsPrevMonth": "so tháng trước",
+      "vsPrevWeek": "so tuần trước"
     }
   },
   "teachingPlan": {
-    "pageTitle": "Kế hoạch bài dạy (PPCT)",
-    "teacherSubtitle": "Soạn kế hoạch bài dạy theo tuần cho từng môn học / lớp / học kỳ",
-    "principalSubtitle": "Xem xét và phê duyệt kế hoạch bài dạy của giáo viên",
-    "selector": {
-      "subject": "Môn học",
-      "class": "Lớp",
-      "term": "Học kỳ",
-      "subjectPlaceholder": "Chọn môn",
-      "classPlaceholder": "Chọn lớp",
-      "termPlaceholder": "Chọn học kỳ"
+    "actions": {
+      "approve": "Phê duyệt",
+      "approveSuccess": "Đã phê duyệt kế hoạch",
+      "approving": "Đang duyệt...",
+      "reject": "Trả lại",
+      "rejectSuccess": "Đã trả lại kế hoạch",
+      "rejecting": "Đang xử lý...",
+      "saveDraft": "Lưu nháp",
+      "submit": "Gửi phê duyệt",
+      "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
+      "submitting": "Đang gửi..."
     },
-    "grid": {
-      "weekLabel": "Tuần {week}",
-      "periodLabel": "Tiết {period}",
-      "addCell": "Thêm nội dung Tuần {week} Tiết {period}",
-      "emptyState": "Chưa có nội dung kế hoạch",
-      "emptyStateCta": "Bắt đầu nhập kế hoạch bài dạy"
+    "approve": {
+      "cancel": "Huỷ",
+      "confirm": "Phê duyệt",
+      "confirmDescription": "Bạn có chắc chắn muốn phê duyệt kế hoạch bài dạy này không?",
+      "confirmTitle": "Xác nhận phê duyệt"
     },
     "cell": {
-      "title": "Tiêu đề bài dạy",
-      "titlePlaceholder": "VD: Đạo hàm — ứng dụng tính cực trị",
-      "titleRequired": "Tiêu đề bài dạy là bắt buộc",
+      "cancel": "Huỷ",
       "learningObjective": "Mục tiêu học tập",
       "learningObjectivePlaceholder": "Học sinh nắm được...",
       "notes": "Ghi chú",
       "notesPlaceholder": "Ghi chú bổ sung...",
       "save": "Lưu ô",
-      "cancel": "Huỷ"
+      "title": "Tiêu đề bài dạy",
+      "titlePlaceholder": "VD: Đạo hàm — ứng dụng tính cực trị",
+      "titleRequired": "Tiêu đề bài dạy là bắt buộc"
     },
-    "status": {
-      "DRAFT": "Nháp",
-      "SUBMITTED": "Chờ duyệt",
-      "APPROVED": "Đã duyệt",
-      "REJECTED": "Đã từ chối"
+    "errors": {
+      "insufficient-cells": "Cần điền ít nhất 50% ô trong kế hoạch trước khi gửi",
+      "invalid-rejection-reason": "Lý do trả lại phải có ít nhất 10 ký tự",
+      "network-error": "Lỗi kết nối mạng",
+      "not-draft": "Kế hoạch không ở trạng thái nháp",
+      "not-found": "Không tìm thấy kế hoạch",
+      "not-submitted": "Kế hoạch chưa được gửi để phê duyệt",
+      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
+      "unknown": "Đã xảy ra lỗi không xác định"
     },
-    "actions": {
-      "saveDraft": "Lưu nháp",
-      "submit": "Gửi phê duyệt",
-      "submitting": "Đang gửi...",
-      "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
-      "approve": "Phê duyệt",
-      "approving": "Đang duyệt...",
-      "approveSuccess": "Đã phê duyệt kế hoạch",
-      "reject": "Trả lại",
-      "rejecting": "Đang xử lý...",
-      "rejectSuccess": "Đã trả lại kế hoạch"
+    "grid": {
+      "addCell": "Thêm nội dung Tuần {week} Tiết {period}",
+      "emptyState": "Chưa có nội dung kế hoạch",
+      "emptyStateCta": "Bắt đầu nhập kế hoạch bài dạy",
+      "periodLabel": "Tiết {period}",
+      "weekLabel": "Tuần {week}"
     },
-    "approve": {
-      "confirmTitle": "Xác nhận phê duyệt",
-      "confirmDescription": "Bạn có chắc chắn muốn phê duyệt kế hoạch bài dạy này không?",
-      "confirm": "Phê duyệt",
-      "cancel": "Huỷ"
+    "pageTitle": "Kế hoạch bài dạy (PPCT)",
+    "principal": {
+      "allClasses": "Tất cả lớp",
+      "allSubjects": "Tất cả môn",
+      "allTeachers": "Tất cả GV",
+      "emptyPending": "Không có kế hoạch nào chờ duyệt",
+      "filterClass": "Lớp",
+      "filterSubject": "Môn học",
+      "filterTeacher": "Giáo viên",
+      "submittedAt": "Ngày gửi: {date}",
+      "submittedBy": "GV: {name}"
     },
+    "principalSubtitle": "Xem xét và phê duyệt kế hoạch bài dạy của giáo viên",
     "reject": {
-      "title": "Trả lại kế hoạch",
-      "reasonLabel": "Lý do trả lại",
-      "reasonPlaceholder": "Nêu rõ lý do trả lại kế hoạch...",
-      "reasonMinLength": "Lý do phải có ít nhất 10 ký tự",
+      "cancel": "Huỷ",
       "confirm": "Xác nhận trả lại",
-      "cancel": "Huỷ"
+      "reasonLabel": "Lý do trả lại",
+      "reasonMinLength": "Lý do phải có ít nhất 10 ký tự",
+      "reasonPlaceholder": "Nêu rõ lý do trả lại kế hoạch...",
+      "title": "Trả lại kế hoạch"
     },
     "rejection": {
       "bannerTitle": "Kế hoạch đã bị trả lại",
-      "reason": "Lý do: {reason}",
-      "editHint": "Bạn có thể chỉnh sửa và gửi lại"
+      "editHint": "Bạn có thể chỉnh sửa và gửi lại",
+      "reason": "Lý do: {reason}"
     },
-    "principal": {
-      "filterTeacher": "Giáo viên",
-      "filterSubject": "Môn học",
-      "filterClass": "Lớp",
-      "allTeachers": "Tất cả GV",
-      "allSubjects": "Tất cả môn",
-      "allClasses": "Tất cả lớp",
-      "emptyPending": "Không có kế hoạch nào chờ duyệt",
-      "submittedBy": "GV: {name}",
-      "submittedAt": "Ngày gửi: {date}"
+    "selector": {
+      "class": "Lớp",
+      "classPlaceholder": "Chọn lớp",
+      "subject": "Môn học",
+      "subjectPlaceholder": "Chọn môn",
+      "term": "Học kỳ",
+      "termPlaceholder": "Chọn học kỳ"
     },
-    "errors": {
-      "not-found": "Không tìm thấy kế hoạch",
-      "not-draft": "Kế hoạch không ở trạng thái nháp",
-      "not-submitted": "Kế hoạch chưa được gửi để phê duyệt",
-      "insufficient-cells": "Cần điền ít nhất 50% ô trong kế hoạch trước khi gửi",
-      "invalid-rejection-reason": "Lý do trả lại phải có ít nhất 10 ký tự",
-      "unauthorized": "Bạn không có quyền thực hiện thao tác này",
-      "network-error": "Lỗi kết nối mạng",
-      "unknown": "Đã xảy ra lỗi không xác định"
+    "status": {
+      "APPROVED": "Đã duyệt",
+      "DRAFT": "Nháp",
+      "REJECTED": "Đã từ chối",
+      "SUBMITTED": "Chờ duyệt"
+    },
+    "teacherSubtitle": "Soạn kế hoạch bài dạy theo tuần cho từng môn học / lớp / học kỳ"
+  },
+  "tenant": {
+    "home": {
+      "body": "Bạn đang ở trong không gian của tổ chức này.",
+      "title": "Không gian làm việc"
+    },
+    "select": {
+      "empty": "Bạn chưa thuộc tổ chức nào",
+      "enter": "Vào",
+      "roles": "Vai trò",
+      "subtitle": "Bạn là thành viên của các tổ chức sau",
+      "switching": "Đang chuyển…",
+      "title": "Chọn không gian làm việc"
     }
   },
-  "assessmentScheme": {
-    "title": "Thang điểm & Khung đánh giá",
-    "subtitle": "Cấu hình thang điểm và các cột điểm thành phần theo môn học.",
-    "gradeScaleSection": "Thang điểm (Xếp loại)",
-    "gradeScaleSectionSubtitle": "Định nghĩa các mức xếp loại điểm cho trường.",
-    "presetThang10": "Thang 10",
-    "presetThang4": "Thang 4.0",
-    "presetLetter": "Chữ (A–F)",
-    "applyPreset": "Áp dụng mẫu",
-    "addBand": "Thêm mức",
-    "saveBands": "Lưu thang điểm",
-    "bandLabel": "Nhãn",
-    "bandMinThreshold": "Điểm tối thiểu",
-    "bandColor": "Màu",
-    "deleteBand": "Xóa mức",
-    "errorLowestBandNotZero": "Mức thấp nhất phải bắt đầu từ 0.",
-    "errorOverlappingThresholds": "Các mức điểm bị trùng nhau.",
-    "errorGapsInCoverage": "Còn khoảng trống giữa các mức điểm.",
-    "errorEmptyBands": "Cần ít nhất một mức điểm.",
-    "assessmentSchemeSection": "Khung đánh giá",
-    "assessmentSchemeSectionSubtitle": "Cấu hình cột điểm thành phần và trọng số cho từng môn học.",
-    "gradeLevelLabel": "Khối lớp",
-    "gradeLevelPlaceholder": "Chọn khối lớp",
-    "subjectLabel": "Môn học",
-    "subjectPlaceholder": "Chọn môn học",
-    "gradePrefix": "Lớp",
-    "noSubjectsForGrade": "Không có môn học nào cho khối này.",
-    "columnType": "Loại",
-    "columnLabel": "Tên cột",
-    "columnCount": "Số lần",
-    "columnWeight": "Trọng số (%)",
-    "weightSumLabel": "Tổng trọng số",
-    "weightSumTarget": "/ 100%",
-    "addColumn": "Thêm cột",
-    "deleteColumn": "Xóa cột",
-    "saveScheme": "Lưu khung đánh giá",
-    "presetTT22": "Mẫu TT22/2021",
-    "applyPresetTT22": "Áp dụng TT22/2021",
-    "errorEmptyColumns": "Cần ít nhất một cột điểm.",
-    "errorWeightSumNot100": "Tổng trọng số phải bằng 100%.",
-    "errorInvalidCount": "Số lần kiểm tra phải ≥ 1.",
-    "saveSuccess": "Đã lưu thành công.",
-    "saveError": "Lưu thất bại. Vui lòng thử lại.",
-    "loading": "Đang tải...",
-    "errorNotFound": "Không tìm thấy dữ liệu.",
-    "errorForbidden": "Bạn không có quyền thực hiện thao tác này.",
-    "errorNetwork": "Lỗi kết nối. Vui lòng thử lại.",
-    "errorUnknown": "Đã xảy ra lỗi không xác định.",
-    "colorSuccess": "Xanh (Giỏi)",
-    "colorPrimary": "Xanh dương (Khá)",
-    "colorWarning": "Vàng (Trung bình)",
-    "colorError": "Đỏ (Yếu)",
-    "columnTypeTX": "Thường xuyên",
-    "columnTypeGK": "Giữa kỳ",
-    "columnTypeCK": "Cuối kỳ",
-    "yearLabel": "Năm học",
-    "yearLabelPlaceholder": "2024-2025",
-    "weightSumInvalid": "Tổng trọng số: {value}% — chưa đủ 100%",
-    "weightSumValid": "Tổng trọng số: {value}% — hợp lệ",
-    "weightSumInvalidSR": "— chưa đủ 100%"
+  "timetable": {
+    "addSlot": "Thêm",
+    "classConflictCount": "{count} xung đột ở lớp này",
+    "classLabel": "Lớp",
+    "conflicts": {
+      "conflictsWith": "trùng với lớp {classes}",
+      "count": "{count} xung đột phát hiện",
+      "hint": "Bấm vào một xung đột để xem ô liên quan.",
+      "jumpedTo": "Đã chuyển đến ô xung đột",
+      "noConflicts": "Không có xung đột",
+      "resolve": "Giải quyết",
+      "title": "Tổng hợp xung đột",
+      "validHint": "TKB hợp lệ trên toàn trường."
+    },
+    "errors": {
+      "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",
+      "save-failed": "Không lưu được tiết học. Vui lòng thử lại.",
+      "slot-not-found": "Không tìm thấy tiết học."
+    },
+    "exportPdf": "Xuất TKB (PDF)",
+    "exportPdfToast": "Tính năng xuất PDF sẽ sớm có.",
+    "gridScrollHint": "Cuộn ngang để xem thêm ngày trong tuần",
+    "importTimetable": "Import TKB",
+    "importTimetableToast": "Tính năng import TKB sẽ sớm có.",
+    "periodColHeader": "Tiết học",
+    "periodN": "Tiết {n}",
+    "recessLabel": "☕ Giải lao trưa",
+    "slotEditor": {
+      "cancel": "Huỷ",
+      "clear": "Xoá tiết",
+      "noEligibleTeacher": "Không có giáo viên dạy môn này cho lớp đã chọn.",
+      "pickSubjectFirst": "Chọn môn học trước để xem danh sách giáo viên.",
+      "room": "Phòng học",
+      "roomPlaceholder": "VD: P.201, P.LAB1, Sân TD…",
+      "save": "Lưu",
+      "subject": "Môn học",
+      "subjectPlaceholder": "— Chọn môn học —",
+      "teacher": "Giáo viên",
+      "teacherBusy": "Đã có lịch tiết này",
+      "title": "Chỉnh sửa tiết"
+    },
+    "subtitle": "Bấm vào ô để chỉnh sửa. Xung đột giáo viên được phát hiện tự động trên toàn trường.",
+    "title": "Thời khoá biểu",
+    "titleForClass": "Thời khoá biểu — Lớp {class}",
+    "yearLabel": "Năm học"
   }
 }

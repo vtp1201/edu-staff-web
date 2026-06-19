@@ -28,7 +28,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
   const handleSave = () => {
     if (draftMode === savedMode) return;
     setSavedMode(draftMode);
-    showToast(t('Da luu cai dat quy trinh nop diem', 'Grade submission workflow saved'));
+    showToast(t('Đã lưu cài đặt quy trình nộp điểm', 'Grade submission workflow saved'));
   };
 
   const isDirty = draftMode !== savedMode;
@@ -63,18 +63,18 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
   const PUBLISH_OPTIONS = [
     {
       id: 'SELF_PUBLISH',
-      vi: 'Tu cong bo',
+      vi: 'Tự công bố',
       en: 'Self-Publish',
-      descVi: 'Giao vien nop diem, diem duoc cong bo ngay. Khong can BGH duyet.',
+      descVi: 'Giáo viên nộp điểm, điểm được công bố ngay. Không cần BGH duyệt.',
       descEn: 'Teachers submit grades and they are published immediately. No admin approval required.',
       icon: 'send',
       tint: pColor,
     },
     {
       id: 'ADMIN_APPROVAL',
-      vi: 'Duyet boi BGH',
+      vi: 'Duyệt bởi BGH',
       en: 'Admin Approval',
-      descVi: 'Giao vien nop diem, BGH phe duyet truoc khi diem duoc cong bo.',
+      descVi: 'Giáo viên nộp điểm, BGH phê duyệt trước khi điểm được công bố.',
       descEn: 'Teachers submit grades; admins review and approve before publication.',
       icon: 'checkSquare',
       tint: T.warning,
@@ -83,9 +83,9 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
 
   // ── Section 2 data ──
   const SHORTCUTS = [
-    { id: 'calendar',     icon: 'calendarDays', tint: pColor,    vi: 'Cau hinh nam hoc',             en: 'Academic Year', route: '/admin/calendar',     section: 'calendar' },
-    { id: 'grade-config', icon: 'bookOpen',     tint: T.success, vi: 'Thang diem & khung danh gia',  en: 'Grade Scale & Assessment', route: '/admin/grade-config', section: 'subjects' },
-    { id: 'assignments',  icon: 'users',        tint: T.purple,  vi: 'Phan cong giang day',          en: 'Teaching Assignments', route: '/admin/assignments',  section: 'teachers' },
+    { id: 'calendar',     icon: 'calendarDays', tint: pColor,    vi: 'Cấu hình năm học',             en: 'Academic Year', route: '/admin/calendar',     section: 'calendar' },
+    { id: 'grade-config', icon: 'bookOpen',     tint: T.success, vi: 'Thang điểm & khung đánh giá',  en: 'Grade Scale & Assessment', route: '/admin/grade-config', section: 'subjects' },
+    { id: 'assignments',  icon: 'users',        tint: T.purple,  vi: 'Phân công giảng dạy',          en: 'Teaching Assignments', route: '/admin/assignments',  section: 'teachers' },
   ];
 
   return (
@@ -106,10 +106,10 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
             onMouseEnter={(e) => { e.currentTarget.style.color = pColor; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = T.textMuted; }}>
             <Icon name="home" size={12} color="currentColor" />
-            {t('Trang chu', 'Home')}
+            {t('Trang chủ', 'Home')}
           </a>
           <Icon name="chevronRight" size={11} color={T.textMuted} />
-          <span style={{ color: T.textPrimary, fontWeight: 700 }}>{t('Cai dat', 'Settings')}</span>
+          <span style={{ color: T.textPrimary, fontWeight: 700 }}>{t('Cài đặt', 'Settings')}</span>
         </div>
 
         {/* Page title */}
@@ -122,10 +122,10 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: T.textPrimary }}>
-              {t('Cai dat truong hoc', 'School Settings')}
+              {t('Cài đặt trường học', 'School Settings')}
             </div>
             <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>
-              {t('Cac tuy chon van hanh ap dung cho toan truong va lien ket toi cac cau hinh khac.',
+              {t('Các tùy chọn vận hành áp dụng cho toàn trường và liên kết tới các cấu hình khác.',
                  'Operational toggles applied school-wide, plus links to other configuration screens.')}
             </div>
           </div>
@@ -134,17 +134,17 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
         {/* Sections */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* SECTION 1 — Grade Submission Workflow */}
+          {/* ─── SECTION 1 — Grade Submission Workflow ─── */}
           <SectionCard>
             <SectionHeader
               icon="clipboardList"
-              title={t('Quy trinh nop diem', 'Grade Submission Workflow')}
-              subtitle={t('Chon cach giao vien cong bo diem cho hoc sinh va phu huynh. Ap dung cho moi cot diem trong toan truong.',
+              title={t('Quy trình nộp điểm', 'Grade Submission Workflow')}
+              subtitle={t('Chọn cách giáo viên công bố điểm cho học sinh và phụ huynh. Áp dụng cho mọi cột điểm trong toàn trường.',
                           'Choose how teachers publish grades to students and parents. Applies to every grade column school-wide.')}
             />
 
             {/* Radio cards */}
-            <div role="radiogroup" aria-label={t('Quy trinh nop diem', 'Grade Submission Workflow')}
+            <div role="radiogroup" aria-label={t('Quy trình nộp điểm', 'Grade Submission Workflow')}
               style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>
               {PUBLISH_OPTIONS.map(opt => {
                 const active = draftMode === opt.id;
@@ -195,7 +195,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
                         {isApplied && (
                           <Badge color={T.success}>
                             <Icon name="check" size={10} color={T.success} strokeWidth={2.6} />
-                            {t('Dang ap dung', 'Currently applied')}
+                            {t('Đang áp dụng', 'Currently applied')}
                           </Badge>
                         )}
                       </div>
@@ -219,7 +219,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
             {/* Save row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
               <Button onClick={handleSave} icon="check" disabled={!isDirty}>
-                {t('Luu cai dat', 'Save settings')}
+                {t('Lưu cài đặt', 'Save settings')}
               </Button>
               {isDirty && (
                 <span style={{
@@ -227,7 +227,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
                   fontSize: 12.5, color: T.textMuted, fontWeight: 600,
                 }}>
                   <Icon name="info" size={13} color={T.textMuted} />
-                  {t('Ban co thay doi chua luu.', 'You have unsaved changes.')}
+                  {t('Bạn có thay đổi chưa lưu.', 'You have unsaved changes.')}
                 </span>
               )}
             </div>
@@ -249,28 +249,28 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
               </div>
               <div style={{ flex: 1, fontSize: 12.5, color: T.textSecondary, lineHeight: 1.65 }}>
                 <strong style={{ color: '#9A6A0F', fontWeight: 800 }}>
-                  {t('Luu y: ', 'Note: ')}
+                  {t('Lưu ý: ', 'Note: ')}
                 </strong>
-                {t('Thay doi quy trinh nop diem se ap dung ngay cho tat ca giao vien. Cac diem dang o trang thai ',
+                {t('Thay đổi quy trình nộp điểm sẽ áp dụng ngay cho tất cả giáo viên. Các điểm đang ở trạng thái ',
                    'Changing the submission workflow takes effect immediately for all teachers. Grades currently in ')}
                 <span style={{
                   display: 'inline-block', padding: '1px 7px', borderRadius: 5,
                   background: T.warning + '22', color: '#9A6A0F',
                   fontWeight: 700, fontSize: 11.5,
                 }}>
-                  {t('Cho duyet', 'Pending approval')}
+                  {t('Chờ duyệt', 'Pending approval')}
                 </span>
-                {t(' se khong bi anh huong.', ' will not be affected.')}
+                {t(' sẽ không bị ảnh hưởng.', ' will not be affected.')}
               </div>
             </div>
           </SectionCard>
 
-          {/* SECTION 2 — Config shortcuts */}
+          {/* ─── SECTION 2 — Config shortcuts ─── */}
           <SectionCard>
             <SectionHeader
               icon="externalLink"
-              title={t('Lien ket cau hinh', 'Configuration Shortcuts')}
-              subtitle={t('Mo cac man hinh cau hinh chuyen biet. Cac thiet lap chi tiet duoc quan ly tai do.',
+              title={t('Liên kết cấu hình', 'Configuration Shortcuts')}
+              subtitle={t('Mở các màn hình cấu hình chuyên biệt. Các thiết lập chi tiết được quản lý tại đó.',
                           'Jump to dedicated configuration screens. Detailed settings are managed there.')}
             />
 
@@ -283,7 +283,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
             </div>
           </SectionCard>
 
-          {/* SECTION 3 — School information (placeholder) */}
+          {/* ─── SECTION 3 — School information (placeholder) ─── */}
           <SectionCard style={{
             background: 'linear-gradient(135deg, #FAFBFD 0%, #F5F7FA 100%)',
             borderStyle: 'dashed',
@@ -301,7 +301,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
                   display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4,
                 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: T.textMuted }}>
-                    {t('Thong tin truong', 'School Information')}
+                    {t('Thông tin trường', 'School Information')}
                   </div>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -311,11 +311,11 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
                     textTransform: 'uppercase',
                   }}>
                     <Icon name="clock" size={10} color={T.textMuted} strokeWidth={2.2} />
-                    {t('Sap co', 'Coming soon')}
+                    {t('Sắp có', 'Coming soon')}
                   </span>
                 </div>
                 <div style={{ fontSize: 12.5, color: T.textMuted, lineHeight: 1.55 }}>
-                  {t('Ten truong, dia chi, logo — sap co.',
+                  {t('Tên trường, địa chỉ, logo — sắp có.',
                      'School name, address, and logo — coming soon.')}
                 </div>
               </div>
@@ -344,7 +344,7 @@ const AdminSettingsScreen = ({ lang, primaryColor, onNavigate }) => {
               background: 'transparent', color: T.textMuted, fontSize: 11, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'inherit',
             }}>
-            {t('Dat lai trang thai demo', 'Reset demo state')}
+            {t('Đặt lại trạng thái demo', 'Reset demo state')}
           </button>
         </div>
       </div>

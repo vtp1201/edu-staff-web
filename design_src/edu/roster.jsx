@@ -776,4 +776,4 @@ const rosterStyles = {
   }),
 };
 
-Object.assign(window, { StudentRosterScreen });
+Object.assign(window, { StudentRosterScreen, ROSTER_BY_CLASS, ROSTER_CLASSES });

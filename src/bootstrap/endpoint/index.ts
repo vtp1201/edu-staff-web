@@ -1,3 +1,4 @@
+export * from "./academic-records.endpoint";
 export * from "./admin-roster.endpoint";
 export * from "./admin-school-setup.endpoint";
 export * from "./assessment-scheme.endpoint";

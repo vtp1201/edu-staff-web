@@ -28,16 +28,94 @@ const TEACHER_CLASSES = [
   { name: '10A2', subject: 'Toán', students: 38, avg: 8.4, attendance: 97, lessons: 18, total: 24 },
 ];
 
-const GRADEBOOK_STUDENTS = [
-  { name: 'Nguyễn Minh Anh', scores: [9, 8, 9, 8.5], avg: 8.7 },
-  { name: 'Trần Văn Bình', scores: [7, 8, 7, 7.5], avg: 7.4 },
-  { name: 'Lê Thị Cẩm', scores: [10, 9, 10, 9.5], avg: 9.6 },
-  { name: 'Phạm Đức Dũng', scores: [6, 7, 6, 6.5], avg: 6.5 },
-  { name: 'Hoàng Thị Linh', scores: [8, 9, 8, 8.5], avg: 8.4 },
-  { name: 'Vũ Quốc Bảo', scores: [9, 7, 8, 8.0], avg: 8.1 },
-  { name: 'Đỗ Thu Hằng', scores: [7, 8, 9, 7.5], avg: 7.9 },
-  { name: 'Bùi Minh Tuấn', scores: [5, 6, 7, 6.0], avg: 6.1 },
+// ── Grade Book mock data ──────────────────────────────────────────────────────
+// Per ADR 0036 (grade-scoped Subject masters) + ADR 0031 (AssessmentScheme) +
+// ADR 0037 (per-grade ClassSubject offerings). Each entry below represents a
+// distinct grade-scoped Subject master that this teacher is assigned to;
+// `periodCount` and `requiredExamCount` are master-locked fields the teacher
+// cannot edit here (read-only header strip with a Lock icon).
+const TEACHER_SUBJECT_OFFERINGS = [
+  { id: 'sub-math-10', vi: 'Toán lớp 10', en: 'Math · Grade 10', periodCount: 4, requiredExamCount: 3, classIds: ['10A1', '10A2'] },
+  { id: 'sub-math-11', vi: 'Toán lớp 11', en: 'Math · Grade 11', periodCount: 4, requiredExamCount: 3, classIds: ['11B2'] },
+  { id: 'sub-math-12', vi: 'Toán lớp 12', en: 'Math · Grade 12', periodCount: 3, requiredExamCount: 3, classIds: ['12C1'] },
 ];
+
+// AssessmentScheme columns per grade-scoped subject.
+//   columnType: TX (thường xuyên) | GK (giữa kỳ) | CK (cuối kỳ)
+//   coefficient (hệ số): weight used in the weighted term average.
+const GRADEBOOK_SCHEMES = {
+  'sub-math-10': [
+    { id: 'tx1', vi: 'TX1 · Miệng',   en: 'TX1 · Oral',     columnType: 'TX', coefficient: 1 },
+    { id: 'tx2', vi: 'TX2 · 15ʹ',     en: 'TX2 · 15-min',   columnType: 'TX', coefficient: 1 },
+    { id: 'tx3', vi: 'TX3 · 15ʹ',     en: 'TX3 · 15-min',   columnType: 'TX', coefficient: 1 },
+    { id: 'gk',  vi: 'Giữa kỳ',       en: 'Midterm',        columnType: 'GK', coefficient: 2 },
+    { id: 'ck',  vi: 'Cuối kỳ',       en: 'Final',          columnType: 'CK', coefficient: 3 },
+  ],
+  'sub-math-11': [
+    { id: 'tx1', vi: 'TX1 · Miệng',   en: 'TX1 · Oral',     columnType: 'TX', coefficient: 1 },
+    { id: 'tx2', vi: 'TX2 · 15ʹ',     en: 'TX2 · 15-min',   columnType: 'TX', coefficient: 1 },
+    { id: 'gk',  vi: 'Giữa kỳ',       en: 'Midterm',        columnType: 'GK', coefficient: 2 },
+    { id: 'ck',  vi: 'Cuối kỳ',       en: 'Final',          columnType: 'CK', coefficient: 3 },
+  ],
+  'sub-math-12': [
+    { id: 'tx1', vi: 'TX1',           en: 'TX1',            columnType: 'TX', coefficient: 1 },
+    { id: 'tx2', vi: 'TX2',           en: 'TX2',            columnType: 'TX', coefficient: 1 },
+    { id: 'gk',  vi: 'Giữa kỳ',       en: 'Midterm',        columnType: 'GK', coefficient: 2 },
+    { id: 'ck',  vi: 'Cuối kỳ',       en: 'Final',          columnType: 'CK', coefficient: 3 },
+  ],
+};
+
+// Per (subject, class) student roster with per-column grade entries.
+// Cell encoding "value|state":
+//   value: numeric score or "—" (no entry yet)
+//   state: P = PUBLISHED, D = DRAFT, L = LOCKED
+const GRADEBOOK_DATA = {
+  'sub-math-10': {
+    '10A1': [
+      { name: 'Nguyễn Minh Anh',  cells: ['9|P',  '8|P',  '9|D',  '8.5|P', '9|L'] },
+      { name: 'Trần Văn Bình',    cells: ['7|P',  '8|P',  '7|P',  '7.5|P', '7|L'] },
+      { name: 'Lê Thị Cẩm',       cells: ['10|P', '9|P',  '10|P', '9.5|P', '9.5|L'] },
+      { name: 'Phạm Đức Dũng',    cells: ['6|D',  '7|P',  '6|D',  '6.5|P', '6|L'] },
+      { name: 'Hoàng Thị Linh',   cells: ['8|P',  '9|P',  '8|P',  '8.5|P', '8|L'] },
+      { name: 'Vũ Quốc Bảo',      cells: ['9|P',  '7|P',  '8|D',  '8|P',   '8|L'] },
+      { name: 'Đỗ Thu Hằng',      cells: ['7|P',  '8|P',  '9|P',  '7.5|D', '7|L'] },
+      { name: 'Bùi Minh Tuấn',    cells: ['5|D',  '6|P',  '7|P',  '6|P',   '6|L'] },
+    ],
+    '10A2': [
+      { name: 'Nguyễn Hoài Anh',  cells: ['8|P',  '9|P',  '9|P',  '8.5|P', '9|D'] },
+      { name: 'Lý Thanh Hà',      cells: ['9|P',  '8|P',  '9|D',  '8|P',   '8|D'] },
+      { name: 'Trần Khải An',     cells: ['7|P',  '8|P',  '7|P',  '7|D',   '—|D'] },
+      { name: 'Đặng Minh Phúc',   cells: ['6|D',  '7|P',  '7|D',  '—|D',   '—|D'] },
+      { name: 'Phạm Diệu Linh',   cells: ['9|P',  '10|P', '9|P',  '9|P',   '9|D'] },
+    ],
+  },
+  'sub-math-11': {
+    '11B2': [
+      { name: 'Phan Anh Khoa',    cells: ['8|P',  '9|P',  '9|D',  '9|D'] },
+      { name: 'Đặng Thuỳ Linh',   cells: ['9|P',  '9|P',  '10|D', '9|D'] },
+      { name: 'Trần Quốc Việt',   cells: ['7|P',  '8|P',  '7|D',  '—|D'] },
+      { name: 'Mai Thu Hà',       cells: ['8|P',  '7|P',  '8|D',  '—|D'] },
+      { name: 'Lưu Trọng An',     cells: ['6|D',  '7|D',  '—|D',  '—|D'] },
+      { name: 'Nguyễn Hà My',     cells: ['9|P',  '9|D',  '—|D',  '—|D'] },
+    ],
+  },
+  'sub-math-12': {
+    '12C1': [
+      { name: 'Lê Hoàng Nhật',    cells: ['9|P',  '9|P',  '8|P',  '9|L'] },
+      { name: 'Đinh Thị Quỳnh',   cells: ['8|P',  '9|P',  '9|P',  '9|L'] },
+      { name: 'Phạm Hữu Phúc',    cells: ['7|P',  '8|D',  '7|P',  '7|L'] },
+      { name: 'Vũ Khánh Linh',    cells: ['8|P',  '8|P',  '7|D',  '8|L'] },
+      { name: 'Bùi Tuấn Kiệt',    cells: ['6|P',  '5|D',  '6|P',  '—|L'] },
+    ],
+  },
+};
+
+// Column type → tint colour used to band header backgrounds (8% bg per spec).
+const COLUMN_TYPE_TINT = {
+  TX: T.primary,
+  GK: T.warning,
+  CK: T.error,
+};
 
 const TEACHER_STUDENTS = [
   { name: 'Nguyễn Minh Anh', class: '10A1', gpa: 8.7, attendance: '96%', status: 'good' },
@@ -200,65 +278,474 @@ const TeacherDashboardHome = ({ lang, t, pColor, onNavigate }) => (
   </div>
 );
 
+// ── Grade Book ────────────────────────────────────────────────────────────────
+// Reads the AssessmentScheme columns for the selected grade-scoped Subject ×
+// academic-year offering. Master-locked fields (periodCount, requiredExamCount)
+// are surfaced in a read-only header strip with a Lock icon.
+//
+// Cell state machine (per grade entry):
+//   DRAFT     → muted, light-grey bg, grey dot top-right
+//   PUBLISHED → normal white cell, score coloured by value
+//   LOCKED    → white cell with a small Lock icon in the corner
 const TeacherGrades = ({ lang, t, pColor }) => {
-  const [selectedClass, setSelectedClass] = React.useState('10A1');
-  const cols = [t('KT Miệng', 'Oral'), t('KT 15\'', '15-min'), t('KT 1 tiết', '45-min'), t('Giữa kỳ', 'Midterm')];
+  const [selectedSubjectId, setSelectedSubjectId] = React.useState(TEACHER_SUBJECT_OFFERINGS[0].id);
+  const subject = TEACHER_SUBJECT_OFFERINGS.find(s => s.id === selectedSubjectId);
+  const [selectedClass, setSelectedClass] = React.useState(subject.classIds[0]);
+  const [loading, setLoading] = React.useState(false);
+
+  // Simulate the AssessmentScheme fetch when the offering changes. Snap class
+  // selection to a valid class for the new offering.
+  React.useEffect(() => {
+    if (!subject.classIds.includes(selectedClass)) setSelectedClass(subject.classIds[0]);
+    setLoading(true);
+    const tid = window.setTimeout(() => setLoading(false), 480);
+    return () => window.clearTimeout(tid);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubjectId]);
+
+  const columns = GRADEBOOK_SCHEMES[selectedSubjectId] || [];
+  const rows = (GRADEBOOK_DATA[selectedSubjectId] || {})[selectedClass] || [];
+
+  // ── Helpers ──
+  const parseCell = (raw) => {
+    const [v, s] = raw.split('|');
+    return {
+      value: v === '—' ? null : parseFloat(v),
+      state: { P: 'PUBLISHED', D: 'DRAFT', L: 'LOCKED' }[s] || 'PUBLISHED',
+    };
+  };
+
+  const rowWeightedAvg = (cells) => {
+    let num = 0, den = 0;
+    cells.forEach((raw, i) => {
+      const { value } = parseCell(raw);
+      const coef = columns[i]?.coefficient || 0;
+      if (value !== null) { num += value * coef; den += coef; }
+    });
+    return den ? num / den : null;
+  };
+
+  const colClassAvg = (ci) => {
+    let sum = 0, cnt = 0;
+    rows.forEach(r => {
+      const { value } = parseCell(r.cells[ci]);
+      if (value !== null) { sum += value; cnt += 1; }
+    });
+    return cnt ? sum / cnt : null;
+  };
+
+  // Weighted term average for the whole class = sum(colAvg × coef) / sum(coef).
+  const classWeightedAvg = () => {
+    let num = 0, den = 0;
+    columns.forEach((c, i) => {
+      const v = colClassAvg(i);
+      if (v !== null) { num += v * c.coefficient; den += c.coefficient; }
+    });
+    return den ? num / den : null;
+  };
+
+  // Existing rank logic (Giỏi/Khá/TB) — reused as-is.
+  const rankBadge = (avg) =>
+    avg == null ? null :
+    avg >= 8.5 ? { vi: 'Giỏi', en: 'Excellent', color: T.success } :
+    avg >= 7   ? { vi: 'Khá',  en: 'Good',      color: pColor } :
+                 { vi: 'TB',   en: 'Average',   color: T.warning };
+
+  const scoreColor = (v) =>
+    v == null ? T.textMuted : v < 5 ? T.error : v >= 8 ? T.success : T.textPrimary;
+
   return (
     <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-      <div style={{ padding: '18px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', gap: 12, alignItems: 'center' }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: T.textPrimary, flex: 1 }}>{t('Bảng điểm', 'Grade Book')}</div>
-        {TEACHER_CLASSES.map(c => (
-          <button key={c.name} onClick={() => setSelectedClass(c.name)}
-            style={{ padding: '5px 14px', borderRadius: 6, border: `1.5px solid ${selectedClass === c.name ? pColor : T.border}`, background: selectedClass === c.name ? pColor : 'transparent', color: selectedClass === c.name ? '#fff' : T.textSecondary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {c.name}
-          </button>
-        ))}
-      </div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: T.bg }}>
-              <th style={{ padding: '10px 24px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: T.textMuted, whiteSpace: 'nowrap' }}>#</th>
-              <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: T.textMuted }}>{t('Họ và tên', 'Full Name')}</th>
-              {cols.map(c => <th key={c} style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: T.textMuted, textAlign: 'center' }}>{c}</th>)}
-              <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: T.textMuted, textAlign: 'center' }}>{t('Trung bình', 'Average')}</th>
-              <th style={{ padding: '10px 16px', fontSize: 12, fontWeight: 700, color: T.textMuted, textAlign: 'center' }}>{t('Xếp loại', 'Grade')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {GRADEBOOK_STUDENTS.map((s, i) => {
-              const rank = s.avg >= 8.5 ? { label: t('Giỏi', 'Excellent'), color: T.success } : s.avg >= 7 ? { label: t('Khá', 'Good'), color: pColor } : { label: t('TB', 'Average'), color: T.warning };
+      {/* ── Top bar: grade-scoped subject offering + class pills ── */}
+      <div style={{
+        padding: '16px 24px', borderBottom: `1px solid ${T.border}`,
+        display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, minWidth: 220 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {t('Môn (theo khối)', 'Subject (grade-scoped)')}
+          </div>
+          <select
+            value={selectedSubjectId}
+            onChange={e => setSelectedSubjectId(e.target.value)}
+            style={{
+              padding: '8px 34px 8px 12px', borderRadius: 8,
+              border: `1.5px solid ${T.border}`, background: T.card,
+              fontSize: 14, fontWeight: 800, color: T.textPrimary,
+              cursor: 'pointer', fontFamily: 'inherit', appearance: 'none',
+              backgroundImage:
+                `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><polyline points='1,1 5,5 9,1' fill='none' stroke='%238898A9' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+            }}>
+            {TEACHER_SUBJECT_OFFERINGS.map(s => (
+              <option key={s.id} value={s.id}>{t(s.vi, s.en)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {t('Lớp', 'Class')}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {subject.classIds.map(cid => {
+              const active = selectedClass === cid;
               return (
-                <tr key={i} style={{ borderTop: `1px solid ${T.border}` }}
-                  onMouseEnter={e => e.currentTarget.style.background = T.bg}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '12px 24px', fontSize: 12, color: T.textMuted }}>{i + 1}</td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Avatar initials={s.name.split(' ').slice(-1)[0][0]} color={pColor} size={28} />
-                      <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{s.name}</span>
-                    </div>
-                  </td>
-                  {s.scores.map((sc, j) => (
-                    <td key={j} style={{ padding: '12px 16px', textAlign: 'center', fontSize: 13, fontWeight: 600, color: sc < 5 ? T.error : sc >= 8 ? T.success : T.textPrimary }}>
-                      {sc}
-                    </td>
-                  ))}
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: rank.color }}>{s.avg.toFixed(1)}</span>
-                  </td>
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                    <Badge color={rank.color}>{rank.label}</Badge>
-                  </td>
-                </tr>
+                <button key={cid} onClick={() => setSelectedClass(cid)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 6,
+                    border: `1.5px solid ${active ? pColor : T.border}`,
+                    background: active ? pColor : 'transparent',
+                    color: active ? '#fff' : T.textSecondary,
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'inherit', transition: 'all 0.15s',
+                  }}>
+                  {cid}
+                </button>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 12px', background: T.bg, borderRadius: 8, border: `1px solid ${T.border}` }}>
+          <Icon name="users" size={12} color={pColor} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, fontVariantNumeric: 'tabular-nums' }}>
+            {rows.length} {t('học sinh', 'students')}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Master-locked fields strip (read-only) ── */}
+      <div style={{
+        padding: '12px 24px', background: T.bg,
+        borderBottom: `1px solid ${T.border}`,
+        display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+      }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 10.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <Icon name="lock" size={12} color={T.textMuted} strokeWidth={2.2} />
+          {t('Khoá theo Subject master', 'Locked by subject master')}
+        </div>
+        <LockedField label={t('Số tiết / tuần', 'Periods / week')} value={subject.periodCount} />
+        <LockedField label={t('Bài KT bắt buộc', 'Required exams')} value={subject.requiredExamCount} />
+        <LockedField label="Subject ID" value={subject.id} mono />
+        <div style={{ flex: 1 }} />
+        <div style={{ fontSize: 11.5, color: T.textMuted, fontStyle: 'italic', maxWidth: 360 }}>
+          {t('Cột điểm bên dưới lấy từ AssessmentScheme của môn này.',
+             "Columns below are sourced from this subject's AssessmentScheme.")}
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      <div style={{ overflowX: 'auto' }}>
+        {loading ? (
+          <GradeBookSkeleton />
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={thStyleMuted} aria-label="#">#</th>
+                <th style={{ ...thStyleMuted, textAlign: 'left', paddingLeft: 16 }}>{t('Họ và tên', 'Full Name')}</th>
+                {columns.map(c => {
+                  const tint = COLUMN_TYPE_TINT[c.columnType];
+                  return (
+                    <th key={c.id} style={{
+                      padding: '10px 10px 12px', textAlign: 'center', minWidth: 102,
+                      background: tint + '14',
+                      borderBottom: `2px solid ${tint}55`,
+                      verticalAlign: 'bottom',
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{
+                            fontSize: 9.5, fontWeight: 800, color: tint,
+                            background: tint + '22',
+                            padding: '2px 7px', borderRadius: 4, letterSpacing: '0.08em',
+                          }}>{c.columnType}</span>
+                          <span style={{
+                            fontSize: 10, fontWeight: 800, color: T.textSecondary,
+                            background: T.card, border: `1px solid ${T.border}`,
+                            padding: '2px 7px', borderRadius: 4,
+                            fontFamily: 'ui-monospace, Menlo, monospace',
+                            fontVariantNumeric: 'tabular-nums',
+                          }}>×{c.coefficient}</span>
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: T.textPrimary, whiteSpace: 'nowrap' }}>
+                          {t(c.vi, c.en)}
+                        </div>
+                      </div>
+                    </th>
+                  );
+                })}
+                <th style={{ ...thStyleMuted, background: T.bg, borderBottom: `2px solid ${T.border}`, paddingTop: 10, paddingBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: T.textPrimary }}>{t('TB kỳ', 'Term Avg')}</div>
+                  <div style={{ fontSize: 9.5, color: T.textMuted, marginTop: 2, fontWeight: 700, letterSpacing: '0.05em' }}>
+                    {t('THEO HỆ SỐ', 'WEIGHTED')}
+                  </div>
+                </th>
+                <th style={{ ...thStyleMuted, background: T.bg, borderBottom: `2px solid ${T.border}`, paddingTop: 10, paddingBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: T.textPrimary }}>{t('Xếp loại', 'Rank')}</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((s, ri) => {
+                const avg = rowWeightedAvg(s.cells);
+                const rank = rankBadge(avg);
+                return (
+                  <tr key={ri}
+                    onMouseEnter={e => e.currentTarget.style.background = T.bg}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <td style={tdStyle}>
+                      <span style={{ fontSize: 12, color: T.textMuted, fontVariantNumeric: 'tabular-nums' }}>{ri + 1}</span>
+                    </td>
+                    <td style={{ ...tdStyle, paddingLeft: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <Avatar initials={s.name.split(' ').slice(-1)[0][0]} color={pColor} size={28} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{s.name}</span>
+                      </div>
+                    </td>
+                    {s.cells.map((raw, ci) => (
+                      <GradeCell key={ci} raw={raw} parseCell={parseCell} scoreColor={scoreColor} />
+                    ))}
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      <span style={{
+                        fontSize: 14, fontWeight: 800,
+                        color: rank ? rank.color : T.textMuted,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {avg != null ? avg.toFixed(2) : '—'}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                      {rank
+                        ? <Badge color={rank.color}>{t(rank.vi, rank.en)}</Badge>
+                        : <span style={{ fontSize: 11, color: T.textMuted }}>—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              {(() => {
+                const wAvg = classWeightedAvg();
+                const wRank = rankBadge(wAvg);
+                const footCellBase = {
+                  padding: '14px 12px',
+                  background: pColor + '0A',
+                  borderTop: `2px solid ${pColor}33`,
+                  textAlign: 'center',
+                };
+                return (
+                  <tr>
+                    <td colSpan={2} style={{ ...footCellBase, textAlign: 'left', padding: '14px 24px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 800, color: pColor, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        <Icon name="chart" size={13} color={pColor} strokeWidth={2.2} />
+                        {t('TB kỳ — trung bình lớp', 'Term Avg — class')}
+                      </div>
+                    </td>
+                    {columns.map((c, ci) => {
+                      const v = colClassAvg(ci);
+                      return (
+                        <td key={c.id} style={footCellBase}>
+                          <span style={{
+                            fontSize: 14, fontWeight: 800,
+                            color: scoreColor(v), fontVariantNumeric: 'tabular-nums',
+                          }}>
+                            {v != null ? v.toFixed(2) : '—'}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td style={footCellBase}>
+                      <span style={{
+                        fontSize: 15, fontWeight: 900,
+                        color: wRank ? wRank.color : T.textMuted,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {wAvg != null ? wAvg.toFixed(2) : '—'}
+                      </span>
+                    </td>
+                    <td style={footCellBase}>
+                      {wRank
+                        ? <Badge color={wRank.color}>{t(wRank.vi, wRank.en)}</Badge>
+                        : <span style={{ fontSize: 11, color: T.textMuted }}>—</span>}
+                    </td>
+                  </tr>
+                );
+              })()}
+            </tfoot>
+          </table>
+        )}
+      </div>
+
+      {/* ── Legend ── */}
+      <div style={{
+        padding: '12px 24px', borderTop: `1px solid ${T.border}`,
+        display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap',
+        fontSize: 11.5, color: T.textMuted,
+      }}>
+        <span style={{ fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: 10.5 }}>
+          {t('Trạng thái điểm', 'Grade states')}
+        </span>
+        <LegendChip
+          swatch={<span style={{ width: 7, height: 7, borderRadius: '50%', background: T.textMuted, opacity: 0.6, display: 'inline-block' }} />}
+          label={`DRAFT · ${t('nháp', 'draft')}`}
+        />
+        <LegendChip
+          swatch={<span style={{ width: 10, height: 10, borderRadius: 3, background: T.card, border: `1px solid ${T.border}`, display: 'inline-block' }} />}
+          label={`PUBLISHED · ${t('đã công bố', 'published')}`}
+        />
+        <LegendChip
+          swatch={<Icon name="lock" size={11} color={T.textMuted} strokeWidth={2} />}
+          label={`LOCKED · ${t('đã khoá', 'locked')}`}
+        />
+        <div style={{ flex: 1 }} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: T.primary + '22' }} /> TX
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: T.warning + '22', marginLeft: 8 }} /> GK
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 3, background: T.error + '22', marginLeft: 8 }} /> CK
+        </span>
       </div>
     </div>
   );
 };
+
+// ── Grade Book sub-components ─────────────────────────────────────────────────
+
+const thStyleMuted = {
+  padding: '12px 16px', textAlign: 'center',
+  fontSize: 11, fontWeight: 800, color: T.textMuted,
+  background: T.bg, borderBottom: `1px solid ${T.border}`,
+  letterSpacing: '0.05em', textTransform: 'uppercase',
+  whiteSpace: 'nowrap',
+};
+const tdStyle = {
+  padding: '10px 12px',
+  borderBottom: `1px solid ${T.border}`,
+  verticalAlign: 'middle',
+};
+
+const LockedField = ({ label, value, mono }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div style={{ fontSize: 9.5, fontWeight: 800, color: T.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
+    <div style={{
+      fontSize: 13, fontWeight: 800, color: T.textPrimary,
+      fontFamily: mono ? 'ui-monospace, Menlo, monospace' : 'inherit',
+      fontVariantNumeric: 'tabular-nums',
+    }}>
+      {value}
+    </div>
+  </div>
+);
+
+const LegendChip = ({ swatch, label }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    {swatch}
+    <span style={{ fontSize: 11, fontWeight: 700, color: T.textSecondary, fontFamily: 'ui-monospace, Menlo, monospace', letterSpacing: '0.02em' }}>
+      {label}
+    </span>
+  </span>
+);
+
+const GradeCell = ({ raw, parseCell, scoreColor }) => {
+  const { value, state } = parseCell(raw);
+  const isDraft = state === 'DRAFT';
+  const isLocked = state === 'LOCKED';
+  return (
+    <td style={{
+      padding: 4,
+      borderBottom: `1px solid ${T.border}`,
+      verticalAlign: 'middle',
+    }}>
+      <div style={{
+        position: 'relative',
+        padding: '8px 12px',
+        textAlign: 'center',
+        background: isDraft ? '#F5F7FA' : T.card,
+        border: `1px solid ${isDraft ? T.border : 'transparent'}`,
+        borderRadius: 7,
+        fontSize: 14, fontWeight: 700,
+        color: isDraft
+          ? T.textMuted
+          : (value == null ? T.textMuted : scoreColor(value)),
+        fontVariantNumeric: 'tabular-nums',
+        minHeight: 34,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+        title={value == null ? state : `${value} · ${state}`}>
+        {value == null
+          ? <span style={{ color: T.textMuted, fontWeight: 600 }}>—</span>
+          : value}
+
+        {isDraft && (
+          <span style={{
+            position: 'absolute', top: 4, right: 4,
+            width: 7, height: 7, borderRadius: '50%',
+            background: T.textMuted, opacity: 0.55,
+          }} aria-label="DRAFT" />
+        )}
+        {isLocked && (
+          <span style={{
+            position: 'absolute', top: 3, right: 3,
+            display: 'inline-flex',
+          }} aria-label="LOCKED">
+            <Icon name="lock" size={12} color={T.textMuted} strokeWidth={2} />
+          </span>
+        )}
+      </div>
+    </td>
+  );
+};
+
+const GradeBookSkeleton = () => (
+  <div style={{ padding: 24 }}>
+    {/* Header row */}
+    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <div style={{ flex: '0 0 220px', height: 38, borderRadius: 6, background: T.bg }} />
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} style={{
+          flex: 1, height: 38, borderRadius: 6,
+          background: 'linear-gradient(90deg, #EEF1F6 0%, #F8FAFC 50%, #EEF1F6 100%)',
+          backgroundSize: '200% 100%',
+          animation: 'gb-shimmer 1.2s linear infinite',
+        }} />
+      ))}
+    </div>
+    {/* Body rows */}
+    {Array.from({ length: 6 }).map((_, ri) => (
+      <div key={ri} style={{ display: 'flex', gap: 10, marginBottom: 9 }}>
+        <div style={{ flex: '0 0 220px', height: 28, borderRadius: 6, background: T.bg }} />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} style={{
+            flex: 1, height: 28, borderRadius: 6,
+            background: 'linear-gradient(90deg, #F2F5F9 0%, #FAFBFD 50%, #F2F5F9 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'gb-shimmer 1.2s linear infinite',
+            animationDelay: `${ri * 0.08}s`,
+          }} />
+        ))}
+      </div>
+    ))}
+    <div style={{
+      marginTop: 10, fontSize: 11.5, color: T.textMuted,
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+    }}>
+      <span style={{
+        width: 12, height: 12, borderRadius: '50%',
+        border: `2px solid ${T.border}`, borderTopColor: T.primary,
+        display: 'inline-block', animation: 'gb-spin 0.8s linear infinite',
+      }} />
+      {'Đang tải AssessmentScheme…'}
+    </div>
+    <style>{`
+      @keyframes gb-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+      @keyframes gb-spin { to { transform: rotate(360deg); } }
+    `}</style>
+  </div>
+);
 
 const TeacherClasses = ({ lang, t, pColor }) => (
   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -1100,4 +1587,8 @@ const pickerItemStyle = (active, pColor) => ({
   fontSize: 12.5, fontWeight: active ? 700 : 500, fontFamily: 'inherit', textAlign: 'left',
 });
 
-Object.assign(window, { TeacherScreen, PrincipalTeachersScreen, TeacherAssignmentSheet });
+Object.assign(window, {
+  TeacherScreen, PrincipalTeachersScreen, TeacherAssignmentSheet,
+  // Shared with grade-entry.jsx
+  TEACHER_SUBJECT_OFFERINGS, GRADEBOOK_SCHEMES, GRADEBOOK_DATA,
+});

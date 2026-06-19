@@ -28,6 +28,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
+| SSE Disconnect Banner + Pending-Message Pill | shell-level (DashboardLayout) | `components/shared/sse-status/` | ⬜ US-E08.6 |
 | Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 |
 | Notifications Center | `(app)/(shared)/notifications` | `features/notification` | 🎨 design-ready (US-E10.2; `notifications.jsx` 1506; SSE decision 0009) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1; `messaging.jsx` 1506) |
@@ -45,7 +46,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
 | Exam Bank + Builder | `(app)/teacher/exam-bank`,`/exam-bank/create`,`/exam-bank/:id/edit` | `features/exam-bank` | 🎨 design-ready (US-E11.3; `exam-bank.jsx` 1506) |
 | Teaching Plan / PPCT | `(app)/teacher/teaching-plan` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
-| Schedule | `(app)/teacher/schedule` | `features/schedule` | ⬜ |
+| Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | 🎨 design-ready (US-E15.2; `timetable-view.jsx` edustaff_5) |
 | Classes / Students | `(app)/teacher/classes`,`/students` | `features/teacher` | ✅ US-E13.1 |
 
 ## Principal / Admin (E03, E09, E10, E11, E12 Admin Core, E14 Academic Records)
@@ -87,13 +88,14 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
-| Courses + lesson player | `(app)/student/courses`,`/courses/[id]` | `features/lms` | ⬜ (E11) |
+| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ⬜ US-E11.6 (design-ready; `student.jsx` edustaff_5) |
 | Assignments | `(app)/student/assignments` | `features/lms` | ⬜ (E11) |
-| Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | 🎨 design-ready (US-E11.1; `exam.jsx` 1506) |
+| Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | 🎨 design-ready (US-E09.2; `discipline.jsx` 1506) |
-| Schedule / Resources | `(app)/student/schedule`,`/resources` | `features/schedule`,`lms` | ⬜ |
+| **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| Resources | `(app)/student/resources` | `features/lms` | ⬜ |
 
 ## Parent (core, E09 conduct, E13/E14 grades)
 
@@ -102,7 +104,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
-| Schedule | `(app)/parent/schedule` | `features/schedule` | ⬜ |
+| **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| **Discipline & Leave (parent view for child)** | `(app)/parent/discipline` | `features/discipline` | 🎨 design-ready (US-E09.4; `discipline.jsx` `ParentDisciplineScreen` edustaff_5) |
 
 ## Ghi chú
 
@@ -141,3 +144,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/audit-log.jsx` — Audit Log (US-E12.12)
   - `design_src/edu/admin-settings.jsx` — Admin Settings / gradePublishMode (US-E12.11)
 - Chi tiet pixel cu (reference only): file `untitled.pen` (mo bang Pencil MCP).
+- **edustaff_5 handoff (2026-06-19, ADR 0044)** adds:
+  - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3, in-flight)
+  - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1 student/parent; US-E15.2 teacher)
+  - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
+  - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
+  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote (US-E10.4)

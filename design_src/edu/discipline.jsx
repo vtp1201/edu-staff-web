@@ -66,6 +66,24 @@ const LEAVE_TYPES = [
   { id: 'other', vi: 'Lý do khác', en: 'Other', icon: 'fileText', color: T.textMuted },
 ];
 
+// ── Staff leave (E07 — staff track) ──────────────────────────────────────────
+// Visible only to ADMIN / MANAGER (BGH). Mirrors the student leave board's
+// approve/reject UX with staff-specific fields (department, employment role,
+// staff leave types: annual / sick / personal).
+const STAFF_LEAVE_REQUESTS = [
+  { id: 's1', staff: 'Nguyễn Thị Hương', staffRoleVi: 'GVBM · Toán',     staffRoleEn: 'Math teacher',      dept: 'Tổ Toán',       avatar: 'NH', color: T.primary, reason: 'Khám sức khoẻ định kỳ tại BV Bạch Mai',                      reasonEn: 'Annual health check at Bach Mai Hospital',         startDate: '03/05/2026', endDate: '03/05/2026', days: 1, type: 'sick',     status: 'pending',   submittedAt: '29/04/2026 09:10' },
+  { id: 's2', staff: 'Trần Văn Minh',    staffRoleVi: 'GVBM · Vật Lý',   staffRoleEn: 'Physics teacher',   dept: 'Tổ Lý-Hoá',     avatar: 'TM', color: T.purple,  reason: 'Tham dự hội thảo chuyên môn ngành Vật Lý tại TP.HCM',         reasonEn: 'Subject-specialist conference in HCMC',           startDate: '05/05/2026', endDate: '07/05/2026', days: 3, type: 'annual',   status: 'approved',  approvedByVi: 'BGH', approvedByEn: 'Admin', submittedAt: '20/04/2026 14:00' },
+  { id: 's3', staff: 'Lê Thị Hoa',       staffRoleVi: 'GVBM · Hoá Học',  staffRoleEn: 'Chemistry teacher', dept: 'Tổ Lý-Hoá',     avatar: 'LH', color: T.success, reason: 'Việc gia đình đột xuất — đám tang người thân',                 reasonEn: 'Family bereavement',                              startDate: '30/04/2026', endDate: '01/05/2026', days: 2, type: 'personal', status: 'approved',  approvedByVi: 'BGH', approvedByEn: 'Admin', submittedAt: '29/04/2026 06:20' },
+  { id: 's4', staff: 'Đỗ Thị Mai',       staffRoleVi: 'GVBM · Tiếng Anh', staffRoleEn: 'English teacher',  dept: 'Tổ Ngoại Ngữ',  avatar: 'DM', color: T.warning, reason: 'Bị cảm sốt, có giấy chứng nhận của bác sĩ',                    reasonEn: 'Fever — doctor’s note attached',                  startDate: '29/04/2026', endDate: '30/04/2026', days: 2, type: 'sick',     status: 'pending',   submittedAt: '29/04/2026 07:00' },
+  { id: 's5', staff: 'Phạm Quốc Bảo',    staffRoleVi: 'GVBM · Ngữ Văn',  staffRoleEn: 'Literature teacher', dept: 'Tổ Văn-Sử',    avatar: 'PB', color: T.teal,    reason: 'Nghỉ phép năm theo lịch — đi du lịch cùng gia đình',          reasonEn: 'Annual leave — family trip',                      startDate: '02/05/2026', endDate: '04/05/2026', days: 3, type: 'annual',   status: 'rejected',  rejectedByVi: 'BGH', rejectedByEn: 'Admin', rejectReason: 'Trùng lịch hội nghị giáo viên — vui lòng dời sang tuần sau.', submittedAt: '26/04/2026 11:00' },
+];
+
+const STAFF_LEAVE_TYPES = [
+  { id: 'annual',   vi: 'Nghỉ phép năm',         en: 'Annual leave', icon: 'calendar', color: T.primary },
+  { id: 'sick',     vi: 'Nghỉ ốm',               en: 'Sick leave',   icon: 'info',     color: T.error },
+  { id: 'personal', vi: 'Việc riêng / gia đình', en: 'Personal',     icon: 'user',     color: T.purple },
+];
+
 // ── Small reusable: conduct badge ─────────────────────────────────────────────
 const ConductBadge = ({ grade, t }) => {
   const cfg = CONDUCT_GRADES.find(g => g.id === grade) || CONDUCT_GRADES[1];
@@ -514,24 +532,206 @@ const LeaveManagementTab = ({ lang, t, pColor, role }) => {
   );
 };
 
+// ── TAB 4: Nghỉ phép nhân sự (ADMIN / MANAGER only) ──────────────────────────
+// E07 — staff track. Same approve/reject UX template as LeaveManagementTab,
+// adapted for staff (department, employment role, annual/sick/personal types).
+const StaffLeaveTab = ({ lang, t, pColor }) => {
+  const [requests, setRequests] = React.useState(STAFF_LEAVE_REQUESTS);
+  const [filter, setFilter] = React.useState('all');
+  const [typeFilter, setTypeFilter] = React.useState('all');
+  const [rejectModal, setRejectModal] = React.useState(null);
+  const [rejectReason, setRejectReason] = React.useState('');
+
+  const filtered = requests.filter(r =>
+    (filter === 'all' || r.status === filter) &&
+    (typeFilter === 'all' || r.type === typeFilter)
+  );
+
+  const handleApprove = (id) => {
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved', approvedByVi: 'BGH', approvedByEn: 'Admin' } : r));
+  };
+  const handleReject = (id) => {
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', rejectedByVi: 'BGH', rejectedByEn: 'Admin', rejectReason: rejectReason || t('Không đáp ứng điều kiện.', 'Does not meet criteria.') } : r));
+    setRejectModal(null); setRejectReason('');
+  };
+
+  const STAFF_TYPE_MAP = Object.fromEntries(STAFF_LEAVE_TYPES.map(l => [l.id, l]));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Stats — status counts mirror the student tab */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        {['pending', 'approved', 'rejected'].map(s => {
+          const sc = LEAVE_STATUS[s];
+          const count = requests.filter(r => r.status === s).length;
+          return (
+            <div key={s} style={{ background: T.card, borderRadius: 12, border: `1px solid ${s === 'pending' && count > 0 ? sc.color + '40' : T.border}`, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: sc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={sc.icon} size={18} color={sc.color} strokeWidth={2} />
+              </div>
+              <div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: sc.color, lineHeight: 1 }}>{count}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{t(sc.vi, sc.en)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* List */}
+      <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary, flex: 1, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {t('Đơn nghỉ phép nhân sự', 'Staff Leave Requests')}
+            <span style={{
+              fontSize: 9.5, fontWeight: 800, color: T.error, background: T.errorLight,
+              padding: '2px 7px', borderRadius: 4, letterSpacing: '0.06em',
+            }}>{t('BGH', 'ADMIN')}</span>
+          </div>
+          {/* Type filter */}
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+            style={{ padding: '5px 10px', border: `1px solid ${T.border}`, borderRadius: 7, fontSize: 12, fontFamily: 'inherit', outline: 'none', background: T.bg, cursor: 'pointer' }}>
+            <option value="all">{t('Tất cả loại nghỉ', 'All types')}</option>
+            {STAFF_LEAVE_TYPES.map(lt => <option key={lt.id} value={lt.id}>{t(lt.vi, lt.en)}</option>)}
+          </select>
+          {/* Status filter pills */}
+          {['all', 'pending', 'approved', 'rejected'].map(f => {
+            const sc = f !== 'all' ? LEAVE_STATUS[f] : null;
+            return (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                padding: '5px 12px', border: `1.5px solid ${filter === f ? (sc?.color || pColor) : T.border}`,
+                borderRadius: 7, background: filter === f ? (sc?.color || pColor) + '12' : 'transparent',
+                color: filter === f ? (sc?.color || pColor) : T.textMuted,
+                fontSize: 12, fontWeight: filter === f ? 700 : 500, cursor: 'pointer',
+              }}>{f === 'all' ? t('Tất cả', 'All') : t(sc.vi, sc.en)}</button>
+            );
+          })}
+        </div>
+
+        {filtered.map((req, i) => {
+          const sc = LEAVE_STATUS[req.status];
+          const lt = STAFF_TYPE_MAP[req.type] || STAFF_LEAVE_TYPES[2];
+          return (
+            <div key={req.id} style={{ padding: '16px 20px', borderBottom: i < filtered.length - 1 ? `1px solid ${T.border}` : 'none', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+              {/* Status accent bar */}
+              <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, background: sc.color, flexShrink: 0 }} />
+              {/* Avatar */}
+              <Avatar initials={req.avatar} color={req.color} size={38} style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: T.textPrimary }}>{req.staff}</span>
+                  <Badge color={T.textSecondary} bg={T.bg} style={{ fontSize: 10 }}>{t(req.staffRoleVi, req.staffRoleEn)}</Badge>
+                  <Badge color={lt.color} style={{ fontSize: 10 }}>
+                    <Icon name={lt.icon} size={10} color={lt.color} strokeWidth={2.4} />
+                    {t(lt.vi, lt.en)}
+                  </Badge>
+                </div>
+                <div style={{ fontSize: 13, color: T.textPrimary, marginBottom: 6, lineHeight: 1.5 }}>
+                  <span style={{ fontWeight: 600 }}>{t('Lý do:', 'Reason:')}</span> {t(req.reason, req.reasonEn)}
+                </div>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="calendar" size={12} color={T.textMuted} />
+                    <span style={{ fontSize: 12, color: T.textMuted }}>
+                      {req.startDate}{req.endDate !== req.startDate ? ` → ${req.endDate}` : ''} ({req.days} {t('ngày', req.days > 1 ? 'days' : 'day')})
+                    </span>
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="briefcase" size={12} color={T.textMuted} />
+                    <span style={{ fontSize: 12, color: T.textMuted }}>{req.dept}</span>
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name="clock" size={12} color={T.textMuted} />
+                    <span style={{ fontSize: 12, color: T.textMuted }}>{t(`Nộp ${req.submittedAt}`, `Submitted ${req.submittedAt}`)}</span>
+                  </div>
+                </div>
+                {req.status === 'rejected' && req.rejectReason && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: T.errorLight, borderRadius: 7, border: `1px solid ${T.error}20`, fontSize: 12, color: T.error }}>
+                    <span style={{ fontWeight: 700 }}>{t('Lý do từ chối:', 'Rejection reason:')}</span> {req.rejectReason}
+                  </div>
+                )}
+                {req.status === 'approved' && (req.approvedByVi || req.approvedByEn) && (
+                  <div style={{ marginTop: 8, fontSize: 11.5, color: T.success, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <Icon name="check" size={11} color={T.success} strokeWidth={2.4} />
+                    {t(`Duyệt bởi ${req.approvedByVi}`, `Approved by ${req.approvedByEn}`)}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+                <Badge color={sc.color} bg={sc.bg}>{t(sc.vi, sc.en)}</Badge>
+                {req.status === 'pending' && (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => handleApprove(req.id)} style={{ padding: '5px 12px', background: T.success, color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="check" size={11} color="#fff" strokeWidth={2.5} /> {t('Duyệt', 'Approve')}
+                    </button>
+                    <button onClick={() => setRejectModal(req.id)} style={{ padding: '5px 12px', background: T.errorLight, color: T.error, border: `1px solid ${T.error}30`, borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name="x" size={11} color={T.error} strokeWidth={2.5} /> {t('Từ chối', 'Reject')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: T.textMuted }}>
+            <Icon name="check" size={36} color={T.success} strokeWidth={1.5} />
+            <div style={{ marginTop: 10, fontSize: 14, color: T.success, fontWeight: 600 }}>{t('Không có đơn nào!', 'No requests!')}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Reject modal — same shell as student tab */}
+      {rejectModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, backdropFilter: 'blur(3px)' }}>
+          <div style={{ background: T.card, borderRadius: 16, padding: 28, width: 420, margin: '0 16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: T.textPrimary, marginBottom: 4 }}>{t('Từ chối đơn nghỉ phép nhân sự', 'Reject Staff Leave Request')}</div>
+            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 16 }}>{t('Vui lòng nhập lý do từ chối để thông báo nhân sự.', 'Please provide a reason to notify the staff member.')}</div>
+            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3}
+              placeholder={t('Lý do từ chối...', 'Reason for rejection...')}
+              style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical', marginBottom: 16 }}
+              onFocus={e => e.target.style.borderColor = T.error} onBlur={e => e.target.style.borderColor = T.border} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { setRejectModal(null); setRejectReason(''); }} style={{ flex: 1, padding: '9px', border: `1px solid ${T.border}`, borderRadius: 9, background: T.bg, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Huỷ', 'Cancel')}</button>
+              <button onClick={() => handleReject(rejectModal)} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: T.error, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận từ chối', 'Confirm Reject')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── MAIN: Teacher/Principal Discipline Screen ─────────────────────────────────
 const DisciplineScreen = ({ role, lang, primaryColor }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const pColor = primaryColor || T.primary;
   const [activeTab, setActiveTab] = React.useState('violations');
 
-  const tabs = [
+  // ADMIN / MANAGER (BGH) — only role that sees the staff track. In this app the
+  // 'principal' role maps to ADMIN/MANAGER.
+  const isAdmin = role === 'principal';
+
+  const baseTabs = [
     { id: 'violations', vi: 'Vi phạm', en: 'Violations', icon: 'x', badge: VIOLATIONS.length },
-    { id: 'conduct', vi: 'Hạnh kiểm', en: 'Conduct Grades', icon: 'award' },
-    { id: 'leave', vi: 'Nghỉ phép', en: 'Leave Requests', icon: 'calendar', badge: LEAVE_REQUESTS.filter(r => r.status === 'pending').length },
+    { id: 'conduct',    vi: 'Hạnh kiểm', en: 'Conduct Grades', icon: 'award' },
+    { id: 'leave',      vi: 'Nghỉ phép', en: 'Leave (Students)', icon: 'calendar', badge: LEAVE_REQUESTS.filter(r => r.status === 'pending').length },
   ];
+  const staffTab = { id: 'staff', vi: 'Nhân sự', en: 'Staff', icon: 'briefcase', badge: STAFF_LEAVE_REQUESTS.filter(r => r.status === 'pending').length, adminOnly: true };
+  const tabs = isAdmin ? [...baseTabs, staffTab] : baseTabs;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.textPrimary }}>{t('Hành chính & Kỷ luật', 'Administration & Discipline')}</div>
-          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>{t('Quản lý vi phạm, hạnh kiểm và nghỉ phép học sinh', 'Manage violations, conduct grades and leave requests')}</div>
+          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>
+            {isAdmin
+              ? t('Quản lý vi phạm, hạnh kiểm và nghỉ phép — học sinh & nhân sự (E07).',
+                  'Manage violations, conduct and leave — students & staff (E07).')
+              : t('Quản lý vi phạm, hạnh kiểm và nghỉ phép học sinh',
+                  'Manage violations, conduct grades and leave requests')}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -555,6 +755,7 @@ const DisciplineScreen = ({ role, lang, primaryColor }) => {
         {activeTab === 'violations' && <ViolationsTab lang={lang} t={t} pColor={pColor} role={role} />}
         {activeTab === 'conduct' && <ConductTab lang={lang} t={t} pColor={pColor} />}
         {activeTab === 'leave' && <LeaveManagementTab lang={lang} t={t} pColor={pColor} role={role} />}
+        {activeTab === 'staff' && isAdmin && <StaffLeaveTab lang={lang} t={t} pColor={pColor} />}
       </div>
     </div>
   );
@@ -731,4 +932,349 @@ const StudentDisciplineScreen = ({ lang, primaryColor }) => {
   );
 };
 
-Object.assign(window, { DisciplineScreen, StudentDisciplineScreen });
+// ── Parent view: child's conduct + violations + leave on child's behalf ───────
+// Route: /parent/conduct (per selected child).
+// Read-only on conduct + violation history. The parent CAN submit a leave
+// request on the child's behalf; submissions are addressed to the child's GVCN.
+const PARENT_CHILDREN_DISCIPLINE = [
+  {
+    name: 'Nguyễn Minh Khoa', className: '11A2', avatar: 'NK', color: T.primary,
+    gvcnVi: 'Cô Nguyễn Thị Hương', gvcnEn: 'Ms. Nguyễn Thị Hương',
+    conduct: { grade: 'good', points: 82, violationsCount: 2, absences: 1, semester: 'HK1 2025–2026' },
+    violations: [
+      { id: 'pc-k1', type: 'late',    date: '21/04/2026', period: 1, description: 'Muộn 10 phút tiết 1.',                severity: 'low',    handledBy: 'Cô Nguyễn Thị Hương' },
+      { id: 'pc-k2', type: 'uniform', date: '15/04/2026', period: 0, description: 'Không đeo huy hiệu trường.',         severity: 'low',    handledBy: 'Thầy Phạm Quốc Bảo' },
+    ],
+    pastLeaves: [
+      { id: 'pl-k1', startDate: '12/03/2026', endDate: '12/03/2026', days: 1, type: 'medical',
+        reason: 'Khám bệnh định kỳ tại bệnh viện Nhi.',
+        status: 'approved', approvedBy: 'Cô Nguyễn Thị Hương',
+        submittedAt: '11/03/2026 21:00' },
+    ],
+  },
+  {
+    name: 'Nguyễn Thu Hà', className: '8B1', avatar: 'NH', color: T.success,
+    gvcnVi: 'Cô Trần Bích Vân', gvcnEn: 'Ms. Trần Bích Vân',
+    conduct: { grade: 'excellent', points: 94, violationsCount: 0, absences: 0, semester: 'HK1 2025–2026' },
+    violations: [],
+    pastLeaves: [
+      { id: 'pl-h1', startDate: '05/02/2026', endDate: '06/02/2026', days: 2, type: 'personal',
+        reason: 'Việc gia đình đột xuất — về quê.',
+        status: 'approved', approvedBy: 'Cô Trần Bích Vân',
+        submittedAt: '04/02/2026 19:30' },
+    ],
+  },
+];
+
+const ParentDisciplineScreen = ({ lang, primaryColor }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  const pColor = primaryColor || T.primary;
+
+  const [childIdx, setChildIdx] = React.useState(0);
+  const child = PARENT_CHILDREN_DISCIPLINE[childIdx];
+
+  // Per-child leave requests state — keyed by child index so switching the
+  // pill doesn't drop in-flight requests for the other child.
+  const [leavesByChild, setLeavesByChild] = React.useState(() =>
+    Object.fromEntries(PARENT_CHILDREN_DISCIPLINE.map((c, i) => [i, c.pastLeaves]))
+  );
+  const leaveRequests = leavesByChild[childIdx] || [];
+
+  const [showLeaveForm, setShowLeaveForm] = React.useState(false);
+  const [form, setForm] = React.useState({ startDate: '', endDate: '', type: 'medical', reason: '' });
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  // Reset the form + close it when switching children, so a half-filled draft
+  // for child A doesn't bleed into child B's screen.
+  React.useEffect(() => {
+    setShowLeaveForm(false);
+    setForm({ startDate: '', endDate: '', type: 'medical', reason: '' });
+  }, [childIdx]);
+
+  const submitterName = `Nguyễn Văn Đức (${t('Phụ huynh', 'Parent')})`;
+
+  const handleSubmitLeave = () => {
+    if (!form.startDate || !form.reason) return;
+    setSubmitting(true);
+    setTimeout(() => {
+      const start = form.startDate.split('-').reverse().join('/');
+      const end   = (form.endDate || form.startDate).split('-').reverse().join('/');
+      // crude inclusive day-count for the seed; good enough for prototype.
+      const days = (() => {
+        const a = new Date(form.startDate);
+        const b = new Date(form.endDate || form.startDate);
+        return Math.max(1, Math.round((b - a) / 86400000) + 1);
+      })();
+      setLeavesByChild(prev => ({
+        ...prev,
+        [childIdx]: [{
+          id: `pl-${childIdx}-${Date.now()}`,
+          startDate: start, endDate: end, days,
+          type: form.type, reason: form.reason,
+          status: 'pending',
+          submitterName,
+          submittedAt: new Date().toLocaleString('vi-VN'),
+        }, ...(prev[childIdx] || [])],
+      }));
+      setSubmitting(false); setSubmitted(true); setShowLeaveForm(false);
+      setForm({ startDate: '', endDate: '', type: 'medical', reason: '' });
+      setTimeout(() => setSubmitted(false), 3000);
+    }, 700);
+  };
+
+  const conductCfg = CONDUCT_GRADES.find(g => g.id === child.conduct.grade) || CONDUCT_GRADES[1];
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', background: T.bg }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+            E06 · {t('Hạnh kiểm & Nghỉ phép', 'Discipline & Leave')}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.textPrimary, marginTop: 4 }}>
+            {t('Hạnh kiểm của con', "Child's Conduct")}
+          </div>
+          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>
+            {t('Theo dõi hạnh kiểm, vi phạm và gửi đơn xin nghỉ phép cho con.',
+               "Track conduct, violations, and submit leave requests on your child's behalf.")}
+          </div>
+        </div>
+
+        {/* Child selector (same pattern as ParentScreen) */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          {PARENT_CHILDREN_DISCIPLINE.map((c, i) => {
+            const active = i === childIdx;
+            return (
+              <button key={i} onClick={() => setChildIdx(i)} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px',
+                borderRadius: 10, border: `2px solid ${active ? c.color : T.border}`,
+                background: active ? c.color + '10' : T.card, cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}>
+                <Avatar initials={c.avatar} color={c.color} size={34} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: T.textMuted }}>
+                    {t(`Lớp ${c.className} · GVCN ${c.gvcnVi}`, `Class ${c.className} · Homeroom ${c.gvcnEn}`)}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {submitted && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 16px', background: T.successLight, border: `1px solid ${T.success}40`, borderRadius: 10, color: T.success, fontWeight: 600, fontSize: 13, marginBottom: 20 }}>
+            <Icon name="check" size={15} color={T.success} strokeWidth={2.5} />
+            {t(`Đơn xin nghỉ cho ${child.name} đã gửi tới ${child.gvcnVi}.`,
+               `Leave request for ${child.name} sent to ${child.gvcnEn}.`)}
+          </div>
+        )}
+
+        {/* Top row — conduct summary + leave CTA */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+          {/* Conduct card (read-only) */}
+          <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {t(`Hạnh kiểm · ${child.conduct.semester}`, `Conduct · ${child.conduct.semester}`)}
+              </div>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 8px', borderRadius: 99, background: T.bg, color: T.textMuted,
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+              }}>
+                <Icon name="lock" size={10} color={T.textMuted} strokeWidth={2} />
+                {t('Chỉ xem', 'Read-only')}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+              <div style={{
+                width: 70, height: 70, borderRadius: 16,
+                background: conductCfg.color + '18', border: `2px solid ${conductCfg.color}30`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontSize: 24, fontWeight: 900, color: conductCfg.color, lineHeight: 1 }}>{child.conduct.points}</span>
+                <span style={{ fontSize: 10, color: T.textMuted }}>/ 100</span>
+              </div>
+              <div>
+                <ConductBadge grade={child.conduct.grade} t={t} />
+                <div style={{ fontSize: 12, color: T.textMuted, marginTop: 6 }}>
+                  {t(`${child.conduct.violationsCount} vi phạm · ${child.conduct.absences} nghỉ KP`,
+                     `${child.conduct.violationsCount} violations · ${child.conduct.absences} unexcused`)}
+                </div>
+              </div>
+            </div>
+            <ProgressBar value={child.conduct.points} color={conductCfg.color} height={8} />
+          </div>
+
+          {/* Leave request CTA */}
+          <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+              {t('Xin nghỉ phép cho con', 'Request Leave for Child')}
+            </div>
+            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 14, lineHeight: 1.6 }}>
+              {t(`Gửi đơn xin nghỉ cho ${child.name} đến GVCN ${child.gvcnVi}. Đơn sẽ được duyệt trong 24 giờ.`,
+                 `Send a leave request for ${child.name} to homeroom teacher ${child.gvcnEn}. Reviewed within 24 hours.`)}
+            </div>
+            <button onClick={() => setShowLeaveForm(s => !s)} style={{
+              padding: '10px',
+              background: showLeaveForm ? T.bg : pColor,
+              color: showLeaveForm ? T.textSecondary : '#fff',
+              border: showLeaveForm ? `1px solid ${T.border}` : 'none',
+              borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+              <Icon name={showLeaveForm ? 'x' : 'plus'} size={13} color={showLeaveForm ? T.textSecondary : '#fff'} strokeWidth={2.5} />
+              {showLeaveForm
+                ? t('Đóng form', 'Close form')
+                : t('Tạo đơn xin nghỉ cho con', 'Create Leave Request for Child')}
+            </button>
+          </div>
+        </div>
+
+        {/* Leave form */}
+        {showLeaveForm && (
+          <div style={{ background: T.card, borderRadius: 14, border: `1.5px solid ${pColor}30`, boxShadow: `0 4px 20px ${pColor}12`, padding: 24, marginBottom: 24 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: T.textPrimary, marginBottom: 4 }}>
+              {t('Xin nghỉ phép cho con', 'Leave Request for Child')}
+            </div>
+            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 18 }}>
+              {t(`Đơn gửi cho ${child.name} (${child.className}) — đồng bộ tới GVCN ${child.gvcnVi}.`,
+                 `For ${child.name} (${child.className}) — addressed to homeroom teacher ${child.gvcnEn}.`)}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, display: 'block', marginBottom: 6 }}>{t('Từ ngày *', 'Start Date *')}</label>
+                <input type="date" value={form.startDate} onChange={e => setF('startDate', e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, display: 'block', marginBottom: 6 }}>{t('Đến ngày', 'End Date')}</label>
+                <input type="date" value={form.endDate} onChange={e => setF('endDate', e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, display: 'block', marginBottom: 6 }}>{t('Loại nghỉ', 'Leave Type')}</label>
+                <select value={form.type} onChange={e => setF('type', e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', background: T.card, cursor: 'pointer' }}>
+                  {LEAVE_TYPES.map(l => <option key={l.id} value={l.id}>{t(l.vi, l.en)}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, display: 'block', marginBottom: 6 }}>{t('Lý do nghỉ *', 'Reason *')}</label>
+              <textarea value={form.reason} onChange={e => setF('reason', e.target.value)} rows={3}
+                placeholder={t('Nêu rõ lý do xin nghỉ cho con...', 'Please explain the reason...')}
+                style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}
+                onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowLeaveForm(false)} style={{ padding: '9px 20px', border: `1px solid ${T.border}`, borderRadius: 9, background: T.bg, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Huỷ', 'Cancel')}</button>
+              <button onClick={handleSubmitLeave} disabled={submitting || !form.startDate || !form.reason}
+                style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: submitting || !form.startDate || !form.reason ? T.textMuted : pColor, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon name="arrowRight" size={13} color="#fff" />
+                {submitting ? t('Đang gửi...', 'Sending...') : t('Gửi đơn xin nghỉ', 'Submit Leave Request')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Violation history (read-only) */}
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden', marginBottom: 20 }}>
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>
+              {t(`Lịch sử vi phạm — ${child.name}`, `Violation History — ${child.name}`)}
+            </div>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 8px', borderRadius: 99, background: T.bg, color: T.textMuted,
+              fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+            }}>
+              <Icon name="lock" size={10} color={T.textMuted} strokeWidth={2} />
+              {t('Chỉ xem', 'Read-only')}
+            </span>
+          </div>
+          {child.violations.length > 0 ? child.violations.map((v, i) => {
+            const vType = VIOLATION_TYPES.find(vt => vt.id === v.type);
+            const sevCfg = SEVERITY_CONFIG[v.severity];
+            return (
+              <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: i < child.violations.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                <div style={{ width: 4, height: 36, borderRadius: 2, background: sevCfg.color, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{t(vType?.vi || v.type, vType?.en || v.type)}</div>
+                  <div style={{ fontSize: 11.5, color: T.textMuted }}>
+                    {v.date}{v.period ? t(` · Tiết ${v.period}`, ` · Period ${v.period}`) : ''} · {v.description}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                    {t(`Ghi bởi: ${v.handledBy}`, `Recorded by: ${v.handledBy}`)}
+                  </div>
+                </div>
+                <Badge color={sevCfg.color} bg={sevCfg.bg}>{t(sevCfg.vi, sevCfg.en)}</Badge>
+              </div>
+            );
+          }) : (
+            <div style={{ padding: 28, textAlign: 'center' }}>
+              <Icon name="check" size={32} color={T.success} strokeWidth={1.6} />
+              <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: T.success }}>
+                {t('Không có vi phạm nào trong học kỳ này.', 'No violations this semester.')}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Child's leave requests */}
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>
+              {t(`Đơn xin nghỉ — ${child.name}`, `Leave Requests — ${child.name}`)}
+            </div>
+          </div>
+          {leaveRequests.length > 0 ? leaveRequests.map((r, i) => {
+            const sc = LEAVE_STATUS[r.status];
+            const lt = LEAVE_TYPES.find(l => l.id === r.type) || LEAVE_TYPES[3];
+            return (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px', borderBottom: i < leaveRequests.length - 1 ? `1px solid ${T.border}` : 'none' }}>
+                <div style={{ width: 4, height: 44, borderRadius: 2, background: sc.color, flexShrink: 0 }} />
+                <Icon name={sc.icon} size={18} color={sc.color} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{r.reason}</span>
+                    <Badge color={lt.color} style={{ fontSize: 10 }}>{t(lt.vi, lt.en)}</Badge>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>
+                    {r.startDate}{r.endDate !== r.startDate ? ` → ${r.endDate}` : ''} · {r.days} {t('ngày', 'day(s)')}
+                    {r.submitterName ? ` · ${r.submitterName}` : ''}
+                  </div>
+                  {r.status === 'approved' && r.approvedBy && (
+                    <div style={{ fontSize: 11, color: T.success, marginTop: 2 }}>
+                      {t(`Duyệt bởi: ${r.approvedBy}`, `Approved by: ${r.approvedBy}`)}
+                    </div>
+                  )}
+                  {r.status === 'rejected' && r.rejectReason && (
+                    <div style={{ fontSize: 11, color: T.error, marginTop: 2 }}>
+                      {t('Từ chối:', 'Rejected:')} {r.rejectReason}
+                    </div>
+                  )}
+                </div>
+                <Badge color={sc.color} bg={sc.bg}>{t(sc.vi, sc.en)}</Badge>
+              </div>
+            );
+          }) : (
+            <div style={{ padding: 32, textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+              {t('Chưa có đơn xin nghỉ nào cho con.', 'No leave requests yet for this child.')}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { DisciplineScreen, StudentDisciplineScreen, ParentDisciplineScreen });

@@ -18,6 +18,7 @@ qua color accent. Font **Plus Jakarta Sans**.
   - `--edu-primary-accessible` → **`#4468e0`** (4.88:1 on white; for small-text active states, e.g. pagination, ADR 0031 / US-E07.6).
 - **Status**: success `#13DEB9`, warning `#FFAE1F`, error `#FA896B`, info
   `#539BFF`, purple `#7B5EA7`, teal `#00B8A9`.
+  - `--edu-warning-text` → `#9A6A0F` — amber text on warningLight surface (4.37:1, large/bold ≥14px only). Decision 0046.
 - **Surface**: bg `#F5F7FA`, card `#FFF`, border `#E5EAF2`.
 - **Text**: primary `#2A3547`, secondary `#5A6A85`, muted `#8898A9`.
 - **Role**: teacher=primary, principal=success, student=warning, parent=purple.

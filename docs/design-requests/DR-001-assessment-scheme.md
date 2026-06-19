@@ -1,6 +1,6 @@
 # DR-001 — Assessment Scheme Config (Grade Scale & Grade-Scoped Subject Selector)
 
-Status: pending
+Status: [x] delivered (2026-06-20)
 US: US-E12.6
 Route: `/admin/assessment`
 Role: `admin`

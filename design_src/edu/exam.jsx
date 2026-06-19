@@ -8,7 +8,7 @@ const AVAILABLE_EXAMS = [
     title: 'Kiểm tra giữa kỳ I — Toán 11', titleEn: 'Midterm Exam I — Math 11',
     duration: 45, totalQ: 30, type: 'Trắc nghiệm', typeEn: 'Multiple Choice',
     dueDate: '30/04/2026', startTime: '08:00', teacher: 'Nguyễn Thị Hương',
-    status: 'available', attempts: 0, maxAttempts: 1,
+    status: 'available', attempts: 0, maxAttempts: 1, hasEssay: false,
     description: 'Bao gồm các nội dung: Hàm số, Đạo hàm, Tích phân cơ bản',
     descriptionEn: 'Covers: Functions, Derivatives, Basic Integrals',
   },
@@ -17,7 +17,7 @@ const AVAILABLE_EXAMS = [
     title: 'Kiểm tra 15 phút — Điện từ trường', titleEn: '15-min Quiz — EM Fields',
     duration: 15, totalQ: 10, type: 'Trắc nghiệm', typeEn: 'Multiple Choice',
     dueDate: '28/04/2026', startTime: '10:00', teacher: 'Trần Văn Minh',
-    status: 'completed', attempts: 1, maxAttempts: 1, score: 8.5,
+    status: 'completed', attempts: 1, maxAttempts: 1, score: 8.5, hasEssay: false,
     description: 'Nội dung: Định luật Faraday, Cảm ứng điện từ',
     descriptionEn: 'Content: Faraday\'s Law, Electromagnetic Induction',
   },
@@ -26,7 +26,7 @@ const AVAILABLE_EXAMS = [
     title: 'Unit 7–8 Vocabulary Quiz', titleEn: 'Unit 7–8 Vocabulary Quiz',
     duration: 20, totalQ: 20, type: 'Trắc nghiệm', typeEn: 'Multiple Choice',
     dueDate: '02/05/2026', startTime: '14:00', teacher: 'Đỗ Thị Mai',
-    status: 'available', attempts: 0, maxAttempts: 2,
+    status: 'available', attempts: 0, maxAttempts: 2, hasEssay: false,
     description: 'Từ vựng và ngữ pháp Unit 7-8',
     descriptionEn: 'Vocabulary and grammar Units 7-8',
   },
@@ -35,9 +35,24 @@ const AVAILABLE_EXAMS = [
     title: 'Kiểm tra 1 tiết — Phản ứng oxi hoá', titleEn: '45-min Test — Redox Reactions',
     duration: 45, totalQ: 25, type: 'Trắc nghiệm', typeEn: 'Multiple Choice',
     dueDate: '26/04/2026', startTime: '09:00', teacher: 'Lê Thị Hoa',
-    status: 'expired', attempts: 0, maxAttempts: 1,
+    status: 'expired', attempts: 0, maxAttempts: 1, hasEssay: false,
     description: 'Phản ứng oxi hoá khử, cân bằng phương trình',
     descriptionEn: 'Redox reactions, balancing equations',
+  },
+  // Mixed-format exam: MCQ auto-graded, essay awaiting teacher.
+  // Status `submitted_pending_essay` covers the Q4 G2b caveat — auto-grading
+  // only covers MCQ, so the final score is partial until the teacher grades the
+  // essay section. Wired to the warning banner in ExamResultScreen.
+  {
+    id: 5, subject: 'Ngữ Văn', subjectEn: 'Literature', color: T.purple,
+    title: 'Kiểm tra cuối kỳ I — Ngữ văn 11', titleEn: 'Final Exam I — Literature 11',
+    duration: 90, totalQ: 24, type: 'Hỗn hợp (TN + Tự luận)', typeEn: 'Mixed (MCQ + Essay)',
+    dueDate: '22/04/2026', startTime: '07:30', teacher: 'Phạm Quốc Bảo',
+    status: 'submitted_pending_essay', attempts: 1, maxAttempts: 1,
+    mcqScore: 6.0, mcqMax: 7.0, essayMax: 3.0,
+    submittedAt: '22/04/2026 09:08', hasEssay: true, essayCount: 2,
+    description: '20 câu trắc nghiệm + 2 câu tự luận phân tích tác phẩm “Chiếc thuyền ngoài xa”.',
+    descriptionEn: '20 MCQ + 2 essay questions on “The Boat Outside the Distance”.',
   },
 ];
 
@@ -88,6 +103,7 @@ const ExamListScreen = ({ lang, primaryColor, onStartExam, onViewResult }) => {
     available: { vi: 'Có thể làm', en: 'Available', color: T.primary, bg: T.primaryLight },
     completed: { vi: 'Đã hoàn thành', en: 'Completed', color: T.success, bg: T.successLight },
     expired:   { vi: 'Hết hạn', en: 'Expired', color: T.textMuted, bg: T.bg },
+    submitted_pending_essay: { vi: 'Chờ chấm tự luận', en: 'Awaiting essay grade', color: T.warning, bg: T.warningLight },
   };
 
   const filtered = AVAILABLE_EXAMS.filter(e => filter === 'all' || e.status === filter);
@@ -108,13 +124,19 @@ const ExamListScreen = ({ lang, primaryColor, onStartExam, onViewResult }) => {
         </div>
 
         {/* Filter */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-          {[{ id: 'all', vi: 'Tất cả', en: 'All' }, { id: 'available', vi: 'Có thể làm', en: 'Available' }, { id: 'completed', vi: 'Đã xong', en: 'Done' }, { id: 'expired', vi: 'Hết hạn', en: 'Expired' }].map(f => (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+          {[
+            { id: 'all', vi: 'Tất cả', en: 'All' },
+            { id: 'available', vi: 'Có thể làm', en: 'Available' },
+            { id: 'completed', vi: 'Đã xong', en: 'Done' },
+            { id: 'submitted_pending_essay', vi: 'Chờ chấm', en: 'Pending grade' },
+            { id: 'expired', vi: 'Hết hạn', en: 'Expired' },
+          ].map(f => (
             <button key={f.id} onClick={() => setFilter(f.id)} style={{
               padding: '6px 16px', border: `1.5px solid ${filter === f.id ? pColor : T.border}`,
               borderRadius: 8, background: filter === f.id ? pColor : T.card,
               color: filter === f.id ? '#fff' : T.textSecondary,
-              fontSize: 12.5, fontWeight: filter === f.id ? 700 : 500, cursor: 'pointer',
+              fontSize: 12.5, fontWeight: filter === f.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit',
             }}>{t(f.vi, f.en)}</button>
           ))}
         </div>
@@ -125,9 +147,10 @@ const ExamListScreen = ({ lang, primaryColor, onStartExam, onViewResult }) => {
             const sc = STATUS_CONFIG[exam.status];
             const isAvailable = exam.status === 'available';
             const isDone = exam.status === 'completed';
+            const isPendingEssay = exam.status === 'submitted_pending_essay';
             return (
               <div key={exam.id} style={{
-                background: T.card, borderRadius: 14, border: `1px solid ${isAvailable ? exam.color + '30' : T.border}`,
+                background: T.card, borderRadius: 14, border: `1px solid ${isAvailable ? exam.color + '30' : isPendingEssay ? T.warning + '40' : T.border}`,
                 boxShadow: isAvailable ? `0 4px 20px ${exam.color}14` : '0 2px 8px rgba(0,0,0,0.03)',
                 overflow: 'hidden', transition: 'all 0.18s',
                 opacity: exam.status === 'expired' ? 0.65 : 1,
@@ -175,6 +198,22 @@ const ExamListScreen = ({ lang, primaryColor, onStartExam, onViewResult }) => {
                     </div>
                   )}
 
+                  {/* Partial-score banner (MCQ done, essay pending) */}
+                  {isPendingEssay && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: T.warningLight, borderRadius: 8, marginBottom: 14, border: `1px solid ${T.warning}30` }}>
+                      <Icon name="clock" size={18} color={T.warning} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.45 }}>
+                          <span style={{ fontWeight: 800, color: T.warning }}>{exam.mcqScore}/{exam.mcqMax}</span>
+                          <span style={{ margin: '0 4px' }}>•</span>
+                          {t('Trắc nghiệm đã chấm tự động', 'MCQ auto-graded')}
+                          <span style={{ margin: '0 4px' }}>•</span>
+                          {t(`đợi chấm ${exam.essayCount} câu tự luận`, `awaiting ${exam.essayCount} essay`)} ({exam.essayMax}đ)
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* CTA */}
                   <div style={{ display: 'flex', gap: 8 }}>
                     {isAvailable && (
@@ -192,6 +231,13 @@ const ExamListScreen = ({ lang, primaryColor, onStartExam, onViewResult }) => {
                         style={{ flex: 1, padding: '10px', background: T.successLight, color: T.success, border: `1px solid ${T.success}30`, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         <Icon name="eye" size={13} color={T.success} />
                         {t('Xem kết quả', 'View Results')}
+                      </button>
+                    )}
+                    {isPendingEssay && (
+                      <button onClick={() => onViewResult(exam)}
+                        style={{ flex: 1, padding: '10px', background: T.warningLight, color: T.warning, border: `1px solid ${T.warning}40`, borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Icon name="clock" size={13} color={T.warning} />
+                        {t('Xem điểm sơ bộ', 'View partial result')}
                       </button>
                     )}
                     {exam.status === 'expired' && (
@@ -533,7 +579,7 @@ const ExamTakingScreen = ({ exam, lang, onSubmit }) => {
 
 // ── Exam Result screen ────────────────────────────────────────────────────────
 
-const ExamResultScreen = ({ exam, answers, lang, onBack }) => {
+const ExamResultScreen = ({ exam, answers, lang, onBack, onNavigate }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const questions = EXAM_QUESTIONS.slice(0, exam.totalQ);
   const OPTS = ['A', 'B', 'C', 'D'];
@@ -571,6 +617,15 @@ const ExamResultScreen = ({ exam, answers, lang, onBack }) => {
 
   React.useEffect(() => { const t = setTimeout(() => setShowConfetti(false), 3000); return () => clearTimeout(t); }, []);
 
+  // Pending-essay scenario (US-E11.5 / Q4 G2b caveat):
+  // Auto-grading only covers MCQ. If the exam has essays, the displayed score
+  // is partial — surface a warning banner explaining the teacher still needs
+  // to grade the essay section.
+  const isPendingEssay = exam.status === 'submitted_pending_essay' || exam.hasEssay;
+  const partialScore = exam.mcqScore != null ? exam.mcqScore : null;
+  const partialMax   = exam.mcqMax   != null ? exam.mcqMax   : null;
+  const essayMax     = exam.essayMax != null ? exam.essayMax : null;
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: T.bg, padding: '28px 32px' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -588,12 +643,23 @@ const ExamResultScreen = ({ exam, answers, lang, onBack }) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', position: 'relative' }}>
               {/* Score circle */}
               <div style={{ width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', border: '3px solid rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }}>{score}</span>
-                <span style={{ fontSize: 13, opacity: 0.8, marginTop: 2 }}>/10</span>
+                {isPendingEssay && partialScore != null ? (
+                  <React.Fragment>
+                    <span style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>{partialScore}</span>
+                    <span style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>/{partialMax} • {t('TN', 'MCQ')}</span>
+                  </React.Fragment>
+                ) : (
+                  <React.Fragment>
+                    <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }}>{score}</span>
+                    <span style={{ fontSize: 13, opacity: 0.8, marginTop: 2 }}>/10</span>
+                  </React.Fragment>
+                )}
               </div>
               <div>
                 <Badge color="#fff" bg="rgba(255,255,255,0.2)" style={{ marginBottom: 10 }}>
-                  {isPassing ? `✓ ${t('ĐẠT', 'PASSED')}` : `✗ ${t('CHƯA ĐẠT', 'FAILED')}`}
+                  {isPendingEssay
+                    ? `⏱ ${t('CHƯA CÓ ĐIỂM TỔNG', 'PARTIAL RESULT')}`
+                    : isPassing ? `✓ ${t('ĐẠT', 'PASSED')}` : `✗ ${t('CHƯA ĐẠT', 'FAILED')}`}
                 </Badge>
                 <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{lang === 'en' ? exam.titleEn : exam.title}</div>
                 <div style={{ fontSize: 13, opacity: 0.8 }}>{lang === 'en' ? exam.subjectEn : exam.subject} · {exam.teacher}</div>
@@ -631,6 +697,52 @@ const ExamResultScreen = ({ exam, answers, lang, onBack }) => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* ── Pending-essay banner (US-E11.5 / Q4 G2b) ──────────────────────────── */}
+        {isPendingEssay && (
+          <div style={{
+            background: T.warningLight,
+            border: `1px solid ${T.warning}40`,
+            borderRadius: 12, padding: '14px 18px', marginBottom: 20,
+            display: 'flex', alignItems: 'flex-start', gap: 14,
+          }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, background: T.warning + '22',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Icon name="clock" size={18} color={T.warning} strokeWidth={2.2} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: T.warning }}>
+                {t('Điểm tự luận đang chờ giáo viên chấm', 'Essay score awaiting teacher grading')}
+              </div>
+              <div style={{ fontSize: 12.5, color: T.textSecondary, marginTop: 4, lineHeight: 1.55 }}>
+                {t(
+                  `Phần trắc nghiệm đã được chấm tự động — ${partialScore != null ? partialScore : score}/${partialMax != null ? partialMax : 10}đ. Phần tự luận (tối đa ${essayMax != null ? essayMax : '—'}đ) sẽ được ${exam.teacher} chấm thủ công và cộng vào điểm tổng trong vòng 3 ngày làm việc.`,
+                  `Multiple-choice section auto-graded — ${partialScore != null ? partialScore : score}/${partialMax != null ? partialMax : 10}. The essay section (max ${essayMax != null ? essayMax : '—'} pts) will be manually graded by ${exam.teacher} within 3 working days.`
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Grade-book deep link (Award icon → section=grades) ────────────────── */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+          <button onClick={() => onNavigate && onNavigate('grades')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '9px 16px', borderRadius: 9,
+              background: 'transparent', border: `1.5px solid ${T.border}`,
+              color: T.textSecondary, fontSize: 13, fontWeight: 700,
+              fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = scoreColor; e.currentTarget.style.color = scoreColor; e.currentTarget.style.background = scoreColor + '08'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; e.currentTarget.style.background = 'transparent'; }}>
+            <Icon name="award" size={14} color="currentColor" strokeWidth={2.1} />
+            {t('Xem điểm trong bảng điểm', 'View in grade book')}
+            <Icon name="chevronRight" size={13} color="currentColor" strokeWidth={2.4} />
+          </button>
         </div>
 
         {/* Question review */}
@@ -700,7 +812,7 @@ const ExamResultScreen = ({ exam, answers, lang, onBack }) => {
 
 // ── Main Exam Router (injected into StudentScreen) ────────────────────────────
 
-const ExamScreen = ({ lang, primaryColor }) => {
+const ExamScreen = ({ lang, primaryColor, onNavigate }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const pColor = primaryColor || T.primary;
 
@@ -718,7 +830,7 @@ const ExamScreen = ({ lang, primaryColor }) => {
   if (examFlow === 'list') return <ExamListScreen lang={lang} primaryColor={pColor} onStartExam={handleStartExam} onViewResult={handleViewResult} />;
   if (examFlow === 'briefing') return <ExamBriefing exam={selectedExam} lang={lang} onStart={handleBegin} onBack={handleBackToList} />;
   if (examFlow === 'taking') return <ExamTakingScreen exam={selectedExam} lang={lang} onSubmit={handleSubmit} />;
-  if (examFlow === 'result') return <ExamResultScreen exam={selectedExam} answers={submittedAnswers} lang={lang} onBack={handleBackToList} />;
+  if (examFlow === 'result') return <ExamResultScreen exam={selectedExam} answers={submittedAnswers} lang={lang} onBack={handleBackToList} onNavigate={onNavigate} />;
   return null;
 };
 
