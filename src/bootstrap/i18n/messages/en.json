@@ -2177,6 +2177,101 @@
       "unknown": "An unknown error occurred"
     }
   },
+  "academicRecord": {
+    "pageTitle": "Student Academic Record",
+    "pageSubtitle": "Signed academic-record history by school year and term. Each record is a snapshot of grades at the time of signing.",
+    "breadcrumb": {
+      "home": "Home",
+      "students": "Students",
+      "record": "Academic Record"
+    },
+    "student": {
+      "code": "Student ID",
+      "dob": "Date of birth",
+      "currentClass": "Current class",
+      "currentYear": "Current school year"
+    },
+    "yearTimeline": {
+      "currentBadge": "Current year",
+      "ariaLabel": "Select school year"
+    },
+    "sealStatus": {
+      "sealed": "Sealed",
+      "unsealed": "Not sealed",
+      "ariaSealed": "Academic record is sealed",
+      "ariaUnsealed": "Academic record is not sealed"
+    },
+    "yearStatus": {
+      "all_sealed": "Fully signed",
+      "partial": "Partially signed",
+      "none": "No record",
+      "unsealed_in_year": "Has unsealed record"
+    },
+    "termStatus": {
+      "PENDING": "Not signed",
+      "SEALED": "Signed",
+      "UNSEALED": "Unsealed"
+    },
+    "termSection": {
+      "term1": "Term 1",
+      "term2": "Term 2",
+      "class": "Class",
+      "signedBy": "Signed by",
+      "sealedOn": "Signed on",
+      "unsealedOn": "Unsealed on",
+      "unsealedBanner": "This record has been unsealed"
+    },
+    "pending": {
+      "title": "Term not yet signed",
+      "description": "The academic record will appear here once grades are locked and signed."
+    },
+    "table": {
+      "caption": "Term grade sheet",
+      "subject": "Subject",
+      "tx1": "RG1",
+      "tx2": "RG2",
+      "midterm": "Midterm",
+      "final": "Final",
+      "termAvg": "Term Avg",
+      "rank": "Rank",
+      "conduct": "Conduct",
+      "gpa": "GPA",
+      "termSummary": "Term summary"
+    },
+    "conduct": {
+      "Tot": "Good",
+      "Kha": "Fair",
+      "TrungBinh": "Average",
+      "Yeu": "Weak"
+    },
+    "rankBand": {
+      "xuat-sac": "Excellent",
+      "gioi": "Good",
+      "kha": "Fair",
+      "trung-binh": "Average",
+      "yeu": "Weak"
+    },
+    "printButton": "Print record",
+    "printButtonComingSoon": "Print feature coming soon",
+    "empty": {
+      "title": "No academic record data",
+      "description": "There is no academic record for this school year yet."
+    },
+    "error": {
+      "title": "Unable to load academic record",
+      "retry": "Retry",
+      "not-found": "Academic record for this student was not found.",
+      "forbidden": "You do not have permission to view this academic record.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "Something went wrong. Please try again later."
+    },
+    "roleBadge": {
+      "ADMIN": "Full view access",
+      "TEACHER": "View students in class",
+      "STUDENT": "View own academic record",
+      "PARENT": "View linked child's record"
+    }
+  },
   "assessmentScheme": {
     "title": "Grade Scale & Assessment Scheme",
     "subtitle": "Configure the grading scale and component score columns per subject.",

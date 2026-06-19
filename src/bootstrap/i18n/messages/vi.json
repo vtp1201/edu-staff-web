@@ -2177,6 +2177,101 @@
       "unknown": "Đã xảy ra lỗi không xác định"
     }
   },
+  "academicRecord": {
+    "pageTitle": "Học bạ học sinh",
+    "pageSubtitle": "Lịch sử học bạ đã ký theo từng năm học và học kỳ. Mỗi bản ghi là ảnh chụp điểm tại thời điểm ký.",
+    "breadcrumb": {
+      "home": "Trang chủ",
+      "students": "Học sinh",
+      "record": "Học bạ"
+    },
+    "student": {
+      "code": "Mã HS",
+      "dob": "Ngày sinh",
+      "currentClass": "Lớp hiện tại",
+      "currentYear": "Năm học hiện tại"
+    },
+    "yearTimeline": {
+      "currentBadge": "Năm hiện tại",
+      "ariaLabel": "Chọn năm học"
+    },
+    "sealStatus": {
+      "sealed": "Đã niêm phong",
+      "unsealed": "Chưa niêm phong",
+      "ariaSealed": "Học bạ đã niêm phong",
+      "ariaUnsealed": "Học bạ chưa niêm phong"
+    },
+    "yearStatus": {
+      "all_sealed": "Đã ký đủ",
+      "partial": "Ký một phần",
+      "none": "Chưa có học bạ",
+      "unsealed_in_year": "Có học bạ đã mở"
+    },
+    "termStatus": {
+      "PENDING": "Chưa ký",
+      "SEALED": "Đã ký",
+      "UNSEALED": "Đã mở"
+    },
+    "termSection": {
+      "term1": "Học kỳ 1",
+      "term2": "Học kỳ 2",
+      "class": "Lớp",
+      "signedBy": "Người ký",
+      "sealedOn": "Đã ký ngày",
+      "unsealedOn": "Mở ngày",
+      "unsealedBanner": "Học bạ đã được mở"
+    },
+    "pending": {
+      "title": "Học kỳ chưa được ký",
+      "description": "Bản ghi học bạ sẽ xuất hiện ở đây sau khi điểm được khoá và ký."
+    },
+    "table": {
+      "caption": "Bảng điểm học kỳ",
+      "subject": "Môn học",
+      "tx1": "TX1",
+      "tx2": "TX2",
+      "midterm": "Giữa Kỳ",
+      "final": "Cuối Kỳ",
+      "termAvg": "TB Kỳ",
+      "rank": "Xếp Loại",
+      "conduct": "Hạnh Kiểm",
+      "gpa": "GPA",
+      "termSummary": "Tổng kết kỳ"
+    },
+    "conduct": {
+      "Tot": "Tốt",
+      "Kha": "Khá",
+      "TrungBinh": "Trung Bình",
+      "Yeu": "Yếu"
+    },
+    "rankBand": {
+      "xuat-sac": "Xuất Sắc",
+      "gioi": "Giỏi",
+      "kha": "Khá",
+      "trung-binh": "Trung Bình",
+      "yeu": "Yếu"
+    },
+    "printButton": "In học bạ",
+    "printButtonComingSoon": "Tính năng in sẽ sớm ra mắt",
+    "empty": {
+      "title": "Không có dữ liệu học bạ",
+      "description": "Chưa có bản ghi học bạ nào cho năm học này."
+    },
+    "error": {
+      "title": "Không thể tải học bạ",
+      "retry": "Thử lại",
+      "not-found": "Không tìm thấy học bạ của học sinh này.",
+      "forbidden": "Bạn không có quyền xem học bạ này.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
+    },
+    "roleBadge": {
+      "ADMIN": "Toàn quyền xem",
+      "TEACHER": "Xem học sinh trong lớp",
+      "STUDENT": "Xem học bạ của chính mình",
+      "PARENT": "Xem học bạ con đã liên kết"
+    }
+  },
   "assessmentScheme": {
     "title": "Thang điểm & Khung đánh giá",
     "subtitle": "Cấu hình thang điểm và các cột điểm thành phần theo môn học.",
