@@ -18,7 +18,7 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | --- | --- | --- | --- |
 | DR-001 | Assessment Scheme Config | US-E12.6 | [x] delivered (2026-06-20) |
 | DR-002 | Grade Book Detail (nhập điểm cuối kỳ + báo cáo) | US-E13.1 | [x] delivered (2026-06-20) |
-| DR-003 | Teaching Plan / PPCT | US-E13.2 | pending |
+| DR-003 | Teaching Plan / PPCT | US-E11.4 (was stale US-E13.2) | [x] delivered (2026-06-20) |
 | DR-004 | Lesson Bank | US-E13.3 | pending |
 | DR-005 | Exam Bank | US-E13.4 | pending |
 | DR-006 | Notifications Center | US-E10.2 | pending |

@@ -2998,5 +2998,731 @@
       // Copy keys (i18n):
       "copyKeys": "assessmentScheme.* namespace — titles, labels, validation messages, CTA labels, preset descriptions"
     }
+  },
+
+  // ╔══════════════════════════════════════════════════════════════════════════╗
+  // ║  TEACHING PLAN / PPCT                                                    ║
+  // ║  Source: design_src/edu/teaching-plan.jsx (1108-line handoff, 1506)      ║
+  // ║  Routes: /teacher/teaching-plan (edit) · /principal/teaching-plan (review)║
+  // ║  Roles: teacher (compose + submit) · principal / admin (review + approve) ║
+  // ║  US: US-E11.4 (implemented) — DR-003 reconciled 2026-06-20               ║
+  // ║  Implementation: src/features/teaching-plan/                              ║
+  // ║  i18n namespace: teachingPlan.*                                           ║
+  // ╚══════════════════════════════════════════════════════════════════════════╝
+  "teachingPlan": {
+    "routes": {
+      "teacher": "/teacher/teaching-plan",
+      "principal": "/principal/teaching-plan",
+      "admin": "/principal/teaching-plan"
+    },
+    "designFile": "design_src/edu/teaching-plan.jsx — TeachingPlanScreen (teacher) + TeachingPlanReviewScreen (principal)",
+    "i18nNamespace": "teachingPlan",
+
+    // ── Domain model ──────────────────────────────────────────────────────────
+    // A plan = (teacher × subject × class × term) keyed by (classId|subjectId|termId).
+    // Each plan row = (week × periodInWeek) → { title, learningObjective?, notes? }.
+    // Status lifecycle: DRAFT → SUBMITTED → APPROVED | REJECTED → DRAFT (resubmit).
+    "domainModel": {
+      "planEntity": "src/features/teaching-plan/domain/entities/teaching-plan.entity.ts",
+      "cellEntity": "src/features/teaching-plan/domain/entities/plan-cell.entity.ts",
+      "statusType": "TeachingPlanStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'",
+      "viewModel": "src/features/teaching-plan/presentation/teaching-plan-screen/teaching-plan-screen.i-vm.ts"
+    },
+
+    // ── Status chip colours (design_src/edu/teaching-plan.jsx TP_STATUS) ─────
+    // All use bg = color/15 (canonical badge rule; design-system.md §Badge).
+    "statusChip": {
+      "DRAFT": {
+        "color": "var(--edu-warning)",
+        "bg": "var(--edu-warning)/15",
+        "icon": "penLine"
+      },
+      "SUBMITTED": {
+        "color": "var(--edu-info)",
+        "bg": "var(--edu-info)/15",
+        "icon": "send"
+      },
+      "APPROVED": {
+        "color": "var(--edu-success)",
+        "bg": "var(--edu-success)/15",
+        "icon": "check"
+      },
+      "REJECTED": {
+        "color": "var(--edu-error)",
+        "bg": "var(--edu-error)/15",
+        "icon": "alertTriangle"
+      }
+    },
+
+    // ── Teacher screen — TeachingPlanScreen ──────────────────────────────────
+    "teacherScreen": {
+      // Page container: flex:1, overflowY:auto, padding:24px 32px, bg:var(--edu-bg)
+      // Inner wrapper: maxWidth 1320, margin 0 auto
+      "layout": {
+        "pageContainer": {
+          "flex": 1,
+          "overflowY": "auto",
+          "padding": "24px 32px",
+          "background": "var(--edu-bg)"
+        },
+        "innerWrapper": {
+          "maxWidth": 1320,
+          "margin": "0 auto",
+          "display": "flex",
+          "flexDirection": "column",
+          "gap": 16
+        }
+      },
+
+      // ── Page header ───────────────────────────────────────────────────────
+      "pageHeader": {
+        "breadcrumb": {
+          // fontSize 11, fontWeight 700, textMuted, uppercase, letterSpacing 0.07em
+          "text": "teachingPlan.pageTitle label (PPCT)"
+        },
+        "title": {
+          "fontSize": 22,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)",
+          "i18nKey": "teachingPlan.pageTitle"
+        },
+        "subtitle": {
+          "fontSize": 12.5,
+          "color": "var(--edu-text-muted)",
+          "i18nKey": "teachingPlan.teacherSubtitle"
+        },
+        // Save-flash toast: inline pill top-right of header
+        // approved → successLight/success; draft → primaryLight/primary
+        "saveFlash": {
+          "borderRadius": 99,
+          "padding": "8px 14px",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "autoDismiss": "2200ms (draft) / 2400ms (submit)"
+        }
+      },
+
+      // ── Selector bar ──────────────────────────────────────────────────────
+      // Card shell: bg card, borderRadius 12, border 1px border, padding:14px 20px
+      "selectorBar": {
+        "layout": "flex row, gap 14, flexWrap:wrap",
+        "cardShell": {
+          "background": "var(--edu-card)",
+          "borderRadius": 12,
+          "border": "1px solid var(--edu-border)",
+          "padding": "14px 20px"
+        },
+        "fields": [
+          {
+            "key": "class",
+            "icon": "grid",
+            "i18nKey": "teachingPlan.selector.class",
+            "minWidth": 170
+          },
+          {
+            "key": "subject",
+            "icon": "bookOpen",
+            "i18nKey": "teachingPlan.selector.subject",
+            "minWidth": 180
+          },
+          {
+            "key": "term",
+            "icon": "calendar",
+            "i18nKey": "teachingPlan.selector.term",
+            "minWidth": 220
+          }
+        ],
+        // Each select field: dropdown button, border 1.5px border, radius 8, 13px/700
+        // Dropdown panel: radius 9, shadow 0 8px 24px rgba(0,0,0,0.12), maxHeight 280, overflowY auto
+        // Active option: bg primary/12, color primary, fw700
+        "selectField": {
+          "button": {
+            "border": "1.5px solid var(--edu-border)",
+            "borderRadius": 8,
+            "padding": "9px 12px",
+            "fontSize": 13,
+            "fontWeight": 700
+          },
+          "dropdownPanel": {
+            "borderRadius": 9,
+            "boxShadow": "0 8px 24px rgba(0,0,0,0.12)",
+            "maxHeight": 280
+          }
+        }
+      },
+
+      // ── Status banners (approved / rejected) ─────────────────────────────
+      // Shown above the plan table when plan exists and status is terminal.
+      "statusBanners": {
+        "shared": {
+          "borderRadius": 12,
+          "padding": "14px 18px",
+          "iconBox": { "width": 38, "height": 38, "borderRadius": 10 }
+        },
+        "approved": {
+          "background": "var(--edu-success-light)",
+          "border": "1px solid var(--edu-success)40",
+          "titleColor": "var(--edu-success)",
+          "fontSize": 14,
+          "fontWeight": 800,
+          "i18nKey": "teachingPlan.actions.approveSuccess"
+        },
+        "rejected": {
+          "background": "var(--edu-error-light)",
+          "border": "1px solid var(--edu-error)40",
+          "titleColor": "var(--edu-error)",
+          "fontSize": 14,
+          "fontWeight": 800,
+          // Resubmit button: border 1.5px error, bg #fff, color error, radius 8, 12.5px/700
+          "resubmitButton": {
+            "border": "1.5px solid var(--edu-error)",
+            "borderRadius": 8,
+            "fontSize": 12.5,
+            "fontWeight": 700,
+            "i18nKey": "teachingPlan.rejection.editHint"
+          }
+        }
+      },
+
+      // ── Plan table (main content area) ────────────────────────────────────
+      // Card shell wraps scrollable table; maxHeight: calc(100vh - 280px)
+      "planTable": {
+        "outerShell": {
+          "background": "var(--edu-card)",
+          "borderRadius": 12,
+          "border": "1px solid var(--edu-border)",
+          "boxShadow": "0 2px 12px rgba(0,0,0,0.04)",
+          "overflow": "hidden"
+        },
+        "scrollArea": {
+          "overflow": "auto",
+          "maxHeight": "calc(100vh - 280px)"
+        },
+        "table": {
+          "minWidth": 920,
+          "borderCollapse": "separate",
+          "borderSpacing": 0
+        },
+        "columns": [
+          {
+            "key": "week",
+            "width": 64,
+            "align": "center",
+            "i18nKey": "teachingPlan.grid.weekLabel"
+          },
+          {
+            "key": "period",
+            "width": 64,
+            "align": "center",
+            "i18nKey": "teachingPlan.grid.periodLabel"
+          },
+          {
+            "key": "lesson",
+            "width": "28%",
+            "align": "left",
+            "i18nKey": "teachingPlan.cell.title"
+          },
+          {
+            "key": "objectives",
+            "width": "auto",
+            "align": "left",
+            "i18nKey": "teachingPlan.cell.learningObjective"
+          },
+          {
+            "key": "notes",
+            "width": "20%",
+            "align": "left",
+            "i18nKey": "teachingPlan.cell.notes"
+          },
+          {
+            "key": "status",
+            "width": 100,
+            "align": "center",
+            "i18nKey": "teachingPlan.actions.saveDraft"
+          }
+        ],
+        "thead": {
+          "padding": "11px 14px",
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "color": "var(--edu-text-muted)",
+          "letterSpacing": "0.06em",
+          "textTransform": "uppercase",
+          "borderBottom": "1px solid var(--edu-border)",
+          "background": "var(--edu-bg)",
+          "position": "sticky",
+          "top": 0,
+          "zIndex": 5
+        },
+        "td": {
+          "padding": "12px 14px",
+          "borderBottom": "1px solid var(--edu-border)",
+          "verticalAlign": "middle"
+        },
+        // Row states
+        "rowStates": {
+          "filled": {
+            "background": "var(--edu-card)",
+            "cursor": "pointer",
+            "hoverBackground": "subjectColor/06"
+          },
+          "empty": {
+            "background": "#FAFBFD",
+            "cursor": "pointer",
+            "hoverBackground": "subjectColor/06"
+          },
+          "editing": {
+            "background": "subjectColor/08"
+            // Inline edit: lesson = <input>, objectives + notes = <textarea rows=2>
+            // Save btn: bg subjectColor (disabled=textMuted), color #fff, radius 7, 11.5px/700
+            // Cancel btn: border border, bg #fff, color textSecondary, radius 7
+          },
+          "readOnly": {
+            "cursor": "default"
+            // readOnly = true when status APPROVED or SUBMITTED (teacher view)
+            // readOnly = true always in principal review
+          }
+        },
+        // Cell fill badge
+        "cellBadge": {
+          "filled": {
+            "background": "var(--edu-success-light)",
+            "color": "var(--edu-success)",
+            "icon": "check",
+            "i18nKey": "teachingPlan.cell.save"
+          },
+          "empty": {
+            "background": "var(--edu-bg)",
+            "color": "var(--edu-text-muted)",
+            "border": "1px dashed var(--edu-border)",
+            "i18nKey": "teachingPlan.grid.emptyState"
+          }
+        }
+      },
+
+      // ── Right sidebar (progress + actions) ────────────────────────────────
+      "progressSidebar": {
+        "width": 280,
+        "flexShrink": 0,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 14,
+
+        // Panel 1: status + metadata card
+        "statusMetaCard": {
+          "padding": 16,
+          "fields": [
+            "status chip",
+            "class",
+            "subject",
+            "term",
+            "weeks",
+            "periods/week"
+          ]
+        },
+
+        // Panel 2: progress card
+        "progressCard": {
+          "padding": 16,
+          "statValue": {
+            "fontSize": 22,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          "progressBar": {
+            "height": 8,
+            "color": "conditional: success when 100%, else subjectColor"
+          },
+          // Remaining hint: 11.5px, textMuted, shown when pct < 100 and not APPROVED
+          "remainingHint": {
+            "fontSize": 11.5,
+            "color": "var(--edu-text-muted)"
+          }
+        },
+
+        // Panel 3: week quick-jump
+        "weekJump": {
+          "grid": "5 columns, gap 4",
+          "weekButton": {
+            "padding": "7px 0",
+            "borderRadius": 6,
+            "fontSize": 11.5,
+            "fontWeight": 800,
+            "states": {
+              "full": {
+                "border": "success60",
+                "bg": "var(--edu-success-light)",
+                "color": "var(--edu-success)"
+              },
+              "partial": {
+                "border": "subjectColor40",
+                "bg": "subjectColor/0E",
+                "color": "subjectColor"
+              },
+              "empty": {
+                "border": "var(--edu-border)",
+                "bg": "var(--edu-card)",
+                "color": "var(--edu-text-muted)"
+              }
+            }
+          }
+        },
+
+        // Panel 4: actions card (hidden when APPROVED)
+        "actionsCard": {
+          "padding": 16,
+          "gap": 8,
+          "copyPriorButton": {
+            "border": "1.5px dashed var(--edu-border)",
+            "borderRadius": 8,
+            "fontSize": 12,
+            "fontWeight": 700,
+            "icon": "archive",
+            "i18nKey": "teachingPlan.actions.saveDraft",
+            "hoverBorder": "subjectColor"
+          },
+          // Resubmit (REJECTED state): primary bg, send icon
+          "resubmitButton": {
+            "background": "subjectColor",
+            "borderRadius": 9,
+            "fontSize": 13,
+            "fontWeight": 700,
+            "icon": "send",
+            "i18nKey": "teachingPlan.actions.submit"
+          },
+          // Normal draft/submitted state: two buttons
+          "saveDraftButton": {
+            "border": "1.5px solid var(--edu-border)",
+            "background": "var(--edu-card)",
+            "borderRadius": 9,
+            "fontSize": 13,
+            "fontWeight": 700,
+            "icon": "penLine",
+            "disabled": "when status = SUBMITTED",
+            "i18nKey": "teachingPlan.actions.saveDraft"
+          },
+          "submitButton": {
+            "background": "subjectColor (disabled: var(--edu-text-muted))",
+            "color": "#fff",
+            "borderRadius": 9,
+            "fontSize": 13,
+            "fontWeight": 700,
+            "icon": "send",
+            "disabled": "when SUBMITTED or filled=0",
+            "i18nKey": "teachingPlan.actions.submit"
+          }
+        }
+      },
+
+      // ── Screen states ─────────────────────────────────────────────────────
+      "states": {
+        "notStarted": {
+          // Full-width card shell, textAlign center, padding 64px 24px
+          "iconBox": {
+            "width": 72,
+            "height": 72,
+            "borderRadius": 18,
+            "background": "subjectColor/14",
+            "icon": "calendar",
+            "iconSize": 32
+          },
+          "title": {
+            "fontSize": 17,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)",
+            "i18nKey": "teachingPlan.grid.emptyStateCta"
+          },
+          "subtitle": {
+            "fontSize": 13,
+            "color": "var(--edu-text-muted)",
+            "maxWidth": 480
+          },
+          "buttons": [
+            "create (primary, plus icon)",
+            "copy from last year (secondary, archive icon)"
+          ],
+          "i18nKeys": "teachingPlan.grid.emptyState + teachingPlan.grid.emptyStateCta"
+        },
+        "loading": {
+          // Skeleton: selector bar shimmer + table row skeletons (min 5 rows)
+          "component": "teaching-plan-skeleton (mirroring GradeBookSkeleton pattern)"
+        },
+        "draft": {
+          "description": "Plan exists, status=DRAFT. Table editable (click row to inline-edit). Sidebar: saveDraft + submit buttons active. No banner."
+        },
+        "submitted": {
+          "description": "Status=SUBMITTED. Table read-only. saveDraft button disabled (opacity 0.5). Submit button shows 'Đã nộp — chờ duyệt'. No edit possible."
+        },
+        "approved": {
+          "description": "Status=APPROVED. Table read-only. Banner success shown. Sidebar actions panel hidden. No inline edit.",
+          "banner": "teachingPlan.actions.approveSuccess + approvedBy + approvedAt"
+        },
+        "rejected": {
+          "description": "Status=REJECTED. Table editable (re-enter draft editing). Banner warning shows rejectionReason. Sidebar: 'Nộp lại kế hoạch' button. No saveDraft button.",
+          "bannerFields": ["rejectedBy", "rejectedAt", "rejectionReason"],
+          "i18nKey": "teachingPlan.rejection.bannerTitle + teachingPlan.rejection.reason"
+        },
+        "error": {
+          "networkError": "teachingPlan.errors.network-error",
+          "notFound": "teachingPlan.errors.not-found",
+          "unauthorized": "teachingPlan.errors.unauthorized"
+        }
+      }
+    },
+
+    // ── Principal review screen — TeachingPlanReviewScreen ───────────────────
+    "principalScreen": {
+      // Two-panel master-detail layout
+      "layout": {
+        "pageContainer": {
+          "flex": 1,
+          "overflowY": "hidden",
+          "padding": 0,
+          "display": "flex",
+          "flexDirection": "column"
+        },
+        "pageHeader": {
+          "padding": "20px 32px 12px",
+          "title": {
+            "fontSize": 22,
+            "fontWeight": 800,
+            "color": "var(--edu-text-primary)"
+          },
+          "subtitle": { "fontSize": 12.5, "color": "var(--edu-text-muted)" },
+          "i18nKey": "teachingPlan.principalSubtitle"
+        },
+        "body": {
+          "display": "flex",
+          "padding": "0 32px 24px",
+          "gap": 16,
+          "minHeight": 0
+        },
+        // Left panel: submission list
+        "listPanel": {
+          "width": 360,
+          "flexShrink": 0,
+          "borderRadius": 12,
+          "border": "1px solid var(--edu-border)",
+          "display": "flex",
+          "flexDirection": "column",
+          "overflow": "hidden"
+        },
+        // Right panel: read-only plan + review actions
+        "detailPanel": {
+          "flex": 1,
+          "minWidth": 0,
+          "display": "flex",
+          "flexDirection": "column",
+          "gap": 14,
+          "overflow": "hidden"
+        }
+      },
+
+      // ── Status filter tabs ─────────────────────────────────────────────────
+      "filterTabs": {
+        "container": {
+          "padding": "12px 14px",
+          "borderBottom": "1px solid var(--edu-border)"
+        },
+        "tab": {
+          "padding": "5px 10px",
+          "borderRadius": 99,
+          "fontSize": 11.5,
+          "fontWeight": 700
+        },
+        "tabActiveStyle": {
+          "border": "1px solid subjectColor",
+          "background": "subjectColor/12",
+          "color": "subjectColor"
+        },
+        "tabCountBadge": {
+          "borderRadius": 99,
+          "padding": "0 6px",
+          "fontSize": 10,
+          "fontWeight": 800,
+          "activeStyle": { "background": "subjectColor", "color": "#fff" }
+        },
+        "tabs": [
+          { "id": "submitted", "i18nKey": "teachingPlan.status.SUBMITTED" },
+          { "id": "approved", "i18nKey": "teachingPlan.status.APPROVED" },
+          { "id": "rejected", "i18nKey": "teachingPlan.status.REJECTED" },
+          { "id": "all", "i18nKey": "teachingPlan.principal.allTeachers" }
+        ]
+      },
+
+      // ── Submission list item ──────────────────────────────────────────────
+      "listItem": {
+        "padding": "14px 18px",
+        "borderBottom": "1px solid var(--edu-border)",
+        "selectedStyle": {
+          "background": "primaryColor/0B",
+          "borderLeft": "3px solid primaryColor"
+        },
+        "avatar": { "size": 32 },
+        "teacherName": { "fontSize": 13, "fontWeight": 700 },
+        "subjectClassTerm": {
+          "fontSize": 11.5,
+          "color": "var(--edu-text-muted)"
+        },
+        "miniProgressBar": { "height": 4 },
+        "submittedAt": {
+          "fontSize": 10.5,
+          "color": "var(--edu-text-muted)",
+          "i18nKey": "teachingPlan.principal.submittedAt"
+        }
+      },
+
+      // ── Submission detail header ──────────────────────────────────────────
+      "detailHeader": {
+        "cardShell": { "padding": "16px 20px" },
+        "avatar": { "size": 44 },
+        "teacherName": { "fontSize": 15, "fontWeight": 800 },
+        "progressStat": { "fontSize": 18, "fontWeight": 800 },
+        // Rejection inline panel (below meta):
+        "rejectionPanel": {
+          "padding": "10px 14px",
+          "background": "var(--edu-error-light)",
+          "border": "1px solid var(--edu-error)30",
+          "borderRadius": 9
+        },
+        // Approval inline note:
+        "approvalNote": {
+          "background": "var(--edu-success-light)",
+          "border": "1px solid var(--edu-success)30",
+          "borderRadius": 9
+        }
+      },
+
+      // ── Review action buttons (submitted plans only) ───────────────────────
+      "reviewActions": {
+        "position": "bottom-right of detail header card, flexEnd",
+        "requestChangesButton": {
+          "border": "1.5px solid var(--edu-border)",
+          "background": "var(--edu-card)",
+          "borderRadius": 9,
+          "padding": "9px 18px",
+          "fontSize": 13,
+          "fontWeight": 700,
+          "icon": "alertTriangle",
+          "i18nKey": "teachingPlan.actions.reject"
+        },
+        "approveButton": {
+          "background": "var(--edu-success)",
+          "color": "#fff",
+          "borderRadius": 9,
+          "padding": "9px 18px",
+          "fontSize": 13,
+          "fontWeight": 700,
+          "icon": "check",
+          "i18nKey": "teachingPlan.actions.approve"
+        }
+      },
+
+      // ── Reject reason form (inline in detail header) ──────────────────────
+      "rejectReasonForm": {
+        "container": {
+          "background": "var(--edu-bg)",
+          "borderRadius": 9,
+          "border": "1px solid var(--edu-border)",
+          "padding": 14
+        },
+        "label": {
+          "i18nKey": "teachingPlan.reject.reasonLabel",
+          "required": true
+        },
+        "textarea": {
+          "border": "1.5px solid var(--edu-border)",
+          "borderRadius": 7,
+          "fontSize": 12.5,
+          "resize": "vertical",
+          "i18nKey": "teachingPlan.reject.reasonPlaceholder"
+        },
+        "validation": {
+          "minLength": 10,
+          "i18nKey": "teachingPlan.reject.reasonMinLength"
+        },
+        "buttons": {
+          "cancel": {
+            "variant": "ghost",
+            "i18nKey": "teachingPlan.reject.cancel"
+          },
+          "confirm": {
+            "variant": "danger",
+            "i18nKey": "teachingPlan.reject.confirm",
+            "disabled": "when reason.trim() empty"
+          }
+        }
+      },
+
+      // ── Empty state (no submissions matching filter) ───────────────────────
+      "emptyState": {
+        "text": "teachingPlan.principal.emptyPending",
+        "padding": 40,
+        "textAlign": "center",
+        "color": "var(--edu-text-muted)",
+        "fontSize": 13
+      },
+
+      // ── No selection state (right panel) ──────────────────────────────────
+      "noSelectionState": {
+        "padding": 60,
+        "textAlign": "center",
+        "color": "var(--edu-text-muted)"
+      }
+    },
+
+    // ── Shared component decisions ────────────────────────────────────────────
+    "developerNotes": {
+      // Components to reuse from design system / shared:
+      "reuse": [
+        "Avatar — initials avatar (size 32 / 44); from components/shared/avatar or feature-local",
+        "ProgressBar — shared progress bar; height prop (4px list items, 8px sidebar)",
+        "StatusBadge / TPStatusChip — feature-local chip wrapping icon + label; bg=color/15",
+        "Button (variant=primary/secondary/ghost/danger) — components/ui/button"
+      ],
+      // Feature-local components (presentation layer):
+      "screenLocal": [
+        "TPSelectField — labeled select dropdown with icon (mirrors TTSelectField from timetable.jsx)",
+        "TPStatusChip — status chip with icon; 3 sizes (sm/md)",
+        "TPStatusBanner — approved/rejected full-width banner with icon box and resubmit CTA",
+        "TPRow — inline-editable table row (read/edit mode); renders input+textareas in edit",
+        "TPPlanTable — scrollable plan table; orchestrates TPRow list",
+        "TPProgressSidebar — right rail: status meta + progress + week-jump + actions",
+        "TPNotStarted — empty state card (notStarted status)",
+        "TeachingPlanScreen — teacher route wrapper (class/subject/term state, plan CRUD)",
+        "TeachingPlanReviewScreen — principal route wrapper (filter tabs, list/detail split)"
+      ],
+      // BE data shape (mock-first per decision 0014 — core service not yet built):
+      "beDataShape": {
+        "getTeachingPlan": "GET /teaching-plans?classId=&subjectId=&term= → TeachingPlan entity",
+        "saveDraft": "PUT /teaching-plans/{id}/draft → updated TeachingPlan",
+        "submit": "POST /teaching-plans/{id}/submit → TeachingPlan(status=SUBMITTED)",
+        "approve": "POST /teaching-plans/{id}/approve → TeachingPlan(status=APPROVED)",
+        "reject": "POST /teaching-plans/{id}/reject { reason } → TeachingPlan(status=REJECTED)",
+        "listForPrincipal": "GET /teaching-plans?teacherId=&status= → TeachingPlan[]"
+      },
+      // Copy keys (i18n):
+      "copyKeys": "teachingPlan.* namespace — all keys in src/bootstrap/i18n/messages/vi.json teachingPlan section",
+      "i18nKeyCount": 52,
+      // Accessibility notes (inherited from handoff, for /fe attention):
+      "a11yNotes": [
+        "TPSelectField button: needs aria-expanded, aria-haspopup='listbox'; dropdown items need role='option'",
+        "TPRow inline edit: autoFocus on lesson input when entering edit mode (done in mockup); confirm with tab order",
+        "Status-only conveyed by color in cell badge — icon (check/empty indicator) accompanies color (OK per design)",
+        "Week jump buttons: title attribute present in mockup (tooltip); ensure keyboard reachable",
+        "reject reason textarea: needs aria-required=true, aria-describedby pointing at validation message",
+        "Approve/reject buttons: consider aria-label clarity ('Phê duyệt kế hoạch của {name}' vs generic)"
+      ]
+    },
+
+    // ── Responsive ────────────────────────────────────────────────────────────
+    "responsive": {
+      "breakpoints": {
+        "1320": "Default — full two-panel layout (teacher: table + 280px sidebar; principal: 360px list + flex detail)",
+        "1024": "Table min-width 920 triggers horizontal scroll within card shell; sidebar stays 280px",
+        "768": "teacher: sidebar moves below table (stacked); principal: list above detail (stacked); padding 16px 20px",
+        "375": "padding 12px 16px; selector bar: flex-wrap forces vertical stack; sidebar gap 10px; table horizontal scroll"
+      }
+    }
   }
 }
