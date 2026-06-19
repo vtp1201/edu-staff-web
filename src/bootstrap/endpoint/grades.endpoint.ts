@@ -14,4 +14,9 @@ export const GRADES_EP = {
   requestRevision: (id: string) =>
     `/core/api/v1/grade-batches/${id}/request-revision`,
   bulkLock: () => `/core/api/v1/grade-batches/bulk-lock`,
+  // US-E13.6 — read-only multi-role grade book:
+  gradeBook: (csId: string) => `/core/api/v1/class-subjects/${csId}/gradebook`,
+  myGrades: `/core/api/v1/students/me/grades`,
+  childGrades: (childId: string) =>
+    `/core/api/v1/parent/children/${childId}/grades`,
 } as const;
