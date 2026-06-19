@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -41,6 +41,31 @@ moi vao cua so chat dang mo (mock-first: setTimeout simulation trong design).
 
 RBAC: Tat ca roles co quyen nhan tin. [ASSUMPTION] Admin co the xem tat ca nhom.
 BE mock-first: `social` service chua ship (decision 0017).
+
+**DR-008 enhancements (edustaff_5 handoff, 2026-06-19 — ADR 0044):**
+
+*Group features:*
+- Danh sách nhóm nâng cao: avatar nhóm (màu từ palette 8 màu), số thành viên, last activity, unread badge riêng cho nhóm.
+- "Tạo nhóm" — modal 2 bước:
+  - Bước 1: tên nhóm, mô tả, loại nhóm (Lớp học / Bộ môn / Câu lạc bộ / Khác), chọn màu avatar.
+  - Bước 2: tìm kiếm + chọn thành viên (multi-select với checkbox).
+  - Submit → nhóm mới xuất hiện đầu tab Groups.
+- Group info panel (320px slide-in từ phải): danh sách thành viên + badge admin, tin nhắn đã ghim, nút rời nhóm / xóa nhóm (admin-only).
+
+*Message interactions:*
+- Context menu (right-click / long-press) trên bubble: Trả lời / Ghim tin nhắn / Sao chép / Xóa (chỉ tin của mình, trong 1 giờ).
+- Reply/Quote: strip "Đang trả lời [Tên]" phía trên input khi chọn reply; bubble được reply hiển thị quoted-strip nhỏ phía trên nội dung.
+- Pin: tin nhắn ghim xuất hiện trong group info panel; click → scroll đến tin nhắn gốc + highlight 3s.
+
+*Per-role group seeding:*
+- Teacher ↔ nhóm bộ môn, nhóm lớp chủ nhiệm.
+- Principal ↔ nhóm BGH.
+- Student ↔ nhóm lớp học.
+- Parent ↔ DM với GVCN.
+
+**Note về status:** Story được mark `implemented` dựa trên TEST_MATRIX row (E10.1 implemented
+với unit/integ/e2e proof). DR-008 là scope bổ sung chưa implement — cần story mới hoặc
+tạo task follow-up để FE team implement DR-008 features sau khi US-E10.1 base merge.
 
 ## Relevant Product Docs
 
