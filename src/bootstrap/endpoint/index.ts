@@ -8,6 +8,7 @@ export * from "./calendar.endpoint";
 export * from "./class.endpoint";
 export * from "./class-log.endpoint";
 export * from "./exam.endpoint";
+export * from "./exam-bank.endpoint";
 export * from "./lesson-bank.endpoint";
 export * from "./messaging.endpoint";
 export * from "./noti.endpoint";

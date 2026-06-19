@@ -2,448 +2,154 @@
   "Common": {
     "hello": "Hello"
   },
-  "gradeApproval": {
-    "title": "Grade Batch Approval",
-    "filterAll": "All",
-    "filterPending": "Pending Approval",
-    "filterPublished": "Published",
-    "filterLocked": "Locked",
-    "colClass": "Class",
-    "colSubject": "Subject",
-    "colTeacher": "Teacher",
-    "colTerm": "Term",
-    "colStudentCount": "Students",
-    "colStatus": "Status",
-    "colUpdated": "Updated",
-    "actionView": "View",
-    "actionApprove": "Approve & Publish",
-    "actionRequestRevision": "Request Revision",
-    "actionBulkLock": "Lock Grades",
-    "selectAllLabel": "Select all grade batches",
-    "selectBatchLabel": "Select batch {id}",
-    "statusPendingApproval": "Pending Approval",
-    "statusPublished": "Published",
-    "statusLocked": "Locked",
-    "statusDraft": "Draft",
-    "approveDialog": {
-      "title": "Confirm Grade Publication",
-      "description": "Once published, students and parents can view grades. Continue?",
-      "confirm": "Publish",
-      "cancel": "Cancel"
+  "academicRecord": {
+    "breadcrumb": {
+      "home": "Home",
+      "record": "Academic Record",
+      "students": "Students"
     },
-    "revisionDialog": {
-      "title": "Request Revision",
-      "noteLabel": "Note for teacher",
-      "notePlaceholder": "Describe what needs to be corrected...",
-      "noteMinLength": "Note must be at least 10 characters",
-      "confirm": "Send request",
-      "cancel": "Cancel"
-    },
-    "bulkLockDialog": {
-      "title": "Lock Grades",
-      "description": "Once locked, grades cannot be edited. Confirm locking {count} batch(es)?",
-      "confirm": "Lock Grades",
-      "cancel": "Cancel"
-    },
-    "detailSheet": {
-      "title": "Grade Batch Detail",
-      "averageScore": "Class average",
-      "distribution": "Grade distribution",
-      "previewTable": "Grade table",
-      "colStudent": "Student",
-      "colCode": "Code",
-      "colAverage": "Average",
-      "colGradeLabel": "Grade",
-      "previewTableAriaLabel": "Student grade table"
-    },
-    "emptyState": "No grade batches awaiting approval",
-    "emptyStateAll": "No grade batches",
-    "selfPublishModeWarning": "School uses self-publish mode; approval queue is empty.",
-    "bulkLockToolbar": "{count} batch(es) selected",
-    "approveSuccess": "Published grades for {subject} {class}",
-    "revisionSuccess": "Revision request sent",
-    "bulkLockSuccess": "Locked {count} grade batch(es)",
-    "errorNotPendingApproval": "Batch is not in pending-approval status",
-    "errorNotPublished": "Batch has not been published",
-    "errorBatchLocked": "Batch is already locked",
-    "errorForbidden": "You do not have permission",
-    "errorNetworkError": "Connection error, please try again",
-    "errorUnknown": "An unexpected error occurred",
-    "loading": "Loading grade batches...",
-    "tableAriaLabel": "Grade batch list",
-    "closeSheet": "Close",
-    "filterGroupLabel": "Filter by status",
-    "bandExcellent": "Excellent",
-    "bandGood": "Good",
-    "bandAverage": "Average",
-    "bandWeak": "Weak",
-    "bandPoor": "Poor"
-  },
-  "gradeEntry": {
-    "title": "Grade Entry",
-    "selectClass": "Select class - subject",
-    "selectTerm": "Select term",
-    "termHK1": "Semester 1",
-    "termHK2": "Semester 2",
-    "columnHeader": "{label} ({weight}%)",
-    "averageColumn": "Average",
-    "studentName": "Full name",
-    "studentCode": "Student ID",
-    "tableCaption": "Grade entry table by student and assessment column",
-    "tableLockedNotice": "Grade sheet is locked, read-only.",
-    "noSelection": "Select a class and term to view the grade sheet",
-    "emptyClass": "No students enrolled in this class",
-    "publishButton": "Publish Grades",
-    "publishConfirmTitle": "Confirm Grade Publication",
-    "publishConfirmDescription": "Published grades cannot be edited. Continue?",
-    "publishConfirmOk": "Publish",
-    "publishConfirmCancel": "Cancel",
-    "pendingApproval": "Pending Approval",
-    "published": "Published",
-    "cellLabel": "{column} score for {student}",
-    "errorOutOfRange": "Score must be between 0 and {max}",
-    "errorAlreadyPublished": "This grade sheet has already been published",
-    "errorIncompleteScores": "All columns must have scores before publishing",
-    "errorForbidden": "You do not have permission to enter grades for this class",
-    "errorNetworkError": "Connection error, please try again",
-    "errorUnknown": "An unknown error occurred",
-    "saveSuccess": "Saved",
-    "publishSuccess": "Grades published successfully",
-    "publishPendingApproval": "Grades submitted for principal approval",
-    "loading": "Loading grade sheet..."
-  },
-  "gradeBook": {
-    "title": "Grade book",
-    "selectClass": "Select class - subject",
-    "selectTerm": "Select term",
-    "termHK1": "Semester 1",
-    "termHK2": "Semester 2",
-    "enterGradesCta": "Enter grades",
-    "tableCaption": "Student grade book",
-    "colStudent": "Student",
-    "colCode": "Student ID",
-    "colAverage": "Average",
-    "colConduct": "Conduct",
-    "colGroup": "{label} ({weight}%)",
-    "conductTot": "Good",
-    "conductKha": "Fair",
-    "conductTB": "Average",
-    "conductYeu": "Weak",
-    "rankXuatSac": "Excellent",
-    "rankGioi": "Good",
-    "rankKha": "Fair",
-    "rankTrungBinh": "Average",
-    "rankYeu": "Weak",
-    "rankDistributionTitle": "Rank distribution",
-    "notPublishedBanner": "Grades not published yet",
-    "notPublishedDescription": "Grades will appear once published by the teacher / administrator.",
-    "noSelection": "Select a class and term to view the grade book",
-    "emptyState": "No grades yet",
-    "scoreNotEntered": "Not entered",
-    "loading": "Loading grade book...",
-    "errorNotFound": "Grade book not found",
-    "errorForbidden": "You do not have permission to view this grade book",
-    "errorNetworkError": "Connection error, please try again",
-    "errorUnknown": "An unknown error occurred",
-    "retry": "Retry",
-    "tableLockedNotice": "Grade book locked, read-only.",
-    "bandHeaderTX": "Regular",
-    "bandHeaderGK": "Midterm",
-    "bandHeaderCK": "Final",
-    "scoreNotPublished": "Not published"
-  },
-  "exam": {
-    "page": {
-      "title": "Exams",
-      "subtitle": "Your list of exams"
-    },
-    "stats": {
-      "available": "Available",
-      "completed": "Completed",
-      "avgScore": "Average score"
-    },
-    "filter": {
-      "all": "All",
-      "available": "Available",
-      "completed": "Done",
-      "expired": "Expired",
-      "groupLabel": "Filter exams"
-    },
-    "card": {
-      "duration": "{minutes} min",
-      "questions": "{count} questions",
-      "deadline": "Due: {date}",
-      "teacher": "Teacher: {name}"
-    },
-    "status": {
-      "available": "Available",
-      "completed": "Done",
-      "expired": "Expired"
-    },
-    "cta": {
-      "start": "Start exam",
-      "viewResult": "View result",
-      "expired": "Expired"
-    },
-    "briefing": {
-      "title": "Exam information",
-      "duration": "Duration",
-      "questions": "Questions",
-      "type": "Type",
-      "typeValue": "Multiple choice",
-      "rulesTitle": "Exam rules",
-      "rules": {
-        "rule1": "Do not use any materials during the exam.",
-        "rule2": "Do not leave the exam page while taking it.",
-        "rule3": "The exam auto-submits when time runs out.",
-        "rule4": "Only one answer can be chosen per question.",
-        "rule5": "You cannot return after submitting."
-      },
-      "agreeLabel": "I have read and agree to the exam rules",
-      "startCta": "Start the exam now"
-    },
-    "taking": {
-      "progress": "{answered}/{total} answered",
-      "submitBtn": "Submit",
-      "flagBtn": "Flag",
-      "unflagBtn": "Unflag",
-      "prevBtn": "Previous",
-      "nextBtn": "Next",
-      "questionLabel": "Question {index}",
-      "optionLabel": "Choose answer {option}",
-      "navigatorLabel": "Question {index}",
-      "navigatorTitle": "Question Navigator",
-      "timerLabel": "Time remaining",
-      "timerAnnounce": "Time remaining: {time}",
-      "progressLabel": "Answer Progress",
-      "legend": {
-        "current": "Current",
-        "answered": "Answered",
-        "flagged": "Flagged",
-        "unanswered": "Unanswered"
-      }
-    },
-    "submitModal": {
-      "title": "Confirm submission",
-      "answered": "Answered",
-      "total": "Total questions",
-      "unanswered": "Unanswered",
-      "warningText": "{count} questions have not been answered.",
-      "reviewBtn": "Review",
-      "confirmBtn": "Submit now"
-    },
-    "result": {
-      "title": "Exam result",
-      "scoreLabel": "Score",
-      "outOf": "/10",
-      "passed": "PASSED",
-      "failed": "NOT PASSED",
-      "rank": "Rank",
-      "percentile": "Percentile",
-      "timeTaken": "Time taken",
-      "correct": "Correct",
-      "incorrect": "Incorrect",
-      "skipped": "Skipped",
-      "reviewTitle": "Review questions",
-      "filterAll": "All",
-      "filterCorrect": "Correct",
-      "filterIncorrect": "Incorrect",
-      "filterSkipped": "Skipped",
-      "filterGroupLabel": "Filter results",
-      "correctAnswer": "Correct answer",
-      "yourAnswer": "Your answer",
-      "backToList": "Back to list"
+    "conduct": {
+      "Kha": "Fair",
+      "Tot": "Good",
+      "TrungBinh": "Average",
+      "Yeu": "Weak"
     },
     "empty": {
-      "title": "No exams",
-      "subtitle": "There are no exams matching this filter."
+      "description": "There is no academic record for this school year yet.",
+      "title": "No academic record data"
     },
-    "errors": {
-      "not-found": "Exam not found.",
-      "max-attempts-exceeded": "You have already taken this exam.",
-      "after-deadline": "The exam has expired.",
-      "already-submitted": "The exam has already been submitted.",
-      "network-error": "Connection error, please try again.",
-      "unknown": "Something went wrong, please try again."
+    "error": {
+      "forbidden": "You do not have permission to view this academic record.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Academic record for this student was not found.",
+      "retry": "Retry",
+      "title": "Unable to load academic record",
+      "unknown": "Something went wrong. Please try again later."
     },
-    "skeleton": {
-      "loading": "Loading exams..."
-    }
-  },
-  "auth": {
-    "brand": {
-      "name": "EduPortal",
-      "tagline": "Education management system"
+    "pageSubtitle": "Signed academic-record history by school year and term. Each record is a snapshot of grades at the time of signing.",
+    "pageTitle": "Student Academic Record",
+    "pending": {
+      "description": "The academic record will appear here once grades are locked and signed.",
+      "title": "Term not yet signed"
     },
-    "login": {
-      "title": "Sign in",
-      "subtitle": "Enter your details to access the system",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Sign in",
-      "submitting": "Signing in..."
+    "printButton": "Print record",
+    "printButtonComingSoon": "Print feature coming soon",
+    "rankBand": {
+      "gioi": "Good",
+      "kha": "Fair",
+      "trung-binh": "Average",
+      "xuat-sac": "Excellent",
+      "yeu": "Weak"
     },
-    "errors": {
-      "invalid-credentials": "Incorrect email or password",
-      "account-suspended": "Your account has been suspended",
-      "email-already-exists": "Email is already registered",
-      "token-expired": "Your session has expired, please sign in again",
-      "invalid-token": "Invalid session, please sign in again",
-      "unauthorized": "You do not have access",
-      "network-error": "Cannot connect to the server",
-      "unknown": "Something went wrong, please try again",
-      "invalid-otp": "The code is incorrect or already used.",
-      "otp-expired": "The code has expired, request a new one.",
-      "too-many-requests": "Too many requests, please try again later.",
-      "sso-unavailable": "Social sign-in is not yet available. Please use your email and password below."
+    "roleBadge": {
+      "ADMIN": "Full view access",
+      "PARENT": "View linked child's record",
+      "STUDENT": "View own academic record",
+      "TEACHER": "View students in class"
     },
-    "forgot": {
-      "title": "Forgot password",
-      "linkFromLogin": "Forgot password?",
-      "backToLogin": "Back to login",
-      "step1": {
-        "subtitle": "Enter your email to get a reset code.",
-        "email": "Email",
-        "submit": "Send OTP",
-        "sending": "Sending…"
-      },
-      "step2": {
-        "subtitle": "Enter the 6-digit code sent to your email.",
-        "submit": "Confirm",
-        "resend": "Resend code"
-      },
-      "step3": {
-        "subtitle": "Set a new password for your account.",
-        "new": "New password",
-        "confirm": "Confirm password",
-        "mismatch": "Passwords do not match.",
-        "submit": "Reset password",
-        "submitting": "Resetting…"
-      },
-      "step4": {
-        "title": "Password reset",
-        "subtitle": "You can sign in with your new password.",
-        "cta": "Sign in"
-      }
+    "sealStatus": {
+      "ariaSealed": "Academic record is sealed",
+      "ariaUnsealed": "Academic record is not sealed",
+      "sealed": "Sealed",
+      "unsealed": "Not sealed"
     },
-    "sso": {
-      "continueWithGoogle": "Continue with Google",
-      "loginWithVneID": "Sign in with VNeID",
-      "divider": "or sign in with email",
-      "vneidComingSoon": "Coming soon",
-      "googleLoading": "Signing in with Google..."
+    "student": {
+      "code": "Student ID",
+      "currentClass": "Current class",
+      "currentYear": "Current school year",
+      "dob": "Date of birth"
     },
-    "selectRole": {
-      "eyebrow": "Sign in as",
-      "roleSummary": "{count, plural, one {# role available} other {# roles available}}",
-      "backLink": "Sign in with a different account"
-    },
-    "roles": {
-      "TEACHER": {
-        "label": "Teacher"
-      },
-      "ADMIN": {
-        "label": "Board of Directors"
-      },
-      "MANAGER": {
-        "label": "Vice Principal"
-      },
-      "STAFF": {
-        "label": "Staff"
-      },
-      "STUDENT": {
-        "label": "Student"
-      },
-      "PARENT": {
-        "label": "Parent"
-      }
-    }
-  },
-  "shell": {
-    "nav": {
-      "dashboard": "Dashboard",
-      "classes": "Classes",
-      "attendance": "Attendance",
-      "classLog": "Class Log",
-      "discipline": "Discipline",
+    "table": {
+      "caption": "Term grade sheet",
       "conduct": "Conduct",
-      "grades": "Grades",
-      "schedule": "Schedule",
-      "students": "Students",
-      "courses": "Courses",
-      "assignments": "Assignments",
-      "exams": "Exams",
-      "resources": "Resources",
-      "messages": "Messages",
-      "profile": "Profile",
-      "teachers": "Teachers",
-      "reports": "Reports",
-      "overview": "Overview",
-      "children": "My Children",
-      "schoolSetup": "School Setup",
-      "academicCalendar": "Academic Calendar",
-      "subjectDepartments": "Subject Departments",
-      "subjects": "Subjects",
-      "studentRoster": "Student Roster",
-      "classManagement": "Class Management",
-      "timetable": "Timetable",
-      "assessmentScheme": "Assessment Scheme",
-      "staffing": "Staffing",
-      "staffLeave": "Staff Leave",
-      "expandSidebar": "Expand sidebar",
-      "collapseSidebar": "Collapse sidebar",
-      "announcements": "Announcements"
+      "final": "Final",
+      "gpa": "GPA",
+      "midterm": "Midterm",
+      "rank": "Rank",
+      "subject": "Subject",
+      "termAvg": "Term Avg",
+      "termSummary": "Term summary",
+      "tx1": "RG1",
+      "tx2": "RG2"
     },
-    "header": {
-      "searchPlaceholder": "Search...",
-      "notifications": "Notifications",
-      "switchRole": "Switch role",
-      "logout": "Log out",
-      "profile": "Profile"
+    "termSection": {
+      "class": "Class",
+      "sealedOn": "Signed on",
+      "signedBy": "Signed by",
+      "term1": "Term 1",
+      "term2": "Term 2",
+      "unsealedBanner": "This record has been unsealed",
+      "unsealedOn": "Unsealed on"
     },
-    "roles": {
-      "teacher": "Teacher",
-      "principal": "Principal",
-      "student": "Student",
-      "parent": "Parent",
-      "admin": "Admin"
+    "termStatus": {
+      "PENDING": "Not signed",
+      "SEALED": "Signed",
+      "UNSEALED": "Unsealed"
+    },
+    "yearStatus": {
+      "all_sealed": "Fully signed",
+      "none": "No record",
+      "partial": "Partially signed",
+      "unsealed_in_year": "Has unsealed record"
+    },
+    "yearTimeline": {
+      "ariaLabel": "Select school year",
+      "currentBadge": "Current year"
     }
   },
   "adminRoster": {
-    "title": "Student roster",
-    "subtitle": "Manage student enrollment — required before grade entry and attendance.",
+    "actions": {
+      "exportList": "Export list",
+      "importCsv": "Import CSV"
+    },
+    "addPanel": {
+      "add": "Add",
+      "importCsv": "Import from CSV",
+      "inClass": "In class",
+      "noResults": "No students found.",
+      "searchPlaceholder": "Name or student ID...",
+      "subtitle": "Find and add students to this class.",
+      "title": "Add students",
+      "transfer": "Transfer",
+      "transferWarning": "Currently in class {className} — adding will transfer.",
+      "unassigned": "Unassigned"
+    },
     "breadcrumb": {
       "classes": "Classes",
       "roster": "Student roster"
     },
     "classInfo": {
-      "homeroom": "Homeroom",
-      "unassigned": "Unassigned",
-      "grade": "Grade {level}",
-      "class": "Class {name}",
       "active": "Active",
+      "class": "Class {name}",
+      "grade": "Grade {level}",
+      "homeroom": "Homeroom",
       "transferred": "Transferred",
+      "unassigned": "Unassigned",
       "year": "Year"
     },
-    "table": {
-      "name": "Full name",
-      "studentId": "Student ID",
-      "dob": "Date of birth",
-      "gender": "Gender",
-      "genderFemale": "Female",
-      "genderMale": "Male",
-      "status": "Status",
-      "searchPlaceholder": "Search by name or student ID...",
-      "noMatch": "No matching students.",
-      "exportCsv": "Export CSV",
-      "removeFromClass": "Remove from class",
-      "selected": "{count} students selected",
-      "clearSelection": "Clear",
-      "clearSearch": "Clear search",
-      "actions": "Actions",
-      "showing": "Showing {from}–{to} of {total} students",
-      "selectAll": "Select all students on this page",
-      "selectStudent": "Select student {name}"
+    "confirm": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "transferBody": "{name} will be transferred from class {fromClass} to this class.",
+      "transferTitle": "Confirm transfer",
+      "unenrollBody": "{count} students will be removed from this class. This cannot be undone.",
+      "unenrollTitle": "Remove from class?"
+    },
+    "empty": {
+      "addFirst": "Add the first student to this class",
+      "body": "Add students to begin grade entry and attendance for this class.",
+      "importCsv": "Import from CSV",
+      "title": "No students yet"
+    },
+    "errors": {
+      "already-enrolled": "Student is already enrolled in another class for this year.",
+      "class-archived": "Class has been archived and cannot accept enrollment.",
+      "forbidden": "You do not have permission to perform this action.",
+      "member-not-student": "The member does not have the student role.",
+      "network-error": "Could not reach the server",
+      "not-found": "Data not found",
+      "unauthorized": "You do not have access",
+      "unknown": "Something went wrong, please try again"
     },
     "pagination": {
       "nav": "Pagination"
@@ -452,426 +158,361 @@
       "active": "Active",
       "transferred": "Transferred"
     },
-    "addPanel": {
-      "title": "Add students",
-      "subtitle": "Find and add students to this class.",
-      "searchPlaceholder": "Name or student ID...",
-      "noResults": "No students found.",
-      "inClass": "In class",
-      "add": "Add",
-      "transfer": "Transfer",
-      "unassigned": "Unassigned",
-      "transferWarning": "Currently in class {className} — adding will transfer.",
-      "importCsv": "Import from CSV"
+    "subtitle": "Manage student enrollment — required before grade entry and attendance.",
+    "table": {
+      "actions": "Actions",
+      "clearSearch": "Clear search",
+      "clearSelection": "Clear",
+      "dob": "Date of birth",
+      "exportCsv": "Export CSV",
+      "gender": "Gender",
+      "genderFemale": "Female",
+      "genderMale": "Male",
+      "name": "Full name",
+      "noMatch": "No matching students.",
+      "removeFromClass": "Remove from class",
+      "searchPlaceholder": "Search by name or student ID...",
+      "selectAll": "Select all students on this page",
+      "selectStudent": "Select student {name}",
+      "selected": "{count} students selected",
+      "showing": "Showing {from}–{to} of {total} students",
+      "status": "Status",
+      "studentId": "Student ID"
     },
-    "empty": {
-      "title": "No students yet",
-      "body": "Add students to begin grade entry and attendance for this class.",
-      "addFirst": "Add the first student to this class",
-      "importCsv": "Import from CSV"
-    },
-    "actions": {
-      "importCsv": "Import CSV",
-      "exportList": "Export list"
-    },
-    "confirm": {
-      "unenrollTitle": "Remove from class?",
-      "unenrollBody": "{count} students will be removed from this class. This cannot be undone.",
-      "transferTitle": "Confirm transfer",
-      "transferBody": "{name} will be transferred from class {fromClass} to this class.",
-      "cancel": "Cancel",
-      "confirm": "Confirm"
-    },
-    "errors": {
-      "network-error": "Could not reach the server",
-      "unauthorized": "You do not have access",
-      "forbidden": "You do not have permission to perform this action.",
-      "not-found": "Data not found",
-      "already-enrolled": "Student is already enrolled in another class for this year.",
-      "member-not-student": "The member does not have the student role.",
-      "class-archived": "Class has been archived and cannot accept enrollment.",
-      "unknown": "Something went wrong, please try again"
-    }
+    "title": "Student roster"
   },
   "adminSchoolSetup": {
-    "title": "School Setup",
-    "subtitle": "Foundational parameters that make EduPortal work for your school.",
-    "saved": "Saved",
-    "guide": {
-      "title": "Initial Setup",
-      "stepsComplete": "steps complete",
-      "subtitle": "Complete the steps below in order to start using EduPortal.",
-      "hide": "Hide guide",
-      "hideAriaLabel": "Hide setup guide",
-      "progressAriaLabel": "Setup progress",
-      "done": "Done",
-      "configure": "Configure",
-      "setupGuideTitle": "Setup Guide",
-      "setupGuideSubtitle": "Recommended configuration order per ADR 0035.",
-      "open": "Open",
-      "configureAriaLabel": "Configure: {step}",
-      "openAriaLabel": "Open settings: {step}"
-    },
-    "steps": {
-      "stepGradeLevels": "Grade levels",
-      "stepAcademicCalendar": "Academic year",
-      "stepSubjects": "Subjects",
-      "stepAssessmentScheme": "Assessment scheme",
-      "stepClasses": "Classes"
-    },
-    "gradeRange": {
-      "title": "Grade Level Range",
-      "subtitle": "Defines which grade levels exist at your school. Classes can only be created within this range.",
-      "minLabel": "Min grade",
-      "maxLabel": "Max grade",
-      "hint": "Examples: High School → 10–12 | Lower Sec. → 6–9 | Primary → 1–5. Platform limit: 1 ≤ min ≤ max ≤ 13.",
-      "presetsLabel": "Quick presets",
-      "currentRange": "Current range:",
-      "gradeLabel": "Grade ",
-      "activeClasses": "active classes",
-      "unconfiguredTitle": "Grade levels not yet configured",
-      "unconfiguredBody": "Classes cannot be created until this step is complete.",
-      "narrowingTitle": "Narrowing range:",
-      "narrowingBody": "Narrowing will be blocked if there are classes outside the new range. Please archive those classes before changing.",
-      "save": "Save grade range",
-      "saving": "Saving..."
-    },
-    "presets": {
-      "presetPrimary": "Primary",
-      "presetSecondary": "Lower Sec.",
-      "presetHighSchool": "High School",
-      "presetK12": "K–12"
-    },
-    "publishMode": {
-      "title": "Grade Publish Workflow",
-      "subtitle": "Choose how teachers publish grades to students and parents.",
-      "legendSr": "Select grade publish mode",
-      "selfPublish": "Self-publish",
-      "selfPublishDesc": "Teacher submits → published immediately.",
-      "adminApproval": "Admin approval",
-      "adminApprovalDesc": "Teacher submits → admin reviews & approves.",
-      "save": "Save setting",
-      "saving": "Saving..."
-    },
-    "validation": {
-      "required": "Both min and max grades are required.",
-      "notInteger": "Grade levels must be integers.",
-      "outOfRange": "Grade levels must be between 1 and 13.",
-      "minExceedsMax": "Min grade must not exceed max grade."
-    },
     "errors": {
-      "not-found": "School not found",
       "already-exists": "School already exists",
       "forbidden": "You do not have permission to perform this action",
       "grade-level-range-invalid": "Invalid grade-level range",
       "narrowing-blocked": "Cannot narrow — active classes exist in this range",
       "network-error": "Could not reach the server, please try again.",
+      "not-found": "School not found",
       "unauthorized": "You do not have permission to perform this action.",
       "unknown": "Something went wrong, please try again."
+    },
+    "gradeRange": {
+      "activeClasses": "active classes",
+      "currentRange": "Current range:",
+      "gradeLabel": "Grade ",
+      "hint": "Examples: High School → 10–12 | Lower Sec. → 6–9 | Primary → 1–5. Platform limit: 1 ≤ min ≤ max ≤ 13.",
+      "maxLabel": "Max grade",
+      "minLabel": "Min grade",
+      "narrowingBody": "Narrowing will be blocked if there are classes outside the new range. Please archive those classes before changing.",
+      "narrowingTitle": "Narrowing range:",
+      "presetsLabel": "Quick presets",
+      "save": "Save grade range",
+      "saving": "Saving...",
+      "subtitle": "Defines which grade levels exist at your school. Classes can only be created within this range.",
+      "title": "Grade Level Range",
+      "unconfiguredBody": "Classes cannot be created until this step is complete.",
+      "unconfiguredTitle": "Grade levels not yet configured"
+    },
+    "guide": {
+      "configure": "Configure",
+      "configureAriaLabel": "Configure: {step}",
+      "done": "Done",
+      "hide": "Hide guide",
+      "hideAriaLabel": "Hide setup guide",
+      "open": "Open",
+      "openAriaLabel": "Open settings: {step}",
+      "progressAriaLabel": "Setup progress",
+      "setupGuideSubtitle": "Recommended configuration order per ADR 0035.",
+      "setupGuideTitle": "Setup Guide",
+      "stepsComplete": "steps complete",
+      "subtitle": "Complete the steps below in order to start using EduPortal.",
+      "title": "Initial Setup"
+    },
+    "presets": {
+      "presetHighSchool": "High School",
+      "presetK12": "K–12",
+      "presetPrimary": "Primary",
+      "presetSecondary": "Lower Sec."
+    },
+    "publishMode": {
+      "adminApproval": "Admin approval",
+      "adminApprovalDesc": "Teacher submits → admin reviews & approves.",
+      "legendSr": "Select grade publish mode",
+      "save": "Save setting",
+      "saving": "Saving...",
+      "selfPublish": "Self-publish",
+      "selfPublishDesc": "Teacher submits → published immediately.",
+      "subtitle": "Choose how teachers publish grades to students and parents.",
+      "title": "Grade Publish Workflow"
+    },
+    "saved": "Saved",
+    "steps": {
+      "stepAcademicCalendar": "Academic year",
+      "stepAssessmentScheme": "Assessment scheme",
+      "stepClasses": "Classes",
+      "stepGradeLevels": "Grade levels",
+      "stepSubjects": "Subjects"
+    },
+    "subtitle": "Foundational parameters that make EduPortal work for your school.",
+    "title": "School Setup",
+    "validation": {
+      "minExceedsMax": "Min grade must not exceed max grade.",
+      "notInteger": "Grade levels must be integers.",
+      "outOfRange": "Grade levels must be between 1 and 13.",
+      "required": "Both min and max grades are required."
     }
   },
   "adminSettings": {
-    "title": "Operational Settings",
-    "subtitle": "Manage the grade submission workflow and config links.",
-    "publishMode": {
-      "title": "Grade Submission Workflow",
-      "subtitle": "Choose how teachers publish grades to students and parents.",
-      "legendSr": "Select grade publish mode",
-      "selfPublish": "Self-publish",
-      "selfPublishDesc": "Teacher submits grades → published immediately. No admin approval needed.",
-      "adminApproval": "Admin approval",
-      "adminApprovalDesc": "Teacher submits grades → admin approves before publishing.",
-      "warningNote": "Changing the grade submission workflow applies immediately to all teachers. Grades currently in the Pending state are not affected.",
-      "warningNoteLabel": "Note:",
-      "save": "Save settings",
-      "saving": "Saving...",
-      "readOnlyHint": "Only administrators can change this setting."
-    },
     "confirmDialog": {
-      "title": "Switch to Self-publish?",
-      "description": "Grade batches awaiting approval will be published automatically and immediately. This action cannot be undone.",
       "cancel": "Cancel",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "description": "Grade batches awaiting approval will be published automatically and immediately. This action cannot be undone.",
+      "title": "Switch to Self-publish?"
     },
-    "shortcuts": {
-      "title": "Configuration Links",
-      "subtitle": "Jump to the dedicated configuration screens.",
-      "calendar": "Academic Calendar",
-      "calendarDesc": "Manage the school year and terms.",
-      "assessment": "Grading Scale & Assessment",
-      "assessmentDesc": "Configure the grading scale and assessment criteria.",
-      "open": "Open"
-    },
-    "toast": {
-      "saveSuccess": "Settings updated",
-      "saveError": "Save failed, please try again"
-    },
-    "loading": "Loading settings...",
     "errors": {
-      "not-found": "Configuration not found",
       "forbidden": "You do not have permission",
       "network-error": "Cannot reach the server, please try again.",
+      "not-found": "Configuration not found",
       "unknown": "Something went wrong, please try again."
-    }
-  },
-  "classLog": {
-    "pageTitle": "Class Log",
-    "teacherSubtitle": "Record each lesson's content for BGH approval",
-    "principalSubtitle": "Review and approve teachers' class logs",
-    "newEntry": "New entry",
-    "stats": {
-      "pending": "Pending",
-      "approved": "Approved",
-      "draft": "Draft",
-      "rejected": "Rejected"
     },
-    "status": {
-      "DRAFT": "Draft",
-      "SUBMITTED": "Pending",
-      "APPROVED": "Approved",
-      "REJECTED": "Rejected"
-    },
-    "form": {
-      "title": "New Class Log Entry",
-      "subtitle": "Record lesson details for BGH review",
-      "entryDate": "Date",
-      "summary": "Lesson content",
-      "summaryPlaceholder": "e.g. Derivatives and applications — Lesson 3: Extrema",
-      "summaryRequired": "Lesson content is required",
-      "notableEvents": "Notes (optional)",
-      "notableEventsPlaceholder": "Remarks, notable events during the lesson...",
-      "saveDraft": "Save draft",
-      "submit": "Submit for approval",
-      "submitting": "Submitting...",
-      "saved": "Log entry saved!",
-      "back": "Back"
-    },
-    "list": {
-      "title": "Class log entries",
-      "empty": "No entries",
-      "filterAll": "All"
-    },
-    "detail": {
-      "back": "Back to list",
-      "bghReview": "BGH Review",
-      "approve": "Approve",
-      "approving": "Approving...",
-      "reject": "Reject",
-      "rejectReason": "Rejection reason",
-      "rejectReasonPlaceholder": "e.g. Missing homework details...",
-      "confirmReject": "Confirm rejection",
-      "cancelReject": "Cancel",
-      "approvedBy": "by BGH",
-      "approvedLabel": "Approved",
-      "rejectedLabel": "Rejected",
-      "rejectionReason": "Rejection reason:",
-      "teacherSignature": "Teacher signature",
-      "noClassSelected": "Select a class to view its log"
-    },
-    "errors": {
-      "not-found": "Entry not found",
-      "already-submitted": "Entry has already been submitted",
-      "not-submitted": "Entry has not been submitted for approval",
-      "unauthorized": "You are not allowed to perform this action",
-      "duplicate-date": "An entry already exists for this date",
-      "network-error": "Network error",
-      "unknown": "An unknown error occurred"
-    }
-  },
-  "discipline": {
-    "title": "Administration & Discipline",
-    "subtitle": "Manage student violations, conduct grades and leave requests",
-    "retry": "Retry",
-    "tabs": {
-      "violations": "Violations",
-      "conduct": "Conduct",
-      "leave": "Leave"
-    },
-    "violations": {
-      "title": "Violation Records",
-      "addNew": "Record New Violation",
-      "record": "Record Violation",
-      "cancel": "Cancel",
+    "loading": "Loading settings...",
+    "publishMode": {
+      "adminApproval": "Admin approval",
+      "adminApprovalDesc": "Teacher submits grades → admin approves before publishing.",
+      "legendSr": "Select grade publish mode",
+      "readOnlyHint": "Only administrators can change this setting.",
+      "save": "Save settings",
       "saving": "Saving...",
-      "success": "Violation recorded successfully!",
-      "formTitle": "Record New Violation",
-      "formSubtitle": "Log a student violation into the system",
-      "form": {
-        "student": "Student Name *",
-        "studentPlaceholder": "Student name...",
-        "class": "Class",
-        "date": "Date",
-        "type": "Violation Type *",
-        "severity": "Severity",
-        "description": "Description *",
-        "descriptionPlaceholder": "Describe the violation in detail...",
-        "notifyParent": "Notify parent"
-      },
-      "severity": {
-        "all": "All",
-        "low": "Minor",
-        "medium": "Moderate",
-        "high": "Serious"
-      },
-      "status": {
-        "recorded": "Recorded",
-        "notified": "Parent Notified",
-        "parent_confirmed": "Parent Confirmed"
-      },
-      "types": {
-        "late": "Late to school",
-        "uniform": "Incorrect uniform",
-        "phone": "Phone use in class",
-        "fight": "Fighting",
-        "skip": "Skipping class",
-        "cheat": "Cheating in exam",
-        "disrespect": "Disrespecting teacher",
-        "noise": "Making noise in class",
-        "other": "Other"
-      },
-      "allClasses": "All Classes",
-      "period": "Period {period}",
-      "recordedBy": "Recorded by: {handler}",
-      "empty": "No violations found!",
-      "stats": {
-        "thisWeek": "This Week",
-        "minor": "Minor",
-        "moderateSevere": "Moderate/Serious",
-        "pendingNotify": "Pending Notify"
-      }
+      "selfPublish": "Self-publish",
+      "selfPublishDesc": "Teacher submits grades → published immediately. No admin approval needed.",
+      "subtitle": "Choose how teachers publish grades to students and parents.",
+      "title": "Grade Submission Workflow",
+      "warningNote": "Changing the grade submission workflow applies immediately to all teachers. Grades currently in the Pending state are not affected.",
+      "warningNoteLabel": "Note:"
     },
-    "conduct": {
-      "title": "Conduct Grades",
-      "tableTitle": "Conduct Grades — {semester}",
-      "semester": "Semester",
-      "grade": {
-        "excellent": "Excellent",
-        "good": "Good",
-        "average": "Average",
-        "poor": "Poor"
-      },
-      "columns": {
-        "student": "Student",
-        "class": "Class",
-        "violations": "Violations",
-        "absences": "Unexcused",
-        "points": "Points",
-        "conduct": "Conduct",
-        "action": "Action"
-      },
-      "override": "Override",
-      "edit": "Edit",
-      "editLabel": "Edit conduct of {student}",
-      "cancelEdit": "Cancel editing",
-      "pointsProgress": "Conduct score for {student}: {points}/100",
-      "overrideNote": "Note...",
-      "overrideNoteLabel": "Override note",
-      "save": "Save",
-      "saved": "Saved",
-      "allClasses": "All Classes",
-      "empty": "No conduct data available"
+    "shortcuts": {
+      "assessment": "Grading Scale & Assessment",
+      "assessmentDesc": "Configure the grading scale and assessment criteria.",
+      "calendar": "Academic Calendar",
+      "calendarDesc": "Manage the school year and terms.",
+      "open": "Open",
+      "subtitle": "Jump to the dedicated configuration screens.",
+      "title": "Configuration Links"
     },
-    "leave": {
-      "title": "Leave Requests",
-      "status": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected"
-      },
-      "type": {
-        "medical": "Medical",
-        "personal": "Personal / Family",
-        "event": "Event / Competition",
-        "other": "Other"
-      },
-      "filterAll": "All",
-      "reasonLabel": "Reason:",
-      "approve": "Approve",
-      "approveLabel": "Approve leave request of {student}",
-      "reject": "Reject",
-      "rejectLabel": "Reject leave request of {student}",
-      "rejectDialog": {
-        "title": "Rejection Reason",
-        "description": "Please provide a reason to notify the parent/student.",
-        "reason": "Enter rejection reason (minimum 10 characters)",
-        "reasonPlaceholder": "Reason...",
-        "reasonMinLength": "Please enter at least 10 characters",
-        "confirm": "Confirm Reject",
-        "cancel": "Cancel"
-      },
-      "submittedBy": "Submitted by",
-      "days": "{count} day(s)",
-      "empty": "No leave requests yet",
-      "rejectedReason": "Rejection reason:",
-      "stats": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected"
-      }
-    },
-    "studentConduct": {
-      "title": "My Conduct",
-      "subtitle": "View conduct score and submit leave requests",
-      "parentTitle": "Student Conduct",
-      "parentSubtitle": "View conduct and submit leave requests on behalf of your child",
-      "childInfo": "{name} — Class {class}",
-      "conductCard": {
-        "points": "Conduct Score",
-        "grade": "Grade",
-        "violations": "Violations",
-        "absences": "Unexcused Absences"
-      },
-      "myViolations": {
-        "title": "Violation History",
-        "empty": "No violations recorded"
-      },
-      "leaveRequest": {
-        "title": "Submit Leave Request",
-        "button": "Request Leave",
-        "startDate": "Start Date *",
-        "endDate": "End Date *",
-        "type": "Leave Type *",
-        "reason": "Reason *",
-        "reasonPlaceholder": "Enter reason for leave (at least 10 characters)...",
-        "submit": "Submit Request",
-        "submitting": "Submitting...",
-        "success": "Leave request submitted successfully!",
-        "close": "Close",
-        "types": {
-          "medical": "Medical / Checkup",
-          "personal": "Personal / Family",
-          "event": "Event",
-          "other": "Other"
-        }
-      },
-      "leaveHistory": {
-        "title": "Leave Request History",
-        "empty": "No leave requests submitted",
-        "rejectionReason": "Rejection reason:"
-      },
-      "status": {
-        "pending": "Pending",
-        "approved": "Approved",
-        "rejected": "Rejected"
-      },
-      "retry": "Try again",
-      "loadError": "Could not load conduct data",
-      "loading": "Loading conduct data..."
-    },
-    "errors": {
-      "missing-student": "Please enter the student name",
-      "missing-description": "Please enter a violation description",
-      "missing-reject-reason": "Please enter a rejection reason (minimum 10 characters)",
-      "already-processed": "This request has already been processed",
-      "invalid-severity": "Invalid violation severity",
-      "invalid-conduct-grade": "Invalid conduct grade",
-      "invalid-date": "Leave start date must be today or later",
-      "reason-too-short": "Reason must be at least 10 characters",
-      "network-error": "Connection error, please try again"
+    "subtitle": "Manage the grade submission workflow and config links.",
+    "title": "Operational Settings",
+    "toast": {
+      "saveError": "Save failed, please try again",
+      "saveSuccess": "Settings updated"
     }
+  },
+  "announcements": {
+    "actionDelete": "Delete",
+    "actionEdit": "Edit",
+    "actionView": "View detail",
+    "audienceAll": "All",
+    "audienceParents": "Parents",
+    "audienceStudents": "Students",
+    "audienceTeachers": "Teachers",
+    "btnCancel": "Cancel",
+    "btnClose": "Close",
+    "btnDelete": "Delete",
+    "btnRemind": "Remind unread",
+    "btnSaveDraft": "Save draft",
+    "btnSchedule": "Schedule",
+    "btnSendNow": "Send now",
+    "charCount": "{current}/{max}",
+    "createButton": "Create announcement",
+    "deleteDescription": "Are you sure you want to delete this announcement? This action cannot be undone.",
+    "deleteTitle": "Delete announcement",
+    "deleteToast": "Announcement deleted",
+    "detailAuthor": "Author",
+    "detailSentAt": "Sent at",
+    "detailTitle": "Announcement detail",
+    "draftToast": "Draft saved",
+    "drawerCreateTitle": "Create announcement",
+    "drawerEditTitle": "Edit announcement",
+    "emptyBody": "Create your first announcement.",
+    "emptyTitle": "No announcements yet",
+    "errors": {
+      "body-too-short": "Body must be at least 10 characters.",
+      "network-error": "Unable to reach the server.",
+      "no-audience": "Please select at least one audience.",
+      "not-found": "Announcement not found.",
+      "schedule-past-date": "Scheduled time must be in the future.",
+      "title-too-short": "Title must be at least 5 characters.",
+      "unauthorized": "You are not authorised to perform this action.",
+      "unknown": "Something went wrong, please try again."
+    },
+    "estimatedRecipients": "Estimated {count} recipients",
+    "fieldAudience": "Audience",
+    "fieldBody": "Body",
+    "fieldBodyPlaceholder": "Enter announcement content...",
+    "fieldGradeFilter": "Filter by grade",
+    "fieldPriority": "Priority",
+    "fieldScheduledAt": "Scheduled time",
+    "fieldSendMode": "Send time",
+    "fieldTitle": "Title",
+    "fieldTitlePlaceholder": "Enter announcement title...",
+    "filterAll": "All",
+    "filterDraft": "Draft",
+    "filterScheduled": "Scheduled",
+    "filterSent": "Sent",
+    "loadError": "Failed to load announcements.",
+    "loadingAriaLabel": "Loading announcements",
+    "loadingRecipientsAriaLabel": "Loading recipients...",
+    "pageTitle": "Announcements",
+    "previewHeading": "Preview",
+    "previewToggle": "Preview",
+    "priorityImportant": "Important",
+    "priorityNormal": "Normal",
+    "priorityUrgent": "Urgent",
+    "readProgressLabel": "Read rate: {pct}%",
+    "readRatio": "{read}/{total} read",
+    "recipientCount": "{count} recipients",
+    "recipientFilterAll": "All",
+    "recipientFilterRead": "Read",
+    "recipientFilterUnread": "Unread",
+    "recipientStatusRead": "Read",
+    "recipientStatusUnread": "Unread",
+    "recipientsEmpty": "No recipients match this filter.",
+    "remindToast": "Reminder sent to {count} unread recipients",
+    "scheduleToast": "Announcement scheduled",
+    "sendModeNow": "Send now",
+    "sendModeSchedule": "Schedule",
+    "sendToast": "Announcement sent",
+    "statusDraft": "Draft",
+    "statusScheduled": "Scheduled",
+    "statusSent": "Sent",
+    "subtitle": "Create and manage announcements sent to teachers, parents and students.",
+    "urgentCardAriaLabel": "Urgent announcement: {title}"
+  },
+  "assessmentScheme": {
+    "addBand": "Add band",
+    "addBandLabel": "Add band",
+    "addColumn": "Add column",
+    "addColumnLabel": "Add column",
+    "applyPreset": "Apply preset",
+    "applyPresetTT22": "Apply TT22/2021",
+    "assessmentSchemePerSubjectSubtitle": "Grade-book column structure per grade-scoped subject. Weights must total 100%.",
+    "assessmentSchemePerSubjectTitle": "Per-subject Assessment Scheme",
+    "assessmentSchemeSection": "Assessment Scheme",
+    "assessmentSchemeSectionSubtitle": "Configure component score columns and weights for each subject.",
+    "bandColor": "Color",
+    "bandColorHeader": "Color",
+    "bandFromHeader": "From",
+    "bandLabel": "Label",
+    "bandLabelPlaceholder": "Label",
+    "bandMinThreshold": "Min score",
+    "bandMoveDown": "Move down",
+    "bandMoveUp": "Move up",
+    "bandRankHeader": "Rank",
+    "bandToHeader": "To",
+    "breadcrumbAssessment": "Assessment Scheme",
+    "breadcrumbSchoolSetup": "School setup",
+    "colorError": "Red (Weak)",
+    "colorPrimary": "Blue (Good)",
+    "colorSuccess": "Green (Excellent)",
+    "colorWarning": "Yellow (Average)",
+    "columnCount": "Count",
+    "columnHeader": "Column",
+    "columnKindLabel": "Column type",
+    "columnLabel": "Column name",
+    "columnNamePlaceholder": "Column name",
+    "columnPlaceholder": "New column",
+    "columnTimesHeader": "Times",
+    "columnType": "Type",
+    "columnTypeCK": "Final",
+    "columnTypeGK": "Midterm",
+    "columnTypeTX": "Regular",
+    "columnWeight": "Weight (%)",
+    "columnWeightHeader": "Weight",
+    "createSchemeWithPreset": "Create scheme · {presetName}",
+    "deleteBand": "Delete band",
+    "deleteColumn": "Delete column",
+    "errorEmptyBands": "At least one band is required.",
+    "errorEmptyColumns": "At least one column is required.",
+    "errorForbidden": "You are not authorised to perform this action.",
+    "errorGapsInCoverage": "There are gaps between grade bands.",
+    "errorInvalidCount": "Assessment count must be ≥ 1.",
+    "errorLowestBandNotZero": "The lowest band must start at 0.",
+    "errorNetwork": "Connection error. Please try again.",
+    "errorNotFound": "Data not found.",
+    "errorOverlappingThresholds": "Grade bands overlap.",
+    "errorUnknown": "An unknown error occurred.",
+    "errorWeightSumNot100": "Total weight must equal 100%.",
+    "goToSubjectCatalogue": "Open Subject catalogue",
+    "gradeLevelHeader": "GRADE",
+    "gradeLevelLabel": "Grade level",
+    "gradeLevelPlaceholder": "Select grade level",
+    "gradePrefix": "Grade",
+    "gradeScaleSection": "Grade Scale (Classification)",
+    "gradeScaleSectionSubtitle": "Define the school's grade classification bands.",
+    "gradeScaleSubtitle": "Applied school-wide. Ranks appear on transcripts and reports.",
+    "gradeScaleTitle": "Grade Scale",
+    "loading": "Loading...",
+    "lockedFieldTooltip": "Locked by Subject master — edit in Subject catalogue",
+    "noSchemeBody": "Pick a preset to get started fast.",
+    "noSchemeTitle": "No assessment scheme for this subject yet.",
+    "noSubjectPickedBody": "Schemes are configured per subject × academic year.",
+    "noSubjectPickedTitle": "Pick a grade and subject to begin",
+    "noSubjectsBannerBody": "The assessment scheme requires a grade-scoped subject catalogue. Add subjects before configuring schemes.",
+    "noSubjectsBannerTitle": "Subject catalogue must be configured first",
+    "noSubjectsForGrade": "No subjects for this grade level.",
+    "overlapCalloutBody": "Two bands share score ranges — adjust so each score maps to a single rank.",
+    "overlapCalloutTitle": "Bands overlap",
+    "pageSubtitle": "Student ranking scale + per-subject grade-book column structure (ADR 0036/0037).",
+    "pageTitle": "Grade Scale & Assessment Scheme",
+    "periodsPerYear": "Periods / year",
+    "pickGrade": "— Pick grade —",
+    "pickGradeFirst": "Pick a grade first",
+    "pickSubject": "— Pick subject —",
+    "presetCustom": "Custom",
+    "presetCustomDesc": "Define columns & weights yourself",
+    "presetGPA4Desc": "International GPA",
+    "presetLetter": "Letter (A–F)",
+    "presetLetterDesc": "Mapped from percentages",
+    "presetTT22": "TT22/2021 preset",
+    "presetTT26": "Circular 26 · Lower secondary",
+    "presetTT26Desc": "For lower secondary",
+    "presetThang10": "Scale 10",
+    "presetThang10Desc": "Default VN · Circular 22/2021",
+    "presetThang4": "Scale 4.0",
+    "removeBand": "Remove band",
+    "removeColumnLabel": "Remove",
+    "removeColumnMinOne": "At least one column required",
+    "requiredExamsPerTerm": "Required exams / term",
+    "saveBands": "Save grade scale",
+    "saveError": "Save failed. Please try again.",
+    "saveScheme": "Save assessment scheme",
+    "saveSuccess": "Saved successfully.",
+    "scaleSavedToast": "Grade scale saved.",
+    "schemeHeadingLabel": "Scheme — ",
+    "schemePresetsLabel": "Preset",
+    "schemeSavedToast": "Assessment scheme saved.",
+    "step4Badge": "Step 4/5 · Onboarding",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "Select subject",
+    "subtitle": "Configure the grading scale and component score columns per subject.",
+    "title": "Grade Scale & Assessment Scheme",
+    "totalWeightLabel": "Total weight",
+    "unsavedChangesBody": "Unsaved changes.",
+    "unsavedLabel": "Unsaved",
+    "weightNotHundredBody": "The scheme cannot be saved until the total weight is exactly 100%.",
+    "weightNotHundredTitle": "Total must equal 100% (currently {value}%)",
+    "weightSumInvalid": "Total weight: {value}% — not 100% yet",
+    "weightSumInvalidSR": "— not 100% yet",
+    "weightSumLabel": "Total weight",
+    "weightSumTarget": "/ 100%",
+    "weightSumValid": "Total weight: {value}% — valid",
+    "yearLabel": "Academic year",
+    "yearLabelPlaceholder": "2024-2025"
   },
   "attendance": {
-    "title": "Attendance",
+    "actions": {
+      "allPresent": "All present",
+      "save": "Save attendance",
+      "saveFailed": "Save failed",
+      "saved": "Attendance saved",
+      "saving": "Saving..."
+    },
+    "empty": "Pick class/date/period to start",
     "filters": {
       "class": "Class",
       "date": "Date",
@@ -879,807 +520,1378 @@
       "selectClass": "Select class",
       "selectPeriod": "Select period"
     },
-    "status": {
-      "present": "Present",
-      "excused": "Excused",
-      "absent": "Absent"
-    },
-    "actions": {
-      "allPresent": "All present",
-      "save": "Save attendance",
-      "saving": "Saving...",
-      "saved": "Attendance saved",
-      "saveFailed": "Save failed"
-    },
-    "summary": {
-      "total": "Total",
-      "present": "Present",
-      "absent": "Absent",
-      "rate": "Rate"
-    },
-    "tabs": {
-      "today": "Today",
-      "history": "History"
-    },
     "history": {
       "date": "Date",
+      "empty": "No attendance history",
       "period": "Period",
-      "subject": "Subject",
-      "empty": "No attendance history"
+      "subject": "Subject"
     },
-    "empty": "Pick class/date/period to start",
     "roster": {
-      "student": "Student",
       "code": "Code",
-      "status": "Status"
-    }
-  },
-  "iamMember": {
-    "errors": {
-      "forbidden": "You do not have permission to perform this action",
-      "not-found": "Member or invitation not found",
-      "email-exists": "Email already exists in the system",
-      "invitation-not-found": "Invitation not found or has expired",
-      "last-admin": "Cannot remove the last admin of the organization",
-      "network-error": "Connection error, please try again",
-      "unknown": "An unexpected error occurred"
-    }
-  },
-  "tenant": {
-    "select": {
-      "title": "Choose a workspace",
-      "subtitle": "You belong to these organizations",
-      "enter": "Enter",
-      "switching": "Switching…",
-      "empty": "You do not belong to any organization yet",
-      "roles": "Roles"
+      "status": "Status",
+      "student": "Student"
     },
-    "home": {
-      "title": "Workspace",
-      "body": "You are inside this organization workspace."
+    "status": {
+      "absent": "Absent",
+      "excused": "Excused",
+      "present": "Present"
+    },
+    "summary": {
+      "absent": "Absent",
+      "present": "Present",
+      "rate": "Rate",
+      "total": "Total"
+    },
+    "tabs": {
+      "history": "History",
+      "today": "Today"
+    },
+    "title": "Attendance"
+  },
+  "auth": {
+    "brand": {
+      "name": "EduPortal",
+      "tagline": "Education management system"
+    },
+    "errors": {
+      "account-suspended": "Your account has been suspended",
+      "email-already-exists": "Email is already registered",
+      "invalid-credentials": "Incorrect email or password",
+      "invalid-otp": "The code is incorrect or already used.",
+      "invalid-token": "Invalid session, please sign in again",
+      "network-error": "Cannot connect to the server",
+      "otp-expired": "The code has expired, request a new one.",
+      "sso-unavailable": "Social sign-in is not yet available. Please use your email and password below.",
+      "token-expired": "Your session has expired, please sign in again",
+      "too-many-requests": "Too many requests, please try again later.",
+      "unauthorized": "You do not have access",
+      "unknown": "Something went wrong, please try again"
+    },
+    "forgot": {
+      "backToLogin": "Back to login",
+      "linkFromLogin": "Forgot password?",
+      "step1": {
+        "email": "Email",
+        "sending": "Sending…",
+        "submit": "Send OTP",
+        "subtitle": "Enter your email to get a reset code."
+      },
+      "step2": {
+        "resend": "Resend code",
+        "submit": "Confirm",
+        "subtitle": "Enter the 6-digit code sent to your email."
+      },
+      "step3": {
+        "confirm": "Confirm password",
+        "mismatch": "Passwords do not match.",
+        "new": "New password",
+        "submit": "Reset password",
+        "submitting": "Resetting…",
+        "subtitle": "Set a new password for your account."
+      },
+      "step4": {
+        "cta": "Sign in",
+        "subtitle": "You can sign in with your new password.",
+        "title": "Password reset"
+      },
+      "title": "Forgot password"
+    },
+    "login": {
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "subtitle": "Enter your details to access the system",
+      "title": "Sign in"
+    },
+    "roles": {
+      "ADMIN": {
+        "label": "Board of Directors"
+      },
+      "MANAGER": {
+        "label": "Vice Principal"
+      },
+      "PARENT": {
+        "label": "Parent"
+      },
+      "STAFF": {
+        "label": "Staff"
+      },
+      "STUDENT": {
+        "label": "Student"
+      },
+      "TEACHER": {
+        "label": "Teacher"
+      }
+    },
+    "selectRole": {
+      "backLink": "Sign in with a different account",
+      "eyebrow": "Sign in as",
+      "roleSummary": "{count, plural, one {# role available} other {# roles available}}"
+    },
+    "sso": {
+      "continueWithGoogle": "Continue with Google",
+      "divider": "or sign in with email",
+      "googleLoading": "Signing in with Google...",
+      "loginWithVneID": "Sign in with VNeID",
+      "vneidComingSoon": "Coming soon"
+    }
+  },
+  "calendar": {
+    "addYear": {
+      "label": "Year label",
+      "placeholder": "e.g. 2026–2027",
+      "setActive": "Set as current academic year",
+      "submit": "Create year",
+      "submitting": "Creating...",
+      "subtitle": "Once created, expand the year card to configure its terms.",
+      "title": "Add new academic year"
+    },
+    "empty": {
+      "cta": "Create your first academic year",
+      "subtitle": "Create your first academic year to start configuring terms, teaching schedules and exam periods.",
+      "title": "No academic years yet"
+    },
+    "errors": {
+      "active-year-exists": "An active academic year already exists",
+      "date-order": "Start date must be before end date",
+      "date-overlap": "Term overlaps with another term in this year",
+      "graded-term-delete": "Cannot delete a term that has grade entries",
+      "network-error": "Cannot connect to the server",
+      "not-found-term": "Term not found",
+      "not-found-year": "Academic year not found",
+      "unknown": "Something went wrong, please try again",
+      "year-archived": "This academic year has been archived",
+      "year-label-exists": "Academic year label already exists"
+    },
+    "subtitle": "Manage academic years and terms for your school",
+    "term": {
+      "actions": "Actions",
+      "addTerm": "Add term",
+      "cancel": "Cancel",
+      "defaultName": "Term {n}",
+      "delete": "Delete term",
+      "deleteBlocked": "Term has grade entries — cannot delete",
+      "edit": "Edit term",
+      "endDate": "End date",
+      "graded": "Graded",
+      "name": "Term name",
+      "noTerms": "No terms configured for this academic year yet.",
+      "save": "Save",
+      "startDate": "Start date"
+    },
+    "title": "Academic Calendar",
+    "year": {
+      "active": "Active",
+      "noTerms": "No terms configured",
+      "termCount": "{count} terms"
+    }
+  },
+  "classLog": {
+    "detail": {
+      "approve": "Approve",
+      "approvedBy": "by BGH",
+      "approvedLabel": "Approved",
+      "approving": "Approving...",
+      "back": "Back to list",
+      "bghReview": "BGH Review",
+      "cancelReject": "Cancel",
+      "confirmReject": "Confirm rejection",
+      "noClassSelected": "Select a class to view its log",
+      "reject": "Reject",
+      "rejectReason": "Rejection reason",
+      "rejectReasonPlaceholder": "e.g. Missing homework details...",
+      "rejectedLabel": "Rejected",
+      "rejectionReason": "Rejection reason:",
+      "teacherSignature": "Teacher signature"
+    },
+    "errors": {
+      "already-submitted": "Entry has already been submitted",
+      "duplicate-date": "An entry already exists for this date",
+      "network-error": "Network error",
+      "not-found": "Entry not found",
+      "not-submitted": "Entry has not been submitted for approval",
+      "unauthorized": "You are not allowed to perform this action",
+      "unknown": "An unknown error occurred"
+    },
+    "form": {
+      "back": "Back",
+      "entryDate": "Date",
+      "notableEvents": "Notes (optional)",
+      "notableEventsPlaceholder": "Remarks, notable events during the lesson...",
+      "saveDraft": "Save draft",
+      "saved": "Log entry saved!",
+      "submit": "Submit for approval",
+      "submitting": "Submitting...",
+      "subtitle": "Record lesson details for BGH review",
+      "summary": "Lesson content",
+      "summaryPlaceholder": "e.g. Derivatives and applications — Lesson 3: Extrema",
+      "summaryRequired": "Lesson content is required",
+      "title": "New Class Log Entry"
+    },
+    "list": {
+      "empty": "No entries",
+      "filterAll": "All",
+      "title": "Class log entries"
+    },
+    "newEntry": "New entry",
+    "pageTitle": "Class Log",
+    "principalSubtitle": "Review and approve teachers' class logs",
+    "stats": {
+      "approved": "Approved",
+      "draft": "Draft",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    },
+    "status": {
+      "APPROVED": "Approved",
+      "DRAFT": "Draft",
+      "REJECTED": "Rejected",
+      "SUBMITTED": "Pending"
+    },
+    "teacherSubtitle": "Record each lesson's content for BGH approval"
+  },
+  "classManagement": {
+    "actions": {
+      "archive": "Archive",
+      "assignHomeroom": "Assign homeroom",
+      "rename": "Rename"
+    },
+    "allGrades": "All grades",
+    "archiveDialog": {
+      "cancel": "Cancel",
+      "confirm": "Archive",
+      "description": "Are you sure you want to archive class {name}?",
+      "title": "Archive class",
+      "warningWithStudents": "This class has {count} enrolled students. Archive anyway?"
+    },
+    "createClass": "Create Class",
+    "createSheet": {
+      "description": "Fill in the details to create a new class.",
+      "gradeLabel": "Grade level",
+      "nameLabel": "Class name",
+      "namePlaceholder": "e.g. 10A1",
+      "submit": "Create class",
+      "title": "Create a class",
+      "yearLabel": "Academic year",
+      "yearPlaceholder": "e.g. 2025-2026"
+    },
+    "errors": {
+      "duplicate-class": "A class with this name already exists for this academic year.",
+      "forbidden": "You do not have permission to perform this action.",
+      "grade-level-out-of-range": "The grade level is outside the configured range. Please check School Setup.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Class not found.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "filterByGrade": "Filter by grade",
+    "filterByYear": "Filter by academic year",
+    "formErrors": {
+      "nameRequired": "Please enter a class name.",
+      "yearRequired": "Please enter an academic year."
+    },
+    "gradeN": "Grade {n}",
+    "homeroomSheet": {
+      "assign": "Assign",
+      "currentHomeroom": "Current homeroom teacher",
+      "description": "Pick a teacher to assign as the homeroom teacher.",
+      "noTeachers": "No teachers found.",
+      "searchPlaceholder": "Search teachers by name...",
+      "title": "Assign homeroom teacher"
+    },
+    "renameSheet": {
+      "description": "Update the name or grade of the class.",
+      "gradeLabel": "Grade level",
+      "nameLabel": "New class name",
+      "submit": "Save changes",
+      "title": "Rename class"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived"
+    },
+    "subtitle": "Create, rename, archive classes and assign homeroom teachers.",
+    "table": {
+      "actions": "Actions",
+      "caption": "Class list",
+      "grade": "Grade",
+      "homeroom": "Homeroom teacher",
+      "name": "Class name",
+      "noClasses": "No classes yet.",
+      "status": "Status",
+      "studentCount": "Students",
+      "unassigned": "Unassigned"
+    },
+    "title": "Class Management",
+    "toast": {
+      "archiveSuccess": "Class archived successfully.",
+      "assignHomeroomSuccess": "Homeroom teacher assigned successfully.",
+      "createSuccess": "Class created successfully.",
+      "renameSuccess": "Class renamed successfully."
     }
   },
   "dashboard": {
     "common": {
       "viewAll": "View all"
     },
-    "teacher": {
-      "title": "Overview",
-      "greeting": "Good morning",
+    "parent": {
+      "childrenTitle": "My children",
       "stats": {
+        "attendance": "Attendance",
+        "avgScore": "Avg score",
+        "conduct": "Conduct"
+      },
+      "title": "Children overview",
+      "viewChild": "View details"
+    },
+    "principal": {
+      "alertsTitle": "Needs attention",
+      "reportsTitle": "Quick reports",
+      "stats": {
+        "attendance": "Attendance",
         "classes": "Classes",
         "students": "Students",
-        "attendance": "Attendance rate",
-        "pending": "To-dos"
+        "teachers": "Teachers"
       },
+      "title": "School overview"
+    },
+    "student": {
+      "coursesTitle": "My courses",
+      "deadlinesTitle": "Upcoming deadlines",
+      "stats": {
+        "assignments": "Assignments",
+        "attendance": "Attendance",
+        "avgScore": "Avg score",
+        "courses": "Courses"
+      },
+      "title": "Overview"
+    },
+    "teacher": {
+      "greeting": "Good morning",
       "scheduleTitle": "Today’s schedule",
+      "stats": {
+        "attendance": "Attendance rate",
+        "classes": "Classes",
+        "pending": "To-dos",
+        "students": "Students"
+      },
       "status": {
         "done": "Done",
         "live": "Live",
         "upcoming": "Upcoming"
-      }
-    },
-    "principal": {
-      "title": "School overview",
-      "stats": {
-        "teachers": "Teachers",
-        "students": "Students",
-        "classes": "Classes",
-        "attendance": "Attendance"
       },
-      "alertsTitle": "Needs attention",
-      "reportsTitle": "Quick reports"
-    },
-    "student": {
-      "title": "Overview",
-      "stats": {
-        "courses": "Courses",
-        "assignments": "Assignments",
-        "avgScore": "Avg score",
-        "attendance": "Attendance"
-      },
-      "coursesTitle": "My courses",
-      "deadlinesTitle": "Upcoming deadlines"
-    },
-    "parent": {
-      "title": "Children overview",
-      "childrenTitle": "My children",
-      "stats": {
-        "avgScore": "Avg score",
-        "attendance": "Attendance",
-        "conduct": "Conduct"
-      },
-      "viewChild": "View details"
+      "title": "Overview"
     }
   },
-  "teacherDashboard": {
-    "pageTitle": "Overview",
-    "stats": {
-      "totalStudents": "Total Students",
-      "classesToday": "Classes Today",
-      "pendingGrades": "Pending Grades",
-      "pendingApproval": "Grades Awaiting Approval",
-      "newMessages": "New Messages",
-      "vsPrevMonth": "vs last month",
-      "vsPrevWeek": "vs last week",
-      "adminApprovalMode": "ADMIN_APPROVAL mode",
-      "totalClasses": "My Classes"
-    },
-    "schedule": {
-      "title": "Today's Schedule",
-      "dayLabel": "Wednesday",
-      "morning": "Morning",
-      "afternoon": "Afternoon",
-      "period": "Period {period}",
-      "empty": "No classes today",
-      "classRoom": "Class {className} · {room}"
-    },
-    "scheduleStatus": {
-      "done": "Done",
-      "live": "Live",
-      "upcoming": "Upcoming"
-    },
-    "pendingGrades": {
-      "title": "Pending Grades",
-      "enterGrades": "Enter grades",
-      "assessmentType": "{type} · {className}"
-    },
-    "notifications": {
-      "title": "Notifications"
-    }
-  },
-  "teacherClasses": {
-    "pageTitle": "My Classes",
-    "empty": "You have not been assigned to any class.",
-    "errorRetryAction": "Try again",
-    "breadcrumbLabel": "Class navigation",
-    "gradeLevel": "Grade {grade}",
-    "students": "students",
-    "homeroomBadge": "Homeroom",
-    "actions": {
-      "viewStudents": "View Students",
-      "attendance": "Attendance",
-      "classLog": "Class Log",
-      "comingSoon": "Coming soon"
-    },
-    "studentPage": {
-      "breadcrumbClasses": "Classes",
-      "empty": "This class has no students yet.",
-      "errorRetryAction": "Try again",
-      "retryButton": "Try again",
-      "studentListSection": "Student list",
-      "paginationNav": "Student list pagination",
-      "filteredCount": "Found {count} students",
-      "searchPlaceholder": "Search by name or student code...",
+  "discipline": {
+    "conduct": {
+      "allClasses": "All Classes",
+      "cancelEdit": "Cancel editing",
       "columns": {
-        "name": "Student",
-        "code": "Student Code",
-        "status": "Status"
+        "absences": "Unexcused",
+        "action": "Action",
+        "class": "Class",
+        "conduct": "Conduct",
+        "points": "Points",
+        "student": "Student",
+        "violations": "Violations"
+      },
+      "edit": "Edit",
+      "editLabel": "Edit conduct of {student}",
+      "empty": "No conduct data available",
+      "grade": {
+        "average": "Average",
+        "excellent": "Excellent",
+        "good": "Good",
+        "poor": "Poor"
+      },
+      "override": "Override",
+      "overrideNote": "Note...",
+      "overrideNoteLabel": "Override note",
+      "pointsProgress": "Conduct score for {student}: {points}/100",
+      "save": "Save",
+      "saved": "Saved",
+      "semester": "Semester",
+      "tableTitle": "Conduct Grades — {semester}",
+      "title": "Conduct Grades"
+    },
+    "errors": {
+      "already-processed": "This request has already been processed",
+      "invalid-conduct-grade": "Invalid conduct grade",
+      "invalid-date": "Leave start date must be today or later",
+      "invalid-severity": "Invalid violation severity",
+      "missing-description": "Please enter a violation description",
+      "missing-reject-reason": "Please enter a rejection reason (minimum 10 characters)",
+      "missing-student": "Please enter the student name",
+      "network-error": "Connection error, please try again",
+      "reason-too-short": "Reason must be at least 10 characters"
+    },
+    "leave": {
+      "approve": "Approve",
+      "approveLabel": "Approve leave request of {student}",
+      "days": "{count} day(s)",
+      "empty": "No leave requests yet",
+      "filterAll": "All",
+      "reasonLabel": "Reason:",
+      "reject": "Reject",
+      "rejectDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm Reject",
+        "description": "Please provide a reason to notify the parent/student.",
+        "reason": "Enter rejection reason (minimum 10 characters)",
+        "reasonMinLength": "Please enter at least 10 characters",
+        "reasonPlaceholder": "Reason...",
+        "title": "Rejection Reason"
+      },
+      "rejectLabel": "Reject leave request of {student}",
+      "rejectedReason": "Rejection reason:",
+      "stats": {
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected"
       },
       "status": {
-        "active": "Enrolled",
-        "transferred": "Transferred"
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected"
       },
-      "resultCount": "{count} students",
-      "showing": "Showing {from}–{to} of {total}",
-      "prevPage": "Previous page",
-      "nextPage": "Next page",
-      "noSearchResults": "No matching students found."
-    },
-    "errors": {
-      "network-error": "Connection error. Please check your network.",
-      "unauthorized": "You do not have permission to view this.",
-      "not-found": "Class not found.",
-      "unknown": "An error occurred. Please try again."
-    }
-  },
-  "profile": {
-    "tabs": {
-      "personal": "Personal info",
-      "security": "Security",
-      "sessions": "Sessions"
-    },
-    "personal": {
-      "fullName": "Full name",
-      "email": "Email",
-      "phone": "Phone",
-      "role": "Role",
-      "save": "Save changes"
-    },
-    "security": {
-      "title": "Change password",
-      "current": "Current password",
-      "new": "New password",
-      "confirm": "Confirm password",
-      "update": "Update password",
-      "strength": {
-        "weak": "Weak",
-        "fair": "Fair",
-        "strong": "Strong"
-      },
-      "rules": {
-        "length": "At least 8 characters",
-        "upper": "An uppercase letter",
-        "number": "A number",
-        "special": "A special character"
-      },
-      "linkedAccounts": {
-        "title": "Linked accounts",
-        "description": "Connect external accounts for faster sign-in.",
-        "providers": {
-          "vneId": "VNeID",
-          "google": "Google"
-        },
-        "linked": "Linked",
-        "notLinked": "Not linked",
-        "linkedDescription": "Connected with {email}",
-        "vneIdDescription": "Connect with VNeID to verify your identity.",
-        "googleDescription": "Connect with Google for faster sign-in.",
-        "link": "Link now",
-        "unlink": "Unlink",
-        "linking": "Linking...",
-        "unlinking": "Unlinking...",
-        "linkSuccess": "Linked successfully",
-        "unlinkSuccess": "Unlinked",
-        "linkError": "Linking failed, please try again.",
-        "unlinkError": "Unlinking failed, please try again."
+      "submittedBy": "Submitted by",
+      "title": "Leave Requests",
+      "type": {
+        "event": "Event / Competition",
+        "medical": "Medical",
+        "other": "Other",
+        "personal": "Personal / Family"
       }
     },
-    "sessions": {
-      "title": "Active sessions",
-      "thisDevice": "This device",
-      "logout": "Log out",
-      "logoutAll": "Log out all other sessions",
-      "lastActive": "Active"
+    "retry": "Retry",
+    "studentConduct": {
+      "childInfo": "{name} — Class {class}",
+      "conductCard": {
+        "absences": "Unexcused Absences",
+        "grade": "Grade",
+        "points": "Conduct Score",
+        "violations": "Violations"
+      },
+      "leaveHistory": {
+        "empty": "No leave requests submitted",
+        "rejectionReason": "Rejection reason:",
+        "title": "Leave Request History"
+      },
+      "leaveRequest": {
+        "button": "Request Leave",
+        "close": "Close",
+        "endDate": "End Date *",
+        "reason": "Reason *",
+        "reasonPlaceholder": "Enter reason for leave (at least 10 characters)...",
+        "startDate": "Start Date *",
+        "submit": "Submit Request",
+        "submitting": "Submitting...",
+        "success": "Leave request submitted successfully!",
+        "title": "Submit Leave Request",
+        "type": "Leave Type *",
+        "types": {
+          "event": "Event",
+          "medical": "Medical / Checkup",
+          "other": "Other",
+          "personal": "Personal / Family"
+        }
+      },
+      "loadError": "Could not load conduct data",
+      "loading": "Loading conduct data...",
+      "myViolations": {
+        "empty": "No violations recorded",
+        "title": "Violation History"
+      },
+      "parentSubtitle": "View conduct and submit leave requests on behalf of your child",
+      "parentTitle": "Student Conduct",
+      "retry": "Try again",
+      "status": {
+        "approved": "Approved",
+        "pending": "Pending",
+        "rejected": "Rejected"
+      },
+      "subtitle": "View conduct score and submit leave requests",
+      "title": "My Conduct"
     },
-    "accountRequests": {
-      "title": "Account requests",
-      "description": "To deactivate or delete your account, please contact your school administrator.",
-      "contact": "Contact administrator"
+    "subtitle": "Manage student violations, conduct grades and leave requests",
+    "tabs": {
+      "conduct": "Conduct",
+      "leave": "Leave",
+      "violations": "Violations"
+    },
+    "title": "Administration & Discipline",
+    "violations": {
+      "addNew": "Record New Violation",
+      "allClasses": "All Classes",
+      "cancel": "Cancel",
+      "empty": "No violations found!",
+      "form": {
+        "class": "Class",
+        "date": "Date",
+        "description": "Description *",
+        "descriptionPlaceholder": "Describe the violation in detail...",
+        "notifyParent": "Notify parent",
+        "severity": "Severity",
+        "student": "Student Name *",
+        "studentPlaceholder": "Student name...",
+        "type": "Violation Type *"
+      },
+      "formSubtitle": "Log a student violation into the system",
+      "formTitle": "Record New Violation",
+      "period": "Period {period}",
+      "record": "Record Violation",
+      "recordedBy": "Recorded by: {handler}",
+      "saving": "Saving...",
+      "severity": {
+        "all": "All",
+        "high": "Serious",
+        "low": "Minor",
+        "medium": "Moderate"
+      },
+      "stats": {
+        "minor": "Minor",
+        "moderateSevere": "Moderate/Serious",
+        "pendingNotify": "Pending Notify",
+        "thisWeek": "This Week"
+      },
+      "status": {
+        "notified": "Parent Notified",
+        "parent_confirmed": "Parent Confirmed",
+        "recorded": "Recorded"
+      },
+      "success": "Violation recorded successfully!",
+      "title": "Violation Records",
+      "types": {
+        "cheat": "Cheating in exam",
+        "disrespect": "Disrespecting teacher",
+        "fight": "Fighting",
+        "late": "Late to school",
+        "noise": "Making noise in class",
+        "other": "Other",
+        "phone": "Phone use in class",
+        "skip": "Skipping class",
+        "uniform": "Incorrect uniform"
+      }
     }
   },
-  "calendar": {
-    "title": "Academic Calendar",
-    "subtitle": "Manage academic years and terms for your school",
-    "addYear": {
-      "title": "Add new academic year",
-      "subtitle": "Once created, expand the year card to configure its terms.",
-      "label": "Year label",
-      "placeholder": "e.g. 2026–2027",
-      "setActive": "Set as current academic year",
-      "submit": "Create year",
-      "submitting": "Creating..."
+  "exam": {
+    "briefing": {
+      "agreeLabel": "I have read and agree to the exam rules",
+      "duration": "Duration",
+      "questions": "Questions",
+      "rules": {
+        "rule1": "Do not use any materials during the exam.",
+        "rule2": "Do not leave the exam page while taking it.",
+        "rule3": "The exam auto-submits when time runs out.",
+        "rule4": "Only one answer can be chosen per question.",
+        "rule5": "You cannot return after submitting."
+      },
+      "rulesTitle": "Exam rules",
+      "startCta": "Start the exam now",
+      "title": "Exam information",
+      "type": "Type",
+      "typeValue": "Multiple choice"
     },
-    "year": {
-      "active": "Active",
-      "noTerms": "No terms configured",
-      "termCount": "{count} terms"
+    "card": {
+      "deadline": "Due: {date}",
+      "duration": "{minutes} min",
+      "questions": "{count} questions",
+      "teacher": "Teacher: {name}"
     },
-    "term": {
-      "name": "Term name",
-      "startDate": "Start date",
-      "endDate": "End date",
-      "actions": "Actions",
-      "graded": "Graded",
-      "defaultName": "Term {n}",
-      "addTerm": "Add term",
-      "noTerms": "No terms configured for this academic year yet.",
-      "deleteBlocked": "Term has grade entries — cannot delete",
-      "edit": "Edit term",
-      "delete": "Delete term",
-      "save": "Save",
-      "cancel": "Cancel"
+    "cta": {
+      "expired": "Expired",
+      "start": "Start exam",
+      "viewResult": "View result"
     },
     "empty": {
-      "title": "No academic years yet",
-      "subtitle": "Create your first academic year to start configuring terms, teaching schedules and exam periods.",
-      "cta": "Create your first academic year"
+      "subtitle": "There are no exams matching this filter.",
+      "title": "No exams"
     },
     "errors": {
-      "date-order": "Start date must be before end date",
-      "date-overlap": "Term overlaps with another term in this year",
-      "graded-term-delete": "Cannot delete a term that has grade entries",
-      "not-found-year": "Academic year not found",
-      "not-found-term": "Term not found",
-      "year-label-exists": "Academic year label already exists",
-      "active-year-exists": "An active academic year already exists",
-      "year-archived": "This academic year has been archived",
-      "network-error": "Cannot connect to the server",
-      "unknown": "Something went wrong, please try again"
-    }
-  },
-  "subjectCatalogue": {
-    "departments": {
-      "title": "Subject Departments",
-      "subtitle": "Group subjects by discipline. Departments are the foundation for teacher assignment and position titles.",
-      "addButton": "Add department",
+      "after-deadline": "The exam has expired.",
+      "already-submitted": "The exam has already been submitted.",
+      "max-attempts-exceeded": "You have already taken this exam.",
+      "network-error": "Connection error, please try again.",
+      "not-found": "Exam not found.",
+      "unknown": "Something went wrong, please try again."
+    },
+    "filter": {
+      "all": "All",
+      "available": "Available",
+      "completed": "Done",
+      "expired": "Expired",
+      "groupLabel": "Filter exams"
+    },
+    "page": {
+      "subtitle": "Your list of exams",
+      "title": "Exams"
+    },
+    "result": {
+      "backToList": "Back to list",
+      "correct": "Correct",
+      "correctAnswer": "Correct answer",
+      "failed": "NOT PASSED",
       "filterAll": "All",
-      "filterActive": "Active",
-      "filterArchived": "Archived",
-      "searchPlaceholder": "Search departments…",
-      "clearSearch": "Clear search",
-      "emptyTitle": "No departments yet",
-      "emptySubtitle": "Create your first department to start building your subject catalog.",
-      "emptyCreateButton": "Create first department",
-      "filteredEmptyTitle": "No matching departments",
-      "filteredEmptySubtitle": "Try adjusting the filter or clearing your search.",
-      "clearFilters": "Clear filters",
-      "subjectUnit": "subjects",
-      "cardActive": "active",
-      "statusActive": "Active",
-      "statusArchived": "Archived",
-      "editButton": "Edit",
-      "archiveButton": "Archive",
-      "restoreButton": "Restore",
-      "archiveBlockedTooltip": "Cannot archive: {count} active subjects remain.",
-      "archiveConfirmTitle": "Archive department?",
-      "archiveConfirmBody": "Archive \"{name}\"? It will be hidden from new assignment options. Existing data is preserved.",
-      "archiveConfirmButton": "Archive",
-      "cancelButton": "Cancel"
+      "filterCorrect": "Correct",
+      "filterGroupLabel": "Filter results",
+      "filterIncorrect": "Incorrect",
+      "filterSkipped": "Skipped",
+      "incorrect": "Incorrect",
+      "outOf": "/10",
+      "passed": "PASSED",
+      "percentile": "Percentile",
+      "rank": "Rank",
+      "reviewTitle": "Review questions",
+      "scoreLabel": "Score",
+      "skipped": "Skipped",
+      "timeTaken": "Time taken",
+      "title": "Exam result",
+      "yourAnswer": "Your answer"
     },
-    "createParentDialog": {
-      "createTitle": "New department",
-      "createSubtitle": "Create a new subject group for your school.",
-      "editTitle": "Edit department",
-      "editSubtitle": "Update name and concept label.",
-      "nameLabel": "Department name",
-      "namePlaceholder": "e.g. Mathematics, Foreign Languages, …",
-      "nameHint": "1–128 characters",
-      "conceptLabel": "Concept label",
-      "conceptOptional": "optional",
-      "conceptHint": "Display label shown in the UI (does not affect functionality).",
-      "conceptBomon": "Department",
-      "conceptTo": "Team",
-      "conceptKhoa": "Faculty",
-      "conceptCustom": "Custom",
-      "customLabelPlaceholder": "Enter custom label (e.g. Center, Office…)",
-      "customLabelRequired": "Please enter a custom label.",
-      "saveButton": "Save",
-      "createButton": "Create department",
-      "cancelButton": "Cancel"
+    "skeleton": {
+      "loading": "Loading exams..."
     },
-    "subjects": {
-      "title": "Subject Catalogue",
-      "subtitle": "Departments and grade-scoped subjects",
-      "addDepartmentButton": "Add department",
-      "addSubjectButton": "Add subject",
-      "noDepartments": "No departments yet",
-      "noDepartmentsSubtitle": "Create your first department to start adding subjects.",
-      "addFirstDepartment": "Add first department",
-      "selectDepartment": "Select a department to view its subjects.",
-      "gradeRangeInfo": "School grade range:",
-      "gradeRangeNote": "New subjects must fall within this range.",
-      "subjectUnit": "subjects",
-      "gradeRange": "grade {range}",
-      "gradeScopedTitle": "Grade-scoped subjects",
-      "gradeScopedBreadcrumb": "Subjects",
-      "breadcrumbLabel": "Current location",
-      "noSubjects": "No subjects yet",
-      "noSubjectsSubtitle": "Add the first subject for \"{name}\".",
-      "addFirstSubject": "Add first subject",
-      "colName": "Name",
-      "colGrade": "Grade",
-      "colCode": "Code",
-      "colStatus": "Status",
-      "colActions": "Actions",
-      "gradeLabel": "Grade {level}",
-      "inUseLabel": "In use",
-      "viewEditButton": "View / Edit",
-      "archiveButton": "Archive",
-      "archivedLabel": "Archived",
-      "archiveBlockedTooltip": "Subject is in use — cannot archive",
-      "archiveConfirmTitle": "Archive subject?",
-      "archiveConfirmBody": "Archive \"{name}\"? It will be hidden from new class creation. Existing data is preserved.",
-      "archiveConfirmButton": "Archive",
-      "cancelButton": "Cancel",
-      "statusActive": "Active",
-      "statusArchived": "Archived",
-      "noGradeRangeTitle": "Grade range not configured",
-      "noGradeRangeBody": "Please complete the grade level setup before adding subjects."
+    "stats": {
+      "available": "Available",
+      "avgScore": "Average score",
+      "completed": "Completed"
     },
-    "createSubjectDialog": {
-      "title": "New subject",
-      "subtitle": "Each subject is scoped to a single grade level.",
-      "departmentLabel": "Department",
-      "changeButton": "Change",
-      "nameLabel": "Subject name",
-      "namePlaceholder": "e.g. Mathematics Grade 10",
-      "gradeLabel": "Grade level",
-      "gradeHint": "Valid range: {min}–{max}",
-      "codeLabel": "Code",
-      "codeOptional": "optional",
-      "codePlaceholder": "MATH10",
-      "codeHint": "A–Z, 0–9, ≤16 chars",
-      "createButton": "Create subject",
-      "cancelButton": "Cancel"
+    "status": {
+      "available": "Available",
+      "completed": "Done",
+      "expired": "Expired"
     },
-    "subjectDetail": {
-      "basicInfoSection": "Basic information",
-      "nameLabel": "Subject name",
-      "nameHint": "1–128 characters",
-      "codeLabel": "Subject code",
-      "codeOptional": "optional",
-      "codeHint": "Uppercase letters & digits, up to 16 chars.",
-      "curriculumSection": "Curriculum standard",
-      "lockedBadge": "Locked at class level",
-      "lockedBanner": "These fields are the curriculum standard — they cannot be changed at the class level. Teachers will see these values when entering grades.",
-      "lockedTooltip": "This value flows down to the class level and cannot be edited by teachers.",
-      "fieldPeriodCount": "Period count",
-      "fieldPeriodCountHint": "/ year",
-      "fieldAssessmentCount": "Required assessments",
-      "fieldAssessmentCountHint": "/ term",
-      "fieldOutcomeTargets": "Learning outcomes",
-      "fieldMasterSyllabus": "Master syllabus",
-      "fieldExerciseBank": "Shared exercise bank",
-      "fieldExamBank": "Shared exam bank",
-      "classOfferingsSection": "Class offerings",
-      "classOfferingsEmpty": "No classes are using this subject yet.",
-      "offeringColClass": "Class",
-      "offeringColYear": "Academic year",
-      "offeringColTeacher": "Teacher",
-      "offeringColStudents": "Students",
-      "closeButton": "Close",
-      "saveButton": "Save changes",
-      "savedFeedback": "Saved"
+    "submitModal": {
+      "answered": "Answered",
+      "confirmBtn": "Submit now",
+      "reviewBtn": "Review",
+      "title": "Confirm submission",
+      "total": "Total questions",
+      "unanswered": "Unanswered",
+      "warningText": "{count} questions have not been answered."
     },
-    "errors": {
-      "code-format": "Invalid subject code. Use uppercase A–Z and digits 0–9, up to 16 characters.",
-      "archive-blocked-parent": "Cannot archive a department with active subjects.",
-      "archive-blocked-subject": "Cannot archive a subject that is assigned to a teacher.",
-      "already-exists": "Already exists. Please check again.",
-      "parent-in-use": "Department has active subjects and cannot be archived.",
-      "parent-archived": "Department has already been archived.",
-      "parent-forbidden": "You do not have permission to perform this action.",
-      "grade-level-out-of-range": "Grade level is outside this school's configured range.",
-      "parent-not-active": "Department is no longer active.",
-      "class-subject-already-exists": "Subject is already assigned to this class.",
-      "class-subject-locked-field-update": "Cannot modify a locked field — this is a master curriculum value.",
-      "class-subject-in-use": "Cannot archive — subject is in active use in this class.",
-      "not-found": "Not found.",
-      "forbidden": "You do not have access.",
-      "network-error": "Connection error. Please try again.",
-      "unknown": "An error occurred. Please try again."
+    "taking": {
+      "flagBtn": "Flag",
+      "legend": {
+        "answered": "Answered",
+        "current": "Current",
+        "flagged": "Flagged",
+        "unanswered": "Unanswered"
+      },
+      "navigatorLabel": "Question {index}",
+      "navigatorTitle": "Question Navigator",
+      "nextBtn": "Next",
+      "optionLabel": "Choose answer {option}",
+      "prevBtn": "Previous",
+      "progress": "{answered}/{total} answered",
+      "progressLabel": "Answer Progress",
+      "questionLabel": "Question {index}",
+      "submitBtn": "Submit",
+      "timerAnnounce": "Time remaining: {time}",
+      "timerLabel": "Time remaining",
+      "unflagBtn": "Unflag"
     }
   },
-  "timetable": {
-    "title": "Timetable",
-    "titleForClass": "Timetable — Class {class}",
-    "subtitle": "Click a cell to edit. Teacher conflicts are detected automatically across the school.",
-    "yearLabel": "Academic Year",
-    "classLabel": "Class",
-    "periodColHeader": "Period",
-    "periodN": "Period {n}",
-    "recessLabel": "☕ Lunch break",
-    "addSlot": "Add",
-    "exportPdf": "Export PDF",
-    "exportPdfToast": "PDF export is coming soon.",
-    "importTimetable": "Import",
-    "importTimetableToast": "Timetable import is coming soon.",
-    "classConflictCount": "{count} conflicts in this class",
-    "gridScrollHint": "Scroll horizontally to see more days",
-    "slotEditor": {
-      "title": "Edit slot",
-      "subject": "Subject",
-      "subjectPlaceholder": "— Select subject —",
-      "teacher": "Teacher",
-      "pickSubjectFirst": "Pick a subject first to see eligible teachers.",
-      "noEligibleTeacher": "No teacher is assigned to teach this subject in this class.",
-      "teacherBusy": "Already busy this period",
-      "room": "Room",
-      "roomPlaceholder": "e.g. P.201, P.LAB1, Gym…",
-      "save": "Save",
-      "clear": "Delete slot",
-      "cancel": "Cancel"
+  "examBank": {
+    "builder": {
+      "addQuestion": "Add question",
+      "back": "Back",
+      "backAriaLabel": "Back to exam bank",
+      "contentLabel": "Question content",
+      "contentPlaceholder": "Enter question content",
+      "correctAnswerAriaLabel": "Select the correct answer",
+      "correctOptionAriaLabel": "Mark option {option} as the correct answer",
+      "createTitle": "Create new exam",
+      "difficultyLabel": "Difficulty",
+      "durationLabel": "Duration (minutes)",
+      "editTitle": "Edit exam",
+      "maxAttemptsLabel": "Max attempts",
+      "newQuestionPlaceholder": "New question",
+      "noSelection": "Select a question to edit",
+      "optionPlaceholder": "Option {option} text",
+      "optionsLabel": "Options",
+      "publish": "Publish",
+      "questionHasError": "This question is missing information",
+      "questionsHeading": "Questions ({count})",
+      "saveDraft": "Save draft",
+      "saving": "Saving...",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Select subject",
+      "titleLabel": "Exam title",
+      "titlePlaceholder": "Enter exam title"
     },
-    "conflicts": {
-      "title": "Conflict summary",
-      "count": "{count} conflicts detected",
-      "noConflicts": "No conflicts",
-      "hint": "Click a conflict to highlight the cell.",
-      "validHint": "Timetable is valid across the school.",
-      "conflictsWith": "conflicts with class {classes}",
-      "resolve": "Resolve",
-      "jumpedTo": "Moved to conflict slot"
+    "card": {
+      "createdAt": "Created on {date}",
+      "delete": "Delete",
+      "edit": "Edit",
+      "menuAriaLabel": "Open exam actions menu",
+      "publish": "Publish",
+      "questionCount": "{count} questions"
+    },
+    "createButton": "Create new exam",
+    "deleteDialog": {
+      "body": "This action cannot be undone. Only draft exams can be deleted.",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "deleting": "Deleting...",
+      "title": "Delete this exam?"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "hard": "Hard",
+      "medium": "Medium"
+    },
+    "empty": {
+      "body": "Start by creating your first multiple-choice exam.",
+      "cta": "Create first exam",
+      "noMatch": "No exams found",
+      "noMatchBody": "Try changing the filters or search keyword.",
+      "title": "No exams yet"
     },
     "errors": {
-      "fetch-failed": "Could not load the timetable. Please try again.",
-      "save-failed": "Could not save the slot. Please try again.",
-      "slot-not-found": "Slot not found."
+      "cannot-delete-published": "Cannot delete a published exam.",
+      "forbidden": "You don't have permission for this action.",
+      "insufficient-options": "Each question needs at least 2 options.",
+      "missing-title": "Please enter an exam title.",
+      "network-error": "Connection error. Please try again.",
+      "no-questions": "An exam needs at least one question.",
+      "not-found": "Exam not found.",
+      "question-empty-content": "Question content is empty.",
+      "question-missing-answer": "Question is missing a correct answer.",
+      "unknown": "An unknown error occurred."
+    },
+    "filter": {
+      "allStatuses": "All statuses",
+      "allSubjects": "All subjects",
+      "allTeachers": "All teachers",
+      "searchAriaLabel": "Search exams by title",
+      "searchPlaceholder": "Search by title...",
+      "statusAriaLabel": "Filter by status",
+      "subjectAriaLabel": "Filter by subject",
+      "teacherAriaLabel": "Filter by teacher"
+    },
+    "loading": "Loading...",
+    "loadingAriaLabel": "Loading exam list",
+    "moveDownAriaLabel": "Move question {index} down",
+    "moveUpAriaLabel": "Move question {index} up",
+    "publishDialog": {
+      "body": "The exam will appear in students' exam list and become available to take.",
+      "cancel": "Cancel",
+      "confirm": "Publish",
+      "publishing": "Publishing...",
+      "title": "Publish this exam?"
+    },
+    "removeQuestionAriaLabel": "Delete question {index}",
+    "resultsHeading": "{count} exams",
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "subtitle": "Create, edit and publish multiple-choice exams for students.",
+    "subtitleAdmin": "View all multiple-choice exams across the school.",
+    "title": "Exam Bank",
+    "toast": {
+      "deleted": "Exam deleted",
+      "draftSaved": "Draft saved",
+      "published": "Exam published"
     }
+  },
+  "gradeApproval": {
+    "actionApprove": "Approve & Publish",
+    "actionBulkLock": "Lock Grades",
+    "actionRequestRevision": "Request Revision",
+    "actionView": "View",
+    "approveDialog": {
+      "cancel": "Cancel",
+      "confirm": "Publish",
+      "description": "Once published, students and parents can view grades. Continue?",
+      "title": "Confirm Grade Publication"
+    },
+    "approveSuccess": "Published grades for {subject} {class}",
+    "bandAverage": "Average",
+    "bandExcellent": "Excellent",
+    "bandGood": "Good",
+    "bandPoor": "Poor",
+    "bandWeak": "Weak",
+    "bulkLockDialog": {
+      "cancel": "Cancel",
+      "confirm": "Lock Grades",
+      "description": "Once locked, grades cannot be edited. Confirm locking {count} batch(es)?",
+      "title": "Lock Grades"
+    },
+    "bulkLockSuccess": "Locked {count} grade batch(es)",
+    "bulkLockToolbar": "{count} batch(es) selected",
+    "closeSheet": "Close",
+    "colClass": "Class",
+    "colStatus": "Status",
+    "colStudentCount": "Students",
+    "colSubject": "Subject",
+    "colTeacher": "Teacher",
+    "colTerm": "Term",
+    "colUpdated": "Updated",
+    "detailSheet": {
+      "averageScore": "Class average",
+      "colAverage": "Average",
+      "colCode": "Code",
+      "colGradeLabel": "Grade",
+      "colStudent": "Student",
+      "distribution": "Grade distribution",
+      "previewTable": "Grade table",
+      "previewTableAriaLabel": "Student grade table",
+      "title": "Grade Batch Detail"
+    },
+    "emptyState": "No grade batches awaiting approval",
+    "emptyStateAll": "No grade batches",
+    "errorBatchLocked": "Batch is already locked",
+    "errorForbidden": "You do not have permission",
+    "errorNetworkError": "Connection error, please try again",
+    "errorNotPendingApproval": "Batch is not in pending-approval status",
+    "errorNotPublished": "Batch has not been published",
+    "errorUnknown": "An unexpected error occurred",
+    "filterAll": "All",
+    "filterGroupLabel": "Filter by status",
+    "filterLocked": "Locked",
+    "filterPending": "Pending Approval",
+    "filterPublished": "Published",
+    "loading": "Loading grade batches...",
+    "revisionDialog": {
+      "cancel": "Cancel",
+      "confirm": "Send request",
+      "noteLabel": "Note for teacher",
+      "noteMinLength": "Note must be at least 10 characters",
+      "notePlaceholder": "Describe what needs to be corrected...",
+      "title": "Request Revision"
+    },
+    "revisionSuccess": "Revision request sent",
+    "selectAllLabel": "Select all grade batches",
+    "selectBatchLabel": "Select batch {id}",
+    "selfPublishModeWarning": "School uses self-publish mode; approval queue is empty.",
+    "statusDraft": "Draft",
+    "statusLocked": "Locked",
+    "statusPendingApproval": "Pending Approval",
+    "statusPublished": "Published",
+    "tableAriaLabel": "Grade batch list",
+    "title": "Grade Batch Approval"
+  },
+  "gradeBook": {
+    "bandHeaderCK": "Final",
+    "bandHeaderGK": "Midterm",
+    "bandHeaderTX": "Regular",
+    "colAverage": "Average",
+    "colCode": "Student ID",
+    "colConduct": "Conduct",
+    "colGroup": "{label} ({weight}%)",
+    "colStudent": "Student",
+    "conductKha": "Fair",
+    "conductTB": "Average",
+    "conductTot": "Good",
+    "conductYeu": "Weak",
+    "emptyState": "No grades yet",
+    "enterGradesCta": "Enter grades",
+    "errorForbidden": "You do not have permission to view this grade book",
+    "errorNetworkError": "Connection error, please try again",
+    "errorNotFound": "Grade book not found",
+    "errorUnknown": "An unknown error occurred",
+    "loading": "Loading grade book...",
+    "noSelection": "Select a class and term to view the grade book",
+    "notPublishedBanner": "Grades not published yet",
+    "notPublishedDescription": "Grades will appear once published by the teacher / administrator.",
+    "rankDistributionTitle": "Rank distribution",
+    "rankGioi": "Good",
+    "rankKha": "Fair",
+    "rankTrungBinh": "Average",
+    "rankXuatSac": "Excellent",
+    "rankYeu": "Weak",
+    "retry": "Retry",
+    "scoreNotEntered": "Not entered",
+    "scoreNotPublished": "Not published",
+    "selectClass": "Select class - subject",
+    "selectTerm": "Select term",
+    "tableCaption": "Student grade book",
+    "tableLockedNotice": "Grade book locked, read-only.",
+    "termHK1": "Semester 1",
+    "termHK2": "Semester 2",
+    "title": "Grade book"
+  },
+  "gradeEntry": {
+    "averageColumn": "Average",
+    "cellLabel": "{column} score for {student}",
+    "columnHeader": "{label} ({weight}%)",
+    "emptyClass": "No students enrolled in this class",
+    "errorAlreadyPublished": "This grade sheet has already been published",
+    "errorForbidden": "You do not have permission to enter grades for this class",
+    "errorIncompleteScores": "All columns must have scores before publishing",
+    "errorNetworkError": "Connection error, please try again",
+    "errorOutOfRange": "Score must be between 0 and {max}",
+    "errorUnknown": "An unknown error occurred",
+    "loading": "Loading grade sheet...",
+    "noSelection": "Select a class and term to view the grade sheet",
+    "pendingApproval": "Pending Approval",
+    "publishButton": "Publish Grades",
+    "publishConfirmCancel": "Cancel",
+    "publishConfirmDescription": "Published grades cannot be edited. Continue?",
+    "publishConfirmOk": "Publish",
+    "publishConfirmTitle": "Confirm Grade Publication",
+    "publishPendingApproval": "Grades submitted for principal approval",
+    "publishSuccess": "Grades published successfully",
+    "published": "Published",
+    "saveSuccess": "Saved",
+    "selectClass": "Select class - subject",
+    "selectTerm": "Select term",
+    "studentCode": "Student ID",
+    "studentName": "Full name",
+    "tableCaption": "Grade entry table by student and assessment column",
+    "tableLockedNotice": "Grade sheet is locked, read-only.",
+    "termHK1": "Semester 1",
+    "termHK2": "Semester 2",
+    "title": "Grade Entry"
+  },
+  "iamMember": {
+    "errors": {
+      "email-exists": "Email already exists in the system",
+      "forbidden": "You do not have permission to perform this action",
+      "invitation-not-found": "Invitation not found or has expired",
+      "last-admin": "Cannot remove the last admin of the organization",
+      "network-error": "Connection error, please try again",
+      "not-found": "Member or invitation not found",
+      "unknown": "An unexpected error occurred"
+    }
+  },
+  "lessonBank": {
+    "detail": {
+      "author": "Uploaded by",
+      "confirmCancel": "Cancel",
+      "confirmDelete": "Delete",
+      "confirmDeleteBody": "This action cannot be undone. The lesson will be permanently removed.",
+      "confirmDeleteTitle": "Delete lesson?",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "department": "Department",
+      "download": "Download",
+      "edit": "Edit",
+      "fileType": "File type",
+      "open": "Open link",
+      "subject": "Subject",
+      "title": "Lesson details",
+      "uploadedAt": "Uploaded on",
+      "views": "Views",
+      "visibility": "Visibility"
+    },
+    "empty": {
+      "body": "Upload your first lesson to start building the bank.",
+      "cta": "Upload lesson",
+      "noMatch": "No lessons found",
+      "noMatchBody": "Try adjusting your filters or search terms.",
+      "title": "No lessons yet"
+    },
+    "errors": {
+      "file-too-large": "The file exceeds the size limit.",
+      "forbidden": "You do not have permission for this action.",
+      "invalid-url": "The link URL is not valid.",
+      "missing-title": "Please enter a lesson title.",
+      "network-error": "Cannot connect to the server.",
+      "not-found": "Lesson not found.",
+      "unauthorized": "You do not have access.",
+      "unknown": "Something went wrong, please try again.",
+      "unsupported-type": "This file type is not supported."
+    },
+    "filter": {
+      "allDepartments": "All departments",
+      "allSubjects": "All subjects",
+      "allVisibility": "All visibility",
+      "departmentAriaLabel": "Filter by department",
+      "layoutAriaLabel": "Layout",
+      "layoutGrid": "Grid",
+      "layoutList": "List",
+      "searchAriaLabel": "Search lessons",
+      "searchPlaceholder": "Search by title...",
+      "sort": {
+        "most-viewed": "Most viewed",
+        "newest": "Newest",
+        "title-asc": "Title A-Z"
+      },
+      "sortAriaLabel": "Sort",
+      "subjectAriaLabel": "Filter by subject",
+      "visibilityAriaLabel": "Filter by visibility"
+    },
+    "subtitle": "Upload and manage your lessons.",
+    "subtitlePrincipal": "Browse the school-wide lesson bank.",
+    "title": "Lesson Bank",
+    "toast": {
+      "deleted": "Lesson deleted.",
+      "uploaded": "Lesson uploaded."
+    },
+    "upload": {
+      "cancel": "Cancel",
+      "department": "Department",
+      "departmentPlaceholder": "Select a department",
+      "description": "Description",
+      "descriptionPlaceholder": "Briefly describe the content (optional)",
+      "dropZoneAriaLabel": "File upload area",
+      "dropZoneHint": "or click to select a file",
+      "dropZoneTitle": "Drag and drop a file here",
+      "errors": {
+        "fileTypeRequired": "Please select a file type.",
+        "titleRequired": "Please enter a title.",
+        "urlInvalid": "The URL is not valid.",
+        "urlRequired": "Please enter a URL."
+      },
+      "file": "File",
+      "fileType": "File type",
+      "fileTypePlaceholder": "Select a file type",
+      "linkUrl": "Link URL",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "submit": "Upload",
+      "submitting": "Uploading...",
+      "title": "Upload lesson",
+      "titleField": "Title",
+      "titlePlaceholder": "Enter the lesson title",
+      "visibility": "Visibility"
+    },
+    "uploadButton": "Upload lesson",
+    "visibility": {
+      "dept": "Department",
+      "private": "Private",
+      "school": "School-wide"
+    }
+  },
+  "messaging": {
+    "chat": {
+      "attach": "Attach",
+      "backToList": "Back to list",
+      "history": "Chat history",
+      "loadMore": "Load more messages",
+      "members": "{count} members",
+      "online": "Online",
+      "placeholder": "Type a message... (Enter to send)",
+      "send": "Send",
+      "typing": "Typing a message..."
+    },
+    "date": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "empty": {
+      "cta": "Start a conversation",
+      "subtitle": "Click a conversation to start messaging",
+      "title": "Select a conversation"
+    },
+    "errors": {
+      "create-conversation-failed": "Could not create the conversation. Please try again.",
+      "load-conversations-failed": "Could not load conversations. Please try again.",
+      "load-messages-failed": "Could not load messages. Please try again.",
+      "send-message-failed": "Could not send the message. Please try again."
+    },
+    "newMessage": {
+      "button": "New message",
+      "searchPlaceholder": "Search users...",
+      "suggestions": "Suggestions",
+      "title": "New message"
+    },
+    "openConversation": "Open conversation with {name}",
+    "search": {
+      "noGroups": "No groups",
+      "noResults": "No results",
+      "placeholder": "Search..."
+    },
+    "skeleton": {
+      "loading": "Loading messages..."
+    },
+    "tabs": {
+      "direct": "Direct",
+      "groups": "Groups"
+    },
+    "title": "Messages",
+    "totalUnread": "{count} unread messages"
+  },
+  "notifications": {
+    "allLoaded": "All notifications shown",
+    "ariaRead": "read",
+    "ariaUnread": "unread",
+    "emptyAllBody": "Notifications will appear here when there is new activity.",
+    "emptyAllTitle": "No notifications yet",
+    "emptyUnreadBody": "You have read all your notifications.",
+    "emptyUnreadTitle": "All caught up",
+    "errorTitle": "Could not load notifications",
+    "errors": {
+      "network-error": "Cannot connect to the server.",
+      "not-found": "Notification not found.",
+      "unauthorized": "You do not have access.",
+      "unknown": "Something went wrong, please try again."
+    },
+    "filterAll": "All",
+    "filterAnnouncement": "Announcements",
+    "filterAttendance": "Attendance",
+    "filterDiscipline": "Discipline",
+    "filterGrade": "Grades",
+    "filterLabel": "Filter notifications",
+    "filterUnread": "Unread",
+    "listAriaLabel": "Notifications list",
+    "loadMore": "Show {count} more notifications",
+    "loadMoreAriaLabel": "Show {count} more notifications",
+    "loading": "Loading...",
+    "markAllRead": "Mark all as read",
+    "markAllReadAriaLabel": "Mark all notifications as read",
+    "markAllReadToast": "All notifications marked as read",
+    "rowAriaLabel": "{title} — {read}",
+    "subtitle": "View and manage all your notifications.",
+    "title": "Notification Center",
+    "toastClose": "Close",
+    "type_announcement": "Announcement",
+    "type_attendance": "Attendance",
+    "type_discipline": "Discipline",
+    "type_grade": "Grades",
+    "type_system": "System",
+    "unreadCountAriaLabel": "{count} unread notifications"
   },
   "principalTeachers": {
-    "title": "Teacher Management",
-    "subtitle": "Assign homeroom (GVCN) and subject teachers (GVBM) to classes.",
     "addTeacher": "Add Teacher",
-    "teacherCount": "{count} teachers",
     "assignClass": "Assign Classes",
     "detail": "Detail",
+    "errors": {
+      "conflict-exists": "Teacher has a scheduling conflict.",
+      "forbidden": "You do not have permission.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Data not found.",
+      "unknown": "An unexpected error occurred."
+    },
     "retry": "Retry",
-    "table": {
-      "teacher": "Teacher",
-      "primarySubject": "Primary Subject",
-      "homeroom": "Homeroom",
-      "subjectAssignments": "Subject Assignments",
-      "status": "Status",
-      "actions": "Actions",
-      "unassigned": "Unassigned",
-      "noTeachers": "No teachers found.",
-      "caption": "Teacher list",
-      "overflowBadges": "+{n} more",
-      "loading": "Loading teacher list..."
+    "sheet": {
+      "addRow": "Add Row",
+      "cancel": "Cancel",
+      "classPicker": "Class",
+      "conflictWarning": "Timetable conflict exists",
+      "deleteRow": "Delete row",
+      "gvbmSection": "Subject Teachers (GVBM)",
+      "gvcnPlaceholder": "Select class",
+      "gvcnSection": "Homeroom Teacher (GVCN)",
+      "save": "Save Assignments",
+      "saveSuccess": "Assignments saved successfully",
+      "saving": "Saving...",
+      "subjectPicker": "Subject",
+      "title": "Assign: {name}"
     },
     "status": {
       "ACTIVE": "Active",
       "ON_LEAVE": "On Leave"
     },
-    "sheet": {
-      "title": "Assign: {name}",
-      "gvcnSection": "Homeroom Teacher (GVCN)",
-      "gvcnPlaceholder": "Select class",
-      "gvbmSection": "Subject Teachers (GVBM)",
-      "addRow": "Add Row",
-      "classPicker": "Class",
-      "subjectPicker": "Subject",
-      "deleteRow": "Delete row",
-      "save": "Save Assignments",
-      "saving": "Saving...",
-      "cancel": "Cancel",
-      "conflictWarning": "Timetable conflict exists",
-      "saveSuccess": "Assignments saved successfully"
+    "subtitle": "Assign homeroom (GVCN) and subject teachers (GVBM) to classes.",
+    "table": {
+      "actions": "Actions",
+      "caption": "Teacher list",
+      "homeroom": "Homeroom",
+      "loading": "Loading teacher list...",
+      "noTeachers": "No teachers found.",
+      "overflowBadges": "+{n} more",
+      "primarySubject": "Primary Subject",
+      "status": "Status",
+      "subjectAssignments": "Subject Assignments",
+      "teacher": "Teacher",
+      "unassigned": "Unassigned"
     },
-    "errors": {
-      "network-error": "Connection error. Please try again.",
-      "forbidden": "You do not have permission.",
-      "not-found": "Data not found.",
-      "conflict-exists": "Teacher has a scheduling conflict.",
-      "unknown": "An unexpected error occurred."
+    "teacherCount": "{count} teachers",
+    "title": "Teacher Management"
+  },
+  "profile": {
+    "accountRequests": {
+      "contact": "Contact administrator",
+      "description": "To deactivate or delete your account, please contact your school administrator.",
+      "title": "Account requests"
+    },
+    "personal": {
+      "email": "Email",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "role": "Role",
+      "save": "Save changes"
+    },
+    "security": {
+      "confirm": "Confirm password",
+      "current": "Current password",
+      "linkedAccounts": {
+        "description": "Connect external accounts for faster sign-in.",
+        "googleDescription": "Connect with Google for faster sign-in.",
+        "link": "Link now",
+        "linkError": "Linking failed, please try again.",
+        "linkSuccess": "Linked successfully",
+        "linked": "Linked",
+        "linkedDescription": "Connected with {email}",
+        "linking": "Linking...",
+        "notLinked": "Not linked",
+        "providers": {
+          "google": "Google",
+          "vneId": "VNeID"
+        },
+        "title": "Linked accounts",
+        "unlink": "Unlink",
+        "unlinkError": "Unlinking failed, please try again.",
+        "unlinkSuccess": "Unlinked",
+        "unlinking": "Unlinking...",
+        "vneIdDescription": "Connect with VNeID to verify your identity."
+      },
+      "new": "New password",
+      "rules": {
+        "length": "At least 8 characters",
+        "number": "A number",
+        "special": "A special character",
+        "upper": "An uppercase letter"
+      },
+      "strength": {
+        "fair": "Fair",
+        "strong": "Strong",
+        "weak": "Weak"
+      },
+      "title": "Change password",
+      "update": "Update password"
+    },
+    "sessions": {
+      "lastActive": "Active",
+      "logout": "Log out",
+      "logoutAll": "Log out all other sessions",
+      "thisDevice": "This device",
+      "title": "Active sessions"
+    },
+    "tabs": {
+      "personal": "Personal info",
+      "security": "Security",
+      "sessions": "Sessions"
     }
   },
-  "classManagement": {
-    "title": "Class Management",
-    "subtitle": "Create, rename, archive classes and assign homeroom teachers.",
-    "createClass": "Create Class",
-    "filterByYear": "Filter by academic year",
-    "filterByGrade": "Filter by grade",
-    "allGrades": "All grades",
-    "gradeN": "Grade {n}",
-    "table": {
-      "name": "Class name",
-      "grade": "Grade",
-      "homeroom": "Homeroom teacher",
-      "status": "Status",
-      "studentCount": "Students",
-      "actions": "Actions",
-      "unassigned": "Unassigned",
-      "noClasses": "No classes yet.",
-      "caption": "Class list"
+  "shell": {
+    "header": {
+      "logout": "Log out",
+      "notifications": "Notifications",
+      "profile": "Profile",
+      "searchPlaceholder": "Search...",
+      "switchRole": "Switch role"
+    },
+    "nav": {
+      "academicCalendar": "Academic Calendar",
+      "announcements": "Announcements",
+      "assessmentScheme": "Assessment Scheme",
+      "assignments": "Assignments",
+      "attendance": "Attendance",
+      "children": "My Children",
+      "classLog": "Class Log",
+      "classManagement": "Class Management",
+      "classes": "Classes",
+      "collapseSidebar": "Collapse sidebar",
+      "conduct": "Conduct",
+      "courses": "Courses",
+      "dashboard": "Dashboard",
+      "discipline": "Discipline",
+      "exams": "Exams",
+      "expandSidebar": "Expand sidebar",
+      "grades": "Grades",
+      "messages": "Messages",
+      "overview": "Overview",
+      "profile": "Profile",
+      "reports": "Reports",
+      "resources": "Resources",
+      "schedule": "Schedule",
+      "schoolSetup": "School Setup",
+      "staffLeave": "Staff Leave",
+      "staffing": "Staffing",
+      "studentRoster": "Student Roster",
+      "students": "Students",
+      "subjectDepartments": "Subject Departments",
+      "subjects": "Subjects",
+      "teachers": "Teachers",
+      "timetable": "Timetable"
+    },
+    "roles": {
+      "admin": "Admin",
+      "parent": "Parent",
+      "principal": "Principal",
+      "student": "Student",
+      "teacher": "Teacher"
+    }
+  },
+  "staffLeave": {
+    "actions": {
+      "approve": "Approve",
+      "approving": "Approving...",
+      "cancel": "Cancel",
+      "confirmReject": "Confirm reject",
+      "reject": "Reject",
+      "rejecting": "Rejecting..."
+    },
+    "card": {
+      "approvedBy": "Approved by",
+      "days": "{count} days",
+      "reason": "Reason",
+      "rejectedBy": "Rejected by",
+      "rejectionReason": "Rejection reason:",
+      "showLess": "Show less",
+      "showMore": "Show more",
+      "submittedAt": "Submitted {at}"
+    },
+    "empty": {
+      "all": "No leave requests yet.",
+      "approved": "No approved requests.",
+      "description": "You'll be notified when a new request arrives.",
+      "pending": "No pending requests.",
+      "rejected": "No rejected requests."
+    },
+    "error": "Unable to load leave requests.",
+    "errors": {
+      "already-processed": "This request has already been processed.",
+      "missing-reject-reason": "Please enter a rejection reason.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Leave request not found.",
+      "reason-too-short": "Rejection reason must be at least 10 characters."
+    },
+    "filters": {
+      "all": "All",
+      "approved": "Approved",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "statusGroup": "Filter by status"
+    },
+    "leaveType": {
+      "annual": "Annual leave",
+      "family": "Family leave",
+      "personal": "Personal leave",
+      "sick": "Sick leave"
+    },
+    "rejectDialog": {
+      "minLength": "Minimum 10 characters.",
+      "placeholder": "Briefly explain why this request is being rejected…",
+      "ready": "Ready to send.",
+      "title": "Rejection reason (required)"
+    },
+    "retry": "Retry",
+    "staffRole": {
+      "staff": "Staff",
+      "teacher": "Teacher"
+    },
+    "stats": {
+      "approvedThisMonth": "Approved this month",
+      "pending": "Pending review",
+      "totalDays": "Total leave days"
     },
     "status": {
-      "ACTIVE": "Active",
-      "ARCHIVED": "Archived"
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected"
     },
-    "actions": {
-      "rename": "Rename",
-      "archive": "Archive",
-      "assignHomeroom": "Assign homeroom"
-    },
-    "formErrors": {
-      "nameRequired": "Please enter a class name.",
-      "yearRequired": "Please enter an academic year."
-    },
-    "createSheet": {
-      "title": "Create a class",
-      "description": "Fill in the details to create a new class.",
-      "nameLabel": "Class name",
-      "namePlaceholder": "e.g. 10A1",
-      "gradeLabel": "Grade level",
-      "yearLabel": "Academic year",
-      "yearPlaceholder": "e.g. 2025-2026",
-      "submit": "Create class"
-    },
-    "renameSheet": {
-      "title": "Rename class",
-      "description": "Update the name or grade of the class.",
-      "nameLabel": "New class name",
-      "gradeLabel": "Grade level",
-      "submit": "Save changes"
-    },
-    "archiveDialog": {
-      "title": "Archive class",
-      "description": "Are you sure you want to archive class {name}?",
-      "warningWithStudents": "This class has {count} enrolled students. Archive anyway?",
-      "confirm": "Archive",
-      "cancel": "Cancel"
-    },
-    "homeroomSheet": {
-      "title": "Assign homeroom teacher",
-      "description": "Pick a teacher to assign as the homeroom teacher.",
-      "searchPlaceholder": "Search teachers by name...",
-      "currentHomeroom": "Current homeroom teacher",
-      "noTeachers": "No teachers found.",
-      "assign": "Assign"
-    },
-    "errors": {
-      "duplicate-class": "A class with this name already exists for this academic year.",
-      "grade-level-out-of-range": "The grade level is outside the configured range. Please check School Setup.",
-      "not-found": "Class not found.",
-      "forbidden": "You do not have permission to perform this action.",
-      "network-error": "Connection error. Please try again.",
-      "unknown": "Something went wrong. Please try again."
-    },
+    "subtitle": "Review and approve leave requests from teachers and staff",
+    "title": "Staff Leave Management",
     "toast": {
-      "createSuccess": "Class created successfully.",
-      "renameSuccess": "Class renamed successfully.",
-      "archiveSuccess": "Class archived successfully.",
-      "assignHomeroomSuccess": "Homeroom teacher assigned successfully."
+      "approved": "Leave request approved.",
+      "rejected": "Leave request rejected."
     }
   },
   "staffing": {
-    "departments": {
-      "title": "Departments / Subject Teams",
-      "subtitle": "Manage the school's subject teams and departments.",
-      "addButton": "Add department",
-      "filterGroupLabel": "Filter by status",
-      "filterAll": "All",
-      "filterActive": "Active",
-      "filterArchived": "Archived",
-      "searchPlaceholder": "Search departments...",
-      "clearSearch": "Clear search",
-      "statusActive": "Active",
-      "statusArchived": "Archived",
-      "editButton": "Edit",
-      "archiveButton": "Archive",
-      "archiveBlockedTooltip": "{count} active assignment(s)",
-      "archiveConfirmTitle": "Archive department",
-      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"? This action cannot be undone.",
-      "archiveConfirmButton": "Archive",
-      "cancelButton": "Cancel",
-      "emptyTitle": "No departments yet",
-      "emptySubtitle": "Create your first department to start managing staff.",
-      "emptyCreateButton": "Create department",
-      "filteredEmptyTitle": "No results found",
-      "filteredEmptySubtitle": "Try changing the filter or search term.",
-      "clearFilters": "Clear filters",
-      "assignmentCount": "{count} assignment(s)",
-      "createSheet": {
-        "title": "Add department",
-        "description": "Enter the new department name.",
-        "nameLabel": "Department name",
-        "namePlaceholder": "e.g. Math - Physics Team",
-        "submit": "Create",
-        "editTitle": "Edit department"
-      },
-      "formErrors": {
-        "nameRequired": "Name is required.",
-        "nameTooLong": "Name must not exceed 100 characters."
-      },
-      "errors": {
-        "already-exists": "Name already exists. Please choose another.",
-        "not-found": "Department not found.",
-        "has-active-assignments": "Department still has active assignments.",
-        "invalid-permissions": "Permissions are invalid for the selected scope.",
-        "member-not-teacher": "This member is not a teacher.",
-        "academic-year-not-active": "Academic year is invalid.",
-        "scope-entity-not-found": "Scope entity does not exist.",
-        "forbidden": "You do not have permission to perform this action.",
-        "network-error": "Connection error. Please try again.",
-        "unknown": "An unknown error occurred."
-      },
-      "table": {
-        "name": "Name",
-        "status": "Status",
-        "assignments": "Assignments",
-        "actions": "Actions",
-        "caption": "Department list"
-      },
-      "toast": {
-        "createSuccess": "Department created.",
-        "editSuccess": "Department updated.",
-        "archiveSuccess": "Department archived."
-      }
-    },
-    "positionTitles": {
-      "title": "Position Titles",
-      "subtitle": "Manage the position titles in the school.",
-      "addButton": "Add position title",
-      "filterGroupLabel": "Filter by status",
-      "filterAll": "All",
-      "filterActive": "Active",
-      "filterArchived": "Archived",
-      "searchPlaceholder": "Search position titles...",
-      "clearSearch": "Clear search",
-      "statusActive": "Active",
-      "statusArchived": "Archived",
-      "editButton": "Edit",
-      "archiveButton": "Archive",
-      "archiveBlockedTooltip": "{count} active assignment(s)",
-      "archiveConfirmTitle": "Archive position title",
-      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"?",
-      "archiveConfirmButton": "Archive",
-      "cancelButton": "Cancel",
-      "emptyTitle": "No position titles yet",
-      "emptySubtitle": "Create your first position title.",
-      "emptyCreateButton": "Create position title",
-      "filteredEmptyTitle": "No results found",
-      "filteredEmptySubtitle": "Try changing the filter.",
-      "clearFilters": "Clear filters",
-      "assignmentCount": "{count} assignment(s)",
-      "scopeTypeSubjectParent": "Subject team",
-      "scopeTypeDepartment": "Department",
-      "permManageSubjectContent": "Manage content",
-      "permManageSchedule": "Manage schedule",
-      "permManageConduct": "Manage conduct",
-      "permViewReports": "View reports",
-      "createSheet": {
-        "title": "Add position title",
-        "description": "Enter the new position title details.",
-        "nameLabel": "Position title name",
-        "namePlaceholder": "e.g. Subject Team Head",
-        "scopeTypeLabel": "Scope",
-        "permissionsLabel": "Permissions",
-        "submit": "Create",
-        "editTitle": "Edit position title",
-        "editSubmit": "Update"
-      },
-      "formErrors": {
-        "nameRequired": "Name is required.",
-        "nameTooLong": "Name must not exceed 100 characters.",
-        "scopeTypeRequired": "Please select a scope."
-      },
-      "errors": {
-        "already-exists": "Position title name already exists.",
-        "not-found": "Position title not found.",
-        "has-active-assignments": "Position title still has active assignments.",
-        "invalid-permissions": "Permissions are invalid for the selected scope.",
-        "member-not-teacher": "This member is not a teacher.",
-        "academic-year-not-active": "Academic year is invalid.",
-        "scope-entity-not-found": "Scope entity does not exist.",
-        "forbidden": "You do not have permission to perform this action.",
-        "network-error": "Connection error. Please try again.",
-        "unknown": "An unknown error occurred."
-      },
-      "table": {
-        "name": "Name",
-        "scopeType": "Scope",
-        "permissions": "Permissions",
-        "status": "Status",
-        "assignments": "Assignments",
-        "actions": "Actions",
-        "caption": "Position title list"
-      },
-      "toast": {
-        "createSuccess": "Position title created.",
-        "editSuccess": "Position title updated.",
-        "archiveSuccess": "Position title archived."
-      }
-    },
     "assignments": {
-      "title": "Position Assignments",
-      "subtitle": "Assign teachers to position titles by academic year.",
       "assignButton": "Assign",
-      "copyYearButton": "Copy to another year",
-      "filterGroupLabel": "Filter by status",
-      "filterAll": "All",
-      "filterActive": "Active",
-      "filterRevoked": "Revoked",
-      "searchPlaceholder": "Search teachers...",
-      "clearSearch": "Clear search",
-      "statusActive": "Active",
-      "statusRevoked": "Revoked",
-      "revokeButton": "Revoke",
-      "revokeConfirmTitle": "Revoke assignment",
-      "revokeConfirmBody": "Are you sure you want to revoke the assignment of \"{name}\"?",
-      "revokeConfirmButton": "Revoke",
-      "cancelButton": "Cancel",
-      "emptyTitle": "No assignments yet",
-      "emptySubtitle": "Start by assigning a position to a teacher.",
-      "emptyAssignButton": "Assign now",
-      "filteredEmptyTitle": "No results found",
-      "filteredEmptySubtitle": "Try changing the filter.",
-      "clearFilters": "Clear filters",
-      "noScopeEntity": "—",
       "assignSheet": {
-        "title": "Assign position",
+        "academicYearLabel": "Academic year",
+        "academicYearPlaceholder": "e.g. 2025-2026",
         "description": "Assign a teacher to a position title.",
         "memberIdLabel": "Teacher ID",
         "memberIdPlaceholder": "e.g. m-101",
@@ -1687,706 +1899,602 @@
         "positionTitlePlaceholder": "Select position title",
         "scopeEntityLabel": "Scope entity (optional)",
         "scopeEntityPlaceholder": "e.g. sp-math",
-        "academicYearLabel": "Academic year",
-        "academicYearPlaceholder": "e.g. 2025-2026",
-        "submit": "Assign"
+        "submit": "Assign",
+        "title": "Assign position"
       },
+      "cancelButton": "Cancel",
+      "clearFilters": "Clear filters",
+      "clearSearch": "Clear search",
       "copySheet": {
-        "title": "Copy assignments",
         "description": "Copy all assignments from one academic year to another.",
+        "resultCopied": "Copied {count} assignment(s).",
+        "resultSkipped": "Skipped {count} existing assignment(s).",
         "sourceYearLabel": "Source academic year",
         "sourceYearPlaceholder": "e.g. 2024-2025",
+        "submit": "Copy",
         "targetYearLabel": "Target academic year",
         "targetYearPlaceholder": "e.g. 2025-2026",
-        "submit": "Copy",
-        "resultCopied": "Copied {count} assignment(s).",
-        "resultSkipped": "Skipped {count} existing assignment(s)."
+        "title": "Copy assignments"
       },
-      "formErrors": {
-        "memberIdRequired": "Teacher ID is required.",
-        "positionTitleRequired": "Please select a position title.",
-        "academicYearRequired": "Academic year is required.",
-        "sourceYearRequired": "Source academic year is required.",
-        "targetYearRequired": "Target academic year is required."
-      },
+      "copyYearButton": "Copy to another year",
+      "emptyAssignButton": "Assign now",
+      "emptySubtitle": "Start by assigning a position to a teacher.",
+      "emptyTitle": "No assignments yet",
       "errors": {
+        "academic-year-not-active": "Academic year is invalid.",
         "already-exists": "This assignment already exists.",
-        "not-found": "Assignment not found.",
+        "forbidden": "You do not have permission to perform this action.",
         "has-active-assignments": "Still has active assignments.",
         "invalid-permissions": "Permissions are invalid for the selected scope.",
         "member-not-teacher": "This member is not a teacher.",
-        "academic-year-not-active": "Academic year is invalid.",
-        "scope-entity-not-found": "Scope entity does not exist.",
-        "forbidden": "You do not have permission to perform this action.",
         "network-error": "Connection error. Please try again.",
+        "not-found": "Assignment not found.",
+        "scope-entity-not-found": "Scope entity does not exist.",
         "unknown": "An unknown error occurred."
       },
+      "filterActive": "Active",
+      "filterAll": "All",
+      "filterGroupLabel": "Filter by status",
+      "filterRevoked": "Revoked",
+      "filteredEmptySubtitle": "Try changing the filter.",
+      "filteredEmptyTitle": "No results found",
+      "formErrors": {
+        "academicYearRequired": "Academic year is required.",
+        "memberIdRequired": "Teacher ID is required.",
+        "positionTitleRequired": "Please select a position title.",
+        "sourceYearRequired": "Source academic year is required.",
+        "targetYearRequired": "Target academic year is required."
+      },
+      "noScopeEntity": "—",
+      "revokeButton": "Revoke",
+      "revokeConfirmBody": "Are you sure you want to revoke the assignment of \"{name}\"?",
+      "revokeConfirmButton": "Revoke",
+      "revokeConfirmTitle": "Revoke assignment",
+      "searchPlaceholder": "Search teachers...",
+      "statusActive": "Active",
+      "statusRevoked": "Revoked",
+      "subtitle": "Assign teachers to position titles by academic year.",
       "table": {
+        "academicYear": "Academic year",
+        "actions": "Actions",
+        "caption": "Position assignment list",
         "member": "Teacher",
         "positionTitle": "Position title",
         "scopeEntity": "Scope",
-        "academicYear": "Academic year",
-        "status": "Status",
-        "actions": "Actions",
-        "caption": "Position assignment list"
+        "status": "Status"
       },
+      "title": "Position Assignments",
       "toast": {
         "assignSuccess": "Assigned successfully.",
-        "revokeSuccess": "Assignment revoked.",
-        "copySuccess": "Assignments copied."
+        "copySuccess": "Assignments copied.",
+        "revokeSuccess": "Assignment revoked."
       }
     },
-    "tabs": {
-      "departments": "Departments",
-      "positionTitles": "Position Titles",
-      "assignments": "Assignments"
-    }
-  },
-  "notifications": {
-    "title": "Notification Center",
-    "subtitle": "View and manage all your notifications.",
-    "markAllRead": "Mark all as read",
-    "markAllReadAriaLabel": "Mark all notifications as read",
-    "markAllReadToast": "All notifications marked as read",
-    "toastClose": "Close",
-    "loading": "Loading...",
-    "loadMore": "Show {count} more notifications",
-    "loadMoreAriaLabel": "Show {count} more notifications",
-    "allLoaded": "All notifications shown",
-    "filterLabel": "Filter notifications",
-    "filterAll": "All",
-    "filterUnread": "Unread",
-    "filterGrade": "Grades",
-    "filterAttendance": "Attendance",
-    "filterDiscipline": "Discipline",
-    "filterAnnouncement": "Announcements",
-    "unreadCountAriaLabel": "{count} unread notifications",
-    "listAriaLabel": "Notifications list",
-    "rowAriaLabel": "{title} — {read}",
-    "ariaRead": "read",
-    "ariaUnread": "unread",
-    "type_grade": "Grades",
-    "type_attendance": "Attendance",
-    "type_discipline": "Discipline",
-    "type_announcement": "Announcement",
-    "type_system": "System",
-    "emptyUnreadTitle": "All caught up",
-    "emptyUnreadBody": "You have read all your notifications.",
-    "emptyAllTitle": "No notifications yet",
-    "emptyAllBody": "Notifications will appear here when there is new activity.",
-    "errorTitle": "Could not load notifications",
-    "errors": {
-      "not-found": "Notification not found.",
-      "unauthorized": "You do not have access.",
-      "network-error": "Cannot connect to the server.",
-      "unknown": "Something went wrong, please try again."
-    }
-  },
-  "staffLeave": {
-    "title": "Staff Leave Management",
-    "subtitle": "Review and approve leave requests from teachers and staff",
-    "retry": "Retry",
-    "error": "Unable to load leave requests.",
-    "stats": {
-      "pending": "Pending review",
-      "approvedThisMonth": "Approved this month",
-      "totalDays": "Total leave days"
-    },
-    "filters": {
-      "statusGroup": "Filter by status",
-      "all": "All",
-      "pending": "Pending",
-      "approved": "Approved",
-      "rejected": "Rejected",
-      "dateFrom": "From",
-      "dateTo": "To"
-    },
-    "card": {
-      "days": "{count} days",
-      "submittedAt": "Submitted {at}",
-      "reason": "Reason",
-      "showMore": "Show more",
-      "showLess": "Show less",
-      "approvedBy": "Approved by",
-      "rejectedBy": "Rejected by",
-      "rejectionReason": "Rejection reason:"
-    },
-    "actions": {
-      "approve": "Approve",
-      "reject": "Reject",
-      "cancel": "Cancel",
-      "confirmReject": "Confirm reject",
-      "approving": "Approving...",
-      "rejecting": "Rejecting..."
-    },
-    "rejectDialog": {
-      "title": "Rejection reason (required)",
-      "placeholder": "Briefly explain why this request is being rejected…",
-      "minLength": "Minimum 10 characters.",
-      "ready": "Ready to send."
-    },
-    "status": {
-      "pending": "Pending",
-      "approved": "Approved",
-      "rejected": "Rejected"
-    },
-    "leaveType": {
-      "annual": "Annual leave",
-      "sick": "Sick leave",
-      "personal": "Personal leave",
-      "family": "Family leave"
-    },
-    "staffRole": {
-      "teacher": "Teacher",
-      "staff": "Staff"
-    },
-    "empty": {
-      "all": "No leave requests yet.",
-      "pending": "No pending requests.",
-      "approved": "No approved requests.",
-      "rejected": "No rejected requests.",
-      "description": "You'll be notified when a new request arrives."
-    },
-    "toast": {
-      "approved": "Leave request approved.",
-      "rejected": "Leave request rejected."
-    },
-    "errors": {
-      "not-found": "Leave request not found.",
-      "already-processed": "This request has already been processed.",
-      "reason-too-short": "Rejection reason must be at least 10 characters.",
-      "missing-reject-reason": "Please enter a rejection reason.",
-      "network-error": "Connection error. Please try again."
-    }
-  },
-  "lessonBank": {
-    "title": "Lesson Bank",
-    "subtitle": "Upload and manage your lessons.",
-    "subtitlePrincipal": "Browse the school-wide lesson bank.",
-    "uploadButton": "Upload lesson",
-    "toast": {
-      "uploaded": "Lesson uploaded.",
-      "deleted": "Lesson deleted."
-    },
-    "visibility": {
-      "private": "Private",
-      "dept": "Department",
-      "school": "School-wide"
-    },
-    "filter": {
-      "searchPlaceholder": "Search by title...",
-      "searchAriaLabel": "Search lessons",
-      "subjectAriaLabel": "Filter by subject",
-      "allSubjects": "All subjects",
-      "departmentAriaLabel": "Filter by department",
-      "allDepartments": "All departments",
-      "visibilityAriaLabel": "Filter by visibility",
-      "allVisibility": "All visibility",
-      "sortAriaLabel": "Sort",
-      "sort": {
-        "newest": "Newest",
-        "most-viewed": "Most viewed",
-        "title-asc": "Title A-Z"
+    "departments": {
+      "addButton": "Add department",
+      "archiveBlockedTooltip": "{count} active assignment(s)",
+      "archiveButton": "Archive",
+      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"? This action cannot be undone.",
+      "archiveConfirmButton": "Archive",
+      "archiveConfirmTitle": "Archive department",
+      "assignmentCount": "{count} assignment(s)",
+      "cancelButton": "Cancel",
+      "clearFilters": "Clear filters",
+      "clearSearch": "Clear search",
+      "createSheet": {
+        "description": "Enter the new department name.",
+        "editTitle": "Edit department",
+        "nameLabel": "Department name",
+        "namePlaceholder": "e.g. Math - Physics Team",
+        "submit": "Create",
+        "title": "Add department"
       },
-      "layoutAriaLabel": "Layout",
-      "layoutGrid": "Grid",
-      "layoutList": "List"
-    },
-    "empty": {
-      "title": "No lessons yet",
-      "body": "Upload your first lesson to start building the bank.",
-      "cta": "Upload lesson",
-      "noMatch": "No lessons found",
-      "noMatchBody": "Try adjusting your filters or search terms."
-    },
-    "detail": {
-      "title": "Lesson details",
-      "author": "Uploaded by",
-      "department": "Department",
-      "subject": "Subject",
-      "fileType": "File type",
-      "uploadedAt": "Uploaded on",
-      "views": "Views",
-      "visibility": "Visibility",
-      "download": "Download",
-      "open": "Open link",
-      "edit": "Edit",
-      "delete": "Delete",
-      "deleting": "Deleting...",
-      "confirmCancel": "Cancel",
-      "confirmDelete": "Delete",
-      "confirmDeleteTitle": "Delete lesson?",
-      "confirmDeleteBody": "This action cannot be undone. The lesson will be permanently removed."
-    },
-    "upload": {
-      "title": "Upload lesson",
-      "titleField": "Title",
-      "titlePlaceholder": "Enter the lesson title",
-      "description": "Description",
-      "descriptionPlaceholder": "Briefly describe the content (optional)",
-      "subject": "Subject",
-      "subjectPlaceholder": "Select a subject",
-      "department": "Department",
-      "departmentPlaceholder": "Select a department",
-      "fileType": "File type",
-      "fileTypePlaceholder": "Select a file type",
-      "file": "File",
-      "linkUrl": "Link URL",
-      "visibility": "Visibility",
-      "submit": "Upload",
-      "submitting": "Uploading...",
-      "cancel": "Cancel",
-      "dropZoneAriaLabel": "File upload area",
-      "dropZoneTitle": "Drag and drop a file here",
-      "dropZoneHint": "or click to select a file",
+      "editButton": "Edit",
+      "emptyCreateButton": "Create department",
+      "emptySubtitle": "Create your first department to start managing staff.",
+      "emptyTitle": "No departments yet",
       "errors": {
-        "titleRequired": "Please enter a title.",
-        "fileTypeRequired": "Please select a file type.",
-        "urlRequired": "Please enter a URL.",
-        "urlInvalid": "The URL is not valid."
+        "academic-year-not-active": "Academic year is invalid.",
+        "already-exists": "Name already exists. Please choose another.",
+        "forbidden": "You do not have permission to perform this action.",
+        "has-active-assignments": "Department still has active assignments.",
+        "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "member-not-teacher": "This member is not a teacher.",
+        "network-error": "Connection error. Please try again.",
+        "not-found": "Department not found.",
+        "scope-entity-not-found": "Scope entity does not exist.",
+        "unknown": "An unknown error occurred."
+      },
+      "filterActive": "Active",
+      "filterAll": "All",
+      "filterArchived": "Archived",
+      "filterGroupLabel": "Filter by status",
+      "filteredEmptySubtitle": "Try changing the filter or search term.",
+      "filteredEmptyTitle": "No results found",
+      "formErrors": {
+        "nameRequired": "Name is required.",
+        "nameTooLong": "Name must not exceed 100 characters."
+      },
+      "searchPlaceholder": "Search departments...",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "subtitle": "Manage the school's subject teams and departments.",
+      "table": {
+        "actions": "Actions",
+        "assignments": "Assignments",
+        "caption": "Department list",
+        "name": "Name",
+        "status": "Status"
+      },
+      "title": "Departments / Subject Teams",
+      "toast": {
+        "archiveSuccess": "Department archived.",
+        "createSuccess": "Department created.",
+        "editSuccess": "Department updated."
       }
     },
-    "errors": {
-      "missing-title": "Please enter a lesson title.",
-      "invalid-url": "The link URL is not valid.",
-      "unsupported-type": "This file type is not supported.",
-      "file-too-large": "The file exceeds the size limit.",
-      "not-found": "Lesson not found.",
-      "forbidden": "You do not have permission for this action.",
-      "unauthorized": "You do not have access.",
-      "network-error": "Cannot connect to the server.",
-      "unknown": "Something went wrong, please try again."
-    }
-  },
-  "messaging": {
-    "title": "Messages",
+    "positionTitles": {
+      "addButton": "Add position title",
+      "archiveBlockedTooltip": "{count} active assignment(s)",
+      "archiveButton": "Archive",
+      "archiveConfirmBody": "Are you sure you want to archive \"{name}\"?",
+      "archiveConfirmButton": "Archive",
+      "archiveConfirmTitle": "Archive position title",
+      "assignmentCount": "{count} assignment(s)",
+      "cancelButton": "Cancel",
+      "clearFilters": "Clear filters",
+      "clearSearch": "Clear search",
+      "createSheet": {
+        "description": "Enter the new position title details.",
+        "editSubmit": "Update",
+        "editTitle": "Edit position title",
+        "nameLabel": "Position title name",
+        "namePlaceholder": "e.g. Subject Team Head",
+        "permissionsLabel": "Permissions",
+        "scopeTypeLabel": "Scope",
+        "submit": "Create",
+        "title": "Add position title"
+      },
+      "editButton": "Edit",
+      "emptyCreateButton": "Create position title",
+      "emptySubtitle": "Create your first position title.",
+      "emptyTitle": "No position titles yet",
+      "errors": {
+        "academic-year-not-active": "Academic year is invalid.",
+        "already-exists": "Position title name already exists.",
+        "forbidden": "You do not have permission to perform this action.",
+        "has-active-assignments": "Position title still has active assignments.",
+        "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "member-not-teacher": "This member is not a teacher.",
+        "network-error": "Connection error. Please try again.",
+        "not-found": "Position title not found.",
+        "scope-entity-not-found": "Scope entity does not exist.",
+        "unknown": "An unknown error occurred."
+      },
+      "filterActive": "Active",
+      "filterAll": "All",
+      "filterArchived": "Archived",
+      "filterGroupLabel": "Filter by status",
+      "filteredEmptySubtitle": "Try changing the filter.",
+      "filteredEmptyTitle": "No results found",
+      "formErrors": {
+        "nameRequired": "Name is required.",
+        "nameTooLong": "Name must not exceed 100 characters.",
+        "scopeTypeRequired": "Please select a scope."
+      },
+      "permManageConduct": "Manage conduct",
+      "permManageSchedule": "Manage schedule",
+      "permManageSubjectContent": "Manage content",
+      "permViewReports": "View reports",
+      "scopeTypeDepartment": "Department",
+      "scopeTypeSubjectParent": "Subject team",
+      "searchPlaceholder": "Search position titles...",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "subtitle": "Manage the position titles in the school.",
+      "table": {
+        "actions": "Actions",
+        "assignments": "Assignments",
+        "caption": "Position title list",
+        "name": "Name",
+        "permissions": "Permissions",
+        "scopeType": "Scope",
+        "status": "Status"
+      },
+      "title": "Position Titles",
+      "toast": {
+        "archiveSuccess": "Position title archived.",
+        "createSuccess": "Position title created.",
+        "editSuccess": "Position title updated."
+      }
+    },
     "tabs": {
-      "direct": "Direct",
-      "groups": "Groups"
-    },
-    "search": {
-      "placeholder": "Search...",
-      "noResults": "No results",
-      "noGroups": "No groups"
-    },
-    "newMessage": {
-      "button": "New message",
-      "title": "New message",
-      "searchPlaceholder": "Search users...",
-      "suggestions": "Suggestions"
-    },
-    "chat": {
-      "members": "{count} members",
-      "online": "Online",
-      "placeholder": "Type a message... (Enter to send)",
-      "send": "Send",
-      "attach": "Attach",
-      "history": "Chat history",
-      "backToList": "Back to list",
-      "loadMore": "Load more messages",
-      "typing": "Typing a message..."
-    },
-    "openConversation": "Open conversation with {name}",
-    "totalUnread": "{count} unread messages",
-    "empty": {
-      "title": "Select a conversation",
-      "subtitle": "Click a conversation to start messaging",
-      "cta": "Start a conversation"
-    },
-    "errors": {
-      "load-conversations-failed": "Could not load conversations. Please try again.",
-      "load-messages-failed": "Could not load messages. Please try again.",
-      "send-message-failed": "Could not send the message. Please try again.",
-      "create-conversation-failed": "Could not create the conversation. Please try again."
-    },
-    "date": {
-      "today": "Today",
-      "yesterday": "Yesterday"
-    },
-    "skeleton": {
-      "loading": "Loading messages..."
+      "assignments": "Assignments",
+      "departments": "Departments",
+      "positionTitles": "Position Titles"
     }
   },
-  "announcements": {
-    "pageTitle": "Announcements",
-    "subtitle": "Create and manage announcements sent to teachers, parents and students.",
-    "createButton": "Create announcement",
-    "filterAll": "All",
-    "filterSent": "Sent",
-    "filterScheduled": "Scheduled",
-    "filterDraft": "Draft",
-    "priorityNormal": "Normal",
-    "priorityImportant": "Important",
-    "priorityUrgent": "Urgent",
-    "statusDraft": "Draft",
-    "statusScheduled": "Scheduled",
-    "statusSent": "Sent",
-    "audienceAll": "All",
-    "audienceTeachers": "Teachers",
-    "audienceParents": "Parents",
-    "audienceStudents": "Students",
-    "recipientCount": "{count} recipients",
-    "readRatio": "{read}/{total} read",
-    "emptyTitle": "No announcements yet",
-    "emptyBody": "Create your first announcement.",
-    "drawerCreateTitle": "Create announcement",
-    "drawerEditTitle": "Edit announcement",
-    "fieldTitle": "Title",
-    "fieldTitlePlaceholder": "Enter announcement title...",
-    "fieldBody": "Body",
-    "fieldBodyPlaceholder": "Enter announcement content...",
-    "fieldAudience": "Audience",
-    "fieldGradeFilter": "Filter by grade",
-    "fieldPriority": "Priority",
-    "fieldSendMode": "Send time",
-    "sendModeNow": "Send now",
-    "sendModeSchedule": "Schedule",
-    "fieldScheduledAt": "Scheduled time",
-    "estimatedRecipients": "Estimated {count} recipients",
-    "previewToggle": "Preview",
-    "previewHeading": "Preview",
-    "charCount": "{current}/{max}",
-    "btnCancel": "Cancel",
-    "btnSaveDraft": "Save draft",
-    "btnSchedule": "Schedule",
-    "btnSendNow": "Send now",
-    "detailTitle": "Announcement detail",
-    "detailAuthor": "Author",
-    "detailSentAt": "Sent at",
-    "recipientFilterAll": "All",
-    "recipientFilterRead": "Read",
-    "recipientFilterUnread": "Unread",
-    "recipientStatusRead": "Read",
-    "recipientStatusUnread": "Unread",
-    "recipientsEmpty": "No recipients match this filter.",
-    "btnRemind": "Remind unread",
-    "remindToast": "Reminder sent to {count} unread recipients",
-    "deleteTitle": "Delete announcement",
-    "deleteDescription": "Are you sure you want to delete this announcement? This action cannot be undone.",
-    "btnDelete": "Delete",
-    "deleteToast": "Announcement deleted",
-    "sendToast": "Announcement sent",
-    "draftToast": "Draft saved",
-    "scheduleToast": "Announcement scheduled",
-    "loadingAriaLabel": "Loading announcements",
-    "loadError": "Failed to load announcements.",
-    "actionView": "View detail",
-    "actionEdit": "Edit",
-    "actionDelete": "Delete",
-    "readProgressLabel": "Read rate: {pct}%",
-    "urgentCardAriaLabel": "Urgent announcement: {title}",
-    "btnClose": "Close",
-    "loadingRecipientsAriaLabel": "Loading recipients...",
+  "subjectCatalogue": {
+    "createParentDialog": {
+      "cancelButton": "Cancel",
+      "conceptBomon": "Department",
+      "conceptCustom": "Custom",
+      "conceptHint": "Display label shown in the UI (does not affect functionality).",
+      "conceptKhoa": "Faculty",
+      "conceptLabel": "Concept label",
+      "conceptOptional": "optional",
+      "conceptTo": "Team",
+      "createButton": "Create department",
+      "createSubtitle": "Create a new subject group for your school.",
+      "createTitle": "New department",
+      "customLabelPlaceholder": "Enter custom label (e.g. Center, Office…)",
+      "customLabelRequired": "Please enter a custom label.",
+      "editSubtitle": "Update name and concept label.",
+      "editTitle": "Edit department",
+      "nameHint": "1–128 characters",
+      "nameLabel": "Department name",
+      "namePlaceholder": "e.g. Mathematics, Foreign Languages, …",
+      "saveButton": "Save"
+    },
+    "createSubjectDialog": {
+      "cancelButton": "Cancel",
+      "changeButton": "Change",
+      "codeHint": "A–Z, 0–9, ≤16 chars",
+      "codeLabel": "Code",
+      "codeOptional": "optional",
+      "codePlaceholder": "MATH10",
+      "createButton": "Create subject",
+      "departmentLabel": "Department",
+      "gradeHint": "Valid range: {min}–{max}",
+      "gradeLabel": "Grade level",
+      "nameLabel": "Subject name",
+      "namePlaceholder": "e.g. Mathematics Grade 10",
+      "subtitle": "Each subject is scoped to a single grade level.",
+      "title": "New subject"
+    },
+    "departments": {
+      "addButton": "Add department",
+      "archiveBlockedTooltip": "Cannot archive: {count} active subjects remain.",
+      "archiveButton": "Archive",
+      "archiveConfirmBody": "Archive \"{name}\"? It will be hidden from new assignment options. Existing data is preserved.",
+      "archiveConfirmButton": "Archive",
+      "archiveConfirmTitle": "Archive department?",
+      "cancelButton": "Cancel",
+      "cardActive": "active",
+      "clearFilters": "Clear filters",
+      "clearSearch": "Clear search",
+      "editButton": "Edit",
+      "emptyCreateButton": "Create first department",
+      "emptySubtitle": "Create your first department to start building your subject catalog.",
+      "emptyTitle": "No departments yet",
+      "filterActive": "Active",
+      "filterAll": "All",
+      "filterArchived": "Archived",
+      "filteredEmptySubtitle": "Try adjusting the filter or clearing your search.",
+      "filteredEmptyTitle": "No matching departments",
+      "restoreButton": "Restore",
+      "searchPlaceholder": "Search departments…",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "subjectUnit": "subjects",
+      "subtitle": "Group subjects by discipline. Departments are the foundation for teacher assignment and position titles.",
+      "title": "Subject Departments"
+    },
     "errors": {
-      "title-too-short": "Title must be at least 5 characters.",
-      "body-too-short": "Body must be at least 10 characters.",
-      "no-audience": "Please select at least one audience.",
-      "schedule-past-date": "Scheduled time must be in the future.",
-      "not-found": "Announcement not found.",
-      "unauthorized": "You are not authorised to perform this action.",
-      "network-error": "Unable to reach the server.",
-      "unknown": "Something went wrong, please try again."
+      "already-exists": "Already exists. Please check again.",
+      "archive-blocked-parent": "Cannot archive a department with active subjects.",
+      "archive-blocked-subject": "Cannot archive a subject that is assigned to a teacher.",
+      "class-subject-already-exists": "Subject is already assigned to this class.",
+      "class-subject-in-use": "Cannot archive — subject is in active use in this class.",
+      "class-subject-locked-field-update": "Cannot modify a locked field — this is a master curriculum value.",
+      "code-format": "Invalid subject code. Use uppercase A–Z and digits 0–9, up to 16 characters.",
+      "forbidden": "You do not have access.",
+      "grade-level-out-of-range": "Grade level is outside this school's configured range.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Not found.",
+      "parent-archived": "Department has already been archived.",
+      "parent-forbidden": "You do not have permission to perform this action.",
+      "parent-in-use": "Department has active subjects and cannot be archived.",
+      "parent-not-active": "Department is no longer active.",
+      "unknown": "An error occurred. Please try again."
+    },
+    "subjectDetail": {
+      "basicInfoSection": "Basic information",
+      "classOfferingsEmpty": "No classes are using this subject yet.",
+      "classOfferingsSection": "Class offerings",
+      "closeButton": "Close",
+      "codeHint": "Uppercase letters & digits, up to 16 chars.",
+      "codeLabel": "Subject code",
+      "codeOptional": "optional",
+      "curriculumSection": "Curriculum standard",
+      "fieldAssessmentCount": "Required assessments",
+      "fieldAssessmentCountHint": "/ term",
+      "fieldExamBank": "Shared exam bank",
+      "fieldExerciseBank": "Shared exercise bank",
+      "fieldMasterSyllabus": "Master syllabus",
+      "fieldOutcomeTargets": "Learning outcomes",
+      "fieldPeriodCount": "Period count",
+      "fieldPeriodCountHint": "/ year",
+      "lockedBadge": "Locked at class level",
+      "lockedBanner": "These fields are the curriculum standard — they cannot be changed at the class level. Teachers will see these values when entering grades.",
+      "lockedTooltip": "This value flows down to the class level and cannot be edited by teachers.",
+      "nameHint": "1–128 characters",
+      "nameLabel": "Subject name",
+      "offeringColClass": "Class",
+      "offeringColStudents": "Students",
+      "offeringColTeacher": "Teacher",
+      "offeringColYear": "Academic year",
+      "saveButton": "Save changes",
+      "savedFeedback": "Saved"
+    },
+    "subjects": {
+      "addDepartmentButton": "Add department",
+      "addFirstDepartment": "Add first department",
+      "addFirstSubject": "Add first subject",
+      "addSubjectButton": "Add subject",
+      "archiveBlockedTooltip": "Subject is in use — cannot archive",
+      "archiveButton": "Archive",
+      "archiveConfirmBody": "Archive \"{name}\"? It will be hidden from new class creation. Existing data is preserved.",
+      "archiveConfirmButton": "Archive",
+      "archiveConfirmTitle": "Archive subject?",
+      "archivedLabel": "Archived",
+      "breadcrumbLabel": "Current location",
+      "cancelButton": "Cancel",
+      "colActions": "Actions",
+      "colCode": "Code",
+      "colGrade": "Grade",
+      "colName": "Name",
+      "colStatus": "Status",
+      "gradeLabel": "Grade {level}",
+      "gradeRange": "grade {range}",
+      "gradeRangeInfo": "School grade range:",
+      "gradeRangeNote": "New subjects must fall within this range.",
+      "gradeScopedBreadcrumb": "Subjects",
+      "gradeScopedTitle": "Grade-scoped subjects",
+      "inUseLabel": "In use",
+      "noDepartments": "No departments yet",
+      "noDepartmentsSubtitle": "Create your first department to start adding subjects.",
+      "noGradeRangeBody": "Please complete the grade level setup before adding subjects.",
+      "noGradeRangeTitle": "Grade range not configured",
+      "noSubjects": "No subjects yet",
+      "noSubjectsSubtitle": "Add the first subject for \"{name}\".",
+      "selectDepartment": "Select a department to view its subjects.",
+      "statusActive": "Active",
+      "statusArchived": "Archived",
+      "subjectUnit": "subjects",
+      "subtitle": "Departments and grade-scoped subjects",
+      "title": "Subject Catalogue",
+      "viewEditButton": "View / Edit"
+    }
+  },
+  "teacherClasses": {
+    "actions": {
+      "attendance": "Attendance",
+      "classLog": "Class Log",
+      "comingSoon": "Coming soon",
+      "viewStudents": "View Students"
+    },
+    "breadcrumbLabel": "Class navigation",
+    "empty": "You have not been assigned to any class.",
+    "errorRetryAction": "Try again",
+    "errors": {
+      "network-error": "Connection error. Please check your network.",
+      "not-found": "Class not found.",
+      "unauthorized": "You do not have permission to view this.",
+      "unknown": "An error occurred. Please try again."
+    },
+    "gradeLevel": "Grade {grade}",
+    "homeroomBadge": "Homeroom",
+    "pageTitle": "My Classes",
+    "studentPage": {
+      "breadcrumbClasses": "Classes",
+      "columns": {
+        "code": "Student Code",
+        "name": "Student",
+        "status": "Status"
+      },
+      "empty": "This class has no students yet.",
+      "errorRetryAction": "Try again",
+      "filteredCount": "Found {count} students",
+      "nextPage": "Next page",
+      "noSearchResults": "No matching students found.",
+      "paginationNav": "Student list pagination",
+      "prevPage": "Previous page",
+      "resultCount": "{count} students",
+      "retryButton": "Try again",
+      "searchPlaceholder": "Search by name or student code...",
+      "showing": "Showing {from}–{to} of {total}",
+      "status": {
+        "active": "Enrolled",
+        "transferred": "Transferred"
+      },
+      "studentListSection": "Student list"
+    },
+    "students": "students"
+  },
+  "teacherDashboard": {
+    "notifications": {
+      "title": "Notifications"
+    },
+    "pageTitle": "Overview",
+    "pendingGrades": {
+      "assessmentType": "{type} · {className}",
+      "enterGrades": "Enter grades",
+      "title": "Pending Grades"
+    },
+    "schedule": {
+      "afternoon": "Afternoon",
+      "classRoom": "Class {className} · {room}",
+      "dayLabel": "Wednesday",
+      "empty": "No classes today",
+      "morning": "Morning",
+      "period": "Period {period}",
+      "title": "Today's Schedule"
+    },
+    "scheduleStatus": {
+      "done": "Done",
+      "live": "Live",
+      "upcoming": "Upcoming"
+    },
+    "stats": {
+      "adminApprovalMode": "ADMIN_APPROVAL mode",
+      "classesToday": "Classes Today",
+      "newMessages": "New Messages",
+      "pendingApproval": "Grades Awaiting Approval",
+      "pendingGrades": "Pending Grades",
+      "totalClasses": "My Classes",
+      "totalStudents": "Total Students",
+      "vsPrevMonth": "vs last month",
+      "vsPrevWeek": "vs last week"
     }
   },
   "teachingPlan": {
-    "pageTitle": "Teaching Plan (PPCT)",
-    "teacherSubtitle": "Compose a weekly teaching plan per subject / class / term",
-    "principalSubtitle": "Review and approve teachers' teaching plans",
-    "selector": {
-      "subject": "Subject",
-      "class": "Class",
-      "term": "Term",
-      "subjectPlaceholder": "Select subject",
-      "classPlaceholder": "Select class",
-      "termPlaceholder": "Select term"
+    "actions": {
+      "approve": "Approve",
+      "approveSuccess": "Plan approved",
+      "approving": "Approving...",
+      "reject": "Return",
+      "rejectSuccess": "Plan returned",
+      "rejecting": "Processing...",
+      "saveDraft": "Save draft",
+      "submit": "Submit for approval",
+      "submitSuccess": "Plan submitted for approval",
+      "submitting": "Submitting..."
     },
-    "grid": {
-      "weekLabel": "Week {week}",
-      "periodLabel": "Period {period}",
-      "addCell": "Add content for Week {week} Period {period}",
-      "emptyState": "No plan content yet",
-      "emptyStateCta": "Start entering the teaching plan"
+    "approve": {
+      "cancel": "Cancel",
+      "confirm": "Approve",
+      "confirmDescription": "Are you sure you want to approve this teaching plan?",
+      "confirmTitle": "Confirm approval"
     },
     "cell": {
-      "title": "Lesson title",
-      "titlePlaceholder": "e.g. Derivatives — finding extrema",
-      "titleRequired": "Lesson title is required",
+      "cancel": "Cancel",
       "learningObjective": "Learning objective",
       "learningObjectivePlaceholder": "Students will be able to...",
       "notes": "Notes",
       "notesPlaceholder": "Additional notes...",
       "save": "Save cell",
-      "cancel": "Cancel"
+      "title": "Lesson title",
+      "titlePlaceholder": "e.g. Derivatives — finding extrema",
+      "titleRequired": "Lesson title is required"
     },
-    "status": {
-      "DRAFT": "Draft",
-      "SUBMITTED": "Pending",
-      "APPROVED": "Approved",
-      "REJECTED": "Rejected"
+    "errors": {
+      "insufficient-cells": "Fill in at least 50% of the plan cells before submitting",
+      "invalid-rejection-reason": "Return reason must be at least 10 characters",
+      "network-error": "Network connection error",
+      "not-draft": "Plan is not in draft status",
+      "not-found": "Plan not found",
+      "not-submitted": "Plan has not been submitted for approval",
+      "unauthorized": "You are not authorised to perform this action",
+      "unknown": "An unknown error occurred"
     },
-    "actions": {
-      "saveDraft": "Save draft",
-      "submit": "Submit for approval",
-      "submitting": "Submitting...",
-      "submitSuccess": "Plan submitted for approval",
-      "approve": "Approve",
-      "approving": "Approving...",
-      "approveSuccess": "Plan approved",
-      "reject": "Return",
-      "rejecting": "Processing...",
-      "rejectSuccess": "Plan returned"
+    "grid": {
+      "addCell": "Add content for Week {week} Period {period}",
+      "emptyState": "No plan content yet",
+      "emptyStateCta": "Start entering the teaching plan",
+      "periodLabel": "Period {period}",
+      "weekLabel": "Week {week}"
     },
-    "approve": {
-      "confirmTitle": "Confirm approval",
-      "confirmDescription": "Are you sure you want to approve this teaching plan?",
-      "confirm": "Approve",
-      "cancel": "Cancel"
+    "pageTitle": "Teaching Plan (PPCT)",
+    "principal": {
+      "allClasses": "All classes",
+      "allSubjects": "All subjects",
+      "allTeachers": "All teachers",
+      "emptyPending": "No plans pending approval",
+      "filterClass": "Class",
+      "filterSubject": "Subject",
+      "filterTeacher": "Teacher",
+      "submittedAt": "Submitted: {date}",
+      "submittedBy": "Teacher: {name}"
     },
+    "principalSubtitle": "Review and approve teachers' teaching plans",
     "reject": {
-      "title": "Return plan",
-      "reasonLabel": "Reason for return",
-      "reasonPlaceholder": "State the reason for returning the plan...",
-      "reasonMinLength": "Reason must be at least 10 characters",
+      "cancel": "Cancel",
       "confirm": "Confirm return",
-      "cancel": "Cancel"
+      "reasonLabel": "Reason for return",
+      "reasonMinLength": "Reason must be at least 10 characters",
+      "reasonPlaceholder": "State the reason for returning the plan...",
+      "title": "Return plan"
     },
     "rejection": {
       "bannerTitle": "Plan was returned",
-      "reason": "Reason: {reason}",
-      "editHint": "You can edit and resubmit"
+      "editHint": "You can edit and resubmit",
+      "reason": "Reason: {reason}"
     },
-    "principal": {
-      "filterTeacher": "Teacher",
-      "filterSubject": "Subject",
-      "filterClass": "Class",
-      "allTeachers": "All teachers",
-      "allSubjects": "All subjects",
-      "allClasses": "All classes",
-      "emptyPending": "No plans pending approval",
-      "submittedBy": "Teacher: {name}",
-      "submittedAt": "Submitted: {date}"
+    "selector": {
+      "class": "Class",
+      "classPlaceholder": "Select class",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select subject",
+      "term": "Term",
+      "termPlaceholder": "Select term"
+    },
+    "status": {
+      "APPROVED": "Approved",
+      "DRAFT": "Draft",
+      "REJECTED": "Rejected",
+      "SUBMITTED": "Pending"
+    },
+    "teacherSubtitle": "Compose a weekly teaching plan per subject / class / term"
+  },
+  "tenant": {
+    "home": {
+      "body": "You are inside this organization workspace.",
+      "title": "Workspace"
+    },
+    "select": {
+      "empty": "You do not belong to any organization yet",
+      "enter": "Enter",
+      "roles": "Roles",
+      "subtitle": "You belong to these organizations",
+      "switching": "Switching…",
+      "title": "Choose a workspace"
+    }
+  },
+  "timetable": {
+    "addSlot": "Add",
+    "classConflictCount": "{count} conflicts in this class",
+    "classLabel": "Class",
+    "conflicts": {
+      "conflictsWith": "conflicts with class {classes}",
+      "count": "{count} conflicts detected",
+      "hint": "Click a conflict to highlight the cell.",
+      "jumpedTo": "Moved to conflict slot",
+      "noConflicts": "No conflicts",
+      "resolve": "Resolve",
+      "title": "Conflict summary",
+      "validHint": "Timetable is valid across the school."
     },
     "errors": {
-      "not-found": "Plan not found",
-      "not-draft": "Plan is not in draft status",
-      "not-submitted": "Plan has not been submitted for approval",
-      "insufficient-cells": "Fill in at least 50% of the plan cells before submitting",
-      "invalid-rejection-reason": "Return reason must be at least 10 characters",
-      "unauthorized": "You are not authorised to perform this action",
-      "network-error": "Network connection error",
-      "unknown": "An unknown error occurred"
-    }
-  },
-  "academicRecord": {
-    "pageTitle": "Student Academic Record",
-    "pageSubtitle": "Signed academic-record history by school year and term. Each record is a snapshot of grades at the time of signing.",
-    "breadcrumb": {
-      "home": "Home",
-      "students": "Students",
-      "record": "Academic Record"
+      "fetch-failed": "Could not load the timetable. Please try again.",
+      "save-failed": "Could not save the slot. Please try again.",
+      "slot-not-found": "Slot not found."
     },
-    "student": {
-      "code": "Student ID",
-      "dob": "Date of birth",
-      "currentClass": "Current class",
-      "currentYear": "Current school year"
-    },
-    "yearTimeline": {
-      "currentBadge": "Current year",
-      "ariaLabel": "Select school year"
-    },
-    "sealStatus": {
-      "sealed": "Sealed",
-      "unsealed": "Not sealed",
-      "ariaSealed": "Academic record is sealed",
-      "ariaUnsealed": "Academic record is not sealed"
-    },
-    "yearStatus": {
-      "all_sealed": "Fully signed",
-      "partial": "Partially signed",
-      "none": "No record",
-      "unsealed_in_year": "Has unsealed record"
-    },
-    "termStatus": {
-      "PENDING": "Not signed",
-      "SEALED": "Signed",
-      "UNSEALED": "Unsealed"
-    },
-    "termSection": {
-      "term1": "Term 1",
-      "term2": "Term 2",
-      "class": "Class",
-      "signedBy": "Signed by",
-      "sealedOn": "Signed on",
-      "unsealedOn": "Unsealed on",
-      "unsealedBanner": "This record has been unsealed"
-    },
-    "pending": {
-      "title": "Term not yet signed",
-      "description": "The academic record will appear here once grades are locked and signed."
-    },
-    "table": {
-      "caption": "Term grade sheet",
+    "exportPdf": "Export PDF",
+    "exportPdfToast": "PDF export is coming soon.",
+    "gridScrollHint": "Scroll horizontally to see more days",
+    "importTimetable": "Import",
+    "importTimetableToast": "Timetable import is coming soon.",
+    "periodColHeader": "Period",
+    "periodN": "Period {n}",
+    "recessLabel": "☕ Lunch break",
+    "slotEditor": {
+      "cancel": "Cancel",
+      "clear": "Delete slot",
+      "noEligibleTeacher": "No teacher is assigned to teach this subject in this class.",
+      "pickSubjectFirst": "Pick a subject first to see eligible teachers.",
+      "room": "Room",
+      "roomPlaceholder": "e.g. P.201, P.LAB1, Gym…",
+      "save": "Save",
       "subject": "Subject",
-      "tx1": "RG1",
-      "tx2": "RG2",
-      "midterm": "Midterm",
-      "final": "Final",
-      "termAvg": "Term Avg",
-      "rank": "Rank",
-      "conduct": "Conduct",
-      "gpa": "GPA",
-      "termSummary": "Term summary"
+      "subjectPlaceholder": "— Select subject —",
+      "teacher": "Teacher",
+      "teacherBusy": "Already busy this period",
+      "title": "Edit slot"
     },
-    "conduct": {
-      "Tot": "Good",
-      "Kha": "Fair",
-      "TrungBinh": "Average",
-      "Yeu": "Weak"
-    },
-    "rankBand": {
-      "xuat-sac": "Excellent",
-      "gioi": "Good",
-      "kha": "Fair",
-      "trung-binh": "Average",
-      "yeu": "Weak"
-    },
-    "printButton": "Print record",
-    "printButtonComingSoon": "Print feature coming soon",
-    "empty": {
-      "title": "No academic record data",
-      "description": "There is no academic record for this school year yet."
-    },
-    "error": {
-      "title": "Unable to load academic record",
-      "retry": "Retry",
-      "not-found": "Academic record for this student was not found.",
-      "forbidden": "You do not have permission to view this academic record.",
-      "network-error": "Connection error. Please try again.",
-      "unknown": "Something went wrong. Please try again later."
-    },
-    "roleBadge": {
-      "ADMIN": "Full view access",
-      "TEACHER": "View students in class",
-      "STUDENT": "View own academic record",
-      "PARENT": "View linked child's record"
-    }
-  },
-  "assessmentScheme": {
-    "title": "Grade Scale & Assessment Scheme",
-    "subtitle": "Configure the grading scale and component score columns per subject.",
-    "gradeScaleSection": "Grade Scale (Classification)",
-    "gradeScaleSectionSubtitle": "Define the school's grade classification bands.",
-    "presetThang10": "Scale 10",
-    "presetThang4": "Scale 4.0",
-    "presetLetter": "Letter (A–F)",
-    "addBand": "Add band",
-    "saveBands": "Save grade scale",
-    "bandLabel": "Label",
-    "bandMinThreshold": "Min score",
-    "bandColor": "Color",
-    "deleteBand": "Delete band",
-    "errorLowestBandNotZero": "The lowest band must start at 0.",
-    "errorOverlappingThresholds": "Grade bands overlap.",
-    "errorGapsInCoverage": "There are gaps between grade bands.",
-    "errorEmptyBands": "At least one band is required.",
-    "assessmentSchemeSection": "Assessment Scheme",
-    "assessmentSchemeSectionSubtitle": "Configure component score columns and weights for each subject.",
-    "gradeLevelLabel": "Grade level",
-    "gradeLevelPlaceholder": "Select grade level",
-    "subjectLabel": "Subject",
-    "subjectPlaceholder": "Select subject",
-    "gradePrefix": "Grade",
-    "noSubjectsForGrade": "No subjects for this grade level.",
-    "columnType": "Type",
-    "columnLabel": "Column name",
-    "columnCount": "Count",
-    "columnWeight": "Weight (%)",
-    "weightSumLabel": "Total weight",
-    "weightSumTarget": "/ 100%",
-    "addColumn": "Add column",
-    "deleteColumn": "Delete column",
-    "saveScheme": "Save assessment scheme",
-    "applyPresetTT22": "Apply TT22/2021",
-    "errorEmptyColumns": "At least one column is required.",
-    "errorWeightSumNot100": "Total weight must equal 100%.",
-    "errorInvalidCount": "Assessment count must be ≥ 1.",
-    "saveSuccess": "Saved successfully.",
-    "saveError": "Save failed. Please try again.",
-    "loading": "Loading...",
-    "errorNotFound": "Data not found.",
-    "errorForbidden": "You are not authorised to perform this action.",
-    "errorNetwork": "Connection error. Please try again.",
-    "errorUnknown": "An unknown error occurred.",
-    "colorSuccess": "Green (Excellent)",
-    "colorPrimary": "Blue (Good)",
-    "colorWarning": "Yellow (Average)",
-    "colorError": "Red (Weak)",
-    "columnTypeTX": "Regular",
-    "columnTypeGK": "Midterm",
-    "columnTypeCK": "Final",
-    "weightSumInvalid": "Total weight: {value}% — not 100% yet",
-    "weightSumValid": "Total weight: {value}% — valid",
-    "weightSumInvalidSR": "— not 100% yet",
-    "breadcrumbSchoolSetup": "School setup",
-    "breadcrumbAssessment": "Assessment Scheme",
-    "pageTitle": "Grade Scale & Assessment Scheme",
-    "pageSubtitle": "Student ranking scale + per-subject grade-book column structure (ADR 0036/0037).",
-    "step4Badge": "Step 4/5 · Onboarding",
-    "gradeScaleTitle": "Grade Scale",
-    "gradeScaleSubtitle": "Applied school-wide. Ranks appear on transcripts and reports.",
-    "presetThang10Desc": "Default VN · Circular 22/2021",
-    "presetGPA4Desc": "International GPA",
-    "presetLetterDesc": "Mapped from percentages",
-    "presetTT26": "Circular 26 · Lower secondary",
-    "presetTT26Desc": "For lower secondary",
-    "presetCustom": "Custom",
-    "presetCustomDesc": "Define columns & weights yourself",
-    "bandRankHeader": "Rank",
-    "bandFromHeader": "From",
-    "bandToHeader": "To",
-    "bandColorHeader": "Color",
-    "bandLabelPlaceholder": "Label",
-    "bandMoveUp": "Move up",
-    "bandMoveDown": "Move down",
-    "removeBand": "Remove band",
-    "addBandLabel": "Add band",
-    "unsavedLabel": "Unsaved",
-    "unsavedChangesBody": "Unsaved changes.",
-    "scaleSavedToast": "Grade scale saved.",
-    "schemeSavedToast": "Assessment scheme saved.",
-    "overlapCalloutTitle": "Bands overlap",
-    "overlapCalloutBody": "Two bands share score ranges — adjust so each score maps to a single rank.",
-    "assessmentSchemePerSubjectTitle": "Per-subject Assessment Scheme",
-    "assessmentSchemePerSubjectSubtitle": "Grade-book column structure per grade-scoped subject. Weights must total 100%.",
-    "gradeLevelHeader": "GRADE",
-    "pickGrade": "— Pick grade —",
-    "pickSubject": "— Pick subject —",
-    "pickGradeFirst": "Pick a grade first",
-    "noSubjectPickedTitle": "Pick a grade and subject to begin",
-    "noSubjectPickedBody": "Schemes are configured per subject × academic year.",
-    "noSchemeTitle": "No assessment scheme for this subject yet.",
-    "noSchemeBody": "Pick a preset to get started fast.",
-    "createSchemeWithPreset": "Create scheme · {presetName}",
-    "schemeHeadingLabel": "Scheme — ",
-    "periodsPerYear": "Periods / year",
-    "requiredExamsPerTerm": "Required exams / term",
-    "lockedFieldTooltip": "Locked by Subject master — edit in Subject catalogue",
-    "schemePresetsLabel": "Preset",
-    "columnKindLabel": "Column type",
-    "columnHeader": "Column",
-    "columnTimesHeader": "Times",
-    "columnWeightHeader": "Weight",
-    "columnNamePlaceholder": "Column name",
-    "columnPlaceholder": "New column",
-    "addColumnLabel": "Add column",
-    "removeColumnLabel": "Remove",
-    "removeColumnMinOne": "At least one column required",
-    "totalWeightLabel": "Total weight",
-    "weightNotHundredTitle": "Total must equal 100% (currently {value}%)",
-    "weightNotHundredBody": "The scheme cannot be saved until the total weight is exactly 100%.",
-    "noSubjectsBannerTitle": "Subject catalogue must be configured first",
-    "noSubjectsBannerBody": "The assessment scheme requires a grade-scoped subject catalogue. Add subjects before configuring schemes.",
-    "goToSubjectCatalogue": "Open Subject catalogue"
+    "subtitle": "Click a cell to edit. Teacher conflicts are detected automatically across the school.",
+    "title": "Timetable",
+    "titleForClass": "Timetable — Class {class}",
+    "yearLabel": "Academic Year"
   }
 }
