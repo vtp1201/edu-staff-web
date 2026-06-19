@@ -111,7 +111,10 @@ function TermSection({ term }: { term: TermRecord }) {
       ) : (
         <>
           {term.status === "UNSEALED" && (
-            <div className="flex items-start gap-2 rounded-lg border border-edu-warning/40 bg-edu-warning/10 p-3 text-sm">
+            <div
+              role="status"
+              className="flex items-start gap-2 rounded-lg border border-edu-warning/40 bg-edu-warning/10 p-3 text-sm"
+            >
               <Unlock
                 aria-hidden
                 className="mt-0.5 size-4 shrink-0 text-edu-warning-foreground"
@@ -199,7 +202,13 @@ export function AcademicRecordScreen({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         {title}
-        <Button type="button" variant="outline" disabled>
+        <Button
+          type="button"
+          variant="outline"
+          aria-disabled="true"
+          title={t("printButtonComingSoon")}
+          onClick={(e) => e.preventDefault()}
+        >
           <Printer aria-hidden className="size-4" />
           {t("printButton")}
         </Button>
@@ -213,7 +222,14 @@ export function AcademicRecordScreen({
         onChange={(id) => onYearChange?.(id)}
       />
 
-      <div className="space-y-8">
+      <div
+        id={`tabpanel-${activeYear.yearId}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeYear.yearId}`}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: ARIA APG tabpanel pattern — the panel is intentionally focusable so Tab from the tablist lands on its content (WAI-ARIA tabs design pattern).
+        tabIndex={0}
+        className="space-y-8"
+      >
         {activeYear.terms.map((term) => (
           <TermSection key={term.termId} term={term} />
         ))}

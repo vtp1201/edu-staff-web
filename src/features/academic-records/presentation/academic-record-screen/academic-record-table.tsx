@@ -116,10 +116,15 @@ export function AcademicRecordTable({ termRecord }: AcademicRecordTableProps) {
                 <span className="text-muted-foreground">—</span>
               )}
             </td>
-            <td className="px-3 py-2 text-center text-muted-foreground">
+            <th
+              id="tfoot-gpa-label"
+              scope="col"
+              className="px-3 py-2 text-center font-normal text-muted-foreground"
+            >
               {t("table.gpa")}
-            </td>
+            </th>
             <td
+              headers="tfoot-gpa-label"
               className={cn(
                 "px-3 py-2 text-center font-bold tabular-nums",
                 getScoreColorClass(gpa, 10),
