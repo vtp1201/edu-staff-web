@@ -53,7 +53,7 @@ export function GradeBookTable({
   if (!(showRoster || isPublished)) {
     return (
       <div
-        className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-[12px] border border-border border-dashed bg-card p-8 text-center"
+        className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-[12px] border border-edu-info bg-edu-info-light p-8 text-center"
         role="status"
         aria-live="polite"
         aria-atomic="true"
@@ -83,7 +83,7 @@ export function GradeBookTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto rounded-[12px] border border-border bg-card">
+      <div className="overflow-x-auto rounded-[12px] border border-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">{t("tableCaption")}</caption>
           <thead>

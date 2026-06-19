@@ -107,12 +107,19 @@ export const TeacherView_WithScores: Story = {
     // 5 student rows render with their names.
     expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
     expect(canvas.getByText("Vũ Thị Em")).toBeInTheDocument();
-    // Teacher CTA present.
-    expect(
-      canvas.getByRole("button", { name: "Nhập điểm" }),
-    ).toBeInTheDocument();
+    // Table structure (caption + column headers) — the table has no CTA.
+    const table = canvas.getByRole("table");
+    expect(table).toBeInTheDocument();
+    expect(table.querySelector("caption")).toBeInTheDocument();
+    const colHeaders = table.querySelectorAll("th[scope='col']");
+    expect(colHeaders.length).toBeGreaterThan(0);
     // Conduct grades shown as text (never color-only).
     expect(canvas.getAllByText("Tốt").length).toBeGreaterThan(0);
+    // Score color classes applied (4.1 → error, 9.7 → success).
+    const errorScores = table.querySelectorAll(".text-edu-error-text");
+    expect(errorScores.length).toBeGreaterThan(0);
+    const successScores = table.querySelectorAll(".text-edu-success-text");
+    expect(successScores.length).toBeGreaterThan(0);
   },
 };
 
