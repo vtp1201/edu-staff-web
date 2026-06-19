@@ -45,15 +45,20 @@ export type StatusBadgeProps = {
   tone?: StatusTone;
   className?: string;
   children: ReactNode;
+  "aria-label"?: string;
 };
 
 export function StatusBadge({
   tone = "primary",
   className,
   children,
+  "aria-label": ariaLabel,
 }: StatusBadgeProps) {
   return (
-    <Badge className={cn("border-0", statusToneClass(tone), className)}>
+    <Badge
+      aria-label={ariaLabel}
+      className={cn("border-0", statusToneClass(tone), className)}
+    >
       {children}
     </Badge>
   );
