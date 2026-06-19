@@ -45,7 +45,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
 | Exam Bank + Builder | `(app)/teacher/exam-bank`,`/exam-bank/create`,`/exam-bank/:id/edit` | `features/exam-bank` | 🎨 design-ready (US-E11.3; `exam-bank.jsx` 1506) |
 | Teaching Plan / PPCT | `(app)/teacher/teaching-plan` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
-| Schedule | `(app)/teacher/schedule` | `features/schedule` | ⬜ |
+| Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | 🎨 design-ready (US-E15.2; `timetable-view.jsx` edustaff_5) |
 | Classes / Students | `(app)/teacher/classes`,`/students` | `features/teacher` | ✅ US-E13.1 |
 
 ## Principal / Admin (E03, E09, E10, E11, E12 Admin Core, E14 Academic Records)
@@ -145,7 +145,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 - Chi tiet pixel cu (reference only): file `untitled.pen` (mo bang Pencil MCP).
 - **edustaff_5 handoff (2026-06-19, ADR 0044)** adds:
   - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3, in-flight)
-  - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1)
+  - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1 student/parent; US-E15.2 teacher)
   - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
   - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
-  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote
+  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote (US-E10.4)

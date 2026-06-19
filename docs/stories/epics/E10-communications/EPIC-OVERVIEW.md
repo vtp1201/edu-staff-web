@@ -18,9 +18,10 @@ announcements (E10.3).
 
 | US | Screen | Roles | BE Service | Design |
 | --- | --- | --- | --- | --- |
-| E10.1 | Messaging: 2-pane inbox + 1:1 + group chat | all roles | social mock-first | `messaging.jsx` |
+| E10.1 | Messaging: 2-pane inbox + 1:1 + group chat (base) | all roles | social mock-first | `messaging.jsx` |
 | E10.2 | Notifications Center: type taxonomy, SSE fan-out, mark-read | all roles | noti mock-first | `notifications.jsx` |
 | E10.3 | Announcements: compose → preview → send pipeline, history | admin, principal | noti mock-first | `announcements.jsx` |
+| E10.4 | Messaging Enhancements (DR-008): group lifecycle + message interactions | all roles | social mock-first | `messaging.jsx` (edustaff_5) |
 
 ## BE Dependencies (decision 0017)
 

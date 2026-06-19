@@ -42,30 +42,19 @@ moi vao cua so chat dang mo (mock-first: setTimeout simulation trong design).
 RBAC: Tat ca roles co quyen nhan tin. [ASSUMPTION] Admin co the xem tat ca nhom.
 BE mock-first: `social` service chua ship (decision 0017).
 
-**DR-008 enhancements (edustaff_5 handoff, 2026-06-19 — ADR 0044):**
+**DR-008 enhancements → ĐÃ TÁCH sang US-E10.4** (quyết định 2026-06-19): group
+creation modal 2 bước, group info panel, context menu (reply/pin/copy/delete),
+reply/quote, per-role group seeding. Toàn bộ scope DR-008 nằm ở
+`docs/stories/epics/E10-communications/US-E10.4-messaging-enhancements/story.md`.
 
-*Group features:*
-- Danh sách nhóm nâng cao: avatar nhóm (màu từ palette 8 màu), số thành viên, last activity, unread badge riêng cho nhóm.
-- "Tạo nhóm" — modal 2 bước:
-  - Bước 1: tên nhóm, mô tả, loại nhóm (Lớp học / Bộ môn / Câu lạc bộ / Khác), chọn màu avatar.
-  - Bước 2: tìm kiếm + chọn thành viên (multi-select với checkbox).
-  - Submit → nhóm mới xuất hiện đầu tab Groups.
-- Group info panel (320px slide-in từ phải): danh sách thành viên + badge admin, tin nhắn đã ghim, nút rời nhóm / xóa nhóm (admin-only).
+**Lý do split 2 phase:** US-E10.1 (base messaging) đã `implemented` với proof
+unit/integ/e2e. DR-008 là lớp tính năng bổ sung đáng kể (group lifecycle + message
+interactions) — gộp vào một story đã đóng sẽ làm mờ ranh giới proof và phình scope.
+Tách thành **US-E10.4** giữ US-E10.1 ở trạng thái `implemented` ổn định, và cho FE
+team một story độc lập để build DR-008 sau (1 US = 1 branch — `parallel-workflow.md`).
 
-*Message interactions:*
-- Context menu (right-click / long-press) trên bubble: Trả lời / Ghim tin nhắn / Sao chép / Xóa (chỉ tin của mình, trong 1 giờ).
-- Reply/Quote: strip "Đang trả lời [Tên]" phía trên input khi chọn reply; bubble được reply hiển thị quoted-strip nhỏ phía trên nội dung.
-- Pin: tin nhắn ghim xuất hiện trong group info panel; click → scroll đến tin nhắn gốc + highlight 3s.
-
-*Per-role group seeding:*
-- Teacher ↔ nhóm bộ môn, nhóm lớp chủ nhiệm.
-- Principal ↔ nhóm BGH.
-- Student ↔ nhóm lớp học.
-- Parent ↔ DM với GVCN.
-
-**Note về status:** Story được mark `implemented` dựa trên TEST_MATRIX row (E10.1 implemented
-với unit/integ/e2e proof). DR-008 là scope bổ sung chưa implement — cần story mới hoặc
-tạo task follow-up để FE team implement DR-008 features sau khi US-E10.1 base merge.
+**Note về status:** Story này (US-E10.1 base) giữ `implemented` dựa trên TEST_MATRIX
+row (unit/integ/e2e proof). DR-008 không thuộc phạm vi đóng của US-E10.1.
 
 ## Relevant Product Docs
 
