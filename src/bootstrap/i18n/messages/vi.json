@@ -9,6 +9,7 @@
     "createButton": "Tạo đề thi mới",
     "loading": "Đang tải...",
     "loadingAriaLabel": "Đang tải danh sách đề thi",
+    "resultsHeading": "{count} đề thi",
     "filter": {
       "searchPlaceholder": "Tìm theo tiêu đề...",
       "searchAriaLabel": "Tìm kiếm đề thi theo tiêu đề",
@@ -53,6 +54,8 @@
       "cancel": "Huỷ"
     },
     "builder": {
+      "editTitle": "Chỉnh sửa đề thi",
+      "createTitle": "Tạo đề thi mới",
       "titleLabel": "Tiêu đề đề thi",
       "titlePlaceholder": "Nhập tiêu đề đề thi",
       "subjectLabel": "Môn học",

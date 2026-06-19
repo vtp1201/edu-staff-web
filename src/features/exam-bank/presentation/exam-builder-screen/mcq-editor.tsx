@@ -89,6 +89,8 @@ export function McqEditor({ question, error, onChange }: McqEditorProps) {
           value={question.correctOptionId}
           onValueChange={(v) => onChange({ correctOptionId: v })}
           aria-label={t("builder.correctAnswerAriaLabel")}
+          aria-invalid={answerInvalid || undefined}
+          aria-describedby={answerInvalid ? "mcq-answer-error" : undefined}
         >
           {question.options.map((opt) => (
             <div key={opt.id} className="flex items-center gap-3">
@@ -110,18 +112,22 @@ export function McqEditor({ question, error, onChange }: McqEditorProps) {
                 value={opt.text}
                 placeholder={t("builder.optionPlaceholder", { option: opt.id })}
                 onChange={(e) => handleOptionText(opt.id, e.target.value)}
+                aria-invalid={optionsInvalid || undefined}
+                aria-describedby={
+                  optionsInvalid ? "mcq-options-error" : undefined
+                }
                 className={cn(optionsInvalid && "border-edu-error")}
               />
             </div>
           ))}
         </RadioGroup>
         {answerInvalid && (
-          <p className="text-edu-error-text text-xs">
+          <p id="mcq-answer-error" className="text-edu-error-text text-xs">
             {t("errors.question-missing-answer")}
           </p>
         )}
         {optionsInvalid && (
-          <p className="text-edu-error-text text-xs">
+          <p id="mcq-options-error" className="text-edu-error-text text-xs">
             {t("errors.insufficient-options")}
           </p>
         )}

@@ -1,6 +1,8 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -82,6 +84,7 @@ export function ExamBankScreen({
   isLoading = false,
 }: ExamBankScreenVM & { isLoading?: boolean }) {
   const t = useTranslations("examBank");
+  const router = useRouter();
 
   const [exams, setExams] = useState<ExamBankSummary[]>(initialExams);
   const [filters, setFilters] = useState<ExamBankFilterState>({});
@@ -155,10 +158,10 @@ export function ExamBankScreen({
 
         {canCreate && (
           <Button asChild className="shrink-0">
-            <a href={createPath}>
+            <Link href={createPath}>
               <Plus className="mr-1.5 size-4" aria-hidden="true" />
               {t("createButton")}
-            </a>
+            </Link>
           </Button>
         )}
       </header>
@@ -177,21 +180,24 @@ export function ExamBankScreen({
         <ExamBankEmpty
           canCreate={canCreate}
           hasActiveFilter={activeFilter}
-          onCreate={() => {
-            window.location.href = createPath;
-          }}
+          onCreate={() => router.push(createPath)}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
-            <ExamCard
-              key={card.id}
-              exam={card}
-              onPublish={setPublishTargetId}
-              onDelete={setDeleteTargetId}
-            />
-          ))}
-        </div>
+        <>
+          <h2 className="sr-only">
+            {t("resultsHeading", { count: cards.length })}
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cards.map((card) => (
+              <ExamCard
+                key={card.id}
+                exam={card}
+                onPublish={setPublishTargetId}
+                onDelete={setDeleteTargetId}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       <PublishConfirmDialog

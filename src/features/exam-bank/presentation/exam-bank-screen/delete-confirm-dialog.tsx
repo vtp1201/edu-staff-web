@@ -11,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/shared/utils";
 
 type DeleteConfirmDialogProps = {
   open: boolean;
@@ -50,10 +49,7 @@ export function DeleteConfirmDialog({
             onClick={onConfirm}
             disabled={isDeleting}
             aria-busy={isDeleting}
-            className={cn(
-              "bg-destructive text-white hover:bg-destructive/90",
-              "focus-visible:ring-destructive/40",
-            )}
+            variant="destructive"
           >
             {isDeleting
               ? t("deleteDialog.deleting")

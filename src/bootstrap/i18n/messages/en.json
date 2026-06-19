@@ -9,6 +9,7 @@
     "createButton": "Create new exam",
     "loading": "Loading...",
     "loadingAriaLabel": "Loading exam list",
+    "resultsHeading": "{count} exams",
     "filter": {
       "searchPlaceholder": "Search by title...",
       "searchAriaLabel": "Search exams by title",
@@ -53,6 +54,8 @@
       "cancel": "Cancel"
     },
     "builder": {
+      "editTitle": "Edit exam",
+      "createTitle": "Create new exam",
       "titleLabel": "Exam title",
       "titlePlaceholder": "Enter exam title",
       "subjectLabel": "Subject",

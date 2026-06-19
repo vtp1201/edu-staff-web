@@ -46,9 +46,11 @@ export function BuilderActionBar({
         </Button>
         <Button
           size="sm"
-          onClick={onPublish}
-          disabled={!isPublishable || isSaving}
-          aria-disabled={!isPublishable}
+          onClick={!isPublishable || isSaving ? undefined : onPublish}
+          aria-disabled={!isPublishable || isSaving}
+          className={
+            !isPublishable || isSaving ? "cursor-not-allowed opacity-50" : ""
+          }
         >
           <Send className="mr-1.5 size-4" aria-hidden="true" />
           {t("builder.publish")}

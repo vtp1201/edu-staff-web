@@ -38,7 +38,7 @@ export function ExamCard({ exam, onPublish, onDelete }: ExamCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 shrink-0"
+                className="size-8 min-h-11 min-w-11 shrink-0"
                 aria-label={t("card.menuAriaLabel")}
               >
                 <MoreVertical className="size-4" aria-hidden="true" />

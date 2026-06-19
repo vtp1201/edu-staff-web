@@ -63,10 +63,16 @@ export function QuestionListItem({
           {preview}
         </span>
         {hasError && (
-          <AlertCircle
-            className="size-4 shrink-0 text-edu-error"
-            aria-label={t("builder.questionHasError")}
-          />
+          <>
+            <AlertCircle
+              className="size-4 shrink-0 text-edu-error"
+              aria-hidden="true"
+            />
+            <span className="sr-only">
+              {", "}
+              {t("builder.questionHasError")}
+            </span>
+          </>
         )}
       </button>
 
@@ -74,7 +80,7 @@ export function QuestionListItem({
         <Button
           variant="ghost"
           size="icon"
-          className="size-6"
+          className="size-6 min-h-11 min-w-11"
           disabled={isFirst}
           onClick={onMoveUp}
           aria-label={t("moveUpAriaLabel", { index: displayIndex })}
@@ -84,7 +90,7 @@ export function QuestionListItem({
         <Button
           variant="ghost"
           size="icon"
-          className="size-6"
+          className="size-6 min-h-11 min-w-11"
           disabled={isLast}
           onClick={onMoveDown}
           aria-label={t("moveDownAriaLabel", { index: displayIndex })}

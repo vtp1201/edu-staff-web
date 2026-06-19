@@ -137,13 +137,18 @@ export function ExamBuilderScreen({
 
   return (
     <div className="flex h-full flex-col">
-      <BuilderActionBar
-        isSaving={isSaving}
-        isPublishable={isPublishable}
-        onBack={() => router.push(EXAM_BANK_LIST_PATH)}
-        onSaveDraft={() => void handleSaveDraft()}
-        onPublish={handlePublishClick}
-      />
+      <header>
+        <h1 className="sr-only">
+          {initial?.id ? t("builder.editTitle") : t("builder.createTitle")}
+        </h1>
+        <BuilderActionBar
+          isSaving={isSaving}
+          isPublishable={isPublishable}
+          onBack={() => router.push(EXAM_BANK_LIST_PATH)}
+          onSaveDraft={() => void handleSaveDraft()}
+          onPublish={handlePublishClick}
+        />
+      </header>
 
       <div className="border-border border-b bg-card px-6 py-4">
         <BuilderHeader
