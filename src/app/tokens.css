@@ -24,6 +24,8 @@
 
   --edu-warning: #ffae1f;
   --edu-warning-light: #fef5e5;
+  /** AA-compliant text on warningLight surface (4.37:1, large/bold ≥14px only). Decision 0046. */
+  --edu-warning-text: #9a6a0f;
 
   --edu-error: #fa896b;
   --edu-error-light: #fff5f2;
