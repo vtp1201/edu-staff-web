@@ -148,7 +148,6 @@ export function GradeBookScreen({
             gradeBook={vm.gradeBook}
             role={vm.role}
             isPublished={vm.isPublished}
-            onEnterGrades={vm.role === "teacher" ? onEnterGrades : undefined}
           />
           {showSelectors && vm.gradeBook.rows.length > 0 ? (
             <RankDistributionChart rows={vm.gradeBook.rows} />
@@ -161,7 +160,12 @@ export function GradeBookScreen({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex min-h-40 items-center justify-center rounded-[12px] border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm">
+    <div
+      className="flex min-h-40 items-center justify-center rounded-[12px] border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       {message}
     </div>
   );

@@ -48,13 +48,16 @@ export function RankDistributionChart({ rows }: { rows: GradeBookRow[] }) {
             <span className="w-24 shrink-0 text-foreground text-xs">
               {t(BAND_LABEL[band.band])}
             </span>
-            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+            <div
+              aria-hidden="true"
+              className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted"
+            >
               <div
                 className={cn("h-full rounded-full", BAND_FILL[band.band])}
                 style={{ width: `${band.percentage}%` }}
               />
             </div>
-            <span className="w-20 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
+            <span className="w-20 shrink-0 text-right text-edu-text-secondary text-xs tabular-nums">
               {band.count} ({band.percentage}%)
             </span>
           </li>

@@ -5,7 +5,6 @@ import {
   StatusBadge,
   type StatusTone,
 } from "@/components/shared/status-badge/status-badge";
-import { Button } from "@/components/ui/button";
 import type { ColumnType } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import type {
   ConductGrade,
@@ -44,7 +43,6 @@ export function GradeBookTable({
   gradeBook,
   role,
   isPublished,
-  onEnterGrades,
 }: GradeBookTableVM) {
   const t = useTranslations("gradeBook");
   const columns = gradeBook.scheme.columns;
@@ -57,6 +55,8 @@ export function GradeBookTable({
       <div
         className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-[12px] border border-border border-dashed bg-card p-8 text-center"
         role="status"
+        aria-live="polite"
+        aria-atomic="true"
       >
         <p className="font-bold text-card-foreground text-sm">
           {t("notPublishedBanner")}
@@ -70,7 +70,12 @@ export function GradeBookTable({
 
   if (gradeBook.rows.length === 0) {
     return (
-      <div className="flex min-h-40 items-center justify-center rounded-[12px] border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm">
+      <div
+        className="flex min-h-40 items-center justify-center rounded-[12px] border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {t("emptyState")}
       </div>
     );
@@ -78,17 +83,6 @@ export function GradeBookTable({
 
   return (
     <div className="flex flex-col gap-3">
-      {role === "teacher" && onEnterGrades ? (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={() => onEnterGrades(gradeBook.classSubjectId)}
-          >
-            {t("enterGradesCta")}
-          </Button>
-        </div>
-      ) : null}
-
       <div className="overflow-x-auto rounded-[12px] border border-border bg-card">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">{t("tableCaption")}</caption>
@@ -98,7 +92,7 @@ export function GradeBookTable({
               <th
                 scope="col"
                 rowSpan={2}
-                className="sticky left-0 bg-card px-4 py-2 text-left font-bold text-muted-foreground text-xs uppercase tracking-wide"
+                className="sticky left-0 bg-card px-4 py-2 text-left font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
               >
                 {t("colStudent")}
               </th>
@@ -117,14 +111,14 @@ export function GradeBookTable({
               <th
                 scope="col"
                 rowSpan={2}
-                className="px-4 py-2 text-center font-bold text-muted-foreground text-xs uppercase tracking-wide"
+                className="px-4 py-2 text-center font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
               >
                 {t("colAverage")}
               </th>
               <th
                 scope="col"
                 rowSpan={2}
-                className="px-4 py-2 text-center font-bold text-muted-foreground text-xs uppercase tracking-wide"
+                className="px-4 py-2 text-center font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
               >
                 {t("colConduct")}
               </th>
@@ -135,7 +129,7 @@ export function GradeBookTable({
                 <th
                   key={`${col.id}-sub`}
                   scope="col"
-                  className="px-4 py-1.5 text-center font-medium text-muted-foreground text-xs"
+                  className="px-4 py-1.5 text-center font-medium text-edu-text-secondary text-xs"
                 >
                   {col.type === "TX"
                     ? t("bandHeaderTX")
@@ -176,7 +170,7 @@ function GradeRow({
         className="sticky left-0 bg-card px-4 py-2 text-left font-medium text-foreground"
       >
         <span className="block">{row.studentName}</span>
-        <span className="block text-muted-foreground text-xs">
+        <span className="block text-edu-text-secondary text-xs">
           {row.studentCode}
         </span>
       </th>
@@ -190,7 +184,14 @@ function GradeRow({
               getScoreColorClass(score, MAX_SCORE),
             )}
           >
-            {score === null ? "—" : score}
+            {score === null ? (
+              <>
+                <span aria-hidden="true">—</span>
+                <span className="sr-only">{t("scoreNotEntered")}</span>
+              </>
+            ) : (
+              score
+            )}
           </td>
         );
       })}
@@ -200,7 +201,14 @@ function GradeRow({
           getScoreColorClass(row.average, MAX_SCORE),
         )}
       >
-        {row.average === null ? "—" : row.average}
+        {row.average === null ? (
+          <>
+            <span aria-hidden="true">—</span>
+            <span className="sr-only">{t("scoreNotEntered")}</span>
+          </>
+        ) : (
+          row.average
+        )}
       </td>
       <td className="px-4 py-2 text-center">
         <StatusBadge tone={CONDUCT_TONE[row.conductGrade]}>

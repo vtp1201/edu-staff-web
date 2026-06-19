@@ -139,6 +139,7 @@
     "notPublishedDescription": "Grades will appear once published by the teacher / administrator.",
     "noSelection": "Select a class and term to view the grade book",
     "emptyState": "No grades yet",
+    "scoreNotEntered": "Not entered",
     "loading": "Loading grade book...",
     "errorNotFound": "Grade book not found",
     "errorForbidden": "You do not have permission to view this grade book",

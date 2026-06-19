@@ -139,6 +139,7 @@
     "notPublishedDescription": "Điểm sẽ hiển thị sau khi được giáo viên / quản trị công bố.",
     "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
     "emptyState": "Chưa có điểm",
+    "scoreNotEntered": "Chưa nhập điểm",
     "loading": "Đang tải bảng điểm...",
     "errorNotFound": "Không tìm thấy bảng điểm",
     "errorForbidden": "Bạn không có quyền xem bảng điểm này",

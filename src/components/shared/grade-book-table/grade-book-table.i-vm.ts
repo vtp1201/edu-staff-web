@@ -8,6 +8,4 @@ export interface GradeBookTableVM {
   role: GradeBookRole;
   /** whether grades are visible to the viewer (gate for student/parent) */
   isPublished: boolean;
-  /** teacher only — navigate to grade entry for the current class-subject */
-  onEnterGrades?: (csId: string) => void;
 }
