@@ -38,6 +38,19 @@ reinvent palette/font/layout. A genuinely new token → **ADR first** (flagged b
 `uiux-design-system-builder`, registered by `uiux-lead`), then `tokens.css` → `@theme`
 in `globals.css` → sync `design-system.md`. No raw color, ever.
 
+## Already-implemented check (before authoring — avoid i18n/design drift)
+
+Design-authoring on a screen the FE team has ALREADY built causes drift (the DR-001 trial
+added 51 `assessmentScheme` i18n keys onto an implemented screen → `/fe` had to prune dead
+duplicates). Before designing, `uiux-lead` MUST grep `src/features/` + `src/app/` (and
+`design_src/edu/<slug>.jsx`) for the target screen:
+
+- **Already implemented** (feature folder + route + components + i18n keys exist) → treat as
+  **reconcile/redesign**: read the existing implementation first; add only what's genuinely
+  missing; **re-use the existing i18n keys** (extend, never regenerate a parallel set); flag
+  the work as such in the DR.
+- **Not implemented** → normal net-new authoring.
+
 ## Multi-team / parallel claim (shared source)
 
 1. **Sync + claim check.** `git fetch --prune`. A remote `docs/dr-NNN-*` branch = a DR
