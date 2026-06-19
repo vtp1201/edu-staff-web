@@ -63,6 +63,22 @@ in `globals.css` → sync `design-system.md`. No raw color, ever.
    Never `--no-verify`.
 6. **Delete the branch** (local + remote). Remote `docs/dr-*` list = the in-flight DR set.
 
+### Within-session shared-file edits (serialize — no parallel writes)
+
+Beyond cross-session branch contention, the lead and a spawned specialist can collide on the
+SAME shared file inside one run (observed on the DR-001 trial: `uiux-designer` was editing
+`docs/product/design-spec.jsonc` while the lead issued its own Edit on the same file → the
+lead's Edit failed on stale state). Rule:
+
+- The lead does NOT edit a shared file (`docs/product/design-spec.jsonc`, `src/app/tokens.css`,
+  `src/app/globals.css`, `messages/{vi,en}.json`, `docs/product/design-system.md`) while a
+  specialist that also writes it is still running. **Wait for that specialist to complete, then
+  do any additive edit.**
+- Give each shared file ONE writer per step. If two specialists must touch the same file, run
+  them sequentially (not in the same `parallel` batch) — keep parallelism for independent files
+  (e.g. `uiux-designer`→`design_src/edu/<slug>.jsx` + `uiux-ux-writer`→`messages/*` are safe in
+  parallel; two writers of `design-spec.jsonc` are not).
+
 ## Handoff (end every /uiux run with this)
 
 When a DR is delivered (jsx + design-spec entry + copy keys exist, design-review gate green,
