@@ -1,8 +1,8 @@
 // ── Notifications Center — /notifications (DR-006) ─────────────────────────
 // Roles:   ALL (teacher, principal, admin, student, parent)
 // Epic:    US-E10.2 (FE). Realtime fan-out via SSE event `notification.new`
-//          per decision-0009 / US-E06.2. The mock here simulates the event
-//          loop with a setTimeout that prepends a new notification.
+//          per decision-0009 / US-E06.2. The mock here simulates a single
+//          incoming push 3s after mount (SOC-02).
 //
 // Persistence note: read-state is local to this session. In production the
 // "mark all read" action would PATCH /notifications/read-batch and the unread
@@ -117,13 +117,14 @@ const NC_SEED = [
 ];
 
 // New notifications that will be "pushed" into the list via the SSE simulation.
-// (Cycled through; the prototype keeps prepending until the user navigates away.)
+// SOC-02: the prototype pushes exactly ONE — NC_INCOMING[0] — three seconds
+// after mount. Later entries stay as fallback seed in case the demo is rerun.
 const NC_INCOMING = [
   { type: 'grade',        ts: 'Vừa xong',
-    titleVi: 'Điểm Văn lớp 10A1 đã được công bố',
-    titleEn: 'Literature grades published — 10A1',
-    bodyVi: 'BGH vừa phê duyệt và công bố điểm Văn học kỳ I cho lớp 10A1.',
-    bodyEn: 'Admin just approved and published Term I Literature grades for 10A1.' },
+    titleVi: 'Điểm Toán lớp 10A1 đã được công bố',
+    titleEn: 'Math grades published — 10A1',
+    bodyVi: 'BGH vừa phê duyệt và công bố điểm Toán học kỳ I cho lớp 10A1.',
+    bodyEn: 'Admin just approved and published Term I Math grades for 10A1.' },
   { type: 'attendance',   ts: 'Vừa xong',
     titleVi: 'Có phép — Hoàng Thị Linh',
     titleEn: 'Excused absence — Hoang Thi Linh',
@@ -158,25 +159,22 @@ const NotificationsCenterScreen = ({ role, lang, primaryColor, onNavigate }) => 
     return () => window.clearTimeout(tid);
   }, []);
 
-  // SSE simulation — prepend a new notification every 16s. Cycles through
-  // NC_INCOMING; each push surfaces a sonner-style toast at the bottom-right.
+  // SSE simulation — single push 3s after the skeleton clears (SOC-02).
+  // NC_INCOMING[0] is the canonical incoming event; the surface mirrors it
+  // both as a row prepend and a sonner-style toast at the bottom-right.
   React.useEffect(() => {
     if (loading) return;
-    let i = 0;
-    const id = window.setInterval(() => {
-      const tpl = NC_INCOMING[i % NC_INCOMING.length];
+    const id = window.setTimeout(() => {
+      const tpl = NC_INCOMING[0];
       const fresh = {
-        ...tpl,
-        id: `live-${Date.now()}`,
-        unread: true,
-        ts: t('Vừa xong', 'Just now'),
+        ...tpl, id: `nc-live-${Date.now()}`,
+        unread: true, starred: false, archived: false,
       };
       setItems(prev => [fresh, ...prev]);
       setToast({ ...fresh, key: fresh.id });
       window.setTimeout(() => setToast(t0 => (t0?.key === fresh.id ? null : t0)), 4500);
-      i += 1;
-    }, 16000);
-    return () => window.clearInterval(id);
+    }, 3000);
+    return () => window.clearTimeout(id);
   }, [loading]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const unread = ncUnreadCount(items);
@@ -525,7 +523,7 @@ const NotificationRow = ({ n, lang, t, pColor, onClick, isLast }) => {
 
 const SkeletonRows = () => (
   <>
-    {Array.from({ length: 4 }).map((_, i) => (
+    {Array.from({ length: 3 }).map((_, i) => (
       <div key={i} style={{
         display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) auto',
         gap: 14, padding: '14px 20px 14px 17px',
@@ -583,13 +581,13 @@ const EmptyState = ({ t, tab }) => {
       </div>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.textSecondary }}>
         {variant === 'unread'
-          ? t('Tat ca da doc!', "You're all caught up!")
-          : t('Chua co thong bao nao.', 'No notifications yet.')}
+          ? t('Tất cả đã đọc 🎉', "You're all caught up 🎉")
+          : t('Chưa có thông báo nào.', 'No notifications yet.')}
       </div>
       <div style={{ marginTop: 4, fontSize: 12 }}>
         {variant === 'unread'
-          ? t('Quay lai khi co thong bao moi.', 'Come back when new notifications arrive.')
-          : t('Ban se nhan duoc thong bao ve diem so, diem danh va su kien truong.',
+          ? t('Quay lại khi có thông báo mới.', 'Come back when new notifications arrive.')
+          : t('Bạn sẽ nhận được thông báo về điểm số, điểm danh và sự kiện trường.',
               'You will be notified about grades, attendance, and school events.')}
       </div>
     </div>
@@ -647,7 +645,7 @@ const SonnerToast = ({ t, lang, toast, pColor, onDismiss }) => {
           </div>
         )}
       </div>
-      <button onClick={onDismiss} title={t('Dong', 'Dismiss')}
+      <button onClick={onDismiss} title={t('Đóng', 'Dismiss')}
         style={{
           width: 22, height: 22, borderRadius: 5, flexShrink: 0,
           background: 'transparent', border: 'none', cursor: 'pointer',

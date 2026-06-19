@@ -945,7 +945,7 @@ const SubmitDialog = ({ t, pColor, classId, subject, term, year, stats, onCancel
             PENDING_APPROVAL
           </span>
           {t(' để BGH duyệt theo cấu hình hiện tại của trường.',
-             ', awaiting admin review per the school\'s current publish mode.')}
+             ', awaiting admin review per the school’s current publish mode.')}
         </div>
       </div>
 

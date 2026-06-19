@@ -45,7 +45,7 @@ const SL_SEED_REQUESTS = [
     staff: { name: 'Đỗ Thị Mai',      role: 'teacher', dept: 'Tổ Ngoại Ngữ',     avatar: 'DM', color: T.warning },
     type: 'sick',     startDate: '29/04/2026', endDate: '30/04/2026', days: 2,
     reasonVi: 'Bị cảm sốt từ tối qua, có giấy chứng nhận của phòng khám tư. Sẽ gửi đề thi thay thế qua email.',
-    reasonEn: "Fever from last night — doctor's note attached. Substitute test material sent via email.",
+    reasonEn: 'Fever from last night — doctor’s note attached. Substitute test material sent via email.',
     submittedAt: '29/04/2026 07:00', status: 'pending',
   },
   {
@@ -53,7 +53,7 @@ const SL_SEED_REQUESTS = [
     staff: { name: 'Hoàng Văn Trí',   role: 'staff',   dept: 'Bộ phận Bảo vệ',   avatar: 'HT', color: T.teal },
     type: 'family',   startDate: '05/05/2026', endDate: '06/05/2026', days: 2,
     reasonVi: 'Đám cưới em ruột tại quê. Đã sắp xếp người trực thay ca bảo vệ.',
-    reasonEn: "Younger sibling's wedding in hometown. Shift coverage arranged.",
+    reasonEn: 'Younger sibling’s wedding in hometown. Shift coverage arranged.',
     submittedAt: '24/04/2026 18:45', status: 'pending',
   },
   {
@@ -638,7 +638,7 @@ const EmptyState = ({ t, status }) => {
         {t(`Không có đơn xin nghỉ ${labelVi}.`, `No ${labelEn}leave requests.`)}
       </div>
       <div style={{ marginTop: 4, fontSize: 12 }}>
-        {t('Khi có đơn mới, hệ thống sẽ thông báo cho bạn.', "You'll be notified when a new request arrives.")}
+        {t('Khi có đơn mới, hệ thống sẽ thông báo cho bạn.', 'You’ll be notified when a new request arrives.')}
       </div>
     </div>
   );

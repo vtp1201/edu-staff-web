@@ -5,6 +5,13 @@
 // Flow:    Send pipeline = compose → preview → send (or schedule, or save
 //          as draft). Sent items fan out via the same SSE channel as
 //          DR-006 (`notification.new`).
+//
+// App routing: mounted by app.jsx for ADMIN under section `announcements`
+//   (route /admin/announcements). The list view is the default surface; the
+//   compose drawer opens in-place — there is NO separate route for compose.
+//   Detail sheet opens via `setDetailId(itemId)`; closing returns to the list
+//   without a URL change. Read-receipts come from `ncReadReceipts()` (window-
+//   exported by notifications.jsx) so the surfaces stay in sync.
 
 // ── Lookups ───────────────────────────────────────────────────────────────
 
@@ -847,8 +854,7 @@ const CreateAnnouncementDrawer = ({ t, lang, pColor, edit, onClose, onSave }) =>
               icon="clock" labelVi="Lên lịch" labelEn="Schedule" t={t} pColor={pColor} />
           </div>
           {scheduleMode === 'schedule' && (
-            <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)}
-              style={{ ...inputStyle(pColor), marginTop: 10 }} />
+            <SchedulePicker value={scheduleAt} onChange={setScheduleAt} pColor={pColor} t={t} lang={lang} />
           )}
 
           <div style={{ height: 16 }} />
@@ -993,6 +999,234 @@ const CharCount = ({ cur, max, valid, minHint, t }) => (
     <span style={{ fontVariantNumeric: 'tabular-nums', color: cur >= max * 0.9 ? T.warning : T.textMuted }}>
       {cur} / {max}
     </span>
+  </div>
+);
+
+// ── Schedule picker (shadcn-style Popover + Calendar + TimePicker) ─────────
+// Replaces the native <input type="datetime-local"> for the compose drawer so
+// scheduling lives inside the design system: a trigger button shows the
+// formatted value; clicking it opens a popover containing a month-grid calendar
+// and an HH:MM time picker (steppers + native input fallback). The value is
+// kept in the same "YYYY-MM-DDTHH:MM" shape the rest of the form expects, so
+// the send pipeline is untouched.
+
+// Pad helpers and (de)serializers for the "YYYY-MM-DDTHH:MM" wire format.
+const _sp_pad2 = (n) => String(n).padStart(2, '0');
+const _sp_toWire = (d, hh, mm) =>
+  `${d.getFullYear()}-${_sp_pad2(d.getMonth() + 1)}-${_sp_pad2(d.getDate())}T${_sp_pad2(hh)}:${_sp_pad2(mm)}`;
+const _sp_parseWire = (s) => {
+  if (!s) return { date: null, hh: 9, mm: 0 };
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(s);
+  if (!m) return { date: null, hh: 9, mm: 0 };
+  return { date: new Date(+m[1], +m[2] - 1, +m[3]), hh: +m[4], mm: +m[5] };
+};
+const _sp_fmt = (d, hh, mm, lang) => {
+  if (!d) return '';
+  const wd = lang === 'en'
+    ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]
+    : ['CN','T2','T3','T4','T5','T6','T7'][d.getDay()];
+  return `${wd} ${_sp_pad2(d.getDate())}/${_sp_pad2(d.getMonth() + 1)}/${d.getFullYear()} · ${_sp_pad2(hh)}:${_sp_pad2(mm)}`;
+};
+
+const SchedulePicker = ({ value, onChange, pColor, t, lang }) => {
+  const init = React.useMemo(() => _sp_parseWire(value), []);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const [open, setOpen] = React.useState(false);
+  const [view, setView] = React.useState(() => {
+    const d = init.date || new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selDate, setSelDate] = React.useState(init.date);
+  const [hh, setHh] = React.useState(init.hh);
+  const [mm, setMm] = React.useState(init.mm);
+
+  // Push every change up so the parent form always has the wire value.
+  React.useEffect(() => {
+    if (selDate) onChange(_sp_toWire(selDate, hh, mm));
+  }, [selDate, hh, mm]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  const monthStart = new Date(view.getFullYear(), view.getMonth(), 1);
+  const monthEnd   = new Date(view.getFullYear(), view.getMonth() + 1, 0);
+  // Grid starts on Monday — the Vietnamese convention used elsewhere in the app.
+  const startPad   = (monthStart.getDay() + 6) % 7;
+  const totalCells = Math.ceil((startPad + monthEnd.getDate()) / 7) * 7;
+  const cells = Array.from({ length: totalCells }, (_, i) => {
+    const day = i - startPad + 1;
+    if (day < 1 || day > monthEnd.getDate()) return null;
+    return new Date(view.getFullYear(), view.getMonth(), day);
+  });
+
+  const sameDay = (a, b) => a && b && a.getTime() === b.getTime();
+  const monthLabel = lang === 'en'
+    ? view.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+    : `Tháng ${view.getMonth() + 1}, ${view.getFullYear()}`;
+
+  const stepHh = (delta) => setHh(v => (v + delta + 24) % 24);
+  const stepMm = (delta) => setMm(v => (v + delta + 60) % 60);
+
+  const triggerLabel = selDate
+    ? _sp_fmt(selDate, hh, mm, lang)
+    : t('Chọn ngày và giờ gửi…', 'Pick date and time…');
+
+  return (
+    <div style={{ position: 'relative', marginTop: 10 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          ...inputStyle(pColor),
+          display: 'flex', alignItems: 'center', gap: 8,
+          textAlign: 'left', cursor: 'pointer', width: '100%',
+          color: selDate ? T.textPrimary : T.textMuted,
+          fontWeight: selDate ? 700 : 500,
+        }}>
+        <Icon name="calendar" size={14} color={selDate ? pColor : T.textMuted} strokeWidth={2.1} />
+        <span style={{ flex: 1 }}>{triggerLabel}</span>
+        <Icon name="chevronDown" size={12} color={T.textMuted} strokeWidth={2} />
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div
+            role="dialog"
+            style={{
+              position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 61,
+              background: T.card, border: `1px solid ${T.border}`, borderRadius: 12,
+              boxShadow: '0 12px 32px rgba(0,0,0,0.16)',
+              padding: 14, display: 'flex', gap: 14,
+              minWidth: 460,
+            }}>
+            {/* Calendar */}
+            <div style={{ width: 260 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <button type="button"
+                  onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))}
+                  style={spIconBtn}>
+                  <Icon name="chevronLeft" size={13} color={T.textSecondary} strokeWidth={2} />
+                </button>
+                <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 800, color: T.textPrimary }}>
+                  {monthLabel}
+                </div>
+                <button type="button"
+                  onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))}
+                  style={spIconBtn}>
+                  <Icon name="chevronRight" size={13} color={T.textSecondary} strokeWidth={2} />
+                </button>
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4,
+              }}>
+                {(lang === 'en'
+                  ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+                  : ['T2','T3','T4','T5','T6','T7','CN']
+                ).map((w, i) => (
+                  <div key={i} style={{
+                    fontSize: 10, fontWeight: 700, color: T.textMuted,
+                    textAlign: 'center', padding: '4px 0',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                  }}>{w}</div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+                {cells.map((d, i) => {
+                  if (!d) return <div key={i} />;
+                  const isToday = sameDay(d, today);
+                  const isSel = sameDay(d, selDate);
+                  const isPast = d < today;
+                  return (
+                    <button key={i} type="button"
+                      onClick={() => setSelDate(new Date(d))}
+                      disabled={isPast}
+                      style={{
+                        height: 32, borderRadius: 7,
+                        border: isToday && !isSel ? `1px solid ${pColor}55` : '1px solid transparent',
+                        background: isSel ? pColor : 'transparent',
+                        color: isSel ? '#fff' : isPast ? T.textMuted : T.textPrimary,
+                        fontSize: 12.5, fontWeight: isSel || isToday ? 800 : 500,
+                        cursor: isPast ? 'not-allowed' : 'pointer',
+                        opacity: isPast ? 0.4 : 1,
+                        fontFamily: 'inherit',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                      {d.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Time picker */}
+            <div style={{
+              width: 170, paddingLeft: 14, borderLeft: `1px solid ${T.border}`,
+              display: 'flex', flexDirection: 'column', gap: 10,
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                {t('Giờ gửi', 'Time')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <SpStepper value={hh} max={23} onStep={stepHh}
+                  onSet={(v) => setHh(Math.max(0, Math.min(23, v)))} pColor={pColor} />
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.textMuted }}>:</div>
+                <SpStepper value={mm} max={59} onStep={stepMm}
+                  onSet={(v) => setMm(Math.max(0, Math.min(59, v)))} pColor={pColor} step={5} />
+              </div>
+              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 'auto' }}>
+                {selDate
+                  ? t(`Gửi vào: ${_sp_fmt(selDate, hh, mm, lang)}`, `Send at: ${_sp_fmt(selDate, hh, mm, lang)}`)
+                  : t('Chưa chọn ngày.', 'No date selected.')}
+              </div>
+              <button type="button"
+                onClick={() => setOpen(false)}
+                disabled={!selDate}
+                style={{
+                  padding: '8px 0', borderRadius: 8, border: 'none',
+                  background: selDate ? pColor : T.border, color: '#fff',
+                  fontSize: 12.5, fontWeight: 800, cursor: selDate ? 'pointer' : 'not-allowed',
+                  fontFamily: 'inherit',
+                }}>
+                {t('Xác nhận', 'Confirm')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const spIconBtn = {
+  width: 26, height: 26, borderRadius: 7,
+  border: `1px solid ${T.border}`, background: T.bg,
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', fontFamily: 'inherit',
+};
+
+const SpStepper = ({ value, max, onStep, onSet, pColor, step = 1 }) => (
+  <div style={{
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    border: `1px solid ${T.border}`, borderRadius: 8, background: '#fff',
+    overflow: 'hidden',
+  }}>
+    <button type="button" onClick={() => onStep(step)}
+      style={{ width: '100%', padding: '4px 0', border: 'none', background: 'transparent', cursor: 'pointer' }}>
+      <Icon name="chevronUp" size={11} color={T.textSecondary} strokeWidth={2.4} />
+    </button>
+    <input
+      type="number" value={String(value).padStart(2, '0')}
+      onChange={(e) => onSet(parseInt(e.target.value, 10) || 0)}
+      style={{
+        width: '100%', textAlign: 'center', border: 'none', outline: 'none',
+        fontSize: 18, fontWeight: 800, color: pColor,
+        background: 'transparent', fontFamily: 'inherit',
+        fontVariantNumeric: 'tabular-nums',
+        padding: '2px 0',
+      }} />
+    <button type="button" onClick={() => onStep(-step)}
+      style={{ width: '100%', padding: '4px 0', border: 'none', background: 'transparent', cursor: 'pointer' }}>
+      <Icon name="chevronDown" size={11} color={T.textSecondary} strokeWidth={2.4} />
+    </button>
   </div>
 );
 
@@ -1377,15 +1611,11 @@ const DeleteDialog = ({ t, item, onCancel, onConfirm }) => (
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary, marginBottom: 6 }}>
-              {t('Xoá thông báo này?', 'Delete this announcement?')}
+              {t('Xóa thông báo này?', 'Delete this announcement?')}
             </div>
             <div style={{ fontSize: 12.5, color: T.textSecondary, lineHeight: 1.6 }}>
-              <strong style={{ color: T.textPrimary }}>"{item?.title}"</strong>
-              {item?.status === 'sent'
-                ? t(' đã được gửi đến người nhận. Việc xoá chỉ ẩn khỏi danh sách quản lý, không thu hồi thông báo đã gửi.',
-                     ' has been sent to recipients. Deleting only hides it from the management list; sent notifications are not recalled.')
-                : t(' sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác.',
-                     ' will be permanently deleted. This action cannot be undone.')}
+              {t('Người nhận đã đọc sẽ không bị ảnh hưởng.',
+                 'Recipients who have already read will not be affected.')}
             </div>
           </div>
         </div>
