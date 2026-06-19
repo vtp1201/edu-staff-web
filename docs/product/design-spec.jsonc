@@ -662,25 +662,456 @@
       }
     },
 
+    // ── Grade screens — DR-002 (US-E13.1) — design_src/edu/gradebook.jsx,
+    //    grade-entry.jsx, grade-approval.jsx. Reconciled 2026-06-20.
+    //    Implementation: src/features/grades/ (fully built).
+    //    i18n namespaces: gradeBook · gradeEntry · gradeApproval.
+
     "gradeBook": {
-      "route": "/teacher/grades",
-      "classSelectorStyle": "pill buttons",
-      "activePill": { "background": "primary", "color": "white" },
-      "inactivePill": {
-        "background": "transparent",
-        "border": true,
-        "color": "textSecondary"
+      // Multi-role read view. Routes vary by role.
+      "routes": {
+        "teacher": "/teacher/grades",
+        "principal": "/principal/grades",
+        "admin": "/admin/grade-book",
+        "student": "/student/grades",
+        "parent": "/parent/grades"
       },
-      "tableHead": { "background": "#F5F7FA" },
+      "designFile": "design_src/edu/gradebook.jsx — GradeBookScreen (role prop)",
+      "i18nNamespace": "gradeBook",
+
+      // ── Score / rank colour rules (tokens only — derived from design-system.md)
       "scoreColors": {
-        "gte8": "#13DEB9",
-        "lt5": "#FA896B",
-        "default": "#2A3547"
+        "gte8": "var(--edu-success)",
+        "lt5": "var(--edu-error)",
+        "default": "var(--edu-text-primary)"
       },
-      "rankBadges": {
-        "gte8_5": { "label": "Giỏi", "color": "#13DEB9" },
-        "gte7_0": { "label": "Khá", "color": "#5D87FF" },
-        "default": { "label": "TB", "color": "#FFAE1F" }
+      "rankScale": [
+        {
+          "id": "xs",
+          "label": "Xuất sắc",
+          "from": 9.5,
+          "to": 10,
+          "color": "var(--edu-success)"
+        },
+        {
+          "id": "gi",
+          "label": "Giỏi",
+          "from": 8.0,
+          "to": 9.4,
+          "color": "var(--edu-primary)"
+        },
+        {
+          "id": "kh",
+          "label": "Khá",
+          "from": 6.5,
+          "to": 7.9,
+          "color": "var(--edu-warning)"
+        },
+        {
+          "id": "tb",
+          "label": "Trung bình",
+          "from": 5.0,
+          "to": 6.4,
+          "color": "var(--edu-text-muted)"
+        },
+        {
+          "id": "ye",
+          "label": "Yếu",
+          "from": 0,
+          "to": 4.9,
+          "color": "var(--edu-error)"
+        }
+      ],
+
+      // ── Column header tinting by assessment-component kind
+      "columnKindTint": {
+        "TX": "var(--edu-primary) + /14 bg, /55 bottom-border",
+        "GK": "var(--edu-warning) + /14 bg, /55 bottom-border",
+        "CK": "var(--edu-error)   + /14 bg, /55 bottom-border"
+      },
+
+      // ── Shared table layout
+      "table": {
+        "card": { "borderRadius": 12, "padding": 0, "shadow": "shadow-card" },
+        "head": {
+          "background": "var(--edu-bg)",
+          "fontSize": 11,
+          "fontWeight": 800,
+          "textTransform": "uppercase",
+          "letterSpacing": "0.05em"
+        },
+        "rowAlt": { "background": "#FBFCFE" },
+        "rowDraft": { "background": "#FFFBEB" },
+        "cell": {
+          "padding": "8px 10px",
+          "borderBottom": "1px solid var(--edu-border)"
+        },
+        "avgCol": {
+          "background": "var(--edu-bg)",
+          "borderLeft": "1px solid var(--edu-border)"
+        }
+      },
+
+      // ── Role-variant layout differences
+      "roleVariants": {
+        "teacher": {
+          "editable": true,
+          "filterBar": "subject dropdown + class dropdown + term dropdown (3-col grid)",
+          "stickyActionsBar": {
+            "position": "fixed bottom-0",
+            "height": 64,
+            "items": [
+              "enteredCount badge",
+              "completeRows count",
+              "Export PDF ghost",
+              "Export Excel secondary",
+              "Save All primary"
+            ]
+          },
+          "unsavedIndicator": {
+            "position": "title-row right",
+            "style": "warning pill with animated dot",
+            "background": "var(--edu-warning-light)",
+            "color": "var(--edu-warning-foreground)",
+            "border": "1px solid var(--edu-warning)/55"
+          },
+          "summaryPanel": { "collapsible": true, "defaultOpen": true }
+        },
+        "principal": {
+          "editable": false,
+          "filterBar": "subject dropdown + class dropdown + term dropdown (3-col grid)",
+          "ctaRight": "secondary button → /admin/grades/approval",
+          "summaryPanel": { "collapsible": false, "alwaysOpen": true }
+        },
+        "student": {
+          "editable": false,
+          "layout": "summary card (GPA + rank + conduct chips) → lock banner (conditional) → subject table",
+          "summaryCard": {
+            "gpaSize": 32,
+            "gpaWeight": 900,
+            "iconBox": { "size": 56, "borderRadius": 12 },
+            "chips": ["Xếp loại học lực", "Hạnh kiểm"]
+          },
+          "lockBanner": {
+            "trigger": "gradePublishMode === ADMIN_APPROVAL && any subject avg == null",
+            "background": "var(--edu-warning-light)",
+            "border": "1px solid var(--edu-warning)/44",
+            "textColor": "var(--edu-warning-foreground)",
+            "icon": "lock"
+          },
+          "maskedValues": {
+            "blurFilter": "blur(5px)",
+            "userSelect": "none"
+          }
+        },
+        "parent": {
+          "editable": false,
+          "extends": "student",
+          "extras": [
+            "ChildSwitcher card (minWidth 180) — per-child dataset switch",
+            "TermPicker card (minWidth 140) — pill buttons",
+            "Contact-teacher strip at bottom → /messaging"
+          ],
+          "gridTop": "minmax(0,1fr) auto auto (summary | child-switcher | term-picker)"
+        }
+      },
+
+      // ── Summary panel (teacher + principal)
+      "summaryPanel": {
+        "histogram": {
+          "barHeight": 18,
+          "barRadius": 4,
+          "colorByBand": true,
+          "emptyBarOpacity": 0.15
+        },
+        "stats": [
+          "TB lớp",
+          "Cao nhất (name + value)",
+          "Thấp nhất (name + value)"
+        ],
+        "statBox": {
+          "padding": "12px 14px",
+          "borderRadius": 10,
+          "background": "color + /0F",
+          "border": "color + /22"
+        }
+      },
+
+      // ── States
+      "states": {
+        "loading": {
+          "component": "GradeBookSkeleton (src/features/grades/presentation/grade-book-screen/grade-book-skeleton.tsx)"
+        },
+        "empty": {
+          "icon": "users",
+          "iconSize": 36,
+          "iconColor": "var(--edu-border)",
+          "cta": "Đến Danh sách lớp → /admin/roster"
+        },
+        "error": {
+          "i18nKey": "gradeBook.errorNetworkError | errorNotFound | errorForbidden",
+          "retry": true
+        },
+        "locked": {
+          "i18nKey": "gradeBook.tableLockedNotice",
+          "cellEdit": "disabled",
+          "lockIcon": true
+        },
+        "unpublished": {
+          "i18nKey": "gradeBook.notPublishedBanner",
+          "appliesTo": "student + parent",
+          "maskValues": true
+        }
+      },
+
+      // ── Cell states (teacher editable cells)
+      "cellStates": {
+        "EMPTY": {
+          "border": "var(--edu-border)",
+          "borderStyle": "solid",
+          "placeholder": "—"
+        },
+        "DRAFT": {
+          "background": "#FFFBEB",
+          "dotIndicator": {
+            "size": 6,
+            "color": "var(--edu-warning)",
+            "position": "absolute top:-2 right:-2"
+          }
+        },
+        "PUBLISHED": { "background": "var(--edu-bg)", "readOnly": true },
+        "LOCKED": {
+          "background": "var(--edu-error-light)",
+          "border": "var(--edu-error)/22",
+          "icon": "lock",
+          "readOnly": true
+        }
+      },
+
+      // ── Responsive notes
+      "responsive": {
+        "tablet768": "filterBar stacks vertically; table overflowX scroll",
+        "mobile375": "filterBar single-column; stickyBar icon-only on small; summaryPanel collapsed"
+      }
+    },
+
+    "gradeEntry": {
+      // Teacher-only screen — /teacher/grades (entry mode via GradeEntryScreen)
+      // Also accessible at /teacher/grades/enter per routing.
+      "route": "/teacher/grades",
+      "roles": ["teacher"],
+      "designFile": "design_src/edu/grade-entry.jsx — GradeEntryScreen",
+      "i18nNamespace": "gradeEntry",
+
+      "layout": {
+        "padding": "28px 32px 110px",
+        "maxWidth": 1280,
+        "grid": "1fr 280px (table + summary panel)",
+        "gap": 18
+      },
+
+      // ── Filter bar (4-column grid)
+      "filterBar": {
+        "columns": ["Lớp", "Môn (theo khối)", "Học kỳ", "Năm học"],
+        "grid": "1fr 1fr 0.7fr 0.9fr",
+        "required": true,
+        "selectStyle": {
+          "borderRadius": 8,
+          "border": "1.5px solid var(--edu-border)",
+          "fontWeight": 700
+        }
+      },
+
+      // ── Master-info collapsible banner
+      "masterInfoBanner": {
+        "collapsible": true,
+        "defaultOpen": true,
+        "background": "var(--edu-bg)",
+        "fields": [
+          "Số tiết/tuần",
+          "Số bài KT yêu cầu",
+          "Chỉ tiêu đầu ra",
+          "Subject ID",
+          "Tên đầy đủ"
+        ],
+        "badge": "READ-ONLY monospace"
+      },
+
+      // ── Locked-row banner (conditional)
+      "lockedBanner": {
+        "trigger": "lockedCount > 0",
+        "background": "var(--edu-error-light)",
+        "border": "1px solid var(--edu-error)/33",
+        "icon": "lock",
+        "iconColor": "var(--edu-error)"
+      },
+
+      // ── Grade input cell states
+      "cellStates": {
+        "EMPTY": {
+          "borderStyle": "dashed on hover",
+          "placeholder": "—",
+          "background": "var(--edu-card)"
+        },
+        "DRAFT": {
+          "background": "var(--edu-card)",
+          "dotIndicator": "● top-right 8.5px"
+        },
+        "PUBLISHED": { "background": "#F5F7FA", "readOnly": true },
+        "PENDING_APPROVAL": {
+          "background": "var(--edu-warning-light)",
+          "textColor": "var(--edu-warning-foreground)",
+          "icon": "clock"
+        },
+        "LOCKED": {
+          "background": "#F5F7FA",
+          "border": "var(--edu-error)/22",
+          "icon": "lock",
+          "textColor": "var(--edu-error)"
+        }
+      },
+
+      // ── Summary panel (right, sticky top:16)
+      "summaryPanel": {
+        "position": "sticky top:16",
+        "width": 280,
+        "sections": [
+          "Students complete / total",
+          "ProgressBar (height 8)",
+          "Cells filled count + %",
+          "State breakdown (DRAFT/PUBLISHED/PENDING_APPROVAL/LOCKED/EMPTY)"
+        ]
+      },
+
+      // ── Sticky action bar
+      "stickyActionsBar": {
+        "position": "fixed bottom-0",
+        "height": 64,
+        "left": ["students-complete badge", "draft-cells count"],
+        "right": [
+          "Save draft ghost",
+          "Submit grades primary (disabled if no DRAFT cells)"
+        ]
+      },
+
+      // ── Submit confirm dialog
+      "submitDialog": {
+        "role": "alertdialog",
+        "ariaModal": true,
+        "maxWidth": 480,
+        "borderRadius": 14,
+        "icon": "alertTriangle",
+        "iconBg": "var(--edu-warning)/22",
+        "stateTransition": "DRAFT → PENDING_APPROVAL",
+        "footer": {
+          "background": "var(--edu-bg)",
+          "buttons": ["Cancel ghost", "Submit primary"]
+        }
+      },
+
+      // ── States
+      "states": {
+        "loading": { "i18nKey": "gradeEntry.loading" },
+        "noSelection": { "i18nKey": "gradeEntry.noSelection" },
+        "emptyClass": { "i18nKey": "gradeEntry.emptyClass" },
+        "locked": { "i18nKey": "gradeEntry.tableLockedNotice" },
+        "published": { "i18nKey": "gradeEntry.published", "editDisabled": true }
+      }
+    },
+
+    "gradeApproval": {
+      // Principal / admin screen — /admin/grades/approval (+ /principal redirect)
+      "route": "/admin/grades/approval",
+      "roles": ["admin", "principal"],
+      "designFile": "design_src/edu/grade-approval.jsx — GradeApprovalScreen",
+      "i18nNamespace": "gradeApproval",
+
+      // ── Filter tabs
+      "filterTabs": ["Tất cả", "Chờ duyệt", "Đã công bố", "Đã khóa"],
+      "activeTab": {
+        "background": "var(--edu-primary)/12",
+        "color": "var(--edu-primary)",
+        "fontWeight": 800
+      },
+
+      // ── Batch list table
+      "table": {
+        "columns": [
+          "Lớp",
+          "Môn học",
+          "Giáo viên",
+          "Học kỳ",
+          "Số HS",
+          "Trạng thái",
+          "Cập nhật",
+          "Actions"
+        ],
+        "rowSelect": "checkbox per row + select-all",
+        "ariaLabel": "gradeApproval.tableAriaLabel"
+      },
+
+      // ── Batch status badge tones (using design-system StatusBadge pattern)
+      "batchStatusBadge": {
+        "PENDING_APPROVAL": { "tone": "warning" },
+        "PUBLISHED": { "tone": "success" },
+        "LOCKED": { "tone": "error" },
+        "DRAFT": { "tone": "muted" }
+      },
+
+      // ── Bulk-lock toolbar (appears when ≥1 row selected)
+      "bulkToolbar": {
+        "trigger": "selectedCount > 0",
+        "label": "gradeApproval.bulkLockToolbar ({count})",
+        "action": "bulk-lock primary-destructive"
+      },
+
+      // ── Detail sheet (slide-over)
+      "detailSheet": {
+        "trigger": "actionView per row",
+        "sections": [
+          "class/subject/teacher/term header",
+          "averageScore",
+          "rankDistributionChart",
+          "previewTable (student | code | avg | rank)"
+        ],
+        "actions": ["Approve & Publish primary", "Request Revision ghost"],
+        "ariaLabel": "gradeApproval.detailSheet.previewTableAriaLabel"
+      },
+
+      // ── Dialogs
+      "dialogs": {
+        "approveConfirm": { "role": "alertdialog", "maxWidth": 420 },
+        "revisionRequest": {
+          "role": "dialog",
+          "maxWidth": 440,
+          "hasTextarea": true,
+          "minLength": 10
+        },
+        "bulkLockConfirm": { "role": "alertdialog", "maxWidth": 420 }
+      },
+
+      // ── Grade publish mode warning
+      "publishModeWarning": {
+        "trigger": "gradePublishMode === AUTO",
+        "i18nKey": "gradeApproval.selfPublishModeWarning",
+        "tone": "info"
+      },
+
+      // ── States
+      "states": {
+        "loading": { "i18nKey": "gradeApproval.loading" },
+        "empty": { "i18nKey": "gradeApproval.emptyState | emptyStateAll" },
+        "error": {
+          "i18nKey": "gradeApproval.errorNetworkError | errorForbidden | errorUnknown"
+        }
+      },
+
+      // ── A11y
+      "a11y": {
+        "checkboxLabel": "gradeApproval.selectBatchLabel ({id})",
+        "selectAllLabel": "gradeApproval.selectAllLabel",
+        "closeSheet": "gradeApproval.closeSheet",
+        "filterGroupLabel": "gradeApproval.filterGroupLabel"
       }
     },
 
