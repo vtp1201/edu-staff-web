@@ -24,6 +24,7 @@ import {
 } from "../group-info-panel";
 import { MessageContextMenu } from "../message-context-menu";
 import { TypingIndicator } from "../typing-indicator/typing-indicator";
+import { scheduleHighlightClear } from "./highlight-timer";
 
 type ReplyState = { messageId: string; senderName: string; excerpt: string };
 
@@ -115,12 +116,13 @@ export function ChatWindow({
     );
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightId(messageId);
-    // Clear a prior pending timer before scheduling a new one (rapid clicks).
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
-    }
-    highlightTimerRef.current = setTimeout(() => setHighlightId(null), 3000);
+    // Pure helper applies the highlight + schedules the clear, always clearing
+    // any prior pending timer first (rapid-click + DEF-01 no-leak contract).
+    highlightTimerRef.current = scheduleHighlightClear({
+      messageId,
+      setHighlightId,
+      previousTimer: highlightTimerRef.current,
+    });
   }, []);
 
   const rows = useMemo<Row[]>(() => {

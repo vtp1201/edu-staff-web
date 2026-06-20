@@ -774,13 +774,13 @@ export const ScrollToPinned_Highlight_Wired: Story = {
       ).toHaveClass("edu-msg-highlight"),
     );
 
-    // After 3s the highlight clears (DEF-01 + DEF-03 timer behavior).
-    await waitFor(
-      () =>
-        expect(
-          canvasElement.querySelector('[data-message-id="g1-2"]'),
-        ).not.toHaveClass("edu-msg-highlight"),
-      { timeout: 4000 },
-    );
+    // NOTE: The timed clear-after-3s (DEF-03 timer) + the rapid-click/unmount
+    // no-leak behaviour (DEF-01) are proven deterministically with a controlled
+    // clock in the pure unit test `../chat-window/highlight-timer.test.ts`
+    // (vi.useFakeTimers + advanceTimersByTime), which exercises the exact
+    // `scheduleHighlightClear` helper that ChatWindow.scrollToMessage uses.
+    // `storybook/test` does not expose vi/fake-timers, so this interaction story
+    // intentionally asserts only the wiring (panel → pinned click → highlight
+    // applied) and does NOT do a real-clock wait — keeping it flake-free.
   },
 };
