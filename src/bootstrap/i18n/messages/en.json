@@ -1600,8 +1600,14 @@
     },
     "errors": {
       "create-conversation-failed": "Could not create the conversation. Please try again.",
+      "create-group-failed": "Could not create group. Please try again.",
+      "delete-message-failed": "Could not delete message.",
+      "group-mutation-failed": "Group action failed. Please try again.",
+      "leave-group-failed": "Could not leave group.",
       "load-conversations-failed": "Could not load conversations. Please try again.",
       "load-messages-failed": "Could not load messages. Please try again.",
+      "not-group-admin": "Only group admins can perform this action.",
+      "pin-failed": "Could not pin message.",
       "send-message-failed": "Could not send the message. Please try again."
     },
     "group": {
@@ -1616,7 +1622,10 @@
       "memberCount": "{count} members",
       "nameLabel": "Group name",
       "namePlaceholder": "Enter group name...",
+      "nextStep": "Next",
       "noMembersFound": "No matching members found.",
+      "prevStep": "Back",
+      "removeChip": "Remove {name}",
       "searchMembersPlaceholder": "Search members...",
       "selectedCount": "{count} selected",
       "stepInfo": "Group info",
@@ -1634,10 +1643,17 @@
       "deleteWarning": "Deleting a group cannot be undone.",
       "editAvatar": "Edit group avatar",
       "leaveGroup": "Leave group",
+      "deleteConfirm": "Confirm delete",
+      "editName": "Edit group info",
+      "leaveConfirmBody": "You will no longer receive messages from this group.",
+      "leaveConfirmTitle": "Leave this group?",
+      "memberSelf": "(You)",
       "membersSection": "MEMBERS",
       "noPinned": "No pinned messages yet.",
       "pinnedSection": "PINNED MESSAGES",
       "removeMember": "Remove from group",
+      "removeMemberAria": "Remove {name} from group",
+      "save": "Save",
       "title": "Group info"
     },
     "newMessage": {

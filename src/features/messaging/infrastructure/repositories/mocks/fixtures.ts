@@ -1,6 +1,10 @@
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
+import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+
+/** Synthetic id of the current authenticated user in the mock world. */
+export const MOCK_SELF_ID = "me";
 
 /**
  * Mock seed data extracted from design_src/edu/messaging.jsx (teacher role).
@@ -109,6 +113,8 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     lastMessageTime: "08:15",
     unreadCount: 3,
     memberCount: 33,
+    lastSenderName: "Cô Hương",
+    selfIsGroupAdmin: true,
   },
   {
     id: "g2",
@@ -131,6 +137,8 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     lastMessageTime: "Hôm qua",
     unreadCount: 1,
     memberCount: 8,
+    lastSenderName: "Tổ trưởng",
+    selfIsGroupAdmin: true,
   },
   {
     id: "g4",
@@ -347,4 +355,153 @@ export const MOCK_MESSAGES: Record<string, MessageEntity[]> = {
       date: "2 ngày",
     }),
   ],
+};
+
+/**
+ * Group lifecycle seed (US-E10.4, teacher role per TR-025). The current user
+ * (`MOCK_SELF_ID`) is admin on the homeroom group (g1) and the dept group (g3),
+ * member on g2/g4 — so both admin and non-admin panel states are reachable.
+ * Keyed by groupId, which equals the linked `conversationId` for group convos.
+ */
+export const MOCK_GROUPS: Record<string, GroupEntity> = {
+  g1: {
+    id: "g1",
+    name: "Lớp 11B2 — Toán",
+    description: "Nhóm trao đổi bài tập lớp 11B2.",
+    kind: "class",
+    color: "primary",
+    conversationId: "g1",
+    members: [
+      {
+        userId: MOCK_SELF_ID,
+        name: "Nguyễn Thị Hương",
+        initials: "NH",
+        color: "primary",
+        role: "admin",
+        isOnline: true,
+      },
+      {
+        userId: "u-b1",
+        name: "Trần Văn Bình",
+        initials: "TB",
+        color: "teal",
+        role: "member",
+        isOnline: true,
+      },
+      {
+        userId: "u-l1",
+        name: "Hoàng Thị Linh",
+        initials: "HL",
+        color: "error",
+        role: "member",
+        isOnline: false,
+      },
+      {
+        userId: "u-c1",
+        name: "Lê Thị Cẩm",
+        initials: "LC",
+        color: "purple",
+        role: "member",
+        isOnline: true,
+      },
+    ],
+    pinnedMessages: [
+      {
+        messageId: "g1-3",
+        senderId: MOCK_SELF_ID,
+        senderName: "Nguyễn Thị Hương",
+        excerpt: "Các em nộp trước tiết học ngày mai nhé!",
+        sentAt: "2026-06-20T07:45:00.000Z",
+      },
+    ],
+  },
+  g2: {
+    id: "g2",
+    name: "Lớp 10A1 — Toán",
+    description: "Nhóm lớp 10A1.",
+    kind: "class",
+    color: "success",
+    conversationId: "g2",
+    members: [
+      {
+        userId: MOCK_SELF_ID,
+        name: "Nguyễn Thị Hương",
+        initials: "NH",
+        color: "primary",
+        role: "member",
+        isOnline: true,
+      },
+      {
+        userId: "u-tt",
+        name: "Phạm Tổ Trưởng",
+        initials: "PT",
+        color: "warning",
+        role: "admin",
+        isOnline: false,
+      },
+    ],
+    pinnedMessages: [],
+  },
+  g3: {
+    id: "g3",
+    name: "Tổ Toán – Tin học",
+    description: "Nhóm tổ bộ môn Toán – Tin học.",
+    kind: "dept",
+    color: "warning",
+    conversationId: "g3",
+    members: [
+      {
+        userId: MOCK_SELF_ID,
+        name: "Nguyễn Thị Hương",
+        initials: "NH",
+        color: "primary",
+        role: "admin",
+        isOnline: true,
+      },
+      {
+        userId: "u-tt",
+        name: "Phạm Tổ Trưởng",
+        initials: "PT",
+        color: "warning",
+        role: "admin",
+        isOnline: true,
+      },
+      {
+        userId: "u4",
+        name: "Lê Thị Hoa",
+        initials: "LH",
+        color: "warning",
+        role: "member",
+        isOnline: false,
+      },
+    ],
+    pinnedMessages: [],
+  },
+  g4: {
+    id: "g4",
+    name: "Hội đồng giáo viên",
+    description: "Nhóm hội đồng giáo viên toàn trường.",
+    kind: "other",
+    color: "purple",
+    conversationId: "g4",
+    members: [
+      {
+        userId: MOCK_SELF_ID,
+        name: "Nguyễn Thị Hương",
+        initials: "NH",
+        color: "primary",
+        role: "member",
+        isOnline: true,
+      },
+      {
+        userId: "u1",
+        name: "Trần Minh Quân",
+        initials: "TQ",
+        color: "success",
+        role: "admin",
+        isOnline: true,
+      },
+    ],
+    pinnedMessages: [],
+  },
 };

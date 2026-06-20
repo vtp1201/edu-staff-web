@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ConversationEntity } from "../entities/conversation.entity";
-import type { IMessagingRepository } from "../repositories/i-messaging.repository";
 import { CreateConversationUseCase } from "./create-conversation.use-case";
+import { makeMessagingRepo as makeRepo } from "./group-test-utils";
 import { ok } from "./result";
 
 const conversation: ConversationEntity = {
@@ -15,19 +15,6 @@ const conversation: ConversationEntity = {
   unreadCount: 0,
   isOnline: true,
 };
-
-function makeRepo(
-  over: Partial<IMessagingRepository> = {},
-): IMessagingRepository {
-  return {
-    getConversations: vi.fn(),
-    getMessages: vi.fn(),
-    sendMessage: vi.fn(),
-    createConversation: vi.fn(),
-    getContacts: vi.fn(),
-    ...over,
-  };
-}
 
 describe("CreateConversationUseCase", () => {
   it("delegates to the repo and returns the new conversation for a valid contact", async () => {

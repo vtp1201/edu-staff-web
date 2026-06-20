@@ -74,4 +74,19 @@ Cache overrides for messaging:
 
 SSE mock updates cache via `setQueryData` (no invalidation round-trip). `onSettled` invalidation after mutations reconciles server truth.
 
+**Extended in US-E10.4** — added group detail key:
+```ts
+messagingKeys = {
+  all:           ()                       => ['messaging']                             as const,
+  conversations: ()                       => ['messaging', 'conversations']            as const,
+  messages:      (conversationId: string) => ['messaging', 'messages', conversationId] as const,
+  contacts:      ()                       => ['messaging', 'contacts']                as const,
+  group:         (groupId: string)        => ['messaging', 'group', groupId]          as const,  // NEW E10.4
+}
+```
+
+Group detail cache: `staleTime: 30_000`, `gcTime: 300_000`, `refetchOnWindowFocus: true`. Fetched client-side on panel open (NOT RSC-prefetched). After `leaveGroup`/`deleteGroup`, call `removeQueries({ queryKey: messagingKeys.group(groupId) })` in addition to invalidating conversations to prevent stale group cache after membership ends.
+
+Optimistic pattern for `InfiniteData<MessagePage>` mutations: use `updateInfinitePages(old, msg => ...)` utility to map over pages without flattening — preserves cursor pagination structure.
+
 **See also:** [[rsc-readonly-pattern]]
