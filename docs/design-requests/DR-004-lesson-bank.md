@@ -1,7 +1,9 @@
 # DR-004 — Lesson Bank (Kho bài giảng)
 
-Status: pending
-US: US-E13.3 (cần tạo story packet)
+Status: [x] delivered (2026-06-20)
+US: US-E11.2 (stale DR header said US-E13.3 — that is Class Log, not Lesson Bank; correct US confirmed via screens.md + E11-lms-exams epic)
+Design-review: APPROVED (docs/stories/epics/E11-lms-exams/US-E11.2-lesson-bank/design-review.md)
+Reconcile decision: ALREADY IMPLEMENTED — feature folder, route, i18n namespace all exist. Zero new i18n keys added. Only gap was missing design-spec.jsonc entry — added 2026-06-20.
 Route: `/teacher/lesson-bank`
 Roles: `teacher` (upload + quản lý bài của mình), `principal` (xem toàn trường)
 Design file to create: `design_src/edu/lesson-bank.jsx`
