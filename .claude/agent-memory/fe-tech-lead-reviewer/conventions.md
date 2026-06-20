@@ -52,6 +52,16 @@ Confirmed facts (verify before citing if stale):
   create/submit, wires approve/reject). This is sound server-side defense-in-depth — the privileged
   use-case is never reachable from the wrong role's route. ACCEPTED pattern; don't flag the "stub"
   actions as dead code — they enforce the boundary.
+- **Auth/role guard (US-INFRA.2, decisions 0022/0024):** `bootstrap/auth-guard/` splits a PURE
+  `evaluateAccess()` (`access-context.ts`, no `server-only`, unit-testable) from a `server-only`
+  `requireRole()` wrapper (`require-role.server.ts`). Layout (RSC) does auth+tenant via
+  `evaluateAccess`; Server Actions do role-only via `requireRole` (BEFORE `makeXxx()`), returning
+  `{ ok:false, errorKey:"forbidden" }`. Mock-first: `decodeRoleClaim` returns "admin" in
+  dev+mock; layout passes `tokenTenantId = urlTenant` in mock to skip tenant-mismatch. Watch:
+  the barrel `index.ts` re-exports the server-only wrapper — safe only while no CLIENT component
+  imports `evaluateAccess` from `@/bootstrap/auth-guard`; a client importer would break the build.
+- **Prod mock build-guard (`next.config.ts`):** throws iff `NODE_ENV==="production" && NEXT_PUBLIC_USE_MOCK==="true"`
+  — backstops the dev-only mock admin bypass. Treat as the required safety net for any mock-first auth shortcut.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
