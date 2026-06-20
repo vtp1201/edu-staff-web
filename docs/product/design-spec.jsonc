@@ -4495,5 +4495,948 @@
         "375": "Grid 1 column; filter bar stacks vertically; padding 12px 16px; FAB stays bottom:28px right:16px; drawer full width"
       }
     }
+  },
+
+  // ╔══════════════════════════════════════════════════════════════════════════╗
+  // ║  EXAM BANK + EXAM BUILDER                                               ║
+  // ║  Routes: /teacher/exam-bank (list) · /teacher/exam-bank/create (build) ║
+  // ║          /admin/exam-bank (aggregate)                                   ║
+  // ║  Roles:  teacher (create/manage own) · admin/principal (read overview)  ║
+  // ║  Story:  US-E11.3 (FE) — completed 2026-06-19                          ║
+  // ║  JSX:    design_src/edu/exam-bank.jsx (edustaff_5 handoff, 1546 lines)  ║
+  // ║  i18n namespace: examBank.*                                              ║
+  // ╚══════════════════════════════════════════════════════════════════════════╝
+  "examBank": {
+    // ── Meta ─────────────────────────────────────────────────────────────────
+    "story": "US-E11.3",
+    "routes": [
+      "/teacher/exam-bank",
+      "/teacher/exam-bank/create",
+      "/teacher/exam-bank/:id/edit",
+      "/admin/exam-bank"
+    ],
+    "roles": ["teacher", "admin", "principal"],
+    "designSrc": "design_src/edu/exam-bank.jsx",
+    "i18nNamespace": "examBank",
+    "i18nKeyCount": 71, // keys in src/bootstrap/i18n/messages/vi.json examBank section
+    "status": "design-ready (reconciled DR-005, 2026-06-20)",
+    "components": ["ExamBankScreen", "ExamBuilderScreen"],
+
+    // ── SCREEN 1: Exam Bank List (/teacher/exam-bank, /admin/exam-bank) ──────
+    "listScreen": {
+      // ── Shell ───────────────────────────────────────────────────────────────
+      "layout": "single-column, maxWidth 1280, margin 0 auto, padding 24px 32px, background var(--edu-bg)",
+      "gap": 16,
+
+      // ── Page header ─────────────────────────────────────────────────────────
+      "pageHeader": {
+        "display": "flex, alignItems flex-end, gap 16, flexWrap wrap",
+        "breadcrumb": {
+          "text": "examBank.title (Kho đề thi)",
+          "fontSize": 11,
+          "fontWeight": 700,
+          "color": "var(--edu-text-muted)",
+          "textTransform": "uppercase",
+          "letterSpacing": "0.07em"
+        },
+        "title": {
+          "teacher": {
+            "i18nKey": "examBank.title",
+            "text": "Kho đề thi của tôi"
+          },
+          "admin": {
+            "i18nKey": "examBank.title",
+            "text": "Kho đề thi toàn trường"
+          },
+          "fontSize": 22,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)",
+          "marginTop": 4
+        },
+        "subtitle": {
+          "teacher": "Bạn có N đề · Toàn trường M đề.",
+          "admin": "N đề từ tất cả giáo viên trong trường.",
+          "fontSize": 12.5,
+          "color": "var(--edu-text-muted)",
+          "marginTop": 3
+        },
+        "ownerToggle": {
+          "visibleFor": "teacher only",
+          "options": ["me (Của tôi)", "all (Toàn trường)"],
+          "display": "inline-flex, borderRadius 9, border 1.5px solid var(--edu-border), background #fff",
+          "activeButton": {
+            "background": "var(--edu-primary)+'14'",
+            "color": "var(--edu-primary)",
+            "fontWeight": 700
+          },
+          "inactiveButton": {
+            "background": "transparent",
+            "color": "var(--edu-text-secondary)"
+          },
+          "countBadge": {
+            "padding": "1px 7px",
+            "borderRadius": 99,
+            "active": { "background": "var(--edu-primary)", "color": "#fff" },
+            "inactive": {
+              "background": "var(--edu-border)",
+              "color": "var(--edu-text-secondary)"
+            },
+            "fontSize": 10,
+            "fontWeight": 800
+          },
+          "a11y": "role='group' + aria-label; active button aria-pressed=true"
+        },
+        "createCTA": {
+          "label": "examBank.createButton",
+          "icon": "plus",
+          "variant": "primary",
+          "position": "top-right header area",
+          "visibleFor": "teacher only"
+        }
+      },
+
+      // ── Filter bar ──────────────────────────────────────────────────────────
+      "filterBar": {
+        "containerStyle": "white card, padding 14px 16px, borderRadius 12, border 1px solid var(--edu-border), boxShadow 0 2px 12px rgba(0,0,0,0.04)",
+        "display": "flex, alignItems center, gap 10, flexWrap wrap",
+        "search": {
+          "flex": "1 1 240px",
+          "minWidth": 220,
+          "padding": "9px 12px 9px 34px",
+          "borderRadius": 9,
+          "border": "1.5px solid var(--edu-border)",
+          "fontSize": 12.5,
+          "leadingIcon": "search, size 14, color var(--edu-text-muted)",
+          "placeholder": "examBank.filter.searchPlaceholder",
+          "a11yLabel": "examBank.filter.searchAriaLabel"
+        },
+        "subjectDropdown": {
+          "label": "examBank.filter.allSubjects",
+          "icon": "bookOpen",
+          "minWidth": 170,
+          "options": "all + each subject from EB_SUBJECTS",
+          "a11yLabel": "examBank.filter.subjectAriaLabel"
+        },
+        "gradeDropdown": {
+          "icon": "graduationCap",
+          "minWidth": 140,
+          "options": "all + grades 10/11/12"
+        },
+        "examTypeDropdown": {
+          "icon": "layers",
+          "minWidth": 150,
+          "options": [
+            "all",
+            "midterm (Giữa kỳ)",
+            "final (Cuối kỳ)",
+            "quiz (Thường xuyên)",
+            "other (Khác)"
+          ]
+        },
+        "teacherDropdown": {
+          "visibleFor": "admin/principal only",
+          "label": "examBank.filter.allTeachers",
+          "a11yLabel": "examBank.filter.teacherAriaLabel",
+          "options": "all + each teacher from school roster"
+        },
+        "statusSummary": {
+          "display": "inline-flex, alignItems center, gap 8",
+          "position": "right side of filter bar",
+          "shows": "EBStatusChip for published + count, draft + count",
+          "fontSize": 11.5,
+          "color": "var(--edu-text-muted)"
+        }
+      },
+
+      // ── Results heading ──────────────────────────────────────────────────────
+      "resultsHeading": {
+        "i18nKey": "examBank.resultsHeading",
+        "text": "{count} đề thi",
+        "fontSize": 12.5,
+        "fontWeight": 600,
+        "color": "var(--edu-text-secondary)"
+      },
+
+      // ── Exam card ────────────────────────────────────────────────────────────
+      "examCard": {
+        "layout": "flex row, alignItems flex-start, gap 16",
+        "padding": "18px 20px",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "background": "var(--edu-card)",
+        "boxShadow": "0 2px 12px rgba(0,0,0,0.04)",
+        "hoverStyle": {
+          "boxShadow": "0 8px 22px rgba(0,0,0,0.08)",
+          "transform": "translateY(-1px)",
+          "transition": "box-shadow 0.15s, transform 0.15s"
+        },
+        "iconBlock": {
+          "size": "52x52",
+          "borderRadius": 12,
+          "background": "linear-gradient(135deg, examType.color+'1A' 0%, examType.color+'33' 100%)",
+          "icon": "clipboardList, size 24, strokeWidth 1.7, color examType.color"
+        },
+        "body": {
+          "header": {
+            "title": {
+              "fontSize": 14,
+              "fontWeight": 800,
+              "color": "var(--edu-text-primary)"
+            },
+            "statusChip": "EBStatusChip — see statusChip spec",
+            "examTypeBadge": "EBTypeBadge — see typeBadge spec",
+            "ownerAvatar": {
+              "size": "28x28",
+              "borderRadius": "50%",
+              "background": "var(--edu-primary)+'18'",
+              "fontSize": 10,
+              "fontWeight": 800,
+              "color": "var(--edu-primary)",
+              "visibleFor": "admin/principal (shows teacher initials) or teacher when viewing 'all'"
+            }
+          },
+          "metaRow": {
+            "display": "flex, alignItems center, gap 12, flexWrap wrap",
+            "items": [
+              {
+                "icon": "bookOpen",
+                "text": "subj.vi (subject name)",
+                "fontSize": 12
+              },
+              {
+                "icon": "graduationCap",
+                "text": "Lớp N (grade level)",
+                "fontSize": 12
+              },
+              { "icon": "clock", "text": "N phút (duration)", "fontSize": 12 },
+              {
+                "icon": "helpCircle",
+                "text": "N câu hỏi (question count)",
+                "fontSize": 12
+              }
+            ],
+            "iconSize": 12,
+            "color": "var(--edu-text-muted)"
+          },
+          "secondaryRow": {
+            "items": [
+              {
+                "text": "examBank.card.createdAt (Tạo ngày {date})",
+                "fontSize": 11.5,
+                "color": "var(--edu-text-muted)"
+              },
+              {
+                "text": "Đã dùng: N lần (usedCount)",
+                "fontSize": 11.5,
+                "color": "var(--edu-text-muted)",
+                "icon": "repeat"
+              }
+            ]
+          }
+        },
+        "actions": {
+          "position": "right side of card body",
+          "teacher (isMine)": [
+            "Xem/Chỉnh sửa (edit)",
+            "Nhân bản (duplicate)",
+            "Giao bài (assign)",
+            "Xóa (delete — draft only)"
+          ],
+          "teacher (others)": [
+            "Xem (view-only)",
+            "Nhân bản (duplicate into own)"
+          ],
+          "admin/principal": ["Xem (view-only)"],
+          "deleteButton": {
+            "visibleWhen": "status === 'draft' AND isMine",
+            "hiddenWhen": "published (cannot delete published)",
+            "color": "var(--edu-error)",
+            "a11yLabel": "Xoá đề thi – {title}"
+          },
+          "menuAriaLabel": "examBank.card.menuAriaLabel"
+        }
+      },
+
+      // ── Status chip ──────────────────────────────────────────────────────────
+      "statusChip": {
+        "draft": {
+          "background": "#FEF5E5",
+          "color": "#FFAE1F",
+          "icon": "penLine",
+          "label": "examBank.status.draft"
+        },
+        "published": {
+          "background": "#E6FFFA",
+          "color": "var(--edu-success)",
+          "icon": "check",
+          "label": "examBank.status.published"
+        },
+        "padding": { "sm": "3px 8px", "md": "4px 11px" },
+        "borderRadius": 99,
+        "fontSize": { "sm": 10.5, "md": 11.5 },
+        "fontWeight": 700,
+        "display": "inline-flex, alignItems center, gap 5"
+      },
+
+      // ── Exam type badge ──────────────────────────────────────────────────────
+      "typeBadge": {
+        "padding": "3px 9px",
+        "borderRadius": 6,
+        "background": "examType.color+'15'",
+        "color": "examType.color",
+        "fontSize": 11,
+        "fontWeight": 700,
+        "display": "inline-flex, alignItems center, gap 4",
+        "types": {
+          "midterm": {
+            "color": "var(--edu-primary)",
+            "icon": "calendarDays",
+            "label": "Giữa kỳ"
+          },
+          "final": { "color": "#7B5EA7", "icon": "award", "label": "Cuối kỳ" },
+          "quiz": {
+            "color": "var(--edu-success)",
+            "icon": "clock",
+            "label": "Thường xuyên"
+          },
+          "other": {
+            "color": "var(--edu-text-muted)",
+            "icon": "fileText",
+            "label": "Khác"
+          }
+        }
+      },
+
+      // ── Dialogs ──────────────────────────────────────────────────────────────
+      "deleteDialog": {
+        "width": 440,
+        "maxWidth": "calc(100vw - 32px)",
+        "background": "var(--edu-card)",
+        "borderRadius": 14,
+        "boxShadow": "0 16px 48px rgba(0,0,0,0.24)",
+        "padding": 24,
+        "backdropBackground": "rgba(20,30,50,0.55)",
+        "iconBlock": {
+          "size": "44x44",
+          "borderRadius": 12,
+          "background": "var(--edu-error-light)",
+          "icon": "trash, size 20, color var(--edu-error)"
+        },
+        "title": { "fontSize": 16, "fontWeight": 800 },
+        "body": {
+          "fontSize": 13,
+          "lineHeight": 1.55,
+          "color": "var(--edu-text-secondary)"
+        },
+        "actions": ["Huỷ (ghost)", "Xoá (danger, var(--edu-error))"],
+        "animation": "eb-fadein 0.18s ease-out",
+        "i18nKeys": {
+          "title": "examBank.deleteDialog.title",
+          "body": "examBank.deleteDialog.body",
+          "cancel": "examBank.deleteDialog.cancel",
+          "confirm": "examBank.deleteDialog.confirm",
+          "deleting": "examBank.deleteDialog.deleting"
+        },
+        "a11y": "role='dialog', aria-modal=true, aria-labelledby=title; focus on Huỷ on open (safe default for destructive)"
+      },
+      "assignDialog": {
+        "note": "Light placeholder — full assign flow lives in classops/exam-management",
+        "width": 440,
+        "icon": "send",
+        "actions": ["Huỷ", "Tiếp tục giao bài (primary)"],
+        "a11y": "role='dialog', aria-modal=true"
+      },
+      "publishDialog": {
+        "width": 440,
+        "i18nKeys": {
+          "title": "examBank.publishDialog.title",
+          "body": "examBank.publishDialog.body",
+          "cancel": "examBank.publishDialog.cancel",
+          "confirm": "examBank.publishDialog.confirm",
+          "publishing": "examBank.publishDialog.publishing"
+        }
+      },
+
+      // ── Toast ────────────────────────────────────────────────────────────────
+      "toast": {
+        "position": "fixed, bottom 24, left 50%, transform translateX(-50%)",
+        "background": "#1F2937",
+        "color": "#fff",
+        "padding": "10px 18px",
+        "borderRadius": 10,
+        "fontSize": 13,
+        "fontWeight": 600,
+        "boxShadow": "0 8px 24px rgba(0,0,0,0.2)",
+        "animation": "eb-toast-in 0.2s ease-out",
+        "duration": "2400ms",
+        "icon": "check, size 14, color var(--edu-success)",
+        "a11y": "role='status' + aria-live='polite' for success; role='alert' for errors",
+        "messages": {
+          "deleted": "examBank.toast.deleted",
+          "draftSaved": "examBank.toast.draftSaved",
+          "published": "examBank.toast.published"
+        }
+      },
+
+      // ── Empty states ─────────────────────────────────────────────────────────
+      "emptyStates": {
+        "noExams": {
+          "variant": "all — no exams in bank yet",
+          "icon": "clipboardList",
+          "iconBoxSize": 80,
+          "iconBoxBorderRadius": 20,
+          "iconBoxBackground": "var(--edu-primary)+'0E'",
+          "iconSize": 36,
+          "iconColor": "var(--edu-primary)+'B0'",
+          "title": "examBank.empty.title",
+          "body": "examBank.empty.body",
+          "cta": {
+            "label": "examBank.empty.cta",
+            "icon": "plus",
+            "visibleFor": "teacher only"
+          },
+          "border": "1px dashed var(--edu-border)"
+        },
+        "noMatch": {
+          "variant": "filter — filters applied but no results",
+          "title": "examBank.empty.noMatch",
+          "body": "examBank.empty.noMatchBody",
+          "cta": { "label": "Bỏ lọc", "icon": "x", "variant": "secondary" }
+        }
+      },
+
+      // ── Loading / skeleton state ──────────────────────────────────────────────
+      "skeleton": {
+        "a11y": "role='status' + sr-only 'Đang tải...' (i18nKey: examBank.loadingAriaLabel)",
+        "cardCount": 3,
+        "cardHeight": 100,
+        "animationClass": "animate-pulse"
+      }
+    },
+
+    // ── SCREEN 2: Exam Builder (/teacher/exam-bank/create, /:id/edit) ─────────
+    "builderScreen": {
+      // ── Shell ────────────────────────────────────────────────────────────────
+      "layout": "full-height flex column, background var(--edu-bg), overflow hidden",
+      "note": "Builder is full-screen — no sidebar padding. Navigation via top-bar back button.",
+
+      // ── Top bar ──────────────────────────────────────────────────────────────
+      "topBar": {
+        "background": "var(--edu-card)",
+        "borderBottom": "1px solid var(--edu-border)",
+        "padding": "14px 24px",
+        "display": "flex, alignItems center, gap 12",
+        "elements": [
+          {
+            "name": "backButton",
+            "label": "examBank.builder.back",
+            "icon": "chevronLeft, size 12",
+            "padding": "7px 12px",
+            "borderRadius": 8,
+            "border": "1px solid var(--edu-border)",
+            "background": "#fff",
+            "a11yLabel": "examBank.builder.backAriaLabel"
+          },
+          {
+            "name": "titleBlock",
+            "flex": 1,
+            "breadcrumb": {
+              "fontSize": 11,
+              "fontWeight": 700,
+              "color": "var(--edu-text-muted)",
+              "textTransform": "uppercase"
+            },
+            "examTitle": {
+              "fontSize": 16,
+              "fontWeight": 800,
+              "color": "var(--edu-text-primary)",
+              "overflow": "hidden",
+              "textOverflow": "ellipsis",
+              "fallback": "— Chưa đặt tên đề — (examBank.builder.titlePlaceholder)"
+            }
+          },
+          { "name": "statusChip", "ref": "statusChip spec above" },
+          {
+            "name": "unsavedIndicator",
+            "visibleWhen": "isDirty === true (any edit not yet saved)",
+            "display": "inline-flex, alignItems center, gap 5",
+            "padding": "3px 9px",
+            "borderRadius": 99,
+            "background": "var(--edu-warning)+'18'",
+            "color": "var(--edu-warning)",
+            "fontSize": 10.5,
+            "fontWeight": 800,
+            "dot": {
+              "size": "7x7",
+              "borderRadius": "50%",
+              "background": "var(--edu-warning)",
+              "boxShadow": "0 0 0 3px var(--edu-warning)+'25'"
+            },
+            "label": "examBank.builder.saving (Chưa lưu)",
+            "position": "absolute top 8 right 14 — inside metadata header"
+          },
+          {
+            "name": "previewButton",
+            "label": "examBank.builder.publish (Xem trước đề)",
+            "icon": "eye, size 13",
+            "padding": "9px 16px",
+            "borderRadius": 8,
+            "border": "1.5px solid var(--edu-primary)+'40'",
+            "background": "var(--edu-primary)+'0E'",
+            "color": "var(--edu-primary)"
+          },
+          {
+            "name": "saveDraftButton",
+            "label": "examBank.builder.saveDraft",
+            "icon": "penLine, size 12",
+            "padding": "9px 16px",
+            "borderRadius": 8,
+            "border": "1.5px solid var(--edu-border)",
+            "background": "#fff",
+            "color": "var(--edu-text-secondary)"
+          },
+          {
+            "name": "publishButton",
+            "label": "examBank.builder.publish",
+            "icon": "check, size 13",
+            "padding": "9px 18px",
+            "borderRadius": 8,
+            "background": {
+              "enabled": "var(--edu-success)",
+              "disabled": "var(--edu-text-muted)"
+            },
+            "color": "#fff",
+            "disabled": "canPublish === false (validation incomplete)",
+            "cursor": { "enabled": "pointer", "disabled": "not-allowed" }
+          }
+        ]
+      },
+
+      // ── Metadata header ────────────────────────────────────────────────────
+      "metadataHeader": {
+        "background": "var(--edu-card)",
+        "borderBottom": "1px solid var(--edu-border)",
+        "padding": "14px 24px",
+        "display": "grid",
+        "gridTemplateColumns": "2fr 1fr 1fr 1fr 1fr 1fr",
+        "gap": 14,
+        "fields": [
+          {
+            "key": "title",
+            "label": "examBank.builder.titleLabel",
+            "type": "text input",
+            "maxLength": 200,
+            "required": true,
+            "placeholder": "examBank.builder.titlePlaceholder",
+            "validation": "minLength 4, maxLength 200"
+          },
+          {
+            "key": "subjectId",
+            "label": "examBank.builder.subjectLabel",
+            "type": "select",
+            "placeholder": "examBank.builder.subjectPlaceholder",
+            "options": "EB_SUBJECTS list"
+          },
+          {
+            "key": "gradeLevel",
+            "label": "Khối",
+            "type": "select",
+            "options": [10, 11, 12]
+          },
+          {
+            "key": "examType",
+            "label": "examBank.builder.difficultyLabel (Loại đề)",
+            "type": "select",
+            "options": "EB_EXAM_TYPES"
+          },
+          {
+            "key": "durationMin",
+            "label": "examBank.builder.durationLabel",
+            "type": "number",
+            "min": 5,
+            "max": 240,
+            "fontVariantNumeric": "tabular-nums"
+          },
+          {
+            "key": "totalPoints",
+            "label": "Tổng điểm",
+            "type": "read-only computed (sum of all question points)",
+            "display": "flex, alignItems center, gap 6",
+            "icon": "award, size 14, color var(--edu-success)",
+            "fontSize": 14,
+            "fontWeight": 800,
+            "background": "var(--edu-bg)",
+            "border": "1.5px solid var(--edu-border)"
+          }
+        ],
+        "fieldLabel": {
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "color": "var(--edu-text-muted)",
+          "textTransform": "uppercase",
+          "letterSpacing": "0.07em",
+          "marginBottom": 6
+        },
+        "fieldInput": {
+          "padding": "9px 12px",
+          "borderRadius": 8,
+          "border": "1.5px solid var(--edu-border)",
+          "fontSize": 13,
+          "color": "var(--edu-text-primary)",
+          "background": "#fff"
+        }
+      },
+
+      // ── Two-column body ────────────────────────────────────────────────────
+      "twoColumnBody": {
+        "display": "flex, flex 1, minHeight 0, overflow hidden",
+        "leftColumn": {
+          "width": "30%",
+          "minWidth": 280,
+          "maxWidth": 380,
+          "background": "var(--edu-card)",
+          "borderRight": "1px solid var(--edu-border)",
+          "display": "flex, flexDirection column, overflow hidden"
+        },
+        "rightColumn": {
+          "flex": 1,
+          "background": "var(--edu-bg)",
+          "overflow": "auto",
+          "padding": "20px 24px"
+        }
+      },
+
+      // ── Question list (left column) ────────────────────────────────────────
+      "questionList": {
+        "header": {
+          "padding": "14px 16px",
+          "borderBottom": "1px solid var(--edu-border)",
+          "title": {
+            "i18nKey": "examBank.builder.questionsHeading",
+            "text": "Câu hỏi ({count})",
+            "fontSize": 13,
+            "fontWeight": 800
+          },
+          "totalPoints": {
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)",
+            "fontVariantNumeric": "tabular-nums"
+          }
+        },
+        "questionItem": {
+          "padding": "10px 14px",
+          "display": "flex, alignItems flex-start, gap 8",
+          "selected": {
+            "background": "var(--edu-primary)+'0C'",
+            "borderLeft": "3px solid var(--edu-primary)"
+          },
+          "unselected": {
+            "background": "transparent",
+            "borderLeft": "3px solid transparent"
+          },
+          "typePill": {
+            "mcq": {
+              "background": "var(--edu-primary)+'14'",
+              "color": "var(--edu-primary)",
+              "label": "TN"
+            },
+            "essay": {
+              "background": "#7B5EA7+'14'",
+              "color": "#7B5EA7",
+              "label": "TL"
+            },
+            "fontSize": 9,
+            "fontWeight": 800,
+            "padding": "2px 6px",
+            "borderRadius": 5
+          },
+          "prompt": {
+            "fontSize": 11.5,
+            "fontWeight": 500,
+            "color": "var(--edu-text-primary)",
+            "lineClamp": 2
+          },
+          "errorIndicator": {
+            "visibleWhen": "question has validation error",
+            "color": "var(--edu-error)",
+            "icon": "alertCircle, size 12",
+            "label": "examBank.builder.questionHasError"
+          },
+          "points": {
+            "fontSize": 11,
+            "color": "var(--edu-text-muted)",
+            "fontVariantNumeric": "tabular-nums"
+          },
+          "reorderButtons": {
+            "icons": ["chevronUp (move up)", "chevronDown (move down)"],
+            "size": 12,
+            "a11yLabels": [
+              "examBank.moveUpAriaLabel",
+              "examBank.moveDownAriaLabel"
+            ],
+            "note": "Keyboard reorder via Up/Down buttons — NO drag-and-drop dependency (ADR 0043)"
+          },
+          "deleteButton": {
+            "icon": "trash, size 11",
+            "color": "var(--edu-error)",
+            "a11yLabel": "examBank.removeQuestionAriaLabel"
+          }
+        },
+        "addQuestionBar": {
+          "padding": "12px 14px",
+          "borderTop": "1px solid var(--edu-border)",
+          "buttons": [
+            {
+              "type": "mcq",
+              "label": "examBank.builder.addQuestion + TN",
+              "icon": "listChecks"
+            },
+            {
+              "type": "essay",
+              "label": "examBank.builder.addQuestion + TL",
+              "icon": "penLine"
+            }
+          ],
+          "buttonStyle": "secondary/ghost, full-width or split"
+        }
+      },
+
+      // ── Question editor (right column) ─────────────────────────────────────
+      "questionEditor": {
+        "noSelection": {
+          "display": "centered placeholder text",
+          "i18nKey": "examBank.builder.noSelection",
+          "text": "Chọn câu hỏi để chỉnh sửa",
+          "color": "var(--edu-text-muted)"
+        },
+        "typeToggle": {
+          "options": ["mcq (Trắc nghiệm)", "essay (Tự luận)"],
+          "display": "radio-button group or toggle bar",
+          "activeStyle": {
+            "background": "var(--edu-primary)+'14'",
+            "color": "var(--edu-primary)",
+            "fontWeight": 700
+          }
+        },
+        "promptField": {
+          "label": "examBank.builder.contentLabel",
+          "type": "textarea",
+          "minHeight": 80,
+          "placeholder": "examBank.builder.contentPlaceholder",
+          "resize": "vertical"
+        },
+        "mcqOptions": {
+          "count": 4,
+          "letters": ["A", "B", "C", "D"],
+          "optionRow": {
+            "display": "flex, alignItems center, gap 8",
+            "letterBox": {
+              "width": 28,
+              "height": 28,
+              "borderRadius": 8,
+              "fontSize": 12,
+              "fontWeight": 800
+            },
+            "input": {
+              "flex": 1,
+              "fontSize": 13,
+              "placeholder": "examBank.builder.optionPlaceholder"
+            },
+            "correctRadio": {
+              "type": "radio button",
+              "selected": {
+                "letterBox": {
+                  "background": "var(--edu-success)",
+                  "color": "#fff",
+                  "border": "1.5px solid var(--edu-success)"
+                }
+              },
+              "unselected": {
+                "letterBox": {
+                  "background": "var(--edu-bg)",
+                  "border": "1.5px solid var(--edu-border)"
+                }
+              },
+              "a11yLabel": "examBank.builder.correctOptionAriaLabel"
+            }
+          }
+        },
+        "essayFields": {
+          "hintField": {
+            "label": "Gợi ý đáp án (ẩn với học sinh)",
+            "type": "textarea",
+            "placeholder": "Nhập gợi ý chấm điểm...",
+            "background": "var(--edu-warning)+'0E'",
+            "border": "1px solid var(--edu-warning)+'33'",
+            "note": "Visible to teacher only; hidden from students during exam"
+          }
+        },
+        "pointsField": {
+          "label": "Điểm",
+          "type": "number input",
+          "min": 0.25,
+          "step": 0.25,
+          "fontVariantNumeric": "tabular-nums"
+        }
+      },
+
+      // ── Preview modal ──────────────────────────────────────────────────────
+      "previewModal": {
+        "type": "full-screen overlay modal",
+        "backdropBackground": "rgba(20,30,50,0.75)",
+        "contentWidth": "min(820px, 100vw - 32px)",
+        "maxHeight": "90vh",
+        "overflow": "auto",
+        "borderRadius": 16,
+        "padding": 24,
+        "background": "var(--edu-card)",
+        "note": "Shows exam as student would see it — renders EBPreviewQuestion for each question",
+        "mcqOptionPreview": {
+          "selected/correct": {
+            "background": "var(--edu-success-light)",
+            "border": "1.5px solid var(--edu-success)"
+          },
+          "letterBox": { "width": 28, "height": 28, "borderRadius": 8 },
+          "correctBadge": {
+            "background": "var(--edu-success)",
+            "color": "#fff",
+            "fontSize": 10,
+            "fontWeight": 800
+          }
+        },
+        "essayAnswerArea": {
+          "padding": "18px 16px",
+          "borderRadius": 10,
+          "border": "1.5px dashed var(--edu-border)",
+          "background": "var(--edu-bg)",
+          "color": "var(--edu-text-muted)",
+          "fontStyle": "italic"
+        },
+        "essayHintBlock": {
+          "background": "var(--edu-warning)+'0E'",
+          "border": "1px solid var(--edu-warning)+'33'",
+          "label": {
+            "fontSize": 10.5,
+            "fontWeight": 800,
+            "color": "var(--edu-warning)",
+            "icon": "info"
+          }
+        },
+        "a11y": "role='dialog', aria-modal=true, focus-trap, close on Escape or backdrop click"
+      },
+
+      // ── Builder: empty-questions state ──────────────────────────────────────
+      "emptyQuestionsState": {
+        "note": "When all questions are deleted, auto-add blank MCQ — prevents truly empty question list",
+        "behavior": "deleteQuestion() auto-adds ebBlankMCQ() when length reaches 0"
+      },
+
+      // ── Builder: validation state ────────────────────────────────────────────
+      "validationState": {
+        "canPublish": "title.length >= 4 AND durationMin in [5,240] AND all questions have non-empty prompt AND MCQ questions have at least 2 filled options",
+        "publishBlockedIndicator": {
+          "publishButton": "disabled, background var(--edu-text-muted), cursor not-allowed"
+        },
+        "saveFlashError": {
+          "position": "inline near top-bar or below metadata header",
+          "background": "var(--edu-error-light)",
+          "color": "var(--edu-error)",
+          "duration": "3200ms auto-dismiss"
+        },
+        "perQuestionError": {
+          "indicator": "red alertCircle icon on question list item",
+          "i18nKey": "examBank.builder.questionHasError"
+        }
+      }
+    },
+
+    // ── ADMIN VARIANT (/admin/exam-bank) ──────────────────────────────────────
+    "adminVariant": {
+      "route": "/admin/exam-bank",
+      "roles": ["admin", "principal"],
+      "subtitle": "examBank.subtitleAdmin — Xem toàn bộ đề thi trắc nghiệm của trường.",
+      "differences": [
+        "ownerToggle hidden (admin always sees all exams)",
+        "createCTA hidden (admin/principal cannot create exams)",
+        "teacherFilter shown in filter bar (filter by teacher)",
+        "card actions: view-only (no edit/delete/assign)",
+        "ownerAvatar always shown on cards (shows teacher initials)",
+        "title: 'Kho đề thi toàn trường' vs teacher's 'Kho đề thi của tôi'"
+      ],
+      "filter": {
+        "extraFilter": "teacherDropdown (allTeachers + each teacher)",
+        "a11yLabel": "examBank.filter.teacherAriaLabel"
+      }
+    },
+
+    // ── Role variants summary ─────────────────────────────────────────────────
+    "roleVariants": {
+      "teacher": {
+        "defaultOwnerFilter": "me (own exams first)",
+        "ownerToggle": true,
+        "canCreate": true,
+        "canEdit": "own exams only (ownerId === currentUserId)",
+        "canDelete": "own draft exams only (status === 'draft')",
+        "canDuplicate": true,
+        "canAssign": "own published exams",
+        "showBuilderRoute": true
+      },
+      "admin": {
+        "defaultOwnerFilter": "all",
+        "ownerToggle": false,
+        "canCreate": false,
+        "canEdit": false,
+        "canDelete": false,
+        "canDuplicate": false,
+        "canAssign": false,
+        "showBuilderRoute": false,
+        "note": "Read-only aggregate view; builder route not accessible"
+      },
+      "principal": {
+        "note": "Same as admin — read-only aggregate, no create/edit/delete"
+      }
+    },
+
+    // ── API contract (mock-first — lms service not yet shipped) ──────────────
+    "api": {
+      "note": "lms service — mock-first per decision 0014; US-054/055 BE deferred",
+      "list": "GET  /lms/api/v1/exams?ownerId=&subjectId=&gradeLevel=&examType=&search=&cursor= → ExamEntity[]",
+      "create": "POST /lms/api/v1/exams (ExamPayload)",
+      "update": "PUT  /lms/api/v1/exams/:id",
+      "delete": "DELETE /lms/api/v1/exams/:id",
+      "publish": "PATCH /lms/api/v1/exams/:id/publish"
+    },
+
+    // ── Accessibility notes (for /fe implementation) ───────────────────────────
+    "a11yNotes": [
+      "Question reorder: implemented via Up/Down buttons (NOT drag-and-drop) per ADR 0043 — buttons must have distinct aria-labels with question index (examBank.moveUpAriaLabel / moveDownAriaLabel).",
+      "Owner toggle: role='group' + aria-label; active button aria-pressed=true.",
+      "Exam cards: action buttons need distinct aria-label including exam title (e.g. 'Xoá đề thi – Kiểm tra Giữa kỳ 1 — Toán lớp 10'). Do NOT rely on visual context alone.",
+      "Delete / Publish / Assign dialogs: role='dialog', aria-modal=true, aria-labelledby=title; focus on 'Huỷ' on open (safe default for destructive actions).",
+      "MCQ correct-answer radio: each option row has radio input with aria-label (examBank.builder.correctOptionAriaLabel replacing {option} with letter); correct state conveyed by both visual highlight AND icon, not color alone.",
+      "Preview modal: role='dialog', aria-modal=true, focus-trap (Radix Dialog or custom); close on Escape + backdrop click; on close return focus to Preview button.",
+      "Warning for unsaved changes: 'Chưa lưu' indicator is visual-only — add aria-live='polite' region that announces when isDirty becomes true ('Có thay đổi chưa lưu').",
+      "Essay hint block: 'Gợi ý chấm (ẩn với HS)' — label text must be present (not color-only); conveyed by warning icon + text label.",
+      "Publish button disabled state: aria-disabled=true + tooltip/title explaining why (validation incomplete).",
+      "Toast: role='status' + aria-live='polite' for success toasts; role='alert' + aria-live='assertive' for error flash messages.",
+      "Filter dropdowns: implement as native <select> or Radix Select with aria-label; keyboard-navigable.",
+      "Builder two-column layout: aside role='complementary' (question list) + main role='main' (editor); aria-label each region."
+    ],
+
+    // ── Responsive ─────────────────────────────────────────────────────────────
+    "responsive": {
+      "listScreen": {
+        "1280": "Default — exam cards full width (single column list); filter bar all controls on one row",
+        "1024": "Filter bar may wrap; status summary moves below dropdowns",
+        "768": "Filter bar wraps: search full-width; dropdowns stack 2-per-row; card actions collapse to icon-only menu",
+        "375": "Filter bar stacks vertically; card actions in dropdown menu (3-dot); padding 12px 16px"
+      },
+      "builderScreen": {
+        "1280": "Default — left 30% (280-380px) / right 70% two-column split; metadata header 6-column grid",
+        "1024": "Left column min 260px; metadata grid may wrap to 3+3",
+        "768": "Two-column collapses to single column: question list becomes collapsible drawer (Radix Sheet or accordion); metadata header stacks 2-per-row",
+        "375": "Metadata header stacks vertically (1 field per row); question list full-width above editor"
+      }
+    }
   }
 }

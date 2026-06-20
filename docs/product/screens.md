@@ -145,7 +145,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/admin-settings.jsx` — Admin Settings / gradePublishMode (US-E12.11)
 - Chi tiet pixel cu (reference only): file `untitled.pen` (mo bang Pencil MCP).
 - **edustaff_5 handoff (2026-06-19, ADR 0044)** adds:
-  - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3, in-flight)
+  - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3, design-spec reconciled DR-005 2026-06-20)
   - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1 student/parent; US-E15.2 teacher)
   - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
   - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
