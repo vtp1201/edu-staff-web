@@ -81,10 +81,9 @@ export class GradeBookRepository implements IGradeBookRepository {
     }
   }
 
-  // biome-ignore lint/suspicious/useAwait: throwing stub; async to satisfy interface
-  async getChildList(): Promise<ChildSummary[]> {
-    // OQ-001: endpoint (GRADES_EP.childList) unconfirmed; stub throws
+  getChildList(): Promise<ChildSummary[]> {
+    // OQ-001: endpoint (GRADES_EP.childList) unconfirmed; stub rejects with
     // NOT_IMPLEMENTED until the core service ships the parent-children contract.
-    throw { type: "not-found" } satisfies GradesFailure;
+    return Promise.reject({ type: "not-found" } satisfies GradesFailure);
   }
 }
