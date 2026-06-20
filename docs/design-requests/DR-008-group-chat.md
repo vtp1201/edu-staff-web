@@ -1,10 +1,30 @@
 # DR-008 — Group Chat (Mở rộng từ messaging.jsx — thêm Groups tab đầy đủ)
 
-Status: pending
-US: US-E10.1 (extend từ messaging.jsx đã có)
+Status: [x] delivered (2026-06-20)
+US: **US-E10.4** — "Messaging Enhancements: group lifecycle + message interactions" (`planned`)
+  Note: DR header originally said US-E10.1 (base messaging, already implemented). The group-chat
+  enhancement (group create/manage/leave + message reply/pin/delete) maps to US-E10.4, which is
+  genuinely net-new and `planned`. Handoff feeds US-E10.4 → /ba → /fe.
 Route: `/messages` (shared, all roles)
 Roles: tất cả
-Design file to update: `design_src/edu/messaging.jsx` (existing) — thêm group chat flows
+Design file: `design_src/edu/messaging.jsx` — ALREADY CONTAINS full DR-008 implementation (1953 lines)
+
+## Reconcile finding (2026-06-20)
+
+Pattern: RECONCILE (messaging.jsx fully built, not net-new authoring needed for the JSX).
+- `design_src/edu/messaging.jsx` (1953 lines): ALL group-chat flows already present:
+  - Group list rows (avatar + member count + last-activity + unread badge) ✓
+  - CreateGroupModal (2-step: info → members) ✓
+  - GroupInfoPanel (320px slide-in: members, admin badges, pinned, leave/delete) ✓
+  - MessageContextMenu (reply, pin, copy, delete with permission rules) ✓
+  - ReplyStrip + quote bubble in ChatBubble ✓
+  - Per-role group seeding (teacher/principal/student/parent) ✓
+  - Empty groups state, skeleton loading, offline member state ✓
+- Gaps closed by this DR:
+  1. `docs/product/design-spec.jsonc` — added `messaging.groupChat` sub-section (spec for FE)
+  2. `src/bootstrap/i18n/messages/{vi,en}.json` — added new group-chat keys under
+     `messaging.group`, `messaging.groupInfo`, `messaging.contextMenu`, `messaging.reply`,
+     `messaging.deleteDialog` (genuinely net-new for US-E10.4; did not duplicate existing keys)
 
 ---
 

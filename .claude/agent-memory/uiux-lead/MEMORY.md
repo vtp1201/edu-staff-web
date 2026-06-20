@@ -8,3 +8,4 @@
 - [DR-005 reconcile pattern](dr-005-reconcile-pattern.md) — exam-bank: fully implemented US-E11.3 (stale DR said US-E13.4); design-spec was only gap; 4th confirmation + builder screen spec (~450 lines)
 - [DR-006 reconcile pattern](dr-006-reconcile-pattern.md) — notifications: fully implemented US-E10.2; JSX 661 lines + 30 i18n keys exist; design-spec screens.notifications was only gap; 5th confirmation
 - [DR-007 reconcile pattern](dr-007-reconcile-pattern.md) — announcements: fully implemented US-E10.3; JSX 1641 lines + 80+ i18n keys exist; design-spec was only gap; 6th confirmation; US-E10.3 correct (not stale)
+- [DR-008 reconcile pattern](dr-008-reconcile-pattern.md) — group-chat: JSX 1953 lines fully built; DR said "net-new" but reconcile pattern held; gaps were design-spec groupChat + 5 new i18n sub-namespaces; US header said E10.1 → corrected to E10.4; 7th confirmation

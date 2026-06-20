@@ -1973,7 +1973,653 @@
         "typing dots",
         "date dividers"
       ],
-      "input": { "enterToSend": true, "attachments": true, "emoji": true }
+      "input": { "enterToSend": true, "attachments": true, "emoji": true },
+
+      // ── DR-008 Group-Chat extension ───────────────────────────────────────────
+      // Source: design_src/edu/messaging.jsx — MessagingScreen (DR-008 group-chat extension)
+      // DR-008 header references US-E10.1 (base messaging screen); the net-new
+      // group-chat feature set below feeds US-E10.4 (planned, not yet built).
+      // Realtime / SSE wiring per decision-0009 is omitted from the mock.
+      "groupChat": {
+        "us": "US-E10.4",
+        "source": "design_src/edu/messaging.jsx — MessagingScreen (DR-008 group-chat extension)",
+
+        // ── Group list rows (Groups tab, ConvoItem component) ────────────────
+        // Lines 1400–1494 in messaging.jsx
+        "groupList": {
+          "avatarSize": 42,
+          "avatarBorderRadius": 12,
+          "avatarBackground": "groupColor + '20'",
+          "avatarFontSize": 14,
+          "avatarFontWeight": 800,
+          // No online-dot on group avatars (online dot only on direct contacts).
+          "onlineDot": false,
+          "nameMaxWidth": 140,
+          "nameFontSize": 13.5,
+          "nameFontWeight": "800 (unread) | 600 (read)",
+          "nameColor": "var(--edu-text-primary)",
+          "timestamp": { "fontSize": 11, "color": "var(--edu-text-muted)" },
+          // Last-activity line: "Sender: preview…" with 1-line ellipsis overflow
+          "lastActivity": {
+            "fontSize": 11.5,
+            "senderFontWeight": 700,
+            "senderColor": "var(--edu-text-secondary)",
+            "previewFontWeight": "700 (unread) | 400 (read)",
+            "previewColor": "var(--edu-text-secondary) (unread) | var(--edu-text-muted) (read)",
+            "overflow": "single-line ellipsis"
+          },
+          // Unread badge (group): uses var(--edu-error) not pColor (distinct from direct badge)
+          "unreadBadge": {
+            "background": "var(--edu-error)",
+            "color": "#fff",
+            "borderRadius": 99,
+            "fontSize": 10,
+            "fontWeight": 800,
+            "padding": "1px 6px",
+            "minWidth": 18
+          },
+          // Member-count chip below the last-activity line
+          "memberCountChip": {
+            "display": "inline-flex",
+            "padding": "1px 7px",
+            "borderRadius": 4,
+            "background": "var(--edu-bg)",
+            "fontSize": 10,
+            "fontWeight": 700,
+            "color": "var(--edu-text-muted)",
+            "icon": { "name": "users", "size": 9 }
+          },
+          // Active row highlight (same as direct pane)
+          "activeRow": {
+            "background": "pColor + '0F'",
+            "borderLeft": "3px solid pColor"
+          },
+          // "+ Tạo nhóm" sub-header CTA above list in Groups tab
+          "createCTA": {
+            "background": "pColor + '08'",
+            "backgroundHover": "pColor + '12'",
+            "fontSize": 13,
+            "fontWeight": 800,
+            "color": "pColor",
+            "iconBox": {
+              "size": 22,
+              "borderRadius": 6,
+              "background": "pColor",
+              "iconColor": "#fff",
+              "iconSize": 12
+            },
+            "borderBottom": "1px solid var(--edu-border)"
+          }
+        },
+
+        // ── Create-group modal (CreateGroupModal, 2-step) ────────────────────
+        // Lines 518–833 in messaging.jsx
+        "createGroupModal": {
+          "maxWidth": 460,
+          "maxHeight": "92vh",
+          "borderRadius": 14,
+          "background": "var(--edu-card)",
+          "boxShadow": "0 24px 60px rgba(0,0,0,0.25)",
+          "animation": "msg-fadein 0.18s ease-out (opacity + translateY(-6px)→0)",
+          "backdrop": "rgba(20,30,50,0.5) + blur(3px)",
+          // Header
+          "header": {
+            "padding": "18px 22px",
+            "iconBox": {
+              "size": 38,
+              "borderRadius": 10,
+              "background": "pColor + '18'",
+              "icon": { "name": "users", "size": 18 }
+            },
+            "titleFontSize": 16,
+            "titleFontWeight": 800,
+            // Step indicators (StepDot + label inline)
+            "stepIndicator": {
+              "dotSize": 18,
+              "dotBorderRadius": "50%",
+              "activeDot": {
+                "background": "pColor",
+                "border": "1.5px solid pColor",
+                "color": "#fff"
+              },
+              "doneDot": {
+                "background": "var(--edu-success)",
+                "border": "1.5px solid var(--edu-success)",
+                "icon": "check/10px"
+              },
+              "inactiveDot": {
+                "background": "var(--edu-bg)",
+                "border": "1.5px solid var(--edu-border)"
+              },
+              "activeLabelColor": "pColor",
+              "activeLabelFontWeight": 800,
+              "inactiveLabelColor": "var(--edu-text-muted)",
+              "separator": "→ (color: var(--edu-border))"
+            }
+          },
+          "bodyPadding": "18px 22px",
+          // Step 1: Group info
+          "step1": {
+            // Avatar preview
+            "avatarPreview": {
+              "size": 56,
+              "borderRadius": 14,
+              "background": "selectedColor + '20'",
+              "border": "2px solid selectedColor + '55'",
+              "fontSize": 15,
+              "fontWeight": 900,
+              "initials": "first 2 words initials, max 3 chars"
+            },
+            // Color picker: 8-swatch row drawn from design tokens
+            "colorPicker": {
+              "swatchSize": 24,
+              "swatchBorderRadius": 7,
+              "selectedBorder": "2.5px solid var(--edu-text-primary)",
+              "selectedRing": "0 0 0 2px selectedColor",
+              "palette": [
+                "var(--edu-primary)",
+                "var(--edu-success)",
+                "var(--edu-warning)",
+                "var(--edu-error)",
+                "var(--edu-purple)",
+                "var(--edu-teal)",
+                "#6366F1",
+                "#FB923C"
+              ]
+            },
+            // Fields
+            "nameField": {
+              "label": "Tên nhóm (required)",
+              "maxLength": 60,
+              "validationMinLength": 2
+            },
+            "descField": {
+              "label": "Mô tả (optional)",
+              "rows": 3,
+              "maxLength": 140,
+              "resize": "vertical"
+            },
+            // Group type: 2-col radio grid
+            "typeSelector": {
+              "columns": 2,
+              "gap": 8,
+              "itemPadding": "10px 12px",
+              "itemBorderRadius": 9,
+              "activeBorder": "1.5px solid pColor",
+              "activeBackground": "pColor + '12'",
+              "inactiveBorder": "1.5px solid var(--edu-border)",
+              "types": [
+                { "id": "class", "vi": "Lớp học", "icon": "users" },
+                { "id": "dept", "vi": "Bộ môn", "icon": "briefcase" },
+                { "id": "club", "vi": "Câu lạc bộ", "icon": "sparkles" },
+                { "id": "other", "vi": "Khác", "icon": "message" }
+              ]
+            }
+          },
+          // Step 2: Member search + chips
+          "step2": {
+            // Selected-member chips
+            "chipArea": {
+              "padding": "8px 10px",
+              "background": "var(--edu-bg)",
+              "borderRadius": 8,
+              "border": "1px solid var(--edu-border)",
+              "chip": {
+                "padding": "4px 4px 4px 10px",
+                "borderRadius": 99,
+                "background": "memberColor + '14'",
+                "border": "1px solid memberColor + '33'",
+                "miniAvatar": {
+                  "size": 18,
+                  "background": "memberColor + '22'",
+                  "fontSize": 9,
+                  "fontWeight": 800
+                },
+                "labelFontSize": 12,
+                "labelFontWeight": 700,
+                "labelColor": "memberColor",
+                "removeBtnSize": 16
+              }
+            },
+            // Search field
+            "searchField": {
+              "paddingLeft": 34,
+              "icon": {
+                "name": "search",
+                "size": 13,
+                "color": "var(--edu-text-muted)"
+              },
+              "placeholder": "Tìm theo tên hoặc vai trò…"
+            },
+            // User list (bordered container)
+            "userList": {
+              "border": "1px solid var(--edu-border)",
+              "borderRadius": 10,
+              "row": {
+                "padding": "10px 14px",
+                "divider": "1px solid var(--edu-border)",
+                "checkedBackground": "pColor + '0A'",
+                "customCheckbox": {
+                  "size": 18,
+                  "borderRadius": 5,
+                  "checkedBackground": "pColor",
+                  "checkedIcon": "check/11px"
+                },
+                "avatar": {
+                  "size": 32,
+                  "borderRadius": "50%",
+                  "background": "memberColor + '22'",
+                  "fontSize": 11,
+                  "fontWeight": 800
+                },
+                "nameFontSize": 13,
+                "nameFontWeight": 700,
+                "roleFontSize": 11,
+                "roleColor": "var(--edu-text-muted)"
+              },
+              "emptyState": {
+                "fontSize": 12.5,
+                "color": "var(--edu-text-muted)",
+                "text": "Không có người dùng nào khớp."
+              }
+            },
+            "minMembersRequired": 1
+          },
+          // Footer
+          "footer": {
+            "padding": "14px 22px",
+            "background": "var(--edu-bg)",
+            "borderTop": "1px solid var(--edu-border)"
+          }
+        },
+
+        // ── Group info panel (GroupInfoPanel, 320px slide-in from right) ────
+        // Lines 868–1139 in messaging.jsx
+        "groupInfoPanel": {
+          "width": 320,
+          "side": "right",
+          "animation": "msg-slide-in 0.22s ease-out (translateX(100%)→0)",
+          "backdrop": "rgba(20,30,50,0.35) + blur(2px)",
+          "background": "var(--edu-card)",
+          "boxShadow": "-12px 0 40px rgba(0,0,0,0.18)",
+          // Header
+          "header": {
+            "padding": "16px 18px",
+            "titleFontSize": 14,
+            "titleFontWeight": 800,
+            // Edit button (admin only, icon-button 28×28)
+            "editBtn": {
+              "size": 28,
+              "borderRadius": 7,
+              "adminOnly": true,
+              "icon": "penLine/13px"
+            }
+          },
+          // Avatar + name section
+          "avatarSection": {
+            "padding": "22px 18px",
+            "background": "groupColor + '08'",
+            "avatar": {
+              "size": 80,
+              "borderRadius": 20,
+              "background": "groupColor + '22'",
+              "border": "3px solid groupColor + '33'",
+              "fontSize": 22,
+              "fontWeight": 900
+            },
+            // Admin-only avatar-edit badge overlaid on avatar
+            "avatarEditBadge": {
+              "size": 28,
+              "borderRadius": "50%",
+              "background": "pColor",
+              "border": "3px solid var(--edu-card)",
+              "position": "bottom-right -4px -4px",
+              "adminOnly": true,
+              "icon": "penLine/11px"
+            },
+            // View mode
+            "nameFontSize": 16,
+            "nameFontWeight": 800,
+            "descFontSize": 12,
+            "descColor": "var(--edu-text-muted)",
+            // Member count pill
+            "memberCountPill": {
+              "padding": "3px 9px",
+              "borderRadius": 99,
+              "background": "var(--edu-bg)",
+              "border": "1px solid var(--edu-border)",
+              "fontSize": 11,
+              "fontWeight": 700,
+              "color": "var(--edu-text-secondary)",
+              "icon": { "name": "users", "size": 11 }
+            },
+            // Edit mode: name input + desc textarea, centered, save/cancel buttons
+            "editMode": {
+              "adminOnly": true,
+              "nameInput": {
+                "textAlign": "center",
+                "fontWeight": 800,
+                "fontSize": 16
+              },
+              "descTextarea": {
+                "rows": 2,
+                "resize": "vertical",
+                "fontSize": 12.5
+              }
+            }
+          },
+          // Members section
+          "membersSection": {
+            "sectionLabelFontSize": 10.5,
+            "sectionLabelFontWeight": 800,
+            "sectionLabelColor": "var(--edu-text-muted)",
+            "sectionLabelUppercase": true,
+            // Admin "Thêm" quick-action link (right of section header)
+            "addMemberCTA": {
+              "adminOnly": true,
+              "fontSize": 11.5,
+              "fontWeight": 800,
+              "color": "pColor"
+            },
+            "row": {
+              "padding": "8px 18px",
+              "offlineMemberOpacity": 0.6,
+              // Avatar with online dot
+              "avatar": {
+                "size": 32,
+                "borderRadius": "50%",
+                "background": "memberColor + '22'",
+                "fontSize": 11,
+                "fontWeight": 800,
+                "offlineFilter": "grayscale(20%)"
+              },
+              "onlineDot": {
+                "size": 9,
+                "background": "var(--edu-success)",
+                "border": "2px solid var(--edu-card)",
+                "position": "bottom-right 0 0"
+              },
+              "nameFontSize": 12.5,
+              "nameFontWeight": 700,
+              // "(Bạn)" suffix on self row
+              "selfSuffix": {
+                "fontSize": 10,
+                "color": "var(--edu-text-muted)",
+                "fontWeight": 600
+              },
+              "roleFontSize": 10.5,
+              "roleColor": "var(--edu-text-muted)",
+              // Admin badge (Badge component: bg error-light, color error)
+              "adminBadge": {
+                "text": "Admin",
+                "background": "var(--edu-error-light)",
+                "color": "var(--edu-error)"
+              },
+              // Remove button (admin only, not shown on self or other admins)
+              "removeBtn": {
+                "adminOnly": true,
+                "hiddenForSelf": true,
+                "hiddenForOtherAdmins": true,
+                "size": 22,
+                "borderRadius": 5,
+                "icon": "x/10px/error",
+                "hoverBackground": "var(--edu-error-light)",
+                "hoverBorderColor": "var(--edu-error)"
+              }
+            }
+          },
+          // Pinned messages section
+          "pinnedSection": {
+            // Empty state
+            "emptyState": {
+              "padding": "18px 18px",
+              "textAlign": "center",
+              "fontSize": 12,
+              "fontStyle": "italic",
+              "color": "var(--edu-text-muted)"
+            },
+            // Pinned message row (clickable → scroll to message)
+            "row": {
+              "padding": "10px 18px",
+              "iconBox": {
+                "size": 22,
+                "borderRadius": "50%",
+                "background": "var(--edu-warning) + '22'",
+                "icon": "star/10px/var(--edu-warning)"
+              },
+              "senderFontSize": 11,
+              "senderFontWeight": 800,
+              "senderColor": "var(--edu-text-primary)",
+              "timeFontWeight": 600,
+              "timeColor": "var(--edu-text-muted)",
+              "textFontSize": 12,
+              "textColor": "var(--edu-text-secondary)",
+              "hoverBackground": "var(--edu-bg)"
+            }
+          },
+          // Footer CTAs
+          "footer": {
+            "padding": "14px 18px",
+            "borderTop": "1px solid var(--edu-border)",
+            "leaveBtn": {
+              "label": "Rời nhóm",
+              "border": "1px solid var(--edu-warning) + '55'",
+              "color": "var(--edu-warning)",
+              "background": "var(--edu-warning-light)",
+              "fullWidth": true
+            },
+            "deleteBtn": {
+              "label": "Xoá nhóm",
+              "adminOnly": true,
+              "border": "1px solid var(--edu-error) + '55'",
+              "color": "var(--edu-error)",
+              "background": "var(--edu-error-light)",
+              "fullWidth": true
+            },
+            // Two-step delete confirmation inline
+            "deleteConfirm": {
+              "warningText": "Xoá nhóm là hành động không thể hoàn tác.",
+              "cancelBtn": "ghost",
+              "confirmBtn": "danger",
+              "confirmLabel": "Xác nhận xoá"
+            }
+          }
+        },
+
+        // ── Message context menu (MessageContextMenu) ────────────────────────
+        // Lines 411–476 in messaging.jsx — triggered by right-click / long-press
+        "contextMenu": {
+          "width": 200,
+          "borderRadius": 10,
+          "background": "var(--edu-card)",
+          "border": "1px solid var(--edu-border)",
+          "boxShadow": "0 12px 40px rgba(0,0,0,0.18)",
+          "padding": 5,
+          "animation": "msg-ctx-in 0.12s ease-out (opacity + translateY(-3px)→0)",
+          "closeOnEscape": true,
+          "backdropClickDismiss": true,
+          // Viewport clamping: position clamped to keep menu within viewport bounds
+          "viewportClamp": true,
+          // 4 items
+          "items": [
+            {
+              "id": "reply",
+              "icon": "arrowLeft",
+              "label": "Trả lời",
+              "alwaysEnabled": true
+            },
+            {
+              "id": "pin",
+              "icon": "star",
+              "label": "Ghim tin nhắn",
+              // Enabled only for: direct messages (always) OR group messages when selfIsAdmin
+              "enabledWhen": "!isGroup || selfIsGroupAdmin",
+              "disabledHint": "Chỉ admin mới có thể ghim"
+            },
+            {
+              "id": "copy",
+              "icon": "fileText",
+              "label": "Sao chép văn bản",
+              "alwaysEnabled": true
+            },
+            {
+              "id": "delete",
+              "icon": "x",
+              "label": "Xóa",
+              "danger": true,
+              // Only own messages, and only within 1 hour of sending
+              "enabledWhen": "isMine && withinOneHour",
+              "disabledHint": "Chỉ xoá tin nhắn của bạn | Đã quá 1 giờ",
+              // Delete requires confirm dialog before executing
+              "requiresConfirm": true
+            }
+          ],
+          // Danger item styling
+          "dangerItem": {
+            "color": "var(--edu-error)",
+            "iconColor": "var(--edu-error)",
+            "hoverBackground": "var(--edu-error-light)",
+            "borderTopSeparator": "1px solid var(--edu-border)"
+          },
+          "itemRow": {
+            "padding": "8px 10px",
+            "borderRadius": 7,
+            "gap": 9,
+            "fontSize": 13,
+            "fontWeight": 600,
+            "disabledOpacity": 0.4
+          }
+        },
+
+        // ── Reply / quote (ReplyStrip + ChatBubble quoted block) ────────────
+        // ReplyStrip: lines 480–514; ChatBubble quote: lines 364–389
+        "replyQuote": {
+          // Strip shown above input while composing a reply
+          "replyStrip": {
+            "padding": "8px 12px",
+            "marginBottom": 8,
+            "background": "pColor + '0F'",
+            "border": "1px solid pColor + '33'",
+            "borderLeft": "4px solid pColor",
+            "borderRadius": 9,
+            "animation": "msg-reply-in 0.15s ease-out (opacity + translateY(4px)→0)",
+            "labelFontSize": 10.5,
+            "labelFontWeight": 800,
+            "labelColor": "pColor",
+            "labelUppercase": true,
+            "labelLetterSpacing": "0.04em",
+            "previewFontSize": 12,
+            "previewColor": "var(--edu-text-secondary)",
+            "previewOverflow": "single-line ellipsis",
+            "cancelBtn": { "size": 22, "borderRadius": 5, "icon": "x/12px" }
+          },
+          // Quoted block inside the sent/received bubble
+          "quotedBubble": {
+            "padding": "6px 10px",
+            "marginBottom": 8,
+            "marginTop": -2,
+            "borderRadius": 8,
+            // Own message context: white-ish semi-transparent
+            "isMe": {
+              "background": "rgba(255,255,255,0.18)",
+              "borderLeft": "3px solid rgba(255,255,255,0.6)",
+              "senderColor": "rgba(255,255,255,0.9)",
+              "previewColor": "rgba(255,255,255,0.85)"
+            },
+            // Others' message context
+            "isOther": {
+              "background": "var(--edu-bg)",
+              "borderLeft": "3px solid pColor",
+              "senderColor": "pColor",
+              "previewColor": "var(--edu-text-secondary)"
+            },
+            "senderFontSize": 11,
+            "senderFontWeight": 800,
+            "previewFontSize": 12,
+            "previewFontWeight": 500,
+            "previewOverflow": "single-line ellipsis",
+            // Clicking the quote scrolls to the original message
+            "clickable": true
+          }
+        },
+
+        // ── Role permissions ─────────────────────────────────────────────────
+        // Derived from GROUPS_BY_ROLE seeding + selfIsAdmin logic in MessagingScreen
+        "rolePermissions": {
+          // All roles can create groups; creator becomes admin automatically
+          "createGroup": ["teacher", "principal", "student", "parent"],
+          // Group admin = the user who created the group (selfIsAdmin: true in seed)
+          // or whoever is flagged admin in GROUP_MEMBERS_BY_GROUP
+          "groupAdmin": {
+            "description": "Group creator is admin; additional admins can be designated",
+            "seedExamples": {
+              "teacher": "selfIsAdmin: true on gT2 (homeroom group they own)",
+              "principal": "selfIsAdmin: true on gT3 + gA1",
+              "student": "selfIsAdmin: false on all seeded groups",
+              "parent": "selfIsAdmin: false on all seeded groups"
+            }
+          },
+          // Pin a message: allowed for direct messages (always) and group messages only when selfIsGroupAdmin
+          "pinMessage": "!isGroup || selfIsGroupAdmin",
+          // Delete a message: only own messages, and only within 1 hour of send time
+          "deleteMessage": "isMine && withinOneHour",
+          // Remove a member: admin only, cannot remove self or other admins
+          "removeMember": "isAdmin && !targetIsSelf && !targetIsAdmin",
+          // Edit group name/description/avatar: admin only
+          "editGroupInfo": "isAdmin",
+          // Delete entire group: admin only (with confirmation step)
+          "deleteGroup": "isAdmin"
+        },
+
+        // ── States ───────────────────────────────────────────────────────────
+        "states": {
+          // Empty: user has no groups
+          "emptyGroups": {
+            "icon": {
+              "name": "users",
+              "size": 36,
+              "color": "var(--edu-border)",
+              "strokeWidth": 1.4
+            },
+            "titleFontSize": 13,
+            "titleFontWeight": 700,
+            "titleColor": "var(--edu-text-secondary)",
+            "subtitleFontSize": 11.5,
+            "subtitleColor": "var(--edu-text-muted)",
+            // Inline "Tạo nhóm mới" primary button
+            "ctaButton": {
+              "variant": "primary",
+              "icon": "plus",
+              "size": "sm",
+              "label": "Tạo nhóm mới"
+            }
+          },
+          // Loading: skeleton bubbles shown during chat-pane switch (320ms)
+          "loadingSkeletonBubbles": {
+            "duration": "320ms",
+            "bubbleCount": 5,
+            "pattern": [
+              "left-220",
+              "left-160",
+              "right-200",
+              "left-240",
+              "right-140"
+            ],
+            "height": 28,
+            "borderRadiusLeft": "16px 16px 16px 4px",
+            "borderRadiusRight": "16px 16px 4px 16px",
+            "animation": "msg-shimmer 1.2s linear infinite (background-position sweep)",
+            "shimmerGradient": "linear-gradient(90deg, var(--edu-bg) 0%, #F2F5F9 50%, var(--edu-bg) 100%)",
+            "staggerDelay": "0.08s per bubble"
+          },
+          // Group member offline: row opacity 0.6, avatar grayscale(20%)
+          "memberOffline": {
+            "rowOpacity": 0.6,
+            "avatarFilter": "grayscale(20%)",
+            "noOnlineDot": true
+          }
+        }
+      }
     },
 
     // ── Notifications Center — US-E10.2 (DR-006) ─────────────────────────────

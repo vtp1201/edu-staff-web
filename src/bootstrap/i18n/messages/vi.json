@@ -1569,9 +1569,25 @@
       "send": "Gửi",
       "typing": "Đang nhập tin nhắn..."
     },
+    "contextMenu": {
+      "copy": "Sao chép văn bản",
+      "delete": "Xóa",
+      "deleteExpired": "Đã quá 1 giờ",
+      "deleteOwnOnly": "Chỉ xoá tin nhắn của bạn",
+      "pin": "Ghim tin nhắn",
+      "pinAdminOnly": "Chỉ admin mới có thể ghim",
+      "reply": "Trả lời"
+    },
     "date": {
       "today": "Hôm nay",
       "yesterday": "Hôm qua"
+    },
+    "deleteDialog": {
+      "body": "Hành động không thể hoàn tác. Tin nhắn sẽ hiển thị dạng \"Tin nhắn đã bị xoá\" trong cuộc trò chuyện.",
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận xoá",
+      "deletedLabel": "Tin nhắn đã bị xoá",
+      "title": "Xoá tin nhắn này?"
     },
     "empty": {
       "cta": "Bắt đầu cuộc hội thoại",
@@ -1584,6 +1600,42 @@
       "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
       "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
     },
+    "group": {
+      "colorLabel": "Màu nhóm",
+      "createButton": "Tạo nhóm",
+      "createTitle": "Tạo nhóm mới",
+      "descLabel": "Mô tả",
+      "descPlaceholder": "Mô tả nhóm (tuỳ chọn)...",
+      "emptyCreateCta": "Tạo nhóm mới",
+      "emptySubtitle": "Tạo nhóm mới để cộng tác với đồng nghiệp.",
+      "emptyTitle": "Bạn chưa tham gia nhóm nào.",
+      "memberCount": "{count} thành viên",
+      "nameLabel": "Tên nhóm",
+      "namePlaceholder": "Nhập tên nhóm...",
+      "noMembersFound": "Không tìm thấy thành viên phù hợp.",
+      "searchMembersPlaceholder": "Tìm thành viên...",
+      "selectedCount": "{count} đã chọn",
+      "stepInfo": "Thông tin nhóm",
+      "stepMembers": "Thêm thành viên",
+      "typeClass": "Lớp học",
+      "typeClub": "Câu lạc bộ",
+      "typeDept": "Bộ môn",
+      "typeLabel": "Loại nhóm",
+      "typeOther": "Khác"
+    },
+    "groupInfo": {
+      "addMembers": "+ Thêm thành viên",
+      "adminBadge": "Admin",
+      "deleteGroup": "Xoá nhóm",
+      "deleteWarning": "Xoá nhóm là hành động không thể hoàn tác.",
+      "editAvatar": "Đổi ảnh đại diện nhóm",
+      "leaveGroup": "Rời nhóm",
+      "membersSection": "THÀNH VIÊN",
+      "noPinned": "Chưa có tin nhắn được ghim.",
+      "pinnedSection": "TIN NHẮN ĐÃ GHIM",
+      "removeMember": "Xoá khỏi nhóm",
+      "title": "Thông tin nhóm"
+    },
     "newMessage": {
       "button": "Tin nhắn mới",
       "searchPlaceholder": "Tìm kiếm người dùng...",
@@ -1591,6 +1643,11 @@
       "title": "Tin nhắn mới"
     },
     "openConversation": "Mở cuộc trò chuyện với {name}",
+    "reply": {
+      "cancelAriaLabel": "Huỷ trả lời",
+      "placeholder": "Trả lời tin nhắn… (Enter để gửi)",
+      "replyingTo": "Đang trả lời {name}"
+    },
     "search": {
       "noGroups": "Không có nhóm",
       "noResults": "Không tìm thấy",

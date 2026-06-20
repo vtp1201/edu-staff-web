@@ -31,7 +31,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | SSE Disconnect Banner + Pending-Message Pill | shell-level (DashboardLayout) | `components/shared/sse-status/` | ⬜ US-E08.6 |
 | Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 |
 | Notifications Center | `(app)/(shared)/notifications` | `features/notification` | 🎨 design-ready (US-E10.2; `notifications.jsx` 1506; SSE decision 0009) |
-| Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1; `messaging.jsx` 1506) |
+| Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1 base; US-E10.4 group-chat design in `messaging.jsx` DR-008 2026-06-20) |
 
 ## Teacher (Epics E02 class-ops, E09 discipline, E11 LMS, E13 workspace, E14 grades)
 
@@ -149,4 +149,4 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/timetable-view.jsx` — Timetable read-only view (US-E15.1 student/parent; US-E15.2 teacher)
   - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
   - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
-  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote (US-E10.4)
+  - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote (US-E10.4; design-spec groupChat section + i18n keys reconciled 2026-06-20)
