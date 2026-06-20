@@ -3724,5 +3724,776 @@
         "375": "padding 12px 16px; selector bar: flex-wrap forces vertical stack; sidebar gap 10px; table horizontal scroll"
       }
     }
+  },
+
+  // ╔══════════════════════════════════════════════════════════════════════════╗
+  // ║  LESSON BANK — Kho bài giảng                                           ║
+  // ║  Source: design_src/edu/lesson-bank.jsx (1506 handoff)                 ║
+  // ║  Routes: /teacher/lesson-bank (upload + manage) · /principal/lesson-bank (read) ║
+  // ║  Roles: teacher (upload + edit/delete own) · principal (school-wide read-only)  ║
+  // ║  US: US-E11.2 (implemented, design-review APPROVED 2026-06-20)         ║
+  // ║  Implementation: src/features/lesson-bank/                             ║
+  // ║  i18n namespace: lessonBank.*                                          ║
+  // ║  DR: DR-004 (reconciled 2026-06-20 — spec entry was the only gap)      ║
+  // ╚══════════════════════════════════════════════════════════════════════════╝
+  "lessonBank": {
+    "routes": {
+      "teacher": "/teacher/lesson-bank",
+      "principal": "/principal/lesson-bank"
+    },
+    "designFile": "design_src/edu/lesson-bank.jsx — LessonBankScreen (teacher + principal role) + UploadLessonDrawer + LessonDetailSheet",
+    "i18nNamespace": "lessonBank",
+    "i18nKeyCount": 65, // keys in src/bootstrap/i18n/messages/vi.json lessonBank section
+    "us": "US-E11.2",
+    "designReviewVerdict": "APPROVED — docs/stories/epics/E11-lms-exams/US-E11.2-lesson-bank/design-review.md",
+
+    // ── Page layout ───────────────────────────────────────────────────────────
+    // LessonBankScreen: main flex:1, overflowY:auto, padding:24px 32px, background:var(--edu-bg)
+    // Inner wrapper: maxWidth:1380, margin:0 auto, flex column, gap:16px
+    "layout": {
+      "pageContainer": {
+        "padding": "24px 32px",
+        "background": "var(--edu-bg)",
+        "flex": 1,
+        "overflowY": "auto"
+      },
+      "innerWrapper": {
+        "maxWidth": 1380,
+        "margin": "0 auto",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 16
+      }
+    },
+
+    // ── Page header ───────────────────────────────────────────────────────────
+    // Row: flex, alignItems:flex-end, gap:16, flexWrap:wrap
+    // Left block: breadcrumb label (11px/700 muted uppercase tracking 0.07em) +
+    //   page-title (22px/800 text-primary) + subtitle (12.5px muted)
+    // Right block: "Của tôi / Toàn trường" owner toggle (teacher only) + "Thêm bài giảng" button
+    "header": {
+      "breadcrumbLabel": {
+        "fontSize": 11,
+        "fontWeight": 700,
+        "color": "var(--edu-text-muted)",
+        "textTransform": "uppercase",
+        "letterSpacing": "0.07em"
+      },
+      "pageTitle": {
+        "fontSize": 22,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)",
+        "marginTop": 4
+      },
+      "subtitle": {
+        "fontSize": 12.5,
+        "color": "var(--edu-text-muted)",
+        "marginTop": 3
+      },
+      "ownerToggle": {
+        "note": "Teacher role only — switches between 'Của tôi' (own lessons) and 'Toàn trường' (school-wide browse)",
+        "borderRadius": 9,
+        "border": "1.5px solid var(--edu-border)",
+        "overflow": "hidden",
+        "background": "var(--edu-card)",
+        "activeBackground": "var(--edu-primary) + '14'",
+        "activeColor": "var(--edu-primary)",
+        "inactiveColor": "var(--edu-text-secondary)",
+        "padding": "8px 14px",
+        "fontSize": 12.5,
+        "fontWeight": 700,
+        "countBadge": {
+          "padding": "1px 7px",
+          "borderRadius": 99,
+          "fontSize": 10,
+          "fontWeight": 800
+        }
+      },
+      "uploadButton": {
+        "icon": "upload",
+        "label": "lessonBank.uploadButton",
+        "note": "Hidden in principal view — principal is read-only"
+      }
+    },
+
+    // ── Filter bar ────────────────────────────────────────────────────────────
+    // Card: background:var(--edu-card), borderRadius:12, border:1px solid var(--edu-border)
+    // padding:14px 16px, flex row, gap:10, flexWrap:wrap
+    "filterBar": {
+      "container": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "padding": "14px 16px",
+        "gap": 10
+      },
+      "searchInput": {
+        "flex": "1 1 240px",
+        "minWidth": 200,
+        "padding": "9px 12px 9px 34px",
+        "borderRadius": 9,
+        "border": "1.5px solid var(--edu-border)",
+        "fontSize": 12.5,
+        "icon": "search",
+        "iconSize": 14,
+        "placeholder": "lessonBank.filter.searchPlaceholder"
+      },
+      "subjectDropdown": {
+        "minWidth": 170,
+        "icon": "bookOpen",
+        "label": "lessonBank.filter.subjectAriaLabel"
+      },
+      "gradeDropdown": {
+        "minWidth": 140,
+        "icon": "graduationCap",
+        "label": "lessonBank.filter.allSubjects"
+      },
+      "sortDropdown": {
+        "minWidth": 150,
+        "icon": "layers",
+        "options": ["newest", "name", "size"],
+        "i18nKeys": "lessonBank.filter.sort.newest / .title-asc"
+      },
+      "viewToggle": {
+        "borderRadius": 9,
+        "border": "1.5px solid var(--edu-border)",
+        "modes": ["grid", "list"],
+        "activeBackground": "var(--edu-primary) + '14'",
+        "activeColor": "var(--edu-primary)",
+        "padding": "7px 12px",
+        "fontSize": 11.5,
+        "fontWeight": 700,
+        "a11y": "role='group' + aria-label (lessonBank.filter.layoutAriaLabel)"
+      }
+    },
+
+    // ── Lesson card (grid view) ───────────────────────────────────────────────
+    // Grid: repeat(auto-fill, minmax(260px, 1fr)), gap:16px
+    "gridCard": {
+      "grid": {
+        "templateColumns": "repeat(auto-fill, minmax(260px, 1fr))",
+        "gap": 16
+      },
+      "card": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "boxShadow": "var(--edu-shadow-card)",
+        "overflow": "hidden",
+        "hoverTransform": "translateY(-2px)",
+        "hoverShadow": "var(--edu-shadow-card-hover)",
+        "hoverTransition": "transform 0.15s, box-shadow 0.15s"
+      },
+      "thumbnail": {
+        "height": 140,
+        "width": "100%",
+        "borderRadius": "10px 10px 0 0",
+        "background": "ft.color + '12'",
+        "backgroundGradient": "linear-gradient(135deg, ft.color+'10' 0%, ft.color+'22' 100%)",
+        "iconSize": 44,
+        "iconStrokeWidth": 1.6,
+        "fileTypeBadge": {
+          "position": "absolute bottom:10px left:10px",
+          "padding": "3px 8px",
+          "borderRadius": 6,
+          "background": "ft.color",
+          "color": "#fff",
+          "fontSize": 10,
+          "fontWeight": 800
+        },
+        "subjectBadge": {
+          "position": "absolute top:10px right:10px",
+          "padding": "4px 10px",
+          "borderRadius": 99,
+          "background": "#fff",
+          "fontSize": 10.5,
+          "fontWeight": 700,
+          "dotSize": 6
+        },
+        "videoPlayOverlay": {
+          "circle": {
+            "width": 44,
+            "height": 44,
+            "borderRadius": "50%",
+            "background": "rgba(255,255,255,0.92)"
+          },
+          "iconSize": 18
+        }
+      },
+      "cardBody": {
+        "padding": 14,
+        "flexGrow": 1,
+        "gap": 8
+      },
+      "titleText": {
+        "fontSize": 14,
+        "fontWeight": 700,
+        "lineClamp": 2,
+        "color": "var(--edu-text-primary)"
+      },
+      "metaLine1": {
+        "fontSize": 12,
+        "color": "var(--edu-text-muted)",
+        "subjectColor": "ft.color",
+        "fontWeight": 700
+      },
+      "metaLine2": {
+        "fontSize": 11,
+        "color": "var(--edu-text-muted)",
+        "icon": "upload",
+        "iconSize": 10
+      },
+      "visibilityBadge": {
+        "display": "inline-flex",
+        "padding": "2px 8px",
+        "borderRadius": 99,
+        "background": "vis.color + '14'",
+        "color": "vis.color",
+        "fontSize": 10,
+        "fontWeight": 700
+      },
+      "statsRow": {
+        "fontSize": 10.5,
+        "color": "var(--edu-text-muted)",
+        "icons": ["eye", "download"]
+      },
+      "actionRow": {
+        "marginTop": 6,
+        "paddingTop": 10,
+        "borderTop": "1px solid var(--edu-border)",
+        "gap": 4,
+        "buttons": {
+          "view": {
+            "color": "var(--edu-primary)",
+            "icon": "eye",
+            "label": "lessonBank.detail.edit → 'Xem'"
+          },
+          "edit": {
+            "color": "var(--edu-text-secondary)",
+            "icon": "penLine",
+            "label": "'Sửa'",
+            "note": "teacher + own lesson only"
+          },
+          "delete": {
+            "color": "var(--edu-error)",
+            "icon": "trash",
+            "label": "'Xoá'",
+            "note": "teacher + own lesson only"
+          }
+        },
+        "buttonStyle": {
+          "flex": 1,
+          "padding": "6px 10px",
+          "borderRadius": 6,
+          "fontSize": 11.5,
+          "fontWeight": 700
+        }
+      }
+    },
+
+    // ── List view ─────────────────────────────────────────────────────────────
+    // Card wrapper: background:var(--edu-card), borderRadius:12, border:1px solid var(--edu-border), overflow:hidden
+    // Row columns: 56px | 1fr | 120px | 110px | 100px | 110px | 200px (thumbnail | title | subject | grade | size | date | actions)
+    "listView": {
+      "wrapper": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "overflow": "hidden"
+      },
+      "header": {
+        "fontSize": 10.5,
+        "fontWeight": 800,
+        "color": "var(--edu-text-muted)",
+        "letterSpacing": "0.06em",
+        "textTransform": "uppercase",
+        "padding": "10px 16px",
+        "background": "var(--edu-bg)",
+        "borderBottom": "1px solid var(--edu-border)",
+        "columns": [
+          "(thumb)",
+          "Tên bài giảng",
+          "Môn",
+          "Khối",
+          "Dung lượng",
+          "Tải lên",
+          "Thao tác"
+        ]
+      },
+      "row": {
+        "gridTemplateColumns": "56px 1fr 120px 110px 100px 110px 200px",
+        "gap": 14,
+        "padding": "12px 16px",
+        "borderBottom": "1px solid var(--edu-border)",
+        "hoverBackground": "var(--edu-bg)",
+        "transition": "background 0.12s"
+      },
+      "thumbnail": { "width": 56, "height": 56, "borderRadius": 8 }
+    },
+
+    // ── File-type vocabulary ──────────────────────────────────────────────────
+    // Used for thumbnail background, icon, and badge color
+    "fileTypes": {
+      "pdf": { "color": "#E5363A", "icon": "fileText", "accept": ".pdf" },
+      "pptx": { "color": "#D24726", "icon": "layers", "accept": ".ppt,.pptx" },
+      "docx": {
+        "color": "#2A6FDB",
+        "icon": "fileText",
+        "accept": ".doc,.docx"
+      },
+      "mp4": {
+        "color": "#7B5EA7",
+        "icon": "fileVideo",
+        "accept": ".mp4,.mov,.webm"
+      },
+      "link": { "color": "#13DEB9", "icon": "externalLink", "accept": "" },
+      "img": {
+        "color": "#FFAE1F",
+        "icon": "image",
+        "accept": ".png,.jpg,.jpeg,.webp"
+      }
+    },
+
+    // ── Visibility vocabulary ─────────────────────────────────────────────────
+    "visibility": {
+      "private": {
+        "color": "var(--edu-text-secondary)",
+        "icon": "lock",
+        "i18nKey": "lessonBank.visibility.private"
+      },
+      "dept": {
+        "color": "var(--edu-primary)",
+        "icon": "users",
+        "i18nKey": "lessonBank.visibility.dept"
+      },
+      "school": {
+        "color": "var(--edu-success)",
+        "icon": "globe",
+        "i18nKey": "lessonBank.visibility.school"
+      }
+    },
+
+    // ── Upload drawer ─────────────────────────────────────────────────────────
+    // Right slide-in, 480px wide, animation lb-slide-in 0.22s ease-out
+    // Triggered by FAB (bottom-right 56×56) or header "Thêm bài giảng" button
+    "uploadDrawer": {
+      "width": 480,
+      "maxWidth": "100vw",
+      "position": "fixed top:0 right:0 bottom:0",
+      "background": "var(--edu-card)",
+      "boxShadow": "-12px 0 40px rgba(0,0,0,0.18)",
+      "animation": "lb-slide-in 0.22s ease-out",
+      "overlay": {
+        "background": "rgba(20,30,50,0.45)",
+        "backdropFilter": "blur(2px)"
+      },
+      "header": {
+        "padding": "18px 22px",
+        "borderBottom": "1px solid var(--edu-border)",
+        "iconBox": {
+          "width": 36,
+          "height": 36,
+          "borderRadius": 10,
+          "background": "var(--edu-primary)+'18'"
+        },
+        "title": { "fontSize": 15, "fontWeight": 800 },
+        "subtitle": {
+          "fontSize": 11.5,
+          "color": "var(--edu-text-muted)",
+          "marginTop": 2
+        }
+      },
+      "body": { "padding": "20px 22px", "gap": 18 },
+      "footer": {
+        "padding": "14px 22px",
+        "borderTop": "1px solid var(--edu-border)"
+      },
+      "lessonTypeToggle": {
+        "note": "3-button grid: Tệp tin | Video | Liên kết — only shown on create (not edit)",
+        "gridColumns": "repeat(3, 1fr)",
+        "gap": 6,
+        "activeButtonBorder": "1.5px solid var(--edu-primary)",
+        "activeBackground": "var(--edu-primary)+'0E'",
+        "fontSize": 12,
+        "fontWeight": 700,
+        "iconSize": 16
+      },
+      "dropZone": {
+        "note": "Drag & drop area — shows file name + size once picked; clicking also triggers file picker",
+        "border": "2px dashed var(--edu-border)",
+        "activeBorder": "2px dashed var(--edu-primary)",
+        "borderRadius": 10,
+        "padding": "20px 18px",
+        "textAlign": "center",
+        "cursor": "pointer",
+        "iconSize": 28,
+        "titleFontSize": 13,
+        "hintFontSize": 11.5,
+        "acceptedTypes": "PDF, PPTX, DOCX, MP4 · tối đa 500 MB",
+        "a11y": "Implement as <button type='button'> for native keyboard (Enter/Space); aria-label=lessonBank.upload.dropZoneAriaLabel"
+      },
+      "linkInput": {
+        "placeholder": "https://…",
+        "icon": "link",
+        "iconSize": 14,
+        "note": "Shown when Liên kết type selected; replaces drop zone"
+      },
+      "formFields": {
+        "titleInput": {
+          "maxLength": 200,
+          "counterDisplay": true,
+          "required": true
+        },
+        "subjectSelect": {
+          "required": true,
+          "options": "from SubjectOption[] in ViewModel"
+        },
+        "gradeSelect": { "required": true, "values": [10, 11, 12] },
+        "tagsInput": {
+          "required": false,
+          "placeholder": "VD: Chương 1, Ôn tập, CT2018"
+        },
+        "visibilityRadioGroup": {
+          "style": "stacked radio cards with icon + description per option",
+          "borderActive": "1.5px solid vis.color",
+          "backgroundActive": "vis.color + '0E'",
+          "padding": "10px 12px",
+          "borderRadius": 9
+        }
+      },
+      "submitButton": {
+        "states": {
+          "createEnabled": "icon:upload + label:'Tải lên'",
+          "editEnabled": "icon:check + label:'Lưu thay đổi'",
+          "disabled": "title empty OR no file/link selected"
+        }
+      }
+    },
+
+    // ── FAB (floating action button) ──────────────────────────────────────────
+    // Visible when drawer + detail sheet both closed; teacher role only
+    "fab": {
+      "size": 56,
+      "borderRadius": "50%",
+      "background": "var(--edu-primary)",
+      "color": "#fff",
+      "icon": "plus",
+      "iconSize": 22,
+      "iconStrokeWidth": 2.6,
+      "position": "fixed bottom:28px right:28px",
+      "zIndex": 60,
+      "boxShadow": "0 8px 24px var(--edu-primary)+'55'",
+      "hoverTransform": "scale(1.08)",
+      "hoverShadow": "0 12px 28px var(--edu-primary)+'77'",
+      "transition": "transform 0.15s, box-shadow 0.15s",
+      "title": "Thêm bài giảng"
+    },
+
+    // ── Upload in-progress / error placeholder (grid card) ────────────────────
+    "uploadPlaceholder": {
+      "thumbnail": {
+        "height": 140,
+        "inProgress": {
+          "background": "var(--edu-primary)+'08'",
+          "icon": "upload",
+          "iconSize": 36
+        },
+        "error": {
+          "background": "var(--edu-error)+'08'",
+          "icon": "alertTriangle",
+          "iconSize": 36
+        }
+      },
+      "progressBar": {
+        "height": 6,
+        "color": "var(--edu-primary)",
+        "errorColor": "var(--edu-error)"
+      },
+      "border": {
+        "inProgress": "1px dashed var(--edu-primary)",
+        "error": "1px solid var(--edu-error)"
+      },
+      "actions": {
+        "inProgress": [{ "label": "Huỷ", "color": "var(--edu-text-muted)" }],
+        "error": [
+          { "label": "Bỏ qua", "color": "var(--edu-text-muted)" },
+          { "label": "Thử lại", "color": "var(--edu-error)", "icon": "upload" }
+        ]
+      }
+    },
+
+    // ── Detail sheet (read-only) ──────────────────────────────────────────────
+    // Same slide-in pattern as upload drawer — 480px, lb-slide-in animation
+    "detailSheet": {
+      "width": 480,
+      "animation": "lb-slide-in 0.22s ease-out",
+      "header": {
+        "padding": "16px 22px",
+        "label": "lessonBank.detail.title",
+        "fontSize": 10.5,
+        "fontWeight": 800,
+        "textTransform": "uppercase"
+      },
+      "preview": {
+        "height": 220,
+        "background": "linear-gradient(135deg, ft.color+'14' 0%, ft.color+'28' 100%)",
+        "pdfPreview": {
+          "width": 130,
+          "height": 170,
+          "background": "#fff",
+          "borderRadius": 6,
+          "boxShadow": "0 8px 24px rgba(0,0,0,0.16)",
+          "padding": 14
+        },
+        "videoPreview": {
+          "width": 200,
+          "height": 130,
+          "background": "#1F2937",
+          "borderRadius": 8
+        },
+        "fileTypeBadge": {
+          "position": "absolute top:14px left:14px",
+          "padding": "4px 10px",
+          "borderRadius": 6,
+          "background": "ft.color",
+          "color": "#fff",
+          "fontSize": 10.5,
+          "fontWeight": 800
+        }
+      },
+      "subjectPill": {
+        "display": "inline-flex",
+        "padding": "3px 10px",
+        "borderRadius": 99,
+        "background": "subj.color+'14'",
+        "color": "subj.color",
+        "fontSize": 11,
+        "fontWeight": 700,
+        "dotSize": 6
+      },
+      "titleText": { "fontSize": 17, "fontWeight": 800, "lineHeight": 1.35 },
+      "tagChips": {
+        "padding": "3px 10px",
+        "borderRadius": 99,
+        "background": "var(--edu-bg)",
+        "fontSize": 11,
+        "fontWeight": 600,
+        "border": "1px solid var(--edu-border)"
+      },
+      "statsGrid": {
+        "columns": 3,
+        "gap": 8,
+        "cell": {
+          "display": "flex",
+          "alignItems": "center",
+          "gap": 8,
+          "padding": "10px 12px",
+          "borderRadius": 9,
+          "background": "var(--edu-bg)",
+          "border": "1px solid var(--edu-border)"
+        },
+        "value": {
+          "fontSize": 18,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)"
+        },
+        "label": {
+          "fontSize": 10,
+          "fontWeight": 600,
+          "color": "var(--edu-text-muted)",
+          "textTransform": "uppercase"
+        }
+      },
+      "metaTable": {
+        "background": "var(--edu-bg)",
+        "borderRadius": 10,
+        "border": "1px solid var(--edu-border)",
+        "padding": "12px 14px",
+        "rowGap": 8,
+        "fields": [
+          "Người tải lên (Avatar + name)",
+          "Ngày tải lên",
+          "Tệp tin / URL",
+          "Quyền xem"
+        ]
+      },
+      "actionBar": {
+        "padding": "14px 20px",
+        "borderTop": "1px solid var(--edu-border)",
+        "gap": 8,
+        "buttons": {
+          "download": {
+            "icon": "download",
+            "label": "lessonBank.detail.download",
+            "variant": "secondary"
+          },
+          "copyLink": {
+            "icon": "link",
+            "label": "'Copy link'",
+            "variant": "ghost"
+          },
+          "share": {
+            "icon": "share2",
+            "label": "'Chia sẻ'",
+            "variant": "ghost"
+          },
+          "edit": {
+            "icon": "penLine",
+            "label": "lessonBank.detail.edit",
+            "variant": "ghost",
+            "note": "owner only"
+          },
+          "delete": {
+            "icon": "trash",
+            "label": "lessonBank.detail.delete",
+            "color": "var(--edu-error)",
+            "note": "owner only"
+          }
+        }
+      }
+    },
+
+    // ── Delete confirm dialog ─────────────────────────────────────────────────
+    "deleteDialog": {
+      "style": "centered overlay modal (not sheet)",
+      "width": 440,
+      "maxWidth": "calc(100vw - 32px)",
+      "borderRadius": 16,
+      "background": "var(--edu-card)",
+      "padding": "28px 28px 20px",
+      "iconBox": {
+        "size": 52,
+        "borderRadius": 16,
+        "background": "var(--edu-error)+'12'"
+      },
+      "title": {
+        "fontSize": 17,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)"
+      },
+      "body": {
+        "fontSize": 13.5,
+        "color": "var(--edu-text-muted)",
+        "lineHeight": 1.6
+      },
+      "actions": {
+        "cancelButton": {
+          "label": "lessonBank.detail.confirmCancel",
+          "variant": "secondary"
+        },
+        "deleteButton": {
+          "label": "lessonBank.detail.confirmDelete",
+          "color": "var(--edu-error)"
+        }
+      },
+      "i18nKeys": "lessonBank.detail.confirmDeleteTitle / .confirmDeleteBody / .confirmDelete / .confirmCancel"
+    },
+
+    // ── Toast notifications ───────────────────────────────────────────────────
+    "toast": {
+      "position": "fixed bottom:24px left:50% transform:translateX(-50%)",
+      "background": "#1F2937",
+      "color": "#fff",
+      "padding": "10px 18px",
+      "borderRadius": 10,
+      "fontSize": 13,
+      "fontWeight": 600,
+      "zIndex": 1100,
+      "animation": "lb-toast-in 0.2s ease-out",
+      "icon": "check",
+      "iconColor": "var(--edu-success)",
+      "messages": {
+        "uploaded": "lessonBank.toast.uploaded",
+        "deleted": "lessonBank.toast.deleted"
+      }
+    },
+
+    // ── Empty states ──────────────────────────────────────────────────────────
+    "emptyStates": {
+      "noLessons": {
+        "variant": "all",
+        "icon": "bookOpen",
+        "iconBoxSize": 96,
+        "iconBoxBorderRadius": 24,
+        "iconBoxBackground": "var(--edu-primary)+'0E'",
+        "iconSize": 44,
+        "iconColor": "var(--edu-primary)+'B0'",
+        "title": "lessonBank.empty.title",
+        "body": "lessonBank.empty.body",
+        "cta": { "label": "lessonBank.empty.cta", "icon": "upload" },
+        "border": "1px dashed var(--edu-border)"
+      },
+      "noMatch": {
+        "variant": "filter",
+        "title": "lessonBank.empty.noMatch",
+        "body": "lessonBank.empty.noMatchBody",
+        "cta": { "label": "'Bỏ lọc'", "icon": "x", "variant": "secondary" }
+      }
+    },
+
+    // ── Skeleton state ────────────────────────────────────────────────────────
+    "skeleton": {
+      "a11y": "role='status' + sr-only text 'Đang tải...'",
+      "grid": "repeat(auto-fill, minmax(260px, 1fr)) — same as populated grid",
+      "cardHeight": 280,
+      "animationClass": "animate-pulse"
+    },
+
+    // ── Role-variant summary ──────────────────────────────────────────────────
+    "roleVariants": {
+      "teacher": {
+        "defaultOwnerFilter": "me (own lessons only on first load)",
+        "ownerToggle": true,
+        "canUpload": true,
+        "canEdit": "own lessons only (currentUserId === lesson.teacherId)",
+        "canDelete": "own lessons only",
+        "visibilityFilter": "none — sees own (all visibilities) + others (dept/school only)",
+        "showFAB": true
+      },
+      "principal": {
+        "defaultOwnerFilter": "all — school-wide by default",
+        "ownerToggle": false,
+        "canUpload": false,
+        "canEdit": false,
+        "canDelete": false,
+        "visibilityFilter": "visibility=school only (or dept within same department)",
+        "showFAB": false,
+        "note": "Upload / edit / delete buttons hidden; filter bar still active"
+      }
+    },
+
+    // ── API contract (mock-first — lms service not yet shipped) ───────────────
+    "api": {
+      "note": "lms service — mock-first per decision 0014; US-053 BE deferred",
+      "list": "GET  /lms/api/v1/lessons?visibility=&subjectId=&departmentId=&search=&sort=&cursor= → LessonEntity[]",
+      "upload": "POST /lms/api/v1/lessons (multipart/form-data OR { url, title, … })",
+      "update": "PUT  /lms/api/v1/lessons/:id",
+      "delete": "DELETE /lms/api/v1/lessons/:id"
+    },
+
+    // ── Accessibility notes (for /fe implementation) ──────────────────────────
+    "a11yNotes": [
+      "Drop-zone: implement as <button type='button'> (not div role=button) — native keyboard (Enter/Space) + focus-visible:ring-ring. APPROVED in design-review.",
+      "Drop-zone keyboard alternative: <input type='file'> hidden, triggered by button click — essential for keyboard-only users who cannot drag.",
+      "Upload progress: when upload starts, inject aria-live='polite' region announcing progress (e.g. 'Đang tải lên 42%'); announce completion 'Đã thêm bài giảng'.",
+      "View toggle (Grid/List): wrap in role='group' + aria-label (lessonBank.filter.layoutAriaLabel). APPROVED in design-review.",
+      "Owner toggle (Của tôi / Toàn trường): role='group' + aria-label; active button aria-pressed=true.",
+      "Lesson cards: interactive action buttons (Xem/Sửa/Xoá) need distinct aria-label including lesson title (e.g. 'Xoá bài giảng – Bài giảng Mệnh đề'). Do NOT rely on visual context alone.",
+      "Detail sheet: focus-trap (Radix Sheet maintains this); on close return focus to trigger card.",
+      "Delete dialog: modal with role='dialog', aria-modal='true', aria-labelledby=title; focus on 'Huỷ' on open (destructive default to safe action).",
+      "Visibility radio group: stacked radio inputs (not div-based); label wraps radio + icon + text per option.",
+      "Toast: role='status' + aria-live='polite' for success; role='alert' + aria-live='assertive' only for errors.",
+      "Color-only status (file type badge color): file type label text always accompanies color — no pure-color-only information.",
+      "File size display: ensure screen-reader-friendly format ('8.4 MB', not raw bytes or abbreviations without units)."
+    ],
+
+    // ── Responsive ────────────────────────────────────────────────────────────
+    "responsive": {
+      "breakpoints": {
+        "1380": "Default — grid minmax(260px, 1fr) fills full width; list view all 7 columns visible",
+        "1024": "Grid collapses to ~3 columns; list view action column may truncate edit/delete to icon-only",
+        "768": "Grid 2 columns (minmax 240px); filter bar wraps — search full-width on own row; list view scrolls horizontally within card wrapper; upload drawer max-width 100vw",
+        "375": "Grid 1 column; filter bar stacks vertically; padding 12px 16px; FAB stays bottom:28px right:16px; drawer full width"
+      }
+    }
   }
 }
