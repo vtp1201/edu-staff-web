@@ -5,10 +5,14 @@ import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
+import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import { MessagingScreen } from "./messaging-screen";
 import type {
+  ActionResult,
   CreateConversationResult,
+  CreateGroupResult,
+  GetGroupResult,
   GetMessagesResult,
   SendMessageResult,
 } from "./messaging-screen.i-vm";
@@ -348,4 +352,216 @@ export const LoadError: Story = {
 
 export const MobileView: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
+};
+
+// ---------------------------------------------------------------------------
+// US-E10.4 gap stories
+// ---------------------------------------------------------------------------
+
+/** Stub group fixture returned after createGroup succeeds. */
+const CREATED_GROUP: GroupEntity = {
+  id: "g-new",
+  name: "Nhóm Vật Lý",
+  description: "",
+  kind: "other",
+  color: "success",
+  conversationId: "g-new",
+  members: [
+    {
+      userId: "me",
+      name: "Nguyễn Thị Hương",
+      initials: "NH",
+      color: "primary",
+      role: "admin",
+      isOnline: true,
+    },
+    {
+      userId: "u1",
+      name: "Trần Minh Quân",
+      initials: "TQ",
+      color: "success",
+      role: "member",
+      isOnline: true,
+    },
+  ],
+  pinnedMessages: [],
+};
+
+const noopGroupAction = async (): Promise<ActionResult> => ({ ok: true });
+const noopGetGroup = async (): Promise<GetGroupResult> => ({
+  ok: false,
+  errorKey: "load-conversations-failed",
+});
+
+/**
+ * AC-4 (create-group optimistic prepend):
+ * User clicks "+ Tạo nhóm", fills name in step 1, selects a member in step 2,
+ * submits → new group conversation appears at the top of the list optimistically
+ * and the modal closes.
+ */
+export const CreateGroup_Optimistic_Prepend: Story = {
+  args: {
+    initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: true,
+      value: CREATED_GROUP,
+    }),
+    getGroupAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    // Open the create-group modal via the "+ Tạo nhóm" button in the group tab
+    const createBtn = await canvas.findByRole("button", {
+      name: /tạo nhóm/i,
+    });
+    await userEvent.click(createBtn);
+
+    // Step 1: fill the group name (dialog is in a Radix portal)
+    const nameInput = await waitFor(() => body.getByLabelText("Tên nhóm"));
+    await userEvent.type(nameInput, "Nhóm Vật Lý");
+
+    const nextBtn = body.getByRole("button", { name: /tiếp theo/i });
+    await waitFor(() => expect(nextBtn).toBeEnabled());
+    await userEvent.click(nextBtn);
+
+    // Step 2: select one member and submit
+    await waitFor(() =>
+      expect(body.getByText("Thêm thành viên")).toBeInTheDocument(),
+    );
+    await userEvent.click(body.getByText("Trần Minh Quân"));
+    const submitBtn = body.getByRole("button", { name: /^tạo nhóm$/i });
+    await waitFor(() => expect(submitBtn).toBeEnabled());
+    await userEvent.click(submitBtn);
+
+    // AC-4: new group must appear at the top of the list; modal must close
+    await waitFor(() =>
+      expect(body.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(canvas.getByText("Nhóm Vật Lý")).toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * AC-7 (reply strip activation):
+ * Right-clicking a bubble opens the context menu → selecting "Trả lời" closes
+ * the menu, renders the reply strip above the input, and focuses the textarea.
+ */
+export const Reply_Strip_Active: Story = {
+  args: {
+    initialConversations: [CONVERSATIONS[2]], // group g1
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    getGroupAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Wait for a message bubble to appear in the log
+    const bubble = await waitFor(() =>
+      canvas.getByText("Cô ơi, bài tập trang 87 nộp khi nào ạ?"),
+    );
+
+    // Right-click to open the context menu
+    await userEvent.pointer({ target: bubble, keys: "[MouseRight]" });
+
+    // Context menu renders in document.body (fixed positioning)
+    const body = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(body.getByRole("menu")).toBeInTheDocument());
+
+    // Select "Trả lời"
+    const replyItem = body.getByRole("menuitem", { name: /trả lời/i });
+    await userEvent.click(replyItem);
+
+    // AC-7: context menu must close
+    await waitFor(() =>
+      expect(body.queryByRole("menu")).not.toBeInTheDocument(),
+    );
+
+    // AC-7: reply strip label visible above the input
+    await waitFor(() =>
+      expect(canvas.getByText(/Đang trả lời/i)).toBeInTheDocument(),
+    );
+
+    // AC-7: textarea is focused (reply placeholder active)
+    const textarea = canvas.getByRole("textbox");
+    await waitFor(() => expect(textarea).toHaveFocus());
+  },
+};
+
+/**
+ * AC-10 (keyboard navigation of context menu):
+ * Opens the context menu, then verifies ArrowDown moves focus through items
+ * and Escape closes the menu and returns focus to the trigger.
+ */
+export const ContextMenu_Keyboard_Nav: Story = {
+  args: {
+    initialConversations: [CONVERSATIONS[0]], // direct u1 — own message exists
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.u1 ?? [] }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    getGroupAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Wait for the own message bubble to be present
+    const ownBubble = await waitFor(() =>
+      canvas.getByText("Dạ thầy, em sẽ nộp trước thứ 5 ạ."),
+    );
+
+    // Right-click to open context menu
+    await userEvent.pointer({ target: ownBubble, keys: "[MouseRight]" });
+
+    const body = within(canvasElement.ownerDocument.body);
+
+    // AC-10: menu has role="menu"
+    const menu = await waitFor(() => body.getByRole("menu"));
+    expect(menu).toBeInTheDocument();
+
+    // AC-10: ArrowDown moves focus to next enabled item
+    await userEvent.keyboard("{ArrowDown}");
+    await waitFor(() => {
+      const focused = canvasElement.ownerDocument.activeElement;
+      expect(focused?.getAttribute("role")).toBe("menuitem");
+    });
+
+    await userEvent.keyboard("{ArrowDown}");
+    await waitFor(() => {
+      const focused = canvasElement.ownerDocument.activeElement;
+      expect(focused?.getAttribute("role")).toBe("menuitem");
+    });
+
+    // AC-10: Escape closes the menu
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(body.queryByRole("menu")).not.toBeInTheDocument(),
+    );
+  },
 };

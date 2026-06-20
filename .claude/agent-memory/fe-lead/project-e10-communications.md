@@ -56,7 +56,27 @@ US-E10.3 Announcements (admin/principal) — IMPLEMENTED (merged to main 2026-06
 - Tab conflict on merge: TEST_MATRIX E11.1 row was "planned" on branch but "implemented" on main — kept main's E11.1 row + added E10.3 implemented row
 - `fe-worktree list` showed stale us-e11.1 worktree entry but directory didn't exist — `git worktree list` was authoritative
 
-**E10 status:** ALL 3 US complete. Remaining: none in E10.
+US-E10.4 Messaging Enhancements (group chat, DR-008) — IMPLEMENTED (merged to main 2026-06-20, commit 7ef278d, 835 total tests).
+
+**What was built (E10.4):**
+- Domain extensions: GroupEntity, GroupMember; MessageEntity.replyTo+isPinned; GroupKind; MessagingFailure extended with 5 new types; 8 new use-cases (CreateGroup, DeleteGroup, LeaveGroup, AddGroupMembers, RemoveGroupMember, UpdateGroup, PinMessage, DeleteMessage)
+- Infrastructure: group DTOs + mapper extensions, mock repo group fixtures (per-role seeding teacher/principal/student/parent)
+- MESSAGING_EP extended with 7 new social service endpoint constants
+- Presentation: CreateGroupModal (2-step: info+member-select, Radix Dialog, focus trap), GroupInfoPanel (Radix Sheet 320px slide-in, admin-gated edit/add-member/delete), MessageContextMenu (ARIA menu role, ArrowUp/Down/Esc keyboard nav, pin/delete disabled states with hints), ChatBubble extended (reply/quote block, highlight state, deleted placeholder), MessagingScreen wired (createGroupAction, getGroupAction, pinMessageAction, deleteMessageAction, removeGroupMemberAction, leaveGroupAction, deleteGroupAction, updateGroupAction)
+- Tokens: --edu-messaging-quote-own-bg + --edu-messaging-quote-own-border added to tokens.css (ADR 0047)
+- globals.css: edu-msg-highlight (3s, motion-safe via global prefers-reduced-motion reset), edu-msg-shimmer animations
+- i18n: messaging.group, messaging.groupInfo, messaging.contextMenu, messaging.reply, messaging.deleteDialog namespaces (47+ keys vi+en)
+- 36+ Storybook stories with play() across 6 story files; 47 domain+integration unit tests
+
+**Key decisions/gotchas (E10.4):**
+- Context menu disabled items use `disabled` attribute (not just aria-disabled) — low-severity a11y tension with NFR-003. Hint text via aria-describedby but not keyboard-reachable. Known gap, not blocking (design-spec-mandated 40%-opacity pattern).
+- `motion-safe:` prefix on context menu animate-in (Tailwind). Global prefers-reduced-motion reset in globals.css gates ALL animations including Radix Sheet slide-in.
+- Shimmer skeleton intentionally "not gated" in the comment but the global `!important` reset covers it anyway.
+- Color swatches #6366F1 and #FB923C are spec-mandated hex literals (design-spec `colorPicker.palette`) — used in dynamic inline style, not Tailwind class. Acceptable exception.
+
+**E10 status:** ALL 4 US complete. E10 COMPLETE.
+
+**How to apply:** E10 feature module (`src/features/messaging/`) is complete. Any future messaging work must be a new US extending it, not modifying the closed stories. Social service is still mock-first (decision 0017).
 
 **Why:** noti service not yet built → mock-first (decision 0014). SSE fan-out deferred to when noti service ships.
 
