@@ -230,6 +230,25 @@
   animation: edu-msg-shimmer 1.4s ease-in-out infinite;
 }
 
+/* Messaging (DR-009 US-E16.5) — typing-indicator dots. Smooth ease-in-out lift
+   replaces Tailwind's default dot animation (a hard, over-springy curve that
+   reads as generic). Gated by the global reduced-motion reset below (TR-032). */
+@keyframes msg-typing {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+.msg-typing-dot {
+  animation: msg-typing 1.2s ease-in-out infinite;
+}
+
 /* Accessibility: respect reduced-motion (decision 0013, rules/accessibility.md).
    Near-instant any animation/transition for users who opted out.
    !important is required: the universal selector has specificity 0 and must

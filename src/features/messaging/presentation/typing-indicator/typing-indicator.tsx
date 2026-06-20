@@ -9,6 +9,15 @@ export interface TypingIndicatorProps {
   color: string;
 }
 
+/**
+ * DR-009 US-E16.5 — typing dots. Per-dot stagger drives the `msg-typing`
+ * keyframe (smooth ease-in-out lift, defined in globals.css), replacing
+ * Tailwind's springy default. Reduced-motion is handled by the global reset.
+ */
+export const TYPING_DOT_CLASS =
+  "msg-typing-dot size-1.5 rounded-full bg-muted-foreground/60";
+export const TYPING_DOT_DELAYS = [0, 0.18, 0.36] as const;
+
 /** 3-dot typing animation. Motion is gated behind prefers-reduced-motion. */
 export function TypingIndicator({ initials, color }: TypingIndicatorProps) {
   const t = useTranslations("messaging");
@@ -28,10 +37,10 @@ export function TypingIndicator({ initials, color }: TypingIndicatorProps) {
         aria-hidden="true"
         className="flex items-center gap-1 rounded-[16px_16px_16px_4px] border border-border bg-card px-3.5 py-2"
       >
-        {[0, 0.15, 0.3].map((delay) => (
+        {TYPING_DOT_DELAYS.map((delay) => (
           <span
             key={delay}
-            className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-bounce"
+            className={TYPING_DOT_CLASS}
             style={{ animationDelay: `${delay}s` }}
           />
         ))}
