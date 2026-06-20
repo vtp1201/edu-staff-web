@@ -156,7 +156,7 @@ export function StaffLeaveRequestCard({
           <div
             id={reasonBodyId}
             className={cn(
-              "rounded-lg border-l-[3px] bg-muted px-3 py-2.5 text-sm leading-relaxed text-foreground",
+              "rounded-lg px-3 py-2.5 text-sm leading-relaxed text-foreground",
               STATUS_REASON_BORDER[status],
             )}
           >

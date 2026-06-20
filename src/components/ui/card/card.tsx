@@ -2,17 +2,34 @@ import type * as React from "react";
 
 import { cn } from "@/shared/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card"
-      className={cn(
-        "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm",
-        className,
-      )}
-      {...props}
-    />
-  );
+function Card({ className, onClick, ...props }: React.ComponentProps<"div">) {
+  const base =
+    "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm";
+
+  // DR-009 US-E16.3: a clickable card must be keyboard-operable (WCAG 2.1.1).
+  // When `onClick` is supplied, the card renders as a native <button> — which
+  // is focusable and fires onClick on Enter/Space for free — instead of a
+  // <div> with an onClick a keyboard user could never reach. With no onClick it
+  // stays a plain, non-interactive container.
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        data-slot="card"
+        onClick={
+          onClick as unknown as React.MouseEventHandler<HTMLButtonElement>
+        }
+        className={cn(
+          base,
+          "cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          className,
+        )}
+        {...(props as React.ComponentProps<"button">)}
+      />
+    );
+  }
+
+  return <div data-slot="card" className={cn(base, className)} {...props} />;
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {

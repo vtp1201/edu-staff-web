@@ -33,6 +33,17 @@ import type {
   SubjectsScreenProps,
 } from "./subjects-screen.i-vm";
 
+/**
+ * Parent-row emphasis. DR-009 US-E16.1: side-stripe ban — the active row uses
+ * a solid bg tint instead of a left accent stripe; inactive rows show only a
+ * hover bg.
+ */
+export function parentRowClass(active: boolean): string {
+  return active
+    ? "bg-primary/14 font-bold text-foreground"
+    : "text-foreground hover:bg-muted";
+}
+
 export function SubjectsScreen({
   initialParents,
   gradeRange,
@@ -173,9 +184,7 @@ export function SubjectsScreen({
                       className={cn(
                         "flex w-full items-center justify-between gap-2 rounded-[var(--edu-radius-btn)] px-3 py-2.5 text-left",
                         "motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        active
-                          ? "border-l-[3px] border-primary bg-primary/12 font-bold text-foreground"
-                          : "border-l-[3px] border-transparent text-foreground hover:bg-muted",
+                        parentRowClass(active),
                       )}
                     >
                       <span className="flex flex-col">

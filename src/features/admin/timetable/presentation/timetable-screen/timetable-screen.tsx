@@ -397,13 +397,12 @@ function SlotCell({
           ? undefined
           : {
               backgroundColor: `${slot.subjectColor}26`,
-              borderLeftColor: slot.subjectColor,
             }
       }
       className={cn(
-        "relative min-h-[76px] w-full rounded-lg border-l-[3px] px-2.5 py-2 text-left transition-shadow",
+        "relative min-h-[76px] w-full rounded-lg px-2.5 py-2 text-left transition-shadow",
         conflict
-          ? "border-l-edu-error-text bg-edu-error/15 ring-1 ring-edu-error-text/40"
+          ? "border border-edu-error-text/40 bg-edu-error/10 ring-1 ring-edu-error-text/20"
           : "",
         highlighted && "outline outline-2 outline-edu-warning",
       )}

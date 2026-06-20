@@ -323,7 +323,7 @@ export function ChatWindow({
       </div>
 
       {replyState && (
-        <div className="flex items-center gap-2 border-border border-t border-l-4 border-l-primary bg-card px-4 py-2">
+        <div className="mx-4 mb-2 flex items-center gap-2 rounded border border-primary/30 bg-primary/10 px-4 py-2">
           <div className="min-w-0 flex-1">
             <p className="font-bold text-[10.5px] text-primary uppercase tracking-wide">
               {tReply("replyingTo", { name: replyState.senderName })}

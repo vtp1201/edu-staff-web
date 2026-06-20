@@ -158,7 +158,7 @@ export function ChatBubble({
                 className={cn(
                   "mb-1.5 block w-full rounded-md px-2.5 py-1.5 text-left",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  !isMe && "border-primary border-l-4 bg-edu-bg",
+                  !isMe && "rounded border border-primary/30 bg-primary/10",
                 )}
               >
                 <span

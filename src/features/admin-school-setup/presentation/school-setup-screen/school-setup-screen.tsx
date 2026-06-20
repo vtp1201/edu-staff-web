@@ -290,8 +290,10 @@ export function SchoolSetupScreen({
               aria-label={t("guide.progressAriaLabel")}
             >
               <div
-                className="h-full rounded-full bg-edu-primary transition-[width] duration-[600ms] motion-reduce:transition-none"
-                style={{ width: `${progress.percentComplete}%` }}
+                className="h-full w-full origin-left rounded-full bg-edu-primary motion-safe:transition-[transform] motion-safe:duration-[600ms]"
+                style={{
+                  transform: `scaleX(${progress.percentComplete / 100})`,
+                }}
               />
             </div>
 

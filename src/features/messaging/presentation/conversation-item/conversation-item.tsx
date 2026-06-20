@@ -5,6 +5,14 @@ import type { ConversationEntity } from "@/features/messaging/domain/entities/co
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 
+/**
+ * Active/inactive emphasis. DR-009 US-E16.1: side-stripe ban — active item
+ * uses a solid bg tint (no left accent stripe); inactive shows only hover bg.
+ */
+export function conversationItemStateClass(isActive: boolean): string {
+  return isActive ? "bg-primary/14" : "hover:bg-muted";
+}
+
 export interface ConversationItemProps {
   conversation: ConversationEntity;
   isActive: boolean;
@@ -43,11 +51,9 @@ export function ConversationItem({
       aria-label={t("openConversation", { name })}
       aria-current={isActive ? "true" : undefined}
       className={cn(
-        "flex w-full items-center gap-3 border-l-[3px] px-4 py-3 text-left transition-colors",
+        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
         "min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        isActive
-          ? "border-primary bg-primary/8"
-          : "border-transparent hover:bg-muted",
+        conversationItemStateClass(isActive),
       )}
     >
       <span className="relative flex-shrink-0">

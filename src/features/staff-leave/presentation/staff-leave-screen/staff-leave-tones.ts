@@ -25,11 +25,14 @@ export const STATUS_ACCENT: Record<StaffLeaveStatus, string> = {
   rejected: "bg-edu-error",
 };
 
-/** Left border accent on the reason block, by status. */
+/**
+ * Reason-block emphasis by status. DR-009 US-E16.1: side-stripe ban — full
+ * 1px border + bg tint instead of a one-sided accent stripe.
+ */
 export const STATUS_REASON_BORDER: Record<StaffLeaveStatus, string> = {
-  pending: "border-l-edu-warning",
-  approved: "border-l-edu-success",
-  rejected: "border-l-edu-error",
+  pending: "border border-edu-warning/33 bg-edu-warning/14",
+  approved: "border border-edu-success/33 bg-edu-success/14",
+  rejected: "border border-edu-error/33 bg-edu-error/14",
 };
 
 /** Leave type → icon + text color token (design-spec). */

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils";
 import { NAV_BY_ROLE, type NavItem, type Role } from "./nav-config";
+import { sidebarGridStyle } from "./sidebar-grid";
 
 type SidebarProps = {
   /** Active tenant — nav hrefs are built as `/t/{tenantId}{item.href}`. */
@@ -34,78 +35,81 @@ export function Sidebar({
   const items = NAV_BY_ROLE[role];
 
   return (
-    <aside
-      data-collapsed={collapsed}
-      className={cn(
-        "flex h-full flex-col border-r border-border bg-sidebar transition-[width] duration-[250ms] ease-in-out",
-        className,
-      )}
-      style={{
-        width: collapsed
-          ? "var(--edu-sidebar-width-collapsed, 72px)"
-          : "var(--edu-sidebar-width, 260px)",
-      }}
+    // DR-009 US-E16.4: the collapse/expand animation runs on the wrapper's
+    // `grid-template-columns` (GPU-friendly) instead of the aside's `width`,
+    // which forced layout each frame. The aside fills the single grid track.
+    <div
+      style={sidebarGridStyle(collapsed)}
+      className="h-full shrink-0 motion-safe:transition-[grid-template-columns] motion-safe:duration-[250ms] motion-safe:ease-in-out"
     >
-      <div
+      <aside
+        data-collapsed={collapsed}
         className={cn(
-          "flex h-16 items-center gap-2 border-b border-border px-5",
-          collapsed && "justify-center px-0",
+          "flex h-full min-w-0 flex-col overflow-hidden border-r border-border bg-sidebar",
+          className,
         )}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-[var(--edu-radius-role-icon)] bg-primary text-primary-foreground">
-          <GraduationCap className="size-5" />
-        </span>
-        {!collapsed && (
-          <span className="truncate text-base font-bold tracking-tight">
-            EduPortal
+        <div
+          className={cn(
+            "flex h-16 items-center gap-2 border-b border-border px-5",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <span className="grid size-9 shrink-0 place-items-center rounded-[var(--edu-radius-role-icon)] bg-primary text-primary-foreground">
+            <GraduationCap className="size-5" />
           </span>
-        )}
-      </div>
-
-      <ScrollArea className="flex-1">
-        <nav className="flex flex-col gap-1 p-3">
-          {items.map((item) => {
-            const href = tenantUrl(tenantId, item.href);
-            return (
-              <NavLink
-                key={item.href}
-                item={item}
-                href={href}
-                label={t(item.labelKey)}
-                collapsed={collapsed}
-                active={
-                  pathname === href ||
-                  (pathname?.startsWith(`${href}/`) ?? false)
-                }
-              />
-            );
-          })}
-        </nav>
-      </ScrollArea>
-
-      {onToggle && (
-        <div className="border-t border-border p-3">
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-            aria-pressed={collapsed}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              collapsed && "justify-center px-0",
-            )}
-          >
-            <ChevronLeft
-              className={cn(
-                "size-4 shrink-0 transition-transform duration-[250ms]",
-                collapsed && "rotate-180",
-              )}
-            />
-            {!collapsed && <span>{t("collapseSidebar")}</span>}
-          </button>
+          {!collapsed && (
+            <span className="truncate text-base font-bold tracking-tight">
+              EduPortal
+            </span>
+          )}
         </div>
-      )}
-    </aside>
+
+        <ScrollArea className="flex-1">
+          <nav className="flex flex-col gap-1 p-3">
+            {items.map((item) => {
+              const href = tenantUrl(tenantId, item.href);
+              return (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  href={href}
+                  label={t(item.labelKey)}
+                  collapsed={collapsed}
+                  active={
+                    pathname === href ||
+                    (pathname?.startsWith(`${href}/`) ?? false)
+                  }
+                />
+              );
+            })}
+          </nav>
+        </ScrollArea>
+
+        {onToggle && (
+          <div className="border-t border-border p-3">
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
+              aria-expanded={!collapsed}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                collapsed && "justify-center px-0",
+              )}
+            >
+              <ChevronLeft
+                className={cn(
+                  "size-4 shrink-0 transition-transform duration-[250ms]",
+                  collapsed && "rotate-180",
+                )}
+              />
+              {!collapsed && <span>{t("collapseSidebar")}</span>}
+            </button>
+          </div>
+        )}
+      </aside>
+    </div>
   );
 }
 

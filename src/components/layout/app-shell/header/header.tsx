@@ -17,6 +17,14 @@ import { Input } from "@/components/ui/input";
 import type { Role } from "../sidebar/nav-config";
 import { RoleSwitcher } from "./role-switcher";
 
+/**
+ * Notification dot. DR-009 US-E16.2: error-ramp contrast — the bell badge dot
+ * uses `bg-edu-error-dark` (#b91c1c, AA on white) instead of the lighter
+ * `bg-edu-error` hue which fails small-target contrast.
+ */
+export const NOTIFICATION_DOT_CLASS =
+  "absolute top-2 right-2 size-2 rounded-full bg-edu-error-dark";
+
 type HeaderProps = {
   role: Role;
   userName?: string;
@@ -53,7 +61,7 @@ export function Header({
         size="icon"
         className="lg:hidden"
         onClick={onMenuClick}
-        aria-label="Toggle navigation"
+        aria-label={t("toggleNav")}
       >
         <Menu className="size-5" />
       </Button>
@@ -63,6 +71,7 @@ export function Header({
         <Input
           type="search"
           placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           className="pl-9"
         />
       </div>
@@ -79,7 +88,7 @@ export function Header({
               className="relative"
             >
               <Bell className="size-5" />
-              <span className="absolute top-2 right-2 size-2 rounded-full bg-edu-error" />
+              <span className={NOTIFICATION_DOT_CLASS} />
             </Button>
 
             <ThemeToggle />
@@ -89,7 +98,7 @@ export function Header({
                 <Button
                   variant="ghost"
                   className="size-9 rounded-full p-0"
-                  aria-label="User menu"
+                  aria-label={t("userMenu")}
                 >
                   <Avatar className="size-9">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">

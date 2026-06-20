@@ -26,6 +26,15 @@ const BAND_LABEL_KEY: Record<
   poor: "bandPoor",
 };
 
+/**
+ * DR-009 US-E16.4 — progress fill uses GPU-composited `scaleX` (transform)
+ * instead of animating `width`, which triggers layout/paint each frame. The
+ * fill is full-width with `origin-left`; the ratio scales it horizontally.
+ */
+export function fillTransform(ratio: number): string {
+  return `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+}
+
 export function GradeDistributionChart({
   distribution,
 }: {
@@ -41,10 +50,19 @@ export function GradeDistributionChart({
           <span className="w-24 shrink-0 text-xs text-edu-text-secondary">
             {t(BAND_LABEL_KEY[band.key])}
           </span>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-edu-border">
+          <div
+            className="h-2.5 flex-1 overflow-hidden rounded-full bg-edu-border"
+            role="progressbar"
+            aria-valuenow={Math.round((band.count / max) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t("bandProgressLabel", {
+              band: t(BAND_LABEL_KEY[band.key]),
+            })}
+          >
             <div
-              className={`h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500 ${TONE[band.key]}`}
-              style={{ width: `${(band.count / max) * 100}%` }}
+              className={`h-full w-full origin-left rounded-full motion-safe:transition-[transform] motion-safe:duration-500 ${TONE[band.key]}`}
+              style={{ transform: fillTransform(band.count / max) }}
             />
           </div>
           <span className="w-6 shrink-0 text-right text-xs font-semibold text-foreground">
