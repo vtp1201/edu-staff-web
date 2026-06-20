@@ -52,6 +52,17 @@ export const ParentView_MultiChild_Tab1: Story = {
     expect(tabs).toHaveLength(2);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
     expect(tabs[1]).toHaveAttribute("aria-selected", "false");
+
+    // Keyboard roving: ArrowRight moves focus to the next tab WITHOUT
+    // changing selection (selection only changes on Enter/Space/click).
+    tabs[0].focus();
+    await expect(tabs[0]).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(tabs[1]).toHaveFocus();
+    await expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    // ArrowLeft wraps focus back to the first tab.
+    await userEvent.keyboard("{ArrowLeft}");
+    await expect(tabs[0]).toHaveFocus();
   },
 };
 
@@ -66,8 +77,8 @@ export const ParentView_SwitchLoading: Story = {
     const canvas = within(canvasElement);
     const tabs = canvas.getAllByRole("tab");
     // active (c2) stays enabled; the non-active tab is disabled while loading.
-    expect(tabs[0]).toBeDisabled();
-    expect(tabs[1]).not.toBeDisabled();
+    expect(tabs[0]).toHaveAttribute("aria-disabled", "true");
+    expect(tabs[1]).not.toHaveAttribute("aria-disabled", "true");
   },
 };
 

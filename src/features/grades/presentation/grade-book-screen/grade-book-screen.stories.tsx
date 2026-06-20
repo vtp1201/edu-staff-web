@@ -250,7 +250,7 @@ export const ParentView_SwitchLoading: Story = {
     // loading skeleton shows in the tabpanel; switcher remains interactive.
     expect(canvas.getByRole("tablist")).toBeInTheDocument();
     const tabs = canvas.getAllByRole("tab");
-    expect(tabs[0]).toBeDisabled();
+    expect(tabs[0]).toHaveAttribute("aria-disabled", "true");
   },
 };
 
