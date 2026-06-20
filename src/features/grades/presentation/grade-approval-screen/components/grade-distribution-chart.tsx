@@ -41,7 +41,16 @@ export function GradeDistributionChart({
           <span className="w-24 shrink-0 text-xs text-edu-text-secondary">
             {t(BAND_LABEL_KEY[band.key])}
           </span>
-          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-edu-border">
+          <div
+            className="h-2.5 flex-1 overflow-hidden rounded-full bg-edu-border"
+            role="progressbar"
+            aria-valuenow={Math.round((band.count / max) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t("bandProgressLabel", {
+              band: t(BAND_LABEL_KEY[band.key]),
+            })}
+          >
             <div
               className={`h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500 ${TONE[band.key]}`}
               style={{ width: `${(band.count / max) * 100}%` }}

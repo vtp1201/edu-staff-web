@@ -89,7 +89,7 @@ export function Sidebar({
             type="button"
             onClick={onToggle}
             aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-            aria-pressed={collapsed}
+            aria-expanded={!collapsed}
             className={cn(
               "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               collapsed && "justify-center px-0",

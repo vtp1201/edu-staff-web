@@ -61,7 +61,7 @@ export function Header({
         size="icon"
         className="lg:hidden"
         onClick={onMenuClick}
-        aria-label="Toggle navigation"
+        aria-label={t("toggleNav")}
       >
         <Menu className="size-5" />
       </Button>
@@ -71,6 +71,7 @@ export function Header({
         <Input
           type="search"
           placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           className="pl-9"
         />
       </div>
@@ -97,7 +98,7 @@ export function Header({
                 <Button
                   variant="ghost"
                   className="size-9 rounded-full p-0"
-                  aria-label="User menu"
+                  aria-label={t("userMenu")}
                 >
                   <Avatar className="size-9">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">

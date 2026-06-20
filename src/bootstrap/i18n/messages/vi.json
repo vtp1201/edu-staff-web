@@ -1330,6 +1330,7 @@
     "bandExcellent": "Giỏi",
     "bandGood": "Khá",
     "bandPoor": "Kém",
+    "bandProgressLabel": "Phân phối {band}",
     "bandWeak": "Yếu",
     "bulkLockDialog": {
       "cancel": "Huỷ",
@@ -1872,7 +1873,9 @@
       "notifications": "Thông báo",
       "profile": "Hồ sơ",
       "searchPlaceholder": "Tìm kiếm...",
-      "switchRole": "Chuyển vai trò"
+      "switchRole": "Chuyển vai trò",
+      "toggleNav": "Bật/tắt điều hướng",
+      "userMenu": "Menu người dùng"
     },
     "nav": {
       "academicCalendar": "Lịch học",

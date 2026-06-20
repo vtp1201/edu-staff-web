@@ -1330,6 +1330,7 @@
     "bandExcellent": "Excellent",
     "bandGood": "Good",
     "bandPoor": "Poor",
+    "bandProgressLabel": "{band} distribution",
     "bandWeak": "Weak",
     "bulkLockDialog": {
       "cancel": "Cancel",
@@ -1872,7 +1873,9 @@
       "notifications": "Notifications",
       "profile": "Profile",
       "searchPlaceholder": "Search...",
-      "switchRole": "Switch role"
+      "switchRole": "Switch role",
+      "toggleNav": "Toggle navigation",
+      "userMenu": "User menu"
     },
     "nav": {
       "academicCalendar": "Academic Calendar",
