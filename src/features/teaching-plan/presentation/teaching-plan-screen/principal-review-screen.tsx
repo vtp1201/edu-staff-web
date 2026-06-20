@@ -106,6 +106,10 @@ export function PrincipalReviewScreen({
                     type="button"
                     variant="outline"
                     disabled={isPending}
+                    aria-label={t("actions.rejectForPlan", {
+                      subject: plan.subjectName,
+                      className: plan.className,
+                    })}
                     onClick={() => setRejectFor(plan.id)}
                   >
                     {t("actions.reject")}
@@ -113,6 +117,10 @@ export function PrincipalReviewScreen({
                   <Button
                     type="button"
                     disabled={isPending}
+                    aria-label={t("actions.approveForPlan", {
+                      subject: plan.subjectName,
+                      className: plan.className,
+                    })}
                     onClick={() => setApproveFor(plan.id)}
                   >
                     {t("actions.approve")}

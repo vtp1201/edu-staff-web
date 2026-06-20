@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/shared/utils";
 
@@ -17,6 +18,7 @@ export function LessonBankSkeleton({
   layout = "grid",
   count = 8,
 }: LessonBankSkeletonProps) {
+  const t = useTranslations("lessonBank");
   const keys = placeholderKeys(count);
 
   if (layout === "list") {
@@ -24,9 +26,9 @@ export function LessonBankSkeleton({
       <div
         className="space-y-2"
         role="status"
-        aria-label="Đang tải danh sách bài giảng"
+        aria-label={t("loadingAriaLabel")}
       >
-        <span className="sr-only">Đang tải...</span>
+        <span className="sr-only">{t("loadingSR")}</span>
         {keys.map((key) => (
           <div
             key={key}
@@ -55,9 +57,9 @@ export function LessonBankSkeleton({
         "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
       )}
       role="status"
-      aria-label="Đang tải danh sách bài giảng"
+      aria-label={t("loadingAriaLabel")}
     >
-      <span className="sr-only">Đang tải...</span>
+      <span className="sr-only">{t("loadingSR")}</span>
       {keys.map((key) => (
         <div
           key={key}

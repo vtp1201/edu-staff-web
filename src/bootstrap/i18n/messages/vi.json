@@ -1219,7 +1219,9 @@
       "subjectLabel": "Môn học",
       "subjectPlaceholder": "Chọn môn học",
       "titleLabel": "Tiêu đề đề thi",
-      "titlePlaceholder": "Nhập tiêu đề đề thi"
+      "titlePlaceholder": "Nhập tiêu đề đề thi",
+      "questionListAriaLabel": "Danh sách câu hỏi",
+      "editorAriaLabel": "Soạn câu hỏi"
     },
     "card": {
       "createdAt": "Tạo ngày {date}",
@@ -1555,7 +1557,9 @@
       "dept": "Bộ môn",
       "private": "Cá nhân",
       "school": "Toàn trường"
-    }
+    },
+    "loadingAriaLabel": "Đang tải danh sách bài giảng",
+    "loadingSR": "Đang tải..."
   },
   "messaging": {
     "chat": {
@@ -2416,7 +2420,9 @@
       "saveDraft": "Lưu nháp",
       "submit": "Gửi phê duyệt",
       "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
-      "submitting": "Đang gửi..."
+      "submitting": "Đang gửi...",
+      "approveForPlan": "Duyệt kế hoạch {subject} - {className}",
+      "rejectForPlan": "Từ chối kế hoạch {subject} - {className}"
     },
     "approve": {
       "cancel": "Huỷ",
