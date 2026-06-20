@@ -1569,9 +1569,25 @@
       "send": "Send",
       "typing": "Typing a message..."
     },
+    "contextMenu": {
+      "copy": "Copy text",
+      "delete": "Delete",
+      "deleteExpired": "More than 1 hour has passed",
+      "deleteOwnOnly": "You can only delete your own messages",
+      "pin": "Pin message",
+      "pinAdminOnly": "Only admin can pin messages",
+      "reply": "Reply"
+    },
     "date": {
       "today": "Today",
       "yesterday": "Yesterday"
+    },
+    "deleteDialog": {
+      "body": "This cannot be undone. The bubble will be replaced by \"Message deleted\" in the conversation.",
+      "cancel": "Cancel",
+      "confirm": "Confirm delete",
+      "deletedLabel": "Message deleted",
+      "title": "Delete this message?"
     },
     "empty": {
       "cta": "Start a conversation",
@@ -1584,6 +1600,42 @@
       "load-messages-failed": "Could not load messages. Please try again.",
       "send-message-failed": "Could not send the message. Please try again."
     },
+    "group": {
+      "colorLabel": "Group color",
+      "createButton": "Create group",
+      "createTitle": "Create new group",
+      "descLabel": "Description",
+      "descPlaceholder": "Group description (optional)...",
+      "emptyCreateCta": "Create new group",
+      "emptySubtitle": "Create a new group to collaborate.",
+      "emptyTitle": "You haven't joined any groups yet.",
+      "memberCount": "{count} members",
+      "nameLabel": "Group name",
+      "namePlaceholder": "Enter group name...",
+      "noMembersFound": "No matching members found.",
+      "searchMembersPlaceholder": "Search members...",
+      "selectedCount": "{count} selected",
+      "stepInfo": "Group info",
+      "stepMembers": "Add members",
+      "typeClass": "Class",
+      "typeClub": "Club",
+      "typeDept": "Department",
+      "typeLabel": "Group type",
+      "typeOther": "Other"
+    },
+    "groupInfo": {
+      "addMembers": "+ Add members",
+      "adminBadge": "Admin",
+      "deleteGroup": "Delete group",
+      "deleteWarning": "Deleting a group cannot be undone.",
+      "editAvatar": "Edit group avatar",
+      "leaveGroup": "Leave group",
+      "membersSection": "MEMBERS",
+      "noPinned": "No pinned messages yet.",
+      "pinnedSection": "PINNED MESSAGES",
+      "removeMember": "Remove from group",
+      "title": "Group info"
+    },
     "newMessage": {
       "button": "New message",
       "searchPlaceholder": "Search users...",
@@ -1591,6 +1643,11 @@
       "title": "New message"
     },
     "openConversation": "Open conversation with {name}",
+    "reply": {
+      "cancelAriaLabel": "Cancel reply",
+      "placeholder": "Reply to message… (Enter to send)",
+      "replyingTo": "Replying to {name}"
+    },
     "search": {
       "noGroups": "No groups",
       "noResults": "No results",
