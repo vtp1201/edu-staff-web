@@ -14,3 +14,4 @@
 - [E09 Discipline epic](project-e09-discipline.md) — ALL 3 US implemented; E09.3 Staff Leave (admin, 448 tests, A11Y-008–016 fixed, card layout + inline reject, destructive btn now bg-edu-error-dark); E09 COMPLETE
 - [E10 Communications epic](project-e10-communications.md) — US-E10.1 Messaging + US-E10.2 Notifications + US-E10.3 Announcements (admin/principal, 558 tests, A11Y-017–030 fixed, 19 stories, 15/15 AC); E10 COMPLETE
 - [E11 LMS Exams epic](project-e11-lms-exams.md) — US-E11.1/E11.2/E11.4 implemented; E11.4 = Teaching Plan PPCT (teacher grid/submit + principal approve/reject, 618 tests, semantic table grid); E11.3 exam-bank in progress (another session)
+- [INFRA security hardening](project-infra-security-hardening.md) — US-INFRA.2: auth-guard module, SSE tenant validation, Server Action tests, build guard (804 tests); push with NEXT_PUBLIC_USE_MOCK= to avoid build guard tripping pre-push
