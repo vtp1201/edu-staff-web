@@ -19,4 +19,6 @@ export const GRADES_EP = {
   myGrades: `/core/api/v1/students/me/grades`,
   childGrades: (childId: string) =>
     `/core/api/v1/parent/children/${childId}/grades`,
+  // US-E13.7 — parent child-switcher:
+  childList: "/core/api/v1/parent/children",
 } as const;

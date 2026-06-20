@@ -29,11 +29,35 @@ describe("MockGradeBookRepository", () => {
     expect(book.rows[0].studentId).toBe("hs-001");
   });
 
-  it("getChildGrades returns a single row (the selected child)", async () => {
+  it("getChildList returns the seeded children for the parent viewer", async () => {
     const repo = new MockGradeBookRepository();
-    const book = await repo.getChildGrades("child-1", "HK1");
-    expect(book.rows).toHaveLength(1);
-    expect(book.rows[0].studentId).toBe("hs-002");
+    const children = await repo.getChildList();
+    expect(children).toHaveLength(2);
+    expect(children[0].childId).toBe("c1");
+    expect(children[1].childId).toBe("c2");
+  });
+
+  it("getChildGrades(c1) returns the 11A2 (child 0) grade book", async () => {
+    const repo = new MockGradeBookRepository();
+    const book = await repo.getChildGrades("c1", "HK1");
+    expect(book.className).toBe("11A2");
+    expect(book.rows).toHaveLength(5);
+    expect(book.rows[0].studentId).toBe("hs-001");
+  });
+
+  it("getChildGrades(c2) returns the 8B1 (child 1) grade book", async () => {
+    const repo = new MockGradeBookRepository();
+    const book = await repo.getChildGrades("c2", "HK1");
+    expect(book.className).toBe("8B1");
+    expect(book.rows).toHaveLength(5);
+    expect(book.rows[0].studentId).toBe("c2-hs-001");
+  });
+
+  it("getChildGrades(unknown) falls back to the 11A2 (child 0) grade book", async () => {
+    const repo = new MockGradeBookRepository();
+    const book = await repo.getChildGrades("unknown", "HK1");
+    expect(book.className).toBe("11A2");
+    expect(book.rows[0].studentId).toBe("hs-001");
   });
 
   it("threads the injected publish mode", async () => {
