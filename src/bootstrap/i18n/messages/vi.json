@@ -1571,7 +1571,8 @@
       "online": "Đang online",
       "placeholder": "Nhập tin nhắn... (Enter để gửi)",
       "send": "Gửi",
-      "typing": "Đang nhập tin nhắn..."
+      "typing": "Đang nhập tin nhắn...",
+      "you": "Bạn"
     },
     "contextMenu": {
       "copy": "Sao chép văn bản",

@@ -1571,7 +1571,8 @@
       "online": "Online",
       "placeholder": "Type a message... (Enter to send)",
       "send": "Send",
-      "typing": "Typing a message..."
+      "typing": "Typing a message...",
+      "you": "You"
     },
     "contextMenu": {
       "copy": "Copy text",

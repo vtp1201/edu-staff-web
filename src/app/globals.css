@@ -194,6 +194,42 @@
   }
 }
 
+/* Messaging (US-E10.4) — pin-highlight flash on scrolled-to message.
+   Gated by the global reduced-motion reset below (TR-032). */
+@keyframes edu-msg-highlight {
+  0% {
+    background-color: color-mix(in oklab, var(--edu-primary) 22%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.edu-msg-highlight {
+  animation: edu-msg-highlight 3s ease-out;
+  border-radius: 12px;
+}
+
+/* Messaging (US-E10.4) — loading skeleton shimmer (decorative, TR-023:
+   intentionally NOT gated behind reduced-motion). */
+@keyframes edu-msg-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.edu-msg-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--edu-border) 0%,
+    color-mix(in oklab, var(--edu-border) 40%, var(--edu-card)) 50%,
+    var(--edu-border) 100%
+  );
+  background-size: 200% 100%;
+  animation: edu-msg-shimmer 1.4s ease-in-out infinite;
+}
+
 /* Accessibility: respect reduced-motion (decision 0013, rules/accessibility.md).
    Near-instant any animation/transition for users who opted out.
    !important is required: the universal selector has specificity 0 and must

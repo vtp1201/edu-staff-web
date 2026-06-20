@@ -5,8 +5,16 @@ import {
 import { MessagingScreen } from "@/features/messaging/presentation/messaging-screen";
 import {
   createConversationAction,
+  createGroupAction,
+  deleteGroupAction,
+  deleteMessageAction,
+  getGroupAction,
   getMessagesAction,
+  leaveGroupAction,
+  pinMessageAction,
+  removeGroupMemberAction,
   sendMessageAction,
+  updateGroupAction,
 } from "./actions";
 
 export default async function MessagesPage() {
@@ -24,9 +32,18 @@ export default async function MessagesPage() {
       initialConversations={convoResult.ok ? convoResult.value : []}
       initialContacts={contactsResult.ok ? contactsResult.value : []}
       loadError={convoResult.ok ? undefined : convoResult.failure.type}
+      selfId="me"
       sendMessageAction={sendMessageAction}
       createConversationAction={createConversationAction}
       getMessagesAction={getMessagesAction}
+      createGroupAction={createGroupAction}
+      getGroupAction={getGroupAction}
+      updateGroupAction={updateGroupAction}
+      removeGroupMemberAction={removeGroupMemberAction}
+      pinMessageAction={pinMessageAction}
+      deleteMessageAction={deleteMessageAction}
+      leaveGroupAction={leaveGroupAction}
+      deleteGroupAction={deleteGroupAction}
     />
   );
 }

@@ -27,9 +27,14 @@ export function ConversationItem({
     lastMessageTime,
     unreadCount,
     isOnline,
+    lastSenderName,
   } = conversation;
   const isGroup = type === "group";
   const hasUnread = unreadCount > 0;
+  const preview =
+    isGroup && lastSenderName
+      ? `${lastSenderName}: ${lastMessage}`
+      : lastMessage;
 
   return (
     <button
@@ -89,7 +94,7 @@ export function ConversationItem({
                 : "text-muted-foreground",
             )}
           >
-            {lastMessage}
+            {preview}
           </span>
           {hasUnread && (
             <span
