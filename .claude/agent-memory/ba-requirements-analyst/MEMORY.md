@@ -1,0 +1,3 @@
+- [NFR Baselines](nfr-baselines.md) — WCAG AA, responsive 375/768/1280, skeleton ≤320ms, i18n vi+en, tokens-only
+- [Actor / Role Patterns](actor-role-patterns.md) — system roles (teacher/principal/student/parent), in-feature flags vs RBAC, capability table format
+- [FR Writing Patterns](fr-patterns.md) — "The system SHALL", trigger/pre/post/error split, extend-not-re-spec, domain enforcement for gated actions, optimistic+rollback, mock-first
