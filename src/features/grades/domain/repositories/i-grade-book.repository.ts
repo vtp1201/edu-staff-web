@@ -1,4 +1,4 @@
-import type { GradeBook } from "../entities/grade-book.entity";
+import type { ChildSummary, GradeBook } from "../entities/grade-book.entity";
 
 /**
  * Throwing repository (matches the IGradesRepository convention): success
@@ -12,4 +12,6 @@ export interface IGradeBookRepository {
   getMyGrades(term: string): Promise<GradeBook>;
   /** parent — single row (the selected child) */
   getChildGrades(childId: string, term: string): Promise<GradeBook>;
+  /** parent — list of children linked to the signed-in viewer */
+  getChildList(): Promise<ChildSummary[]>;
 }

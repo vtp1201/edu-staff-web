@@ -4,7 +4,10 @@ import { GRADES_EP } from "@/bootstrap/endpoint/grades.endpoint";
 import { errorCodeOf, statusOf } from "@/bootstrap/lib/api-envelope";
 import type { GradePublishMode } from "@/features/admin-school-setup/domain/entities/school-config.entity";
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
-import type { GradeBook } from "../../domain/entities/grade-book.entity";
+import type {
+  ChildSummary,
+  GradeBook,
+} from "../../domain/entities/grade-book.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 import type { IGradeBookRepository } from "../../domain/repositories/i-grade-book.repository";
 import type { GradeBookResponseDto } from "../dtos/grade-book-response.dto";
@@ -76,5 +79,12 @@ export class GradeBookRepository implements IGradeBookRepository {
     } catch (err) {
       throwFailure(err);
     }
+  }
+
+  // biome-ignore lint/suspicious/useAwait: throwing stub; async to satisfy interface
+  async getChildList(): Promise<ChildSummary[]> {
+    // OQ-001: endpoint (GRADES_EP.childList) unconfirmed; stub throws
+    // NOT_IMPLEMENTED until the core service ships the parent-children contract.
+    throw { type: "not-found" } satisfies GradesFailure;
   }
 }
