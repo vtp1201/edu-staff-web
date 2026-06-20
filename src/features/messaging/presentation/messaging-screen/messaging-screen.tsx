@@ -9,6 +9,7 @@ import type { ConversationEntity } from "@/features/messaging/domain/entities/co
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import { cn } from "@/shared/utils";
+import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
 import { CreateGroupModal } from "../create-group-modal";
@@ -42,6 +43,7 @@ export function MessagingScreen({
   pinMessageAction,
   deleteMessageAction,
   removeGroupMemberAction,
+  addGroupMembersAction,
   leaveGroupAction,
   deleteGroupAction,
   updateGroupAction,
@@ -68,6 +70,7 @@ export function MessagingScreen({
   );
   const [isModalOpen, setModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
 
   useEffect(() => {
     if (deepLinkId) {
@@ -220,6 +223,37 @@ export function MessagingScreen({
     },
   });
 
+  const addMembersMutation = useMutation({
+    mutationFn: async (memberIds: string[]) => {
+      if (!activeId) throw new Error("no-active-group");
+      const res = await addGroupMembersAction(activeId, memberIds);
+      if (!res.ok) throw new Error(res.errorKey);
+      return res.value;
+    },
+    onSuccess: (updatedGroup: GroupEntity) => {
+      // Reflect the new member list immediately; the group query is the
+      // source of truth for the info panel.
+      if (activeId) queryClient.setQueryData(groupKey(activeId), updatedGroup);
+      // Keep the conversation list member-count in sync.
+      queryClient.setQueryData<ConversationEntity[]>(
+        conversationsKey(),
+        (old = []) =>
+          old.map((c) =>
+            c.id === activeId
+              ? { ...c, memberCount: updatedGroup.members.length }
+              : c,
+          ),
+      );
+      setAddMembersOpen(false);
+    },
+    onSettled: () => {
+      // Revalidate against the server (mock-first) regardless of outcome;
+      // on error the previous group data is left intact (no optimistic write).
+      if (activeId)
+        queryClient.invalidateQueries({ queryKey: groupKey(activeId) });
+    },
+  });
+
   const handleSelect = (id: string) => {
     setActiveId(id);
     setMobilePane("chat");
@@ -316,7 +350,7 @@ export function MessagingScreen({
                 );
                 if (res.ok) refreshGroup(res.value);
               },
-              onAddMembers: () => {},
+              onAddMembers: () => setAddMembersOpen(true),
               onRemoveMember: async (userId) => {
                 if (!activeId) return;
                 const res = await removeGroupMemberAction(activeId, userId);
@@ -365,6 +399,17 @@ export function MessagingScreen({
         submitError={createGroupMutation.isError}
         onOpenChange={setCreateGroupOpen}
         onSubmit={(values) => createGroupMutation.mutate(values)}
+      />
+
+      <AddMembersModal
+        open={addMembersOpen}
+        contacts={initialContacts.filter(
+          (c) => !group?.members.some((m) => m.userId === c.id),
+        )}
+        isSubmitting={addMembersMutation.isPending}
+        submitError={addMembersMutation.isError}
+        onOpenChange={setAddMembersOpen}
+        onSubmit={(memberIds) => addMembersMutation.mutate(memberIds)}
       />
     </div>
   );
