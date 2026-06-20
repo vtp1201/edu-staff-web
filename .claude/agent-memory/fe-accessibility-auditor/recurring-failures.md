@@ -146,6 +146,26 @@ Pattern: Single-page view toggle (list/new/detail state with useState) renders n
 Fix: In the root orchestrator, add a `useRef` on the new view's heading/back-button and a `useEffect` that fires when `view` changes to call `.focus()` on that ref. Both `ClassLogEntryForm` and `ClassLogEntryDetail` should have their back-button or h2 receive focus on mount.
 Seen in: US-E13.3 class-log-screen.tsx (view state transitions).
 
+## Keyboard — No keyboard trigger for context menus (right-click-only)
+Pattern: `onContextMenu` handler on a `<div>` with biome-ignore comment claiming "accessible menu trigger exists". No actual keyboard trigger button or accessible equivalent is present. Keyboard users cannot access the context menu at all.
+Fix: Add a `<button type="button" aria-label={t("contextMenu.openAriaLabel")} aria-haspopup="menu">` that appears on keyboard focus of the message bubble (via focus-within) and calls the same openContextMenu handler with position derived from the button's getBoundingClientRect().
+Seen in: US-E10.4 chat-bubble.tsx / chat-window.tsx.
+
+## ARIA — role="menu" container aria-label is the first menu item label
+Pattern: `<div role="menu" aria-label={t("reply")}>` — the menu label says "Trả lời" which is also the first item text. SR announces "Trả lời menu" then "Trả lời menuitem" — confusing duplication.
+Fix: Use a descriptive label like `t("contextMenu.label")` = "Thao tác tin nhắn", not the first item text.
+Seen in: US-E10.4 message-context-menu.tsx.
+
+## Focus — No focus return from custom context menu on Escape
+Pattern: Custom `role="menu"` panels that call `onClose()` on Escape do not programmatically return focus to the triggering element. Since the context menu is triggered by right-click (not a tracked button ref), the triggering element is a `<div>` with no ref stored, so focus is lost after Escape.
+Fix: Store a `triggerRef = useRef<HTMLElement | null>(null)` in the parent; on open, set `triggerRef.current = document.activeElement as HTMLElement`; on close, call `triggerRef.current?.focus()`.
+Seen in: US-E10.4 chat-window.tsx + message-context-menu.tsx.
+
+## ARIA — alertdialog required but inline div used for destructive confirm
+Pattern: Destructive action confirms (delete group) implemented as inline conditional render of a `<div>` with no ARIA role — not `role="alertdialog"`. Screen readers don't announce the prompt as an alert, focus is not trapped, and Escape doesn't cancel.
+Fix: Wrap the inline confirm in a Radix `AlertDialog` (which provides `role="alertdialog"`, focus trap, Escape handling automatically), same as the "leave group" flow already does.
+Seen in: US-E10.4 group-info-panel.tsx (confirmDelete inline div).
+
 ## ARIA — aria-disabled instead of disabled on blocked buttons
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.

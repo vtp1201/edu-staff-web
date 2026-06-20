@@ -62,6 +62,19 @@ Confirmed facts (verify before citing if stale):
   imports `evaluateAccess` from `@/bootstrap/auth-guard`; a client importer would break the build.
 - **Prod mock build-guard (`next.config.ts`):** throws iff `NODE_ENV==="production" && NEXT_PUBLIC_USE_MOCK==="true"`
   — backstops the dev-only mock admin bypass. Treat as the required safety net for any mock-first auth shortcut.
+- **Mock-first mutation boundary — Server Actions are ACCEPTED even when state-design says "direct to mock repo"**
+  (confirmed US-E10.4 messaging): state-engineer's contract sometimes specifies social/mock mutations
+  dispatch from client straight to the mock repo (no `'use server'`) until the real service ships.
+  Engineers routinely implement them via Server Actions NOW (mutationFn calls the action; DI picks
+  mock via `USE_MOCK`). This is the correct FINAL boundary and cleaner — do NOT block it; flag to
+  fe-lead to reconcile the state-design doc. Watch instead for: planned optimistic updates silently
+  dropped (e.g. createGroup/pinMessage listed as optimistic in state-design but implemented as
+  post-confirm `onSuccess` / no `onMutate`) — that's a contract gap worth a SHOULD FIX.
+- **Dynamic-swatch color exemption + `text-white` nuance** (US-E10.4): a color-picker swatch palette
+  may legitimately carry raw hex `value`/`cssColor` when documented (e.g. `color-swatches.ts` ADR-exempt
+  dynamic values rendered via inline `style`). But `text-white` on a checkmark over such a swatch is
+  STILL a raw-color smell — prefer `text-edu-success-foreground` (==#fff) or document in the ADR.
+  Don't hard-block the dynamic swatch values themselves when ADR-covered.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
