@@ -120,8 +120,8 @@ export function AnnouncementCard({
           aria-label={t("readProgressLabel", { pct: readPct })}
         >
           <div
-            className="h-full rounded-full bg-edu-success-text transition-[width] duration-500 motion-reduce:transition-none"
-            style={{ width: `${readPct}%` }}
+            className="h-full w-full origin-left rounded-full bg-edu-success-text motion-safe:transition-[transform] motion-safe:duration-500"
+            style={{ transform: `scaleX(${readPct / 100})` }}
           />
         </div>
       </div>

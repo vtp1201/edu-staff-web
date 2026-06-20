@@ -104,10 +104,12 @@ export function ConductSummaryCard({
         >
           <div
             className={cn(
-              "h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500",
+              "h-full w-full origin-left rounded-full motion-safe:transition-[transform] motion-safe:duration-500",
               pointsColorClass(points),
             )}
-            style={{ width: `${Math.min(100, Math.max(0, points))}%` }}
+            style={{
+              transform: `scaleX(${Math.min(1, Math.max(0, points / 100))})`,
+            }}
           />
         </div>
       </div>
