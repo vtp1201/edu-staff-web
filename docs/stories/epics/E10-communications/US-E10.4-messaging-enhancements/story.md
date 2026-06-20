@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -130,7 +130,40 @@ Mock-first: `social` service chưa ship (decision 0017).
 
 ## Evidence
 
-(empty — fill after implementation)
+### Implementation
+- Merged to main: commit `7ef278d` (feat/us-e10.4-messaging-enhancements)
+- Unit tests: 47 tests in 12 files (all green)
+- Full suite: 835 tests / 167 files (all green, 2026-06-20)
+- TypeScript: `tsc --noEmit` clean
+
+### Design-Review Gate (2026-06-20)
+```
+Design review: PASS
+- design-system: CONFORM — tokens-only, no raw colors except 2 spec-mandated
+  hex literals (#6366F1, #FB923C) in dynamic color-swatch inline style (messaging.groupChat
+  colorPicker.palette). All semantic edu-* tokens used correctly. Typography, spacing,
+  radius, shadow match design-spec messaging.groupChat.
+- a11y: WCAG 2.1 AA
+  DR-E10.4-01 (Low, accepted): context menu disabled items use HTML `disabled` attribute
+    in addition to `aria-disabled`. Items remain visible; hint text cannot be keyboard-focused.
+    Pre-existing design tension per spec FR-016/017 (40%-opacity visible-but-disabled
+    pattern). Not blocking — impeccable cannot override the spec-mandated pattern without
+    an ADR. Noted for future hardening.
+  DR-E10.4-02 (Low, pre-existing): muted text at 11px on card-white. Platform-wide
+    pre-existing issue not introduced by E10.4.
+  All motion-safe gates confirmed (global prefers-reduced-motion reset in globals.css;
+  motion-safe: prefix on context menu animation).
+  Focus trap: Radix Dialog + Radix Sheet provide native focus management.
+  Keyboard nav: context menu implements ARIA menu role with ArrowUp/Down/Escape.
+  Icon-only aria-labels: all present (edit, close, remove-member).
+- impeccable audit: 2 findings (both Low, both pre-existing-acceptable); 0 blocking.
+- states: loading / empty / error / success all covered by Storybook stories.
+  Responsive 375px: Mobile_375 stories for modal, panel, screen.
+```
+
+### QA Gate — see QA verdict below (filled after fe-qa-playwright completes)
+- QA Go/No-Go: (pending)
+- AC coverage: (pending)
 
 ---
 
