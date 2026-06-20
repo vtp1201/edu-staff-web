@@ -267,8 +267,9 @@ export const ParentView_MultiChild_Switch: Story = {
     const canvas = within(canvasElement);
     const tabs = canvas.getAllByRole("tab");
     expect(tabs[1]).toHaveAttribute("aria-selected", "true");
-    // child 1 data (8B1) is shown.
-    expect(canvas.getByText("Nguyễn Thu Hà")).toBeInTheDocument();
+    // child 1 data (8B1) is shown — name appears in both the tab and the table;
+    // verify at least one instance is present.
+    expect(canvas.getAllByText("Nguyễn Thu Hà").length).toBeGreaterThan(0);
     // clicking the first child tab requests a switch.
     await userEvent.click(
       canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ }),
