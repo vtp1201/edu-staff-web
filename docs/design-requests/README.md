@@ -22,5 +22,5 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-004 | Lesson Bank | US-E11.2 (stale: DR said US-E13.3 = Class Log) | [x] delivered (2026-06-20) |
 | DR-005 | Exam Bank + Builder | US-E11.3 (stale: DR said US-E13.4) | [x] delivered (2026-06-20) |
 | DR-006 | Notifications Center | US-E10.2 | [x] delivered (2026-06-20) |
-| DR-007 | Announcements (BGH gửi thông báo) | US-E10.3 | pending |
+| DR-007 | Announcements (BGH gửi thông báo) | US-E10.3 | [x] delivered (2026-06-20) |
 | DR-008 | Group Chat (mở rộng từ messaging.jsx) | US-E10.1 | pending |
