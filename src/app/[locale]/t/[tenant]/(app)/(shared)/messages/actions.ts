@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  makeAddGroupMembersUseCase,
   makeCreateConversationUseCase,
   makeCreateGroupUseCase,
   makeDeleteGroupUseCase,
@@ -82,6 +83,17 @@ export async function updateGroupAction(
 ): Promise<GetGroupResult> {
   const useCase = await makeUpdateGroupUseCase();
   const result = await useCase.execute({ groupId, name, description });
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function addGroupMembersAction(
+  groupId: string,
+  memberIds: string[],
+): Promise<GetGroupResult> {
+  const useCase = await makeAddGroupMembersUseCase();
+  const result = await useCase.execute(groupId, memberIds);
   return result.ok
     ? { ok: true, value: result.value }
     : { ok: false, errorKey: result.failure.type };

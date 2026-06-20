@@ -70,6 +70,10 @@ export interface MessagingScreenActions {
     groupId: string,
     userId: string,
   ) => Promise<GetGroupResult>;
+  addGroupMembersAction: (
+    groupId: string,
+    memberIds: string[],
+  ) => Promise<GetGroupResult>;
   leaveGroupAction: (conversationId: string) => Promise<ActionResult>;
   deleteGroupAction: (groupId: string) => Promise<ActionResult>;
   updateGroupAction: (

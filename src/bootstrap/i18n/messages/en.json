@@ -1660,6 +1660,16 @@
       "save": "Save",
       "title": "Group info"
     },
+    "addMembersModal": {
+      "title": "Add members",
+      "subtitle": "Select the people you want to add to the group.",
+      "searchPlaceholder": "Search members...",
+      "noContacts": "No members left to add.",
+      "selectedCount": "{count} selected",
+      "submit": "Add",
+      "cancel": "Cancel",
+      "error": "Could not add members. Please try again."
+    },
     "newMessage": {
       "button": "New message",
       "searchPlaceholder": "Search users...",

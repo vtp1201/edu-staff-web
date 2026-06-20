@@ -1660,6 +1660,16 @@
       "save": "Lưu",
       "title": "Thông tin nhóm"
     },
+    "addMembersModal": {
+      "title": "Thêm thành viên",
+      "subtitle": "Chọn người bạn muốn thêm vào nhóm.",
+      "searchPlaceholder": "Tìm thành viên...",
+      "noContacts": "Không còn thành viên nào để thêm.",
+      "selectedCount": "{count} đã chọn",
+      "submit": "Thêm",
+      "cancel": "Huỷ",
+      "error": "Không thể thêm thành viên. Vui lòng thử lại."
+    },
     "newMessage": {
       "button": "Tin nhắn mới",
       "searchPlaceholder": "Tìm kiếm người dùng...",

@@ -4,6 +4,7 @@ import {
 } from "@/bootstrap/di";
 import { MessagingScreen } from "@/features/messaging/presentation/messaging-screen";
 import {
+  addGroupMembersAction,
   createConversationAction,
   createGroupAction,
   deleteGroupAction,
@@ -40,6 +41,7 @@ export default async function MessagesPage() {
       getGroupAction={getGroupAction}
       updateGroupAction={updateGroupAction}
       removeGroupMemberAction={removeGroupMemberAction}
+      addGroupMembersAction={addGroupMembersAction}
       pinMessageAction={pinMessageAction}
       deleteMessageAction={deleteMessageAction}
       leaveGroupAction={leaveGroupAction}

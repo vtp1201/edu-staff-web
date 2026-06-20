@@ -91,12 +91,23 @@ export function ChatWindow({
   const [replyState, setReplyState] = useState<ReplyState | null>(null);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new messages
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, conversation.id]);
+
+  // DEF-01: clear any pending highlight timer when the component unmounts so we
+  // never call setHighlightId on an unmounted component (no timer leak).
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
 
   const scrollToMessage = useCallback((messageId: string) => {
     const el = scrollRef.current?.querySelector<HTMLElement>(
@@ -105,7 +116,11 @@ export function ChatWindow({
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlightId(messageId);
-    window.setTimeout(() => setHighlightId(null), 3000);
+    // Clear a prior pending timer before scheduling a new one (rapid clicks).
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+    }
+    highlightTimerRef.current = setTimeout(() => setHighlightId(null), 3000);
   }, []);
 
   const rows = useMemo<Row[]>(() => {

@@ -410,6 +410,7 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     pinMessageAction: noopGroupAction,
     deleteMessageAction: noopGroupAction,
     removeGroupMemberAction: noopGetGroup,
+    addGroupMembersAction: noopGetGroup,
     leaveGroupAction: noopGroupAction,
     deleteGroupAction: noopGroupAction,
     updateGroupAction: noopGetGroup,
@@ -468,6 +469,7 @@ export const Reply_Strip_Active: Story = {
     pinMessageAction: noopGroupAction,
     deleteMessageAction: noopGroupAction,
     removeGroupMemberAction: noopGetGroup,
+    addGroupMembersAction: noopGetGroup,
     leaveGroupAction: noopGroupAction,
     deleteGroupAction: noopGroupAction,
     updateGroupAction: noopGetGroup,
@@ -524,6 +526,7 @@ export const ContextMenu_Keyboard_Nav: Story = {
     pinMessageAction: noopGroupAction,
     deleteMessageAction: noopGroupAction,
     removeGroupMemberAction: noopGetGroup,
+    addGroupMembersAction: noopGetGroup,
     leaveGroupAction: noopGroupAction,
     deleteGroupAction: noopGroupAction,
     updateGroupAction: noopGetGroup,
@@ -562,6 +565,222 @@ export const ContextMenu_Keyboard_Nav: Story = {
     await userEvent.keyboard("{Escape}");
     await waitFor(() =>
       expect(body.queryByRole("menu")).not.toBeInTheDocument(),
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// US-E10.5 defect-fix stories (DEF-02, DEF-03)
+// ---------------------------------------------------------------------------
+
+/** Admin-owned group so the GroupInfoPanel "Thêm thành viên" button is shown. */
+const ADMIN_GROUP_CONVERSATION: ConversationEntity = {
+  id: "g1",
+  type: "group",
+  name: "Lớp 11B2 — Toán",
+  avatarInitials: "11B2",
+  color: "primary",
+  lastMessage: "Em áp dụng định lý Lagrange nhé...",
+  lastMessageTime: "08:15",
+  unreadCount: 0,
+  memberCount: 2,
+  selfIsGroupAdmin: true,
+};
+
+const ADMIN_GROUP: GroupEntity = {
+  id: "g1",
+  name: "Lớp 11B2 — Toán",
+  description: "",
+  kind: "class",
+  color: "primary",
+  conversationId: "g1",
+  members: [
+    {
+      userId: "me",
+      name: "Nguyễn Thị Hương",
+      initials: "NH",
+      color: "primary",
+      role: "admin",
+      isOnline: true,
+    },
+    {
+      userId: "u1",
+      name: "Trần Minh Quân",
+      initials: "TQ",
+      color: "success",
+      role: "member",
+      isOnline: true,
+    },
+  ],
+  pinnedMessages: [
+    {
+      messageId: "g1-2",
+      senderId: "u2",
+      senderName: "Trần Văn Bình",
+      excerpt: "Cô ơi, bài tập trang 87 nộp khi nào ạ?",
+      sentAt: "2026-06-20T07:30:00.000Z",
+    },
+  ],
+};
+
+/**
+ * DEF-02 (add-members wiring):
+ * Open the GroupInfoPanel → click "Thêm thành viên" → the add-members modal
+ * opens → select a contact → submit → addGroupMembersAction is called with the
+ * group id + selected member ids, the group query updates, and the modal closes.
+ */
+export const AddMembers_Wired: Story = {
+  args: {
+    initialConversations: [ADMIN_GROUP_CONVERSATION],
+    // u4 (Lê Thị Hoa) is NOT yet a member → eligible to add.
+    initialContacts: CONTACTS,
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    getGroupAction: async (): Promise<GetGroupResult> => ({
+      ok: true,
+      value: ADMIN_GROUP,
+    }),
+    addGroupMembersAction: async (
+      _groupId: string,
+      memberIds: string[],
+    ): Promise<GetGroupResult> => ({
+      ok: true,
+      value: {
+        ...ADMIN_GROUP,
+        members: [
+          ...ADMIN_GROUP.members,
+          ...memberIds.map((id) => ({
+            userId: id,
+            name: "Lê Thị Hoa",
+            initials: "LH",
+            color: "warning",
+            role: "member" as const,
+            isOnline: true,
+          })),
+        ],
+      },
+    }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    // Open the group info panel via the group header button.
+    const header = await canvas.findByRole("button", {
+      name: /thông tin nhóm/i,
+    });
+    await userEvent.click(header);
+
+    // Click "Thêm thành viên" inside the panel (admin-gated).
+    const addBtn = await waitFor(() =>
+      body.getByRole("button", { name: /thêm thành viên/i }),
+    );
+    await userEvent.click(addBtn);
+
+    // The add-members modal opens, scoped by its accessible title. (The
+    // GroupInfoPanel Sheet is also role="dialog", so target the modal by name.)
+    const modal = await waitFor(() =>
+      body.getByRole("dialog", { name: /thêm thành viên/i }),
+    );
+    await waitFor(() =>
+      expect(within(modal).getByText("Lê Thị Hoa")).toBeInTheDocument(),
+    );
+
+    // Select the eligible contact and submit.
+    await userEvent.click(within(modal).getByText("Lê Thị Hoa"));
+    const submit = within(modal).getByRole("button", { name: /^thêm$/i });
+    await waitFor(() => expect(submit).toBeEnabled());
+    await userEvent.click(submit);
+
+    // On success the add-members modal closes (its title is gone).
+    await waitFor(() =>
+      expect(
+        body.queryByRole("dialog", { name: /thêm thành viên/i }),
+      ).not.toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * DEF-03 (scroll-to-pinned + highlight flash, screen level):
+ * Open the GroupInfoPanel → click the pinned-message row → onPinnedClick closes
+ * the panel and triggers scrollToMessage, which applies the highlight class to
+ * the target bubble. Asserts the panel closes and the highlight is applied.
+ */
+export const ScrollToPinned_Highlight_Wired: Story = {
+  args: {
+    initialConversations: [ADMIN_GROUP_CONVERSATION],
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    getGroupAction: async (): Promise<GetGroupResult> => ({
+      ok: true,
+      value: ADMIN_GROUP,
+    }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    addGroupMembersAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    // Open the group info panel.
+    const header = await canvas.findByRole("button", {
+      name: /thông tin nhóm/i,
+    });
+    await userEvent.click(header);
+
+    // The panel (Radix Sheet) is open; scope to it so we click the pinned-row
+    // button — not the identical chat-bubble text in the message log.
+    const panel = await waitFor(() =>
+      body.getByRole("dialog", { name: /thông tin nhóm/i }),
+    );
+    const pinnedRow = await waitFor(() => {
+      const el = within(panel)
+        .getByText("Cô ơi, bài tập trang 87 nộp khi nào ạ?")
+        .closest("button");
+      if (!el) throw new Error("pinned row button not found");
+      return el;
+    });
+    await userEvent.click(pinnedRow);
+
+    // The panel closes (no dialog named "Thông tin nhóm" remains).
+    await waitFor(() =>
+      expect(
+        body.queryByRole("dialog", { name: /thông tin nhóm/i }),
+      ).not.toBeInTheDocument(),
+    );
+
+    // The target bubble receives the highlight class (edu-msg-highlight).
+    await waitFor(() =>
+      expect(
+        canvasElement.querySelector('[data-message-id="g1-2"]'),
+      ).toHaveClass("edu-msg-highlight"),
+    );
+
+    // After 3s the highlight clears (DEF-01 + DEF-03 timer behavior).
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelector('[data-message-id="g1-2"]'),
+        ).not.toHaveClass("edu-msg-highlight"),
+      { timeout: 4000 },
     );
   },
 };
