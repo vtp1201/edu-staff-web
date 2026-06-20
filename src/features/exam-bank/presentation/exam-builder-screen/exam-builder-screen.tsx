@@ -161,7 +161,10 @@ export function ExamBuilderScreen({
 
       <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,30%)_minmax(0,70%)]">
         {/* Left: question list */}
-        <aside className="overflow-y-auto border-border border-r bg-background p-4">
+        <aside
+          className="overflow-y-auto border-border border-r bg-background p-4"
+          aria-label={t("builder.questionListAriaLabel")}
+        >
           <h2 className="mb-3 font-bold text-muted-foreground text-xs uppercase tracking-wide">
             {t("builder.questionsHeading", {
               count: builder.questions.length,
@@ -179,7 +182,10 @@ export function ExamBuilderScreen({
         </aside>
 
         {/* Right: MCQ editor */}
-        <section className="overflow-y-auto bg-background p-6">
+        <section
+          className="overflow-y-auto bg-background p-6"
+          aria-label={t("builder.editorAriaLabel")}
+        >
           <McqEditor
             question={selectedQuestion}
             error={selectedError}

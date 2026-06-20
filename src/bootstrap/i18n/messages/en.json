@@ -1219,7 +1219,9 @@
       "subjectLabel": "Subject",
       "subjectPlaceholder": "Select subject",
       "titleLabel": "Exam title",
-      "titlePlaceholder": "Enter exam title"
+      "titlePlaceholder": "Enter exam title",
+      "questionListAriaLabel": "Question list",
+      "editorAriaLabel": "Question editor"
     },
     "card": {
       "createdAt": "Created on {date}",
@@ -1555,7 +1557,9 @@
       "dept": "Department",
       "private": "Private",
       "school": "School-wide"
-    }
+    },
+    "loadingAriaLabel": "Loading lesson list",
+    "loadingSR": "Loading..."
   },
   "messaging": {
     "chat": {
@@ -2416,7 +2420,9 @@
       "saveDraft": "Save draft",
       "submit": "Submit for approval",
       "submitSuccess": "Plan submitted for approval",
-      "submitting": "Submitting..."
+      "submitting": "Submitting...",
+      "approveForPlan": "Approve plan {subject} - {className}",
+      "rejectForPlan": "Reject plan {subject} - {className}"
     },
     "approve": {
       "cancel": "Cancel",
