@@ -1,7 +1,7 @@
 # FE Lead Memory Index
 
 - [Admin role enabler pattern](feedback-admin-role-enabler.md) — order of changes when adding a new role to nav-config + auth entity
-- [E07 Design System epic](project-e07-design-system.md) — US-E07.3 StatCard variants + US-E07.4 StatusBadge implemented; decision 0027 accessible text tokens; next id E07.5
+- [E07 Design System epic](project-e07-design-system.md) — US-E07.3/E07.4/E07.5/E07.6/E07.7 implemented; decision 0027 accessible text tokens; E07.7=A11y hardening DR-001→DR-007 (3 gaps fixed); next id E07.8
 - [E12 Admin Core epic](project-e12-admin-core.md) — US-E12.1–E12.4 + E12.5 + E12.8 + E12.9 + E12.10 implemented; US-E12.9 = Staffing UI (3-tab, /admin/staffing, 342 tests); remaining US-E12.6 planned
 - [E06 BE Integration epic](project-e06-be-integration.md) — US-E06.3..E06.8 all implemented; E06.8 staffing domain+infra done; UI screen delivered by US-E12.9; remaining: none in E06
 - [Concurrent session shared files](feedback-concurrent-session-shared-files.md) — when another /fe session is active, untracked timetable/feature files may be in working tree; stash only i18n + modified tracked files before checkout; never move untracked files that belong to another session

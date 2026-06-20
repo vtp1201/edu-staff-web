@@ -1,6 +1,6 @@
 ---
 name: project-e07-design-system
-description: E07 Design System epic status — US-E07.3 StatCard variants + US-E07.4 StatusBadge implemented; decision 0027 accessible status text tokens added
+description: E07 Design System epic status — US-E07.3/E07.4/E07.5/E07.6/E07.7 implemented; decision 0027 accessible text tokens; next id E07.8
 metadata:
   type: project
 ---
@@ -28,6 +28,13 @@ E07 Design System epic follow-ups from decision 0026 (component-placement-canoni
 - Badge fill opacity: `/15` is canonical (design-system.md updated from legacy `/18`).
 - calendar-screen active-year badge intentionally deferred (in-flight branch feat/us-e12.2).
 
-## Next available E07 US id: E07.5
+## US-E07.7 — A11y hardening DR-001→DR-007 (merged 2026-06-20)
+- A11Y-050: principal-review approve/reject buttons now include plan subject+class in aria-label (i18n keys: actions.approveForPlan / rejectForPlan).
+- A11Y-051: lesson-bank-skeleton hardcoded Vietnamese aria-label strings replaced with typed next-intl keys (lessonBank.loadingAriaLabel, loadingSR).
+- A11Y-052: exam-builder `<aside>` and `<section>` landmarks now have aria-label (examBank.builder.questionListAriaLabel / editorAriaLabel).
+- 7 other flagged items from DR-001→DR-007 audit verified already-covered: Radix/shadcn handles ARIA/focus, global reduced-motion reset (`globals.css:199`) covers all animations with `!important`, score colors use `edu-success-text` not raw `#13DEB9`, grade inputs have `min-h-[44px]`.
+- 804/804 tests; tsc clean; build green. No new design tokens needed.
+
+## Next available E07 US id: E07.8
 
 [[project-e12-admin-core]]
