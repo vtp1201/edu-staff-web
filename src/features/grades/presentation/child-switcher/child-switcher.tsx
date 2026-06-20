@@ -11,13 +11,22 @@ interface ChildSwitcherProps extends ChildSwitcherVM {
   isLoading?: boolean;
 }
 
-/** Maps design-token color name → CSS variable string. */
+/** Maps design-token color name → CSS variable string (avatar background). */
 const COLOR_VAR: Record<ChildColor, string> = {
-  primary: "var(--edu-primary)",
+  primary: "var(--edu-primary-accessible)", // 4.88:1 vs white (was --edu-primary 3.29:1 FAIL)
   success: "var(--edu-success)",
   warning: "var(--edu-warning)",
   error: "var(--edu-error)",
   purple: "var(--edu-purple)",
+};
+
+/** Per-color avatar foreground — ensures ≥4.5:1 on its background (WCAG 1.4.3). */
+const COLOR_TEXT: Record<ChildColor, string> = {
+  primary: "#ffffff", // 4.88:1 on --edu-primary-accessible
+  success: "var(--edu-text-primary)", // #2a3547 → 7.17:1 on #13deb9
+  warning: "var(--edu-warning-foreground)", // #2a3547 → 6.67:1 on #ffae1f
+  error: "var(--edu-text-primary)", // #2a3547 → 5.21:1 on #fa896b
+  purple: "#ffffff", // 5.25:1 on --edu-purple
 };
 
 export function ChildSwitcher({
@@ -39,7 +48,9 @@ export function ChildSwitcher({
       tabRefs.current[next]?.focus();
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onSwitch(childList[idx].childId);
+      const c = childList[idx];
+      const blocked = isLoading && c.childId !== activeChildId;
+      if (!blocked) onSwitch(c.childId);
     }
   }
 
@@ -47,7 +58,7 @@ export function ChildSwitcher({
     <div className="rounded-[12px] border border-border bg-card p-4">
       <p
         id="child-switcher-label"
-        className="mb-3 font-bold text-muted-foreground text-xs uppercase tracking-wider"
+        className="mb-3 font-bold text-edu-text-secondary text-xs uppercase tracking-wider"
       >
         {t("childSwitcherLabel")}
       </p>
@@ -71,13 +82,16 @@ export function ChildSwitcher({
               id={`tab-${child.childId}`}
               tabIndex={isActive ? 0 : -1}
               type="button"
-              disabled={isLoading && !isActive}
-              onClick={() => onSwitch(child.childId)}
+              aria-disabled={isLoading && !isActive}
+              onClick={() => {
+                if (isLoading && !isActive) return;
+                onSwitch(child.childId);
+              }}
               onKeyDown={(e) => handleKeyDown(e, idx)}
               className={cn(
                 "flex min-h-[44px] min-w-[44px] items-center gap-2 rounded-[10px] border px-3 py-2 text-left",
-                "motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "disabled:cursor-not-allowed disabled:opacity-60",
+                "motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                isLoading && !isActive && "cursor-not-allowed opacity-60",
               )}
               style={
                 isActive
@@ -95,8 +109,11 @@ export function ChildSwitcher({
             >
               {/* Avatar circle */}
               <span
-                className="flex size-[26px] shrink-0 items-center justify-center rounded-full font-bold text-[10px] text-white"
-                style={{ backgroundColor: colorVar }}
+                className="flex size-[26px] shrink-0 items-center justify-center rounded-full font-bold text-[10px]"
+                style={{
+                  backgroundColor: colorVar,
+                  color: COLOR_TEXT[child.color],
+                }}
                 aria-hidden="true"
               >
                 {child.avatar}
@@ -105,7 +122,7 @@ export function ChildSwitcher({
                 <span className="font-[800] text-[12.5px] text-foreground leading-tight">
                   {child.name}
                 </span>
-                <span className="text-[10.5px] text-muted-foreground leading-tight">
+                <span className="text-[10.5px] text-edu-text-secondary leading-tight">
                   {child.className}
                 </span>
               </span>

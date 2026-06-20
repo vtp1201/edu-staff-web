@@ -1413,7 +1413,6 @@
     "errorNotFound": "Không tìm thấy bảng điểm",
     "errorUnknown": "Đã xảy ra lỗi không xác định",
     "loading": "Đang tải bảng điểm...",
-    "noEnrolledChildren": "Chưa có con đang học",
     "noSelection": "Chọn lớp và học kỳ để xem bảng điểm",
     "notPublishedBanner": "Điểm chưa được công bố",
     "notPublishedDescription": "Điểm sẽ hiển thị sau khi được giáo viên / quản trị công bố.",

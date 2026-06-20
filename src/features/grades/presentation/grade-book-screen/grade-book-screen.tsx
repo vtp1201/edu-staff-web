@@ -76,14 +76,18 @@ export function GradeBookScreen({
     vm.role === "parent" &&
     Boolean(vm.childrenList) &&
     (vm.childrenList?.length ?? 0) >= 2;
+  const resolvedActiveChildId =
+    vm.activeChildId ?? vm.childrenList?.[0]?.childId;
+
   // the grade table region is a tabpanel only when the switcher is shown.
-  const panelProps = showChildSwitcher
-    ? ({
-        role: "tabpanel",
-        id: `tabpanel-${vm.activeChildId}`,
-        "aria-labelledby": `tab-${vm.activeChildId}`,
-      } as const)
-    : {};
+  const panelProps =
+    showChildSwitcher && resolvedActiveChildId
+      ? ({
+          role: "tabpanel",
+          id: `tabpanel-${resolvedActiveChildId}`,
+          "aria-labelledby": `tab-${resolvedActiveChildId}`,
+        } as const)
+      : {};
 
   function changeSelection(next: { csId?: string; term?: string }) {
     startTransition(() => onSelectionChange?.(next));
@@ -155,7 +159,7 @@ export function GradeBookScreen({
       {showChildSwitcher && vm.childrenList ? (
         <ChildSwitcher
           childList={vm.childrenList}
-          activeChildId={vm.activeChildId ?? vm.childrenList[0].childId}
+          activeChildId={resolvedActiveChildId ?? vm.childrenList[0].childId}
           onSwitch={onChildSwitch ?? (() => {})}
           isLoading={isLoading}
         />
