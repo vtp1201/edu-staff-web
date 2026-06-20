@@ -804,6 +804,8 @@
           }
         },
         "parent": {
+          // US-E13.7 — Grade Book Parent Child-Switcher (DR-002 enhancement)
+          // Source: design_src/edu/gradebook.jsx ChildSwitcher (~line 1081) + VIEWER_DATA_BY_CHILD (~line 367)
           "editable": false,
           "extends": "student",
           "extras": [
@@ -811,7 +813,62 @@
             "TermPicker card (minWidth 140) — pill buttons",
             "Contact-teacher strip at bottom → /messaging"
           ],
-          "gridTop": "minmax(0,1fr) auto auto (summary | child-switcher | term-picker)"
+          "gridTop": "minmax(0,1fr) auto auto (summary | child-switcher | term-picker)",
+
+          // ── ChildSwitcher component spec (US-E13.7) ───────────────────────────────
+          "childSwitcher": {
+            "route": "/parent/grades",
+            "designFile": "design_src/edu/gradebook.jsx — ChildSwitcher component (~line 1081)",
+            "i18nNamespace": "gradeBook",
+            "visibility": "hidden when childrenList.length === 1 (single-child: renders US-E13.6 ParentView_SingleRow unchanged)",
+            "layout": {
+              "component": "card — background var(--edu-card), borderRadius 12, border 1px solid var(--edu-border), boxShadow 0 2px 12px rgba(0,0,0,0.04), padding 12, flexDirection column, gap 6, minWidth 180"
+            },
+            "sectionLabel": {
+              "fontSize": 10.5,
+              "fontWeight": 800,
+              "color": "var(--edu-text-muted)",
+              "letterSpacing": "0.08em",
+              "textTransform": "uppercase",
+              "i18nKey": "gradeBook.childSwitcherLabel"
+            },
+            "childButton": {
+              "layout": "flex row, alignItems center, gap 9, padding 7px 10px, borderRadius 8",
+              "active": {
+                "border": "1.5px solid child.color",
+                "background": "child.color + '14'"
+              },
+              "inactive": {
+                "border": "1.5px solid var(--edu-border)",
+                "background": "var(--edu-card)"
+              },
+              "avatar": {
+                "component": "Avatar",
+                "size": 26,
+                "color": "child.color"
+              },
+              "name": {
+                "fontSize": 12.5,
+                "fontWeight": 800,
+                "color": "var(--edu-text-primary)",
+                "lineHeight": 1.2
+              },
+              "className": {
+                "fontSize": 10.5,
+                "color": "var(--edu-text-muted)"
+              }
+            },
+            "a11y": {
+              "tablist": "role='tablist' wrapping all child buttons",
+              "tab": "role='tab', aria-selected=true/false per active state",
+              "tabpanel": "GradeBookTable container gets role='tabpanel'",
+              "keyboard": "ArrowLeft / ArrowRight navigate between tabs; Enter/Space selects"
+            },
+            "states": {
+              "loading": "GradeBookSkeleton shown while fetching selected child's data",
+              "single child": "ChildSwitcher not rendered; behavior identical to US-E13.6"
+            }
+          }
         }
       },
 
@@ -1182,7 +1239,143 @@
       "result": {
         "hero": "score circle (PASSED / FAILED)",
         "stats": ["correct", "incorrect", "skipped"],
-        "reviewFilters": true
+        "reviewFilters": true,
+
+        // ── Mixed-exam / pending-essay variant (US-E11.5) ─────────────────────────
+        // Source: design_src/edu/exam.jsx ExamResultScreen isPendingEssay branch (~line 620)
+        // Activated when: exam.status === 'submitted_pending_essay'
+        "mixedExamPendingEssay": {
+          "trigger": "result.status === 'submitted_pending_essay'",
+          "designFile": "design_src/edu/exam.jsx — ExamResultScreen isPendingEssay branch (~line 620)",
+          "i18nNamespace": "exam",
+
+          "scoreHero": {
+            "circle": {
+              "value": "partialScore (MCQ score only, e.g. 6.0)",
+              "denominator": "/{mcqMax} · 'TN' label",
+              "totalScore": "hidden — displayed as '--/10'",
+              "i18nKey_label": "exam.result.mcqLabel"
+            },
+            "badge": {
+              "text": "⏱ CHƯA CÓ ĐIỂM TỔNG",
+              "i18nKey": "exam.result.partialResultBadge",
+              "style": "white text on rgba(255,255,255,0.20) — same hero gradient bg"
+            },
+            "passFailBadge": "hidden (no pass/fail until essay graded)"
+          },
+
+          "pendingEssayBanner": {
+            "background": "var(--edu-warning-light)",
+            "border": "1px solid var(--edu-warning) + '40'",
+            "borderRadius": 12,
+            "padding": "14px 18px",
+            "icon": {
+              "name": "clock",
+              "size": 18,
+              "color": "var(--edu-warning)",
+              "boxSize": 38,
+              "boxBg": "var(--edu-warning) + '22'",
+              "boxRadius": 10
+            },
+            "title": {
+              "fontSize": 14,
+              "fontWeight": 800,
+              "color": "var(--edu-warning)",
+              "i18nKey": "exam.result.pendingEssayTitle"
+            },
+            "body": {
+              "fontSize": 12.5,
+              "color": "var(--edu-text-secondary)",
+              "lineHeight": 1.55,
+              "i18nKey": "exam.result.pendingEssayBody"
+            },
+            "a11y": "role='alert' + aria-live='assertive'"
+          },
+
+          "statsRow": {
+            "mcqCorrect": { "i18nKey": "exam.result.correct" },
+            "mcqIncorrect": { "i18nKey": "exam.result.incorrect" },
+            "essayCount": {
+              "label": "exam.result.essayPending",
+              "color": "var(--edu-warning)",
+              "icon": "fileText"
+            }
+          },
+
+          "questionReview": {
+            "mcqQuestions": "normal correct/incorrect/skipped display",
+            "essayQuestions": {
+              "label": {
+                "i18nKey": "exam.result.essayQuestionLabel",
+                "value": "Câu tự luận — Chờ chấm"
+              },
+              "answerArea": "shows student's text answer (read-only)",
+              "statusIndicator": "warning badge 'Chờ chấm' — no correct/incorrect marker"
+            }
+          },
+
+          "examListCard": {
+            "statusBadge": {
+              "color": "warning",
+              "bg": "var(--edu-warning-light)",
+              "i18nKey": "exam.status.submittedPendingEssay"
+            },
+            "cta": {
+              "text": "exam.cta.viewPendingResult",
+              "value": "Xem kết quả tạm thời"
+            }
+          },
+
+          "briefingMixedIndicator": {
+            "badge": {
+              "i18nKey": "exam.briefing.mixedType",
+              "value": "Bài thi kết hợp",
+              "color": "var(--edu-purple)"
+            },
+            "typeRow": {
+              "i18nKey": "exam.briefing.mixedTypeValue",
+              "value": "Trắc nghiệm + Tự luận"
+            },
+            "essayNote": {
+              "i18nKey": "exam.briefing.essayGradingNote",
+              "value": "Phần tự luận sẽ được giáo viên chấm và cập nhật kết quả sau."
+            }
+          },
+
+          "takingEssayQuestion": {
+            "textarea": {
+              "placeholder": {
+                "i18nKey": "exam.taking.essayPlaceholder",
+                "value": "Nhập câu trả lời của bạn..."
+              },
+              "maxLength": 2000,
+              "charCount": {
+                "i18nKey": "exam.taking.essayCharCount",
+                "pattern": "{count}/2000 ký tự",
+                "a11y": "aria-describedby on textarea"
+              }
+            },
+            "navigatorIcon": "fileText (distinct from MCQ checkCircle)",
+            "submitWithEmptyEssay": {
+              "allowed": true,
+              "warning": {
+                "i18nKey": "exam.taking.essayEmptyWarning",
+                "value": "Bạn chưa trả lời câu tự luận."
+              }
+            }
+          },
+
+          "filterChip": {
+            "id": "submitted_pending_essay",
+            "i18nKey": "exam.filter.pendingEssay",
+            "value": "Chờ chấm"
+          },
+
+          "completedTransition": {
+            "trigger": "result.status transitions from 'submitted_pending_essay' → 'completed'",
+            "behavior": "score hero shows full total score + PASSED/FAILED badge (E11.1 normal flow)"
+          }
+        }
       }
     },
 
@@ -2929,7 +3122,182 @@
         "TB": 50,
         "Yếu": 0
       },
-      "violationStatus": ["recorded", "notified", "parent_notified", "resolved"]
+      "violationStatus": [
+        "recorded",
+        "notified",
+        "parent_notified",
+        "resolved"
+      ],
+
+      // ── Parent view (US-E09.4) ────────────────────────────────────────────────
+      // Source: design_src/edu/discipline.jsx ParentDisciplineScreen (~line 969)
+      //         PARENT_CHILDREN_DISCIPLINE mock (~line 939)
+      // Route:  /parent/discipline
+      "parent": {
+        "route": "/parent/discipline",
+        "designFile": "design_src/edu/discipline.jsx — ParentDisciplineScreen (~line 969)",
+        "i18nNamespace": "discipline.studentConduct",
+        "rbac": "parent role only — childId scoped (BE enforce)",
+        "layout": {
+          "contentPadding": "28px 32px",
+          "maxWidth": 1100,
+          "grid": "3-column on ≥1024 (childSelector 220px | conductCard 1fr | violations+leave 1fr); single-column on <768"
+        },
+
+        "childSelector": {
+          "visibility": "hidden when childrenList.length === 1",
+          "type": "pill tabs — horizontal scroll on overflow",
+          "activeState": {
+            "border": "1.5px solid child.color",
+            "background": "child.color + '14'"
+          },
+          "inactiveState": {
+            "border": "1.5px solid var(--edu-border)",
+            "background": "var(--edu-card)"
+          },
+          "avatar": {
+            "component": "Avatar",
+            "size": 30,
+            "color": "child.color"
+          },
+          "a11y": "role='tablist'; each pill role='tab' + aria-selected; tabpanel on content area"
+        },
+
+        "conductCard": {
+          "background": "var(--edu-card)",
+          "borderRadius": 14,
+          "border": "1px solid var(--edu-border)",
+          "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+          "padding": "20px",
+          "scoreCircle": {
+            "size": 80,
+            "borderRadius": "50%",
+            "background": "conductColor + '18'",
+            "border": "3px solid conductColor + '44'",
+            "valueFontSize": 28,
+            "valueFontWeight": 800,
+            "conductColor": "score>=90→var(--edu-success) | >=70→var(--edu-primary) | >=50→var(--edu-warning) | <50→var(--edu-error)"
+          },
+          "gradeBadge": {
+            "component": "Badge",
+            "colorMapping": "Tốt→success | Khá→primary | TB→warning | Yếu→error",
+            "a11y": "aria-label includes full grade name + score (not color alone)"
+          },
+          "childInfo": {
+            "fontSize": 13,
+            "fontWeight": 600,
+            "color": "var(--edu-text-secondary)"
+          },
+          "gvcnLine": {
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)",
+            "icon": "user"
+          }
+        },
+
+        "violationHistory": {
+          "readOnly": true,
+          "noAddButton": "parent role never sees 'Ghi nhận vi phạm' button",
+          "emptyState": {
+            "icon": "shieldCheck",
+            "iconColor": "var(--edu-success)",
+            "i18nKey": "discipline.studentConduct.myViolations.empty"
+          },
+          "listRow": {
+            "date": { "fontSize": 12, "color": "var(--edu-text-muted)" },
+            "description": {
+              "fontSize": 13,
+              "fontWeight": 600,
+              "color": "var(--edu-text-primary)"
+            },
+            "severityBadge": {
+              "component": "Badge",
+              "Nhẹ": "warning",
+              "Vừa": "error",
+              "Nặng": "destructive"
+            },
+            "pointDeduction": {
+              "fontSize": 12,
+              "color": "var(--edu-error)",
+              "fontWeight": 700
+            }
+          }
+        },
+
+        "leaveRequestForm": {
+          "trigger": "Nộp đơn nghỉ cho con button — opens inline panel (not modal)",
+          "fields": [
+            {
+              "id": "startDate",
+              "type": "date",
+              "validation": "≥ today",
+              "i18nKey": "discipline.studentConduct.leaveRequest.startDate"
+            },
+            {
+              "id": "endDate",
+              "type": "date",
+              "validation": "≥ startDate",
+              "i18nKey": "discipline.studentConduct.leaveRequest.endDate"
+            },
+            {
+              "id": "type",
+              "type": "select",
+              "options": ["medical", "event", "personal", "other"],
+              "i18nKey": "discipline.studentConduct.leaveRequest.type"
+            },
+            {
+              "id": "reason",
+              "type": "textarea",
+              "minLength": 10,
+              "i18nKey": "discipline.studentConduct.leaveRequest.reason"
+            }
+          ],
+          "submitLabel": "discipline.studentConduct.leaveRequest.submit",
+          "successToast": "discipline.studentConduct.leaveRequest.success",
+          "formReset": "on child switch — half-filled draft does not persist to other child"
+        },
+
+        "leaveHistory": {
+          "statusBadge": {
+            "pending": {
+              "color": "warning",
+              "i18nKey": "discipline.studentConduct.status.pending"
+            },
+            "approved": {
+              "color": "success",
+              "i18nKey": "discipline.studentConduct.status.approved"
+            },
+            "rejected": {
+              "color": "error",
+              "i18nKey": "discipline.studentConduct.status.rejected"
+            }
+          },
+          "rejectedReason": {
+            "visible": "when status=rejected",
+            "i18nKey": "discipline.studentConduct.leaveHistory.rejectionReason"
+          },
+          "emptyState": {
+            "i18nKey": "discipline.studentConduct.leaveHistory.empty"
+          }
+        },
+
+        "states": {
+          "loading": "skeleton — conductCard + violationList + leaveHistory shimmer",
+          "error": {
+            "retry": true,
+            "i18nKey": "discipline.studentConduct.loadError"
+          },
+          "singleChild": "childSelector hidden; content renders directly for the single child"
+        },
+
+        "a11yNotes": [
+          "ConductCard score badge: aria-label='Hạnh kiểm {grade}: {score} điểm' (not color alone)",
+          "Severity badges: aria-label includes full severity name (Nhẹ/Vừa/Nặng)",
+          "Leave form: all inputs have <label> + aria-invalid + aria-describedby on error",
+          "Date inputs: touch target ≥ 44×44px",
+          "Child selector tabs: role='tablist' + role='tab' + aria-selected"
+        ]
+      }
     },
 
     "attendance": {

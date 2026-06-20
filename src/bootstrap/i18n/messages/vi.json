@@ -1091,7 +1091,10 @@
       "startCta": "Bắt đầu làm bài ngay",
       "title": "Thông tin bài kiểm tra",
       "type": "Loại bài",
-      "typeValue": "Trắc nghiệm"
+      "typeValue": "Trắc nghiệm",
+      "mixedType": "Bài thi kết hợp",
+      "mixedTypeValue": "Trắc nghiệm + Tự luận",
+      "essayGradingNote": "Phần tự luận sẽ được giáo viên chấm và cập nhật kết quả sau."
     },
     "card": {
       "deadline": "Hạn nộp: {date}",
@@ -1102,7 +1105,8 @@
     "cta": {
       "expired": "Hết hạn",
       "start": "Bắt đầu làm bài",
-      "viewResult": "Xem kết quả"
+      "viewResult": "Xem kết quả",
+      "viewPendingResult": "Xem kết quả tạm thời"
     },
     "empty": {
       "subtitle": "Hiện tại không có bài kiểm tra nào phù hợp với bộ lọc.",
@@ -1121,6 +1125,7 @@
       "available": "Có thể làm",
       "completed": "Đã xong",
       "expired": "Hết hạn",
+      "pendingEssay": "Chờ chấm",
       "groupLabel": "Lọc bài kiểm tra"
     },
     "page": {
@@ -1147,7 +1152,13 @@
       "skipped": "Bỏ qua",
       "timeTaken": "Thời gian làm bài",
       "title": "Kết quả bài kiểm tra",
-      "yourAnswer": "Đáp án của bạn"
+      "yourAnswer": "Đáp án của bạn",
+      "mcqLabel": "TN",
+      "partialResultBadge": "CHƯA CÓ ĐIỂM TỔNG",
+      "pendingEssayTitle": "Điểm tự luận đang chờ giáo viên chấm",
+      "pendingEssayBody": "Phần trắc nghiệm đã được chấm tự động — {mcqScore}/{mcqMax}đ. Phần tự luận (tối đa {essayMax}đ) sẽ được giáo viên chấm thủ công và cộng vào điểm tổng trong vòng 3 ngày làm việc.",
+      "essayPending": "Câu tự luận (chờ chấm)",
+      "essayQuestionLabel": "Câu tự luận — Chờ chấm"
     },
     "skeleton": {
       "loading": "Đang tải danh sách bài kiểm tra..."
@@ -1160,7 +1171,8 @@
     "status": {
       "available": "Có thể làm",
       "completed": "Đã xong",
-      "expired": "Hết hạn"
+      "expired": "Hết hạn",
+      "submittedPendingEssay": "Chờ chấm tự luận"
     },
     "submitModal": {
       "answered": "Đã trả lời",
@@ -1190,7 +1202,10 @@
       "submitBtn": "Nộp bài",
       "timerAnnounce": "Còn lại {time}",
       "timerLabel": "Thời gian còn lại",
-      "unflagBtn": "Bỏ đánh dấu"
+      "unflagBtn": "Bỏ đánh dấu",
+      "essayPlaceholder": "Nhập câu trả lời của bạn...",
+      "essayCharCount": "{count}/2000 ký tự",
+      "essayEmptyWarning": "Bạn chưa trả lời câu tự luận."
     }
   },
   "examBank": {
@@ -1377,6 +1392,7 @@
     "title": "Phê duyệt lô điểm"
   },
   "gradeBook": {
+    "childSwitcherLabel": "Chọn con",
     "bandHeaderCK": "Cuối kỳ",
     "bandHeaderGK": "Giữa kỳ",
     "bandHeaderTX": "Thường xuyên",
