@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   GradeBook,
   GradeBookRow,
 } from "../../domain/entities/grade-book.entity";
+import { MOCK_VIEWER_CHILDREN } from "../../infrastructure/repositories/mocks/grade-book-fixtures";
 import { GradeBookScreen } from "./grade-book-screen";
 import type {
   ClassSubjectOption,
@@ -170,6 +171,109 @@ export const ParentView_SingleRow: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     expect(canvas.getByText("Trần Thị Bình")).toBeInTheDocument();
+  },
+};
+
+// ─── US-E13.7 — parent child-switcher ────────────────────────────────────────
+
+const child1Book: GradeBook = {
+  ...book,
+  className: "8B1",
+  rows: [
+    {
+      studentId: "c2-hs-001",
+      studentName: "Nguyễn Thu Hà",
+      studentCode: "HS201",
+      scores: { tx: 7, gk: 7.5, ck: 8 },
+      average: 7.7,
+      conductGrade: "Kha",
+      publishStatus: "PUBLISHED",
+    },
+  ],
+};
+
+function parentVm(over: Partial<GradeBookScreenVM> = {}): GradeBookScreenVM {
+  return vm({
+    role: "parent",
+    classSubjects: [],
+    selectedCsId: null,
+    gradeBook: { ...book, rows: [ROWS[0]] },
+    gradeEntryPath: undefined,
+    ...over,
+  });
+}
+
+export const ParentView_SingleChild: Story = {
+  args: {
+    vm: parentVm({
+      childrenList: [MOCK_VIEWER_CHILDREN[0]],
+      activeChildId: "c1",
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // AC: single child → switcher tablist is hidden.
+    expect(canvas.queryByRole("tablist")).toBeNull();
+    expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
+  },
+};
+
+export const ParentView_MultiChild_Tab1: Story = {
+  args: {
+    vm: parentVm({
+      childrenList: MOCK_VIEWER_CHILDREN,
+      activeChildId: "c1",
+    }),
+    onChildSwitch: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // AC: ≥2 children → switcher renders with one tab per child.
+    expect(canvas.getByRole("tablist")).toBeInTheDocument();
+    const tabs = canvas.getAllByRole("tab");
+    expect(tabs).toHaveLength(2);
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+  },
+};
+
+export const ParentView_SwitchLoading: Story = {
+  args: {
+    vm: parentVm({
+      childrenList: MOCK_VIEWER_CHILDREN,
+      activeChildId: "c2",
+    }),
+    isLoading: true,
+    onChildSwitch: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // loading skeleton shows in the tabpanel; switcher remains interactive.
+    expect(canvas.getByRole("tablist")).toBeInTheDocument();
+    const tabs = canvas.getAllByRole("tab");
+    expect(tabs[0]).toBeDisabled();
+  },
+};
+
+export const ParentView_MultiChild_Switch: Story = {
+  args: {
+    vm: parentVm({
+      childrenList: MOCK_VIEWER_CHILDREN,
+      activeChildId: "c2",
+      gradeBook: child1Book,
+    }),
+    onChildSwitch: fn(),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const tabs = canvas.getAllByRole("tab");
+    expect(tabs[1]).toHaveAttribute("aria-selected", "true");
+    // child 1 data (8B1) is shown.
+    expect(canvas.getByText("Nguyễn Thu Hà")).toBeInTheDocument();
+    // clicking the first child tab requests a switch.
+    await userEvent.click(
+      canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ }),
+    );
+    expect(args.onChildSwitch).toHaveBeenCalledWith("c1");
   },
 };
 

@@ -1413,6 +1413,7 @@
     "errorNotFound": "Grade book not found",
     "errorUnknown": "An unknown error occurred",
     "loading": "Loading grade book...",
+    "noEnrolledChildren": "No enrolled children",
     "noSelection": "Select a class and term to view the grade book",
     "notPublishedBanner": "Grades not published yet",
     "notPublishedDescription": "Grades will appear once published by the teacher / administrator.",
