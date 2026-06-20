@@ -24,3 +24,4 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-006 | Notifications Center | US-E10.2 | [x] delivered (2026-06-20) |
 | DR-007 | Announcements (BGH gửi thông báo) | US-E10.3 | [x] delivered (2026-06-20) |
 | DR-008 | Group Chat (mở rộng từ messaging.jsx) | US-E10.4 (not US-E10.1; group-lifecycle net-new) | [x] delivered (2026-06-20) |
+| DR-009 | Impeccable anti-pattern fixes (side-stripe ban, error contrast, a11y, GPU transition, bounce easing) | US-E16.1–E16.5 | [x] delivered (2026-06-21) |
