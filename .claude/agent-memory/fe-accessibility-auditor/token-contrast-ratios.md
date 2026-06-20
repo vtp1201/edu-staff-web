@@ -82,6 +82,16 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - edu-warning-foreground (#2a3547) on warning/15 bg: 11.25:1 — PASS (badge pattern correct)
 - edu-text-secondary (#5a6a85) on white: 5.48:1 — PASS (fieldset legend in severity selector)
 
+## Additional ratios confirmed (US-E10.4 messaging audit, 2026-06-20)
+- white (#fff) on bg-primary (#5d87ff) at 11px font-extrabold (unread badge): 3.29:1 — FAIL 4.5:1 small text
+- --edu-error (#fa896b) on --edu-error-light (#fff5f2) (admin badge raw token): 2.21:1 — FAIL; use text-edu-error-text (#c0392b) = 5.07:1 PASS
+- --edu-primary (#5d87ff) on bg-primary/8 (#f2f5ff) (create-group CTA in list): 3.02:1 — FAIL 4.5:1
+- --edu-text-muted (#8898a9) on white (timestamps in chat bubbles): 2.95:1 — FAIL 4.5:1
+- Own-bubble quoted block: white/80 effective (#e4ebff) on effective quote bg (#7a9cff = #5d87ff + 18% white): 2.20:1 — FAIL; use text-primary-foreground without opacity reduction, or use white/55+ on a darker token
+- Own-bubble quoted block sender name: white/90 on #7a9cff: 2.40:1 — FAIL
+- --edu-primary (#5d87ff) on --edu-bg (#f5f7fa) (reply quote sender name in "other" bubble): 3.07:1 — FAIL 4.5:1 for 11px text
+- --edu-warning-foreground (#2a3547) on bg-edu-warning/15 (#fff2dd): 11.18:1 — PASS (leave group button correct)
+
 ## Additional ratios confirmed (US-E12.4 audit, US-E13.4 audit)
 - --edu-primary-dark (#4570EA) on white: 4.41:1 — BARELY FAILS AA for ≤12px normal text (globals.css comment claims 4.56 — incorrect; this is a measurement discrepancy to note)
 - --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS for small text buttons. Use for any button with text-[11px] or smaller.

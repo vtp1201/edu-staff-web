@@ -1571,13 +1571,16 @@
       "online": "Đang online",
       "placeholder": "Nhập tin nhắn... (Enter để gửi)",
       "send": "Gửi",
-      "typing": "Đang nhập tin nhắn..."
+      "typing": "Đang nhập tin nhắn...",
+      "you": "Bạn"
     },
     "contextMenu": {
       "copy": "Sao chép văn bản",
       "delete": "Xóa",
       "deleteExpired": "Đã quá 1 giờ",
       "deleteOwnOnly": "Chỉ xoá tin nhắn của bạn",
+      "menuLabel": "Menu tùy chọn tin nhắn",
+      "openAriaLabel": "Tùy chọn tin nhắn",
       "pin": "Ghim tin nhắn",
       "pinAdminOnly": "Chỉ admin mới có thể ghim",
       "reply": "Trả lời"
@@ -1600,8 +1603,14 @@
     },
     "errors": {
       "create-conversation-failed": "Không thể tạo cuộc hội thoại. Vui lòng thử lại.",
+      "create-group-failed": "Không thể tạo nhóm. Vui lòng thử lại.",
+      "delete-message-failed": "Không thể xoá tin nhắn.",
+      "group-mutation-failed": "Thao tác nhóm thất bại. Vui lòng thử lại.",
+      "leave-group-failed": "Không thể rời nhóm.",
       "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
       "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
+      "not-group-admin": "Chỉ admin nhóm mới có quyền thực hiện.",
+      "pin-failed": "Không thể ghim tin nhắn.",
       "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
     },
     "group": {
@@ -1616,7 +1625,10 @@
       "memberCount": "{count} thành viên",
       "nameLabel": "Tên nhóm",
       "namePlaceholder": "Nhập tên nhóm...",
+      "nextStep": "Tiếp theo",
       "noMembersFound": "Không tìm thấy thành viên phù hợp.",
+      "prevStep": "Quay lại",
+      "removeChip": "Xóa {name}",
       "searchMembersPlaceholder": "Tìm thành viên...",
       "selectedCount": "{count} đã chọn",
       "stepInfo": "Thông tin nhóm",
@@ -1634,10 +1646,18 @@
       "deleteWarning": "Xoá nhóm là hành động không thể hoàn tác.",
       "editAvatar": "Đổi ảnh đại diện nhóm",
       "leaveGroup": "Rời nhóm",
+      "deleteConfirm": "Xác nhận xoá",
+      "editName": "Chỉnh sửa thông tin nhóm",
+      "leaveConfirmBody": "Bạn sẽ không còn nhận tin nhắn từ nhóm này.",
+      "leaveConfirmTitle": "Rời khỏi nhóm này?",
+      "descLabel": "Mô tả nhóm",
+      "memberSelf": "(Bạn)",
       "membersSection": "THÀNH VIÊN",
       "noPinned": "Chưa có tin nhắn được ghim.",
       "pinnedSection": "TIN NHẮN ĐÃ GHIM",
       "removeMember": "Xoá khỏi nhóm",
+      "removeMemberAria": "Xóa {name} khỏi nhóm",
+      "save": "Lưu",
       "title": "Thông tin nhóm"
     },
     "newMessage": {

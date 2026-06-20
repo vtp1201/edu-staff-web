@@ -2,11 +2,23 @@
 
 import {
   makeCreateConversationUseCase,
+  makeCreateGroupUseCase,
+  makeDeleteGroupUseCase,
+  makeDeleteMessageUseCase,
+  makeGetGroupUseCase,
   makeGetMessagesUseCase,
+  makeLeaveGroupUseCase,
+  makePinMessageUseCase,
+  makeRemoveGroupMemberUseCase,
   makeSendMessageUseCase,
+  makeUpdateGroupUseCase,
 } from "@/bootstrap/di";
+import type { CreateGroupFormValues } from "@/features/messaging/presentation/create-group-modal";
 import type {
+  ActionResult,
   CreateConversationResult,
+  CreateGroupResult,
+  GetGroupResult,
   GetMessagesResult,
   SendMessageResult,
 } from "@/features/messaging/presentation/messaging-screen";
@@ -40,5 +52,96 @@ export async function getMessagesAction(
   const result = await useCase.execute(conversationId);
   return result.ok
     ? { ok: true, value: result.value.messages }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+// --- US-E10.4 group lifecycle + message interactions ---
+
+export async function createGroupAction(
+  values: CreateGroupFormValues,
+): Promise<CreateGroupResult> {
+  const useCase = await makeCreateGroupUseCase();
+  const result = await useCase.execute(values);
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function getGroupAction(groupId: string): Promise<GetGroupResult> {
+  const useCase = await makeGetGroupUseCase();
+  const result = await useCase.execute(groupId);
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function updateGroupAction(
+  groupId: string,
+  name: string,
+  description: string,
+): Promise<GetGroupResult> {
+  const useCase = await makeUpdateGroupUseCase();
+  const result = await useCase.execute({ groupId, name, description });
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function removeGroupMemberAction(
+  groupId: string,
+  userId: string,
+): Promise<GetGroupResult> {
+  const useCase = await makeRemoveGroupMemberUseCase();
+  const result = await useCase.execute(groupId, userId);
+  return result.ok
+    ? { ok: true, value: result.value }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function pinMessageAction(
+  conversationId: string,
+  messageId: string,
+): Promise<ActionResult> {
+  const useCase = await makePinMessageUseCase();
+  const result = await useCase.execute(conversationId, messageId);
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function deleteMessageAction(
+  conversationId: string,
+  messageId: string,
+  sentAt: string,
+): Promise<ActionResult> {
+  const useCase = await makeDeleteMessageUseCase();
+  const result = await useCase.execute({
+    conversationId,
+    messageId,
+    isMine: true,
+    sentAt,
+  });
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function leaveGroupAction(
+  conversationId: string,
+): Promise<ActionResult> {
+  const useCase = await makeLeaveGroupUseCase();
+  const result = await useCase.execute(conversationId);
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function deleteGroupAction(
+  groupId: string,
+): Promise<ActionResult> {
+  const useCase = await makeDeleteGroupUseCase();
+  const result = await useCase.execute(groupId);
+  return result.ok
+    ? { ok: true }
     : { ok: false, errorKey: result.failure.type };
 }

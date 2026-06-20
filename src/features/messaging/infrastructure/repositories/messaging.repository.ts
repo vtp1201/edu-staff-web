@@ -4,11 +4,14 @@ import { MESSAGING_EP } from "@/bootstrap/endpoint/messaging.endpoint";
 import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
+import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type {
+  CreateGroupInput,
   IMessagingRepository,
   MessagePage,
+  UpdateGroupInput,
 } from "@/features/messaging/domain/repositories/i-messaging.repository";
 import {
   fail,
@@ -18,7 +21,9 @@ import {
 import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { ConversationsListResponseDto } from "../dtos/conversations-list-response.dto";
+import type { GroupResponseDto } from "../dtos/group-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
+import { toGroupEntity } from "../mappers/group.mapper";
 import {
   toContactEntity,
   toConversationEntity,
@@ -117,6 +122,198 @@ export class MessagingRepository implements IMessagingRepository {
     } catch (err) {
       return fail({
         type: "load-conversations-failed",
+        cause: errorCodeOf(err) ?? "social-service-not-available",
+      });
+    }
+  }
+
+  // --- US-E10.4 group lifecycle (social service not yet shipped) ---
+
+  private notGroupAdminOr(
+    err: unknown,
+    fallback: MessagingFailure,
+  ): MessagingFailure {
+    return errorCodeOf(err) === "NOT_GROUP_ADMIN"
+      ? { type: "not-group-admin" }
+      : fallback;
+  }
+
+  async createGroup(
+    input: CreateGroupInput,
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const dto = (await this.http.post(
+        MESSAGING_EP.groups,
+        input,
+      )) as unknown as GroupResponseDto;
+      return ok(toGroupEntity(dto));
+    } catch (err) {
+      return fail({
+        type: "create-group-failed",
+        cause: errorCodeOf(err) ?? "social-service-not-available",
+      });
+    }
+  }
+
+  async getGroup(
+    groupId: string,
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const dto = (await this.http.get(
+        MESSAGING_EP.groupById(groupId),
+      )) as unknown as GroupResponseDto;
+      return ok(toGroupEntity(dto));
+    } catch (err) {
+      return fail({
+        type: "group-mutation-failed",
+        action: "get",
+        cause: errorCodeOf(err) ?? "social-service-not-available",
+      });
+    }
+  }
+
+  async updateGroup(
+    input: UpdateGroupInput,
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const { groupId, ...patch } = input;
+      const dto = (await this.http.patch(
+        MESSAGING_EP.groupById(groupId),
+        patch,
+      )) as unknown as GroupResponseDto;
+      return ok(toGroupEntity(dto));
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "group-mutation-failed",
+          action: "update",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  async addGroupMembers(
+    groupId: string,
+    memberIds: string[],
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const dto = (await this.http.post(MESSAGING_EP.groupMembers(groupId), {
+        memberIds,
+      })) as unknown as GroupResponseDto;
+      return ok(toGroupEntity(dto));
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "group-mutation-failed",
+          action: "add-members",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  async removeGroupMember(
+    groupId: string,
+    userId: string,
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const dto = (await this.http.delete(
+        MESSAGING_EP.groupMemberById(groupId, userId),
+      )) as unknown as GroupResponseDto;
+      return ok(toGroupEntity(dto));
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "group-mutation-failed",
+          action: "remove-member",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  async leaveGroup(
+    conversationId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.post(MESSAGING_EP.conversationLeave(conversationId));
+      return ok(true);
+    } catch (err) {
+      return fail({
+        type: "leave-group-failed",
+        cause: errorCodeOf(err) ?? "social-service-not-available",
+      });
+    }
+  }
+
+  async deleteGroup(
+    groupId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.delete(MESSAGING_EP.groupById(groupId));
+      return ok(true);
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "group-mutation-failed",
+          action: "delete",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  // --- US-E10.4 message interactions ---
+
+  async pinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.post(MESSAGING_EP.messagePin(conversationId, messageId));
+      return ok(true);
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "pin-failed",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  async unpinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.delete(
+        MESSAGING_EP.messagePin(conversationId, messageId),
+      );
+      return ok(true);
+    } catch (err) {
+      return fail(
+        this.notGroupAdminOr(err, {
+          type: "pin-failed",
+          cause: errorCodeOf(err) ?? "social-service-not-available",
+        }),
+      );
+    }
+  }
+
+  async deleteMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.delete(
+        MESSAGING_EP.messageById(conversationId, messageId),
+      );
+      return ok(true);
+    } catch (err) {
+      return fail({
+        type: "delete-message-failed",
         cause: errorCodeOf(err) ?? "social-service-not-available",
       });
     }

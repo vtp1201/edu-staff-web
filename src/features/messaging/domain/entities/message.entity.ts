@@ -20,4 +20,16 @@ export type MessageEntity = {
   senderColor?: string;
   /** Optimistic UI flag — true while the send mutation is in flight. */
   isPending?: boolean;
+  /** Reply quote (US-E10.4) — set when this message replies to another. */
+  replyTo?: {
+    messageId: string;
+    senderName: string;
+    excerpt: string;
+  };
+  /** Pinned in the group info panel (US-E10.4). */
+  isPinned?: boolean;
+  /** Soft-deleted — bubble renders the "Tin nhắn đã bị xoá" placeholder (US-E10.4). */
+  isDeleted?: boolean;
+  /** ISO8601 timestamp for the delete-window check (isMine && within 1 hour). */
+  sentAt?: string;
 };

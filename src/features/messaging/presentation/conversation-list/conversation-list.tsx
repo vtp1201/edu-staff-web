@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,8 @@ export interface ConversationListProps {
   loadError?: MessagingFailure["type"];
   onSelect: (id: string) => void;
   onNewMessage: () => void;
+  /** Open the create-group modal (Groups tab CTA + empty state, US-E10.4). */
+  onCreateGroup?: () => void;
 }
 
 export function ConversationList({
@@ -27,6 +29,7 @@ export function ConversationList({
   loadError,
   onSelect,
   onNewMessage,
+  onCreateGroup,
 }: ConversationListProps) {
   const t = useTranslations("messaging");
   const tErrors = useTranslations("messaging.errors");
@@ -56,7 +59,7 @@ export function ConversationList({
               {t("title")}
             </span>
             {totalUnread > 0 && (
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground">
+              <span className="rounded-full bg-edu-primary-accessible px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground">
                 <span className="sr-only">
                   {t("totalUnread", { count: totalUnread })}
                 </span>
@@ -100,6 +103,7 @@ export function ConversationList({
         {(["direct", "groups"] as const).map((id) => (
           <button
             key={id}
+            id={`${searchId}-tab-${id}`}
             type="button"
             role="tab"
             aria-selected={tab === id}
@@ -117,7 +121,12 @@ export function ConversationList({
         ))}
       </div>
 
-      <div id={panelId} role="tabpanel" className="flex-1 overflow-y-auto">
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={`${searchId}-tab-${tab}`}
+        className="flex-1 overflow-y-auto"
+      >
         {loadError ? (
           <div
             role="alert"
@@ -137,22 +146,61 @@ export function ConversationList({
               </li>
             ))}
           </ul>
-        ) : filtered.length > 0 ? (
-          <ul>
-            {filtered.map((c) => (
-              <li key={c.id}>
-                <ConversationItem
-                  conversation={c}
-                  isActive={activeConversationId === c.id}
-                  onSelect={onSelect}
-                />
-              </li>
-            ))}
-          </ul>
         ) : (
-          <p className="px-6 py-6 text-center text-muted-foreground text-sm">
-            {tab === "groups" ? t("search.noGroups") : t("search.noResults")}
-          </p>
+          <>
+            {tab === "groups" && onCreateGroup && (
+              <button
+                type="button"
+                onClick={onCreateGroup}
+                className="flex w-full items-center gap-1.5 bg-primary/8 px-4 py-2.5 text-left font-semibold text-edu-primary-accessible text-sm transition-colors hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
+                {t("group.emptyCreateCta")}
+              </button>
+            )}
+            {filtered.length > 0 ? (
+              <ul>
+                {filtered.map((c) => (
+                  <li key={c.id}>
+                    <ConversationItem
+                      conversation={c}
+                      isActive={activeConversationId === c.id}
+                      onSelect={onSelect}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : tab === "groups" && !search.trim() ? (
+              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+                <Users
+                  className="size-9 text-border"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+                <p className="font-bold text-foreground text-sm">
+                  {t("group.emptyTitle")}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {t("group.emptySubtitle")}
+                </p>
+                {onCreateGroup && (
+                  <button
+                    type="button"
+                    onClick={onCreateGroup}
+                    className="mt-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {t("group.emptyCreateCta")}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="px-6 py-6 text-center text-muted-foreground text-sm">
+                {tab === "groups"
+                  ? t("search.noGroups")
+                  : t("search.noResults")}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

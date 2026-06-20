@@ -63,6 +63,12 @@
   --edu-card: #ffffff;
   --edu-border: #e5eaf2;
 
+  /* ── Messaging (US-E10.4, ADR 0047) ─────────────── */
+  /** Own-message reply quoted block background — dark overlay on primary bubble (~#4a6dcc) for WCAG AA white text (A11Y-034). */
+  --edu-messaging-quote-own-bg: rgba(0, 0, 0, 0.2);
+  /** Own-message reply quoted block border — semi-transparent white. */
+  --edu-messaging-quote-own-border: rgba(255, 255, 255, 0.35);
+
   /* ── Layout ─────────────────────────────────────── */
   --edu-sidebar-width: 260px;
   --edu-sidebar-width-collapsed: 72px;

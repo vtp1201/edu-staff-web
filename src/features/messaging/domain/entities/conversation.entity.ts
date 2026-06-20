@@ -19,4 +19,8 @@ export type ConversationEntity = {
   isOnline?: boolean;
   /** Group only — member count. */
   memberCount?: number;
+  /** Group only — name of the last message sender for "Sender: preview…" (US-E10.4). */
+  lastSenderName?: string;
+  /** Group only — whether the current user is an admin of this group (US-E10.4). */
+  selfIsGroupAdmin?: boolean;
 };

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MessageEntity } from "../entities/message.entity";
-import type { IMessagingRepository } from "../repositories/i-messaging.repository";
+import { makeMessagingRepo as makeRepo } from "./group-test-utils";
 import { ok } from "./result";
 import { SendMessageUseCase } from "./send-message.use-case";
 
@@ -12,19 +12,6 @@ const message: MessageEntity = {
   time: "08:30",
   date: "Hôm nay",
 };
-
-function makeRepo(
-  over: Partial<IMessagingRepository> = {},
-): IMessagingRepository {
-  return {
-    getConversations: vi.fn(),
-    getMessages: vi.fn(),
-    sendMessage: vi.fn(),
-    createConversation: vi.fn(),
-    getContacts: vi.fn(),
-    ...over,
-  };
-}
 
 describe("SendMessageUseCase", () => {
   it("delegates to the repo and returns the sent message for valid text", async () => {
