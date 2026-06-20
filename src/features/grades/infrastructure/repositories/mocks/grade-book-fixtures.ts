@@ -1,3 +1,4 @@
+import type { ChildSummary } from "../../../domain/entities/grade-book.entity";
 import type { GradeBookRowDto } from "../../dtos/grade-book-response.dto";
 
 export const MOCK_GRADE_BOOK_CS_ID = "cs-001";
@@ -58,6 +59,78 @@ export const MOCK_GRADE_BOOK_ROWS: GradeBookRowDto[] = [
     scores: { tx: 5, gk: 5, ck: 5 },
     average: 5.0,
     conductGrade: "Yeu",
+    publishStatus: "PUBLISHED",
+  },
+];
+
+// ─── US-E13.7 — parent child-switcher fixtures ───────────────────────────────
+
+/** Children linked to the signed-in parent viewer. */
+export const MOCK_VIEWER_CHILDREN: ChildSummary[] = [
+  {
+    childId: "c1",
+    name: "Nguyễn Minh Khoa",
+    className: "11A2",
+    avatar: "NK",
+    color: "primary",
+  },
+  {
+    childId: "c2",
+    name: "Nguyễn Thu Hà",
+    className: "8B1",
+    avatar: "NH",
+    color: "success",
+  },
+];
+
+/** child 0 — 11A2; reuses the existing roster rows. */
+export const MOCK_GRADE_BOOK_ROWS_CHILD_0 = MOCK_GRADE_BOOK_ROWS;
+
+/** child 1 — 8B1; 5 subjects with slightly different data. */
+export const MOCK_GRADE_BOOK_ROWS_CHILD_1: GradeBookRowDto[] = [
+  {
+    studentId: "c2-hs-001",
+    studentName: "Nguyễn Thu Hà",
+    studentCode: "HS201",
+    scores: { tx: 7, gk: 7.5, ck: 8 },
+    average: 7.7,
+    conductGrade: "Kha",
+    publishStatus: "PUBLISHED",
+  },
+  {
+    studentId: "c2-hs-002",
+    studentName: "Phạm Minh Đức",
+    studentCode: "HS202",
+    scores: { tx: 5, gk: 5.5, ck: 6 },
+    average: 5.7,
+    conductGrade: "TB",
+    publishStatus: "PUBLISHED",
+  },
+  {
+    studentId: "c2-hs-003",
+    studentName: "Trần Anh Tú",
+    studentCode: "HS203",
+    scores: { tx: 9, gk: 9, ck: 9.5 },
+    average: 9.2,
+    conductGrade: "Tot",
+    publishStatus: "PUBLISHED",
+  },
+  {
+    studentId: "c2-hs-004",
+    studentName: "Lê Thị Mai",
+    studentCode: "HS204",
+    scores: { tx: 4, gk: 4, ck: 4.5 },
+    average: 4.2,
+    conductGrade: "TB",
+    publishStatus: "DRAFT",
+  },
+  {
+    studentId: "c2-hs-005",
+    studentName: "Vũ Hoàng Nam",
+    studentCode: "HS205",
+    scores: { tx: 6.5, gk: 7, ck: 7.5 },
+    average: 7.1,
+    conductGrade: "Kha",
     publishStatus: "PUBLISHED",
   },
 ];

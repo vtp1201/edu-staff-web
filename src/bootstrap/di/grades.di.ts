@@ -11,6 +11,7 @@ import type { IGradesRepository } from "@/features/grades/domain/repositories/i-
 import { ApproveGradeBatchUseCase } from "@/features/grades/domain/use-cases/approve-grade-batch.use-case";
 import { BulkLockBatchesUseCase } from "@/features/grades/domain/use-cases/bulk-lock-batches.use-case";
 import { GetChildGradesUseCase } from "@/features/grades/domain/use-cases/get-child-grades.use-case";
+import { GetChildListUseCase } from "@/features/grades/domain/use-cases/get-child-list.use-case";
 import { GetGradeBookUseCase } from "@/features/grades/domain/use-cases/get-grade-book.use-case";
 import { GetGradeSheetUseCase } from "@/features/grades/domain/use-cases/get-grade-sheet.use-case";
 import { GetMyGradesUseCase } from "@/features/grades/domain/use-cases/get-my-grades.use-case";
@@ -134,6 +135,14 @@ export async function makeGetChildGradesUseCase(
   return new GetChildGradesUseCase(
     await makeGradeBookRepo(subjectId, yearLabel),
   );
+}
+
+// US-E13.7 — parent child-switcher: list children linked to the viewer.
+export async function makeGetChildListUseCase(
+  subjectId = "subj-toan-10",
+  yearLabel = "2024-2025",
+) {
+  return new GetChildListUseCase(await makeGradeBookRepo(subjectId, yearLabel));
 }
 
 // ─── US-E14.4 — grade approval pipeline (admin) ──────────────────────────────

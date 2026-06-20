@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
+import { ChildSwitcher } from "../child-switcher/child-switcher";
 import { RankDistributionChart } from "./components/rank-distribution-chart";
 import type { GradeBookScreenVM } from "./grade-book-screen.i-vm";
 import { GradeBookSkeleton } from "./grade-book-skeleton";
@@ -48,6 +49,8 @@ export interface GradeBookScreenProps {
   onEnterGrades?: (csId: string) => void;
   /** retry the current query (RSC refresh) */
   onRetry?: () => void;
+  /** parent only — called when a different child tab is clicked */
+  onChildSwitch?: (childId: string) => void;
 }
 
 export function GradeBookScreen({
@@ -56,6 +59,7 @@ export function GradeBookScreen({
   onSelectionChange,
   onEnterGrades,
   onRetry,
+  onChildSwitch,
 }: GradeBookScreenProps) {
   const t = useTranslations("gradeBook");
   const [, startTransition] = useTransition();
@@ -66,6 +70,24 @@ export function GradeBookScreen({
   const hasSelection = needsSelection
     ? Boolean(vm.selectedCsId && vm.selectedTerm)
     : Boolean(vm.selectedTerm);
+
+  // parent-only child switcher: only shown when ≥2 children are linked.
+  const showChildSwitcher =
+    vm.role === "parent" &&
+    Boolean(vm.childrenList) &&
+    (vm.childrenList?.length ?? 0) >= 2;
+  const resolvedActiveChildId =
+    vm.activeChildId ?? vm.childrenList?.[0]?.childId;
+
+  // the grade table region is a tabpanel only when the switcher is shown.
+  const panelProps =
+    showChildSwitcher && resolvedActiveChildId
+      ? ({
+          role: "tabpanel",
+          id: `tabpanel-${resolvedActiveChildId}`,
+          "aria-labelledby": `tab-${resolvedActiveChildId}`,
+        } as const)
+      : {};
 
   function changeSelection(next: { csId?: string; term?: string }) {
     startTransition(() => onSelectionChange?.(next));
@@ -134,26 +156,37 @@ export function GradeBookScreen({
         </div>
       ) : null}
 
-      {isLoading ? (
-        <GradeBookSkeleton />
-      ) : !hasSelection ? (
-        <EmptyState message={t("noSelection")} />
-      ) : vm.error ? (
-        <ErrorBanner message={t(ERROR_KEY_MAP[vm.error])} onRetry={onRetry} />
-      ) : !vm.gradeBook ? (
-        <EmptyState message={t("emptyState")} />
-      ) : (
-        <>
-          <GradeBookTable
-            gradeBook={vm.gradeBook}
-            role={vm.role}
-            isPublished={vm.isPublished}
-          />
-          {showSelectors && vm.gradeBook.rows.length > 0 ? (
-            <RankDistributionChart rows={vm.gradeBook.rows} />
-          ) : null}
-        </>
-      )}
+      {showChildSwitcher && vm.childrenList ? (
+        <ChildSwitcher
+          childList={vm.childrenList}
+          activeChildId={resolvedActiveChildId ?? vm.childrenList[0].childId}
+          onSwitch={onChildSwitch ?? (() => {})}
+          isLoading={isLoading}
+        />
+      ) : null}
+
+      <div {...panelProps} className="flex flex-col gap-5">
+        {isLoading ? (
+          <GradeBookSkeleton />
+        ) : !hasSelection ? (
+          <EmptyState message={t("noSelection")} />
+        ) : vm.error ? (
+          <ErrorBanner message={t(ERROR_KEY_MAP[vm.error])} onRetry={onRetry} />
+        ) : !vm.gradeBook ? (
+          <EmptyState message={t("emptyState")} />
+        ) : (
+          <>
+            <GradeBookTable
+              gradeBook={vm.gradeBook}
+              role={vm.role}
+              isPublished={vm.isPublished}
+            />
+            {showSelectors && vm.gradeBook.rows.length > 0 ? (
+              <RankDistributionChart rows={vm.gradeBook.rows} />
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -104,4 +104,30 @@ trường hợp đa-con mà không phá vỡ single-child case.
 
 ## Evidence
 
-(empty — fill after implementation)
+- **Unit (Vitest):** 15 tests — `get-child-list.use-case.test.ts` (3),
+  `get-child-grades.use-case.test.ts` (3), `child-switcher.test.tsx` (9, keyboard
+  handler: ArrowLeft/Right wrap-around math + Enter/Space aria-disabled guard).
+- **Integration:** `grade-book.mock.repository.test.ts` covers `getChildList`
+  (seeded parent viewer) + `getChildGrades` for c1/c2/unknown-fallback (mock-first
+  core, INT-001 child-list + INT-002 child-grades).
+- **Storybook interaction:** 4 `ChildSwitcher` stories (SingleChild,
+  MultiChild_Tab1 incl. keyboard roving, SwitchLoading, MultiChild_Switch) +
+  4 `GradeBookScreen` parent stories. `ChildSwitcher` uses `aria-disabled`
+  (not native `disabled`); loading-state stories assert
+  `aria-disabled='true'` on the non-active tab.
+- **`bunx tsc --noEmit`:** clean.
+- **`bun vitest run`:** 873 passed (179 files).
+- **`bun run build`:** ✓ Compiled successfully.
+
+### QA defect fixes (post-implementation)
+
+- **DEF-001 (MAJOR):** `ParentView_SwitchLoading` stories asserted `toBeDisabled()`,
+  which checks the native `disabled` attribute the component never sets — always
+  failed. Replaced with `toHaveAttribute('aria-disabled', 'true')` /
+  `not.toHaveAttribute('aria-disabled', 'true')` in both
+  `child-switcher.stories.tsx` and `grade-book-screen.stories.tsx`.
+- **DEF-002 (MINOR):** Added `child-switcher.test.tsx` (9 pure-logic keyboard
+  tests) + a keyboard-roving assertion to `ParentView_MultiChild_Tab1`
+  (ArrowRight/Left move focus without changing `aria-selected`).
+- **DEF-003 (MINOR):** Updated `docs/TEST_MATRIX.md` row + this packet to
+  `implemented` with proof counts.

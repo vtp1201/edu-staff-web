@@ -1,4 +1,5 @@
 import type {
+  ChildSummary,
   GradeBook,
   GradeBookRole,
 } from "../../domain/entities/grade-book.entity";
@@ -20,4 +21,8 @@ export interface GradeBookScreenVM {
   error: GradesFailure["type"] | null;
   /** teacher only — grade-entry route to navigate to via the CTA */
   gradeEntryPath?: string;
+  /** parent role only — list of linked children; undefined for other roles */
+  childrenList?: ChildSummary[];
+  /** parent role only — currently active child id; undefined for other roles */
+  activeChildId?: string;
 }

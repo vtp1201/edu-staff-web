@@ -37,3 +37,15 @@ export type GradeBookRole =
   | "admin"
   | "student"
   | "parent";
+
+export type ChildColor = "primary" | "success" | "warning" | "error" | "purple";
+
+export interface ChildSummary {
+  childId: string;
+  name: string;
+  className: string;
+  /** 2-char initials for avatar fallback */
+  avatar: string;
+  /** design-token role string → maps to --edu-<color> CSS var in presentation */
+  color: ChildColor;
+}
