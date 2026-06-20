@@ -1051,9 +1051,9 @@ const UnsealCard = ({ req, t, pColor, onApprove, onSelfApprove, readonly }) => {
             <div style={{
               marginTop: 8,
               padding: '10px 12px',
-              background: T.bg, borderRadius: 8,
+              background: T.warningLight, borderRadius: 8,
+              border: `1px solid ${T.warning}33`,
               fontSize: 12.5, color: T.textSecondary, lineHeight: 1.6,
-              borderLeft: `3px solid ${T.warning}`,
             }}>
               <span style={{
                 fontSize: 9.5, fontWeight: 800, color: T.textMuted,

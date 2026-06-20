@@ -282,7 +282,7 @@ const TTCell = ({ slot, isConflict, conflictTeacherName, conflictClasses, isHigh
         onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
         style={{
           width: '100%', minHeight: 76, padding: '8px 10px',
-          background: bg, border: 'none', borderLeft: `3px solid ${accent}`,
+          background: bg, border: `1px solid ${accent}30`,
           borderRadius: 9, cursor: 'pointer', textAlign: 'left',
           fontFamily: 'inherit', position: 'relative',
           boxShadow: hover ? `inset 0 0 0 1.5px ${accent}40` : 'none',
@@ -803,7 +803,7 @@ const TimetableBuilderScreen = ({ lang, primaryColor }) => {
                 <div key={s.id} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   padding: '4px 9px', borderRadius: 6,
-                  background: s.color + '15', borderLeft: `3px solid ${s.color}`,
+                  background: s.color + '15', border: `1px solid ${s.color}30`,
                   fontSize: 11.5, fontWeight: 700, color: s.color,
                 }}>
                   {s.name}

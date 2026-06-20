@@ -449,18 +449,17 @@ const NotificationRow = ({ n, lang, t, pColor, onClick, isLast }) => {
         display: 'grid',
         gridTemplateColumns: '28px minmax(0, 1fr) auto',
         gap: 14, alignItems: 'flex-start',
-        padding: '14px 20px 14px 17px',
-        borderLeft: `3px solid ${unread ? pColor : 'transparent'}`,
+        padding: '14px 20px',
         borderBottom: isLast ? 'none' : `1px solid ${T.border}`,
-        background: unread ? pColor + '08' : T.card,
+        background: unread ? pColor + '12' : T.card,
         border: 'none',
         cursor: 'pointer', fontFamily: 'inherit',
         transition: 'background 0.12s',
         animation: 'nc-row-in 0.18s ease-out',
         position: 'relative',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = unread ? pColor + '12' : T.bg}
-      onMouseLeave={e => e.currentTarget.style.background = unread ? pColor + '08' : T.card}>
+      onMouseEnter={e => e.currentTarget.style.background = unread ? pColor + '1C' : T.bg}
+      onMouseLeave={e => e.currentTarget.style.background = unread ? pColor + '12' : T.card}>
       <div style={{
         width: 28, height: 28, borderRadius: 8, flexShrink: 0,
         background: m.color + '18',
@@ -604,7 +603,6 @@ const SonnerToast = ({ t, lang, toast, pColor, onDismiss }) => {
       background: T.card, color: T.textPrimary,
       padding: '12px 14px 12px 12px', borderRadius: 12,
       border: `1px solid ${m.color}33`,
-      borderLeft: `4px solid ${m.color}`,
       boxShadow: '0 16px 48px rgba(0,0,0,0.18)',
       display: 'flex', alignItems: 'flex-start', gap: 11,
       minWidth: 280, maxWidth: 360,

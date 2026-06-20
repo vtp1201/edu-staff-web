@@ -207,7 +207,7 @@ const TeacherDashboardHome = ({ lang, t, pColor, onNavigate }) => (
             const STATUS = { done: { color: T.textMuted, bg: T.bg, label: t('Hoàn thành', 'Done') }, live: { color: T.success, bg: T.successLight, label: t('Đang dạy', 'Live') }, upcoming: { color: T.warning, bg: T.warningLight, label: t('Sắp tới', 'Upcoming') } };
             const st = STATUS[s.status];
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', borderLeft: s.status === 'live' ? `3px solid ${T.success}` : '3px solid transparent' }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', background: s.status === 'live' ? T.successLight : 'transparent' }}>
                 <div style={{ width: 80, display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 800, color: T.textPrimary, lineHeight: 1.15 }}>
                     {t(`Tiết ${s.period}`, `Period ${s.period}`)}
@@ -868,7 +868,6 @@ const TeacherScheduleFull = ({ lang, t, pColor }) => {
                           position: 'relative',
                           background: cell.conflict ? T.errorLight : pColor + '15',
                           border: `1px solid ${cell.conflict ? T.error + '55' : pColor + '30'}`,
-                          borderLeft: `3px solid ${cell.conflict ? T.error : pColor}`,
                           borderRadius: 8, padding: '8px 10px',
                         }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: cell.conflict ? T.error : pColor }}>

@@ -367,9 +367,9 @@ const ChatBubble = ({ msg, isMe, showName, senderName, senderInitials, senderCol
                 display: 'flex', flexDirection: 'column', gap: 2,
                 marginBottom: 8, marginTop: -2,
                 padding: '6px 10px', width: '100%',
-                borderRadius: 8, border: 'none',
+                borderRadius: 8,
                 background: isMe ? 'rgba(255,255,255,0.18)' : T.bg,
-                borderLeft: `3px solid ${isMe ? 'rgba(255,255,255,0.6)' : pColor}`,
+                border: `1px solid ${isMe ? 'rgba(255,255,255,0.35)' : pColor + '33'}`,
                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
               }}>
               <span style={{
@@ -483,7 +483,6 @@ const ReplyStrip = ({ replyTo, pColor, onCancel, t }) => (
     padding: '8px 12px', marginBottom: 8,
     background: pColor + '0F', borderRadius: 9,
     border: `1px solid ${pColor}33`,
-    borderLeft: `4px solid ${pColor}`,
     animation: 'msg-reply-in 0.15s ease-out',
   }}>
     <Icon name="arrowLeft" size={13} color={pColor} strokeWidth={2.4} />
@@ -1409,9 +1408,8 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
       <button onClick={() => { setActiveId(id); setIsGroup(isGroupItem); }}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-          background: isActive ? pColor + '0F' : 'transparent',
+          background: isActive ? pColor + '16' : 'transparent',
           border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.12s',
-          borderLeft: `3px solid ${isActive ? pColor : 'transparent'}`,
         }}
         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.bg; }}
         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
@@ -1709,7 +1707,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                       </div>
                       <div style={{ padding: '8px 14px', background: T.card, borderRadius: '16px 16px 16px 4px', border: `1px solid ${T.border}`, display: 'flex', gap: 4, alignItems: 'center' }}>
                         {[0, 1, 2].map(j => (
-                          <div key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: T.textMuted, animation: `bounce ${1 + j * 0.15}s infinite`, opacity: 0.5 }} />
+                          <div key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: T.textMuted, animation: `msg-typing 1.2s ${j * 0.18}s ease-in-out infinite` }} />
                         ))}
                       </div>
                     </div>
@@ -1872,9 +1870,9 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
       )}
 
       <style>{`
-        @keyframes bounce {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-4px); }
+        @keyframes msg-typing {
+          0%, 70%, 100% { opacity: 0.35; transform: translateY(0); }
+          35%           { opacity: 1; transform: translateY(-3px); }
         }
         @keyframes sse-pulse {
           0%   { box-shadow: 0 0 0 0   ${T.success}55; }
@@ -1920,8 +1918,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                 {/* Quoted preview of the message being deleted */}
                 <div style={{
                   marginTop: 10, padding: '7px 10px',
-                  background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
-                  borderLeft: `3px solid ${T.error}`,
+                  background: T.errorLight, border: `1px solid ${T.error}33`, borderRadius: 8,
                   fontSize: 12, color: T.textSecondary, lineHeight: 1.4,
                   maxHeight: 60, overflow: 'hidden',
                   textOverflow: 'ellipsis',

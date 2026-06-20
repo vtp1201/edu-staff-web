@@ -947,8 +947,8 @@ const TeachingPlanReviewScreen = ({ lang, primaryColor }) => {
               return (
                 <button key={s.id} onClick={() => setSelectedId(s.id)}
                   style={{
-                    width: '100%', textAlign: 'left', background: isSelected ? pColor + '0B' : 'transparent',
-                    border: 'none', borderLeft: `3px solid ${isSelected ? pColor : 'transparent'}`,
+                    width: '100%', textAlign: 'left', background: isSelected ? pColor + '16' : 'transparent',
+                    border: 'none',
                     borderBottom: `1px solid ${T.border}`, padding: '14px 18px',
                     cursor: 'pointer', fontFamily: 'inherit',
                   }}>
