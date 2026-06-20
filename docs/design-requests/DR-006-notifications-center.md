@@ -1,6 +1,6 @@
 # DR-006 — Notifications Center (Trung tâm thông báo)
 
-Status: pending
+Status: [x] delivered (2026-06-20)
 US: US-E10.2 (cần tạo story packet)
 Route: `/notifications`
 Roles: tất cả (`teacher`, `principal`, `admin`, `student`, `parent`)

@@ -1976,6 +1976,309 @@
       "input": { "enterToSend": true, "attachments": true, "emoji": true }
     },
 
+    // ── Notifications Center — US-E10.2 (DR-006) ─────────────────────────────
+    // Source: design_src/edu/notifications.jsx — NotificationsCenterScreen (DR-006)
+    // Roles: ALL (teacher, principal, admin, student, parent)
+    // Realtime: SSE event `notification.new` per decision-0009 / US-E06.2
+    "notifications": {
+      "route": "/notifications",
+      "roles": ["teacher", "principal", "admin", "student", "parent"],
+      "source": "design_src/edu/notifications.jsx — NotificationsCenterScreen",
+      "us": "US-E10.2",
+
+      "page": {
+        "maxWidth": 920,
+        "padding": "28px 32px 40px"
+      },
+
+      "breadcrumb": {
+        "fontSize": 12.5,
+        "color": "var(--edu-text-muted)",
+        "activeColor": "var(--edu-text-primary)",
+        "fontWeight": 700
+      },
+
+      "header": {
+        "iconBox": {
+          "size": 44,
+          "borderRadius": 12,
+          "background": "primaryColor + '18'"
+        },
+        "icon": { "name": "bell", "size": 22, "strokeWidth": 1.8 },
+        "unreadBadge": {
+          "size": 18,
+          "borderRadius": 99,
+          "background": "var(--edu-error)",
+          "color": "#fff",
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "border": "2px solid var(--edu-card)",
+          "offset": { "top": -4, "right": -4 },
+          "maxDisplay": "99+"
+        },
+        "title": {
+          "fontSize": 22,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)"
+        },
+        "subtitle": {
+          "fontSize": 13,
+          "fontWeight": 500,
+          "color": "var(--edu-text-muted)",
+          "allReadColor": "var(--edu-success)",
+          "allReadFontWeight": 700
+        },
+        "markAllReadButton": {
+          "padding": "7px 12px",
+          "borderRadius": 8,
+          "fontSize": 12.5,
+          "fontWeight": 800,
+          "color": "primaryColor",
+          "disabledColor": "var(--edu-text-muted)",
+          "disabledOpacity": 0.5,
+          "hoverBackground": "primaryColor + '10'",
+          "icon": { "name": "check", "size": 12, "strokeWidth": 2.6 }
+        }
+      },
+
+      "filterPills": {
+        "containerBackground": "var(--edu-card)",
+        "containerBorderRadius": 12,
+        "containerPadding": 8,
+        "border": "1px solid var(--edu-border)",
+        "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+        "gap": 8,
+        "pill": {
+          "padding": "7px 13px",
+          "borderRadius": 8,
+          "fontSize": 12.5,
+          "fontWeight": { "active": 800, "inactive": 600 },
+          "activeBackground": "primaryColor + '14'",
+          "activeBorder": "1.5px solid primaryColor",
+          "activeColor": "primaryColor",
+          "inactiveColor": "var(--edu-text-secondary)",
+          "hoverBackground": "var(--edu-bg)"
+        },
+        "countBadge": {
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "borderRadius": 99,
+          "activeBackground": "primaryColor + '22'",
+          "activeColor": "primaryColor",
+          "inactiveBackground": "var(--edu-bg)",
+          "inactiveColor": "var(--edu-text-muted)"
+        },
+        "tabs": [
+          { "id": "all", "labelVi": "Tất cả", "type": null },
+          { "id": "unread", "labelVi": "Chưa đọc", "type": "unread" },
+          { "id": "grade", "labelVi": "Điểm số", "type": "grade" },
+          { "id": "attendance", "labelVi": "Điểm danh", "type": "attendance" },
+          { "id": "discipline", "labelVi": "Kỷ luật", "type": "discipline" },
+          {
+            "id": "announcement",
+            "labelVi": "Thông báo trường",
+            "type": "announcement"
+          }
+        ]
+      },
+
+      "notificationTypes": {
+        "grade": {
+          "icon": "chart",
+          "color": "var(--edu-success)",
+          "labelVi": "Điểm số"
+        },
+        "attendance": {
+          "icon": "calendar",
+          "color": "var(--edu-primary)",
+          "labelVi": "Điểm danh"
+        },
+        "discipline": {
+          "icon": "alertTriangle",
+          "color": "var(--edu-warning)",
+          "labelVi": "Kỷ luật"
+        },
+        "announcement": {
+          "icon": "megaphone",
+          "color": "var(--edu-info)",
+          "labelVi": "Thông báo trường"
+        },
+        "system": {
+          "icon": "bell",
+          "color": "var(--edu-text-muted)",
+          "labelVi": "Hệ thống"
+        }
+      },
+
+      "list": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+        "overflow": "hidden",
+        "marginTop": 16
+      },
+
+      "notificationRow": {
+        "layout": "grid — 28px icon | flex-1 content | chevron",
+        "gap": 14,
+        "padding": "14px 20px 14px 17px",
+        "unread": {
+          "borderLeft": "3px solid primaryColor",
+          "background": "primaryColor + '08'",
+          "hoverBackground": "primaryColor + '12'",
+          "titleFontWeight": 800,
+          "titleColor": "var(--edu-text-primary)"
+        },
+        "read": {
+          "borderLeft": "3px solid transparent",
+          "background": "var(--edu-card)",
+          "hoverBackground": "var(--edu-bg)",
+          "titleFontWeight": 500,
+          "titleColor": "var(--edu-text-secondary)"
+        },
+        "separator": "1px solid var(--edu-border) (omitted on last row)",
+        "animation": "nc-row-in 0.18s ease-out (gated by prefers-reduced-motion)",
+        "iconBox": {
+          "size": 28,
+          "borderRadius": 8,
+          "background": "typeColor + '18'"
+        },
+        "title": { "fontSize": 14, "lineHeight": 1.35 },
+        "unreadDot": { "size": 7, "shape": "circle", "color": "primaryColor" },
+        "body": {
+          "fontSize": 12.5,
+          "lineHeight": 1.55,
+          "webkitLineClamp": 2,
+          "unreadColor": "var(--edu-text-secondary)",
+          "readColor": "var(--edu-text-muted)"
+        },
+        "meta": {
+          "gap": 9,
+          "timestamp": {
+            "fontSize": 11,
+            "fontWeight": 700,
+            "color": "var(--edu-text-muted)",
+            "icon": { "name": "clock", "size": 10, "strokeWidth": 2.2 }
+          },
+          "typeBadge": "Badge component — canonical bg=color/15, radius full, 11px/600"
+        },
+        "chevron": {
+          "name": "chevronRight",
+          "size": 13,
+          "color": "var(--edu-text-muted)"
+        }
+      },
+
+      "loadMore": {
+        "padding": "10px 22px",
+        "borderRadius": 9,
+        "background": "var(--edu-card)",
+        "border": "1.5px solid var(--edu-border)",
+        "fontSize": 13,
+        "fontWeight": 700,
+        "hoverBorderColor": "primaryColor",
+        "countChip": {
+          "fontSize": 11,
+          "fontWeight": 800,
+          "fontFamily": "ui-monospace",
+          "background": "var(--edu-bg)",
+          "color": "var(--edu-text-muted)",
+          "borderRadius": 4,
+          "padding": "2px 8px"
+        },
+        "pageSize": 8
+      },
+
+      "states": {
+        "loading": {
+          "type": "skeleton rows (3–4)",
+          "rowLayout": "28px box | two text lines | spacer",
+          "animation": "nc-shimmer shimmer gradient (gated by prefers-reduced-motion)",
+          "gradientLight": "#EEF1F6 → #F8FAFC → #EEF1F6",
+          "duration": "~420ms simulated"
+        },
+        "emptyAll": {
+          "iconBox": {
+            "size": 80,
+            "borderRadius": 20,
+            "border": "1px dashed var(--edu-border)",
+            "background": "var(--edu-bg)"
+          },
+          "icon": { "name": "bell", "size": 36, "color": "var(--edu-border)" },
+          "titleFontSize": 15,
+          "titleFontWeight": 700,
+          "titleColor": "var(--edu-text-secondary)",
+          "padding": "60px 24px"
+        },
+        "emptyUnread": {
+          "icon": {
+            "name": "check",
+            "size": 36,
+            "color": "var(--edu-success)"
+          },
+          "titleColor": "var(--edu-text-secondary)"
+        },
+        "allLoaded": {
+          "icon": {
+            "name": "check",
+            "size": 12,
+            "color": "var(--edu-success)"
+          },
+          "fontSize": 12,
+          "color": "var(--edu-text-muted)",
+          "marginTop": 18
+        },
+        "error": {
+          "layout": "icon + title + retry button",
+          "titleFontSize": 14,
+          "titleFontWeight": 700,
+          "titleColor": "var(--edu-text-secondary)"
+        }
+      },
+
+      "realtimeSSE": {
+        "event": "notification.new",
+        "decision": "0009",
+        "behavior": "prepend new item to list + show sonner toast",
+        "toast": {
+          "position": "bottom-right",
+          "offset": { "bottom": 28, "right": 28 },
+          "borderRadius": 12,
+          "border": "1px solid typeColor + '33'",
+          "borderLeft": "4px solid typeColor",
+          "shadow": "0 16px 48px rgba(0,0,0,0.18)",
+          "minWidth": 280,
+          "maxWidth": 360,
+          "autoDismiss": 4500,
+          "animation": "nc-toast-in 0.22s ease-out (gated by prefers-reduced-motion)",
+          "iconBox": {
+            "size": 30,
+            "borderRadius": 9,
+            "background": "typeColor + '18'"
+          },
+          "title": { "fontSize": 13, "fontWeight": 700 },
+          "body": { "fontSize": 12, "webkitLineClamp": 2 },
+          "dismissButton": { "size": "22×22", "borderRadius": 5, "icon": "x" }
+        }
+      },
+
+      "a11y": {
+        "listAriaLabel": "i18n: notifications.listAriaLabel",
+        "rowAriaLabel": "i18n: notifications.rowAriaLabel ({title} — {read})",
+        "unreadAriaLabel": "i18n: notifications.unreadCountAriaLabel ({count})",
+        "markAllReadAriaLabel": "i18n: notifications.markAllReadAriaLabel",
+        "animations": "all gated by prefers-reduced-motion: reduce → disabled",
+        "skeletonNote": "aria-busy=true on list container while loading",
+        "focusRing": "var(--ring) — all interactive elements",
+        "colorNote": "status never conveyed by color alone — always icon + label (type badge)"
+      },
+
+      "i18nNamespace": "notifications",
+      "i18nKeyCount": 30,
+      "i18nNote": "All keys exist in src/bootstrap/i18n/messages/{vi,en}.json — zero new keys added (DR-006 reconcile)"
+    },
+
     "discipline": {
       "teacher": "/teacher/discipline",
       "principal": "/principal/discipline",
