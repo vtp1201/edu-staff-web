@@ -23,6 +23,15 @@ const STATUS_TONE: Record<AnnouncementStatus, StatusTone> = {
   sent: "success",
 };
 
+/**
+ * Urgent card emphasis. DR-009 US-E16.1: side-stripe ban — an urgent
+ * announcement is highlighted with a full 1px border + bg tint, not a
+ * one-sided accent stripe.
+ */
+export function urgentCardClass(isUrgent: boolean): string {
+  return isUrgent ? "border border-edu-error/30 bg-edu-error/10" : "";
+}
+
 export interface AnnouncementCardProps {
   item: AnnouncementEntity;
   onView: (id: string) => void;
@@ -51,7 +60,7 @@ export function AnnouncementCard({
       }
       className={cn(
         "flex flex-col gap-3 rounded-[var(--edu-radius-card)] bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover",
-        isUrgent && "border-l-4 border-edu-error",
+        urgentCardClass(isUrgent),
       )}
     >
       <div className="flex items-start justify-between gap-3">

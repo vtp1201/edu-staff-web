@@ -20,6 +20,16 @@ import type {
   TeacherDashboardVM,
 } from "./teacher-dashboard-home.i-vm";
 
+/**
+ * Schedule-row emphasis. DR-009 US-E16.1: side-stripe ban — a live period
+ * gets full horizontal borders + success tint instead of a left accent stripe.
+ */
+export function scheduleRowClass(status: string): string {
+  return status === "live"
+    ? "bg-edu-success/14 border-y border-edu-success/30"
+    : "";
+}
+
 /** lucide icon key → component (notification rows). */
 const NOTIF_ICON: Record<string, LucideIcon> = {
   calendar: Calendar,
@@ -122,10 +132,8 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
             <li
               key={item.period}
               className={cn(
-                "flex items-center gap-4 border-l-[3px] px-6 py-3",
-                item.status === "live"
-                  ? "border-edu-success"
-                  : "border-transparent",
+                "flex items-center gap-4 px-6 py-3",
+                scheduleRowClass(item.status),
               )}
             >
               <div className="w-20 shrink-0">
