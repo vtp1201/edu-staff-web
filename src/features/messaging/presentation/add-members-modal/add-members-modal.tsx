@@ -94,11 +94,15 @@ export function AddMembersModal({
         )}
 
         <div className="space-y-3 px-5 py-4">
-          {memberIds.length > 0 && (
-            <p className="text-muted-foreground text-xs">
-              {t("selectedCount", { count: memberIds.length })}
-            </p>
-          )}
+          <p
+            aria-live="polite"
+            aria-atomic="true"
+            className="text-muted-foreground text-xs"
+          >
+            {memberIds.length > 0
+              ? t("selectedCount", { count: memberIds.length })
+              : ""}
+          </p>
 
           <div className="relative">
             <Search
@@ -129,7 +133,7 @@ export function AddMembersModal({
                         type="button"
                         onClick={() => toggleMember(c.id)}
                         aria-pressed={checked}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       >
                         <span
                           className={cn(
@@ -176,7 +180,7 @@ export function AddMembersModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-lg border border-border px-4 py-2 font-semibold text-foreground text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-lg border border-border px-4 py-3 font-semibold text-foreground text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {t("cancel")}
           </button>
@@ -184,7 +188,7 @@ export function AddMembersModal({
             type="button"
             onClick={handleSubmit}
             disabled={memberIds.length < 1 || isSubmitting}
-            className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground text-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-primary-foreground text-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting && (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
