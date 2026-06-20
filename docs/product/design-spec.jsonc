@@ -5741,5 +5741,1162 @@
         "375": "Metadata header stacks vertically (1 field per row); question list full-width above editor"
       }
     }
+  },
+
+  // ── Announcements ─────────────────────────────────────────────────────────────
+  // Source: design_src/edu/announcements.jsx (1506 handoff)
+  // Story: US-E10.3 (implemented)
+  // Roles: admin / principal (create + manage); all roles receive via Notifications Center (DR-006)
+  // Routes: /admin/announcements · /principal/announcements
+  // DR: docs/design-requests/DR-007-announcements.md (reconcile 2026-06-20)
+  "announcements": {
+    // ── Page layout ──────────────────────────────────────────────────────────────
+    "page": {
+      "padding": "28px 32px 40px",
+      "maxWidth": 1120,
+      "margin": "0 auto",
+      "background": "var(--edu-bg)"
+    },
+
+    // ── Breadcrumb ───────────────────────────────────────────────────────────────
+    "breadcrumb": {
+      "fontSize": 12.5,
+      "color": "var(--edu-text-muted)",
+      "marginBottom": 12,
+      "homeIcon": { "name": "home", "size": 12 },
+      "separator": { "name": "chevronRight", "size": 11 },
+      "activeColor": "var(--edu-text-primary)",
+      "activeFontWeight": 700
+    },
+
+    // ── Title row ────────────────────────────────────────────────────────────────
+    "titleRow": {
+      "marginBottom": 22,
+      "gap": 14,
+      "iconBox": {
+        "size": 44,
+        "borderRadius": 12,
+        "background": "primaryColor + '18'",
+        "icon": "megaphone",
+        "iconSize": 22,
+        "iconColor": "primaryColor",
+        "iconStrokeWidth": 1.8
+      },
+      "title": {
+        "fontSize": 22,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)"
+      },
+      "subtitle": {
+        "fontSize": 13,
+        "color": "var(--edu-text-muted)",
+        "marginTop": 2
+      },
+      "roleChip": {
+        "color": "var(--edu-error)",
+        "text": "ADMIN · BGH",
+        "icon": "shield",
+        "iconSize": 11,
+        "iconStrokeWidth": 2.4
+      },
+      "ctaButton": {
+        "variant": "primary",
+        "icon": "plus",
+        "labelKey": "announcements.createButton"
+      }
+    },
+
+    // ── Status filter pills ───────────────────────────────────────────────────────
+    "filterPills": {
+      "container": {
+        "background": "var(--edu-card)",
+        "borderRadius": 12,
+        "border": "1px solid var(--edu-border)",
+        "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+        "padding": 8,
+        "gap": 8
+      },
+      "pill": {
+        "padding": "7px 13px",
+        "borderRadius": 8,
+        "fontSize": 12.5,
+        "inactiveFontWeight": 600,
+        "activeFontWeight": 800,
+        "activeBorder": "1.5px solid <pillColor>",
+        "activeBackground": "<pillColor> + '14'",
+        "inactiveBorder": "1.5px solid transparent"
+      },
+      "countBadge": {
+        "fontSize": 10.5,
+        "fontWeight": 800,
+        "padding": "1px 7px",
+        "borderRadius": 99,
+        "minWidth": 16
+      },
+      "filters": [
+        {
+          "id": "all",
+          "labelKey": "announcements.filterAll",
+          "color": "primaryColor",
+          "icon": null
+        },
+        {
+          "id": "sent",
+          "labelKey": "announcements.filterSent",
+          "color": "var(--edu-success)",
+          "icon": "check"
+        },
+        {
+          "id": "scheduled",
+          "labelKey": "announcements.filterScheduled",
+          "color": "var(--edu-primary)",
+          "icon": "clock"
+        },
+        {
+          "id": "draft",
+          "labelKey": "announcements.filterDraft",
+          "color": "var(--edu-warning)",
+          "icon": "penLine"
+        }
+      ]
+    },
+
+    // ── Announcement card (list item) ────────────────────────────────────────────
+    "announcementCard": {
+      "background": "var(--edu-card)",
+      "borderRadius": 12,
+      "border": {
+        "default": "1px solid var(--edu-border)",
+        "draft": "1px solid var(--edu-warning) + '44'"
+      },
+      "shadow": "0 2px 12px rgba(0,0,0,0.04)",
+      "padding": "18px 22px",
+      "overflow": "hidden",
+
+      "urgentAccentBar": {
+        "width": 4,
+        "position": "absolute left 0, top 0, bottom 0",
+        "background": "var(--edu-error)",
+        "visibleWhen": "priority === 'urgent'"
+      },
+
+      "layout": "flex row — iconBox | content flex-1 | actions column",
+      "gap": 14,
+
+      "iconBox": {
+        "size": 40,
+        "borderRadius": 10,
+        "background": "priorityColor + '18'",
+        "icon": "megaphone",
+        "iconSize": 19,
+        "iconStrokeWidth": 2
+      },
+
+      "title": {
+        "fontSize": 15,
+        "fontWeight": 800,
+        "color": "var(--edu-text-primary)"
+      },
+
+      "priorityBadge": {
+        "priorities": {
+          "normal": {
+            "color": "var(--edu-text-secondary)",
+            "bg": "var(--edu-bg)",
+            "icon": "bell",
+            "labelKey": "announcements.priorityNormal"
+          },
+          "important": {
+            "color": "var(--edu-warning)",
+            "bg": "var(--edu-warning)/15",
+            "icon": "alertTriangle",
+            "labelKey": "announcements.priorityImportant"
+          },
+          "urgent": {
+            "color": "var(--edu-error)",
+            "bg": "var(--edu-error)/15",
+            "icon": "alertTriangle",
+            "labelKey": "announcements.priorityUrgent"
+          }
+        }
+      },
+
+      "statusBadge": {
+        "statuses": {
+          "draft": {
+            "color": "var(--edu-warning)",
+            "bg": "var(--edu-warning)/15",
+            "icon": "penLine",
+            "labelKey": "announcements.statusDraft"
+          },
+          "scheduled": {
+            "color": "var(--edu-primary)",
+            "bg": "var(--edu-primary)/15",
+            "icon": "clock",
+            "labelKey": "announcements.statusScheduled"
+          },
+          "sent": {
+            "color": "var(--edu-success)",
+            "bg": "var(--edu-success)/15",
+            "icon": "check",
+            "labelKey": "announcements.statusSent"
+          }
+        }
+      },
+
+      "meta": {
+        "fontSize": 12.5,
+        "color": "var(--edu-text-muted)",
+        "gap": 8,
+        "audienceIcon": "users",
+        "audienceIconSize": 11,
+        "timeIcon": "clock",
+        "timeIconSize": 11,
+        "authorIcon": "userCheck",
+        "authorIconSize": 11,
+        "dotSeparator": {
+          "width": 3,
+          "height": 3,
+          "borderRadius": "50%",
+          "background": "var(--edu-border)"
+        }
+      },
+
+      "readReceiptStrip": {
+        "visibleWhen": "status === 'sent'",
+        "background": "var(--edu-bg)",
+        "borderRadius": 8,
+        "border": "1px solid var(--edu-border)",
+        "padding": "8px 12px",
+        "gap": 14,
+        "progressBar": {
+          "height": 6,
+          "trackBackground": "var(--edu-border)",
+          "fillColor": "var(--edu-success)",
+          "borderRadius": 99,
+          "transition": "width 0.3s"
+        }
+      },
+
+      "draftNotice": {
+        "visibleWhen": "status === 'draft'",
+        "background": "var(--edu-warning)/15",
+        "border": "1px solid var(--edu-warning) + '33'",
+        "borderRadius": 7,
+        "padding": "6px 10px",
+        "fontSize": 11.5,
+        "color": "var(--edu-warning-foreground)",
+        "fontStyle": "italic",
+        "icon": "alertTriangle",
+        "iconColor": "var(--edu-warning)"
+      },
+
+      "actions": {
+        "layout": "flex column align-end",
+        "gap": 7,
+        "viewDetail": {
+          "variant": "primary",
+          "icon": "eye",
+          "size": "sm",
+          "visibleWhen": "status !== 'draft'"
+        },
+        "editDraft": {
+          "variant": "primary",
+          "icon": "penLine",
+          "size": "sm",
+          "visibleWhen": "status === 'draft'"
+        },
+        "delete": {
+          "variant": "ghost",
+          "icon": "x",
+          "size": "sm",
+          "color": "var(--edu-error)",
+          "border": "1px solid var(--edu-border)"
+        }
+      }
+    },
+
+    // ── Empty states ──────────────────────────────────────────────────────────────
+    "emptyState": {
+      "background": "var(--edu-card)",
+      "borderRadius": 12,
+      "border": "1px dashed var(--edu-border)",
+      "padding": "52px 24px",
+      "textAlign": "center",
+      "icon": {
+        "name": "megaphone",
+        "size": 40,
+        "color": "var(--edu-border)",
+        "strokeWidth": 1.6
+      },
+      "title": {
+        "fontSize": 14,
+        "fontWeight": 800,
+        "color": "var(--edu-text-secondary)",
+        "marginTop": 12
+      },
+      "body": {
+        "fontSize": 12,
+        "color": "var(--edu-text-muted)",
+        "marginBottom": 18
+      },
+      "variants": {
+        "all": {
+          "titleKey": "announcements.emptyTitle",
+          "bodyKey": "announcements.emptyBody",
+          "cta": {
+            "variant": "primary",
+            "icon": "plus",
+            "labelKey": "announcements.createButton"
+          }
+        },
+        "filter": {
+          "cta": {
+            "variant": "ghost",
+            "border": "1px solid var(--edu-border)",
+            "color": "var(--edu-text-secondary)"
+          }
+        }
+      }
+    },
+
+    // ── Loading state ─────────────────────────────────────────────────────────────
+    "loadingState": {
+      "ariaLabel": "announcements.loadingAriaLabel",
+      "skeletonCards": 3,
+      "skeletonHeight": 90,
+      "skeletonBorderRadius": 12,
+      "skeletonBackground": "var(--edu-border)"
+    },
+
+    // ── Error state ───────────────────────────────────────────────────────────────
+    "errorState": {
+      "messageKey": "announcements.loadError",
+      "icon": "alertTriangle",
+      "color": "var(--edu-error)"
+    },
+
+    // ── Create / Edit drawer ──────────────────────────────────────────────────────
+    "createDrawer": {
+      "width": 480,
+      "maxWidth": "100vw",
+      "position": "fixed right 0, top 0, bottom 0",
+      "background": "var(--edu-card)",
+      "shadow": "-12px 0 40px rgba(0,0,0,0.18)",
+      "zIndex": 1001,
+      "animation": "slideInFromRight 0.22s ease-out",
+      "scrim": {
+        "background": "rgba(20,30,50,0.45)",
+        "backdropFilter": "blur(2px)",
+        "zIndex": 1000
+      },
+
+      "header": {
+        "padding": "18px 22px",
+        "borderBottom": "1px solid var(--edu-border)",
+        "iconBox": {
+          "size": 36,
+          "borderRadius": 10,
+          "background": "primaryColor + '18'"
+        },
+        "icon": "megaphone",
+        "iconSize": 17,
+        "titleFontSize": 16,
+        "titleFontWeight": 800,
+        "subtitleFontSize": 11.5,
+        "subtitleColor": "var(--edu-text-muted)",
+        "closeButton": { "icon": "x", "size": 16 }
+      },
+
+      "body": { "padding": "20px 22px", "gap": 14 },
+
+      "fields": {
+        "fieldLabel": {
+          "fontSize": 10.5,
+          "fontWeight": 800,
+          "color": "var(--edu-text-muted)",
+          "letterSpacing": "0.08em",
+          "textTransform": "uppercase",
+          "marginBottom": 6
+        },
+        "input": {
+          "padding": "10px 12px",
+          "borderRadius": 8,
+          "border": "1.5px solid var(--edu-border)",
+          "background": "var(--edu-card)",
+          "fontSize": 13.5,
+          "color": "var(--edu-text-primary)",
+          "focusBorder": "1.5px solid primaryColor"
+        },
+        "charCount": {
+          "fontSize": 10.5,
+          "fontWeight": 700,
+          "marginTop": 5,
+          "okColor": "var(--edu-success)",
+          "pendingColor": "var(--edu-text-muted)",
+          "nearLimitColor": "var(--edu-warning)",
+          "nearLimitThreshold": "90% of max"
+        },
+
+        "titleField": {
+          "type": "input",
+          "maxLength": 200,
+          "minLength": 5,
+          "labelKey": "announcements.fieldTitle",
+          "placeholderKey": "announcements.fieldTitlePlaceholder",
+          "required": true
+        },
+
+        "bodyField": {
+          "type": "textarea",
+          "rows": 5,
+          "maxLength": 2000,
+          "minLength": 10,
+          "labelKey": "announcements.fieldBody",
+          "placeholderKey": "announcements.fieldBodyPlaceholder",
+          "resize": "vertical",
+          "lineHeight": 1.55,
+          "required": true
+        },
+
+        "audienceField": {
+          "labelKey": "announcements.fieldAudience",
+          "required": true,
+          "presetChips": {
+            "display": "flex wrap",
+            "gap": 7,
+            "chip": {
+              "padding": "6px 11px",
+              "borderRadius": 99,
+              "activeBorder": "1.5px solid primaryColor",
+              "activeBackground": "primaryColor + '14'",
+              "activeColor": "primaryColor",
+              "inactiveBorder": "1.5px solid var(--edu-border)",
+              "fontSize": 12,
+              "fontWeight": 700
+            },
+            "presets": [
+              {
+                "id": "all",
+                "labelKey": "announcements.audienceAll",
+                "icon": "users",
+                "est": 1280,
+                "exclusive": true
+              },
+              {
+                "id": "teachers",
+                "labelKey": "announcements.audienceTeachers",
+                "icon": "userCheck",
+                "est": 42
+              },
+              {
+                "id": "parents",
+                "labelKey": "announcements.audienceParents",
+                "icon": "users",
+                "est": 768
+              },
+              {
+                "id": "students",
+                "labelKey": "announcements.audienceStudents",
+                "icon": "graduationCap",
+                "est": 480
+              }
+            ]
+          },
+          "gradeFilter": {
+            "collapsible": true,
+            "labelKey": "announcements.fieldGradeFilter",
+            "grades": [10, 11, 12],
+            "chip": {
+              "padding": "5px 12px",
+              "borderRadius": 7,
+              "fontSize": 12,
+              "fontWeight": 700
+            }
+          },
+          "classFilter": {
+            "source": "window.ROSTER_CLASSES (exported by roster.jsx)",
+            "chip": {
+              "padding": "5px 11px",
+              "borderRadius": 7,
+              "fontSize": 12,
+              "fontWeight": 700
+            }
+          },
+          "estimateStrip": {
+            "background": "primaryColor + '08'",
+            "border": "1px solid primaryColor + '33'",
+            "borderRadius": 8,
+            "padding": "8px 12px",
+            "fontSize": 12,
+            "labelKey": "announcements.estimatedRecipients",
+            "valueColor": "primaryColor",
+            "valueFontWeight": 800
+          }
+        },
+
+        "priorityField": {
+          "labelKey": "announcements.fieldPriority",
+          "required": true,
+          "type": "radioGroup",
+          "options": [
+            {
+              "value": "normal",
+              "labelKey": "announcements.priorityNormal",
+              "color": "var(--edu-text-secondary)",
+              "icon": "bell"
+            },
+            {
+              "value": "important",
+              "labelKey": "announcements.priorityImportant",
+              "color": "var(--edu-warning)",
+              "icon": "alertTriangle"
+            },
+            {
+              "value": "urgent",
+              "labelKey": "announcements.priorityUrgent",
+              "color": "var(--edu-error)",
+              "icon": "alertTriangle"
+            }
+          ],
+          "radioButton": {
+            "flex": 1,
+            "minWidth": 100,
+            "padding": "8px 11px",
+            "borderRadius": 8,
+            "activeBorder": "1.5px solid <optionColor>",
+            "activeBackground": "<optionColor> + '12'",
+            "radioCircleSize": 18,
+            "radioCircleBorder": "2px solid <optionColor>",
+            "radioDotSize": 9
+          }
+        },
+
+        "sendModeField": {
+          "labelKey": "announcements.fieldSendMode",
+          "required": true,
+          "options": [
+            {
+              "value": "now",
+              "labelKey": "announcements.sendModeNow",
+              "icon": "send"
+            },
+            {
+              "value": "schedule",
+              "labelKey": "announcements.sendModeSchedule",
+              "icon": "clock"
+            }
+          ],
+          "radioButton": {
+            "flex": 1,
+            "padding": "9px 11px",
+            "borderRadius": 8,
+            "activeBorder": "1.5px solid primaryColor",
+            "activeBackground": "primaryColor + '14'"
+          }
+        },
+
+        "schedulePicker": {
+          "visibleWhen": "sendMode === 'schedule'",
+          "labelKey": "announcements.fieldScheduledAt",
+          "trigger": {
+            "type": "button",
+            "style": "inputStyle",
+            "icon": "calendar",
+            "iconSize": 14,
+            "chevron": "chevronDown",
+            "placeholderColor": "var(--edu-text-muted)",
+            "selectedFontWeight": 700
+          },
+          "popover": {
+            "position": "absolute top: calc(100% + 6px) left: 0",
+            "zIndex": 61,
+            "background": "var(--edu-card)",
+            "border": "1px solid var(--edu-border)",
+            "borderRadius": 12,
+            "shadow": "0 12px 32px rgba(0,0,0,0.16)",
+            "padding": 14,
+            "minWidth": 460,
+            "layout": "flex row gap-14"
+          },
+          "calendar": {
+            "width": 260,
+            "weekdayRow": {
+              "gridCols": 7,
+              "gap": 2,
+              "fontSize": 10,
+              "fontWeight": 700,
+              "textTransform": "uppercase"
+            },
+            "dayCell": {
+              "height": 32,
+              "borderRadius": 7,
+              "fontSize": 12.5,
+              "selectedBackground": "primaryColor",
+              "selectedColor": "#fff",
+              "todayBorder": "1px solid primaryColor + '55'"
+            },
+            "pastDayOpacity": 0.4,
+            "weekStartDay": "Monday (Vietnamese convention)"
+          },
+          "timePicker": {
+            "width": 170,
+            "borderLeft": "1px solid var(--edu-border)",
+            "steppers": {
+              "incrementIcon": "chevronUp",
+              "decrementIcon": "chevronDown",
+              "inputFontSize": 18,
+              "inputFontWeight": 800,
+              "inputColor": "primaryColor",
+              "stepSize": { "hour": 1, "minute": 5 }
+            },
+            "confirmButton": {
+              "fontSize": 12.5,
+              "fontWeight": 800,
+              "background": "primaryColor",
+              "color": "#fff",
+              "borderRadius": 8,
+              "disabledBackground": "var(--edu-border)"
+            }
+          }
+        },
+
+        "attachmentsField": {
+          "optional": true,
+          "maxFiles": 3,
+          "container": {
+            "background": "var(--edu-bg)",
+            "border": "1px dashed var(--edu-border)",
+            "borderRadius": 8,
+            "padding": 10
+          },
+          "fileRow": {
+            "padding": "6px 10px",
+            "borderRadius": 6,
+            "border": "1px solid var(--edu-border)",
+            "background": "var(--edu-card)",
+            "icon": "fileText",
+            "iconColor": "primaryColor",
+            "removeIcon": "x",
+            "removeIconColor": "var(--edu-error)"
+          },
+          "addButton": {
+            "icon": "plus",
+            "fontSize": 11.5,
+            "fontWeight": 800,
+            "border": "1px dashed primaryColor + '55'",
+            "color": "primaryColor",
+            "borderRadius": 6
+          }
+        }
+      },
+
+      "previewPanel": {
+        "trigger": {
+          "background": "primaryColor + '0F'",
+          "border": "1px solid primaryColor + '33'",
+          "borderRadius": 8,
+          "color": "primaryColor",
+          "fontSize": 12.5,
+          "fontWeight": 800,
+          "icon": "eye",
+          "labelKey": "announcements.previewToggle"
+        },
+        "notificationPreview": {
+          "padding": 12,
+          "borderRadius": 10,
+          "background": "var(--edu-bg)",
+          "border": "1px dashed var(--edu-border)",
+          "labelKey": "announcements.previewHeading",
+          "notificationRow": {
+            "background": "primaryColor + '08'",
+            "border": "1px solid primaryColor + '33'",
+            "borderLeft": "3px solid primaryColor",
+            "borderRadius": 10,
+            "padding": "12px 14px 12px 13px",
+            "layout": "grid — 28px icon | flex-1 content",
+            "gap": 12,
+            "iconBox": { "size": 28, "borderRadius": 8 },
+            "title": { "fontSize": 13.5, "fontWeight": 800 },
+            "body": { "fontSize": 12, "lineClamp": 2 },
+            "unreadDot": {
+              "size": 7,
+              "borderRadius": "50%",
+              "background": "primaryColor"
+            }
+          }
+        }
+      },
+
+      "footer": {
+        "padding": "14px 22px",
+        "background": "var(--edu-bg)",
+        "borderTop": "1px solid var(--edu-border)",
+        "layout": "flex row gap-10",
+        "actions": [
+          {
+            "variant": "ghost",
+            "labelKey": "announcements.btnCancel",
+            "position": "left",
+            "border": "1px solid var(--edu-border)"
+          },
+          {
+            "variant": "ghost",
+            "labelKey": "announcements.btnSaveDraft",
+            "icon": "fileText",
+            "position": "left",
+            "disabledWhen": "!titleOk"
+          },
+          {
+            "variant": "primary",
+            "labelKey": "announcements.btnSchedule",
+            "icon": "clock",
+            "position": "right",
+            "visibleWhen": "sendMode === 'schedule'",
+            "disabledWhen": "!canSubmit"
+          },
+          {
+            "variant": "primary",
+            "labelKey": "announcements.btnSendNow",
+            "icon": "send",
+            "position": "right",
+            "visibleWhen": "sendMode === 'now'",
+            "disabledWhen": "!canSubmit"
+          }
+        ]
+      }
+    },
+
+    // ── Detail side-sheet (read receipts) ─────────────────────────────────────────
+    "detailSheet": {
+      "width": 620,
+      "maxWidth": "100vw",
+      "position": "fixed right 0, top 0, bottom 0",
+      "background": "var(--edu-card)",
+      "shadow": "-12px 0 40px rgba(0,0,0,0.18)",
+      "zIndex": 1001,
+      "animation": "slideInFromRight 0.22s ease-out",
+      "scrim": {
+        "background": "rgba(20,30,50,0.45)",
+        "backdropFilter": "blur(2px)",
+        "zIndex": 1000
+      },
+
+      "header": {
+        "padding": "20px 22px",
+        "borderBottom": "1px solid var(--edu-border)",
+        "iconBox": { "size": 42, "borderRadius": 11 },
+        "icon": "megaphone",
+        "iconSize": 19,
+        "titleFontSize": 17,
+        "titleFontWeight": 800,
+        "metaFontSize": 11.5,
+        "metaColor": "var(--edu-text-muted)"
+      },
+
+      "audienceStrip": {
+        "padding": "10px 14px",
+        "background": "var(--edu-bg)",
+        "borderRadius": 10,
+        "border": "1px solid var(--edu-border)",
+        "icon": "users",
+        "iconSize": 13,
+        "fontSize": 12.5,
+        "marginBottom": 16
+      },
+
+      "bodyText": {
+        "padding": "14px 16px",
+        "borderRadius": 10,
+        "border": "1px solid var(--edu-border)",
+        "fontSize": 13.5,
+        "lineHeight": 1.6,
+        "color": "var(--edu-text-secondary)",
+        "whiteSpace": "pre-wrap",
+        "marginBottom": 16
+      },
+
+      "attachmentList": {
+        "marginBottom": 18,
+        "fileRow": {
+          "padding": "8px 12px",
+          "borderRadius": 8,
+          "border": "1px solid var(--edu-border)",
+          "background": "var(--edu-card)",
+          "icon": "fileText",
+          "iconColor": "primaryColor",
+          "iconSize": 14,
+          "downloadButton": { "size": 24, "icon": "arrowDown" }
+        }
+      },
+
+      "readReceiptSection": {
+        "visibleWhen": "status === 'sent'",
+        "ratioPanel": {
+          "padding": "14px 16px",
+          "background": "primaryColor + '08'",
+          "border": "1px solid primaryColor + '33'",
+          "borderRadius": 10,
+          "marginBottom": 12,
+          "layout": "flex row align-end gap-14",
+          "label": {
+            "fontSize": 10.5,
+            "fontWeight": 800,
+            "color": "var(--edu-text-muted)",
+            "textTransform": "uppercase"
+          },
+          "pctValue": {
+            "fontSize": 26,
+            "fontWeight": 900,
+            "color": "primaryColor",
+            "lineHeight": 1
+          },
+          "countLabel": {
+            "fontSize": 12,
+            "color": "var(--edu-text-muted)",
+            "fontWeight": 700
+          },
+          "progressBar": {
+            "height": 6,
+            "fillColor": "primaryColor",
+            "borderRadius": 99,
+            "transition": "width 0.3s"
+          },
+          "unreadCountLabel": {
+            "fontSize": 11,
+            "marginTop": 6,
+            "color": "var(--edu-text-muted)"
+          },
+          "remindButton": {
+            "variant": "secondary",
+            "icon": "bell",
+            "labelKey": "announcements.btnRemind",
+            "disabledWhen": "unreadCount === 0"
+          }
+        },
+        "filterTabs": {
+          "gap": 8,
+          "tabs": [
+            {
+              "id": "all",
+              "labelKey": "announcements.recipientFilterAll",
+              "color": "var(--edu-text-secondary)"
+            },
+            {
+              "id": "read",
+              "labelKey": "announcements.recipientFilterRead",
+              "color": "var(--edu-success)"
+            },
+            {
+              "id": "unread",
+              "labelKey": "announcements.recipientFilterUnread",
+              "color": "var(--edu-error)"
+            }
+          ],
+          "tab": {
+            "padding": "5px 12px",
+            "borderRadius": 7,
+            "fontSize": 12,
+            "fontWeight": 800,
+            "activeBorder": "1.5px solid <tabColor>",
+            "activeBackground": "<tabColor> + '14'"
+          },
+          "countBadge": {
+            "fontSize": 10,
+            "fontWeight": 800,
+            "padding": "1px 6px",
+            "borderRadius": 99
+          },
+          "exportButton": {
+            "variant": "ghost",
+            "icon": "fileText",
+            "size": "sm"
+          }
+        },
+        "recipientList": {
+          "background": "var(--edu-card)",
+          "border": "1px solid var(--edu-border)",
+          "borderRadius": 10,
+          "overflow": "hidden",
+          "row": {
+            "layout": "grid — 30px avatar | content | status column",
+            "gap": 10,
+            "padding": "10px 14px",
+            "borderBottom": "1px solid var(--edu-border)",
+            "avatar": {
+              "size": 30,
+              "borderRadius": "50%",
+              "fontSize": 11,
+              "fontWeight": 800
+            },
+            "name": {
+              "fontSize": 13,
+              "fontWeight": 700,
+              "color": "var(--edu-text-primary)"
+            },
+            "child": {
+              "fontSize": 11,
+              "color": "var(--edu-text-muted)",
+              "marginTop": 1
+            },
+            "readBadge": {
+              "color": "var(--edu-success)",
+              "icon": "check",
+              "labelKey": "announcements.recipientStatusRead"
+            },
+            "unreadBadge": {
+              "color": "var(--edu-error)",
+              "icon": "clock",
+              "labelKey": "announcements.recipientStatusUnread"
+            },
+            "readAtTimestamp": {
+              "fontSize": 10.5,
+              "color": "var(--edu-text-muted)",
+              "fontFamily": "monospace",
+              "marginTop": 3
+            }
+          },
+          "emptyRow": {
+            "padding": 24,
+            "textAlign": "center",
+            "fontSize": 12.5,
+            "color": "var(--edu-text-muted)",
+            "messageKey": "announcements.recipientsEmpty"
+          }
+        }
+      },
+
+      "footer": {
+        "padding": "14px 22px",
+        "borderTop": "1px solid var(--edu-border)",
+        "layout": "flex row",
+        "actions": [
+          {
+            "variant": "ghost",
+            "icon": "x",
+            "labelKey": "announcements.btnDelete",
+            "color": "var(--edu-error)",
+            "border": "1px solid var(--edu-error) + '55'",
+            "background": "var(--edu-error)/10",
+            "position": "left"
+          },
+          {
+            "variant": "ghost",
+            "labelKey": "announcements.btnClose",
+            "border": "1px solid var(--edu-border)",
+            "color": "var(--edu-text-secondary)",
+            "position": "right"
+          }
+        ]
+      }
+    },
+
+    // ── Delete confirm dialog ─────────────────────────────────────────────────────
+    "deleteDialog": {
+      "role": "alertdialog",
+      "ariaModal": true,
+      "maxWidth": 460,
+      "background": "var(--edu-card)",
+      "borderRadius": 14,
+      "shadow": "0 24px 60px rgba(0,0,0,0.25)",
+      "animation": "fadeIn 0.18s ease-out",
+      "iconBox": {
+        "size": 42,
+        "borderRadius": 11,
+        "background": "var(--edu-error)/14",
+        "icon": "alertTriangle",
+        "iconColor": "var(--edu-error)",
+        "iconSize": 19
+      },
+      "titleFontSize": 16,
+      "titleFontWeight": 800,
+      "bodyFontSize": 12.5,
+      "bodyLineHeight": 1.6,
+      "titleKey": "announcements.deleteTitle",
+      "bodyKey": "announcements.deleteDescription",
+      "footer": {
+        "padding": "14px 24px",
+        "background": "var(--edu-bg)",
+        "borderTop": "1px solid var(--edu-border)",
+        "actions": [
+          {
+            "variant": "ghost",
+            "labelKey": "announcements.btnCancel",
+            "border": "1px solid var(--edu-border)"
+          },
+          {
+            "variant": "danger",
+            "labelKey": "announcements.btnDelete",
+            "icon": "x"
+          }
+        ]
+      }
+    },
+
+    // ── Toast notifications ───────────────────────────────────────────────────────
+    "toast": {
+      "position": "fixed bottom-28 center (translateX -50%)",
+      "background": "var(--edu-text-primary)",
+      "color": "#fff",
+      "padding": "11px 18px",
+      "borderRadius": 12,
+      "shadow": "0 12px 40px rgba(0,0,0,0.25)",
+      "fontSize": 13,
+      "fontWeight": 600,
+      "zIndex": 9000,
+      "animation": "slideUpFadeIn 0.2s ease-out",
+      "autoDismiss": "2600ms",
+      "successIcon": {
+        "size": 22,
+        "borderRadius": "50%",
+        "background": "var(--edu-success)",
+        "checkSize": 12,
+        "checkColor": "#fff"
+      },
+      "variants": {
+        "send": { "messageKey": "announcements.sendToast" },
+        "schedule": { "messageKey": "announcements.scheduleToast" },
+        "draft": { "messageKey": "announcements.draftToast" },
+        "delete": { "messageKey": "announcements.deleteToast" },
+        "remind": { "messageKey": "announcements.remindToast" }
+      }
+    },
+
+    // ── Role variant behavior ─────────────────────────────────────────────────────
+    "roleVariants": {
+      "admin": {
+        "route": "/admin/announcements",
+        "primaryColor": "var(--edu-primary)",
+        "canCreate": true,
+        "canDelete": true,
+        "canViewReadReceipts": true,
+        "roleChip": "ADMIN · BGH"
+      },
+      "principal": {
+        "route": "/principal/announcements",
+        "primaryColor": "var(--edu-success)",
+        "canCreate": true,
+        "canDelete": true,
+        "canViewReadReceipts": true,
+        "roleChip": "BGH"
+      },
+      "recipientRoles": {
+        "note": "All other roles (teacher/student/parent) receive announcements via Notifications Center (DR-006 / US-E10.2). No compose UI shown for these roles.",
+        "deliveryChannel": "SSE fan-out — noti service",
+        "notificationTab": "announcement (type: announcement) in Notifications Center filter pills"
+      }
+    },
+
+    // ── Priority / audience / status lookups ──────────────────────────────────────
+    "lookups": {
+      "priority": {
+        "normal": {
+          "labelKey": "announcements.priorityNormal",
+          "color": "var(--edu-text-secondary)",
+          "bg": "var(--edu-bg)",
+          "icon": "bell",
+          "stamp": "NORMAL"
+        },
+        "important": {
+          "labelKey": "announcements.priorityImportant",
+          "color": "var(--edu-warning)",
+          "bg": "var(--edu-warning)/15",
+          "icon": "alertTriangle",
+          "stamp": "IMPORTANT"
+        },
+        "urgent": {
+          "labelKey": "announcements.priorityUrgent",
+          "color": "var(--edu-error)",
+          "bg": "var(--edu-error)/15",
+          "icon": "alertTriangle",
+          "stamp": "URGENT",
+          "urgentAccentBar": true
+        }
+      },
+      "status": {
+        "draft": {
+          "labelKey": "announcements.statusDraft",
+          "color": "var(--edu-warning)",
+          "bg": "var(--edu-warning)/15",
+          "icon": "penLine"
+        },
+        "scheduled": {
+          "labelKey": "announcements.statusScheduled",
+          "color": "var(--edu-primary)",
+          "bg": "var(--edu-primary)/15",
+          "icon": "clock"
+        },
+        "sent": {
+          "labelKey": "announcements.statusSent",
+          "color": "var(--edu-success)",
+          "bg": "var(--edu-success)/15",
+          "icon": "check"
+        }
+      },
+      "audiencePresets": [
+        {
+          "id": "all",
+          "labelKey": "announcements.audienceAll",
+          "icon": "users",
+          "est": 1280,
+          "exclusive": true
+        },
+        {
+          "id": "teachers",
+          "labelKey": "announcements.audienceTeachers",
+          "icon": "userCheck",
+          "est": 42
+        },
+        {
+          "id": "parents",
+          "labelKey": "announcements.audienceParents",
+          "icon": "users",
+          "est": 768
+        },
+        {
+          "id": "students",
+          "labelKey": "announcements.audienceStudents",
+          "icon": "graduationCap",
+          "est": 480
+        }
+      ],
+      "gradeLevels": [10, 11, 12]
+    },
+
+    // ── API contract (mock-first — noti service fan-out) ─────────────────────────
+    "api": {
+      "note": "noti service — mock-first per decision 0014; fan-out over SSE (decision 0009)",
+      "list": "GET  /noti/api/v1/announcements?status=&cursor= → AnnouncementEntity[]",
+      "create": "POST /noti/api/v1/announcements (AnnouncementPayload)",
+      "update": "PUT  /noti/api/v1/announcements/:id",
+      "delete": "DELETE /noti/api/v1/announcements/:id",
+      "readReceipts": "GET /noti/api/v1/announcements/:id/receipts?status=&cursor=",
+      "remind": "POST /noti/api/v1/announcements/:id/remind"
+    },
+
+    // ── Accessibility notes (for /fe implementation) ──────────────────────────────
+    "a11yNotes": [
+      "Create drawer: role='dialog', aria-modal=true, aria-labelledby=drawer title; focus on first input on open; trap focus within; close on Escape + backdrop click.",
+      "Detail sheet: role='dialog', aria-modal=true, aria-labelledby=announcement title; close button aria-label='Đóng'.",
+      "Delete dialog: role='alertdialog', aria-modal=true; focus on 'Huỷ' on open (safe default for destructive actions).",
+      "Audience preset chips: role='checkbox' + aria-checked per chip (multi-select); 'all' chip is exclusive — selecting it must aria-announce via aria-live region.",
+      "Priority radio group: role='radiogroup' + role='radio' per option; aria-checked; keyboard arrow-key navigation between options.",
+      "Schedule picker: calendar dates — aria-label includes full date (e.g. 'Thứ 2, 15 tháng 6 năm 2026'); disabled past dates aria-disabled=true; confirmed date aria-selected=true.",
+      "Read-receipt progress bar: aria-label using readProgressLabel key with pct value (e.g. 'Tỷ lệ đã đọc: 89%').",
+      "Remind button: aria-live='polite' toast confirmation; disabled state aria-disabled=true with reason (all read).",
+      "Status filter pills: role='radiogroup' + role='radio' per pill; active state aria-checked=true.",
+      "Toast: role='status' + aria-live='polite' for success; role='alert' + aria-live='assertive' for error.",
+      "Urgent announcement card: communicates urgency via icon + badge (not color alone); urgentCardAriaLabel key wraps full announcement title.",
+      "Warning foreground: draft notice uses var(--edu-warning-foreground) (#2A3547) — NOT white on warning yellow (a11y compliance, decision 0013).",
+      "Close buttons: icon-only — aria-label='Đóng' in Vietnamese."
+    ],
+
+    // ── Responsive ────────────────────────────────────────────────────────────────
+    "responsive": {
+      "1280": "Default — list cards full width; filter pills on one row; CTA top-right",
+      "1024": "Filter pills may wrap to two rows; card action column stays visible",
+      "768": "Card meta wraps; action column stacks below content; drawer width max 100vw; detail sheet width max 100vw",
+      "375": "Filter pills scroll horizontally; card padding 12px 16px; action buttons icon-only with tooltip; drawer + detail sheet full-screen"
+    }
   }
 }

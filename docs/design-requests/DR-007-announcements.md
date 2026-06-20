@@ -1,7 +1,7 @@
 # DR-007 — Announcements (BGH gửi thông báo toàn trường)
 
-Status: pending
-US: US-E10.3 (cần tạo story packet)
+Status: [x] delivered (2026-06-20)
+US: US-E10.3 (implemented — reconcile only; design_src/edu/announcements.jsx existed from 1506 handoff)
 Route: `/admin/announcements` (tạo + quản lý) · `/principal/announcements` (tạo + quản lý)
        Nhận qua Notifications Center (DR-006) cho tất cả roles
 Roles: `admin`, `principal` (tạo/gửi) · tất cả roles (nhận)
