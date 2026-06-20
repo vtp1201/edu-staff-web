@@ -852,9 +852,9 @@ const SummaryPanel = ({ t, pColor, roster, columns, cellsFor, open, setOpen, alw
                   <div style={{ flex: 1, position: 'relative', height: 18 }}>
                     <div style={{
                       position: 'absolute', left: 0, top: 0, bottom: 0,
-                      width: `${(b.count / max) * 100}%`,
+                      width: '100%', transformOrigin: 'left', transform: `scaleX(${b.count / max})`,
                       background: b.color, borderRadius: 4,
-                      transition: 'width 0.3s',
+                      transition: 'transform 0.3s',
                       opacity: b.count === 0 ? 0.15 : 1,
                     }} />
                   </div>

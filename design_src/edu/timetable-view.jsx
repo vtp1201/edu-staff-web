@@ -242,7 +242,7 @@ const TVCell = ({ slot, lang }) => {
       <div style={{
         minHeight: 76, padding: '8px 10px', borderRadius: 9,
         background: subjColor + '15',
-        borderLeft: `3px solid ${subjColor}`,
+        border: `1px solid ${subjColor}30`,
         textAlign: 'left', fontFamily: 'inherit',
       }}>
         <div style={{
@@ -613,7 +613,7 @@ const TimetableViewScreen = ({ role, lang, primaryColor }) => {
                 <div key={s.key} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                   padding: '4px 9px', borderRadius: 6,
-                  background: s.color + '15', borderLeft: `3px solid ${s.color}`,
+                  background: s.color + '15', border: `1px solid ${s.color}30`,
                   fontSize: 11.5, fontWeight: 700, color: s.color,
                 }}>{lang === 'en' ? s.en : s.vi}</div>
               ))}

@@ -498,9 +498,10 @@
           "dayBadge": { "component": "Badge", "color": "var(--edu-primary)" }
         },
         "row": {
-          "borderLeft": {
-            "live": "3px solid var(--edu-success)",
-            "default": "3px solid transparent"
+          // Live period marked by a soft success tint on the whole row (no side-stripe).
+          "background": {
+            "live": "var(--edu-success-light)",
+            "default": "transparent"
           },
           "periodCell": {
             "width": 80,
@@ -621,7 +622,6 @@
       "filledCell": {
         "background": "var(--edu-primary) + '15'",
         "border": "1px solid var(--edu-primary) + '30'",
-        "borderLeft": "3px solid var(--edu-primary)",
         "borderRadius": 8,
         "padding": "8px 10px",
         "className": {
@@ -644,7 +644,6 @@
         // Shown when API flags conflict=true (double-booked period)
         "background": "var(--edu-error-light)",
         "border": "1px solid var(--edu-error) + '55'",
-        "borderLeft": "3px solid var(--edu-error)",
         "className": { "color": "var(--edu-error)" },
         "alertIcon": {
           "name": "alertTriangle",
@@ -1120,8 +1119,7 @@
       "grid": "Mon–Sat × 5 time slots",
       "filledCell": {
         "background": "primaryColor/15",
-        "border": "primaryColor/30",
-        "leftBorder": "3px solid primary"
+        "border": "primaryColor/30"
       },
       "emptyCell": {
         "background": "#F5F7FA",
@@ -2031,8 +2029,7 @@
           },
           // Active row highlight (same as direct pane)
           "activeRow": {
-            "background": "pColor + '0F'",
-            "borderLeft": "3px solid pColor"
+            "background": "pColor + '16'"
           },
           // "+ Tạo nhóm" sub-header CTA above list in Groups tab
           "createCTA": {
@@ -2500,7 +2497,6 @@
             "marginBottom": 8,
             "background": "pColor + '0F'",
             "border": "1px solid pColor + '33'",
-            "borderLeft": "4px solid pColor",
             "borderRadius": 9,
             "animation": "msg-reply-in 0.15s ease-out (opacity + translateY(4px)→0)",
             "labelFontSize": 10.5,
@@ -2522,14 +2518,14 @@
             // Own message context: white-ish semi-transparent
             "isMe": {
               "background": "rgba(255,255,255,0.18)",
-              "borderLeft": "3px solid rgba(255,255,255,0.6)",
+              "border": "1px solid rgba(255,255,255,0.35)",
               "senderColor": "rgba(255,255,255,0.9)",
               "previewColor": "rgba(255,255,255,0.85)"
             },
             // Others' message context
             "isOther": {
               "background": "var(--edu-bg)",
-              "borderLeft": "3px solid pColor",
+              "border": "1px solid var(--edu-primary) + '33'",
               "senderColor": "pColor",
               "previewColor": "var(--edu-text-secondary)"
             },
@@ -2768,16 +2764,14 @@
       "notificationRow": {
         "layout": "grid — 28px icon | flex-1 content | chevron",
         "gap": 14,
-        "padding": "14px 20px 14px 17px",
+        "padding": "14px 20px",
         "unread": {
-          "borderLeft": "3px solid primaryColor",
-          "background": "primaryColor + '08'",
-          "hoverBackground": "primaryColor + '12'",
+          "background": "primaryColor + '12'",
+          "hoverBackground": "primaryColor + '1C'",
           "titleFontWeight": 800,
           "titleColor": "var(--edu-text-primary)"
         },
         "read": {
-          "borderLeft": "3px solid transparent",
           "background": "var(--edu-card)",
           "hoverBackground": "var(--edu-bg)",
           "titleFontWeight": 500,
@@ -2892,7 +2886,6 @@
           "offset": { "bottom": 28, "right": 28 },
           "borderRadius": 12,
           "border": "1px solid typeColor + '33'",
-          "borderLeft": "4px solid typeColor",
           "shadow": "0 16px 48px rgba(0,0,0,0.18)",
           "minWidth": 280,
           "maxWidth": 360,
@@ -4504,8 +4497,7 @@
         "padding": "14px 18px",
         "borderBottom": "1px solid var(--edu-border)",
         "selectedStyle": {
-          "background": "primaryColor/0B",
-          "borderLeft": "3px solid primaryColor"
+          "background": "primaryColor/16"
         },
         "avatar": { "size": 32 },
         "teacherName": { "fontSize": 13, "fontWeight": 700 },
@@ -6076,12 +6068,10 @@
           "padding": "10px 14px",
           "display": "flex, alignItems flex-start, gap 8",
           "selected": {
-            "background": "var(--edu-primary)+'0C'",
-            "borderLeft": "3px solid var(--edu-primary)"
+            "background": "var(--edu-primary)+'16'"
           },
           "unselected": {
-            "background": "transparent",
-            "borderLeft": "3px solid transparent"
+            "background": "transparent"
           },
           "typePill": {
             "mcq": {
@@ -7057,9 +7047,8 @@
           "notificationRow": {
             "background": "primaryColor + '08'",
             "border": "1px solid primaryColor + '33'",
-            "borderLeft": "3px solid primaryColor",
             "borderRadius": 10,
-            "padding": "12px 14px 12px 13px",
+            "padding": "12px 14px",
             "layout": "grid — 28px icon | flex-1 content",
             "gap": 12,
             "iconBox": { "size": 28, "borderRadius": 8 },

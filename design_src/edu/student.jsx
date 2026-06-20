@@ -508,10 +508,10 @@ const LessonPlayer = ({ course, lang, t, pColor, onBack }) => {
                       <button key={l.id} onClick={() => setActiveId(l.id)}
                         style={{
                           width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                          background: isActive ? course.color + '0E' : 'transparent',
-                          border: 'none', borderLeft: `3px solid ${isActive ? course.color : 'transparent'}`,
+                          background: isActive ? course.color + '16' : 'transparent',
+                          border: 'none',
                           borderBottom: li < ch.lessons.length - 1 ? `1px solid ${T.border}` : 'none',
-                          padding: '11px 14px 11px 13px',
+                          padding: '11px 14px',
                           display: 'flex', alignItems: 'flex-start', gap: 10,
                         }}>
                         <div style={{

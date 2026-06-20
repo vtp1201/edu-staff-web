@@ -1,15 +1,35 @@
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 
-const Card = ({ children, style, onClick }) => (
-  <div onClick={onClick} style={{
-    background: T.card, borderRadius: 12, border: `1px solid ${T.border}`,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: 24,
-    cursor: onClick ? 'pointer' : 'default',
-    transition: 'box-shadow 0.2s, transform 0.2s',
-    ...(onClick && { ':hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.08)' } }),
-    ...style
-  }}>{children}</div>
-);
+const Card = ({ children, style, onClick }) => {
+  const interactive = !!onClick;
+  const [hovered, setHovered] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
+  const lifted = interactive && (hovered || focused);
+  return (
+    <div
+      onClick={onClick}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); } } : undefined}
+      onMouseEnter={interactive ? () => setHovered(true) : undefined}
+      onMouseLeave={interactive ? () => setHovered(false) : undefined}
+      onFocus={interactive ? () => setFocused(true) : undefined}
+      onBlur={interactive ? () => setFocused(false) : undefined}
+      style={{
+        background: T.card, borderRadius: 12, border: `1px solid ${T.border}`,
+        boxShadow: [
+          lifted ? '0 4px 20px rgba(0,0,0,0.08)' : '0 2px 12px rgba(0,0,0,0.04)',
+          focused ? `0 0 0 2px ${T.primary}` : null,
+        ].filter(Boolean).join(', '),
+        padding: 24,
+        cursor: interactive ? 'pointer' : 'default',
+        transform: lifted ? 'translateY(-2px)' : 'none',
+        transition: 'box-shadow 0.2s, transform 0.2s',
+        outline: 'none',
+        ...style
+      }}>{children}</div>
+  );
+};
 
 const Badge = ({ children, color = T.primary, bg, style }) => (
   <span style={{
@@ -36,7 +56,7 @@ const Button = ({ children, onClick, variant = 'primary', size = 'md', disabled,
     primary: { background: hovered ? T.primaryDark : T.primary, color: '#fff', border: 'none' },
     secondary: { background: hovered ? T.primaryLight : 'transparent', color: T.primary, border: `1.5px solid ${T.primary}` },
     ghost: { background: hovered ? T.bg : 'transparent', color: T.textSecondary, border: 'none' },
-    danger: { background: hovered ? '#e0745a' : T.error, color: '#fff', border: 'none' },
+    danger: { background: hovered ? T.errorDark + 'E6' : T.errorDark, color: T.errorForeground, border: 'none' },
   };
   return (
     <button onClick={onClick} disabled={disabled}
@@ -52,11 +72,16 @@ const Button = ({ children, onClick, variant = 'primary', size = 'md', disabled,
   );
 };
 
-const ProgressBar = ({ value, color = T.primary, height = 6, style }) => (
-  <div style={{ background: T.border, borderRadius: 99, height, overflow: 'hidden', ...style }}>
-    <div style={{ width: `${Math.min(value, 100)}%`, height: '100%', background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
-  </div>
-);
+const ProgressBar = ({ value, color = T.primary, height = 6, style }) => {
+  const pct = Math.min(value, 100);
+  return (
+    <div role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}
+      style={{ background: T.border, borderRadius: 99, height, overflow: 'hidden', ...style }}>
+      {/* GPU-composited fill: a full-width bar scaled along X from the left edge — no width/layout thrash */}
+      <div style={{ width: '100%', height: '100%', background: color, borderRadius: 99, transformOrigin: 'left center', transform: `scaleX(${pct / 100})`, transition: 'transform 0.6s ease' }} />
+    </div>
+  );
+};
 
 const StatCard = ({ icon, iconColor, iconBg, label, value, trend, trendLabel, lang }) => (
   <div style={{
@@ -166,10 +191,16 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
   };
 
   return (
+    // Outer track animates grid-template-columns (260px ⇆ 72px) instead of width — no `width` transition.
     <div style={{
-      width: W, flexShrink: 0, height: '100vh', background: T.card,
+      display: 'grid', gridTemplateColumns: `${W}px`,
+      flexShrink: 0, height: '100vh',
+      transition: 'grid-template-columns 0.25s ease',
+    }}>
+    <div style={{
+      minWidth: 0, height: '100vh', background: T.card,
       borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column',
-      transition: 'width 0.25s ease', overflow: 'hidden', position: 'relative', zIndex: 10,
+      overflow: 'hidden', position: 'relative', zIndex: 10,
     }}>
       {/* Logo */}
       <div style={{
@@ -207,6 +238,9 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
           return (
             <button key={item.id} onClick={() => onNavigate(item.id)}
               title={collapsed ? t(item.vi, item.en) : ''}
+              aria-current={isActive ? 'page' : undefined}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.bg; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: collapsed ? 0 : 12, padding: collapsed ? '10px 0' : '9px 20px',
@@ -224,7 +258,7 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
                 </span>
               )}
               {!collapsed && item.badge && (
-                <span style={{ background: T.error, color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 7px', minWidth: 18 }}>
+                <span style={{ background: T.errorDark, color: T.errorForeground, borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 7px', minWidth: 18, textAlign: 'center' }}>
                   {item.badge}
                 </span>
               )}
@@ -264,6 +298,10 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
 
       {/* Collapse toggle */}
       <button onClick={onToggleCollapse}
+        aria-label={collapsed ? t('Mở rộng thanh điều hướng', 'Expand sidebar') : t('Thu gọn thanh điều hướng', 'Collapse sidebar')}
+        aria-expanded={!collapsed}
+        onMouseEnter={e => e.currentTarget.style.background = T.bg}
+        onMouseLeave={e => e.currentTarget.style.background = T.card}
         style={{
           position: 'absolute', top: 18, right: collapsed ? '50%' : -12,
           transform: collapsed ? 'translateX(50%)' : 'none',
@@ -274,6 +312,7 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
         }}>
         <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={12} color={T.textSecondary} />
       </button>
+      </div>
     </div>
   );
 };
@@ -284,6 +323,15 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
   const t = (vi, en) => lang === 'en' ? en : vi;
   const [showDropdown, setShowDropdown] = React.useState(false);
   const pColor = primaryColor || T.primary;
+  const menuRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!showDropdown) return;
+    const onPointer = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowDropdown(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setShowDropdown(false); };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onPointer); document.removeEventListener('keydown', onKey); };
+  }, [showDropdown]);
   const ROLE_LABELS = {
     teacher: { vi: 'Giáo viên', en: 'Teacher' },
     principal: { vi: 'Hiệu trưởng', en: 'Principal' },
@@ -308,7 +356,7 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
         padding: '7px 14px', width: 220,
       }}>
         <Icon name="search" size={14} color={T.textMuted} />
-        <input placeholder={t('Tìm kiếm...', 'Search...')} style={{
+        <input aria-label={t('Tìm kiếm', 'Search')} placeholder={t('Tìm kiếm...', 'Search...')} style={{
           border: 'none', background: 'transparent', outline: 'none',
           fontSize: 13, color: T.textPrimary, width: '100%', fontFamily: 'inherit',
         }} />
@@ -316,24 +364,30 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
 
       {/* Notifications */}
       <div style={{ position: 'relative' }}>
-        <button style={{
-          width: 38, height: 38, borderRadius: 10, background: T.bg, border: `1px solid ${T.border}`,
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <button
+          aria-label={notifCount > 0 ? t(`Thông báo (${notifCount} mới)`, `Notifications (${notifCount} new)`) : t('Thông báo', 'Notifications')}
+          onMouseEnter={e => e.currentTarget.style.background = T.border}
+          onMouseLeave={e => e.currentTarget.style.background = T.bg}
+          style={{
+            width: 38, height: 38, borderRadius: 10, background: T.bg, border: `1px solid ${T.border}`,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
           <Icon name="bell" size={16} color={T.textSecondary} />
         </button>
         {notifCount > 0 && (
-          <div style={{
+          <div aria-hidden="true" style={{
             position: 'absolute', top: -4, right: -4, width: 18, height: 18,
-            background: T.error, borderRadius: '50%', fontSize: 10, fontWeight: 700,
-            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: T.errorDark, borderRadius: '50%', fontSize: 10, fontWeight: 700,
+            color: T.errorForeground, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>{notifCount}</div>
         )}
       </div>
 
       {/* Avatar + dropdown */}
-      <div style={{ position: 'relative' }}>
+      <div ref={menuRef} style={{ position: 'relative' }}>
         <button onClick={() => setShowDropdown(d => !d)}
+          aria-haspopup="menu" aria-expanded={showDropdown}
+          aria-label={t('Tài khoản và đổi vai trò', 'Account and switch role')}
           style={{
             display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
             background: 'transparent', border: 'none', padding: '4px 8px', borderRadius: 10,
@@ -351,13 +405,15 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
           <Icon name="chevronDown" size={14} color={T.textMuted} />
         </button>
         {showDropdown && (
-          <div style={{
+          <div role="menu" aria-label={t('Đổi vai trò', 'Switch role')} style={{
             position: 'absolute', right: 0, top: 48, background: T.card,
             border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
             padding: 8, minWidth: 180, zIndex: 100,
           }}>
             {[['teacher', '👩‍🏫 Giáo viên / Teacher'], ['principal', '🏫 Hiệu trưởng / Principal'], ['student', '🎓 Học sinh / Student'], ['parent', '👨‍👩‍👦 Phụ huynh / Parent']].map(([r, label]) => (
-              <button key={r} onClick={() => { onRoleChange(r); setShowDropdown(false); }}
+              <button key={r} role="menuitemradio" aria-checked={role === r} onClick={() => { onRoleChange(r); setShowDropdown(false); }}
+                onMouseEnter={e => { if (role !== r) e.currentTarget.style.background = T.bg; }}
+                onMouseLeave={e => { if (role !== r) e.currentTarget.style.background = 'transparent'; }}
                 style={{
                   width: '100%', padding: '9px 12px', background: role === r ? pColor + '12' : 'transparent',
                   border: 'none', cursor: 'pointer', borderRadius: 8, textAlign: 'left',

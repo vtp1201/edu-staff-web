@@ -75,7 +75,7 @@ Radius: btn 8px, card 12px, role-icon 16px, badge full, otp 10px. Shadow:
 
 - Assignment: pending ≤1d `error`, ≤3d `warning`, >3d `success`; submitted
   `primary`; graded `success`.
-- Schedule: done `muted`, live `success` + left accent, upcoming `warning`.
+- Schedule: done `muted`, live `success` (soft full-row tint, no side-stripe), upcoming `warning`.
 - Discipline severity: Nhẹ `warning`, Vừa `error`, Nặng `destructive`.
 
 ## Liên quan

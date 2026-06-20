@@ -522,8 +522,9 @@ const ProgressTrack = ({ value, color }) => (
   <div style={{ height: 6, background: T.border, borderRadius: 99, position: 'relative', overflow: 'hidden' }}>
     <div style={{
       position: 'absolute', left: 0, top: 0, bottom: 0,
-      width: `${value}%`, background: color, borderRadius: 99,
-      transition: 'width 0.3s',
+      width: '100%', transformOrigin: 'left', transform: `scaleX(${value / 100})`,
+      background: color, borderRadius: 99,
+      transition: 'transform 0.3s',
     }} />
   </div>
 );
@@ -1271,8 +1272,7 @@ const NotificationPreview = ({ t, title, body, priority, pColor }) => {
       <div style={{
         background: pColor + '08', borderRadius: 10,
         border: `1px solid ${pColor + '33'}`,
-        borderLeft: `3px solid ${pColor}`,
-        padding: '12px 14px 12px 13px',
+        padding: '12px 14px',
         display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr)', gap: 12,
         alignItems: 'flex-start',
       }}>
