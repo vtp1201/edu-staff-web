@@ -4,6 +4,7 @@ import { NOTI_EP } from "@/bootstrap/endpoint";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import { createMockUpstream } from "@/bootstrap/realtime/mock-upstream.server";
+import { resolveStreamTenant } from "./stream-tenant";
 
 // Long-lived streaming connection — never statically rendered/cached.
 export const dynamic = "force-dynamic";
@@ -31,10 +32,18 @@ export async function GET(request: NextRequest) {
   }
 
   const store = await cookies();
-  const tenantId =
+  const requested =
     request.nextUrl.searchParams.get("tenant") ??
     store.get("tenant_id")?.value ??
     "default";
+
+  // Validate the requested tenant against the token's tenantId claim (defense-in-depth).
+  // Mock-first (ADR 0014/0024): skip in mock mode — mock tokens carry no real tenantId.
+  const tenantResolution = resolveStreamTenant(token, requested, USE_MOCK);
+  if (!tenantResolution.ok) {
+    return new Response("Forbidden", { status: 403 });
+  }
+  const tenantId = tenantResolution.tenantId;
 
   // Mock-first (decision `0014`): no BE `noti` yet → serve a local stream.
   if (USE_MOCK || !NOTI_URL) {
