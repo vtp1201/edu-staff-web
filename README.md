@@ -44,6 +44,8 @@ cp .env.example .env.local
 # NEXT_PUBLIC_API_URL=http://localhost:8080  # Direct IAM bypass (debug only, skips Kong edge-auth)
 ```
 
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` — Google OAuth client ID (ADR 0035). Leave as placeholder for "SSO unavailable" graceful state.
+
 > **Kong gateway** (ADR 0030): Kong listens on port 8000 and routes by service prefix
 > (`/iam/...` → IAM on 8080, `/core/...` → core on 8081). All endpoint constants already
 > encode the full external path including the service prefix and `/api/v1` segment.

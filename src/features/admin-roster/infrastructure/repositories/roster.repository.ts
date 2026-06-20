@@ -5,11 +5,7 @@ import {
   ROSTER_EP,
   unenrollPath,
 } from "@/bootstrap/endpoint/admin-roster.endpoint";
-import {
-  type ApiEnvelope,
-  errorCodeOf,
-  parseEnvelope,
-} from "@/bootstrap/lib/api-envelope";
+import { type ApiEnvelope, parseEnvelope } from "@/bootstrap/lib/api-envelope";
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
 import type { SearchStudent } from "../../domain/entities/search-student.entity";

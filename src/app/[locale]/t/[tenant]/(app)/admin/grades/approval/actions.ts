@@ -1,5 +1,6 @@
 "use server";
 
+import { requireRole } from "@/bootstrap/auth-guard";
 import {
   makeApproveGradeBatchUseCase,
   makeBulkLockBatchesUseCase,
@@ -55,6 +56,8 @@ export async function getBatchDetailAction(
 export async function approveGradeBatchAction(
   batchId: string,
 ): Promise<Result<GradeApprovalBatch>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeApproveGradeBatchUseCase();
     return { ok: true, data: await useCase.execute(batchId) };
@@ -67,6 +70,8 @@ export async function requestGradeRevisionAction(
   batchId: string,
   note: string,
 ): Promise<Result<GradeApprovalBatch>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeRequestGradeRevisionUseCase();
     return { ok: true, data: await useCase.execute(batchId, note) };
@@ -78,6 +83,8 @@ export async function requestGradeRevisionAction(
 export async function bulkLockBatchesAction(
   batchIds: string[],
 ): Promise<Result<GradeApprovalBatch[]>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeBulkLockBatchesUseCase();
     return { ok: true, data: await useCase.execute(batchIds) };
