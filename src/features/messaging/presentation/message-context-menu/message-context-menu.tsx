@@ -172,7 +172,7 @@ export function MessageContextMenu({
       <div
         ref={menuRef}
         role="menu"
-        aria-label={t("reply")}
+        aria-label={t("menuLabel")}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         style={{ left: pos.left, top: pos.top, width: MENU_WIDTH }}

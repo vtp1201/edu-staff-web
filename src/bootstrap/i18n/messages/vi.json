@@ -1579,6 +1579,8 @@
       "delete": "Xóa",
       "deleteExpired": "Đã quá 1 giờ",
       "deleteOwnOnly": "Chỉ xoá tin nhắn của bạn",
+      "menuLabel": "Menu tùy chọn tin nhắn",
+      "openAriaLabel": "Tùy chọn tin nhắn",
       "pin": "Ghim tin nhắn",
       "pinAdminOnly": "Chỉ admin mới có thể ghim",
       "reply": "Trả lời"
@@ -1648,6 +1650,7 @@
       "editName": "Chỉnh sửa thông tin nhóm",
       "leaveConfirmBody": "Bạn sẽ không còn nhận tin nhắn từ nhóm này.",
       "leaveConfirmTitle": "Rời khỏi nhóm này?",
+      "descLabel": "Mô tả nhóm",
       "memberSelf": "(Bạn)",
       "membersSection": "THÀNH VIÊN",
       "noPinned": "Chưa có tin nhắn được ghim.",

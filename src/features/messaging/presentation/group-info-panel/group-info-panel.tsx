@@ -51,7 +51,7 @@ export function GroupInfoPanel({
   const tDialog = useTranslations("messaging.deleteDialog");
   const tGroup = useTranslations("messaging.group");
   const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [name, setName] = useState(group?.name ?? "");
   const [desc, setDesc] = useState(group?.description ?? "");
@@ -59,7 +59,7 @@ export function GroupInfoPanel({
   // Reset transient state whenever the group or open state changes.
   useEffect(() => {
     setEditing(false);
-    setConfirmDelete(false);
+    setDeleteOpen(false);
     setName(group?.name ?? "");
     setDesc(group?.description ?? "");
   }, [group]);
@@ -119,7 +119,11 @@ export function GroupInfoPanel({
                     onChange={(e) => setName(e.target.value)}
                     className="w-full rounded-lg border-[1.5px] border-border bg-background px-3 py-2 text-center font-bold text-foreground text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
                   />
+                  <label htmlFor="group-edit-desc" className="sr-only">
+                    {t("descLabel")}
+                  </label>
                   <textarea
+                    id="group-edit-desc"
                     value={desc}
                     onChange={(e) => setDesc(e.target.value)}
                     rows={2}
@@ -213,7 +217,7 @@ export function GroupInfoPanel({
                           )}
                         </span>
                         {m.role === "admin" && (
-                          <span className="rounded-full bg-edu-error-light px-1.5 py-0.5 font-bold text-[10px] text-edu-error">
+                          <span className="rounded-full bg-edu-error-light px-1.5 py-0.5 font-bold text-[10px] text-edu-error-text">
                             {t("adminBadge")}
                           </span>
                         )}
@@ -256,48 +260,24 @@ export function GroupInfoPanel({
 
             {/* Footer */}
             <div className="mt-auto border-border border-t px-4 py-4">
-              {confirmDelete ? (
-                <div className="space-y-2">
-                  <p className="text-center text-edu-error text-xs">
-                    {t("deleteWarning")}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(false)}
-                      className="flex-1 rounded-lg border border-border py-2 font-semibold text-foreground text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {tDialog("cancel")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onDelete}
-                      className="flex-1 rounded-lg bg-edu-error py-2 font-semibold text-edu-error-foreground text-sm hover:bg-edu-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {t("deleteConfirm")}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setLeaveOpen(true)}
+                  className="w-full rounded-lg bg-edu-warning/15 py-2.5 font-semibold text-edu-warning-foreground text-sm hover:bg-edu-warning/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {t("leaveGroup")}
+                </button>
+                {selfIsAdmin && (
                   <button
                     type="button"
-                    onClick={() => setLeaveOpen(true)}
-                    className="w-full rounded-lg bg-edu-warning/15 py-2.5 font-semibold text-edu-warning-foreground text-sm hover:bg-edu-warning/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => setDeleteOpen(true)}
+                    className="w-full rounded-lg bg-edu-error-light py-2.5 font-semibold text-edu-error-text text-sm hover:bg-edu-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {t("leaveGroup")}
+                    {t("deleteGroup")}
                   </button>
-                  {selfIsAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(true)}
-                      className="w-full rounded-lg bg-edu-error-light py-2.5 font-semibold text-edu-error text-sm hover:bg-edu-error/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {t("deleteGroup")}
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -321,6 +301,29 @@ export function GroupInfoPanel({
               className="bg-edu-warning text-edu-warning-foreground hover:bg-edu-warning/90"
             >
               {t("leaveGroup")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteGroup")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteWarning")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tDialog("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteOpen(false);
+                onDelete();
+              }}
+              className="bg-edu-error text-edu-error-foreground hover:bg-edu-error/90"
+            >
+              {t("deleteConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

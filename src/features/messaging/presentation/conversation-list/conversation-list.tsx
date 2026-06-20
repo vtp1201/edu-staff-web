@@ -59,7 +59,7 @@ export function ConversationList({
               {t("title")}
             </span>
             {totalUnread > 0 && (
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground">
+              <span className="rounded-full bg-edu-primary-accessible px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground">
                 <span className="sr-only">
                   {t("totalUnread", { count: totalUnread })}
                 </span>
@@ -103,6 +103,7 @@ export function ConversationList({
         {(["direct", "groups"] as const).map((id) => (
           <button
             key={id}
+            id={`${searchId}-tab-${id}`}
             type="button"
             role="tab"
             aria-selected={tab === id}
@@ -120,7 +121,12 @@ export function ConversationList({
         ))}
       </div>
 
-      <div id={panelId} role="tabpanel" className="flex-1 overflow-y-auto">
+      <div
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={`${searchId}-tab-${tab}`}
+        className="flex-1 overflow-y-auto"
+      >
         {loadError ? (
           <div
             role="alert"
@@ -146,7 +152,7 @@ export function ConversationList({
               <button
                 type="button"
                 onClick={onCreateGroup}
-                className="flex w-full items-center gap-1.5 bg-primary/8 px-4 py-2.5 text-left font-semibold text-primary text-sm transition-colors hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex w-full items-center gap-1.5 bg-primary/8 px-4 py-2.5 text-left font-semibold text-edu-primary-accessible text-sm transition-colors hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
                 {t("group.emptyCreateCta")}

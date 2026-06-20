@@ -87,6 +87,7 @@ export function ChatWindow({
   const selfIsGroupAdmin = Boolean(conversation.selfIsGroupAdmin);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const contextTriggerRef = useRef<HTMLElement | null>(null);
   const [replyState, setReplyState] = useState<ReplyState | null>(null);
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -154,6 +155,7 @@ export function ChatWindow({
   const openContextMenu = (e: MouseEvent, messageId: string) => {
     const msg = messages.find((m) => m.id === messageId);
     if (!msg || msg.from === "system") return;
+    contextTriggerRef.current = document.activeElement as HTMLElement | null;
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -163,7 +165,11 @@ export function ChatWindow({
     });
   };
 
-  const closeContextMenu = () => setContextMenu(null);
+  const closeContextMenu = () => {
+    setContextMenu(null);
+    const trigger = contextTriggerRef.current;
+    if (trigger) requestAnimationFrame(() => trigger.focus());
+  };
 
   const handleReplyFromMenu = () => {
     const msg = messages.find((m) => m.id === contextMenu?.targetMessageId);

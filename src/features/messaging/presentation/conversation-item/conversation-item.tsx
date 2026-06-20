@@ -99,7 +99,7 @@ export function ConversationItem({
           {hasUnread && (
             <span
               aria-hidden="true"
-              className="ml-1 flex min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground"
+              className="ml-1 flex min-w-[18px] flex-shrink-0 items-center justify-center rounded-full bg-edu-primary-accessible px-1.5 py-0.5 text-[11px] font-extrabold text-primary-foreground"
             >
               {unreadCount}
             </span>

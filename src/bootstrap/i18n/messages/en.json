@@ -1579,6 +1579,8 @@
       "delete": "Delete",
       "deleteExpired": "More than 1 hour has passed",
       "deleteOwnOnly": "You can only delete your own messages",
+      "menuLabel": "Message options menu",
+      "openAriaLabel": "Message options",
       "pin": "Pin message",
       "pinAdminOnly": "Only admin can pin messages",
       "reply": "Reply"
@@ -1648,6 +1650,7 @@
       "editName": "Edit group info",
       "leaveConfirmBody": "You will no longer receive messages from this group.",
       "leaveConfirmTitle": "Leave this group?",
+      "descLabel": "Group description",
       "memberSelf": "(You)",
       "membersSection": "MEMBERS",
       "noPinned": "No pinned messages yet.",
