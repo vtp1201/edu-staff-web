@@ -1091,7 +1091,10 @@
       "startCta": "Start the exam now",
       "title": "Exam information",
       "type": "Type",
-      "typeValue": "Multiple choice"
+      "typeValue": "Multiple choice",
+      "mixedType": "Mixed exam",
+      "mixedTypeValue": "Multiple Choice + Essay",
+      "essayGradingNote": "The essay section will be graded by the teacher and results updated later."
     },
     "card": {
       "deadline": "Due: {date}",
@@ -1102,7 +1105,8 @@
     "cta": {
       "expired": "Expired",
       "start": "Start exam",
-      "viewResult": "View result"
+      "viewResult": "View result",
+      "viewPendingResult": "View partial result"
     },
     "empty": {
       "subtitle": "There are no exams matching this filter.",
@@ -1121,6 +1125,7 @@
       "available": "Available",
       "completed": "Done",
       "expired": "Expired",
+      "pendingEssay": "Pending grade",
       "groupLabel": "Filter exams"
     },
     "page": {
@@ -1147,7 +1152,13 @@
       "skipped": "Skipped",
       "timeTaken": "Time taken",
       "title": "Exam result",
-      "yourAnswer": "Your answer"
+      "yourAnswer": "Your answer",
+      "mcqLabel": "MCQ",
+      "partialResultBadge": "PARTIAL RESULT",
+      "pendingEssayTitle": "Essay score awaiting teacher grading",
+      "pendingEssayBody": "Multiple-choice section auto-graded — {mcqScore}/{mcqMax} pts. The essay section (max {essayMax} pts) will be manually graded by your teacher within 3 working days.",
+      "essayPending": "Essay questions (pending grade)",
+      "essayQuestionLabel": "Essay question — Awaiting grade"
     },
     "skeleton": {
       "loading": "Loading exams..."
@@ -1160,7 +1171,8 @@
     "status": {
       "available": "Available",
       "completed": "Done",
-      "expired": "Expired"
+      "expired": "Expired",
+      "submittedPendingEssay": "Awaiting essay grade"
     },
     "submitModal": {
       "answered": "Answered",
@@ -1190,7 +1202,10 @@
       "submitBtn": "Submit",
       "timerAnnounce": "Time remaining: {time}",
       "timerLabel": "Time remaining",
-      "unflagBtn": "Unflag"
+      "unflagBtn": "Unflag",
+      "essayPlaceholder": "Enter your answer here...",
+      "essayCharCount": "{count}/2000 characters",
+      "essayEmptyWarning": "You have not answered the essay question."
     }
   },
   "examBank": {
@@ -1377,6 +1392,7 @@
     "title": "Grade Batch Approval"
   },
   "gradeBook": {
+    "childSwitcherLabel": "Select child",
     "bandHeaderCK": "Final",
     "bandHeaderGK": "Midterm",
     "bandHeaderTX": "Regular",
