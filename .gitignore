@@ -66,3 +66,6 @@ scripts/bin/harness-cli.exe
 .claude/scheduled_tasks.lock
 # Design handoff preview entrypoint — kept on disk for local preview, not committed (decision 0021)
 design_src/EduPortal.html
+# Agent runtime artifacts — local only
+.agents/
+skills-lock.json
