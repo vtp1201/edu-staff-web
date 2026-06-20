@@ -12,6 +12,6 @@
 - [E01 Auth RBAC epic](project-e01-auth.md) — US-E01.1 email+token done; US-E01.2 SSO+multi-role done (ADR 0035 VNeID, ADR 0036 roleEnum); 304 tests
 - [E08 App Shell epic](project-e08-app-shell.md) — US-E08.5 Profile Linked Accounts (VNeID+Google) implemented; SSO icons promoted to components/shared/sso-icons/; ReactQueryProvider added to (app)/layout; mock-first all 3 BE endpoints; 341 tests
 - [E09 Discipline epic](project-e09-discipline.md) — ALL 3 US implemented; E09.3 Staff Leave (admin, 448 tests, A11Y-008–016 fixed, card layout + inline reject, destructive btn now bg-edu-error-dark); E09 COMPLETE
-- [E10 Communications epic](project-e10-communications.md) — US-E10.1 Messaging + US-E10.2 Notifications + US-E10.3 Announcements (admin/principal, 558 tests, A11Y-017–030 fixed, 19 stories, 15/15 AC); E10 COMPLETE
+- [E10 Communications epic](project-e10-communications.md) — US-E10.1–E10.5 all implemented; E10.5=QA defect fixes (DEF-01 timer, DEF-02 addMembers wiring, DEF-03 highlight test; 839 tests); E10 COMPLETE; storybook/test has no vi/useFakeTimers
 - [E11 LMS Exams epic](project-e11-lms-exams.md) — US-E11.1/E11.2/E11.4 implemented; E11.4 = Teaching Plan PPCT (teacher grid/submit + principal approve/reject, 618 tests, semantic table grid); E11.3 exam-bank in progress (another session)
 - [INFRA security hardening](project-infra-security-hardening.md) — US-INFRA.2: auth-guard module, SSE tenant validation, Server Action tests, build guard (804 tests); push with NEXT_PUBLIC_USE_MOCK= to avoid build guard tripping pre-push

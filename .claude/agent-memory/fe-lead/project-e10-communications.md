@@ -74,9 +74,22 @@ US-E10.4 Messaging Enhancements (group chat, DR-008) — IMPLEMENTED (merged to 
 - Shimmer skeleton intentionally "not gated" in the comment but the global `!important` reset covers it anyway.
 - Color swatches #6366F1 and #FB923C are spec-mandated hex literals (design-spec `colorPicker.palette`) — used in dynamic inline style, not Tailwind class. Acceptable exception.
 
-**E10 status:** ALL 4 US complete. E10 COMPLETE.
+US-E10.5 Messaging QA defect fixes — IMPLEMENTED (merged to main 2026-06-20, 839 total tests).
 
-**How to apply:** E10 feature module (`src/features/messaging/`) is complete. Any future messaging work must be a new US extending it, not modifying the closed stories. Social service is still mock-first (decision 0017).
+**What was fixed (E10.5):**
+- DEF-01: `chat-window.tsx` — extracted `useHighlightTimer` logic into `highlight-timer.ts` pure helper; timer cleared before re-scheduling (rapid-click) and on unmount via `useEffect` cleanup ref. Unit tested with vi.useFakeTimers (4 cases).
+- DEF-02: Wired `onAddMembers` stub → full chain: `addGroupMembersAction` Server Action (`'use server'`, calls `makeAddGroupMembersUseCase`), extended `MessagingScreenActions` ViewModel, new `AddMembersModal` component (contact-picker dialog, search, aria-pressed checkboxes, error alert, spinner), `addMembersMutation` in MessagingScreen (onSuccess writes updated group to cache + syncs conversationList memberCount, onSettled invalidates groupKey). Page.tsx passes the action. 5 AddMembersModal stories + AddMembers_Wired interaction story.
+- DEF-03: `ScrollToPinned_Highlight_Wired` story (open panel → click pinned row → panel closes → highlight applied); real-clock 4s wait removed (storybook/test has no vi.useFakeTimers — that package exports only expect/userEvent/waitFor/within/fn/spyOn). Timer behavior proven by unit test.
+
+**New files (E10.5):**
+- `src/features/messaging/presentation/chat-window/highlight-timer.ts` — pure scheduleHighlightClear helper
+- `src/features/messaging/presentation/chat-window/highlight-timer.test.ts` — 4 unit tests
+- `src/features/messaging/presentation/add-members-modal/` — add-members-modal.tsx + .i-vm.ts + index.ts + .stories.tsx
+- Extended: messaging-screen.tsx, messaging-screen.i-vm.ts, messaging-screen.stories.tsx, actions.ts, page.tsx, vi.json+en.json (messaging.addMembersModal block)
+
+**E10 status:** ALL 5 US complete. E10 COMPLETE (US-E10.5 closes the QA defect list).
+
+**How to apply:** E10 feature module (`src/features/messaging/`) is complete. Any future messaging work must be a new US extending it, not modifying the closed stories. Social service is still mock-first (decision 0017). Note: `storybook/test` does NOT export `vi`/`useFakeTimers` — use pure Vitest for timer-based tests, Storybook for wiring assertions only.
 
 **Why:** noti service not yet built → mock-first (decision 0014). SSE fan-out deferred to when noti service ships.
 
