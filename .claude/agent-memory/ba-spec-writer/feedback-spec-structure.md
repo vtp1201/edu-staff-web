@@ -38,6 +38,30 @@ The 18-section spec.md structure used for US-E13.7 was confirmed complete:
 
 ---
 
+## US-E17.7 addenda — polish/audit-first spec patterns (2026-06-21)
+
+When the story is a polish upgrade of already-implemented components (no new BE, no new tokens, no new i18n keys):
+
+- **§4 Functional Spec: use a per-file change table (# | Location | Current | Required)** — this is more useful to fe-lead than prose descriptions. The engineer can diff current code against the table row-by-row.
+- **Pseudo-JSX resulting structure block:** include a pseudo-JSX block showing the target component shape. Label it "not implementation code" — fe-lead owns the exact impl but needs the shape to start.
+- **Audit-first AC as its own criterion:** always include an "audit-first — no duplicate component" AC (e.g. AC-01.14). This prevents fe-lead from creating a parallel component.
+- **Open questions resolved in spec header context:** when OQs are pre-resolved by the caller, embed resolution inline in §4 (next to the prop/callback they affect) rather than only in §9. Both places.
+- **Storybook proof: name stories explicitly and list the assertions per story** — `getByRole('status')`, `aria-hidden`, color class, `clientHeight >= 44`. This maps 1:1 to TEST_MATRIX rows.
+- **No Unit layer row when there is no domain logic** — the Validation table should say "Not applicable" rather than leaving it blank. Blank reads as "forgot to fill in".
+
+---
+
+## US-E17.4/E17.5/E17.6 addenda — cross-cutting UX polish spec patterns (2026-06-21)
+
+When the story is a pure UI upgrade touching multiple file locations (cross-cutting empty state standardisation, no new tokens/i18n/BE):
+
+- **Use a simplified §3 format:** one subsection per FR with file target + class names + i18n call. No Integration Map section needed.
+- **AC numbering: AC-{FR}-{seq}**, e.g. AC-01.1 for FR-01's first AC. Group by FR, not by UC.
+- **Storybook play() requirements in §11 Handoff:** list exact DOM assertions by name (`role="status"`, `aria-hidden="true"`, class presence/absence). This maps to TEST_MATRIX without ambiguity.
+- **[CONFLICT] for design-spec typos:** flag in §9 with resolution inline (e.g. US-E17.5: `grades.gradeBook.emptyState` is a design-spec typo; actual namespace is `gradeBook`).
+- **Body contrast fix is mandatory for notification stories:** `text-muted-foreground` / `text-edu-text-muted` at 13px = 3.08:1 FAILS WCAG 1.4.3. Spec must explicitly prohibit the failing class AND require `text-edu-text-secondary` (5.1:1). Include in AC as a "MUST NOT have class X" assertion.
+- **Multi-location stories:** state machine AC per location (AC-05.X pattern) is cleaner than repeating loading/error/populated ACs inside each FR's AC block when there are 4+ locations.
+
 ## US-E11.5 addenda — additive delta spec patterns (2026-06-21)
 
 When the story extends an already-implemented feature (delta, not net-new), apply these patterns:

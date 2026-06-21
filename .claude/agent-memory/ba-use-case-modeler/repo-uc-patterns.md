@@ -43,3 +43,26 @@ pending → var(--edu-warning) | approved → var(--edu-success) | rejected → 
 ## Leave form validation rules (discipline domain)
 startDate >= today | endDate >= startDate (optional field) | reason.trim().length >= 10
 All three rules fire independently; model concurrent-violation alt flow explicitly.
+
+## Responsive layout UC patterns (UX-03 / E17)
+Pure CSS-layout stories (no new BE, no new tokens, no new i18n) still need four async states modeled: loading skeletons inherit the same CSS class, empty state uses role="status", error state replaces grid/table.
+
+### Stat-grid breakpoint spec (design-spec.jsonc responsiveGrid.statGrid)
+`repeat(auto-fit, minmax(200px, 1fr))` — 4 cols >1024px, 2 cols 640–1024px, 1 col <640px.
+Key AC test: document.documentElement.scrollWidth === clientWidth at 320px.
+No JS matchMedia / ResizeObserver added — CSS-only constraint.
+Open question pattern: "teacher dashboard" reference in DR-010 has no matching src/features/teacher/ file — FE must grep for remaining hard-coded grid-cols-4 patterns.
+
+### Grade table mobile spec (design-spec.jsonc responsiveGrid.gradeTable)
+Scroll wrapper: overflow-x:auto, -webkit-overflow-scrolling:touch, padding:0, role="region"+aria-label (existing key).
+Table: min-width:640px.
+First column cells: position:sticky, left:0, background:var(--edu-card), z-index:1, border-right:1px solid var(--edu-border).
+z-index must NOT exceed 1 (modal/popover layers must be > 1).
+
+### Messaging pane toggle spec (design-spec.jsonc responsiveGrid.messagingLayout)
+Mobile (≤768px): single pane, default="list"; chat slides in on row tap, back button returns.
+Transition: transform translateX 0.25s ease; @media(prefers-reduced-motion:reduce) → no transition (CSS-only guard, not JS matchMedia).
+Off-screen pane: aria-hidden="true" or inert — removes focusable children from tab order.
+No-overlap rule: outer container must clip overflow (overflow:hidden) during transition.
+Back button aria-label: reuse existing i18n key under messaging.* or Common.*.
+Desktop (>768px): both panes visible, no transform applied.
