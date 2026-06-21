@@ -41,7 +41,19 @@ export class ExamRepository implements IExamRepository {
   async submitExam(input: SubmitExamInput): Promise<ExamResult> {
     const body: SubmitExamDto = {
       examId: input.examId,
-      answers: input.answers,
+      answers: input.answers.map((a) =>
+        a.type === "essay"
+          ? {
+              questionId: a.questionId,
+              type: "essay",
+              textAnswer: a.textAnswer,
+            }
+          : {
+              questionId: a.questionId,
+              type: "mcq",
+              selectedOptionId: a.selectedOptionId,
+            },
+      ),
       startedAt: input.startedAt,
     };
     const data = (await this.http.post(

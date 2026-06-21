@@ -17,6 +17,7 @@ export interface SubmitModalProps {
   onOpenChange: (open: boolean) => void;
   answeredCount: number;
   totalCount: number;
+  hasEmptyEssay?: boolean;
   onConfirm: () => void;
 }
 
@@ -25,6 +26,7 @@ export function SubmitModal({
   onOpenChange,
   answeredCount,
   totalCount,
+  hasEmptyEssay = false,
   onConfirm,
 }: SubmitModalProps) {
   const t = useTranslations("exam");
@@ -48,6 +50,12 @@ export function SubmitModal({
             />
             <span>{t("submitModal.warningText", { count: unanswered })}</span>
           </div>
+        )}
+
+        {hasEmptyEssay && (
+          <p className="text-sm text-edu-warning-text">
+            {t("taking.essayEmptyWarning")}
+          </p>
         )}
 
         <DialogFooter>

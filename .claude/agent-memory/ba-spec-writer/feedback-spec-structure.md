@@ -35,3 +35,17 @@ The 18-section spec.md structure used for US-E13.7 was confirmed complete:
 - Traceability matrix maps FRs to test layer explicitly — this is what produces TEST_MATRIX rows.
 
 **How to apply:** Use this section order for any normal-lane spec with ARIA tablist pattern, TanStack Query integration, or mock-first service.
+
+---
+
+## US-E11.5 addenda — additive delta spec patterns (2026-06-21)
+
+When the story extends an already-implemented feature (delta, not net-new), apply these patterns:
+
+- **Domain-changes-first ordering in §Handoff:** list domain entities first, then mapper/DTO, then fixtures, then UI. This is the only safe order because nullable relaxation cascades.
+- **ADR cross-reference in domain section:** cite the ADR (e.g. ADR-0048) directly in the entity section and in the relevant ACs. Spec is self-contained only if the FE team can read the ADR link without digging.
+- **Breaking-change flag as explicit [RISK] note:** `score`/`passed` nullable relaxation touches all E11.1 call sites — flag this prominently in §5 next to the entity change, not just in §14 OQs.
+- **`submitted_pending_essay` is a SUCCESS state:** explicitly call out in §11 UI States that pending-essay is NOT empty/error. This distinction is non-obvious and directly prevents a common implementation mistake.
+- **Mock fixtures must list safe defaults:** for every additive entity field, document the safe default (e.g. `hasEssayQuestions` absent → `false`) — prevents mapper crashes on E11.1 data.
+- **i18n key table:** include a table of ALL new keys with vi + en values in §13. If any might already exist, add a note to check before adding. Saves one round-trip.
+- **Storybook story per screen-state-group, not per AC:** group stories as List/Briefing/Taking/Result-Pending/Result-Completed and list AC coverage per story — this is what the QA gate checks, not individual AC stories.

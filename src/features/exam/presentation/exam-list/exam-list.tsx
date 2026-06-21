@@ -16,12 +16,19 @@ import type { ExamListVm } from "./exam-list.i-vm";
 
 type FilterKey = "all" | ExamStatus;
 
-const FILTERS: FilterKey[] = ["all", "available", "completed", "expired"];
+const FILTERS: FilterKey[] = [
+  "all",
+  "available",
+  "completed",
+  "submitted_pending_essay",
+  "expired",
+];
 
 const STATUS_TONE: Record<ExamStatus, StatusTone> = {
   available: "primary",
   completed: "success",
   expired: "muted",
+  submitted_pending_essay: "warning",
 };
 
 function formatDeadline(iso: string): string {
@@ -38,7 +45,9 @@ export function ExamListScreen({ exams }: ExamListVm) {
   const [filter, setFilter] = useState<FilterKey>("all");
 
   const availableCount = exams.filter((e) => e.status === "available").length;
-  const completedExams = exams.filter((e) => e.status === "completed");
+  const completedExams = exams.filter(
+    (e) => e.status === "completed" || e.status === "submitted_pending_essay",
+  );
   const avgScore = useMemo(() => {
     if (completedExams.length === 0) return "—";
     // List summary does not carry per-exam scores (mock-first, lms service pending).
@@ -48,6 +57,21 @@ export function ExamListScreen({ exams }: ExamListVm) {
 
   const filtered =
     filter === "all" ? exams : exams.filter((e) => e.status === filter);
+
+  const filterLabel = (f: FilterKey): string => {
+    switch (f) {
+      case "all":
+        return t("filter.all");
+      case "available":
+        return t("filter.available");
+      case "completed":
+        return t("filter.completed");
+      case "submitted_pending_essay":
+        return t("filter.pendingEssay");
+      case "expired":
+        return t("filter.expired");
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -103,7 +127,7 @@ export function ExamListScreen({ exams }: ExamListVm) {
                   : "bg-muted text-foreground hover:bg-muted/70",
               )}
             >
-              {t(`filter.${f}`)}
+              {filterLabel(f)}
             </button>
           );
         })}
@@ -134,10 +158,27 @@ export function ExamListScreen({ exams }: ExamListVm) {
   );
 }
 
+function statusLabel(
+  t: ReturnType<typeof useTranslations<"exam">>,
+  status: ExamStatus,
+): string {
+  switch (status) {
+    case "available":
+      return t("status.available");
+    case "completed":
+      return t("status.completed");
+    case "expired":
+      return t("status.expired");
+    case "submitted_pending_essay":
+      return t("status.submittedPendingEssay");
+  }
+}
+
 function ExamCard({ exam, onOpen }: { exam: ExamSummary; onOpen: () => void }) {
   const t = useTranslations("exam");
   const isExpired = exam.status === "expired";
   const isCompleted = exam.status === "completed";
+  const isPendingEssay = exam.status === "submitted_pending_essay";
 
   return (
     <article
@@ -156,7 +197,7 @@ function ExamCard({ exam, onOpen }: { exam: ExamSummary; onOpen: () => void }) {
           </h3>
         </div>
         <StatusBadge tone={STATUS_TONE[exam.status]}>
-          {t(`status.${exam.status}`)}
+          {statusLabel(t, exam.status)}
         </StatusBadge>
       </div>
 
@@ -186,6 +227,10 @@ function ExamCard({ exam, onOpen }: { exam: ExamSummary; onOpen: () => void }) {
         {isExpired ? (
           <Button variant="outline" disabled className="w-full">
             {t("cta.expired")}
+          </Button>
+        ) : isPendingEssay ? (
+          <Button variant="outline" className="w-full" onClick={onOpen}>
+            {t("cta.viewPendingResult")}
           </Button>
         ) : (
           <Button

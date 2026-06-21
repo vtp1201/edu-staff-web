@@ -59,6 +59,27 @@ export const MOCK_EXAMS: ExamSummary[] = [
     status: "expired",
     type: "multiple-choice",
   },
+  {
+    id: "exam-005",
+    title: "Kiểm tra cuối kỳ - Ngữ văn",
+    subjectId: "sub-005",
+    subjectName: "Ngữ văn",
+    subjectColor: "warning",
+    teacherName: "Hoàng Thị Lan",
+    description:
+      "Bài kiểm tra kết hợp trắc nghiệm và tự luận về văn học Việt Nam.",
+    durationMinutes: 90,
+    totalQuestions: 28,
+    deadline: "2026-06-20T23:59:00Z",
+    status: "submitted_pending_essay",
+    type: "multiple-choice",
+    hasEssayQuestions: true,
+    essayCount: 3,
+    essayMax: 4,
+    mcqScore: 6.25,
+    mcqMax: 6,
+    questionTypes: ["mcq", "essay"],
+  },
 ];
 
 /** First seeded exam — convenience single fixture for stories/tests. */
@@ -88,9 +109,32 @@ export function buildMockQuestions(count: number): ExamQuestion[] {
   return Array.from({ length: count }, (_, i) => ({
     id: `q-${i + 1}`,
     index: i + 1,
+    type: "mcq" as const,
     text: `Câu hỏi số ${i + 1}: Đây là nội dung câu hỏi mẫu để kiểm tra khả năng hiển thị và cuộn trang của học sinh trong bài kiểm tra trắc nghiệm.`,
     options: OPTIONS_POOL,
   }));
+}
+
+/** Mixed exam: `mcqCount` MCQ questions followed by `essayCount` essay questions. */
+export function buildMockMixedQuestions(
+  mcqCount: number,
+  essayCount: number,
+): ExamQuestion[] {
+  const mcqs: ExamQuestion[] = Array.from({ length: mcqCount }, (_, i) => ({
+    id: `mq-${i + 1}`,
+    index: i + 1,
+    type: "mcq" as const,
+    text: `Câu hỏi trắc nghiệm ${i + 1}: Chọn đáp án đúng nhất.`,
+    options: OPTIONS_POOL,
+  }));
+  const essays: ExamQuestion[] = Array.from({ length: essayCount }, (_, i) => ({
+    id: `eq-${i + 1}`,
+    index: mcqCount + i + 1,
+    type: "essay" as const,
+    text: `Câu tự luận ${i + 1}: Hãy phân tích nội dung đoạn thơ sau và nêu cảm nhận của bạn.`,
+    options: [],
+  }));
+  return [...mcqs, ...essays];
 }
 
 export const MOCK_QUESTIONS: Record<string, ExamQuestion[]> = {
@@ -98,6 +142,7 @@ export const MOCK_QUESTIONS: Record<string, ExamQuestion[]> = {
   "exam-002": buildMockQuestions(10),
   "exam-003": buildMockQuestions(40),
   "exam-004": buildMockQuestions(15),
+  "exam-005": buildMockMixedQuestions(25, 3),
 };
 
 export function buildMockResult(examId: string): ExamResult {
@@ -110,6 +155,7 @@ export function buildMockResult(examId: string): ExamResult {
   return {
     examId,
     examTitle,
+    status: "completed",
     score,
     totalQuestions: total,
     correctCount,
@@ -119,6 +165,10 @@ export function buildMockResult(examId: string): ExamResult {
     rank: 5,
     percentile: 82,
     passed: score >= 5,
+    mcqScore: null,
+    mcqMax: null,
+    essayMax: null,
+    essayCount: 0,
     questionResults: questions.map((q, i) => {
       const selectedOptionId =
         i < total - 1
@@ -133,6 +183,7 @@ export function buildMockResult(examId: string): ExamResult {
       return {
         questionId: q.id,
         index: q.index,
+        type: q.type ?? "mcq",
         text: q.text,
         options: q.options,
         selectedOptionId,
@@ -142,3 +193,57 @@ export function buildMockResult(examId: string): ExamResult {
     }),
   };
 }
+
+/** Result returned for the mixed exam (exam-005): MCQ auto-graded, essay pending. */
+export const MOCK_PENDING_ESSAY_RESULT: ExamResult = {
+  examId: "exam-005",
+  examTitle: "Kiểm tra cuối kỳ - Ngữ văn",
+  status: "submitted_pending_essay",
+  score: null,
+  passed: null,
+  totalQuestions: 28,
+  correctCount: 18,
+  incorrectCount: 7,
+  skippedCount: 0,
+  timeTakenSeconds: 4200,
+  rank: null,
+  percentile: null,
+  mcqScore: 6.25,
+  mcqMax: 6,
+  essayMax: 4,
+  essayCount: 3,
+  questionResults: [
+    {
+      questionId: "mq-1",
+      index: 1,
+      type: "mcq",
+      text: "Câu hỏi trắc nghiệm 1: Chọn đáp án đúng nhất.",
+      options: OPTIONS_POOL,
+      selectedOptionId: "A",
+      correctOptionId: "A",
+      isCorrect: true,
+    },
+    {
+      questionId: "mq-2",
+      index: 2,
+      type: "mcq",
+      text: "Câu hỏi trắc nghiệm 2: Chọn đáp án đúng nhất.",
+      options: OPTIONS_POOL,
+      selectedOptionId: "B",
+      correctOptionId: "A",
+      isCorrect: false,
+    },
+    {
+      questionId: "eq-1",
+      index: 26,
+      type: "essay",
+      text: "Câu tự luận 1: Hãy phân tích nội dung đoạn thơ sau và nêu cảm nhận của bạn.",
+      options: [],
+      selectedOptionId: null,
+      correctOptionId: null,
+      isCorrect: null,
+      textAnswer:
+        "Đoạn thơ thể hiện tình yêu quê hương sâu nặng của tác giả qua những hình ảnh bình dị mà giàu sức gợi.",
+    },
+  ],
+};

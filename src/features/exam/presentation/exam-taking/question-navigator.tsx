@@ -1,5 +1,6 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ExamQuestion } from "@/features/exam/domain/entities/exam-question.entity";
 import { cn } from "@/shared/utils";
@@ -9,6 +10,7 @@ export interface QuestionNavigatorProps {
   currentIndex: number; // 0-based
   answeredIds: Set<string>;
   flaggedIds: Set<string>;
+  essayIds?: Set<string>;
   onJump: (index: number) => void;
 }
 
@@ -17,6 +19,7 @@ export function QuestionNavigator({
   currentIndex,
   answeredIds,
   flaggedIds,
+  essayIds,
   onJump,
 }: QuestionNavigatorProps) {
   const t = useTranslations("exam");
@@ -31,6 +34,7 @@ export function QuestionNavigator({
           const isCurrent = i === currentIndex;
           const isFlagged = flaggedIds.has(q.id);
           const isAnswered = answeredIds.has(q.id);
+          const isEssay = essayIds?.has(q.id) ?? q.type === "essay";
           return (
             <button
               key={q.id}
@@ -55,7 +59,11 @@ export function QuestionNavigator({
                   "bg-muted text-foreground",
               )}
             >
-              {q.index}
+              {isEssay ? (
+                <FileText className="size-4" aria-hidden="true" />
+              ) : (
+                q.index
+              )}
             </button>
           );
         })}

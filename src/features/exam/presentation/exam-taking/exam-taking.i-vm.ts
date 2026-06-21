@@ -1,10 +1,9 @@
 import type { ExamSummary } from "@/features/exam/domain/entities/exam.entity";
 import type { ExamQuestion } from "@/features/exam/domain/entities/exam-question.entity";
+import type { SubmitAnswer } from "@/features/exam/domain/repositories/i-exam.repository";
 
-export interface ExamAnswer {
-  questionId: string;
-  selectedOptionId: string | null;
-}
+/** Presentation answer = domain submit answer (discriminated mcq | essay). */
+export type ExamAnswer = SubmitAnswer;
 
 export interface ExamTakingVm {
   exam: ExamSummary;

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateScore, scoreColorClass } from "../../calculate-score";
+import {
+  calculatePartialScore,
+  calculateScore,
+  scoreColorClass,
+} from "../../calculate-score";
+import type { ExamQuestion } from "../../entities/exam-question.entity";
 
 describe("calculateScore", () => {
   it("15/20 = 7.5", () => {
@@ -13,6 +18,71 @@ describe("calculateScore", () => {
   });
   it("0/0 = 0 (no division by zero)", () => {
     expect(calculateScore(0, 0)).toBe(0);
+  });
+});
+
+describe("calculatePartialScore", () => {
+  const mcq = (id: string, index: number): ExamQuestion => ({
+    id,
+    index,
+    type: "mcq",
+    text: `Q${index}`,
+    options: [
+      { id: "A", text: "a" },
+      { id: "B", text: "b" },
+    ],
+  });
+  const essay = (id: string, index: number): ExamQuestion => ({
+    id,
+    index,
+    type: "essay",
+    text: `E${index}`,
+    options: [],
+  });
+
+  it("returns {0,0,0} for empty questions array", () => {
+    expect(calculatePartialScore([], {})).toEqual({
+      mcqCorrect: 0,
+      mcqTotal: 0,
+      mcqScore: 0,
+    });
+  });
+
+  it("counts only mcq questions (skips essay)", () => {
+    const questions = [mcq("q1", 1), essay("e1", 2), mcq("q2", 3)];
+    const result = calculatePartialScore(questions, {});
+    expect(result.mcqTotal).toBe(2);
+  });
+
+  it("counts answered MCQ questions", () => {
+    const questions = [mcq("q1", 1), mcq("q2", 2), mcq("q3", 3)];
+    const answers = {
+      q1: { questionId: "q1", selectedOptionId: "A" },
+      q3: { questionId: "q3", selectedOptionId: "B" },
+    };
+    const result = calculatePartialScore(questions, answers);
+    expect(result.mcqCorrect).toBe(2);
+    expect(result.mcqTotal).toBe(3);
+  });
+
+  it("returns correct mcqScore via calculateScore (2/4 = 5)", () => {
+    const questions = [mcq("q1", 1), mcq("q2", 2), mcq("q3", 3), mcq("q4", 4)];
+    const answers = {
+      q1: { questionId: "q1", selectedOptionId: "A" },
+      q2: { questionId: "q2", selectedOptionId: "B" },
+    };
+    const result = calculatePartialScore(questions, answers);
+    expect(result.mcqScore).toBe(5);
+  });
+
+  it("defaults missing type to mcq", () => {
+    const noType: ExamQuestion = {
+      id: "q1",
+      index: 1,
+      text: "Q1",
+      options: [],
+    };
+    expect(calculatePartialScore([noType], {}).mcqTotal).toBe(1);
   });
 });
 
