@@ -8044,5 +8044,268 @@
       "ctaKey": "messaging.empty.cta",
       "note": "All keys already exist in messages.json under messaging.empty — no new keys needed"
     }
+  },
+
+  // DR-011 — UX-02/04/05/06/07/08 cross-cutting interaction patterns (2026-06-21)
+  "interactionPatterns": {
+    // UX-02 — Destructive Confirm Dialog
+    "destructiveConfirmDialog": {
+      "canonicalHome": "components/shared/destructive-confirm-dialog/",
+      "builtOn": "shadcn AlertDialog (Radix UI)",
+      "usedBy": [
+        "announcements (send-to-school confirm)",
+        "discipline-violations (delete violation)",
+        "staff-leave (reject request)",
+        "exam-bank (delete exam)"
+      ],
+      "props": {
+        "open": "boolean",
+        "title": "string",
+        "body": "string",
+        "confirmLabel": "string",
+        "isLoading": "boolean (optional, default false)",
+        "onConfirm": "() => void",
+        "onCancel": "() => void"
+      },
+      "layout": {
+        "iconTitleRow": {
+          "icon": "lucide AlertTriangle",
+          "iconSize": 20,
+          "iconColor": "text-destructive",
+          "titleTypography": "text-base font-bold text-foreground"
+        },
+        "body": {
+          "typography": "text-sm text-muted-foreground",
+          "placement": "below icon+title row"
+        },
+        "footer": {
+          "cancelPlacement": "left",
+          "confirmPlacement": "right"
+        }
+      },
+      "tokens": {
+        "confirmButton": "variant='destructive' → bg-destructive text-destructive-foreground",
+        "title": "text-foreground text-base font-bold",
+        "body": "text-muted-foreground text-sm",
+        "icon": "text-destructive"
+      },
+      "states": {
+        "isLoading=true": {
+          "confirmButton": "disabled + aria-busy='true'",
+          "cancelButton": "disabled"
+        },
+        "isLoading=false": "both buttons interactive"
+      },
+      "keyboard": {
+        "Escape": "cancel (Radix AlertDialog default)",
+        "Enter": "confirm (Radix AlertDialog default)"
+      },
+      "a11y": {
+        "focusTrap": "Radix AlertDialog built-in",
+        "focusRestoreOnClose": "returns to trigger element",
+        "role": "alertdialog (Radix default)"
+      },
+      "specificInstances": {
+        "announcements.sendToSchool": {
+          "titleKey": "announcements.sendConfirmTitle",
+          "bodyKey": "announcements.sendConfirmBody",
+          "bodyInterpolation": "{recipientCount}",
+          "confirmLabelKey": "announcements.btnSendNow"
+        },
+        "discipline.violations.delete": {
+          "titleKey": "discipline.violations.deleteDialog.title",
+          "bodyKey": "discipline.violations.deleteDialog.body",
+          "confirmLabelKey": "discipline.violations.deleteDialog.confirmLabel"
+        },
+        "staffLeave.reject": {
+          "titleKey": "staffLeave.rejectConfirmTitle",
+          "confirmLabelKey": "staffLeave.actions.confirmReject"
+        }
+      }
+    },
+
+    // UX-04 — Detail Panel Back Navigation
+    "detailPanelHeader": {
+      "canonicalHome": "components/shared/detail-panel-header/",
+      "usedBy": [
+        "announcements detail drawer",
+        "group-chat info panel",
+        "exam-builder header"
+      ],
+      "props": {
+        "backLabel": "string — i18n key resolved by caller",
+        "onBack": "() => void",
+        "title": "string (optional)",
+        "actions": "React.ReactNode (optional)"
+      },
+      "layout": {
+        "structure": "3-zone row: [back button left] [title center] [actions right]",
+        "backButton": {
+          "variant": "ghost",
+          "icon": "lucide ChevronLeft, 16px",
+          "minHeight": "min-h-[44px]",
+          "minWidth": "min-w-[44px]",
+          "ariaLabel": "aria-label={backLabel}",
+          "typography": "text-sm text-muted-foreground"
+        },
+        "title": {
+          "typography": "text-base font-bold text-foreground",
+          "overflow": "truncate on mobile (375px)"
+        },
+        "actions": {
+          "desktop": "visible right-aligned",
+          "mobile": "collapse to icon-only via md:hidden on label text"
+        }
+      },
+      "responsive": {
+        "375": "title truncates, actions icon-only",
+        "768+": "full title, labeled actions"
+      },
+      "keyboard": {
+        "Tab": "reaches back button",
+        "Enter/Space": "activates back action"
+      },
+      "a11y": {
+        "backButtonAriaLabel": "must equal backLabel prop (descriptive: e.g. 'Quay lại danh sách thông báo')",
+        "focusRing": "ring token visible, never outline:none bare"
+      }
+    },
+
+    // UX-05 — Loading Skeletons
+    "loadingSkeleton": {
+      "placement": "feature-local per screen; promote to components/shared/ only when ≥2 features share an identical shape",
+      "baseComponent": "shadcn Skeleton (src/components/ui/skeleton/)",
+      "motionGate": "motion-safe:animate-pulse — confirm Skeleton component wraps pulse in motion-safe; FE must add gate if absent",
+      "wrapper": {
+        "role": "status",
+        "ariaBusy": "true",
+        "ariaLabel": "t('Common.skeleton.loading')",
+        "srOnlyText": "<span className='sr-only'>{t('Common.skeleton.loading')}</span>"
+      },
+      "shapes": {
+        "StatCardSkeleton": {
+          "iconBox": "52×52px, bg-muted animate-pulse, radius 12px",
+          "valueBlock": "h-7 w-16 bg-muted animate-pulse",
+          "labelBlock": "h-3 w-20 bg-muted animate-pulse",
+          "cardPadding": "20px",
+          "cardRadius": "12px"
+        },
+        "TableRowSkeleton": {
+          "rowHeight": "min-h-[44px] (touch-safe baseline)",
+          "cells": "Skeleton blocks of varying widths (e.g. w-24 / w-16 / w-32)",
+          "border": "border-b border-border",
+          "background": "bg-muted animate-pulse per cell"
+        }
+      },
+      "appliesTo": [
+        "StatCard grids — discipline dashboard, teacher dashboard, student dashboard",
+        "Table bodies — grade-entry, discipline-conduct",
+        "List items — lesson-bank, exam-bank"
+      ],
+      "i18nKey": "Common.skeleton.loading"
+    },
+
+    // UX-08 — Mobile Touch Target ≥44px
+    "touchTarget": {
+      "rule": "All interactive elements on mobile must have min-h-[44px]; icon-only buttons also min-w-[44px]",
+      "tailwindUtility": "min-h-[44px] = Tailwind min-h-11 (44px); min-w-[44px] = min-w-11",
+      "noNewToken": true,
+      "patterns": {
+        "tableRows": {
+          "interactiveTr": "add min-h-[44px] to <tr> or row container when row is clickable/tappable",
+          "interactiveTd": "add min-h-[44px] to data cell when cell is individually tappable"
+        },
+        "gradeTable": {
+          "dataCell": "min-h-[44px] per row",
+          "stickyFirstColumn": {
+            "position": "sticky",
+            "left": 0,
+            "background": "bg-card",
+            "zIndex": "z-10",
+            "purpose": "horizontal scroll on mobile — first column stays visible"
+          }
+        },
+        "auditLogViolationRows": {
+          "rowContainer": "py-2.5 min-h-[44px]"
+        },
+        "iconOnlyButtons": {
+          "size": "min-h-[44px] min-w-[44px]",
+          "note": "action buttons in table rows, tab items, floating action triggers"
+        }
+      },
+      "scope": "375px mobile breakpoint and up; not needed when element is desktop-only non-interactive"
+    },
+
+    // UX-06 — Contextual Toast Messages
+    "contextualToast": {
+      "toastLibrary": "sonner (already wired in project)",
+      "rule": "Toast messages affecting specific entities or counts MUST include context (entity name or count + optional timestamp)",
+      "format": "[Past-tense verb] [entity/count] [optional: lúc {time}]",
+      "duration": {
+        "contextual": "4000ms",
+        "generic": "2000ms"
+      },
+      "variant": "success",
+      "replacements": {
+        "announcements": {
+          "genericKey": "announcements.sendToast",
+          "genericValue": "Đã gửi thông báo",
+          "contextualKey": "announcements.sendToastContext",
+          "contextualValue": "Đã gửi thông báo đến {recipientCount} người nhận lúc {time}",
+          "interpolation": "{recipientCount: number, time: string (HH:mm)}"
+        },
+        "discipline.violations": {
+          "genericKey": "discipline.violations.success",
+          "genericValue": "Đã ghi nhận vi phạm thành công!",
+          "contextualKey": "discipline.violations.successContext",
+          "contextualValue": "Đã ghi nhận vi phạm của {studentName}",
+          "interpolation": "{studentName: string}"
+        }
+      },
+      "note": "Do NOT delete generic keys — add contextual variant alongside. Caller supplies interpolation data. Fall back to generic key when context data unavailable."
+    },
+
+    // UX-07 — Onboarding Stepper
+    "setupStepper": {
+      "currentLocation": "feature-local: src/features/admin-school-setup/presentation/school-setup-screen/",
+      "promoteCondition": "Move to components/shared/setup-stepper/ when a second onboarding flow appears",
+      "visual": {
+        "progressBar": {
+          "track": "h-1.5 rounded-full bg-muted",
+          "fill": "bg-primary",
+          "fillWidth": "(completedSteps / totalSteps * 100)%",
+          "transition": "transition-[width] duration-[400ms] ease-out — gated: motion-safe:transition-[width]",
+          "placement": "top of the setup guide card"
+        },
+        "stepCounter": {
+          "typography": "text-xs font-bold text-muted-foreground uppercase tracking-wide",
+          "format": "BƯỚC {current}/{total}",
+          "i18nKey": "adminSchoolSetup.stepper.progress",
+          "i18nInterpolation": "{current: number, total: number}"
+        },
+        "stepItems": {
+          "done": "check icon, color text-edu-success (green)",
+          "current": "spinner or clock icon, color text-primary",
+          "pending": "circle icon, color text-muted-foreground",
+          "noTokenChange": true
+        }
+      },
+      "a11y": {
+        "role": "progressbar",
+        "ariaValuenow": "pct (0–100, integer)",
+        "ariaValuemin": 0,
+        "ariaValuemax": 100,
+        "ariaLabel": "t('adminSchoolSetup.stepper.ariaLabel')",
+        "i18nKey": "adminSchoolSetup.stepper.ariaLabel"
+      },
+      "tokens": {
+        "track": "bg-muted",
+        "fill": "bg-primary",
+        "stepDone": "text-edu-success",
+        "stepCurrent": "text-primary",
+        "stepPending": "text-muted-foreground",
+        "counterText": "text-muted-foreground"
+      }
+    }
   }
 }

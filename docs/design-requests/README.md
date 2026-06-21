@@ -25,4 +25,5 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-007 | Announcements (BGH gửi thông báo) | US-E10.3 | [x] delivered (2026-06-20) |
 | DR-008 | Group Chat (mở rộng từ messaging.jsx) | US-E10.4 (not US-E10.1; group-lifecycle net-new) | [x] delivered (2026-06-20) |
 | DR-009 | Impeccable anti-pattern fixes (side-stripe ban, error contrast, a11y, GPU transition, bounce easing) | US-E16.1–E16.5 | [x] delivered (2026-06-21) |
-| DR-010 | Responsive grid + empty states (UX-03 mobile breakpoints + UX-01 empty-state pattern) | UX-03 + UX-01 | [ ] delivered |
+| DR-010 | Responsive grid + empty states (UX-03 mobile breakpoints + UX-01 empty-state pattern) | UX-03 + UX-01 | [x] delivered (2026-06-21) |
+| DR-011 | UX Polish: Confirmations, Navigation, Loading & Feedback (UX-02/04/05/06/07/08) | UX-02 + UX-04 + UX-05 + UX-06 + UX-07 + UX-08 | [x] delivered (2026-06-21) |
