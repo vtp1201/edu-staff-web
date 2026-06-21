@@ -1170,7 +1170,8 @@
       "pendingEssayTitle": "Điểm tự luận đang chờ giáo viên chấm",
       "pendingEssayBody": "Phần trắc nghiệm đã được chấm tự động — {mcqScore}/{mcqMax}đ. Phần tự luận (tối đa {essayMax}đ) sẽ được giáo viên chấm thủ công và cộng vào điểm tổng trong vòng 3 ngày làm việc.",
       "essayPending": "Câu tự luận (chờ chấm)",
-      "essayQuestionLabel": "Câu tự luận — Chờ chấm"
+      "essayQuestionLabel": "Câu tự luận — Chờ chấm",
+      "filterEmpty": "Không có câu nào trong bộ lọc này."
     },
     "skeleton": {
       "loading": "Đang tải danh sách bài kiểm tra..."

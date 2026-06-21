@@ -1170,7 +1170,8 @@
       "pendingEssayTitle": "Essay score awaiting teacher grading",
       "pendingEssayBody": "Multiple-choice section auto-graded — {mcqScore}/{mcqMax} pts. The essay section (max {essayMax} pts) will be manually graded by your teacher within 3 working days.",
       "essayPending": "Essay questions (pending grade)",
-      "essayQuestionLabel": "Essay question — Awaiting grade"
+      "essayQuestionLabel": "Essay question — Awaiting grade",
+      "filterEmpty": "No questions in this filter."
     },
     "skeleton": {
       "loading": "Loading exams..."

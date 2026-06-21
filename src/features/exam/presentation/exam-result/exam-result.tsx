@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BellRing,
   CheckCircle2,
   Clock,
   FileText,
@@ -188,17 +187,23 @@ export function ExamResultScreen({
         </h2>
         <ReviewFilterTabs filter={filter} onChange={setFilter} />
 
-        <ul className="space-y-4">
-          {visible.map((q) => (
-            <li key={q.questionId}>
-              {q.type === "essay" ? (
-                <EssayQuestionReviewCard question={q} />
-              ) : (
-                <QuestionReviewCard question={q} />
-              )}
-            </li>
-          ))}
-        </ul>
+        {visible.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t("result.filterEmpty")}
+          </p>
+        ) : (
+          <ul className="space-y-4">
+            {visible.map((q) => (
+              <li key={q.questionId}>
+                {q.type === "essay" ? (
+                  <EssayQuestionReviewCard question={q} />
+                ) : (
+                  <QuestionReviewCard question={q} />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <Button variant="outline" onClick={onBackToList}>
@@ -268,16 +273,13 @@ function PendingEssayResultView({
         className="flex items-start gap-3 rounded-[var(--edu-radius-card)] border border-edu-warning/40 bg-edu-warning-light p-4"
       >
         <div className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-edu-warning/20">
-          <BellRing
-            className="size-5 text-edu-warning-text"
-            aria-hidden="true"
-          />
+          <Clock className="size-5 text-edu-warning-text" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold text-edu-warning-text">
             {t("result.pendingEssayTitle")}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-foreground">
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t("result.pendingEssayBody", {
               mcqScore: result.mcqScore?.toFixed(1) ?? "—",
               mcqMax: result.mcqMax ?? "—",
@@ -330,17 +332,23 @@ function PendingEssayResultView({
         </h2>
         <ReviewFilterTabs filter={filter} onChange={setFilter} />
 
-        <ul className="space-y-4">
-          {visible.map((q) => (
-            <li key={q.questionId}>
-              {q.type === "essay" ? (
-                <EssayQuestionReviewCard question={q} />
-              ) : (
-                <QuestionReviewCard question={q} />
-              )}
-            </li>
-          ))}
-        </ul>
+        {visible.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            {t("result.filterEmpty")}
+          </p>
+        ) : (
+          <ul className="space-y-4">
+            {visible.map((q) => (
+              <li key={q.questionId}>
+                {q.type === "essay" ? (
+                  <EssayQuestionReviewCard question={q} />
+                ) : (
+                  <QuestionReviewCard question={q} />
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <Button variant="outline" onClick={onBackToList}>
