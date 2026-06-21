@@ -971,10 +971,14 @@
     "retry": "Retry",
     "studentConduct": {
       "childInfo": "{name} — Class {class}",
+      "childSelector": {
+        "label": "Select student"
+      },
       "conductCard": {
         "absences": "Unexcused Absences",
         "grade": "Grade",
         "points": "Conduct Score",
+        "readOnly": "Read-only",
         "violations": "Violations"
       },
       "leaveHistory": {
@@ -992,6 +996,7 @@
         "submit": "Submit Request",
         "submitting": "Submitting...",
         "success": "Leave request submitted successfully!",
+        "successParent": "Leave request for {childName} has been sent to {gvcnName}.",
         "title": "Submit Leave Request",
         "type": "Leave Type *",
         "types": {
@@ -1007,6 +1012,7 @@
         "empty": "No violations recorded",
         "title": "Violation History"
       },
+      "noLinkedChildren": "No children are linked to this account.",
       "parentSubtitle": "View conduct and submit leave requests on behalf of your child",
       "parentTitle": "Student Conduct",
       "retry": "Try again",

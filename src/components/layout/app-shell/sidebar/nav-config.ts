@@ -86,6 +86,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/parent/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/parent/attendance", labelKey: "attendance", icon: ClipboardList },
     { href: "/parent/conduct", labelKey: "conduct", icon: Scale },
+    { href: "/parent/discipline", labelKey: "discipline", icon: Scale },
     { href: "/parent/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },

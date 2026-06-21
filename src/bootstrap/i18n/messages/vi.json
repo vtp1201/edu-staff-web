@@ -971,10 +971,14 @@
     "retry": "Thử lại",
     "studentConduct": {
       "childInfo": "{name} — Lớp {class}",
+      "childSelector": {
+        "label": "Chọn học sinh"
+      },
       "conductCard": {
         "absences": "Nghỉ không phép",
         "grade": "Xếp loại",
         "points": "Điểm hành kiểm",
+        "readOnly": "Chỉ xem",
         "violations": "Vi phạm"
       },
       "leaveHistory": {
@@ -992,6 +996,7 @@
         "submit": "Gửi đơn",
         "submitting": "Đang gửi...",
         "success": "Đã gửi đơn thành công!",
+        "successParent": "Đơn xin nghỉ cho {childName} đã gửi tới {gvcnName}.",
         "title": "Gửi đơn xin nghỉ",
         "type": "Loại nghỉ *",
         "types": {
@@ -1007,6 +1012,7 @@
         "empty": "Chưa có vi phạm nào",
         "title": "Lịch sử vi phạm"
       },
+      "noLinkedChildren": "Chưa có học sinh nào liên kết với tài khoản này.",
       "parentSubtitle": "Xem hành kiểm và gửi đơn nghỉ thay con",
       "parentTitle": "Hành kiểm học sinh",
       "retry": "Thử lại",
