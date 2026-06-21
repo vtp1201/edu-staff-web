@@ -1,6 +1,15 @@
 {
   "Common": {
-    "hello": "Hello"
+    "confirmDialog": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "irreversible": "This action cannot be undone."
+    },
+    "hello": "Hello",
+    "skeleton": {
+      "loading": "Loading...",
+      "loadingAriaLabel": "Loading data"
+    }
   },
   "academicRecord": {
     "breadcrumb": {
@@ -249,6 +258,13 @@
       "stepGradeLevels": "Grade levels",
       "stepSubjects": "Subjects"
     },
+    "stepper": {
+      "ariaLabel": "Setup progress: Step {current} of {total}",
+      "progress": "Step {current}/{total}",
+      "stepComplete": "Completed",
+      "stepCurrent": "In progress",
+      "stepPending": "Not started"
+    },
     "subtitle": "Foundational parameters that make EduPortal work for your school.",
     "title": "School Setup",
     "validation": {
@@ -376,7 +392,10 @@
     "scheduleToast": "Announcement scheduled",
     "sendModeNow": "Send now",
     "sendModeSchedule": "Schedule",
+    "sendConfirmBody": "This announcement will be sent to {recipientCount} recipients. This action cannot be undone.",
+    "sendConfirmTitle": "Send school-wide announcement?",
     "sendToast": "Announcement sent",
+    "sendToastContext": "Announcement sent to {recipientCount} recipients at {time}",
     "statusDraft": "Draft",
     "statusScheduled": "Scheduled",
     "statusSent": "Sent",
@@ -1036,6 +1055,14 @@
       "addNew": "Record New Violation",
       "allClasses": "All Classes",
       "cancel": "Cancel",
+      "deleteDialog": {
+        "body": "{studentName}'s violation ({type}) will be permanently deleted. This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete violation",
+        "deleting": "Deleting...",
+        "title": "Delete violation?"
+      },
+      "deleteToast": "Deleted {studentName}'s violation",
       "empty": "No violations found!",
       "form": {
         "class": "Class",
@@ -1982,6 +2009,8 @@
       "personal": "Personal leave",
       "sick": "Sick leave"
     },
+    "rejectConfirmBody": "{staffName}'s leave request will be rejected. The staff member will receive a rejection notification.",
+    "rejectConfirmTitle": "Reject leave request?",
     "rejectDialog": {
       "minLength": "Minimum 10 characters.",
       "placeholder": "Briefly explain why this request is being rejected…",

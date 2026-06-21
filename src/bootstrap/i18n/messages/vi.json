@@ -1,6 +1,15 @@
 {
   "Common": {
-    "hello": "Xin chào"
+    "confirmDialog": {
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận",
+      "irreversible": "Hành động này không thể hoàn tác."
+    },
+    "hello": "Xin chào",
+    "skeleton": {
+      "loading": "Đang tải...",
+      "loadingAriaLabel": "Đang tải dữ liệu"
+    }
   },
   "academicRecord": {
     "breadcrumb": {
@@ -249,6 +258,13 @@
       "stepGradeLevels": "Khối lớp",
       "stepSubjects": "Bộ môn & Môn học"
     },
+    "stepper": {
+      "ariaLabel": "Tiến trình thiết lập: Bước {current} trên {total}",
+      "progress": "Bước {current}/{total}",
+      "stepComplete": "Hoàn thành",
+      "stepCurrent": "Đang thực hiện",
+      "stepPending": "Chưa thực hiện"
+    },
     "subtitle": "Các thông số nền tảng để vận hành EduPortal cho trường của bạn.",
     "title": "Thiết lập trường học",
     "validation": {
@@ -376,7 +392,10 @@
     "scheduleToast": "Đã lên lịch thông báo",
     "sendModeNow": "Gửi ngay",
     "sendModeSchedule": "Lên lịch",
+    "sendConfirmBody": "Thông báo sẽ được gửi đến {recipientCount} người nhận. Hành động này không thể hoàn tác.",
+    "sendConfirmTitle": "Gửi thông báo toàn trường?",
     "sendToast": "Đã gửi thông báo",
+    "sendToastContext": "Đã gửi thông báo đến {recipientCount} người nhận lúc {time}",
     "statusDraft": "Nháp",
     "statusScheduled": "Đã lên lịch",
     "statusSent": "Đã gửi",
@@ -1036,6 +1055,14 @@
       "addNew": "Nhập vi phạm mới",
       "allClasses": "Tất cả lớp",
       "cancel": "Huỷ",
+      "deleteDialog": {
+        "body": "Vi phạm của {studentName} ({type}) sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.",
+        "cancel": "Huỷ",
+        "confirm": "Xóa vi phạm",
+        "deleting": "Đang xóa...",
+        "title": "Xóa vi phạm?"
+      },
+      "deleteToast": "Đã xóa vi phạm của {studentName}",
       "empty": "Không có vi phạm nào!",
       "form": {
         "class": "Lớp",
@@ -1982,6 +2009,8 @@
       "personal": "Nghỉ cá nhân",
       "sick": "Nghỉ ốm"
     },
+    "rejectConfirmBody": "Đơn nghỉ phép của {staffName} sẽ bị từ chối. Nhân sự sẽ nhận được thông báo từ chối.",
+    "rejectConfirmTitle": "Từ chối đơn nghỉ phép?",
     "rejectDialog": {
       "minLength": "Tối thiểu 10 ký tự.",
       "placeholder": "Giải thích ngắn gọn lý do từ chối để gửi đến nhân sự…",
