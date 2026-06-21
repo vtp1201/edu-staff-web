@@ -1153,6 +1153,7 @@
       "filterGroupLabel": "Filter results",
       "filterIncorrect": "Incorrect",
       "filterSkipped": "Skipped",
+      "viewGradeBook": "View grade book",
       "incorrect": "Incorrect",
       "outOf": "/10",
       "passed": "PASSED",
@@ -1169,7 +1170,8 @@
       "pendingEssayTitle": "Essay score awaiting teacher grading",
       "pendingEssayBody": "Multiple-choice section auto-graded — {mcqScore}/{mcqMax} pts. The essay section (max {essayMax} pts) will be manually graded by your teacher within 3 working days.",
       "essayPending": "Essay questions (pending grade)",
-      "essayQuestionLabel": "Essay question — Awaiting grade"
+      "essayQuestionLabel": "Essay question — Awaiting grade",
+      "filterEmpty": "No questions in this filter."
     },
     "skeleton": {
       "loading": "Loading exams..."
@@ -1215,6 +1217,7 @@
       "timerLabel": "Time remaining",
       "unflagBtn": "Unflag",
       "essayPlaceholder": "Enter your answer here...",
+      "essayLabel": "Essay answer",
       "essayCharCount": "{count}/2000 characters",
       "essayEmptyWarning": "You have not answered the essay question."
     }

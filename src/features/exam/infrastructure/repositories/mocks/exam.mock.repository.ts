@@ -8,7 +8,12 @@ import type {
   IExamRepository,
   SubmitExamInput,
 } from "../../../domain/repositories/i-exam.repository";
-import { buildMockResult, MOCK_EXAMS, MOCK_QUESTIONS } from "./exam.fixtures";
+import {
+  buildMockResult,
+  MOCK_EXAMS,
+  MOCK_PENDING_ESSAY_RESULT,
+  MOCK_QUESTIONS,
+} from "./exam.fixtures";
 
 export class MockExamRepository implements IExamRepository {
   async listExams(_studentId: string): Promise<ExamSummary[]> {
@@ -27,11 +32,13 @@ export class MockExamRepository implements IExamRepository {
     await mockDelay(300);
     const exam = MOCK_EXAMS.find((e) => e.id === input.examId);
     if (!exam) throw new Error("not-found");
+    if (input.examId === "exam-005") return MOCK_PENDING_ESSAY_RESULT;
     return buildMockResult(input.examId);
   }
 
   async getResult(examId: string): Promise<ExamResult> {
     await mockDelay(150);
+    if (examId === "exam-005") return MOCK_PENDING_ESSAY_RESULT;
     return buildMockResult(examId);
   }
 }

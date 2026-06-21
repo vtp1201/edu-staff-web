@@ -5,3 +5,4 @@
 - [Error mapping conventions](error-mapping-conventions.md) — UPPER_SNAKE codes, failure union, errorCodeOf pattern
 - [Grades E13 baseline](grades-e13-baseline.md) — GradeBook E13.6/E13.7 contracts, IGradeBookRepository, MockGradeBookRepository, childrenList open question
 - [Discipline E09 baseline](discipline-e09-baseline.md) — E09.4 parent endpoints, MockDisciplineRepository, child-list ambiguity, failure codes, conduct grade+leave status badge mappings
+- [LMS Exam E11 baseline](lms-exam-e11-baseline.md) — E11.1 entity shapes (no type discriminant, non-nullable score/passed), E11.5 deltas, breaking entity changes, open questions for lms team

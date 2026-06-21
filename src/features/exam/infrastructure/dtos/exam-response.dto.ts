@@ -11,6 +11,12 @@ export interface ExamSummaryDto {
   deadline: string;
   status: string;
   type: string;
+  hasEssayQuestions?: boolean;
+  essayCount?: number;
+  essayMax?: number;
+  mcqScore?: number | null;
+  mcqMax?: number;
+  questionTypes?: string[];
 }
 
 export interface ExamsListDto {
@@ -26,6 +32,7 @@ export interface ExamQuestionDto {
   id: string;
   index: number;
   text: string;
+  type?: string;
   options: ExamOptionDto[];
 }
 
@@ -37,16 +44,19 @@ export interface QuestionResultDto {
   questionId: string;
   index: number;
   text: string;
+  type?: string;
   options: { id: string; text: string }[];
   selectedOptionId: string | null;
-  correctOptionId: string;
-  isCorrect: boolean;
+  correctOptionId: string | null;
+  isCorrect: boolean | null;
+  textAnswer?: string | null;
 }
 
 export interface ExamResultDto {
   examId: string;
   examTitle: string;
-  score: number;
+  status?: string;
+  score: number | null;
   totalQuestions: number;
   correctCount: number;
   incorrectCount: number;
@@ -54,12 +64,21 @@ export interface ExamResultDto {
   timeTakenSeconds: number;
   rank: number | null;
   percentile: number | null;
-  passed: boolean;
+  passed: boolean | null;
+  mcqScore?: number | null;
+  mcqMax?: number | null;
+  essayMax?: number | null;
+  essayCount?: number;
   questionResults: QuestionResultDto[];
 }
 
 export interface SubmitExamDto {
   examId: string;
-  answers: { questionId: string; selectedOptionId: string | null }[];
+  answers: {
+    questionId: string;
+    type: "mcq" | "essay";
+    selectedOptionId?: string | null;
+    textAnswer?: string;
+  }[];
   startedAt: number;
 }

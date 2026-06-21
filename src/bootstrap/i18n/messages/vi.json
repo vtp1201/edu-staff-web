@@ -1153,6 +1153,7 @@
       "filterGroupLabel": "Lọc kết quả",
       "filterIncorrect": "Sai",
       "filterSkipped": "Bỏ qua",
+      "viewGradeBook": "Xem học bạ",
       "incorrect": "Câu sai",
       "outOf": "/10",
       "passed": "ĐẠT",
@@ -1169,7 +1170,8 @@
       "pendingEssayTitle": "Điểm tự luận đang chờ giáo viên chấm",
       "pendingEssayBody": "Phần trắc nghiệm đã được chấm tự động — {mcqScore}/{mcqMax}đ. Phần tự luận (tối đa {essayMax}đ) sẽ được giáo viên chấm thủ công và cộng vào điểm tổng trong vòng 3 ngày làm việc.",
       "essayPending": "Câu tự luận (chờ chấm)",
-      "essayQuestionLabel": "Câu tự luận — Chờ chấm"
+      "essayQuestionLabel": "Câu tự luận — Chờ chấm",
+      "filterEmpty": "Không có câu nào trong bộ lọc này."
     },
     "skeleton": {
       "loading": "Đang tải danh sách bài kiểm tra..."
@@ -1215,6 +1217,7 @@
       "timerLabel": "Thời gian còn lại",
       "unflagBtn": "Bỏ đánh dấu",
       "essayPlaceholder": "Nhập câu trả lời của bạn...",
+      "essayLabel": "Bài làm tự luận",
       "essayCharCount": "{count}/2000 ký tự",
       "essayEmptyWarning": "Bạn chưa trả lời câu tự luận."
     }

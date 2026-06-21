@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/shared/utils";
@@ -25,14 +25,45 @@ export function ExamTakingScreen({
 
   const current = questions[currentIndex];
 
-  const answeredIds = useMemo(() => new Set(answers.keys()), [answers]);
+  const answeredIds = useMemo(
+    () =>
+      new Set(
+        [...answers.entries()]
+          .filter(([, v]) => v.trim() !== "")
+          .map(([k]) => k),
+      ),
+    [answers],
+  );
+
+  const essayIds = useMemo(
+    () => new Set(questions.filter((q) => q.type === "essay").map((q) => q.id)),
+    [questions],
+  );
 
   const buildAnswers = useCallback((): ExamAnswer[] => {
-    return questions.map((q) => ({
-      questionId: q.id,
-      selectedOptionId: answers.get(q.id) ?? null,
-    }));
+    return questions.map((q) => {
+      if ((q.type ?? "mcq") === "essay") {
+        return {
+          questionId: q.id,
+          type: "essay",
+          textAnswer: answers.get(q.id) ?? "",
+        };
+      }
+      return {
+        questionId: q.id,
+        type: "mcq",
+        selectedOptionId: answers.get(q.id) ?? null,
+      };
+    });
   }, [questions, answers]);
+
+  const hasEmptyEssay = useMemo(
+    () =>
+      questions.some(
+        (q) => q.type === "essay" && !(answers.get(q.id)?.trim() ?? ""),
+      ),
+    [questions, answers],
+  );
 
   const handleSubmit = useCallback(() => {
     onSubmit(buildAnswers(), startedAt);
@@ -50,6 +81,14 @@ export function ExamTakingScreen({
     setAnswers((prev) => {
       const next = new Map(prev);
       next.set(current.id, optionId);
+      return next;
+    });
+  };
+
+  const setEssayAnswer = (text: string) => {
+    setAnswers((prev) => {
+      const next = new Map(prev);
+      next.set(current.id, text);
       return next;
     });
   };
@@ -100,43 +139,50 @@ export function ExamTakingScreen({
             {current.text}
           </h2>
 
-          <ul className="mt-5 space-y-3">
-            {current.options.map((opt) => {
-              const selected = answers.get(current.id) === opt.id;
-              return (
-                <li key={opt.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => selectOption(opt.id)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] border p-4 text-left text-sm transition-colors",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      selected
-                        ? "border-primary bg-primary/10 text-foreground"
-                        : "border-border bg-card text-foreground hover:bg-muted/50",
-                    )}
-                  >
-                    <span className="sr-only">
-                      {t("taking.optionLabel", { option: opt.id })}:{" "}
-                    </span>
-                    <span
-                      aria-hidden="true"
+          {(current.type ?? "mcq") === "essay" ? (
+            <EssayQuestionInput
+              value={answers.get(current.id) ?? ""}
+              onChange={(text) => setEssayAnswer(text)}
+            />
+          ) : (
+            <ul className="mt-5 space-y-3">
+              {current.options.map((opt) => {
+                const selected = answers.get(current.id) === opt.id;
+                return (
+                  <li key={opt.id}>
+                    <button
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => selectOption(opt.id)}
                       className={cn(
-                        "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold",
+                        "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] border p-4 text-left text-sm transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         selected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground",
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-card text-foreground hover:bg-muted/50",
                       )}
                     >
-                      {opt.id}
-                    </span>
-                    <span>{opt.text}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                      <span className="sr-only">
+                        {t("taking.optionLabel", { option: opt.id })}:{" "}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold",
+                          selected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground",
+                        )}
+                      >
+                        {opt.id}
+                      </span>
+                      <span>{opt.text}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
           <div className="mt-6 flex items-center justify-between gap-3">
             <Button
@@ -190,6 +236,7 @@ export function ExamTakingScreen({
               currentIndex={currentIndex}
               answeredIds={answeredIds}
               flaggedIds={flagged}
+              essayIds={essayIds}
               onJump={setCurrentIndex}
             />
           </div>
@@ -201,8 +248,50 @@ export function ExamTakingScreen({
         onOpenChange={setShowSubmit}
         answeredCount={answeredCount}
         totalCount={questions.length}
+        hasEmptyEssay={hasEmptyEssay}
         onConfirm={handleSubmit}
       />
+    </div>
+  );
+}
+
+function EssayQuestionInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+}) {
+  const t = useTranslations("exam");
+  const id = useId();
+  const charCount = value.length;
+  const isNearLimit = charCount >= 1900;
+  return (
+    <div className="mt-5 space-y-2">
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        {t("taking.essayLabel")}
+      </label>
+      <textarea
+        id={id}
+        aria-describedby={`${id}-count`}
+        maxLength={2000}
+        rows={8}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t("taking.essayPlaceholder")}
+        className="w-full resize-none rounded-[var(--edu-radius-btn)] border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <p
+        id={`${id}-count`}
+        className={cn(
+          "text-right text-xs",
+          isNearLimit
+            ? "font-bold text-edu-warning-foreground"
+            : "text-muted-foreground",
+        )}
+      >
+        {t("taking.essayCharCount", { count: charCount })}
+      </p>
     </div>
   );
 }

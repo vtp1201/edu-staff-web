@@ -12,10 +12,7 @@ import { ExamResultScreen } from "../exam-result/exam-result";
 import { ExamTakingScreen } from "./exam-taking";
 import type { ExamAnswer } from "./exam-taking.i-vm";
 
-export type SubmitAnswerPayload = {
-  questionId: string;
-  selectedOptionId: string | null;
-};
+export type SubmitAnswerPayload = ExamAnswer;
 
 export type SubmitExamActionResult =
   | { ok: true; result: ExamResult }
@@ -99,7 +96,13 @@ export function ExamDetailScreen({
   }
 
   if (step === "result" && result) {
-    return <ExamResultScreen result={result} onBackToList={backToList} />;
+    return (
+      <ExamResultScreen
+        result={result}
+        onBackToList={backToList}
+        gradeBookPath="/student/grades"
+      />
+    );
   }
 
   // Fallback (e.g. completed exam without a loadable result).

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, FileText, ListChecks } from "lucide-react";
+import { Clock, FileText, Info, ListChecks } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,11 @@ export function ExamBriefingScreen({ exam, onStart }: ExamBriefingVm) {
           <h1 className="mt-1 text-2xl font-extrabold text-foreground">
             {exam.title}
           </h1>
+          {exam.hasEssayQuestions && (
+            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-edu-purple/15 px-3 py-1 text-xs font-bold text-edu-purple-text">
+              {t("briefing.mixedType")}
+            </span>
+          )}
           <p className="mt-1 text-sm text-muted-foreground">
             {t("card.teacher", { name: exam.teacherName })}
           </p>
@@ -48,9 +53,25 @@ export function ExamBriefingScreen({ exam, onStart }: ExamBriefingVm) {
               <ListChecks className="size-4 text-primary" aria-hidden="true" />
             }
             label={t("briefing.type")}
-            value={t("briefing.typeValue")}
+            value={
+              exam.hasEssayQuestions
+                ? t("briefing.mixedTypeValue")
+                : t("briefing.typeValue")
+            }
           />
         </div>
+
+        {exam.hasEssayQuestions && (
+          <div className="flex items-start gap-2 border-border border-t px-6 py-3">
+            <Info
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("briefing.essayGradingNote")}
+            </p>
+          </div>
+        )}
       </div>
 
       <section className="rounded-[var(--edu-radius-card)] border border-border bg-card p-6 shadow-card">

@@ -38,6 +38,20 @@ export const FilterTabs: Story = {
   },
 };
 
+export const ExamList_PendingEssayCard: Story = {
+  args: { exams: MOCK_EXAMS },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Chờ chấm tự luận")).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("tab", { name: "Chờ chấm" }),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: "Xem kết quả tạm thời" }),
+    ).toBeInTheDocument();
+  },
+};
+
 export const EmptyState: Story = {
   args: { exams: [] },
   play: async ({ canvasElement }) => {

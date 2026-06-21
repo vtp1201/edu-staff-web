@@ -9,6 +9,7 @@ import { SubmitExamUseCase } from "../submit-exam.use-case";
 const RESULT: ExamResult = {
   examId: "exam-001",
   examTitle: "Test",
+  status: "completed",
   score: 7.5,
   totalQuestions: 20,
   correctCount: 15,
@@ -18,6 +19,10 @@ const RESULT: ExamResult = {
   rank: 5,
   percentile: 80,
   passed: true,
+  mcqScore: null,
+  mcqMax: null,
+  essayMax: null,
+  essayCount: 0,
   questionResults: [],
 };
 

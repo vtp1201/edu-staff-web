@@ -17,6 +17,7 @@ export interface SubmitModalProps {
   onOpenChange: (open: boolean) => void;
   answeredCount: number;
   totalCount: number;
+  hasEmptyEssay?: boolean;
   onConfirm: () => void;
 }
 
@@ -25,6 +26,7 @@ export function SubmitModal({
   onOpenChange,
   answeredCount,
   totalCount,
+  hasEmptyEssay = false,
   onConfirm,
 }: SubmitModalProps) {
   const t = useTranslations("exam");
@@ -47,6 +49,19 @@ export function SubmitModal({
               aria-hidden="true"
             />
             <span>{t("submitModal.warningText", { count: unanswered })}</span>
+          </div>
+        )}
+
+        {hasEmptyEssay && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--edu-radius-btn)] bg-edu-warning/15 p-3 text-sm text-edu-warning-foreground"
+          >
+            <AlertTriangle
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>{t("taking.essayEmptyWarning")}</span>
           </div>
         )}
 

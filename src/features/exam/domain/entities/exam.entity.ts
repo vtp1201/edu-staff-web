@@ -1,4 +1,8 @@
-export type ExamStatus = "available" | "completed" | "expired";
+export type ExamStatus =
+  | "available"
+  | "completed"
+  | "expired"
+  | "submitted_pending_essay";
 
 export type ExamType = "multiple-choice";
 
@@ -24,4 +28,11 @@ export interface ExamSummary {
   deadline: string; // ISO date
   status: ExamStatus;
   type: ExamType;
+  /** True when the exam mixes MCQ + essay questions. */
+  hasEssayQuestions?: boolean;
+  essayCount?: number;
+  essayMax?: number;
+  mcqScore?: number | null;
+  mcqMax?: number;
+  questionTypes?: ("mcq" | "essay")[];
 }

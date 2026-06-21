@@ -34,6 +34,7 @@ const questionDto: ExamQuestionDto = {
 const resultDto: ExamResultDto = {
   examId: "exam-001",
   examTitle: "Toán",
+  status: "completed",
   score: 7.5,
   totalQuestions: 20,
   correctCount: 15,
@@ -75,7 +76,79 @@ describe("exam.mapper", () => {
     const r = mapExamResult(resultDto);
     expect(r.score).toBe(7.5);
     expect(r.passed).toBe(true);
+    expect(r.status).toBe("completed");
     expect(r.questionResults).toHaveLength(1);
     expect(r.questionResults[0]?.isCorrect).toBe(true);
+  });
+
+  it("mapExamResult defaults missing status to completed", () => {
+    const r = mapExamResult({ ...resultDto, status: undefined });
+    expect(r.status).toBe("completed");
+  });
+
+  it("mapExamResult handles submitted_pending_essay (null score/passed)", () => {
+    const dto: ExamResultDto = {
+      ...resultDto,
+      status: "submitted_pending_essay",
+      score: null,
+      passed: null,
+      mcqScore: 6.25,
+      mcqMax: 6,
+      essayMax: 4,
+      essayCount: 3,
+    };
+    const r = mapExamResult(dto);
+    expect(r.status).toBe("submitted_pending_essay");
+    expect(r.score).toBeNull();
+    expect(r.passed).toBeNull();
+    expect(r.mcqScore).toBe(6.25);
+    expect(r.essayCount).toBe(3);
+  });
+
+  it("mapExamSummary passes through essay aggregate fields", () => {
+    const e = mapExamSummary({
+      ...summaryDto,
+      hasEssayQuestions: true,
+      essayCount: 3,
+      essayMax: 4,
+      mcqScore: 6.25,
+      mcqMax: 6,
+      questionTypes: ["mcq", "essay"],
+    });
+    expect(e.hasEssayQuestions).toBe(true);
+    expect(e.essayCount).toBe(3);
+    expect(e.questionTypes).toEqual(["mcq", "essay"]);
+  });
+
+  it("mapExamQuestion normalizes essay type", () => {
+    expect(mapExamQuestion({ ...questionDto, type: "essay" }).type).toBe(
+      "essay",
+    );
+    expect(mapExamQuestion({ ...questionDto, type: "mcq" }).type).toBe("mcq");
+    expect(mapExamQuestion(questionDto).type).toBe("mcq");
+  });
+
+  it("mapQuestionResult handles essay (null correctOptionId + isCorrect)", () => {
+    const r = mapExamResult({
+      ...resultDto,
+      questionResults: [
+        {
+          questionId: "e-1",
+          index: 2,
+          text: "Essay",
+          type: "essay",
+          options: [],
+          selectedOptionId: null,
+          correctOptionId: null,
+          isCorrect: null,
+          textAnswer: "student answer",
+        },
+      ],
+    });
+    const q = r.questionResults[0];
+    expect(q?.type).toBe("essay");
+    expect(q?.correctOptionId).toBeNull();
+    expect(q?.isCorrect).toBeNull();
+    expect(q?.textAnswer).toBe("student answer");
   });
 });

@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import {
+  buildMockMixedQuestions,
   buildMockQuestions,
   MOCK_EXAM,
 } from "../../infrastructure/repositories/mocks/exam.fixtures";
@@ -58,6 +59,27 @@ export const SubmitModal: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Nộp bài" }));
     const dialog = within(document.body);
     await expect(dialog.getByText("Xác nhận nộp bài")).toBeInTheDocument();
+  },
+};
+
+const mixedQuestions = buildMockMixedQuestions(3, 1);
+
+export const Taking_EssayQuestion: Story = {
+  args: {
+    exam,
+    questions: mixedQuestions,
+    startedAt: Date.now(),
+    onSubmit: () => {},
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Jump to the essay question (last in the navigator).
+    await userEvent.click(canvas.getByRole("button", { name: "Câu 4" }));
+    const textarea = canvas.getByRole("textbox");
+    await expect(textarea).toBeInTheDocument();
+    await expect(canvas.getByText("0/2000 ký tự")).toBeInTheDocument();
+    await userEvent.type(textarea, "12345");
+    await expect(canvas.getByText("5/2000 ký tự")).toBeInTheDocument();
   },
 };
 
