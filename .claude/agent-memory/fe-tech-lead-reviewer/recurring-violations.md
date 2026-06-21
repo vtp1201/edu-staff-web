@@ -57,6 +57,18 @@ Watch for these (each has bitten a story here):
 - **`text-white` on `bg-edu-error` (count badge / chip)** — token violation; `--edu-error-foreground`
   (#fff) exists → fix `text-edu-error-foreground`. SHOULD-FIX when value is identical (coral, contrast
   fine); only the warning-yellow variant is a hard gate. (US-E09.1 tab count badge.)
+- **`text-white` initials on a role/child-colored avatar circle where the color set INCLUDES
+  `warning`** — e.g. `ChildColor = primary|success|warning|error|purple` with `text-white` on
+  `backgroundColor: var(--edu-warning)`. Warning-yellow + white ≈ 1.7:1 fails the named a11y rule.
+  Mitigant: if the initials are `aria-hidden` decorative AND the child name/class is shown as
+  adjacent real text (so meaning isn't color/avatar-only), it's CONSIDER not blocking — but still
+  flag, since the visible glyphs are sub-AA. (US-E13.7 ChildSwitcher avatar.)
+- **New use-case + DI factory + endpoint added but zero callers (page wiring deferred)** — valid
+  contract-first scaffolding ONLY when the story explicitly scopes out page sourcing (check the
+  packet "Out of Scope"). Then it's a tracked follow-up, not dead code — but the AC are proven only
+  at Storybook/VM level, NOT end-to-end. Verify the deferral is written in the packet before
+  accepting; otherwise it's a half-wired feature. (US-E13.7: getChildList/makeGetChildListUseCase/
+  GRADES_EP.childList unused; parent page + grade-book-container untouched — deferral is in spec.md.)
 
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story

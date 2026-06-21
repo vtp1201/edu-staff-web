@@ -39,3 +39,17 @@ export interface SubmitLeaveRequestInput {
   reason: string;
   submittedBy: "student" | "parent";
 }
+
+/**
+ * Input for a parent submitting a leave request on behalf of a child (US-E09.4).
+ * The childId is passed separately to the repo/use-case; `parentId`/`submittedBy`
+ * are NEVER part of the wire body (derived server-side from the session).
+ */
+export interface SubmitChildLeaveRequestInput {
+  /** ISO "YYYY-MM-DD". */
+  startDate: string;
+  /** ISO "YYYY-MM-DD". */
+  endDate: string;
+  type: LeaveType;
+  reason: string;
+}

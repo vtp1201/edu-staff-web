@@ -917,6 +917,9 @@
     },
     "errors": {
       "already-processed": "Yêu cầu này đã được xử lý",
+      "conflict": "Thao tác xung đột, vui lòng thử lại",
+      "forbidden": "Bạn không có quyền xem thông tin này",
+      "invalid-child": "Học sinh không hợp lệ",
       "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
       "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
       "invalid-severity": "Mức độ vi phạm không hợp lệ",
@@ -924,6 +927,7 @@
       "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
       "missing-student": "Vui lòng nhập tên học sinh",
       "network-error": "Lỗi kết nối, vui lòng thử lại",
+      "not-found": "Không tìm thấy thông tin học sinh",
       "reason-too-short": "Lý do phải có ít nhất 10 ký tự"
     },
     "leave": {

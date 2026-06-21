@@ -1,3 +1,4 @@
+import type { ChildEntity } from "../../../domain/entities/child.entity";
 import type { ConductSummaryEntity } from "../../../domain/entities/conduct-summary.entity";
 import type { LeaveRequestEntity } from "../../../domain/entities/leave-request.entity";
 import type { ViolationEntity } from "../../../domain/entities/violation.entity";
@@ -372,3 +373,171 @@ export const MOCK_MY_LEAVE_REQUESTS: LeaveRequestEntity[] = [
     rejectionReason: null,
   },
 ];
+
+/**
+ * Parent multi-child fixtures (US-E09.4). Two children linked to the parent
+ * account. These are *data*, not UI copy — intentionally not i18n. avatarColor
+ * is a hex string (OQ-6, mock-first) until the real core link ships.
+ */
+export const MOCK_CHILDREN: ChildEntity[] = [
+  {
+    childId: "c1",
+    name: "Nguyễn Minh Khoa",
+    className: "11A2",
+    avatar: "NK",
+    avatarColor: "#5D87FF",
+    gvcnName: "Nguyễn Thị Hương",
+  },
+  {
+    childId: "c2",
+    name: "Nguyễn Thu Hà",
+    className: "8B1",
+    avatar: "NH",
+    avatarColor: "#13DEB9",
+    gvcnName: "Trần Bích Vân",
+  },
+];
+
+/** Per-child conduct summary keyed by childId (US-E09.4). */
+export const MOCK_CHILD_CONDUCT: Record<string, ConductSummaryEntity> = {
+  c1: {
+    studentId: "c1",
+    studentName: "Nguyễn Minh Khoa",
+    initials: "NK",
+    avatarTone: "primary",
+    classId: "11A2",
+    className: "11A2",
+    violationCount: 2,
+    unexcusedAbsences: 1,
+    points: 82,
+    grade: "good",
+    isOverridden: false,
+    overrideNote: null,
+    semester: "HK1",
+  },
+  c2: {
+    studentId: "c2",
+    studentName: "Nguyễn Thu Hà",
+    initials: "NH",
+    avatarTone: "success",
+    classId: "8B1",
+    className: "8B1",
+    violationCount: 0,
+    unexcusedAbsences: 0,
+    points: 94,
+    grade: "excellent",
+    isOverridden: false,
+    overrideNote: null,
+    semester: "HK1",
+  },
+};
+
+/** Per-child violations keyed by childId (US-E09.4). c2 has none. */
+export const MOCK_CHILD_VIOLATIONS: Record<string, ViolationEntity[]> = {
+  c1: [
+    {
+      id: "cv-1",
+      studentId: "c1",
+      studentName: "Nguyễn Minh Khoa",
+      initials: "NK",
+      avatarTone: "primary",
+      classId: "11A2",
+      className: "11A2",
+      type: "late",
+      date: "2026-05-12",
+      period: 1,
+      description: "Vào lớp muộn 10 phút không có lý do chính đáng",
+      severity: "low",
+      handledBy: "Nguyễn Thị Hương",
+      status: "notified",
+    },
+    {
+      id: "cv-2",
+      studentId: "c1",
+      studentName: "Nguyễn Minh Khoa",
+      initials: "NK",
+      avatarTone: "primary",
+      classId: "11A2",
+      className: "11A2",
+      type: "phone",
+      date: "2026-05-04",
+      period: 3,
+      description: "Sử dụng điện thoại trong giờ học Văn",
+      severity: "medium",
+      handledBy: "Trần Văn Minh",
+      status: "parent_confirmed",
+    },
+  ],
+  c2: [],
+};
+
+/** Per-child leave history keyed by childId (US-E09.4). */
+export const MOCK_CHILD_LEAVE_REQUESTS: Record<string, LeaveRequestEntity[]> = {
+  c1: [
+    {
+      id: "cl-1",
+      studentId: "c1",
+      studentName: "Nguyễn Minh Khoa",
+      initials: "NK",
+      avatarTone: "primary",
+      classId: "11A2",
+      className: "11A2",
+      submittedBy: "parent",
+      submitterName: "Nguyễn Văn Đức (Phụ huynh)",
+      reason: "Khám sức khỏe định kỳ tại bệnh viện tỉnh",
+      startDate: "10/05/2026",
+      endDate: "10/05/2026",
+      dayCount: 1,
+      type: "medical",
+      status: "approved",
+      submittedAt: "08/05/2026 19:00",
+      approvedBy: "Nguyễn Thị Hương",
+      rejectedBy: null,
+      rejectionReason: null,
+    },
+  ],
+  c2: [
+    {
+      id: "cl-2",
+      studentId: "c2",
+      studentName: "Nguyễn Thu Hà",
+      initials: "NH",
+      avatarTone: "success",
+      classId: "8B1",
+      className: "8B1",
+      submittedBy: "parent",
+      submitterName: "Nguyễn Văn Đức (Phụ huynh)",
+      reason: "Về quê dự đám giỗ cùng gia đình",
+      startDate: "02/05/2026",
+      endDate: "03/05/2026",
+      dayCount: 2,
+      type: "personal",
+      status: "approved",
+      submittedAt: "28/04/2026 20:00",
+      approvedBy: "Trần Bích Vân",
+      rejectedBy: null,
+      rejectionReason: null,
+    },
+    {
+      id: "cl-3",
+      studentId: "c2",
+      studentName: "Nguyễn Thu Hà",
+      initials: "NH",
+      avatarTone: "success",
+      classId: "8B1",
+      className: "8B1",
+      submittedBy: "parent",
+      submitterName: "Nguyễn Văn Đức (Phụ huynh)",
+      reason: "Gia đình có việc đột xuất",
+      startDate: "20/04/2026",
+      endDate: "20/04/2026",
+      dayCount: 1,
+      type: "personal",
+      status: "rejected",
+      submittedAt: "18/04/2026 18:00",
+      approvedBy: null,
+      rejectedBy: "Trần Bích Vân",
+      rejectionReason: "Học sinh đã nghỉ quá 5 ngày trong tháng",
+    },
+  ],
+};

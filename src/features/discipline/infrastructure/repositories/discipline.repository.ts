@@ -2,12 +2,14 @@ import "server-only";
 import type { AxiosInstance } from "axios";
 import { DISCIPLINE_EP } from "@/bootstrap/endpoint/discipline.endpoint";
 import { errorCodeOf, statusOf } from "@/bootstrap/lib/api-envelope";
+import type { ChildEntity } from "../../domain/entities/child.entity";
 import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../../domain/entities/conduct-summary.entity";
 import type {
   LeaveRequestEntity,
+  SubmitChildLeaveRequestInput,
   SubmitLeaveRequestInput,
 } from "../../domain/entities/leave-request.entity";
 import type {
@@ -53,6 +55,18 @@ export function toFailure(err: unknown): DisciplineFailure {
   }
   if (code === "INVALID_CONDUCT_GRADE") {
     return { type: "invalid-conduct-grade" };
+  }
+  if (code === "FORBIDDEN" || status === 403) {
+    return { type: "forbidden" };
+  }
+  if (code === "CHILD_NOT_FOUND" || code === "NOT_FOUND" || status === 404) {
+    return { type: "not-found" };
+  }
+  if (code === "INVALID_CHILD") {
+    return { type: "invalid-child" };
+  }
+  if (code === "CONFLICT") {
+    return { type: "conflict" };
   }
   return { type: "network-error" };
 }
@@ -198,6 +212,71 @@ export class DisciplineRepository implements IDisciplineRepository {
     try {
       const dto = (await this.http.post(
         DISCIPLINE_EP.submitLeaveRequest,
+        input,
+      )) as unknown as LeaveRequestResponseDto;
+      return DisciplineMapper.toLeaveRequest(dto);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  // --- Parent multi-child view (US-E09.4) ---
+  // Mock-first: the real `core` parent↔child + child-scoped discipline endpoints
+  // are not shipped yet (decision 0014/0017). These call the documented routes;
+  // until the service exists DI selects the mock repo. The wire shape (camelCase
+  // ChildEntity / ConductResponseDto / etc.) is reconciled when core ships.
+
+  async getChildren(): Promise<ChildEntity[]> {
+    try {
+      const dtos = (await this.http.get(
+        DISCIPLINE_EP.parentChildren,
+      )) as unknown as ChildEntity[];
+      return dtos ?? [];
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async getChildConductSummary(childId: string): Promise<ConductSummaryEntity> {
+    try {
+      const dto = (await this.http.get(
+        DISCIPLINE_EP.childConductSummary(childId),
+      )) as unknown as ConductResponseDto;
+      return DisciplineMapper.toConductSummary(dto);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async getChildViolations(childId: string): Promise<ViolationEntity[]> {
+    try {
+      const dtos = (await this.http.get(
+        DISCIPLINE_EP.childViolations(childId),
+      )) as unknown as ViolationResponseDto[];
+      return (dtos ?? []).map(DisciplineMapper.toViolation);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async getChildLeaveRequests(childId: string): Promise<LeaveRequestEntity[]> {
+    try {
+      const dtos = (await this.http.get(
+        DISCIPLINE_EP.childLeaveRequests(childId),
+      )) as unknown as LeaveRequestResponseDto[];
+      return (dtos ?? []).map(DisciplineMapper.toLeaveRequest);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async submitLeaveForChild(
+    childId: string,
+    input: SubmitChildLeaveRequestInput,
+  ): Promise<LeaveRequestEntity> {
+    try {
+      const dto = (await this.http.post(
+        DISCIPLINE_EP.submitChildLeaveRequest(childId),
         input,
       )) as unknown as LeaveRequestResponseDto;
       return DisciplineMapper.toLeaveRequest(dto);

@@ -917,6 +917,9 @@
     },
     "errors": {
       "already-processed": "This request has already been processed",
+      "conflict": "Conflicting operation, please try again",
+      "forbidden": "You do not have permission to view this information",
+      "invalid-child": "Invalid student",
       "invalid-conduct-grade": "Invalid conduct grade",
       "invalid-date": "Leave start date must be today or later",
       "invalid-severity": "Invalid violation severity",
@@ -924,6 +927,7 @@
       "missing-reject-reason": "Please enter a rejection reason (minimum 10 characters)",
       "missing-student": "Please enter the student name",
       "network-error": "Connection error, please try again",
+      "not-found": "Student information not found",
       "reason-too-short": "Reason must be at least 10 characters"
     },
     "leave": {

@@ -124,6 +124,75 @@ describe("MockDisciplineRepository", () => {
   });
 });
 
+describe("MockDisciplineRepository (parent multi-child, US-E09.4)", () => {
+  it("getChildren returns the linked children", async () => {
+    const repo = new MockDisciplineRepository();
+    const children = await repo.getChildren();
+    expect(children).toHaveLength(2);
+    expect(children[0].childId).toBe("c1");
+    expect(children[1].childId).toBe("c2");
+  });
+
+  it("getChildConductSummary returns the per-child summary", async () => {
+    const repo = new MockDisciplineRepository();
+    const c1 = await repo.getChildConductSummary("c1");
+    expect(c1.points).toBe(82);
+    expect(c1.grade).toBe("good");
+    const c2 = await repo.getChildConductSummary("c2");
+    expect(c2.points).toBe(94);
+    expect(c2.grade).toBe("excellent");
+  });
+
+  it("getChildConductSummary throws not-found for an unknown child", async () => {
+    const repo = new MockDisciplineRepository();
+    await expect(repo.getChildConductSummary("c9")).rejects.toMatchObject({
+      type: "not-found",
+    });
+  });
+
+  it("getChildViolations returns child-specific violations (c1 has 2, c2 none)", async () => {
+    const repo = new MockDisciplineRepository();
+    expect(await repo.getChildViolations("c1")).toHaveLength(2);
+    expect(await repo.getChildViolations("c2")).toHaveLength(0);
+  });
+
+  it("getChildLeaveRequests returns child-specific history with a rejected entry for c2", async () => {
+    const repo = new MockDisciplineRepository();
+    const c2 = await repo.getChildLeaveRequests("c2");
+    expect(c2.some((l) => l.status === "rejected" && l.rejectionReason)).toBe(
+      true,
+    );
+  });
+
+  it("submitLeaveForChild prepends a pending entry to the child's history", async () => {
+    const repo = new MockDisciplineRepository();
+    const before = await repo.getChildLeaveRequests("c1");
+    const created = await repo.submitLeaveForChild("c1", {
+      startDate: "2026-06-20",
+      endDate: "2026-06-21",
+      type: "medical",
+      reason: "Khám bệnh định kỳ tại bệnh viện",
+    });
+    expect(created.status).toBe("pending");
+    expect(created.dayCount).toBe(2);
+    const after = await repo.getChildLeaveRequests("c1");
+    expect(after.length).toBe(before.length + 1);
+    expect(after[0].id).toBe(created.id);
+  });
+
+  it("submitLeaveForChild throws not-found for an unknown child", async () => {
+    const repo = new MockDisciplineRepository();
+    await expect(
+      repo.submitLeaveForChild("c9", {
+        startDate: "2026-06-20",
+        endDate: "2026-06-20",
+        type: "medical",
+        reason: "Khám bệnh định kỳ tại bệnh viện",
+      }),
+    ).rejects.toMatchObject({ type: "not-found" });
+  });
+});
+
 function makeHttp(over: Partial<AxiosInstance> = {}) {
   return {
     get: vi.fn(),

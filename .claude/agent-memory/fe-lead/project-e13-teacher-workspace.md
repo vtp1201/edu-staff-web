@@ -20,6 +20,9 @@ metadata:
 ### Implemented (cont.)
 - **US-E13.3**: Class Log Screen (Sổ Đầu Bài) — REAL core homeroom-entries API wired (not mock-first; BE US-044 shipped in core openapi.yaml). Teacher screen (list+stats+entry form, save draft/submit), Principal screen (review all, approve/reject with reason). Role boundary enforced server-side. 6 unit + 11 integration + 7 Storybook stories, 397/397 pass. Routes: /teacher/class-log, /principal/class-log. A11Y: text-edu-warning-foreground on bg-edu-success (approve button), text-edu-text-secondary replaces text-muted-foreground on informational text, autoFocus on back button for view transitions, bg-edu-primary-accessible for active filter chip.
 
+### Implemented (cont.)
+- **US-E13.7**: Grade Book Parent Child-Switcher (DR-002) — `ChildSwitcher` tablist above GradeBookTable for parent role with ≥2 children; `GetChildListUseCase` + `getChildList()` on `IGradeBookRepository`; mock-first (core `GET /core/api/v1/parent/children` unconfirmed OQ-001); `MockGradeBookRepository` childId-aware (c1=11A2, c2=8B1); `GRADES_EP.childList`; `GradeBookScreenVM` extended with optional `childrenList`/`activeChildId`; ARIA tablist/tab/tabpanel pattern with roving tabindex + ArrowLeft/Right/Enter/Space; `aria-disabled` (not native `disabled`) for loading state; `color-mix(in srgb, var(--edu-*) 8%, transparent)` for tint; 873/873 tests pass; TLR-002 follow-up: RSC page not yet wired to pass `childrenList` to VM.
+
 ### Remaining (all planned)
 - **US-E13.1**: Teacher Class View (shares classes API)
 - **US-E13.2**: Attendance BE Wiring (mock-first, BE US-046 pending)
