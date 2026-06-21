@@ -121,7 +121,8 @@
         "background": "var(--edu-bg)",
         "badge": {
           "size": 18,
-          "background": "var(--edu-error)",
+          "background": "var(--edu-error-dark)",
+          "color": "var(--edu-error-foreground)",
           "fontSize": 10,
           "fontWeight": 700,
           "offset": { "top": -4, "right": -4 }
@@ -7900,6 +7901,148 @@
       "1024": "Filter pills may wrap to two rows; card action column stays visible",
       "768": "Card meta wraps; action column stacks below content; drawer width max 100vw; detail sheet width max 100vw",
       "375": "Filter pills scroll horizontally; card padding 12px 16px; action buttons icon-only with tooltip; drawer + detail sheet full-screen"
+    }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DR-010 — Responsive breakpoints + empty states
+  // Source: DR-010 (UX-03 + UX-01); branch docs/dr-010-responsive-empty-states
+  // Applies to: discipline, gradebook, messaging, notifications, lesson-bank
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── Responsive grid system (UX-03) ────────────────────────────────────────
+  "responsiveGrid": {
+    // NORMATIVE breakpoints for stat-card / summary grids across all dashboards.
+    // All stat grids using repeat(N, 1fr) MUST adopt this pattern.
+    "statGrid": {
+      "default": "repeat(4, 1fr)",
+      "tablet": "repeat(2, 1fr)",
+      "mobile": "1fr",
+      "breakpoints": {
+        ">1024px": "4 columns",
+        "640–1024px": "2 columns",
+        "<640px": "1 column"
+      },
+      "implementation": "CSS Grid auto-responsive: gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' — collapses naturally without JS breakpoint detection; minmax floor 200px = 2 cols at 440px, 1 col at 220px (375px viewport gives single col with 16px padding each side)"
+    },
+    // Grade table: horizontal scroll on mobile, sticky first column
+    "gradeTable": {
+      "mobile": {
+        "overflowX": "auto",
+        "WebkitOverflowScrolling": "touch",
+        "firstColumn": {
+          "position": "sticky",
+          "left": 0,
+          "background": "var(--edu-card)",
+          "zIndex": 1,
+          "borderRight": "1px solid var(--edu-border)"
+        },
+        "minWidth": "640px",
+        "padding": "0"
+      }
+    },
+    // Messaging: single-pane toggle (list OR chat) on mobile
+    "messagingLayout": {
+      ">768px": "side-by-side: conversation list (300px) + chat pane (flex 1)",
+      "<=768px": "single pane; show list by default; tapping a conversation slides in chat pane (full width); back button returns to list; no list/chat overlap",
+      "mobileTransition": "transform 0.25s ease (slide left/right); @media (prefers-reduced-motion: reduce) → no transform, instant show/hide"
+    },
+    // Touch targets — all interactive elements on mobile
+    "touchTarget": {
+      "minHeight": 44,
+      "minWidth": 44,
+      "note": "WCAG 2.5.5 AA — applies to buttons, nav items, list rows, table action icons"
+    }
+  },
+
+  // ── Empty state design pattern (UX-01) ────────────────────────────────────
+  "emptyStatePattern": {
+    // Canonical empty state design — reused across all list/table screens.
+    // Icon + title + body + optional CTA. All copy via i18n keys.
+    "layout": "centered column; padding 40px 20px; text-align center",
+    "icon": {
+      "size": 64,
+      "color": "var(--edu-text-muted)",
+      "ariaHidden": true,
+      "note": "Use contextual icon from design_src/edu/icons.jsx (e.g. inbox, file-text, message-square, shield); NEVER inline SVG raw color"
+    },
+    "title": {
+      "fontSize": 16,
+      "fontWeight": 700,
+      "color": "var(--edu-text-primary)",
+      "marginTop": 16
+    },
+    "body": {
+      "fontSize": 13,
+      "color": "var(--edu-text-muted)",
+      "marginTop": 8,
+      "maxWidth": 320
+    },
+    "cta": {
+      "optional": true,
+      "marginTop": 20,
+      "variant": "primary",
+      "minTouchTarget": 44
+    },
+    "a11y": "role=status on the container so screen readers announce the empty state; icon aria-hidden=true; title rendered as <p> not <h2> (no heading hierarchy disruption)"
+  },
+
+  // Per-screen empty state specs
+  "emptyStates": {
+    "discipline.violations": {
+      "i18nKey": "discipline.violations.empty",
+      "icon": "shield",
+      "hasCTA": false,
+      "note": "Existing key discipline.violations.empty ('Không có vi phạm nào!') re-used; conduct table uses discipline.conduct.empty"
+    },
+    "discipline.leaveRequests": {
+      "i18nKey": "discipline.leave.empty",
+      "icon": "calendar-off",
+      "hasCTA": false,
+      "note": "Existing key discipline.leave.empty re-used; no new key needed"
+    },
+    "gradebook.gradeTable": {
+      "i18nKey": "grades.gradeBook.emptyState",
+      "icon": "file-text",
+      "hasCTA": false,
+      "note": "Existing key grades.gradeBook.emptyState re-used; shown when class has no students or no grades entered yet"
+    },
+    "notifications.list": {
+      "allTab": {
+        "titleKey": "notifications.emptyAllTitle",
+        "bodyKey": "notifications.emptyAllBody",
+        "icon": "bell-off"
+      },
+      "unreadTab": {
+        "titleKey": "notifications.emptyUnreadTitle",
+        "bodyKey": "notifications.emptyUnreadBody",
+        "icon": "check-circle"
+      },
+      "note": "All 4 keys already exist in messages.json — no new keys"
+    },
+    "lessonBank.list": {
+      "allVariant": {
+        "titleKey": "lessonBank.empty.title",
+        "bodyKey": "lessonBank.empty.body",
+        "icon": "book-open",
+        "hasCTA": true,
+        "ctaKey": "lessonBank.empty.cta"
+      },
+      "filterVariant": {
+        "titleKey": "lessonBank.empty.noMatch",
+        "bodyKey": "lessonBank.empty.noMatchBody",
+        "icon": "search",
+        "hasCTA": false
+      },
+      "note": "All keys already exist in messages.json under lessonBank.empty — no new keys needed"
+    },
+    "messaging.conversations": {
+      "titleKey": "messaging.empty.title",
+      "bodyKey": "messaging.empty.subtitle",
+      "icon": "message-square",
+      "hasCTA": true,
+      "ctaKey": "messaging.empty.cta",
+      "note": "All keys already exist in messages.json under messaging.empty — no new keys needed"
     }
   }
 }
