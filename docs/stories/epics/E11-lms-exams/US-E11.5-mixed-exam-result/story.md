@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -98,4 +98,14 @@ Mock-first: `lms` service chua ship (decision 0014).
 
 ## Evidence
 
-(to be filled after implementation)
+- Unit: 13 new tests (calculatePartialScore x5, isResultFinal x2, mapExamResult pending-essay x6); 924/924 pass
+- Integration: mock repo returns MOCK_PENDING_ESSAY_RESULT for exam-005; mapper handles submitted_pending_essay branch
+- E2E: 5 Storybook stories with play() assertions — ExamList_PendingEssayCard, Briefing_MixedIndicator, Taking_EssayQuestion, Result_PendingEssay, Result_CompletedAfterEssay
+- tsc --noEmit: 0 errors
+- bun build: green (via pre-push hook)
+- Tech-lead: Approved (all 15 gates pass)
+- A11y: WCAG AA pass after A11Y-001..006 fixes (contrast, visible label, alert role, distinct link text)
+- Design-review: PASS with minor notes (DR-E11.5-001..003 all applied)
+- QA: Go — 10/10 ACs covered
+- ADR-0048: Accepted (nullable score/passed for pending-essay status)
+- Branch: feat/us-e11.5-mixed-exam-result → merged to main 2026-06-21
