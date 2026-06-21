@@ -9,7 +9,7 @@
 | Stories | UX-02 / UX-04 / UX-05 / UX-06 / UX-07 / UX-08 (from impeccable critique post-DR-009) |
 | Routes | `/announcements`, `/discipline`, `/staff-leave`, `/grades`, `/admin/school-setup` (+ any screen with destructive actions, detail panels, or stat-card grids) |
 | Roles | Teacher, Principal, Admin (primary); Parent (mobile consumer) |
-| Status | [ ] delivered |
+| Status | [x] delivered (2026-06-21) |
 
 ## Why 1 DR (not split)
 
@@ -110,9 +110,9 @@ All 6 issues are **cross-cutting interaction patterns** — none requires a new 
 
 - [x] `docs/design-requests/DR-011-ux-polish-interactions.md` (this file)
 - [x] `docs/design-requests/README.md` updated
-- [ ] `docs/product/design-spec.jsonc` → `interactionPatterns` section (6 sub-entries)
-- [ ] `src/bootstrap/i18n/messages/vi.json` + `en.json` — new keys (see above)
-- [ ] Design-review gate (impeccable audit)
+- [x] `docs/product/design-spec.jsonc` → `interactionPatterns` section (6 sub-entries)
+- [x] `src/bootstrap/i18n/messages/vi.json` + `en.json` — 21 new keys (see above)
+- [x] Design-review gate — Approved (2026-06-21)
 
 ## Handoff to /ba + /fe
 
