@@ -170,8 +170,10 @@ export function ParentDisciplineScreen(props: ParentDisciplineScreenVM) {
 
       {childList.length === 0 ? (
         <div className="rounded-[var(--edu-radius-card)] border border-border bg-card px-6 py-12 text-center shadow-card">
+          {/* DR-GATE-002: text-muted-foreground (#8898A9) on bg-card (white) = 2.75:1 — fails SC 1.4.11 (non-text 3:1).
+              text-edu-text-secondary (#5A6A85) on white = 5.10:1 — passes. */}
           <Inbox
-            className="mx-auto size-9 text-muted-foreground"
+            className="mx-auto size-9 text-edu-text-secondary"
             aria-hidden="true"
           />
           <p className="mt-2.5 font-semibold text-foreground text-sm">

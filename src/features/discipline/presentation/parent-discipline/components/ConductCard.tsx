@@ -30,7 +30,9 @@ export function ConductCard({ conduct }: { conduct: ConductSummaryEntity }) {
         >
           {t("points")}
         </h2>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-semibold text-[0.6875rem] text-muted-foreground">
+        {/* DR-GATE-001: text-muted-foreground (#8898A9) on bg-muted (#F5F7FA) = 2.75:1 — fails SC 1.4.3.
+            text-edu-text-secondary (#5A6A85) on bg-muted = 5.10:1 — passes. */}
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-semibold text-[0.6875rem] text-edu-text-secondary">
           <Lock className="size-3" aria-hidden="true" />
           {t("readOnly")}
         </span>
