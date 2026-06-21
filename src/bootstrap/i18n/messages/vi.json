@@ -917,6 +917,9 @@
     },
     "errors": {
       "already-processed": "Yêu cầu này đã được xử lý",
+      "conflict": "Thao tác xung đột, vui lòng thử lại",
+      "forbidden": "Bạn không có quyền xem thông tin này",
+      "invalid-child": "Học sinh không hợp lệ",
       "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
       "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
       "invalid-severity": "Mức độ vi phạm không hợp lệ",
@@ -924,6 +927,7 @@
       "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
       "missing-student": "Vui lòng nhập tên học sinh",
       "network-error": "Lỗi kết nối, vui lòng thử lại",
+      "not-found": "Không tìm thấy thông tin học sinh",
       "reason-too-short": "Lý do phải có ít nhất 10 ký tự"
     },
     "leave": {
@@ -967,10 +971,15 @@
     "retry": "Thử lại",
     "studentConduct": {
       "childInfo": "{name} — Lớp {class}",
+      "childSelector": {
+        "label": "Chọn học sinh"
+      },
       "conductCard": {
         "absences": "Nghỉ không phép",
         "grade": "Xếp loại",
         "points": "Điểm hành kiểm",
+        "readOnly": "Chỉ xem",
+        "scoreAriaLabel": "Hạnh kiểm {grade}: {points} điểm",
         "violations": "Vi phạm"
       },
       "leaveHistory": {
@@ -988,6 +997,7 @@
         "submit": "Gửi đơn",
         "submitting": "Đang gửi...",
         "success": "Đã gửi đơn thành công!",
+        "successParent": "Đơn xin nghỉ cho {childName} đã gửi tới {gvcnName}.",
         "title": "Gửi đơn xin nghỉ",
         "type": "Loại nghỉ *",
         "types": {
@@ -1003,6 +1013,7 @@
         "empty": "Chưa có vi phạm nào",
         "title": "Lịch sử vi phạm"
       },
+      "noLinkedChildren": "Chưa có học sinh nào liên kết với tài khoản này.",
       "parentSubtitle": "Xem hành kiểm và gửi đơn nghỉ thay con",
       "parentTitle": "Hành kiểm học sinh",
       "retry": "Thử lại",

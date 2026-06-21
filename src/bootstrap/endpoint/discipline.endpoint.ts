@@ -18,4 +18,15 @@ export const DISCIPLINE_EP = {
   myViolations: "/core/api/v1/discipline/my-violations",
   myLeaveRequests: "/core/api/v1/discipline/my-leave-requests",
   submitLeaveRequest: "/core/api/v1/discipline/leave-requests",
+  // Parent multi-child view (US-E09.4). parentChildren shares the path with
+  // GRADES_EP.childList (US-E13.7) but is its own constant — do not break E13.7.
+  parentChildren: "/core/api/v1/parent/children",
+  childConductSummary: (childId: string) =>
+    `/core/api/v1/discipline/children/${childId}/conduct-summary`,
+  childViolations: (childId: string) =>
+    `/core/api/v1/discipline/children/${childId}/violations`,
+  childLeaveRequests: (childId: string) =>
+    `/core/api/v1/discipline/children/${childId}/leave-requests`,
+  submitChildLeaveRequest: (childId: string) =>
+    `/core/api/v1/discipline/children/${childId}/leave-requests`,
 } as const;

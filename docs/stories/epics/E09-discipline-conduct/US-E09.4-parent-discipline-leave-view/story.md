@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -134,6 +134,19 @@ mock con theo `childId` (tương tự pattern trong US-E09.2 parent variant).
 - Add row `US-E09.4` to `docs/TEST_MATRIX.md` when implemented.
 - Update `docs/product/screens.md` Parent section: `/parent/discipline` → `implemented`.
 
+## Gate Log
+
+| Gate | Verdict | Notes |
+| --- | --- | --- |
+| `fe-tech-lead-reviewer` | **Approved** | SHOULD-FIX: `conduct-color.test.ts` missing — added in a11y commit `facecdf`. Commit `facecdf` on branch. |
+| `fe-accessibility-auditor` | **8 findings resolved** | A11Y-E09.4-001–008 all fixed in commit `facecdf`. |
+| Design-review gate (`/impeccable`) | **Pass** (after DR-GATE-001/002 fixes) | DR-GATE-001: ConductCard readOnly badge contrast fixed. DR-GATE-002: empty-state Inbox icons fixed. Commit `859caeb`. |
+
 ## Evidence
 
-(empty — fill after implementation)
+| Layer | Proof | Count |
+| --- | --- | --- |
+| Unit | `GetChildren`, `GetChildConductSummary`, `GetChildViolations`, `GetChildLeaveRequests`, `SubmitChildLeaveRequest` use-case tests + `conduct-color.test.ts` (10 boundary tests) + `MockDisciplineRepository` child-scoped | 26 unit + 7 integration |
+| E2E (Storybook) | 11 stories with `play()` assertions covering all AC | 11 stories |
+| Design review | `/impeccable audit` + `critique` — Pass | DR-GATE-001/002 fixed |
+| WCAG 2.1 AA | A11Y-E09.4-001–008 all resolved | 0 open findings |

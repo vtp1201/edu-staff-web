@@ -170,3 +170,13 @@ Seen in: US-E10.4 group-info-panel.tsx (confirmDelete inline div).
 Pattern: Blocked buttons use `aria-disabled="true"` without the native `disabled` attribute. This keeps the button keyboard-focusable (which is correct for tooltip access) but requires the click handler to be manually no-op'd (`e.preventDefault()`).
 Assessment: This pattern is intentionally correct for tooltip-visible disabled buttons per ARIA APG. Not a failure — document as validated pattern.
 Seen in: US-E12.2 (delete blocked button).
+
+## Keyboard — HTML `disabled` attr on role="tab" breaks roving tabindex Arrow navigation
+Pattern: Using native `disabled` attribute on `<button role="tab">` during a loading state prevents programmatic focus in Firefox (and some other browsers) — `element.focus()` has no effect on disabled buttons. Arrow key navigation in the roving tabindex pattern silently skips those tabs.
+Fix: Replace `disabled={isLoading && !isActive}` with `aria-disabled={isLoading && !isActive}` and guard `onClick`/`onKeyDown` manually: `if (isLoading && !isActive) return;`. ARIA APG recommends aria-disabled for all tabs so they remain keyboard-reachable.
+Seen in: US-E13.7 child-switcher.tsx.
+
+## Contrast — Avatar initials at 10px: white text fails on all edu-* colors except purple
+Pattern: 26px circle avatar with 10px initials text. White text on primary/success/warning/error all fail 4.5:1. Only purple passes (5.25:1).
+Fix per color: success/warning/error → dark text `var(--edu-text-primary)` (#2a3547). Primary → swap bg to `var(--edu-primary-accessible)` (#4468e0) + keep white text (4.88:1). Purple → keep white text.
+Seen in: US-E13.7 child-switcher.tsx COLOR_VAR map.

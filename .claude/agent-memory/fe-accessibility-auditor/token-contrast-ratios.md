@@ -102,3 +102,13 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - edu-success-text (#007A6E) on bg-edu-success/10: 4.90:1 — PASS
 - border-edu-border (#E5EAF2) on white: 1.21:1 — FAILS SC 1.4.11 for UI component boundary
 - white on bg-edu-warning (#FFAE1F): 1.85:1 — FAILS (same as recorded; applies to any button using bg-edu-warning + text-white)
+
+## Additional ratios confirmed (US-E13.7 ChildSwitcher audit, 2026-06-21)
+- white (#fff) on --edu-success (#13DEB9) avatar circle: 1.72:1 — FAIL (10px text, 4.5:1 required)
+- white (#fff) on --edu-warning (#FFAE1F) avatar circle: 1.85:1 — FAIL (10px text)
+- white (#fff) on --edu-error (#fa896b) avatar circle: 2.37:1 — FAIL (10px text)
+- white (#fff) on --edu-primary (#5d87ff) avatar circle: 3.29:1 — FAIL (10px text, 4.5:1 required)
+- white (#fff) on --edu-purple (#7B5EA7) avatar circle: 5.25:1 — PASS
+- dark text (#2a3547) on edu-success/warning/error avatar circles: 7.17 / 6.67 / 5.21 — PASS (use as foreground)
+- dark text (#2a3547) on --edu-primary (#5d87ff) avatar circle: 3.75:1 — FAILS 4.5:1 (use --edu-primary-accessible bg + white text = 4.88:1 instead)
+- --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS. Confirmed for avatar circle bg with white initials text.

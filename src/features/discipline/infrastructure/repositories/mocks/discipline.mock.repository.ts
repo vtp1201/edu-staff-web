@@ -1,11 +1,13 @@
 import "server-only";
 import { mockDelay } from "@/bootstrap/lib/mock";
+import type { ChildEntity } from "../../../domain/entities/child.entity";
 import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../../../domain/entities/conduct-summary.entity";
 import type {
   LeaveRequestEntity,
+  SubmitChildLeaveRequestInput,
   SubmitLeaveRequestInput,
 } from "../../../domain/entities/leave-request.entity";
 import type {
@@ -16,6 +18,10 @@ import type { DisciplineFailure } from "../../../domain/failures/discipline.fail
 import type { IDisciplineRepository } from "../../../domain/repositories/i-discipline.repository";
 import { initialsOf } from "../../mappers/discipline.mapper";
 import {
+  MOCK_CHILD_CONDUCT,
+  MOCK_CHILD_LEAVE_REQUESTS,
+  MOCK_CHILD_VIOLATIONS,
+  MOCK_CHILDREN,
   MOCK_CONDUCT,
   MOCK_LEAVE_REQUESTS,
   MOCK_MY_CONDUCT,
@@ -64,6 +70,11 @@ let _leave: LeaveRequestEntity[] = [
   ...structuredClone(MOCK_LEAVE_REQUESTS),
 ];
 
+// Per-child leave history (US-E09.4), keyed by childId, mutable for optimistic submit.
+let _childLeave: Record<string, LeaveRequestEntity[]> = structuredClone(
+  MOCK_CHILD_LEAVE_REQUESTS,
+);
+
 function fail(type: DisciplineFailure["type"]): never {
   const failure: DisciplineFailure = { type };
   throw failure;
@@ -80,6 +91,7 @@ export class MockDisciplineRepository implements IDisciplineRepository {
       ...structuredClone(MOCK_MY_LEAVE_REQUESTS),
       ...structuredClone(MOCK_LEAVE_REQUESTS),
     ];
+    _childLeave = structuredClone(MOCK_CHILD_LEAVE_REQUESTS);
   }
 
   async getViolations(params: {
@@ -221,6 +233,65 @@ export class MockDisciplineRepository implements IDisciplineRepository {
       rejectionReason: null,
     };
     _leave = [req, ..._leave];
+    return structuredClone(req);
+  }
+
+  // --- Parent multi-child view (US-E09.4) ---
+
+  async getChildren(): Promise<ChildEntity[]> {
+    await mockDelay();
+    return structuredClone(MOCK_CHILDREN);
+  }
+
+  async getChildConductSummary(childId: string): Promise<ConductSummaryEntity> {
+    await mockDelay();
+    const summary = MOCK_CHILD_CONDUCT[childId];
+    if (!summary) fail("not-found");
+    return structuredClone(summary);
+  }
+
+  async getChildViolations(childId: string): Promise<ViolationEntity[]> {
+    await mockDelay();
+    if (!MOCK_CHILD_CONDUCT[childId]) fail("not-found");
+    return structuredClone(MOCK_CHILD_VIOLATIONS[childId] ?? []);
+  }
+
+  async getChildLeaveRequests(childId: string): Promise<LeaveRequestEntity[]> {
+    await mockDelay();
+    if (!MOCK_CHILD_CONDUCT[childId]) fail("not-found");
+    return structuredClone(_childLeave[childId] ?? []);
+  }
+
+  async submitLeaveForChild(
+    childId: string,
+    input: SubmitChildLeaveRequestInput,
+  ): Promise<LeaveRequestEntity> {
+    await mockDelay();
+    const child = MOCK_CHILDREN.find((c) => c.childId === childId);
+    if (!child) fail("not-found");
+    if (input.reason.trim().length < 10) fail("reason-too-short");
+    const req: LeaveRequestEntity = {
+      id: genId("cl"),
+      studentId: childId,
+      studentName: child.name,
+      initials: child.avatar,
+      avatarTone: "primary",
+      classId: child.className,
+      className: child.className,
+      submittedBy: "parent",
+      submitterName: `${child.gvcnName}`,
+      reason: input.reason.trim(),
+      startDate: formatISODate(input.startDate),
+      endDate: formatISODate(input.endDate),
+      dayCount: dayCountOf(input.startDate, input.endDate),
+      type: input.type,
+      status: "pending",
+      submittedAt: formatISODate(todayISO()),
+      approvedBy: null,
+      rejectedBy: null,
+      rejectionReason: null,
+    };
+    _childLeave[childId] = [req, ...(_childLeave[childId] ?? [])];
     return structuredClone(req);
   }
 }

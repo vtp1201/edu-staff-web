@@ -1,9 +1,11 @@
+import type { ChildEntity } from "../entities/child.entity";
 import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../entities/conduct-summary.entity";
 import type {
   LeaveRequestEntity,
+  SubmitChildLeaveRequestInput,
   SubmitLeaveRequestInput,
 } from "../entities/leave-request.entity";
 import type {
@@ -45,5 +47,15 @@ export interface IDisciplineRepository {
   getMyLeaveRequests(studentId: string): Promise<LeaveRequestEntity[]>;
   submitLeaveRequest(
     input: SubmitLeaveRequestInput,
+  ): Promise<LeaveRequestEntity>;
+
+  // --- Parent multi-child view (US-E09.4) ---
+  getChildren(): Promise<ChildEntity[]>;
+  getChildConductSummary(childId: string): Promise<ConductSummaryEntity>;
+  getChildViolations(childId: string): Promise<ViolationEntity[]>;
+  getChildLeaveRequests(childId: string): Promise<LeaveRequestEntity[]>;
+  submitLeaveForChild(
+    childId: string,
+    input: SubmitChildLeaveRequestInput,
   ): Promise<LeaveRequestEntity>;
 }

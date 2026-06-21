@@ -9,3 +9,4 @@
 - [US-E10.1 QA patterns](us-e10.1-qa-patterns.md) — messaging: Radix Dialog portal query via ownerDocument.body; multi-node text pitfall (name in list + header); AC-3 needs g1 fixture override; Loading story skeleton not assertable in headless
 - [US-E10.3 QA patterns](us-e10.3-qa-patterns.md) — announcements: 12 gap stories added (AC-3/5/6/7/8/10/11 needed interaction-to-completion, not just open; char count + filter tabs always need explicit assertion)
 - [US-E10.4 QA patterns](us-e10.4-qa-patterns.md) — group chat: E10.4 story args need all 8 action props; right-click via pointer keys; context menu in body portal; reply strip /Đang trả lời/i
+- [US-E13.7 QA patterns](us-e13.7-qa-patterns.md) — child-switcher: aria-disabled vs toBeDisabled() mismatch (MAJOR); AC6 keyboard unit tests missing; TEST_MATRIX stale at planned

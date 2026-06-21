@@ -15,3 +15,4 @@
 - [E10 Communications epic](project-e10-communications.md) — US-E10.1–E10.5 all implemented; E10.5=QA defect fixes (DEF-01 timer, DEF-02 addMembers wiring, DEF-03 highlight test; 839 tests); E10 COMPLETE; storybook/test has no vi/useFakeTimers
 - [E11 LMS Exams epic](project-e11-lms-exams.md) — US-E11.1/E11.2/E11.4 implemented; E11.4 = Teaching Plan PPCT (teacher grid/submit + principal approve/reject, 618 tests, semantic table grid); E11.3 exam-bank in progress (another session)
 - [INFRA security hardening](project-infra-security-hardening.md) — US-INFRA.2: auth-guard module, SSE tenant validation, Server Action tests, build guard (804 tests); push with NEXT_PUBLIC_USE_MOCK= to avoid build guard tripping pre-push
+- [E16 Impeccable fixes epic](project-e16-impeccable-fixes.md) — US-E16.1–E16.5 all implemented (DR-009); 858 tests; one shared branch for all 5 (shared files); native button for Card; scaleX fills; grid-template-columns sidebar; msg-typing keyframe

@@ -12,4 +12,8 @@ export type DisciplineFailure =
   | { type: "invalid-conduct-grade" }
   | { type: "invalid-date" }
   | { type: "reason-too-short" }
+  | { type: "forbidden" }
+  | { type: "not-found" }
+  | { type: "invalid-child" }
+  | { type: "conflict" }
   | { type: "network-error" };
