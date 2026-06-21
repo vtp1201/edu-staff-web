@@ -38,7 +38,8 @@ export function ChildSelector({
         : (index - 1 + items.length) % items.length;
     const target = items[next];
     if (target) {
-      onSelect(target.childId);
+      // Arrow keys move focus only — activation happens on click / Enter / Space
+      // (TR-NFR-001, WCAG 2.1.1, ARIA APG manual-activation Tabs pattern).
       focusTab(target.childId);
     }
   };
@@ -51,12 +52,16 @@ export function ChildSelector({
     >
       {items.map((child, index) => {
         const isActive = child.childId === activeChildId;
+        const tabId = `child-tab-${child.childId}`;
+        const panelId = `child-panel-${child.childId}`;
         return (
           <button
             key={child.childId}
+            id={tabId}
             type="button"
             role="tab"
             aria-selected={isActive}
+            aria-controls={panelId}
             tabIndex={isActive ? 0 : -1}
             ref={(el) => {
               tabRefs.current[child.childId] = el;
@@ -82,12 +87,15 @@ export function ChildSelector({
               <span
                 className={cn(
                   "font-bold text-sm",
-                  isActive ? "text-primary" : "text-foreground",
+                  // A11Y-E09.4-004: text-primary (#5D87FF) on bg-primary/12 = 2.89:1 < 3:1.
+                  // Use text-foreground for both states; active state is communicated via
+                  // border + bg tint (no color-only reliance).
+                  "text-foreground",
                 )}
               >
                 {child.name}
               </span>
-              <span className="text-[0.6875rem] text-muted-foreground">
+              <span className="text-[0.6875rem] text-edu-text-secondary">
                 {child.className}
               </span>
             </span>

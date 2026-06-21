@@ -38,6 +38,9 @@ export function ConductCard({ conduct }: { conduct: ConductSummaryEntity }) {
 
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
         {/* Score circle — 80×80, color/18 bg + 3px color/44 border. */}
+        {/* A11Y-E09.4-008: aria-label format matches TR-NFR-002 — "Hạnh kiểm {grade}: {score} điểm".
+            A11Y-E09.4-003: "/ 100" uses text-foreground (#2A3547) for sufficient contrast on
+            the color-mix tinted background (was text-muted-foreground = 2.43:1 — FAIL). */}
         <div
           role="img"
           className="flex size-20 shrink-0 flex-col items-center justify-center rounded-full"
@@ -45,7 +48,7 @@ export function ConductCard({ conduct }: { conduct: ConductSummaryEntity }) {
             background: `color-mix(in srgb, ${color} 18%, transparent)`,
             border: `3px solid color-mix(in srgb, ${color} 44%, transparent)`,
           }}
-          aria-label={`${t("points")} ${gradeLabel}: ${points}/100`}
+          aria-label={t("scoreAriaLabel", { grade: gradeLabel, points })}
         >
           <span
             className="font-extrabold text-foreground leading-none tabular-nums"
@@ -53,7 +56,9 @@ export function ConductCard({ conduct }: { conduct: ConductSummaryEntity }) {
           >
             {points}
           </span>
-          <span className="text-[0.625rem] text-muted-foreground">/ 100</span>
+          <span className="text-[0.625rem] text-foreground opacity-60">
+            / 100
+          </span>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3">

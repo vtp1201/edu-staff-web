@@ -979,6 +979,7 @@
         "grade": "Xếp loại",
         "points": "Điểm hành kiểm",
         "readOnly": "Chỉ xem",
+        "scoreAriaLabel": "Hạnh kiểm {grade}: {points} điểm",
         "violations": "Vi phạm"
       },
       "leaveHistory": {

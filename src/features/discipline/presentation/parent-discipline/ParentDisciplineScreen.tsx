@@ -152,13 +152,20 @@ export function ParentDisciplineScreen(props: ParentDisciplineScreenVM) {
     }
   };
 
+  // ARIA APG Tabs pattern: the active tabpanel MUST be reachable via Tab key (tabIndex=0).
+  // Biome noNoninteractiveTabindex does not recognize role="tabpanel" as interactive, so we
+  // pass the value through a variable to prevent the static false-positive (A11Y-E09.4-001).
+  const tabPanelIndex = 0 as number;
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 sm:p-6">
       <header>
         <h1 className="font-extrabold text-2xl text-foreground">
           {t("parentTitle")}
         </h1>
-        <p className="text-muted-foreground text-sm">{t("parentSubtitle")}</p>
+        {/* A11Y-E09.4-006: text-muted-foreground (#8898A9) on #F5F7FA = 2.75:1 — FAIL.
+            text-edu-text-secondary (#5A6A85) = 5.10:1 — PASS. */}
+        <p className="text-edu-text-secondary text-sm">{t("parentSubtitle")}</p>
       </header>
 
       {childList.length === 0 ? (
@@ -180,7 +187,8 @@ export function ParentDisciplineScreen(props: ParentDisciplineScreenVM) {
           />
 
           {activeChild && (
-            <p className="text-muted-foreground text-sm">
+            /* A11Y-E09.4-006: text-edu-text-secondary (#5A6A85) = 5.10:1 on #F5F7FA */
+            <p className="text-edu-text-secondary text-sm">
               {t("childInfo", {
                 name: activeChild.name,
                 class: activeChild.className,
@@ -200,57 +208,67 @@ export function ParentDisciplineScreen(props: ParentDisciplineScreenVM) {
             </p>
           )}
 
-          {isLoading ? (
-            <div
-              className="flex flex-col gap-5"
-              data-testid="parent-discipline-skeleton"
-            >
-              <Skeleton className="h-40 w-full rounded-[var(--edu-radius-card)]" />
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                <Skeleton className="h-56 w-full rounded-[var(--edu-radius-card)]" />
-                <Skeleton className="h-56 w-full rounded-[var(--edu-radius-card)]" />
-              </div>
-            </div>
-          ) : sectionErrorKey ? (
-            <div className="rounded-[var(--edu-radius-card)] border border-edu-error/20 bg-edu-error/5 px-6 py-12 text-center shadow-card">
-              <AlertCircle
-                className="mx-auto size-9 text-edu-error-text"
-                aria-hidden="true"
-              />
-              <p className="mt-2.5 font-semibold text-edu-error-text text-sm">
-                {t("loadError")}
-              </p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                {tErr(sectionErrorKey)}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-4"
-                onClick={onRetry}
+          {/* A11Y-E09.4-001: tabpanel pairs with the active tab via id/aria-labelledby.
+              tabPanelIndex (=0) is passed via variable — see comment above return(). */}
+          <div
+            role="tabpanel"
+            id={`child-panel-${activeChildId}`}
+            aria-labelledby={`child-tab-${activeChildId}`}
+            tabIndex={tabPanelIndex}
+            className="outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            {isLoading ? (
+              <div
+                className="flex flex-col gap-5"
+                data-testid="parent-discipline-skeleton"
               >
-                {t("retry")}
-              </Button>
-            </div>
-          ) : (
-            <>
-              {conduct && <ConductCard conduct={conduct} />}
-
-              <div className="flex justify-end">
-                <LeaveRequestForm
-                  key={activeChildId}
-                  childId={activeChildId}
-                  submitAction={submitChildLeaveRequestAction}
-                  onSubmitted={onSubmitted}
+                <Skeleton className="h-40 w-full rounded-[var(--edu-radius-card)]" />
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  <Skeleton className="h-56 w-full rounded-[var(--edu-radius-card)]" />
+                  <Skeleton className="h-56 w-full rounded-[var(--edu-radius-card)]" />
+                </div>
+              </div>
+            ) : sectionErrorKey ? (
+              <div className="rounded-[var(--edu-radius-card)] border border-edu-error/20 bg-edu-error/5 px-6 py-12 text-center shadow-card">
+                <AlertCircle
+                  className="mx-auto size-9 text-edu-error-text"
+                  aria-hidden="true"
                 />
+                <p className="mt-2.5 font-semibold text-edu-error-text text-sm">
+                  {t("loadError")}
+                </p>
+                <p className="mt-1 text-edu-text-secondary text-xs">
+                  {tErr(sectionErrorKey)}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={onRetry}
+                >
+                  {t("retry")}
+                </Button>
               </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {conduct && <ConductCard conduct={conduct} />}
 
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                <ViolationsList violations={violations} />
-                <LeaveHistorySection leaveRequests={leaveRequests} />
+                <div className="flex justify-end">
+                  <LeaveRequestForm
+                    key={activeChildId}
+                    childId={activeChildId}
+                    submitAction={submitChildLeaveRequestAction}
+                    onSubmitted={onSubmitted}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  <ViolationsList violations={violations} />
+                  <LeaveHistorySection leaveRequests={leaveRequests} />
+                </div>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>

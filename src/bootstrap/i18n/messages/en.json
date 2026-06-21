@@ -979,6 +979,7 @@
         "grade": "Grade",
         "points": "Conduct Score",
         "readOnly": "Read-only",
+        "scoreAriaLabel": "Conduct {grade}: {points} points",
         "violations": "Violations"
       },
       "leaveHistory": {

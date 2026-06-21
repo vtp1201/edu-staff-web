@@ -33,8 +33,10 @@ export function ViolationsList({
 
       {violations.length === 0 ? (
         <div className="px-6 py-12 text-center">
+          {/* A11Y-E09.4-005: text-edu-success (#13DEB9) on white = 1.72:1 — FAIL SC 1.4.11.
+              text-edu-success-text (#007A6E) on white = 5.24:1 — PASS. */}
           <ShieldCheck
-            className="mx-auto size-9 text-edu-success"
+            className="mx-auto size-9 text-edu-success-text"
             aria-hidden="true"
           />
           <p className="mt-2.5 font-semibold text-edu-success-text text-sm">
