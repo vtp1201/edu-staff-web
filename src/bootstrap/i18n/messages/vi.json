@@ -1099,6 +1099,7 @@
         "recorded": "Đã ghi nhận"
       },
       "success": "Đã ghi nhận vi phạm thành công!",
+      "successContext": "Đã ghi nhận vi phạm của {studentName}",
       "title": "Danh sách vi phạm",
       "types": {
         "cheat": "Gian lận kiểm tra",
