@@ -268,8 +268,8 @@ function EssayQuestionInput({
   const isNearLimit = charCount >= 1900;
   return (
     <div className="mt-5 space-y-2">
-      <label htmlFor={id} className="sr-only">
-        {t("taking.essayPlaceholder")}
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        {t("taking.essayLabel")}
       </label>
       <textarea
         id={id}
@@ -285,7 +285,9 @@ function EssayQuestionInput({
         id={`${id}-count`}
         className={cn(
           "text-right text-xs",
-          isNearLimit ? "text-edu-warning-text" : "text-muted-foreground",
+          isNearLimit
+            ? "font-bold text-edu-warning-foreground"
+            : "text-muted-foreground",
         )}
       >
         {t("taking.essayCharCount", { count: charCount })}

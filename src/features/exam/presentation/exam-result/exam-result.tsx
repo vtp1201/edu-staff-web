@@ -289,7 +289,7 @@ function PendingEssayResultView({
               href={gradeBookPath}
               className="mt-2 inline-block text-xs font-bold text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {t("result.backToList")}
+              {t("result.viewGradeBook")}
             </a>
           )}
         </div>
@@ -396,7 +396,7 @@ function EssayQuestionReviewCard({ question }: { question: QuestionResult }) {
       <p className="text-xs font-bold uppercase tracking-wide text-foreground">
         {t("taking.questionLabel", { index: question.index })}
       </p>
-      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-edu-warning/15 px-3 py-1 text-xs font-bold text-edu-warning-text">
+      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-edu-warning/15 px-3 py-1 text-xs font-bold text-edu-warning-foreground">
         {t("result.essayQuestionLabel")}
       </div>
       <h3 className="mt-2 text-sm font-medium text-foreground">

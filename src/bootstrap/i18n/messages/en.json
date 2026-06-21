@@ -1153,6 +1153,7 @@
       "filterGroupLabel": "Filter results",
       "filterIncorrect": "Incorrect",
       "filterSkipped": "Skipped",
+      "viewGradeBook": "View grade book",
       "incorrect": "Incorrect",
       "outOf": "/10",
       "passed": "PASSED",
@@ -1215,6 +1216,7 @@
       "timerLabel": "Time remaining",
       "unflagBtn": "Unflag",
       "essayPlaceholder": "Enter your answer here...",
+      "essayLabel": "Essay answer",
       "essayCharCount": "{count}/2000 characters",
       "essayEmptyWarning": "You have not answered the essay question."
     }

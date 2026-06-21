@@ -1153,6 +1153,7 @@
       "filterGroupLabel": "Lọc kết quả",
       "filterIncorrect": "Sai",
       "filterSkipped": "Bỏ qua",
+      "viewGradeBook": "Xem học bạ",
       "incorrect": "Câu sai",
       "outOf": "/10",
       "passed": "ĐẠT",
@@ -1215,6 +1216,7 @@
       "timerLabel": "Thời gian còn lại",
       "unflagBtn": "Bỏ đánh dấu",
       "essayPlaceholder": "Nhập câu trả lời của bạn...",
+      "essayLabel": "Bài làm tự luận",
       "essayCharCount": "{count}/2000 ký tự",
       "essayEmptyWarning": "Bạn chưa trả lời câu tự luận."
     }

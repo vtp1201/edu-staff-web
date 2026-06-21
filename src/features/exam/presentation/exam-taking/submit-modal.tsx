@@ -53,9 +53,16 @@ export function SubmitModal({
         )}
 
         {hasEmptyEssay && (
-          <p className="text-sm text-edu-warning-text">
-            {t("taking.essayEmptyWarning")}
-          </p>
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--edu-radius-btn)] bg-edu-warning/15 p-3 text-sm text-edu-warning-foreground"
+          >
+            <AlertTriangle
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>{t("taking.essayEmptyWarning")}</span>
+          </div>
         )}
 
         <DialogFooter>
