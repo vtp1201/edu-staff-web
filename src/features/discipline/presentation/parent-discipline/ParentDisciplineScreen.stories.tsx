@@ -256,7 +256,7 @@ export const ParentDisciplineScreen_EmptyViolations: Story = {
   },
 };
 
-/** Valid leave submission closes the form and prepends a pending entry (AC-01-03/04). */
+/** Valid leave submission closes the form, shows success banner, and prepends a pending entry (AC-01-03/04). */
 export const ParentDisciplineScreen_LeaveForm_Valid: Story = {
   args: {
     ...baseVm,
@@ -270,13 +270,18 @@ export const ParentDisciplineScreen_LeaveForm_Valid: Story = {
     const reason = canvas.getByLabelText("Lý do *");
     await userEvent.type(reason, "Con bị ốm cần nghỉ ở nhà điều trị");
     await userEvent.click(canvas.getByRole("button", { name: "Gửi đơn" }));
+    // Form closes after submit.
     await waitFor(() =>
       expect(
         canvas.queryByRole("heading", { name: "Gửi đơn xin nghỉ" }),
       ).toBeNull(),
     );
-    // Success banner mentions the GVCN.
+    // Success banner mentions the GVCN (DEF-E09.4-002 assertion).
     await expect(canvas.getByText(/Nguyễn Thị Hương/)).toBeInTheDocument();
+    // Optimistic pending entry prepended to history list (DEF-E09.4-002 gap fix).
+    await waitFor(() =>
+      expect(canvas.getByText("Chờ duyệt")).toBeInTheDocument(),
+    );
   },
 };
 
@@ -345,6 +350,36 @@ export const ParentDisciplineScreen_ErrorState: Story = {
     ).toBeInTheDocument();
     await expect(
       canvas.getByRole("button", { name: "Thử lại" }),
+    ).toBeInTheDocument();
+  },
+};
+
+/** Past startDate shows inline validation error "Ngày nghỉ phải từ hôm nay trở đi" (AC-03, DEF-E09.4-003). */
+export const ParentDisciplineScreen_LeaveForm_PastDate: Story = {
+  args: {
+    ...baseVm,
+    childList: [CHILDREN[0]],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Xin nghỉ phép" }),
+    );
+    // Enter a past date for startDate (2020-01-01 is safely in the past).
+    const startDateInput = canvas.getByLabelText("Ngày bắt đầu *");
+    await userEvent.clear(startDateInput);
+    await userEvent.type(startDateInput, "2020-01-01");
+    const reason = canvas.getByLabelText("Lý do *");
+    await userEvent.type(reason, "Con bị ốm cần nghỉ ở nhà điều trị");
+    await userEvent.click(canvas.getByRole("button", { name: "Gửi đơn" }));
+    // Past-date validation error visible; form stays open.
+    await waitFor(() =>
+      expect(
+        canvas.getByText("Ngày nghỉ phải từ hôm nay trở đi"),
+      ).toBeInTheDocument(),
+    );
+    await expect(
+      canvas.getByRole("heading", { name: "Gửi đơn xin nghỉ" }),
     ).toBeInTheDocument();
   },
 };
