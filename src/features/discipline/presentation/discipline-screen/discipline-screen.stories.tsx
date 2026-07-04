@@ -230,8 +230,30 @@ const VIEWPORT_375 = {
   defaultViewport: "mobile375",
 };
 
+/** AC-11: violations tab (default initialTab) stat grid at 375px. */
 export const Viewport375: Story = {
   args: baseVm,
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector<HTMLElement>(
+      '[class*="auto-fit"]',
+    );
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain(
+      "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
+    );
+    await expect(grid?.className).toContain("gap-4");
+  },
+};
+
+/**
+ * AC-10: Conduct tab stat grid at 375px. `Viewport375` above only mounts the
+ * violations tab (baseVm.initialTab === "violations"); Radix Tabs unmounts
+ * inactive panels, so it never renders the Conduct tab's grid. This story
+ * closes that gap (found by fe-qa-playwright).
+ */
+export const Viewport375_ConductTab: Story = {
+  args: { ...baseVm, initialTab: "conduct" },
   parameters: { viewport: VIEWPORT_375 },
   play: async ({ canvasElement }) => {
     const grid = canvasElement.querySelector<HTMLElement>(
