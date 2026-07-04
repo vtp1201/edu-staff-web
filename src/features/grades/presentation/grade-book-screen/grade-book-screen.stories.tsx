@@ -305,10 +305,39 @@ export const NoSelection: Story = {
 };
 
 export const EmptyState: Story = {
-  args: { vm: vm({ gradeBook: { ...book, rows: [] } }) },
+  args: { vm: vm({ gradeBook: null }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByText("Chưa có điểm")).toBeInTheDocument();
+    // AC-01.1: role="status" + aria-live="polite" container.
+    const status = canvas.getByRole("status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    // AC-01.3: FileText icon, 64px, aria-hidden, muted color.
+    const icon = status.querySelector("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon?.getAttribute("class")).toContain("size-16");
+    expect(icon?.getAttribute("class")).toContain("text-edu-text-muted");
+    // AC-01.4/01.9: title text from gradeBook.emptyState namespace.
+    expect(within(status).getByText("Chưa có điểm")).toBeInTheDocument();
+    // AC-01.5/01.6/01.7/01.8: no heading, no secondary text, no CTA, no
+    // dashed-border legacy element.
+    expect(status.querySelector("h2, h3")).toBeNull();
+    expect(status.querySelectorAll("p")).toHaveLength(1);
+    expect(status.querySelector("button, a")).toBeNull();
+    expect(status.className).not.toContain("dashed");
+  },
+};
+
+export const NoSelectionUnchanged: Story = {
+  // AC-02.1/02.2: no-selection prompt keeps the legacy dashed-border look and
+  // does NOT render the canonical role="status" empty state.
+  args: { vm: vm({ selectedCsId: null, gradeBook: null }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    expect(status.className).toContain("dashed");
+    expect(
+      within(status).getByText("Chọn lớp và học kỳ để xem bảng điểm"),
+    ).toBeInTheDocument();
   },
 };
 
