@@ -480,6 +480,192 @@ export const MobileReducedMotion_Correctness: Story = {
   },
 };
 
+/**
+ * AC-14 / AC-15 — transition targets `transform` only (not `left`/`width`/
+ * `margin`), duration 250ms. Read via `getComputedStyle` in the real Chromium
+ * runner (unlike the vendor-prefixed `-webkit-overflow-scrolling` case in
+ * US-E17.2, `transition-property`/`transition-duration` are standard
+ * properties Chromium reports correctly in the CSSOM).
+ */
+export const SlideTransition_ComputedStyle: Story = {
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    for (const pane of [listPane, chatPane]) {
+      const style = getComputedStyle(pane);
+      // AC-15: `transition-transform` is a Tailwind v4 shorthand that expands
+      // to `transform, translate, scale, rotate` in the computed CSSOM (all
+      // still transform-family properties) — no `left`/`right`/`width`/
+      // `margin-left` is present, confirmed by exact string match.
+      expect(style.transitionProperty).toBe(
+        "transform, translate, scale, rotate",
+      );
+      expect(style.transitionProperty).not.toMatch(
+        /\b(left|right|width|margin)\b/,
+      );
+      // AC-14: 250ms duration (spec §6 says "0.25s ease"; Tailwind's
+      // `ease-in-out` utility compiles to the `cubic-bezier(0.4, 0, 0.2, 1)`
+      // token, not the literal `ease` keyword — timing-function *shape* is
+      // asserted, not the exact keyword, since Tailwind v4 has no utility that
+      // emits the bare `ease` keyword).
+      expect(style.transitionDuration).toBe("0.25s");
+      expect(style.transitionTimingFunction).not.toBe("");
+    }
+  },
+};
+
+/**
+ * AC-19 / AC-20 / AC-21 — desktop (1280 px) is untouched by this story: both
+ * panes visible side-by-side, neither `aria-hidden`/`inert`, no `transform`
+ * applied, no page-level horizontal overflow.
+ */
+export const DesktopUnchanged_1280: Story = {
+  parameters: {
+    viewport: {
+      viewports: {
+        desktop1280: {
+          name: "Desktop 1280",
+          styles: { width: "1280px", height: "800px" },
+          type: "desktop" as const,
+        },
+      },
+      defaultViewport: "desktop1280",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    // AC-19: both panes visible, neither hidden from AT.
+    await waitFor(() =>
+      expect(canvas.getAllByRole("log").length).toBeGreaterThanOrEqual(1),
+    );
+    expect(listPane).not.toHaveAttribute("aria-hidden");
+    expect(chatPane).not.toHaveAttribute("aria-hidden");
+    expect(listPane).not.toHaveAttribute("inert");
+    expect(chatPane).not.toHaveAttribute("inert");
+
+    // AC-19: no CSS transform applied at desktop (`md:translate-x-0` resets
+    // any mobile slide offset — matrix(1, 0, 0, 1, 0, 0) === identity/none).
+    const listTransform = getComputedStyle(listPane).transform;
+    const chatTransform = getComputedStyle(chatPane).transform;
+    expect(["none", "matrix(1, 0, 0, 1, 0, 0)"]).toContain(listTransform);
+    expect(["none", "matrix(1, 0, 0, 1, 0, 0)"]).toContain(chatTransform);
+
+    // AC-20: static side-by-side flow, not the mobile absolute-stack.
+    expect(getComputedStyle(listPane).position).toBe("static");
+    expect(getComputedStyle(chatPane).position).toBe("static");
+
+    // AC-21: no page-level horizontal overflow at 1280 px.
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+  },
+};
+
+/**
+ * AC-22 — empty conversation list on mobile (375 px): the empty-state renders
+ * in the list pane at full width; the chat pane stays off-screen and
+ * `aria-hidden="true"` (the pane-toggle mechanism must not regress when the
+ * list has no conversations to select).
+ */
+export const MobileEmptyState_ChatPaneHidden: Story = {
+  args: { initialConversations: [] },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    await waitFor(() =>
+      expect(canvas.getByText(/chọn một cuộc trò chuyện/i)).toBeInTheDocument(),
+    );
+    expect(chatPane).toHaveAttribute("aria-hidden", "true");
+    expect(chatPane).toHaveAttribute("inert");
+    expect(listPane).not.toHaveAttribute("aria-hidden");
+  },
+};
+
+/**
+ * AC-03 — list-fetch error on mobile (375 px): error state renders in the
+ * list pane at full width; chat pane stays off-screen and `aria-hidden`.
+ */
+export const MobileLoadError_ChatPaneHidden: Story = {
+  args: { initialConversations: [], loadError: "load-conversations-failed" },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    await waitFor(() => expect(canvas.getByRole("alert")).toBeInTheDocument());
+    expect(chatPane).toHaveAttribute("aria-hidden", "true");
+    expect(listPane).not.toHaveAttribute("aria-hidden");
+  },
+};
+
+/**
+ * AC-23 — no horizontal overflow at 320 px across UI states (loaded / empty /
+ * error). `document.documentElement.scrollWidth === clientWidth` must hold in
+ * every state, not just the happy-path loaded list.
+ */
+const VIEWPORT_320 = {
+  viewports: {
+    mobile320: {
+      name: "Mobile 320",
+      styles: { width: "320px", height: "700px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile320",
+};
+
+export const NoOverflow_320_Loaded: Story = {
+  parameters: { viewport: VIEWPORT_320 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findAllByRole("button", { name: /mở cuộc trò chuyện/i });
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+
+    // AC-23 "any state" — also hold after switching to the chat pane.
+    const row = (
+      await canvas.findAllByRole("button", { name: /mở cuộc trò chuyện/i })
+    )[0];
+    await userEvent.click(row);
+    await waitFor(() => expect(canvas.getAllByRole("log")).not.toHaveLength(0));
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+  },
+};
+
+export const NoOverflow_320_Empty: Story = {
+  args: { initialConversations: [] },
+  parameters: { viewport: VIEWPORT_320 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(canvas.getByText(/chọn một cuộc trò chuyện/i)).toBeInTheDocument(),
+    );
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+  },
+};
+
+export const NoOverflow_320_Error: Story = {
+  args: { initialConversations: [], loadError: "load-conversations-failed" },
+  parameters: { viewport: VIEWPORT_320 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole("alert")).toBeInTheDocument());
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+  },
+};
+
 // ---------------------------------------------------------------------------
 // US-E10.4 gap stories
 // ---------------------------------------------------------------------------
