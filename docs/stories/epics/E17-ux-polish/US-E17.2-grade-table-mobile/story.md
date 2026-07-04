@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -78,4 +78,22 @@ Confirm with `ba-lead` if an i18n key for `aria-label` must be added (see OQ-001
 
 ## Evidence
 
-Add Storybook screenshot links and Playwright reports after validation.
+Design review: pass
+- design-system: conform (tokens-only — `border-border`/`bg-card`; no new tokens; component pattern reused as-is)
+- a11y: WCAG AA OK — A11Y-001 (blocking, keyboard-scroll `tabIndex={0}`) and A11Y-002 (should-fix, `aria-labelledby` replacing duplicate `aria-label`) found by `fe-accessibility-auditor` and fixed in commit `3fd6d44`; reduced-motion N/A (native momentum scroll, not a CSS animation)
+- impeccable audit: scoped manual design-system + a11y checklist walk (CSS/a11y-only diff, no new visual pattern) — 0 outstanding findings after A11Y-001/002 fix
+- states: loading/empty/error/success unaffected by this diff (confirmed structurally sound); responsive 320px/375px/768px/1280px OK via Storybook (`MobileScroll_320`, `MobileScroll_375`, `TeacherView_Tablet768`, `DesktopView_1280`, `ParentView_Mobile375`)
+
+QA gate (`fe-qa-playwright`): **PASS**. 18/18 relevant AC (AC-01–AC-18, excl. AC-04/05/14 pre-existing/unaffected, AC-18 N/A — no interactive row elements) traced to unit tests + 11 real-Chromium Storybook interaction stories. Found + fixed one test-only false negative (DEF-01, `-webkit-overflow-scrolling` CSSOM read in Chromium) — not a production defect.
+
+Proof:
+- Unit: `bun vitest run src/components/shared/grade-book-table/grade-book-table.test.tsx` → 4/4 passed
+- E2E (Storybook interaction, real Chromium via `vitest.storybook.mts`): 11/11 stories passed
+- Full suite: `bun vitest run` → 928/928 passed (187 files)
+- `bunx tsc --noEmit` → clean
+- `bun lint` → clean
+- `bun run build` (`next build`) → succeeded
+
+Commits: `a523418` (implementation), `3fd6d44` (a11y fix A11Y-001/002), `5555ca9` (QA coverage strengthening).
+
+Reviews: `fe-tech-lead-reviewer` → Approved. `fe-accessibility-auditor` → 2 findings, both fixed. `fe-qa-playwright` → Go.
