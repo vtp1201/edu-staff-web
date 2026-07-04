@@ -75,6 +75,22 @@ Confirmed facts (verify before citing if stale):
   dynamic values rendered via inline `style`). But `text-white` on a checkmark over such a swatch is
   STILL a raw-color smell — prefer `text-edu-success-foreground` (==#fff) or document in the ADR.
   Don't hard-block the dynamic swatch values themselves when ADR-covered.
+- **`role="status"` is shared by skeleton AND canonical empty-state** (confirmed US-E17.5 grades):
+  `GradeBookSkeleton` carries `role="status"` and so does the canonical `emptyStatePattern` empty-state
+  container. So a naive negative assertion `queryByRole("status")` in a LOADING/error story would
+  falsely find the skeleton's status. The ACCEPTED proof shape for empty-state suppression ACs is
+  positive per-branch stories in a mutually-exclusive render ternary (loading | !hasSelection | error |
+  !gradeBook | populated) + distinguishing the canonical container by class (e.g. `.not.toContain("dashed")`).
+  Don't demand a blanket `queryByRole("status")===null` — it's wrong given the skeleton overlap.
+- **Canonical `EmptyState` shared component NOW EXISTS** at `components/shared/empty-state/`
+  (created US-E17.4, 2026-07): presentation-only, no-CTA-by-default, callers pass already-translated
+  strings (no `useTranslations` inside). Props: `icon: LucideIcon`, `title`, optional `body`, optional
+  `cta`, `className` (merged via cn). Watch: the optional `body` renders `text-muted-foreground`
+  text-sm — ~2.75:1 on a white card = WCAG AA FAIL for any future caller that passes `body`; discipline
+  callers pass no body so it's latent, not triggered. Migrations still pending (inline copies remain in
+  grades, exam-list, exam-result, exam-bank/lesson-bank empty, staff-leave, roster, parent-discipline
+  ViolationsList, student-conduct lists) — pre-existing debt, migrate opportunistically, don't block a
+  scoped story for them.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

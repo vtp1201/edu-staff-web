@@ -15,4 +15,6 @@
 - [Server-action-as-prop step machine](pattern-server-action-as-prop-step-machine.md) — [id] route: RSC page imports action + passes as prop to client step-machine container (not client-imported)
 - [Storybook TanStack decorator](pattern-storybook-tanstack-decorator.md) — screen owning query hooks needs per-story QueryClientProvider; portal content via within(document.body); no rounded-card/button token
 - [Storybook baseline failures + dual dialog](gotcha-storybook-baseline-failures-and-dual-dialog.md) — git-stash to baseline before blaming a failing story; scope getByRole(dialog) by name when Sheet+Dialog coexist
+- [Responsive aria gate](pattern-responsive-aria-gate.md) — responsive aria-hidden needs JS matchMedia (CSS can't toggle attrs); keep motion guard CSS; node-env tests = pure helpers + Storybook
+- [Node-env component test](pattern-node-env-component-test.md) — no @testing-library/react; use renderToStaticMarkup string asserts for shared presentational components; canonical EmptyState at components/shared/empty-state
 - [Status union extension + nullable fields](pattern-status-union-extension.md) — snake_case union vs camelCase i18n key → explicit switch mapper not dynamic t(); nullable score/passed → re-check field after isResultFinal guard, never ?? 0
