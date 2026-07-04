@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import {
   StatusBadge,
   type StatusTone,
@@ -45,6 +46,7 @@ export function GradeBookTable({
   isPublished,
 }: GradeBookTableVM) {
   const t = useTranslations("gradeBook");
+  const captionId = useId();
   const columns = gradeBook.scheme.columns;
   const showRoster =
     role === "teacher" || role === "principal" || role === "admin";
@@ -89,10 +91,14 @@ export function GradeBookTable({
         className="overflow-x-auto rounded-[12px] border border-border bg-card shadow-card"
         style={{ WebkitOverflowScrolling: "touch" }}
         role="region"
-        aria-label={t("tableCaption")}
+        aria-labelledby={captionId}
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: US-E17.2 (A11Y-001, WCAG 2.1.1) — an overflow-x scroll region MUST be focusable so keyboard users can scroll to columns past the sticky first column; native arrow/PageDown scrolling needs the container in the tab order.
+        tabIndex={0}
       >
         <table className="w-full min-w-[640px] border-collapse text-sm">
-          <caption className="sr-only">{t("tableCaption")}</caption>
+          <caption id={captionId} className="sr-only">
+            {t("tableCaption")}
+          </caption>
           <thead>
             {/* Tier 1: group headers per assessment column type. */}
             <tr className="border-border border-b">

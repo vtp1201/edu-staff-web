@@ -82,13 +82,22 @@ function scrollWrapper(html: string): string {
 }
 
 describe("GradeBookTable — mobile scroll + sticky column a11y (US-E17.2)", () => {
-  it("FR-1/FR-4: scroll wrapper is a labelled region reusing gradeBook.tableCaption", () => {
-    const wrapper = scrollWrapper(renderTable());
+  it("FR-1/FR-4/A11Y-002: scroll region is named via aria-labelledby → the caption reusing gradeBook.tableCaption (no duplicate string)", () => {
+    const html = renderTable();
+    const wrapper = scrollWrapper(html);
     expect(wrapper).toContain('role="region"');
-    // aria-label reuses the existing key — no new i18n key added.
-    expect(wrapper).toContain(
-      `aria-label="${messages.gradeBook.tableCaption}"`,
+    // A11Y-001: focusable so keyboard users can arrow/PageDown-scroll it.
+    expect(wrapper).toContain('tabindex="0"');
+    // A11Y-002: no redundant aria-label — the name comes from the caption via id.
+    expect(wrapper).not.toContain("aria-label=");
+    const labelledBy = wrapper.match(/aria-labelledby="([^"]+)"/);
+    expect(labelledBy).not.toBeNull();
+    const captionId = labelledBy?.[1] as string;
+    // Resolve the id reference: the referenced <caption> text = tableCaption.
+    const caption = html.match(
+      new RegExp(`<caption[^>]*id="${captionId}"[^>]*>([^<]*)</caption>`),
     );
+    expect(caption?.[1]).toBe(messages.gradeBook.tableCaption);
     expect(messages.gradeBook.tableCaption.length).toBeGreaterThan(0);
   });
 

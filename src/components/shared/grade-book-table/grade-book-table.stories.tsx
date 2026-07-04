@@ -188,9 +188,20 @@ export const MobileScroll_375: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Scroll wrapper is an accessible region labelled from the existing key.
+    // Scroll wrapper is an accessible region named via aria-labelledby → the
+    // sr-only <caption> (A11Y-002: single source of the name, no duplicate).
     const region = canvas.getByRole("region", { name: "Bảng điểm học sinh" });
     expect(region).toBeInTheDocument();
+    expect(region).not.toHaveAttribute("aria-label");
+    const labelledBy = region.getAttribute("aria-labelledby");
+    expect(labelledBy).toBeTruthy();
+    const caption = document.getElementById(labelledBy as string);
+    expect(caption?.tagName.toLowerCase()).toBe("caption");
+    expect(caption?.textContent).toBe("Bảng điểm học sinh");
+    // A11Y-001: focusable so keyboard-only users can scroll the overflow region.
+    expect(region).toHaveAttribute("tabindex", "0");
+    region.focus();
+    expect(region).toHaveFocus();
     // iOS momentum scroll + horizontal overflow live on that same element.
     expect(region.style.getPropertyValue("-webkit-overflow-scrolling")).toBe(
       "touch",
