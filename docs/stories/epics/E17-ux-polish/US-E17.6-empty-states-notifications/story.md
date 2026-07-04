@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -82,4 +82,33 @@ No harness changes required. No new ADR, no new tokens, no new i18n keys.
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+Implementation deviated (improved) from the original "edit internals of the local
+`EmptyState`" plan in `## Design Notes`: the canonical shared `EmptyState`
+(`src/components/shared/empty-state/`, built in US-E17.4 after this spec.md was
+written) is used instead of a local component — one canonical home, no duplication
+(`component-organization.md`, decision `0026`). The shared component's optional
+body text had the same contrast bug this story targets (`text-muted-foreground` →
+`--edu-text-muted` = 2.95:1 FAIL); fixed there to `text-edu-text-secondary` (5.1:1
+PASS, existing token, no new ADR) — benefits every current/future consumer.
+`notifications-center.tsx` local `EmptyState` removed, migrated to the shared
+component (`BellOff`/`CheckCircle2` by `activeFilter`). Low-risk sibling migration:
+`src/features/discipline/presentation/student-conduct-screen/components/leave-history-list.tsx`
+also moved onto the shared component, normalizing its icon to canonical 64px (was
+36px, no test/story pinned the old size). `ViolationsList.tsx` (discipline, parent
+view) intentionally NOT migrated — its success-toned (`text-edu-success-text`)
+empty state conveys a distinct positive "no violations" meaning the shared
+component's fixed icon color can't represent; migrating would regress a deliberate
+prior a11y fix (`A11Y-E09.4-005`).
+
+Proof:
+- `bunx tsc --noEmit`: clean.
+- `bun vitest run` (affected dirs — `src/components/shared/empty-state`, `src/features/notification`, `src/features/discipline`): 118/118 pass, incl. red→green `empty-state.test.tsx` contrast assertion.
+- Storybook interaction (`notifications-center.stories.tsx` `EmptyAll`/`EmptyUnread`): pass — asserts `role="status"`, icon `aria-hidden`, body `text-edu-text-secondary` present and `text-muted-foreground`/`text-edu-text-muted` absent, no `<button>`.
+- `fe-tech-lead-reviewer`: **Approved**. Two non-blocking CONSIDER notes filed as follow-up, not required for this story: (1) a separate pre-existing WCAG 1.4.11 fail in `my-violations-list.tsx` (unrelated component, out of scope); (2) if a third success-toned empty state appears, consider an optional tone/`iconClassName` prop on the shared component via a future ADR.
+- `fe-accessibility-auditor`: PASS, no findings — contrast (measured against `tokens.css`/`globals.css`), `role="status"` suppression across loading/error/populated (mutually-exclusive guards verified), `aria-hidden`, no heading-hierarchy disruption, no CTA leakage, motion-safe, i18n unchanged (empty diff on `vi.json`/`en.json`) all verified against the diff.
+
+Design review: pass
+- design-system: conform (token/typography/component OK — matches `emptyStatePattern` in `design-spec.jsonc`; reuses the canonical shared component, no new pattern introduced)
+- a11y: WCAG AA OK (body 5.1:1, icon 5.48:1); keyboard N/A (no interactive elements in either empty state); reduced-motion OK (no animation)
+- impeccable audit: 0 finding — this is a token-class correction + de-duplication onto an already-audited canonical pattern (no new visual surface introduced)
+- states: loading/error/populated unaffected (verified via control-flow read + a11y audit); empty state correct per tab; responsive OK (`max-w-xs` body, no fixed widths)

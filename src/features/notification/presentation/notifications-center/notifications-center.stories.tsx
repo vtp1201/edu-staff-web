@@ -61,10 +61,14 @@ export const Loading: Story = {
     await expect(
       canvas.getByRole("heading", { name: /Trung tâm thông báo/i }),
     ).toBeInTheDocument();
-    // Skeleton loading indicator present
+    // Skeleton loading indicator present (this itself is role="status" for
+    // its own aria-busy announcement — distinct from the empty state).
     await expect(
       canvas.getByLabelText(/Đang tải thông báo/i),
     ).toBeInTheDocument();
+    // Empty-state copy must NOT render while loading (AC-01.10/AC-02.8/AC-04.1).
+    await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
+    await expect(canvas.queryByText("Tất cả đã đọc")).toBeNull();
   },
 };
 
@@ -84,6 +88,10 @@ export const Populated_AllTab: Story = {
     await expect(
       canvas.getByLabelText(/thông báo chưa đọc/i),
     ).toBeInTheDocument();
+    // Empty-state copy must NOT render when the list is populated
+    // (AC-01.12/AC-02.10).
+    await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
+    await expect(canvas.queryByText("Tất cả đã đọc")).toBeNull();
   },
 };
 
@@ -181,6 +189,12 @@ export const AllLoaded: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Đã hiển thị tất cả")).toBeInTheDocument();
+    // Empty-state copy must NOT render when the list is populated
+    // (AC-01.12/AC-02.10) — kept here (rather than only Populated_AllTab)
+    // since that story has a pre-existing unrelated failure on the unread
+    // badge label assertion (verified pre-existing on main).
+    await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
+    await expect(canvas.queryByText("Tất cả đã đọc")).toBeNull();
   },
 };
 
@@ -289,5 +303,8 @@ export const ErrorState: Story = {
     await expect(
       canvas.getByText(/Không thể tải thông báo/i),
     ).toBeInTheDocument();
+    // Empty-state copy must NOT render on fetch failure (AC-01.11/AC-02.9/AC-05.1).
+    await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
+    await expect(canvas.queryByText("Tất cả đã đọc")).toBeNull();
   },
 };
