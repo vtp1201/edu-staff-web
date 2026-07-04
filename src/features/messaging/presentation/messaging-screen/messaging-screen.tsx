@@ -22,6 +22,7 @@ import {
   chatPaneClass,
   listPaneClass,
   paneAriaHidden,
+  paneInert,
 } from "./pane-visibility";
 import { useIsMobile } from "./use-is-mobile";
 
@@ -297,11 +298,12 @@ export function MessagingScreen({
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="relative flex h-[calc(100vh-64px)] overflow-hidden">
       <div
         ref={listPaneRef}
         className={listPaneClass(mobilePane)}
         aria-hidden={paneAriaHidden(isMobile, mobilePane, "list")}
+        inert={paneInert(isMobile, mobilePane, "list")}
       >
         <ConversationList
           conversations={conversations}
@@ -317,6 +319,7 @@ export function MessagingScreen({
       <div
         className={chatPaneClass(mobilePane)}
         aria-hidden={paneAriaHidden(isMobile, mobilePane, "chat")}
+        inert={paneInert(isMobile, mobilePane, "chat")}
       >
         {activeConversation ? (
           <ChatWindow

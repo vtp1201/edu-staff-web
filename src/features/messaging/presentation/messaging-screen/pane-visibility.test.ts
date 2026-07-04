@@ -4,6 +4,7 @@ import {
   chatPaneClass,
   listPaneClass,
   paneAriaHidden,
+  paneInert,
 } from "./pane-visibility";
 
 /**
@@ -28,15 +29,25 @@ describe("listPaneClass", () => {
   it("slides out to the left when the chat pane is active (mobile)", () => {
     const cls = listPaneClass("chat");
     expect(cls).toContain("-translate-x-full");
-    // desktop reset — never translated at >= md
+    // desktop reset — never translated at >= md, and never display:none
+    // (display:none would suppress the transform transition)
     expect(cls).toContain("md:translate-x-0");
-    expect(cls).toContain("md:flex");
+    expect(cls).toContain("md:static");
+    expect(cls).not.toContain("hidden ");
   });
 
   it("sits at translate-x-0 when the list is the active pane", () => {
     const cls = listPaneClass("list");
     expect(cls).toContain("translate-x-0");
     expect(cls).not.toContain("-translate-x-full");
+  });
+
+  it("is always absolutely stacked on mobile so the slide can animate", () => {
+    for (const pane of ["list", "chat"] as const) {
+      const cls = listPaneClass(pane);
+      expect(cls).toContain("absolute inset-0");
+      expect(cls).toContain("flex");
+    }
   });
 });
 
@@ -55,7 +66,7 @@ describe("chatPaneClass", () => {
     const cls = chatPaneClass("list");
     expect(cls).toContain("translate-x-full");
     expect(cls).toContain("md:translate-x-0");
-    expect(cls).toContain("md:flex");
+    expect(cls).toContain("md:static");
   });
 
   it("sits at translate-x-0 when the chat is the active pane", () => {
@@ -83,6 +94,23 @@ describe("paneAriaHidden", () => {
     expect(paneAriaHidden(false, "chat", "list")).toBeUndefined();
     expect(paneAriaHidden(false, "list", "list")).toBeUndefined();
     expect(paneAriaHidden(false, "chat", "chat")).toBeUndefined();
+  });
+});
+
+describe("paneInert", () => {
+  it("marks the off-screen pane inert only in mobile single-pane mode (AC-04/AC-13)", () => {
+    expect(paneInert(true, "list", "chat")).toBe(true);
+    expect(paneInert(true, "chat", "list")).toBe(true);
+  });
+
+  it("never marks the active pane inert", () => {
+    expect(paneInert(true, "list", "list")).toBeUndefined();
+    expect(paneInert(true, "chat", "chat")).toBeUndefined();
+  });
+
+  it("never sets inert at desktop regardless of mobilePane (AC-19)", () => {
+    expect(paneInert(false, "list", "chat")).toBeUndefined();
+    expect(paneInert(false, "chat", "list")).toBeUndefined();
   });
 });
 

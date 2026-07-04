@@ -401,6 +401,10 @@ export const MobileSinglePane_Toggle: Story = {
       expect(chatPane).toHaveAttribute("aria-hidden", "true"),
     );
     expect(listPane).not.toHaveAttribute("aria-hidden");
+    // AC-04: off-screen chat pane is `inert` — its focusable children are out of
+    // the tab order (both panes stay in the DOM now that the slide animates).
+    expect(chatPane).toHaveAttribute("inert");
+    expect(listPane).not.toHaveAttribute("inert");
 
     // AC-05: tapping a conversation activates the chat pane.
     const row = (
@@ -412,6 +416,9 @@ export const MobileSinglePane_Toggle: Story = {
       expect(listPane).toHaveAttribute("aria-hidden", "true"),
     );
     expect(chatPane).not.toHaveAttribute("aria-hidden");
+    // AC-13: after switching, the off-screen list pane is now inert instead.
+    expect(listPane).toHaveAttribute("inert");
+    expect(chatPane).not.toHaveAttribute("inert");
 
     // AC-11 / AC-12: back button present at 375 px with the reused i18n label +
     // a >= 44x44 hit area.
