@@ -2,6 +2,7 @@
 
 import { MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { EmptyState } from "@/components/shared/empty-state";
 
 export interface EmptyMessagingStateProps {
   onStart?: () => void;
@@ -10,23 +11,14 @@ export interface EmptyMessagingStateProps {
 export function EmptyMessagingState({ onStart }: EmptyMessagingStateProps) {
   const t = useTranslations("messaging.empty");
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-muted/30 px-6 text-center">
-      <MessageSquare
-        className="size-12 text-border"
-        strokeWidth={1.2}
-        aria-hidden="true"
-      />
-      <p className="font-bold text-base text-foreground">{t("title")}</p>
-      <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
-      {onStart && (
-        <button
-          type="button"
-          onClick={onStart}
-          className="mt-1 rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground text-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {t("cta")}
-        </button>
-      )}
-    </div>
+    <EmptyState
+      // The chat pane is a flex row container; grow to fill it and center the
+      // column vertically (the shared EmptyState only centers horizontally).
+      className="flex-1 justify-center"
+      icon={MessageSquare}
+      title={t("title")}
+      body={t("subtitle")}
+      cta={onStart ? { label: t("cta"), onClick: onStart } : undefined}
+    />
   );
 }
