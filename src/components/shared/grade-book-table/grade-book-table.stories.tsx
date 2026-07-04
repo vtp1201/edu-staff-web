@@ -167,3 +167,44 @@ export const EmptyState: Story = {
     expect(canvas.getByText("Chưa có điểm")).toBeInTheDocument();
   },
 };
+
+/**
+ * US-E17.2 — mobile scroll at 375px. The wrapper is a labelled scroll region;
+ * the first column (student name) stays sticky while the score columns scroll.
+ */
+export const MobileScroll_375: Story = {
+  args: { gradeBook: book(ROWS), role: "student", isPublished: true },
+  parameters: {
+    viewport: {
+      viewports: {
+        mobile375: {
+          name: "Mobile 375",
+          styles: { width: "375px", height: "812px" },
+          type: "mobile",
+        },
+      },
+      defaultViewport: "mobile375",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Scroll wrapper is an accessible region labelled from the existing key.
+    const region = canvas.getByRole("region", { name: "Bảng điểm học sinh" });
+    expect(region).toBeInTheDocument();
+    // iOS momentum scroll + horizontal overflow live on that same element.
+    expect(region.style.getPropertyValue("-webkit-overflow-scrolling")).toBe(
+      "touch",
+    );
+    expect(region.className).toContain("overflow-x-auto");
+    // Table enforces its 640px readable minimum so columns are not crushed.
+    const table = canvas.getByRole("table");
+    expect(table.className).toContain("min-w-[640px]");
+    // Sticky first column (student name) remains present.
+    const rowHeader = canvas.getByRole("rowheader", {
+      name: /Nguyễn Văn An/,
+    });
+    expect(rowHeader).toBeInTheDocument();
+    expect(rowHeader.className).toContain("sticky");
+    expect(rowHeader.className).toContain("border-r");
+  },
+};
