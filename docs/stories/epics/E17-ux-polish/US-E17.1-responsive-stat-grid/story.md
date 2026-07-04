@@ -84,4 +84,16 @@ No harness changes required. This story introduces no new endpoints, tokens, or 
 
 ## Evidence
 
-Add Storybook screenshot links and Playwright reports after validation.
+Design review: pass
+- design-system: conform (no new tokens; `gap-4` normalized on grids that had `gap-3`/`gap-3.5`; StatCard untouched; per-feature grid containers correctly left in place, not duplicated — component-organization OK)
+- a11y: WCAG AA OK (fe-accessibility-auditor, no findings) — DOM order unchanged across 320/768/1280px, no touch-target gap (StatCard has no interactive children on any of the 8 screens), no contrast/motion impact, no grid-flow/order scrambling
+- impeccable audit: 0 findings — pure `grid-template-columns` utility change, no new visual/hierarchy decision in scope for critique
+- states: responsive 320px/375px/768px/1280px covered by 39 passing unit tests (`responsive-stat-grid.test.ts` ×6) asserting exact class presence/absence per breakpoint target, plus Storybook `Viewport375` stories on attendance-screen, discipline-screen, exam-result, teacher-dashboard-home. `principal-dashboard.tsx`/`student-dashboard.tsx` are RSC with no `.stories.tsx` in this diff (flagged non-blocking — CSS-only change, covered by unit test); no loading/empty/error UI was touched by this story (layout-only)
+
+Proof:
+- `bunx tsc --noEmit` → exit 0
+- `bun vitest run` → 195 files, 989 tests, all pass (targeted: 39/39 on the 6 new test files)
+- `fe-tech-lead-reviewer` verdict: APPROVED
+- `fe-accessibility-auditor` verdict: PASS, no findings
+- Files touched: `attendance-summary-card.tsx`, `discipline-screen.tsx`, `conduct-tab.tsx`, `violations-tab.tsx`, `teacher-dashboard-home.tsx`, `principal-dashboard.tsx`, `student-dashboard.tsx`, plus `exam-result.tsx` (found beyond the original 7-file list via OQ-003 grep, same fix applied)
+- Touch-target audit (FR-4/AC-16): N/A confirmed — no interactive elements inside any of the 8 stat-card grids
