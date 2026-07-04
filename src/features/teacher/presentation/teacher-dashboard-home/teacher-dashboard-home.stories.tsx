@@ -204,6 +204,34 @@ export const PendingGradesDetail: Story = {
   },
 };
 
+// US-E17.1 AC-08/AC-13/AC-14: at 375px the stat grid uses the auto-fit
+// minmax(200px) column class (1 column on mobile) with a 16px gap-4 gap.
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+export const Viewport375: Story = {
+  args: { vm: baseVm },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector<HTMLElement>(
+      '[class*="auto-fit"]',
+    );
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain(
+      "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
+    );
+    await expect(grid?.className).toContain("gap-4");
+  },
+};
+
 // AC-13, AC-14: notifications with icon boxes, content text, timestamps
 export const NotificationsDetail: Story = {
   args: { vm: baseVm },

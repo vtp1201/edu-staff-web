@@ -99,3 +99,31 @@ export const QuestionReview: Story = {
     }
   },
 };
+
+// US-E17.1 (OQ-003): at 375px the MCQ-stats grid uses the auto-fit
+// minmax(200px) column class (1 column on mobile) with a 16px gap-4 gap.
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+export const Viewport375: Story = {
+  args: { result: passResult },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector<HTMLElement>(
+      '[class*="auto-fit"]',
+    );
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain(
+      "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
+    );
+    await expect(grid?.className).toContain("gap-4");
+  },
+};

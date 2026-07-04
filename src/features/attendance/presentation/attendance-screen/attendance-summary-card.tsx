@@ -14,7 +14,7 @@ export function AttendanceSummaryCard({ records }: Props) {
   const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
       <StatCard variant="compact" label={t("total")} value={String(total)} />
       <StatCard
         variant="compact"

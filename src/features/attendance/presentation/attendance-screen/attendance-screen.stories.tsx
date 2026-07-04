@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
+import { expect } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
 import type { ClassPeriod } from "../../domain/entities/class-period.entity";
@@ -82,5 +83,39 @@ export const Empty: Story = {
     history: [],
     filters: {},
     saveAction,
+  },
+};
+
+// US-E17.1 AC-05: at 375px the attendance-summary stat grid uses the auto-fit
+// minmax(200px) column class (1 column on mobile) with a 16px gap-4 gap.
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+export const Viewport375: Story = {
+  args: {
+    classes,
+    roster: { period, records },
+    history: [],
+    filters: { classId: "c-1", date: "2026-06-07", period: "2" },
+    saveAction,
+  },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector<HTMLElement>(
+      '[class*="auto-fit"]',
+    );
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain(
+      "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
+    );
+    await expect(grid?.className).toContain("gap-4");
   },
 };

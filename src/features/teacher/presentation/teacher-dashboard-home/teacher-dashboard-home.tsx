@@ -52,7 +52,7 @@ export function TeacherDashboardHomeClient({ vm }: { vm: TeacherDashboardVM }) {
     <div className="space-y-5">
       <h1 className="sr-only">{t("pageTitle")}</h1>
       {/* ── Stats grid ─────────────────────────────────── */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <StatCard
           label={t("stats.totalStudents")}
           value={vm.totalStudents === null ? "—" : String(vm.totalStudents)}
