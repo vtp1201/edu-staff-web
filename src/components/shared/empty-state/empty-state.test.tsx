@@ -25,7 +25,9 @@ describe("EmptyState", () => {
     );
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain("size-16");
-    expect(html).toContain("text-edu-text-muted");
+    // icon uses text-edu-text-secondary (5.48:1 on white), not
+    // text-edu-text-muted (2.95:1, fails WCAG 1.4.11) — A11Y-001 / DR-GATE-002.
+    expect(html).toContain("text-edu-text-secondary");
   });
 
   it("does NOT render a <button> when no cta is passed (no-CTA variant)", () => {

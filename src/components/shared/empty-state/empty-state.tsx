@@ -4,9 +4,17 @@ import { cn } from "@/shared/utils";
 
 /**
  * Canonical empty state — the `emptyStatePattern` from design-spec.jsonc:
- * centered column, 64px muted icon (aria-hidden), 16px/700 title as a `<p>`
+ * centered column, 64px icon (aria-hidden), 16px/700 title as a `<p>`
  * (no heading-hierarchy disruption), optional body + CTA. `role="status"` so
  * screen readers announce the empty state.
+ *
+ * A11y note: the icon uses `text-edu-text-secondary` (#5A6A85 = 5.48:1 on the
+ * white card) — NOT `text-edu-text-muted`, despite design-spec.jsonc's
+ * `emptyStatePattern.icon.color: var(--edu-text-muted)` literally naming that
+ * token. `text-edu-text-muted` (#8898A9) is only 2.95:1 on white, below the
+ * repo's ≥3:1 icon-contrast floor (WCAG 1.4.11, accessibility.md; DR-GATE-002
+ * precedent). This is a corrected accessible implementation of the canonical
+ * pattern, not a design deviation.
  *
  * This component is presentation-only: callers pass already-translated strings
  * (it does NOT call `useTranslations`), so it stays framework-neutral and
@@ -43,7 +51,7 @@ export function EmptyState({
         className,
       )}
     >
-      <Icon className="size-16 text-edu-text-muted" aria-hidden="true" />
+      <Icon className="size-16 text-edu-text-secondary" aria-hidden="true" />
       <p className="mt-4 font-bold text-base text-foreground">{title}</p>
       {body && (
         <p className="mt-2 max-w-xs text-muted-foreground text-sm">{body}</p>

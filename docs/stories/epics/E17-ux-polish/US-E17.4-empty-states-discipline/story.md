@@ -35,9 +35,11 @@ All four locations must implement a clean state machine: exactly one of {loading
 
 ## Acceptance Criteria
 
-- The violations tab empty state renders `role="status"` container + `ShieldOff` icon (`aria-hidden="true"`, 64px, `text-edu-text-muted`) + `<p>` title from `discipline.violations.empty`; no `<button>`; no element with `text-edu-success` inside the container.
-- The conduct tab empty state renders `role="status"` container + `ClipboardList` icon (`aria-hidden="true"`, 64px, `text-edu-text-muted`) + `<p>` title from `discipline.conduct.empty`; no `<button>`.
-- The teacher-side leave-requests tab empty state renders `role="status"` container + `CalendarOff` icon (`aria-hidden="true"`, 64px, `text-edu-text-muted`) + `<p>` title from `discipline.leave.empty`; no `<button>`.
+- The violations tab empty state renders `role="status"` container + `ShieldOff` icon (`aria-hidden="true"`, 64px, `text-edu-text-secondary`) + `<p>` title from `discipline.violations.empty`; no `<button>`; no element with `text-edu-success` inside the container.
+- The conduct tab empty state renders `role="status"` container + `ClipboardList` icon (`aria-hidden="true"`, 64px, `text-edu-text-secondary`) + `<p>` title from `discipline.conduct.empty`; no `<button>`.
+- The teacher-side leave-requests tab empty state renders `role="status"` container + `CalendarOff` icon (`aria-hidden="true"`, 64px, `text-edu-text-secondary`) + `<p>` title from `discipline.leave.empty`; no `<button>`.
+
+> Note (A11Y-001 fix): icon color corrected from `text-edu-text-muted` (2.95:1 on white — fails the repo's ≥3:1 icon-contrast floor, WCAG 1.4.11) to `text-edu-text-secondary` (5.48:1) — see `src/components/shared/empty-state/empty-state.tsx` JSDoc. `docs/product/design-spec.jsonc`'s `emptyStatePattern.icon.color` still literally reads `var(--edu-text-muted)`; this story's implementation deviates from that generic pattern definition intentionally for accessibility and is the accepted precedent (DR-GATE-002).
 - The parent-discipline leave-requests empty state renders identically to the teacher-side; resets to loading when parent switches child.
 - At any point in time, exactly one of {loading spinner, canonical empty state, populated list/table, error state} is visible for each tab location.
 - No `<h2>` or `<h3>` is present inside any empty state container.
