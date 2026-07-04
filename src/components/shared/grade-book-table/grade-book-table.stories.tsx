@@ -202,14 +202,35 @@ export const MobileScroll_375: Story = {
     expect(region).toHaveAttribute("tabindex", "0");
     region.focus();
     expect(region).toHaveFocus();
-    // iOS momentum scroll + horizontal overflow live on that same element.
-    expect(region.style.getPropertyValue("-webkit-overflow-scrolling")).toBe(
-      "touch",
-    );
+    // AC-10 (iOS momentum scroll): NOT asserted here. Chromium — the only
+    // engine `@vitest/browser-playwright` drives — does not recognize the
+    // non-standard `-webkit-overflow-scrolling` property, so the browser
+    // silently drops the declaration from the live CSSOM (confirmed:
+    // `style.getPropertyValue`, `style.cssText`, and even
+    // `getAttribute("style")` all come back empty for this property once React
+    // sets it via the DOM style API — there is no way to observe it from a
+    // real Chromium DOM). This is expected graceful degradation on non-Safari
+    // engines, not a component defect. AC-10 proof instead lives in
+    // `grade-book-table.test.tsx` (`renderToStaticMarkup`), which asserts the
+    // literal server-rendered markup contains
+    // `-webkit-overflow-scrolling:touch` — the authoritative check that the
+    // JSX actually emits the declaration Safari will honor.
     expect(region.className).toContain("overflow-x-auto");
-    // Table enforces its 640px readable minimum so columns are not crushed.
+    // AC-01: computed overflow-x is actually `auto` on the region.
+    expect(getComputedStyle(region).overflowX).toBe("auto");
+    // AC-02: no internal horizontal padding — sticky column starts flush left.
+    const regionStyle = getComputedStyle(region);
+    expect(regionStyle.paddingLeft).toBe("0px");
+    expect(regionStyle.paddingRight).toBe("0px");
+    // Table enforces its 640px readable minimum so columns are not crushed
+    // (AC-01/AC-11) — verified via computed layout, not just the className.
     const table = canvas.getByRole("table");
     expect(table.className).toContain("min-w-[640px]");
+    expect(table.getBoundingClientRect().width).toBeGreaterThanOrEqual(640);
+    // AC-01/AC-12: no page-level horizontal overflow — only the region scrolls.
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
     // Sticky first column (student name) remains present.
     const rowHeader = canvas.getByRole("rowheader", {
       name: /Nguyễn Văn An/,
@@ -217,5 +238,138 @@ export const MobileScroll_375: Story = {
     expect(rowHeader).toBeInTheDocument();
     expect(rowHeader.className).toContain("sticky");
     expect(rowHeader.className).toContain("border-r");
+    // AC-07: sticky cell computed position/left/z-index/background.
+    const rowHeaderStyle = getComputedStyle(rowHeader);
+    expect(rowHeaderStyle.position).toBe("sticky");
+    expect(rowHeaderStyle.left).toBe("0px");
+    expect(rowHeaderStyle.zIndex).toBe("1");
+    // bg-card is opaque (not "rgba(0, 0, 0, 0)"/"transparent") — a real fill,
+    // not the wrapper's card background showing through by accident.
+    expect(rowHeaderStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+    expect(rowHeaderStyle.backgroundColor).not.toBe("transparent");
+    // AC-06: sticky header stays pinned to the left edge of the region after
+    // scrolling the region 100px to the right.
+    const headerCell = canvas.getByRole("columnheader", { name: "Học sinh" });
+    const beforeScroll = headerCell.getBoundingClientRect().left;
+    region.scrollLeft = 100;
+    const afterScroll = headerCell.getBoundingClientRect().left;
+    expect(afterScroll).toBe(beforeScroll);
+    expect(getComputedStyle(headerCell).position).toBe("sticky");
+  },
+};
+
+/**
+ * US-E17.2 / AC-12 — at 320px (the narrowest supported viewport) the table
+ * still enforces its 640px minimum and the page itself never gains
+ * horizontal overflow; only the scroll region does.
+ */
+export const MobileScroll_320: Story = {
+  args: { gradeBook: book(ROWS), role: "student", isPublished: true },
+  parameters: {
+    viewport: {
+      viewports: {
+        mobile320: {
+          name: "Mobile 320",
+          styles: { width: "320px", height: "700px" },
+          type: "mobile",
+        },
+      },
+      defaultViewport: "mobile320",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = canvas.getByRole("table");
+    expect(table.getBoundingClientRect().width).toBeGreaterThanOrEqual(640);
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
+  },
+};
+
+/**
+ * US-E17.2 / AC-13 — at desktop (1280px) the table expands to fill its
+ * container; `min-w-[640px]` is a floor, not a ceiling.
+ */
+export const DesktopView_1280: Story = {
+  args: { gradeBook: book(ROWS), role: "teacher", isPublished: true },
+  parameters: {
+    viewport: {
+      viewports: {
+        desktop1280: {
+          name: "Desktop 1280",
+          styles: { width: "1280px", height: "800px" },
+          type: "desktop",
+        },
+      },
+      defaultViewport: "desktop1280",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = canvas.getByRole("table");
+    expect(table.getBoundingClientRect().width).toBeGreaterThan(640);
+  },
+};
+
+/**
+ * US-E17.2 / AC-16 — Parent role gets the identical mobile scroll behavior
+ * as Student (AC-15); the scroll wrapper structure is role-agnostic.
+ */
+export const ParentView_Mobile375: Story = {
+  args: { gradeBook: book([ROWS[1]]), role: "parent", isPublished: true },
+  parameters: {
+    viewport: {
+      viewports: {
+        mobile375: {
+          name: "Mobile 375",
+          styles: { width: "375px", height: "812px" },
+          type: "mobile",
+        },
+      },
+      defaultViewport: "mobile375",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvas.getByRole("region", { name: "Bảng điểm học sinh" });
+    expect(region.className).toContain("overflow-x-auto");
+    const table = canvas.getByRole("table");
+    expect(table.getBoundingClientRect().width).toBeGreaterThanOrEqual(640);
+    expect(canvas.getByText("Trần Thị Bình")).toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E17.2 / AC-17 — Teacher on tablet (768px): scroll wrapper present, and
+ * because the table (640px min) is narrower than the viewport here it does
+ * not need to scroll — the sticky column classes are still applied
+ * (harmless no-op) and stay visible either way.
+ */
+export const TeacherView_Tablet768: Story = {
+  args: { gradeBook: book(ROWS), role: "teacher", isPublished: true },
+  parameters: {
+    viewport: {
+      viewports: {
+        tablet768: {
+          name: "Tablet 768",
+          styles: { width: "768px", height: "1024px" },
+          type: "tablet",
+        },
+      },
+      defaultViewport: "tablet768",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvas.getByRole("region", { name: "Bảng điểm học sinh" });
+    expect(region.className).toContain("overflow-x-auto");
+    const rowHeader = canvas.getByRole("rowheader", {
+      name: /Nguyễn Văn An/,
+    });
+    expect(getComputedStyle(rowHeader).position).toBe("sticky");
+    expect(document.documentElement.scrollWidth).toBe(
+      document.documentElement.clientWidth,
+    );
   },
 };
