@@ -8,7 +8,6 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
-import { cn } from "@/shared/utils";
 import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
@@ -19,6 +18,13 @@ import type {
   MessagingScreenActions,
   MessagingScreenVM,
 } from "./messaging-screen.i-vm";
+import {
+  chatPaneClass,
+  listPaneClass,
+  paneAriaHidden,
+  paneInert,
+} from "./pane-visibility";
+import { useIsMobile } from "./use-is-mobile";
 
 export interface MessagingScreenProps
   extends MessagingScreenVM,
@@ -49,6 +55,7 @@ export function MessagingScreen({
   updateGroupAction,
 }: MessagingScreenProps) {
   const t = useTranslations("messaging");
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams?.get("conversation") ?? null;
@@ -291,13 +298,12 @@ export function MessagingScreen({
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="relative flex h-[calc(100vh-64px)] overflow-hidden">
       <div
         ref={listPaneRef}
-        className={cn(
-          "w-full md:flex md:w-[300px]",
-          mobilePane === "chat" ? "hidden md:flex" : "flex",
-        )}
+        className={listPaneClass(mobilePane)}
+        aria-hidden={paneAriaHidden(isMobile, mobilePane, "list")}
+        inert={paneInert(isMobile, mobilePane, "list")}
       >
         <ConversationList
           conversations={conversations}
@@ -311,10 +317,9 @@ export function MessagingScreen({
       </div>
 
       <div
-        className={cn(
-          "w-full flex-1 md:flex",
-          mobilePane === "list" ? "hidden md:flex" : "flex",
-        )}
+        className={chatPaneClass(mobilePane)}
+        aria-hidden={paneAriaHidden(isMobile, mobilePane, "chat")}
+        inert={paneInert(isMobile, mobilePane, "chat")}
       >
         {activeConversation ? (
           <ChatWindow

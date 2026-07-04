@@ -23,6 +23,7 @@ import {
   type GroupInfoPanelActions,
 } from "../group-info-panel";
 import { MessageContextMenu } from "../message-context-menu";
+import { BACK_BUTTON_CLASS } from "../messaging-screen/pane-visibility";
 import { TypingIndicator } from "../typing-indicator/typing-indicator";
 import { scheduleHighlightClear } from "./highlight-timer";
 
@@ -214,7 +215,7 @@ export function ChatWindow({
             type="button"
             onClick={onBack}
             aria-label={t("chat.backToList")}
-            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            className={BACK_BUTTON_CLASS}
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </button>

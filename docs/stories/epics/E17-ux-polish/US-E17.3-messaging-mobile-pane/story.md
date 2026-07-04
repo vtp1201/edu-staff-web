@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -82,4 +82,18 @@ Confirm `messaging.chat.backToList` key exists in `vi.json` / `en.json` before c
 
 ## Evidence
 
-Add Storybook screenshot links and Playwright reports after validation.
+Design review: pass
+- design-system: conform — zero new tokens/colors; pure layout/transform/aria change; existing pane/back-button patterns reused, not forked (`fe-tech-lead-reviewer`: Approved).
+- a11y: WCAG AA OK (`fe-accessibility-auditor`: PASS, 0 blocker/critical). Keyboard/focus OK (`aria-hidden` + native `inert` dual-gate on the off-screen pane); reduced-motion OK (`motion-reduce:transition-none`, CSS-only per AC-17); touch targets OK (back button `min-h-[44px] min-w-[44px]`, rows already `min-h-[44px]`). 2 Minor findings: A11Y-001 (pre-hydration `matchMedia` gap) fixed in `a6e2d14`; A11Y-002 (Tab-walk hardening, optional) left open, non-blocking.
+- impeccable audit: 0 finding requiring design-system deviation — scope is pure motion/aria on an already-approved layout; no visual redesign surface.
+- states: loading/empty/error/success unaffected on desktop; mobile empty/error states proven to correctly hide the chat pane (AC-03/AC-22, new Storybook stories). Responsive 320px OK (AC-23, `scrollWidth === clientWidth` across loaded/empty/error, new Storybook stories). Desktop 1280px OK (AC-19/20/21, new Storybook stories) — unchanged from pre-story.
+
+QA (`fe-qa-playwright`): Go — 19/23 spec.md AC proven by automated test (82.6%); 100% of `story.md`'s critical AC subset (AC-01,04,05,09,10,11,12,16,17,19,23) proven green in the real Chromium Storybook browser runner (`vitest.storybook.mts`). 4 acknowledged non-blocking gaps (AC-02/06/07/08) are pre-existing scope-boundary items in the base messaging feature, not regressions from this story. One out-of-scope defect found and logged for follow-up: DEF-01 — `ChatWindow` has no chat-fetch-error UI (AC-08 in spec.md, not in this story's critical list); recommend a separate backlog item against the base messaging feature.
+
+Proof:
+- Unit: `bun vitest run` — 942/942 passed (full suite), including 69/69 in `src/features/messaging` (`pane-visibility.test.ts` covers `listPaneClass`/`chatPaneClass`/`paneAriaHidden`/`paneInert`/`BACK_BUTTON_CLASS`).
+- E2E/Story: `bun vitest run --config vitest.storybook.mts src/features/messaging/presentation/messaging-screen/messaging-screen.stories.tsx` — 21/23 passed (the 2 failures, `Create Group Optimistic Prepend` / `Reply Strip Active`, are pre-existing flakes on `main`, unrelated to this story — confirmed by re-running against `main`'s copy of the file).
+- `bunx tsc --noEmit` — clean.
+- `bun lint:fix` (Biome) — clean on all files touched by this story.
+- i18n: `git diff origin/main..HEAD -- src/bootstrap/i18n/messages/` — empty (zero new keys; reuses `messaging.chat.backToList`).
+- `bun build` — run as the final pre-merge gate (see harness proof below).
