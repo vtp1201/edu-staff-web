@@ -355,6 +355,125 @@ export const MobileView: Story = {
 };
 
 // ---------------------------------------------------------------------------
+// US-E17.3 — mobile single-pane slide + a11y
+// ---------------------------------------------------------------------------
+
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+/** The two panes are the first two element children of the `overflow-hidden`
+ * flex wrapper (the modals render as Radix portals — nothing inline when closed). */
+function getPanes(canvasElement: HTMLElement): {
+  listPane: HTMLElement;
+  chatPane: HTMLElement;
+} {
+  const wrapper = canvasElement.querySelector<HTMLElement>(".overflow-hidden");
+  if (!wrapper) throw new Error("pane wrapper not found");
+  const [listPane, chatPane] = Array.from(wrapper.children) as HTMLElement[];
+  return { listPane, chatPane };
+}
+
+/**
+ * AC-01 / AC-05 / AC-10 — mobile single-pane toggle at 375 px.
+ * Mount → list visible, chat pane `aria-hidden="true"` → tap a conversation →
+ * chat pane visible + list pane `aria-hidden="true"` + back button (>=44px)
+ * present → tap back → list visible again, chat pane `aria-hidden="true"`.
+ *
+ * NOTE: `aria-hidden` is gated by `useIsMobile()` (matchMedia < 768 px), so this
+ * story MUST run at the 375 px viewport for the assertions to hold.
+ */
+export const MobileSinglePane_Toggle: Story = {
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    // AC-01: on mount the list is the active pane; the chat pane is hidden from AT.
+    await waitFor(() =>
+      expect(chatPane).toHaveAttribute("aria-hidden", "true"),
+    );
+    expect(listPane).not.toHaveAttribute("aria-hidden");
+
+    // AC-05: tapping a conversation activates the chat pane.
+    const row = (
+      await canvas.findAllByRole("button", { name: /mở cuộc trò chuyện/i })
+    )[0];
+    await userEvent.click(row);
+
+    await waitFor(() =>
+      expect(listPane).toHaveAttribute("aria-hidden", "true"),
+    );
+    expect(chatPane).not.toHaveAttribute("aria-hidden");
+
+    // AC-11 / AC-12: back button present at 375 px with the reused i18n label +
+    // a >= 44x44 hit area.
+    const back = await canvas.findByRole("button", {
+      name: /quay lại danh sách/i,
+    });
+    expect(back).toHaveClass("min-h-[44px]", "min-w-[44px]");
+
+    // AC-10: tapping back returns to the list pane.
+    await userEvent.click(back);
+    await waitFor(() =>
+      expect(chatPane).toHaveAttribute("aria-hidden", "true"),
+    );
+    expect(listPane).not.toHaveAttribute("aria-hidden");
+  },
+};
+
+/**
+ * AC-16 / AC-17 / AC-18 — reduced-motion functional correctness.
+ *
+ * The slide animation's reduced-motion guard is pure CSS: both pane wrappers
+ * carry `motion-reduce:transition-none` (compiled to
+ * `@media (prefers-reduced-motion: reduce) { transition: none }`) — asserted in
+ * `pane-visibility.test.ts`. There is no JS `matchMedia` guard for the animation
+ * (AC-17). Storybook has no built-in reduced-motion emulation in this repo, so
+ * this story proves the *functional* half of AC-18: the pane toggle + aria-hidden
+ * remain correct regardless of the motion preference (the switch is state-driven,
+ * so it is instant when the transition is suppressed). The "no transition plays"
+ * visual is verified at the design-review gate (manual + axe) per spec §6.
+ */
+export const MobileReducedMotion_Correctness: Story = {
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const { listPane, chatPane } = getPanes(canvasElement);
+
+    // Both panes carry the CSS-only reduced-motion guard.
+    await waitFor(() =>
+      expect(listPane).toHaveClass("motion-reduce:transition-none"),
+    );
+    expect(chatPane).toHaveClass("motion-reduce:transition-none");
+
+    // AC-18: toggle still lands on the correct pane with correct aria-hidden.
+    const row = (
+      await canvas.findAllByRole("button", { name: /mở cuộc trò chuyện/i })
+    )[0];
+    await userEvent.click(row);
+    await waitFor(() =>
+      expect(listPane).toHaveAttribute("aria-hidden", "true"),
+    );
+
+    const back = await canvas.findByRole("button", {
+      name: /quay lại danh sách/i,
+    });
+    await userEvent.click(back);
+    await waitFor(() =>
+      expect(chatPane).toHaveAttribute("aria-hidden", "true"),
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
 // US-E10.4 gap stories
 // ---------------------------------------------------------------------------
 
