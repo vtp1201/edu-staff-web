@@ -1,9 +1,46 @@
 ---
 name: project-e17-ux-polish
-description: E17 UX polish epic (DR-010/DR-011) — US-E17.2/US-E17.3/US-E17.5 implemented; other US in epic
+description: E17 UX polish epic (DR-010/DR-011) — US-E17.1/US-E17.2/US-E17.3/US-E17.4/US-E17.5/US-E17.6/US-E17.7 implemented; other US in epic
 metadata:
   type: project
 ---
+
+US-E17.1 (Responsive Stat-Card Grid, UX-03/DR-010) implemented 2026-07-05 on
+`feat/us-e17.1-responsive-stat-grid` (merged `4bbcf91` + deleted). Solo mode.
+
+**Pure Tailwind arbitrary-value grid swap is the cleanest profile in this epic: engineer
+found an 8th grid beyond the spec's 7-file list via a self-directed grep (OQ-003) with zero
+back-and-forth, both tech-lead + a11y gates passed immediately with no findings.** Delegating
+"grep for the same pattern beyond the listed files" as an explicit brief instruction (not just
+trusting the BA spec's file list) reliably catches drift — same value seen when specs predate a
+shared-component extraction (E17.4/E17.6/E17.7 pattern), just a different kind of staleness
+(missing file, not stale JSX).
+
+**QA's real-browser Storybook run caught 2 test-authoring bugs invisible to node-env Vitest:**
+(1) a `Viewport375` story asserted on a grid selector that never mounted for its chosen fixture
+(the "pass" fixture took an untouched 3-col branch; only the "pending" fixture renders the
+auto-fit grid this story touched) — a vacuous assertion that passed for the wrong reason; (2) a
+tabbed screen's `Viewport375` story only ever exercised the default-active tab because Radix
+`Tabs` unmounts inactive `TabsContent` — the non-default tab's AC had zero real coverage despite
+a code comment claiming otherwise. **Node-env class-string assertions can't catch "does this
+fixture/tab actually mount the element under test" — that requires the real-browser runner.**
+Neither was a production bug; both were QA-owned test fixes, correctly left as QA's job rather
+than escalated back to the engineer.
+
+**Gap normalization judgment call, made explicitly in the delegation brief up front:** several
+grids had `gap-3`/`gap-3.5` (12/14px) pre-existing, not the design-system's 16px stat-grid
+standard. Told the engineer to normalize these to `gap-4` as part of the same diff (not scope
+creep — AC-14 requires `gap-4`, and design-system.md's stat-grid spacing standard already says
+16px) rather than leaving inconsistent gaps or treating it as out-of-scope. Tech-lead confirmed
+this was the correct call, not a rule violation.
+
+Full pipeline: engineer (TDD, 6 test files, 39 tests, self-found 8th file via OQ-003 grep) →
+tech-lead (Approved, 0 findings) + a11y (PASS, 0 findings) in parallel → design-review gate
+(fe-lead, reused both verdicts, impeccable = 0 findings for a pure layout-utility change, no
+separate CLI invocation needed — consistent with prior small-CSS-diff US precedent) → QA (Go,
+closed 2 test-authoring gaps, no production bugs) → harness proof (`--unit 1 --integration 1
+--e2e 1 --platform 0`) → TEST_MATRIX row synced (was stale `planned`/no×4 from BA-time) → merge.
+989/989 unit, tsc/build clean throughout.
 
 US-E17.2 (Grade Table Mobile Scroll + Sticky Column, UX-03/DR-010) implemented
 2026-07-04 on branch `feat/us-e17.2-grade-table-mobile-scroll` (merged + deleted).
@@ -193,3 +230,105 @@ coverage gap invisible if you only check the shared component's own tests. QA cl
 new/strengthened Storybook `play()` stories (test-only, no production code touched) rather than
 just flagging and stopping — the right call when the fix is test-code-only and squarely in QA's
 lane.
+
+US-E17.6 (Empty States — Notifications all/unread, UX-01/DR-010) implemented 2026-07-05 on
+`feat/us-e17.6-empty-states-notifications` (merged `27ac4ce` + deleted). Solo mode, no in-flight
+branches at claim time. 950/950 unit + tsc/build clean; tech-lead Approved; a11y PASS 0 findings;
+QA Go, 100% AC coverage.
+
+**A BA spec.md can be stale the moment a shared component ships mid-epic — check for a newer
+canonical home before following the spec literally.** This story's spec.md (written before
+US-E17.4 existed) instructed editing a *local* `EmptyState` inside `notifications-center.tsx`.
+By delivery time, US-E17.4 had already extracted the canonical `components/shared/empty-state/`.
+Followed `component-organization.md` (one component, one home) over the stale spec instruction:
+migrated onto the shared component instead of upgrading the local one in place. Documented the
+deviation explicitly in `story.md` `## Evidence` so the packet doesn't silently contradict the
+shipped code (same lesson as US-E17.4's own note about syncing AC text after a fix).
+
+**The shared component itself carried the exact same contrast bug this story was written to
+fix — found it before delegating, not after.** `empty-state.tsx`'s optional `body` paragraph
+used `text-muted-foreground` (→ `--edu-text-muted`, 2.95:1 FAIL), identical in kind to the icon
+bug US-E17.4 had already fixed in the same file (icon uses `text-edu-text-secondary`, not the
+design-spec-literal `text-edu-text-muted`). Fixing it at the shared-component level (not just in
+the notifications-center call site) fixed it for every current AND future consumer in one change
+— always check whether a bug named in a story's AC already exists inside a shared dependency
+before treating it as call-site-local.
+
+**Judgment call on "low-risk sibling migration": migrate call sites with generic negative/
+neutral empty states, explicitly SKIP ones with a distinct positive-framing semantic the shared
+component can't represent.** User asked to migrate 2 legacy inline empty-state call sites if
+low-risk. Migrated `leave-history-list.tsx` (generic `Inbox` + muted text — straightforward,
+also normalized icon 36px→64px per canonical size, no test pinned the old size). Deliberately
+did NOT migrate `ViolationsList.tsx` (parent-discipline) — its icon is intentionally
+`text-edu-success-text` (green, "no violations = good news", per inline comment
+`A11Y-E09.4-005`), a positive-framing decision the shared component's hardcoded icon color
+can't preserve without an API change (optional tone/`iconClassName` prop — flagged as a future
+ADR candidate by tech-lead, not built now). **When "migrate onto the shared component" would
+silently regress a deliberate, commented a11y/semantic decision in the file being touched, stop
+and exclude it — don't force every legacy pattern through one component just because it's now
+canonical.**
+
+**Delegated the entire implementation (component fix + 2-file migration + story hardening) in
+ONE `fe-nextjs-engineer` prompt with an explicit "do NOT migrate X, here's why" instruction —
+worked cleanly, zero deviations reported.** Front-loading the scope boundary (what to migrate,
+what to explicitly skip and why, which existing test/story conventions to follow) in the initial
+delegation avoided any back-and-forth; the engineer's own report matched the plan exactly,
+including correctly reusing the pre-existing `activeFilter === "unread"` condition instead of
+inventing new branching logic.
+
+**QA's AC-to-test traceability pass caught a real "state suppression" gap the engineer's
+Storybook hardening had missed:** the strengthened `EmptyAll`/`EmptyUnread` stories proved the
+empty-state renders correctly, but nothing asserted the empty-state copy is ABSENT during
+loading/error/populated (AC-01.10–12/AC-02.8–10) — a classic "tested the happy path, not the
+negative/exclusion path" gap. QA closed it itself (test-only) by adding `queryByText(...)` null
+assertions to the pre-existing `Loading`/`ErrorState`/`AllLoaded` stories rather than writing new
+ones — reusing existing stories for negative-space assertions is cheaper than adding new stories
+whose only job is "prove X is NOT there."
+
+**`bun build` (bare) is Bun's own bundler CLI, not the npm script — use `bun run build` (or `bun
+build` only works if it happens to alias correctly, verify per-repo).** Running `bun build`
+directly here errors "Missing entrypoints" because Bun intercepts it as its native bundler
+subcommand rather than dispatching to `package.json`'s `"build": "next build"` script. Always use
+`bun run build` for this repo's production build gate (not the drop-`run` shorthand that works
+for e.g. `bun dev`/`bun lint`).
+
+US-E17.7 (Empty States — Lesson Bank + Messaging, UX-01/DR-010) implemented 2026-07-05 on
+`feat/us-e17.7-empty-states-lessonbank-messaging` (merged `54fcca0` + deleted). Solo mode.
+
+**A BA spec.md instructing "hand-write the canonical pattern inline" is exactly the E17.4/E17.6
+staleness pattern repeating — caught at intake, before delegating, not after.** The task brief
+already flagged it ("shared EmptyState exists, BẮT BUỘC dùng nó"), so no discovery was needed this
+time — but this is now the THIRD story in this epic where a spec pre-dating the shared component
+instructs inline duplication. Wrote the deviation explicitly into the engineer's delegation brief
+(exact props, exact color, why) rather than letting the spec's literal JSX guide implementation —
+zero back-and-forth, engineer's report matched exactly.
+
+**CTA touch-target AC was already satisfied for free by the shared `Button`'s `min-h-11` on both
+`size="sm"` and `size="default"` — verified this BEFORE delegating** by reading `button.tsx`'s
+`buttonVariants`, which let the brief explicitly forbid the engineer from adding a redundant
+`min-h-[44px]` className (which the stale AC text literally asks for). Check the primitive's actual
+CSS before assuming an AC's suggested mechanism is still needed post-shared-component-migration.
+
+**QA found a real per-role AC gap invisible without an explicit AC-to-test trace: `canUpload=false`
+(Principal) was never exercised by any of the 3 originally-planned lesson-bank-empty stories** —
+`FilterVariant` suppresses the CTA via a *different* prop (`hasActiveFilter`), so it doesn't
+substitute as proof for the `canUpload` gate. QA closed it test-only (`PrincipalNoUpload` story).
+Recurring lesson: a CTA gated by multiple independent props each needs its OWN negative-space
+story — "one story shows CTA, one shows no-CTA" isn't enough if different props can each
+independently suppress it.
+
+**Shared-file collision with concurrent sessions handled cleanly, twice in one run.** Unrelated
+BA/uiux-lead/QA sessions had uncommitted `.claude/agent-memory/*` changes in the working tree both
+before branch creation AND again before the final merge-to-main, blocking plain
+`git pull --ff-only`/`git checkout -b`. Resolved both times with
+`git stash push -u -m "..."` → do the git op → `git stash pop` — never touched or committed those
+other sessions' files, exactly restored afterward. Same pattern as `[[project-shared-worktree-race]]`;
+solo-mode git ops still need this stash-around-git-op discipline whenever other sessions are live in
+the same checkout, not just literal parallel-worktree races.
+
+Full pipeline this run: engineer (migrate, TDD red→green, 2 commits) → tech-lead (Approved, 2
+non-blocking CONSIDER notes) + a11y (PASS, 0 findings) in parallel → design-review gate (fe-lead,
+reused tech-lead/a11y verdicts, no separate `/impeccable` CLI invocation for a token-reuse-only
+polish diff — consistent with US-E17.5/E17.6 precedent) → QA (Go, closed 1 coverage gap, 48/48 AC)
+→ harness proof (`--unit 1 --integration 1 --e2e 0 --platform 0`) → TEST_MATRIX row replaced (was a
+stale `planned` row from an earlier BA sync) → merge. 950/950 unit, tsc/build clean throughout.
