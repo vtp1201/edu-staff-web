@@ -58,6 +58,18 @@ describe("EmptyState", () => {
     expect(withBody).toContain("max-w-xs");
   });
 
+  it("renders the body text with an accessible-contrast token (not muted)", () => {
+    const html = renderToStaticMarkup(
+      <EmptyState icon={Inbox} title="Trống" body="mô tả phụ" />,
+    );
+    // body uses text-edu-text-secondary (#5A6A85 = 5.1:1 on white), not
+    // text-muted-foreground / text-edu-text-muted (#8898A9 = 2.95:1, fails
+    // WCAG 1.4.3) — same fix as the icon (A11Y-001 / DR-GATE-002).
+    expect(html).toContain("text-edu-text-secondary");
+    expect(html).not.toContain("text-muted-foreground");
+    expect(html).not.toContain("text-edu-text-muted");
+  });
+
   it("renders a <button> with the cta label when a cta is provided", () => {
     const html = renderToStaticMarkup(
       <EmptyState

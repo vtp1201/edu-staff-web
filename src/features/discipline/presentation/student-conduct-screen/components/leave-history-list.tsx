@@ -2,6 +2,7 @@
 
 import { CalendarRange, Inbox } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { cn } from "@/shared/utils";
 import type { LeaveRequestEntity } from "../../../domain/entities/leave-request.entity";
@@ -26,15 +27,7 @@ export function LeaveHistoryList({
       </div>
 
       {leaveRequests.length === 0 ? (
-        <div className="px-6 py-12 text-center">
-          <Inbox
-            className="mx-auto size-9 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <p className="mt-2.5 font-semibold text-foreground text-sm">
-            {t("empty")}
-          </p>
-        </div>
+        <EmptyState icon={Inbox} title={t("empty")} />
       ) : (
         <ul>
           {leaveRequests.map((req) => (
