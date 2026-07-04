@@ -1,7 +1,8 @@
 "use client";
 
-import { CalendarRange, Inbox } from "lucide-react";
+import { CalendarOff, CalendarRange } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { cn } from "@/shared/utils";
 import type { LeaveRequestEntity } from "../../../domain/entities/leave-request.entity";
@@ -20,6 +21,7 @@ export function LeaveHistorySection({
   leaveRequests: LeaveRequestEntity[];
 }) {
   const t = useTranslations("discipline.studentConduct.leaveHistory");
+  const tLeave = useTranslations("discipline.leave");
   const tStatus = useTranslations("discipline.studentConduct.status");
   const tType = useTranslations("discipline.studentConduct.leaveRequest.types");
 
@@ -30,17 +32,10 @@ export function LeaveHistorySection({
       </div>
 
       {leaveRequests.length === 0 ? (
-        <div className="px-6 py-12 text-center">
-          {/* DR-GATE-002: text-muted-foreground (#8898A9) on bg-card (white) = 2.75:1 — fails SC 1.4.11 (non-text 3:1).
-              text-edu-text-secondary (#5A6A85) on white = 5.10:1 — passes. */}
-          <Inbox
-            className="mx-auto size-9 text-edu-text-secondary"
-            aria-hidden="true"
-          />
-          <p className="mt-2.5 font-semibold text-foreground text-sm">
-            {t("empty")}
-          </p>
-        </div>
+        // FR-04: identical canonical empty state (icon + copy) as the
+        // teacher-side leave tab — uses discipline.leave.empty, not the local
+        // leaveHistory.empty key.
+        <EmptyState icon={CalendarOff} title={tLeave("empty")} />
       ) : (
         <ul>
           {leaveRequests.map((req) => (
