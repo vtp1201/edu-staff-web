@@ -22,7 +22,8 @@ Four locations inside the discipline feature currently render non-canonical or m
 - New BE endpoints, design tokens, or i18n keys
 
 **Definitions:**
-- *Canonical empty state* — the `emptyStatePattern` from `docs/product/design-spec.jsonc`: `role="status"` container, centered column, icon 64px `text-edu-text-muted` `aria-hidden`, `<p>` title 16px/700 `text-foreground` `mt-4`, no CTA.
+- *Canonical empty state* — the `emptyStatePattern` from `docs/product/design-spec.jsonc`: `role="status"` container, centered column, icon 64px `text-edu-text-secondary` `aria-hidden`, `<p>` title 16px/700 `text-foreground` `mt-4`, no CTA.
+  - **A11Y-001 fix (implementation):** the icon color is `text-edu-text-secondary` (#5A6A85 = 5.48:1 on the white card), NOT `text-edu-text-muted` which `emptyStatePattern.icon.color` literally names — `text-edu-text-muted` (#8898A9) is 2.95:1 on white, below the ≥3:1 icon-contrast floor (WCAG 1.4.11, `accessibility.md`; DR-GATE-002 precedent). The `design-spec.jsonc` pattern entry itself is unchanged (cross-cutting, out of this story's scope).
 
 ---
 
@@ -47,7 +48,7 @@ Principal sees the same violations and conduct empty states as Teacher (no role-
 The system SHALL render the canonical empty state inside the violations tab panel when `violations.length === 0` after a successful (non-error, non-loading) data fetch.
 
 - Container: `role="status"`, `flex flex-col items-center text-center px-5 py-10`
-- Icon: `ShieldOff` (Lucide), `size-16` (64px), `text-edu-text-muted`, `aria-hidden="true"`
+- Icon: `ShieldOff` (Lucide), `size-16` (64px), `text-edu-text-secondary`, `aria-hidden="true"`
 - Title: `<p className="text-base font-bold text-foreground mt-4">` — i18n key `discipline.violations.empty` ("Không có vi phạm nào!")
 - Body: omitted (no separate body key; title is self-contained)
 - CTA: none
@@ -66,7 +67,7 @@ The system SHALL render the canonical empty state inside the violations tab pane
 The system SHALL render the canonical empty state inside the conduct tab panel when the conduct summary table has zero rows after a successful data fetch.
 
 - Container: `role="status"`, `flex flex-col items-center text-center px-5 py-10`
-- Icon: `ClipboardList` (Lucide), `size-16` (64px), `text-edu-text-muted`, `aria-hidden="true"`
+- Icon: `ClipboardList` (Lucide), `size-16` (64px), `text-edu-text-secondary`, `aria-hidden="true"`
 - Title: `<p className="text-base font-bold text-foreground mt-4">` — i18n key `discipline.conduct.empty` ("Chưa có dữ liệu hạnh kiểm")
 - Body: omitted
 - CTA: none
@@ -84,7 +85,7 @@ The system SHALL render the canonical empty state inside the conduct tab panel w
 The system SHALL render the canonical empty state inside the teacher-side leave-requests tab panel when `leaveRequests.length === 0` after a successful data fetch.
 
 - Container: `role="status"`, `flex flex-col items-center text-center px-5 py-10`
-- Icon: `CalendarOff` (Lucide), `size-16` (64px), `text-edu-text-muted`, `aria-hidden="true"`
+- Icon: `CalendarOff` (Lucide), `size-16` (64px), `text-edu-text-secondary`, `aria-hidden="true"`
 - Title: `<p className="text-base font-bold text-foreground mt-4">` — i18n key `discipline.leave.empty` ("Chưa có yêu cầu nghỉ phép")
   - i18n call: `useTranslations("discipline.leave")`, key `"empty"`
 - Body: omitted
@@ -145,7 +146,7 @@ All four empty states SHALL conform to the `emptyStatePattern` specification: `f
 
 ### NFR-03 — No token additions
 
-- **Target:** `src/app/tokens.css` diff is empty for this story. All colors from existing tokens (`text-edu-text-muted`, `text-foreground`).
+- **Target:** `src/app/tokens.css` diff is empty for this story. All colors from existing tokens (`text-edu-text-secondary`, `text-foreground`).
 - **How QA verifies:** `git diff src/app/tokens.css` shows no changes.
 
 ### NFR-04 — Responsive
@@ -192,7 +193,7 @@ No new backend integration. All four locations consume data already fetched by e
 
 **AC-01.2** — Given AC-01.1, when the container is inspected, then it has `padding: 40px 20px` (Tailwind `px-5 py-10`), `text-align: center`, and flex column alignment centered on both axes.
 
-**AC-01.3** — Given the empty state is rendered, when the DOM is inspected, then a `ShieldOff` icon (or `Shield` if `ShieldOff` unavailable) is present with `aria-hidden="true"`, size 64px, and class `text-edu-text-muted`. No element with class `text-edu-success` exists inside the empty state container.
+**AC-01.3** — Given the empty state is rendered, when the DOM is inspected, then a `ShieldOff` icon (or `Shield` if `ShieldOff` unavailable) is present with `aria-hidden="true"`, size 64px, and class `text-edu-text-secondary`. No element with class `text-edu-success` exists inside the empty state container.
 
 **AC-01.4** — Given the empty state is rendered, when the DOM is inspected, then a `<p>` element contains "Không có vi phạm nào!" (resolved from `discipline.violations.empty`), with `font-size: 16px`, `font-weight: 700`, and color `var(--edu-text-primary)`.
 
@@ -216,7 +217,7 @@ No new backend integration. All four locations consume data already fetched by e
 
 **AC-02.1** — Given the conduct fetch completed with zero rows and the tab is active, when the component renders, then the empty state container has `role="status"`.
 
-**AC-02.2** — Given the empty state is rendered, when the DOM is inspected, then a `ClipboardList` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-muted`.
+**AC-02.2** — Given the empty state is rendered, when the DOM is inspected, then a `ClipboardList` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-secondary`.
 
 **AC-02.3** — Given the empty state is rendered, when the DOM is inspected, then a `<p>` contains "Chưa có dữ liệu hạnh kiểm" (resolved from `discipline.conduct.empty`), 16px / 700, color `var(--edu-text-primary)`.
 
@@ -234,7 +235,7 @@ No new backend integration. All four locations consume data already fetched by e
 
 **AC-03.1** — Given the leave-requests fetch completed with an empty array in the teacher-side tab, when the component renders, then the container has `role="status"`.
 
-**AC-03.2** — Given the empty state renders, when the DOM is inspected, then a `CalendarOff` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-muted`.
+**AC-03.2** — Given the empty state renders, when the DOM is inspected, then a `CalendarOff` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-secondary`.
 
 **AC-03.3** — Given the empty state renders, when the DOM is inspected, then a `<p>` contains "Chưa có yêu cầu nghỉ phép" (resolved from `discipline.leave.empty`), 16px / 700, `var(--edu-text-primary)`.
 
@@ -252,7 +253,7 @@ No new backend integration. All four locations consume data already fetched by e
 
 **AC-04.1** — Given the parent is on `/parent/discipline`, the selected child's fetch completed with empty array, and the component is not loading or in error, when the parent-discipline component renders, then the container has `role="status"`.
 
-**AC-04.2** — Given the above, when the DOM is inspected, then a `CalendarOff` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-muted`.
+**AC-04.2** — Given the above, when the DOM is inspected, then a `CalendarOff` icon is present with `aria-hidden="true"`, 64px, `text-edu-text-secondary`.
 
 **AC-04.3** — Given the empty state renders, when the DOM is inspected, then a `<p>` contains "Chưa có yêu cầu nghỉ phép" (resolved from `discipline.leave.empty`), 16px / 700, `var(--edu-text-primary)`.
 

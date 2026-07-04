@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus, ShieldOff, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/shared/empty-state";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -378,15 +379,7 @@ export function ViolationsTab({
         </div>
 
         {filtered.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <Check
-              className="mx-auto size-9 text-edu-success"
-              aria-hidden="true"
-            />
-            <p className="mt-2.5 font-semibold text-edu-success-text text-sm">
-              {t("empty")}
-            </p>
-          </div>
+          <EmptyState icon={ShieldOff} title={t("empty")} />
         ) : (
           <ul>
             {filtered.map((v) => (

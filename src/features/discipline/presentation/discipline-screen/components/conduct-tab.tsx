@@ -1,9 +1,10 @@
 "use client";
 
-import { Users, X } from "lucide-react";
+import { ClipboardList, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/shared/empty-state";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -95,11 +96,8 @@ export function ConductTab({
 
   if (conductSummary.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--edu-radius-card)] border border-border bg-card p-10 text-center shadow-card">
-        <Users className="size-9 text-edu-text-muted" aria-hidden="true" />
-        <p className="font-semibold text-edu-text-secondary text-sm">
-          {t("empty")}
-        </p>
+      <div className="rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+        <EmptyState icon={ClipboardList} title={t("empty")} />
       </div>
     );
   }
