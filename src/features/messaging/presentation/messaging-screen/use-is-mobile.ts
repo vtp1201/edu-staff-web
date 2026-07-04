@@ -13,11 +13,18 @@ const MOBILE_QUERY = "(max-width: 767.98px)";
  * slide animation and its reduced-motion guard remain pure CSS (`motion-reduce:`),
  * so this `matchMedia` call does not conflict with AC-17.
  *
- * Defaults to `false` during SSR / first paint so the desktop layout never flashes
- * `aria-hidden` on a pane before hydration.
+ * Defaults to `false` during SSR (no `window`) so the desktop layout never flashes
+ * `aria-hidden` on a pane before hydration. Once client-side, the initial value is
+ * read synchronously from `matchMedia` (not deferred to an effect) so a keyboard
+ * user tabbing immediately after hydration never has a brief window where the
+ * off-screen pane's `aria-hidden`/`inert` gate is incorrectly `false` (A11Y-001).
  */
 export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia(MOBILE_QUERY).matches
+      : false,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
