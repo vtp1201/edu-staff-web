@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -83,4 +83,16 @@ No harness changes required. No new ADR, no new tokens, no new i18n keys.
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+- `bunx tsc --noEmit` — pass
+- `bun lint` (Biome) — pass (0 findings in scoped files; 1 pre-existing unrelated warning in `message-context-menu.tsx` from US-E17.3)
+- `bun vitest run` — 942/942 pass (full unit suite)
+- `bunx vitest run --config vitest.storybook.mts grade-book` — 26/26 pass (`grade-book-screen.stories.tsx` + `grade-book-table.stories.tsx`)
+- `bun run build` (`NEXT_PUBLIC_USE_MOCK=`) — pass, all routes compiled
+- `fe-tech-lead-reviewer`: **Approved** (layering, tokens, i18n, TS, test proof all pass; non-blocking follow-up noted: extract a shared `components/shared/empty-state/` — pre-existing debt across multiple screens, out of scope here)
+- `fe-accessibility-auditor`: **PASS**, 0 findings (WCAG 2.1 AA — role/aria-live, aria-hidden icon, contrast 11.52:1, no color-only status, no motion regression)
+
+Design review: pass
+- design-system: conform (token/typography/component OK — matches `emptyStatePattern` in `design-spec.jsonc`)
+- a11y: WCAG AA OK; keyboard OK; reduced-motion OK (no interactive elements, no animation)
+- impeccable audit: 0 finding — layout matches canonical pattern, no anti-pattern introduced
+- states: loading/empty/error/success/no-selection OK (Storybook); responsive 320px/375px OK (via existing `MobileScroll_320`/`MobileScroll_375` stories, untouched)
