@@ -99,3 +99,38 @@ export const QuestionReview: Story = {
     }
   },
 };
+
+// US-E17.1 (OQ-003): at 375px the MCQ-stats grid uses the auto-fit
+// minmax(200px) column class (1 column on mobile) with a 16px gap-4 gap.
+// NOTE: the migrated auto-fit grid only renders in PendingEssayResultView
+// (exam-result.tsx line 301) — it is NOT the sm:grid-cols-3 grid shown for a
+// final Pass/Fail result (line 162, intentionally left untouched — see
+// responsive-stat-grid.test.ts "leaves the already-responsive 3-col grid
+// untouched"). This story therefore MUST use a pending-essay fixture, not
+// `passResult`, or the auto-fit grid never mounts and the assertion is
+// vacuously unreachable (found by fe-qa-playwright — QA-DEF-01).
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+export const Viewport375: Story = {
+  args: { result: MOCK_PENDING_ESSAY_RESULT },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const grid = canvasElement.querySelector<HTMLElement>(
+      '[class*="auto-fit"]',
+    );
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain(
+      "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
+    );
+    await expect(grid?.className).toContain("gap-4");
+  },
+};

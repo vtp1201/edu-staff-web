@@ -298,7 +298,7 @@ function PendingEssayResultView({
       </div>
 
       {/* Stats row — MCQ stats + essay pending */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <StatCard
           label={t("result.correct")}
           value={String(result.correctCount)}

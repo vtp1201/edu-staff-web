@@ -58,7 +58,7 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
       <div className="flex flex-col gap-6 p-6 sm:p-8">
         {header}
         <div
-          className="grid grid-cols-2 gap-3.5 lg:grid-cols-4"
+          className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4"
           aria-busy="true"
         >
           {["a", "b", "c", "d"].map((k) => (

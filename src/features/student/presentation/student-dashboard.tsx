@@ -22,7 +22,7 @@ export async function StudentDashboard() {
         </h1>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <StatCard
           label={t("stats.courses")}
           value="8"
