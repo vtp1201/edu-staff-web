@@ -3,12 +3,15 @@
 import {
   AlertTriangle,
   Bell,
+  BellOff,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   GraduationCap,
   Megaphone,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/shared/utils";
@@ -99,28 +102,6 @@ function SkeletonRows() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-interface EmptyStateProps {
-  variant: "unread" | "all";
-}
-
-function EmptyState({ variant }: EmptyStateProps) {
-  const t = useTranslations("notifications");
-  return (
-    <div
-      className="flex flex-col items-center justify-center gap-3 py-16"
-      role="status"
-    >
-      <Bell className="size-12 text-muted-foreground" aria-hidden="true" />
-      <p className="font-semibold text-sm text-foreground">
-        {variant === "unread" ? t("emptyUnreadTitle") : t("emptyAllTitle")}
-      </p>
-      <p className="max-w-xs text-center text-muted-foreground text-xs">
-        {variant === "unread" ? t("emptyUnreadBody") : t("emptyAllBody")}
-      </p>
     </div>
   );
 }
@@ -336,7 +317,19 @@ export function NotificationsCenterScreen(
 
         {/* Empty state */}
         {!isLoading && !error && items.length === 0 && (
-          <EmptyState variant={activeFilter === "unread" ? "unread" : "all"} />
+          <EmptyState
+            icon={activeFilter === "unread" ? CheckCircle2 : BellOff}
+            title={
+              activeFilter === "unread"
+                ? t("emptyUnreadTitle")
+                : t("emptyAllTitle")
+            }
+            body={
+              activeFilter === "unread"
+                ? t("emptyUnreadBody")
+                : t("emptyAllBody")
+            }
+          />
         )}
 
         {/* Notification list */}

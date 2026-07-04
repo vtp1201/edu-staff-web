@@ -227,9 +227,20 @@ export const EmptyUnread: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Tất cả đã đọc")).toBeInTheDocument();
-    await expect(
-      canvas.getByText(/Bạn đã đọc hết tất cả thông báo/i),
-    ).toBeInTheDocument();
+    const body = canvas.getByText(/Bạn đã đọc hết tất cả thông báo/i);
+    await expect(body).toBeInTheDocument();
+
+    // Canonical shared EmptyState: role=status container, aria-hidden icon,
+    // accessible-contrast body token, no CTA button (US-E17.6 migration).
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).not.toBeNull();
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    await expect(body.className).toContain("text-edu-text-secondary");
+    await expect(body.className).not.toContain("text-muted-foreground");
+    await expect(body.className).not.toContain("text-edu-text-muted");
+    await expect(status.querySelector("button")).toBeNull();
   },
 };
 
@@ -246,6 +257,19 @@ export const EmptyAll: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Chưa có thông báo")).toBeInTheDocument();
+    const body = canvas.getByText(/Thông báo sẽ xuất hiện ở đây/i);
+    await expect(body).toBeInTheDocument();
+
+    // Canonical shared EmptyState assertions (US-E17.6 migration).
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).not.toBeNull();
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    await expect(body.className).toContain("text-edu-text-secondary");
+    await expect(body.className).not.toContain("text-muted-foreground");
+    await expect(body.className).not.toContain("text-edu-text-muted");
+    await expect(status.querySelector("button")).toBeNull();
   },
 };
 
