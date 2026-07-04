@@ -119,7 +119,11 @@ describe("GradeBookTable — mobile scroll + sticky column a11y (US-E17.2)", () 
     expect(stickyCells.length).toBeGreaterThanOrEqual(2);
     for (const cell of stickyCells) {
       expect(cell).toContain("border-r");
-      expect(cell).toContain("border-border");
+      // US-E17.5 (AC-03.3/03.4): explicit edu-* tokens so the separator/bg
+      // stay literally `var(--edu-border)` / `var(--edu-card)` regardless of
+      // shadcn semantic aliasing (which diverges in dark mode).
+      expect(cell).toContain("border-edu-border");
+      expect(cell).toContain("bg-edu-card");
       expect(cell).toContain("z-[1]");
     }
   });

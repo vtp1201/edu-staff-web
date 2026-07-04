@@ -105,7 +105,7 @@ export function GradeBookTable({
               <th
                 scope="col"
                 rowSpan={2}
-                className="sticky left-0 z-[1] border-border border-r bg-card px-4 py-2 text-left font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
+                className="sticky left-0 z-[1] border-edu-border border-r bg-edu-card px-4 py-2 text-left font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
               >
                 {t("colStudent")}
               </th>
@@ -180,7 +180,7 @@ function GradeRow({
     <tr className="border-border border-b last:border-0">
       <th
         scope="row"
-        className="sticky left-0 z-[1] border-border border-r bg-card px-4 py-2 text-left font-medium text-foreground"
+        className="sticky left-0 z-[1] border-edu-border border-r bg-edu-card px-4 py-2 text-left font-medium text-foreground"
       >
         <span className="block">{row.studentName}</span>
         <span className="block text-edu-text-secondary text-xs">

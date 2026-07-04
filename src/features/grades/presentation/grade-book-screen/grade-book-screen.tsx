@@ -1,5 +1,6 @@
 "use client";
 
+import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { GradeBookTable } from "@/components/shared/grade-book-table";
@@ -173,7 +174,7 @@ export function GradeBookScreen({
         ) : vm.error ? (
           <ErrorBanner message={t(ERROR_KEY_MAP[vm.error])} onRetry={onRetry} />
         ) : !vm.gradeBook ? (
-          <EmptyState message={t("emptyState")} />
+          <GradeBookEmptyState />
         ) : (
           <>
             <GradeBookTable
@@ -200,6 +201,28 @@ function EmptyState({ message }: { message: string }) {
       aria-atomic="true"
     >
       {message}
+    </div>
+  );
+}
+
+/**
+ * US-E17.5 — canonical `emptyStatePattern` (design-spec.jsonc) for the "no
+ * grades yet" state (`vm.gradeBook === null` with a selection made). Replaces
+ * the legacy dashed-border box. The "no selection" prompt above keeps using
+ * the legacy `EmptyState` — unchanged per AC-02.
+ */
+function GradeBookEmptyState() {
+  const t = useTranslations("gradeBook");
+  return (
+    <div
+      className="flex flex-col items-center px-5 py-10 text-center"
+      role="status"
+      aria-live="polite"
+    >
+      <FileText className="size-16 text-edu-text-muted" aria-hidden="true" />
+      <p className="mt-4 font-bold text-base text-foreground">
+        {t("emptyState")}
+      </p>
     </div>
   );
 }
