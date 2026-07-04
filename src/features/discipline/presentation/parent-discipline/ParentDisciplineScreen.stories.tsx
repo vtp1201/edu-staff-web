@@ -311,6 +311,37 @@ export const ParentDisciplineScreen_LeaveForm_Validation: Story = {
   },
 };
 
+/**
+ * Empty leave-requests history for the selected child shows the canonical
+ * empty state (AC-04.1–04.4): role="status", CalendarOff icon (aria-hidden),
+ * no CTA, using the shared `discipline.leave.empty` key (parity with the
+ * teacher-side tab) — previously untested (US-E17.4 coverage gap fix).
+ */
+export const ParentDisciplineScreen_EmptyLeaveRequests: Story = {
+  args: {
+    ...baseVm,
+    childList: [CHILDREN[0]],
+    initialLeaveRequests: [],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Chưa có yêu cầu nghỉ phép"),
+    ).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    await expect(svg?.getAttribute("class") ?? "").toContain(
+      "text-edu-text-secondary",
+    );
+    await expect(status.querySelector("button")).toBeNull();
+    // Populated conduct + violations sections still render alongside the
+    // empty leave history (only the leave section is empty).
+    await expect(canvas.getByText("82")).toBeInTheDocument();
+  },
+};
+
 /** Leave history shows rejection reason only on the rejected row (AC-04). */
 export const ParentDisciplineScreen_LeaveHistoryWithRejection: Story = {
   args: {

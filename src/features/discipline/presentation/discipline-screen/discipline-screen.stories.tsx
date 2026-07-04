@@ -91,12 +91,29 @@ export const ViolationsTab_Principal: Story = {
   },
 };
 
-/** Empty violations list shows the success-style empty state (AC-7). */
+/**
+ * Empty violations list shows the canonical empty state (AC-01.1–01.6,
+ * AC-01.9): role="status", ShieldOff icon (aria-hidden), no CTA, and the
+ * misleading text-edu-success/<Check> anti-pattern is gone (US-E17.4).
+ */
 export const ViolationsTab_Empty: Story = {
   args: { ...baseVm, violations: [] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
     await expect(canvas.getByText("Không có vi phạm nào!")).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    // A11Y-001: icon color is text-edu-text-secondary, not the old
+    // text-edu-text-muted / text-edu-success anti-pattern.
+    await expect(svg?.getAttribute("class") ?? "").toContain(
+      "text-edu-text-secondary",
+    );
+    await expect(status.querySelector(".text-edu-success")).toBeNull();
+    await expect(status.querySelector("button")).toBeNull();
+    await expect(status.querySelector("h2")).toBeNull();
+    await expect(status.querySelector("h3")).toBeNull();
   },
 };
 
@@ -108,6 +125,29 @@ export const ConductTab: Story = {
     await expect(
       canvas.getByRole("button", { name: /Sửa hạnh kiểm của/ }),
     ).toBeInTheDocument();
+  },
+};
+
+/**
+ * Empty conduct summary shows the canonical empty state (AC-02.1–02.4) —
+ * previously untested (US-E17.4 coverage gap fix): ClipboardList icon,
+ * role="status", no CTA.
+ */
+export const ConductTab_Empty: Story = {
+  args: { ...baseVm, initialTab: "conduct", conductSummary: [] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Chưa có dữ liệu hạnh kiểm"),
+    ).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    await expect(svg?.getAttribute("class") ?? "").toContain(
+      "text-edu-text-secondary",
+    );
+    await expect(status.querySelector("button")).toBeNull();
   },
 };
 
@@ -142,14 +182,26 @@ export const LeaveTab_Reject: Story = {
   },
 };
 
-/** Empty leave list. */
+/**
+ * Empty leave list shows the canonical empty state (AC-03.1–03.4, AC-03.7):
+ * role="status", CalendarOff icon (aria-hidden), no CTA.
+ */
 export const LeaveTab_Empty: Story = {
   args: { ...baseVm, initialTab: "leave", leaveRequests: [] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    await expect(status).toBeInTheDocument();
     await expect(
       canvas.getByText("Chưa có yêu cầu nghỉ phép"),
     ).toBeInTheDocument();
+    const svg = status.querySelector("svg");
+    await expect(svg).toHaveAttribute("aria-hidden", "true");
+    await expect(svg?.getAttribute("class") ?? "").toContain(
+      "text-edu-text-secondary",
+    );
+    await expect(status.querySelector(".text-edu-success")).toBeNull();
+    await expect(status.querySelector("button")).toBeNull();
   },
 };
 
