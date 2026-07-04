@@ -31,6 +31,7 @@ async function assertCanonicalEmptyState(canvasElement: HTMLElement) {
   const svg = status.querySelector("svg");
   await expect(svg).not.toBeNull();
   await expect(svg).toHaveAttribute("aria-hidden", "true");
+  return status;
 }
 
 /** No lessons yet, uploader — CTA present (AC-01.x). */
@@ -74,5 +75,21 @@ export const WithUpload: Story = {
     await expect(btn.clientHeight).toBeGreaterThanOrEqual(44);
     await userEvent.click(btn);
     await expect(args.onUpload).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * Principal role: `canUpload={false}` — CTA must NOT render even though
+ * there is no active filter and an `onUpload` handler is supplied (AC-07.1).
+ */
+export const PrincipalNoUpload: Story = {
+  args: { canUpload: false, hasActiveFilter: false, onUpload: fn() },
+  play: async ({ canvasElement }) => {
+    const status = await assertCanonicalEmptyState(canvasElement);
+    const canvas = within(canvasElement);
+    // allVariant title/body still shown to Principal.
+    await expect(canvas.getByText("Chưa có bài giảng")).toBeInTheDocument();
+    // CTA is suppressed — not disabled, not rendered.
+    await expect(status.querySelector("button")).toBeNull();
   },
 };

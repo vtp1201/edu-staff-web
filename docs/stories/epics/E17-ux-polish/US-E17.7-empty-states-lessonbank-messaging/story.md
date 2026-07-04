@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -92,4 +92,32 @@ No harness updates. No new decisions required (no new tokens, no new contracts, 
 
 ## Evidence
 
-_Add Storybook interaction test results and `/impeccable audit` output after implementation._
+Implementation deviated (improved) from `spec.md`'s literal "hand-write the
+canonical pattern inline in each component" instruction — that spec was written
+before the canonical shared `EmptyState` (`src/components/shared/empty-state/`,
+built US-E17.4, hardened US-E17.6) existed. Per `component-organization.md`
+(decision `0026`, one component/one home), both `lesson-bank-empty.tsx` and
+`empty-messaging-state.tsx` were migrated onto the shared component instead of
+writing a second inline copy of the pattern. Public contracts unchanged
+(`LessonBankEmpty{canUpload,hasActiveFilter,onUpload}`,
+`EmptyMessagingState{onStart}}`); both parent screens compile unchanged.
+`text-edu-text-secondary` (5.1–5.48:1) used for icon+body — not the spec AC's
+literal `text-edu-text-muted` (2.95:1, WCAG-fail literal already corrected in
+the shared component by US-E17.4/E17.6). `empty-messaging-state.tsx` passes
+`className="flex-1 justify-center"` to fill/center within the messaging pane's
+flex-row layout — verified non-conflicting by `fe-tech-lead-reviewer`.
+
+Proof:
+- `bunx tsc --noEmit`: clean (verified independently by `fe-tech-lead-reviewer`).
+- `bun vitest run` (full suite): 950/950 pass, no regressions.
+- `bun vitest:storybook run` (2 new story files + shared `empty-state` suite): 8/8 pass. `play()` assertions per story: `getByRole('status')`, icon `aria-hidden="true"`, body carries `text-edu-text-secondary` (not `text-muted-foreground`), CTA `clientHeight >= 44`, CTA click fires the callback; filter/no-`onStart` variants assert CTA absence.
+- TDD: RED confirmed (new story `play()` tests failed against the pre-migration inline components, no `role="status"`) before GREEN migration.
+- `git diff main..HEAD -- src/app/tokens.css src/bootstrap/i18n/messages/`: empty — no new tokens, no new i18n keys (reused `lessonBank.empty.*` / `messaging.empty.*`, vi/en parity confirmed).
+- `fe-tech-lead-reviewer`: **Approved**. Architecture/layering, public-contract preservation, `className` merge (no conflict with shared component's base classes), i18n parity, no residual duplicate empty-state pattern — all verified. Two non-blocking CONSIDER notes (JSDOM `clientHeight` assertion is environment-dependent; minor story-helper inconsistency) — no action required.
+- `fe-accessibility-auditor`: **PASS**, 0 findings. Contrast, `role="status"` mutual-exclusivity vs loading/error/populated branches (AC-01.11–13/AC-04.11–13/AC-06.1–4), `aria-hidden` icon, 44px touch target on both Button sizes, no color-alone status, no motion regression, i18n copy sanity — all verified against the diff.
+
+Design review: pass
+- design-system: conform (matches `emptyStatePattern` in `design-spec.jsonc`; reuses the canonical shared component, no new pattern introduced, no raw color)
+- a11y: WCAG AA OK (body/icon 5.1–5.48:1); keyboard OK (CTA is the only focusable element, no trap); reduced-motion N/A (no animation added)
+- impeccable audit: 0 finding — token-class-correct migration onto an already-audited canonical pattern; no new visual surface, no anti-pattern introduced (no card-in-card, no arbitrary z-index, no decorative motion)
+- states: loading/error/populated verified mutually exclusive with the empty-state branch in both parent screens (regression guard, unchanged); empty state per variant correct; responsive OK (`max-w-xs` body + centered flex column, no fixed widths, no overflow at 320px)
