@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
@@ -25,6 +25,10 @@ import type {
   UpdateAnnouncementInput,
 } from "../../domain/entities/announcement.entity";
 import type { AnnouncementActionOutcome } from "./announcements-screen.i-vm";
+import {
+  formatSendToastTime,
+  resolveSendToastParams,
+} from "./send-toast-params";
 
 const TITLE_MAX = 200;
 const TITLE_MIN = 5;
@@ -76,6 +80,7 @@ export function AnnouncementDrawer({
   onSuccess,
 }: AnnouncementDrawerProps) {
   const t = useTranslations("announcements");
+  const locale = useLocale();
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -165,15 +170,21 @@ export function AnnouncementDrawer({
         res = await onCreate(input);
       }
       if (res.ok) {
-        toast.success(
-          t(
-            mode === "draft"
-              ? "draftToast"
-              : mode === "scheduled"
-                ? "scheduleToast"
-                : "sendToast",
-          ),
-        );
+        if (mode === "draft") {
+          toast.success(t("draftToast"));
+        } else if (mode === "scheduled") {
+          toast.success(t("scheduleToast"));
+        } else {
+          // mode === "now" — US-E17.12: contextual toast with recipient
+          // count/time when available, generic fallback otherwise.
+          const params = resolveSendToastParams(
+            recipientEstimate,
+            formatSendToastTime(locale, new Date()),
+          );
+          toast.success(t(params.key, params.values), {
+            duration: params.duration,
+          });
+        }
         onSuccess();
         // Reset the confirm dialog too — the drawer is always-mounted, so
         // otherwise the focus-trapped dialog lingers over the closed Sheet

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -75,4 +75,25 @@ Net-new i18n key `discipline.violations.successContext` added to both `vi.json` 
 
 ## Evidence
 
-Add Storybook screenshot links and TypeScript build proof after implementation.
+**Implementation:**
+- `src/features/announcements/presentation/announcements-screen/send-toast-params.ts` (+ `.test.ts`) — `resolveSendToastParams(recipientCount, time)`, `formatSendToastTime(locale, date)`.
+- `src/features/announcements/presentation/announcements-screen/announcement-drawer.tsx` — wired into `submit()`'s `mode === "now"` success branch only; draft/scheduled toasts untouched.
+- `src/features/discipline/presentation/discipline-screen/components/violation-toast-params.ts` (+ `.test.ts`) — `resolveViolationToastParams(studentName)`.
+- `src/features/discipline/presentation/discipline-screen/components/violations-tab.tsx` — wired into `handleSubmit()`'s success branch; `input.studentName` trimmed once at the call site (shared by the toast and the optimistic row).
+- Net-new i18n key `discipline.violations.successContext` was already present in both `vi.json`/`en.json` from a prior DR-011 batch (verified byte-for-byte against spec — no change needed); `announcements.sendToastContext` likewise pre-existing.
+- Storybook: `CreateDrawer_SendSubmit_ContextualToast` (announcements) + `ViolationsTab_RecordViolation_ContextualToast` (discipline), both asserting the interpolated toast text via `findByText` against a `<Toaster/>` added to each story file's decorator.
+- The generic-fallback branch (recipientCount undefined/0, studentName undefined/empty) is NOT reachable through either screen's current UI (recipient estimate is always >0 for any selectable audience; the discipline submit button is disabled while studentName is empty) — that branch is pinned by the two new unit-test files only, per `fe-tech-lead-reviewer`'s confirmation.
+
+**Proof:**
+- Unit: `bun vitest run` → 1043/1043 passed (9 new: `send-toast-params.test.ts` 6, `violation-toast-params.test.ts` 3).
+- Types: `bunx tsc --noEmit` clean.
+- Lint: `bun lint:fix` clean on changed files.
+- Storybook (`@vitest/browser-playwright`): the new `announcements-screen.stories.tsx` story passes; the new `discipline-screen.stories.tsx` story is correctly authored but the ENTIRE file (all 16 stories, pre-existing + new) fails under this harness with "invariant expected app router to be mounted" from `useRouter` in `discipline-screen.tsx` — confirmed via `git stash` that this is a PRE-EXISTING repo-wide harness issue unrelated to this change (identical failure on `main`, `discipline-screen.tsx` has zero diff on this branch).
+
+**Design review:** pass
+- design-system: conform — no new markup/component/token; only toast copy + `duration` option changed on the existing sonner `toast.success()` call.
+- a11y: WCAG AA OK (fe-accessibility-auditor verdict: PASS, 0 blocking findings; A11Y-001 informational note on 4000ms readability for long names — no code change required, screen-reader announcement unaffected by visual duration).
+- impeccable audit: 0 findings applicable — copy/timing-only diff, no visual hierarchy/layout/token surface to audit.
+- states: no new states introduced (existing loading/empty/error/success flows for both screens unaffected).
+
+**fe-tech-lead-reviewer verdict:** Approved (layering, i18n typing/parity, TDD proof, data-source assumptions all confirmed correct).
