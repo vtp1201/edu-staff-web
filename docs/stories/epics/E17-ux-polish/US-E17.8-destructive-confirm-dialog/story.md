@@ -183,3 +183,82 @@ unenroll, admin-settings switch, class-management archive. `bulk-lock`/`approve`
 bespoke amber "has-students" warning box is folded into the body string (information
 preserved as text; loses the standalone alert-box styling) — flagged here as the only
 consolidation that had extra presentational content.
+
+### Tech-lead review
+
+**Verdict: Approved** (0 blocking findings). Layering, tokens, i18n, role-gating, and TDD
+proof all pass. 4 non-blocking CONSIDER notes logged (not required for this story):
+commit `8f1b0bb` scope `ui` is slightly imprecise (touches `presentation/`, cosmetic);
+`archive-class`'s folded warning box could get a `children`/slot restore later; the
+component's name now also backs non-destructive-but-irreversible actions (publish/approve/
+switch) which is DR-011-approved, not a regression; several other raw-`AlertDialog` sites
+outside this story's fixed 7-file list are a future consolidation candidate.
+
+### Accessibility audit
+
+**Round 1:** 3 Blocking + 2 Major findings (A11Y-001..005, see remediation section above).
+**Round 2 (post-fix, re-verified by fe-lead against the auditor's exact recommendations):**
+all 5 fixes applied correctly — `cancelRef`/`onOpenAutoFocus` restores initial focus,
+icon/body contrast both clear their WCAG floors (≈5:1 / ≈5.1:1), row delete button meets
+the 44px target, and each row's `aria-label` is now distinguishable per student/date. No
+outstanding findings.
+
+### Design review: pass
+
+- design-system: conform — tokens-only throughout (verified by tech-lead + a re-grep for
+  raw color across the full diff), typography/spacing/radius match the
+  `destructiveConfirmDialog` design-spec.jsonc entry, reuses the existing `alert-dialog`
+  primitive and `Button` variants (no new pattern invented).
+- a11y: WCAG AA OK after round-2 remediation — contrast, keyboard, focus-on-open/restore,
+  touch target, distinguishable labels all verified; reduced-motion unaffected (no new
+  animation added, Radix's existing motion-safe wrapping untouched).
+- impeccable audit: not run as a separate CLI invocation — this is a token-reuse consolidation
+  of an existing interaction pattern (not a new screen/visual direction), consistent with
+  US-E17.5/E17.6/E17.7 precedent in this epic; tech-lead + a11y verdicts cover the same
+  ground impeccable would flag (contrast/spacing/hierarchy/states).
+- states: closed / open-idle / open-loading all covered (Storybook + Vitest); error state is
+  parent-owned (toast) per spec §5, not inside the dialog — matches FR-007's AC. Responsive:
+  `max-h-[92vh]` + internal scroll inherited unchanged from the existing `alert-dialog`
+  primitive, no new layout risk at 320px.
+
+### QA gate — Go (after 1 CRITICAL defect fix)
+
+`fe-qa-playwright` traced every AC to concrete test proof, closed 4 real coverage gaps
+test-only (shared component `TabCyclesFocusTrap` for AC-11; discipline delete-flow
+`ViolationsTab_DeleteFlow`/`_DeleteError`/`_Principal_NoDeleteButton`, previously 0%
+interaction-covered), and verified AC-24 (7-file consolidation) by direct grep. It also
+ran the real Storybook browser and found a genuine **CRITICAL production defect**:
+
+**DEF-001 (fixed):** `announcement-drawer.tsx`'s `submit()` success branch called
+`onOpenChange(false)` (closes the Sheet) but never reset `confirmSendOpen` — since the
+drawer is always-mounted, `DestructiveConfirmDialog` was left `open=true`, focus-trapped,
+visibly stuck over the closed drawer after every successful "Gửi ngay" confirm. Fixed by
+adding `setConfirmSendOpen(false)` alongside `onOpenChange(false)` in the `res.ok` branch.
+
+**Test-authoring follow-up (fe-lead):** QA's own red-test proof for DEF-001
+(`Create Drawer Send Submit` in `announcements-screen.stories.tsx`) asserted
+`queryByRole("alertdialog")` synchronously right after the confirm click, racing the
+un-awaited `submit()` promise + Radix's exit-animation unmount delay — this made the
+assertion flaky even with the fix applied (confirmed identical against a `main` baseline
+worktree: the *same* 9/19 stories in this file fail on both `main` and this branch for an
+unrelated pre-existing cascading env issue at a different assertion, `getByRole("tablist")`
+— NOT a DEF-001 regression). Isolated re-run in a clean per-test invocation
+(`-t "Create Drawer Send Submit"`) confirmed the underlying fix is correct but the
+assertion needed to poll rather than assert synchronously. Fixed by swapping to
+`waitFor(() => expect(...).not.toBeInTheDocument())` — re-run in isolation now passes
+(1 passed | 18 skipped, the 18 skip from the `-t` filter, not a failure).
+
+**Verdict: Go** — 1 CRITICAL defect found and fixed, 4 real coverage gaps closed, AC-24
+consolidation verified, ~88% explicit AC-bullet-to-test traceability (remaining gaps are
+low-risk items inherited unchanged from the Radix primitive: icon/title DOM order,
+Enter/Space-vs-click on native `<button>`, focus-restore-to-trigger in an isolated-story
+context with no real trigger, 320px re-verification — none are novel risk from this diff).
+
+### Proof re-verified by fe-lead (post-remediation + post-QA-defect-fix)
+
+`bunx tsc --noEmit` clean · `bun vitest run` 1000/1000 (197 files) · Storybook real-browser
+run for `destructive-confirm-dialog` 8/8 passed · `announcements-screen > Create Drawer Send
+Submit` passes in isolation after the `waitFor` fix · confirmed the file's other 9/19
+failures are identical on a `main` baseline worktree (pre-existing, unrelated cascading env
+issue, not a regression) · `bun run build` compiled · pre-push gate (`branch-name`/`test`/
+`build`) green on push.

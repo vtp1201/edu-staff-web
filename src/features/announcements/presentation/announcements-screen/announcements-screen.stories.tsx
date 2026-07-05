@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   AnnouncementEntity,
@@ -347,8 +347,13 @@ export const CreateDrawer_SendSubmit: Story = {
 
     // Drawer closes (its title disappears) once the mutation resolves —
     // we trust the onCreate mock was called; toast renders outside canvas.
-    await expect(drawer.queryByRole("alertdialog")).not.toBeInTheDocument();
-    await expect(title).not.toBeInTheDocument();
+    // The confirm click fires an un-awaited async submit() + Radix's own
+    // exit-animation unmount delay, so poll instead of asserting synchronously
+    // (DEF-001 fix verification — see US-E17.8 story.md Evidence).
+    await waitFor(() =>
+      expect(drawer.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(title).not.toBeInTheDocument());
   },
 };
 
