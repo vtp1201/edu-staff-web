@@ -28,10 +28,16 @@
       "title": "Không có dữ liệu học bạ"
     },
     "error": {
+      "already-sealed": "Học bạ đã được ký trước đó.",
       "forbidden": "Bạn không có quyền xem học bạ này.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "no-pending-request": "Không tìm thấy yêu cầu mở học bạ.",
+      "not-all-locked": "Chưa thể ký: vẫn còn điểm chưa được khoá.",
       "not-found": "Không tìm thấy học bạ của học sinh này.",
+      "not-sealed": "Học bạ chưa được ký nên không thể mở.",
+      "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
       "retry": "Thử lại",
+      "same-admin-as-initiator": "Cần một admin khác xác nhận.",
       "title": "Không thể tải học bạ",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
     },

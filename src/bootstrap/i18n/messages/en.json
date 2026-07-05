@@ -28,10 +28,16 @@
       "title": "No academic record data"
     },
     "error": {
+      "already-sealed": "This record has already been sealed.",
       "forbidden": "You do not have permission to view this academic record.",
       "network-error": "Connection error. Please try again.",
+      "no-pending-request": "No matching unseal request was found.",
+      "not-all-locked": "Cannot seal: some grades are still unlocked.",
       "not-found": "Academic record for this student was not found.",
+      "not-sealed": "This record is not sealed and cannot be unsealed.",
+      "reason-too-short": "The reason must be at least 20 characters.",
       "retry": "Retry",
+      "same-admin-as-initiator": "A different admin must confirm.",
       "title": "Unable to load academic record",
       "unknown": "Something went wrong. Please try again later."
     },
