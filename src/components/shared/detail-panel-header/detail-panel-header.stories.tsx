@@ -4,6 +4,26 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { Button } from "@/components/ui/button";
 import { DetailPanelHeader } from "./detail-panel-header";
 
+/**
+ * QA NOTE (US-E17.9 gate): `@storybook/addon-viewport` is NOT installed in
+ * this repo (`.storybook/main.ts` addons list), so `globals.viewport` /
+ * `parameters.viewport` below are INERT decoration only — they do not resize
+ * anything in either the Storybook UI or the `vitest --config
+ * vitest.storybook.mts` browser runner (default Playwright chromium viewport
+ * is 1280x720, well above the `md:` 768px breakpoint, so `md:not-sr-only`
+ * labels never actually collapse under that default). To get REAL proof of
+ * the 375px-viewport ACs (AC-E17.9-08/09), this play() calls the underlying
+ * `@vitest/browser-playwright` context's `page.viewport()` to genuinely
+ * resize the iframe before asserting. This is a repo-wide gap (every other
+ * "MobileViewport"/"Viewport375" story in the codebase has the same inert
+ * `globals.viewport` pattern) — flagged to fe-lead separately, not something
+ * this story packet's tests can fix on their own for every consumer.
+ */
+async function resizeToMobile() {
+  const { page } = await import("vitest/browser");
+  await page.viewport(375, 812);
+}
+
 const meta = {
   title: "Shared/DetailPanelHeader",
   component: DetailPanelHeader,
@@ -99,21 +119,40 @@ export const MobileViewport: Story = {
     ),
   },
   play: async ({ canvasElement }) => {
+    await resizeToMobile();
     const canvas = within(canvasElement);
-    // Back button keeps its accessible name and 44px target at 375px.
+    // AC-E17.9-02: back button keeps its accessible name and >=44x44 target at 375px.
     const back = canvas.getByRole("button", { name: BACK_LABEL });
     await expect(back).toBeInTheDocument();
-    // Action buttons expose their name via aria-label even when the visible
-    // label span is collapsed (icon-only) below md.
+    const backRect = back.getBoundingClientRect();
+    await expect(backRect.height).toBeGreaterThanOrEqual(44);
+    await expect(backRect.width).toBeGreaterThanOrEqual(44);
+
+    // AC-E17.9-08: the long title truncates (scrollWidth > clientWidth means
+    // the ellipsis is actually clipping content, not just present as a class)
+    // and does NOT displace the back button or actions zone out of view.
+    const title = canvasElement.querySelector("span.truncate.text-center");
+    if (!title) throw new Error("title span not found");
+    await expect(title.scrollWidth).toBeGreaterThan(title.clientWidth);
+    await expect(back.getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    const publishBtn = canvas.getByRole("button", { name: "Xuất bản" });
+    await expect(publishBtn.getBoundingClientRect().right).toBeLessThanOrEqual(
+      canvasElement.getBoundingClientRect().right,
+    );
+
+    // AC-E17.9-09: action buttons expose their name via aria-label even when
+    // the visible label span is collapsed (icon-only) below md.
     await expect(
       canvas.getByRole("button", { name: "Lưu nháp" }),
     ).toBeInTheDocument();
-    await expect(
-      canvas.getByRole("button", { name: "Xuất bản" }),
-    ).toBeInTheDocument();
-    // The label span is present in the DOM but visually collapsed (sr-only)
-    // at this viewport — proving the icon-only mobile behavior.
+    await expect(publishBtn).toBeInTheDocument();
+    // The label span is present in the DOM (accessible name intact) but
+    // visually clipped to a 1px box at this viewport (`sr-only`), proving the
+    // icon-only mobile collapse rather than merely asserting a class string.
     const label = canvasElement.querySelector("span.sr-only");
-    await expect(label).not.toBeNull();
+    if (!label) throw new Error("action label span not found");
+    const labelStyle = window.getComputedStyle(label);
+    await expect(labelStyle.position).toBe("absolute");
+    await expect(Number.parseInt(labelStyle.width, 10)).toBeLessThanOrEqual(1);
   },
 };

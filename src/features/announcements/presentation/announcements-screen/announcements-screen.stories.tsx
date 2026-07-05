@@ -211,6 +211,32 @@ export const DetailSheet_ReadReceipts: Story = {
   },
 };
 
+/**
+ * AC-E17.9-17 / FR-006 (US-E17.9): the detail sheet's DetailPanelHeader back
+ * button shows the resolved `announcements.backToList` label as both visible
+ * text and `aria-label`, and clicking it closes the sheet.
+ */
+export const DetailSheet_BackButton: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const viewBtns = canvas.getAllByRole("button", { name: /Xem chi tiết/i });
+    await userEvent.click(viewBtns[0]);
+    const dialog = within(document.body);
+    const back = await dialog.findByRole("button", {
+      name: "Quay lại danh sách thông báo",
+    });
+    await expect(back).toHaveAttribute(
+      "aria-label",
+      "Quay lại danh sách thông báo",
+    );
+    await userEvent.click(back);
+    await waitFor(() =>
+      expect(dialog.queryByText(/Chi tiết thông báo/i)).not.toBeInTheDocument(),
+    );
+  },
+};
+
 /** Delete confirmation dialog. */
 export const DeleteDialog: Story = {
   args: baseProps,

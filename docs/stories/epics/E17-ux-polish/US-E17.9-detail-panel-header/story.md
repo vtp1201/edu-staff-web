@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -70,8 +70,36 @@ When updating durable proof status, use numeric booleans:
 
 ## Harness Delta
 
-No harness changes required. No new endpoints, tokens, or net-new i18n keys.
+No new endpoints or design tokens. One net-new i18n key added (routine copy,
+not a design-system token, no ADR needed): `announcements.backToList` (vi:
+"Quay lại danh sách thông báo", en: "Back to announcements") — spec.md's
+traceability table incorrectly listed it as pre-existing; confirmed missing
+from `messages/{vi,en}.json` before this story and added in both files,
+same commit.
 
 ## Evidence
 
-Add Storybook screenshot links after implementation.
+Design review: pass
+- design-system: conform — tokens-only (`border-border`, `bg-card`, `text-foreground`,
+  `text-edu-text-secondary`, ghost `Button` variant); no raw color; canonical home
+  `components/shared/detail-panel-header/` per decision `0026` (composed, 3 consumers).
+- a11y: fe-accessibility-auditor found A11Y-001 (critical, back-button contrast
+  `text-muted-foreground` 2.95:1 → `text-edu-text-secondary` 5.48:1) and A11Y-002
+  (major, same issue on messaging edit-icon button) — both fixed in commit
+  `e20c5a5`. Re-verified: WCAG AA contrast OK, keyboard (Enter/Space) OK, focus
+  ring via `--ring` untouched, Radix Sheet title/description preserved (sr-only),
+  reduced-motion N/A (no new animation), 44×44 touch target OK at all viewports.
+- impeccable audit: 0 findings — scoped manual audit against
+  `.claude/rules/impeccable.md` (design-system supremacy); reused ghost-Button
+  pattern already established repo-wide, no anti-pattern introduced.
+- states: default / with-title / with-actions / with-title-and-actions covered
+  in Storybook; 375px mobile-viewport story demonstrates title truncation +
+  icon-only actions (`sr-only md:not-sr-only` — corrected from spec's literal
+  `md:hidden`, which was backwards vs. the stated intent); no horizontal
+  overflow at 320px (flex-shrink-0 zones + min-w-0 title wrapper).
+
+fe-tech-lead-reviewer verdict: **Approved** (layering N/A — pure presentational
+shared component; tokens/i18n/TDD proof all verified independently).
+
+Storybook stories: `src/components/shared/detail-panel-header/detail-panel-header.stories.tsx`
+(Default, WithTitle, WithActions, WithTitleAndActions, MobileViewport).
