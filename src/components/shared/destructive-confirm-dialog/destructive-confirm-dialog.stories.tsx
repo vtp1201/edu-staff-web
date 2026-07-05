@@ -59,6 +59,8 @@ export const OpenIdle: Story = {
     const confirm = body.getByRole("button", { name: "Xóa vi phạm" });
     await expect(cancel).toBeEnabled();
     await expect(confirm).toBeEnabled();
+    // Initial focus moves onto the (non-destructive) cancel button on open.
+    await expect(cancel).toHaveFocus();
 
     await userEvent.click(confirm);
     await expect(args.onConfirm).toHaveBeenCalledTimes(1);

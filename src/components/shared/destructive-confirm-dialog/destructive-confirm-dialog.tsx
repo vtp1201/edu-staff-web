@@ -2,6 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { type Ref, useRef } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -45,16 +46,20 @@ export function DestructiveDialogActions({
   isLoading,
   onConfirm,
   onCancel,
+  cancelRef,
 }: {
   confirmLabel: string;
   cancelLabel: string;
   isLoading: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Forwarded so the dialog can move initial focus here on open (a11y). */
+  cancelRef?: Ref<HTMLButtonElement>;
 }) {
   return (
     <>
       <Button
+        ref={cancelRef}
         type="button"
         variant="outline"
         onClick={onCancel}
@@ -91,6 +96,7 @@ export function DestructiveConfirmDialog({
   onCancel,
 }: DestructiveConfirmDialogProps) {
   const tCommon = useTranslations("Common");
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   return (
     <AlertDialog
@@ -99,18 +105,27 @@ export function DestructiveConfirmDialog({
         if (!next) onCancel();
       }}
     >
-      <AlertDialogContent className="max-h-[92vh] overflow-y-auto">
+      <AlertDialogContent
+        className="max-h-[92vh] overflow-y-auto"
+        // We render plain <Button>s (not AlertDialogCancel), so Radix's default
+        // onOpenAutoFocus → cancelRef.current?.focus() is a no-op. Move initial
+        // focus to our cancel button explicitly (WCAG 2.4.3 / 2.1.2).
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          cancelRef.current?.focus();
+        }}
+      >
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle
               aria-hidden="true"
-              className="size-5 shrink-0 text-destructive"
+              className="size-5 shrink-0 text-edu-error-text"
             />
             <AlertDialogTitle className="text-base font-bold text-foreground">
               {title}
             </AlertDialogTitle>
           </div>
-          <AlertDialogDescription className="text-sm text-muted-foreground">
+          <AlertDialogDescription className="text-sm text-edu-text-secondary">
             {body}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -121,6 +136,7 @@ export function DestructiveConfirmDialog({
             isLoading={isLoading}
             onConfirm={onConfirm}
             onCancel={onCancel}
+            cancelRef={cancelRef}
           />
         </AlertDialogFooter>
       </AlertDialogContent>
