@@ -6,10 +6,12 @@ import {
   CalendarRange,
   Check,
   ChevronDown,
+  Circle,
   ClipboardList,
   GraduationCap,
   Grid3x3,
   Info,
+  Loader2,
   type LucideIcon,
   Settings2,
   Sparkles,
@@ -280,19 +282,30 @@ export function SchoolSetupScreen({
               </button>
             </div>
 
+            {/* Step counter — "BƯỚC N/M" */}
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              {t("stepper.progress", {
+                current: progress.currentStep,
+                total: progress.totalCount,
+              })}
+            </p>
+
             {/* Progress bar */}
             <div
               className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-edu-border"
               role="progressbar"
-              aria-valuenow={progress.percentComplete}
+              aria-valuenow={progress.roundedPercent}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={t("guide.progressAriaLabel")}
+              aria-label={t("stepper.ariaLabel", {
+                current: progress.currentStep,
+                total: progress.totalCount,
+              })}
             >
               <div
-                className="h-full w-full origin-left rounded-full bg-edu-primary motion-safe:transition-[transform] motion-safe:duration-[600ms]"
+                className="h-full rounded-full bg-edu-primary duration-[400ms] ease-out motion-safe:transition-[width]"
                 style={{
-                  transform: `scaleX(${progress.percentComplete / 100})`,
+                  width: `${(progress.completedCount / progress.totalCount) * 100}%`,
                 }}
               />
             </div>
@@ -301,7 +314,7 @@ export function SchoolSetupScreen({
             <div className="flex flex-col gap-0.5">
               {STEP_DEFS.map((step, i) => {
                 const done = setupStatus?.[step.key] ?? false;
-                const StepIcon = step.icon;
+                const isCurrent = !done && i === progress.currentStep - 1;
                 const stepLabel = tSteps(step.labelKey);
                 return (
                   <div
@@ -311,12 +324,15 @@ export function SchoolSetupScreen({
                       done && "bg-edu-success/[0.04]",
                     )}
                   >
+                    {/* Per-step status icon — carries its own aria-label (not decorative) */}
                     <div
                       className={cn(
                         "flex size-7 shrink-0 items-center justify-center rounded-full border",
                         done
                           ? "border-transparent bg-edu-success"
-                          : "border-edu-border bg-card",
+                          : isCurrent
+                            ? "border-edu-primary bg-card"
+                            : "border-edu-border bg-card",
                       )}
                     >
                       {done ? (
@@ -325,22 +341,27 @@ export function SchoolSetupScreen({
                           size={14}
                           className="text-edu-text-primary"
                           strokeWidth={2.6}
-                          aria-hidden
+                          role="img"
+                          aria-label={t("stepper.stepComplete")}
+                        />
+                      ) : isCurrent ? (
+                        <Loader2
+                          size={14}
+                          className="text-primary motion-safe:animate-spin"
+                          strokeWidth={2.4}
+                          role="img"
+                          aria-label={t("stepper.stepCurrent")}
                         />
                       ) : (
-                        /* A001 fix: step number uses text-edu-text-secondary */
-                        <span className="text-[12px] font-extrabold text-edu-text-secondary">
-                          {i + 1}
-                        </span>
+                        <Circle
+                          size={12}
+                          className="text-muted-foreground"
+                          strokeWidth={2.4}
+                          role="img"
+                          aria-label={t("stepper.stepPending")}
+                        />
                       )}
                     </div>
-                    <StepIcon
-                      size={16}
-                      className={
-                        done ? "text-edu-success" : "text-edu-text-secondary"
-                      }
-                      aria-hidden
-                    />
                     <span
                       className={cn(
                         "flex-1 text-[13.5px]",

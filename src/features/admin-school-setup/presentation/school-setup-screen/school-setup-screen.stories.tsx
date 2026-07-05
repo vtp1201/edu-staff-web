@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
+import { expect, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   SchoolConfig,
@@ -52,6 +53,85 @@ export const Configured: Story = {
     initialSetupStatus: partialStatus,
     onSaveGradeRange: noOp,
     onSaveMode: noOp,
+  },
+};
+
+// Stepper: 0 of 5 complete — fill 0%, counter "Bước 1/5", all steps pending.
+export const StepperZeroOfFive: Story = {
+  args: {
+    initialConfig: configuredConfig,
+    initialSetupStatus: allPendingStatus,
+    onSaveGradeRange: noOp,
+    onSaveMode: noOp,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const bar = await canvas.findByRole("progressbar");
+    await expect(bar).toHaveAttribute("aria-valuenow", "0");
+    await expect(bar).toHaveAttribute("aria-valuemin", "0");
+    await expect(bar).toHaveAttribute("aria-valuemax", "100");
+    const fill = bar.querySelector("div");
+    await expect(fill?.getAttribute("style")).toContain("width: 0%");
+    await expect(fill?.className).toContain("motion-safe:transition-[width]");
+    await expect(
+      await canvas.findByText(
+        messages.adminSchoolSetup.stepper.progress
+          .replace("{current}", "1")
+          .replace("{total}", "5"),
+      ),
+    ).toBeInTheDocument();
+    // Step 1 is "current"; steps 2–5 announce "pending".
+    await expect(
+      await canvas.findAllByLabelText(
+        messages.adminSchoolSetup.stepper.stepCurrent,
+      ),
+    ).toHaveLength(1);
+    await expect(
+      await canvas.findAllByLabelText(
+        messages.adminSchoolSetup.stepper.stepPending,
+      ),
+    ).toHaveLength(4);
+  },
+};
+
+// Stepper: 2 of 5 complete — fill 40%, aria-valuenow 40, counter "Bước 3/5",
+// 2 complete + 1 current + 2 pending icons.
+export const StepperTwoOfFive: Story = {
+  args: {
+    initialConfig: configuredConfig,
+    initialSetupStatus: partialStatus,
+    onSaveGradeRange: noOp,
+    onSaveMode: noOp,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const bar = await canvas.findByRole("progressbar");
+    await expect(bar).toHaveAttribute("aria-valuenow", "40");
+    const fill = bar.querySelector("div");
+    await expect(fill?.getAttribute("style")).toContain("width: 40%");
+    await expect(fill?.getAttribute("style")).not.toContain("scaleX");
+    await expect(
+      await canvas.findByText(
+        messages.adminSchoolSetup.stepper.progress
+          .replace("{current}", "3")
+          .replace("{total}", "5"),
+      ),
+    ).toBeInTheDocument();
+    await expect(
+      await canvas.findAllByLabelText(
+        messages.adminSchoolSetup.stepper.stepComplete,
+      ),
+    ).toHaveLength(2);
+    await expect(
+      await canvas.findAllByLabelText(
+        messages.adminSchoolSetup.stepper.stepCurrent,
+      ),
+    ).toHaveLength(1);
+    await expect(
+      await canvas.findAllByLabelText(
+        messages.adminSchoolSetup.stepper.stepPending,
+      ),
+    ).toHaveLength(2);
   },
 };
 
