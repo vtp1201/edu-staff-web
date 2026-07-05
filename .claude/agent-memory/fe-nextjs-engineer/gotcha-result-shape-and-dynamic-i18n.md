@@ -32,4 +32,21 @@ assignable" on US-E12.9 staffing departments screen.
 multiple sub-screens each with their own `errors` namespace, mirror all union keys
 into every sub-namespace.
 
-Related: [[pattern-usecase-result]], [[pattern-mock-first-wiring]].
+**2b. WIDENING a shared failure union ripples into SIBLING screens' dynamic
+`t(`errors.${key}`)`.** On US-E14.6 I added 6 members to the shared
+`AcademicRecordsFailure` union for the new seal screen. That instantly broke the
+already-built sibling viewer (`academic-record-screen.tsx`) whose
+`t(`error.${vm.error}`)` now type-required all 10 keys in its `academicRecord.error`
+namespace — a pre-commit `tsc` failure in a file I hadn't touched. Fix: add the new
+union keys to the sibling's `errors` namespace too (vi+en), even if that screen never
+emits them (generic wording is fine). **How to apply:** before widening any
+`*.failure.ts` union, grep for every `t(`error*.${` dynamic usage of that union and
+patch each namespace in the SAME commit.
+
+**Note (US-E14.6):** two repo error conventions coexist — this feature's seal repo
+uses `SealResult<T> = {ok,data}/{ok,error:Failure}` (see
+[[pattern-result-repo-vs-throwing]]); the viewer repo uses `{ok,data}/{ok,error}`
+too. Actions still return `{ok,data}/{ok,errorKey}`. Grep the feature's actual
+`i-*.repository.ts`/`result.ts` before assuming `.value`/`.failure` vs `.data`/`.error`.
+
+Related: [[pattern-usecase-result]], [[pattern-mock-first-wiring]], [[pattern-result-repo-vs-throwing]].
