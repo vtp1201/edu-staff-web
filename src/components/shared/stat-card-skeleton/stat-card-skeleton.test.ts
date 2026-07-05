@@ -44,11 +44,11 @@ describe("StatCardSkeleton — shape matches DefaultStatCard (FR-001)", () => {
 
 describe("StatCardSkeletonGrid — a11y wrapper + shared grid (FR-005, FR-007)", () => {
   it("wraps skeletons in role=status", () => {
-    expect(src).toContain('role="status"');
+    expect(src).toContain('role: "status"');
   });
 
   it("sets aria-busy=true on the wrapper", () => {
-    expect(src).toContain('aria-busy="true"');
+    expect(src).toContain('"aria-busy": "true"');
   });
 
   it("renders a visually-hidden sr-only label", () => {
@@ -63,5 +63,23 @@ describe("StatCardSkeletonGrid — a11y wrapper + shared grid (FR-005, FR-007)",
 
   it("does not re-add animate-pulse (the base Skeleton primitive owns it)", () => {
     expect(src).not.toContain("animate-pulse");
+  });
+});
+
+describe("StatCardSkeletonGrid — announce prop gates the live region (A11Y-001)", () => {
+  it("exposes an announce prop defaulting to true", () => {
+    expect(src).toContain("announce = true");
+    expect(src).toContain("announce?: boolean");
+  });
+
+  it("gates role=status/aria-busy behind announce", () => {
+    // The status/aria-busy attrs are spread conditionally on `announce`.
+    expect(src).toContain(
+      'announce ? { role: "status", "aria-busy": "true" } : {}',
+    );
+  });
+
+  it("gates the sr-only live-region label behind announce", () => {
+    expect(src).toContain('announce && <span className="sr-only">');
   });
 });

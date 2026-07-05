@@ -45,9 +45,10 @@ export default meta;
 type Story = StoryObj<typeof DisciplineScreen>;
 
 /**
- * Skeleton while the RSC streams initial data (AC-1). US-E17.10: the stat grid
- * and the table skeleton each expose role="status" + aria-busy="true" so screen
- * readers announce loading without focus (FR-005 / WCAG 4.1.3).
+ * Skeleton while the RSC streams initial data (AC-1). US-E17.10: the whole
+ * loading block (stat grid + table skeleton) is wrapped in ONE role="status" +
+ * aria-busy="true" region so screen readers announce loading once, without
+ * focus (FR-005 / WCAG 4.1.3, A11Y-001).
  */
 export const Loading: Story = {
   args: { ...baseVm, isLoading: true },
@@ -56,12 +57,13 @@ export const Loading: Story = {
     await expect(
       canvas.getByRole("heading", { name: /Kỷ luật|Hành chính/ }),
     ).toBeInTheDocument();
-    // Two skeleton wrappers: stat grid + table (US-E17.10 FR-005).
+    // Exactly ONE status region for the whole loading block: the nested stat
+    // grid opts out of its own live region (announce={false}) so screen
+    // readers announce the single logical loading event once, not twice
+    // (US-E17.10, A11Y-001 / WCAG 4.1.3).
     const statuses = canvas.getAllByRole("status");
-    await expect(statuses.length).toBeGreaterThanOrEqual(2);
-    for (const status of statuses) {
-      await expect(status).toHaveAttribute("aria-busy", "true");
-    }
+    await expect(statuses.length).toBe(1);
+    await expect(statuses[0]).toHaveAttribute("aria-busy", "true");
   },
 };
 

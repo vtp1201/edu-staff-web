@@ -30,26 +30,34 @@ export function StatCardSkeleton() {
  * translated `srLabel` so this works in both a client component (discipline,
  * `useTranslations`) and an RSC `loading.tsx` (teacher/student,
  * `getTranslations`) without importing next-intl itself.
+ *
+ * `announce` (default `true`) owns the `role="status"` + `aria-busy` +
+ * `sr-only` live region. When this grid is nested inside a larger loading
+ * block that already exposes ONE status region (e.g. the discipline screen's
+ * stat grid + table skeleton), pass `announce={false}` so screen readers
+ * announce the single logical loading event once, not once per skeleton block
+ * (US-E17.10, A11Y-001 / WCAG 4.1.3).
  */
 export function StatCardSkeletonGrid({
   count,
   srLabel,
   className,
+  announce = true,
 }: {
   count: number;
   srLabel: string;
   className?: string;
+  announce?: boolean;
 }) {
   return (
     <div
-      role="status"
-      aria-busy="true"
+      {...(announce ? { role: "status", "aria-busy": "true" } : {})}
       className={cn(
         "grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4",
         className,
       )}
     >
-      <span className="sr-only">{srLabel}</span>
+      {announce && <span className="sr-only">{srLabel}</span>}
       {Array.from({ length: count }, (_, i) => `stat-card-skeleton-${i}`).map(
         (key) => (
           <StatCardSkeleton key={key} />

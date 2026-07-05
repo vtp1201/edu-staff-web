@@ -59,24 +59,27 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
     return (
       <div className="flex flex-col gap-6 p-6 sm:p-8">
         {header}
-        {/* count=4: both violations-tab and conduct-tab render exactly 4
-            StatCards, and violations is the default tab — 4 matches the real
-            content shown, satisfying NFR-002 (zero CLS). */}
-        <StatCardSkeletonGrid
-          count={4}
-          srLabel={tCommon("skeleton.loadingAriaLabel")}
-        />
-        <div
-          role="status"
-          aria-busy="true"
-          className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card"
-        >
+        {/* One status region for the whole loading block: screen readers
+            announce the single logical loading event once, not once per
+            skeleton block (A11Y-001 / WCAG 4.1.3). The nested stat grid opts
+            out of its own live region via announce={false}. */}
+        <div role="status" aria-busy="true" className="flex flex-col gap-6">
           <span className="sr-only">
             {tCommon("skeleton.loadingAriaLabel")}
           </span>
-          {["r1", "r2", "r3", "r4", "r5"].map((k) => (
-            <TableRowSkeleton key={k} />
-          ))}
+          {/* count=4: both violations-tab and conduct-tab render exactly 4
+              StatCards, and violations is the default tab — 4 matches the real
+              content shown, satisfying NFR-002 (zero CLS). */}
+          <StatCardSkeletonGrid
+            count={4}
+            srLabel={tCommon("skeleton.loadingAriaLabel")}
+            announce={false}
+          />
+          <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+            {["r1", "r2", "r3", "r4", "r5"].map((k) => (
+              <TableRowSkeleton key={k} />
+            ))}
+          </div>
         </div>
       </div>
     );
