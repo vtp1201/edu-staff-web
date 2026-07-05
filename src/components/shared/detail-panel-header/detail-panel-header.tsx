@@ -58,7 +58,7 @@ export function DetailPanelHeader({
         variant="ghost"
         onClick={onBack}
         aria-label={backLabel}
-        className="min-h-[44px] min-w-[44px] flex-shrink-0 text-muted-foreground"
+        className="min-h-[44px] min-w-[44px] flex-shrink-0 text-edu-text-secondary"
       >
         <ChevronLeft className="size-4" aria-hidden="true" />
         <span className="truncate">{backLabel}</span>

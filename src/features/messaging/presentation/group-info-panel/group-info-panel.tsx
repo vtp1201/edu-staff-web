@@ -95,7 +95,7 @@ export function GroupInfoPanel({
                 size="icon"
                 onClick={() => setEditing(true)}
                 aria-label={t("editName")}
-                className="text-muted-foreground"
+                className="text-edu-text-secondary"
               >
                 <Pencil className="size-4" aria-hidden="true" />
               </Button>
