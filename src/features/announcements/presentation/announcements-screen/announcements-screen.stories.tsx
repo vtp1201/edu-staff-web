@@ -305,7 +305,12 @@ export const CreateDrawer_CharCount: Story = {
 // AC-5 — Send now → toast confirmation
 // ---------------------------------------------------------------------------
 
-/** AC-5: Filling the form and clicking "Gửi ngay" triggers the send action. */
+/**
+ * AC-5 / US-E17.8 AC-17: Clicking "Gửi ngay" no longer sends immediately — it
+ * opens the `DestructiveConfirmDialog` (send-to-school is high-stakes). Only
+ * confirming inside that dialog triggers the send action and closes the
+ * drawer. This replaces the pre-US-E17.8 single-click-sends assertion.
+ */
 export const CreateDrawer_SendSubmit: Story = {
   args: {
     ...baseProps,
@@ -317,17 +322,33 @@ export const CreateDrawer_SendSubmit: Story = {
       name: /Tạo thông báo/i,
     })[0];
     await userEvent.click(createBtn);
-    const dialog = within(document.body);
-    const title = await dialog.findByLabelText(/Tiêu đề/i);
-    const body = await dialog.findByLabelText(/Nội dung/i);
+    const drawer = within(document.body);
+    const title = await drawer.findByLabelText(/Tiêu đề/i);
+    const body = await drawer.findByLabelText(/Nội dung/i);
     await userEvent.type(title, "Thông báo nghỉ lễ 30/4");
     await userEvent.type(body, "Nhà trường thông báo lịch nghỉ lễ 30/4.");
-    const sendBtn = await dialog.findByRole("button", { name: /Gửi ngay/i });
-    await expect(sendBtn).toBeEnabled();
-    await userEvent.click(sendBtn);
-    // Drawer should close (drawer title disappears from the dialog portal)
-    // and we trust the onCreate mock was called; toast renders outside canvas
-    await expect(sendBtn).not.toBeInTheDocument();
+    const drawerSendBtn = await drawer.findByRole("button", {
+      name: /Gửi ngay/i,
+    });
+    await expect(drawerSendBtn).toBeEnabled();
+
+    await userEvent.click(drawerSendBtn);
+
+    // Confirm dialog opens first — the drawer's send action has NOT fired yet.
+    const confirmDialog = within(await drawer.findByRole("alertdialog"));
+    await expect(
+      confirmDialog.getByText(messages.announcements.sendConfirmTitle),
+    ).toBeInTheDocument();
+
+    const confirmSendBtn = confirmDialog.getByRole("button", {
+      name: /Gửi ngay/i,
+    });
+    await userEvent.click(confirmSendBtn);
+
+    // Drawer closes (its title disappears) once the mutation resolves —
+    // we trust the onCreate mock was called; toast renders outside canvas.
+    await expect(drawer.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await expect(title).not.toBeInTheDocument();
   },
 };
 

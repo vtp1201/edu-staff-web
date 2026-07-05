@@ -68,6 +68,36 @@ export const OpenIdle: Story = {
   },
 };
 
+/**
+ * AC-11 (FR-005): Tab cycles focus only between cancel and confirm — Radix's
+ * focus trap keeps focus inside the dialog (no escape to elements outside).
+ */
+export const TabCyclesFocusTrap: Story = {
+  args: {
+    open: true,
+    isLoading: false,
+    title: "Xóa vi phạm?",
+    body: "Hành động này không thể hoàn tác.",
+    confirmLabel: "Xóa vi phạm",
+  },
+  play: async () => {
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    const cancel = body.getByRole("button", { name: CANCEL_LABEL });
+    const confirm = body.getByRole("button", { name: "Xóa vi phạm" });
+
+    // Initial focus lands on cancel (A11Y-001).
+    await expect(cancel).toHaveFocus();
+
+    await userEvent.tab();
+    await expect(confirm).toHaveFocus();
+
+    // Tab again wraps back to cancel — focus never escapes the two buttons.
+    await userEvent.tab();
+    await expect(cancel).toHaveFocus();
+  },
+};
+
 /** open + idle → clicking cancel fires onCancel exactly once. */
 export const CancelClick: Story = {
   args: {
