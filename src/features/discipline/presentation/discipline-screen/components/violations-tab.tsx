@@ -456,9 +456,12 @@ export function ViolationsTab({
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon"
                       className="text-edu-text-secondary hover:text-destructive"
-                      aria-label={t("deleteDialog.confirm")}
+                      aria-label={t("deleteDialog.rowAriaLabel", {
+                        studentName: v.studentName,
+                        date: v.date,
+                      })}
                       onClick={() => setDeleteTarget(v)}
                     >
                       <Trash2 className="size-4" aria-hidden="true" />
