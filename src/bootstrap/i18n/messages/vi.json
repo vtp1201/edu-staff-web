@@ -112,6 +112,145 @@
       "currentBadge": "Năm hiện tại"
     }
   },
+  "academicRecordSeal": {
+    "ariaLocked": "Đã khoá",
+    "auditTrail": {
+      "actionSeal": "Ký học bạ",
+      "actionUnseal": "Mở học bạ",
+      "columns": {
+        "action": "Hành động",
+        "actor": "Người thực hiện",
+        "class": "Lớp",
+        "occurredAt": "Thời điểm",
+        "term": "Học kỳ",
+        "year": "Năm học"
+      },
+      "empty": "Chưa có lịch sử ký / mở học bạ.",
+      "title": "Lịch sử ký & mở học bạ"
+    },
+    "breadcrumb": {
+      "home": "Trang chủ",
+      "record": "Học bạ"
+    },
+    "emptyBatch": "Chưa có dữ liệu cho lựa chọn này",
+    "errors": {
+      "already-sealed": "Học bạ đã được ký trước đó.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "no-pending-request": "Không tìm thấy yêu cầu mở học bạ.",
+      "not-all-locked": "Chưa thể ký: vẫn còn điểm chưa được khoá.",
+      "not-found": "Không tìm thấy dữ liệu học bạ.",
+      "not-sealed": "Học bạ chưa được ký nên không thể mở.",
+      "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
+      "same-admin-as-initiator": "Cần một admin khác xác nhận.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
+    },
+    "gate": {
+      "allLocked": {
+        "subtitle": "{total} học sinh · {pending} chưa ký · {sealed} đã ký",
+        "title": "Tất cả điểm đã khoá. Sẵn sàng ký học bạ."
+      },
+      "notAllLocked": {
+        "linkToApproval": "Đến màn Duyệt & khoá",
+        "subjectsLabel": "Môn chưa khoá",
+        "title": "Còn {count} học sinh chưa khoá điểm.",
+        "warning": "Vui lòng khoá toàn bộ điểm tại màn hình Duyệt & khoá điểm trước khi ký học bạ."
+      }
+    },
+    "roleAdmin": "ADMIN",
+    "sealButton": "Ký học bạ",
+    "sealDialog": {
+      "after": "Sau khi ký: điểm được đóng băng và không thể thay đổi. Để chỉnh sửa, cần yêu cầu mở học bạ với xác nhận 2 quản trị viên.",
+      "body": "Ký học bạ cho lớp {class} — {term} ({year})?",
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận ký",
+      "sealing": "Đang ký…",
+      "title": "Xác nhận ký học bạ"
+    },
+    "sealSuccess": {
+      "sealedAtLabel": "Thời điểm ký",
+      "sealedByLabel": "Người ký",
+      "sealedIndicator": "Đã ký",
+      "toast": "Đã ký học bạ lớp {class} — {term}."
+    },
+    "selector": {
+      "class": "Lớp",
+      "classPlaceholder": "— Chọn lớp —",
+      "term": "Học kỳ",
+      "term1": "Học kỳ 1",
+      "term2": "Học kỳ 2",
+      "year": "Năm học"
+    },
+    "signedInAs": "Bạn đang đăng nhập với tư cách",
+    "subtitle": "Đóng băng điểm cuối kỳ và quản lý yêu cầu mở học bạ với xác nhận 2 quản trị viên.",
+    "tabs": {
+      "seal": "Ký học bạ",
+      "unseal": "Yêu cầu mở học bạ",
+      "unsealWithCount": "Yêu cầu mở học bạ, {count} chờ xác nhận"
+    },
+    "title": "Ký học bạ",
+    "unseal": {
+      "card": {
+        "awaitingOther": "Chờ xác nhận từ quản trị viên khác",
+        "canConfirm": "Yêu cầu được tạo bởi admin khác. Bạn có thể xác nhận để mở học bạ.",
+        "confirmedBy": "Xác nhận bởi {name}",
+        "reasonLabel": "Lý do",
+        "requestedBy": "Yêu cầu bởi {name}"
+      },
+      "confirmButton": "Xác nhận mở",
+      "empty": {
+        "pending": "Không có yêu cầu chờ xác nhận",
+        "resolved": "Chưa có yêu cầu nào đã xử lý"
+      },
+      "initiateButton": "Tạo yêu cầu mở học bạ",
+      "initiateForm": {
+        "cancel": "Huỷ",
+        "charCount": "{count} / {min}",
+        "minChars": "Tối thiểu {min} ký tự",
+        "note": "Yêu cầu này cần xác nhận thứ hai từ admin khác trước khi học bạ được mở. Mọi hành động đều được ghi vào nhật ký kiểm toán.",
+        "noteLabel": "Lưu ý:",
+        "reasonLabel": "Lý do mở học bạ — bắt buộc",
+        "reasonPlaceholder": "Mô tả chi tiết lý do cần mở học bạ, kèm số biên bản / công văn nếu có…",
+        "sealedHint": "Ký {date}",
+        "studentLabel": "Học sinh đã ký học bạ",
+        "studentPlaceholder": "— Chọn học sinh —",
+        "submit": "Tạo yêu cầu",
+        "subtitle": "Yêu cầu sẽ chờ xác nhận từ admin thứ hai.",
+        "title": "Tạo yêu cầu mở học bạ"
+      },
+      "reasonMinLengthError": "Lý do phải có ít nhất {min} ký tự.",
+      "sameAdminDialog": {
+        "body": "Bạn là người đã tạo yêu cầu này. Cần một quản trị viên khác xác nhận để mở học bạ.",
+        "ok": "Đã hiểu",
+        "title": "Cần admin khác xác nhận"
+      },
+      "sections": {
+        "pending": "Đang chờ xác nhận",
+        "resolved": "Đã xử lý"
+      },
+      "selfApproveButton": "Tự phê duyệt (cảnh báo)",
+      "selfApproveDialog": {
+        "auditLabel": "Bản ghi kiểm toán",
+        "body": "Bạn đang tự phê duyệt yêu cầu mở học bạ của chính mình. Hành động này sẽ được ghi lại trong nhật ký kiểm toán và có thể bị BGH cấp cao xét duyệt sau.",
+        "cancel": "Huỷ",
+        "confirm": "Tiếp tục tự phê duyệt",
+        "title": "Cảnh báo: Tự phê duyệt"
+      },
+      "statusApproved": "Đã duyệt",
+      "statusApprovedSelf": "Đã duyệt (tự PD)",
+      "statusPending": "Chờ xác nhận",
+      "success": {
+        "confirmToast": "Đã xác nhận mở học bạ.",
+        "initiateToast": "Đã tạo yêu cầu mở học bạ — chờ admin thứ hai xác nhận.",
+        "selfApproveToast": "Đã tự phê duyệt — hành động được ghi vào nhật ký."
+      },
+      "toolbar": {
+        "pendingBadge": "{count} chờ xác nhận",
+        "subtitle": "Mỗi yêu cầu cần xác nhận thứ hai từ admin khác trước khi học bạ được mở.",
+        "title": "Yêu cầu mở học bạ"
+      }
+    }
+  },
   "adminRoster": {
     "actions": {
       "exportList": "Xuất danh sách",
