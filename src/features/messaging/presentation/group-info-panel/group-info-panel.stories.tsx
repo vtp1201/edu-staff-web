@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import { GroupInfoPanel } from "./group-info-panel";
@@ -114,6 +114,27 @@ export const GroupInfoPanel_NonAdminView: Story = {
       body().queryByText("+ Thêm thành viên"),
     ).not.toBeInTheDocument();
     await expect(body().queryByText("Xoá nhóm")).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * AC-E17.9-19/20 / FR-007 (US-E17.9): back button's aria-label matches the
+ * resolved `messaging.chat.backToList` value, meets the 44x44 touch target,
+ * and clicking it calls `onOpenChange(false)` exactly once.
+ */
+export const GroupInfoPanel_BackButton: Story = {
+  args: { onOpenChange: fn() },
+  play: async ({ args }) => {
+    const back = await body().findByRole("button", {
+      name: "Quay lại danh sách",
+    });
+    await expect(back).toHaveAttribute("aria-label", "Quay lại danh sách");
+    const rect = back.getBoundingClientRect();
+    await expect(rect.height).toBeGreaterThanOrEqual(44);
+    await expect(rect.width).toBeGreaterThanOrEqual(44);
+    await userEvent.click(back);
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false);
   },
 };
 
