@@ -23,8 +23,9 @@ function read(rel: string): string {
   return readFileSync(new URL(rel, import.meta.url), "utf8");
 }
 
+// The tab panels still render their stat grids inline with the responsive
+// column class.
 describe.each([
-  ["discipline-screen.tsx", "./discipline-screen.tsx"],
   ["conduct-tab.tsx", "./components/conduct-tab.tsx"],
   ["violations-tab.tsx", "./components/violations-tab.tsx"],
 ])("discipline stat-grid — %s", (_name, rel) => {
@@ -36,6 +37,26 @@ describe.each([
 
   it("keeps the 16px gap-4 gap on the stat-grid container", () => {
     expect(src).toContain(`${STAT_GRID} gap-4`);
+  });
+
+  it("no longer uses the pre-fix hard-coded stat-grid container class", () => {
+    expect(src).not.toContain(OLD_STAT_CONTAINER);
+  });
+
+  it.each(FORBIDDEN)("no longer contains the hard-coded class %s", (cls) => {
+    expect(src).not.toContain(cls);
+  });
+});
+
+// US-E17.10: discipline-screen.tsx's loading block no longer inlines the stat
+// grid — it delegates to the shared <StatCardSkeletonGrid>, which carries the
+// responsive column class (locked in stat-card-skeleton.test.ts). The screen
+// must still be free of the pre-fix hard-coded 4-col classes.
+describe("discipline stat-grid — discipline-screen.tsx", () => {
+  const src = read("./discipline-screen.tsx");
+
+  it("delegates the loading stat grid to the shared StatCardSkeletonGrid", () => {
+    expect(src).toContain("StatCardSkeletonGrid");
   });
 
   it("no longer uses the pre-fix hard-coded stat-grid container class", () => {

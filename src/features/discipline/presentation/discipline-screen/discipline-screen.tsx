@@ -4,12 +4,13 @@ import { Award, CalendarDays, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { StatCardSkeletonGrid } from "@/components/shared/stat-card-skeleton";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/shared/utils";
 import { ConductTab } from "./components/conduct-tab";
 import { LeaveTab } from "./components/leave-tab";
+import { TableRowSkeleton } from "./components/table-row-skeleton";
 import { ViolationsTab } from "./components/violations-tab";
 import type {
   DisciplineScreenVM,
@@ -18,6 +19,7 @@ import type {
 
 export function DisciplineScreen(vm: DisciplineScreenVM) {
   const t = useTranslations("discipline");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -57,18 +59,28 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
     return (
       <div className="flex flex-col gap-6 p-6 sm:p-8">
         {header}
-        <div
-          className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4"
-          aria-busy="true"
-        >
-          {["a", "b", "c", "d"].map((k) => (
-            <Skeleton
-              key={k}
-              className="h-20 rounded-[var(--edu-radius-card)]"
-            />
-          ))}
+        {/* One status region for the whole loading block: screen readers
+            announce the single logical loading event once, not once per
+            skeleton block (A11Y-001 / WCAG 4.1.3). The nested stat grid opts
+            out of its own live region via announce={false}. */}
+        <div role="status" aria-busy="true" className="flex flex-col gap-6">
+          <span className="sr-only">
+            {tCommon("skeleton.loadingAriaLabel")}
+          </span>
+          {/* count=4: both violations-tab and conduct-tab render exactly 4
+              StatCards, and violations is the default tab — 4 matches the real
+              content shown, satisfying NFR-002 (zero CLS). */}
+          <StatCardSkeletonGrid
+            count={4}
+            srLabel={tCommon("skeleton.loadingAriaLabel")}
+            announce={false}
+          />
+          <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+            {["r1", "r2", "r3", "r4", "r5"].map((k) => (
+              <TableRowSkeleton key={k} />
+            ))}
+          </div>
         </div>
-        <Skeleton className="h-64 rounded-[var(--edu-radius-card)]" />
       </div>
     );
   }
