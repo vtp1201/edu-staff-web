@@ -40,6 +40,11 @@ describe("StatCardSkeleton — shape matches DefaultStatCard (FR-001)", () => {
     expect(src).toContain("shadow-card");
     expect(src).toContain("px-6 py-5");
   });
+
+  it("uses no raw colors (tokens-only; AC-14)", () => {
+    expect(src).not.toMatch(/#[0-9a-fA-F]{3,6}/);
+    expect(src).not.toMatch(/(bg|text|border)-(gray|slate|zinc|neutral)-\d/);
+  });
 });
 
 describe("StatCardSkeletonGrid — a11y wrapper + shared grid (FR-005, FR-007)", () => {
