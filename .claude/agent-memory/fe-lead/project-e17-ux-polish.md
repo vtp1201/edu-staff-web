@@ -1,6 +1,6 @@
 ---
 name: project-e17-ux-polish
-description: E17 UX polish epic (DR-010/DR-011) — US-E17.1/US-E17.2/US-E17.3/US-E17.4/US-E17.5/US-E17.6/US-E17.7 implemented; other US in epic
+description: E17 UX polish epic (DR-010/DR-011) — US-E17.1..E17.9 implemented; other US in epic
 metadata:
   type: project
 ---
@@ -332,3 +332,377 @@ reused tech-lead/a11y verdicts, no separate `/impeccable` CLI invocation for a t
 polish diff — consistent with US-E17.5/E17.6 precedent) → QA (Go, closed 1 coverage gap, 48/48 AC)
 → harness proof (`--unit 1 --integration 1 --e2e 0 --platform 0`) → TEST_MATRIX row replaced (was a
 stale `planned` row from an earlier BA sync) → merge. 950/950 unit, tsc/build clean throughout.
+
+US-E17.8 (DestructiveConfirmDialog shared component, UX-02/DR-011) implemented 2026-07-05
+on `feat/us-e17.8-destructive-confirm-dialog` (merged `9d6875a` + deleted). Solo mode. The
+most consolidation-heavy story in this epic: 1 new shared component + 2 real net-new
+instances + 7 feature-local dialogs deleted-and-migrated + 1 net-new mock-first Clean-Arch
+mini-feature (discipline delete-violation didn't exist at all before this story).
+
+**A BA spec's "no net-new anything" framing can still hide real net-new work and a real
+typo — verify each claim against the actual codebase before delegating, not after.** spec.md
+said "purely presentational... no BE integration" and "all i18n keys existing," but grepping
+first found: (1) discipline violation delete had ZERO existing capability anywhere (no
+use-case/repo method/button) — FR-007 actually required building a full mock-first
+Clean-Arch mini-feature, not just wiring a dialog; (2) the spec's own key name
+`discipline.violations.deleteDialog.confirmLabel` doesn't exist in vi.json/en.json — the
+real key is `.confirm`. Both caught via a 5-minute grep+python-json-check *before*
+delegating, which let the engineer's brief include the exact correction instead of
+discovering it mid-implementation.
+
+**A shared-dialog API with only title/body/confirmLabel cannot always replace a bespoke
+existing flow — check the actual call site's behavior, not just its category, before
+folding it into a consolidation.** Staff-leave reject (framed by spec.md as a "net-new
+instance" using the shared dialog) turned out to be an ALREADY-SHIPPED inline panel with a
+MANDATORY rejection-reason `Textarea` (US-E09.3, 448 tests). Migrating it onto the plain
+confirm dialog would have silently dropped the reason-capture requirement — a real
+regression, not a style choice. Caught by reading the actual component file before
+delegating (not trusting the spec's framing), and the deviation was written into the
+delegation brief up front so the engineer didn't have to discover and improvise it — it
+correctly left the flow untouched and documented the deviation per FR-009's own escape
+clause ("bespoke behavior → document, no fork").
+
+**A11y audit (round 1) found 3 Blocking + 2 Major that BOTH tech-lead review AND the
+engineer's own TDD missed — all stemmed from one design choice made to fix a different,
+real bug.** The engineer correctly used plain `<Button>`s instead of Radix
+`AlertDialogAction`/`AlertDialogCancel` to stop `onCancel` from double-firing (Radix's
+auto-close triggers `onOpenChange(false)` on top of an explicit handler). But that same
+substitution silently dropped Radix's `onOpenAutoFocus → cancelRef.current?.focus()`
+built-in initial-focus-on-open, since `cancelRef` is only ever populated by
+`AlertDialogCancel` itself — a no-op with plain buttons. **When you deliberately swap out a
+primitive's wrapper subcomponent to fix one behavior, audit what ELSE that subcomponent was
+silently providing for free** (here: initial focus routing) — it's not enough to verify the
+one behavior you were fixing. The other 2 findings (icon/body contrast) were plain token
+misuse (`text-destructive`/`text-muted-foreground` both fail their WCAG floors against
+`bg-background` — this is now the 3rd+ time in this epic the same pair of "obviously named"
+semantic tokens turns out to be under 3:1/4.5:1; worth flagging as a systemic docs gap, not
+just fixing per-instance). All 5 fixes verified correct against the auditor's exact
+recommendations by re-reading the diff myself before re-running the gate — didn't just trust
+the engineer's self-report.
+
+**QA's real Storybook run (not the tech-lead/a11y reviews, which don't execute interactions)
+caught a genuine CRITICAL production defect: DEF-001, a confirm dialog that never closes
+after a successful send.** `announcement-drawer.tsx`'s `submit()` success branch reset the
+Sheet's `onOpenChange(false)` but never reset the confirm dialog's own `confirmSendOpen`
+state — since the drawer is always-mounted (not conditionally unmounted), the nested
+`DestructiveConfirmDialog` stayed `open=true`, focus-trapped, visibly stuck on top of the
+closed drawer forever. Neither tech-lead review nor the a11y audit run actual browser
+interactions, so this was invisible to both — reinforces that QA's real-Chromium pass is
+not redundant with the earlier gates, it's a different failure class (state-machine bugs
+across an always-mounted parent, not layering/tokens/static-a11y).
+
+**QA's own red-test proof for a real bug can itself be flaky for an unrelated reason —
+verify the fix against a clean baseline before accepting "still red" as "still broken."**
+After the engineer's one-line DEF-001 fix (`setConfirmSendOpen(false)` alongside
+`onOpenChange(false)`), QA's own updated Storybook assertion (`queryByRole("alertdialog")`
+right after the confirm click) still failed in the full-file run. Rather than trust that at
+face value, I: (1) ran the SAME 19-story file against a clean `main` worktree
+(`git worktree add`) and got the *identical* 9/19 failures at an *unrelated* assertion
+(`getByRole("tablist")`, a pre-existing cascading env issue unrelated to this diff at all —
+confirmed byte-identical failure count/names on both branches); (2) ran the ONE test in
+isolation (`-t "Create Drawer Send Submit"`) to strip out that cascading contamination, which
+revealed the REAL remaining issue: the test asserted synchronously right after
+`userEvent.click`, racing the un-awaited `submit()` promise + Radix's exit-animation unmount
+delay. Fixed by swapping to `waitFor(() => expect(...).not.toBeInTheDocument())`. **The
+lesson: when a full-suite run shows unexpected failures after a fix that should have worked,
+isolate the ONE test with `-t` before concluding the fix is wrong — a shared-file/ordering
+env issue elsewhere in the same file can mask (or fake) an unrelated pass/fail signal.**
+
+**Coordinator flagged a real stalling pattern mid-run: don't end your turn with prose like
+"waiting for X" when a subagent is running — actively poll with a bounded bash
+until/sleep-loop instead** (subagents only execute while the lead's own turn is active; an
+idle "waiting" text response doesn't advance anything and the user has to manually nudge).
+Fixed by using `while [ condition ] && [ $i -lt N ]; do sleep 10; i=$((i+1)); done` loops
+against `git log -1 --format=%H <branch>` to detect new commits, immediately after every
+`Agent`/`SendMessage` resume call, instead of a bare status sentence.
+
+Full pipeline: engineer (TDD, new shared component + net-new discipline delete-violation
+Clean-Arch stack + announcements wiring + 7-file consolidation, 1 documented API-typo
+correction, 1 documented staff-leave deviation) → tech-lead (Approved, 0 blocking, 4
+CONSIDER notes) + a11y (round 1: 3 Blocking + 2 Major — all fixed, re-verified by fe-lead
+against the auditor's exact recommendations) in parallel → design-review gate (fe-lead,
+reused tech-lead/a11y verdicts, no separate `/impeccable` CLI invocation — token-reuse
+consolidation, not a new screen, consistent with E17.5/E17.6/E17.7 precedent) → QA (found +
+QA closed 4 real coverage gaps test-only, found 1 CRITICAL production defect DEF-001 →
+routed to engineer → fixed → QA's own red-test assertion needed a `waitFor` fix, applied by
+fe-lead directly after isolating via a clean-main-worktree diff) → harness proof (`--unit 1
+--integration 0 --e2e 1 --platform 0`) → TEST_MATRIX row synced → merge. 1000/1000 unit,
+tsc/build clean throughout; final gate re-verified by fe-lead after every fix round, not just
+trusted from agent self-reports.
+
+US-E17.9 (DetailPanelHeader shared component, UX-04/DR-011) implemented 2026-07-05 on
+`feat/us-e17.9-detail-panel-header` (merged `17c4078` + deleted). Solo mode.
+
+**A BA spec.md's "existing/confirmed" i18n claim and its "AlertDialog-based back" assumption
+were BOTH wrong for the same consumer — verified by reading the actual consumer files before
+delegating, not trusting the packet.** `announcements.backToList` did not exist in either
+messages file (net-new, added same commit); the messaging group-info panel had no
+AlertDialog-based back affordance at all (its AlertDialogs are Leave/Delete confirmations,
+untouched) — spec.md conflated two unrelated things. Caught both via direct grep/read of the
+3 consumer files during intake, so the engineer's brief carried the correction instead of
+discovering it mid-implementation (same discipline as US-E17.8's spec-typo catch).
+
+**A spec's literal Tailwind class name can itself be backwards from its own stated intent —
+resolve by testing the prose requirement, not the literal classname.** AC-E17.9-09/FR-005 said
+`md:hidden` on action-label spans to achieve "icon-only below 768px, labeled at 768px+" — but
+`md:hidden` hides at md-and-above (backwards). Engineer used `sr-only md:not-sr-only` plus an
+explicit `aria-label` on each action button instead; both tech-lead and a11y independently
+verified this produces the correct behavior with no double-announced accessible name (aria-label
+wins accessible-name computation over child text, so the sr-only span is inert once aria-label is
+set). Flagged as a documentation bug in the story/TEST_MATRIX evidence, not a behavior change.
+
+**One consolidation target (exam-builder's `BuilderActionBar`) was already shaped exactly like
+the target component before migration — back-left/actions-right, no title.** Recognizing this
+during intake let the delegation brief specify "replace this component's internals with
+`DetailPanelHeader`, actions=Save+Publish" directly rather than treating it as a from-scratch
+wiring task.
+
+**a11y audit found the exact same repeat-offender contrast bug this epic keeps hitting
+(A11Y-001/002): `text-muted-foreground` (2.95:1) on a new component's back button AND on an
+untouched pre-existing icon button it now sits next to inside the `actions` slot.** Both fixed
+to `text-edu-text-secondary` (5.48:1) in one small follow-up delegation. This is now the 4th+
+story in this epic where `text-muted-foreground`/`text-destructive` fail their WCAG floor on
+`bg-card`/`bg-background` — a systemic docs gap (these tokens read as "obviously safe" semantic
+names but aren't verified-AA for body/icon text), worth a design-system.md callout rather than
+re-discovering per-story.
+
+**QA's real-browser run found a repo-wide test-infrastructure defect, not a bug in this story:**
+`@storybook/addon-viewport` isn't installed, so every `globals.viewport`/`parameters.viewport`
+annotation across the codebase is inert under `vitest.storybook.mts` — stories claiming to prove
+"mobile" behavior have been running at the default 1280×720 Chromium viewport this whole time.
+QA worked around it for this story using `vitest/browser`'s `page.viewport()` (real resize) and
+flagged the repo-wide gap as a follow-up rather than blocking on it. **Any prior "Mobile_375"/
+"Viewport375" story sign-off in this epic should be treated as viewport-inert unless it also used
+`page.viewport()` explicitly — re-verify before citing as proof of a responsive AC.**
+
+**QA also closed a "shared component tested, consumers not" gap for a THIRD time in this
+epic (see E17.4/E17.7 notes):** the shared `DetailPanelHeader` had full unit+story coverage but
+zero of its 3 consumer wirings (announcements/messaging/exam-builder) had a back-button test at
+the integration/consumer level — QA added one story per consumer, test-only. **Recurring pattern
+worth generalizing: when delegating a shared-component consolidation, explicitly ask the engineer
+(or QA) for at least one consumer-level interaction test per wiring, not just the component's own
+isolated stories.**
+
+Full pipeline: engineer (TDD, 6 unit tests + Storybook stories, 3 consumer wirings, 1 net-new
+i18n key, 2 documented spec corrections) → tech-lead (Approved, 1 non-blocking CONSIDER re:
+orphaned `examBank.builder.back` key) + a11y (2 findings A11Y-001 Critical/A11Y-002 Major, both
+fixed) in parallel → fix (1 small delegation, both contrast swaps) → design-review gate (fe-lead,
+reused tech-lead/a11y verdicts, scoped manual impeccable audit — 0 findings for a token-reuse
+consolidation) → QA (Go, 8/8 named AC = 100%, closed 4 consumer-level coverage gaps + flagged the
+addon-viewport repo-wide gap) → harness proof (`--unit 1 --integration 0 --e2e 1 --platform 0`)
+→ TEST_MATRIX row synced → merge. 1006/1006 unit, tsc/build clean throughout.
+
+US-E17.10 (Loading Skeletons — StatCard + TableRow, UX-05/DR-011) implemented 2026-07-05 on
+`feat/us-e17.10-loading-skeletons` (merged `e6df325` + deleted). Solo mode.
+
+**A BA spec's "isLoading boolean" assumption was simply false for 2 of 3 target screens —
+verified by reading each dashboard's actual code before delegating, not trusting the packet.**
+spec.md assumed all 3 dashboards (discipline/teacher/student) expose a client `isLoading` flag
+from TanStack Query. Grepping found: discipline genuinely has one (`vm.isLoading`, client
+component); teacher (`teacher-dashboard.tsx`) and student (`student-dashboard.tsx`) are BOTH
+pure async RSCs with zero client state — `grep isLoading` returned nothing. Fix: used the
+correct Next.js idiom instead — route-segment `loading.tsx` (Suspense-boundary convention),
+which achieves the same "skeleton visible during fetch, unmount on resolve" outcome without
+inventing a client flag that doesn't exist. Documented as a deliberate deviation in the
+delegation brief AND the commit body; tech-lead independently re-verified the RSC claim by
+reading both files and confirmed it as sound engineering judgment, not a spec violation.
+
+**A literal AC count ("3 StatCardSkeleton") conflicted with the actual real-content count —
+resolved by matching real content, not the AC's literal number.** AC-01 said discipline shows
+3 skeletons, but both `violations-tab.tsx` and `conduct-tab.tsx` (the default+2nd tab) render
+exactly 4 real `StatCard`s. Used count=4 (verified via grep before delegating) because
+NFR-002's zero-CLS requirement is the higher-priority constraint — a skeleton that doesn't
+match real content's card count causes visible layout shift when data resolves, which is a
+worse outcome than literally satisfying a possibly-stale AC number. Also computed
+teacher=6/student=4 the same way (grep actual `StatCard` counts in each screen) rather than
+guessing. Tech-lead independently re-verified all three counts against the real code.
+
+**A `.claude/rules/component-organization.md` "shared vs feature-local" call was made
+correctly BEFORE delegating by reading design-spec.jsonc, not left as an open question for the
+engineer.** design-spec.jsonc's `interactionPatterns.loadingSkeleton.shapes.StatCardSkeleton`
+already states ONE universal shape "appliesTo" all 3 dashboards — confirmed by reading
+`stat-card.tsx`'s `DefaultStatCard` (the variant all 3 screens use) has the exact icon-box/
+value/label shape the spec names. This resolved the spec's own `OQ-E17.10-01`
+open-question up front: shared component at `components/shared/stat-card-skeleton/`, not 3
+feature-local files. `TableRowSkeleton` stays feature-local (single discipline consumer) per
+the same file.
+
+**a11y audit caught a real "obviously fine but actually double-announced" pattern that no
+earlier gate would catch:** two independently-correct `role="status"` regions (stat grid +
+table skeleton) rendering in the same tick both carry the identical sr-only text, so screen
+readers announce "Đang tải dữ liệu" twice back-to-back for one logical loading event
+(A11Y-001, Minor). Each region was individually spec-compliant (FR-005 says "wrap all skeleton
+containers" — doesn't forbid multiple), so this wasn't caught by tech-lead's structural review,
+only by a11y's screen-reader-script-level analysis. Fix: added an `announce?: boolean` prop
+to the shared `StatCardSkeletonGrid` (default `true`, so the teacher/student `loading.tsx`
+single-region call sites are unaffected) so a caller wrapping multiple skeleton pieces in one
+outer status region can suppress the nested grid's own live-region attrs. **When a shared
+a11y-wrapping component might be composed alongside a sibling that ALSO wraps itself in the
+same live-region role, give the shared component an opt-out prop up front — don't assume "each
+piece owns its own wrapper" is always composable.**
+
+**A systemic, pre-existing a11y finding was correctly deferred rather than fixed inline.**
+A11Y-002: the shared `Skeleton` primitive's `bg-accent` block is ~1.1:1 contrast against
+`bg-card` in both light/dark themes (near-imperceptible) — but this affects 8+ unrelated
+screens already using the same primitive (grade-entry/grade-book/exam-bank/etc.), and switching
+to `bg-muted` wouldn't even fix it (computed equally poor, ~1.07:1). Correctly flagged as a
+design-system ADR candidate (new `--edu-skeleton` token) rather than patched inside this story's
+diff — a cross-cutting primitive change needs its own regression pass across every consumer,
+not a side-effect of one US.
+
+**No `/impeccable` slash-command tool available in this orchestration session — substituted a
+manual checklist audit against the same written criteria (`design-system.md`+`impeccable.md`),
+documented as such in the story's Evidence rather than silently presented as if the CLI ran.**
+Consistent with prior E17 stories' "no separate CLI invocation for a token-reuse-only polish
+diff" precedent, but this time explicitly noted the substitution reason (tool unavailability,
+not judgment that it was unnecessary) for packet honesty.
+
+**QA independently found and closed a real test-coverage asymmetry between two sibling test
+files for the same AC.** `table-row-skeleton.test.ts` had an AC-14 (no-raw-color) negative
+regex assertion; the sibling `stat-card-skeleton.test.ts` did not, despite covering the exact
+same AC for a different component. QA added the missing assertion (test-only, no production
+code touched) rather than just flagging it. QA also ran the REAL Storybook browser-mode runner
+(not simulated) for the new `Shared/StatCardSkeleton` story (3/3 passed) and confirmed the
+`discipline-screen.stories.tsx` full-file failure is the same pre-existing `useRouter`-invariant
+env baseline documented in prior E17 memory notes (verified via `git show <pre-story-commit>` —
+the `useRouter()` call pre-dates this story, landed in US-E17.1).
+
+Full pipeline: fe-lead did own research (RSC-vs-client isLoading reality check, real StatCard
+counts, shared-vs-feature-local resolution) before delegating a single comprehensive
+implementation brief → engineer (TDD, 1 commit, 2 new route-segment `loading.tsx` files + 1
+new shared component + 1 new feature-local component, 3 documented spec deviations) →
+tech-lead (Approved, 0 blocking, 2 CONSIDER notes) + a11y (PASS, 1 Minor A11Y-001 fixed in a
+follow-up delegation, 1 Minor A11Y-002 deferred as design-system follow-up) in parallel → fix
+(1 small delegation, `announce` prop + single-region merge) → design-review gate (fe-lead,
+manual checklist audit substituting for unavailable `/impeccable` tool, reused tech-lead/a11y
+verdicts) → QA (Go, 100% AC coverage, closed 1 test-file asymmetry gap, real Storybook browser
+run for the new shared component) → harness proof (`--unit 1 --integration 0 --e2e 1
+--platform 0`) → TEST_MATRIX row synced → merge. 1030/1030 unit, tsc/build clean throughout.
+
+US-E17.11 (Touch Target ≥44px: grade rows + violation rows, UX-08/DR-011) implemented
+2026-07-05 on `feat/us-e17.11-touch-target-44px` (merged `0adfc74` + deleted). Solo mode.
+The smallest real production diff in this epic so far (4 classNames in one file) but the
+LARGEST verification/documentation lift — spec.md predated 4 prior stories (E17.2/E17.4/
+E17.5/E17.8/E17.10) that had already touched the exact files this US targeted.
+
+**When a BA spec predates multiple intervening stories on the same files, read current state
+FIRST and brief the engineer with an explicit "already done, skip" list — don't let it
+rediscover this mid-implementation.** Both `grade-book-table.tsx`'s sticky column (US-E17.5)
+and `discipline`'s violation rows + icon-only delete button (US-E17.4/E17.8) already met the
+44px floor by the time this story started; the ONLY real gap was `GradeRow`'s data cells
+(`th[scope=row]` + 3 `<td>`s) having no `min-h-[44px]` at all (~33-36px computed, below the
+floor). Pre-computed this via reading `button.tsx`'s `size="icon"` variant (`min-h-11
+min-w-11` already baked in from E17.8) and `discipline-avatar.tsx`'s `size="lg"` (40px) +
+`violations-tab.tsx`'s `py-3.5` (28px) ≈ 68px row height, BEFORE delegating — the engineer's
+brief said explicitly "skip file X, here's why" for the no-op file, avoiding a wasted diff.
+
+**A spec's literal CSS-property wording can be stale relative to a LATER story's deliberate
+decision on the SAME file — don't blindly "complete" the spec's AC text if it would regress
+a documented decision.** spec.md/use-cases.md's AC-07 literally says the sticky column should
+use `bg-card`/`z-10`; the actual code (from US-E17.5) deliberately uses `bg-edu-card`/`z-[1]`
+for dark-mode-literal-token pinning (documented in `grade-book-table.test.tsx`'s own existing
+test comments). Kept the E17.5 choice, did NOT revert to the spec's literal wording — this
+story's own AC-15 ("no regression on US-E17.2/E17.5") would have been violated by "fixing" it.
+Both `fe-tech-lead-reviewer` and `fe-accessibility-auditor` independently confirmed this was
+the right call by re-deriving the dark-mode CSS var behavior themselves, not trusting the claim.
+
+**QA's Go/No-Go found a real structural problem in story.md itself: only 8 of 15 ACs from
+use-cases.md were carried into the story packet's own AC list** — and the 7 silently dropped
+(AC-03/04/08/09/11/12/14) were disproportionately the ones with zero test coverage, making the
+"8/8 covered" self-report misleadingly look 100% when real automated-proof coverage was closer
+to 60%. **Recurring lesson for this epic: always diff story.md's AC section against
+use-cases.md's full AC list before calling a story done — a narrowed AC list can hide real
+gaps rather than reflect a deliberate scope cut.** Fixed by reconciling the full 15-AC list
+into story.md with an honest per-AC status (DONE-tested / DONE-by-inspection / NOT-TESTED),
+rather than silently re-narrowing again.
+
+**QA also found 2 more files in the exact violation-row pattern that neither the original
+spec nor the engineer's scope decisions had ever named** — `student-conduct-screen/components/
+my-violations-list.tsx` and `parent-discipline/components/ViolationsList.tsx` (both read-only,
+`py-4` rows, no icon buttons). The spec's OQ-E17.11-02 asked "does `student-conduct-screen.tsx`
+exist with the same markup" — the literal file doesn't exist, so the original scope-decision
+doc technically answered the OQ but missed that the FEATURE (student's own violations list)
+exists under a different file/folder name. **When an open question asks "does file X exist,"
+also grep for the CAPABILITY by role/feature, not just the literal filename** — a renamed/
+reorganized file can make a literal-match search return a false negative for something that's
+real and needs auditing.
+
+**Closing a QA-flagged "verified by inspection only" gap doesn't always need the same proof
+mechanism per file — match the mechanism to what the file actually offers.** For the delete-
+button-bearing `violations-tab.tsx` (a genuine interactive surface), added a Storybook
+`play()` viewport-resize assertion (same `page.viewport(375,812)` pattern as the grade table).
+For the two READ-ONLY list files with no `.stories.tsx` of their own, chose a cheaper
+`renderToStaticMarkup` unit test asserting `py-4` presence instead of building new Storybook
+harnesses from scratch — a lower-effort path that still runs in CI (`bun vitest run`) and
+gives real regression signal, since the Storybook browser runner doesn't execute in every
+environment anyway. Explicitly instructed the engineer to make this judgment call and report
+which path it took per file, rather than mandating one approach uniformly.
+
+**A mislabeled AC reference in test/story code comments (`AC-E17.11-15` used for a test that
+actually proves `AC-E17.11-01`) was caught by QA, not the engineer's own TDD or tech-lead
+review** — both had reviewed the assertions' correctness but not the traceability-comment
+accuracy. Cheap follow-up fix, but worth remembering: a test being CORRECT doesn't mean its
+AC-ID label is; QA's AC-to-test mapping pass is the gate that actually catches this class of
+drift, not the earlier code-quality gates.
+
+Full pipeline: fe-lead pre-investigated current file state across 4 prior stories' worth of
+drift before delegating (found the 1 real gap + 2 no-op-but-verify files) → engineer (TDD, 1
+commit, 4 classNames changed + 2 new unit tests + 1 new Storybook story) → tech-lead
+(Approved, 1 SHOULD-FIX doc note + 2 CONSIDER notes) + a11y (PASS, 0 blocking, 1 non-blocking
+doc-drift note) in parallel → design-review gate (fe-lead, manual checklist substituting for
+unavailable `/impeccable` tool, reused tech-lead/a11y verdicts, documented all scope decisions
++ follow-ups in story.md Evidence) → QA (CONDITIONAL PASS, found 2 more affected files + a
+15-vs-8 AC undercounting + an AC-mislabel; all closed in 1 follow-up engineer delegation, no
+production code changed, test-only) → fe-lead reconciled the full 15-AC story.md section in
+parallel with the engineer's gap-closing commit → harness proof (`--unit 1 --integration 0
+--e2e 1 --platform 0`) → TEST_MATRIX row synced → merge. 1034/1034 unit, tsc/build clean
+throughout. Flagged (not fixed, pre-existing from US-E17.5, out of this story's scope):
+dark-mode sticky-column `--edu-card`/`--edu-border` not overridden in `.dark` while `--card`
+is — candidate for a future dark-mode visual QA/token-reconciliation story.
+
+US-E17.12 (Contextual Toast Messages, UX-06/DR-011) implemented 2026-07-05 on
+`feat/us-e17.12-contextual-toast` (merged `8fd0ea5` + deleted). Solo mode. Implemented directly
+by fe-lead (no fe-nextjs-engineer delegation) — small, well-scoped copy/timing diff across two
+known call sites, no architecture step needed.
+
+**Both target i18n keys (`announcements.sendToastContext`, `discipline.violations.successContext`)
+already existed in vi.json/en.json from a prior DR-011 batch even though spec.md called the
+discipline one "net-new" — grepped both files before writing any code and confirmed byte-for-byte
+match to spec's required values, so correctly did NOT re-add them.** Same "spec can be stale the
+moment prior work already shipped it" pattern as US-E17.6/E17.9's notes — always grep the actual
+messages files for a claimed "net-new" key before adding it.
+
+**The generic-fallback branch is provably unreachable through either screen's current UI — extracted
+the branch logic into a pure, unit-tested helper instead of trying to force a Storybook story to hit
+it.** Announcements: `estimate()` returns >0 for every selectable audience and `canSubmit` requires
+`audience.length > 0`. Discipline: `handleSubmit` early-returns unless `form.studentName.trim() !==
+""`. Both `fe-tech-lead-reviewer` and `fe-accessibility-auditor` independently re-derived this and
+agreed — when a fallback branch is a defensive guard the UI can never actually trigger, pin it with a
+pure-function unit test rather than contorting a Storybook interaction test to fake it.
+
+**Both parallel gate agents passed with zero fix loop** (tech-lead Approved with 1 cosmetic CONSIDER
+— untrimmed vs trimmed studentName between the toast and the optimistic list row, applied by
+trimming once at the `input` construction site; a11y PASS 0 blocking, 1 informational note re:
+4000ms readability for long names, no code change needed since screen-reader announcement isn't
+gated by visual duration).
+
+**Storybook `<Toaster/>` decorator pattern reused from `admin-settings-screen.stories.tsx`**
+(`body.findByText(...)` against `document.body` after mounting `<Toaster/>` in the decorator) — the
+announcements/discipline story files didn't have `<Toaster/>` wired before this story, so toast
+assertions would have silently found nothing. Grep for an existing `<Toaster/>`-in-decorator story
+before writing a new toast-assertion story in a file that doesn't have one yet.
+
+**No `fe-qa-playwright` delegation this time** — deliberately skipped for a 2-call-site copy/timing
+change with full unit coverage of both branches and a passing Storybook proof for the reachable
+branch; QA's marginal value here was already covered by the unit tests + the tech-lead's own
+traceability check. Reserve QA skip for similarly tiny, single-reviewer-pass, fully-unit-tested
+diffs — don't generalize to multi-file/new-screen stories.
+
+Full pipeline: fe-lead implemented directly (TDD: 2 pure helpers + `.test.ts` red→green, 2 call-site
+wirings, 2 new Storybook stories with a newly-added `<Toaster/>` decorator) → tech-lead (Approved, 1
+CONSIDER, applied) + a11y (PASS, 0 blocking) in parallel → design-review gate (fe-lead, manual
+checklist — copy/timing-only diff, 0 impeccable-scope findings) → harness proof (`--unit 1
+--integration 0 --e2e 1 --platform 0`) → TEST_MATRIX row updated (was stale `planned`/no×4) → merge.
+1043/1043 unit, tsc/build clean throughout. Confirmed via `git stash` that the discipline-screen
+Storybook file's wholesale `useRouter`-invariant failure (all 16 stories, pre-existing + new) is a
+repo-wide harness issue unrelated to this diff (identical failure on unmodified `main`).
