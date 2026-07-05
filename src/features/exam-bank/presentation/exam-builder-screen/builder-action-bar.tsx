@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowLeft, Save, Send } from "lucide-react";
+import { Save, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { DetailPanelHeader } from "@/components/shared/detail-panel-header";
 import { Button } from "@/components/ui/button";
 
 type BuilderActionBarProps = {
@@ -22,40 +23,43 @@ export function BuilderActionBar({
   const t = useTranslations("examBank");
 
   return (
-    <div className="flex items-center justify-between gap-3 border-border border-b bg-card px-6 py-3">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onBack}
-        aria-label={t("builder.backAriaLabel")}
-      >
-        <ArrowLeft className="mr-1.5 size-4" aria-hidden="true" />
-        {t("builder.back")}
-      </Button>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onSaveDraft}
-          disabled={isSaving}
-          aria-busy={isSaving}
-        >
-          <Save className="mr-1.5 size-4" aria-hidden="true" />
-          {isSaving ? t("builder.saving") : t("builder.saveDraft")}
-        </Button>
-        <Button
-          size="sm"
-          onClick={!isPublishable || isSaving ? undefined : onPublish}
-          aria-disabled={!isPublishable || isSaving}
-          className={
-            !isPublishable || isSaving ? "cursor-not-allowed opacity-50" : ""
-          }
-        >
-          <Send className="mr-1.5 size-4" aria-hidden="true" />
-          {t("builder.publish")}
-        </Button>
-      </div>
-    </div>
+    <DetailPanelHeader
+      backLabel={t("builder.backAriaLabel")}
+      onBack={onBack}
+      actions={
+        <>
+          {/* Action buttons carry their own aria-label; the visible text label
+              collapses to icon-only below md via `sr-only md:not-sr-only`
+              (still announced to screen readers on mobile). */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSaveDraft}
+            disabled={isSaving}
+            aria-busy={isSaving}
+            aria-label={isSaving ? t("builder.saving") : t("builder.saveDraft")}
+          >
+            <Save className="size-4" aria-hidden="true" />
+            <span className="sr-only md:not-sr-only">
+              {isSaving ? t("builder.saving") : t("builder.saveDraft")}
+            </span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={!isPublishable || isSaving ? undefined : onPublish}
+            aria-disabled={!isPublishable || isSaving}
+            aria-label={t("builder.publish")}
+            className={
+              !isPublishable || isSaving ? "cursor-not-allowed opacity-50" : ""
+            }
+          >
+            <Send className="size-4" aria-hidden="true" />
+            <span className="sr-only md:not-sr-only">
+              {t("builder.publish")}
+            </span>
+          </Button>
+        </>
+      }
+    />
   );
 }

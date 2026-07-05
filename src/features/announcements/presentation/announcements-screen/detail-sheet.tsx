@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DetailPanelHeader } from "@/components/shared/detail-panel-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,12 +90,17 @@ export function DetailSheet({
         closeLabel={t("btnClose")}
         className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[400px]"
       >
-        <SheetHeader className="border-border border-b p-5">
+        {/* Radix requires an accessible title/description on the Sheet; keep
+            them sr-only and render the visible header via DetailPanelHeader. */}
+        <SheetHeader className="sr-only">
           <SheetTitle>{t("detailTitle")}</SheetTitle>
-          <SheetDescription className="sr-only">
-            {item?.title ?? ""}
-          </SheetDescription>
+          <SheetDescription>{item?.title ?? ""}</SheetDescription>
         </SheetHeader>
+
+        <DetailPanelHeader
+          backLabel={t("backToList")}
+          onBack={() => onOpenChange(false)}
+        />
 
         {item && (
           <div className="flex flex-col gap-4 p-5">

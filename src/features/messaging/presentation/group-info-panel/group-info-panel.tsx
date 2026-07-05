@@ -3,6 +3,7 @@
 import { Pencil, UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { DetailPanelHeader } from "@/components/shared/detail-panel-header";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -50,6 +52,7 @@ export function GroupInfoPanel({
   const t = useTranslations("messaging.groupInfo");
   const tDialog = useTranslations("messaging.deleteDialog");
   const tGroup = useTranslations("messaging.group");
+  const tChat = useTranslations("messaging.chat");
   const [editing, setEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -74,22 +77,31 @@ export function GroupInfoPanel({
         closeLabel={t("title")}
         className="w-full gap-0 p-0 sm:max-w-[320px]"
       >
-        <SheetHeader className="flex-row items-center justify-between border-border border-b px-4 py-3">
-          <SheetTitle className="font-extrabold text-base text-foreground">
-            {t("title")}
-          </SheetTitle>
-          <SheetDescription className="sr-only">{t("title")}</SheetDescription>
-          {selfIsAdmin && !editing && group && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              aria-label={t("editName")}
-              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Pencil className="size-4" aria-hidden="true" />
-            </button>
-          )}
+        {/* Radix requires an accessible title/description on the Sheet; keep
+            them sr-only and render the visible header via DetailPanelHeader. */}
+        <SheetHeader className="sr-only">
+          <SheetTitle>{t("title")}</SheetTitle>
+          <SheetDescription>{t("title")}</SheetDescription>
         </SheetHeader>
+
+        <DetailPanelHeader
+          backLabel={tChat("backToList")}
+          onBack={() => onOpenChange(false)}
+          title={t("title")}
+          actions={
+            selfIsAdmin && !editing && group ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditing(true)}
+                aria-label={t("editName")}
+                className="text-muted-foreground"
+              >
+                <Pencil className="size-4" aria-hidden="true" />
+              </Button>
+            ) : undefined
+          }
+        />
 
         {isLoading || !group ? (
           <div className="flex flex-1 items-center justify-center p-6 text-muted-foreground text-sm">
