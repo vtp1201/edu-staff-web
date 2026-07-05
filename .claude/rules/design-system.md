@@ -16,6 +16,11 @@ trong `src/app/globals.css` `@theme`). Contract đọc hiểu:
 - Cần token mới → thêm vào `src/app/tokens.css` TRƯỚC, map ở `@theme` trong
   `globals.css`, RỒI mới dùng. Đồng bộ `docs/product/design-system.md`.
 - Conflict giữa doc và code runtime → `tokens.css` thắng.
+- **Contrast token cho text/icon (ADR 0049):** lỗi/destructive dạng text hoặc icon
+  → `text-edu-error-text`, KHÔNG dùng `text-destructive` (đó là màu background).
+  `--muted-foreground` đã alias sang `--edu-text-secondary` (5.48:1) nên
+  `text-muted-foreground` an toàn; `text-edu-text-muted` (2.95:1) chỉ cho nội dung
+  decorative/không thiết yếu, không bao giờ cho icon hay text mang nghĩa.
 
 ## Font & Typography
 

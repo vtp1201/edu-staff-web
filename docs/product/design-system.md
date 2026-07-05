@@ -21,6 +21,15 @@ qua color accent. Font **Plus Jakarta Sans**.
   - `--edu-warning-text` → `#9A6A0F` — amber text on warningLight surface (4.37:1, large/bold ≥14px only). Decision 0046.
 - **Surface**: bg `#F5F7FA`, card `#FFF`, border `#E5EAF2`.
 - **Text**: primary `#2A3547`, secondary `#5A6A85`, muted `#8898A9`.
+  - `--muted-foreground` (shadcn alias) → **`--edu-text-secondary`** (5.48:1) — KHÔNG
+    còn trỏ `--edu-text-muted` (2.95:1, fail AA cho icon/text nhỏ). `text-edu-text-muted`
+    chỉ dùng có chủ đích cho nội dung decorative/không thiết yếu. ADR 0049.
+  - Text/icon lỗi trên nền sáng → `--edu-error-text` (#C0392B); `--destructive`
+    (#FA896B) chỉ dành cho background (`bg-destructive` + chữ trắng, alpha wash). ADR 0049.
+- **Dark mode**: `.dark` override họ `--edu-*` surface/text (`--edu-card #131A2E`,
+  `--edu-border #232B45`, `--edu-text-primary #E5EAF2`, secondary/muted `#8898A9`,
+  `--edu-error-text` → `--edu-error`) — tái dùng palette dark của shadcn block, không
+  màu mới. Status/role token chưa override (chờ dark-mode pass riêng). ADR 0049.
 - **Role**: teacher=primary, principal=success, student=warning, parent=purple.
 - **Per-tenant**: override `--edu-primary` (decision `0007`).
 
