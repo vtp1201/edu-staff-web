@@ -80,4 +80,90 @@ No harness changes required. No new endpoints, tokens, or net-new i18n keys.
 
 ## Evidence
 
-Add Storybook screenshot links and Vitest proof after implementation.
+Implemented 2026-07-05 on branch `feat/us-e17.8-destructive-confirm-dialog`.
+
+### Test / Storybook proof
+
+- **Shared component** — `src/components/shared/destructive-confirm-dialog/`:
+  - `destructive-confirm-dialog.test.tsx` (Vitest, node env): 8 tests over the pure
+    portal-free `DestructiveDialogActions` footer + closed-state — `aria-busy="true"`
+    when loading / absent when idle, both buttons `disabled=""` when loading / neither
+    when idle, cancel-left-before-confirm-right DOM order, `data-variant="destructive"`
+    (confirm) + `data-variant="outline"` (cancel), labels rendered, and `open=false`
+    renders empty markup.
+  - `destructive-confirm-dialog.stories.tsx`: 8 interaction stories — `Closed`,
+    `OpenIdle` (role=alertdialog + onConfirm once), `CancelClick` (onCancel once),
+    `EscapeCancels` (Escape → onCancel once), `OpenLoading` (aria-busy + both disabled),
+    and 3 real-instance text variants (`AnnouncementsSendToSchool` with 150 interpolated,
+    `DisciplineViolationDelete`, `StaffLeaveReject`).
+  - **Why the DOM contract splits across two layers:** the repo's Vitest runs in `node`
+    (no jsdom / `@testing-library/react`) and Radix portals do not render server-side, so
+    `renderToStaticMarkup` cannot reach the dialog's portal content. Loading/disabled/
+    variant/order → proven in Vitest against the extracted pure footer; role/interaction/
+    Escape/call-counts → proven in the Storybook browser stories.
+- **Discipline delete-violation** — `delete-violation.use-case.test.ts` (2 tests, TDD
+  red→green: deletes via repo; rejects `not-found` on blank id) + a mock-repo integration
+  test in `discipline.repository.test.ts` (`deleteViolation` removes the row). All 11
+  sibling discipline use-case test mocks extended with `deleteViolation: vi.fn()`.
+- **Gate:** `bunx tsc --noEmit` clean · `bun vitest run` 1000 passed (197 files) ·
+  `bun run build` compiled successfully · `bun lint` exit 0 (the 1 pre-existing
+  warning/info is in unrelated `message-context-menu.tsx`).
+
+### Component API note — cancel label
+
+FR-001's 7-prop contract has no `cancelLabel`, but a cancel button needs text and NFR-004
+forbids hardcoded strings. The shared component resolves the cancel label internally from
+the existing `Common.confirmDialog.cancel` key via `useTranslations("Common")` — no net-new
+key, no hardcoded string, and the 7 functional props stay exactly as specified. Cancel is a
+universal word; every consumer's title/body/confirm remain caller-resolved as required.
+
+### i18n key correction (spec typo)
+
+spec.md §5 FR-007 / §9 and design-spec.jsonc reference
+`discipline.violations.deleteDialog.confirmLabel` — **that key does not exist** in
+`messages/{vi,en}.json`. The actual existing key is
+`discipline.violations.deleteDialog.confirm` ("Xóa vi phạm"). The discipline instance uses
+`.confirm`; **no new `.confirmLabel` key was added** (per NFR-004 / "no net-new i18n keys").
+
+### Deviation — staff-leave reject (FR-008 / AC-E17.8-22 NOT migrated by letter)
+
+The staff-leave reject flow (`staff-leave-request-card.tsx`) is an inline expanding panel
+with a **mandatory rejection-reason `Textarea`** (`MIN_REJECT_LENGTH = 10`, `aria-required`,
+`aria-invalid`, focus-managed; shipped US-E09.3, later displayed to the rejected staff via
+`request.rejectionReason`). `DestructiveConfirmDialog`'s title/body/confirmLabel API has no
+input-capture slot, so migrating would silently drop the reason requirement — a real data
+regression. Per FR-009 AC ("bespoke behavior not expressible by the shared API → document
+the deviation and flag for API extension, no fork") the existing flow is **left untouched**.
+A future optional `children`/extra-field slot on the shared component would be the
+prerequisite to migrate this instance — not built now. The `StaffLeaveReject` Storybook
+story still models the reject text variant for reference. Staff-leave was correctly
+**excluded** from the FR-009 7-dialog consolidation list; this deviation is only about the
+net-new instance in §FR-008.
+
+### Net-new discipline delete-violation layers (in-scope necessity for FR-007)
+
+Delete-violation did not exist anywhere in the feature. To satisfy FR-007 under Clean
+Architecture + mock-first (decision 0014), these files were added (not scope creep — the
+use-case/repo layers must exist even against an in-memory mock):
+
+- domain: `delete-violation.use-case.ts` (+ test), `deleteViolation(id)` on
+  `i-discipline.repository.ts`.
+- infrastructure: mock impl (filters in-memory `_violations`, mirrors `recordViolation`),
+  real repo `http.delete(DISCIPLINE_EP.deleteViolation(id))`, endpoint constant.
+- bootstrap/di: `makeDeleteViolationUseCase()`.
+- app: `deleteViolationAction` in both teacher + principal `actions.ts`; wired through
+  both `page.tsx` → `DisciplineScreenVM.deleteViolationAction`.
+- presentation: teacher-only per-row delete button (`isTeacher` gate) → optimistic list
+  removal + `deleteToast`, no real BE endpoint (UI-polish scope, mock-first).
+
+### Consolidation (FR-009 / AC-E17.8-24)
+
+All 7 feature-local dialogs deleted and their call sites migrated to import
+`DestructiveConfirmDialog` directly (no thin re-export wrappers): exam-bank delete +
+publish (publish used at 2 call sites), grade-approval approve + bulk-lock, admin-roster
+unenroll, admin-settings switch, class-management archive. `bulk-lock`/`approve`/`publish`/
+`switch`/`archive` gain `variant="destructive"` + `aria-busy` from the shared contract
+(expected per DR-011, not a regression). **Minor visual change on archive-class:** the
+bespoke amber "has-students" warning box is folded into the body string (information
+preserved as text; loses the standalone alert-box styling) — flagged here as the only
+consolidation that had extra presentational content.
