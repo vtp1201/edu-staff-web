@@ -112,3 +112,8 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - dark text (#2a3547) on edu-success/warning/error avatar circles: 7.17 / 6.67 / 5.21 — PASS (use as foreground)
 - dark text (#2a3547) on --edu-primary (#5d87ff) avatar circle: 3.75:1 — FAILS 4.5:1 (use --edu-primary-accessible bg + white text = 4.88:1 instead)
 - --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS. Confirmed for avatar circle bg with white initials text.
+
+## Additional ratios confirmed (US-E17.10 Skeleton primitive audit, 2026-07-05)
+- bg-accent (light, #ECF2FF = --edu-primary-light) on card #FFFFFF: ~1.12:1 — decorative/non-text, but visually near-invisible.
+- bg-accent (dark, #1C2541) on card dark #131A2E: ~1.14:1 — same near-invisible issue in dark mode.
+- bg-muted (light, #F5F7FA = --edu-bg) on card #FFFFFF: ~1.07:1 — NOT materially better than bg-accent. The base `Skeleton` primitive (`src/components/ui/skeleton/skeleton.tsx`) has a systemic low-visibility issue regardless of bg-accent vs bg-muted — predates US-E17.10, affects every existing skeleton screen (grade-entry, exam-bank, grade-book, etc.), not just the new StatCardSkeleton/TableRowSkeleton. Treat "skeleton nearly invisible" as a design-system/primitive-level finding (flag to uiux-design-system-builder for a dedicated `--edu-skeleton` token with real separation from card bg) — not a per-story blocker unless the story literally authors the primitive.

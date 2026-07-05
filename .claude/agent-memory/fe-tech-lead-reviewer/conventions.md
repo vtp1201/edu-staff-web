@@ -91,6 +91,14 @@ Confirmed facts (verify before citing if stale):
   grades, exam-list, exam-result, exam-bank/lesson-bank empty, staff-leave, roster, parent-discipline
   ViolationsList, student-conduct lists) — pre-existing debt, migrate opportunistically, don't block a
   scoped story for them.
+- **CSS-class-lock test = ACCEPTED TDD proof for pure-CSS/Tailwind-only stories** (confirmed
+  US-E17.1 responsive stat grid): Vitest runs node-env with no `@testing-library/react`, so a
+  pure class change (e.g. `grid-cols-[repeat(auto-fit,minmax(200px,1fr))]`) is proven by
+  `readFileSync` on the `.tsx` source + asserting the NEW class present AND the OLD/forbidden
+  classes absent (`.not.toContain`), with column-count/viewport proof in Storybook `Viewport375`
+  interaction stories. Non-vacuous requires BOTH the positive (new class) and negative (old class
+  gone) assertions — a test that only checks the new class present is vacuous, flag it. Don't
+  demand a render test the toolchain can't run.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

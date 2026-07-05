@@ -176,7 +176,23 @@ Pattern: Using native `disabled` attribute on `<button role="tab">` during a loa
 Fix: Replace `disabled={isLoading && !isActive}` with `aria-disabled={isLoading && !isActive}` and guard `onClick`/`onKeyDown` manually: `if (isLoading && !isActive) return;`. ARIA APG recommends aria-disabled for all tabs so they remain keyboard-reachable.
 Seen in: US-E13.7 child-switcher.tsx.
 
+## Contrast — Shared DetailPanelHeader back-button text-muted-foreground recurs
+Pattern: New shared component `detail-panel-header.tsx` back button uses `text-muted-foreground` for visible label text (not decorative) — same recurring #8898a9-on-white failure (2.95:1), now baked into a component consumed by 3 screens (announcements, messaging, exam-bank) at once. Also present pre-existing on the group-info-panel edit icon-only button (`text-muted-foreground`, 2.95:1 < 3:1 icon threshold — fails by a hair).
+Fix: `text-edu-text-secondary` (5.48:1 on white) for the back-button label; ghost icon-only buttons on white cards should use `text-edu-text-secondary` too, not `text-muted-foreground`.
+Seen in: US-E17.9 detail-panel-header.tsx line 61 + group-info-panel.tsx edit button (pre-existing, retained across the refactor).
+Lesson: because this is now a *shared* component, this single fix propagates the correction to all 3+ consuming screens at once — worth flagging as high-leverage.
+
 ## Contrast — Avatar initials at 10px: white text fails on all edu-* colors except purple
 Pattern: 26px circle avatar with 10px initials text. White text on primary/success/warning/error all fail 4.5:1. Only purple passes (5.25:1).
 Fix per color: success/warning/error → dark text `var(--edu-text-primary)` (#2a3547). Primary → swap bg to `var(--edu-primary-accessible)` (#4468e0) + keep white text (4.88:1). Purple → keep white text.
 Seen in: US-E13.7 child-switcher.tsx COLOR_VAR map.
+
+## Status message — Multiple simultaneous role="status" regions with identical text
+Pattern: A single loading view renders two separate `role="status" aria-busy="true"` wrappers side by side (e.g. stat-grid skeleton + table skeleton), each with its own `sr-only` span carrying the SAME translated string. Both mount in the same render tick.
+Assessment: Not a hard WCAG 4.1.3 violation (spec doesn't forbid multiple live regions), but produces a duplicate/confusing announcement in most screen readers (e.g. NVDA/JAWS speak "Đang tải dữ liệu... Đang tải dữ liệu..." back to back). Recommend consolidating to ONE `role="status"` wrapper around the whole loading block with a single sr-only label, letting the individual skeleton pieces (grids/rows) stay purely decorative (no nested role="status").
+Seen in: US-E17.10 discipline-screen.tsx loading block (StatCardSkeletonGrid's internal role=status + a second role=status div wrapping TableRowSkeleton rows).
+
+## Contrast — Skeleton primitive (bg-accent/bg-muted) barely visible on card background
+Pattern: `src/components/ui/skeleton/skeleton.tsx` uses `bg-accent` (or historically `bg-muted`) for placeholder blocks on `bg-card` (white). Both tokens resolve to near-white/near-card hues (~1.1:1 contrast light and dark mode) — the skeleton shape is nearly imperceptible, especially for low-vision users or with `prefers-reduced-motion: reduce` (no pulse to help distinguish it).
+Assessment: Systemic, affects EVERY skeleton screen in the app (pre-existing), not introduced by any single story. Flag to uiux-design-system-builder for a dedicated `--edu-skeleton` token; don't block an individual story's skeleton work for inheriting the shared primitive as-is.
+Seen in: US-E17.10 StatCardSkeleton/TableRowSkeleton/teacher+student loading.tsx (all use the shared Skeleton primitive unmodified).

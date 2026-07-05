@@ -18,3 +18,5 @@
 - [Responsive aria gate](pattern-responsive-aria-gate.md) — responsive aria-hidden needs JS matchMedia (CSS can't toggle attrs); keep motion guard CSS; node-env tests = pure helpers + Storybook
 - [Node-env component test](pattern-node-env-component-test.md) — no @testing-library/react; use renderToStaticMarkup string asserts for shared presentational components; canonical EmptyState at components/shared/empty-state
 - [Status union extension + nullable fields](pattern-status-union-extension.md) — snake_case union vs camelCase i18n key → explicit switch mapper not dynamic t(); nullable score/passed → re-check field after isResultFinal guard, never ?? 0
+- [DetailPanelHeader shared component](pattern-detail-panel-header.md) — 3-zone back-nav header; icon-only action labels via sr-only md:not-sr-only (NOT md:hidden); sr-only SheetHeader keeps Radix a11y
+- [Portal-dialog testing + DestructiveConfirmDialog](pattern-portal-dialog-testing.md) — Radix portals don't render in node static markup; split proof (pure footer Vitest + Storybook play); shared confirm dialog uses plain Buttons for exactly-once callbacks

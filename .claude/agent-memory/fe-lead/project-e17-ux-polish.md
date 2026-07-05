@@ -706,3 +706,57 @@ checklist — copy/timing-only diff, 0 impeccable-scope findings) → harness pr
 1043/1043 unit, tsc/build clean throughout. Confirmed via `git stash` that the discipline-screen
 Storybook file's wholesale `useRouter`-invariant failure (all 16 stories, pre-existing + new) is a
 repo-wide harness issue unrelated to this diff (identical failure on unmodified `main`).
+
+US-E17.13 (Setup Stepper — progress bar + "BƯỚC N/M" counter, UX-07/DR-011) implemented 2026-07-05
+on `feat/us-e17.13-setup-stepper` (merged `8f3c371` + deleted). Solo mode. **Last story in E17 —
+epic now COMPLETE (US-E17.1 through US-E17.13, all `implemented`).**
+
+**Percent/current-step math correctly pushed into the domain use-case, not left component-local —
+same pattern as prior E17 percent-calc stories.** Extended `getSetupProgress()`'s return shape with
+`roundedPercent` (`Math.round`, divide-by-zero guarded) and `currentStep` (1-based index of first
+incomplete step, capped at total) as a pure `roundStepPercent()` helper, backward-compatible with the
+existing return fields — kept `get-setup-progress.use-case.test.ts`'s pre-existing assertions green
+while adding 2/5=40, 1/3=33, 2/3=67 coverage.
+
+**a11y found the exact recurring `text-muted-foreground` sub-3:1 icon-contrast bug this epic keeps
+hitting (see E17.8/E17.9 notes) — this time on a NEW icon (`Circle`, pending-step status) that didn't
+exist before this story, not a pre-existing element.** 2.95:1 on white `bg-card` → `text-edu-text-
+secondary` (5.48:1), same fix token as every prior instance. Also worth noting the ENGINEER'S OWN
+choice for the Check icon (`text-edu-text-primary` instead of the spec's literal `text-edu-success`)
+was independently verified correct by both tech-lead and a11y — `text-edu-success` icon on a
+`bg-edu-success` badge circle would be ~1:1/invisible; the deviation from spec's literal wording was
+the RIGHT call, not a defect. **When FR text names a token that would produce same-color-on-same-
+color, trust the engineer's contrast-driven substitution over the literal spec wording — verify by
+computing the literal spec token's own ratio before treating a deviation as suspicious.**
+
+**A11Y-002 (redundant SR announcement) was optional/non-blocking but applied anyway since it was a
+1-line `aria-hidden="true"` addition** — same "cheap wins get applied before QA rather than logged
+as follow-up" discipline as E17.3's A11Y-001 note.
+
+**QA closed 2 real assertion gaps in EXISTING Storybook stories rather than the more common "shared
+component, consumer untested" pattern from prior E17 stories** — this time `aria-label` on the
+progressbar and icon color-token/motion-safe-spin assertions were simply never written into the
+story's `play()` fn despite the underlying implementation being correct; extended the existing
+`StepperZeroOfFive`/`StepperTwoOfFive` play fns in place rather than adding new stories.
+
+**Design-review gate again substituted a manual checklist for the unavailable `/impeccable` CLI**
+(consistent with every prior E17 story since E17.10) — documented explicitly in story.md's Evidence
+section as "no separate CLI run" with the reasoning (narrow single-block diff on an already-shipped
+screen, hierarchy/contrast/motion already covered by the two parallel gate agents).
+
+Full pipeline: engineer (TDD, domain calc extension + presentation wiring + Storybook stories, 1
+commit) → tech-lead (Approved, 0 blocking, 2 CONSIDER notes incl. flagging the all-done state as
+unreachable within the banner's own `!allDone` visibility gate — pre-existing UX, not a gap) + a11y
+(2 Minor findings A11Y-001/002, both fixed in 1 follow-up delegation) in parallel → fix → design-
+review gate (fe-lead, manual checklist, reused tech-lead/a11y verdicts) → QA (Go, 8/8 AC covered
+incl. 1 accepted manual/platform-tier item for reduced-motion, closed 2 story-assertion gaps,
+test-only commit) → harness proof (`--unit 1 --integration 0 --e2e 1 --platform 0`) → TEST_MATRIX
+row updated (was stale `planned`) → merge. 1055/1055 unit, tsc/build clean throughout.
+
+**Epic-level note:** across all 13 US in E17, the recurring `text-muted-foreground`/`text-
+destructive` sub-AA-contrast pattern was independently rediscovered on a NEW element at least 5
+times (E17.8 icon/body, E17.9 back-button×2, this story's Circle icon) — still not fixed at the
+design-system.md documentation level. Worth flagging to `uiux-design-system-builder`/an ADR next
+time a design-system pass touches this epic's tokens, since `.claude/rules/design-system.md` and
+`docs/product/design-system.md` still don't warn that these two "obviously safe" semantic names are
+NOT verified-AA for icon/small-text use against `bg-card`/`bg-background`.
