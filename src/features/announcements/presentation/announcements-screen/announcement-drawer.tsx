@@ -175,6 +175,10 @@ export function AnnouncementDrawer({
           ),
         );
         onSuccess();
+        // Reset the confirm dialog too — the drawer is always-mounted, so
+        // otherwise the focus-trapped dialog lingers over the closed Sheet
+        // after a successful "Gửi ngay" (DEF-001).
+        setConfirmSendOpen(false);
         onOpenChange(false);
       } else {
         toast.error(t(`errors.${res.errorKey ?? "unknown"}` as const));
