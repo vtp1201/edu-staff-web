@@ -78,4 +78,10 @@ No harness changes required. No new endpoints, tokens, or net-new i18n keys.
 
 ## Evidence
 
-Add Storybook screenshot links after implementation.
+Design review: pass
+- design-system: conform — tokens-only (`bg-edu-border`, `bg-edu-primary`, `text-edu-success`, `text-primary`, `text-edu-text-secondary`, `text-muted-foreground`); no raw color; ProgressBar pattern reused (track/fill), transition duration follows DR-011/design-spec.jsonc#setupStepper (400ms) which supersedes the generic 600ms note in design-system.md for this screen; matches `docs/product/screens.md` school-setup entry.
+- a11y: WCAG AA OK after fix — `fe-accessibility-auditor` found A11Y-001 (pending-step Circle icon 2.95:1, below 3:1 for meaningful icons) and A11Y-002 (redundant SR announcement on "done" badge); both fixed in commit `07633dc` (Circle → `text-edu-text-secondary` 5.48:1; "done" badge `aria-hidden="true"`). Keyboard/focus unaffected (no new interactive elements). Motion-safe OK: `motion-safe:transition-[width]` on fill, `motion-safe:animate-spin` on the current-step Loader2.
+- impeccable audit: no separate CLI run — scope is a single progress-bar block inside an already-shipped screen; hierarchy/spacing/contrast/motion covered by `fe-tech-lead-reviewer` (Approved) + `fe-accessibility-auditor` passes above. No anti-pattern found beyond A11Y-001/002 (fixed).
+- states: visual-only enhancement, no new async state (no BE call); responsive 320px reasoned low-risk pass (a11y auditor); dark mode unaffected (semantic tokens only).
+
+Storybook: `StepperZeroOfFive`, `StepperTwoOfFive` in `school-setup-screen.stories.tsx` (interaction play fns assert `aria-valuenow`, inline `width`, no `scaleX`, `motion-safe:transition-[width]`, counter text, icon-status counts).
