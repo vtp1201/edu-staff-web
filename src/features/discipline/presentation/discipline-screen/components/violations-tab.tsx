@@ -35,6 +35,7 @@ import {
   VIOLATION_STATUS_TONE,
 } from "../discipline-tones";
 import { DisciplineAvatar } from "./discipline-avatar";
+import { resolveViolationToastParams } from "./violation-toast-params";
 
 const SEVERITIES: ViolationSeverity[] = ["low", "medium", "high"];
 const VIOLATION_TYPES: ViolationType[] = [
@@ -126,7 +127,7 @@ export function ViolationsTab({
   const handleSubmit = () => {
     if (!canSubmit) return;
     const input: RecordViolationInput = {
-      studentName: form.studentName,
+      studentName: form.studentName.trim(),
       classId: form.classId,
       date: form.date,
       type: form.type,
@@ -164,7 +165,12 @@ export function ViolationsTab({
       ]);
       setShowForm(false);
       setForm((f) => ({ ...f, studentName: "", description: "", period: "" }));
-      toast.success(t("success"));
+      // US-E17.12: contextual toast with the student name when available,
+      // generic fallback otherwise.
+      const params = resolveViolationToastParams(input.studentName);
+      toast.success(t(params.key, params.values), {
+        duration: params.duration,
+      });
     });
   };
 

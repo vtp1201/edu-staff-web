@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type {
   AnnouncementEntity,
   AnnouncementRecipient,
@@ -113,6 +114,7 @@ const meta: Meta<typeof AnnouncementsScreen> = {
             <div className="min-h-screen bg-[color:var(--edu-bg)]">
               <Story />
             </div>
+            <Toaster />
           </NextIntlClientProvider>
         </QueryClientProvider>
       );
@@ -380,6 +382,59 @@ export const CreateDrawer_SendSubmit: Story = {
       expect(drawer.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
     await waitFor(() => expect(title).not.toBeInTheDocument());
+  },
+};
+
+// ---------------------------------------------------------------------------
+// US-E17.12 (DR-011 §UX-06) — contextual "send now" toast
+// ---------------------------------------------------------------------------
+
+/**
+ * AC-E17.12-01: sending now with the default "all" audience (recipient
+ * estimate 1280, always > 0) fires the CONTEXTUAL toast
+ * `announcements.sendToastContext`, interpolated with the recipient count and
+ * the current time — not the generic `sendToast`.
+ *
+ * The generic fallback (AC-E17.12-04, `recipientCount` undefined/0) is not
+ * reachable through this UI — every selectable audience has a positive
+ * estimate (see `ESTIMATE` in `announcement-drawer.tsx`) — so that branch is
+ * pinned by the `resolveSendToastParams` unit tests instead
+ * (`send-toast-params.test.ts`).
+ */
+export const CreateDrawer_SendSubmit_ContextualToast: Story = {
+  args: {
+    ...baseProps,
+    onCreate: async () => ({ ok: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const createBtn = canvas.getAllByRole("button", {
+      name: /Tạo thông báo/i,
+    })[0];
+    await userEvent.click(createBtn);
+    const drawer = within(document.body);
+    const title = await drawer.findByLabelText(/Tiêu đề/i);
+    const body = await drawer.findByLabelText(/Nội dung/i);
+    await userEvent.type(title, "Thông báo nghỉ lễ 30/4");
+    await userEvent.type(body, "Nhà trường thông báo lịch nghỉ lễ 30/4.");
+    const drawerSendBtn = await drawer.findByRole("button", {
+      name: /Gửi ngay/i,
+    });
+    await userEvent.click(drawerSendBtn);
+
+    const confirmDialog = within(await drawer.findByRole("alertdialog"));
+    const confirmSendBtn = confirmDialog.getByRole("button", {
+      name: /Gửi ngay/i,
+    });
+    await userEvent.click(confirmSendBtn);
+
+    // Contextual toast: "Đã gửi thông báo đến 1280 người nhận lúc HH:mm" —
+    // default audience is "all" (recipient estimate 1280). The exact {time}
+    // is non-deterministic, so match the invariant prefix only.
+    const bodyEl = within(document.body);
+    await expect(
+      await bodyEl.findByText(/Đã gửi thông báo đến 1280 người nhận lúc/i),
+    ).toBeInTheDocument();
   },
 };
 

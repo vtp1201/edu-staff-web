@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import {
   MOCK_CONDUCT,
   MOCK_LEAVE_REQUESTS,
@@ -48,6 +49,7 @@ const meta: Meta<typeof DisciplineScreen> = {
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
         <Story />
+        <Toaster />
       </NextIntlClientProvider>
     ),
   ],
@@ -243,6 +245,48 @@ export const ViolationsTab_DeleteFlow: Story = {
     );
     await expect(
       await body.findByText("Đã xóa vi phạm của Trần Văn Bình."),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E17.12 (DR-011 §UX-06) — recording a violation fires the CONTEXTUAL
+ * toast `discipline.violations.successContext` interpolated with the student
+ * name (AC-E17.12-06), not the generic `success`.
+ *
+ * The generic fallback (AC-E17.12-09, `studentName` unavailable) is not
+ * reachable through this UI — the form's submit button stays disabled while
+ * `studentName` is empty (see `ViolationsTab_Teacher` above) — so that branch
+ * is pinned by the `resolveViolationToastParams` unit tests instead
+ * (`violation-toast-params.test.ts`).
+ */
+export const ViolationsTab_RecordViolation_ContextualToast: Story = {
+  args: {
+    ...baseVm,
+    recordViolationAction: async () => ({}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Nhập vi phạm mới" }),
+    );
+    await userEvent.type(
+      canvas.getByLabelText(/Tên học sinh/i),
+      "Nguyen Van A",
+    );
+    await userEvent.type(
+      canvas.getByLabelText(/Mô tả vi phạm/i),
+      "Đi học muộn 15 phút không lý do.",
+    );
+    const submitBtn = canvas.getByRole("button", {
+      name: /Ghi nhận vi phạm/i,
+    });
+    await expect(submitBtn).toBeEnabled();
+    await userEvent.click(submitBtn);
+
+    const body = within(document.body);
+    await expect(
+      await body.findByText("Đã ghi nhận vi phạm của Nguyen Van A"),
     ).toBeInTheDocument();
   },
 };
