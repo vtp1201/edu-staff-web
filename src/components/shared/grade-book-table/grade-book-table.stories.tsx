@@ -386,7 +386,7 @@ export const TeacherView_Tablet768: Story = {
 };
 
 /**
- * US-E17.11 / AC-E17.11-15 — at a real 375px viewport every data-row cell
+ * US-E17.11 / AC-E17.11-01 — at a real 375px viewport every data-row cell
  * (row header + score/average/conduct cells) renders at least 44px tall,
  * meeting the WCAG 2.5.5 / 2.5.8 touch-target floor. Proven via live layout
  * (getBoundingClientRect), not just the className.

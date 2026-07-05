@@ -143,14 +143,14 @@ describe("GradeBookTable — touch target 44px (US-E17.11)", () => {
     return match[1];
   }
 
-  it("AC-E17.11-15: the data-row header (<th scope=row>) has min-h-[44px]", () => {
+  it("AC-E17.11-01: the data-row header (<th scope=row>) has min-h-[44px]", () => {
     const body = tbody(renderTable());
     const rowHeader = body.match(/<th[^>]*scope="row"[^>]*>/);
     expect(rowHeader).not.toBeNull();
     expect(rowHeader?.[0]).toContain("min-h-[44px]");
   });
 
-  it("AC-E17.11-15: every data <td> has min-h-[44px]", () => {
+  it("AC-E17.11-01: every data <td> has min-h-[44px]", () => {
     const body = tbody(renderTable());
     const cells = body.match(/<td[^>]*>/g) ?? [];
     // score columns (3) + average + conduct = 5 cells in this fixture.
