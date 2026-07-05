@@ -12,6 +12,18 @@ import type { DisciplineScreenVM } from "./discipline-screen.i-vm";
 
 const noop = async () => ({});
 
+/**
+ * US-E17.11: `@storybook/addon-viewport` is not installed, so the
+ * `parameters.viewport` blocks in this file are inert decoration. To prove the
+ * 44px touch-target floor at a REAL 375px viewport we drive the
+ * `@vitest/browser-playwright` context directly via `page.viewport()` (same
+ * pattern as grade-book-table.stories.tsx's TouchTarget_Mobile375).
+ */
+async function resizeToMobile() {
+  const { page } = await import("vitest/browser");
+  await page.viewport(375, 812);
+}
+
 const baseVm: DisciplineScreenVM = {
   viewerRole: "teacher",
   availableClasses: ["10A1", "11B2", "12C1"],
@@ -73,6 +85,26 @@ export const ViolationsTab_Teacher: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Trần Văn Bình")).toBeInTheDocument();
+
+    // US-E17.11 / AC-E17.11-10 + AC-E17.11-13 — regression guard for the
+    // "already compliant, no code change" claim on violations-tab.tsx. At a
+    // real 375px viewport the violation <li> row is ≥44px tall (py-3.5 +
+    // DisciplineAvatar size="lg"), and the teacher-only icon-only delete button
+    // (Button size="icon" → min-h-11 min-w-11 from US-E17.8 A11Y-004) is
+    // ≥44×44px. Proven via live layout (getBoundingClientRect), not className.
+    await resizeToMobile();
+    const deleteBtn = canvas.getByRole("button", {
+      name: "Xóa vi phạm của Trần Văn Bình ngày 2026-04-29",
+    });
+    const btnRect = deleteBtn.getBoundingClientRect();
+    await expect(btnRect.height).toBeGreaterThanOrEqual(44);
+    await expect(btnRect.width).toBeGreaterThanOrEqual(44);
+    const row = deleteBtn.closest("li");
+    await expect(row).not.toBeNull();
+    await expect(
+      (row as HTMLElement).getBoundingClientRect().height,
+    ).toBeGreaterThanOrEqual(44);
+
     await expect(
       canvas.getByRole("button", { name: "Nhập vi phạm mới" }),
     ).toBeInTheDocument();
