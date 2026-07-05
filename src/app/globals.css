@@ -129,7 +129,11 @@
   --secondary-foreground: var(--edu-primary-dark);
 
   --muted: var(--edu-bg);
-  --muted-foreground: var(--edu-text-muted);
+  /* WCAG AA fix (ADR 0049): --edu-text-muted (#8898A9) is 2.95:1 on white —
+     below the 3:1 icon floor and 4.5:1 text floor. Alias muted-foreground to
+     --edu-text-secondary (5.48:1) so the idiomatic shadcn class is safe.
+     text-edu-text-muted stays available for deliberate decorative use. */
+  --muted-foreground: var(--edu-text-secondary);
 
   --accent: var(--edu-primary-light);
   --accent-foreground: var(--edu-primary-dark);
@@ -158,6 +162,19 @@
 .dark {
   --background: #0b1020;
   --foreground: #e5eaf2;
+  /* Dark overrides for the --edu-* family (ADR 0049). Without these, bg-edu-card
+     stayed white and text-edu-text-* stayed navy in dark mode (US-E17.11 found
+     the grade-table sticky column rendering as a white stripe). Values reuse
+     this block's existing dark palette — no new colors. Secondary/muted collapse
+     to one shade, matching the shadcn dark hierarchy. Status/role tokens are
+     deliberately untouched (future full dark-mode pass). */
+  --edu-bg: #0b1020;
+  --edu-card: #131a2e;
+  --edu-border: #232b45;
+  --edu-text-primary: #e5eaf2;
+  --edu-text-secondary: #8898a9;
+  --edu-text-muted: #8898a9;
+  --edu-error-text: var(--edu-error);
   --card: #131a2e;
   --card-foreground: #e5eaf2;
   --popover: #131a2e;

@@ -463,7 +463,7 @@ export function ViolationsTab({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="text-edu-text-secondary hover:text-destructive"
+                      className="text-edu-text-secondary hover:text-edu-error-text"
                       aria-label={t("deleteDialog.rowAriaLabel", {
                         studentName: v.studentName,
                         date: v.date,
