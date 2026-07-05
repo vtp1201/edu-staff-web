@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Plus, ShieldOff, X } from "lucide-react";
+import { Check, Plus, ShieldOff, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -75,8 +76,12 @@ export function ViolationsTab({
   const t = useTranslations("discipline.violations");
   const tErr = useTranslations("discipline.errors");
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDelete] = useTransition();
 
   const [list, setList] = useState<ViolationEntity[]>(violations);
+  const [deleteTarget, setDeleteTarget] = useState<ViolationEntity | null>(
+    null,
+  );
   const [showForm, setShowForm] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState<SeverityFilter>("all");
   const [filterClass, setFilterClass] = useState<string>("all");
@@ -160,6 +165,21 @@ export function ViolationsTab({
       setShowForm(false);
       setForm((f) => ({ ...f, studentName: "", description: "", period: "" }));
       toast.success(t("success"));
+    });
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    startDelete(async () => {
+      const res = await vm.deleteViolationAction(target.id);
+      if (res.errorKey) {
+        toast.error(tErr(res.errorKey));
+        return;
+      }
+      setList((prev) => prev.filter((v) => v.id !== target.id));
+      setDeleteTarget(null);
+      toast.success(t("deleteToast", { studentName: target.studentName }));
     });
   };
 
@@ -432,12 +452,44 @@ export function ViolationsTab({
                   <StatusBadge tone={VIOLATION_STATUS_TONE[v.status]}>
                     {t(`status.${v.status}`)}
                   </StatusBadge>
+                  {isTeacher && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-edu-text-secondary hover:text-destructive"
+                      aria-label={t("deleteDialog.rowAriaLabel", {
+                        studentName: v.studentName,
+                        date: v.date,
+                      })}
+                      onClick={() => setDeleteTarget(v)}
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </Button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <DestructiveConfirmDialog
+        open={deleteTarget !== null}
+        title={t("deleteDialog.title")}
+        body={
+          deleteTarget
+            ? t("deleteDialog.body", {
+                studentName: deleteTarget.studentName,
+                type: t(`types.${deleteTarget.type}`),
+              })
+            : ""
+        }
+        confirmLabel={t("deleteDialog.confirm")}
+        isLoading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

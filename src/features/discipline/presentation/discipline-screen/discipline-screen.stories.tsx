@@ -21,6 +21,7 @@ const baseVm: DisciplineScreenVM = {
   conductSummary: MOCK_CONDUCT,
   leaveRequests: MOCK_LEAVE_REQUESTS,
   recordViolationAction: noop,
+  deleteViolationAction: noop,
   approveLeaveAction: noop,
   rejectLeaveAction: noop,
   overrideConductGradeAction: noop,
@@ -148,6 +149,101 @@ export const ConductTab_Empty: Story = {
       "text-edu-text-secondary",
     );
     await expect(status.querySelector("button")).toBeNull();
+  },
+};
+
+/**
+ * Delete-violation flow (US-E17.8 FR-007) — teacher clicks the per-row delete
+ * button, the confirm dialog opens with the correct discipline i18n keys,
+ * confirming calls `deleteViolationAction` and removes the row optimistically
+ * with a success toast. Also proves the per-row `aria-label` is
+ * student/date-distinguishable (A11Y-005 fix — previously unexercised).
+ */
+export const ViolationsTab_DeleteFlow: Story = {
+  args: {
+    ...baseVm,
+    deleteViolationAction: async () => ({}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    // A11Y-005: each row's delete button has a distinguishable aria-label
+    // (studentName + date interpolated), not one generic shared label.
+    const deleteBinh = canvas.getByRole("button", {
+      name: "Xóa vi phạm của Trần Văn Bình ngày 2026-04-29",
+    });
+    const deleteDung = canvas.getByRole("button", {
+      name: "Xóa vi phạm của Phạm Đức Dũng ngày 2026-04-28",
+    });
+    await expect(deleteBinh).toBeInTheDocument();
+    await expect(deleteDung).toBeInTheDocument();
+
+    await userEvent.click(deleteBinh);
+
+    const dialog = await body.findByRole("alertdialog");
+    await expect(within(dialog).getByText("Xóa vi phạm?")).toBeInTheDocument();
+    await expect(
+      within(dialog).getByText(/Vi phạm của Trần Văn Bình/),
+    ).toBeInTheDocument();
+
+    const confirmBtn = within(dialog).getByRole("button", {
+      name: "Xóa vi phạm",
+    });
+    await userEvent.click(confirmBtn);
+
+    // Optimistic removal — the row (and its uniquely-labelled delete button)
+    // disappears from the list.
+    await waitFor(() =>
+      expect(canvas.queryByText("Trần Văn Bình")).not.toBeInTheDocument(),
+    );
+    await expect(
+      await body.findByText("Đã xóa vi phạm của Trần Văn Bình."),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * Delete-violation error path — mutation rejects, parent shows the mapped
+ * error toast and keeps the row (no optimistic removal on failure).
+ */
+export const ViolationsTab_DeleteError: Story = {
+  args: {
+    ...baseVm,
+    deleteViolationAction: async () => ({ errorKey: "network-error" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Xóa vi phạm của Trần Văn Bình ngày 2026-04-29",
+      }),
+    );
+    const dialog = await body.findByRole("alertdialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Xóa vi phạm" }),
+    );
+
+    await expect(
+      await body.findByText("Lỗi kết nối, vui lòng thử lại"),
+    ).toBeInTheDocument();
+    // Row stays — no optimistic removal on failure.
+    await expect(canvas.getByText("Trần Văn Bình")).toBeInTheDocument();
+  },
+};
+
+/** Principal view — teacher-only delete button is not rendered (role gate). */
+export const ViolationsTab_Principal_NoDeleteButton: Story = {
+  args: { ...baseVm, viewerRole: "principal" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: "Xóa vi phạm của Trần Văn Bình ngày 2026-04-29",
+      }),
+    ).not.toBeInTheDocument();
   },
 };
 

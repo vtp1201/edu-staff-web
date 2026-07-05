@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import type { ExamBankSummary } from "../../domain/entities/exam-bank-summary.entity";
-import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 import { ExamBankEmpty } from "./exam-bank-empty";
 import {
   ExamBankFilterBar,
@@ -17,7 +17,6 @@ import {
 import type { ExamBankScreenVM, ExamCardVM } from "./exam-bank-screen.i-vm";
 import { ExamBankSkeleton } from "./exam-bank-skeleton";
 import { ExamCard } from "./exam-card";
-import { PublishConfirmDialog } from "./publish-confirm-dialog";
 
 function applyFilters(
   exams: ExamBankSummary[],
@@ -200,15 +199,21 @@ export function ExamBankScreen({
         </>
       )}
 
-      <PublishConfirmDialog
+      <DestructiveConfirmDialog
         open={publishTargetId !== null}
-        isPublishing={isPublishing}
+        title={t("publishDialog.title")}
+        body={t("publishDialog.body")}
+        confirmLabel={t("publishDialog.confirm")}
+        isLoading={isPublishing}
         onConfirm={confirmPublish}
         onCancel={() => setPublishTargetId(null)}
       />
-      <DeleteConfirmDialog
+      <DestructiveConfirmDialog
         open={deleteTargetId !== null}
-        isDeleting={isDeleting}
+        title={t("deleteDialog.title")}
+        body={t("deleteDialog.body")}
+        confirmLabel={t("deleteDialog.confirm")}
+        isLoading={isDeleting}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTargetId(null)}
       />

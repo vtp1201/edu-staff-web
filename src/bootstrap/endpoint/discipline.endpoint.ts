@@ -5,6 +5,7 @@
 export const DISCIPLINE_EP = {
   violations: "/core/api/v1/discipline/violations",
   recordViolation: "/core/api/v1/discipline/violations",
+  deleteViolation: (id: string) => `/core/api/v1/discipline/violations/${id}`,
   conduct: "/core/api/v1/discipline/conduct",
   overrideConduct: (studentId: string) =>
     `/core/api/v1/discipline/conduct/${studentId}/override`,

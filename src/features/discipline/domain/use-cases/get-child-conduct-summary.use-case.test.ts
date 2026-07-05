@@ -26,6 +26,7 @@ function makeRepo(
   return {
     getViolations: vi.fn(),
     recordViolation: vi.fn(),
+    deleteViolation: vi.fn(),
     getConductSummary: vi.fn(),
     overrideConductGrade: vi.fn(),
     getLeaveRequests: vi.fn(),

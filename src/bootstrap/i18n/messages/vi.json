@@ -1060,6 +1060,7 @@
         "cancel": "Huỷ",
         "confirm": "Xóa vi phạm",
         "deleting": "Đang xóa...",
+        "rowAriaLabel": "Xóa vi phạm của {studentName} ngày {date}",
         "title": "Xóa vi phạm?"
       },
       "deleteToast": "Đã xóa vi phạm của {studentName}",

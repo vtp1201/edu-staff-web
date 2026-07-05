@@ -100,6 +100,14 @@ export class DisciplineRepository implements IDisciplineRepository {
     }
   }
 
+  async deleteViolation(id: string): Promise<void> {
+    try {
+      await this.http.delete(DISCIPLINE_EP.deleteViolation(id));
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
   async getConductSummary(params: {
     classId?: string;
     semester?: string;

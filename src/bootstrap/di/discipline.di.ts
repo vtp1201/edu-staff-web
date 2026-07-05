@@ -3,6 +3,7 @@ import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IDisciplineRepository } from "@/features/discipline/domain/repositories/i-discipline.repository";
 import { ApproveLeaveUseCase } from "@/features/discipline/domain/use-cases/approve-leave.use-case";
+import { DeleteViolationUseCase } from "@/features/discipline/domain/use-cases/delete-violation.use-case";
 import { GetChildConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-child-conduct-summary.use-case";
 import { GetChildLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-child-leave-requests.use-case";
 import { GetChildViolationsUseCase } from "@/features/discipline/domain/use-cases/get-child-violations.use-case";
@@ -36,6 +37,10 @@ export async function makeGetViolationsUseCase() {
 
 export async function makeRecordViolationUseCase() {
   return new RecordViolationUseCase(await makeRepo());
+}
+
+export async function makeDeleteViolationUseCase() {
+  return new DeleteViolationUseCase(await makeRepo());
 }
 
 export async function makeGetConductSummaryUseCase() {

@@ -4,6 +4,7 @@ import { Archive, Pencil, Plus, UserCog } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Class } from "@/features/admin/class-management/domain/entities/class.entity";
-import { ArchiveClassDialog } from "./archive-class-dialog";
 import type { ClassManagementScreenProps } from "./class-management-screen.i-vm";
 import { CreateClassSheet } from "./create-class-sheet";
 import { HomeroomPickerSheet } from "./homeroom-picker-sheet";
@@ -65,6 +65,7 @@ export function ClassManagementScreen({
   const [createOpen, setCreateOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Class | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Class | null>(null);
+  const [archiving, setArchiving] = useState(false);
   const [homeroomTarget, setHomeroomTarget] = useState<Class | null>(null);
 
   const gradeOptions = useMemo(
@@ -303,12 +304,29 @@ export function ClassManagementScreen({
         gradeOptions={gradeOptions}
         onSubmit={handleRename}
       />
-      <ArchiveClassDialog
-        target={archiveTarget}
-        onOpenChange={(open) => {
-          if (!open) setArchiveTarget(null);
+      <DestructiveConfirmDialog
+        open={archiveTarget !== null}
+        title={t("archiveDialog.title")}
+        body={
+          (archiveTarget?.studentCount ?? 0) > 0
+            ? `${t("archiveDialog.description", { name: archiveTarget?.name ?? "" })} ${t(
+                "archiveDialog.warningWithStudents",
+                { count: archiveTarget?.studentCount ?? 0 },
+              )}`
+            : t("archiveDialog.description", {
+                name: archiveTarget?.name ?? "",
+              })
+        }
+        confirmLabel={t("archiveDialog.confirm")}
+        isLoading={archiving}
+        onConfirm={async () => {
+          if (!archiveTarget) return;
+          setArchiving(true);
+          const result = await handleArchive(archiveTarget.id);
+          setArchiving(false);
+          if (result.ok) setArchiveTarget(null);
         }}
-        onConfirm={handleArchive}
+        onCancel={() => setArchiveTarget(null)}
       />
       <HomeroomPickerSheet
         open={homeroomTarget !== null}

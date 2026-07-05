@@ -1060,6 +1060,7 @@
         "cancel": "Cancel",
         "confirm": "Delete violation",
         "deleting": "Deleting...",
+        "rowAriaLabel": "Delete {studentName}'s violation on {date}",
         "title": "Delete violation?"
       },
       "deleteToast": "Deleted {studentName}'s violation",

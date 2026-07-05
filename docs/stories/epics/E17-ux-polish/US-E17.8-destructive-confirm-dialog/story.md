@@ -80,4 +80,185 @@ No harness changes required. No new endpoints, tokens, or net-new i18n keys.
 
 ## Evidence
 
-Add Storybook screenshot links and Vitest proof after implementation.
+Implemented 2026-07-05 on branch `feat/us-e17.8-destructive-confirm-dialog`.
+
+### Test / Storybook proof
+
+- **Shared component** — `src/components/shared/destructive-confirm-dialog/`:
+  - `destructive-confirm-dialog.test.tsx` (Vitest, node env): 8 tests over the pure
+    portal-free `DestructiveDialogActions` footer + closed-state — `aria-busy="true"`
+    when loading / absent when idle, both buttons `disabled=""` when loading / neither
+    when idle, cancel-left-before-confirm-right DOM order, `data-variant="destructive"`
+    (confirm) + `data-variant="outline"` (cancel), labels rendered, and `open=false`
+    renders empty markup.
+  - `destructive-confirm-dialog.stories.tsx`: 8 interaction stories — `Closed`,
+    `OpenIdle` (role=alertdialog + onConfirm once), `CancelClick` (onCancel once),
+    `EscapeCancels` (Escape → onCancel once), `OpenLoading` (aria-busy + both disabled),
+    and 3 real-instance text variants (`AnnouncementsSendToSchool` with 150 interpolated,
+    `DisciplineViolationDelete`, `StaffLeaveReject`).
+  - **Why the DOM contract splits across two layers:** the repo's Vitest runs in `node`
+    (no jsdom / `@testing-library/react`) and Radix portals do not render server-side, so
+    `renderToStaticMarkup` cannot reach the dialog's portal content. Loading/disabled/
+    variant/order → proven in Vitest against the extracted pure footer; role/interaction/
+    Escape/call-counts → proven in the Storybook browser stories.
+- **Discipline delete-violation** — `delete-violation.use-case.test.ts` (2 tests, TDD
+  red→green: deletes via repo; rejects `not-found` on blank id) + a mock-repo integration
+  test in `discipline.repository.test.ts` (`deleteViolation` removes the row). All 11
+  sibling discipline use-case test mocks extended with `deleteViolation: vi.fn()`.
+- **Gate:** `bunx tsc --noEmit` clean · `bun vitest run` 1000 passed (197 files) ·
+  `bun run build` compiled successfully · `bun lint` exit 0 (the 1 pre-existing
+  warning/info is in unrelated `message-context-menu.tsx`).
+
+### Component API note — cancel label
+
+FR-001's 7-prop contract has no `cancelLabel`, but a cancel button needs text and NFR-004
+forbids hardcoded strings. The shared component resolves the cancel label internally from
+the existing `Common.confirmDialog.cancel` key via `useTranslations("Common")` — no net-new
+key, no hardcoded string, and the 7 functional props stay exactly as specified. Cancel is a
+universal word; every consumer's title/body/confirm remain caller-resolved as required.
+
+### i18n key correction (spec typo)
+
+spec.md §5 FR-007 / §9 and design-spec.jsonc reference
+`discipline.violations.deleteDialog.confirmLabel` — **that key does not exist** in
+`messages/{vi,en}.json`. The actual existing key is
+`discipline.violations.deleteDialog.confirm` ("Xóa vi phạm"). The discipline instance uses
+`.confirm`; **no new `.confirmLabel` key was added** (per NFR-004 / "no net-new i18n keys").
+
+### Deviation — staff-leave reject (FR-008 / AC-E17.8-22 NOT migrated by letter)
+
+The staff-leave reject flow (`staff-leave-request-card.tsx`) is an inline expanding panel
+with a **mandatory rejection-reason `Textarea`** (`MIN_REJECT_LENGTH = 10`, `aria-required`,
+`aria-invalid`, focus-managed; shipped US-E09.3, later displayed to the rejected staff via
+`request.rejectionReason`). `DestructiveConfirmDialog`'s title/body/confirmLabel API has no
+input-capture slot, so migrating would silently drop the reason requirement — a real data
+regression. Per FR-009 AC ("bespoke behavior not expressible by the shared API → document
+the deviation and flag for API extension, no fork") the existing flow is **left untouched**.
+A future optional `children`/extra-field slot on the shared component would be the
+prerequisite to migrate this instance — not built now. The `StaffLeaveReject` Storybook
+story still models the reject text variant for reference. Staff-leave was correctly
+**excluded** from the FR-009 7-dialog consolidation list; this deviation is only about the
+net-new instance in §FR-008.
+
+### Net-new discipline delete-violation layers (in-scope necessity for FR-007)
+
+Delete-violation did not exist anywhere in the feature. To satisfy FR-007 under Clean
+Architecture + mock-first (decision 0014), these files were added (not scope creep — the
+use-case/repo layers must exist even against an in-memory mock):
+
+- domain: `delete-violation.use-case.ts` (+ test), `deleteViolation(id)` on
+  `i-discipline.repository.ts`.
+- infrastructure: mock impl (filters in-memory `_violations`, mirrors `recordViolation`),
+  real repo `http.delete(DISCIPLINE_EP.deleteViolation(id))`, endpoint constant.
+- bootstrap/di: `makeDeleteViolationUseCase()`.
+- app: `deleteViolationAction` in both teacher + principal `actions.ts`; wired through
+  both `page.tsx` → `DisciplineScreenVM.deleteViolationAction`.
+- presentation: teacher-only per-row delete button (`isTeacher` gate) → optimistic list
+  removal + `deleteToast`, no real BE endpoint (UI-polish scope, mock-first).
+
+### A11y remediation (accessibility-auditor round 1 — 3 Blocking + 2 Major, all fixed)
+
+- **A11Y-001** (WCAG 2.4.3/2.1.2): the plain-`<Button>` footer dropped Radix's built-in
+  initial-focus-on-open (its default `onOpenAutoFocus` focuses a `cancelRef` only populated
+  by `AlertDialogCancel`, which we no longer render). Fixed by forwarding a `cancelRef` onto
+  the footer's cancel button + an explicit `onOpenAutoFocus` on `AlertDialogContent` that
+  focuses it. Plain-Button design kept (that's the exactly-once `onCancel` fix). Storybook
+  `OpenIdle` now asserts `cancel` has focus on open.
+- **A11Y-002** (1.4.11): icon `text-destructive` (#fa896b ≈2.4:1) → `text-edu-error-text` (≈5:1).
+- **A11Y-003** (1.4.3): body `text-muted-foreground` (#8898a9 ≈2.75:1) → `text-edu-text-secondary` (≈5.1:1).
+- **A11Y-004** (a11y.md ≥44px): discipline row delete button `size="icon-sm"` (32px) → `size="icon"` (min-h-11/min-w-11).
+- **A11Y-005** (2.4.6/4.1.2): every row's delete button shared one generic aria-label →
+  **one net-new key** `discipline.violations.deleteDialog.rowAriaLabel` (vi+en) interpolating
+  `{studentName}`/`{date}`. This is a targeted a11y fix (auditor-approved), distinct from the
+  "no net-new keys for the shared component's own props" scoping.
+
+### Consolidation (FR-009 / AC-E17.8-24)
+
+All 7 feature-local dialogs deleted and their call sites migrated to import
+`DestructiveConfirmDialog` directly (no thin re-export wrappers): exam-bank delete +
+publish (publish used at 2 call sites), grade-approval approve + bulk-lock, admin-roster
+unenroll, admin-settings switch, class-management archive. `bulk-lock`/`approve`/`publish`/
+`switch`/`archive` gain `variant="destructive"` + `aria-busy` from the shared contract
+(expected per DR-011, not a regression). **Minor visual change on archive-class:** the
+bespoke amber "has-students" warning box is folded into the body string (information
+preserved as text; loses the standalone alert-box styling) — flagged here as the only
+consolidation that had extra presentational content.
+
+### Tech-lead review
+
+**Verdict: Approved** (0 blocking findings). Layering, tokens, i18n, role-gating, and TDD
+proof all pass. 4 non-blocking CONSIDER notes logged (not required for this story):
+commit `8f1b0bb` scope `ui` is slightly imprecise (touches `presentation/`, cosmetic);
+`archive-class`'s folded warning box could get a `children`/slot restore later; the
+component's name now also backs non-destructive-but-irreversible actions (publish/approve/
+switch) which is DR-011-approved, not a regression; several other raw-`AlertDialog` sites
+outside this story's fixed 7-file list are a future consolidation candidate.
+
+### Accessibility audit
+
+**Round 1:** 3 Blocking + 2 Major findings (A11Y-001..005, see remediation section above).
+**Round 2 (post-fix, re-verified by fe-lead against the auditor's exact recommendations):**
+all 5 fixes applied correctly — `cancelRef`/`onOpenAutoFocus` restores initial focus,
+icon/body contrast both clear their WCAG floors (≈5:1 / ≈5.1:1), row delete button meets
+the 44px target, and each row's `aria-label` is now distinguishable per student/date. No
+outstanding findings.
+
+### Design review: pass
+
+- design-system: conform — tokens-only throughout (verified by tech-lead + a re-grep for
+  raw color across the full diff), typography/spacing/radius match the
+  `destructiveConfirmDialog` design-spec.jsonc entry, reuses the existing `alert-dialog`
+  primitive and `Button` variants (no new pattern invented).
+- a11y: WCAG AA OK after round-2 remediation — contrast, keyboard, focus-on-open/restore,
+  touch target, distinguishable labels all verified; reduced-motion unaffected (no new
+  animation added, Radix's existing motion-safe wrapping untouched).
+- impeccable audit: not run as a separate CLI invocation — this is a token-reuse consolidation
+  of an existing interaction pattern (not a new screen/visual direction), consistent with
+  US-E17.5/E17.6/E17.7 precedent in this epic; tech-lead + a11y verdicts cover the same
+  ground impeccable would flag (contrast/spacing/hierarchy/states).
+- states: closed / open-idle / open-loading all covered (Storybook + Vitest); error state is
+  parent-owned (toast) per spec §5, not inside the dialog — matches FR-007's AC. Responsive:
+  `max-h-[92vh]` + internal scroll inherited unchanged from the existing `alert-dialog`
+  primitive, no new layout risk at 320px.
+
+### QA gate — Go (after 1 CRITICAL defect fix)
+
+`fe-qa-playwright` traced every AC to concrete test proof, closed 4 real coverage gaps
+test-only (shared component `TabCyclesFocusTrap` for AC-11; discipline delete-flow
+`ViolationsTab_DeleteFlow`/`_DeleteError`/`_Principal_NoDeleteButton`, previously 0%
+interaction-covered), and verified AC-24 (7-file consolidation) by direct grep. It also
+ran the real Storybook browser and found a genuine **CRITICAL production defect**:
+
+**DEF-001 (fixed):** `announcement-drawer.tsx`'s `submit()` success branch called
+`onOpenChange(false)` (closes the Sheet) but never reset `confirmSendOpen` — since the
+drawer is always-mounted, `DestructiveConfirmDialog` was left `open=true`, focus-trapped,
+visibly stuck over the closed drawer after every successful "Gửi ngay" confirm. Fixed by
+adding `setConfirmSendOpen(false)` alongside `onOpenChange(false)` in the `res.ok` branch.
+
+**Test-authoring follow-up (fe-lead):** QA's own red-test proof for DEF-001
+(`Create Drawer Send Submit` in `announcements-screen.stories.tsx`) asserted
+`queryByRole("alertdialog")` synchronously right after the confirm click, racing the
+un-awaited `submit()` promise + Radix's exit-animation unmount delay — this made the
+assertion flaky even with the fix applied (confirmed identical against a `main` baseline
+worktree: the *same* 9/19 stories in this file fail on both `main` and this branch for an
+unrelated pre-existing cascading env issue at a different assertion, `getByRole("tablist")`
+— NOT a DEF-001 regression). Isolated re-run in a clean per-test invocation
+(`-t "Create Drawer Send Submit"`) confirmed the underlying fix is correct but the
+assertion needed to poll rather than assert synchronously. Fixed by swapping to
+`waitFor(() => expect(...).not.toBeInTheDocument())` — re-run in isolation now passes
+(1 passed | 18 skipped, the 18 skip from the `-t` filter, not a failure).
+
+**Verdict: Go** — 1 CRITICAL defect found and fixed, 4 real coverage gaps closed, AC-24
+consolidation verified, ~88% explicit AC-bullet-to-test traceability (remaining gaps are
+low-risk items inherited unchanged from the Radix primitive: icon/title DOM order,
+Enter/Space-vs-click on native `<button>`, focus-restore-to-trigger in an isolated-story
+context with no real trigger, 320px re-verification — none are novel risk from this diff).
+
+### Proof re-verified by fe-lead (post-remediation + post-QA-defect-fix)
+
+`bunx tsc --noEmit` clean · `bun vitest run` 1000/1000 (197 files) · Storybook real-browser
+run for `destructive-confirm-dialog` 8/8 passed · `announcements-screen > Create Drawer Send
+Submit` passes in isolation after the `waitFor` fix · confirmed the file's other 9/19
+failures are identical on a `main` baseline worktree (pre-existing, unrelated cascading env
+issue, not a regression) · `bun run build` compiled · pre-push gate (`branch-name`/`test`/
+`build`) green on push.

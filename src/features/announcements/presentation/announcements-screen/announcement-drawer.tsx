@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,6 +86,7 @@ export function AnnouncementDrawer({
   const [scheduledAt, setScheduledAt] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false);
 
   // Seed from the editing draft when the drawer opens.
   useEffect(() => {
@@ -107,6 +109,7 @@ export function AnnouncementDrawer({
       setScheduledAt("");
     }
     setShowPreview(false);
+    setConfirmSendOpen(false);
   }, [open, editing]);
 
   const titleInvalid = title.trim().length < TITLE_MIN;
@@ -172,6 +175,10 @@ export function AnnouncementDrawer({
           ),
         );
         onSuccess();
+        // Reset the confirm dialog too — the drawer is always-mounted, so
+        // otherwise the focus-trapped dialog lingers over the closed Sheet
+        // after a successful "Gửi ngay" (DEF-001).
+        setConfirmSendOpen(false);
         onOpenChange(false);
       } else {
         toast.error(t(`errors.${res.errorKey ?? "unknown"}` as const));
@@ -439,15 +446,31 @@ export function AnnouncementDrawer({
             </Button>
             <Button
               disabled={!canSubmit}
-              onClick={() =>
-                submit(sendMode === "scheduled" ? "scheduled" : "now")
-              }
+              onClick={() => {
+                if (sendMode === "scheduled") {
+                  submit("scheduled");
+                } else {
+                  // Broadcast send-to-school is high-stakes → confirm first.
+                  setConfirmSendOpen(true);
+                }
+              }}
             >
               {sendMode === "scheduled" ? t("btnSchedule") : t("btnSendNow")}
             </Button>
           </div>
         </SheetFooter>
       </SheetContent>
+      <DestructiveConfirmDialog
+        open={confirmSendOpen}
+        title={t("sendConfirmTitle")}
+        body={t("sendConfirmBody", { recipientCount: recipientEstimate })}
+        confirmLabel={t("btnSendNow")}
+        isLoading={submitting}
+        onConfirm={() => {
+          void submit("now");
+        }}
+        onCancel={() => setConfirmSendOpen(false)}
+      />
     </Sheet>
   );
 }

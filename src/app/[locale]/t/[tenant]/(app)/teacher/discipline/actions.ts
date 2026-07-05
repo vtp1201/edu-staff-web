@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   makeApproveLeaveUseCase,
+  makeDeleteViolationUseCase,
   makeOverrideConductGradeUseCase,
   makeRecordViolationUseCase,
   makeRejectLeaveUseCase,
@@ -25,6 +26,18 @@ export async function recordViolationAction(
 ): Promise<{ errorKey?: DisciplineFailure["type"] }> {
   try {
     await (await makeRecordViolationUseCase()).execute(input);
+    revalidatePath(TEACHER_PATH, "page");
+    return {};
+  } catch (err) {
+    return { errorKey: toErrorKey(err) };
+  }
+}
+
+export async function deleteViolationAction(
+  id: string,
+): Promise<{ errorKey?: DisciplineFailure["type"] }> {
+  try {
+    await (await makeDeleteViolationUseCase()).execute(id);
     revalidatePath(TEACHER_PATH, "page");
     return {};
   } catch (err) {

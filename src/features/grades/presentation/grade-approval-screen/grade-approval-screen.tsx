@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,10 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/shared/utils";
-import { ApproveConfirmDialog } from "./components/approve-confirm-dialog";
 import { BatchReviewSheet } from "./components/batch-review-sheet";
 import { BatchStatusBadge } from "./components/batch-status-badge";
-import { BulkLockDialog } from "./components/bulk-lock-dialog";
 import { GradeApprovalSkeleton } from "./components/grade-approval-skeleton";
 import { GradePublishModeWarning } from "./components/grade-publish-mode-warning";
 import { RevisionRequestDialog } from "./components/revision-request-dialog";
@@ -197,14 +196,17 @@ export function GradeApprovalScreen({ vm }: { vm: GradeApprovalScreenVM }) {
         onRequestRevision={() => setRevisionOpen(true)}
       />
 
-      <ApproveConfirmDialog
+      <DestructiveConfirmDialog
         open={approveOpen}
-        onOpenChange={setApproveOpen}
-        isPending={vm.isApproving}
+        title={t("approveDialog.title")}
+        body={t("approveDialog.description")}
+        confirmLabel={t("approveDialog.confirm")}
+        isLoading={vm.isApproving}
         onConfirm={() => {
           if (vm.detailBatchId) vm.onApprove(vm.detailBatchId);
           setApproveOpen(false);
         }}
+        onCancel={() => setApproveOpen(false)}
       />
 
       <RevisionRequestDialog
@@ -217,15 +219,19 @@ export function GradeApprovalScreen({ vm }: { vm: GradeApprovalScreenVM }) {
         }}
       />
 
-      <BulkLockDialog
+      <DestructiveConfirmDialog
         open={bulkLockOpen}
-        onOpenChange={setBulkLockOpen}
-        isPending={vm.isBulkLocking}
-        count={lockableSelected.length}
+        title={t("bulkLockDialog.title")}
+        body={t("bulkLockDialog.description", {
+          count: lockableSelected.length,
+        })}
+        confirmLabel={t("bulkLockDialog.confirm")}
+        isLoading={vm.isBulkLocking}
         onConfirm={() => {
           vm.onBulkLock();
           setBulkLockOpen(false);
         }}
+        onCancel={() => setBulkLockOpen(false)}
       />
     </div>
   );
