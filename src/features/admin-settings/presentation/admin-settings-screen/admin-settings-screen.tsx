@@ -15,10 +15,10 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GradePublishMode } from "@/features/admin-school-setup/domain/entities/school-config.entity";
 import { cn } from "@/shared/utils";
-import { SwitchConfirmDialog } from "./switch-confirm-dialog";
 
 interface AdminSettingsScreenProps {
   initialMode: GradePublishMode | null;
@@ -355,13 +355,16 @@ export function AdminSettingsScreen({
         </div>
       </div>
 
-      <SwitchConfirmDialog
+      <DestructiveConfirmDialog
         open={showConfirmDialog}
-        onOpenChange={(open) => {
-          setShowConfirmDialog(open);
-          if (!open) setPendingMode(null);
-        }}
+        title={t("confirmDialog.title")}
+        body={t("confirmDialog.description")}
+        confirmLabel={t("confirmDialog.confirm")}
         onConfirm={handleConfirm}
+        onCancel={() => {
+          setShowConfirmDialog(false);
+          setPendingMode(null);
+        }}
       />
     </div>
   );

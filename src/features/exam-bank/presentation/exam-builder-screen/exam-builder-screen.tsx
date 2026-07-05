@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import type {
   CreateExamInput,
   UpdateExamInput,
 } from "../../domain/entities/exam-bank-input.entity";
 import type { QuestionFailureType } from "../../domain/use-cases/validate-questions";
 import { validateQuestion } from "../../domain/use-cases/validate-questions";
-import { PublishConfirmDialog } from "../exam-bank-screen/publish-confirm-dialog";
 import { BuilderActionBar } from "./builder-action-bar";
 import { BuilderHeader } from "./builder-header";
 import type { ExamBuilderScreenVM } from "./exam-builder-screen.i-vm";
@@ -198,9 +198,12 @@ export function ExamBuilderScreen({
         </section>
       </div>
 
-      <PublishConfirmDialog
+      <DestructiveConfirmDialog
         open={publishDialogOpen}
-        isPublishing={isPublishing}
+        title={t("publishDialog.title")}
+        body={t("publishDialog.body")}
+        confirmLabel={t("publishDialog.confirm")}
+        isLoading={isPublishing}
         onConfirm={confirmPublish}
         onCancel={() => setPublishDialogOpen(false)}
       />

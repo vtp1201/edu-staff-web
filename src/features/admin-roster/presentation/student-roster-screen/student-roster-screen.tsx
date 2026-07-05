@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import type { SearchStudent } from "@/features/admin-roster/domain/entities/search-student.entity";
 import { AddStudentPanel } from "./components/add-student-panel";
@@ -13,7 +14,6 @@ import { RosterBreadcrumb } from "./components/roster-breadcrumb";
 import { RosterEmptyState } from "./components/roster-empty-state";
 import { RosterTable } from "./components/roster-table";
 import { TransferConfirmDialog } from "./components/transfer-confirm-dialog";
-import { UnenrollConfirmDialog } from "./components/unenroll-confirm-dialog";
 import type {
   RosterActionResult,
   StudentRosterScreenProps,
@@ -172,10 +172,14 @@ export function StudentRosterScreen({
         </div>
       </div>
 
-      <UnenrollConfirmDialog
+      <DestructiveConfirmDialog
         open={confirm?.type === "unenroll"}
-        targetIds={confirm?.type === "unenroll" ? confirm.targetIds : []}
-        pending={pending}
+        title={t("confirm.unenrollTitle")}
+        body={t("confirm.unenrollBody", {
+          count: confirm?.type === "unenroll" ? confirm.targetIds.length : 0,
+        })}
+        confirmLabel={t("confirm.confirm")}
+        isLoading={pending}
         onConfirm={confirmUnenroll}
         onCancel={() => setConfirm(null)}
       />
