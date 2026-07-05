@@ -353,9 +353,10 @@ export function SchoolSetupScreen({
                           aria-label={t("stepper.stepCurrent")}
                         />
                       ) : (
+                        /* A11Y-001 fix: pending circle uses text-edu-text-secondary (5.48:1) not muted (2.95:1) */
                         <Circle
                           size={12}
-                          className="text-muted-foreground"
+                          className="text-edu-text-secondary"
                           strokeWidth={2.4}
                           role="img"
                           aria-label={t("stepper.stepPending")}
@@ -373,8 +374,12 @@ export function SchoolSetupScreen({
                       {stepLabel}
                     </span>
                     {done ? (
-                      /* A003 fix: "done" label uses text-edu-text-secondary (5.48:1) not success (1.72:1) */
-                      <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-edu-text-secondary">
+                      /* A003 fix: "done" label uses text-edu-text-secondary (5.48:1) not success (1.72:1)
+                         A11Y-002 fix: aria-hidden — Check icon already announces "Hoàn thành" */
+                      <span
+                        aria-hidden="true"
+                        className="text-[11px] font-bold uppercase tracking-[0.04em] text-edu-text-secondary"
+                      >
                         {t("guide.done")}
                       </span>
                     ) : (
