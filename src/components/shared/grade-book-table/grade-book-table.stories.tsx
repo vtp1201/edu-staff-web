@@ -8,6 +8,17 @@ import type {
 } from "@/features/grades/domain/entities/grade-book.entity";
 import { GradeBookTable } from "./grade-book-table";
 
+/**
+ * QA NOTE (US-E17.11): `@storybook/addon-viewport` is NOT installed, so the
+ * `parameters.viewport` blocks below are inert decoration only. To get REAL
+ * proof at 375px we drive the `@vitest/browser-playwright` context directly
+ * via `page.viewport()` (same pattern as detail-panel-header.stories.tsx).
+ */
+async function resizeToMobile() {
+  const { page } = await import("vitest/browser");
+  await page.viewport(375, 812);
+}
+
 const SCHEME = {
   subjectId: "subj-toan-10",
   yearLabel: "2024-2025",
@@ -371,5 +382,30 @@ export const TeacherView_Tablet768: Story = {
     expect(document.documentElement.scrollWidth).toBe(
       document.documentElement.clientWidth,
     );
+  },
+};
+
+/**
+ * US-E17.11 / AC-E17.11-15 — at a real 375px viewport every data-row cell
+ * (row header + score/average/conduct cells) renders at least 44px tall,
+ * meeting the WCAG 2.5.5 / 2.5.8 touch-target floor. Proven via live layout
+ * (getBoundingClientRect), not just the className.
+ */
+export const TouchTarget_Mobile375: Story = {
+  args: { gradeBook: book(ROWS), role: "student", isPublished: true },
+  play: async ({ canvasElement }) => {
+    await resizeToMobile();
+    const canvas = within(canvasElement);
+    // First data row: its sticky row header (student name/code).
+    const rowHeader = canvas.getByRole("rowheader", { name: /Nguyễn Văn An/ });
+    expect(rowHeader.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    // Every data cell in that same <tr> is ≥ 44px tall too.
+    const dataRow = rowHeader.closest("tr");
+    expect(dataRow).not.toBeNull();
+    const dataCells = (dataRow as HTMLTableRowElement).querySelectorAll("td");
+    expect(dataCells.length).toBeGreaterThanOrEqual(5);
+    for (const cell of dataCells) {
+      expect(cell.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    }
   },
 };

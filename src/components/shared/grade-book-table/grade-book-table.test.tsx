@@ -128,3 +128,35 @@ describe("GradeBookTable — mobile scroll + sticky column a11y (US-E17.2)", () 
     }
   });
 });
+
+/**
+ * US-E17.11 — every data-row cell meets the WCAG 2.5.5 / 2.5.8 44px touch
+ * target floor. Header (<thead>) cells are out of scope (not tappable). We
+ * isolate the <tbody> markup and assert `min-h-[44px]` on the row header and
+ * every data <td>.
+ */
+describe("GradeBookTable — touch target 44px (US-E17.11)", () => {
+  // Extract only the <tbody>…</tbody> slice so <thead> cells are excluded.
+  function tbody(html: string): string {
+    const match = html.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
+    if (!match) throw new Error("tbody not found");
+    return match[1];
+  }
+
+  it("AC-E17.11-15: the data-row header (<th scope=row>) has min-h-[44px]", () => {
+    const body = tbody(renderTable());
+    const rowHeader = body.match(/<th[^>]*scope="row"[^>]*>/);
+    expect(rowHeader).not.toBeNull();
+    expect(rowHeader?.[0]).toContain("min-h-[44px]");
+  });
+
+  it("AC-E17.11-15: every data <td> has min-h-[44px]", () => {
+    const body = tbody(renderTable());
+    const cells = body.match(/<td[^>]*>/g) ?? [];
+    // score columns (3) + average + conduct = 5 cells in this fixture.
+    expect(cells.length).toBeGreaterThanOrEqual(5);
+    for (const cell of cells) {
+      expect(cell).toContain("min-h-[44px]");
+    }
+  });
+});

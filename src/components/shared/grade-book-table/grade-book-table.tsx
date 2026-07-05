@@ -180,7 +180,7 @@ function GradeRow({
     <tr className="border-border border-b last:border-0">
       <th
         scope="row"
-        className="sticky left-0 z-[1] border-edu-border border-r bg-edu-card px-4 py-2 text-left font-medium text-foreground"
+        className="sticky left-0 z-[1] min-h-[44px] border-edu-border border-r bg-edu-card px-4 py-2 text-left font-medium text-foreground"
       >
         <span className="block">{row.studentName}</span>
         <span className="block text-edu-text-secondary text-xs">
@@ -193,7 +193,7 @@ function GradeRow({
           <td
             key={colId}
             className={cn(
-              "px-4 py-2 text-center tabular-nums",
+              "min-h-[44px] px-4 py-2 text-center tabular-nums",
               getScoreColorClass(score, MAX_SCORE),
             )}
           >
@@ -210,7 +210,7 @@ function GradeRow({
       })}
       <td
         className={cn(
-          "px-4 py-2 text-center font-bold tabular-nums",
+          "min-h-[44px] px-4 py-2 text-center font-bold tabular-nums",
           getScoreColorClass(row.average, MAX_SCORE),
         )}
       >
@@ -223,7 +223,7 @@ function GradeRow({
           row.average
         )}
       </td>
-      <td className="px-4 py-2 text-center">
+      <td className="min-h-[44px] px-4 py-2 text-center">
         <StatusBadge tone={CONDUCT_TONE[row.conductGrade]}>
           {t(CONDUCT_KEY[row.conductGrade])}
         </StatusBadge>
