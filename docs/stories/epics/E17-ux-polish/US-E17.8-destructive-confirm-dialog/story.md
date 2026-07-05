@@ -156,6 +156,22 @@ use-case/repo layers must exist even against an in-memory mock):
 - presentation: teacher-only per-row delete button (`isTeacher` gate) → optimistic list
   removal + `deleteToast`, no real BE endpoint (UI-polish scope, mock-first).
 
+### A11y remediation (accessibility-auditor round 1 — 3 Blocking + 2 Major, all fixed)
+
+- **A11Y-001** (WCAG 2.4.3/2.1.2): the plain-`<Button>` footer dropped Radix's built-in
+  initial-focus-on-open (its default `onOpenAutoFocus` focuses a `cancelRef` only populated
+  by `AlertDialogCancel`, which we no longer render). Fixed by forwarding a `cancelRef` onto
+  the footer's cancel button + an explicit `onOpenAutoFocus` on `AlertDialogContent` that
+  focuses it. Plain-Button design kept (that's the exactly-once `onCancel` fix). Storybook
+  `OpenIdle` now asserts `cancel` has focus on open.
+- **A11Y-002** (1.4.11): icon `text-destructive` (#fa896b ≈2.4:1) → `text-edu-error-text` (≈5:1).
+- **A11Y-003** (1.4.3): body `text-muted-foreground` (#8898a9 ≈2.75:1) → `text-edu-text-secondary` (≈5.1:1).
+- **A11Y-004** (a11y.md ≥44px): discipline row delete button `size="icon-sm"` (32px) → `size="icon"` (min-h-11/min-w-11).
+- **A11Y-005** (2.4.6/4.1.2): every row's delete button shared one generic aria-label →
+  **one net-new key** `discipline.violations.deleteDialog.rowAriaLabel` (vi+en) interpolating
+  `{studentName}`/`{date}`. This is a targeted a11y fix (auditor-approved), distinct from the
+  "no net-new keys for the shared component's own props" scoping.
+
 ### Consolidation (FR-009 / AC-E17.8-24)
 
 All 7 feature-local dialogs deleted and their call sites migrated to import
