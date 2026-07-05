@@ -40,6 +40,16 @@ describe("MockDisciplineRepository", () => {
     expect(after[0].id).toBe(created.id);
   });
 
+  it("deleteViolation removes the violation from the list", async () => {
+    const repo = new MockDisciplineRepository();
+    const created = await repo.recordViolation(recordInput);
+    const before = await repo.getViolations({});
+    await repo.deleteViolation(created.id);
+    const after = await repo.getViolations({});
+    expect(after.length).toBe(before.length - 1);
+    expect(after.some((v) => v.id === created.id)).toBe(false);
+  });
+
   it("approveLeave moves a pending request to approved", async () => {
     const repo = new MockDisciplineRepository();
     const updated = await repo.approveLeave("l-1");

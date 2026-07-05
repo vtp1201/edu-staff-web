@@ -21,6 +21,7 @@ const baseVm: DisciplineScreenVM = {
   conductSummary: MOCK_CONDUCT,
   leaveRequests: MOCK_LEAVE_REQUESTS,
   recordViolationAction: noop,
+  deleteViolationAction: noop,
   approveLeaveAction: noop,
   rejectLeaveAction: noop,
   overrideConductGradeAction: noop,

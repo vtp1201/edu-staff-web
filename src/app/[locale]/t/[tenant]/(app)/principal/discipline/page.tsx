@@ -10,6 +10,7 @@ import { DisciplineScreen } from "@/features/discipline/presentation/discipline-
 import type { DisciplineTab } from "@/features/discipline/presentation/discipline-screen/discipline-screen.i-vm";
 import {
   approveLeaveAction,
+  deleteViolationAction,
   overrideConductGradeAction,
   recordViolationAction,
   rejectLeaveAction,
@@ -61,6 +62,7 @@ export default async function PrincipalDisciplinePage({
       conductSummary={conductSummary}
       leaveRequests={leaveRequests}
       recordViolationAction={recordViolationAction}
+      deleteViolationAction={deleteViolationAction}
       approveLeaveAction={approveLeaveAction}
       rejectLeaveAction={rejectLeaveAction}
       overrideConductGradeAction={overrideConductGradeAction}

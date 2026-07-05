@@ -25,6 +25,7 @@ export interface IDisciplineRepository {
     semester?: string;
   }): Promise<ViolationEntity[]>;
   recordViolation(input: RecordViolationInput): Promise<ViolationEntity>;
+  deleteViolation(id: string): Promise<void>;
   getConductSummary(params: {
     classId?: string;
     semester?: string;

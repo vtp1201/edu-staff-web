@@ -126,6 +126,11 @@ export class MockDisciplineRepository implements IDisciplineRepository {
     return structuredClone(violation);
   }
 
+  async deleteViolation(id: string): Promise<void> {
+    await mockDelay();
+    _violations = _violations.filter((v) => v.id !== id);
+  }
+
   async getConductSummary(params: {
     classId?: string;
     semester?: string;

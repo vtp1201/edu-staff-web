@@ -29,6 +29,7 @@ export interface DisciplineScreenVM {
   recordViolationAction: (
     input: RecordViolationInput,
   ) => Promise<DisciplineActionResult>;
+  deleteViolationAction: (id: string) => Promise<DisciplineActionResult>;
   approveLeaveAction: (id: string) => Promise<DisciplineActionResult>;
   rejectLeaveAction: (
     id: string,
