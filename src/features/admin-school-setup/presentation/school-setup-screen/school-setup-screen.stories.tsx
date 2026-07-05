@@ -70,6 +70,13 @@ export const StepperZeroOfFive: Story = {
     await expect(bar).toHaveAttribute("aria-valuenow", "0");
     await expect(bar).toHaveAttribute("aria-valuemin", "0");
     await expect(bar).toHaveAttribute("aria-valuemax", "100");
+    // AC-E17.13-04: aria-label from adminSchoolSetup.stepper.ariaLabel (interpolated).
+    await expect(bar).toHaveAttribute(
+      "aria-label",
+      messages.adminSchoolSetup.stepper.ariaLabel
+        .replace("{current}", "1")
+        .replace("{total}", "5"),
+    );
     const fill = bar.querySelector("div");
     await expect(fill?.getAttribute("style")).toContain("width: 0%");
     await expect(fill?.className).toContain("motion-safe:transition-[width]");
@@ -107,6 +114,15 @@ export const StepperTwoOfFive: Story = {
     const canvas = within(canvasElement);
     const bar = await canvas.findByRole("progressbar");
     await expect(bar).toHaveAttribute("aria-valuenow", "40");
+    await expect(bar).toHaveAttribute("aria-valuemin", "0");
+    await expect(bar).toHaveAttribute("aria-valuemax", "100");
+    // AC-E17.13-04: aria-label from adminSchoolSetup.stepper.ariaLabel (interpolated).
+    await expect(bar).toHaveAttribute(
+      "aria-label",
+      messages.adminSchoolSetup.stepper.ariaLabel
+        .replace("{current}", "3")
+        .replace("{total}", "5"),
+    );
     const fill = bar.querySelector("div");
     await expect(fill?.getAttribute("style")).toContain("width: 40%");
     await expect(fill?.getAttribute("style")).not.toContain("scaleX");
@@ -132,6 +148,28 @@ export const StepperTwoOfFive: Story = {
         messages.adminSchoolSetup.stepper.stepPending,
       ),
     ).toHaveLength(2);
+    // AC-E17.13-13: complete-step badge circle is bg-edu-success; icon itself
+    // uses text-edu-text-primary for contrast (a11y-audited deviation from the
+    // literal "text-edu-success on icon" wording — badge bg carries the success tone).
+    // SVG elements expose `.className` as SVGAnimatedString, not a plain
+    // string — read the `class` attribute directly instead.
+    const [firstCheckIcon] = await canvas.findAllByLabelText(
+      messages.adminSchoolSetup.stepper.stepComplete,
+    );
+    await expect(firstCheckIcon.getAttribute("class")).toContain(
+      "text-edu-text-primary",
+    );
+    await expect(firstCheckIcon.closest("div")?.className).toContain(
+      "bg-edu-success",
+    );
+    // AC-E17.13-14: current-step Loader2 icon uses text-primary + motion-safe:animate-spin.
+    const currentIcon = await canvas.findByLabelText(
+      messages.adminSchoolSetup.stepper.stepCurrent,
+    );
+    await expect(currentIcon.getAttribute("class")).toContain("text-primary");
+    await expect(currentIcon.getAttribute("class")).toContain(
+      "motion-safe:animate-spin",
+    );
   },
 };
 
