@@ -89,4 +89,35 @@ Group detail cache: `staleTime: 30_000`, `gcTime: 300_000`, `refetchOnWindowFocu
 
 Optimistic pattern for `InfiniteData<MessagePage>` mutations: use `updateInfinitePages(old, msg => ...)` utility to map over pages without flattening — preserves cursor pagination structure.
 
+## Admin two-step approval / safety-critical gate pattern (US-E14.6, academic-record-seal)
+
+For high-risk, one-way-transition admin actions (seal/unseal, publish/lock-style gates):
+- **No optimistic updates** on any mutation in the flow — wait for server confirmation
+  before flipping UI state; a false-positive "sealed"/"approved" flash that then gets
+  rejected is worse UX than a short pending spinner for a low-frequency admin action.
+- The gate-check query (e.g. `sealStatus`) uses `staleTime: 0` + `refetchOnWindowFocus: true`
+  — safety-critical gates must reflect the latest state, not a cached snapshot.
+- A "pending requests" list that a second admin discovers by **independently navigating**
+  to the screen (not a live/same-session picker) also gets `staleTime: 0` +
+  `refetchOnWindowFocus: true` instead of realtime/SSE — no event taxonomy entry needed if
+  the product spec explicitly says "self-navigate" (ADR amendment), not live push.
+- Domain errors from the mutation (stale-state races like `already-sealed`,
+  `no-pending-request`) → `toast.error`. But an error that's a **direct, synchronous
+  consequence of the action just taken inside an open dialog** (e.g. "you can't confirm
+  your own request") → inline dialog error, not a toast (toast can be missed if the dialog
+  auto-closes).
+- Mutation variables should capture the selector/key at the moment the confirm-dialog
+  opened (not re-read live searchParams inside `mutationFn`) — protects against the
+  selector changing while a mutation is in flight.
+
+## RSC-resolved identity vs client-derived display name
+
+When `page.tsx` needs a "current user" value for a client feature that already queries a
+directory list containing that user (e.g. `tenant-admins`): resolve only the **ID**
+server-side (cheap — `decodeSubClaim(accessToken)` from `bootstrap/lib/jwt.ts`, no extra
+request) and let the **display name** be derived client-side via
+`list.find(x => x.id === currentId)?.name` once that query settles, rather than adding a
+second server round-trip just for a cosmetic label. Only resolve the name server-side if
+it gates something before the client query can run.
+
 **See also:** [[rsc-readonly-pattern]]
