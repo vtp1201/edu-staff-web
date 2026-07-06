@@ -34,5 +34,8 @@ Key patterns for E14.4:
 
 Gate: 711/711 Vitest, tsc 0 errors, build clean; merged to main commit 71d19ef.
 
-Remaining US in E14: E14.5 academic record viewer, E14.6 record seal (HIGH-RISK).
+E14.5 (academic record viewer) and E14.6 (record seal, HIGH-RISK) implemented too
+(2026-07-06) — see [project-e14-record-seal](project-e14-record-seal.md) for E14.6's
+review findings (they live in `src/features/academic-records/`, a SEPARATE module
+from `grades/` — don't confuse the two). E14 epic now fully implemented.
 Remaining US sharing grades module: E13.6 grade book (multi-role read-only).
