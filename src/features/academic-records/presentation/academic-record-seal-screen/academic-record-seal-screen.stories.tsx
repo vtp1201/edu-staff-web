@@ -366,6 +366,58 @@ export const UnsealSelfApproveFallback: Story = {
   },
 };
 
+/** Page-level query failure (e.g. seal-status fetch throws) — inline
+ * role="alert" panel mapped from `AcademicRecordsFailure["type"]` via i18n,
+ * per state-architecture.md §5 "error (query failure)". */
+export const PageError: Story = {
+  args: { vm: baseVM({ error: "network-error" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    await expect(alert).toBeInTheDocument();
+    await expect(alert).toHaveTextContent(M.errors["network-error"]);
+  },
+};
+
+/** Seal tab — no batch loaded yet (selector incomplete / no data for the
+ * chosen class+term+year). Distinct from AC-3's NOT-OK gate: here there is no
+ * batch object at all. */
+export const SealTab_EmptyBatch: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: null, classId: null }) }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(M.emptyBatch)).toBeInTheDocument();
+    // No seal button and no gate copy should render without a batch.
+    await expect(
+      canvas.queryByRole("button", { name: M.sealButton }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Audit trail — no entries yet for the tenant. */
+export const AuditTrail_Empty: Story = {
+  args: { vm: baseVM({ seal: sealVM({ auditTrail: [] }) }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(M.auditTrail.empty)).toBeInTheDocument();
+  },
+};
+
+/** Unseal tab — no pending requests. */
+export const UnsealTab_EmptyPending: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      pendingUnsealCount: 0,
+      unseal: unsealVM({ pendingRequests: [] }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(M.unseal.empty.pending)).toBeInTheDocument();
+  },
+};
+
 /** ADR-0037 — in a MULTI-admin tenant the initiator's own pending request shows
  * only "awaiting other admin"; the self-approve bypass must NOT be offered. */
 export const UnsealOwnRequestMultiAdmin: Story = {

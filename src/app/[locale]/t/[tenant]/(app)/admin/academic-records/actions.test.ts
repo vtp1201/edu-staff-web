@@ -18,6 +18,8 @@ const listSealedStudentsExecute = vi.fn();
 const getPendingUnsealRequestsExecute = vi.fn();
 const listTenantAdminsExecute = vi.fn();
 const confirmUnsealExecute = vi.fn();
+const sealExecute = vi.fn();
+const initiateUnsealExecute = vi.fn();
 
 vi.mock("@/bootstrap/di/academic-records.di", () => ({
   makeListAvailableClassesUseCase: vi.fn(async () => ({
@@ -41,8 +43,10 @@ vi.mock("@/bootstrap/di/academic-records.di", () => ({
   makeConfirmUnsealUseCase: vi.fn(async () => ({
     execute: confirmUnsealExecute,
   })),
-  makeInitiateUnsealUseCase: vi.fn(async () => ({ execute: vi.fn() })),
-  makeSealAcademicRecordUseCase: vi.fn(async () => ({ execute: vi.fn() })),
+  makeInitiateUnsealUseCase: vi.fn(async () => ({
+    execute: initiateUnsealExecute,
+  })),
+  makeSealAcademicRecordUseCase: vi.fn(async () => ({ execute: sealExecute })),
 }));
 
 vi.mock("@/bootstrap/lib/auth-token.server", () => ({
@@ -55,12 +59,15 @@ vi.mock("@/bootstrap/lib/jwt", () => ({
 
 import { requireRole } from "@/bootstrap/auth-guard";
 import {
+  confirmUnsealAction,
   getAuditTrailAction,
   getPendingUnsealRequestsAction,
   getSealStatusAction,
+  initiateUnsealAction,
   listAvailableClassesAction,
   listSealedStudentsAction,
   listTenantAdminsAction,
+  sealAction,
 } from "./actions";
 
 const mockRequireRole = vi.mocked(requireRole);
@@ -115,6 +122,33 @@ describe("seal/unseal read Server Actions — RBAC guard", () => {
     const res = await listTenantAdminsAction();
     expect(res).toEqual({ ok: false, errorKey: "forbidden" });
     expect(listTenantAdminsExecute).not.toHaveBeenCalled();
+  });
+
+  it("sealAction rejects a non-admin before running the use-case", async () => {
+    mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
+    const res = await sealAction(SAMPLE_KEY);
+    expect(res).toEqual({ ok: false, errorKey: "forbidden" });
+    expect(sealExecute).not.toHaveBeenCalled();
+  });
+
+  it("initiateUnsealAction rejects a non-admin before running the use-case", async () => {
+    mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
+    const res = await initiateUnsealAction({
+      studentId: "s-1",
+      classId: SAMPLE_KEY.classId,
+      term: SAMPLE_KEY.term,
+      year: SAMPLE_KEY.year,
+      reason: "x".repeat(25),
+    });
+    expect(res).toEqual({ ok: false, errorKey: "forbidden" });
+    expect(initiateUnsealExecute).not.toHaveBeenCalled();
+  });
+
+  it("confirmUnsealAction rejects a non-admin before running the use-case", async () => {
+    mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
+    const res = await confirmUnsealAction("ur-1", "admin-2");
+    expect(res).toEqual({ ok: false, errorKey: "forbidden" });
+    expect(confirmUnsealExecute).not.toHaveBeenCalled();
   });
 
   it("passes the guard and returns data for an admin", async () => {

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -735,3 +735,76 @@ export interface UnsealSelfApproveDialogProps {
 | Tab badge (pending-unseal count) | Announce via visually-hidden text or `aria-label` on the `TabsTrigger` (e.g. `aria-label={t("unsealTabWithCount", {count})}`) so screen readers get "Yêu cầu mở học bạ, 2 chờ xác nhận" rather than just reading the bare number. |
 
 All strings above go under i18n namespace `academicRecordSeal` per AC-11 — no new namespace needed.
+
+## Evidence
+
+Design review: pass
+
+- design-system: conform — tokens-only across the seal/unseal component tree
+  (grepped for raw hex/`bg-[`/`text-[` under
+  `presentation/academic-record-seal-screen/`, none found outside a decorator
+  in `.stories.tsx`); `SealStatusBadge` reused by import (not forked, decision
+  `0026`); component tree registered in `docs/product/screens.md` (Academic
+  Record Seal row, US-E14.6).
+- a11y: WCAG AA — reviewed by `fe-accessibility-auditor`; findings fixed in
+  the revision pass: contrast (`text-edu-text-muted` → `text-muted-foreground`
+  for meaningful labels, ADR `0049`), lock icon `aria-label` on
+  `UnsealRequestCard`, `motion-safe:` added to the shared `Dialog` primitive
+  (`components/ui/dialog/dialog.tsx`), dead "Resolved" section removed rather
+  than left empty. Keyboard/focus rely on Radix Dialog/AlertDialog/Sheet
+  (untouched, no override). Reduced-motion respected repo-wide after the
+  Dialog fix.
+- impeccable audit: scope-checked against `.claude/rules/design-system.md` +
+  `.claude/rules/accessibility.md` (design system supreme — no palette/layout
+  changes proposed or needed; the mockup fidelity + a11y fixes above already
+  cover impeccable's usual contrast/hierarchy/state findings for this screen).
+- states: loading (`academic-record-seal-skeleton.tsx`, per-section
+  `Skeleton` in seal/unseal tabs) / empty (pending/audit-trail empty copy) /
+  error (inline `errorKey` → i18n `academicRecordSeal.errors.*`, no silent
+  failures per the fix pass) / success (seal/unseal success toasts + updated
+  indicators) all present; responsive not manually re-verified at 320px this
+  pass (admin desktop-first screen, consistent with sibling admin screens) —
+  no regression risk introduced, deferred to a future admin-shell 320px sweep
+  if ever prioritized.
+
+## Review Verdicts
+
+- `fe-tech-lead-reviewer`: REVISION REQUIRED (critical two-ADMIN gate bypass +
+  missing RBAC on 6 read Server Actions) → both fixed in commit
+  `a8af363` → re-verified by `fe-lead` (diff read + `tsc`/`vitest`/`build`
+  green) → now APPROVED.
+- `fe-accessibility-auditor`: FAIL-WITH-FINDINGS (contrast blast-radius, lock
+  icon aria-label gap, shared Dialog missing `motion-safe:`, hardcoded
+  close-label — verified N/A/already-i18n on this screen, dead VM error
+  field) → fixed in commits `dc7c578` + `a8af363` → PASS.
+
+## Proof
+
+- Unit (Vitest): domain use-cases for seal/initiate-unseal/confirm-unseal incl.
+  the new "self-approve rejected when adminCount >= 2" defense-in-depth case.
+- Integration (Vitest): mock seal repository (seal/unseal-initiate/
+  unseal-confirm/audit-trail/pending-requests incl. single-admin fixture).
+- Feature suite: `bunx vitest run src/features/academic-records` green
+  (55 tests, sibling viewer un-regressed).
+- Repo-wide: `bun vitest run` → **1093/1093 tests, 211/211 files pass**
+  (post-QA gap-closing additions).
+- E2E (Storybook interaction, `--config vitest.storybook.mts`): 14 seal-screen
+  stories (10 original + 4 QA gap-closing: `PageError`, `SealTab_EmptyBatch`,
+  `AuditTrail_Empty`, `UnsealTab_EmptyPending`) + 9 sibling-viewer stories +
+  1 `UnsealOwnRequestMultiAdmin` (pre-existing, verified not a gap) →
+  **24/24 pass** (Loading, AllLockedGate_OK/NotOK, SealConfirmDialog,
+  SealSuccess, AuditTrail, UnsealInitiate, UnsealConfirm,
+  UnsealSameAdminError, UnsealSelfApproveFallback,
+  UnsealOwnRequestMultiAdmin, + the 4 empty/error states above).
+- Platform: `bunx tsc --noEmit` clean; `NEXT_PUBLIC_USE_MOCK= bun run build`
+  succeeds, `/admin/academic-records` route present in the build output.
+- RBAC unit test: `actions.test.ts` — **9/9 Server Actions** (6 reads + 3
+  mutations: seal/initiateUnseal/confirmUnseal) verified to reject non-admin
+  before the use-case runs (QA expanded coverage from 6→9; production guards
+  were already correct on all 9, only test proof was incomplete).
+- QA gate (`fe-qa-playwright`): **PASS** — 11/11 AC traced to real test
+  evidence, 5 test-only coverage gaps found and closed by QA itself (no
+  production code changes), Storybook-interaction-as-E2E judged sufficient
+  per the US-E14.4 grade-approval precedent (no Playwright spec exists in
+  this repo; no cross-page navigation or un-mocked network path in this
+  screen).
