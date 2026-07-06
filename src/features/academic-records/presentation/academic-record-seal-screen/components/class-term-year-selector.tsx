@@ -46,7 +46,7 @@ export function ClassTermYearSelector({
       <div className="flex flex-col gap-1.5">
         <Label
           htmlFor={yearId}
-          className="text-edu-text-muted text-xs uppercase tracking-wide"
+          className="text-muted-foreground text-xs uppercase tracking-wide"
         >
           {t("year")}
         </Label>
@@ -67,7 +67,7 @@ export function ClassTermYearSelector({
       <div className="flex flex-col gap-1.5">
         <Label
           htmlFor={termId}
-          className="text-edu-text-muted text-xs uppercase tracking-wide"
+          className="text-muted-foreground text-xs uppercase tracking-wide"
         >
           {t("term")}
         </Label>
@@ -85,7 +85,7 @@ export function ClassTermYearSelector({
       <div className="flex flex-col gap-1.5">
         <Label
           htmlFor={classFieldId}
-          className="text-edu-text-muted text-xs uppercase tracking-wide"
+          className="text-muted-foreground text-xs uppercase tracking-wide"
         >
           {t("class")}
         </Label>

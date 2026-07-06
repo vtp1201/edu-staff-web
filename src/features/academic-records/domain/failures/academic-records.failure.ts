@@ -9,4 +9,5 @@ export type AcademicRecordsFailure =
   | { type: "not-sealed" } // unseal-initiate on a non-sealed record
   | { type: "reason-too-short" } // unseal reason < 20 chars (AC-7)
   | { type: "no-pending-request" } // unseal-confirm target missing
-  | { type: "same-admin-as-initiator" }; // AC-8 two-admin gate
+  | { type: "same-admin-as-initiator" } // AC-8 two-admin gate
+  | { type: "self-approve-not-allowed" }; // ADR-0037 — self-approve only when tenant has exactly 1 admin

@@ -51,7 +51,7 @@ export function UnsealSelfApproveDialog({
         </AlertDialogHeader>
         {request && (
           <div className="rounded-lg bg-muted p-3 font-mono text-muted-foreground text-xs leading-relaxed">
-            <p className="font-bold text-edu-text-muted uppercase tracking-wide">
+            <p className="font-bold text-muted-foreground uppercase tracking-wide">
               {t("auditLabel")}
             </p>
             <p className="mt-1.5">

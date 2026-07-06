@@ -72,7 +72,7 @@ export function AllLockedGate({
         </p>
         {batch.unlockedSubjectNames.length > 0 && (
           <p className="mt-2 text-foreground text-sm">
-            <span className="font-bold text-edu-text-muted text-xs uppercase tracking-wide">
+            <span className="font-bold text-muted-foreground text-xs uppercase tracking-wide">
               {t("gate.notAllLocked.subjectsLabel")}:{" "}
             </span>
             {batch.unlockedSubjectNames.join(", ")}

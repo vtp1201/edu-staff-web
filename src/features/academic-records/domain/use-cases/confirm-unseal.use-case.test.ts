@@ -111,9 +111,13 @@ describe("ConfirmUnsealUseCase", () => {
     });
   });
 
-  it("allows self-approve fallback (coSignerId null) and flags fallback", async () => {
+  it("allows self-approve fallback (coSignerId null) only when the tenant has exactly 1 admin", async () => {
     let confirmedWith: string | null | undefined = "x";
     const repo = makeRepo({
+      listTenantAdmins: async () => ({
+        ok: true,
+        data: [{ id: "admin-1", name: "Admin 1" }],
+      }),
       confirmUnseal: async (_id, coSignerId) => {
         confirmedWith = coSignerId;
         return {
@@ -129,6 +133,28 @@ describe("ConfirmUnsealUseCase", () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.fallback).toBe(true);
     expect(confirmedWith).toBeNull();
+  });
+
+  it("rejects self-approve when the tenant has >= 2 admins (ADR-0037 gate, defense-in-depth)", async () => {
+    const repo = makeRepo({
+      listTenantAdmins: async () => ({
+        ok: true,
+        data: [
+          { id: "admin-1", name: "Admin 1" },
+          { id: "admin-2", name: "Admin 2" },
+        ],
+      }),
+      confirmUnseal: async () => {
+        throw new Error(
+          "must not confirm self-approve in a multi-admin tenant",
+        );
+      },
+    });
+    const result = await new ConfirmUnsealUseCase(repo).execute("ur-1", null);
+    expect(result).toEqual({
+      ok: false,
+      error: { type: "self-approve-not-allowed" },
+    });
   });
 
   it("bubbles no-pending-request from the repo (already-confirmed race)", async () => {

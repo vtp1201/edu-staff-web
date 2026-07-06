@@ -150,7 +150,6 @@ function unsealVM(over: Partial<UnsealTabVM> = {}): UnsealTabVM {
     currentAdminName: "Trần Minh Quân",
     tenantAdminCount: 3,
     pendingRequests: [PENDING_FROM_OTHER],
-    resolvedRequests: [],
     isRequestsLoading: false,
     isInitiateFormOpen: false,
     onOpenInitiateForm: fn(),
@@ -194,7 +193,7 @@ const meta: Meta<typeof AcademicRecordSealScreen> = {
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
-        <div className="min-h-screen bg-[color:var(--edu-bg)] p-6">
+        <div className="min-h-screen bg-background p-6">
           <Story />
         </div>
       </NextIntlClientProvider>
@@ -364,5 +363,32 @@ export const UnsealSelfApproveFallback: Story = {
     await expect(
       body.getByText(M.unseal.selfApproveDialog.auditLabel),
     ).toBeInTheDocument();
+  },
+};
+
+/** ADR-0037 — in a MULTI-admin tenant the initiator's own pending request shows
+ * only "awaiting other admin"; the self-approve bypass must NOT be offered. */
+export const UnsealOwnRequestMultiAdmin: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      pendingUnsealCount: 1,
+      unseal: unsealVM({
+        tenantAdminCount: 3,
+        pendingRequests: [PENDING_OWN],
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(M.unseal.card.awaitingOther)).toBeVisible();
+    // The two-admin gate: no self-approve affordance for the initiator.
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.selfApproveButton }),
+    ).not.toBeInTheDocument();
+    // ...and no confirm button either (own request can't be self-confirmed).
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.confirmButton }),
+    ).not.toBeInTheDocument();
   },
 };

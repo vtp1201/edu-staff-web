@@ -84,7 +84,11 @@ export function UnsealInitiateForm({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="w-full gap-0 sm:max-w-md"
+        closeLabel={t("closeSheet")}
+      >
         <SheetHeader>
           <SheetTitle>{t("title")}</SheetTitle>
           <SheetDescription>{t("subtitle")}</SheetDescription>

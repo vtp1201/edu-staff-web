@@ -94,7 +94,6 @@ export interface UnsealTabVM {
   tenantAdminCount: number; // drives the self-approve-fallback affordance (ADR 0037)
 
   pendingRequests: UnsealRequest[];
-  resolvedRequests: UnsealRequest[];
   isRequestsLoading: boolean;
 
   isInitiateFormOpen: boolean;

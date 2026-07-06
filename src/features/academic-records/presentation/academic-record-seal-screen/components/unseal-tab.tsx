@@ -20,12 +20,12 @@ export interface UnsealTabProps {
 export function UnsealTab({ vm }: UnsealTabProps) {
   const t = useTranslations("academicRecordSeal.unseal");
 
-  const allRequests = [...vm.pendingRequests, ...vm.resolvedRequests];
   const selfApproveTarget =
     vm.selfApproveTargetRequestId === null
       ? null
-      : (allRequests.find((r) => r.id === vm.selfApproveTargetRequestId) ??
-        null);
+      : (vm.pendingRequests.find(
+          (r) => r.id === vm.selfApproveTargetRequestId,
+        ) ?? null);
 
   return (
     <div className="space-y-6">
@@ -51,7 +51,7 @@ export function UnsealTab({ vm }: UnsealTabProps) {
 
       {/* Pending */}
       <section className="space-y-3">
-        <h2 className="font-bold text-edu-text-muted text-xs uppercase tracking-wider">
+        <h2 className="font-bold text-muted-foreground text-xs uppercase tracking-wider">
           {t("sections.pending")} ({vm.pendingRequests.length})
         </h2>
         {vm.isRequestsLoading ? (
@@ -66,33 +66,7 @@ export function UnsealTab({ vm }: UnsealTabProps) {
               key={r.id}
               request={r}
               currentAdminId={vm.currentAdminId}
-              readonly={false}
-              onConfirm={vm.onConfirmRequest}
-              onRequestSelfApprove={vm.onRequestSelfApprove}
-              isConfirming={vm.isConfirming}
-            />
-          ))
-        )}
-      </section>
-
-      {/* Resolved */}
-      <section className="space-y-3">
-        <h2 className="font-bold text-edu-text-muted text-xs uppercase tracking-wider">
-          {t("sections.resolved")} ({vm.resolvedRequests.length})
-        </h2>
-        {vm.isRequestsLoading ? (
-          <Skeleton className="h-28 w-full rounded-xl" />
-        ) : vm.resolvedRequests.length === 0 ? (
-          <p className="rounded-xl border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm">
-            {t("empty.resolved")}
-          </p>
-        ) : (
-          vm.resolvedRequests.map((r) => (
-            <UnsealRequestCard
-              key={r.id}
-              request={r}
-              currentAdminId={vm.currentAdminId}
-              readonly
+              tenantAdminCount={vm.tenantAdminCount}
               onConfirm={vm.onConfirmRequest}
               onRequestSelfApprove={vm.onRequestSelfApprove}
               isConfirming={vm.isConfirming}

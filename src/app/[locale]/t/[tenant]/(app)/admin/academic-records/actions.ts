@@ -53,6 +53,8 @@ export async function listAvailableClassesAction(filter: {
   term: Term;
   year: string;
 }): Promise<SealActionResult<ClassOption[]>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeListAvailableClassesUseCase();
     const result = await useCase.execute(filter);
@@ -67,6 +69,8 @@ export async function listAvailableClassesAction(filter: {
 export async function getSealStatusAction(
   key: SealBatchKey,
 ): Promise<SealActionResult<SealBatchStatus>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeGetSealStatusUseCase();
     const result = await useCase.execute(key);
@@ -99,6 +103,8 @@ export async function sealAction(
 export async function getAuditTrailAction(
   filter?: Partial<SealBatchKey>,
 ): Promise<SealActionResult<SealAuditEntry[]>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeGetSealAuditTrailUseCase();
     const result = await useCase.execute(filter);
@@ -113,6 +119,8 @@ export async function getAuditTrailAction(
 export async function listSealedStudentsAction(
   filter?: Partial<SealBatchKey>,
 ): Promise<SealActionResult<SealedStudentOption[]>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeListSealedStudentsUseCase();
     const result = await useCase.execute(filter);
@@ -127,6 +135,8 @@ export async function listSealedStudentsAction(
 export async function getPendingUnsealRequestsAction(): Promise<
   SealActionResult<UnsealRequest[]>
 > {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeListPendingUnsealRequestsUseCase();
     const result = await useCase.execute();
@@ -176,6 +186,8 @@ export async function confirmUnsealAction(
 export async function listTenantAdminsAction(): Promise<
   SealActionResult<TenantAdminSummary[]>
 > {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeListTenantAdminsUseCase();
     const result = await useCase.execute();

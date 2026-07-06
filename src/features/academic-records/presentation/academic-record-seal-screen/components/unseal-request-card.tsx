@@ -9,17 +9,18 @@ import type { UnsealRequest } from "../../../domain/entities/seal-batch.entity";
 export interface UnsealRequestCardProps {
   request: UnsealRequest;
   currentAdminId: string;
-  readonly: boolean; // true for the "Resolved" section
+  /** ADR-0037 — self-approve fallback is ONLY offered in a single-admin tenant. */
+  tenantAdminCount: number;
   onConfirm: (requestId: string) => void;
   onRequestSelfApprove: (requestId: string) => void;
   isConfirming: boolean;
 }
 
-/** AC-8 — one pending/resolved unseal request row. */
+/** AC-8 — one pending unseal request row. */
 export function UnsealRequestCard({
   request,
   currentAdminId,
-  readonly,
+  tenantAdminCount,
   onConfirm,
   onRequestSelfApprove,
   isConfirming,
@@ -41,7 +42,10 @@ export function UnsealRequestCard({
       <div className="p-5">
         <div className="flex flex-wrap items-start gap-4">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
-            <Lock aria-hidden className="size-5 text-primary" />
+            <Lock
+              aria-label={t("card.lockedAria")}
+              className="size-5 text-primary"
+            />
           </span>
 
           <div className="min-w-0 flex-1">
@@ -54,7 +58,7 @@ export function UnsealRequestCard({
               </span>
             </div>
             <p className="mt-2 rounded-lg border border-edu-warning/30 bg-edu-warning/10 p-3 text-muted-foreground text-sm">
-              <span className="mr-1.5 font-bold text-edu-text-muted text-xs uppercase tracking-wide">
+              <span className="mr-1.5 font-bold text-muted-foreground text-xs uppercase tracking-wide">
                 {t("card.reasonLabel")}:
               </span>
               {request.reason}
@@ -92,7 +96,7 @@ export function UnsealRequestCard({
           </div>
         </div>
 
-        {!readonly && isPending && (
+        {isPending && (
           <div className="mt-4 flex flex-wrap items-center gap-3 border-border border-t border-dashed pt-4">
             {isOwnRequest ? (
               <>
@@ -100,15 +104,20 @@ export function UnsealRequestCard({
                   <Clock aria-hidden className="size-3.5" />
                   {t("card.awaitingOther")}
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-edu-error/50 text-edu-error-text"
-                  onClick={() => onRequestSelfApprove(request.id)}
-                >
-                  <AlertTriangle aria-hidden className="size-4" />
-                  {t("selfApproveButton")}
-                </Button>
+                {/* ADR-0037 two-admin gate: the initiator may self-approve ONLY in
+                    a single-admin tenant. In a multi-admin tenant the own-request
+                    row shows the "awaiting other admin" note with no bypass. */}
+                {tenantAdminCount === 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-edu-error/50 text-edu-error-text"
+                    onClick={() => onRequestSelfApprove(request.id)}
+                  >
+                    <AlertTriangle aria-hidden className="size-4" />
+                    {t("selfApproveButton")}
+                  </Button>
+                )}
               </>
             ) : (
               <>

@@ -38,6 +38,7 @@
       "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
       "retry": "Thử lại",
       "same-admin-as-initiator": "Cần một admin khác xác nhận.",
+      "self-approve-not-allowed": "Không thể tự phê duyệt: trường có nhiều hơn một quản trị viên nên cần admin khác xác nhận.",
       "title": "Không thể tải học bạ",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
     },
@@ -143,6 +144,7 @@
       "not-sealed": "Học bạ chưa được ký nên không thể mở.",
       "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
       "same-admin-as-initiator": "Cần một admin khác xác nhận.",
+      "self-approve-not-allowed": "Không thể tự phê duyệt: trường có nhiều hơn một quản trị viên nên cần admin khác xác nhận.",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
     },
     "gate": {
@@ -194,18 +196,19 @@
         "awaitingOther": "Chờ xác nhận từ quản trị viên khác",
         "canConfirm": "Yêu cầu được tạo bởi admin khác. Bạn có thể xác nhận để mở học bạ.",
         "confirmedBy": "Xác nhận bởi {name}",
+        "lockedAria": "Học bạ đang bị khoá",
         "reasonLabel": "Lý do",
         "requestedBy": "Yêu cầu bởi {name}"
       },
       "confirmButton": "Xác nhận mở",
       "empty": {
-        "pending": "Không có yêu cầu chờ xác nhận",
-        "resolved": "Chưa có yêu cầu nào đã xử lý"
+        "pending": "Không có yêu cầu chờ xác nhận"
       },
       "initiateButton": "Tạo yêu cầu mở học bạ",
       "initiateForm": {
         "cancel": "Huỷ",
         "charCount": "{count} / {min}",
+        "closeSheet": "Đóng",
         "minChars": "Tối thiểu {min} ký tự",
         "note": "Yêu cầu này cần xác nhận thứ hai từ admin khác trước khi học bạ được mở. Mọi hành động đều được ghi vào nhật ký kiểm toán.",
         "noteLabel": "Lưu ý:",
@@ -225,8 +228,7 @@
         "title": "Cần admin khác xác nhận"
       },
       "sections": {
-        "pending": "Đang chờ xác nhận",
-        "resolved": "Đã xử lý"
+        "pending": "Đang chờ xác nhận"
       },
       "selfApproveButton": "Tự phê duyệt (cảnh báo)",
       "selfApproveDialog": {

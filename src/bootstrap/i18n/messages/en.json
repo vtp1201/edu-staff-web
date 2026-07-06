@@ -38,6 +38,7 @@
       "reason-too-short": "The reason must be at least 20 characters.",
       "retry": "Retry",
       "same-admin-as-initiator": "A different admin must confirm.",
+      "self-approve-not-allowed": "Self-approval is not allowed: this tenant has more than one admin, so a different admin must confirm.",
       "title": "Unable to load academic record",
       "unknown": "Something went wrong. Please try again later."
     },
@@ -143,6 +144,7 @@
       "not-sealed": "This record is not sealed and cannot be unsealed.",
       "reason-too-short": "The reason must be at least 20 characters.",
       "same-admin-as-initiator": "A different admin must confirm.",
+      "self-approve-not-allowed": "Self-approval is not allowed: this tenant has more than one admin, so a different admin must confirm.",
       "unknown": "Something went wrong. Please try again later."
     },
     "gate": {
@@ -194,18 +196,19 @@
         "awaitingOther": "Awaiting confirmation from another administrator",
         "canConfirm": "Created by another admin. You can confirm to unseal.",
         "confirmedBy": "Confirmed by {name}",
+        "lockedAria": "Record is locked",
         "reasonLabel": "Reason",
         "requestedBy": "Requested by {name}"
       },
       "confirmButton": "Confirm unseal",
       "empty": {
-        "pending": "No pending requests",
-        "resolved": "No resolved requests yet"
+        "pending": "No pending requests"
       },
       "initiateButton": "New unseal request",
       "initiateForm": {
         "cancel": "Cancel",
         "charCount": "{count} / {min}",
+        "closeSheet": "Close",
         "minChars": "Minimum {min} characters",
         "note": "This request requires a second-ADMIN confirmation before the record is actually unsealed. All actions are logged to the audit trail.",
         "noteLabel": "Note:",
@@ -225,8 +228,7 @@
         "title": "A different admin must confirm"
       },
       "sections": {
-        "pending": "Awaiting confirmation",
-        "resolved": "Resolved"
+        "pending": "Awaiting confirmation"
       },
       "selfApproveButton": "Self-approve (warning)",
       "selfApproveDialog": {

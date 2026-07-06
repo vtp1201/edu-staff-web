@@ -219,6 +219,12 @@ export function AcademicRecordSealContainer({
   const isSealLoading = classesQuery.isPending;
   const isUnsealLoading = pendingQuery.isPending;
 
+  // Surface the active tab's primary-fetch failure as the full-screen error
+  // state (AC-1). The stable errorKey is thrown from each queryFn above.
+  const activeError = (
+    activeTab === "seal" ? classesQuery.error : pendingQuery.error
+  ) as AcademicRecordsFailure["type"] | null;
+
   return (
     <AcademicRecordSealScreen
       onGoToApproval={() =>
@@ -230,7 +236,7 @@ export function AcademicRecordSealContainer({
         pendingUnsealCount: pendingRequests.length,
         currentAdminName,
         isLoading: activeTab === "seal" ? isSealLoading : isUnsealLoading,
-        error: null,
+        error: activeError ?? null,
         seal: {
           year,
           term,
@@ -260,7 +266,6 @@ export function AcademicRecordSealContainer({
           currentAdminName,
           tenantAdminCount: admins.length,
           pendingRequests,
-          resolvedRequests: [],
           isRequestsLoading: pendingQuery.isPending,
           isInitiateFormOpen,
           onOpenInitiateForm: () => setInitiateFormOpen(true),
