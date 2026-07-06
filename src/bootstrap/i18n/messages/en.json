@@ -28,10 +28,17 @@
       "title": "No academic record data"
     },
     "error": {
+      "already-sealed": "This record has already been sealed.",
       "forbidden": "You do not have permission to view this academic record.",
       "network-error": "Connection error. Please try again.",
+      "no-pending-request": "No matching unseal request was found.",
+      "not-all-locked": "Cannot seal: some grades are still unlocked.",
       "not-found": "Academic record for this student was not found.",
+      "not-sealed": "This record is not sealed and cannot be unsealed.",
+      "reason-too-short": "The reason must be at least 20 characters.",
       "retry": "Retry",
+      "same-admin-as-initiator": "A different admin must confirm.",
+      "self-approve-not-allowed": "Self-approval is not allowed: this tenant has more than one admin, so a different admin must confirm.",
       "title": "Unable to load academic record",
       "unknown": "Something went wrong. Please try again later."
     },
@@ -104,6 +111,146 @@
     "yearTimeline": {
       "ariaLabel": "Select school year",
       "currentBadge": "Current year"
+    }
+  },
+  "academicRecordSeal": {
+    "ariaLocked": "Locked",
+    "auditTrail": {
+      "actionSeal": "Seal",
+      "actionUnseal": "Unseal",
+      "columns": {
+        "action": "Action",
+        "actor": "Performed by",
+        "class": "Class",
+        "occurredAt": "Time",
+        "term": "Term",
+        "year": "School year"
+      },
+      "empty": "No seal / unseal history yet.",
+      "title": "Seal & unseal history"
+    },
+    "breadcrumb": {
+      "home": "Home",
+      "record": "Academic Records"
+    },
+    "emptyBatch": "No data for the current selection",
+    "errors": {
+      "already-sealed": "This record has already been sealed.",
+      "forbidden": "You do not have permission to perform this action.",
+      "network-error": "Connection error. Please try again.",
+      "no-pending-request": "No matching unseal request was found.",
+      "not-all-locked": "Cannot seal: some grades are still unlocked.",
+      "not-found": "Academic record data was not found.",
+      "not-sealed": "This record is not sealed and cannot be unsealed.",
+      "reason-too-short": "The reason must be at least 20 characters.",
+      "same-admin-as-initiator": "A different admin must confirm.",
+      "self-approve-not-allowed": "Self-approval is not allowed: this tenant has more than one admin, so a different admin must confirm.",
+      "unknown": "Something went wrong. Please try again later."
+    },
+    "gate": {
+      "allLocked": {
+        "subtitle": "{total} students · {pending} not sealed · {sealed} sealed",
+        "title": "All grades locked. Ready to seal records."
+      },
+      "notAllLocked": {
+        "linkToApproval": "Go to Approval & Lock",
+        "subjectsLabel": "Unlocked subjects",
+        "title": "{count} students still have unlocked grades.",
+        "warning": "Lock all grades in the Approval & Lock screen before sealing the records."
+      }
+    },
+    "roleAdmin": "ADMIN",
+    "sealButton": "Seal records",
+    "sealDialog": {
+      "after": "After sealing: grades are frozen and cannot be changed. To edit, you must create an unseal request with two-ADMIN approval.",
+      "body": "Seal records for class {class} — {term} ({year})?",
+      "cancel": "Cancel",
+      "confirm": "Confirm seal",
+      "sealing": "Sealing…",
+      "title": "Confirm record seal"
+    },
+    "sealSuccess": {
+      "sealedAtLabel": "Sealed at",
+      "sealedByLabel": "Sealed by",
+      "sealedIndicator": "Sealed",
+      "toast": "Sealed records for class {class} — {term}."
+    },
+    "selector": {
+      "class": "Class",
+      "classPlaceholder": "— Select class —",
+      "term": "Term",
+      "term1": "Term 1",
+      "term2": "Term 2",
+      "year": "School year"
+    },
+    "signedInAs": "Signed in as",
+    "subtitle": "Freeze end-of-term grades and manage two-ADMIN unseal requests.",
+    "tabs": {
+      "seal": "Seal Records",
+      "unseal": "Unseal Requests",
+      "unsealWithCount": "Unseal Requests, {count} pending"
+    },
+    "title": "Academic Record Seal",
+    "unseal": {
+      "card": {
+        "awaitingOther": "Awaiting confirmation from another administrator",
+        "canConfirm": "Created by another admin. You can confirm to unseal.",
+        "confirmedBy": "Confirmed by {name}",
+        "lockedAria": "Record is locked",
+        "reasonLabel": "Reason",
+        "requestedBy": "Requested by {name}"
+      },
+      "confirmButton": "Confirm unseal",
+      "empty": {
+        "pending": "No pending requests"
+      },
+      "initiateButton": "New unseal request",
+      "initiateForm": {
+        "cancel": "Cancel",
+        "charCount": "{count} / {min}",
+        "closeSheet": "Close",
+        "minChars": "Minimum {min} characters",
+        "note": "This request requires a second-ADMIN confirmation before the record is actually unsealed. All actions are logged to the audit trail.",
+        "noteLabel": "Note:",
+        "reasonLabel": "Unseal reason — required",
+        "reasonPlaceholder": "Describe in detail why this record needs to be unsealed, including any reference document / decision number…",
+        "sealedHint": "Sealed {date}",
+        "studentLabel": "Sealed student",
+        "studentPlaceholder": "— Select student —",
+        "submit": "Create request",
+        "subtitle": "Request will await second-ADMIN confirmation.",
+        "title": "New unseal request"
+      },
+      "reasonMinLengthError": "The reason must be at least {min} characters.",
+      "sameAdminDialog": {
+        "body": "You created this request. A different administrator must confirm it to unseal the record.",
+        "ok": "Got it",
+        "title": "A different admin must confirm"
+      },
+      "sections": {
+        "pending": "Awaiting confirmation"
+      },
+      "selfApproveButton": "Self-approve (warning)",
+      "selfApproveDialog": {
+        "auditLabel": "Audit entry",
+        "body": "You are about to self-approve your own unseal request. This action will be logged to the audit trail and may be reviewed by senior leadership.",
+        "cancel": "Cancel",
+        "confirm": "Proceed anyway",
+        "title": "Warning: Self-approval"
+      },
+      "statusApproved": "Approved",
+      "statusApprovedSelf": "Approved (self)",
+      "statusPending": "Awaiting confirmation",
+      "success": {
+        "confirmToast": "Unseal request approved.",
+        "initiateToast": "Unseal request created — awaiting second admin confirmation.",
+        "selfApproveToast": "Self-approved — logged to audit trail."
+      },
+      "toolbar": {
+        "pendingBadge": "{count} pending",
+        "subtitle": "Each request requires a second-admin confirmation before the record is unsealed.",
+        "title": "Unseal requests"
+      }
     }
   },
   "adminRoster": {

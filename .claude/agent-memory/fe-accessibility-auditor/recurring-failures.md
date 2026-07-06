@@ -196,3 +196,28 @@ Seen in: US-E17.10 discipline-screen.tsx loading block (StatCardSkeletonGrid's i
 Pattern: `src/components/ui/skeleton/skeleton.tsx` uses `bg-accent` (or historically `bg-muted`) for placeholder blocks on `bg-card` (white). Both tokens resolve to near-white/near-card hues (~1.1:1 contrast light and dark mode) — the skeleton shape is nearly imperceptible, especially for low-vision users or with `prefers-reduced-motion: reduce` (no pulse to help distinguish it).
 Assessment: Systemic, affects EVERY skeleton screen in the app (pre-existing), not introduced by any single story. Flag to uiux-design-system-builder for a dedicated `--edu-skeleton` token; don't block an individual story's skeleton work for inheriting the shared primitive as-is.
 Seen in: US-E17.10 StatCardSkeleton/TableRowSkeleton/teacher+student loading.tsx (all use the shared Skeleton primitive unmodified).
+
+## Contrast — text-edu-text-muted baked into a whole new screen's labels/headings
+Pattern: A brand-new screen uses `text-edu-text-muted text-xs uppercase tracking-wide` as the default styling for EVERY form-field `<Label>`, section `<h2>`, and inline content label (e.g. "Lý do:", "Bản ghi kiểm toán") — not just one spot, but the screen's whole typographic convention for small caps labels. Same 2.95:1 failure as always, just at higher blast radius (6+ occurrences in one story).
+Fix: `text-edu-text-muted` → `text-muted-foreground` (aliased to `--edu-text-secondary`, 5.48:1, already AA) wherever the label carries meaning (which is almost always — decorative-only uses are rare).
+Seen in: US-E14.6 academic-record-seal-screen (class-term-year-selector.tsx labels, all-locked-gate.tsx subject label, unseal-tab.tsx section h2s, unseal-self-approve-dialog.tsx audit label, unseal-request-card.tsx reason label).
+
+## A11y — Lock/status icon aria-label spec'd in component-architecture doc but not implemented
+Pattern: The story's own `fe-component-architect` accessibility-contract table explicitly named a specific "standalone" icon (no adjacent visible text) as needing `aria-label`, and even had `fe-nextjs-engineer` add the i18n key for it (`ariaLocked`) — but the icon itself shipped as plain `aria-hidden` with no `role="img"`/`aria-label` wiring, leaving the i18n key completely unused (dead key). Cross-check: `grep` the i18n key across `src/` after reading the architecture doc's a11y table — if a key exists but has zero non-messages.json usages, the intended a11y wiring was dropped mid-implementation.
+Fix: `<Icon role="img" aria-label={t("key")} />` (never `aria-hidden` + `aria-label` together — lucide's default `aria-hidden` silences any `aria-label` on the same element).
+Seen in: US-E14.6 unseal-request-card.tsx Lock icon (line ~44).
+
+## Motion — Dialog primitive missing motion-safe: prefix (Sheet/AlertDialog have it, Dialog doesn't)
+Pattern: `components/ui/dialog/dialog.tsx`'s `DialogOverlay`/`DialogContent` animate-in/out classes have NO `motion-safe:` prefix, while `components/ui/sheet/sheet.tsx` and `components/ui/alert-dialog/alert-dialog.tsx` (same shadcn generation era) correctly prefix every animation class. A story using plain `Dialog` (not `AlertDialog`/`Sheet`) inherits the gap for free.
+Fix: primitive-level — add `motion-safe:` to `dialog.tsx` lines with `animate-in`/`animate-out`/`fade-*`/`zoom-*`/`duration-*`, mirroring `alert-dialog.tsx`.
+Seen in: US-E14.6 seal-confirm-dialog.tsx (consumer of the unmodified `Dialog` primitive).
+
+## i18n/a11y — Sheet/Dialog close-button label hardcoded, ignores locale
+Pattern: `components/ui/dialog/dialog.tsx` hardcodes `<span className="sr-only">Đóng</span>` (Vietnamese literal, no `t()`) regardless of `en` locale. `components/ui/sheet/sheet.tsx` has a `closeLabel` prop but defaults to hardcoded English `"Close"` — callers must remember to pass a translated value or SR users get the wrong language.
+Fix: For Sheet call sites, always pass `closeLabel={t("close")}`. For Dialog, flag the primitive owner — needs the same `closeLabel` prop pattern Sheet already has, translated by default.
+Seen in: US-E14.6 unseal-initiate-form.tsx (SheetContent call omits closeLabel), seal-confirm-dialog.tsx (inherits Dialog's hardcoded "Đóng").
+
+## Error state — VM field wired but never consumed / hardcoded null (dead role="alert" block)
+Pattern: Screen shell (`academic-record-seal-screen.tsx`) implements a correct `role="alert"` error block reading `vm.error`, but the container hardcodes `error: null` — the block can never render. A separate per-tab error field (`batchError`) IS populated from the real query error in the container, but no child component (`seal-tab.tsx`) actually reads it, so query failures fall through to a generic empty-state message with no `role="alert"` and no error-specific text. Root cause pattern: VM contract correctly plumbs an error type through, but the last-mile consumer (JSX branch) was never wired — check every `xxxError`/`vm.error` field for an actual conditional render site, not just its presence in the interface.
+Fix: Add the missing conditional render branch in the consuming component (mirrors the already-correct AC-3 "not all locked" `role="alert"` pattern one file over — copy that pattern).
+Seen in: US-E14.6 academic-record-seal-container.tsx (`error: null` literal) + seal-tab.tsx (ignores `vm.batchError`).

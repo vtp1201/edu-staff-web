@@ -79,3 +79,19 @@ Tradeoffs:
   `src/features/academic-records/domain/use-cases/`.
 - TEST_MATRIX row US-E14.6 must include integration proof for the co-signer
   confirmation path and the single-admin fallback path.
+
+## Amendment (2026-07-05, US-E14.6 implementation)
+
+The finalized story AC (US-E14.6, AC-7) sets the unseal-reason minimum at
+**20 characters**, superseding the "min 10 chars" figure in Decision-1 above
+(that figure was draft-time prose written before the AC was finalized).
+**20 chars is the binding number** — implemented and tested against AC-7, not
+the original Decision-1 text. This amendment is additive; Decision-1's
+mechanism (two-step confirmation, self-approve fallback, audit logging) is
+unchanged.
+
+Additionally, AC-8's flow ("Admin 2 navigates to the screen, sees the pending
+request, confirms") is a simpler pending-list model than the "co-signer
+picker" phrasing in Decision-1 — implemented per AC-8. The `confirmUnseal`
+contract still takes an explicit `coSignerId` parameter so an active picker UI
+could be layered on later without a contract change.

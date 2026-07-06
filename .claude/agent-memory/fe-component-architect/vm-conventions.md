@@ -35,3 +35,29 @@ the client component does not parse strings.
 **`totalClasses: number | null`:** Dashboard VM extended with null-able counts uses
 `null` to mean "unavailable" (same pattern as `totalStudents`). Render "—" em dash
 when null.
+
+**`SealActionResult<T>` / `ActionResult<T>` naming:** screens define their own
+local `{ok:true,data:T}|{ok:false,errorKey:Failure["type"]}` result type in the
+`.i-vm.ts` (e.g. `GradeApprovalScreenVM`'s `ActionResult`, `AcademicRecordSealScreenVM`'s
+`SealActionResult`) rather than sharing one global generic — keeps each feature's
+error-key union local and avoids an artificial cross-feature dependency.
+
+**Multi-tab screen VMs:** when a screen has tabs with materially different data/
+actions (US-E14.6 seal/unseal), nest a per-tab VM (`SealTabVM`, `UnsealTabVM`) inside
+the top-level screen VM rather than flattening every field — keeps the container's
+VM-building code and each tab's presentational component focused.
+
+**Before finalizing an i-vm.ts, gap-check the planner's draft repo/Actions
+interface against every UI affordance the mockup shows a picker/list for**
+(e.g. US-E14.6's class picker and sealed-student picker had no backing query in
+the Phase 3 draft — found by tracing "where does this dropdown's data come from"
+for every `<select>`/combobox in the `design_src/edu/*.jsx` mockup). Add the
+missing query action explicitly and call it out as a fix vs the draft, don't
+silently patch over it.
+
+**Split a single "confirm dialog" into two when the underlying actions have
+different semantics** (blocking error vs warn-and-proceed) — US-E14.6's
+same-admin error (AC-8, dead-end) vs self-approve fallback (ADR 0037, proceeds
+with a warning) are different enough to need separate components + separate
+Storybook stories, even though the planner's draft bundled them into one
+`unseal-confirm-dialog.tsx`.

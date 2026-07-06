@@ -70,6 +70,22 @@ Watch for these (each has bitten a story here):
   accepting; otherwise it's a half-wired feature. (US-E13.7: getChildList/makeGetChildListUseCase/
   GRADES_EP.childList unused; parent page + grade-book-container untouched — deferral is in spec.md.)
 
+- **Read/query Server Actions missing `requireRole`** — engineers guard the mutations but leave
+  the `get*`/`list*` actions unguarded, assuming the `/admin` layout role-guard covers them. It does
+  NOT: Server Actions are independently invocable POST endpoints; the layout only guards RSC page
+  render. Unguarded reads leak seal status, audit trails (who/when — Nghị định 13 sensitive), tenant
+  admin rosters + student lists (PII) to any authenticated non-admin. EVERY new Server Action in a
+  role-gated route needs its own `requireRole`. Blocking in high-risk lanes. (US-E14.6 actions.ts:
+  6 read actions unguarded, only seal/initiate/confirm guarded.)
+- **Two-person / co-sign gate bypassable via a "self-approve fallback" that isn't count-gated** —
+  the fallback (single-admin tenant → self-approve) affordance is rendered/allowed whenever
+  `isOwnRequest`, NOT gated on `tenantAdminCount === 1`, AND the use-case skips ALL checks when
+  `coSignerId === null`. Result: in a multi-admin tenant the initiator self-approves alone, fully
+  defeating the two-admin gate (the whole point of the ADR). The VM even carries `tenantAdminCount`
+  but it's never threaded to the card. Check BOTH: (a) UI only offers self-approve when count===1;
+  (b) the confirm use-case/repo re-verifies count===1 server-side on the `coSignerId===null` path
+  (defense-in-depth — actions are directly callable). (US-E14.6, ADR 0037.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.
