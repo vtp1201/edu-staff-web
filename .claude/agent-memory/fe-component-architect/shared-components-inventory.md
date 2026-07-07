@@ -41,3 +41,4 @@ Sidebar, Header, DashboardLayout — shell components.
   family=purple) and actor-role tones (teacher=primary, staff=muted) — no new tones needed.
 - `scroll-area` is confirmed present — use `<ScrollArea>` for chat window + conversation list in messaging (US-E10.1).
 - Messaging feature (US-E10.1): all 10 components are feature-local in `features/messaging/presentation/`. None promoted to shared yet (first screen). Promote if a second screen reuses any pattern.
+- No shared `FilterBar` or `DateRangeField` component exists — every feature (exam-bank, lesson-bank, staff-leave, audit-log) hand-rolls its own filter bar from `ui/select`+`ui/input`. `staff-leave-filters.tsx` has a `dateFrom`/`dateTo` pair with NO `from<=to` validation wired; audit-log (US-E12.12) is the first to need that validation — built feature-local as `DateRangeFields`, flagged for promotion to `components/shared/date-range-fields/` when a 2nd screen needs the same validated range.
