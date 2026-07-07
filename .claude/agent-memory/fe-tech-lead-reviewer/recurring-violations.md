@@ -86,6 +86,17 @@ Watch for these (each has bitten a story here):
   (b) the confirm use-case/repo re-verifies count===1 server-side on the `coSignerId===null` path
   (defense-in-depth — actions are directly callable). (US-E14.6, ADR 0037.)
 
+- **`useInfiniteQuery` status collapse wipes loaded rows on a failed `fetchNextPage`** — deriving a
+  single mutually-exclusive `status = query.isError ? "error" : ...` and rendering ONLY an error
+  banner for it. In RQ v5 a failed `fetchNextPage` (or a background refetch after `staleTime`) sets
+  `isError=true` while KEEPING `data.pages`, so the whole list is replaced by the error banner even
+  though rows are still loaded — violates cursor-pagination AC ("load-more failure must not wipe
+  loaded rows") and the append-only UX. Fix: gate full-screen error on first page only
+  (`isError && events.length === 0`, or `isLoadingError`); surface `isFetchNextPageError` as an
+  inline retry near the load-more button while keeping the table rendered. Note the load-more button
+  itself often disappears too (rendered only when `status==="success"`). Tests/tsc stay green because
+  no interaction test exercises a page-2 failure. (US-E12.12 audit-log-screen.tsx.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

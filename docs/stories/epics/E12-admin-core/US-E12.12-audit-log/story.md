@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -42,7 +42,13 @@ Route: `/admin/audit-log`.
 - Moi entry ghi ro: ai / lam gi / luc nao / thay doi gi.
 - Retention: [ASSUMPTION] server-enforced 7 nam; UI khong can biet.
 
-BE: REAL (US-064 BE comment suggests audit endpoints built).
+BE: mock-first (decision 0014) — US-064's "audit endpoints built" comment could
+not be confirmed live anywhere in this repo (no `core` service is wired for
+any sibling feature either); `AuditLogRepository` (REAL) is fully implemented
+against the documented contract but DI selects `MockAuditLogRepository` while
+`NEXT_PUBLIC_USE_MOCK=true`. Flip to REAL needs BE US-064 confirmation first —
+no domain/presentation rework required when that happens (both repos satisfy
+`IAuditLogRepository`).
 RBAC: Chi admin (BGH). Tap ket qua khong loc theo tenant neu superadmin [ASSUMPTION].
 
 ## Relevant Product Docs
@@ -90,6 +96,23 @@ RBAC: Chi admin (BGH). Tap ket qua khong loc theo tenant neu superadmin [ASSUMPT
 
 ## Harness Delta
 
-- `docs/TEST_MATRIX.md`: add row US-E12.12 (planned, high-risk)
-- `docs/product/screens.md`: add Admin "Audit Log" row -> design-ready
-- [FLAG for ba-lead]: GDPR Nghi dinh 13/2023 compliance requirement — ADR candidate for audit log retention policy and immutability contract (decision >= 0023).
+- `docs/TEST_MATRIX.md`: US-E12.12 row -> implemented (unit/integration/e2e/platform all `yes`)
+- `docs/product/screens.md`: Admin "Audit Log" row -> implemented (US-E12.12)
+- [FLAG for ba-lead]: GDPR Nghi dinh 13/2023 compliance requirement — ADR candidate for audit log retention policy and immutability contract (decision >= 0023). Not resolved by this story (ComplianceNotice is a static banner referencing the decree, no retention logic in UI).
+- [FOLLOW-UP, non-blocking]: confirm BE core US-064 status before flipping `NEXT_PUBLIC_USE_MOCK=false` for this feature's DI factory (`bootstrap/di/audit-log.di.ts`).
+- [FOLLOW-UP, non-blocking]: `DateRangeFields` (feature-local `from<=to` validated date range) should be promoted to `components/shared/` the next time a 2nd screen needs the same pattern (component-architecture.md flag).
+- [FOLLOW-UP, non-blocking, from fe-qa-playwright]: `Filter_EntityType`/`Filter_DateRange` Storybook stories currently seed pre-filtered fixture data rather than driving the Select/date inputs end-to-end; underlying filter logic is solidly unit/integration-tested, but a future pass could strengthen these to real interaction-driven proof.
+
+## Evidence
+
+Design review: pass
+- design-system: conform (tokens-only confirmed by fe-tech-lead-reviewer grep + fe-accessibility-auditor color audit; zero raw colors/gray-scale/`text-destructive` misuse; `StatusBadge` reused for action/entity badges via `auditBadgeTone`, no new badge invented; shadcn `Table`/`Select`/`Input`/`Skeleton`/`Button` reused as-is)
+- a11y: WCAG AA — fe-accessibility-auditor issued a clean PASS (0 blocking/critical/major/minor findings across 11 checked items: labels, aria-invalid/aria-describedby wired to real validation state, table accessible name via linked `aria-labelledby`, load-more button DOM removal + distinct aria-label, role="alert" on error banner, keyboard/focus preserved, motion-safe skeleton, heading hierarchy, zero contrast/token violations)
+- impeccable audit (scoped, tokens-supreme per decision 0012): no AI-slop tells (no nested cards, no hero-metric grid, no gradient/glassmorphism); layout is a straightforward filter+table admin screen consistent with sibling screens (staff-leave, academic-records); touch targets consistently `min-h-11` (44px); table wrapped in `overflow-x-auto` for narrow viewports
+- states: loading/empty/error/success + load-more-error (added during fix pass) all covered by Storybook interaction stories with `play()` assertions
+
+fe-tech-lead-reviewer: Approved (after fix pass — 1 blocking defect found + fixed: load-more `fetchNextPage` failure was wiping already-loaded rows via `query.isError` collapsing all error states into one; fixed by isolating `firstPageError` from a separately-tracked `loadMoreError` state, per plan.md's State Architecture §6 spec). 2 non-blocking CONSIDER items addressed (AC-12 table caption linked via `aria-labelledby`; BE `retryable` signal threaded through `toFailure`/`isRetryableFailure` instead of hardcoded by failure type).
+
+fe-qa-playwright: PASS — release-ready. 13/13 AC have real test proof; independently re-ran full suite (1143/1143), Storybook interaction tests for this feature (15/15), `tsc --noEmit`, `bun run build` — all green. Strengthened 2 Storybook assertions (LoadMore success-path row persistence; LogTable accessible-name proof) as test-only additions within QA's role.
+
+Proof commands run (fe-lead, final verification): `bun vitest run` → 219 files / 1143 tests pass. `bun vitest:storybook run src/features/audit-log` → 5 files / 15 tests pass. `bunx tsc --noEmit` → clean. `bun run build` → clean, `/admin/audit-log` route emitted.

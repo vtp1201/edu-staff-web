@@ -715,6 +715,76 @@
     },
     "title": "Attendance"
   },
+  "auditLog": {
+    "title": "Audit log",
+    "subtitle": "All changes to grades, transcripts, and conduct. Read-only — cannot be edited or deleted.",
+    "compliance": {
+      "strong": "This log cannot be edited or deleted.",
+      "body": "Records are retained per <decree>Nghị định 13/2023/NĐ-CP</decree> — Personal Data Protection Decree."
+    },
+    "filters": {
+      "legend": "Log filters",
+      "entityType": "Entity type",
+      "action": "Action",
+      "actor": "Actor",
+      "actorPlaceholder": "Actor name…",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "reset": "Reset",
+      "allEntityTypes": "All types",
+      "allActions": "All actions",
+      "dateRangeError": "The start date must be on or before the end date.",
+      "entityTypeAriaLabel": "Filter by entity type",
+      "actionAriaLabel": "Filter by action",
+      "actorAriaLabel": "Search by actor"
+    },
+    "columns": {
+      "occurredAt": "Time",
+      "actor": "Actor",
+      "action": "Action",
+      "entityType": "Type",
+      "entity": "Entity",
+      "before": "Before",
+      "after": "After"
+    },
+    "tableLabel": "Audit log table",
+    "entityType": {
+      "grade": "Grade",
+      "conduct": "Conduct",
+      "record": "Record",
+      "setting": "Setting"
+    },
+    "action": {
+      "CREATE": "Create",
+      "UPDATE": "Update",
+      "DELETE": "Delete",
+      "APPROVE": "Approve",
+      "LOCK": "Lock",
+      "SEAL": "Seal",
+      "UNSEAL": "Unseal"
+    },
+    "empty": {
+      "title": "No results found",
+      "hint": "Try widening the date range, changing the entity type, or resetting the filters."
+    },
+    "errors": {
+      "title": "Couldn't load the audit log",
+      "network-error": "Connection error. Please try again.",
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "forbidden": "You do not have permission to view the audit log.",
+      "invalid-filter": "Invalid filter. Please check the date range.",
+      "unknown": "Something went wrong. Please try again.",
+      "retry": "Retry"
+    },
+    "loadMore": {
+      "label": "Load more",
+      "loading": "Loading…",
+      "ariaLabel": "Load more audit log entries",
+      "retry": "Retry",
+      "error": "Couldn't load more. Please try again."
+    },
+    "allDone": "All matching entries shown."
+  },
   "auth": {
     "brand": {
       "name": "EduPortal",
@@ -2100,7 +2170,8 @@
       "subjectDepartments": "Subject Departments",
       "subjects": "Subjects",
       "teachers": "Teachers",
-      "timetable": "Timetable"
+      "timetable": "Timetable",
+      "auditLog": "Audit log"
     },
     "roles": {
       "admin": "Admin",

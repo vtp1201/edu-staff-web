@@ -74,7 +74,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Assessment Scheme Config** | `(app)/admin/assessment` | `assessment.jsx` (1506) | `features/admin/assessment` | 🎨 design-ready (US-E12.6/E14.1) |
 | **Grade Approval** | `(app)/admin/grades/approval` | `grade-approval.jsx` (1506) | `features/grades` | 🎨 design-ready (US-E14.4) |
 | **Academic Record Seal** | `(app)/admin/academic-records` | `academic-records.jsx` (1506) | `features/academic-records` | ✅ US-E14.6 |
-| **Audit Log** | `(app)/admin/audit-log` | `audit-log.jsx` (1506) | `features/audit-log` | 🎨 design-ready (US-E12.12) |
+| **Audit Log** | `(app)/admin/audit-log` | `audit-log.jsx` (1506) | `features/audit-log` | ✅ implemented US-E12.12 (mock-first, core US-064 pending) |
 | **Admin Settings** | `(app)/admin/settings` | `admin-settings.jsx` (1506) | `features/admin-settings` | 🎨 design-ready (US-E12.11) |
 | **Announcements** | `(app)/admin/announcements` | `announcements.jsx` (1506) | `features/announcements` | 🎨 design-ready (US-E10.3) |
 | **Staff Leave Management** | `(app)/admin/staff-leave` | `staff-leave.jsx` (1506) | `features/staff-leave` | 🎨 design-ready (US-E09.3) |

@@ -121,3 +121,39 @@ second server round-trip just for a cosmetic label. Only resolve the name server
 it gates something before the client query can run.
 
 **See also:** [[rsc-readonly-pattern]]
+
+## RSC-seeded useInfiniteQuery + draft/applied URL filters (US-E12.12, audit-log)
+
+First screen combining RSC-prefetch with `useInfiniteQuery` (no `HydrationBoundary`/
+`dehydrate` anywhere in this repo — confirmed by repo-wide grep, zero matches). Pattern:
+`page.tsx` calls the DI use-case directly for page 1 of the filter derived from initial
+`searchParams` (same as `admin/staff-leave`/`admin/calendar` non-Query RSC pattern), maps to
+`{ filter, events, nextCursor, hasMore, loadFailed }`, passes as a prop. Client container
+seeds `useInfiniteQuery`'s `initialData` (`{ pages: [...], pageParams: [null] }`) **only**
+when the current `appliedFilter` (from `useSearchParams()`) structurally matches the
+RSC-rendered filter and `loadFailed` was false; otherwise runs a normal client fetch.
+
+**Filter-key-drives-reset, not manual reset**: for any list with filter-driven cursor
+pagination, put the applied filter directly in the query key
+(`keys.list(appliedFilter)`); never manually clear/reset `pages` on filter change — a
+distinct key is a fresh, empty infinite-query cache entry automatically, which is also
+what prevents "load more" from ever appending across a filter change.
+
+**Draft vs applied filter split** (matches a design mockup's explicit "Tìm kiếm" search
+button rather than live-as-you-type filtering): draft = local component state in the
+filter bar (not shared, changes every keystroke); applied = synced to URL search params
+on submit, and it's the URL-derived value (read fresh from `useSearchParams()` every
+render, never mirrored into a separate `useState`) that the query key reads. Rationale:
+avoids a refetch storm per keystroke, keeps filters shareable/back-button friendly per
+CLAUDE.md's URL-state guidance, and the query key naturally resets on submit.
+
+**Load-more error must not blank prior pages**: `useInfiniteQuery`'s `isError` reflects
+page-1 status; a failed `fetchNextPage()` for page N does not clear `data.pages` — give
+`LoadMoreButton` its own inline retry affordance (distinct from the full-page
+`ErrorBanner` used for a first-page failure) so already-rendered rows visibly persist.
+
+**Server Action result shape with `retryable`**: when the query layer needs to decide
+retry eligibility (`error.retryable === true` per api-integration.md), the Server Action
+must return it explicitly (`{ ok: false, errorKey, retryable }`), not just a bare
+`errorKey` string — the client can't otherwise recover `ApiError.retryable` through a
+Server Action boundary.

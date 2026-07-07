@@ -16,6 +16,7 @@ import {
   NotebookPen,
   Scale,
   School,
+  ScrollText,
   Settings2,
   User,
   UserCog,
@@ -119,6 +120,7 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       labelKey: "announcements",
       icon: Megaphone,
     },
+    { href: "/admin/audit-log", labelKey: "auditLog", icon: ScrollText },
   ],
 };
 

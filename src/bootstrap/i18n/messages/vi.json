@@ -715,6 +715,76 @@
     },
     "title": "Điểm danh"
   },
+  "auditLog": {
+    "title": "Nhật ký kiểm toán",
+    "subtitle": "Mọi thay đổi đối với điểm số, học bạ và hạnh kiểm. Chỉ đọc — không thể chỉnh sửa hoặc xoá.",
+    "compliance": {
+      "strong": "Nhật ký này không thể chỉnh sửa hoặc xoá.",
+      "body": "Dữ liệu được lưu giữ theo <decree>Nghị định 13/2023/NĐ-CP</decree> — bảo vệ dữ liệu cá nhân."
+    },
+    "filters": {
+      "legend": "Bộ lọc nhật ký",
+      "entityType": "Loại đối tượng",
+      "action": "Hành động",
+      "actor": "Người thực hiện",
+      "actorPlaceholder": "Tên người thực hiện…",
+      "dateFrom": "Từ ngày",
+      "dateTo": "Đến ngày",
+      "reset": "Đặt lại",
+      "allEntityTypes": "Tất cả loại",
+      "allActions": "Tất cả hành động",
+      "dateRangeError": "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.",
+      "entityTypeAriaLabel": "Lọc theo loại đối tượng",
+      "actionAriaLabel": "Lọc theo hành động",
+      "actorAriaLabel": "Tìm theo người thực hiện"
+    },
+    "columns": {
+      "occurredAt": "Thời gian",
+      "actor": "Người thực hiện",
+      "action": "Hành động",
+      "entityType": "Loại",
+      "entity": "Đối tượng",
+      "before": "Trước",
+      "after": "Sau"
+    },
+    "tableLabel": "Bảng nhật ký kiểm toán",
+    "entityType": {
+      "grade": "Điểm số",
+      "conduct": "Hạnh kiểm",
+      "record": "Học bạ",
+      "setting": "Cài đặt"
+    },
+    "action": {
+      "CREATE": "Tạo mới",
+      "UPDATE": "Cập nhật",
+      "DELETE": "Xoá",
+      "APPROVE": "Phê duyệt",
+      "LOCK": "Khoá",
+      "SEAL": "Niêm phong",
+      "UNSEAL": "Mở niêm phong"
+    },
+    "empty": {
+      "title": "Không tìm thấy kết quả",
+      "hint": "Thử mở rộng khoảng ngày, đổi loại đối tượng hoặc đặt lại bộ lọc."
+    },
+    "errors": {
+      "title": "Không tải được nhật ký",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unauthorized": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+      "forbidden": "Bạn không có quyền xem nhật ký kiểm toán.",
+      "invalid-filter": "Bộ lọc không hợp lệ. Vui lòng kiểm tra lại khoảng ngày.",
+      "unknown": "Đã xảy ra lỗi. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "loadMore": {
+      "label": "Tải thêm",
+      "loading": "Đang tải…",
+      "ariaLabel": "Tải thêm nhật ký kiểm toán",
+      "retry": "Thử lại",
+      "error": "Không tải thêm được. Vui lòng thử lại."
+    },
+    "allDone": "Đã hiển thị tất cả nhật ký phù hợp."
+  },
   "auth": {
     "brand": {
       "name": "EduPortal",
@@ -2100,7 +2170,8 @@
       "subjectDepartments": "Tổ bộ môn",
       "subjects": "Môn học",
       "teachers": "Giáo viên",
-      "timetable": "Thời khoá biểu"
+      "timetable": "Thời khoá biểu",
+      "auditLog": "Nhật ký kiểm toán"
     },
     "roles": {
       "admin": "Quản trị viên",
