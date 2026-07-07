@@ -1,6 +1,6 @@
 ---
 name: project-e12-admin-core
-description: E12 Admin Core epic status — US-E12.1–E12.4 + E12.5 + E12.8 + E12.9 + E12.10 implemented; US-E12.6 planned
+description: E12 Admin Core epic status — US-E12.1–E12.4 + E12.5 + E12.8 + E12.9 + E12.10 + E12.12 implemented; US-E12.6 planned
 metadata:
   type: project
 ---
@@ -22,6 +22,13 @@ E12 Admin Core epic is the admin-facing configuration flow.
   - Mock-first academic-year validation in assignPositionAction (core not live yet, decision 0014)
   - 342 tests pass; bun build green; tech-lead Approved; a11y 3 major findings fixed
 - US-E12.10 Class Management UI — `src/features/admin/class-management/` (route /admin/classes, 2026-06-14)
+- US-E12.12 Audit Log (admin, read-only, append-only, cursor-paginated) — `src/features/audit-log/` (route /admin/audit-log, 2026-07-06/07)
+  - Mock-first (core US-064 audit endpoint status unconfirmed anywhere in repo); REAL repo fully wired (not a bare not-implemented scaffold) so its contract is provable now — DI still selects Mock while USE_MOCK=true, flip is a one-line change later
+  - First screen combining RSC-seeded `initialData` + client `useInfiniteQuery` (no `HydrationBoundary` pattern exists in this repo) — see fe-state-engineer memory `reference-query-key-conventions.md`
+  - Applied filter lives in URL search params (draft/applied split preserved from design mockup, draft debounced into URL) — query key is the applied filter, so a filter change is a brand-new infinite-query cache entry (no manual page reset needed)
+  - Key defect caught by review: `useInfiniteQuery`'s `isError` collapses first-page AND load-more failures into one flag — naive `status = query.isError ? "error" : ...` wipes already-loaded rows on a failed "load more". Fix: `firstPageError = query.isError && events.length === 0` gates the full-table error banner; a separate local `loadMoreError` state (set via `fetchNextPage({ throwOnError: true }).catch(...)`) drives an inline retry near the load-more button instead. Also: `fetchNextPage()` WITHOUT `{ throwOnError: true }` silently swallows the rejection (TanStack Query v5 `QueryObserver` catches with noop) — `.catch()` alone never fires without that option.
+  - 219 test files / 1143 tests; tech-lead Approved-after-fix; a11y clean PASS (0 findings); QA PASS (13/13 AC covered, strengthened 2 assertions)
+  - Follow-ups flagged in story Harness Delta: BE US-064 confirmation before USE_MOCK=false; promote `DateRangeFields` to `components/shared/` on 2nd use; strengthen `Filter_EntityType`/`Filter_DateRange` stories to drive real inputs instead of seeded fixtures
 
 **Planned:** US-E12.6 (assessment scheme — design pending DR-001)
 
