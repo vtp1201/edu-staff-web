@@ -20,3 +20,4 @@
 - [Status union extension + nullable fields](pattern-status-union-extension.md) — snake_case union vs camelCase i18n key → explicit switch mapper not dynamic t(); nullable score/passed → re-check field after isResultFinal guard, never ?? 0
 - [DetailPanelHeader shared component](pattern-detail-panel-header.md) — 3-zone back-nav header; icon-only action labels via sr-only md:not-sr-only (NOT md:hidden); sr-only SheetHeader keeps Radix a11y
 - [Portal-dialog testing + DestructiveConfirmDialog](pattern-portal-dialog-testing.md) — Radix portals don't render in node static markup; split proof (pure footer Vitest + Storybook play); shared confirm dialog uses plain Buttons for exactly-once callbacks
+- [RSC-seeded infinite query + URL filter](pattern-rsc-seeded-infinite-query.md) — cursor list: RSC prefetch→useInfiniteQuery initialData (no HydrationBoundary) + draft/applied URL filter sync; SB vitest runner works now
