@@ -118,11 +118,31 @@ export function AuditLogScreen({
     [query.data],
   );
 
-  const errorKey: AuditLogFailure["type"] | null = query.isError
+  // A failed load-more flips query.isError to true even though page-1 data is
+  // still cached; only a first-page error (nothing loaded yet) should replace
+  // the table with the error banner. Load-more failures surface inline instead
+  // (AC-10 — already-loaded rows must stay visible).
+  const [loadMoreError, setLoadMoreError] = useState<
+    AuditLogFailure["type"] | null
+  >(null);
+
+  // Clear any stale load-more error when the applied filter changes (the query
+  // key changes → a fresh list, so the previous load-more error is irrelevant).
+  // React's "adjust state on prop change" pattern — reset during render instead
+  // of an effect, so the stale banner never paints for a frame.
+  const [prevQs, setPrevQs] = useState(appliedQs);
+  if (prevQs !== appliedQs) {
+    setPrevQs(appliedQs);
+    setLoadMoreError(null);
+  }
+
+  const firstPageError = query.isError && events.length === 0;
+
+  const errorKey: AuditLogFailure["type"] | null = firstPageError
     ? ((query.error as unknown as ThrownFailure | undefined)?.type ?? "unknown")
     : null;
 
-  const status: AuditLogResultsStatus = query.isError
+  const status: AuditLogResultsStatus = firstPageError
     ? "error"
     : query.isLoading
       ? "loading"
@@ -146,7 +166,14 @@ export function AuditLogScreen({
   }, [query]);
 
   const handleLoadMore = useCallback(() => {
-    void query.fetchNextPage();
+    setLoadMoreError(null);
+    // throwOnError:true — without it TanStack swallows the queryFn rejection
+    // (QueryObserver catches with noop), so .catch would never fire.
+    query
+      .fetchNextPage({ throwOnError: true })
+      .catch((e) =>
+        setLoadMoreError((e as ThrownFailure | undefined)?.type ?? "unknown"),
+      );
   }, [query]);
 
   return (
@@ -178,6 +205,7 @@ export function AuditLogScreen({
           hasMore={query.hasNextPage ?? false}
           isLoadingMore={query.isFetchingNextPage}
           onLoadMore={handleLoadMore}
+          errorKey={loadMoreError}
         />
       )}
     </div>

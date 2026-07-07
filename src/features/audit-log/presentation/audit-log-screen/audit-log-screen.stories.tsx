@@ -210,6 +210,42 @@ export const LoadMore: Story = {
   },
 };
 
+/**
+ * AC-10 — a load-more failure keeps the already-loaded rows visible and shows an
+ * inline error + retry (it must NOT blank the table like a first-page error).
+ */
+export const LoadMore_Error: Story = {
+  args: {
+    ...baseProps,
+    // Page 1 is seeded (initialFilter === applied {}), advertises a next page…
+    initialPage: page(MIXED.slice(0, 3), true),
+    // …but fetching page 2 fails.
+    getAuditLogAction: resolveWith({
+      ok: false,
+      errorKey: "network-error",
+      retryable: false,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Page-1 rows present before the failed load-more.
+    await expect(canvas.getByText(/Toán · Cuối kỳ/)).toBeInTheDocument();
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Tải thêm nhật ký kiểm toán/i }),
+    );
+
+    // Inline load-more error surfaces (role="alert")…
+    await waitFor(() => expect(canvas.getByRole("alert")).toBeInTheDocument());
+    // …page-1 rows are STILL visible (table not blanked)…
+    await expect(canvas.getByText(/Toán · Cuối kỳ/)).toBeInTheDocument();
+    // …and a retry affordance remains.
+    await expect(
+      canvas.getByRole("button", { name: /Tải thêm nhật ký kiểm toán/i }),
+    ).toBeInTheDocument();
+  },
+};
+
 /** AC-9 — no results match the filter. */
 export const EmptyState: Story = {
   args: {

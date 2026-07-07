@@ -83,14 +83,14 @@ describe("buildAuditLogParams", () => {
 });
 
 describe("toFailure", () => {
-  it("network-error for NETWORK_ERROR", () => {
+  it("network-error (retryable) for NETWORK_ERROR", () => {
     expect(
       toFailure(
         new ApiError({ code: "NETWORK_ERROR", message: "x", retryable: true }),
       ),
-    ).toEqual({ type: "network-error" });
+    ).toEqual({ type: "network-error", retryable: true });
   });
-  it("unauthorized for 401", () => {
+  it("unauthorized for 401 (not retryable)", () => {
     expect(
       toFailure(
         new ApiError({
@@ -100,9 +100,9 @@ describe("toFailure", () => {
           status: 401,
         }),
       ),
-    ).toEqual({ type: "unauthorized" });
+    ).toEqual({ type: "unauthorized", retryable: false });
   });
-  it("forbidden for 403", () => {
+  it("forbidden for 403 (not retryable)", () => {
     expect(
       toFailure(
         new ApiError({
@@ -112,9 +112,9 @@ describe("toFailure", () => {
           status: 403,
         }),
       ),
-    ).toEqual({ type: "forbidden" });
+    ).toEqual({ type: "forbidden", retryable: false });
   });
-  it("invalid-filter for 422", () => {
+  it("invalid-filter for 422 (not retryable)", () => {
     expect(
       toFailure(
         new ApiError({
@@ -124,9 +124,9 @@ describe("toFailure", () => {
           status: 422,
         }),
       ),
-    ).toEqual({ type: "invalid-filter" });
+    ).toEqual({ type: "invalid-filter", retryable: false });
   });
-  it("unknown for 500", () => {
+  it("unknown for a non-retryable 500", () => {
     expect(
       toFailure(
         new ApiError({
@@ -136,7 +136,31 @@ describe("toFailure", () => {
           status: 500,
         }),
       ),
-    ).toEqual({ type: "unknown" });
+    ).toEqual({ type: "unknown", retryable: false });
+  });
+  it("threads the BE retryable signal for a 503 (unknown but retryable)", () => {
+    expect(
+      toFailure(
+        new ApiError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "x",
+          retryable: true,
+          status: 503,
+        }),
+      ),
+    ).toEqual({ type: "unknown", retryable: true });
+  });
+  it("threads the BE retryable signal for a 429 (unknown but retryable)", () => {
+    expect(
+      toFailure(
+        new ApiError({
+          code: "RATE_LIMITED",
+          message: "x",
+          retryable: true,
+          status: 429,
+        }),
+      ),
+    ).toEqual({ type: "unknown", retryable: true });
   });
 });
 
@@ -186,6 +210,9 @@ describe("AuditLogRepository", () => {
     const repo = new AuditLogRepository(makeHttp({ get }));
 
     const res = await repo.getAuditLog({}, null, 20);
-    expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
+    expect(res).toEqual({
+      ok: false,
+      error: { type: "forbidden", retryable: false },
+    });
   });
 });

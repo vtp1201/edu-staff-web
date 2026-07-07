@@ -4,6 +4,7 @@ import { AUDIT_LOG_EP } from "@/bootstrap/endpoint/audit-log.endpoint";
 import {
   type ApiEnvelope,
   errorCodeOf,
+  isApiError,
   parseEnvelope,
   statusOf,
 } from "@/bootstrap/lib/api-envelope";
@@ -24,20 +25,23 @@ import { toAuditEvent } from "../mappers/audit-log.mapper";
 export function toFailure(err: unknown): AuditLogFailure {
   const code = errorCodeOf(err);
   const status = statusOf(err);
+  // Thread the BE retryable signal (408/429/502/503/504 → retryable) so a
+  // retryable 5xx that maps to `unknown` still gets the query's retry treatment.
+  const retryable = isApiError(err) ? err.retryable : false;
 
   if (code === "NETWORK_ERROR" || status === undefined || status === 0) {
-    return { type: "network-error" };
+    return { type: "network-error", retryable: true };
   }
   if (status === 401 || code === "UNAUTHORIZED" || code === "TOKEN_EXPIRED") {
-    return { type: "unauthorized" };
+    return { type: "unauthorized", retryable };
   }
   if (status === 403 || code === "FORBIDDEN" || code === "SCHOOL_FORBIDDEN") {
-    return { type: "forbidden" };
+    return { type: "forbidden", retryable };
   }
   if (status === 400 || status === 422 || code === "VALIDATION_ERROR") {
-    return { type: "invalid-filter" };
+    return { type: "invalid-filter", retryable };
   }
-  return { type: "unknown" };
+  return { type: "unknown", retryable };
 }
 
 /** Build the wire query params from a filter (+ cursor/limit). camelCase. */

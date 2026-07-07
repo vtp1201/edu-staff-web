@@ -34,6 +34,6 @@ export async function getAuditLogAction(
   return {
     ok: false,
     errorKey: result.error.type,
-    retryable: isRetryableFailure(result.error.type),
+    retryable: isRetryableFailure(result.error),
   };
 }
