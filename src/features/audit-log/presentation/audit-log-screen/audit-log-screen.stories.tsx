@@ -198,6 +198,9 @@ export const LoadMore: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Page-1 rows present before load-more.
+    await expect(canvas.getByText(/Toán · Cuối kỳ/)).toBeInTheDocument();
+
     const button = canvas.getByRole("button", {
       name: /Tải thêm nhật ký kiểm toán/i,
     });
@@ -206,6 +209,18 @@ export const LoadMore: Story = {
       expect(
         canvas.getByText(/Trọng số điểm · Năm học 2025-2026/),
       ).toBeInTheDocument(),
+    );
+    // AC-7 — page-2 rows are APPENDED, not a replacement: page-1 rows must
+    // still be present after a successful load-more.
+    await expect(canvas.getByText(/Toán · Cuối kỳ/)).toBeInTheDocument();
+    // The button reflects "no more data" — LoadMoreButton unmounts entirely
+    // once hasMore is false, so it must no longer be in the document.
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", {
+          name: /Tải thêm nhật ký kiểm toán/i,
+        }),
+      ).not.toBeInTheDocument(),
     );
   },
 };

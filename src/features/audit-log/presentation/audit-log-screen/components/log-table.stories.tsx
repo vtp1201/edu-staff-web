@@ -67,6 +67,11 @@ export const Default: Story = {
   args: { events: EVENTS },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // AC-12 — the <table> carries an accessible name via aria-labelledby
+    // pointing at the sr-only <h2> heading (not just a floating caption).
+    await expect(
+      canvas.getByRole("table", { name: /Bảng nhật ký kiểm toán/i }),
+    ).toBeInTheDocument();
     // Column headers present (AC-12 scope=col defaulted by TableHead).
     await expect(
       canvas.getByRole("columnheader", { name: /Thời gian/i }),
