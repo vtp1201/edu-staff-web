@@ -88,7 +88,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
-| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ⬜ US-E11.6 (design-ready; `student.jsx` edustaff_5) |
+| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ✅ US-E11.6 (grid+tabs, 2-col player, video/pdf/text, notes/Q&A, mark-complete; mock-first) |
 | Assignments | `(app)/student/assignments` | `features/lms` | ⬜ (E11) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |

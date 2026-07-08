@@ -63,6 +63,11 @@
   --edu-card: #ffffff;
   --edu-border: #e5eaf2;
 
+  /* ── Media chrome (US-E11.6, ADR 0050) ──────────── */
+  /** Always-dark video/media player chrome background, independent of app theme. */
+  --edu-media-surface: #0f1117;
+  --edu-media-surface-foreground: #ffffff;
+
   /* ── Messaging (US-E10.4, ADR 0047) ─────────────── */
   /** Own-message reply quoted block background — dark overlay on primary bubble (~#4a6dcc) for WCAG AA white text (A11Y-034). */
   --edu-messaging-quote-own-bg: rgba(0, 0, 0, 0.2);

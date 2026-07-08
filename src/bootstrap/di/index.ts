@@ -13,6 +13,7 @@ export * from "./exam.di";
 export * from "./exam-bank.di";
 export * from "./grades.di";
 export * from "./lesson-bank.di";
+export * from "./lms.di";
 export * from "./messaging.di";
 export * from "./notification.di";
 export * from "./principal-teachers.di";

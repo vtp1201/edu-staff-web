@@ -80,6 +80,8 @@
   --color-edu-bg: var(--edu-bg);
   --color-edu-card: var(--edu-card);
   --color-edu-border: var(--edu-border);
+  --color-edu-media-surface: var(--edu-media-surface);
+  --color-edu-media-surface-foreground: var(--edu-media-surface-foreground);
   --color-edu-messaging-quote-own-bg: var(--edu-messaging-quote-own-bg);
   --color-edu-messaging-quote-own-border: var(--edu-messaging-quote-own-border);
   --color-edu-role-teacher: var(--edu-role-teacher);
