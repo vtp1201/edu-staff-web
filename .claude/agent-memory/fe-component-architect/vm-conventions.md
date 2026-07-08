@@ -61,3 +61,19 @@ same-admin error (AC-8, dead-end) vs self-approve fallback (ADR 0037, proceeds
 with a warning) are different enough to need separate components + separate
 Storybook stories, even though the planner's draft bundled them into one
 `unseal-confirm-dialog.tsx`.
+
+**No `.i-vm.ts` needed for pure client-state leaf components.** `.i-vm.ts` is
+for the RSC→client server-data boundary. A component driven entirely by
+hook-derived client-only UI state (e.g. US-E08.6's `SseDisconnectBanner`/
+`SsePendingPill`, fed by `useRealtimeEvents()` — an `EventSource` connection
+state machine, not fetched/server data) just needs a plain `type <X>Props` in
+its own file. Don't force a `.i-vm.ts` file where there's no server↔client
+data contract to name.
+
+**Fixed-position z-index scale observed in this codebase (no formal token
+yet):** `Header` sticky `z-30` < feature dropdown/context-menu overlay `z-40`
+< Radix `Sheet`/`Dialog`/`AlertDialog`/`Popover`/`Tooltip` (all `z-50`, so
+modals/sheets always win) . One outlier: `staff-leave-screen` toast uses
+`z-[9000]` (one-off, not a convention — don't copy it). When placing a new
+fixed/floating component (e.g. a floating pill/FAB), pick `z-40` if it should
+sit above page chrome but yield to any open modal/sheet.

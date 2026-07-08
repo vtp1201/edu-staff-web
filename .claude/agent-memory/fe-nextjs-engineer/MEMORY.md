@@ -21,3 +21,4 @@
 - [DetailPanelHeader shared component](pattern-detail-panel-header.md) — 3-zone back-nav header; icon-only action labels via sr-only md:not-sr-only (NOT md:hidden); sr-only SheetHeader keeps Radix a11y
 - [Portal-dialog testing + DestructiveConfirmDialog](pattern-portal-dialog-testing.md) — Radix portals don't render in node static markup; split proof (pure footer Vitest + Storybook play); shared confirm dialog uses plain Buttons for exactly-once callbacks
 - [RSC-seeded infinite query + URL filter](pattern-rsc-seeded-infinite-query.md) — cursor list: RSC prefetch→useInfiniteQuery initialData (no HydrationBoundary) + draft/applied URL filter sync; SB vitest runner works now
+- [Subscription hook node test](pattern-subscription-hook-node-test.md) — no renderHook in node env; extract framework-free controller + FakeEventSource + fake timers; hook stays thin binding

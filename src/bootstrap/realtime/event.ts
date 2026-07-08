@@ -58,6 +58,19 @@ export type RealtimeEvent =
       tenantId: string;
       occurredAt: string;
       payload: { sessionId: string };
+    }
+  | {
+      /**
+       * US-E08.6 — a new chat message arrived. Minimal payload: only the
+       * conversation id, since the shell's pending-message pill renders a count,
+       * never message content. Bumps the hook-local `pendingMsgCount` when the
+       * user is not on the messages route; invalidates no query cache.
+       */
+      type: "message.new";
+      eventId: string;
+      tenantId: string;
+      occurredAt: string;
+      payload: { conversationId: string };
     };
 
 export type RealtimeEventType = RealtimeEvent["type"];
@@ -68,6 +81,7 @@ export const REALTIME_EVENT_TYPES: readonly RealtimeEventType[] = [
   "notification.new",
   "attendance.updated",
   "session.revoked",
+  "message.new",
 ];
 
 const KNOWN_TYPES = new Set<RealtimeEventType>(REALTIME_EVENT_TYPES);
