@@ -2179,6 +2179,15 @@
       "principal": "Hiệu trưởng",
       "student": "Học sinh",
       "teacher": "Giáo viên"
+    },
+    "sseStatus": {
+      "disconnectedBody": "Trang sẽ tự động kết nối lại. Các sự kiện mới sẽ không đến cho đến khi được khôi phục.",
+      "disconnectedTitle": "Mất kết nối realtime.",
+      "pendingMessageMany": "Bạn có {count} tin nhắn mới. Bấm để xem.",
+      "pendingMessageOne": "Bạn có 1 tin nhắn mới. Bấm để xem.",
+      "pendingMessageOverflowLabel": "99+",
+      "reconnectButton": "Kết nối lại",
+      "reconnectingTitle": "Đang kết nối lại..."
     }
   },
   "staffLeave": {

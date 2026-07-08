@@ -2179,6 +2179,15 @@
       "principal": "Principal",
       "student": "Student",
       "teacher": "Teacher"
+    },
+    "sseStatus": {
+      "disconnectedBody": "The page will reconnect automatically. New events won't arrive until it's restored.",
+      "disconnectedTitle": "Realtime connection lost.",
+      "pendingMessageMany": "You have {count} new messages. Tap to view.",
+      "pendingMessageOne": "You have 1 new message. Tap to view.",
+      "pendingMessageOverflowLabel": "99+",
+      "reconnectButton": "Reconnect",
+      "reconnectingTitle": "Reconnecting..."
     }
   },
   "staffLeave": {

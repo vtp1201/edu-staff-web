@@ -28,7 +28,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
-| SSE Disconnect Banner + Pending-Message Pill | shell-level (DashboardLayout) | `components/shared/sse-status/` | ⬜ US-E08.6 |
+| SSE Disconnect Banner + Pending-Message Pill | shell-level (`components/layout/app-shell`) | `components/shared/sse-status/` | 🟡 US-E08.6 |
 | Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 |
 | Notifications Center | `(app)/(shared)/notifications` | `features/notification` | 🎨 design-ready (US-E10.2; `notifications.jsx` 1506; SSE decision 0009) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1 base; US-E10.4 group-chat design in `messaging.jsx` DR-008 2026-06-20) |

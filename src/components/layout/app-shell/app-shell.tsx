@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/bootstrap/i18n/routing";
+import { usePathname, useRouter } from "@/bootstrap/i18n/routing";
+import { useRealtimeEvents } from "@/bootstrap/realtime";
 import { tenantUrl } from "@/bootstrap/tenant";
+import {
+  SseDisconnectBanner,
+  SsePendingPill,
+} from "@/components/shared/sse-status";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Header } from "./header/header";
 import type { Role } from "./sidebar/nav-config";
@@ -24,9 +29,20 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [role, setRole] = useState<Role>(initialRole);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { collapsed, toggle } = useSidebarCollapsed();
+
+  // Realtime (SSE) connection — mounted once for the whole shell (US-E08.6).
+  // Also activates the dormant notification.created/attendance.updated cache
+  // invalidation the hook has provided since US-E06.2 but was never mounted.
+  const { sseStatus, showBanner, pendingMsgCount, reconnect } =
+    useRealtimeEvents({ tenantId });
+  // `showBanner` is only ever true for disconnected / post-disconnect
+  // connecting; the `!== "connected"` guard narrows the type for the banner prop.
+  const bannerStatus =
+    showBanner && sseStatus !== "connected" ? sseStatus : undefined;
 
   // Switch workspace via client navigation — no full reload, scoped to the
   // current tenant (`/t/{tenantId}/{role}`); the layout re-renders the new nav.
@@ -62,8 +78,15 @@ export function AppShell({
           onMenuClick={() => setMobileOpen(true)}
           onRoleChange={handleRoleChange}
         />
+        <SseDisconnectBanner status={bannerStatus} onReconnect={reconnect} />
         <main className="flex-1 p-4 sm:p-6">{children}</main>
       </div>
+
+      <SsePendingPill
+        count={pendingMsgCount}
+        visible={pendingMsgCount > 0 && !pathname.endsWith("/messages")}
+        onClick={() => router.push(tenantUrl(tenantId, "/messages"))}
+      />
     </div>
   );
 }
