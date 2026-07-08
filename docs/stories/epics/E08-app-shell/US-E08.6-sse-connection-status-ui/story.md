@@ -97,7 +97,35 @@ Mock-first: SSE upstream chua ship; `TweaksPanelUI` trong `app.jsx` demo toggle 
 
 ## Evidence
 
-(to be filled after implementation)
+**Implementation (fe-nextjs-engineer, 2026-07-07/08):**
+- `src/bootstrap/realtime/event.ts` + `event-invalidation.ts` — `message.new` union member + exhaustive invalidation arm.
+- `src/bootstrap/realtime/schedule-reconnect.ts` (new) — pure 4s reconnect timer helper.
+- `src/bootstrap/realtime/use-realtime-events.ts` — extended `void` → `{ sseStatus, showBanner, pendingMsgCount, reconnect }`; two-effect split (connection effect stable deps; separate `[pathname]` effect for count reset); `SseStatus` exported.
+- `src/components/shared/sse-status/{sse-disconnect-banner,sse-pending-pill}.tsx` (+ `index.ts` + `.stories.tsx`) — pure prop-in, no internal hooks beyond `useTranslations`.
+- `src/components/layout/app-shell/app-shell.tsx` — mounts `useRealtimeEvents({ tenantId })` once; banner in-flow between Header/main; pill fixed `bottom-6 right-6 z-40`.
+- `src/bootstrap/i18n/messages/{vi,en}.json` — `shell.sseStatus.*` (7 keys), vi source + en mirror.
+- `docs/product/screens.md` — row updated to ✅.
+
+**Test proof (real, verified independently by fe-lead + fe-tech-lead-reviewer, not self-reported only):**
+- Unit: 40 new (5 event · 4 schedule-reconnect · 19 sse-connection controller · 5→ banner · 7 pill, +1 a11y fix-pass test = final 1184 total suite).
+- `bun vitest run`: 223 files / 1184 tests PASS.
+- `bunx tsc --noEmit`: 0 errors.
+- `bun lint`: clean (2 pre-existing unrelated warnings).
+- `bun run build`: green.
+- E2E/Storybook: 6 interaction stories (Banner_Hidden/Disconnected/Reconnecting, Pill_Visible/Overflow/HiddenInMessages) with `play()` assertions — all pass.
+
+**Review verdicts:**
+- `fe-tech-lead-reviewer`: **Approved**. Verified two-effect split correctness (pathname isolated from connection effect, route read live via ref — no reconnect-on-navigate bug), the no-`renderHook`-available deviation (extraction into a framework-free `sse-connection.ts` controller) is legitimate and matches existing repo precedent (`status-badge.test.ts`, `pane-visibility.test.ts`, etc.), tokens/i18n/component-placement/security all pass. Two non-blocking CONSIDER notes (admin RBAC gate is genuinely optional per AC; hook's own effect wiring has no direct unit test, inherent to the environment constraint, low risk).
+- `fe-accessibility-auditor`: Initial audit found 2 Blocking + 1 Major + 2 Minor (A11Y-001/002 contrast failures from `--edu-warning-text` bold-only token misused on 12px/regular-weight text; A11Y-003 focus lost on reconnect-button unmount; A11Y-005/006 minor). Fix-pass commit `927b5f4` resolved A11Y-001/002/003/006 (switched to `--edu-warning-foreground` for non-bold text, added focus management to the live-region wrapper, kept the wrapper always-mounted). A11Y-005 (border contrast, decorative accent) accepted as-is per auditor's own non-blocking judgment.
+
+## Design Review
+
+- design-system: conform — tokens only (`bg-edu-warning-light`/`border-edu-warning`/`text-edu-warning-text`(bold-only)/`text-edu-warning-foreground`(body/button), `bg-primary`/`text-primary-foreground` for the pill); AC-11 amended and honored; no new token; reused `Loader2`/`WifiOff` (lucide, already a dependency); component pattern reuse (shadcn `Button`), no duplicate pattern created.
+- a11y: WCAG AA — contrast fixed (11.42:1 body/button text), keyboard-operable (native `<button>`s), focus-visible ring present, focus-management on reconnect (A11Y-003 fixed), touch target ≥44×44px (pill `min-h-11 min-w-11`), `role="status"`/`aria-live="polite"` wired to real state, icon `aria-hidden` paired with visible text/label, reduced-motion respected via existing global gate (decision 0013, no bespoke `@keyframes` added).
+- impeccable audit: ran `node .claude/skills/impeccable/scripts/detect.mjs` scoped to the 3 changed UI files (`app-shell.tsx`, `sse-disconnect-banner.tsx`, `sse-pending-pill.tsx`) — 0 anti-pattern hits (no side-stripe borders, no gradient text, no glassmorphism, no hero-metric/card-grid clichés). Full `/impeccable critique` skipped as disproportionate for a two-component shell addition (not a new screen); the a11y-auditor's contrast/focus review already exceeds impeccable's standard technical checklist for this scope.
+- states: hidden/connecting/disconnected (banner) and hidden/visible/overflow (pill) all covered by unit tests + Storybook stories; no loading/empty/error states apply (this is UI-state-only, no data fetch). Not vetted in a live 320px viewport screenshot (no dev server run in this session) but banner uses `flex`+`min-w-0`+`sm:px-6` responsive classes and pill is a fixed small element — both verified by code review to not have a fixed-width overflow risk at narrow viewports; dark mode contrast explicitly verified via token hex values (fix-pass commit added explicit `dark:` overrides beating the outline-button's baked-in dark classes).
+
+Design review: **pass**
 
 ## Implementation Plan
 
