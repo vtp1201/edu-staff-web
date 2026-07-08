@@ -19,9 +19,23 @@ function render(ui: React.ReactElement) {
 }
 
 describe("SseDisconnectBanner", () => {
-  it("renders nothing when status is undefined (AC-1)", () => {
+  it("keeps the live region mounted but hidden with no content when status is undefined (AC-1, A11Y-006)", () => {
     const html = render(<SseDisconnectBanner onReconnect={vi.fn()} />);
-    expect(html).toBe("");
+    // A11Y-006: the role=status node stays in the DOM from first paint so SRs
+    // register the live region; it is visually hidden and carries no content.
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain("hidden");
+    expect(html).not.toContain(messages.shell.sseStatus.disconnectedTitle);
+    expect(html).not.toContain(messages.shell.sseStatus.reconnectingTitle);
+    expect(html).not.toContain(messages.shell.sseStatus.reconnectButton);
+  });
+
+  it("exposes the live region as a programmatic focus target (A11Y-003)", () => {
+    const html = render(
+      <SseDisconnectBanner status="disconnected" onReconnect={vi.fn()} />,
+    );
+    expect(html).toContain('tabindex="-1"');
   });
 
   it("renders a polite status live region with warning tokens when disconnected (AC-5/AC-11)", () => {

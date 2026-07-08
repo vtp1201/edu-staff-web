@@ -2,6 +2,7 @@
 
 import { Loader2, WifiOff } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRef } from "react";
 import type { SseStatus } from "@/bootstrap/realtime/use-realtime-events";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils";
@@ -32,48 +33,73 @@ export function SseDisconnectBanner({
   className,
 }: SseDisconnectBannerProps) {
   const t = useTranslations("shell.sseStatus");
-
-  if (!status) return null;
+  const statusRef = useRef<HTMLDivElement>(null);
 
   const isReconnecting = status === "connecting";
 
+  /**
+   * A11Y-003: the reconnect button unmounts once status flips to `connecting`,
+   * which would drop keyboard/SR focus to <body>. Move focus to the always-
+   * mounted live region before the re-render removes the button.
+   */
+  function handleReconnectClick() {
+    statusRef.current?.focus();
+    onReconnect();
+  }
+
   return (
+    // A11Y-006: keep the live region mounted from first paint (SRs pick up
+    // present regions more reliably than freshly-inserted ones); toggle
+    // visibility via `hidden` instead of unmounting the node.
     <div
+      ref={statusRef}
+      tabIndex={-1}
       role="status"
       aria-live="polite"
       className={cn(
         "flex items-center gap-3 border-edu-warning border-b bg-edu-warning-light px-4 py-2.5 text-edu-warning-text sm:px-6",
         "animate-in slide-in-from-top-2 fade-in",
+        "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        // Ordered after `flex` so tailwind-merge keeps `hidden` (both set
+        // `display`) when there is nothing to show (A11Y-006).
+        !status && "hidden",
         className,
       )}
     >
-      {isReconnecting ? (
-        <Loader2 aria-hidden="true" className="size-4 shrink-0 animate-spin" />
-      ) : (
-        <WifiOff aria-hidden="true" className="size-4 shrink-0" />
-      )}
+      {status && (
+        <>
+          {isReconnecting ? (
+            <Loader2
+              aria-hidden="true"
+              className="size-4 shrink-0 animate-spin"
+            />
+          ) : (
+            <WifiOff aria-hidden="true" className="size-4 shrink-0" />
+          )}
 
-      <div className="min-w-0 flex-1">
-        <p className="font-bold text-sm">
-          {isReconnecting ? t("reconnectingTitle") : t("disconnectedTitle")}
-        </p>
-        {!isReconnecting && (
-          <p className="text-edu-warning-text/90 text-xs">
-            {t("disconnectedBody")}
-          </p>
-        )}
-      </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-sm">
+              {isReconnecting ? t("reconnectingTitle") : t("disconnectedTitle")}
+            </p>
+            {!isReconnecting && (
+              <p className="text-edu-warning-foreground text-xs">
+                {t("disconnectedBody")}
+              </p>
+            )}
+          </div>
 
-      {!isReconnecting && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onReconnect}
-          className="shrink-0 border-edu-warning bg-edu-warning-light text-edu-warning-text hover:bg-edu-warning/15"
-        >
-          {t("reconnectButton")}
-        </Button>
+          {!isReconnecting && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleReconnectClick}
+              className="shrink-0 border-edu-warning bg-edu-warning-light text-edu-warning-foreground hover:bg-edu-warning/15 dark:border-edu-warning dark:bg-edu-warning-light dark:hover:bg-edu-warning/15"
+            >
+              {t("reconnectButton")}
+            </Button>
+          )}
+        </>
       )}
     </div>
   );

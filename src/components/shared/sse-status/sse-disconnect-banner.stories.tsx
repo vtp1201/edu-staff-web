@@ -23,12 +23,20 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** status undefined → nothing renders (AC-1). */
+/**
+ * status undefined → the live region stays mounted (A11Y-006) but hidden with
+ * no visible content or reconnect button (AC-1).
+ */
 export const Banner_Hidden: Story = {
   args: { status: undefined },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryByRole("status")).toBeNull();
+    // A11Y-006: node present from first paint so SRs register the live region.
+    const region = canvas.getByRole("status", { hidden: true });
+    await expect(region).toHaveClass("hidden");
+    await expect(
+      canvas.queryByRole("button", { name: copy.reconnectButton }),
+    ).toBeNull();
   },
 };
 
