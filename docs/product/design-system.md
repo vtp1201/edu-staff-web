@@ -20,6 +20,10 @@ qua color accent. Font **Plus Jakarta Sans**.
   `#539BFF`, purple `#7B5EA7`, teal `#00B8A9`.
   - `--edu-warning-text` → `#9A6A0F` — amber text on warningLight surface (4.37:1, large/bold ≥14px only). Decision 0046.
 - **Surface**: bg `#F5F7FA`, card `#FFF`, border `#E5EAF2`.
+  - **Media chrome** (video/audio player, always-dark regardless of app theme):
+    `--edu-media-surface` `#0F1117`, `--edu-media-surface-foreground` `#FFFFFF`
+    (19.6:1, AAA). Dùng cho faux/real video player content pane (vd Student
+    Lesson Player, US-E11.6). ADR 0050.
 - **Text**: primary `#2A3547`, secondary `#5A6A85`, muted `#8898A9`.
   - `--muted-foreground` (shadcn alias) → **`--edu-text-secondary`** (5.48:1) — KHÔNG
     còn trỏ `--edu-text-muted` (2.95:1, fail AA cho icon/text nhỏ). `text-edu-text-muted`

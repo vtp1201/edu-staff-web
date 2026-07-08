@@ -1067,6 +1067,102 @@
       "renameSuccess": "Đổi tên lớp thành công."
     }
   },
+  "courses": {
+    "title": "Khoá học của tôi",
+    "tabs": {
+      "all": "Tất cả",
+      "inProgress": "Đang học",
+      "completed": "Hoàn thành"
+    },
+    "card": {
+      "gradeLabel": "Điểm TB",
+      "lessonsLabel": "Tiết học",
+      "progressLabel": "Tiến độ",
+      "progressAria": "Tiến độ {pct}%",
+      "ctaStart": "Bắt đầu",
+      "ctaContinue": "Tiếp tục học"
+    },
+    "empty": {
+      "allTab": "Bạn chưa ghi danh khoá học nào.",
+      "inProgressTab": "Không có khoá học nào đang học.",
+      "completedTab": "Bạn chưa hoàn thành khoá học nào."
+    },
+    "player": {
+      "breadcrumb": {
+        "coursesLink": "Khoá học",
+        "pickLesson": "Chọn bài học"
+      },
+      "progress": {
+        "label": "Tiến độ",
+        "count": "{done}/{total} bài · {pct}%"
+      },
+      "chapterList": {
+        "navAriaLabel": "Danh sách bài học",
+        "toggleMobile": "Danh sách bài học",
+        "emptyChapter": "Giáo viên chưa tải lên nội dung cho chương này.",
+        "emptyCourse": "Giáo viên chưa tải lên nội dung cho khoá học này.",
+        "nextButton": "Tiếp theo"
+      },
+      "lessonType": {
+        "video": "Video",
+        "pdf": "PDF",
+        "text": "Văn bản"
+      },
+      "content": {
+        "video": {
+          "lectureLabel": "Video bài giảng",
+          "playAriaLabel": "Phát video",
+          "pauseAriaLabel": "Tạm dừng video",
+          "seekAriaLabel": "Thanh tua video",
+          "fullscreenAriaLabel": "Toàn màn hình",
+          "playingAnnounce": "Đang phát",
+          "pausedAnnounce": "Đã tạm dừng"
+        },
+        "pdf": {
+          "title": "Tài liệu bài giảng",
+          "downloadButton": "Tải xuống",
+          "downloadAriaLabel": "Tải xuống tài liệu PDF"
+        },
+        "empty": {
+          "title": "Chưa có nội dung",
+          "body": "Giáo viên chưa tải lên nội dung cho khoá học này."
+        }
+      },
+      "markComplete": {
+        "button": "Đánh dấu hoàn thành",
+        "doneLabel": "Đã hoàn thành"
+      },
+      "tabs": {
+        "notes": "Ghi chú",
+        "qna": "Hỏi & Đáp"
+      },
+      "notes": {
+        "placeholder": "Ghi chú của bạn…",
+        "saveButton": "Lưu ghi chú",
+        "saving": "Đang lưu…",
+        "savedToast": "Đã lưu ghi chú.",
+        "loadError": "Không tải được ghi chú."
+      },
+      "qna": {
+        "emptyState": "Chưa có câu hỏi nào cho bài học này.",
+        "askButton": "Đặt câu hỏi",
+        "inputPlaceholder": "Nhập câu hỏi của bạn…",
+        "submitButton": "Gửi câu hỏi",
+        "submitting": "Đang gửi…",
+        "unanswered": "Chờ giáo viên trả lời",
+        "loadError": "Không tải được câu hỏi."
+      }
+    },
+    "a11y": {
+      "activeLessonState": "đang học",
+      "doneLessonState": "đã hoàn thành"
+    },
+    "errors": {
+      "not-found": "Không tìm thấy khoá học.",
+      "forbidden": "Bạn không có quyền truy cập nội dung này.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+    }
+  },
   "dashboard": {
     "common": {
       "viewAll": "Xem tất cả"

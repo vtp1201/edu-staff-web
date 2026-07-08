@@ -1067,6 +1067,102 @@
       "renameSuccess": "Class renamed successfully."
     }
   },
+  "courses": {
+    "title": "My courses",
+    "tabs": {
+      "all": "All",
+      "inProgress": "In progress",
+      "completed": "Completed"
+    },
+    "card": {
+      "gradeLabel": "Grade",
+      "lessonsLabel": "Lessons",
+      "progressLabel": "Progress",
+      "progressAria": "Progress {pct}%",
+      "ctaStart": "Start",
+      "ctaContinue": "Continue"
+    },
+    "empty": {
+      "allTab": "You are not enrolled in any courses yet.",
+      "inProgressTab": "No courses in progress.",
+      "completedTab": "You haven't completed any courses yet."
+    },
+    "player": {
+      "breadcrumb": {
+        "coursesLink": "Courses",
+        "pickLesson": "Pick a lesson"
+      },
+      "progress": {
+        "label": "Progress",
+        "count": "{done}/{total} lessons · {pct}%"
+      },
+      "chapterList": {
+        "navAriaLabel": "Lesson list",
+        "toggleMobile": "Lesson list",
+        "emptyChapter": "The teacher hasn't uploaded content for this chapter yet.",
+        "emptyCourse": "The teacher hasn't uploaded content for this course yet.",
+        "nextButton": "Next"
+      },
+      "lessonType": {
+        "video": "Video",
+        "pdf": "PDF",
+        "text": "Text"
+      },
+      "content": {
+        "video": {
+          "lectureLabel": "Lecture video",
+          "playAriaLabel": "Play video",
+          "pauseAriaLabel": "Pause video",
+          "seekAriaLabel": "Video seek bar",
+          "fullscreenAriaLabel": "Fullscreen",
+          "playingAnnounce": "Playing",
+          "pausedAnnounce": "Paused"
+        },
+        "pdf": {
+          "title": "Lecture handout",
+          "downloadButton": "Download",
+          "downloadAriaLabel": "Download PDF handout"
+        },
+        "empty": {
+          "title": "No content yet",
+          "body": "The teacher hasn't uploaded content for this course yet."
+        }
+      },
+      "markComplete": {
+        "button": "Mark as complete",
+        "doneLabel": "Completed"
+      },
+      "tabs": {
+        "notes": "Notes",
+        "qna": "Q & A"
+      },
+      "notes": {
+        "placeholder": "Your notes…",
+        "saveButton": "Save note",
+        "saving": "Saving…",
+        "savedToast": "Note saved.",
+        "loadError": "Couldn't load the note."
+      },
+      "qna": {
+        "emptyState": "No questions yet for this lesson.",
+        "askButton": "Ask a question",
+        "inputPlaceholder": "Type your question…",
+        "submitButton": "Send question",
+        "submitting": "Sending…",
+        "unanswered": "Awaiting teacher's answer",
+        "loadError": "Couldn't load questions."
+      }
+    },
+    "a11y": {
+      "activeLessonState": "in progress",
+      "doneLessonState": "completed"
+    },
+    "errors": {
+      "not-found": "Course not found.",
+      "forbidden": "You don't have access to this content.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
   "dashboard": {
     "common": {
       "viewAll": "View all"
