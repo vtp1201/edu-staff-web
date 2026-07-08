@@ -10,6 +10,7 @@ export * from "./class-log.endpoint";
 export * from "./exam.endpoint";
 export * from "./exam-bank.endpoint";
 export * from "./lesson-bank.endpoint";
+export * from "./lms.endpoint";
 export * from "./messaging.endpoint";
 export * from "./noti.endpoint";
 export * from "./notification.endpoint";
