@@ -227,3 +227,113 @@ export const QA_Ask: Story = {
     );
   },
 };
+
+// ── QA gap-fill (US-E11.6 QA gate) ──────────────────────────────────────────
+
+/**
+ * AC-7 — collapsing a chapter header hides its lesson list; expanding brings
+ * it back. Fixture only has one chapter with real lessons (ch2 is `isEmpty`),
+ * so full "collapse persists across navigating to a DIFFERENT chapter's
+ * lesson" round-trip isn't exercisable with this data — this proves the
+ * collapse/expand toggle itself + `aria-expanded` state.
+ */
+export const ChapterList_CollapseExpand: Story = {
+  args: { vm: makeVm("l2"), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const chapterHeader = canvas.getByRole("button", {
+      name: /Chương 1 — Mệnh đề/,
+    });
+    await expect(chapterHeader).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.getByRole("button", { name: /Bài 1: Mệnh đề toán học/ }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(chapterHeader);
+    await expect(chapterHeader).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      canvas.queryByRole("button", { name: /Bài 1: Mệnh đề toán học/ }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(chapterHeader);
+    await expect(chapterHeader).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.getByRole("button", { name: /Bài 1: Mệnh đề toán học/ }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * AC-8 — video controls are keyboard-operable: Space toggles play/pause on
+ * the focused play button; ArrowRight/ArrowLeft move the seek slider.
+ */
+export const VideoPlayer_KeyboardControls: Story = {
+  args: { vm: makeVm("l1"), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const playButton = canvas.getByRole("button", { name: "Phát video" });
+    playButton.focus();
+    await userEvent.keyboard(" ");
+    await expect(
+      canvas.getByRole("button", { name: "Tạm dừng video" }),
+    ).toBeInTheDocument();
+
+    const slider = canvas.getByRole("slider", { name: "Thanh tua video" });
+    await expect(slider).toHaveAttribute("aria-valuenow", "0");
+    slider.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(slider).toHaveAttribute("aria-valuenow", "5");
+    await userEvent.keyboard("{ArrowLeft}");
+    await expect(slider).toHaveAttribute("aria-valuenow", "0");
+  },
+};
+
+/**
+ * AC-15 — mobile (< 768px) chapter-list accordion toggle. `@storybook/addon-viewport`
+ * isn't installed (US-E17.11 precedent); drive the real Playwright viewport
+ * directly so the `md:hidden` toggle button is exercised meaningfully.
+ */
+export const ChapterList_MobileToggle: Story = {
+  args: { vm: makeVm("l2"), actions },
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const canvas = within(canvasElement);
+    const toggle = canvas.getByRole("button", {
+      name: "Danh sách bài học",
+    });
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(toggle);
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.getByRole("button", { name: /Bài 1: Mệnh đề toán học/ }),
+    ).toBeVisible();
+  },
+};
+
+/**
+ * Empty-course fallback: course has no chapters at all — the chapter-list nav
+ * ("Danh sách bài học") shows its `BookOpen` empty state AND the content pane
+ * (`LessonBody`, lesson === null) shows its own empty state. Both currently
+ * reuse the identical copy string "Giáo viên chưa tải lên nội dung cho khoá
+ * học này." (`player.content.empty.body` === `player.chapterList.emptyCourse`)
+ * — flagged as a MINOR copy-duplication finding (not a functional gap): two
+ * DOM nodes render the same text, so this asserts count === 2 rather than a
+ * single unique match.
+ */
+export const LessonPlayer_EmptyContent: Story = {
+  args: {
+    vm: { ...makeVm(null), chapters: [] },
+    actions,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const matches = canvas.getAllByText(
+      "Giáo viên chưa tải lên nội dung cho khoá học này.",
+    );
+    await expect(matches).toHaveLength(2);
+    await expect(
+      canvas.getByText("Chưa có nội dung"), // player.content.empty.title (content pane only)
+    ).toBeInTheDocument();
+  },
+};

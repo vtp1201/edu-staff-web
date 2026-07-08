@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -88,7 +88,7 @@ Mock-first: `lms` service chua ship (decision 0014). Dung `COURSE_LESSONS` mock 
   - `src/features/lms/presentation/lesson-player/LessonBody.tsx` — video/pdf/text switch
   - `src/features/lms/presentation/lesson-player/ChapterList.tsx` — collapsible chapter nav
   - `src/features/lms/domain/` — CourseEntity, LessonEntity (type: video|pdf|text), progress rules
-- Routes: `/student/courses` (list); `/student/courses/[courseId]` (player) — need to confirm route shape with fe-lead
+- Routes: `/student/courses` (list); `/student/courses/[courseId]` (player) — confirmed by fe-lead, matches `student/exams` + `student/exams/[examId]` precedent
 
 ## Validation
 
@@ -107,4 +107,26 @@ Mock-first: `lms` service chua ship (decision 0014). Dung `COURSE_LESSONS` mock 
 
 ## Evidence
 
-(to be filled after implementation)
+- Design review: pass — see `design-review.md` in this packet (APPROVED, after 1 fix
+  round on tech-lead + a11y findings).
+- Tests: 1237/1237 vitest pass (232 files); 15/15 Storybook interaction stories
+  (`src/features/lms/**/*.stories.tsx`) with `play()` assertions; `tsc --noEmit`
+  0 errors; `bun run build` green (routes `/student/courses` +
+  `/student/courses/[courseId]` in manifest); biome clean.
+- RBAC: `requireRole(["student"])` enforced on both RSC pages (read paths) and all
+  5 Server Actions (`markLessonCompleteAction`, `saveNoteAction`, `askQuestionAction`,
+  `getNoteAction`, `listQuestionsAction`) — covered by `actions.test.ts` (rejection +
+  happy-path cases).
+- AC traceability: all 16 AC + RBAC + empty-content fallback covered (100%),
+  verified by `fe-qa-playwright` (Go/No-Go: PASS). 4 gaps found during QA
+  (AC-7 collapse-persist, AC-8 keyboard controls, AC-15 mobile toggle, empty-course
+  fallback) were closed with new Storybook interaction tests, no production code
+  changes needed.
+- New design token: ADR `0050` (`--edu-media-surface` / `--edu-media-surface-foreground`)
+  for the video faux-chrome, consumed via Tailwind classes only (no raw hex).
+- Mock-first: `lms` BE service not shipped (decision `0014`); `MockLmsRepository`
+  seeded from `design_src/edu/student.jsx`'s `COURSES`/`COURSE_LESSONS`; real
+  `LmsRepository` written to the documented (not-yet-live) contract, follow-up
+  noted to map `ApiError.code` fully once the service ships.
+- Harness: `docs/product/screens.md` line 91 updated; `docs/TEST_MATRIX.md` row
+  updated to `implemented` with truthful unit/integration/e2e/platform flags.
