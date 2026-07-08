@@ -31,5 +31,9 @@ export function queryKeysFor(event: RealtimeEvent): QueryKey[] {
       ];
     case "session.revoked":
       return [];
+    case "message.new":
+      // US-E08.6: no query invalidated — pendingMsgCount is hook-local React
+      // state, not cache. Messaging screen queries stay US-E10.x scope.
+      return [];
   }
 }

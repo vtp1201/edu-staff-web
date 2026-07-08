@@ -76,6 +76,15 @@ describe("queryKeysFor (taxonomy)", () => {
     expect(queryKeysFor(e)).toEqual([]);
   });
 
+  // US-E08.6: message.new bumps the hook-local pending counter only — no query
+  // cache is invalidated by this story (messaging screen queries stay US-E10.x).
+  it("returns no query keys for message.new (hook-local pendingMsgCount only)", () => {
+    const e = parseEvent(
+      frame({ type: "message.new", payload: { conversationId: "conv-1" } }),
+    ) as RealtimeEvent;
+    expect(queryKeysFor(e)).toEqual([]);
+  });
+
   // US-E10.2: notification.new invalidates list variants + unread count
   it("invalidates all/unread list caches and unread-count on notification.new", () => {
     const e = parseEvent(
@@ -140,6 +149,41 @@ describe("parseEvent — notification.new", () => {
 
   it("tenant-scoping: drops event from a different tenant", () => {
     const e = parseEvent(newFrame()) as RealtimeEvent;
+    expect(shouldHandle(e, "school-b")).toBe(false);
+    expect(shouldHandle(e, "school-a")).toBe(true);
+  });
+});
+
+describe("parseEvent — message.new (US-E08.6)", () => {
+  function msgFrame(over: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      type: "message.new",
+      eventId: "evt-msg-1",
+      tenantId: "school-a",
+      occurredAt: "2026-07-08T09:00:00.000Z",
+      payload: { conversationId: "conv-42" },
+      ...over,
+    });
+  }
+
+  it("parses a well-formed message.new frame", () => {
+    const e = parseEvent(msgFrame());
+    expect(e?.type).toBe("message.new");
+    expect(e?.tenantId).toBe("school-a");
+  });
+
+  it("carries the conversationId payload", () => {
+    const e = parseEvent(msgFrame()) as RealtimeEvent;
+    if (e?.type !== "message.new") throw new Error("wrong type");
+    expect(e.payload.conversationId).toBe("conv-42");
+  });
+
+  it("returns null when the payload is missing", () => {
+    expect(parseEvent(msgFrame({ payload: undefined }))).toBeNull();
+  });
+
+  it("tenant-scoping: drops message.new from a different tenant", () => {
+    const e = parseEvent(msgFrame()) as RealtimeEvent;
     expect(shouldHandle(e, "school-b")).toBe(false);
     expect(shouldHandle(e, "school-a")).toBe(true);
   });
