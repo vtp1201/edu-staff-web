@@ -152,6 +152,55 @@ page-1 status; a failed `fetchNextPage()` for page N does not clear `data.pages`
 `LoadMoreButton` its own inline retry affordance (distinct from the full-page
 `ErrorBanner` used for a first-page failure) so already-rendered rows visibly persist.
 
+## Course/lesson hierarchy + cross-query optimistic patch (US-E11.6, lms feature)
+
+For a two-screen list→detail flow (courses grid + lesson player) where a
+detail-screen mutation (mark lesson complete) must also update a summary
+field cached under a *different* query key (course progress in the list):
+
+```ts
+lmsKeys = {
+  all:           ()                 => ["lms"]                                as const,
+  coursesList:   ()                 => ["lms", "courses", "list"]             as const,
+  courseLessons: (courseId: string) => ["lms", "course", courseId, "lessons"] as const,
+  note:          (lessonId: string) => ["lms", "lesson", lessonId, "note"]    as const,
+  questions:     (lessonId: string) => ["lms", "lesson", lessonId, "questions"] as const,
+}
+```
+
+- **Client-side tabs filtering an already-fetched full list → do NOT put the
+  filter in the query key.** If the RSC/repo always returns the full
+  unfiltered set and tabs just filter in-memory (`useMemo`), a
+  status-parameterized key (`["courses", {status}]`) would create redundant
+  cache entries needing separate fetches per tab for no benefit. Only key by
+  filter when the filter actually drives a distinct server request (e.g.
+  cursor-paginated lists per `api-integration.md`).
+- **Cross-query optimistic patch, no `invalidateQueries` on success**: when a
+  mutation needs to update two related caches (detail + summary-in-a-list),
+  patch BOTH directly with `setQueryData` in `onMutate` (snapshot both first
+  for rollback), then patch again with server-confirmed values in
+  `onSuccess`. Avoid `invalidateQueries` here — a background refetch racing
+  the mutation's own commit (mock latency simulation, or real-BE eventual
+  consistency) can flicker the UI back to pre-mutation state. Only fall back
+  to invalidate once there's a genuine reason the cache can't be safely
+  computed client-side.
+- **Reuse the same domain pure-fn on both sides**: if a use-case computes a
+  derived value server-side (e.g. `calculateCourseProgress(done, total)`),
+  import that exact fn client-side for the optimistic patch too (domain/ has
+  zero framework deps → confirmed client-bundle-safe) rather than
+  reimplementing the formula in the presentation layer — prevents drift bugs.
+- **Explicit-save form fields (no autosave) don't need optimistic
+  `setQueryData`**: when an AC explicitly calls for a "Lưu"/Save button (not
+  live-typing sync), skip `onMutate` entirely — just `onSuccess: (saved) =>
+  setQueryData(key, saved)`. The local textarea `useState` draft already gives
+  instant UI feedback; optimistic cache writes add rollback complexity for no
+  UX gain when nothing else reads that key concurrently.
+- **Idempotent mutation re-trigger**: when a UI already disables the trigger
+  after success (e.g. "mark complete" button becomes disabled), model
+  repeated calls as a no-op success rather than inventing an
+  `already-complete` failure variant — simpler contract, and the disabled
+  button makes the race vanishingly rare anyway.
+
 **Server Action result shape with `retryable`**: when the query layer needs to decide
 retry eligibility (`error.retryable === true` per api-integration.md), the Server Action
 must return it explicitly (`{ ok: false, errorKey, retryable }`), not just a bare

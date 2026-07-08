@@ -8,3 +8,4 @@
 - [Staff leave US-E09.3 plan](project-staff-leave-e093-plan.md) — phase breakdown, conflicts (AC-4/5/9 vs design inline reject), key open questions (avatar tone, errorLight token, CalendarClock icon)
 - [Messaging E10.4 plan](project-messaging-e104-plan.md) — 7-phase additive plan on US-E10.1; GroupEntity shape, 9 new repo methods, 5 new i18n error keys, dark-mode quoted-bubble token ADR flag
 - [Staff E14.6 seal plan](project-us-e146-seal-plan.md) — ADR-vs-AC discrepancy (reason min-length), batch-level seal entity added onto per-student viewer feature, single-admin fallback mock pattern
+- [US-E11.6 LMS plan](project-us-e116-lms-plan.md) — new src/features/lms/ (not extend lesson-bank), student/courses routes, RBAC-on-reads, no design-spec.jsonc entry yet
