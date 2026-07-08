@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { CourseTone } from "@/features/lms/domain/entities/course.entity";
 import { cn } from "@/shared/utils";
-import { TONE_BG, TONE_TEXT } from "../tone";
+import { TONE_BG, TONE_TEXT_ACCESSIBLE } from "../tone";
 
 export interface ProgressCardProps {
   pct: number;
@@ -32,7 +32,7 @@ export function ProgressCard({
         <span
           className={cn(
             "font-extrabold text-xs tabular-nums",
-            TONE_TEXT[valueTone],
+            TONE_TEXT_ACCESSIBLE[valueTone],
           )}
         >
           {countLabel}

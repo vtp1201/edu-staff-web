@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import type { CourseTone } from "@/features/lms/domain/entities/course.entity";
 import type { LessonType } from "@/features/lms/domain/entities/lesson.entity";
 import { cn } from "@/shared/utils";
-import { TONE_TEXT, TONE_TINT } from "../tone";
+import { TONE_TEXT_ACCESSIBLE, TONE_TINT } from "../tone";
 import type { ChapterVm, LessonListItemVm } from "./lesson-player.i-vm";
 
 export interface ChapterListProps {
@@ -68,7 +68,7 @@ export function ChapterList({
         {labels.toggleMobile}
         <ChevronDown
           className={cn(
-            "size-4 text-edu-text-secondary transition-transform",
+            "size-4 text-edu-text-secondary motion-safe:transition-transform",
             showOnMobile && "rotate-180",
           )}
           aria-hidden="true"
@@ -231,7 +231,9 @@ function LessonRow({
             <span
               className={cn(
                 "font-extrabold text-[10px]",
-                isActive ? TONE_TEXT[tone] : "text-edu-text-secondary",
+                isActive
+                  ? TONE_TEXT_ACCESSIBLE[tone]
+                  : "text-edu-text-secondary",
               )}
             >
               {lesson.order}
@@ -243,7 +245,7 @@ function LessonRow({
             className={cn(
               "block text-xs leading-snug",
               isActive
-                ? cn("font-bold", TONE_TEXT[tone])
+                ? cn("font-bold", TONE_TEXT_ACCESSIBLE[tone])
                 : lesson.done
                   ? "font-semibold text-edu-text-secondary"
                   : "font-semibold text-foreground",

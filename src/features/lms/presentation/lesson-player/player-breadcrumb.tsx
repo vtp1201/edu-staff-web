@@ -6,6 +6,8 @@ export interface PlayerBreadcrumbProps {
   coursesHref: string;
   lessonName: string;
   coursesLabel: string;
+  /** Describes the nav's PURPOSE (e.g. "Breadcrumb") — not the link text. */
+  navLabel: string;
 }
 
 /** Static breadcrumb trail: Courses ‹back› › Course › Lesson. Feature-local. */
@@ -14,10 +16,11 @@ export function PlayerBreadcrumb({
   coursesHref,
   lessonName,
   coursesLabel,
+  navLabel,
 }: PlayerBreadcrumbProps) {
   return (
     <nav
-      aria-label={coursesLabel}
+      aria-label={navLabel}
       className="flex flex-wrap items-center gap-2 text-xs"
     >
       <Link

@@ -36,8 +36,14 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [seekPct, setSeekPct] = useState(0);
+  // Gate the aria-live announcement so it stays silent until the user actually
+  // toggles — otherwise SR reads "paused" on initial mount (nothing changed).
+  const [hasToggled, setHasToggled] = useState(false);
 
-  const toggle = () => setIsPlaying((p) => !p);
+  const toggle = () => {
+    setHasToggled(true);
+    setIsPlaying((p) => !p);
+  };
   const PlayIcon = isPlaying ? Pause : Play;
 
   return (
@@ -58,7 +64,7 @@ export function VideoPlayer({
             }
           }}
           aria-label={isPlaying ? labels.pauseAriaLabel : labels.playAriaLabel}
-          className="flex size-16 items-center justify-center rounded-full border-2 border-white/30 bg-white/20 text-edu-media-surface-foreground backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="flex size-16 items-center justify-center rounded-full border-2 border-edu-media-surface-foreground/30 bg-edu-media-surface-foreground/20 text-edu-media-surface-foreground backdrop-blur-sm outline-none focus-visible:ring-2 focus-visible:ring-edu-media-surface-foreground"
         >
           <PlayIcon className="size-6" strokeWidth={2.2} aria-hidden="true" />
         </button>
@@ -68,7 +74,7 @@ export function VideoPlayer({
       </div>
 
       {/* Faux player chrome */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 bg-gradient-to-t from-black/55 to-transparent px-4 py-3.5">
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2.5 bg-gradient-to-t from-edu-media-surface/55 to-transparent px-4 py-3.5">
         <div
           role="slider"
           tabIndex={0}
@@ -85,7 +91,7 @@ export function VideoPlayer({
               setSeekPct((v) => Math.max(0, v - SEEK_STEP));
             }
           }}
-          className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20 outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="h-1.5 flex-1 overflow-hidden rounded-full bg-edu-media-surface-foreground/20 outline-none focus-visible:ring-2 focus-visible:ring-edu-media-surface-foreground"
         >
           <div
             className={cn("h-full rounded-full", TONE_BG[tone])}
@@ -98,7 +104,11 @@ export function VideoPlayer({
       </div>
 
       <span className="sr-only" aria-live="polite">
-        {isPlaying ? labels.playingAnnounce : labels.pausedAnnounce}
+        {hasToggled
+          ? isPlaying
+            ? labels.playingAnnounce
+            : labels.pausedAnnounce
+          : ""}
       </span>
       <span className="sr-only">{title}</span>
     </div>

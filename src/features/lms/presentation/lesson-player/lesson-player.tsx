@@ -262,11 +262,18 @@ export function LessonPlayer({ vm, actions }: LessonPlayerProps) {
         coursesHref={vm.coursesListHref}
         lessonName={lessonName}
         coursesLabel={t("player.breadcrumb.coursesLink")}
+        navLabel={t("player.breadcrumb.navLabel")}
       />
 
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         {/* LEFT — content + tabs */}
         <div className="flex flex-col overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+          {/* Announce lesson switches to SR/keyboard users (no focus steal). */}
+          <span className="sr-only" aria-live="polite">
+            {activeLesson
+              ? t("a11y.lessonChanged", { title: activeLesson.title })
+              : ""}
+          </span>
           <div className="px-5 pt-3.5 pb-3">
             {activeLesson?.chapterTitle && (
               <div className="font-bold text-[10.5px] text-edu-text-secondary uppercase tracking-wider">

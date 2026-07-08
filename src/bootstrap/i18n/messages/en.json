@@ -1089,6 +1089,7 @@
     },
     "player": {
       "breadcrumb": {
+        "navLabel": "Breadcrumb",
         "coursesLink": "Courses",
         "pickLesson": "Pick a lesson"
       },
@@ -1155,7 +1156,8 @@
     },
     "a11y": {
       "activeLessonState": "in progress",
-      "doneLessonState": "completed"
+      "doneLessonState": "completed",
+      "lessonChanged": "Now viewing lesson: {title}"
     },
     "errors": {
       "not-found": "Course not found.",

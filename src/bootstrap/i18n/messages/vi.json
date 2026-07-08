@@ -1089,6 +1089,7 @@
     },
     "player": {
       "breadcrumb": {
+        "navLabel": "Đường dẫn điều hướng",
         "coursesLink": "Khoá học",
         "pickLesson": "Chọn bài học"
       },
@@ -1155,7 +1156,8 @@
     },
     "a11y": {
       "activeLessonState": "đang học",
-      "doneLessonState": "đã hoàn thành"
+      "doneLessonState": "đã hoàn thành",
+      "lessonChanged": "Đang xem bài học: {title}"
     },
     "errors": {
       "not-found": "Không tìm thấy khoá học.",
