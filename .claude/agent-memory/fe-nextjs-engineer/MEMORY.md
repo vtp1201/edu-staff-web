@@ -22,3 +22,4 @@
 - [Portal-dialog testing + DestructiveConfirmDialog](pattern-portal-dialog-testing.md) — Radix portals don't render in node static markup; split proof (pure footer Vitest + Storybook play); shared confirm dialog uses plain Buttons for exactly-once callbacks
 - [RSC-seeded infinite query + URL filter](pattern-rsc-seeded-infinite-query.md) — cursor list: RSC prefetch→useInfiniteQuery initialData (no HydrationBoundary) + draft/applied URL filter sync; SB vitest runner works now
 - [Subscription hook node test](pattern-subscription-hook-node-test.md) — no renderHook in node env; extract framework-free controller + FakeEventSource + fake timers; hook stays thin binding
+- [LMS player + media token](pattern-lms-player-and-media-token.md) — media-surface token; tone→literal-class map (mapper does hex→tone); RSC-seeded plain useQuery + cross-query optimistic patch (no invalidate); all-content-up-front player VM + pure .derive.ts
