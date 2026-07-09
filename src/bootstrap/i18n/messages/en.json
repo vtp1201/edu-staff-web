@@ -2979,5 +2979,49 @@
     "title": "Timetable",
     "titleForClass": "Timetable — Class {class}",
     "yearLabel": "Academic Year"
+  },
+  "timetableView": {
+    "academicYear": "Academic Year",
+    "caption": "Read-only timetable for class {className}.",
+    "childPickerLabel": "Select a child to view their timetable",
+    "classLabel": "Class {className}",
+    "days": {
+      "fri": "Fri",
+      "mon": "Mon",
+      "sat": "Sat",
+      "thu": "Thu",
+      "tue": "Tue",
+      "wed": "Wed"
+    },
+    "emptyBody": "The school has not scheduled classes for this semester.",
+    "emptySlot": "No class scheduled",
+    "emptyTitle": "No timetable has been published for this class yet.",
+    "errorTitle": "Couldn't load the timetable",
+    "errors": {
+      "forbidden": "You don't have permission to view this timetable.",
+      "network-error": "Something went wrong loading the timetable. Please try again.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "exportComingSoon": "PDF export is coming soon.",
+    "exportPdf": "Export PDF",
+    "eyebrow": "Timetable",
+    "legendTitle": "Subjects",
+    "loading": "Loading timetable…",
+    "nextWeek": "Next week",
+    "period": "Period {n}",
+    "periodColumnHeader": "Period",
+    "prevWeek": "Previous week",
+    "readOnlyBadge": "Read-only",
+    "recess": "Lunch break",
+    "retry": "Try again",
+    "semester": "Semester",
+    "semesterValue": "Semester I",
+    "subtitleParent": "Week {range} · read-only view.",
+    "subtitleStudent": "Read-only view. The school publishes the timetable; students cannot edit it.",
+    "thisWeek": "This week",
+    "title": "Timetable",
+    "titleThisWeek": "This week's timetable",
+    "today": "Today",
+    "yearValue": "2025–2026 (current)"
   }
 }

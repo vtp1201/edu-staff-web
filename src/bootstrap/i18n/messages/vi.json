@@ -2979,5 +2979,49 @@
     "title": "Thời khoá biểu",
     "titleForClass": "Thời khoá biểu — Lớp {class}",
     "yearLabel": "Năm học"
+  },
+  "timetableView": {
+    "academicYear": "Năm học",
+    "caption": "Thời khoá biểu lớp {className}, chế độ chỉ xem.",
+    "childPickerLabel": "Chọn con để xem thời khoá biểu",
+    "classLabel": "Lớp {className}",
+    "days": {
+      "fri": "Thứ 6",
+      "mon": "Thứ 2",
+      "sat": "Thứ 7",
+      "thu": "Thứ 5",
+      "tue": "Thứ 3",
+      "wed": "Thứ 4"
+    },
+    "emptyBody": "Nhà trường chưa xếp lịch học cho học kỳ này.",
+    "emptySlot": "Không có tiết học",
+    "emptyTitle": "Chưa có thời khoá biểu cho lớp này.",
+    "errorTitle": "Không tải được thời khoá biểu",
+    "errors": {
+      "forbidden": "Bạn không có quyền xem thời khoá biểu này.",
+      "network-error": "Đã có lỗi khi tải thời khoá biểu. Vui lòng thử lại.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+    },
+    "exportComingSoon": "Tính năng xuất PDF sẽ sớm có.",
+    "exportPdf": "Xuất PDF",
+    "eyebrow": "Thời khoá biểu",
+    "legendTitle": "Chú thích môn",
+    "loading": "Đang tải thời khoá biểu…",
+    "nextWeek": "Tuần sau",
+    "period": "Tiết {n}",
+    "periodColumnHeader": "Tiết",
+    "prevWeek": "Tuần trước",
+    "readOnlyBadge": "Chỉ xem",
+    "recess": "Giải lao trưa",
+    "retry": "Thử lại",
+    "semester": "Học kỳ",
+    "semesterValue": "Học kỳ I",
+    "subtitleParent": "Tuần {range} · chế độ chỉ xem.",
+    "subtitleStudent": "Chế độ chỉ xem. Lịch học do nhà trường xếp; học sinh không thể chỉnh sửa.",
+    "thisWeek": "Tuần này",
+    "title": "Thời khoá biểu",
+    "titleThisWeek": "Thời khoá biểu tuần này",
+    "today": "Hôm nay",
+    "yearValue": "2025–2026 (hiện tại)"
   }
 }
