@@ -10,3 +10,4 @@
 - [Staff E14.6 seal plan](project-us-e146-seal-plan.md) — ADR-vs-AC discrepancy (reason min-length), batch-level seal entity added onto per-student viewer feature, single-admin fallback mock pattern
 - [US-E11.6 LMS plan](project-us-e116-lms-plan.md) — new src/features/lms/ (not extend lesson-bank), student/courses routes, RBAC-on-reads, no design-spec.jsonc entry yet
 - [US-E15.1 timetable view plan](project-us-e151-timetable-view-plan.md) — new features/timetable module separate from admin builder; subject-color token gap (Địa lý #946000, ADR candidate); no centralized parent-children/session resolution exists (grades has same gap)
+- [US-E15.2 teacher schedule plan](project-us-e152-teacher-schedule-plan.md) — additive extension reusing pre-built cellVariant="teacher" seam from E15.1; stale design-spec teacherScheduleFull entry flagged; teacher/ route+guard pattern confirmed reusable
