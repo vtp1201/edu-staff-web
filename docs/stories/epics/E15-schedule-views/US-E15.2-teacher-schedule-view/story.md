@@ -125,7 +125,36 @@ theo teacher, hoặc thêm fixture `TV_TEACHER_SCHEDULE`).
 
 ## Evidence
 
-(empty — fill after implementation)
+Implementation: `feat/us-e15.2-teacher-schedule-view` (commits `e4fa13c` domain+infra,
+`36840b4` presentation+route, `33343d2` review-fix promoting `ExportPdfButton`/`ReadOnlyField`
+to shared `features/timetable/presentation/timetable-view/` modules per decision `0026`).
+
+Tests: unit 3 (`GetMyTeachingScheduleUseCase` ok/not-found/network-error) + integration 6
+(mock repo `getByTeacher` multi-class + not-found; Server Action RBAC guard-fail/pass/use-case-
+failure) + Storybook interaction 5 (`TeacherView_FullWeek` incl. a11y caption assertion,
+`TeacherView_EmptySchedule`, `Loading_Skeleton`, `ErrorState`, `TeacherView_Mobile` @375px).
+`bunx tsc --noEmit` clean. `bun vitest run` 242 files / 1278 pass. `bun run build` success
+(`/[locale]/t/[tenant]/teacher/schedule` route emitted). `bun lint` clean for this diff.
+
+fe-tech-lead-reviewer: Revision Required (1 blocking — decision-0026 verbatim `ExportPdfButton`
+duplication) → fixed → re-verified green, no re-review round needed (mechanical extraction,
+same tests/build proof re-run post-fix).
+fe-accessibility-auditor: WCAG 2.1 AA PASS (no blocking findings; same duplication noted
+informationally, resolved by the same fix).
+
+Design review: pass
+- design-system: conform — zero raw color (grep clean), reuses `TimetableGrid`/`SubjectLegend`/
+  `TimetableSkeleton`/`EmptyState`/`ReadOnlyBadge` verbatim, no new tokens; matches `screens.md`
+  `/teacher/schedule` entry; no generic-dashboard/anti-reference patterns (no nested cards, no
+  decorative gradient/glassmorphism, existing 3px left-border subject accent is an established
+  design-system pattern, not ad-hoc "AI slop" stripe).
+- a11y: WCAG AA OK (fe-accessibility-auditor pass — contrast, keyboard, table semantics via
+  `<th scope>`/sr-only `<caption>`, color-independence, reduced-motion inherited unmodified).
+- impeccable audit: 0 findings requiring change; reviewed diff against PRODUCT.md anti-references
+  and design principles — conformant, no polish applied (screen already matches the committed
+  EduPortal product register).
+- states: loading/empty/error/success all covered (Storybook); responsive verified at 375px
+  (`TeacherView_Mobile` story) and grid `overflow-x-auto` prevents breakage at 320px reflow.
 
 ## Implementation Plan
 
