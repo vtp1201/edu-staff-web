@@ -94,7 +94,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | 🎨 design-ready (US-E09.2; `discipline.jsx` 1506) |
-| **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | Resources | `(app)/student/resources` | `features/lms` | ⬜ |
 
 ## Parent (core, E09 conduct, E13/E14 grades)
@@ -104,7 +104,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
-| **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | 🎨 design-ready (US-E15.1; `timetable-view.jsx` edustaff_5) |
+| **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | **Discipline & Leave (parent view for child)** | `(app)/parent/discipline` | `features/discipline` | 🎨 design-ready (US-E09.4; `discipline.jsx` `ParentDisciplineScreen` edustaff_5) |
 
 ## Ghi chú
