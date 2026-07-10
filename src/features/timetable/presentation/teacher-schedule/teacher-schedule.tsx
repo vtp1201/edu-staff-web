@@ -1,12 +1,13 @@
 "use client";
 
-import { Calendar as CalendarGlyph, Download } from "lucide-react";
+import { Calendar as CalendarGlyph } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { ExportPdfButton } from "../timetable-view/export-pdf-button";
 import { ReadOnlyBadge } from "../timetable-view/read-only-badge";
+import { ReadOnlyField } from "../timetable-view/read-only-field";
 import { SubjectLegend } from "../timetable-view/subject-legend";
 import { TimetableGrid } from "../timetable-view/timetable-grid";
 import { TimetableSkeleton } from "../timetable-view/timetable-skeleton";
@@ -110,35 +111,13 @@ function Header() {
   );
 }
 
-function ExportPdfButton() {
-  const t = useTranslations("timetableView");
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="motion-safe:transition-colors"
-      onClick={() => toast(t("exportComingSoon"))}
-    >
-      <Download aria-hidden="true" />
-      {t("exportPdf")}
-    </Button>
-  );
-}
-
 /* ── Read-only selectors (decorative — no data reload) ──────────────────── */
 
 function ReadOnlySelectors() {
   const t = useTranslations("timetableView");
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-edu-border bg-edu-card px-5 py-3.5 shadow-card">
-      <div className="min-w-[184px]">
-        <div className="mb-1 font-bold text-[10px] text-edu-text-secondary uppercase tracking-wide">
-          {t("academicYear")}
-        </div>
-        <div className="rounded-lg border border-edu-border bg-edu-card px-3 py-2 font-bold text-edu-text-primary text-sm">
-          {t("yearValue")}
-        </div>
-      </div>
+      <ReadOnlyField label={t("academicYear")} value={t("yearValue")} />
       <div className="flex-1" />
       <ReadOnlyBadge />
     </div>
