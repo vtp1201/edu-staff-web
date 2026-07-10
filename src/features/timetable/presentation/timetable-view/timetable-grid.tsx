@@ -53,7 +53,9 @@ export function TimetableGrid({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[920px] border-separate border-spacing-1 p-3">
           <caption className="sr-only">
-            {t("caption", { className: timetable.className })}
+            {cellVariant === "teacher"
+              ? t("teacherCaption")
+              : t("caption", { className: timetable.className })}
           </caption>
           <thead>
             <tr>

@@ -29,6 +29,7 @@ function repo(
   return {
     getByClass: async () => ({}) as WeeklyTimetable,
     getMyTimetable: async () => ({}) as WeeklyTimetable,
+    getByTeacher: async () => ({}) as WeeklyTimetable,
     getChildren: async () => CHILDREN,
     ...impl,
   };

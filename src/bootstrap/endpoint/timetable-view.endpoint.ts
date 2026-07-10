@@ -9,6 +9,13 @@ export const TIMETABLE_VIEW_EP = {
     `/core/api/v1/timetable/class/${encodeURIComponent(classId)}`,
   /** Signed-in student's own class timetable. */
   myTimetable: "/core/api/v1/timetable/me",
+  /**
+   * Signed-in teacher's personal teaching schedule (self-scope, across classes).
+   * BE resolves teacherId from the bearer token — consistent with `myTimetable`'s
+   * `/me` convention. Plan open question #1: confirm vs. path-param form once
+   * `core` ships (contract-readiness only today; mock-first, decision 0014).
+   */
+  teacherSchedule: "/core/api/v1/timetable/teacher/me",
   /** Parent's children roster. */
   myChildren: "/core/api/v1/timetable/my-children",
 } as const;

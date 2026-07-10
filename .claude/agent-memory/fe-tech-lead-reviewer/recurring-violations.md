@@ -97,6 +97,16 @@ Watch for these (each has bitten a story here):
   itself often disappears too (rendered only when `status==="success"`). Tests/tsc stay green because
   no interaction test exercises a page-2 failure. (US-E12.12 audit-log-screen.tsx.)
 
+- **Verbatim copy of a small presentation sub-component across sibling screens in the SAME feature**
+  — when a new screen mirrors an existing one (e.g. `TeacherScheduleScreen` alongside `TimetableView`
+  in `features/timetable/presentation/`), engineers copy the little internal helpers (`ExportPdfButton`,
+  `ReadOnlySelectors`, `ReadOnlyField`, error-banner block) byte-for-byte into the new file rather than
+  extracting a shared one. tsc/lint/tests stay green. Decision 0026 case (d) — "feature-local component
+  copied to a 2nd screen instead of promoted to shared" → Revision Required trigger. Watch specifically
+  for identical `<Button>`+toast helpers and identical read-only-field wrappers. Fix: extract to a shared
+  module (feature-local shared file or `components/shared/`) and import in both. (US-E15.2 ExportPdfButton
+  copied from timetable-view.tsx into teacher-schedule.tsx verbatim.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

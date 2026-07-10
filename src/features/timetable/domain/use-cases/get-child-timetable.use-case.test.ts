@@ -34,6 +34,7 @@ function repo(
   return {
     getByClass: async (classId) => ttFor(classId),
     getMyTimetable: async () => ttFor("11A2"),
+    getByTeacher: async () => ttFor("11A2"),
     getChildren: async () => CHILDREN,
     ...impl,
   };

@@ -46,7 +46,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
 | Exam Bank + Builder | `(app)/teacher/exam-bank`,`/exam-bank/create`,`/exam-bank/:id/edit` | `features/exam-bank` | 🎨 design-ready (US-E11.3; `exam-bank.jsx` 1506) |
 | Teaching Plan / PPCT | `(app)/teacher/teaching-plan` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
-| Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | 🎨 design-ready (US-E15.2; `timetable-view.jsx` edustaff_5) |
+| Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | ✅ US-E15.2 (`timetable-view.jsx` edustaff_5) |
 | Classes / Students | `(app)/teacher/classes`,`/students` | `features/teacher` | ✅ US-E13.1 |
 
 ## Principal / Admin (E03, E09, E10, E11, E12 Admin Core, E14 Academic Records)

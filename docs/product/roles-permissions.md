@@ -32,6 +32,7 @@ Hệ quả nghiệp vụ:
 | --- | --- | --- |
 | Workspace giáo viên | `(app)/teacher/**` | `teacher` |
 | Điểm danh | `(app)/teacher/attendance` | `teacher` |
+| Lịch dạy cá nhân (read-only) | `(app)/teacher/schedule` | `teacher` |
 | Dashboard hiệu trưởng | `(app)/principal/**` | `principal` |
 | Cổng học sinh | `(app)/student/**` | `student` |
 | Cổng phụ huynh | `(app)/parent/**` | `parent` |
