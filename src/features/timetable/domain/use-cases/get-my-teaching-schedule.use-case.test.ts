@@ -3,19 +3,21 @@ import type { TimetableChild } from "../entities/timetable-child.entity";
 import type { WeeklyTimetable } from "../entities/weekly-timetable.entity";
 import type { TimetableViewFailure } from "../failures/timetable-view.failure";
 import type { IWeeklyTimetableRepository } from "../repositories/i-weekly-timetable.repository";
-import { GetMyTimetableUseCase } from "./get-my-timetable.use-case";
+import { GetMyTeachingScheduleUseCase } from "./get-my-teaching-schedule.use-case";
 
+// Teacher-scope reuse of the class-shaped entity: top-level classId/className
+// hold the teacher's id/name; slots carry a per-slot className (the class taught).
 const TT: WeeklyTimetable = {
-  classId: "11A2",
-  className: "11A2",
+  classId: "t1",
+  className: "Cô Nguyễn Thị Hương",
   slots: {
     0: {
       1: {
         subjectId: "math",
         subjectName: "Toán",
         subjectColorToken: "primary",
-        teacherName: "Cô Nguyễn Thị Hương",
         room: "P.302",
+        className: "11A2",
       },
     },
   },
@@ -33,21 +35,22 @@ function repo(
   };
 }
 
-describe("GetMyTimetableUseCase", () => {
-  it("returns the student's own weekly timetable (11A2 full week)", async () => {
-    const useCase = new GetMyTimetableUseCase(repo({}));
+describe("GetMyTeachingScheduleUseCase", () => {
+  it("returns the signed-in teacher's weekly teaching schedule (across classes)", async () => {
+    const useCase = new GetMyTeachingScheduleUseCase(repo({}));
     const result = await useCase.execute();
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.classId).toBe("11A2");
       expect(result.data.slots[0][1]?.subjectName).toBe("Toán");
+      // teacher variant carries the class taught on the slot
+      expect(result.data.slots[0][1]?.className).toBe("11A2");
     }
   });
 
   it("maps a thrown not-found failure to { ok: false, error }", async () => {
-    const useCase = new GetMyTimetableUseCase(
+    const useCase = new GetMyTeachingScheduleUseCase(
       repo({
-        getMyTimetable: async () => {
+        getByTeacher: async () => {
           throw { type: "not-found" } satisfies TimetableViewFailure;
         },
       }),
@@ -57,9 +60,9 @@ describe("GetMyTimetableUseCase", () => {
   });
 
   it("maps a non-typed throw to a network-error failure", async () => {
-    const useCase = new GetMyTimetableUseCase(
+    const useCase = new GetMyTeachingScheduleUseCase(
       repo({
-        getMyTimetable: async () => {
+        getByTeacher: async () => {
           throw new Error("boom");
         },
       }),

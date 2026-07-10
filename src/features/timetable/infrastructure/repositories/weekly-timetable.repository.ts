@@ -51,6 +51,18 @@ export class WeeklyTimetableRepository implements IWeeklyTimetableRepository {
     }
   }
 
+  async getByTeacher(weekStart?: string): Promise<WeeklyTimetable> {
+    try {
+      const data = (await this.http.get(
+        TIMETABLE_VIEW_EP.teacherSchedule,
+        weekStart ? { params: { weekStart } } : undefined,
+      )) as unknown as WeeklyTimetableResponseDto;
+      return mapWeeklyTimetable(data);
+    } catch (err) {
+      throw this.toFailure(err);
+    }
+  }
+
   async getChildren(): Promise<TimetableChild[]> {
     try {
       const data = (await this.http.get(

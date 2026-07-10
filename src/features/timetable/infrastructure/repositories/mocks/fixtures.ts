@@ -149,6 +149,97 @@ export function timetableDtoFor(
   return RAW[classId] ? buildDto(classId) : null;
 }
 
+/* ── Teacher-scope seed (US-E15.2) ───────────────────────────────────────── */
+
+/** Compact teacher-slot factory: [subjectId, className, room] → DTO slot. */
+function ts(
+  subjectId: string,
+  className: string,
+  room: string,
+): TimetableSlotDto {
+  return {
+    subjectId,
+    subjectName: SUBJECT_NAME[subjectId] ?? subjectId,
+    className,
+    room,
+  };
+}
+
+/**
+ * Raw teacher-schedule seed: teacherId → dayIndex → periodNumber → slot.
+ * A teacher's week spans MULTIPLE classes (unlike a class timetable). Seed
+ * teacher `t1` ("Cô Nguyễn Thị Hương") teaching Toán across 11A2 / 8B1 / 10C3,
+ * plus a couple of GDCD homeroom periods (exercises the multi-subject legend).
+ */
+const TEACHER_RAW: Record<
+  string,
+  Record<number, Record<number, TimetableSlotDto>>
+> = {
+  t1: {
+    0: {
+      1: ts("math", "11A2", "P.302"),
+      2: ts("math", "11A2", "P.302"),
+      4: ts("math", "8B1", "P.205"),
+      7: ts("math", "10C3", "P.410"),
+    },
+    1: {
+      1: ts("math", "8B1", "P.205"),
+      3: ts("math", "11A2", "P.302"),
+      8: ts("civic", "11A2", "P.302"),
+    },
+    2: {
+      2: ts("math", "10C3", "P.410"),
+      3: ts("math", "11A2", "P.302"),
+      4: ts("math", "8B1", "P.205"),
+    },
+    3: {
+      1: ts("math", "11A2", "P.302"),
+      5: ts("math", "10C3", "P.410"),
+      7: ts("civic", "8B1", "P.205"),
+    },
+    4: {
+      2: ts("math", "8B1", "P.205"),
+      3: ts("math", "10C3", "P.410"),
+      4: ts("math", "11A2", "P.302"),
+    },
+    5: {
+      1: ts("math", "10C3", "P.410"),
+    },
+  },
+};
+
+/** teacherId → display name (top-level className for the reused entity). */
+const TEACHER_NAME: Record<string, string> = {
+  t1: "Cô Nguyễn Thị Hương",
+};
+
+/** Full 10-period × 6-day teacher grid with explicit nulls for free periods. */
+function buildTeacherDto(teacherId: string): WeeklyTimetableResponseDto {
+  const raw = TEACHER_RAW[teacherId];
+  const slots: WeeklyTimetableResponseDto["slots"] = {};
+  for (let day = 0; day < 6; day++) {
+    slots[day] = {};
+    for (let period = 1; period <= 10; period++) {
+      slots[day][period] = raw[day]?.[period] ?? null;
+    }
+  }
+  // classId/className carry the teacher's own id/name (documented reuse).
+  return {
+    classId: teacherId,
+    className: TEACHER_NAME[teacherId] ?? teacherId,
+    slots,
+  };
+}
+
+export function teacherScheduleDtoFor(
+  teacherId: string,
+): WeeklyTimetableResponseDto | null {
+  return TEACHER_RAW[teacherId] ? buildTeacherDto(teacherId) : null;
+}
+
+/** Teacher self-scope: the signed-in teacher (Cô Nguyễn Thị Hương) is `t1`. */
+export const MY_TEACHER_ID = "t1";
+
 /** Student self-scope: the signed-in student (Nguyễn Minh Khoa) is in 11A2. */
 export const MY_CLASS_ID = "11A2";
 

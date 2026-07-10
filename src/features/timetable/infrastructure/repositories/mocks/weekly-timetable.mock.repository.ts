@@ -5,7 +5,13 @@ import type { WeeklyTimetable } from "../../../domain/entities/weekly-timetable.
 import type { IWeeklyTimetableRepository } from "../../../domain/repositories/i-weekly-timetable.repository";
 import { mapTimetableChild } from "../../mappers/timetable-child.mapper";
 import { mapWeeklyTimetable } from "../../mappers/weekly-timetable.mapper";
-import { MY_CLASS_ID, TIMETABLE_CHILDREN, timetableDtoFor } from "./fixtures";
+import {
+  MY_CLASS_ID,
+  MY_TEACHER_ID,
+  TIMETABLE_CHILDREN,
+  teacherScheduleDtoFor,
+  timetableDtoFor,
+} from "./fixtures";
 
 /**
  * Mock-first repository (decision 0014) — `core` service not shipped. Seeds
@@ -25,6 +31,13 @@ export class MockWeeklyTimetableRepository
 
   async getMyTimetable(): Promise<WeeklyTimetable> {
     return this.getByClass(MY_CLASS_ID);
+  }
+
+  async getByTeacher(): Promise<WeeklyTimetable> {
+    await mockDelay();
+    const dto = teacherScheduleDtoFor(MY_TEACHER_ID);
+    if (!dto) throw { type: "not-found" };
+    return mapWeeklyTimetable(dto);
   }
 
   async getChildren(): Promise<TimetableChild[]> {
