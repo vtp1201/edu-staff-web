@@ -47,9 +47,21 @@ export const TeacherView_FullWeek: Story = {
     expect(canvas.getAllByText("10C3").length).toBeGreaterThan(0);
     // Recess row still renders.
     expect(canvas.getByText(/Giải lao trưa/)).toBeVisible();
-    // AC2 — read-only, no edit affordance.
+    // AC2 — read-only, no edit affordance: no add/edit buttons, no pencil/edit icon.
     expect(canvas.getByText("Chỉ xem")).toBeVisible();
     expect(canvas.queryByRole("button", { name: /Thêm|Sửa/ })).toBeNull();
+    expect(
+      canvasElement.querySelector(
+        "svg.lucide-pencil, svg.lucide-square-pen, svg.lucide-edit, svg.lucide-edit-2, svg.lucide-edit-3",
+      ),
+    ).toBeNull();
+    // AC3 — visual consistency: subjectColor/15 tint + 3px left accent border,
+    // same token pair `TimetableGrid` renders for the student/parent variant
+    // (subject "Toán" → subjectColorToken "primary" per the mapper table).
+    const mathCellLabel = canvas.getAllByText("Toán")[0];
+    const mathCell = mathCellLabel.parentElement;
+    expect(mathCell?.className).toContain("bg-edu-primary/15");
+    expect(mathCell?.className).toContain("border-l-edu-primary");
     // AC4 — legend shows only subjects actually taught (Toán + GDCD).
     const legend = canvas.getByRole("region", { name: "Chú thích môn" });
     expect(within(legend).getByText("Toán")).toBeVisible();
@@ -101,8 +113,15 @@ export const TeacherView_Mobile: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     // Table still renders (its min-width forces horizontal scroll on mobile).
-    expect(
-      canvas.getByRole("table", { name: /Lịch dạy cá nhân/ }),
-    ).toBeInTheDocument();
+    const table = canvas.getByRole("table", { name: /Lịch dạy cá nhân/ });
+    expect(table).toBeInTheDocument();
+    // AC6 — grid scrolls horizontally instead of breaking layout at 375px: the
+    // table keeps its `min-w-[920px]` and its direct scroll wrapper is
+    // `overflow-x-auto` (viewport is narrower than the table, so this wrapper is
+    // what prevents the grid from clipping/overlapping other content).
+    expect(table.className).toContain("min-w-[920px]");
+    expect(table.parentElement?.className).toContain("overflow-x-auto");
+    // Period label column stays readable (sticky, not clipped/hidden).
+    expect(canvas.getByRole("rowheader", { name: /Tiết 1\b/ })).toBeVisible();
   },
 };
