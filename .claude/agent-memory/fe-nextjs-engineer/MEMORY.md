@@ -23,3 +23,4 @@
 - [RSC-seeded infinite query + URL filter](pattern-rsc-seeded-infinite-query.md) — cursor list: RSC prefetch→useInfiniteQuery initialData (no HydrationBoundary) + draft/applied URL filter sync; SB vitest runner works now
 - [Subscription hook node test](pattern-subscription-hook-node-test.md) — no renderHook in node env; extract framework-free controller + FakeEventSource + fake timers; hook stays thin binding
 - [LMS player + media token](pattern-lms-player-and-media-token.md) — media-surface token; tone→literal-class map (mapper does hex→tone); RSC-seeded plain useQuery + cross-query optimistic patch (no invalidate); all-content-up-front player VM + pure .derive.ts
+- [BE-wiring remap pattern](pattern-be-wiring-remap.md) — E18: flat wire DTO→nested entity via per-parent fan-out; create+activate orchestration outside try (no double-map); full error-code matrix; ensureFreshSession in every real DI branch

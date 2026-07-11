@@ -11,5 +11,8 @@ export type CalendarFailure =
   | { type: "year-label-exists"; message: string }
   | { type: "active-year-exists"; message: string }
   | { type: "year-archived"; message: string }
+  | { type: "forbidden"; message: string }
+  | { type: "invalid-label"; message: string }
+  | { type: "invalid-term-name"; message: string }
   | { type: "network-error"; message: string }
   | { type: "unknown"; message: string };
