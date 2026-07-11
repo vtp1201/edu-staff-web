@@ -366,6 +366,30 @@ round-trip against. Error-path smoke deferred to when the stack is reachable.
 permission enum) and the mock `createDepartment`/`patchDepartment` to the split
 input; mock keeps real display names (the `memberId` fallback is real-mode-only).
 
+### Review round-trip 1 (tech-lead: REVISION REQUIRED → fixed)
+
+- **Blocking bug found:** in `staffing.repository.ts` all 5 `raw: true` flags were
+  nested *inside* the `params` object instead of as a top-level axios config
+  sibling of `params`. `isRawCall` (`bootstrap/lib/api-envelope.ts`) reads
+  `config.raw` at the TOP level, so with `raw` nested the interceptor would unwrap
+  the envelope to its `.data` array *before* the repo's `parseEnvelope` runs → in
+  real (`!USE_MOCK`) mode every list/derivation call (`listDepartments`,
+  `listPositionTitles`, `listAssignments`, `fetchActiveAssignmentDtos`,
+  `fetchTitleNameMap`) would silently fail into `network-error`. The mocked-
+  `http.get` unit tests couldn't catch it because they never exercise the real
+  interceptor — exactly the class of bug this epic exists to catch.
+- **Fix:** hoisted `raw: true` out of `params` to a sibling config key at all 5
+  call sites (matches the `calendar.repository.ts` US-E18.1 precedent).
+- **Regression guard added (reviewer's CONSIDER, taken):** new describe block in
+  `staffing.repository.test.ts` — "real interceptor pipeline (raw-flag placement)"
+  — whose `http.get` runs the actual `unwrapResponse` against the config the repo
+  passes. Verified it FAILS when `raw` is misplaced (temporarily reintroduced the
+  bug → 1 failed) and passes when correct. So a future `raw`-placement regression
+  now breaks a test instead of reaching production silently.
+- Re-verified after fix: 244 files / 1336 tests pass (2 new guard tests); `bunx tsc
+  --noEmit` clean; `bun run build` green. Committed separately as `fix(staffing):`
+  (not amended).
+
 **Review round 1 — `fe-tech-lead-reviewer`: REVISION REQUIRED.** One blocking bug:
 `raw: true` was nested inside `params` instead of being a top-level axios config key
 (sibling of `params`) at 5 call sites in `staffing.repository.ts`
