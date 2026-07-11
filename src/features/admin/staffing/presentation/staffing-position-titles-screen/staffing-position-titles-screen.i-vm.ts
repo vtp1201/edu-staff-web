@@ -17,10 +17,12 @@ export type VoidActionResult =
 export type PositionTitleStatusFilter = "ALL" | "ACTIVE" | "ARCHIVED";
 
 export const ALL_PERMISSIONS: Permission[] = [
+  "VIEW_SUBJECT_CONTENT",
   "MANAGE_SUBJECT_CONTENT",
-  "MANAGE_SCHEDULE",
-  "MANAGE_CONDUCT",
-  "VIEW_REPORTS",
+  "VIEW_GRADE_DATA",
+  "APPROVE_LESSON_PLAN",
+  "VIEW_TEACHER_ASSIGNMENTS",
+  "MANAGE_TEACHER_ASSIGNMENTS",
 ];
 
 export interface StaffingPositionTitlesScreenProps {

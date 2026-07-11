@@ -4,11 +4,18 @@ import type {
   ScopeType,
 } from "../../domain/entities/position-title.entity";
 
+/**
+ * Wire shape of `PositionTitleResponse` (core/openapi.yaml). Note:
+ * `positionTitleId` (not `id`), the 6-value `Permission` enum, and NO
+ * `activeAssignmentCount` (derived by the repository from active assignments).
+ */
 export interface PositionTitleResponseDto {
-  id: string;
+  positionTitleId: string;
+  tenantId: string;
   name: string;
   scopeType: ScopeType;
   permissions: Permission[];
   status: PositionTitleStatus;
-  activeAssignmentCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

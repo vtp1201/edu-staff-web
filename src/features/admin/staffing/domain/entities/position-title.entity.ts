@@ -1,10 +1,13 @@
 export type ScopeType = "SUBJECT_PARENT" | "DEPARTMENT";
 
+/** Real BE `PositionPermission` enum (core/openapi.yaml). */
 export type Permission =
+  | "VIEW_SUBJECT_CONTENT"
   | "MANAGE_SUBJECT_CONTENT"
-  | "MANAGE_SCHEDULE"
-  | "MANAGE_CONDUCT"
-  | "VIEW_REPORTS";
+  | "VIEW_GRADE_DATA"
+  | "APPROVE_LESSON_PLAN"
+  | "VIEW_TEACHER_ASSIGNMENTS"
+  | "MANAGE_TEACHER_ASSIGNMENTS";
 
 export type PositionTitleStatus = "ACTIVE" | "ARCHIVED";
 

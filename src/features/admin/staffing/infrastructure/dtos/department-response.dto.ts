@@ -1,10 +1,21 @@
-import type { DepartmentStatus } from "../../domain/entities/department.entity";
+import type {
+  DepartmentConceptLabel,
+  DepartmentStatus,
+} from "../../domain/entities/department.entity";
 
+/**
+ * Wire shape of `DepartmentResponse` (core/openapi.yaml). Note: `departmentId`
+ * (not `id`), the split `conceptLabelSuggested`/`conceptLabelCustom` fields, and
+ * NO `activeAssignmentCount` (derived by the repository from active assignments).
+ */
 export interface DepartmentResponseDto {
-  id: string;
+  departmentId: string;
+  tenantId: string;
   name: string;
-  conceptLabel: string | null;
+  conceptLabelSuggested: DepartmentConceptLabel | null;
+  conceptLabelCustom: string | null;
   subjectParentIds: string[];
   status: DepartmentStatus;
-  activeAssignmentCount: number;
+  createdAt: string;
+  updatedAt: string;
 }

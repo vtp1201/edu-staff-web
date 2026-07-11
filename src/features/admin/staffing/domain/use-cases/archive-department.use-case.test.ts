@@ -7,7 +7,8 @@ import { ok } from "./result";
 const dept = (overrides: Partial<Department> = {}): Department => ({
   id: "dep-1",
   name: "Tổ Toán",
-  conceptLabel: null,
+  conceptLabelSuggested: null,
+  conceptLabelCustom: null,
   subjectParentIds: [],
   status: "ACTIVE",
   activeAssignmentCount: 0,

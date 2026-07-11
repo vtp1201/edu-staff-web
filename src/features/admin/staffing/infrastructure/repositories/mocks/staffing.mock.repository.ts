@@ -75,7 +75,8 @@ export class MockStaffingRepository implements IStaffingRepository {
     const dep: Department = {
       id: genId("dep"),
       name: input.name,
-      conceptLabel: input.conceptLabel,
+      conceptLabelSuggested: input.conceptLabelSuggested,
+      conceptLabelCustom: input.conceptLabelCustom,
       subjectParentIds: input.subjectParentIds,
       status: "ACTIVE",
       activeAssignmentCount: 0,
@@ -92,7 +93,10 @@ export class MockStaffingRepository implements IStaffingRepository {
     const dep = _departments.find((d) => d.id === id);
     if (!dep) return fail({ type: "not-found" });
     if (input.name !== undefined) dep.name = input.name;
-    if (input.conceptLabel !== undefined) dep.conceptLabel = input.conceptLabel;
+    if (input.conceptLabelSuggested !== undefined)
+      dep.conceptLabelSuggested = input.conceptLabelSuggested;
+    if (input.conceptLabelCustom !== undefined)
+      dep.conceptLabelCustom = input.conceptLabelCustom;
     if (input.subjectParentIds !== undefined)
       dep.subjectParentIds = input.subjectParentIds;
     return ok({ ...dep });

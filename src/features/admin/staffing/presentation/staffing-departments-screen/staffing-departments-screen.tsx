@@ -92,7 +92,8 @@ export function StaffingDepartmentsScreen({
   const handleCreate = async (name: string) => {
     const result = await onCreateDepartment({
       name,
-      conceptLabel: null,
+      conceptLabelSuggested: null,
+      conceptLabelCustom: null,
       subjectParentIds: [],
     });
     if (result.ok) {

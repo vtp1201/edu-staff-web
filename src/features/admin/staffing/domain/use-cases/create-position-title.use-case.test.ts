@@ -38,7 +38,7 @@ describe("CreatePositionTitleUseCase", () => {
     const result = await useCase.execute(
       input({
         scopeType: "DEPARTMENT",
-        permissions: ["MANAGE_SUBJECT_CONTENT", "VIEW_REPORTS"],
+        permissions: ["MANAGE_SUBJECT_CONTENT", "VIEW_GRADE_DATA"],
       }),
     );
     expect(result.ok).toBe(false);
@@ -63,7 +63,7 @@ describe("CreatePositionTitleUseCase", () => {
     const repo = makeRepo();
     const useCase = new CreatePositionTitleUseCase(repo);
     const result = await useCase.execute(
-      input({ scopeType: "DEPARTMENT", permissions: ["MANAGE_SCHEDULE"] }),
+      input({ scopeType: "DEPARTMENT", permissions: ["APPROVE_LESSON_PLAN"] }),
     );
     expect(result.ok).toBe(true);
     expect(repo.createPositionTitle).toHaveBeenCalled();

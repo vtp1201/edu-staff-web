@@ -33,10 +33,12 @@ import {
 
 const MAX_NAME = 100;
 const PERM_LABEL_KEY = {
+  VIEW_SUBJECT_CONTENT: "permViewSubjectContent",
   MANAGE_SUBJECT_CONTENT: "permManageSubjectContent",
-  MANAGE_SCHEDULE: "permManageSchedule",
-  MANAGE_CONDUCT: "permManageConduct",
-  VIEW_REPORTS: "permViewReports",
+  VIEW_GRADE_DATA: "permViewGradeData",
+  APPROVE_LESSON_PLAN: "permApproveLessonPlan",
+  VIEW_TEACHER_ASSIGNMENTS: "permViewTeacherAssignments",
+  MANAGE_TEACHER_ASSIGNMENTS: "permManageTeacherAssignments",
 } as const satisfies Record<Permission, string>;
 
 interface CreatePositionTitleSheetProps {

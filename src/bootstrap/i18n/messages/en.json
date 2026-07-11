@@ -2407,14 +2407,17 @@
       "errors": {
         "academic-year-not-active": "Academic year is invalid.",
         "already-exists": "This assignment already exists.",
+        "archived": "This item has been archived.",
         "forbidden": "You do not have permission to perform this action.",
         "has-active-assignments": "Still has active assignments.",
         "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "invalid-scope-type": "Invalid scope type.",
         "member-not-teacher": "This member is not a teacher.",
         "network-error": "Connection error. Please try again.",
         "not-found": "Assignment not found.",
         "scope-entity-not-found": "Scope entity does not exist.",
-        "unknown": "An unknown error occurred."
+        "unknown": "An unknown error occurred.",
+        "validation": "Invalid data."
       },
       "filterActive": "Active",
       "filterAll": "All",
@@ -2480,14 +2483,17 @@
       "errors": {
         "academic-year-not-active": "Academic year is invalid.",
         "already-exists": "Name already exists. Please choose another.",
+        "archived": "This item has been archived.",
         "forbidden": "You do not have permission to perform this action.",
         "has-active-assignments": "Department still has active assignments.",
         "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "invalid-scope-type": "Invalid scope type.",
         "member-not-teacher": "This member is not a teacher.",
         "network-error": "Connection error. Please try again.",
         "not-found": "Department not found.",
         "scope-entity-not-found": "Scope entity does not exist.",
-        "unknown": "An unknown error occurred."
+        "unknown": "An unknown error occurred.",
+        "validation": "Invalid data."
       },
       "filterActive": "Active",
       "filterAll": "All",
@@ -2546,14 +2552,17 @@
       "errors": {
         "academic-year-not-active": "Academic year is invalid.",
         "already-exists": "Position title name already exists.",
+        "archived": "This item has been archived.",
         "forbidden": "You do not have permission to perform this action.",
         "has-active-assignments": "Position title still has active assignments.",
         "invalid-permissions": "Permissions are invalid for the selected scope.",
+        "invalid-scope-type": "Invalid scope type.",
         "member-not-teacher": "This member is not a teacher.",
         "network-error": "Connection error. Please try again.",
         "not-found": "Position title not found.",
         "scope-entity-not-found": "Scope entity does not exist.",
-        "unknown": "An unknown error occurred."
+        "unknown": "An unknown error occurred.",
+        "validation": "Invalid data."
       },
       "filterActive": "Active",
       "filterAll": "All",
@@ -2566,10 +2575,12 @@
         "nameTooLong": "Name must not exceed 100 characters.",
         "scopeTypeRequired": "Please select a scope."
       },
-      "permManageConduct": "Manage conduct",
-      "permManageSchedule": "Manage schedule",
-      "permManageSubjectContent": "Manage content",
-      "permViewReports": "View reports",
+      "permApproveLessonPlan": "Approve lesson plan",
+      "permManageSubjectContent": "Manage subject content",
+      "permManageTeacherAssignments": "Manage teacher assignments",
+      "permViewGradeData": "View grade data",
+      "permViewSubjectContent": "View subject content",
+      "permViewTeacherAssignments": "View teacher assignments",
       "scopeTypeDepartment": "Department",
       "scopeTypeSubjectParent": "Subject team",
       "searchPlaceholder": "Search position titles...",

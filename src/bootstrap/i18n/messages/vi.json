@@ -2407,14 +2407,17 @@
       "errors": {
         "academic-year-not-active": "Năm học không hợp lệ.",
         "already-exists": "Phân công này đã tồn tại.",
+        "archived": "Mục này đã được lưu trữ.",
         "forbidden": "Bạn không có quyền thực hiện thao tác này.",
         "has-active-assignments": "Còn phân công đang hoạt động.",
         "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "invalid-scope-type": "Loại phạm vi không hợp lệ.",
         "member-not-teacher": "Thành viên này không phải giáo viên.",
         "network-error": "Lỗi kết nối. Vui lòng thử lại.",
         "not-found": "Không tìm thấy phân công.",
         "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "unknown": "Đã xảy ra lỗi không xác định."
+        "unknown": "Đã xảy ra lỗi không xác định.",
+        "validation": "Dữ liệu không hợp lệ."
       },
       "filterActive": "Đang hoạt động",
       "filterAll": "Tất cả",
@@ -2480,14 +2483,17 @@
       "errors": {
         "academic-year-not-active": "Năm học không hợp lệ.",
         "already-exists": "Tên đã tồn tại. Vui lòng chọn tên khác.",
+        "archived": "Mục này đã được lưu trữ.",
         "forbidden": "Bạn không có quyền thực hiện thao tác này.",
         "has-active-assignments": "Tổ bộ môn còn phân công đang hoạt động.",
         "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "invalid-scope-type": "Loại phạm vi không hợp lệ.",
         "member-not-teacher": "Thành viên này không phải giáo viên.",
         "network-error": "Lỗi kết nối. Vui lòng thử lại.",
         "not-found": "Không tìm thấy tổ bộ môn.",
         "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "unknown": "Đã xảy ra lỗi không xác định."
+        "unknown": "Đã xảy ra lỗi không xác định.",
+        "validation": "Dữ liệu không hợp lệ."
       },
       "filterActive": "Đang hoạt động",
       "filterAll": "Tất cả",
@@ -2546,14 +2552,17 @@
       "errors": {
         "academic-year-not-active": "Năm học không hợp lệ.",
         "already-exists": "Tên chức danh đã tồn tại.",
+        "archived": "Mục này đã được lưu trữ.",
         "forbidden": "Bạn không có quyền thực hiện thao tác này.",
         "has-active-assignments": "Chức danh còn phân công đang hoạt động.",
         "invalid-permissions": "Quyền hạn không hợp lệ với phạm vi đã chọn.",
+        "invalid-scope-type": "Loại phạm vi không hợp lệ.",
         "member-not-teacher": "Thành viên này không phải giáo viên.",
         "network-error": "Lỗi kết nối. Vui lòng thử lại.",
         "not-found": "Không tìm thấy chức danh.",
         "scope-entity-not-found": "Đơn vị phạm vi không tồn tại.",
-        "unknown": "Đã xảy ra lỗi không xác định."
+        "unknown": "Đã xảy ra lỗi không xác định.",
+        "validation": "Dữ liệu không hợp lệ."
       },
       "filterActive": "Đang hoạt động",
       "filterAll": "Tất cả",
@@ -2566,10 +2575,12 @@
         "nameTooLong": "Tên không được vượt quá 100 ký tự.",
         "scopeTypeRequired": "Vui lòng chọn phạm vi."
       },
-      "permManageConduct": "Quản lý hạnh kiểm",
-      "permManageSchedule": "Quản lý lịch",
-      "permManageSubjectContent": "Quản lý nội dung",
-      "permViewReports": "Xem báo cáo",
+      "permApproveLessonPlan": "Duyệt kế hoạch bài dạy",
+      "permManageSubjectContent": "Quản lý nội dung môn học",
+      "permManageTeacherAssignments": "Quản lý phân công giảng dạy",
+      "permViewGradeData": "Xem dữ liệu điểm",
+      "permViewSubjectContent": "Xem nội dung môn học",
+      "permViewTeacherAssignments": "Xem phân công giảng dạy",
       "scopeTypeDepartment": "Phòng ban",
       "scopeTypeSubjectParent": "Tổ chuyên môn",
       "searchPlaceholder": "Tìm kiếm chức danh...",
