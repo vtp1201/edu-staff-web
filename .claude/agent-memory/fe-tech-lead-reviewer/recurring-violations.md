@@ -107,6 +107,23 @@ Watch for these (each has bitten a story here):
   module (feature-local shared file or `components/shared/`) and import in both. (US-E15.2 ExportPdfButton
   copied from timetable-view.tsx into teacher-schedule.tsx verbatim.)
 
+- **`raw: true` nested inside `params` instead of top-level axios config** — the interceptor's
+  `isRawCall` reads `config.raw` at the TOP level (`http.get(url, { params: {...}, raw: true })`),
+  NOT `params.raw`. Engineers writing paginated/list calls put `params: { status, raw: true }` →
+  `isRawCall` sees `undefined` → the envelope gets unwrapped BEFORE `parseEnvelope`, so
+  `parseEnvelope` receives an already-unwrapped array and every real-mode list call falls into
+  `network-error`. tsc/unit-with-mocked-http stay green because a hand-mocked `http.get` never runs
+  the real interceptor. Blocking. Guard = a test that runs the REAL `unwrapResponse` against the
+  config (describe "real interceptor pipeline (raw-flag placement)"). Precedent: calendar.repository
+  US-E18.1 (correct), staffing.repository US-E18.2 round-1 (5 call sites had it nested → fixed).
+- **BE-derived fields fetched per-call via full pagination** — when the BE contract drops a field the
+  UI needs (e.g. `activeAssignmentCount`, joined `positionTitleName`) and offers no server-side count
+  or filter, the repo may page the whole ACTIVE-assignments list on EVERY list AND get-by-id call to
+  derive it (`Promise.all([entityCall, fetchAssignmentCounts()])`). Correct + documented, but O(all
+  assignments) per read — non-blocking perf nit worth flagging for a follow-up (server count field).
+  Also watch the display-name fallback (`memberName = memberId` when IAM has no name source): a
+  documented cross-repo gap, non-blocking, but the UI shows a raw id until BE closes it. (US-E18.2.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

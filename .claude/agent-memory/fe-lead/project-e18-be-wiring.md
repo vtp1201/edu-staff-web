@@ -66,3 +66,48 @@ field against the entity/DTO the web already assumes before calling a cluster
 "just a transport swap." fe-nextjs-engineer wrote this up as a reusable
 pattern in its own memory (`pattern-be-wiring-remap.md`) — worth reading when
 briefing US-E18.2 onward.
+
+**US-E18.2 (staffing, 2026-07-11) — even bigger drift than calendar; two new
+cross-cutting findings for every remaining Wave 1-3 US:**
+1. **The epic audit's "MATCH" label undersold this cluster more than calendar.**
+   Beyond the expected id-renames (`departmentId`/`positionTitleId`/
+   `positionAssignmentId`), found: department `conceptLabel` (1 field) split
+   into wire's `conceptLabelSuggested`+`conceptLabelCustom` (2 fields);
+   `Permission` enum was a **completely wrong 4-value taxonomy** vs the real
+   6-value BE enum (only 1 value overlapped) — a genuine domain-type change,
+   not just a repo fix; `PositionAssignment.status` wire `ARCHIVED` → domain
+   `REVOKED` rename; 3 fields (`activeAssignmentCount`, `memberName`,
+   `positionTitleName`) don't exist on the wire at all and needed real
+   derivation logic (paginated count fan-out, cross-entity name joins) in the
+   repository. **Lesson**: for any cluster with "computed/joined" fields in
+   the mock-first entity, check whether the join source is even reachable
+   from the BE contract before assuming a repo-only fix — sometimes (like
+   `memberName` here) there is NO BE source at all (checked IAM's
+   `MemberResponse`: no name field anywhere except self-only `/users/me`).
+2. **[CRITICAL, check on every remaining US]** `fe-tech-lead-reviewer` found
+   a real, shipped bug in this cluster: `raw: true` was nested inside the
+   axios `params` object instead of as a top-level config key. `isRawCall`
+   (`bootstrap/lib/api-envelope.ts`) only reads `config.raw` at the TOP
+   level — with `raw` nested, the interceptor unwraps the envelope before
+   `parseEnvelope` runs, so every real-mode LIST call silently degrades to
+   `network-error`. **Mocked-`http.get` unit tests cannot catch this** (they
+   never exercise the real interceptor) — it slipped through TDD green and
+   was only caught by the reviewer's independent re-verification. The
+   reviewer flagged that **this same misplacement may exist pre-existing in
+   `principal-teachers`/`class-log`/`subject-catalogue` repos** — worth a
+   dedicated grep sweep (`grep -rn "params: {.*raw: true" src/features`)
+   across the codebase, not just as each epic US touches those files.
+   Fix pattern: `{ params: {...filter}, raw: true }` (raw as sibling), NOT
+   `{ params: {...filter, raw: true} }`. Correct precedent:
+   `calendar.repository.ts` (US-E18.1). A regression test that runs the REAL
+   `unwrapResponse` against the repo's actual config (not a mocked
+   `http.get`) is the only way to guard against this recurring.
+3. Confirmed a second async-agent working-tree race this session (see
+   `feedback` memory or note here): the engineer agent, once resumed via
+   SendMessage for a revision, made its own follow-up commit in the SAME
+   checkout concurrently with fe-lead's own commit of the same fix — no code
+   was lost, but a duplicated Evidence paragraph in the story landed in two
+   separate commits and had to be manually de-duplicated. When resuming an
+   agent for revision fixes in a solo/non-worktree branch, expect it may
+   commit on its own schedule — check `git log` for surprise commits before
+   assuming only your own commits landed.
