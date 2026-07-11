@@ -63,7 +63,8 @@ export class ClassManagementRepository implements IClassManagementRepository {
     try {
       // cursor-paginated list: { raw: true } + parseEnvelope (TR-026).
       const envelope = (await this.http.get(CLASS_EP.classes, {
-        params: { ...params, raw: true },
+        params: { ...params },
+        raw: true,
       })) as unknown as ApiEnvelope<ClassResponseDto[]>;
       const { data, pagination } = parseEnvelope(envelope);
       return ok({
