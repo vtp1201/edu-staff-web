@@ -96,7 +96,7 @@ Chạy đủ vòng thật qua Kong (`:8000`) với cụm `school-config` (MATCH 
 
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
-| US-E18.1 | Calendar wiring (academic-years/terms) | MATCH | normal | Error: `CALENDAR_*` |
+| US-E18.1 | Calendar wiring (academic-years/terms) | MATCH | normal | Error: `CALENDAR_*`. **Done** — the "MATCH 100%" label held at the path level only; DTO-shape audit during implementation found real drift (flat vs nested year/term responses, `status` enum vs `isActive` boolean, no `hasGrades` on the wire, `CALENDAR_FORBIDDEN` mismapped, `createYear` can't atomically set active). See `US-E18.1-calendar-wiring/story.md` for the full remap + a reusable "BE-wiring remap" pattern for the rest of Wave 1. |
 | US-E18.2 | Staffing wiring (departments/titles/assignments) | MATCH | normal | Error: `DEPARTMENT_*`, `POSITION_*` |
 | US-E18.3 | Subject catalogue wiring | MATCH− | normal | `restore` là WEB-ONLY (BE chỉ có `archive`) → giữ mock/ẩn nút + flag BE |
 | US-E18.4 | Class management wiring | MATCH− | normal | `/core/api/v1/teachers` KHÔNG tồn tại → nguồn teacher list đổi sang IAM members (decision trong packet) |
