@@ -84,6 +84,18 @@ Chạy đủ vòng thật qua Kong (`:8000`) với cụm `school-config` (MATCH 
   cho local dev (cross-repo ask #4 dưới) — Wave 1+ nên tự mang theo cách tạo
   fixture tenant riêng nếu cần test 200 thật (vd nhờ BE thêm dev-seed script).
 
+## Bug class xuyên suốt: vị trí `raw: true` (từ US-E18.2, sweep 2026-07-11)
+
+`isRawCall` đọc `config.raw` ở **top-level** axios config. Đặt `raw: true` nested
+trong `params` khiến interceptor unwrap envelope trước `parseEnvelope` → mọi
+list call real-mode âm thầm rơi vào `network-error`; unit test mock `http.get`
+KHÔNG bắt được. Sweep xác nhận bug còn latent ở 8 repo: `principal-teachers`
+(2 site), `class-log`, `subject-catalogue` (2), `class-management`,
+`admin-roster` (1 trong 2), `teacher-class`, `teacher-dashboard` →
+**US-E18.19** (tiny) hoặc fix trong US wiring của từng cụm — kèm regression
+guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
+§"real interceptor pipeline").
+
 ## Scope — US breakdown theo wave
 
 ### Wave 0 — tiền đề
