@@ -1,4 +1,14 @@
 import "server-only";
+// NOTE (US-E18.1): this mock operates on the `AcademicYear`/`Term` DOMAIN
+// entities directly, so it is unaffected by the wire-DTO remap done for the
+// real `CalendarRepository`. Its simplified semantics INTENTIONALLY DIVERGE
+// from the real BE path in two ways (kept for NEXT_PUBLIC_USE_MOCK dev
+// convenience — do not assume parity):
+//   - `archiveYear` deletes the year from the array; the real BE keeps it as
+//     ARCHIVED and the real repo filters ARCHIVED out of `listYears`.
+//   - `createYear({ isActive: true })` silently deactivates the previous active
+//     year; the real BE has NO auto-swap — the real repo chains a separate
+//     activate call that fails with CALENDAR_ACTIVE_YEAR_EXISTS if one exists.
 import { mockDelay } from "@/bootstrap/lib/mock";
 import type { AcademicYear } from "../../../domain/entities/academic-year.entity";
 import type { Term } from "../../../domain/entities/term.entity";
