@@ -35,8 +35,8 @@ export class RosterRepository implements IRosterRepository {
       const envelope = (await this.http.get(ROSTER_EP.classes, {
         params: {
           ...(params.academicYear ? { academicYear: params.academicYear } : {}),
-          raw: true,
         },
+        raw: true,
       })) as unknown as ApiEnvelope<ClassesResponseDto>;
       const { data } = parseEnvelope(envelope);
       return { ok: true, data: (data as ClassSummary[]).map(toClassSummary) };
@@ -49,7 +49,7 @@ export class RosterRepository implements IRosterRepository {
     try {
       // cursor-paginated: use { raw: true } + parseEnvelope (TR-031)
       const envelope = (await this.http.get(classStudentsPath(classId), {
-        params: { raw: true },
+        raw: true,
       })) as unknown as ApiEnvelope<RosterResponseDto>;
       const { data } = parseEnvelope(envelope);
       return {

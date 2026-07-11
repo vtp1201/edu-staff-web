@@ -72,7 +72,8 @@ export class ClassLogRepository implements IClassLogRepository {
     try {
       const { classId, fromDate, toDate, cursor, limit } = params;
       const envelope = (await this.http.get(CLASS_LOG_EP.entries(classId), {
-        params: { fromDate, toDate, cursor, limit, raw: true },
+        params: { fromDate, toDate, cursor, limit },
+        raw: true,
       })) as unknown as ApiEnvelope<HomeroomEntryListResponseDto>;
       const { data, pagination } = parseEnvelope(envelope);
       return {

@@ -52,7 +52,7 @@ export class PrincipalTeachersRepository
   > {
     try {
       const envelope = (await this.http.get(CLASS_EP.principalTeachers, {
-        params: { raw: true },
+        raw: true,
       })) as unknown as ApiEnvelope<PrincipalTeacherResponseDto[]>;
       const { data } = parseEnvelope(envelope);
       return ok(data.map(PrincipalTeachersMapper.toTeacher));
@@ -64,7 +64,7 @@ export class PrincipalTeachersRepository
   async listClasses(): Promise<Result<Class[], PrincipalTeachersFailure>> {
     try {
       const envelope = (await this.http.get(CLASS_EP.classes, {
-        params: { raw: true },
+        raw: true,
       })) as unknown as ApiEnvelope<ClassResponseDto[]>;
       const { data } = parseEnvelope(envelope);
       return ok(data.map(ClassManagementMapper.toClass));

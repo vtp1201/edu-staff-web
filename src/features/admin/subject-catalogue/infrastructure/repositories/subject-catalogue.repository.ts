@@ -117,7 +117,7 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
       const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.parents, {
-        params: { raw: true },
+        raw: true,
       })) as unknown as ApiEnvelope<SubjectParentResponseDto[]>;
       const { data } = parseEnvelope(envelope);
       return ok(data.map(SubjectCatalogueMapper.toSubjectParent));
@@ -183,7 +183,8 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
       const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.subjects, {
-        params: { parentId, raw: true },
+        params: { parentId },
+        raw: true,
       })) as unknown as ApiEnvelope<SubjectResponseDto[]>;
       const { data } = parseEnvelope(envelope);
       return ok(data.map(SubjectCatalogueMapper.toSubject));

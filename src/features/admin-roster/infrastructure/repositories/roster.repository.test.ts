@@ -6,7 +6,7 @@
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import { RosterRepository } from "./roster.repository";
 
 function apiError(code: string, status: number) {
@@ -217,5 +217,65 @@ describe("RosterRepository (US-E06.7)", () => {
       "/core/api/v1/classes/cls-10a1/students",
       { studentMemberId: "HS25202" },
     );
+  });
+});
+
+/**
+ * Regression guard for `{ raw: true }` config placement. The suite above mocks
+ * `http.get` to return an envelope directly, so it cannot catch `raw` being
+ * nested inside `params` (isRawCall reads `config.raw` at the TOP level). Here
+ * `http.get` runs the REAL `unwrapResponse` interceptor against the config each
+ * list method actually passes: if `raw` sits inside `params`, isRawCall returns
+ * false → the envelope is unwrapped to its array → the repo's
+ * `parseEnvelope(array)` throws UNKNOWN_ERROR → the call fails. Passes only when
+ * `raw` sits at the top level of the config (sibling of `params`).
+ */
+describe("RosterRepository — real interceptor pipeline (raw-flag placement)", () => {
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    ) as unknown as AxiosInstance["get"];
+  }
+
+  it("getClasses survives the real unwrap (raw top-level, academicYear kept in params)", async () => {
+    const get = interceptedGet(() =>
+      makeListEnvelope([
+        {
+          id: "cls-10a1",
+          name: "10A1",
+          gradeLevel: 10,
+          homeroomTeacher: "Nguyễn Thị Hương",
+          year: "2025–2026",
+        },
+      ]),
+    );
+    const res = await new RosterRepository(makeHttp({ get })).getClasses({
+      academicYear: "2025-2026",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data[0].id).toBe("cls-10a1");
+  });
+
+  it("getClassRoster survives the real unwrap (raw is top-level)", async () => {
+    const get = interceptedGet(() =>
+      makeListEnvelope([
+        {
+          id: "HS25001",
+          name: "A",
+          dob: "01/01/2010",
+          gender: "F",
+          status: "active",
+        },
+      ]),
+    );
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-10a1",
+    );
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data[0].gender).toBe("F");
   });
 });

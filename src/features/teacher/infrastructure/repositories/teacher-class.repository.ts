@@ -66,10 +66,11 @@ export class TeacherClassRepository implements ITeacherClassRepository {
     const all: T[number][] = [];
     let cursor: string | null = null;
     do {
-      const params: Record<string, unknown> = { limit: 100, raw: true };
+      const params: Record<string, unknown> = { limit: 100 };
       if (cursor) params.cursor = cursor;
       const env = (await this.http.get(url, {
         params,
+        raw: true,
       })) as unknown as ApiEnvelope<T>;
       const { data: page, pagination } = parseEnvelope(env);
       all.push(...(page ?? []));
