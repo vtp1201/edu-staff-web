@@ -111,3 +111,23 @@ cross-cutting findings for every remaining Wave 1-3 US:**
    agent for revision fixes in a solo/non-worktree branch, expect it may
    commit on its own schedule — check `git log` for surprise commits before
    assuming only your own commits landed.
+
+**US-E18.19 (raw-flag sweep, tiny, 2026-07-11) — the dedicated sweep flagged in
+US-E18.2 finding #2 above, DONE.** Grep `raw: true` across all of `src/features`
+(excl. test/mock) found 9 more nested-`raw` sites in 7 repos:
+`principal-teachers` (2), `class-log` (1), `subject-catalogue` (2),
+`class-management` (1), `admin-roster/roster` (2 — BOTH `getClasses` and
+`getClassRoster`; the initial task brief wrongly assumed `getClasses` was
+already correct, engineer/reviewer verified via actual code read that it
+wasn't), `teacher-class`/`teacher-dashboard` `fetchAllPages` (1 each). Fixed all
+9 by hoisting `raw: true` to a config-level sibling of `params`; added the
+real-`unwrapResponse`-piped regression guard (pattern from US-E18.2) to all 9
+repos' test files, plus 2 guard-only additions to `notification`/`audit-log`
+(already correct, no source change). Fresh post-fix grep confirmed the sweep
+is complete — no repo under `src/features` still nests `raw` in `params`.
+246 files/1357 tests, tsc clean, build green, tech-lead APPROVED first pass (no
+revision round this time — the established guard pattern + explicit "verify
+every fixed repo hoists correctly + fresh grep for misses" review brief caught
+everything). **Lesson for future bug-class sweeps**: when the task brief
+asserts a specific site is "already correct," still independently verify via
+Read — don't propagate an unverified assumption into the story packet.
