@@ -7,7 +7,7 @@
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import type { ClassLogFailure } from "../../domain/failures/class-log.failure";
 import type { HomeroomEntryResponseDto } from "../dtos/homeroom-entry-response.dto";
 import { ClassLogRepository } from "./class-log.repository";
@@ -106,6 +106,38 @@ describe("ClassLogRepository — happy paths", () => {
       "/core/api/v1/classes/c-1/homeroom-entries/e-1/reject",
       { reason: "Thiếu" },
     );
+  });
+});
+
+/**
+ * Regression guard for `{ raw: true }` config placement. The suites above mock
+ * `http.get` to return an envelope directly, so they cannot catch `raw` being
+ * nested inside `params` (isRawCall reads `config.raw` at the TOP level). Here
+ * `http.get` runs the REAL `unwrapResponse` interceptor against the config the
+ * repo actually passes: if the list call puts `raw` inside `params`, isRawCall
+ * returns false → the envelope is unwrapped to `{ entries }` → the repo's
+ * `parseEnvelope(...)` throws UNKNOWN_ERROR → listEntries throws. Passes only
+ * when `raw` sits at the top level of the config (sibling of `params`).
+ */
+describe("ClassLogRepository — real interceptor pipeline (raw-flag placement)", () => {
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    ) as unknown as AxiosInstance["get"];
+  }
+
+  it("listEntries survives the real unwrap and reads pagination (raw top-level)", async () => {
+    const get = interceptedGet(() => listEnvelope([dto], true));
+    const repo = new ClassLogRepository(makeHttp({ get }));
+    const res = await repo.listEntries({ classId: "c-1" });
+    expect(res.entries).toHaveLength(1);
+    expect(res.entries[0].summary).toBe("Đạo hàm");
+    expect(res.hasMore).toBe(true);
+    expect(res.nextCursor).toBe("cur-2");
   });
 });
 
