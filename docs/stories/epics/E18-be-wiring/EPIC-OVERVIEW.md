@@ -42,6 +42,47 @@ Nguồn: audit contract-drift 2026-07-11 (đối chiếu từng
 5. Proof: unit (mapper/failure), integration (repo contract, kể cả mock), full
    suite zero-regression, `bun run build`. Smoke thật qua gateway `:8000` khi
    môi trường BE bật (ghi vào Evidence nếu chạy được).
+6. **Wire proactive refresh (decision `0018`) vào chính DI factory của cụm này**:
+   `await ensureFreshSession()` (từ `bootstrap/di/auth.di.ts`) TRƯỚC
+   `createServerHttpClient()` trong nhánh `!USE_MOCK`. Xác nhận từ US-E18.0
+   (2026-07-11): pattern này đã được document từ decision `0018` nhưng **chưa
+   từng được gọi ở bất kỳ DI factory feature nào** ngoài chính `auth.di.ts` —
+   coi đây là bug tồn đọng cross-epic, mỗi US wiring phải tự đóng cho cụm của
+   mình khi flip sang real (không phải việc riêng của US-E18.0).
+
+## Xác nhận từ US-E18.0 (proof-of-pattern, chạy `make stack-up` thật 2026-07-11)
+
+Chạy đủ vòng thật qua Kong (`:8000`) với cụm `school-config` (MATCH 100% với
+`core/docs/openapi.yaml`, không cần sửa path/DTO):
+
+- **(a) Envelope unwrap** — xác nhận đúng cho cả success (`GET /iam/api/v1/users/me`
+  → 200, data unwrap trực tiếp không còn wrapper) và lỗi (401/400 → `ApiError`
+  với `code`/`status` đúng) qua chính `bootstrap/lib/http.ts` (không phải chỉ
+  curl thô — đã chạy bằng script import trực tiếp `createHttpClient` thật).
+- **(b) Refresh** — `POST /iam/api/v1/auth/refresh` rotate access+refresh token
+  thành công qua gateway. **Nhưng phát hiện 2 vấn đề:**
+  1. Proactive refresh (`ensureFreshSession`) chưa từng được wire vào DI factory
+     nào ngoài `auth.di.ts` — đã fix cho `admin-school-setup.di.ts` (US-E18.0),
+     playbook step 6 ở trên áp dụng cho các US còn lại.
+  2. **[Cross-repo finding]** Refresh-token reuse-detection (`user_token_reused`,
+     `services/iam/docs/ERROR_CODES.md`) **không kích hoạt** trên
+     `POST /api/v1/auth/refresh` — replay một refresh token đã rotate-away vẫn
+     trả `200` + mint token pair mới (xác nhận lặp lại 2 lần, cùng `sessionId`).
+     Đây là gap phía BE (F3 không được enforce ở endpoint này), KHÔNG phải bug
+     web — web dùng token rotate đúng theo hợp đồng. Cần báo edu-api team.
+- **(c) Error map** — `errorCodeOf()` trả đúng `UNAUTHORIZED` (401, không token)
+  và `SCHOOL_INVALID_TENANT_ID` (400, token không có tenant claim hợp lệ — case
+  xảy ra vì user test không thuộc tenant nào). Code sau trước đó rơi vào
+  `"unknown"` trong `SchoolConfigRepository` → đã map sang `"forbidden"` (fix
+  nhỏ, US-E18.0).
+- **Blocker cho happy-path 200 thật** (login → tenant → `GET school-config` trả
+  data thật): tạo tenant đòi hỏi user có platform role `SUPER_ADMIN`
+  (`POST /iam/api/v1/tenants`), nhưng **stack dev local (`make stack-up`) không
+  seed sẵn SUPER_ADMIN nào** — không có migration/script bootstrap. Không thể
+  tự cấp quyền này qua DB trực tiếp (chặn bởi permission boundary, đúng đắn:
+  đây không phải việc của web team). Cần edu-api cung cấp seed/CLI SUPER_ADMIN
+  cho local dev (cross-repo ask #4 dưới) — Wave 1+ nên tự mang theo cách tạo
+  fixture tenant riêng nếu cần test 200 thật (vd nhờ BE thêm dev-seed script).
 
 ## Scope — US breakdown theo wave
 
@@ -106,6 +147,15 @@ Nguồn: audit contract-drift 2026-07-11 (đối chiếu từng
    — blocker của Wave 4.
 2. Xác nhận **iam error-code taxonomy** (ERROR_CODES.md gần rỗng) — cần cho US-E18.6.
 3. Danh sách "BE chưa có endpoint" ở trên — để BE quyết có build hay không.
+4. **(US-E18.0, 2026-07-11)** `POST /api/v1/auth/refresh` không enforce
+   refresh-token reuse-detection (`user_token_reused` documented nhưng không
+   kích hoạt — replay token đã rotate-away vẫn trả `200` + token pair mới).
+   Đây là gap an ninh phía BE (F3), cần fix trước khi dựa vào nó làm safety-net
+   cho hybrid token strategy (decision `0018`).
+5. **(US-E18.0, 2026-07-11)** Local dev stack (`make stack-up`) không seed sẵn
+   user `SUPER_ADMIN` nào → không tạo được tenant đầu tiên để test full
+   happy-path qua Kong. Cần một seed/migration/CLI dev-only bootstrap 1
+   SUPER_ADMIN cho `docker/docker-compose.yml`.
 
 ## Dependencies & thứ tự
 

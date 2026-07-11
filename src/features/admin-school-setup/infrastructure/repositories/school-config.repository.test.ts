@@ -49,6 +49,18 @@ describe("SchoolConfigRepository", () => {
     if (!res.ok) expect(res.error.type).toBe("not-found");
   });
 
+  it("maps SCHOOL_INVALID_TENANT_ID to forbidden (US-E18.0 gateway smoke finding)", async () => {
+    const http = makeHttp({
+      get: vi.fn().mockRejectedValue(apiError("SCHOOL_INVALID_TENANT_ID", 400)),
+    });
+    const repo = new SchoolConfigRepository(http);
+
+    const res = await repo.getConfig();
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.type).toBe("forbidden");
+  });
+
   it("maps an unknown error code to unknown", async () => {
     const http = makeHttp({
       get: vi.fn().mockRejectedValue(apiError("WEIRD_CODE")),

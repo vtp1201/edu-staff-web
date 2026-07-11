@@ -35,6 +35,13 @@ function mapSchoolFailure(err: unknown): SchoolSetupFailure {
       return { type: "already-exists" };
     case "SCHOOL_FORBIDDEN":
       return { type: "forbidden" };
+    // Tenant claim missing/invalid on the caller's token (e.g. pre-tenant-
+    // selection session reaching a protected core route) — same "no valid
+    // access to this tenant's school" UX as SCHOOL_FORBIDDEN (US-E18.0 gateway
+    // smoke finding: real gateway returned this code, previously fell to
+    // "unknown"; core/docs/ERROR_CODES.md: `SCHOOL_INVALID_TENANT_ID`, 400).
+    case "SCHOOL_INVALID_TENANT_ID":
+      return { type: "forbidden" };
     case "SCHOOL_GRADE_LEVEL_RANGE_INVALID":
       return { type: "grade-level-range-invalid" };
     case "SCHOOL_GRADE_LEVEL_RANGE_NARROWING_BLOCKED":
