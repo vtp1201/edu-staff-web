@@ -1,15 +1,17 @@
 /**
- * Integration tests — TeacherClassRepository (US-E13.1).
+ * Integration tests — TeacherClassRepository (US-E13.1 / raw-flag sweep US-E18.19).
  * The http interceptor unwraps the envelope only when `config.raw` is truthy at
- * config level; this repo passes `{ params: { limit: 100, raw: true } }` so the
- * raw flag is nested under params — the interceptor does NOT unwrap, and the repo
- * calls `parseEnvelope()` itself. We therefore mock `http.get` to resolve the
- * full ApiEnvelope<T> shape (what `parseEnvelope` consumes). Errors arrive as a
- * normalised ApiError and map through `toTeacherClassFailure`.
+ * the TOP level of the axios config; this repo passes
+ * `{ params: { limit: 100 }, raw: true }` so the interceptor leaves the envelope
+ * intact and the repo calls `parseEnvelope()` itself. We therefore mock
+ * `http.get` to resolve the full ApiEnvelope<T> shape (what `parseEnvelope`
+ * consumes). Errors arrive as a normalised ApiError and map through
+ * `toTeacherClassFailure`. The "real interceptor pipeline" suite locks the raw
+ * flag at config top-level (a nested `params.raw` silently breaks every call).
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import { TeacherClassRepository } from "./teacher-class.repository";
 
 function apiError(code: string, status: number) {
@@ -122,7 +124,8 @@ describe("TeacherClassRepository (US-E13.1)", () => {
     );
     expect(classListCalls).toHaveLength(2);
     expect(classListCalls[1][1]).toEqual({
-      params: { limit: 100, raw: true, cursor: "C2" },
+      params: { limit: 100, cursor: "C2" },
+      raw: true,
     });
   });
 
@@ -166,7 +169,8 @@ describe("TeacherClassRepository (US-E13.1)", () => {
       expect(res.data[1].status).toBe("transferred");
     }
     expect(get).toHaveBeenCalledWith("/core/api/v1/classes/cls-10a1/students", {
-      params: { limit: 100, raw: true },
+      params: { limit: 100 },
+      raw: true,
     });
   });
 
@@ -186,5 +190,54 @@ describe("TeacherClassRepository (US-E13.1)", () => {
     const res = await repo.getClassStudents("missing");
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.type).toBe("not-found");
+  });
+});
+
+/**
+ * Regression guard for `{ raw: true }` config placement in `fetchAllPages`. The
+ * suites above mock `http.get` to return an envelope directly, so they cannot
+ * catch `raw` being nested inside `params` (isRawCall reads `config.raw` at the
+ * TOP level). Here `http.get` runs the REAL `unwrapResponse` interceptor against
+ * the config the repo actually passes: if `raw` sits inside `params`, isRawCall
+ * returns false → the envelope is unwrapped to its array → the repo's
+ * `parseEnvelope(array)` throws UNKNOWN_ERROR → the call fails. Passes only when
+ * `raw` sits at the top level of the config (sibling of `params`).
+ */
+describe("TeacherClassRepository — real interceptor pipeline (raw-flag placement)", () => {
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    );
+  }
+
+  it("listMyClasses survives the real unwrap (raw top-level, limit kept in params)", async () => {
+    const get = interceptedGet((url) =>
+      url === "/core/api/v1/classes"
+        ? listEnvelope([classDto({ classId: "cls-a" })])
+        : listEnvelope([enrollmentDto()]),
+    );
+    const res = await new TeacherClassRepository(
+      makeHttp(get),
+      null,
+    ).listMyClasses();
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data[0].id).toBe("cls-a");
+      expect(res.data[0].studentCount).toBe(1);
+    }
+  });
+
+  it("getClassStudents survives the real unwrap (raw top-level)", async () => {
+    const get = interceptedGet(() => listEnvelope([enrollmentDto()]));
+    const res = await new TeacherClassRepository(
+      makeHttp(get),
+      null,
+    ).getClassStudents("cls-10a1");
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data).toHaveLength(1);
   });
 });
