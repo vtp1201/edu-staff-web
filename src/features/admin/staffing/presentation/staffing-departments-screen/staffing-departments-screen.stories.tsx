@@ -9,7 +9,8 @@ const departments: Department[] = [
   {
     id: "dep-natural-sciences",
     name: "Tổ Khoa học Tự nhiên",
-    conceptLabel: "Tổ chuyên môn",
+    conceptLabelSuggested: "TO",
+    conceptLabelCustom: "Tổ chuyên môn",
     subjectParentIds: ["sp-math", "sp-physics"],
     status: "ACTIVE",
     activeAssignmentCount: 2,
@@ -17,7 +18,8 @@ const departments: Department[] = [
   {
     id: "dep-social-sciences",
     name: "Tổ Khoa học Xã hội",
-    conceptLabel: "Tổ chuyên môn",
+    conceptLabelSuggested: "TO",
+    conceptLabelCustom: "Tổ chuyên môn",
     subjectParentIds: ["sp-literature"],
     status: "ACTIVE",
     activeAssignmentCount: 0,
@@ -25,7 +27,8 @@ const departments: Department[] = [
   {
     id: "dep-foreign-languages",
     name: "Tổ Ngoại ngữ",
-    conceptLabel: null,
+    conceptLabelSuggested: null,
+    conceptLabelCustom: null,
     subjectParentIds: ["sp-english"],
     status: "ARCHIVED",
     activeAssignmentCount: 0,
@@ -37,7 +40,8 @@ const okDepartment = async (input: { name: string }) => ({
   department: {
     id: `dep-${Math.random()}`,
     name: input.name,
-    conceptLabel: null,
+    conceptLabelSuggested: null,
+    conceptLabelCustom: null,
     subjectParentIds: [],
     status: "ACTIVE" as const,
     activeAssignmentCount: 0,

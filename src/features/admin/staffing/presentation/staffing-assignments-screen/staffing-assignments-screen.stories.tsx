@@ -19,7 +19,7 @@ const titles: PositionTitle[] = [
     id: "pt-department-head",
     name: "Trưởng phòng",
     scopeType: "DEPARTMENT",
-    permissions: ["MANAGE_SCHEDULE"],
+    permissions: ["APPROVE_LESSON_PLAN"],
     status: "ACTIVE",
     activeAssignmentCount: 1,
   },

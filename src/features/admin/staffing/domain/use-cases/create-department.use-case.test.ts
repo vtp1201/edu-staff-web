@@ -7,7 +7,8 @@ import { fail, ok } from "./result";
 const dept = (overrides: Partial<Department> = {}): Department => ({
   id: "dep-1",
   name: "Tổ Khoa học Tự nhiên",
-  conceptLabel: null,
+  conceptLabelSuggested: null,
+  conceptLabelCustom: null,
   subjectParentIds: [],
   status: "ACTIVE",
   activeAssignmentCount: 0,
@@ -24,7 +25,8 @@ describe("CreateDepartmentUseCase", () => {
 
     const result = await useCase.execute({
       name: "Tổ Toán",
-      conceptLabel: null,
+      conceptLabelSuggested: null,
+      conceptLabelCustom: null,
       subjectParentIds: [],
     });
 
@@ -32,7 +34,8 @@ describe("CreateDepartmentUseCase", () => {
     if (result.ok) expect(result.value).toBe(created);
     expect(repo.createDepartment).toHaveBeenCalledWith({
       name: "Tổ Toán",
-      conceptLabel: null,
+      conceptLabelSuggested: null,
+      conceptLabelCustom: null,
       subjectParentIds: [],
     });
   });
@@ -47,7 +50,8 @@ describe("CreateDepartmentUseCase", () => {
 
     const result = await useCase.execute({
       name: "Tổ Toán",
-      conceptLabel: null,
+      conceptLabelSuggested: null,
+      conceptLabelCustom: null,
       subjectParentIds: [],
     });
 

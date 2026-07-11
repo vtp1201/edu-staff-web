@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IStaffingRepository } from "@/features/admin/staffing/domain/repositories/i-staffing.repository";
@@ -13,6 +14,11 @@ import { StaffingRepository } from "@/features/admin/staffing/infrastructure/rep
 
 async function makeRepo(): Promise<IStaffingRepository> {
   if (USE_MOCK) return new MockStaffingRepository();
+  // Proactive refresh (decision 0018): rotate the access token BEFORE the
+  // protected core call if it's about to expire, avoiding a wasted 401. See
+  // EPIC-OVERVIEW.md playbook step 6 — documented but historically only wired
+  // in auth.di; each wiring US closes it for its own cluster (US-E18.2).
+  await ensureFreshSession();
   return new StaffingRepository(await createServerHttpClient());
 }
 
