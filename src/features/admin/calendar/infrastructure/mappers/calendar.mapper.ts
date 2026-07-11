@@ -1,29 +1,50 @@
 import type { AcademicYear } from "../../domain/entities/academic-year.entity";
 import type { Term } from "../../domain/entities/term.entity";
 import type {
-  AcademicYearDto,
-  TermDto,
+  AcademicYearResponseDto,
+  TermResponseDto,
 } from "../dtos/academic-year-response.dto";
 
 export const TermMapper = {
-  fromDto(dto: TermDto): Term {
+  fromDto(dto: TermResponseDto): Term {
     return {
-      id: dto.id,
+      id: dto.termId,
       name: dto.name,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      hasGrades: dto.hasGrades,
+      // `hasGrades` does not exist on the wire — always false. The real
+      // protection against deleting a graded term is the 409
+      // CALENDAR_TERM_IN_USE returned on archive (mapped to graded-term-delete).
+      hasGrades: false,
     };
   },
 };
 
 export const AcademicYearMapper = {
-  fromDto(dto: AcademicYearDto): AcademicYear {
+  /**
+   * Map the flat wire year DTO to everything on {@link AcademicYear} EXCEPT the
+   * nested `terms` (which live on a separate resource). `isActive` is derived
+   * from the `status` enum.
+   */
+  fromFlatDto(dto: AcademicYearResponseDto): Omit<AcademicYear, "terms"> {
     return {
-      id: dto.id,
+      id: dto.academicYearId,
       label: dto.label,
-      isActive: dto.isActive,
-      terms: dto.terms.map(TermMapper.fromDto),
+      isActive: dto.status === "ACTIVE",
+    };
+  },
+
+  /**
+   * Assemble the full nested {@link AcademicYear} from the flat year DTO plus
+   * the term DTOs fetched separately (`GET .../{yearId}/terms`).
+   */
+  fromDto(
+    dto: AcademicYearResponseDto,
+    termDtos: TermResponseDto[],
+  ): AcademicYear {
+    return {
+      ...AcademicYearMapper.fromFlatDto(dto),
+      terms: termDtos.map(TermMapper.fromDto),
     };
   },
 };
