@@ -7,7 +7,7 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { CLASS_EP } from "@/bootstrap/endpoint/class.endpoint";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import { PrincipalTeachersRepository } from "./principal-teachers.repository";
 
 function apiError(code: string, status: number) {
@@ -128,12 +128,12 @@ describe("PrincipalTeachersRepository", () => {
   });
 
   describe("listTeachers", () => {
-    it("calls GET principalTeachers with { raw: true }", async () => {
+    it("calls GET principalTeachers with { raw: true } at config top-level", async () => {
       const get = vi.fn().mockResolvedValue(listEnvelope([]));
       const repo = new PrincipalTeachersRepository(makeHttp({ get }));
       await repo.listTeachers();
       expect(get).toHaveBeenCalledWith(CLASS_EP.principalTeachers, {
-        params: { raw: true },
+        raw: true,
       });
     });
 
@@ -160,6 +160,73 @@ describe("PrincipalTeachersRepository", () => {
         expect(res.value[0].teacherId).toBe("t-001");
         expect(res.value[0].displayName).toBe("Nguyễn Thị Lan");
       }
+    });
+  });
+
+  /**
+   * Regression guard for `{ raw: true }` config placement. The suites above mock
+   * `http.get` to return an envelope directly, so they cannot catch `raw` being
+   * nested inside `params` (isRawCall reads `config.raw` at the TOP level). Here
+   * `http.get` runs the REAL `unwrapResponse` interceptor against the config the
+   * repo actually passes: if a list call puts `raw` inside `params`, isRawCall
+   * returns false → the envelope is unwrapped to its array → the repo's
+   * `parseEnvelope(array)` throws UNKNOWN_ERROR → the call fails. Passes only
+   * when `raw` sits at the top level of the config.
+   */
+  describe("real interceptor pipeline (raw-flag placement)", () => {
+    /** Mimics bootstrap/lib/http.ts: resolve get() to unwrapResponse(response). */
+    function interceptedGet(bodyFor: (url: string) => unknown) {
+      return vi.fn(
+        async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+          unwrapResponse({
+            data: bodyFor(url),
+            config: { url, raw: config?.raw },
+          }),
+      ) as unknown as AxiosInstance["get"];
+    }
+
+    it("listTeachers survives the real unwrap (raw is top-level)", async () => {
+      const get = interceptedGet(() =>
+        listEnvelope([
+          {
+            teacherId: "t-001",
+            displayName: "Nguyễn Thị Lan",
+            email: "lan@edu.vn",
+            primarySubjectName: "Toán",
+            homeroomClassId: "c-10a1",
+            homeroomClassName: "10A1",
+            subjectAssignments: [],
+            status: "ACTIVE",
+          },
+        ]),
+      );
+      const res = await new PrincipalTeachersRepository(
+        makeHttp({ get }),
+      ).listTeachers();
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.value[0].teacherId).toBe("t-001");
+    });
+
+    it("listClasses survives the real unwrap (raw is top-level)", async () => {
+      const get = interceptedGet(() =>
+        listEnvelope([
+          {
+            id: "c-10a1",
+            name: "10A1",
+            gradeLevel: 10,
+            status: "ACTIVE",
+            academicYear: "2025-2026",
+            studentCount: 30,
+            homeroomTeacherId: null,
+            homeroomTeacherName: null,
+          },
+        ]),
+      );
+      const res = await new PrincipalTeachersRepository(
+        makeHttp({ get }),
+      ).listClasses();
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.value[0].id).toBe("c-10a1");
     });
   });
 
