@@ -6,7 +6,11 @@
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { type ApiEnvelope, ApiError } from "@/bootstrap/lib/api-envelope";
+import {
+  type ApiEnvelope,
+  ApiError,
+  unwrapResponse,
+} from "@/bootstrap/lib/api-envelope";
 import type { AuditEventResponseDto } from "../dtos/audit-event-response.dto";
 import {
   AuditLogRepository,
@@ -214,5 +218,41 @@ describe("AuditLogRepository", () => {
       ok: false,
       error: { type: "forbidden", retryable: false },
     });
+  });
+});
+
+/**
+ * Protective regression guard for `{ raw: true }` config placement (US-E18.19).
+ * `getAuditLog` already spreads `raw: true` as a sibling of `params`; this suite
+ * locks that in. The suite above mocks `http.get` to return an envelope directly,
+ * so it cannot catch a future edit that nests `raw` inside `params` (isRawCall
+ * reads `config.raw` at the TOP level). Here `http.get` runs the REAL
+ * `unwrapResponse` interceptor against the config the repo actually passes: a
+ * nested `params.raw` would leave isRawCall false → envelope unwrapped to its
+ * array → `parseEnvelope(array)` throws UNKNOWN_ERROR. Passes with no source
+ * change, confirming raw is at config top-level.
+ */
+describe("AuditLogRepository — real interceptor pipeline (raw-flag placement)", () => {
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    ) as unknown as AxiosInstance["get"];
+  }
+
+  it("getAuditLog survives the real unwrap and reads pagination", async () => {
+    const get = interceptedGet(() =>
+      envelope([makeDto()], { nextCursor: "offset:20", hasMore: true }),
+    );
+    const repo = new AuditLogRepository(makeHttp({ get }));
+    const res = await repo.getAuditLog({ entityType: "grade" }, null, 20);
+    expect(res.ok).toBe(true);
+    if (!res.ok) throw new Error("expected ok");
+    expect(res.value.events).toHaveLength(1);
+    expect(res.value.nextCursor).toBe("offset:20");
+    expect(res.value.hasMore).toBe(true);
   });
 });

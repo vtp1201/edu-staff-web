@@ -5,7 +5,7 @@
 
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import type { NotificationResponseDto } from "../dtos/notification-response.dto";
 import { NotificationRepository, toFailure } from "./notification.repository";
 
@@ -158,6 +158,43 @@ describe("NotificationRepository.listNotifications", () => {
     });
     const repo = new NotificationRepository(http, "vi");
     const result = await repo.listNotifications({ filter: "all" });
+    expect(result.hasMore).toBe(true);
+    expect(result.nextCursor).toBe("cursor-next");
+  });
+});
+
+// ─── real interceptor pipeline (raw-flag placement guard) ─────────────────────
+
+/**
+ * Protective regression guard for `{ raw: true }` config placement (US-E18.19).
+ * `listNotifications` already spreads `raw: true` as a sibling of `params`; this
+ * suite locks that in. The suites above mock `http.get` to return an envelope
+ * directly, so they cannot catch a future edit that nests `raw` inside `params`
+ * (isRawCall reads `config.raw` at the TOP level). Here `http.get` runs the REAL
+ * `unwrapResponse` interceptor against the config the repo actually passes: a
+ * nested `params.raw` would leave isRawCall false → envelope unwrapped to its
+ * array → `parseEnvelope(array)` throws UNKNOWN_ERROR. Passes with no source
+ * change, confirming raw is at config top-level.
+ */
+describe("NotificationRepository — real interceptor pipeline (raw-flag placement)", () => {
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    ) as unknown as AxiosInstance["get"];
+  }
+
+  it("listNotifications survives the real unwrap and reads pagination", async () => {
+    const get = interceptedGet(() =>
+      makeEnvelope([makeDto()], "cursor-next", true),
+    );
+    const repo = new NotificationRepository(makeHttp({ get }), "vi");
+    const result = await repo.listNotifications({ filter: "all" });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].title).toBe("Kết quả học tập");
     expect(result.hasMore).toBe(true);
     expect(result.nextCursor).toBe("cursor-next");
   });
