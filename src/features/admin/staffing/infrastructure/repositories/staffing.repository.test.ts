@@ -9,7 +9,7 @@
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
+import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import type { StaffingFailure } from "../../domain/failures/staffing.failure";
 import type { DepartmentResponseDto } from "../dtos/department-response.dto";
 import type { PositionAssignmentResponseDto } from "../dtos/position-assignment-response.dto";
@@ -322,6 +322,61 @@ describe("StaffingRepository — happy paths", () => {
     });
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.value).toEqual({ copiedCount: 5, skippedCount: 1 });
+  });
+});
+
+/**
+ * Regression guard for the `{ raw: true }` config placement. The other suites
+ * mock `http.get` to return an envelope directly, so they cannot catch `raw`
+ * being nested inside `params` (isRawCall reads `config.raw` at the TOP level).
+ * Here `http.get` runs the REAL `unwrapResponse` interceptor against the config
+ * the repository actually passes: if a list call ever puts `raw` inside `params`,
+ * isRawCall returns false → the envelope is unwrapped to its array → the repo's
+ * `parseEnvelope(array)` throws → the call fails. This test only passes when
+ * `raw` sits as a sibling of `params` (top-level config).
+ */
+describe("StaffingRepository — real interceptor pipeline (raw-flag placement)", () => {
+  /** Mimics bootstrap/lib/http.ts: resolve get() to unwrapResponse(response). */
+  function interceptedGet(bodyFor: (url: string) => unknown) {
+    return vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data: bodyFor(url),
+          config: { url, raw: config?.raw },
+        }),
+    );
+  }
+
+  it("listDepartments survives the real unwrap (raw is top-level)", async () => {
+    const get = interceptedGet((url) => {
+      if (url === EP.departments)
+        return envelope([depDto({ departmentId: "dep-1" })]);
+      if (url === EP.positionAssignments)
+        return envelope([asgDto({ scopeEntityId: "dep-1" })]);
+      throw new Error(`unrouted ${url}`);
+    });
+    const res = await new StaffingRepository(
+      makeHttp({ get }),
+    ).listDepartments();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value[0].id).toBe("dep-1");
+  });
+
+  it("listAssignments survives the real unwrap and joins the title name", async () => {
+    const get = interceptedGet((url) => {
+      if (url === EP.positionTitles)
+        return envelope([
+          titleDto({ positionTitleId: "pt-1", name: "Tổ trưởng" }),
+        ]);
+      if (url === EP.positionAssignments)
+        return envelope([asgDto({ positionTitleId: "pt-1" })]);
+      throw new Error(`unrouted ${url}`);
+    });
+    const res = await new StaffingRepository(
+      makeHttp({ get }),
+    ).listAssignments();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value[0].positionTitleName).toBe("Tổ trưởng");
   });
 });
 

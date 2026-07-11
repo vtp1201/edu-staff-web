@@ -154,8 +154,8 @@ export class StaffingRepository implements IStaffingRepository {
         params: {
           status: "ACTIVE",
           ...(cursor ? { cursor } : {}),
-          raw: true,
         },
+        raw: true,
       })) as unknown as ApiEnvelope<PositionAssignmentResponseDto[]>;
       const { data, pagination } = parseEnvelope(env);
       out.push(...data);
@@ -195,7 +195,7 @@ export class StaffingRepository implements IStaffingRepository {
   /** id → title name map from the full position-titles list (for join). */
   private async fetchTitleNameMap(): Promise<Map<string, string>> {
     const env = (await this.http.get(STAFFING_EP.positionTitles, {
-      params: { raw: true },
+      raw: true,
     })) as unknown as ApiEnvelope<PositionTitleResponseDto[]>;
     const { data } = parseEnvelope(env);
     return new Map(data.map((t) => [t.positionTitleId, t.name]));
@@ -209,7 +209,8 @@ export class StaffingRepository implements IStaffingRepository {
     try {
       const [envelope, counts] = await Promise.all([
         this.http.get(STAFFING_EP.departments, {
-          params: { status, raw: true },
+          params: { status },
+          raw: true,
         }) as unknown as Promise<ApiEnvelope<DepartmentResponseDto[]>>,
         this.fetchAssignmentCounts(),
       ]);
@@ -304,7 +305,8 @@ export class StaffingRepository implements IStaffingRepository {
     try {
       const [envelope, counts] = await Promise.all([
         this.http.get(STAFFING_EP.positionTitles, {
-          params: { ...filter, raw: true },
+          params: { ...filter },
+          raw: true,
         }) as unknown as Promise<ApiEnvelope<PositionTitleResponseDto[]>>,
         this.fetchAssignmentCounts(),
       ]);
@@ -428,8 +430,8 @@ export class StaffingRepository implements IStaffingRepository {
             memberId: filter?.memberId,
             academicYearId: filter?.academicYearId,
             status: wireStatus,
-            raw: true,
           },
+          raw: true,
         }) as unknown as Promise<ApiEnvelope<PositionAssignmentResponseDto[]>>,
         this.fetchTitleNameMap(),
       ]);

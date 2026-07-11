@@ -365,3 +365,21 @@ round-trip against. Error-path smoke deferred to when the stack is reachable.
 **Mock repo:** updated fixtures to the new shapes (concept-label split, 6-value
 permission enum) and the mock `createDepartment`/`patchDepartment` to the split
 input; mock keeps real display names (the `memberId` fallback is real-mode-only).
+
+**Review round 1 — `fe-tech-lead-reviewer`: REVISION REQUIRED.** One blocking bug:
+`raw: true` was nested inside `params` instead of being a top-level axios config key
+(sibling of `params`) at 5 call sites in `staffing.repository.ts`
+(`fetchAssignmentCounts`, `fetchTitleNameMap`, `listDepartments`,
+`listPositionTitles`, `listAssignments`). `isRawCall` in `bootstrap/lib/api-envelope.ts`
+only reads `config.raw` at the top level, so with `raw` nested, the interceptor
+unwrapped the envelope early and every one of these real-mode calls would have
+thrown inside `parseEnvelope` and silently degraded to `network-error` — exactly the
+failure class this epic exists to catch, and undetectable by the mocked-`http.get`
+unit tests. Everything else (error-code coverage, `activeAssignmentCount` fan-out,
+`scopeEntityType` derivation, `memberName` fallback, i18n parity, security, TDD
+depth) was Approved-grade on the first pass.
+
+**Fix applied:** hoisted `raw: true` to the top level at all 5 call sites, matching
+the `calendar.repository.ts` precedent from US-E18.1. Re-ran full gate after the fix:
+`bun vitest run` → 244 files / 1334 tests pass (unchanged); `bunx tsc --noEmit`
+clean; `bun run build` green. Sent back to `fe-tech-lead-reviewer` for final sign-off.
