@@ -169,6 +169,14 @@ endpoints back this screen, or flag mock-first if none exist yet.
 
 None blocking within this batch.
 
+## Design-review (gate)
+
+Carried over from the P8 confirmation ("reports.jsx ... đạt spec") — this
+screen is the reference implementation P8 asked `invitations.jsx` to copy
+for its `failedOnce` retry-demo pattern. Verdict: **Pass**. Charts have a
+non-color-only text/table fallback for values; status badges (ready/
+generating) use icon+text.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

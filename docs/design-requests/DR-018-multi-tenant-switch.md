@@ -149,6 +149,16 @@ Service `iam`. `GET /api/v1/members/me/tenants`, `POST
 
 None blocking within this batch.
 
+## Design-review (gate)
+
+Carried over from the P7 audit (P8 confirms "P7 tenant-switch ... đạt
+spec"). Verdict: **Pass**. Tenant cards are real `<button>`s with a readable
+name+role+current-state unit; single-tenant users see zero added UI
+(verified zero-noise branch in `app.jsx`). `tenant.switch.*` kept as its own
+sub-tree under the existing `tenant` namespace (distinct UX from the
+one-time `tenant.select.*` post-login flow) — `/ba` to confirm at spec time
+whether consolidation with `tenant.select` is worthwhile.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

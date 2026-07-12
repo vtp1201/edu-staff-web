@@ -352,6 +352,14 @@ Service `iam`. `GET/POST /api/v1/tenants/{id}/invitations`, `DELETE
 
 None blocking.
 
+## Design-review (gate)
+
+Carried over from the P4 audit + P8 fix-pass items 1-4 (hex→token restores,
+2 missing states added to the admin table). Verdict: **Pass**. 4/4 states
+confirmed on both the admin screen and the public accept screen (3 error
+variants + form + logged-in + success). Expiry countdown uses
+`--edu-warning-text` correctly at ≥14px/bold per decision 0046's constraint.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

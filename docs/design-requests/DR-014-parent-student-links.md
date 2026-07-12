@@ -316,6 +316,14 @@ Service `core` (US-047, US-094/095). `GET/POST
 None blocking — independent of DR-012/013/017. Shares only the doc-level
 states.jsx pattern.
 
+## Design-review (gate)
+
+Carried over from the P3 audit (P8 confirms "P3 parent-links ... đạt spec").
+Verdict: **Pass**. States 4/4 present both parts. Consent toggles use real
+`<Switch>` + linked labels; destructive Unlink has consequence-stating
+confirm. Consent copy kept under its own `parentLinks.consent.*` sub-tree so
+`/fe` can compose it into the existing `profile` namespace without merging.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

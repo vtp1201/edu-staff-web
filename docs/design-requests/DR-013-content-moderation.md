@@ -329,6 +329,15 @@ Service `social` (US-098). `POST /api/v1/reports`, `GET /api/v1/reports`,
 - `uiux-designer`/`uiux-ux-writer`: write the `reportDialog` design-spec
   entry and i18n keys ONCE here; DR-012 references them, does not duplicate.
 
+## Design-review (gate)
+
+Carried over from the P2 audit in `PROMPTS-group-b-ui-gen.md` (P8 confirms
+"P2 moderation+report dialog ... đạt spec"). Verdict: **Pass**. States 4/4
+present via shared `EduSkeleton`/`EduEmpty`/`EduError`. Destructive
+"Gỡ nội dung" is role-gated + confirm-dialog per a11y notes above; report
+dialog copy centralized under `moderation.reportDialog.*` to avoid the DR-001
+i18n-duplication mistake.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

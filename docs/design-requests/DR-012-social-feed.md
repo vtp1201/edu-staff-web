@@ -247,6 +247,16 @@ Service `social` (US-097→100 implemented; US-101 post-pinning `in_progress`).
   already merged in this order per P1→P2).
 - Depends on shared states.jsx pattern (doc-only, no blocking).
 
+## Design-review (gate)
+
+Carried over from the P1→P8 audit in `PROMPTS-group-b-ui-gen.md` — no new
+visual work introduced by this DR (design-spec + i18n reconcile only).
+Verdict: **Pass**. States 4/4 present (loading/empty/error/end-of-feed via
+shared `EduSkeleton`/`EduEmpty`/`EduError`). A11y notes above carried from P1
+prompt + verified against `feed.jsx` (aria-pressed reaction buttons, Radix
+menu, alt text, non-color-only pinned badge). No raw hex found outside
+`T.warningText`/`T.errorText` (both P8-restored tokens).
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

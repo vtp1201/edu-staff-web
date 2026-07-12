@@ -121,6 +121,15 @@ with `/ba`). `GET /api/v1/presence`, realtime via SSE `/api/v1/stream`
   `uiux-designer` should apply DR-013's edit before DR-017's in the same pass
   to avoid clobbering each other in `design-spec.jsonc`.
 
+## Design-review (gate)
+
+Carried over from the P6 audit + P8 item 6 (group-panel presence now driven
+by `msgPresence()`/sort-online-first instead of the legacy boolean). Verdict:
+**Pass**. Presence dot carries `sr-only` text per a11y notes; no blinking
+animation (motion-safe by construction, nothing to gate). i18n additions are
+purely additive under the existing `messaging` namespace — no collision with
+DR-006/DR-008 keys.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

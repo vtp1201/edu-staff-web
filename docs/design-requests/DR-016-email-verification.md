@@ -181,6 +181,16 @@ Touches the existing (implemented) Profile screen — coordinate with `/ba`/`/fe
 on where exactly the row/dialog mount; no shared-file contention with
 DR-012→015/017/018/019 in this batch.
 
+## Design-review (gate)
+
+Carried over from the P5 audit + P8 fix-pass items 2-3 (hex→token restores
+for the badge, OTP cell background, and error text). Verdict: **Pass**.
+Banner uses `role="status"` (not alert) per a11y notes; OTP cells have
+per-digit `aria-label`; warning banner text confirmed as
+`--edu-warning-foreground` (never white on yellow, decision 0013). Profile
+row copy staged as additive keys under the EXISTING `profile` namespace, not
+a duplicate.
+
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-12)

@@ -27,11 +27,11 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-009 | Impeccable anti-pattern fixes (side-stripe ban, error contrast, a11y, GPU transition, bounce easing) | US-E16.1–E16.5 | [x] delivered (2026-06-21) |
 | DR-010 | Responsive grid + empty states (UX-03 mobile breakpoints + UX-01 empty-state pattern) | UX-03 + UX-01 | [x] delivered (2026-06-21) |
 | DR-011 | UX Polish: Confirmations, Navigation, Loading & Feedback (UX-02/04/05/06/07/08) | UX-02 + UX-04 + UX-05 + UX-06 + UX-07 + UX-08 | [x] delivered (2026-06-21) |
-| DR-012 | Social Feed | US-E19.1 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-013 | Content Reporting & Moderation | US-E19.2 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-014 | Parent–Student Links & Consent Management | US-E20.1 + US-E20.2 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-015 | Tenant Invitations & Accept Onboarding | US-E21.1 + US-E21.2 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-016 | Email Verification Flow | US-E22.1 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-017 | Presence Indicator (Messaging) | US-E10.5 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-018 | Multi-Tenant Switch (đa trường) | US-E23.1 + US-E23.2 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
-| DR-019 | Principal Reports Dashboard | US-E03.1 | [ ] pending doc-sync — mockup delivered (v2.2), spec+copy staged |
+| DR-012 | Social Feed | US-E19.1 | [x] delivered (2026-07-12) |
+| DR-013 | Content Reporting & Moderation | US-E19.2 | [x] delivered (2026-07-12) |
+| DR-014 | Parent–Student Links & Consent Management | US-E20.1 + US-E20.2 | [x] delivered (2026-07-12) |
+| DR-015 | Tenant Invitations & Accept Onboarding | US-E21.1 + US-E21.2 | [x] delivered (2026-07-12) |
+| DR-016 | Email Verification Flow | US-E22.1 | [x] delivered (2026-07-12) |
+| DR-017 | Presence Indicator (Messaging) | US-E10.5 | [x] delivered (2026-07-12) |
+| DR-018 | Multi-Tenant Switch (đa trường) | US-E23.1 + US-E23.2 | [x] delivered (2026-07-12) |
+| DR-019 | Principal Reports Dashboard | US-E03.1 | [x] delivered (2026-07-12) |
