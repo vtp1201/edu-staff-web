@@ -32,9 +32,10 @@ plus `messaging.jsx` extended in place for presence) and the shared
   `warningText`/`errorText` mirror `--edu-warning-text` (decision `0046`) and
   `--edu-error-text` (decision `0027`) — no new tokens in this batch.
 - `docs/design-requests/README.md`: added DR-012 through DR-019 rows to the
-  Active Requests table, status `pending doc-sync` (mockup + spec + copy
-  staged; not yet flipped to `delivered` — pending final validation +
-  design-review gate note by `uiux-lead`).
+  Active Requests table. All 8 flipped to `[x] delivered (2026-07-12)` by
+  `uiux-lead` after validating the design-spec + i18n reconcile and adding a
+  per-DR design-review section (verdict: Pass, carried over from the P1–P8
+  audit — no new visual work introduced by this batch).
 
 **Refs**: DR-012 (Social Feed, US-E19.1) · DR-013 (Content Moderation,
 US-E19.2) · DR-014 (Parent–Student Links, US-E20.1/E20.2) · DR-015 (Tenant
