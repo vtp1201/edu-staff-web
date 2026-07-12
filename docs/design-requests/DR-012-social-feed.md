@@ -57,7 +57,171 @@ Namespace: `feed` (net-new — no existing key collision). Keys staged below by
 `uiux-ux-writer`, vi source + en mirror, ready for `/fe` to paste into
 `src/bootstrap/i18n/messages/{vi,en}.json`.
 
-<!-- UX-WRITER: insert feed.* key block here -->
+```jsonc
+// vi.json → "feed"
+{
+  "feed": {
+    "tabs": {
+      "ariaLabel": "Phạm vi bảng tin",
+      "school": "Toàn trường",
+      "class": "Lớp {class}",
+      "choosePickerAriaLabel": "Chọn lớp"
+    },
+    "composer": {
+      "contentAriaLabel": "Nội dung bài viết",
+      "placeholderSchool": "Chia sẻ với cả trường…",
+      "placeholderClass": "Chia sẻ với lớp {class}…",
+      "attachImage": "Đính kèm ảnh",
+      "attachedMock": "1 ảnh đính kèm (mô phỏng)",
+      "removeImage": "Gỡ ảnh",
+      "photo": "Ảnh",
+      "post": "Đăng"
+    },
+    "post": {
+      "pinned": "Đã ghim",
+      "scopeSchool": "Toàn trường",
+      "scopeClass": "Lớp {class}",
+      "seeMore": "Xem thêm",
+      "showLess": "Thu gọn",
+      "optionsAriaLabel": "Tuỳ chọn bài viết",
+      "menu": {
+        "pin": "Ghim bài viết",
+        "unpin": "Bỏ ghim bài viết",
+        "report": "Báo cáo bài viết",
+        "remove": "Gỡ bài viết"
+      },
+      "comments": "Bình luận",
+      "removed": "Đã gỡ bài viết",
+      "published": "Đã đăng bài viết"
+    },
+    "reaction": {
+      "like": "Thích",
+      "love": "Yêu thích",
+      "celebrate": "Chúc mừng",
+      "applaud": "Tuyệt vời",
+      "reactAriaLabel": "Thả cảm xúc {reaction}, {count} người",
+      "addReaction": "Thả cảm xúc khác",
+      "addReactionNamed": "Thả cảm xúc {reaction}"
+    },
+    "comments": {
+      "optionsAriaLabel": "Tuỳ chọn bình luận",
+      "report": "Báo cáo bình luận",
+      "remove": "Gỡ bình luận",
+      "writeAriaLabel": "Viết bình luận",
+      "placeholder": "Viết bình luận…",
+      "sendAriaLabel": "Gửi bình luận",
+      "justNow": "Vừa xong"
+    },
+    "empty": {
+      "title": "Chưa có bài viết nào",
+      "description": "Bảng tin này còn trống. Bài viết mới sẽ xuất hiện tại đây.",
+      "cta": "Đăng bài viết đầu tiên"
+    },
+    "error": {
+      "title": "Không tải được bảng tin",
+      "description": "Đã xảy ra lỗi khi kết nối. Vui lòng thử lại."
+    },
+    "pagination": {
+      "loadMore": "Tải thêm bài viết",
+      "loading": "Đang tải…",
+      "endOfFeed": "Bạn đã xem hết bảng tin"
+    },
+    "report": {
+      "sent": "Đã gửi báo cáo. BGH sẽ xem xét."
+    }
+  }
+}
+```
+
+```jsonc
+// en.json → "feed" (mirror)
+{
+  "feed": {
+    "tabs": {
+      "ariaLabel": "Feed scope",
+      "school": "Whole school",
+      "class": "Class {class}",
+      "choosePickerAriaLabel": "Choose class"
+    },
+    "composer": {
+      "contentAriaLabel": "Post content",
+      "placeholderSchool": "Share with the whole school…",
+      "placeholderClass": "Share with class {class}…",
+      "attachImage": "Attach image",
+      "attachedMock": "1 image attached (mock)",
+      "removeImage": "Remove image",
+      "photo": "Photo",
+      "post": "Post"
+    },
+    "post": {
+      "pinned": "Pinned",
+      "scopeSchool": "Whole school",
+      "scopeClass": "Class {class}",
+      "seeMore": "See more",
+      "showLess": "Show less",
+      "optionsAriaLabel": "Post options",
+      "menu": {
+        "pin": "Pin post",
+        "unpin": "Unpin post",
+        "report": "Report post",
+        "remove": "Remove post"
+      },
+      "comments": "Comments",
+      "removed": "Post removed",
+      "published": "Post published"
+    },
+    "reaction": {
+      "like": "Like",
+      "love": "Love",
+      "celebrate": "Celebrate",
+      "applaud": "Applaud",
+      "reactAriaLabel": "React {reaction}, {count} people",
+      "addReaction": "Add a reaction",
+      "addReactionNamed": "React {reaction}"
+    },
+    "comments": {
+      "optionsAriaLabel": "Comment options",
+      "report": "Report comment",
+      "remove": "Remove comment",
+      "writeAriaLabel": "Write a comment",
+      "placeholder": "Write a comment…",
+      "sendAriaLabel": "Send comment",
+      "justNow": "Just now"
+    },
+    "empty": {
+      "title": "No posts yet",
+      "description": "This feed is empty. New posts will appear here.",
+      "cta": "Write the first post"
+    },
+    "error": {
+      "title": "Could not load the feed",
+      "description": "Something went wrong while connecting. Please try again."
+    },
+    "pagination": {
+      "loadMore": "Load more posts",
+      "loading": "Loading…",
+      "endOfFeed": "You're all caught up"
+    },
+    "report": {
+      "sent": "Report sent. School leadership will review it."
+    }
+  }
+}
+```
+
+Notes:
+- `feed.post.menu.report` / `feed.comments.report` reuse the SAME reason list +
+  dialog copy as `moderation.reportDialog.*` (DR-013) — the dialog itself
+  (title, radio reasons, textarea, submit/cancel) is keyed once under
+  `moderation.reportDialog.*`; `feed.jsx` only needs its own menu-item labels
+  and the post-submit toast (`feed.report.sent`), which duplicates
+  `moderation.reportDialog.toastSent` intentionally (same string, two call
+  sites — `messaging.jsx` uses the third). Do not add a second copy of the
+  dialog body under `feed.*`.
+- Relative-time strings (`"2 giờ trước"`, `"Hôm qua"`, …) and full timestamps
+  are **mock/seed data** shaped per-post — not i18n keys (would need per-post
+  dynamic values that don't fit a message catalogue); `/fe` should compute
+  these from real timestamps with a date-relative formatter, not hardcode.
 
 ## A11y (WCAG 2.1 AA)
 

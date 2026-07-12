@@ -43,7 +43,114 @@ dimensions/scale, table columns) — added by `uiux-designer`.
 Namespace: `reports` (net-new — no existing `reports`/`principalReports` key
 in `messages/vi.json`).
 
-<!-- UX-WRITER: insert reports.* key block here -->
+```jsonc
+// vi.json → "reports"
+{
+  "reports": {
+    "toolbar": {
+      "termGroupAriaLabel": "Kỳ báo cáo",
+      "termSemester1": "Học kỳ I",
+      "termSemester2": "Học kỳ II",
+      "termFullYear": "Cả năm",
+      "refresh": "Làm mới",
+      "exportExcel": "Xuất Excel"
+    },
+    "stats": {
+      "totalStudents": "Tổng số học sinh",
+      "schoolAverage": "Điểm TB toàn trường",
+      "attendanceRate": "Tỷ lệ chuyên cần",
+      "incidentsThisTerm": "Vi phạm trong kỳ",
+      "vsLastTerm": "so với HK trước"
+    },
+    "charts": {
+      "subjectAverageTitle": "Điểm trung bình theo môn",
+      "subjectAverageScale": "Thang điểm 10",
+      "subjectAverageAriaLabel": "Biểu đồ cột điểm trung bình theo môn",
+      "attendanceTitle": "Chuyên cần 6 tuần gần nhất",
+      "attendanceAriaLabel": "Biểu đồ chuyên cần theo tuần"
+    },
+    "table": {
+      "title": "Báo cáo định kỳ",
+      "newReport": "Tạo báo cáo",
+      "columnReport": "Tên báo cáo",
+      "columnTerm": "Kỳ",
+      "columnCreated": "Ngày tạo",
+      "columnStatus": "Trạng thái",
+      "statusReady": "Sẵn sàng",
+      "statusGenerating": "Đang tạo…",
+      "download": "Tải về"
+    },
+    "empty": {
+      "title": "Không có báo cáo nào",
+      "description": "Chưa có báo cáo nào cho kỳ đã chọn. Thử chọn kỳ khác hoặc tạo báo cáo mới."
+    },
+    "error": {
+      "title": "Không tải được báo cáo",
+      "description": "Máy chủ báo cáo không phản hồi. Vui lòng thử lại."
+    }
+  }
+}
+```
+
+```jsonc
+// en.json → "reports" (mirror)
+{
+  "reports": {
+    "toolbar": {
+      "termGroupAriaLabel": "Reporting term",
+      "termSemester1": "Semester I",
+      "termSemester2": "Semester II",
+      "termFullYear": "Full year",
+      "refresh": "Refresh",
+      "exportExcel": "Export Excel"
+    },
+    "stats": {
+      "totalStudents": "Total students",
+      "schoolAverage": "School grade average",
+      "attendanceRate": "Attendance rate",
+      "incidentsThisTerm": "Incidents this term",
+      "vsLastTerm": "vs last term"
+    },
+    "charts": {
+      "subjectAverageTitle": "Grade average by subject",
+      "subjectAverageScale": "Scale of 10",
+      "subjectAverageAriaLabel": "Bar chart of grade average by subject",
+      "attendanceTitle": "Attendance, last 6 weeks",
+      "attendanceAriaLabel": "Weekly attendance chart"
+    },
+    "table": {
+      "title": "Periodic reports",
+      "newReport": "New report",
+      "columnReport": "Report",
+      "columnTerm": "Term",
+      "columnCreated": "Created",
+      "columnStatus": "Status",
+      "statusReady": "Ready",
+      "statusGenerating": "Generating…",
+      "download": "Download"
+    },
+    "empty": {
+      "title": "No reports yet",
+      "description": "No reports for the selected term yet. Try another term or create a new report."
+    },
+    "error": {
+      "title": "Failed to load reports",
+      "description": "The reporting service did not respond. Please try again."
+    }
+  }
+}
+```
+
+Notes:
+- Subject names (Toán, Ngữ văn, …), week labels (T1…T6) and per-report titles
+  (`"Báo cáo sơ kết Học kỳ I"`, …) are mock/seed data shaped as `{vi, en}`
+  pairs in `RP_SUBJECT_AVG`/`RP_ATTENDANCE`/`RP_REPORTS` — excluded from
+  i18n; `/fe` renders them from real API data, not from the message catalogue.
+- `reports.empty.*` is staged defensively per the DR's state checklist (empty
+  when a filter yields no reports) even though the current mock always has
+  ≥1 report per term — no mockup markup to transcribe verbatim, so this pair
+  follows the same tone/shape as the sibling `EduEmpty` usages elsewhere in
+  this batch (e.g. `invitations.empty.none`).
 
 ## A11y (WCAG 2.1 AA)
 

@@ -53,7 +53,51 @@ Extend the EXISTING `messaging` namespace: `messaging.presence.online`,
 must grep existing `messaging.*` keys first to avoid collision with DR-006/
 DR-008 keys.
 
-<!-- UX-WRITER: insert messaging.presence.* key additions here -->
+```jsonc
+// vi.json → ADD "presence" object inside the EXISTING "messaging" namespace
+// (alongside chat/contextMenu/date/... siblings at line ~1943; do not touch
+// messaging.chat.online — that existing key is a different, legacy label)
+"messaging": {
+  // ...existing keys unchanged...
+  "presence": {
+    "onlineNow": "Đang hoạt động",
+    "activeMinutesAgo": "Hoạt động {count} phút trước",
+    "activeYesterday": "Hoạt động hôm qua",
+    "onlineCount": "{count} đang hoạt động",
+    "srOnline": "đang hoạt động",
+    "srRecentlyActive": "vừa hoạt động gần đây"
+  }
+}
+```
+
+```jsonc
+// en.json → ADD "presence" object (mirror)
+"messaging": {
+  // ...existing keys unchanged...
+  "presence": {
+    "onlineNow": "Active now",
+    "activeMinutesAgo": "Active {count} minutes ago",
+    "activeYesterday": "Active yesterday",
+    "onlineCount": "{count} online now",
+    "srOnline": "online",
+    "srRecentlyActive": "recently active"
+  }
+}
+```
+
+Notes:
+- Grepped `src/bootstrap/i18n/messages/vi.json` → `messaging` block (lines
+  1943–2078) first: existing keys are `chat.online` ("Đang online" — legacy
+  1:1 DM presence label, distinct call site) and no `presence.*` sub-tree yet
+  → safe additive extension, no collision.
+- `msgPresenceCaption`'s per-contact seeded `lastSeen` strings (`"Hoạt động 3
+  phút trước"`, `"Hoạt động 5 phút trước"`) are mock data with baked-in
+  minute counts; the static key is `presence.activeMinutesAgo` with a
+  `{count}` param — `/fe` computes the actual elapsed minutes, does not
+  hardcode the mock's "3"/"5".
+- `messaging.chat.members` (`"{count} thành viên"`) already exists and is
+  reused as-is for the member-panel header count; only the online-count line
+  (`"N đang hoạt động"`) is new (`presence.onlineCount`).
 
 ## A11y (WCAG 2.1 AA)
 

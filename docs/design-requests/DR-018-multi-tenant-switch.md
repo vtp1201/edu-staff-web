@@ -53,7 +53,86 @@ Check `tenant` namespace first (existing, from US-E01.2 select-role/tenant
 flow). Extend with `tenant.switch.*` if compatible; otherwise document why a
 separate namespace was needed.
 
-<!-- UX-WRITER: insert tenant.switch.* (or documented alternative) key block here -->
+**Namespace decision**: extend the EXISTING `tenant` namespace with a new
+`tenant.switch.*` sub-tree — grepped `messages/vi.json` first (`tenant.home.*`
+and `tenant.select.*`, lines 2937–2950). `tenant.select.*` is the
+already-implemented US-E01.2 ONE-TIME post-login choice screen (simple list,
+no "current" badge, no header re-entry point, title "Chọn không gian làm
+việc"). This DR's `TenantSelectScreen` is a **different, richer UX**
+generated for this batch: card grid with logo/initial, address, role badge,
+hover-lift, per-card loading state, and — critically — a **persistent header
+menu re-entry point** ("Đổi trường") that `tenant.select.*` has no concept of.
+Reusing `tenant.select.*` verbatim would either silently change the shipped
+US-E01.2 copy or force two screens to share keys that diverge in shape
+(no address/role-badge/current-badge in the old screen). Per the DR's own
+instruction, keeping a distinct `tenant.switch.*` sub-tree (still nested
+under `tenant`, not a new top-level namespace) — flagging to `uiux-lead`/`/ba`
+that they may want to evaluate consolidating `tenant.select` and
+`tenant.switch.postLogin` into one screen at implementation time, since they
+serve overlapping post-login moments.
+
+```jsonc
+// vi.json → ADD "switch" object inside the EXISTING "tenant" namespace
+"tenant": {
+  // ...existing "home" and "select" keys unchanged...
+  "switch": {
+    "menuItem": "Đổi trường",
+    "dialog": {
+      "title": "Chọn trường",
+      "description": "Tài khoản của bạn thuộc nhiều trường. Chọn trường để làm việc.",
+      "close": "Đóng",
+      "current": "Hiện tại",
+      "switching": "Đang chuyển…",
+      "cardAriaLabel": "{school}, {address}, vai trò {role}",
+      "cardAriaLabelCurrent": "{school}, {address}, vai trò {role}, trường hiện tại",
+      "toastSwitched": "Đã chuyển sang {school}"
+    },
+    "postLogin": {
+      "title": "Chọn trường để tiếp tục",
+      "greeting": "Xin chào {name} — tài khoản của bạn thuộc {count} trường.",
+      "greetingNoName": "Tài khoản của bạn thuộc {count} trường.",
+      "footnote": "Bạn có thể đổi trường bất kỳ lúc nào từ menu tài khoản."
+    },
+    "reloadingContext": "Đang tải dữ liệu {school}…"
+  }
+}
+```
+
+```jsonc
+// en.json → ADD "switch" object (mirror)
+"tenant": {
+  // ...existing "home" and "select" keys unchanged...
+  "switch": {
+    "menuItem": "Switch school",
+    "dialog": {
+      "title": "Choose a school",
+      "description": "Your account belongs to multiple schools. Pick one to work in.",
+      "close": "Close",
+      "current": "Current",
+      "switching": "Switching…",
+      "cardAriaLabel": "{school}, {address}, role {role}",
+      "cardAriaLabelCurrent": "{school}, {address}, role {role}, current school",
+      "toastSwitched": "Switched to {school}"
+    },
+    "postLogin": {
+      "title": "Choose a school to continue",
+      "greeting": "Hi {name} — your account belongs to {count} schools.",
+      "greetingNoName": "Your account belongs to {count} schools.",
+      "footnote": "You can switch schools anytime from the account menu."
+    },
+    "reloadingContext": "Loading {school}…"
+  }
+}
+```
+
+Notes:
+- School name, address, role label are per-membership data (`TS_MEMBERSHIPS`
+  mock), passed as interpolation params (`{school}`/`{address}`/`{role}`), not
+  baked into strings.
+- The role badge label reuses whatever role-name keys already exist
+  (`shell.roles.*` — "Giáo viên", "Hiệu trưởng", …) rather than re-keying role
+  names a third time; `/fe` should map `tenant.switch` card role text to
+  `shell.roles.*` where the role matches an app role 1:1.
 
 ## A11y (WCAG 2.1 AA)
 

@@ -50,8 +50,117 @@ Namespace: `emailVerify` for banner + dialog. Profile row copy goes under the
 EXISTING `profile` namespace (`uiux-ux-writer` must grep
 `messages/vi.json` → `profile.*` first and extend, not duplicate).
 
-<!-- UX-WRITER: insert emailVerify.* key block + the 2-3 keys to ADD under
-     existing profile.* here -->
+```jsonc
+// vi.json → "emailVerify" (net-new namespace: banner + OTP dialog only)
+{
+  "emailVerify": {
+    "banner": {
+      "unverifiedTitle": "Email của bạn chưa được xác thực.",
+      "unverifiedBody": "Xác thực để nhận thông báo quan trọng.",
+      "sendButton": "Gửi mail xác thực",
+      "sentTitle": "Đã gửi.",
+      "sentBody": "Kiểm tra hộp thư {email}.",
+      "resendIn": "Gửi lại được sau {seconds} giây.",
+      "resend": "Gửi lại",
+      "dismissAriaLabel": "Đóng thông báo xác thực email"
+    },
+    "dialog": {
+      "title": "Xác thực email",
+      "description": "Chúng tôi đã gửi mã 6 số tới {email}.",
+      "close": "Đóng",
+      "codeGroupAriaLabel": "Mã xác thực 6 chữ số",
+      "digitAriaLabel": "Chữ số thứ {n}",
+      "errorWrong": "Mã không đúng. Vui lòng kiểm tra lại email và nhập lại.",
+      "errorExpired": "Mã đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới.",
+      "resendIn": "Gửi lại mã được sau {seconds} giây",
+      "resend": "Gửi lại mã",
+      "confirm": "Xác nhận",
+      "confirming": "Đang xác minh…",
+      "successTitle": "Email đã được xác thực",
+      "successBody": "{email} giờ sẽ nhận đầy đủ thông báo quan trọng từ nhà trường.",
+      "done": "Hoàn tất"
+    }
+  }
+}
+```
+
+```jsonc
+// en.json → "emailVerify" (mirror)
+{
+  "emailVerify": {
+    "banner": {
+      "unverifiedTitle": "Your email is not verified yet.",
+      "unverifiedBody": "Verify it to receive important notifications.",
+      "sendButton": "Send verification mail",
+      "sentTitle": "Sent.",
+      "sentBody": "Check the inbox of {email}.",
+      "resendIn": "Resend available in {seconds} seconds.",
+      "resend": "Resend",
+      "dismissAriaLabel": "Dismiss email verification notice"
+    },
+    "dialog": {
+      "title": "Verify your email",
+      "description": "We sent a 6-digit code to {email}.",
+      "close": "Close",
+      "codeGroupAriaLabel": "6-digit verification code",
+      "digitAriaLabel": "Digit {n}",
+      "errorWrong": "Incorrect code. Please check your email and try again.",
+      "errorExpired": "This code has expired. Press \"Resend code\" to get a new one.",
+      "resendIn": "You can resend the code in {seconds} seconds",
+      "resend": "Resend code",
+      "confirm": "Confirm",
+      "confirming": "Verifying…",
+      "successTitle": "Email verified",
+      "successBody": "{email} will now receive all important school notifications.",
+      "done": "Done"
+    }
+  }
+}
+```
+
+### ADD to EXISTING `profile` namespace (do not duplicate — extend `profile.personal.*`)
+
+`profile.personal.email` already exists as the field label ("Email"). Add
+these 3 sibling keys for the verification-status row next to it:
+
+```jsonc
+// vi.json → profile.personal (ADD to existing block, see line ~2173-2179)
+"personal": {
+  "email": "Email",                       // unchanged, existing
+  "emailVerified": "Đã xác thực",
+  "emailUnverified": "Chưa xác thực",
+  "emailVerifyNow": "Xác thực ngay",
+  "emailImmutableHint": "Email không thể thay đổi",
+  "fullName": "Họ và tên",
+  "phone": "Số điện thoại",
+  "role": "Vai trò",
+  "save": "Lưu thay đổi"
+}
+```
+
+```jsonc
+// en.json → profile.personal (ADD, mirror)
+"personal": {
+  "email": "Email",
+  "emailVerified": "Verified",
+  "emailUnverified": "Not verified",
+  "emailVerifyNow": "Verify now",
+  "emailImmutableHint": "Email cannot be changed",
+  "fullName": "Full name",
+  "phone": "Phone number",
+  "role": "Role",
+  "save": "Save changes"
+}
+```
+
+Notes:
+- Grepped `src/bootstrap/i18n/messages/vi.json` → `profile` block (lines
+  2167–2231) before writing: `profile.personal.email` already exists as a bare
+  label; no existing verification-status keys collide, so the 4 additions
+  above are safe extensions, not new duplicates.
+- The dialog's demo-only helper text ("Demo: mã đúng 123456 · mã hết hạn
+  000000") is a design-review aid in the mockup, not production copy —
+  excluded from i18n; `/fe` should not ship it.
 
 ## A11y (WCAG 2.1 AA)
 

@@ -49,7 +49,263 @@ Namespace: `moderation` (report dialog copy lives under `moderation.reportDialog
 so `feed.jsx`/`messaging.jsx` can reference the same keys instead of
 duplicating them — avoids the i18n-drift mistake from DR-001).
 
-<!-- UX-WRITER: insert moderation.* key block here -->
+```jsonc
+// vi.json → "moderation"
+{
+  "moderation": {
+    "reportDialog": {
+      "title": "Báo cáo nội dung",
+      "subtitle": "Báo cáo {kind} của {authorName}",
+      "kindPost": "bài viết",
+      "kindComment": "bình luận",
+      "kindMessage": "tin nhắn",
+      "kindContent": "nội dung",
+      "close": "Đóng",
+      "reasonGroupLabel": "Lý do báo cáo",
+      "reasonSpam": "Spam",
+      "reasonLanguage": "Ngôn từ không phù hợp",
+      "reasonBully": "Bắt nạt",
+      "reasonMisinfo": "Thông tin sai",
+      "reasonOther": "Khác",
+      "otherDescribeAriaLabel": "Mô tả lý do báo cáo",
+      "otherPlaceholder": "Mô tả cụ thể vấn đề…",
+      "cancel": "Hủy",
+      "submit": "Gửi báo cáo",
+      "toastSent": "Đã gửi báo cáo. BGH sẽ xem xét."
+    },
+    "stats": {
+      "pending": "Chờ xử lý",
+      "resolvedThisWeek": "Đã xử lý tuần này",
+      "removed": "Đã gỡ nội dung"
+    },
+    "views": {
+      "ariaLabel": "Chế độ xem kiểm duyệt",
+      "queue": "Hàng chờ báo cáo",
+      "audit": "Nhật ký kiểm duyệt"
+    },
+    "statusTabs": {
+      "ariaLabel": "Lọc theo trạng thái",
+      "pending": "Chờ xử lý",
+      "resolved": "Đã xử lý",
+      "all": "Tất cả"
+    },
+    "typeFilter": {
+      "ariaLabel": "Lọc theo loại nội dung",
+      "all": "Mọi loại nội dung",
+      "post": "Bài viết",
+      "comment": "Bình luận",
+      "message": "Tin nhắn"
+    },
+    "search": {
+      "ariaLabel": "Tìm trong báo cáo",
+      "placeholder": "Tìm nội dung, người đăng, người báo cáo…"
+    },
+    "refresh": "Tải lại danh sách",
+    "table": {
+      "content": "Nội dung",
+      "reporter": "Người báo cáo",
+      "reason": "Lý do",
+      "reportedUser": "Người bị báo cáo",
+      "time": "Thời gian",
+      "status": "Trạng thái",
+      "action": "Hành động",
+      "openDetail": "Mở chi tiết báo cáo {id}"
+    },
+    "status": {
+      "pending": "Chờ xử lý",
+      "removed": "Đã gỡ",
+      "dismissed": "Đã bỏ qua"
+    },
+    "reason": {
+      "spam": "Spam",
+      "language": "Ngôn từ không phù hợp",
+      "bully": "Bắt nạt",
+      "misinfo": "Thông tin sai",
+      "other": "Khác"
+    },
+    "type": {
+      "post": "Bài viết",
+      "comment": "Bình luận",
+      "message": "Tin nhắn"
+    },
+    "detail": {
+      "closeAriaLabel": "Đóng chi tiết",
+      "reportedTitle": "{type} · {id}",
+      "reportedContent": "Nội dung bị báo cáo",
+      "originalPost": "Bài viết gốc",
+      "conversationContext": "Ngữ cảnh hội thoại",
+      "reported": "Bị báo cáo",
+      "report": "Báo cáo",
+      "duplicates": "Báo cáo trùng ({count})",
+      "resolution": "Kết quả xử lý",
+      "resolvedBy": "bởi {actor} · {time}",
+      "dismiss": "Bỏ qua",
+      "remove": "Gỡ nội dung"
+    },
+    "confirmRemove": {
+      "title": "Gỡ {type} này?",
+      "body": "Hành động này không thể hoàn tác. Nội dung sẽ bị gỡ khỏi hệ thống và {authorName} sẽ nhận được thông báo về quyết định kiểm duyệt.",
+      "cancel": "Hủy",
+      "confirm": "Gỡ nội dung"
+    },
+    "empty": {
+      "pendingTitle": "Không có báo cáo nào chờ xử lý",
+      "pendingDescription": "Tuyệt vời — cộng đồng trường đang lành mạnh. Báo cáo mới sẽ xuất hiện tại đây.",
+      "filteredTitle": "Không tìm thấy báo cáo nào",
+      "filteredDescription": "Thử đổi bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "error": {
+      "title": "Không tải được danh sách báo cáo",
+      "description": "Đã xảy ra lỗi khi kết nối. Vui lòng thử lại."
+    },
+    "audit": {
+      "empty": "Chưa có hành động kiểm duyệt nào.",
+      "removedBy": "{actor}",
+      "removedAction": "Đã gỡ",
+      "dismissedAction": "Đã bỏ qua",
+      "byLine": "{typeLower} của {author}"
+    },
+    "toast": {
+      "dismissed": "Đã bỏ qua báo cáo",
+      "removed": "Đã gỡ nội dung và thông báo cho người đăng"
+    }
+  }
+}
+```
+
+```jsonc
+// en.json → "moderation" (mirror)
+{
+  "moderation": {
+    "reportDialog": {
+      "title": "Report content",
+      "subtitle": "Report a {kind} by {authorName}",
+      "kindPost": "post",
+      "kindComment": "comment",
+      "kindMessage": "message",
+      "kindContent": "content",
+      "close": "Close",
+      "reasonGroupLabel": "Report reason",
+      "reasonSpam": "Spam",
+      "reasonLanguage": "Inappropriate language",
+      "reasonBully": "Bullying",
+      "reasonMisinfo": "Misinformation",
+      "reasonOther": "Other",
+      "otherDescribeAriaLabel": "Describe the reason",
+      "otherPlaceholder": "Describe the issue…",
+      "cancel": "Cancel",
+      "submit": "Send report",
+      "toastSent": "Report sent. School leadership will review it."
+    },
+    "stats": {
+      "pending": "Pending",
+      "resolvedThisWeek": "Resolved this week",
+      "removed": "Content removed"
+    },
+    "views": {
+      "ariaLabel": "Moderation view",
+      "queue": "Report queue",
+      "audit": "Moderation log"
+    },
+    "statusTabs": {
+      "ariaLabel": "Filter by status",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "all": "All"
+    },
+    "typeFilter": {
+      "ariaLabel": "Filter by content type",
+      "all": "All content types",
+      "post": "Posts",
+      "comment": "Comments",
+      "message": "Messages"
+    },
+    "search": {
+      "ariaLabel": "Search reports",
+      "placeholder": "Search content, author, reporter…"
+    },
+    "refresh": "Refresh list",
+    "table": {
+      "content": "Content",
+      "reporter": "Reporter",
+      "reason": "Reason",
+      "reportedUser": "Reported user",
+      "time": "Time",
+      "status": "Status",
+      "action": "Action",
+      "openDetail": "Open report {id}"
+    },
+    "status": {
+      "pending": "Pending",
+      "removed": "Removed",
+      "dismissed": "Dismissed"
+    },
+    "reason": {
+      "spam": "Spam",
+      "language": "Inappropriate language",
+      "bully": "Bullying",
+      "misinfo": "Misinformation",
+      "other": "Other"
+    },
+    "type": {
+      "post": "Post",
+      "comment": "Comment",
+      "message": "Message"
+    },
+    "detail": {
+      "closeAriaLabel": "Close details",
+      "reportedTitle": "{type} · {id}",
+      "reportedContent": "Reported content",
+      "originalPost": "Original post",
+      "conversationContext": "Conversation context",
+      "reported": "Reported",
+      "report": "Report",
+      "duplicates": "Duplicate reports ({count})",
+      "resolution": "Resolution",
+      "resolvedBy": "by {actor} · {time}",
+      "dismiss": "Dismiss",
+      "remove": "Remove content"
+    },
+    "confirmRemove": {
+      "title": "Remove this {type}?",
+      "body": "This cannot be undone. The content will be removed and {authorName} will be notified of the moderation decision.",
+      "cancel": "Cancel",
+      "confirm": "Remove content"
+    },
+    "empty": {
+      "pendingTitle": "No reports waiting",
+      "pendingDescription": "Great — the school community is healthy. New reports will appear here.",
+      "filteredTitle": "No reports found",
+      "filteredDescription": "Try changing the filters or search keywords."
+    },
+    "error": {
+      "title": "Could not load reports",
+      "description": "Something went wrong. Please try again."
+    },
+    "audit": {
+      "empty": "No moderation actions yet.",
+      "removedBy": "{actor}",
+      "removedAction": "Removed",
+      "dismissedAction": "Dismissed",
+      "byLine": "{typeLower} by {author}"
+    },
+    "toast": {
+      "dismissed": "Report dismissed",
+      "removed": "Content removed — author notified"
+    }
+  }
+}
+```
+
+Notes:
+- `moderation.reportDialog.*` is the single source for the shared dialog used
+  by `feed.jsx` (DR-012) and `messaging.jsx` (DR-017) — do not re-key it under
+  `feed.*` or `messaging.*`.
+- Free-text moderator notes seeded in mock data (`resolveNote`, duplicate
+  report timestamps) are per-report dynamic content, not static UI copy — `/fe`
+  composes them from real data + the static fragments above
+  (`moderation.audit.byLine`, `moderation.detail.resolvedBy`), not literal
+  mock strings.
 
 ## A11y (WCAG 2.1 AA)
 
