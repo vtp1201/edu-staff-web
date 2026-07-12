@@ -379,6 +379,66 @@ teacher). Tokens-only, reuse card/badge/dialog pattern baseline.
 
 ---
 
+## P8 — Fix pass sau audit handoff v2 (2026-07-12)
+
+> Kết quả audit `design_handoff_v2` (so với baseline repo `design_src/edu/`):
+> P1–P7 coverage gần đủ. Prompt này gom TOÀN BỘ phần thiếu/sai còn lại — chạy
+> 1 lần trên Claude Design, không cần gen lại màn nào.
+
+**Trạng thái audit**: ✅ P1 feed / P2 moderation+report dialog / P3 parent-links /
+P5 email-verify / P6 presence / P7 tenant-switch / states.jsx / reports.jsx —
+đạt spec. Còn lại các mục dưới.
+
+### Prompt
+
+```
+Trên baseline EduPortal v2 (đã có feed/moderation/parent-links/invitations/
+email-verify/tenant-switch/states/reports), thực hiện MỘT lượt sửa — không đổi
+layout, không gen màn mới:
+
+1. TOKENS (tokens.js):
+   - KHÔI PHỤC token đã bị rơi so với baseline gốc:
+     errorText: '#C0392B'  (AA text trên nền sáng — decision 0027).
+   - THÊM token mirror từ runtime tokens.css (đã tồn tại, không cần ADR):
+     warningText: '#9A6A0F' (AA text/icon tone warning trên nền sáng — decision 0046).
+
+2. THAY HẾT hex tự chế '#B98200' (8 chỗ) bằng T.warningText:
+   - parent-links.jsx: consent badge "Chưa phản hồi".
+   - invitations.jsx: badge "Chờ chấp nhận", đếm ngược hết hạn <3 ngày,
+     illustration token hết hạn.
+   - email-verify.jsx: badge "Chưa xác thực".
+
+3. Literal lẻ:
+   - invitations.jsx gradient accept-screen: '#13DEB988' → `${T.success}88`.
+   - email-verify.jsx OTP cell: background '#fff' → T.card.
+   - email-verify.jsx text lỗi mã sai/hết hạn: dùng T.errorText (sau khi khôi
+     phục ở mục 1) thay cho T.errorDark.
+
+4. INVITATIONS — bổ sung 2 state còn thiếu cho màn admin (màn duy nhất chưa đủ
+   4 state): loading skeleton bảng + error có nút "Thử lại" — dùng đúng bộ
+   EduSkeleton / EduError trong states.jsx (pattern failedOnce như reports.jsx).
+
+5. A11Y REGRESSION trong ui.jsx (so với baseline gốc — khôi phục):
+   - Nút đổi vai trò trong user menu: role="menuitemradio" + aria-checked.
+   - Dropdown đổi vai trò: aria-label "Đổi vai trò" trên role="menu".
+   - Nút thu gọn sidebar: aria-label theo trạng thái ("Thu gọn thanh điều hướng"
+     khi đang mở / "Mở rộng thanh điều hướng" khi đang gọn).
+
+6. NHẤT QUÁN (không đổi visual):
+   - feed.jsx + moderation.jsx: thay bộ skeleton/empty/error tự vẽ
+     (FeedSkeleton/FeedEmpty/FeedError, ModSkeleton/ModEmpty/ModError) bằng
+     EduSkeleton/EduEmpty/EduError của states.jsx — states.jsx là bộ bắt buộc.
+     Gỡ class '.feed-skel' bị define trùng ở 2 file.
+   - messaging.jsx panel thành viên group: count "N đang hoạt động" + sort
+     online-first dùng msgPresence() thay boolean online cũ (để presence
+     'recent' không bị đếm là offline).
+
+RÀNG BUỘC: tokens-only, không thêm hex nào ngoài 2 token khai báo ở mục 1;
+không đụng typing indicator, không đổi layout/spacing màn nào.
+```
+
+---
+
 ## Ghi chú chung cho mọi prompt
 
 - **Không tạo token mới trong lúc gen.** Nếu mockup thực sự cần màu/token mới →
