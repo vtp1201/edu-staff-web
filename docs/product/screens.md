@@ -11,7 +11,11 @@ Map màn hình từ design handoff → route + feature theo kiến trúc thật 
 announcements.jsx, grade-entry.jsx, gradebook.jsx, grade-approval.jsx,
 academic-record-view.jsx, academic-records.jsx, assessment.jsx, lesson-bank.jsx,
 exam-bank.jsx, teaching-plan.jsx, staff-leave.jsx, audit-log.jsx, admin-settings.jsx.
-Current design version: 1506.
+**Group B handoff v2.2** (commit `0ebcb59`, 2026-07-12, DR-012..019) adds:
+feed.jsx, moderation.jsx, parent-links.jsx, invitations.jsx, email-verify.jsx,
+tenant-switch.jsx, reports.jsx, plus messaging.jsx extended in place (presence),
+and the shared `states.jsx` state-primitive set (see `design-system.md`).
+Current design version: 1506 (+ group B v2.2 additions above).
 
 Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design, chưa impl).
 
@@ -22,6 +26,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Login (email + SSO Google/VNeID) | `(auth)/login` | `features/auth/presentation/login-form` | 🟡 (email done; SSO 🎨 US-E01.2) |
 | Select role/tenant (multi-role) | `(auth)/select-role` | `features/auth/presentation` | 🎨 design-ready (US-E01.2) |
 | Forgot password (email→OTP→new pw→done) | `(auth)/forgot-password` | `features/auth/presentation` | ✅ (BE-wired US-030) |
+| Accept tenant invitation (public, no shell) | `/invitations/accept?token=...` | `features/auth/presentation` (proposed) | 🎨 design-ready (US-E21.2; `invitations.jsx` `InviteAcceptScreen`, DR-015 2026-07-12) |
+| Select tenant (post-login, ≥2 tenants) | `(auth)/select-tenant` | `features/tenant` | 🎨 design-ready (US-E23.2; `tenant-switch.jsx` `TenantSelectScreen`, DR-018 2026-07-12; coordinate i18n with existing `tenant` namespace, US-E01.2) |
 
 ## All roles (Epic E08 shell + E10 messaging)
 
@@ -29,9 +35,18 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | --- | --- | --- | --- |
 | App shell (Sidebar + Header) | `(app)/layout` | `components/layout/app-shell` | 🟡 |
 | SSE Disconnect Banner + Pending-Message Pill | shell-level (`components/layout/app-shell`) | `components/shared/sse-status/` | ✅ US-E08.6 |
-| Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 |
+| Email-verify banner (unverified reminder, all pages) | shell-level (`components/layout/app-shell`) | `components/shared/` (proposed) | 🎨 design-ready (US-E22.1; `email-verify.jsx` `EmailVerifyBanner`/`EmailVerifyDialog`, DR-016 2026-07-12) |
+| Tenant switch (header user-menu "Đổi trường" + dialog, ≥2 tenants) | shell-level (header, all app routes) | `components/layout/app-shell` | 🎨 design-ready (US-E23.1; menu/dialog logic in `app.jsx`, mockup `tenant-switch.jsx`, DR-018 2026-07-12) |
+| Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 — 🎨 extension: email-verify inline row (US-E22.1, `email-verify.jsx` `EVEmailField`, DR-016 2026-07-12, reuses `profile` i18n namespace); parent consent section (US-E20.2, `parent-links.jsx` `ParentConsentSection`, DR-014 2026-07-12) |
 | Notifications Center | `(app)/(shared)/notifications` | `features/notification` | 🎨 design-ready (US-E10.2; `notifications.jsx` 1506; SSE decision 0009) |
-| Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1 base; US-E10.4 group-chat design in `messaging.jsx` DR-008 2026-06-20) |
+| Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | 🎨 design-ready (US-E10.1 base; US-E10.4 group-chat design in `messaging.jsx` DR-008 2026-06-20; US-E10.5 presence indicator extension in `messaging.jsx` DR-017 2026-07-12, `messaging.presence.*` keys) |
+
+## Social (Epic E19)
+
+| Screen | Route | Feature | Status |
+| --- | --- | --- | --- |
+| Social Feed (school-wide + per-class post/comment/reaction) | `(app)/(shared)/feed` (all roles) | `features/feed` (proposed) | 🎨 design-ready (US-E19.1; `feed.jsx` `FeedScreen`, DR-012 2026-07-12) |
+| Content Moderation (principal/admin) | `(app)/principal/moderation` | `features/moderation` (proposed) | 🎨 design-ready (US-E19.2; `moderation.jsx` `ModerationScreen`; shared Report dialog also in `feed.jsx`/`messaging.jsx`, DR-013 2026-07-12) |
 
 ## Teacher (Epics E02 class-ops, E09 discipline, E11 LMS, E13 workspace, E14 grades)
 
@@ -62,7 +77,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | 🎨 design-ready (US-E09.1; `discipline.jsx` 1506) |
 | Grade Book (principal read) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Teaching Plan review | `(app)/principal/teaching-plan` | `teaching-plan.jsx` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
-| Reports | `(app)/principal/reports` | — | `features/principal` | ⬜ |
+| Reports | `(app)/principal/reports` | `reports.jsx` | `features/principal` | 🎨 design-ready (US-E03.1; `reports.jsx`, DR-019 2026-07-12) |
+| **Parent–Student Links** (admin link management) | `(app)/admin/parent-links` | `parent-links.jsx` (US-E20.1) | `features/admin/parent-links` (proposed) | 🎨 design-ready (US-E20.1; `parent-links.jsx` `ParentLinksScreen`, DR-014 2026-07-12; consent counterpart attaches to Profile — see All-roles section) |
+| **Tenant Invitations** (admin "Mời thành viên") | `(app)/admin/invitations` | `invitations.jsx` (US-E21.1) | `features/admin/invitations` (proposed) | 🎨 design-ready (US-E21.1; `invitations.jsx` `InvitationsScreen`, DR-015 2026-07-12; public accept screen — see Auth section) |
 | **School Setup (grade range + settings)** | `(app)/admin/school-setup` | `school-setup.jsx` (US-049, ADR 0035) | `features/admin-school-setup` | ✅ implemented US-E12.1 (2026-06-13) |
 | **Academic Calendar config** | `(app)/admin/calendar` | `calendar.jsx` (US-042) | `features/admin/calendar` | 🎨 (design done) |
 | **Subject Departments (SubjectParent)** | `(app)/admin/subject-departments` | `subject-parents.jsx` (US-048) | `features/admin/subjects` | 🎨 (design done) |
@@ -150,3 +167,13 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `discipline.jsx` `ParentDisciplineScreen` — Parent discipline+leave view (US-E09.4)
   - `gradebook.jsx` `ChildSwitcher` (DR-002) — Parent multi-child grade book (US-E13.7)
   - `messaging.jsx` DR-008 group features — Group creation, context menu, reply/quote (US-E10.4; design-spec groupChat section + i18n keys reconciled 2026-06-20)
+- **Group B handoff v2.2 (2026-07-12, commit `0ebcb59`, DR-012..019)** adds:
+  - `design_src/edu/feed.jsx` — Social Feed (US-E19.1, DR-012)
+  - `design_src/edu/moderation.jsx` — Content Reporting & Moderation (US-E19.2, DR-013; shared Report dialog also touches `feed.jsx`/`messaging.jsx`)
+  - `design_src/edu/parent-links.jsx` — Parent–Student Links admin screen + `ParentConsentSection`/`ParentConsentScreen` (US-E20.1/US-E20.2, DR-014)
+  - `design_src/edu/invitations.jsx` — Tenant Invitations admin screen + public `InviteAcceptScreen` (US-E21.1/US-E21.2, DR-015)
+  - `design_src/edu/email-verify.jsx` — Email Verification shell banner + dialog + Profile extension (US-E22.1, DR-016)
+  - `messaging.jsx` presence extension — `msgPresence()`/`MSGPresenceDot`/`msgPresenceCaption()` (US-E10.5, DR-017; reuses `messaging` i18n namespace under `messaging.presence.*`)
+  - `design_src/edu/tenant-switch.jsx` — Multi-Tenant post-login select screen; header user-menu + dialog logic embedded in `app.jsx` (US-E23.1/US-E23.2, DR-018)
+  - `design_src/edu/reports.jsx` — Principal Reports Dashboard, fills the prior placeholder row (US-E03.1, DR-019)
+  - `design_src/edu/states.jsx` — shared `EduSkeleton`/`EduEmpty`/`EduError`/`EduComingSoon` state primitives consumed by the above (see `docs/product/design-system.md` §Component patterns)
