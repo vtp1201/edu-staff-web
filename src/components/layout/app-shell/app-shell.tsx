@@ -94,7 +94,13 @@ export function AppShell({
           />
           <SseDisconnectBanner status={bannerStatus} onReconnect={reconnect} />
           <EmailVerifyBanner onSend={onRequestEmailVerification} />
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main
+            id="app-shell-main"
+            tabIndex={-1}
+            className="flex-1 p-4 outline-none sm:p-6"
+          >
+            {children}
+          </main>
         </div>
 
         <SsePendingPill

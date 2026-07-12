@@ -56,6 +56,10 @@ export function EmailVerifyBanner({
   function dismiss() {
     sessionStorage.setItem(DISMISS_KEY, "1");
     setDismissed(true);
+    // The dismiss button (the focused node) unmounts with the banner, so
+    // re-anchor focus to the always-mounted main region to avoid dropping it
+    // to <body> — mirrors the sse-disconnect-banner focus hand-off precedent.
+    document.getElementById("app-shell-main")?.focus();
   }
 
   const cooling = remainingSeconds > 0;
