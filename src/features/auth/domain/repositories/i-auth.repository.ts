@@ -1,8 +1,17 @@
-import type { AuthSession, AuthTokens } from "../entities/auth-user.entity";
+import type {
+  AuthSession,
+  AuthTokens,
+  AuthUser,
+} from "../entities/auth-user.entity";
 import type { AuthFailure } from "../failures/auth.failure";
 
 export type AuthResult =
   | { data: AuthSession; error?: never }
+  | { data?: never; error: AuthFailure };
+
+/** Standalone `GET /users/me` result — identity only, no tokens (unlike AuthResult). */
+export type ProfileResult =
+  | { data: AuthUser; error?: never }
   | { data?: never; error: AuthFailure };
 
 export type RefreshResult =
@@ -34,4 +43,10 @@ export interface IAuthRepository {
     otp: string,
     newPassword: string,
   ): Promise<VoidResult>;
+  /** Standalone `GET /users/me` (no signin flow attached, no tokens). */
+  getProfile(): Promise<ProfileResult>;
+  /** `POST /users/me/email/verification` — send/resend the verification email (204). */
+  requestEmailVerification(): Promise<VoidResult>;
+  /** `POST /users/me/email/verification/confirm` — submit the 6-digit OTP (204). */
+  confirmEmailVerification(otp: string): Promise<VoidResult>;
 }

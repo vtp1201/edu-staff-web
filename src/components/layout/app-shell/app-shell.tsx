@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { EmailVerificationActionResult } from "@/app/[locale]/t/[tenant]/(app)/email-verification.actions";
 import { usePathname, useRouter } from "@/bootstrap/i18n/routing";
 import { useRealtimeEvents } from "@/bootstrap/realtime";
 import { tenantUrl } from "@/bootstrap/tenant";
@@ -9,6 +10,8 @@ import {
   SsePendingPill,
 } from "@/components/shared/sse-status";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { EmailVerifyBanner } from "@/features/auth/presentation/email-verify/email-verify-banner";
+import { EmailVerifyProvider } from "@/features/auth/presentation/email-verify/email-verify-context";
 import { Header } from "./header/header";
 import type { Role } from "./sidebar/nav-config";
 import { Sidebar } from "./sidebar/sidebar";
@@ -19,6 +22,13 @@ type AppShellProps = {
   tenantId: string;
   role: Role;
   userName?: string;
+  /** Verification status — tri-state (`null` = unresolved/error → banner
+   *  fail-closed) from the shell's `GET /users/me` (US-E22.1). */
+  emailVerified?: boolean | null;
+  /** Account email for the banner/dialog copy (US-E22.1). */
+  email?: string;
+  /** Send/resend email-verification server action (server-action-as-prop). */
+  onRequestEmailVerification?: () => Promise<EmailVerificationActionResult>;
   children: React.ReactNode;
 };
 
@@ -26,6 +36,9 @@ export function AppShell({
   tenantId,
   role: initialRole,
   userName,
+  emailVerified = null,
+  email = "",
+  onRequestEmailVerification,
   children,
 }: AppShellProps) {
   const router = useRouter();
@@ -54,39 +67,48 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <div className="hidden lg:block">
-        <Sidebar
-          tenantId={tenantId}
-          role={role}
-          collapsed={collapsed}
-          onToggle={toggle}
+    <EmailVerifyProvider initialEmailVerified={emailVerified} email={email}>
+      <div className="flex min-h-screen bg-background">
+        <div className="hidden lg:block">
+          <Sidebar
+            tenantId={tenantId}
+            role={role}
+            collapsed={collapsed}
+            onToggle={toggle}
+          />
+        </div>
+
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="w-[260px] p-0">
+            <SheetTitle className="sr-only">EduPortal</SheetTitle>
+            <Sidebar tenantId={tenantId} role={role} className="border-r-0" />
+          </SheetContent>
+        </Sheet>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Header
+            role={role}
+            userName={userName}
+            onMenuClick={() => setMobileOpen(true)}
+            onRoleChange={handleRoleChange}
+          />
+          <SseDisconnectBanner status={bannerStatus} onReconnect={reconnect} />
+          <EmailVerifyBanner onSend={onRequestEmailVerification} />
+          <main
+            id="app-shell-main"
+            tabIndex={-1}
+            className="flex-1 p-4 outline-none sm:p-6"
+          >
+            {children}
+          </main>
+        </div>
+
+        <SsePendingPill
+          count={pendingMsgCount}
+          visible={pendingMsgCount > 0 && !pathname.endsWith("/messages")}
+          onClick={() => router.push(tenantUrl(tenantId, "/messages"))}
         />
       </div>
-
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[260px] p-0">
-          <SheetTitle className="sr-only">EduPortal</SheetTitle>
-          <Sidebar tenantId={tenantId} role={role} className="border-r-0" />
-        </SheetContent>
-      </Sheet>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Header
-          role={role}
-          userName={userName}
-          onMenuClick={() => setMobileOpen(true)}
-          onRoleChange={handleRoleChange}
-        />
-        <SseDisconnectBanner status={bannerStatus} onReconnect={reconnect} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
-      </div>
-
-      <SsePendingPill
-        count={pendingMsgCount}
-        visible={pendingMsgCount > 0 && !pathname.endsWith("/messages")}
-        onClick={() => router.push(tenantUrl(tenantId, "/messages"))}
-      />
-    </div>
+    </EmailVerifyProvider>
   );
 }

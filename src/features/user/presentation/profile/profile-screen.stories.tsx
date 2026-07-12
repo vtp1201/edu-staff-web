@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { EmailVerifyProvider } from "@/features/auth/presentation/email-verify/email-verify-context";
 import type {
   LinkedAccount,
   SocialProvider,
@@ -55,16 +56,29 @@ const failLink = (): Promise<LinkedAccountResult> =>
 const neverResolve = (_p: SocialProvider): Promise<LinkedAccountResult> =>
   new Promise(() => {});
 
-function withProviders(Story: () => React.ReactElement) {
+const okAction = () => Promise.resolve({ ok: true as const });
+
+function withProviders(
+  Story: () => React.ReactElement,
+  context: { parameters: { emailVerified?: boolean | null } },
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // Distinguish "not set" (→ false) from an explicit `null` (unresolved).
+  const p = context.parameters.emailVerified;
+  const emailVerified = p === undefined ? false : p;
   return (
     <QueryClientProvider client={client}>
       <NextIntlClientProvider locale="vi" messages={messages}>
-        <div className="p-6">
-          <Story />
-        </div>
+        <EmailVerifyProvider
+          initialEmailVerified={emailVerified}
+          email={BASE.email}
+        >
+          <div className="p-6">
+            <Story />
+          </div>
+        </EmailVerifyProvider>
       </NextIntlClientProvider>
     </QueryClientProvider>
   );
@@ -80,6 +94,8 @@ const meta: Meta<typeof ProfileScreen> = {
     linkedAccounts: LINKED_BOTH,
     onLinkAccount: okLink,
     onUnlinkAccount: okLink,
+    onConfirmEmailVerification: okAction,
+    onRequestEmailVerification: okAction,
   },
 };
 export default meta;
@@ -155,5 +171,131 @@ export const LinkedAccountsLinkError: Story = {
     await userEvent.click(firstLink);
     const alertEl = await canvas.findByRole("alert");
     expect(alertEl).toBeInTheDocument();
+  },
+};
+
+// ── Email verification row (US-E22.1) ──────────────────────────────────────
+export const EmailUnverified: Story = {
+  parameters: { emailVerified: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Warning badge + CTA present on the personal tab (default tab).
+    expect(canvas.getByText(/chưa xác thực/i)).toBeInTheDocument();
+    const cta = canvas.getByRole("button", { name: /xác thực ngay/i });
+    // Opening the CTA mounts the dialog (Radix portal → document.body).
+    await userEvent.click(cta);
+    const dialog = within(document.body).getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+  },
+};
+
+export const EmailVerified: Story = {
+  parameters: { emailVerified: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.getByText(/đã xác thực/i)).toBeInTheDocument();
+    // No CTA when already verified (AC-007.5).
+    expect(
+      canvas.queryByRole("button", { name: /xác thực ngay/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const EmailStatusUnresolved: Story = {
+  // Fetch unresolved/error → no badge, not a stale one (AC-007.1/7.3).
+  parameters: { emailVerified: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.queryByText(/chưa xác thực/i)).not.toBeInTheDocument();
+    expect(canvas.queryByText(/đã xác thực/i)).not.toBeInTheDocument();
+    expect(
+      canvas.queryByRole("button", { name: /xác thực ngay/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+// ── Convergence flow (fe-qa-playwright, US-E22.1 QA pass) ──────────────────
+// Profile CTA → dialog → wrong code → expired code → lockout → resend
+// unlocks → success → badge flips WITHOUT a page reload (AC-003.4/007.7).
+let convergenceConfirmCalls = 0;
+const convergenceConfirm = () => {
+  convergenceConfirmCalls += 1;
+  if (convergenceConfirmCalls === 1)
+    return Promise.resolve({ errorKey: "invalid-otp" as const });
+  if (convergenceConfirmCalls === 2)
+    return Promise.resolve({ errorKey: "otp-expired" as const });
+  if (convergenceConfirmCalls === 3)
+    return Promise.resolve({ errorKey: "too-many-requests" as const });
+  return Promise.resolve({ ok: true as const });
+};
+
+export const EmailVerifyConvergence: Story = {
+  parameters: { emailVerified: false },
+  args: {
+    onConfirmEmailVerification: convergenceConfirm,
+    onRequestEmailVerification: okAction,
+  },
+  play: async ({ canvasElement }) => {
+    convergenceConfirmCalls = 0; // reset (Storybook can re-invoke play)
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: /xác thực ngay/i }),
+    );
+    const dialog = within(document.body).getByRole("dialog");
+    const typeAndConfirm = async (code: string) => {
+      const cells = within(dialog).getAllByRole("textbox");
+      await userEvent.click(cells[0]);
+      await userEvent.keyboard(code);
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: /^xác nhận$/i }),
+      );
+    };
+
+    // 1) Wrong code.
+    await typeAndConfirm("111111");
+    await expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      /mã không đúng/i,
+    );
+
+    // 2) Expired code (submit again over the still-editable cells).
+    await typeAndConfirm("000000");
+    await expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      /mã đã hết hạn/i,
+    );
+
+    // 3) Lockout — cells become disabled.
+    await typeAndConfirm("222222");
+    await expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      /quá số lần cho phép/i,
+    );
+    await expect(within(dialog).getAllByRole("textbox")[0]).toBeDisabled();
+
+    // 4) Resend unlocks the cells and clears the lockout message.
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /gửi lại mã/i }),
+    );
+    await waitFor(() =>
+      expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument(),
+    );
+    await expect(within(dialog).getAllByRole("textbox")[0]).toBeEnabled();
+
+    // 5) Success on the 4th confirm attempt.
+    await typeAndConfirm("333333");
+    await expect(
+      await within(dialog).findByText(/email đã được xác thực/i),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /hoàn tất/i }),
+    );
+
+    // 6) No reload — Profile row's badge flips reactively (AC-007.7) and the
+    // CTA disappears (AC-007.5), same shared EmailVerifyProvider state.
+    await waitFor(() =>
+      expect(canvas.getByText(/đã xác thực/i)).toBeInTheDocument(),
+    );
+    expect(canvas.queryByText(/chưa xác thực/i)).not.toBeInTheDocument();
+    expect(
+      canvas.queryByRole("button", { name: /xác thực ngay/i }),
+    ).not.toBeInTheDocument();
   },
 };

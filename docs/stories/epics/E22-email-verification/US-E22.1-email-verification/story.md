@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -154,6 +154,102 @@ When updating durable proof status, use numeric booleans:
   spec.md §8) — not blocking implementation (all have a safe, documented
   fallback), but should be tracked for confirmation.
 
+## Implementation Plan
+
+See `plan.md` in this packet (fe-planner) — 11 phases (0-10): data plumbing
+(DTO/entity/mapper/VM) → new endpoints/repo methods/use-cases/DI →
+`OtpInput` promotion to `components/shared/otp-input/` → shared cooldown +
+verification-status Context (`EmailVerifyProvider`, mounted in `AppShell`,
+NOT TanStack Query — architectural finding: `ReactQueryProvider` only wraps
+`AppShell`'s `children`, not `AppShell` itself) → `layout.tsx`/`AppShell`
+wiring (first real `GET /users/me`, closes the `[GAP]` in spec.md §8) →
+`EmailVerifyBanner` → server actions + i18n → Profile row →
+`EmailVerifyDialog` (3 error states + success) → Storybook/a11y pass →
+Playwright E2E. Key decisions: extend `IAuthRepository` (no new repo
+interface); DTO keeps wire-shaped `isEmailVerified`, entity/VM use
+`emailVerified`; INT-003 success = optimistic local flip via context, not a
+refetch.
+
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+**Implementation** (`fe-nextjs-engineer`, branch `feat/us-e22.1-email-verification`):
+commits `0c023d8`..`f24c87a` (10 commits: 7 feature/test + 4 a11y-fix + 2 docs/memory).
+`bun vitest run` → 250 files / 1393 tests pass. `bunx tsc --noEmit` clean.
+`bun run build` clean. `bun lint` clean.
+
+**fe-tech-lead-reviewer**: Revision Required (1 MUST FIX: banner dismiss
+touch target) → fixed in `e53792c` → all other criteria Approved (layering,
+`AuthFailure` zero new members, tokens-only, i18n parity, security/NFR-008,
+test tiers). Ruled the `disabled` email field a scope-correct FR-008 fix
+(pre-story it had no `disabled` at all — AC-007.8's premise was inaccurate),
+not a regression.
+
+**fe-accessibility-auditor**: FAIL (2 Critical: A11Y-001 touch target,
+A11Y-002 cross-browser focus-return) + 1 Major (A11Y-003 focus-visible ring)
++ 1 Minor (A11Y-004 focus hand-off on dismiss) → all 4 fixed
+(`e53792c`/`5857f1b`/`53f369c`/`f24c87a`). A11Y-005/006 flagged as
+pre-existing/out-of-scope (systemic `--primary` link contrast, hardcoded
+Dialog close label) — not fixed here, left for the primitive/design-system
+owners.
+
+**Design-review gate** (`docs/DESIGN_REVIEW.md`):
+- design-system: conform — tokens-only (`edu-error-dark`/`edu-error-dark-light`/
+  `edu-error-text`/`edu-teal`/`edu-teal-light`/`edu-warning-foreground`
+  verified present in `tokens.css`), `StatusBadge` reused (`tone="teal"`/
+  `"warning"`, no duplicate badge styling), `OtpInput` promoted to
+  `components/shared/otp-input/` (decision 0026, single canonical home).
+- a11y: WCAG AA — all Critical/Major findings fixed; keyboard/focus-trap OK;
+  reduced-motion gate present on banner entrance animation.
+- impeccable audit: `node .claude/skills/impeccable/scripts/detect.mjs --json`
+  scoped to all new/changed UI files (`email-verify/`, `otp-input/`,
+  `profile-screen.tsx`, `app-shell.tsx`) → **0 findings**, exit 0. No
+  redesign suggested/applied — design system (tokens, layout, palette) left
+  as-is per scope.
+- states: loading/empty/error/success covered in Storybook stories for
+  banner (default/sent/error/dismissed), dialog (idle/wrong/expired/
+  lockout/success), OtpInput (default/error/disabled), Profile row
+  (unverified/verified/unresolved); `bun run vitest:storybook run` (real
+  Chromium) — all story files for this feature pass; pre-existing unrelated
+  baseline failures (Timetable) confirmed not touched by this story.
+
+**fe-qa-playwright** (final QA gate): initial pass **FAIL** — while writing
+Storybook-tier E2E coverage (this repo has no Playwright harness; browser
+E2E proof is `bun run vitest:storybook run` in real Chromium) for the
+convergence flow, keyboard walkthrough, and 320px viewport, QA found 2
+genuine CRITICAL production defects (not test artifacts, root-caused into
+Radix Dialog internals and a real viewport resize):
+- **DEF-01** — focus never restored to the invoking control on dialog close
+  (AC-003.5/NFR-004): `EmailVerifyDialog` opens via a plain button with no
+  `DialogTrigger`, so Radix's `onCloseAutoFocus` always deferred to an empty
+  `triggerRef`. Fixed in `815d299` — `EmailVerifyDialog` now snapshots
+  `document.activeElement` on the open-transition and overrides
+  `onCloseAutoFocus` to restore it explicitly. Follow-up flagged (not fixed
+  here, out of scope): 8 other `Dialog` usages across the repo share the
+  same manual-open-without-`DialogTrigger` pattern and likely the same
+  latent defect — candidate for a shared fix baked into `DialogContent`
+  itself; a separate story/ticket, `fe-lead`'s call.
+- **DEF-02** — real 320px overflow (AC-003.7/NFR-005): `OtpInput`'s 6 cells
+  at the canonical 46×46 spec size (316px total) didn't fit the dialog's
+  ~240px content area at a true 320px viewport. Fixed in `ddf48c0` —
+  cells/gap now shrink at the base breakpoint (`h-11 w-8 gap-1`, 212px
+  total) and restore the exact design-spec dimension at `sm:` and above
+  (NFR-005 explicitly sanctions shrinking below `sm`, not a design-spec
+  violation).
+Both regression tests (`KeyboardWalkthrough`, `Viewport320` in
+`email-verify-dialog.stories.tsx`, commit `60c24d1`) were NOT weakened to
+pass — production code was fixed under them. Re-verified after fixes:
+`vitest:storybook` for the email-verify surface all green (baseline diff
+confirms 0 new failures elsewhere); full gate (`bun vitest run` 1393 tests,
+`tsc --noEmit`, `bun run build`, `bun lint`) green.
+
+**Final verdict: Go** — both blocking defects resolved, full pipeline
+(planner → architecture sign-off → TDD implementation → tech-lead review →
+a11y audit → design-review gate → QA) complete with real, reproducible
+proof at every tier.
+
+**Open items carried forward** (not blocking, tracked for follow-up):
+OQ2 (lockout scope — Resend unlocks, implemented per AC-006.3's assumption,
+confirm with iam BE), A11Y-005/006 pre-existing systemic issues (link
+contrast, hardcoded Dialog close label) for the design-system/primitive
+owners, the shared `Dialog` focus-restore pattern (DEF-01 follow-up) as a
+candidate cross-cutting fix in `DialogContent` itself.

@@ -13,4 +13,6 @@ export const AUTH_EP = {
   me: "/iam/api/v1/users/me",
   forgotPassword: "/iam/api/v1/auth/password/forgot",
   resetPassword: "/iam/api/v1/auth/password/reset",
+  requestEmailVerification: "/iam/api/v1/users/me/email/verification",
+  confirmEmailVerification: "/iam/api/v1/users/me/email/verification/confirm",
 } as const;

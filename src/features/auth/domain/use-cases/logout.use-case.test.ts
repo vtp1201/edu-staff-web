@@ -11,6 +11,9 @@ describe("LogoutUseCase", () => {
       signout: vi.fn().mockResolvedValue(undefined),
       requestPasswordReset: vi.fn(),
       resetPassword: vi.fn(),
+      getProfile: vi.fn(),
+      requestEmailVerification: vi.fn(),
+      confirmEmailVerification: vi.fn(),
     };
     await new LogoutUseCase(repo).execute();
     expect(repo.signout).toHaveBeenCalledOnce();

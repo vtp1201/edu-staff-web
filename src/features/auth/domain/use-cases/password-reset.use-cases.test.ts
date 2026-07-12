@@ -11,6 +11,9 @@ function repo(over: Partial<IAuthRepository> = {}): IAuthRepository {
     signout: vi.fn(),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
     resetPassword: vi.fn().mockResolvedValue({ ok: true }),
+    getProfile: vi.fn(),
+    requestEmailVerification: vi.fn(),
+    confirmEmailVerification: vi.fn(),
     ...over,
   };
 }

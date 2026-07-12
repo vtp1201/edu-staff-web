@@ -21,6 +21,8 @@ export interface AuthUser {
   name: string;
   avatar: string | null;
   roles: UserTenantRole[];
+  /** Whether the account email has been verified (IAM `isEmailVerified`). */
+  emailVerified: boolean;
 }
 
 /**

@@ -56,6 +56,7 @@ describe("AuthRepository.signin", () => {
         email: "a@school.vn",
         name: "An",
         avatar: null,
+        emailVerified: false,
         roles: [
           {
             role: "teacher",
@@ -168,5 +169,99 @@ describe("AuthRepository.signout", () => {
       post: vi.fn().mockRejectedValue(new Error("network down")),
     });
     await expect(new AuthRepository(http).signout()).resolves.toBeUndefined();
+  });
+});
+
+describe("AuthRepository.getProfile", () => {
+  it("GETs AUTH_EP.me and maps the profile (incl. emailVerified)", async () => {
+    const http = makeHttp({
+      get: vi.fn().mockResolvedValue({ ...profileData, isEmailVerified: true }),
+    });
+    const result = await new AuthRepository(http).getProfile();
+    expect(http.get).toHaveBeenCalledWith(AUTH_EP.me);
+    expect(result.data?.email).toBe("a@school.vn");
+    expect(result.data?.emailVerified).toBe(true);
+  });
+
+  it("defaults emailVerified to false when the wire field is absent", async () => {
+    const http = makeHttp({ get: vi.fn().mockResolvedValue(profileData) });
+    const result = await new AuthRepository(http).getProfile();
+    expect(result.data?.emailVerified).toBe(false);
+  });
+
+  it("maps an UNAUTHORIZED rejection to a typed failure", async () => {
+    const http = makeHttp({
+      get: vi.fn().mockRejectedValue(apiError("UNAUTHORIZED_ACCESS", 401)),
+    });
+    const result = await new AuthRepository(http).getProfile();
+    expect(result.error).toEqual({ type: "unauthorized" });
+  });
+});
+
+describe("AuthRepository.requestEmailVerification", () => {
+  it("posts to the verification endpoint (no body) and returns ok on 204", async () => {
+    const http = makeHttp({ post: vi.fn().mockResolvedValue(undefined) });
+    const result = await new AuthRepository(http).requestEmailVerification();
+    expect(http.post).toHaveBeenCalledWith(AUTH_EP.requestEmailVerification);
+    expect(result.ok).toBe(true);
+  });
+
+  it("maps a 429 to too-many-requests", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(apiError("RATE_LIMIT_EXCEEDED", 429)),
+    });
+    const result = await new AuthRepository(http).requestEmailVerification();
+    expect(result.error).toEqual({ type: "too-many-requests" });
+  });
+
+  it("maps a transport failure to network-error", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+    });
+    const result = await new AuthRepository(http).requestEmailVerification();
+    expect(result.error).toEqual({ type: "network-error" });
+  });
+});
+
+describe("AuthRepository.confirmEmailVerification", () => {
+  it("posts { otp } and returns ok on 204", async () => {
+    const http = makeHttp({ post: vi.fn().mockResolvedValue(undefined) });
+    const result = await new AuthRepository(http).confirmEmailVerification(
+      "123456",
+    );
+    expect(http.post).toHaveBeenCalledWith(AUTH_EP.confirmEmailVerification, {
+      otp: "123456",
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("maps USER_INVALID_OTP → invalid-otp", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(apiError("USER_INVALID_OTP", 400)),
+    });
+    const result = await new AuthRepository(http).confirmEmailVerification(
+      "111111",
+    );
+    expect(result.error).toEqual({ type: "invalid-otp" });
+  });
+
+  it("maps USER_OTP_EXPIRED → otp-expired", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(apiError("USER_OTP_EXPIRED", 400)),
+    });
+    const result = await new AuthRepository(http).confirmEmailVerification(
+      "000000",
+    );
+    expect(result.error).toEqual({ type: "otp-expired" });
+  });
+
+  it("maps USER_TOO_MANY_ATTEMPTS (429) → too-many-requests (lockout)", async () => {
+    const http = makeHttp({
+      post: vi.fn().mockRejectedValue(apiError("USER_TOO_MANY_ATTEMPTS", 429)),
+    });
+    const result = await new AuthRepository(http).confirmEmailVerification(
+      "222222",
+    );
+    expect(result.error).toEqual({ type: "too-many-requests" });
   });
 });

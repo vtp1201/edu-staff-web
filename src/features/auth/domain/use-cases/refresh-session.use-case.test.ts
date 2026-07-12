@@ -10,6 +10,9 @@ function makeRepo(over: Partial<IAuthRepository> = {}): IAuthRepository {
     signout: vi.fn(),
     requestPasswordReset: vi.fn(),
     resetPassword: vi.fn(),
+    getProfile: vi.fn(),
+    requestEmailVerification: vi.fn(),
+    confirmEmailVerification: vi.fn(),
     ...over,
   };
 }
