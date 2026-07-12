@@ -33,3 +33,16 @@ For every role-gated destructive or privileged action, include a corresponding F
 
 ## Mock-first pattern
 When the real service is unavailable (decision 0017), the FR scopes to mock behavior. Note: "endpoints are defined but mock-first — real wiring deferred." Use `[ASSUMPTION]` label.
+
+## High-risk auth/public-link stories (confirmed US-E21.2, invite-accept)
+For any unauthenticated public route that creates an account or mutates auth state (first
+seen: tenant-invitation accept flow), always add explicit NFRs/FRs for: (1) no client-supplied
+role/tenantId in the mutating request (privilege-escalation guard — state the exact request
+payload shape in the FR so reviewers can diff it), (2) token/secret never persisted client-side
+(no localStorage, no logging), (3) server response is sole source of truth — no optimistic
+success before response, (4) explicit "what happens on account-mismatch/session-conflict"
+FR even if the exact BE behavior is unknown — write it as an open question rather than
+guessing, since guessing wrong here is a security bug, not a UX nit. Always recommend an ADR
+to ba-lead when this is the FIRST occurrence of a new auth pattern in the repo (e.g. first
+account-creation-via-public-link flow) — link to [[actor-role-patterns]] for the sensitive-gate
+list this falls under.
