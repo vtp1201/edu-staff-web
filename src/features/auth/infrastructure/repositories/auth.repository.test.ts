@@ -56,6 +56,7 @@ describe("AuthRepository.signin", () => {
         email: "a@school.vn",
         name: "An",
         avatar: null,
+        emailVerified: false,
         roles: [
           {
             role: "teacher",

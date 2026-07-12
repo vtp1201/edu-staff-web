@@ -33,6 +33,22 @@ describe("auth.mapper", () => {
     expect(user.roles[0].role).toBe("teacher");
   });
 
+  it("mapProfile maps isEmailVerified → emailVerified (true)", () => {
+    const user = mapProfile({ ...profileDto, isEmailVerified: true });
+    expect(user.emailVerified).toBe(true);
+  });
+
+  it("mapProfile maps isEmailVerified → emailVerified (false)", () => {
+    const user = mapProfile({ ...profileDto, isEmailVerified: false });
+    expect(user.emailVerified).toBe(false);
+  });
+
+  it("mapProfile defaults emailVerified to false when the wire field is absent", () => {
+    // Older cached sessions predate the field — never assume verified.
+    const user = mapProfile(profileDto);
+    expect(user.emailVerified).toBe(false);
+  });
+
   it("mapProfile preserves the raw BE roleEnum alongside the appRole", () => {
     const user = mapProfile(profileDto);
     expect(user.roles[0].roleEnum).toBe("TEACHER");

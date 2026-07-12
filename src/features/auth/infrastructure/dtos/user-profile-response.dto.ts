@@ -10,4 +10,7 @@ export interface UserProfileResponseDto {
     tenantName: string;
     tenantCode?: string;
   }>;
+  /** IAM `isEmailVerified` (openapi.yaml ~line 1386). Optional on the wire so
+   *  older cached sessions that predate the field don't fail the mapper. */
+  isEmailVerified?: boolean;
 }
