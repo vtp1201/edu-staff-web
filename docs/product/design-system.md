@@ -52,6 +52,28 @@ Sidebar 260/72px, header 64px, card pad 20–24px, gap 16px. Radius btn 8 / card
 Xem `.claude/rules/design-system.md` (StatCard, Badge, ProgressBar, Sidebar,
 score colors, assignment/schedule/discipline badge mappings).
 
+- **Shared screen-state primitives** (`design_src/edu/states.jsx`, group B
+  handoff v2.2, 2026-07-12): canonical loading/empty/error/coming-soon markup
+  for every screen — supersedes bespoke per-screen versions (retired
+  `FeedSkeleton`/`FeedEmpty`/`FeedError` in `feed.jsx` and
+  `ModSkeleton`/`ModEmpty`/`ModError` in `moderation.jsx` are now thin
+  screen-specific wrappers around these shared primitives, not standalone
+  implementations; `invitations.jsx` and `reports.jsx` use them directly).
+  Tokens-only, mirrors to production at `src/components/ui/screen-states/`.
+  - `EduSkeleton({ variant, count, lang })` — shimmer skeleton, `variant:
+    'rows'` (list/table) | `'cards'` (stat-card grid); shimmer animation must
+    stay motion-safe (`prefers-reduced-motion`) when ported to production.
+  - `EduEmpty({ icon, title, desc, action, color })` — valid-empty-data state,
+    icon chip (`bg = color/14`), optional single CTA action.
+  - `EduError({ title, desc, onRetry })` — load-failure state, always renders
+    a retry action when `onRetry` provided; `role="alert"`.
+  - `EduComingSoon({ title })` — nav module not yet designed (dashed border,
+    distinct from `EduEmpty`).
+- **Token mirror confirmed**: `design_src/edu/tokens.js` `warningText`
+  (`#9A6A0F`, decision `0046`) and `errorText` (`#C0392B`, decision `0027`)
+  mirror `--edu-warning-text`/`--edu-error-text` in `tokens.css` — no new
+  tokens introduced by the group B batch.
+
 ## A11y & motion
 
 WCAG 2.1 AA; warning vàng → text tối; animation gate `prefers-reduced-motion`;

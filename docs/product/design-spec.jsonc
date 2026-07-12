@@ -1718,6 +1718,118 @@
         },
         "thisDeviceBadge": "success",
         "perSessionLogout": true
+      },
+
+      // ── DR-016 Email verification (P5) — extends this EXISTING profile screen ──
+      // Source: design_src/edu/email-verify.jsx — EmailVerifyBanner / EVEmailField / EmailVerifyDialog.
+      // NOT a new screen: augments profile.infoTab email row + adds an app-shell
+      // banner (rendered by app.jsx, above content, below header — all routes).
+      "emailVerify": {
+        "us": "US-E01.x (planned)",
+        "source": "design_src/edu/email-verify.jsx",
+        // 1. App-shell banner — shown on every route when email unverified
+        "banner": {
+          "component": "EmailVerifyBanner",
+          "position": "below header (T.headerHeight), above route content",
+          "role": "status",
+          "padding": "9px 24px",
+          "background": "var(--edu-warning) + '1A'",
+          "borderBottom": "1px solid var(--edu-warning) + '55'",
+          "textColor": "var(--edu-warning-foreground)",
+          "iconBox": {
+            "size": 28,
+            "borderRadius": 8,
+            "background": "var(--edu-warning) + '26'",
+            "icon": "mail"
+          },
+          "badgeDot": {
+            "size": 11,
+            "background": "var(--edu-warning)",
+            "text": "!"
+          },
+          "dismissButton": {
+            "size": 26,
+            "borderRadius": 7,
+            "icon": "x",
+            "sessionOnly": true
+          },
+          "states": {
+            "default": {
+              "text": "Email của bạn chưa được xác thực. Xác thực để nhận thông báo quan trọng.",
+              "cta": "Gửi mail xác thực (ghost, inline)"
+            },
+            "sent": {
+              "text": "Đã gửi. Kiểm tra hộp thư <email>.",
+              "resendLink": "cooldown 60s, aria-live polite countdown, then 'Gửi lại' link"
+            }
+          },
+          "animation": "ev-banner-in 0.2s ease-out (opacity + translateY(-6px)→0); respects prefers-reduced-motion via global rule"
+        },
+        // 2. profile.infoTab email row — augments the existing "email (disabled)" field
+        //    listed in profile.infoTab.fields above with a status badge + inline CTA.
+        "profileEmailField": {
+          "component": "EVEmailField",
+          "context": "profile.infoTab, email field (disabled input) — ADD status badge, do not remove existing disabled-input spec",
+          "badge": {
+            "verified": {
+              "text": "Đã xác thực",
+              "color": "var(--edu-teal)",
+              "icon": "check"
+            },
+            "unverified": {
+              "text": "Chưa xác thực",
+              "color": "var(--edu-warning-text)",
+              "background": "var(--edu-warning-light)",
+              "icon": "alertTriangle"
+            }
+          },
+          "verifyNowLink": {
+            "fontSize": 11.5,
+            "fontWeight": 800,
+            "color": "var(--edu-primary)",
+            "icon": "userCheck",
+            "shownWhen": "!verified"
+          }
+        },
+        // 3. OTP dialog
+        "dialog": {
+          "component": "EmailVerifyDialog",
+          "maxWidth": 420,
+          "otpInput": {
+            "cells": 6,
+            "cellSize": "46x52",
+            "borderRadius": 10,
+            "fontSize": 20,
+            "fontWeight": 800,
+            "a11y": "each cell aria-label 'Chữ số thứ N'; group role=group aria-label 'Mã xác thực 6 chữ số'; autoComplete one-time-code on first cell",
+            "errorState": {
+              "border": "1.5px solid var(--edu-error-dark)",
+              "background": "var(--edu-error-dark-light) + '55'",
+              "textColor": "var(--edu-error-text)",
+              "messages": {
+                "wrong": "Mã không đúng. Vui lòng kiểm tra lại email và nhập lại.",
+                "expired": "Mã đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới."
+              }
+            },
+            "resendCooldown": "60s, aria-live polite"
+          },
+          "successState": {
+            "iconCircle": {
+              "size": 72,
+              "background": "var(--edu-teal-light)",
+              "icon": "check",
+              "iconColor": "var(--edu-teal)"
+            },
+            "title": "Email đã được xác thực",
+            "cta": "Hoàn tất"
+          }
+        },
+        "a11y": [
+          "banner role=status (not alert — non-urgent, matches accessibility.md)",
+          "OTP cells 1-digit-1-input with per-digit aria-label; error text uses --edu-error-text (never plain destructive bg color)",
+          "cooldown countdown announced via aria-live=polite, not color-only"
+        ],
+        "tokensNote": "warning banner text uses var(--edu-warning-foreground) on warning bg — never white (WCAG, decision 0013)"
       }
     },
 
@@ -2809,6 +2921,91 @@
             "noOnlineDot": true
           }
         }
+      },
+
+      // ── DR-017 Presence indicator (P6) — extends messaging.jsx in place ──────
+      // Source: design_src/edu/messaging.jsx — "P6: Presence" block (lines ~40–76),
+      // ConvoItem avatar dot (line ~1479), chat header dot + caption (~1684/1697),
+      // group-panel member list (~1015–1053). BE: notification service
+      // GET /api/v1/presence + SSE /api/v1/stream (decision-0009, mock in this file).
+      "presence": {
+        "us": "US-E10.x (planned)",
+        "source": "design_src/edu/messaging.jsx — msgPresence()/MSGPresenceDot()/msgPresenceCaption()",
+        // presence value union: 'online' | 'recent' (left <5 min ago) | 'offline'.
+        // Contacts without an explicit `presence` field derive it from legacy `online` boolean
+        // via msgPresence(c) = c.presence || (c.online ? 'online' : 'offline').
+        "presenceValues": ["online", "recent", "offline"],
+        // Status dot on avatar — bottom-right, MSGPresenceDot component
+        "dot": {
+          "size": 10,
+          "offset": 1,
+          "groupPanelSize": 9,
+          "groupPanelOffset": 0,
+          "position": "absolute bottom-right of avatar",
+          "online": {
+            "background": "var(--edu-success)",
+            "border": "none",
+            "ring": "0 0 0 2px var(--edu-card)"
+          },
+          "recent": {
+            "background": "var(--edu-card)",
+            "border": "2px solid var(--edu-success)",
+            "ring": "0 0 0 2px var(--edu-card)",
+            "note": "hollow ring, not solid — visually distinct from online"
+          },
+          "offline": {
+            "render": "none",
+            "note": "no dot at all for offline — NOT a gray dot (reduces visual noise per P6 prompt)"
+          },
+          "animation": "none — static, no blink/pulse (motion-safe / anti-noise)",
+          "a11y": "sr-only text on the dot span: 'đang hoạt động' (online) / 'vừa hoạt động gần đây' (recent) — status not color-only"
+        },
+        // Applies to: conversation-list avatar (direct only, NOT group avatars),
+        // chat header avatar (DM only), group-info-panel member rows.
+        "appliesTo": {
+          "convoListAvatar": "direct contacts only — group avatars never show a presence dot",
+          "chatHeaderAvatar": "DM (1:1) only — group chat header shows member count instead, never per-member presence",
+          "groupMemberPanel": "every member row shows its own dot"
+        },
+        // DM chat-header caption under the contact name (msgPresenceCaption)
+        "headerCaption": {
+          "fontSize": 12,
+          "color": "var(--edu-text-muted)",
+          "values": {
+            "online": { "vi": "Đang hoạt động", "en": "Active now" },
+            "recent": {
+              "vi": "Hoạt động {n} phút trước (or contact.lastSeen)",
+              "en": "Active {n} minutes ago (or contact.lastSeen)"
+            },
+            "offline": {
+              "vi": "Hoạt động hôm qua (or contact.lastSeen)",
+              "en": "Active yesterday (or contact.lastSeen)"
+            }
+          },
+          "note": "full words, no cryptic shorthand (e.g. never just 'online'/'5m')"
+        },
+        // Group-info-panel members section (GroupInfoPanel.membersSection extension)
+        "groupPanel": {
+          "onlineCountBanner": {
+            "position": "top of members list, before the sorted rows",
+            "padding": "7px 18px",
+            "background": "var(--edu-bg)",
+            "dot": { "size": 7, "background": "var(--edu-success)" },
+            "label": {
+              "fontSize": 11,
+              "fontWeight": 800,
+              "color": "var(--edu-text-secondary)"
+            },
+            "text": { "vi": "{n} đang hoạt động", "en": "{n} online now" },
+            "count": "members.filter(m => msgPresence(m) !== 'offline').length"
+          },
+          "sortOrder": "online (rank 2) → recent (rank 1) → offline (rank 0), stable sort by msgPresence(); NOT the old boolean `online` — fixes recent being miscounted as offline",
+          "offlineRow": { "opacity": 0.6, "avatarFilter": "grayscale(20%)" }
+        },
+        "unaffected": [
+          "typing indicator (unchanged, out of scope for P6)",
+          "SSE 'Trực tuyến/Tin mới' connection pill in chat header (separate feature, unchanged)"
+        ]
       }
     },
 
@@ -3309,6 +3506,1071 @@
         "search + filter",
         "summary panel",
         "history tab"
+      ]
+    },
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // GROUP B RECONCILE (DR-012 → DR-019) — 8 screens gen'd via
+    // docs/design-requests/PROMPTS-group-b-ui-gen.md (P1–P7 + P8 audit fix pass).
+    // BE has these APIs already; web had no UI — reconcile transcribes the
+    // already-built + already-audited (P8) design_src/edu/*.jsx into this spec.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ── Social Feed — DR-012 (US-097→100, social service) ─────────────────────
+    // Source: design_src/edu/feed.jsx — FeedScreen
+    "feed": {
+      "route": "/feed",
+      "roles": ["teacher", "principal", "student", "parent"],
+      "source": "design_src/edu/feed.jsx — FeedScreen",
+      "layout": {
+        "columnMaxWidth": 680,
+        "columnAlign": "centered",
+        "padding": "28px 32px (16px 12px <=640px)",
+        "gap": 16
+      },
+      // Scope tab switcher: "Toàn trường" (globe icon) + "Lớp <tên>" (users icon,
+      // dropdown listbox if user belongs to >1 class). role=tablist.
+      "scopeTabs": {
+        "component": "role=tablist, 2 role=tab buttons",
+        "padding": "8px 16px",
+        "borderRadius": 99,
+        "active": {
+          "border": "1.5px solid pColor",
+          "background": "pColor + '12'",
+          "color": "pColor",
+          "fontWeight": 700
+        },
+        "inactive": {
+          "border": "1.5px solid var(--edu-border)",
+          "color": "var(--edu-text-secondary)",
+          "fontWeight": 600
+        },
+        "classDropdown": "role=listbox when user has >1 class; single static tab otherwise",
+        "mobileScroll": "horizontal scroll, scrollbar hidden (.feed-tabs)"
+      },
+      // Composer — hidden ENTIRELY (not disabled) for roles without post permission
+      // in the active scope: school scope = teacher/principal only; class scope =
+      // teacher/principal/student (policy: students may post to their own class feed).
+      "composer": {
+        "component": "FeedComposer",
+        "card": { "padding": 16 },
+        "avatarSize": 38,
+        "textarea": {
+          "rowsCollapsed": 1,
+          "rowsExpanded": 3,
+          "borderRadius": 10,
+          "background": "var(--edu-bg)",
+          "focusBorder": "pColor"
+        },
+        "attachToggle": {
+          "icon": "image",
+          "activeBackground": "pColor + '12'",
+          "activeColor": "pColor"
+        },
+        "submitButton": {
+          "variant": "primary",
+          "size": "sm",
+          "icon": "send",
+          "disabledWhenEmpty": true
+        },
+        "visibilityRule": "canPost = (scope===school ? role in [teacher,principal] : role in [teacher,principal,student]) — composer NOT rendered at all when false"
+      },
+      // Post card (FeedPostCard)
+      "postCard": {
+        "padding": 20,
+        "pinnedBorder": "1px solid pColor + '4D'",
+        "defaultBorder": "1px solid var(--edu-border)",
+        "header": {
+          "avatarSize": 40,
+          "authorName": { "fontSize": 13.5, "fontWeight": 700 },
+          "roleBadge": {
+            "component": "Badge",
+            "colorMap": "teacher→primary, principal→success, student→warning, parent→purple"
+          },
+          "pinnedBadge": {
+            "icon": "pin",
+            "color": "pColor",
+            "label": "Đã ghim"
+          },
+          "timeMeta": {
+            "fontSize": 11.5,
+            "color": "var(--edu-text-muted)",
+            "fullTimeInTitle": true,
+            "scopeIcon": "globe (school) | users (class)"
+          },
+          "menu": {
+            "component": "FeedMenu",
+            "trigger": {
+              "size": 30,
+              "borderRadius": 8,
+              "icon": "moreHorizontal"
+            },
+            "semantics": "aria-haspopup=menu, role=menu/menuitem, Escape + outside-click dismiss, viewport-anchored",
+            "items": {
+              "pinToggle": "moderator only (principal, or teacher when class scope is own class)",
+              "report": "any role except the post's own author",
+              "remove": "moderator only, danger styled"
+            }
+          }
+        },
+        "body": {
+          "fontSize": 13.5,
+          "lineHeight": 1.65,
+          "clamp": {
+            "lines": 5,
+            "threshold": "text.length > 320",
+            "toggleLabel": "Xem thêm / Thu gọn",
+            "className": "feed-clamp"
+          },
+          "imageGrid": {
+            "component": "FeedImageGrid + FeedImg (placeholder: repeating-linear-gradient stripe + monospace caption, NOT real photos in mock)",
+            "layouts": {
+              "1": "16/9 full width",
+              "2": "2-col 4/3",
+              "3": "1 wide (21/9) + 2 below (4/3)",
+              "4+": "2x2 grid, max 4 shown"
+            },
+            "gap": 6,
+            "borderRadius": 10,
+            "alt": "required, describes image content"
+          }
+        },
+        "footer": {
+          "reactionBar": {
+            "component": "FeedReactionBar",
+            "reactions": [
+              "👍 Thích",
+              "❤️ Yêu thích",
+              "🎉 Chúc mừng",
+              "👏 Tuyệt vời"
+            ],
+            "chip": {
+              "padding": "4px 10px",
+              "borderRadius": 99,
+              "mine": {
+                "border": "1px solid pColor",
+                "background": "pColor + '1F'",
+                "color": "pColor",
+                "fontWeight": 700
+              },
+              "notMine": {
+                "border": "1px solid var(--edu-border)",
+                "color": "var(--edu-text-secondary)",
+                "fontWeight": 600
+              },
+              "aria": "aria-pressed=mine, aria-label 'Thả cảm xúc {reason}, {count} người'"
+            },
+            "addReactionPicker": {
+              "trigger": {
+                "size": 28,
+                "borderRadius": 99,
+                "border": "1px dashed var(--edu-border)",
+                "icon": "smile"
+              },
+              "popover": "row of emoji buttons, hover scale(1.25)"
+            }
+          },
+          "commentsToggle": {
+            "padding": "5px 12px",
+            "borderRadius": 8,
+            "activeBackground": "pColor + '12'",
+            "activeColor": "pColor",
+            "icon": "message",
+            "countSuffix": " · {n}"
+          }
+        }
+      },
+      // Comment thread (FeedComments) — expands under post footer
+      "commentThread": {
+        "borderTop": "1px solid var(--edu-border)",
+        "row": {
+          "avatarSize": 28,
+          "bubble": {
+            "background": "var(--edu-bg)",
+            "borderRadius": 10,
+            "padding": "8px 12px"
+          }
+        },
+        "menu": "same FeedMenu semantics; Báo cáo bình luận (non-author) / Gỡ bình luận (author or moderator, danger)",
+        "input": {
+          "avatarSize": 28,
+          "pillBackground": "var(--edu-bg)",
+          "borderRadius": 99,
+          "sendButton": {
+            "size": 28,
+            "borderRadius": "50%",
+            "disabledBackground": "var(--edu-border)"
+          }
+        }
+      },
+      // Report entry point — see screens.moderation.reportDialog (SHARED, not duplicated here)
+      "reportEntryPoint": "post/comment '…' menu → 'Báo cáo' → opens screens.moderation.reportDialog (ReportContentDialog in ui.jsx)",
+      "states": {
+        "loading": {
+          "component": "EduSkeleton",
+          "variant": "rows",
+          "count": 3
+        },
+        "empty": {
+          "component": "EduEmpty",
+          "icon": "newspaper",
+          "title": "Chưa có bài viết nào",
+          "cta": "Đăng bài viết đầu tiên — only when canPost"
+        },
+        "error": {
+          "component": "EduError",
+          "title": "Không tải được bảng tin",
+          "retry": true
+        },
+        "endOfFeed": {
+          "text": "Bạn đã xem hết bảng tin",
+          "layout": "divider — label — divider"
+        },
+        "pagination": "cursor-based; 'Tải thêm bài viết' button (secondary, sm), loading label 'Đang tải…'"
+      },
+      "a11y": [
+        "reaction buttons: aria-pressed + Vietnamese aria-label including reaction name and count",
+        "'…' menus: proper menu/menuitem roles, Escape + outside-click close, focus not trapped (non-modal)",
+        "images: alt required, decorative time separator '·' aria-hidden",
+        "tab switcher: role=tablist/tab + aria-selected"
+      ],
+      "responsive": {
+        "mobile375": "single column full width, no composer sticky (in-flow), scope tabs scroll horizontally"
+      }
+    },
+
+    // ── Content Moderation — DR-013 (US-098, social service) ──────────────────
+    // Source: design_src/edu/moderation.jsx — ModerationScreen (principal/admin,
+    // route /principal/moderation) + shared ReportContentDialog (design_src/edu/ui.jsx).
+    "moderation": {
+      "route": "/principal/moderation",
+      "roles": ["principal", "admin"],
+      "source": "design_src/edu/moderation.jsx — ModerationScreen",
+      "layout": {
+        "maxWidth": 1200,
+        "padding": "28px 32px (16px 12px <=760px)",
+        "gap": 20
+      },
+      "statRow": {
+        "grid": "repeat(auto-fit, minmax(240px, 1fr))",
+        "cards": [
+          {
+            "icon": "clock",
+            "iconColor": "var(--edu-warning)",
+            "label": "Chờ xử lý",
+            "source": "pending count"
+          },
+          {
+            "icon": "checkSquare",
+            "iconColor": "var(--edu-success)",
+            "label": "Đã xử lý tuần này",
+            "source": "resolved count"
+          },
+          {
+            "icon": "trash",
+            "iconColor": "var(--edu-error-dark)",
+            "label": "Đã gỡ nội dung",
+            "source": "removed count"
+          }
+        ],
+        "component": "StatCard (canonical)"
+      },
+      "viewTabs": {
+        "role": "tablist",
+        "tabs": [
+          "Hàng chờ báo cáo (flag icon)",
+          "Nhật ký kiểm duyệt (scrollText icon)"
+        ],
+        "activeStyle": {
+          "borderBottom": "2px solid pColor",
+          "color": "pColor",
+          "fontWeight": 700
+        }
+      },
+      "queueFilterBar": {
+        "statusTabs": {
+          "role": "tablist",
+          "options": ["Chờ xử lý", "Đã xử lý", "Tất cả"],
+          "countBadge": "inline, tabular-nums"
+        },
+        "typeSelect": {
+          "options": ["Mọi loại nội dung", "Bài viết", "Bình luận", "Tin nhắn"]
+        },
+        "search": { "placeholder": "Tìm nội dung, người đăng, người báo cáo…" },
+        "refreshButton": { "size": 32, "borderRadius": 8, "icon": "refreshCw" }
+      },
+      "table": {
+        "columns": [
+          "Nội dung (icon+2-line clamp preview+location)",
+          "Người báo cáo (+duplicate count)",
+          "Lý do (badge)",
+          "Người bị báo cáo",
+          "Thời gian",
+          "Trạng thái (badge)",
+          "Hành động (chevronRight icon button, sr-only label)"
+        ],
+        "rowClickable": true,
+        "reasonBadgeTones": {
+          "spam": "warning",
+          "language": "error",
+          "bully": "error",
+          "misinfo": "warning",
+          "other": "muted (textSecondary)"
+        },
+        "statusBadges": {
+          "pending": {
+            "color": "var(--edu-warning)",
+            "icon": "clock",
+            "label": "Chờ xử lý"
+          },
+          "removed": {
+            "color": "var(--edu-error-dark)",
+            "background": "var(--edu-error-dark-light)",
+            "icon": "trash",
+            "label": "Đã gỡ"
+          },
+          "dismissed": {
+            "color": "var(--edu-text-secondary)",
+            "icon": "check",
+            "label": "Đã bỏ qua"
+          }
+        },
+        "mobileVariant": "card list (<=760px), same fields stacked"
+      },
+      "detailSheet": {
+        "component": "ModDetailSheet",
+        "width": 440,
+        "side": "right",
+        "role": "dialog, aria-modal, focus-trapped (Tab loop + Escape + return focus)",
+        "sections": [
+          "Nội dung bị báo cáo (author + full content, muted bg)",
+          "Ngữ cảnh — original post (comment reports) OR 3 nearby messages (message reports, reported one highlighted errorDark tint)",
+          "Báo cáo — reporter + time + reason badge + optional reasonNote quote",
+          "Báo cáo trùng (N) — list of other reporters for same content",
+          "Kết quả xử lý — resolvedBy/resolvedAt/resolveNote, shown only when status=resolved"
+        ],
+        "footerActions": {
+          "shownWhen": "status===pending",
+          "dismiss": "ghost, icon check",
+          "remove": "danger, icon trash → opens confirmRemove dialog"
+        }
+      },
+      "confirmRemoveDialog": {
+        "component": "ModConfirmRemove",
+        "role": "alertdialog",
+        "maxWidth": 400,
+        "iconBox": {
+          "size": 38,
+          "borderRadius": 10,
+          "background": "var(--edu-error-dark-light)",
+          "icon": "trash",
+          "iconColor": "var(--edu-error-dark)"
+        },
+        "body": "explicit not-undoable + author-will-be-notified copy, content quote clamp 2 lines",
+        "actions": ["Hủy (ghost)", "Gỡ nội dung (danger)"],
+        "focusTrap": true
+      },
+      "auditTimelineTab": {
+        "component": "ModAuditTimeline",
+        "layout": "vertical timeline, left rail 2px var(--edu-border), dot per entry (removed=errorDark ring, dismissed=textSecondary ring)",
+        "row": "actor + action badge + '{type} của {author}' + timestamp (right-aligned) + reason text below",
+        "empty": "Chưa có hành động kiểm duyệt nào."
+      },
+      "states": {
+        "loading": {
+          "component": "EduSkeleton",
+          "variant": "rows",
+          "count": 5
+        },
+        "empty": {
+          "component": "EduEmpty",
+          "pendingTab": {
+            "icon": "checkSquare",
+            "color": "var(--edu-success)",
+            "title": "Không có báo cáo nào chờ xử lý",
+            "tone": "positive"
+          },
+          "otherTabs": {
+            "icon": "search",
+            "title": "Không tìm thấy báo cáo nào"
+          }
+        },
+        "error": {
+          "component": "EduError",
+          "title": "Không tải được danh sách báo cáo",
+          "retry": true
+        }
+      },
+      "a11y": [
+        "destructive remove is role-gated (principal/admin) + always confirm-dialog gated",
+        "status badges carry icon + text, never color-only",
+        "detail sheet + confirm dialog both focus-trapped with Escape + return-focus-on-close"
+      ],
+
+      // ── Report-content dialog — SHARED, single source of truth ───────────────
+      // Source: design_src/edu/ui.jsx — ReportContentDialog + REPORT_REASONS.
+      // Triggered from feed.jsx (post/comment '…' menu) AND messaging.jsx
+      // (message context menu "reply/pin/copy/delete" sibling action). Both
+      // callers reference THIS entry — do not duplicate under screens.feed or
+      // messaging.groupChat.
+      "reportDialog": {
+        "component": "ReportContentDialog",
+        "source": "design_src/edu/ui.jsx",
+        "usedBy": ["feed.jsx (post + comment)", "messaging.jsx (message)"],
+        "maxWidth": 430,
+        "role": "dialog, aria-modal, focus-trapped",
+        "header": {
+          "iconBox": {
+            "size": 36,
+            "borderRadius": 10,
+            "background": "var(--edu-warning-light)",
+            "icon": "flag",
+            "iconColor": "var(--edu-warning)"
+          }
+        },
+        "quotePreview": {
+          "background": "var(--edu-bg)",
+          "borderRadius": 8,
+          "clampLines": 3
+        },
+        "reasonRadioGroup": {
+          "role": "radiogroup",
+          "options": [
+            "Spam",
+            "Ngôn từ không phù hợp",
+            "Bắt nạt",
+            "Thông tin sai",
+            "Khác"
+          ],
+          "otherReasonRequiresNote": true,
+          "active": {
+            "border": "1.5px solid pColor",
+            "background": "pColor + '0D'"
+          }
+        },
+        "footer": {
+          "cancel": "ghost",
+          "submit": {
+            "label": "Gửi báo cáo",
+            "icon": "flag",
+            "disabledUntilValid": true
+          }
+        },
+        "postSubmitBehavior": "toast 'Đã gửi báo cáo. BGH sẽ xem xét.' — reported content is NOT hidden from the reporter's own view"
+      }
+    },
+
+    // ── Parent–Student Links & Consent — DR-014 (US-047, US-094/095, core service) ──
+    // Source: design_src/edu/parent-links.jsx — ParentLinksScreen (admin) +
+    // ParentConsentSection/ParentConsentScreen (parent)
+    "parentLinks": {
+      "route": "/admin/parent-links",
+      "roles": ["principal", "admin"],
+      "source": "design_src/edu/parent-links.jsx — ParentLinksScreen",
+      "layout": {
+        "maxWidth": 1200,
+        "padding": "28px 32px (20px 16px on mobile <760px)"
+      },
+      "pageHeader": {
+        "titleFontSize": 22,
+        "titleFontWeight": 800,
+        "createButton": {
+          "variant": "primary",
+          "icon": "plus",
+          "label": "Tạo liên kết"
+        }
+      },
+      "filterBar": {
+        "search": { "placeholder": "Tìm học sinh hoặc phụ huynh…" },
+        "classSelect": { "options": "PL_CLASSES + 'Tất cả các lớp'" }
+      },
+      "table": {
+        "columns": [
+          "Học sinh (avatar+name+class)",
+          "Phụ huynh (avatar+name+phone)",
+          "Quan hệ (badge)",
+          "Trạng thái consent (badge+icon)",
+          "Ngày liên kết",
+          "Hành động (row menu)"
+        ],
+        "relationBadges": {
+          "father": "info tone (Bố)",
+          "mother": "purple tone (Mẹ)",
+          "guardian": "textSecondary tone (Người giám hộ)"
+        },
+        "consentBadges": {
+          "agreed": {
+            "color": "var(--edu-teal)",
+            "icon": "check",
+            "label": "Đã đồng ý nhận TB"
+          },
+          "pending": {
+            "color": "var(--edu-warning-text)",
+            "icon": "clock",
+            "label": "Chưa phản hồi"
+          },
+          "declined": {
+            "color": "var(--edu-error-dark)",
+            "icon": "x",
+            "label": "Đã từ chối"
+          }
+        },
+        "rowMenu": {
+          "component": "PLRowMenu",
+          "items": ["Xem chi tiết", "Gỡ liên kết (danger)"]
+        },
+        "mobileVariant": "card list <760px, same fields stacked, relation shown as icon+label row"
+      },
+      "createDialog": {
+        "component": "PLCreateDialog",
+        "maxWidth": 470,
+        "studentCombobox": {
+          "component": "PLCombobox",
+          "role": "combobox+listbox",
+          "placeholder": "Tìm theo tên học sinh…"
+        },
+        "parentCombobox": {
+          "role": "combobox+listbox",
+          "placeholder": "Tìm theo tên phụ huynh…",
+          "subLabel": "phone"
+        },
+        "relationSelect": { "options": ["father", "mother", "guardian"] },
+        "noteTextarea": { "rows": 2, "optional": true },
+        "duplicateValidation": {
+          "rule": "1 studentId+parentId pair may not repeat",
+          "errorText": "Liên kết đã tồn tại",
+          "errorStyle": "role=alert, errorDark, alertTriangle icon"
+        }
+      },
+      "unlinkConfirmDialog": {
+        "component": "PLUnlinkDialog",
+        "maxWidth": 430,
+        "iconBox": {
+          "background": "var(--edu-error-dark-light)",
+          "icon": "alertTriangle",
+          "iconColor": "var(--edu-error-dark)"
+        },
+        "body": "explicit consequence copy: parent loses access to grades/conduct/attendance/notifications; neither account is deleted",
+        "actions": ["Hủy (ghost)", "Gỡ liên kết (danger)"]
+      },
+      "detailDialog": {
+        "component": "PLDetailDialog",
+        "maxWidth": 440,
+        "layout": "label-value rows (120px label column)"
+      },
+      "states": {
+        "loading": {
+          "component": "PLSkeleton (rows=5), same shimmer pattern as other admin tables"
+        },
+        "empty": {
+          "component": "PLEmpty",
+          "noFilters": "Lớp này chưa có liên kết nào + Tạo liên kết CTA",
+          "filtered": "Không có liên kết nào khớp bộ lọc + Xoá bộ lọc"
+        },
+        "error": {
+          "component": "PLError",
+          "title": "Không tải được dữ liệu",
+          "retry": true
+        }
+      },
+      "toast": {
+        "component": "PLToast",
+        "position": "bottom-right, fixed",
+        "borderRadius": 12
+      },
+      "a11y": [
+        "consent badges carry icon + text, never color-only",
+        "unlink is destructive + role-gated (principal/admin) + confirm dialog states the consequence",
+        "combobox uses role=combobox/listbox/option correctly"
+      ],
+
+      // ── Parent-facing consent section — separate surface, embedded in parent profile ──
+      // Source: design_src/edu/parent-links.jsx — ParentConsentSection (embeddable
+      // Card) + ParentConsentScreen (standalone route wrapper for the parent role).
+      "consentSection": {
+        "route": "/consent (standalone) OR embedded card in parent profile/settings",
+        "roles": ["parent"],
+        "component": "ParentConsentSection",
+        "header": {
+          "iconBox": {
+            "size": 38,
+            "borderRadius": 10,
+            "background": "pColor + '15'",
+            "icon": "bell"
+          },
+          "titleFontSize": 15,
+          "titleFontWeight": 800
+        },
+        "childCard": {
+          "component": "PLChildConsentCard",
+          "header": {
+            "background": "var(--edu-bg)",
+            "avatarSize": 38,
+            "linkedBadge": "Đã liên kết"
+          },
+          "toggles": [
+            {
+              "id": "discipline",
+              "icon": "shield",
+              "label": "Thông báo vi phạm / hạnh kiểm"
+            },
+            {
+              "id": "absence",
+              "icon": "calendarX",
+              "label": "Thông báo vắng học"
+            },
+            { "id": "grades", "icon": "award", "label": "Thông báo điểm số" }
+          ],
+          "toggleRow": {
+            "iconBox": {
+              "size": 34,
+              "borderRadius": 9,
+              "background": "(pColor or textMuted) + '14'"
+            },
+            "description": "1-line muted explainer under each toggle label",
+            "switch": {
+              "component": "PLSwitch",
+              "width": 42,
+              "height": 24,
+              "role": "switch",
+              "aria-checked": true
+            }
+          },
+          "onChangeConfirm": "toast 'Đã cập nhật quyền nhận thông báo' (no modal confirm — instant + toast)"
+        },
+        "footerNote": {
+          "icon": "lockClosed",
+          "fontSize": 11.5,
+          "color": "var(--edu-text-muted)",
+          "copy": "explains school only sends with consent, scoped to linked students, toggling off doesn't affect in-app data access — privacy-respecting tone"
+        },
+        "states": {
+          "loading": { "component": "PLConsentSkeleton" },
+          "empty": {
+            "icon": "users",
+            "title": "Chưa có con nào được liên kết",
+            "body": "contact-school guidance"
+          },
+          "error": { "component": "PLError" }
+        },
+        "a11y": "each PLSwitch has aria-labelledby + aria-describedby pointing at the toggle's own label + description text"
+      }
+    },
+
+    // ── Tenant Invitations — DR-015 (iam service) ──────────────────────────────
+    // Source: design_src/edu/invitations.jsx — InvitationsScreen (admin)
+    "invitations": {
+      "route": "/admin/invitations",
+      "roles": ["principal", "admin"],
+      "source": "design_src/edu/invitations.jsx — InvitationsScreen",
+      "layout": { "maxWidth": 1200, "padding": "28px 32px (20px 16px <820px)" },
+      "pageHeader": {
+        "titleFontSize": 22,
+        "actions": [
+          "Làm mới (secondary, icon refreshCw)",
+          "Gửi lời mời (primary, icon send)"
+        ]
+      },
+      "statusTabs": {
+        "role": "tablist",
+        "options": [
+          "Tất cả",
+          "Chờ chấp nhận",
+          "Đã chấp nhận",
+          "Hết hạn",
+          "Đã thu hồi"
+        ],
+        "countBadge": true
+      },
+      "search": { "placeholder": "Tìm theo email…" },
+      "table": {
+        "columns": [
+          "Email",
+          "Vai trò (badge)",
+          "Người mời",
+          "Ngày gửi",
+          "Hết hạn (countdown)",
+          "Trạng thái (badge)",
+          "Hành động"
+        ],
+        "roleBadgeColors": {
+          "teacher": "var(--edu-primary)",
+          "student": "var(--edu-warning)",
+          "parent": "var(--edu-purple)",
+          "manager": "var(--edu-success) (BGH)",
+          "admin": "var(--edu-error) (Admin)"
+        },
+        "statusBadges": {
+          "pending": {
+            "color": "var(--edu-warning-text)",
+            "icon": "clock",
+            "label": "Chờ chấp nhận"
+          },
+          "accepted": {
+            "color": "var(--edu-teal)",
+            "icon": "check",
+            "label": "Đã chấp nhận"
+          },
+          "expired": {
+            "color": "var(--edu-text-muted)",
+            "icon": "calendarX",
+            "label": "Hết hạn"
+          },
+          "revoked": {
+            "color": "var(--edu-error-dark)",
+            "icon": "x",
+            "label": "Đã thu hồi"
+          }
+        },
+        "expiryCountdown": {
+          "component": "INVExpiryCell",
+          "rule": "daysLeft < 3 → warning tone (var(--edu-warning-text)) + bold + alertTriangle icon; else textSecondary",
+          "note": "countdown never color-only — always paired with 'Còn N ngày' text + icon when urgent",
+          "acceptedOrRevoked": "em-dash placeholder",
+          "expired": "'Hết hạn {date}' + calendarX icon, muted"
+        },
+        "rowActions": {
+          "copyLink": "pending only, icon copy",
+          "resend": "expired only, icon refreshCw",
+          "revoke": "pending only, icon x, danger"
+        },
+        "revokedRowOpacity": 0.65,
+        "mobileVariant": "card list <820px"
+      },
+      "sendDialog": {
+        "component": "INVSendDialog",
+        "maxWidth": 480,
+        "emailChips": {
+          "component": "INVEmailChips",
+          "minHeight": 44,
+          "chipValid": {
+            "background": "pColor + '14'",
+            "color": "pColor",
+            "border": "pColor + '33'"
+          },
+          "chipInvalid": {
+            "background": "var(--edu-error-dark-light)",
+            "color": "var(--edu-error-dark)",
+            "border": "var(--edu-error-dark) + '55'",
+            "icon": "alertTriangle"
+          },
+          "commitKeys": ["Enter", ",", "Space"],
+          "backspaceRemovesLastChip": true,
+          "pasteMultiple": true,
+          "errorText": {
+            "role": "alert",
+            "copy": "Một số email không đúng định dạng — xóa hoặc sửa trước khi gửi."
+          }
+        },
+        "roleRadioGroup": {
+          "role": "radiogroup",
+          "options": ["teacher", "student", "parent", "manager", "admin"],
+          "activeStyle": "border+bg tinted by role color, bold"
+        },
+        "expirySelect": {
+          "options": ["7 ngày", "14 ngày", "30 ngày"],
+          "default": "14 ngày"
+        },
+        "submitLabel": "Gửi lời mời | Gửi N lời mời (when >1 chip)"
+      },
+      "revokeConfirmDialog": {
+        "component": "INVRevokeDialog",
+        "maxWidth": 420,
+        "role": "alertdialog-style",
+        "body": "explains link becomes invalid immediately; new invite can be sent anytime",
+        "actions": ["Hủy", "Thu hồi lời mời (danger)"]
+      },
+      "empty": {
+        "component": "INVEmpty",
+        "noFilters": "Chưa có lời mời nào + Gửi lời mời CTA",
+        "filtered": "Không có lời mời nào khớp bộ lọc + Xoá bộ lọc"
+      },
+      // P8 fix: admin table now has full loading/error states (previously the only
+      // screen in this batch missing them) — uses the mandatory states.jsx pair.
+      "states": {
+        "loading": {
+          "component": "EduSkeleton",
+          "variant": "rows",
+          "count": 5
+        },
+        "error": {
+          "component": "EduError",
+          "title": "Không tải được danh sách lời mời",
+          "retry": true,
+          "pattern": "failedOnce ref — first refresh fails, retry succeeds (demo only)"
+        }
+      },
+      "toast": { "component": "INVToast", "position": "bottom-right fixed" },
+      "a11y": [
+        "email chips removable by keyboard (button per chip)",
+        "countdown urgency never color-only",
+        "revoke is destructive + confirm-gated"
+      ]
+    },
+
+    // ── Invite Accept (public onboarding) — DR-015 companion screen ───────────
+    // Source: design_src/edu/invitations.jsx — InviteAcceptScreen
+    // Layout family: SAME 2-column auth shell as screens.login (left brand panel
+    // + right content card) — reuse screens.login.left tokens, do not respecify.
+    "inviteAccept": {
+      "route": "/invitations/accept?token=...",
+      "roles": ["public (unauthenticated or authenticated, pre-tenant-join)"],
+      "source": "design_src/edu/invitations.jsx — InviteAcceptScreen",
+      "layoutReuse": "screens.login.left (42% brand gradient panel, decorative circles, bullet list) — same family, content bullets swapped for invite-specific copy",
+      "card": { "maxWidth": 440, "padding": "32px 32px 28px" },
+      "invitationSummary": {
+        "iconBox": {
+          "size": 54,
+          "borderRadius": 15,
+          "background": "pColor",
+          "icon": "school"
+        },
+        "roleBadge": { "component": "INVRoleBadge", "size": "lg" },
+        "metaLine": "Được mời bởi {invitedBy} ({title}) · Còn {daysLeft} ngày (đến {expiresAt})"
+      },
+      "userStates": {
+        "guest": {
+          "form": [
+            "Email (readOnly, locked icon, describedby hint)",
+            "Họ và tên (required)",
+            "Mật khẩu (required, min 6 chars, inline hint/error)"
+          ],
+          "submitLabel": "Tạo tài khoản & tham gia",
+          "switchToSignedIn": "Đã có tài khoản? Đăng nhập để tham gia"
+        },
+        "signedin": {
+          "primaryButton": "Tham gia {school}",
+          "caption": "Đang đăng nhập với {email} — Đổi tài khoản? (link back to guest)"
+        }
+      },
+      "tokenErrorStates": {
+        "component": "INVTokenError",
+        "layout": "96px dashed-ring icon circle + title + body + school-contact chip",
+        "expired": {
+          "icon": "clock",
+          "color": "var(--edu-warning-text)",
+          "bg": "var(--edu-warning-light)",
+          "title": "Lời mời đã hết hạn"
+        },
+        "used": {
+          "icon": "userCheck",
+          "color": "var(--edu-teal)",
+          "bg": "var(--edu-teal-light)",
+          "title": "Lời mời đã được sử dụng"
+        },
+        "invalid": {
+          "icon": "alertTriangle",
+          "color": "var(--edu-error-dark)",
+          "bg": "var(--edu-error-dark-light)",
+          "title": "Liên kết không hợp lệ"
+        }
+      },
+      "successState": {
+        "iconCircle": {
+          "background": "var(--edu-teal-light)",
+          "icon": "check",
+          "iconColor": "var(--edu-teal)"
+        },
+        "cta": "Vào trang chính (redirect by role)"
+      },
+      "responsive": { "brandPanel": "hidden <=900px (.inv-left display:none)" },
+      "a11y": [
+        "email readOnly field has describedby hint explaining it's locked",
+        "form errors: role=alert + aria-invalid + aria-describedby",
+        "expiry countdown text always paired with words, not color-only"
+      ]
+    },
+
+    // ── Multi-Tenant Switch — DR-018 (iam service) ─────────────────────────────
+    // Source: design_src/edu/tenant-switch.jsx — TenantSwitchDialog (header menu)
+    // + design_src/edu/app.jsx "P7 Multi-tenant" wiring (Header user-menu item).
+    "tenantSwitch": {
+      "roles": ["teacher", "principal", "student", "parent"],
+      "source": "design_src/edu/tenant-switch.jsx — TenantSwitchDialog + TenantCard + TenantLogo",
+      "zeroNoiseRule": "user belongs to exactly 1 school → no 'Đổi trường' menu item is rendered, no dialog, no post-login select screen — verified via tenants.length >= 2 checks in app.jsx/ui.jsx Header",
+      "userMenuBlock": {
+        "context": "Header avatar dropdown (design_src/edu/ui.jsx Header component), top of menu, before role-switch radio items",
+        "tenantLogo": {
+          "component": "TenantLogo",
+          "size": 36,
+          "borderRadius": 16,
+          "background": "tenant.color + '1A'",
+          "border": "1px solid tenant.color + '33'"
+        },
+        "roleBadge": { "component": "Badge", "color": "tenant.roleColor" },
+        "switchMenuItem": {
+          "shownWhen": "tenants.length >= 2",
+          "icon": "switchHorizontal",
+          "label": "Đổi trường",
+          "role": "menuitem"
+        }
+      },
+      "dialog": {
+        "component": "TenantSwitchDialog",
+        "maxWidth": 440,
+        "role": "dialog, aria-modal, focus-trapped (Tab loop, Escape, backdrop click when not busy)",
+        "header": {
+          "iconBox": {
+            "size": 36,
+            "borderRadius": 10,
+            "background": "pColor + '15'",
+            "icon": "switchHorizontal"
+          },
+          "titleFontSize": 15
+        },
+        "tenantCard": {
+          "component": "TenantCard",
+          "element": "<button> — real interactive element, not a styled div",
+          "minHeight": 80,
+          "logoSize": 56,
+          "hover": {
+            "shadow": "0 4px 20px rgba(0,0,0,0.08)",
+            "transform": "translateY(-2px)"
+          },
+          "focus": { "ring": "0 0 0 2px var(--edu-primary)" },
+          "currentBadge": {
+            "text": "Hiện tại",
+            "color": "var(--edu-success)",
+            "icon": "check"
+          },
+          "loadingState": {
+            "spinner": "20px, tenant.color border-top",
+            "ariaBusy": true,
+            "srOnlyLabel": "Đang chuyển…"
+          },
+          "ariaLabel": "full sentence: '{name}, {address}, vai trò {role}[, trường hiện tại]'"
+        },
+        "switchFlow": "select non-current card → 900ms simulated loading on that card → TenantSwitchOverlay full-screen 'Đang tải dữ liệu {name}…' → toast 'Đã chuyển sang {name}' → app context reload"
+      },
+      "overlay": {
+        "component": "TenantSwitchOverlay",
+        "background": "rgba(245,247,250,0.92) + blur(4px)",
+        "role": "status, aria-live=polite",
+        "content": "TenantLogo 64px + loading label + spinner"
+      },
+      "a11y": [
+        "card is a real <button>, keyboard operable",
+        "current-school state conveyed by text badge, not border color alone",
+        "dialog standard focus-trap semantics"
+      ]
+    },
+
+    // ── Select Tenant (post-login) — DR-018 companion screen ──────────────────
+    // Source: design_src/edu/tenant-switch.jsx — TenantSelectScreen
+    // Layout family: SAME auth shell pattern as screens.login (centered card,
+    // T.bg background, logo top) — reuse those tokens; only shown when
+    // tenants.length >= 2 immediately after login (see app.jsx routing guard).
+    "selectTenant": {
+      "route": "(post-login gate, before entering the app shell)",
+      "roles": ["teacher", "principal", "student", "parent"],
+      "source": "design_src/edu/tenant-switch.jsx — TenantSelectScreen",
+      "layoutReuse": "screens.login centered single-column variant (no left brand panel here — logo icon box 60px + heading, centered column maxWidth 480)",
+      "shownWhen": "memberships.length >= 2 AND no active tenant selected yet",
+      "heading": {
+        "fontSize": 22,
+        "fontWeight": 800,
+        "text": "Chọn trường để tiếp tục"
+      },
+      "subheading": "Xin chào {userName} — tài khoản của bạn thuộc {n} trường.",
+      "cardGrid": {
+        "gap": 12,
+        "cardComponent": "TenantCard (same as tenantSwitch.dialog.tenantCard, isCurrent always false here)"
+      },
+      "footerNote": "Bạn có thể đổi trường bất kỳ lúc nào từ menu tài khoản.",
+      "switchFlow": "pick card → 900ms simulated loading → onSelect(tenant) → proceeds into app shell",
+      "a11y": "identical TenantCard a11y contract as screens.tenantSwitch.dialog.tenantCard"
+    },
+
+    // ── Principal Reports — DR-019 (core service, school-wide analytics) ─────
+    // Source: design_src/edu/reports.jsx — ReportsScreen
+    "reports": {
+      "route": "/principal/reports",
+      "roles": ["principal"],
+      "source": "design_src/edu/reports.jsx — ReportsScreen",
+      "layout": { "maxWidth": 1200, "padding": "28px 32px" },
+      "toolbar": {
+        "termRadioGroup": {
+          "role": "radiogroup",
+          "options": ["Học kỳ I", "Học kỳ II", "Cả năm"],
+          "activeBackground": "pColor",
+          "activeColor": "#fff"
+        },
+        "actions": [
+          "Làm mới (secondary, icon refreshCw)",
+          "Xuất Excel (primary, icon download)"
+        ]
+      },
+      "statGrid": {
+        "grid": "repeat(auto-fit, minmax(230px, 1fr))",
+        "cards": [
+          { "icon": "users", "label": "Tổng số học sinh", "trend": true },
+          {
+            "icon": "award",
+            "iconColor": "var(--edu-success)",
+            "label": "Điểm TB toàn trường",
+            "trend": true
+          },
+          {
+            "icon": "userCheck",
+            "iconColor": "var(--edu-warning)",
+            "label": "Tỷ lệ chuyên cần",
+            "trend": true
+          },
+          {
+            "icon": "shield",
+            "iconColor": "var(--edu-error)",
+            "label": "Vi phạm trong kỳ",
+            "trend": true
+          }
+        ],
+        "component": "StatCard (canonical), trendLabel 'so với HK trước'"
+      },
+      "charts": {
+        "gridColumns": "minmax(0,3fr) minmax(0,2fr)",
+        "subjectBarChart": {
+          "type": "bar, one bar per subject, scale of 10",
+          "barGradient": "linear-gradient(180deg, pColor, pColor + '99')",
+          "height": 180,
+          "a11y": "role=img aria-label describing the whole chart (no per-bar SR detail — acceptable for a summary aggregate chart)"
+        },
+        "attendanceColumnChart": {
+          "type": "column, 6 weeks",
+          "lowThreshold": "pct < 96 → var(--edu-warning) bar + warning-colored value label; else var(--edu-success)",
+          "height": 180,
+          "a11y": "role=img aria-label describing chart"
+        }
+      },
+      "periodicReportsTable": {
+        "header": "title + 'Tạo báo cáo' ghost button (icon plus)",
+        "columns": [
+          "Tên báo cáo (icon+name)",
+          "Kỳ",
+          "Ngày tạo",
+          "Trạng thái (badge)",
+          "Tải về (icon download, disabled unless ready)"
+        ],
+        "statusBadges": {
+          "ready": "success — Sẵn sàng",
+          "generating": "warning — Đang tạo…"
+        }
+      },
+      "states": {
+        "loading": {
+          "component": "EduSkeleton",
+          "variant": "cards",
+          "count": 4
+        },
+        "error": {
+          "component": "EduError",
+          "title": "Không tải được báo cáo",
+          "retry": true,
+          "pattern": "failedOnce ref — first refresh fails, retry succeeds (demo only)"
+        }
+      },
+      "a11y": [
+        "charts use role=img + descriptive aria-label",
+        "low-attendance weeks flagged by value color AND numeric label, not bar color alone",
+        "download action disabled state communicated via disabled attribute, not just opacity"
       ]
     }
   },
