@@ -2,7 +2,7 @@
 
 import { CircleAlert, Mail, MailCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import type { EmailVerificationActionResult } from "@/app/[locale]/t/[tenant]/(app)/email-verification.actions";
 import { OtpInput } from "@/components/shared/otp-input";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,23 @@ export function EmailVerifyDialog({
   >(null);
   const [isPending, startTransition] = useTransition();
   const errId = useId();
+
+  // Capture the control that opened the dialog so focus can be restored to it
+  // on close (AC-003.5 / NFR-004). Radix's default `onCloseAutoFocus` defers to
+  // `context.triggerRef`, which is only populated by `<DialogTrigger>` — this
+  // dialog is controlled via `open`/`onOpenChange` from a plain button, so that
+  // ref is always null and focus would fall through to <body>. We snapshot
+  // `document.activeElement` during the render where `open` flips to true
+  // (before Radix's focus-trap layout effect moves focus into the dialog).
+  const invokerRef = useRef<HTMLElement | null>(null);
+  const prevOpenRef = useRef(open);
+  if (open && !prevOpenRef.current) {
+    invokerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+  }
+  prevOpenRef.current = open;
 
   const cooling = remainingSeconds > 0;
   const isCellError =
@@ -133,7 +150,17 @@ export function EmailVerifyDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[420px]">
+      <DialogContent
+        className="max-w-[420px]"
+        onCloseAutoFocus={(e) => {
+          // Restore focus to the invoking control (AC-003.5) — Radix's default
+          // would focus <body> here since there is no <DialogTrigger>.
+          if (invokerRef.current) {
+            e.preventDefault();
+            invokerRef.current.focus();
+          }
+        }}
+      >
         {status === "success" ? (
           <div className="flex flex-col items-center gap-4 py-2 text-center">
             <span className="grid size-18 place-items-center rounded-full bg-edu-teal-light">
