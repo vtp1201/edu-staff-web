@@ -71,7 +71,7 @@ const InputField = ({ label, value, onChange, type = 'text', disabled, icon, pla
   );
 };
 
-const ProfileScreen = ({ role, lang, primaryColor }) => {
+const ProfileScreen = ({ role, lang, primaryColor, emailVerified, onOpenEmailVerify }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const pColor = primaryColor || T.primary;
   const base = PROFILE_DATA[role] || PROFILE_DATA.teacher;
@@ -253,7 +253,11 @@ const ProfileScreen = ({ role, lang, primaryColor }) => {
                     </div>
                   </div>
                   <InputField label={t('Số điện thoại', 'Phone Number')} value={form.phone} onChange={v => setField('phone', v)} disabled={!editMode} icon="clock" />
-                  <InputField label="Email" value={form.email} disabled={true} icon="mail" hint={t('Email không thể thay đổi', 'Email cannot be changed')} />
+                  {typeof EVEmailField !== 'undefined' ? (
+                    <EVEmailField email={form.email} verified={!!emailVerified} onVerify={onOpenEmailVerify} lang={lang} />
+                  ) : (
+                    <InputField label="Email" value={form.email} disabled={true} icon="mail" hint={t('Email không thể thay đổi', 'Email cannot be changed')} />
+                  )}
                   <InputField label={t('Số CMND / CCCD', 'National ID (CCCD)')} value={form.cccd} onChange={v => setField('cccd', v)} disabled={!editMode} icon="fileText" />
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ fontSize: 12.5, fontWeight: 700, color: T.textSecondary, display: 'block', marginBottom: 6 }}>{t('Địa chỉ', 'Address')}</label>

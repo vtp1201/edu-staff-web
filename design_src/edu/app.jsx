@@ -11,9 +11,34 @@ const App = () => {
   const initialSection = urlParams?.get('section') || window.__INITIAL_SECTION || 'dashboard';
   const [role, setRole] = React.useState(initialRole);
   const [section, setSection] = React.useState(initialSection);
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [sidebarPref, setSidebarPref] = React.useState(null); // null = auto theo viewport
+  // Responsive shell: dưới 1100px sidebar tự thu gọn; toggle vẫn override được
+  const vw = (typeof useViewportWidth !== 'undefined') ? useViewportWidth() : 1440;
+  const sidebarCollapsed = sidebarPref === null ? vw < 1100 : sidebarPref;
   const [showTweaks, setShowTweaks] = React.useState(false);
   const [showForgotPassword, setShowForgotPassword] = React.useState(false);
+
+  // ── P7 Multi-tenant (đa trường) ── memberships theo role; user 1 trường → zero-noise.
+  const tsMemberships = (r) => (typeof TS_MEMBERSHIPS !== 'undefined' && r && TS_MEMBERSHIPS[r]) || [];
+  const [activeTenantId, setActiveTenantId] = React.useState(() => {
+    const ms = tsMemberships(initialRole);
+    return ms.length === 1 ? ms[0].id : null;
+  });
+  const [showTenantSwitch, setShowTenantSwitch] = React.useState(false);
+  const [switchingTenant, setSwitchingTenant] = React.useState(null);
+  const [tenantToast, setTenantToast] = React.useState(null);
+
+  // ── Email verification (P5) ── state lives in the shell so the banner shows on
+  // every page; components are guarded (email-verify.jsx may not be loaded).
+  const [emailVerified, setEmailVerified] = React.useState(false);
+  const [everifyDismissed, setEverifyDismissed] = React.useState(() => {
+    try { return sessionStorage.getItem('edu-everify-dismissed') === '1'; } catch (e) { return false; }
+  });
+  const [showEmailVerify, setShowEmailVerify] = React.useState(false);
+  const dismissEverify = () => {
+    setEverifyDismissed(true);
+    try { sessionStorage.setItem('edu-everify-dismissed', '1'); } catch (e) { /* noop */ }
+  };
 
   // ── SSE realtime state (SOC-04 / ADR-0041) ──────────────────────────────────────
   // Simulates the EventSource lifecycle for /api/v1/social/events:
@@ -98,6 +123,8 @@ const App = () => {
 
   const handleLogin = (r) => {
     setRole(r);
+    const ms = tsMemberships(r);
+    setActiveTenantId(ms.length === 1 ? ms[0].id : null); // ≥2 trường → màn chọn trường
     const defaultSection = { teacher: 'dashboard', principal: 'dashboard', student: 'home', parent: 'children' };
     setSection(defaultSection[r] || 'dashboard');
   };
@@ -108,8 +135,28 @@ const App = () => {
 
   const handleRoleChange = (r) => {
     setRole(r);
+    const ms = tsMemberships(r);
+    setActiveTenantId(ms.length ? ms[0].id : null); // role-jump demo: auto-chọn trường đầu
     const defaultSection = { teacher: 'dashboard', principal: 'dashboard', student: 'home', parent: 'children' };
     setSection(defaultSection[r] || 'dashboard');
+  };
+
+  const tenants = tsMemberships(role);
+  const activeTenant = tenants.find(x => x.id === activeTenantId) || null;
+
+  const handleTenantSwitch = (tenant) => {
+    setShowTenantSwitch(false);
+    setSwitchingTenant(tenant); // "reload context" overlay
+    window.setTimeout(() => {
+      setActiveTenantId(tenant.id);
+      setSwitchingTenant(null);
+      const defaultSection = { teacher: 'dashboard', principal: 'dashboard', student: 'home', parent: 'children' };
+      setSection(defaultSection[role] || 'dashboard');
+      const name = lang === 'en' ? tenant.nameEn : tenant.name;
+      setTenantToast(t(`Đã chuyển sang ${tenant.name}`, `Switched to ${tenant.nameEn}`));
+      window.clearTimeout(handleTenantSwitch._tid);
+      handleTenantSwitch._tid = window.setTimeout(() => setTenantToast(null), 2800);
+    }, 900);
   };
 
   const getUser = () => {
@@ -122,19 +169,20 @@ const App = () => {
   const getHeaderTitle = () => {
     const profileTitle = t('Hồ sơ cá nhân', 'My Profile');
     const titles = {
-      teacher: { dashboard: t('Tổng quan', 'Dashboard'), classes: t('Lớp học', 'Classes'), attendance: t('Điểm danh', 'Attendance'), classlog: t('Sổ đầu bài', 'Class Log'), discipline: t('Vi phạm & Hạnh kiểm', 'Discipline'), grades: t('Bảng điểm', 'Grade Book'), 'teaching-plan': t('Kế hoạch giảng dạy (PPCT)', 'Teaching Plan (PPCT)'), 'lesson-bank': t('Kho bài giảng', 'Lesson Bank'), 'exam-bank': t('Kho đề thi', 'Exam Bank'), schedule: t('Lịch dạy', 'Schedule'), students: t('Học sinh', 'Students'), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), settings: t('Cài đặt', 'Settings'), profile: profileTitle },
-      principal: { dashboard: t('Tổng quan trường', 'School Overview'), 'school-setup': t('Thiết lập trường học', 'School Setup'), 'subject-parents': t('Bộ môn / Tổ chuyên môn', 'Subject Departments'), subjects: t('Danh mục môn học', 'Subject Catalogue'), 'subject-detail': t('Chi tiết môn học', 'Subject Detail'), teachers: t('Giáo viên', 'Teachers'), classes: t('Lớp học', 'Classes'), roster: t('Danh sách lớp học', 'Student Roster'), timetable: t('Thời khoá biểu', 'Timetable'), 'teaching-plan': t('Phê duyệt kế hoạch giảng dạy', 'Review Teaching Plans'), 'lesson-bank': t('Kho bài giảng toàn trường', 'School Lesson Bank'), 'exam-bank': t('Kho đề thi toàn trường', 'School Exam Bank'), classlog: t('Sổ đầu bài', 'Class Log'), discipline: t('Vi phạm & Hạnh kiểm', 'Discipline'), reports: t('Báo cáo', 'Reports'), calendar: t('Cấu hình năm học', 'Academic Calendar'), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), announcements: t('Thông báo trường', 'School Announcements'), settings: t('Cài đặt trường học', 'School Settings'), profile: profileTitle },
-      student: { home: t('Tổng quan', 'Overview'), courses: t('Khoá học', 'Courses'), assignments: t('Bài tập', 'Assignments'), exams: t('Bài kiểm tra & Thi', 'Exams & Quizzes'), grades: t('Điểm số', 'Grades'), discipline: t('Hạnh kiểm của tôi', 'My Conduct'), schedule: t('Lịch học', 'Schedule'), resources: t('Tài nguyên', 'Resources'), messaging: t('Nhắn tin', 'Messages'), 'academic-record-view': t('Học bạ của tôi', 'My Academic Record'), profile: profileTitle },
-      parent: { children: t('Học sinh của tôi', 'My Children'), grades: t('Điểm số', 'Grades'), schedule: t('Thời khoá biểu', 'Weekly Timetable'), conduct: t('Hạnh kiểm của con', "Child's Conduct"), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), 'academic-record-view': t('Học bạ của con', "Child's Academic Record"), profile: profileTitle },
+      teacher: { dashboard: t('Tổng quan', 'Dashboard'), feed: t('Bảng tin', 'News Feed'), classes: t('Lớp học', 'Classes'), attendance: t('Điểm danh', 'Attendance'), classlog: t('Sổ đầu bài', 'Class Log'), discipline: t('Vi phạm & Hạnh kiểm', 'Discipline'), grades: t('Bảng điểm', 'Grade Book'), 'teaching-plan': t('Kế hoạch giảng dạy (PPCT)', 'Teaching Plan (PPCT)'), 'lesson-bank': t('Kho bài giảng', 'Lesson Bank'), 'exam-bank': t('Kho đề thi', 'Exam Bank'), schedule: t('Lịch dạy', 'Schedule'), students: t('Học sinh', 'Students'), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), settings: t('Cài đặt', 'Settings'), profile: profileTitle },
+      principal: { dashboard: t('Tổng quan trường', 'School Overview'), feed: t('Bảng tin', 'News Feed'), moderation: t('Kiểm duyệt nội dung', 'Content Moderation'), 'school-setup': t('Thiết lập trường học', 'School Setup'), 'subject-parents': t('Bộ môn / Tổ chuyên môn', 'Subject Departments'), subjects: t('Danh mục môn học', 'Subject Catalogue'), 'subject-detail': t('Chi tiết môn học', 'Subject Detail'), teachers: t('Giáo viên', 'Teachers'), classes: t('Lớp học', 'Classes'), roster: t('Danh sách lớp học', 'Student Roster'), timetable: t('Thời khoá biểu', 'Timetable'), 'teaching-plan': t('Phê duyệt kế hoạch giảng dạy', 'Review Teaching Plans'), 'lesson-bank': t('Kho bài giảng toàn trường', 'School Lesson Bank'), 'exam-bank': t('Kho đề thi toàn trường', 'School Exam Bank'), classlog: t('Sổ đầu bài', 'Class Log'), discipline: t('Vi phạm & Hạnh kiểm', 'Discipline'), reports: t('Báo cáo', 'Reports'), calendar: t('Cấu hình năm học', 'Academic Calendar'), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), announcements: t('Thông báo trường', 'School Announcements'), settings: t('Cài đặt trường học', 'School Settings'), 'parent-links': t('Liên kết Phụ huynh – Học sinh', 'Parent–Student Links'), invitations: t('Mời thành viên', 'Invitations'), profile: profileTitle },
+      student: { home: t('Tổng quan', 'Overview'), feed: t('Bảng tin', 'News Feed'), courses: t('Khoá học', 'Courses'), assignments: t('Bài tập', 'Assignments'), exams: t('Bài kiểm tra & Thi', 'Exams & Quizzes'), grades: t('Điểm số', 'Grades'), discipline: t('Hạnh kiểm của tôi', 'My Conduct'), schedule: t('Lịch học', 'Schedule'), resources: t('Tài nguyên', 'Resources'), messaging: t('Nhắn tin', 'Messages'), 'academic-record-view': t('Học bạ của tôi', 'My Academic Record'), profile: profileTitle },
+      parent: { children: t('Học sinh của tôi', 'My Children'), feed: t('Bảng tin', 'News Feed'), grades: t('Điểm số', 'Grades'), schedule: t('Thời khoá biểu', 'Weekly Timetable'), conduct: t('Hạnh kiểm của con', "Child's Conduct"), messaging: t('Nhắn tin', 'Messages'), notifications: t('Thông báo', 'Notifications'), 'academic-record-view': t('Học bạ của con', "Child's Academic Record"), consent: t('Quyền nhận thông báo', 'Notification Consent'), profile: profileTitle },
     };
     return (titles[role] || {})[section] || section;
   };
 
   const getHeaderSubtitle = () => {
-    if (role === 'teacher') return t('THPT Nguyễn Du · Giáo viên Toán học', 'Nguyen Du HS · Mathematics Teacher');
-    if (role === 'principal') return t('THPT Nguyễn Du · Năm học 2025–2026', 'Nguyen Du HS · Academic Year 2025–2026');
-    if (role === 'student') return t('Lớp 11A2 · THPT Nguyễn Du', 'Class 11A2 · Nguyen Du HS');
-    if (role === 'parent') return t('Phụ huynh · THPT Nguyễn Du', 'Parent · Nguyen Du HS');
+    const school = activeTenant ? (lang === 'en' ? activeTenant.nameEn : activeTenant.name) : t('THPT Nguyễn Du', 'Nguyen Du HS');
+    if (role === 'teacher') return t(`${school} · Giáo viên Toán học`, `${school} · Mathematics Teacher`);
+    if (role === 'principal') return t(`${school} · Năm học 2025–2026`, `${school} · Academic Year 2025–2026`);
+    if (role === 'student') return t(`Lớp 11A2 · ${school}`, `Class 11A2 · ${school}`);
+    if (role === 'parent') return t(`Phụ huynh · ${school}`, `Parent · ${school}`);
     return '';
   };
 
@@ -142,10 +190,28 @@ const App = () => {
     <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} lang={lang} primaryColor={primaryColor} />
   );
 
+  if (!role && section === 'invite-accept' && typeof InviteAcceptScreen !== 'undefined') return (
+    <div style={{ position: 'relative' }}>
+      <InviteAcceptScreen lang={lang} primaryColor={primaryColor} onEnterApp={handleLogin} />
+      {showTweaks && <TweaksPanelUI tweaks={tweaks} setTweak={setTweak} onClose={() => { setShowTweaks(false); window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); }} lang={lang} onRoleJump={handleLogin} />}
+    </div>
+  );
+
   if (!role) return (
     <div style={{ position: 'relative' }}>
       <LoginScreen onLogin={handleLogin} lang={lang} primaryColor={primaryColor} onForgotPassword={() => setShowForgotPassword(true)} />
       {showTweaks && <TweaksPanelUI tweaks={tweaks} setTweak={setTweak} onClose={() => { setShowTweaks(false); window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); }} lang={lang} onRoleJump={handleLogin} />}
+    </div>
+  );
+
+  // P7 — màn chọn trường sau login, chỉ khi user thuộc ≥2 trường
+  if (tenants.length >= 2 && !activeTenantId && typeof TenantSelectScreen !== 'undefined') return (
+    <div style={{ position: 'relative' }}>
+      <TenantSelectScreen memberships={tenants}
+        userName={lang === 'en' ? getUser().nameEn : getUser().name}
+        onSelect={(tn) => setActiveTenantId(tn.id)}
+        lang={lang} primaryColor={primaryColor} />
+      {showTweaks && <TweaksPanelUI tweaks={tweaks} setTweak={setTweak} onClose={() => { setShowTweaks(false); window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); }} lang={lang} onRoleJump={handleRoleChange} />}
     </div>
   );
 
@@ -156,11 +222,12 @@ const App = () => {
         activeSection={section}
         onNavigate={handleNavigate}
         collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        onToggleCollapse={() => setSidebarPref(!sidebarCollapsed)}
         onLogout={handleLogout}
         user={getUser()}
         lang={lang}
         primaryColor={primaryColor}
+        tenant={activeTenant}
       />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header
@@ -174,6 +241,9 @@ const App = () => {
           onRoleChange={handleRoleChange}
           onNavigate={handleNavigate}
           sseStatus={sseStatus}
+          tenants={tenants}
+          activeTenant={activeTenant}
+          onOpenTenantSwitch={tenants.length >= 2 ? (() => setShowTenantSwitch(true)) : undefined}
         />
         {sseStatus === 'disconnected' && (
           <div role="status" style={{
@@ -211,6 +281,15 @@ const App = () => {
               {t('Kết nối lại', 'Reconnect')}
             </button>
           </div>
+        )}
+        {typeof EmailVerifyBanner !== 'undefined' && !emailVerified && !everifyDismissed && (
+          <EmailVerifyBanner
+            email={(typeof EV_EMAILS !== 'undefined' && EV_EMAILS[role]) || 'ban@truong.edu.vn'}
+            onDismiss={dismissEverify}
+            lang={lang} />
+        )}
+        {section === 'feed' && (
+          <FeedScreen role={role} lang={lang} primaryColor={primaryColor} />
         )}
         {section === 'messaging' && (
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
@@ -278,8 +357,17 @@ const App = () => {
         {role === 'principal' && section === 'staff-leave' && (
           <StaffLeaveScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
         )}
+        {role === 'principal' && section === 'invitations' && typeof InvitationsScreen !== 'undefined' && (
+          <InvitationsScreen lang={lang} primaryColor={primaryColor} />
+        )}
+        {role === 'principal' && section === 'parent-links' && typeof ParentLinksScreen !== 'undefined' && (
+          <ParentLinksScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
+        )}
         {role === 'principal' && section === 'audit-log' && (
           <AuditLogScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
+        )}
+        {role === 'principal' && section === 'reports' && typeof ReportsScreen !== 'undefined' && (
+          <ReportsScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
         )}
         {role === 'principal' && section === 'assessment' && (
           <AssessmentSchemeScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
@@ -290,6 +378,9 @@ const App = () => {
         {section === 'notifications' && (
           <NotificationsCenterScreen role={role} lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
         )}
+        {role === 'principal' && section === 'moderation' && (
+          <ModerationScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
+        )}
         {role === 'principal' && section === 'announcements' && (
           <AnnouncementsScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
         )}
@@ -299,7 +390,7 @@ const App = () => {
         {role === 'teacher' && section === 'grades-enter' && (
           <GradeEntryScreen lang={lang} primaryColor={primaryColor} onNavigate={handleNavigate} />
         )}
-        {(role === 'teacher' || role === 'principal') && !['profile','attendance','classlog','messaging','discipline','calendar','school-setup','subject-parents','subjects','subject-detail','roster','timetable','teaching-plan','lesson-bank','exam-bank','academic-record-view','grades','notifications','announcements'].includes(section) && !(role === 'principal' && section === 'settings') && !(role === 'principal' && section === 'grades-approval') && !(role === 'principal' && section === 'academic-records') && !(role === 'principal' && section === 'staff-leave') && !(role === 'principal' && section === 'audit-log') && !(role === 'principal' && section === 'assessment') && !(role === 'teacher' && section === 'grades-enter') && (
+        {(role === 'teacher' || role === 'principal') && !['feed','moderation','profile','attendance','classlog','messaging','discipline','calendar','school-setup','subject-parents','subjects','subject-detail','roster','timetable','teaching-plan','lesson-bank','exam-bank','academic-record-view','grades','notifications','announcements'].includes(section) && !(role === 'principal' && section === 'settings') && !(role === 'principal' && section === 'grades-approval') && !(role === 'principal' && section === 'academic-records') && !(role === 'principal' && section === 'staff-leave') && !(role === 'principal' && section === 'audit-log') && !(role === 'principal' && section === 'assessment') && !(role === 'principal' && section === 'reports' && typeof ReportsScreen !== 'undefined') && !(role === 'principal' && section === 'parent-links') && !(role === 'principal' && section === 'invitations') && !(role === 'teacher' && section === 'grades-enter') && (
           <TeacherScreen role={role} section={section} onNavigate={handleNavigate} lang={lang} primaryColor={primaryColor} />
         )}
         {role === 'student' && section === 'exams' && (
@@ -311,16 +402,19 @@ const App = () => {
         {role === 'student' && section === 'schedule' && (
           <TimetableViewScreen role={role} lang={lang} primaryColor={primaryColor} />
         )}
-        {role === 'student' && !['profile','exams','messaging','discipline','schedule','academic-record-view','grades','notifications'].includes(section) && (
+        {role === 'student' && !['feed','profile','exams','messaging','discipline','schedule','academic-record-view','grades','notifications'].includes(section) && (
           <StudentScreen section={section} lang={lang} primaryColor={primaryColor} />
         )}
         {role === 'parent' && section === 'schedule' && (
           <TimetableViewScreen role={role} lang={lang} primaryColor={primaryColor || T.primary} />
         )}
+        {role === 'parent' && section === 'consent' && typeof ParentConsentScreen !== 'undefined' && (
+          <ParentConsentScreen lang={lang} primaryColor={primaryColor || T.primary} />
+        )}
         {role === 'parent' && section === 'conduct' && (
           <ParentDisciplineScreen lang={lang} primaryColor={primaryColor || T.primary} />
         )}
-        {role === 'parent' && section !== 'profile' && section !== 'messaging' && section !== 'academic-record-view' && section !== 'grades' && section !== 'notifications' && section !== 'schedule' && section !== 'conduct' && (
+        {role === 'parent' && section !== 'feed' && section !== 'profile' && section !== 'messaging' && section !== 'academic-record-view' && section !== 'grades' && section !== 'notifications' && section !== 'schedule' && section !== 'conduct' && section !== 'consent' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
             <div style={{ maxWidth: 1200, margin: '0 auto' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: T.textPrimary, marginBottom: 24 }}>{getHeaderTitle()}</div>
@@ -329,10 +423,45 @@ const App = () => {
           </div>
         )}
         {section === 'profile' && (
-          <ProfileScreen role={role} lang={lang} primaryColor={primaryColor} />
+          <ProfileScreen role={role} lang={lang} primaryColor={primaryColor}
+            emailVerified={emailVerified}
+            onOpenEmailVerify={typeof EmailVerifyDialog !== 'undefined' ? (() => setShowEmailVerify(true)) : undefined} />
         )}
       </div>
       {showTweaks && <TweaksPanelUI tweaks={tweaks} setTweak={setTweak} onClose={() => { setShowTweaks(false); window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*'); }} lang={lang} onRoleJump={handleRoleChange} sseStatus={sseStatus} setSseStatus={setSseStatus} />}
+
+      {showEmailVerify && typeof EmailVerifyDialog !== 'undefined' && (
+        <EmailVerifyDialog
+          email={(typeof EV_EMAILS !== 'undefined' && EV_EMAILS[role]) || 'ban@truong.edu.vn'}
+          onClose={() => setShowEmailVerify(false)}
+          onVerified={() => setEmailVerified(true)}
+          lang={lang} primaryColor={primaryColor} />
+      )}
+
+      {/* P7 — dialog đổi trường + overlay reload context + toast */}
+      {showTenantSwitch && typeof TenantSwitchDialog !== 'undefined' && (
+        <TenantSwitchDialog memberships={tenants} activeTenantId={activeTenantId}
+          onClose={() => setShowTenantSwitch(false)} onSwitch={handleTenantSwitch}
+          lang={lang} primaryColor={primaryColor} />
+      )}
+      {switchingTenant && typeof TenantSwitchOverlay !== 'undefined' && (
+        <TenantSwitchOverlay tenant={switchingTenant} lang={lang} />
+      )}
+      {tenantToast && (
+        <div role="status" style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: T.textPrimary, color: '#fff', borderRadius: 10,
+          padding: '10px 18px 10px 12px', fontSize: 12.5, fontWeight: 600, zIndex: 9500,
+          boxShadow: '0 12px 32px rgba(0,0,0,0.2)', whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center', gap: 9,
+          animation: 'sse-pill-in 0.22s ease-out',
+        }}>
+          <span style={{ width: 22, height: 22, borderRadius: '50%', background: T.success + '33', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="check" size={12} color={T.success} strokeWidth={2.6} />
+          </span>
+          {tenantToast}
+        </div>
+      )}
 
       {/* Pending realtime-message pill — visible when a `message.new` SSE
           event lands while the user is OUTSIDE the messaging surface. */}
@@ -357,7 +486,7 @@ const App = () => {
             <span style={{
               position: 'absolute', top: -2, right: -2,
               minWidth: 16, height: 16, padding: '0 4px', borderRadius: 99,
-              background: T.error, color: '#fff',
+              background: T.errorDark, color: T.errorForeground,
               fontSize: 10, fontWeight: 800,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               border: `2px solid ${T.textPrimary}`, fontVariantNumeric: 'tabular-nums',

@@ -885,8 +885,8 @@ const SchemeEditor = ({ t, lang, pColor, subject, scheme, presetId, onApplyPrese
         {/* Running progress bar */}
         <div style={{ height: 5, background: T.bg, position: 'relative' }}>
           <div style={{
-            position: 'absolute', left: 0, top: 0, bottom: 0,
-            width: '100%', transformOrigin: 'left', transform: `scaleX(${Math.min(total, 200) / 100})`,
+            position: 'absolute', left: 0, top: 0, bottom: 0, width: '100%',
+            transformOrigin: 'left center', transform: `scaleX(${Math.min(total, 200) / 100})`,
             background: isHundred ? T.success : (total > 100 ? T.error : T.warning),
             transition: 'transform 0.3s, background 0.2s',
           }} />

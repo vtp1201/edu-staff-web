@@ -570,7 +570,7 @@ const GradeEntryTable = ({ t, pColor, rows, columns, onUpdate }) => {
                   <td style={{
                     ...geTdStyle, textAlign: 'center',
                     background: avg != null ? T.bg : 'transparent',
-                    borderLeft: `1px solid ${T.border}`,
+                    boxShadow: `inset 1px 0 0 ${T.border}`,
                   }}>
                     <span style={{
                       fontSize: 14, fontWeight: 800,

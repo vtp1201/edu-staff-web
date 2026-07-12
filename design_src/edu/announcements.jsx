@@ -522,8 +522,8 @@ const ProgressTrack = ({ value, color }) => (
   <div style={{ height: 6, background: T.border, borderRadius: 99, position: 'relative', overflow: 'hidden' }}>
     <div style={{
       position: 'absolute', left: 0, top: 0, bottom: 0,
-      width: '100%', transformOrigin: 'left', transform: `scaleX(${value / 100})`,
-      background: color, borderRadius: 99,
+      width: '100%', background: color, borderRadius: 99,
+      transformOrigin: 'left center', transform: `scaleX(${Math.min(value, 100) / 100})`,
       transition: 'transform 0.3s',
     }} />
   </div>
@@ -1160,7 +1160,7 @@ const SchedulePicker = ({ value, onChange, pColor, t, lang }) => {
 
             {/* Time picker */}
             <div style={{
-              width: 170, paddingLeft: 14, borderLeft: `1px solid ${T.border}`,
+              width: 170, paddingLeft: 14, boxShadow: `inset 1px 0 0 ${T.border}`,
               display: 'flex', flexDirection: 'column', gap: 10,
             }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -1270,9 +1270,9 @@ const NotificationPreview = ({ t, title, body, priority, pColor }) => {
         {t('Người nhận sẽ thấy như sau (DR-006)', 'Recipients will see (DR-006)')}
       </div>
       <div style={{
-        background: pColor + '08', borderRadius: 10,
+        background: pColor + '0F', borderRadius: 10,
         border: `1px solid ${pColor + '33'}`,
-        padding: '12px 14px',
+        padding: '12px 14px 12px 13px',
         display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr)', gap: 12,
         alignItems: 'flex-start',
       }}>

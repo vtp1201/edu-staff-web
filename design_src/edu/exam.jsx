@@ -505,7 +505,7 @@ const ExamTakingScreen = ({ exam, lang, onSubmit }) => {
         </div>
 
         {/* Right: question navigator */}
-        <div style={{ background: T.card, borderLeft: `1px solid ${T.border}`, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ background: T.card, boxShadow: `inset 1px 0 0 ${T.border}`, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Legend */}
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{t('Bảng câu hỏi', 'Questions')}</div>

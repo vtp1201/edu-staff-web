@@ -1384,7 +1384,7 @@ const LBDeleteDialog = ({ item, t, pColor, onCancel, onConfirm }) => (
         <Button variant="ghost" onClick={onCancel}>{t('Huỷ', 'Cancel')}</Button>
         <button onClick={onConfirm} style={{
           padding: '9px 18px', borderRadius: 8, border: 'none',
-          background: T.error, color: '#fff', fontSize: 13, fontWeight: 700,
+          background: T.errorDark, color: T.errorForeground, fontSize: 13, fontWeight: 700,
           fontFamily: 'inherit', cursor: 'pointer',
           display: 'inline-flex', alignItems: 'center', gap: 6,
         }}>

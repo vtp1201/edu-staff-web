@@ -19,7 +19,7 @@ const CONTACTS_BY_ROLE = {
   ],
   student: [
     { id: 'u6', name: 'Nguyễn Thị Hương', nameEn: 'Nguyen Thi Huong', role: 'GV Toán', roleEn: 'Math Teacher', avatar: 'NH', color: T.primary, online: true },
-    { id: 'u7', name: 'Trần Văn Minh', nameEn: 'Tran Van Minh', role: 'GV Vật Lý', roleEn: 'Physics Teacher', avatar: 'TM', color: T.success, online: false },
+    { id: 'u7', name: 'Trần Văn Minh', nameEn: 'Tran Van Minh', role: 'GV Vật Lý', roleEn: 'Physics Teacher', avatar: 'TM', color: T.success, online: false, presence: 'recent', lastSeen: { vi: 'Hoạt động 3 phút trước', en: 'Active 3 minutes ago' } },
     { id: 'u8', name: 'Nguyễn Văn Đức', nameEn: 'Nguyen Van Duc', role: 'Phụ huynh', roleEn: 'Parent', avatar: 'ND', color: T.purple, online: true },
     { id: 'u9', name: 'Trần Văn Bình', nameEn: 'Tran Van Binh', role: 'Bạn cùng lớp 11A2', roleEn: 'Classmate 11A2', avatar: 'TB', color: T.teal, online: true },
     { id: 'u10', name: 'Hoàng Thị Linh', nameEn: 'Hoang Thi Linh', role: 'Bạn cùng lớp 11A2', roleEn: 'Classmate 11A2', avatar: 'HL', color: T.error, online: false },
@@ -27,7 +27,7 @@ const CONTACTS_BY_ROLE = {
   principal: [
     { id: 'u11', name: 'Nguyễn Thị Hương', nameEn: 'Nguyen Thi Huong', role: 'GV Toán', roleEn: 'Math Teacher', avatar: 'NH', color: T.primary, online: true },
     { id: 'u12', name: 'Lê Thị Hoa', nameEn: 'Le Thi Hoa', role: 'GV Hóa', roleEn: 'Chemistry Teacher', avatar: 'LH', color: T.warning, online: true },
-    { id: 'u13', name: 'Đỗ Thị Mai', nameEn: 'Do Thi Mai', role: 'GV Anh', roleEn: 'English Teacher', avatar: 'DM', color: T.teal, online: false },
+    { id: 'u13', name: 'Đỗ Thị Mai', nameEn: 'Do Thi Mai', role: 'GV Anh', roleEn: 'English Teacher', avatar: 'DM', color: T.teal, online: false, presence: 'recent', lastSeen: { vi: 'Hoạt động 5 phút trước', en: 'Active 5 minutes ago' } },
     { id: 'u14', name: 'Phạm Quốc Bảo', nameEn: 'Pham Quoc Bao', role: 'GV Văn', roleEn: 'Literature Teacher', avatar: 'PB', color: T.purple, online: false },
   ],
   parent: [
@@ -35,6 +35,44 @@ const CONTACTS_BY_ROLE = {
     { id: 'u16', name: 'Trần Văn Minh', nameEn: 'Tran Van Minh', role: 'GV Vật Lý', roleEn: 'Physics Teacher', avatar: 'TM', color: T.success, online: false },
     { id: 'u17', name: 'Trần Minh Quân', nameEn: 'Tran Minh Quan', role: 'BGH', roleEn: 'Admin', avatar: 'TQ', color: T.success, online: true },
   ],
+};
+
+// ── P6: Presence ─────────────────────────────────────────────────────────────
+// presence: 'online' | 'recent' (left <5 min ago) | 'offline'. Contacts without
+// an explicit `presence` field derive it from the legacy `online` boolean.
+const MSG_SR_ONLY = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 };
+
+const msgPresence = (c) => (c && (c.presence || (c.online ? 'online' : 'offline'))) || 'offline';
+
+// 10px status dot, bottom-right of an avatar. online = solid success with a
+// 2px card ring; recent = hollow success ring; offline renders nothing (no
+// gray dot). Static — no blink/pulse animation.
+const MSGPresenceDot = ({ presence, size = 10, offset = 1, lang, label }) => {
+  if (presence !== 'online' && presence !== 'recent') return null;
+  const solid = presence === 'online';
+  const srText = label || (solid
+    ? (lang === 'en' ? 'online' : 'đang hoạt động')
+    : (lang === 'en' ? 'recently active' : 'vừa hoạt động gần đây'));
+  return (
+    <span style={{
+      position: 'absolute', bottom: offset, right: offset, width: size, height: size,
+      borderRadius: '50%', boxSizing: 'border-box',
+      background: solid ? T.success : T.card,
+      border: solid ? 'none' : `2px solid ${T.success}`,
+      boxShadow: `0 0 0 2px ${T.card}`,
+    }}>
+      <span style={MSG_SR_ONLY}>{srText}</span>
+    </span>
+  );
+};
+
+// DM header caption under the contact name. Full words, no cryptic shorthand.
+const msgPresenceCaption = (c, lang) => {
+  const p = msgPresence(c);
+  if (p === 'online') return lang === 'en' ? 'Active now' : 'Đang hoạt động';
+  const seen = c && c.lastSeen ? (lang === 'en' ? c.lastSeen.en : c.lastSeen.vi) : null;
+  if (p === 'recent') return seen || (lang === 'en' ? 'Active 5 minutes ago' : 'Hoạt động 5 phút trước');
+  return seen || (lang === 'en' ? 'Active yesterday' : 'Hoạt động hôm qua');
 };
 
 // ── DR-008 group catalogue & per-role seeding ────────────────────────────────
@@ -418,7 +456,7 @@ const MessageContextMenu = ({ x, y, msg, isMine, withinOneHour, canPin = true, o
   }, [onClose]);
 
   // Clamp position so the menu stays in the viewport.
-  const W = 200, H = 188;
+  const W = 200, H = 226;
   const adjX = Math.min(x, window.innerWidth  - W - 8);
   const adjY = Math.min(y, window.innerHeight - H - 8);
 
@@ -427,6 +465,9 @@ const MessageContextMenu = ({ x, y, msg, isMine, withinOneHour, canPin = true, o
     { id: 'pin',    icon: 'star',      vi: 'Ghim tin nhắn',   en: 'Pin message',   enabled: canPin,
       hint: !canPin ? 'Chỉ admin mới có thể ghim' : null },
     { id: 'copy',   icon: 'fileText',  vi: 'Sao chép văn bản', en: 'Copy text',    enabled: true },
+    { id: 'report', icon: 'flag',      vi: 'Báo cáo',         en: 'Report',
+      enabled: !isMine,
+      hint: isMine ? 'Không thể báo cáo tin nhắn của bạn' : null },
     { id: 'delete', icon: 'x',         vi: 'Xóa',             en: 'Delete',
       enabled: isMine && withinOneHour, danger: true,
       hint: !isMine ? 'Chỉ xoá tin nhắn của bạn' : !withinOneHour ? 'Đã quá 1 giờ' : null },
@@ -982,12 +1023,21 @@ const GroupInfoPanel = ({ t, pColor, group, members, pinned, isAdmin, onClose, o
                 }}>+ {t('Thêm', 'Add')}</button>
               : null}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {members.map((m, i) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', background: T.bg }}>
+                <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: '50%', background: T.success, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.textSecondary }}>
+                  {members.filter(mm => msgPresence(mm) !== 'offline').length} {t('đang hoạt động', 'online now')}
+                </span>
+              </div>
+              {[...members].sort((a, b) => {
+                const rank = (m) => ({ online: 2, recent: 1 }[msgPresence(m)] || 0);
+                return rank(b) - rank(a);
+              }).map((m, i) => (
                 <div key={m.id} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '8px 18px',
                   borderTop: i === 0 ? 'none' : `1px solid ${T.border}`,
-                  opacity: m.online ? 1 : 0.6,
+                  opacity: msgPresence(m) !== 'offline' ? 1 : 0.6,
                 }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <div style={{
@@ -995,17 +1045,11 @@ const GroupInfoPanel = ({ t, pColor, group, members, pinned, isAdmin, onClose, o
                       background: m.color + '22', color: m.color,
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 11, fontWeight: 800,
-                      filter: m.online ? 'none' : 'grayscale(20%)',
+                      filter: msgPresence(m) !== 'offline' ? 'none' : 'grayscale(20%)',
                     }}>
                       {m.avatar}
                     </div>
-                    {m.online && (
-                      <span style={{
-                        position: 'absolute', bottom: 0, right: 0,
-                        width: 9, height: 9, borderRadius: '50%',
-                        background: T.success, border: `2px solid ${T.card}`,
-                      }} />
-                    )}
+                    <MSGPresenceDot presence={msgPresence(m)} size={9} offset={0} label={t('đang hoạt động', 'online')} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: T.textPrimary, lineHeight: 1.3 }}>
@@ -1217,6 +1261,8 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
   const [contextMenu, setContextMenu] = React.useState(null);
   const [loadingChat, setLoadingChat] = React.useState(false);
   const [pendingDelete, setPendingDelete] = React.useState(null);
+  const [reportTarget, setReportTarget] = React.useState(null);
+  const [reportToast, setReportToast] = React.useState(null);
   // SSE design tie-in (US-068 / ADR-0041): UI flag pulses when a `message.new`
   // event is received from /api/v1/social/events.
   const [sseFlash, setSseFlash] = React.useState(false);
@@ -1334,6 +1380,13 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
         return prev;
       });
     }
+    if (action === 'report') {
+      setReportTarget({
+        kind: 'message',
+        text: msg.text,
+        authorName: msg.name || t('Người dùng', 'User'),
+      });
+    }
     if (action === 'delete') {
       // Confirm via AlertDialog per spec — soft-delete only after the user confirms.
       setPendingDelete(msg);
@@ -1423,9 +1476,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
           }}>
             {item.avatar}
           </div>
-          {!isGroupItem && item.online && (
-            <div style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: T.success, border: `2px solid ${T.card}` }} />
-          )}
+          {!isGroupItem && <MSGPresenceDot presence={msgPresence(item)} lang={lang} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3, gap: 6 }}>
@@ -1454,7 +1505,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                 </span>
                 {unread > 0 && (
                   <span style={{
-                    background: T.error, color: '#fff',
+                    background: T.errorDark, color: T.errorForeground,
                     borderRadius: 99, fontSize: 10, fontWeight: 800,
                     padding: '1px 6px', minWidth: 18, textAlign: 'center', flexShrink: 0,
                   }}>{unread}</span>
@@ -1630,9 +1681,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                   }}>
                     {isGroup ? activeGroup?.avatar : activeContact?.avatar}
                   </div>
-                  {!isGroup && activeContact?.online && (
-                    <div style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: T.success, border: `2px solid ${T.card}` }} />
-                  )}
+                  {!isGroup && <MSGPresenceDot presence={msgPresence(activeContact)} lang={lang} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
@@ -1645,7 +1694,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                   <div style={{ fontSize: 12, color: T.textMuted }}>
                     {isGroup
                       ? `${activeGroup?.members} ${t('thành viên', 'members')}`
-                      : (activeContact?.online ? t('Đang online', 'Online') : (lang === 'en' ? activeContact?.roleEn : activeContact?.role))
+                      : msgPresenceCaption(activeContact, lang)
                     }
                   </div>
                 </div>
@@ -1872,7 +1921,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
       <style>{`
         @keyframes msg-typing {
           0%, 70%, 100% { opacity: 0.35; transform: translateY(0); }
-          35%           { opacity: 1; transform: translateY(-3px); }
+          35%           { opacity: 1;    transform: translateY(-3px); }
         }
         @keyframes sse-pulse {
           0%   { box-shadow: 0 0 0 0   ${T.success}55; }
@@ -1918,7 +1967,7 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                 {/* Quoted preview of the message being deleted */}
                 <div style={{
                   marginTop: 10, padding: '7px 10px',
-                  background: T.errorLight, border: `1px solid ${T.error}33`, borderRadius: 8,
+                  background: `${T.error}14`, border: `1px solid ${T.error}33`, borderRadius: 8,
                   fontSize: 12, color: T.textSecondary, lineHeight: 1.4,
                   maxHeight: 60, overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1942,6 +1991,24 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
             </div>
           </div>
         </div>
+      )}
+      {/* Report-content dialog (shared component from ui.jsx) */}
+      {reportTarget && (
+        <ReportContentDialog target={reportTarget} onClose={() => setReportTarget(null)}
+          onSubmit={() => {
+            setReportTarget(null);
+            setReportToast(t('Đã gửi báo cáo. BGH sẽ xem xét.', 'Report sent. School leadership will review it.'));
+            window.setTimeout(() => setReportToast(null), 2600);
+          }}
+          lang={lang} primaryColor={pColor} />
+      )}
+      {reportToast && (
+        <div role="status" style={{
+          position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+          background: T.textPrimary, color: '#fff', borderRadius: 99,
+          padding: '10px 20px', fontSize: 12.5, fontWeight: 600, zIndex: 9500,
+          boxShadow: '0 12px 32px rgba(0,0,0,0.2)', whiteSpace: 'nowrap',
+        }}>{reportToast}</div>
       )}
     </div>
   );

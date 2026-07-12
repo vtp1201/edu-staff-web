@@ -1,31 +1,40 @@
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 
+// Viewport width hook — responsive shell (sidebar auto-collapse, header search)
+const useViewportWidth = () => {
+  const [w, setW] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1440);
+  React.useEffect(() => {
+    const on = () => setW(window.innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return w;
+};
+
 const Card = ({ children, style, onClick }) => {
   const interactive = !!onClick;
   const [hovered, setHovered] = React.useState(false);
   const [focused, setFocused] = React.useState(false);
   const lifted = interactive && (hovered || focused);
+  let boxShadow = lifted ? '0 4px 20px rgba(0,0,0,0.08)' : '0 2px 12px rgba(0,0,0,0.04)';
+  if (focused) boxShadow += `, 0 0 0 2px ${T.primary}`;
   return (
     <div
       onClick={onClick}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      onKeyDown={interactive ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); } } : undefined}
-      onMouseEnter={interactive ? () => setHovered(true) : undefined}
-      onMouseLeave={interactive ? () => setHovered(false) : undefined}
-      onFocus={interactive ? () => setFocused(true) : undefined}
-      onBlur={interactive ? () => setFocused(false) : undefined}
+      onKeyDown={interactive ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(e); } }) : undefined}
+      onMouseEnter={interactive ? (() => setHovered(true)) : undefined}
+      onMouseLeave={interactive ? (() => setHovered(false)) : undefined}
+      onFocus={interactive ? (() => setFocused(true)) : undefined}
+      onBlur={interactive ? (() => setFocused(false)) : undefined}
       style={{
         background: T.card, borderRadius: 12, border: `1px solid ${T.border}`,
-        boxShadow: [
-          lifted ? '0 4px 20px rgba(0,0,0,0.08)' : '0 2px 12px rgba(0,0,0,0.04)',
-          focused ? `0 0 0 2px ${T.primary}` : null,
-        ].filter(Boolean).join(', '),
-        padding: 24,
+        boxShadow, padding: 24,
         cursor: interactive ? 'pointer' : 'default',
-        transform: lifted ? 'translateY(-2px)' : 'none',
-        transition: 'box-shadow 0.2s, transform 0.2s',
         outline: 'none',
+        transition: 'box-shadow 0.2s, transform 0.2s',
+        transform: lifted ? 'translateY(-2px)' : 'none',
         ...style
       }}>{children}</div>
   );
@@ -77,7 +86,6 @@ const ProgressBar = ({ value, color = T.primary, height = 6, style }) => {
   return (
     <div role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}
       style={{ background: T.border, borderRadius: 99, height, overflow: 'hidden', ...style }}>
-      {/* GPU-composited fill: a full-width bar scaled along X from the left edge — no width/layout thrash */}
       <div style={{ width: '100%', height: '100%', background: color, borderRadius: 99, transformOrigin: 'left center', transform: `scaleX(${pct / 100})`, transition: 'transform 0.6s ease' }} />
     </div>
   );
@@ -116,6 +124,7 @@ const StatCard = ({ icon, iconColor, iconBg, label, value, trend, trendLabel, la
 const NAV_ITEMS = {
   teacher: [
     { id: 'dashboard', icon: 'home', vi: 'Tổng quan', en: 'Dashboard' },
+    { id: 'feed', icon: 'newspaper', vi: 'Bảng tin', en: 'News Feed' },
     { id: 'classes', icon: 'grid', vi: 'Lớp học', en: 'Classes' },
     { id: 'attendance', icon: 'userCheck', vi: 'Điểm danh', en: 'Attendance' },
     { id: 'classlog', icon: 'fileText', vi: 'Sổ đầu bài', en: 'Class Log' },
@@ -133,6 +142,7 @@ const NAV_ITEMS = {
   ],
   principal: [
     { id: 'dashboard', icon: 'home', vi: 'Tổng quan', en: 'Dashboard' },
+    { id: 'feed', icon: 'newspaper', vi: 'Bảng tin', en: 'News Feed' },
     { id: 'school-setup', icon: 'building', vi: 'Thiết lập trường', en: 'School Setup' },
     { id: 'subject-parents', icon: 'layers', vi: 'Bộ môn', en: 'Departments' },
     { id: 'subjects', icon: 'bookOpen', vi: 'Môn học', en: 'Subjects' },
@@ -145,6 +155,7 @@ const NAV_ITEMS = {
     { id: 'exam-bank', icon: 'clipboardList', vi: 'Kho đề thi', en: 'Exam Bank' },
     { id: 'classlog', icon: 'fileText', vi: 'Sổ đầu bài', en: 'Class Log', badge: 2 },
     { id: 'discipline', icon: 'shield', vi: 'Vi phạm & Hạnh kiểm', en: 'Discipline' },
+    { id: 'moderation', icon: 'flag', vi: 'Kiểm duyệt nội dung', en: 'Moderation', badge: 3 },
     { id: 'reports', icon: 'chart', vi: 'Báo cáo', en: 'Reports' },
     { id: 'calendar', icon: 'calendar', vi: 'Năm học & Học kỳ', en: 'Academic Calendar' },
     { id: 'messaging', icon: 'message', vi: 'Nhắn tin', en: 'Messages', badge: 2 },
@@ -154,6 +165,7 @@ const NAV_ITEMS = {
   ],
   student: [
     { id: 'home', icon: 'home', vi: 'Tổng quan', en: 'Overview' },
+    { id: 'feed', icon: 'newspaper', vi: 'Bảng tin', en: 'News Feed' },
     { id: 'courses', icon: 'bookOpen', vi: 'Khoá học', en: 'Courses' },
     { id: 'assignments', icon: 'clipboard', vi: 'Bài tập', en: 'Assignments' },
     { id: 'exams', icon: 'fileText', vi: 'Bài kiểm tra', en: 'Exams', badge: 1 },
@@ -167,6 +179,7 @@ const NAV_ITEMS = {
   ],
   parent: [
     { id: 'children', icon: 'users', vi: 'Học sinh', en: 'My Children' },
+    { id: 'feed', icon: 'newspaper', vi: 'Bảng tin', en: 'News Feed' },
     { id: 'grades', icon: 'award', vi: 'Điểm số', en: 'Grades' },
     { id: 'academic-record-view', icon: 'scrollText', vi: 'Học bạ của con', en: "Child's Academic Record" },
     { id: 'conduct', icon: 'shield', vi: 'Hạnh kiểm của con', en: "Child's Conduct" },
@@ -177,7 +190,7 @@ const NAV_ITEMS = {
   ],
 };
 
-const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse, onLogout, user, lang, primaryColor }) => {
+const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse, onLogout, user, lang, primaryColor, tenant }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const items = NAV_ITEMS[role] || NAV_ITEMS.teacher;
   const W = collapsed ? T.sidebarCollapsedWidth : T.sidebarWidth;
@@ -191,16 +204,15 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
   };
 
   return (
-    // Outer track animates grid-template-columns (260px ⇆ 72px) instead of width — no `width` transition.
     <div style={{
       display: 'grid', gridTemplateColumns: `${W}px`,
-      flexShrink: 0, height: '100vh',
       transition: 'grid-template-columns 0.25s ease',
+      flexShrink: 0, height: '100vh', position: 'relative', zIndex: 10,
     }}>
     <div style={{
-      minWidth: 0, height: '100vh', background: T.card,
+      minWidth: 0, width: '100%', height: '100vh', background: T.card,
       borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', position: 'relative', zIndex: 10,
+      overflow: 'hidden',
     }}>
       {/* Logo */}
       <div style={{
@@ -217,7 +229,7 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: T.textPrimary, whiteSpace: 'nowrap' }}>
-              {t('THPT Nguyễn Du', 'Nguyen Du HS')}
+              {tenant ? (lang === 'en' ? tenant.nameEn : tenant.name) : t('THPT Nguyễn Du', 'Nguyen Du HS')}
             </div>
             <div style={{ fontSize: 10, color: T.textMuted, fontWeight: 500, whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               EduPortal
@@ -240,7 +252,7 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
               title={collapsed ? t(item.vi, item.en) : ''}
               aria-current={isActive ? 'page' : undefined}
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.bg; }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = isActive ? pColor + '12' : 'transparent'; }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center',
                 gap: collapsed ? 0 : 12, padding: collapsed ? '10px 0' : '9px 20px',
@@ -258,7 +270,7 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
                 </span>
               )}
               {!collapsed && item.badge && (
-                <span style={{ background: T.errorDark, color: T.errorForeground, borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 7px', minWidth: 18, textAlign: 'center' }}>
+                <span style={{ background: T.errorDark, color: T.errorForeground, borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 7px', minWidth: 18 }}>
                   {item.badge}
                 </span>
               )}
@@ -298,10 +310,8 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
 
       {/* Collapse toggle */}
       <button onClick={onToggleCollapse}
-        aria-label={collapsed ? t('Mở rộng thanh điều hướng', 'Expand sidebar') : t('Thu gọn thanh điều hướng', 'Collapse sidebar')}
+        aria-label={collapsed ? t('Mở rộng thanh điều hướng', 'Expand navigation') : t('Thu gọn thanh điều hướng', 'Collapse navigation')}
         aria-expanded={!collapsed}
-        onMouseEnter={e => e.currentTarget.style.background = T.bg}
-        onMouseLeave={e => e.currentTarget.style.background = T.card}
         style={{
           position: 'absolute', top: 18, right: collapsed ? '50%' : -12,
           transform: collapsed ? 'translateX(50%)' : 'none',
@@ -312,25 +322,28 @@ const Sidebar = ({ role, activeSection, onNavigate, collapsed, onToggleCollapse,
         }}>
         <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={12} color={T.textSecondary} />
       </button>
-      </div>
+    </div>
     </div>
   );
 };
 
 // ── Header ───────────────────────────────────────────────────────────────────
 
-const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColor, onRoleChange }) => {
+const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColor, onRoleChange, tenants, activeTenant, onOpenTenantSwitch }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const [showDropdown, setShowDropdown] = React.useState(false);
   const pColor = primaryColor || T.primary;
   const menuRef = React.useRef(null);
   React.useEffect(() => {
     if (!showDropdown) return;
-    const onPointer = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowDropdown(false); };
-    const onKey = (e) => { if (e.key === 'Escape') setShowDropdown(false); };
-    document.addEventListener('mousedown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onPointer); document.removeEventListener('keydown', onKey); };
+    const onDocMouseDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowDropdown(false); };
+    const onKeyDown = (e) => { if (e.key === 'Escape') setShowDropdown(false); };
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [showDropdown]);
   const ROLE_LABELS = {
     teacher: { vi: 'Giáo viên', en: 'Teacher' },
@@ -338,18 +351,20 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
     student: { vi: 'Học sinh', en: 'Student' },
     parent: { vi: 'Phụ huynh', en: 'Parent' },
   };
+  const vw = useViewportWidth();
 
   return (
     <div style={{
       height: T.headerHeight, background: T.card, borderBottom: `1px solid ${T.border}`,
       display: 'flex', alignItems: 'center', padding: '0 28px', gap: 16, flexShrink: 0,
     }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.textPrimary }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{subtitle}</div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: T.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</div>}
       </div>
 
-      {/* Search */}
+      {/* Search — ẩn dưới 900px (responsive shell) */}
+      {vw >= 900 && (
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8,
@@ -361,17 +376,16 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
           fontSize: 13, color: T.textPrimary, width: '100%', fontFamily: 'inherit',
         }} />
       </div>
+      )}
 
       {/* Notifications */}
       <div style={{ position: 'relative' }}>
         <button
           aria-label={notifCount > 0 ? t(`Thông báo (${notifCount} mới)`, `Notifications (${notifCount} new)`) : t('Thông báo', 'Notifications')}
-          onMouseEnter={e => e.currentTarget.style.background = T.border}
-          onMouseLeave={e => e.currentTarget.style.background = T.bg}
           style={{
-            width: 38, height: 38, borderRadius: 10, background: T.bg, border: `1px solid ${T.border}`,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          width: 38, height: 38, borderRadius: 10, background: T.bg, border: `1px solid ${T.border}`,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
           <Icon name="bell" size={16} color={T.textSecondary} />
         </button>
         {notifCount > 0 && (
@@ -408,12 +422,42 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
           <div role="menu" aria-label={t('Đổi vai trò', 'Switch role')} style={{
             position: 'absolute', right: 0, top: 48, background: T.card,
             border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            padding: 8, minWidth: 180, zIndex: 100,
+            padding: 8, minWidth: 220, zIndex: 100,
           }}>
+            {/* P7 — khối trường hiện tại (multi-tenant) */}
+            {activeTenant && (
+              <div style={{ padding: '8px 10px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                {typeof TenantLogo !== 'undefined' && <TenantLogo tenant={activeTenant} size={36} />}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: T.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {lang === 'en' ? activeTenant.nameEn : activeTenant.name}
+                  </div>
+                  <div style={{ marginTop: 3 }}>
+                    <Badge color={activeTenant.roleColor} style={{ fontSize: 10, padding: '2px 8px' }}>
+                      {lang === 'en' ? activeTenant.roleEn : activeTenant.roleVi}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeTenant && tenants && tenants.length >= 2 && onOpenTenantSwitch && (
+              <button role="menuitem" onClick={() => { setShowDropdown(false); onOpenTenantSwitch(); }}
+                style={{
+                  width: '100%', padding: '9px 12px', background: 'transparent',
+                  border: 'none', cursor: 'pointer', borderRadius: 8, textAlign: 'left',
+                  fontSize: 13, fontWeight: 600, color: T.textPrimary,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = T.bg}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <Icon name="switchHorizontal" size={14} color={T.textSecondary} strokeWidth={2} />
+                {t('Đổi trường', 'Switch school')}
+              </button>
+            )}
+            {activeTenant && <div role="separator" style={{ height: 1, background: T.border, margin: '6px 4px' }} />}
             {[['teacher', '👩‍🏫 Giáo viên / Teacher'], ['principal', '🏫 Hiệu trưởng / Principal'], ['student', '🎓 Học sinh / Student'], ['parent', '👨‍👩‍👦 Phụ huynh / Parent']].map(([r, label]) => (
-              <button key={r} role="menuitemradio" aria-checked={role === r} onClick={() => { onRoleChange(r); setShowDropdown(false); }}
-                onMouseEnter={e => { if (role !== r) e.currentTarget.style.background = T.bg; }}
-                onMouseLeave={e => { if (role !== r) e.currentTarget.style.background = 'transparent'; }}
+              <button key={r} onClick={() => { onRoleChange(r); setShowDropdown(false); }}
+                role="menuitemradio" aria-checked={role === r}
                 style={{
                   width: '100%', padding: '9px 12px', background: role === r ? pColor + '12' : 'transparent',
                   border: 'none', cursor: 'pointer', borderRadius: 8, textAlign: 'left',
@@ -429,4 +473,120 @@ const Header = ({ title, subtitle, user, role, notifCount = 5, lang, primaryColo
   );
 };
 
-Object.assign(window, { Card, Badge, Avatar, Button, ProgressBar, StatCard, Sidebar, Header });
+// ── Report content dialog — dùng chung cho post / comment / message ──────────────
+const REPORT_REASONS = [
+  { id: 'spam', vi: 'Spam', en: 'Spam' },
+  { id: 'language', vi: 'Ngôn từ không phù hợp', en: 'Inappropriate language' },
+  { id: 'bully', vi: 'Bắt nạt', en: 'Bullying' },
+  { id: 'misinfo', vi: 'Thông tin sai', en: 'Misinformation' },
+  { id: 'other', vi: 'Khác', en: 'Other' },
+];
+
+const ReportContentDialog = ({ target, onClose, onSubmit, lang, primaryColor }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  const pColor = primaryColor || T.primary;
+  const [reason, setReason] = React.useState(null);
+  const [note, setNote] = React.useState('');
+  const dialogRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const prev = document.activeElement;
+    const el = dialogRef.current;
+    if (el) { const f = el.querySelector('input, button, textarea'); if (f) f.focus(); }
+    const onKey = (e) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && el) {
+        const focusables = el.querySelectorAll('button:not([disabled]), input, textarea');
+        if (!focusables.length) return;
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); if (prev && prev.focus) prev.focus(); };
+  }, [onClose]);
+
+  const kindLabel = ({ post: t('bài viết', 'post'), comment: t('bình luận', 'comment'), message: t('tin nhắn', 'message') })[target.kind] || t('nội dung', 'content');
+  const valid = !!reason && (reason !== 'other' || !!note.trim());
+
+  return (
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, background: 'rgba(20,30,50,0.5)', backdropFilter: 'blur(3px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 8000, padding: 20,
+    }}>
+      <div ref={dialogRef} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="report-dialog-title"
+        style={{
+          background: T.card, borderRadius: 14, width: '100%', maxWidth: 430,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.25)', overflow: 'hidden',
+          maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+        }}>
+        <div style={{ padding: '18px 22px 0', display: 'flex', alignItems: 'flex-start', gap: 10, flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: T.warningLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="flag" size={16} color={T.warning} strokeWidth={2} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div id="report-dialog-title" style={{ fontSize: 15, fontWeight: 800, color: T.textPrimary }}>{t('Báo cáo nội dung', 'Report content')}</div>
+            <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 1 }}>
+              {t(`Báo cáo ${kindLabel} của ${target.authorName}`, `Report a ${kindLabel} by ${target.authorName}`)}
+            </div>
+          </div>
+          <button onClick={onClose} aria-label={t('Đóng', 'Close')}
+            style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: T.bg, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name="x" size={13} color={T.textMuted} />
+          </button>
+        </div>
+
+        <div style={{ overflowY: 'auto' }}>
+          {/* Quote preview của nội dung bị báo cáo */}
+          <div style={{ margin: '14px 22px 0', padding: '10px 12px', background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, marginBottom: 3 }}>{target.authorName}</div>
+            <div style={{ fontSize: 12.5, color: T.textSecondary, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {target.text}
+            </div>
+          </div>
+
+          {/* Lý do */}
+          <div role="radiogroup" aria-label={t('Lý do báo cáo', 'Report reason')}
+            style={{ padding: '14px 22px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {REPORT_REASONS.map(r => {
+              const active = reason === r.id;
+              return (
+                <label key={r.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 9,
+                  cursor: 'pointer', border: `1.5px solid ${active ? pColor : T.border}`,
+                  background: active ? pColor + '0D' : 'transparent', transition: 'all 0.15s',
+                }}>
+                  <input type="radio" name="report-reason" value={r.id} checked={active}
+                    onChange={() => setReason(r.id)} style={{ accentColor: pColor }} />
+                  <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? pColor : T.textPrimary }}>{t(r.vi, r.en)}</span>
+                </label>
+              );
+            })}
+            {reason === 'other' && (
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
+                aria-label={t('Mô tả lý do báo cáo', 'Describe the reason')}
+                placeholder={t('Mô tả cụ thể vấn đề…', 'Describe the issue…')}
+                style={{
+                  width: '100%', border: `1px solid ${T.border}`, borderRadius: 9, padding: '9px 12px',
+                  fontSize: 12.5, fontFamily: 'inherit', color: T.textPrimary, background: T.bg,
+                  outline: 'none', resize: 'vertical', marginTop: 2, lineHeight: 1.5,
+                }} />
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding: '12px 22px', display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: `1px solid ${T.border}`, background: T.bg, flexShrink: 0 }}>
+          <Button variant="ghost" size="sm" onClick={onClose} style={{ border: `1px solid ${T.border}`, color: T.textSecondary }}>
+            {t('Hủy', 'Cancel')}
+          </Button>
+          <Button size="sm" icon="flag" disabled={!valid} onClick={() => valid && onSubmit({ reason, note: note.trim() })}>
+            {t('Gửi báo cáo', 'Send report')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { Card, Badge, Avatar, Button, ProgressBar, StatCard, Sidebar, Header, ReportContentDialog, REPORT_REASONS, useViewportWidth });
