@@ -1436,6 +1436,35 @@
       }
     }
   },
+  "emailVerify": {
+    "banner": {
+      "unverifiedTitle": "Email của bạn chưa được xác thực.",
+      "unverifiedBody": "Xác thực để nhận thông báo quan trọng.",
+      "sendButton": "Gửi mail xác thực",
+      "sentTitle": "Đã gửi.",
+      "sentBody": "Kiểm tra hộp thư {email}.",
+      "resendIn": "Gửi lại được sau {seconds} giây.",
+      "resend": "Gửi lại",
+      "dismissAriaLabel": "Đóng thông báo xác thực email"
+    },
+    "dialog": {
+      "title": "Xác thực email",
+      "description": "Chúng tôi đã gửi mã 6 số tới {email}.",
+      "close": "Đóng",
+      "codeGroupAriaLabel": "Mã xác thực 6 chữ số",
+      "digitAriaLabel": "Chữ số thứ {n}",
+      "errorWrong": "Mã không đúng. Vui lòng kiểm tra lại email và nhập lại.",
+      "errorExpired": "Mã đã hết hạn. Bấm \"Gửi lại mã\" để nhận mã mới.",
+      "errorLockout": "Bạn đã nhập sai quá số lần cho phép. Bấm \"Gửi lại mã\" để nhận mã mới.",
+      "resendIn": "Gửi lại mã được sau {seconds} giây",
+      "resend": "Gửi lại mã",
+      "confirm": "Xác nhận",
+      "confirming": "Đang xác minh…",
+      "successTitle": "Email đã được xác thực",
+      "successBody": "{email} giờ sẽ nhận đầy đủ thông báo quan trọng từ nhà trường.",
+      "done": "Hoàn tất"
+    }
+  },
   "exam": {
     "briefing": {
       "agreeLabel": "Tôi đã đọc và đồng ý với các quy định thi",
@@ -2174,6 +2203,10 @@
     },
     "personal": {
       "email": "Email",
+      "emailImmutableHint": "Email không thể thay đổi",
+      "emailUnverified": "Chưa xác thực",
+      "emailVerified": "Đã xác thực",
+      "emailVerifyNow": "Xác thực ngay",
       "fullName": "Họ và tên",
       "phone": "Số điện thoại",
       "role": "Vai trò",

@@ -1436,6 +1436,35 @@
       }
     }
   },
+  "emailVerify": {
+    "banner": {
+      "unverifiedTitle": "Your email is not verified yet.",
+      "unverifiedBody": "Verify it to receive important notifications.",
+      "sendButton": "Send verification mail",
+      "sentTitle": "Sent.",
+      "sentBody": "Check the inbox of {email}.",
+      "resendIn": "Resend available in {seconds} seconds.",
+      "resend": "Resend",
+      "dismissAriaLabel": "Dismiss email verification notice"
+    },
+    "dialog": {
+      "title": "Verify your email",
+      "description": "We sent a 6-digit code to {email}.",
+      "close": "Close",
+      "codeGroupAriaLabel": "6-digit verification code",
+      "digitAriaLabel": "Digit {n}",
+      "errorWrong": "Incorrect code. Please check your email and try again.",
+      "errorExpired": "This code has expired. Press \"Resend code\" to get a new one.",
+      "errorLockout": "Too many incorrect attempts. Press \"Resend code\" to get a new one.",
+      "resendIn": "You can resend the code in {seconds} seconds",
+      "resend": "Resend code",
+      "confirm": "Confirm",
+      "confirming": "Verifying…",
+      "successTitle": "Email verified",
+      "successBody": "{email} will now receive all important school notifications.",
+      "done": "Done"
+    }
+  },
   "exam": {
     "briefing": {
       "agreeLabel": "I have read and agree to the exam rules",
@@ -2174,6 +2203,10 @@
     },
     "personal": {
       "email": "Email",
+      "emailImmutableHint": "Email cannot be changed",
+      "emailUnverified": "Not verified",
+      "emailVerified": "Verified",
+      "emailVerifyNow": "Verify now",
       "fullName": "Full name",
       "phone": "Phone",
       "role": "Role",
