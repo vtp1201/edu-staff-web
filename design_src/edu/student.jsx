@@ -511,7 +511,7 @@ const LessonPlayer = ({ course, lang, t, pColor, onBack }) => {
                           background: isActive ? course.color + '16' : 'transparent',
                           border: 'none',
                           borderBottom: li < ch.lessons.length - 1 ? `1px solid ${T.border}` : 'none',
-                          padding: '11px 14px',
+                          padding: '11px 14px 11px 13px',
                           display: 'flex', alignItems: 'flex-start', gap: 10,
                         }}>
                         <div style={{

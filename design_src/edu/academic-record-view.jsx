@@ -705,7 +705,7 @@ const GradeSnapshotTable = ({ record, t, lang, pColor }) => {
                     </span>
                   </td>
                 ))}
-                <td style={{ ...sarTdStyle, textAlign: 'center', background: T.bg, borderLeft: `1px solid ${T.border}` }}>
+                <td style={{ ...sarTdStyle, textAlign: 'center', background: T.bg, boxShadow: `inset 1px 0 0 ${T.border}` }}>
                   <span style={{
                     fontSize: 14, fontWeight: 800,
                     color: r ? r.color : T.textMuted,

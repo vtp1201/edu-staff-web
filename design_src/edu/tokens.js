@@ -9,13 +9,13 @@ window.T = {
   warningLight: '#FEF5E5',
   error: '#FA896B',
   errorLight: '#FFF5F2',
-  errorText: '#C0392B',        // AA on white/light (5.1:1) — decision 0027
   errorDark: '#B91C1C',        // solid fill for white text (8.2:1) — decision 0040
   errorDarkLight: '#FEE2E2',
-  // Foreground colors for solid status backgrounds (mirror tokens.css)
-  successForeground: '#FFFFFF',
-  warningForeground: '#2A3547', // never white on warning yellow (a11y, decision 0013)
   errorForeground: '#FFFFFF',
+  errorText: '#C0392B',        // AA on white/light (5.1:1) — decision 0027
+  warningText: '#9A6A0F',      // AA text/icon tone warning trên nền sáng — mirror tokens.css, decision 0046
+  warningForeground: '#2A3547', // never white on warning yellow (a11y, decision 0013)
+  successForeground: '#FFFFFF',
   info: '#539BFF',
   infoLight: '#EBF3FE',
   purple: '#7B5EA7',

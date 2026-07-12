@@ -798,7 +798,7 @@ const ApproveSheet = ({ batch, t, lang, pColor, onClose, onApprove }) => {
                         </span>
                       </td>
                     ))}
-                    <td style={{ ...geApprTdStyle, textAlign: 'center', background: T.bg, borderLeft: `1px solid ${T.border}` }}>
+                    <td style={{ ...geApprTdStyle, textAlign: 'center', background: T.bg, boxShadow: `inset 1px 0 0 ${T.border}` }}>
                       <span style={{
                         fontSize: 13.5, fontWeight: 800,
                         color: scoreColor(avg),

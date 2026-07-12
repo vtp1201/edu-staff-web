@@ -523,7 +523,7 @@ const LeaveManagementTab = ({ lang, t, pColor, role }) => {
               onFocus={e => e.target.style.borderColor = T.error} onBlur={e => e.target.style.borderColor = T.border} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => { setRejectModal(null); setRejectReason(''); }} style={{ flex: 1, padding: '9px', border: `1px solid ${T.border}`, borderRadius: 9, background: T.bg, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Huỷ', 'Cancel')}</button>
-              <button onClick={() => handleReject(rejectModal)} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: T.error, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận từ chối', 'Confirm Reject')}</button>
+              <button onClick={() => handleReject(rejectModal)} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: T.errorDark, color: T.errorForeground, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận từ chối', 'Confirm Reject')}</button>
             </div>
           </div>
         </div>
@@ -693,7 +693,7 @@ const StaffLeaveTab = ({ lang, t, pColor }) => {
               onFocus={e => e.target.style.borderColor = T.error} onBlur={e => e.target.style.borderColor = T.border} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => { setRejectModal(null); setRejectReason(''); }} style={{ flex: 1, padding: '9px', border: `1px solid ${T.border}`, borderRadius: 9, background: T.bg, color: T.textSecondary, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Huỷ', 'Cancel')}</button>
-              <button onClick={() => handleReject(rejectModal)} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: T.error, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận từ chối', 'Confirm Reject')}</button>
+              <button onClick={() => handleReject(rejectModal)} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: 9, background: T.errorDark, color: T.errorForeground, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận từ chối', 'Confirm Reject')}</button>
             </div>
           </div>
         </div>
@@ -747,7 +747,7 @@ const DisciplineScreen = ({ role, lang, primaryColor }) => {
             }}>
               <Icon name={tab.icon} size={14} color={activeTab === tab.id ? pColor : T.textMuted} />
               {t(tab.vi, tab.en)}
-              {tab.badge > 0 && <span style={{ background: activeTab === tab.id ? pColor : T.error, color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 800, padding: '1px 6px', marginLeft: 2 }}>{tab.badge}</span>}
+              {tab.badge > 0 && <span style={{ background: activeTab === tab.id ? pColor : T.errorDark, color: T.errorForeground, borderRadius: 99, fontSize: 10, fontWeight: 800, padding: '1px 6px', marginLeft: 2 }}>{tab.badge}</span>}
             </button>
           ))}
         </div>

@@ -679,7 +679,7 @@ const GradeTable = ({ t, pColor, roster, columns, cellsFor, draft, onChange, edi
                     pColor={pColor}
                   />
                 ))}
-                <td style={{ ...gbTd, textAlign: 'center', background: T.bg, borderLeft: `1px solid ${T.border}` }}>
+                <td style={{ ...gbTd, textAlign: 'center', background: T.bg, boxShadow: `inset 1px 0 0 ${T.border}` }}>
                   <span style={{
                     fontSize: 14, fontWeight: 800,
                     color: rank ? rank.color : T.textMuted,
@@ -851,8 +851,8 @@ const SummaryPanel = ({ t, pColor, roster, columns, cellsFor, open, setOpen, alw
                   </span>
                   <div style={{ flex: 1, position: 'relative', height: 18 }}>
                     <div style={{
-                      position: 'absolute', left: 0, top: 0, bottom: 0,
-                      width: '100%', transformOrigin: 'left', transform: `scaleX(${b.count / max})`,
+                      position: 'absolute', left: 0, top: 0, bottom: 0, width: '100%',
+                      transformOrigin: 'left center', transform: `scaleX(${max ? (b.count / max) : 0})`,
                       background: b.color, borderRadius: 4,
                       transition: 'transform 0.3s',
                       opacity: b.count === 0 ? 0.15 : 1,
@@ -1220,7 +1220,7 @@ const ViewerSubjectTable = ({ t, pColor, rows, columns, masked }) => (
                     </td>
                   );
                 })}
-                <td style={{ ...gbTd, textAlign: 'center', background: T.bg, borderLeft: `1px solid ${T.border}` }}>
+                <td style={{ ...gbTd, textAlign: 'center', background: T.bg, boxShadow: `inset 1px 0 0 ${T.border}` }}>
                   <span style={{
                     fontSize: 14, fontWeight: 800,
                     color: showMasked ? T.textMuted : (rank?.color || T.textMuted),

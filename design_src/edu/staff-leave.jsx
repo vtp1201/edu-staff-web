@@ -467,8 +467,7 @@ const RequestCard = ({
             {/* Reason — truncated with expand */}
             <div style={{
               fontSize: 13, color: T.textPrimary, lineHeight: 1.6,
-              padding: '10px 12px', background: sm.color + '14', borderRadius: 8,
-              border: `1px solid ${sm.color}33`,
+              padding: '10px 12px', background: `${sm.color}14`, border: `1px solid ${sm.color}33`, borderRadius: 8,
             }}>
               <span style={{
                 display: 'inline-block', marginRight: 8,

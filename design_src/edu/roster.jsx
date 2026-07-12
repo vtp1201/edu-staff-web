@@ -296,7 +296,7 @@ const RosterTable = ({ roster, pColor, t, onRemoveMany, onRemoveOne }) => {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 12px', borderRadius: 7, border: 'none',
-              background: T.error, color: '#fff', fontSize: 12, fontWeight: 700,
+              background: T.errorDark, color: T.errorForeground, fontSize: 12, fontWeight: 700,
               fontFamily: 'inherit', cursor: 'pointer',
             }}>
             <Icon name="x" size={11} color="#fff" strokeWidth={2.4} />

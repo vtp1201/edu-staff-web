@@ -1040,6 +1040,7 @@ const TeacherScreen = ({ role, section, onNavigate, lang, primaryColor }) => {
     if (section === 'classes') return <TeacherClasses lang={lang} t={t} pColor={pColor} />;
     if (section === 'students') return <TeacherStudents lang={lang} t={t} pColor={pColor} />;
     if (section === 'schedule') return <TeacherScheduleFull lang={lang} t={t} pColor={pColor} />;
+    if (typeof EduComingSoon !== 'undefined') return <EduComingSoon title={title} lang={lang} />;
     return (
       <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: 60, textAlign: 'center', color: T.textMuted }}>
         <Icon name="settings" size={40} color={T.border} />

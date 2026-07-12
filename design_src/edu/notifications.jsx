@@ -240,7 +240,7 @@ const NotificationsCenterScreen = ({ role, lang, primaryColor, onNavigate }) => 
               <span style={{
                 position: 'absolute', top: -4, right: -4,
                 minWidth: 18, height: 18, borderRadius: 99,
-                background: T.error, color: '#fff',
+                background: T.errorDark, color: T.errorForeground,
                 fontSize: 10.5, fontWeight: 800, letterSpacing: 0,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 padding: '0 5px',
@@ -449,17 +449,17 @@ const NotificationRow = ({ n, lang, t, pColor, onClick, isLast }) => {
         display: 'grid',
         gridTemplateColumns: '28px minmax(0, 1fr) auto',
         gap: 14, alignItems: 'flex-start',
-        padding: '14px 20px',
+        padding: '14px 20px 14px 17px',
         borderBottom: isLast ? 'none' : `1px solid ${T.border}`,
-        background: unread ? pColor + '12' : T.card,
+        background: unread ? pColor + '16' : T.card,
         border: 'none',
         cursor: 'pointer', fontFamily: 'inherit',
         transition: 'background 0.12s',
         animation: 'nc-row-in 0.18s ease-out',
         position: 'relative',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = unread ? pColor + '1C' : T.bg}
-      onMouseLeave={e => e.currentTarget.style.background = unread ? pColor + '12' : T.card}>
+      onMouseEnter={e => e.currentTarget.style.background = unread ? pColor + '12' : T.bg}
+      onMouseLeave={e => e.currentTarget.style.background = unread ? pColor + '16' : T.card}>
       <div style={{
         width: 28, height: 28, borderRadius: 8, flexShrink: 0,
         background: m.color + '18',
