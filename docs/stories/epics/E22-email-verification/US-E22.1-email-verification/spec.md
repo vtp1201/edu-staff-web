@@ -360,6 +360,30 @@ by integration.md/use-cases.md):
   between `IAuthRepository` extension vs a new
   `IEmailVerificationRepository` are left as implementation decisions (not
   prescribed here — see §6 INT-001/INT-003 notes).
+- **[GAP, found during `fe-lead` intake, 2026-07-12]** NFR-006's premise
+  ("reuse already-fetched session/user data") does not hold in the current
+  codebase: `AppLayout`
+  (`src/app/[locale]/t/[tenant]/(app)/layout.tsx`) only decodes the JWT
+  claim for `role`/`tenantId` (`decodeRoleClaim`/`decodeTenantId`) and
+  hardcodes `userName="Nguyen Van A"` — it never calls `GET /users/me`.
+  `ProfilePage`
+  (`src/app/[locale]/t/[tenant]/(app)/(shared)/profile/page.tsx`) renders a
+  hardcoded `MOCK` object (email/fullName/phone/role/sessions), also never
+  calling `GET /users/me`. There is no existing profile fetch to "extend"
+  with one boolean field — this story must ADD the first real
+  `GET /users/me` wiring for both surfaces (a new `makeGetProfileUseCase`
+  DI factory + repository method, since `AuthRepository.signin`/
+  `socialSignin` only call `/users/me` inline during login, not as a
+  reusable fetch). This does not change any AC (the banner/row still show
+  the same states) but does mean this story closes a pre-existing
+  MOCK-first gap on `ProfilePage` as a side effect and adds one
+  request-time server fetch to the shell layout (server-side, before shell
+  paint — still satisfies NFR-006's client-observable-waterfall intent,
+  just not a zero-marginal-cost reuse as the NFR text implied). Flagged to
+  the user in the `fe-lead` delivery report; not escalated as a scope
+  change since AC/UC are unaffected — `fe-state-engineer` decides the exact
+  fetch/caching mechanism (RSC prop-drill vs TanStack Query shared client
+  cache).
 
 **[OPEN QUESTION]s** (none block starting implementation — each has a safe,
 documented fallback already modeled in the AC):

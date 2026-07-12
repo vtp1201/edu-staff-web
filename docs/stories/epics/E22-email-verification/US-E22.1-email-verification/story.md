@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -153,6 +153,22 @@ When updating durable proof status, use numeric booleans:
 - Three `[OPEN QUESTION]`s carried forward to `ba-lead`/iam BE team (see
   spec.md §8) — not blocking implementation (all have a safe, documented
   fallback), but should be tracked for confirmation.
+
+## Implementation Plan
+
+See `plan.md` in this packet (fe-planner) — 11 phases (0-10): data plumbing
+(DTO/entity/mapper/VM) → new endpoints/repo methods/use-cases/DI →
+`OtpInput` promotion to `components/shared/otp-input/` → shared cooldown +
+verification-status Context (`EmailVerifyProvider`, mounted in `AppShell`,
+NOT TanStack Query — architectural finding: `ReactQueryProvider` only wraps
+`AppShell`'s `children`, not `AppShell` itself) → `layout.tsx`/`AppShell`
+wiring (first real `GET /users/me`, closes the `[GAP]` in spec.md §8) →
+`EmailVerifyBanner` → server actions + i18n → Profile row →
+`EmailVerifyDialog` (3 error states + success) → Storybook/a11y pass →
+Playwright E2E. Key decisions: extend `IAuthRepository` (no new repo
+interface); DTO keeps wire-shaped `isEmailVerified`, entity/VM use
+`emailVerified`; INT-003 success = optimistic local flip via context, not a
+refetch.
 
 ## Evidence
 
