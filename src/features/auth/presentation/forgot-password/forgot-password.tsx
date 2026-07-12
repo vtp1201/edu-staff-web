@@ -3,6 +3,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { OtpInput } from "@/components/shared/otp-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,6 @@ import {
 } from "@/shared/password-strength";
 import { cn } from "@/shared/utils";
 import type { ForgotPasswordVM } from "./forgot-password.i-vm";
-import { OtpInput } from "./otp-input";
 
 const LEVEL_COLOR = {
   weak: "bg-edu-error",
@@ -104,7 +104,12 @@ export function ForgotPassword({
       {step === 2 && (
         <div className="mt-5 flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">{t("step2.subtitle")}</p>
-          <OtpInput value={otp} onChange={setOtp} />
+          <OtpInput
+            value={otp}
+            onChange={setOtp}
+            groupAriaLabel={t("step2.codeGroupAriaLabel")}
+            digitAriaLabel={(n) => t("step2.digitAriaLabel", { n })}
+          />
           <Button disabled={otp.length !== 6} onClick={() => setStep(3)}>
             {t("step2.submit")}
           </Button>

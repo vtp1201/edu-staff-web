@@ -814,6 +814,8 @@
         "subtitle": "Nhập email để nhận mã đặt lại."
       },
       "step2": {
+        "codeGroupAriaLabel": "Mã xác thực 6 chữ số",
+        "digitAriaLabel": "Chữ số thứ {n}",
         "resend": "Gửi lại mã",
         "submit": "Xác nhận",
         "subtitle": "Nhập mã 6 số đã gửi tới email của bạn."

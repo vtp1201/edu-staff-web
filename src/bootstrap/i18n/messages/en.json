@@ -814,6 +814,8 @@
         "subtitle": "Enter your email to get a reset code."
       },
       "step2": {
+        "codeGroupAriaLabel": "6-digit verification code",
+        "digitAriaLabel": "Digit {n}",
         "resend": "Resend code",
         "submit": "Confirm",
         "subtitle": "Enter the 6-digit code sent to your email."
