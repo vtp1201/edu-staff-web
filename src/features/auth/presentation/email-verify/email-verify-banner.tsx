@@ -127,7 +127,7 @@ export function EmailVerifyBanner({
         type="button"
         onClick={dismiss}
         aria-label={t("dismissAriaLabel")}
-        className="grid size-8 shrink-0 place-items-center rounded-md hover:bg-edu-warning/15"
+        className="grid size-8 min-h-11 min-w-11 shrink-0 place-items-center rounded-md hover:bg-edu-warning/15"
       >
         <X className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
       </button>

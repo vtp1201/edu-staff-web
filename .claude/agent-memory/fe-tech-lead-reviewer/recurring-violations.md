@@ -124,6 +124,15 @@ Watch for these (each has bitten a story here):
   Also watch the display-name fallback (`memberName = memberId` when IAM has no name source): a
   documented cross-repo gap, non-blocking, but the UI shows a raw id until BE closes it. (US-E18.2.)
 
+- **Icon-only control below the 44×44 touch-target floor because design-spec says smaller** — a
+  design-spec/mockup specifies a small icon button (e.g. banner dismiss "X" at 26px) and the engineer
+  ships it as `size-8` (32px) or less. `.claude/rules/accessibility.md` hard rule = "Touch target ≥
+  44×44px trên mobile"; design-system supremacy covers tokens/palette/layout, NOT the a11y target
+  floor. Fix = keep the visual footprint per spec but expand the hit area to ≥44×44 (padding / larger
+  tap surface, small inner icon). MUST FIX (a11y hard gate). Converges with fe-accessibility-auditor.
+  (US-E22.1 EmailVerifyBanner dismiss `email-verify-banner.tsx:130` size-8; banner send/resend inline
+  controls also compact — auditor owns full sweep.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.
