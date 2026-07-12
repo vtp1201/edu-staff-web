@@ -1,4 +1,9 @@
+import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
 import { ProfileScreen } from "@/features/user/presentation/profile";
+import {
+  confirmEmailVerificationAction,
+  requestEmailVerificationAction,
+} from "../../email-verification.actions";
 import {
   getLinkedAccountsAction,
   linkAccountAction,
@@ -29,13 +34,20 @@ const MOCK = {
 
 export default async function ProfilePage() {
   const linkedAccounts = await getLinkedAccountsAction();
+  // Real email from GET /users/me (US-E22.1); rest of MOCK stays until the BE
+  // profile slice lands (out of scope, plan §0.6). Verification status itself
+  // is served reactively from EmailVerifyProvider context, not this VM.
+  const profile = await makeGetProfileUseCase().then((uc) => uc.execute());
   return (
     <ProfileScreen
       {...MOCK}
+      email={profile.data?.email ?? MOCK.email}
       linkedAccounts={linkedAccounts}
       onLinkAccount={linkAccountAction}
       onUnlinkAccount={unlinkAccountAction}
       onFetchLinkedAccounts={getLinkedAccountsAction}
+      onConfirmEmailVerification={confirmEmailVerificationAction}
+      onRequestEmailVerification={requestEmailVerificationAction}
     />
   );
 }

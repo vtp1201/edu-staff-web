@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, LogOut, Monitor, X } from "lucide-react";
+import { Check, LogOut, Monitor, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import type { EmailVerificationActionResult } from "@/app/[locale]/t/[tenant]/(app)/email-verification.actions";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEmailVerify } from "@/features/auth/presentation/email-verify/email-verify-context";
+import { EmailVerifyDialog } from "@/features/auth/presentation/email-verify/email-verify-dialog";
 import type {
   LinkedAccount,
   SocialProvider,
@@ -30,6 +33,11 @@ export interface ProfileScreenProps extends ProfileScreenVM {
   onLinkAccount: (provider: SocialProvider) => Promise<LinkedAccountResult>;
   onUnlinkAccount: (provider: SocialProvider) => Promise<LinkedAccountResult>;
   onFetchLinkedAccounts?: () => Promise<LinkedAccount[]>;
+  /** Email-verification server actions (server-action-as-prop, US-E22.1). */
+  onConfirmEmailVerification?: (
+    otp: string,
+  ) => Promise<EmailVerificationActionResult>;
+  onRequestEmailVerification?: () => Promise<EmailVerificationActionResult>;
 }
 
 const LEVEL_COLOR: Record<Exclude<StrengthLevel, "empty">, string> = {
@@ -48,8 +56,11 @@ export function ProfileScreen({
   onLinkAccount,
   onUnlinkAccount,
   onFetchLinkedAccounts,
+  onConfirmEmailVerification,
+  onRequestEmailVerification,
 }: ProfileScreenProps) {
   const t = useTranslations("profile");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const initials = fullName
     .split(" ")
     .map((p) => p[0])
@@ -98,10 +109,9 @@ export function ProfileScreen({
           <Card>
             <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
               <Field label={t("personal.fullName")} defaultValue={fullName} />
-              <Field
-                label={t("personal.email")}
-                defaultValue={email}
-                type="email"
+              <EmailField
+                email={email}
+                onVerifyNow={() => setDialogOpen(true)}
               />
               <Field label={t("personal.phone")} defaultValue={phone} />
               <Field label={t("personal.role")} defaultValue={role} disabled />
@@ -126,6 +136,63 @@ export function ProfileScreen({
           <SessionsTab sessions={sessions} />
         </TabsContent>
       </Tabs>
+
+      <EmailVerifyDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={onConfirmEmailVerification}
+        onResend={onRequestEmailVerification}
+      />
+    </div>
+  );
+}
+
+/** Email row with verification badge + "Xác thực ngay" CTA (US-E22.1). Reads
+ *  the shared context so the badge flips reactively after a successful confirm
+ *  (AC-007.7). Email input stays disabled — immutable (FR-008/AC-007.8). */
+function EmailField({
+  email,
+  onVerifyNow,
+}: {
+  email: string;
+  onVerifyNow: () => void;
+}) {
+  const t = useTranslations("profile.personal");
+  const { emailVerified } = useEmailVerify();
+  const id = useId();
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id}>{t("email")}</Label>
+        {emailVerified === true && (
+          <StatusBadge tone="teal">
+            <Check className="mr-1 size-3" aria-hidden="true" />
+            {t("emailVerified")}
+          </StatusBadge>
+        )}
+        {emailVerified === false && (
+          <StatusBadge tone="warning">
+            <TriangleAlert className="mr-1 size-3" aria-hidden="true" />
+            {t("emailUnverified")}
+          </StatusBadge>
+        )}
+      </div>
+      <Input id={id} defaultValue={email} type="email" disabled />
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">
+          {t("emailImmutableHint")}
+        </span>
+        {emailVerified === false && (
+          <button
+            type="button"
+            onClick={onVerifyNow}
+            className="text-xs font-extrabold text-primary hover:underline"
+          >
+            {t("emailVerifyNow")}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

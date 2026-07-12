@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { EmailVerifyProvider } from "@/features/auth/presentation/email-verify/email-verify-context";
 import type {
   LinkedAccount,
   SocialProvider,
@@ -55,16 +56,29 @@ const failLink = (): Promise<LinkedAccountResult> =>
 const neverResolve = (_p: SocialProvider): Promise<LinkedAccountResult> =>
   new Promise(() => {});
 
-function withProviders(Story: () => React.ReactElement) {
+const okAction = () => Promise.resolve({ ok: true as const });
+
+function withProviders(
+  Story: () => React.ReactElement,
+  context: { parameters: { emailVerified?: boolean | null } },
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // Distinguish "not set" (→ false) from an explicit `null` (unresolved).
+  const p = context.parameters.emailVerified;
+  const emailVerified = p === undefined ? false : p;
   return (
     <QueryClientProvider client={client}>
       <NextIntlClientProvider locale="vi" messages={messages}>
-        <div className="p-6">
-          <Story />
-        </div>
+        <EmailVerifyProvider
+          initialEmailVerified={emailVerified}
+          email={BASE.email}
+        >
+          <div className="p-6">
+            <Story />
+          </div>
+        </EmailVerifyProvider>
       </NextIntlClientProvider>
     </QueryClientProvider>
   );
@@ -80,6 +94,8 @@ const meta: Meta<typeof ProfileScreen> = {
     linkedAccounts: LINKED_BOTH,
     onLinkAccount: okLink,
     onUnlinkAccount: okLink,
+    onConfirmEmailVerification: okAction,
+    onRequestEmailVerification: okAction,
   },
 };
 export default meta;
@@ -155,5 +171,45 @@ export const LinkedAccountsLinkError: Story = {
     await userEvent.click(firstLink);
     const alertEl = await canvas.findByRole("alert");
     expect(alertEl).toBeInTheDocument();
+  },
+};
+
+// ── Email verification row (US-E22.1) ──────────────────────────────────────
+export const EmailUnverified: Story = {
+  parameters: { emailVerified: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Warning badge + CTA present on the personal tab (default tab).
+    expect(canvas.getByText(/chưa xác thực/i)).toBeInTheDocument();
+    const cta = canvas.getByRole("button", { name: /xác thực ngay/i });
+    // Opening the CTA mounts the dialog (Radix portal → document.body).
+    await userEvent.click(cta);
+    const dialog = within(document.body).getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+  },
+};
+
+export const EmailVerified: Story = {
+  parameters: { emailVerified: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.getByText(/đã xác thực/i)).toBeInTheDocument();
+    // No CTA when already verified (AC-007.5).
+    expect(
+      canvas.queryByRole("button", { name: /xác thực ngay/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const EmailStatusUnresolved: Story = {
+  // Fetch unresolved/error → no badge, not a stale one (AC-007.1/7.3).
+  parameters: { emailVerified: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.queryByText(/chưa xác thực/i)).not.toBeInTheDocument();
+    expect(canvas.queryByText(/đã xác thực/i)).not.toBeInTheDocument();
+    expect(
+      canvas.queryByRole("button", { name: /xác thực ngay/i }),
+    ).not.toBeInTheDocument();
   },
 };
