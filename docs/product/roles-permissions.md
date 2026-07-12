@@ -3,10 +3,16 @@
 Hợp đồng phân quyền (RBAC). Auth *là ai* nằm ở `docs/product/auth.md`; file này
 mô tả *được làm gì*.
 
-## Bốn role
+## Năm role
+
+> Cập nhật (2026-07-12, batch DR-012..019 BA intake): tài liệu này trước đây
+> chỉ liệt kê 4 role nhưng decision `0022` (admin-role-separation) đã thêm
+> role thứ 5 `admin` cho các màn admin-core (school-setup, calendar, subjects,
+> roster, và giờ thêm parent-links/invitations/moderation — xem bảng dưới).
+> `nav-config.ts` (`Role` union) là nguồn chân lý runtime, khớp danh sách này.
 
 ```text
-UserRole = "teacher" | "principal" | "student" | "parent"
+UserRole = "teacher" | "principal" | "student" | "parent" | "admin"
 ```
 
 ## Model: role gắn tenant
@@ -37,6 +43,10 @@ Hệ quả nghiệp vụ:
 | Cổng học sinh | `(app)/student/**` | `student` |
 | Cổng phụ huynh | `(app)/parent/**` | `parent` |
 | Hồ sơ cá nhân | `(app)/(shared)/profile` | mọi role đã đăng nhập |
+| Admin core (school-setup, calendar, subjects, roster, parent-links US-E20.1, invitations US-E21.1) | `(app)/admin/**` | `admin` (decision `0022`/`0024`; mock-role bypass khi `NEXT_PUBLIC_USE_MOCK=true`) |
+| Kiểm duyệt nội dung (report queue + audit log, US-E19.2) | `(app)/principal/moderation` | `principal` |
+| Báo cáo toàn trường (US-E03.1) | `(app)/principal/reports` | `principal` |
+| Bảng tin (đăng/bình luận/báo cáo nội dung, US-E19.1) | `(app)/(shared)/feed` | mọi role đã đăng nhập (composer role-gated theo scope trường/lớp — xem spec) |
 
 ## Quy tắc
 

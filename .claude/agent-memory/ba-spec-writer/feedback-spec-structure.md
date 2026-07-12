@@ -73,3 +73,16 @@ When the story extends an already-implemented feature (delta, not net-new), appl
 - **Mock fixtures must list safe defaults:** for every additive entity field, document the safe default (e.g. `hasEssayQuestions` absent → `false`) — prevents mapper crashes on E11.1 data.
 - **i18n key table:** include a table of ALL new keys with vi + en values in §13. If any might already exist, add a note to check before adding. Saves one round-trip.
 - **Storybook story per screen-state-group, not per AC:** group stories as List/Briefing/Taking/Result-Pending/Result-Completed and list AC coverage per story — this is what the QA gate checks, not individual AC stories.
+
+## US-E22.1 addenda — verify "already staged" i18n claims, don't trust the handoff phrasing (2026-07-12)
+
+When a DR/requirements doc says i18n keys are "already staged" / "confirmed no collision" for
+an upstream-authored feature (uiux → ba chain), still grep `messages/vi.json` yourself before
+writing the spec — "staged" can mean "drafted in the DR markdown" (a `docs/design-requests/DR-NNN-*.md`
+code block), NOT "already merged into `src/bootstrap/i18n/messages/{vi,en}.json`". For US-E22.1,
+DR-016 had a full copy block (banner+dialog `emailVerify` namespace + 4 additive
+`profile.personal.*` keys) but none of it existed in the actual messages files yet — so the
+spec's §10 Handoff had to explicitly instruct fe-nextjs-engineer to add ALL of it, not just
+reference it as done. Also: integration.md/use-cases.md can surface a BE error code (here
+`USER_TOO_MANY_ATTEMPTS`/429 lockout) that the upstream DR's copy block never anticipated —
+flag the resulting missing i18n key as a `[GAP]` needing exactly one new key, not a redesign.

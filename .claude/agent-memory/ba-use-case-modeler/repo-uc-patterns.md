@@ -59,6 +59,58 @@ Table: min-width:640px.
 First column cells: position:sticky, left:0, background:var(--edu-card), z-index:1, border-right:1px solid var(--edu-border).
 z-index must NOT exceed 1 (modal/popover layers must be > 1).
 
+### Shared-cooldown countdown pattern (auth/OTP-adjacent flows, E22.1 email-verify)
+When two entry points (e.g. banner + dialog) hit the same send/resend endpoint, model
+ONE shared clock, not two independent timers — AC must explicitly assert the second
+surface reflects the first surface's remaining time on open/reopen. Cooldown is
+client-only when the BE 204 response carries no retryAfter/nextResendAt field —
+model a full-page-reload reset as accepted behavior (not a defect) rather than
+inventing a persistence requirement not in the contract.
+aria-live="polite" for countdowns: only start/end transitions need guaranteed
+announcement — do not require per-second announcement (screen readers throttle
+live-region updates naturally); state this explicitly in AC to avoid over-speccing.
+
+### Defensive modeling of a BE error code flagged mid-pipeline (E22.1 too-many-attempts)
+When ba-integration-analyst confirms a BE error code exists (e.g. USER_TOO_MANY_ATTEMPTS,
+429, already in CODE_MAP) but the original requirements/design only named 2 of 3 dialog
+error states — write it as a full UC with its own AC, not a footnote, and flag the
+still-open behavioral question (e.g. "does resend unlock the lockout?") as
+[OPEN QUESTION] rather than asserting an unconfirmed BE behavior as fact. Keep it
+textually/AC-distinct from a same-shaped 429 on a DIFFERENT endpoint (send vs confirm) —
+don't let the modeler merge two error codes just because the surfaced copy is similar.
+
+### High-risk destructive-mutation AC pattern (E20.1 admin Unlink, 5th role `admin`)
+When ba-lead escalates a destructive UC to high-risk lane (authorization-adjacent
+data-visibility change, not just a normal confirm-dialog delete), write THREE
+distinct AC classes for that one action: (1) exact consequence copy assertion —
+quote the literal DR string with interpolation vars, not "shows a warning";
+(2) explicit server-side re-authorization assertion, worded to be testable by
+invoking the repository/Server Action directly with a forged/altered role — do
+NOT accept "route is role-gated" alone as satisfying this, since client gating
+is exactly what the high-risk lane says is insufficient; (3) a negative UC
+(non-admin actor denied) restated at both the specific action's AC (redundant
+by design, for traceability) and a dedicated role-gate UC. Also model
+"no client-only optimistic removal" as its own AC — the row/item must stay
+visible until the server 2xx, not disappear on click.
+5-role model note: decision 0022 added `admin` as a distinct UserRole from
+`principal` for `(app)/admin/**` route group — don't default to `principal`
+for admin-route stories; check roles-permissions.md's current role count first.
+
+### Distinct mobile layout callout (not squeeze) — design-spec explicit variant
+When a design-spec/DR explicitly calls a breakpoint variant "distinct" (e.g.
+card-list vs squeezed table) rather than implying pure CSS reflow, give it its
+own UC + AC set (data-parity assertion: every field the desktop view shows
+must appear on the card, no field dropped/hidden behind extra interaction) —
+don't fold it into the parent feature's AC as an implicit responsive note.
+
+### Sibling-screen shared entity pattern (E20.1 + E20.2 parent-student-links)
+Two independent stories (admin-side CRUD vs parent-side self-service toggle)
+sharing one conceptual entity (ParentStudentLink/Consent) still get two
+separate UC sets/mocks — cross-reference the shared shape in an edge-case-
+matrix row instead of merging use cases. Model the "empty vs 403-scoping-
+failure must not look the same" distinction explicitly as its own AC when a
+generic empty-array response could be confused with a silent auth failure.
+
 ### Messaging pane toggle spec (design-spec.jsonc responsiveGrid.messagingLayout)
 Mobile (≤768px): single pane, default="list"; chat slides in on row tap, back button returns.
 Transition: transform translateX 0.25s ease; @media(prefers-reduced-motion:reduce) → no transition (CSS-only guard, not JS matchMedia).
