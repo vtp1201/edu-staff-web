@@ -6,9 +6,12 @@ import {
   setAuthCookies,
 } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { ConfirmEmailVerificationUseCase } from "@/features/auth/domain/use-cases/confirm-email-verification.use-case";
+import { GetProfileUseCase } from "@/features/auth/domain/use-cases/get-profile.use-case";
 import { LoginUseCase } from "@/features/auth/domain/use-cases/login.use-case";
 import { LogoutUseCase } from "@/features/auth/domain/use-cases/logout.use-case";
 import { RefreshSessionUseCase } from "@/features/auth/domain/use-cases/refresh-session.use-case";
+import { RequestEmailVerificationUseCase } from "@/features/auth/domain/use-cases/request-email-verification.use-case";
 import { RequestPasswordResetUseCase } from "@/features/auth/domain/use-cases/request-password-reset.use-case";
 import { ResetPasswordUseCase } from "@/features/auth/domain/use-cases/reset-password.use-case";
 import { SocialAuthUseCase } from "@/features/auth/domain/use-cases/social-auth.use-case";
@@ -42,6 +45,28 @@ export async function makeRefreshSessionUseCase() {
 export async function makeLogoutUseCase() {
   const http = await createServerHttpClient();
   return new LogoutUseCase(new AuthRepository(http));
+}
+
+/**
+ * Protected `GET /users/me` outside the login flow — proactively refresh the
+ * access token first (decision 0018) so the fetch never wastes a 401 round-trip.
+ */
+export async function makeGetProfileUseCase() {
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  return new GetProfileUseCase(new AuthRepository(http));
+}
+
+export async function makeRequestEmailVerificationUseCase() {
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  return new RequestEmailVerificationUseCase(new AuthRepository(http));
+}
+
+export async function makeConfirmEmailVerificationUseCase() {
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  return new ConfirmEmailVerificationUseCase(new AuthRepository(http));
 }
 
 /**
