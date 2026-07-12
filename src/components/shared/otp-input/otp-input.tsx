@@ -47,7 +47,7 @@ export function OtpInput({
       aria-label={groupAriaLabel}
       aria-invalid={error || undefined}
       aria-describedby={error ? describedById : undefined}
-      className="m-0 flex min-w-0 justify-between gap-2 border-0 p-0"
+      className="m-0 flex min-w-0 justify-between gap-1 border-0 p-0 sm:gap-2"
     >
       {digits.map((d, i) => (
         <input
@@ -70,7 +70,10 @@ export function OtpInput({
             }
           }}
           className={cn(
-            "h-13 w-11.5 rounded-[10px] border text-center text-xl font-extrabold outline-none disabled:cursor-not-allowed disabled:opacity-70",
+            // Mobile-first: shrink cells/gap so 6 cells fit a 320px viewport
+            // (AC-003.7/NFR-005); restore the canonical 46×52 design-spec size
+            // at ≥sm (design-spec.jsonc emailVerify.dialog.otpInput baseline).
+            "h-11 w-8 rounded-[10px] border text-center text-lg font-extrabold outline-none disabled:cursor-not-allowed disabled:opacity-70 sm:h-13 sm:w-11.5 sm:text-xl",
             error
               ? "border-edu-error-dark bg-edu-error-dark-light/55 text-edu-error-text focus:border-edu-error-dark focus:ring-2 focus:ring-edu-error-dark/20"
               : "border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20",
