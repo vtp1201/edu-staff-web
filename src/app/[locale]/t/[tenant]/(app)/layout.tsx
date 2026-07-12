@@ -1,10 +1,12 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { evaluateAccess } from "@/bootstrap/auth-guard";
+import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell } from "@/components/layout/app-shell";
+import { requestEmailVerificationAction } from "./email-verification.actions";
 
 /**
  * Tenant app-shell layout — enforces auth + tenant membership (decision 0022/0024).
@@ -39,9 +41,24 @@ export default async function AppLayout({
     redirect(`/${locale}/select-tenant`);
   }
 
+  // First real GET /users/me for the shell (US-E22.1, closes the mock-first gap).
+  // Tri-state: null on fetch error → banner fail-closed (AC-001.3), never a
+  // wrong "verified" state. Server-side fetch — no client waterfall (NFR-006).
+  const profile = await makeGetProfileUseCase().then((uc) => uc.execute());
+  const emailVerified = profile.data ? profile.data.emailVerified : null;
+  const email = profile.data?.email ?? "";
+  const userName = profile.data?.name ?? "Nguyen Van A";
+
   return (
-    // biome-ignore lint/style/noNonNullAssertion: verdict "allowed" guarantees a non-null role
-    <AppShell tenantId={tenant} role={role!} userName="Nguyen Van A">
+    <AppShell
+      tenantId={tenant}
+      // biome-ignore lint/style/noNonNullAssertion: verdict "allowed" guarantees a non-null role
+      role={role!}
+      userName={userName}
+      emailVerified={emailVerified}
+      email={email}
+      onRequestEmailVerification={requestEmailVerificationAction}
+    >
       <ReactQueryProvider>{children}</ReactQueryProvider>
     </AppShell>
   );

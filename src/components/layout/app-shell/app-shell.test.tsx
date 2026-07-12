@@ -78,6 +78,21 @@ vi.mock("@/components/ui/sheet", () => ({
   SheetContent: () => null,
   SheetTitle: () => null,
 }));
+// EmailVerifyBanner/Provider (US-E22.1) have their own tests/stories; stub them
+// here so this SSE-wiring test needs no i18n/context setup.
+vi.mock(
+  "@/features/auth/presentation/email-verify/email-verify-banner",
+  () => ({
+    EmailVerifyBanner: () => null,
+  }),
+);
+vi.mock(
+  "@/features/auth/presentation/email-verify/email-verify-context",
+  () => ({
+    EmailVerifyProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
+  }),
+);
 
 async function renderShell(overrides: Partial<typeof mockRealtime> = {}) {
   mockRealtime = { ...mockRealtime, ...overrides };
