@@ -25,3 +25,4 @@
 - [LMS player + media token](pattern-lms-player-and-media-token.md) — media-surface token; tone→literal-class map (mapper does hex→tone); RSC-seeded plain useQuery + cross-query optimistic patch (no invalidate); all-content-up-front player VM + pure .derive.ts
 - [BE-wiring remap pattern](pattern-be-wiring-remap.md) — E18: flat wire DTO→nested entity via per-parent fan-out; create+activate orchestration outside try (no double-map); full error-code matrix; ensureFreshSession in every real DI branch
 - [Raw-flag interceptor guard](pattern-raw-flag-interceptor-guard.md) — raw:true is a config-level sibling of params (nested → silent UNKNOWN_ERROR); guard test pipes real unwrapResponse
+- [Shell context + cooldown](pattern-shell-context-and-cooldown.md) — E22: AppShell can't use TanStack Query (Context instead); framework-free timer + useSyncExternalStore; server-action-as-prop = Storybook-safe; fieldset for role=group; null??false tri-state trap
