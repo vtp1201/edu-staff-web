@@ -186,7 +186,13 @@ function EmailField({
         {emailVerified === false && (
           <button
             type="button"
-            onClick={onVerifyNow}
+            onClick={(e) => {
+              // Safari/Firefox don't focus a <button> on mouse click, so Radix
+              // would restore focus to <body> on dialog close instead of here.
+              // Force focus first so focus-restore lands back on this control.
+              e.currentTarget.focus();
+              onVerifyNow();
+            }}
             className="text-xs font-extrabold text-primary hover:underline"
           >
             {t("emailVerifyNow")}
