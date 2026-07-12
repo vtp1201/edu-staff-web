@@ -92,7 +92,7 @@ export function EmailVerifyBanner({
                   type="button"
                   onClick={runSend}
                   disabled={isPending}
-                  className="font-extrabold underline underline-offset-2 disabled:opacity-60"
+                  className="rounded-md font-extrabold underline underline-offset-2 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-60"
                 >
                   {t("resend")}
                 </button>
@@ -116,7 +116,7 @@ export function EmailVerifyBanner({
           type="button"
           onClick={runSend}
           disabled={isPending}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-edu-warning/40 px-3 py-1.5 text-xs font-extrabold text-edu-warning-foreground disabled:opacity-60"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-edu-warning/40 px-3 py-1.5 text-xs font-extrabold text-edu-warning-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-60"
         >
           <Send className="size-3" strokeWidth={2.2} aria-hidden="true" />
           {t("sendButton")}
@@ -127,7 +127,7 @@ export function EmailVerifyBanner({
         type="button"
         onClick={dismiss}
         aria-label={t("dismissAriaLabel")}
-        className="grid size-8 min-h-11 min-w-11 shrink-0 place-items-center rounded-md hover:bg-edu-warning/15"
+        className="grid size-8 min-h-11 min-w-11 shrink-0 place-items-center rounded-md outline-none hover:bg-edu-warning/15 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <X className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
       </button>

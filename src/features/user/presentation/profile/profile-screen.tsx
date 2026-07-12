@@ -193,7 +193,7 @@ function EmailField({
               e.currentTarget.focus();
               onVerifyNow();
             }}
-            className="text-xs font-extrabold text-primary hover:underline"
+            className="rounded-md text-xs font-extrabold text-primary outline-none hover:underline focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {t("emailVerifyNow")}
           </button>
