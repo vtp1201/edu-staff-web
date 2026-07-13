@@ -204,6 +204,79 @@ export const DisciplineViolationDelete: Story = {
   },
 };
 
+/**
+ * US-E19.2 errorSlot=forbidden (AC-1928.6): distinct permissions copy, NO retry
+ * button, AND the confirm button is force-disabled so re-clicking can't bypass
+ * "no retry". Cancel stays enabled (the only way out).
+ */
+export const ErrorSlotForbidden: Story = {
+  args: {
+    open: true,
+    isLoading: false,
+    title: "Gỡ nội dung?",
+    body: "Hành động này không thể hoàn tác. Người đăng sẽ được thông báo.",
+    confirmLabel: "Gỡ nội dung",
+    errorSlot: {
+      tone: "forbidden",
+      message: "Bạn không có quyền thực hiện hành động này.",
+    },
+  },
+  play: async () => {
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await expect(body.getByRole("alert")).toHaveTextContent(
+      "Bạn không có quyền thực hiện hành động này.",
+    );
+    // No retry control at all for the forbidden tone.
+    await expect(
+      body.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).toBeNull();
+    // Confirm force-disabled; cancel still enabled.
+    await expect(
+      body.getByRole("button", { name: "Gỡ nội dung" }),
+    ).toBeDisabled();
+    await expect(
+      body.getByRole("button", { name: CANCEL_LABEL }),
+    ).toBeEnabled();
+  },
+};
+
+/**
+ * US-E19.2 errorSlot=transient (AC-1928.7): inline error WITH a retry button;
+ * confirm stays enabled. Visibly/semantically distinct from the forbidden path.
+ */
+export const ErrorSlotTransient: Story = {
+  args: {
+    open: true,
+    isLoading: false,
+    title: "Gỡ nội dung?",
+    body: "Hành động này không thể hoàn tác. Người đăng sẽ được thông báo.",
+    confirmLabel: "Gỡ nội dung",
+    errorSlot: {
+      tone: "transient",
+      message: "Không thể gỡ nội dung. Vui lòng thử lại.",
+      onRetry: fn(),
+    },
+  },
+  play: async ({ args }) => {
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await expect(body.getByRole("alert")).toHaveTextContent(
+      "Không thể gỡ nội dung. Vui lòng thử lại.",
+    );
+    const retry = body.getByRole("button", {
+      name: messages.Common.confirmDialog.retry,
+    });
+    await expect(
+      body.getByRole("button", { name: "Gỡ nội dung" }),
+    ).toBeEnabled();
+    await userEvent.click(retry);
+    await expect(args.errorSlot?.onRetry).toHaveBeenCalledTimes(1);
+  },
+};
+
 /** Instance: staff-leave reject (documented deviation still models the text variant). */
 export const StaffLeaveReject: Story = {
   args: {

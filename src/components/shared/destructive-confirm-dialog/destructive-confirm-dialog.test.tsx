@@ -79,6 +79,38 @@ describe("DestructiveDialogActions (footer contract)", () => {
     expect(html).toContain("Xóa vi phạm");
     expect(html).toContain("Huỷ");
   });
+
+  // US-E19.2 — confirmDisabled force-disables ONLY confirm (cancel stays open).
+  it("force-disables confirm (only) when confirmDisabled, leaving cancel enabled", () => {
+    const html = renderToStaticMarkup(
+      <DestructiveDialogActions
+        {...baseProps}
+        isLoading={false}
+        confirmDisabled
+      />,
+    );
+    // Exactly one disabled attr — the confirm button. Cancel remains interactive.
+    const disabledAttr = html.match(/disabled=""/g) ?? [];
+    expect(disabledAttr).toHaveLength(1);
+    // The disabled one is the destructive (confirm) button.
+    const destructiveIdx = html.indexOf('data-variant="destructive"');
+    const outlineIdx = html.indexOf('data-variant="outline"');
+    const disabledIdx = html.indexOf('disabled=""');
+    // disabled attr sits within the destructive button's tag (after outline's).
+    expect(disabledIdx).toBeGreaterThan(outlineIdx);
+    expect(disabledIdx).toBeGreaterThan(destructiveIdx);
+  });
+
+  it("is NOT aria-busy when only confirmDisabled (forbidden ≠ loading)", () => {
+    const html = renderToStaticMarkup(
+      <DestructiveDialogActions
+        {...baseProps}
+        isLoading={false}
+        confirmDisabled
+      />,
+    );
+    expect(html).not.toContain('aria-busy="true"');
+  });
 });
 
 describe("DestructiveConfirmDialog (closed state)", () => {

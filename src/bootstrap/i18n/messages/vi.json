@@ -3,7 +3,8 @@
     "confirmDialog": {
       "cancel": "Huỷ",
       "confirm": "Xác nhận",
-      "irreversible": "Hành động này không thể hoàn tác."
+      "irreversible": "Hành động này không thể hoàn tác.",
+      "retry": "Thử lại"
     },
     "hello": "Xin chào",
     "skeleton": {
@@ -2135,6 +2136,113 @@
         "transient": "Không thể gửi báo cáo. Vui lòng thử lại.",
         "alreadyReported": "Bạn đã báo cáo nội dung này trước đó."
       }
+    },
+    "title": "Kiểm duyệt nội dung",
+    "subtitle": "Xem xét và xử lý nội dung bị báo cáo",
+    "stats": {
+      "pending": "Chờ xử lý",
+      "resolvedThisWeek": "Đã xử lý tuần này",
+      "removed": "Đã gỡ nội dung"
+    },
+    "tabs": {
+      "queue": "Hàng chờ báo cáo",
+      "audit": "Nhật ký kiểm duyệt"
+    },
+    "filter": {
+      "statusLabel": "Trạng thái",
+      "status": {
+        "pending": "Chờ xử lý",
+        "resolved": "Đã xử lý",
+        "all": "Tất cả"
+      },
+      "typeLabel": "Loại nội dung",
+      "type": {
+        "all": "Mọi loại",
+        "post": "Bài viết",
+        "comment": "Bình luận",
+        "message": "Tin nhắn"
+      },
+      "searchLabel": "Tìm kiếm báo cáo",
+      "searchPlaceholder": "Tìm theo tác giả, người báo cáo, nội dung…",
+      "refresh": "Làm mới danh sách"
+    },
+    "table": {
+      "content": "Nội dung",
+      "reason": "Lý do",
+      "reporter": "Người báo cáo",
+      "status": "Trạng thái",
+      "createdAt": "Thời gian",
+      "openDetail": "Mở chi tiết báo cáo {id}",
+      "duplicateSuffix": "+{count} báo cáo khác"
+    },
+    "statusLabels": {
+      "pending": "Chờ xử lý",
+      "dismissed": "Đã bỏ qua",
+      "removed": "Đã gỡ"
+    },
+    "kinds": {
+      "post": "Bài viết",
+      "comment": "Bình luận",
+      "message": "Tin nhắn"
+    },
+    "detail": {
+      "title": "Chi tiết báo cáo",
+      "contentSection": "Nội dung bị báo cáo",
+      "contextSection": "Bối cảnh",
+      "reportSection": "Thông tin báo cáo",
+      "reporter": "Người báo cáo",
+      "reason": "Lý do",
+      "note": "Ghi chú của người báo cáo",
+      "resolveSection": "Thông tin xử lý",
+      "resolvedBy": "Người xử lý",
+      "resolvedAt": "Thời gian xử lý",
+      "resolveNote": "Ghi chú xử lý",
+      "dismiss": "Bỏ qua",
+      "remove": "Gỡ nội dung",
+      "close": "Đóng"
+    },
+    "duplicates": {
+      "heading": "{count} báo cáo trùng lặp",
+      "none": "Không có báo cáo trùng lặp khác"
+    },
+    "removeDialog": {
+      "title": "Gỡ nội dung?",
+      "body": "Hành động này không thể hoàn tác. Nội dung sẽ bị gỡ khỏi hệ thống và người đăng sẽ được thông báo.",
+      "confirm": "Gỡ nội dung"
+    },
+    "audit": {
+      "actionBadge": {
+        "removed": "Đã gỡ",
+        "dismissed": "Đã bỏ qua"
+      },
+      "actionText": {
+        "removed": "đã gỡ nội dung",
+        "dismissed": "đã bỏ qua báo cáo"
+      },
+      "reasonPrefix": "Lý do",
+      "empty": "Chưa có hoạt động kiểm duyệt nào"
+    },
+    "empty": {
+      "positiveTitle": "Không có báo cáo nào chờ xử lý",
+      "positiveBody": "Tất cả nội dung hiện đang ổn.",
+      "filteredTitle": "Không tìm thấy báo cáo nào",
+      "filteredBody": "Thử điều chỉnh bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "loadMore": "Tải thêm",
+    "loadMoreError": "Không thể tải thêm. Nhấn để thử lại.",
+    "retry": "Thử lại",
+    "errorTitle": "Không thể tải dữ liệu",
+    "toasts": {
+      "dismissed": "Đã bỏ qua báo cáo",
+      "removed": "Đã gỡ nội dung và thông báo cho người đăng"
+    },
+    "errors": {
+      "validation": "Dữ liệu không hợp lệ.",
+      "already-reported": "Nội dung này đã được báo cáo trước đó.",
+      "not-found": "Không tìm thấy báo cáo. Có thể đã bị xoá.",
+      "already-resolved": "Báo cáo này vừa được người khác xử lý.",
+      "forbidden": "Bạn không có quyền thực hiện hành động này.",
+      "network-error": "Đã xảy ra lỗi kết nối. Vui lòng thử lại."
     }
   },
   "notifications": {
@@ -2323,6 +2431,7 @@
       "expandSidebar": "Mở rộng thanh bên",
       "grades": "Bảng điểm",
       "messages": "Nhắn tin",
+      "moderation": "Kiểm duyệt",
       "overview": "Tổng quan",
       "profile": "Hồ sơ",
       "reports": "Báo cáo",
