@@ -211,3 +211,60 @@ follow-up owned by `fe-lead` — NOT self-approved here.
    4-region-settle interaction is left to the Playwright/E2E tier
    (`fe-qa-playwright`) per spec §10 — the SB layer proves per-region states +
    partial-failure isolation statically instead.
+
+### Review gate results (`fe-lead`)
+
+**`fe-tech-lead-reviewer`: Approved.** Independent re-run of `tsc --noEmit` /
+`bun lint` / `bun vitest run` confirmed green (1439 tests). §0 anti-demo check
+(highest-severity risk on this story) independently re-verified clean: the
+mock repository's only reject path is the explicit one-shot
+`forceNextFailure`, empty by default; grep of the whole reports tree +
+route files for ordinal/counter/session/demo-forced-failure patterns found
+none. 4 non-blocking [CONSIDER]/[nit] items noted (CSV-vs-.xlsx button copy
+honesty, global `retry:1` not gated on `error.retryable`, a stale JSDoc, a
+cast) — accepted as-is for this normal-lane Should-adjacent story, no rework
+required.
+
+**`fe-accessibility-auditor`: 1 blocker + 5 major + 1 minor found, ALL FIXED**
+by `fe-nextjs-engineer` (commit `fb50e1f`) and re-verified green
+(`tsc`/`lint`/`vitest run` 1439/`bun run build`):
+- A11Y-001 (blocker) — status badge missing icon+text (FR-006/AC-04.1) → added
+  `CheckCircle2`/`Loader2` icons per status.
+- A11Y-002a/002b (major) — segmented-radio pill + table download button below
+  44×44 touch target → `min-h-11` / `size="icon"`.
+- A11Y-003 (major) — attendance chart bar-fill non-text contrast (WCAG 1.4.11,
+  <3:1) → added `border-edu-warning-text`/`border-edu-success-text` (fills
+  unchanged, semantics preserved).
+- A11Y-004 (major) — segmented-pill selected-state text 4.41:1 → swapped to
+  existing `--edu-primary-accessible` token (4.88:1); confirmed component-local
+  fix using an already-existing token, not a new systemic finding.
+- A11Y-005 (major) — chart `aria-label`s missing value range → interpolated
+  min/max (subject chart) and lowest/highest (attendance chart) into the
+  existing i18n `ariaLabel` keys.
+- A11Y-007 (minor) — 2 regions' simultaneous loading announcements identical
+  → `ChartSkeleton` now takes a distinct `srLabel` per region.
+
+**impeccable / design-system conformance (`fe-lead` review):** read
+`reports-screen.tsx` + `term-radio-group.tsx` + the 4 region components
+against `docs/product/design-spec.jsonc`'s `screens.reports` entry — layout
+`maxWidth 1200` / toolbar / charts grid (`minmax(0,3fr) minmax(0,2fr)`) /
+segmented term-radiogroup all match the spec verbatim; tokens-only throughout
+(no raw color found); `StatCard`/`StatusBadge`/`StatCardSkeletonGrid` reused
+unmodified; no anti-pattern requiring `polish` beyond the a11y findings above
+(already fixed). No conflict between impeccable guidance and the design
+system encountered.
+
+```text
+Design review: pass
+- design-system: conform (token/typography/component OK, verified against
+  design-spec.jsonc screens.reports)
+- a11y: WCAG AA OK after A11Y-001..007 fixes (blocker+5 major+1 minor, all
+  resolved and re-verified); keyboard OK; reduced-motion OK (motion-safe
+  inherited from Skeleton primitive, untouched)
+- impeccable audit: 0 new finding beyond the accessibility-auditor's (already
+  folded in above); no design-system conflict
+- states: loading/empty/error/success OK per region (AC-04.7 distinctness
+  confirmed in component-architecture.md + Storybook coverage); responsive
+  320px grid (`grid-cols-1` → `lg:grid-cols-[...]`) confirmed by layout read;
+  full 320/375/768/1280 viewport matrix left to `fe-qa-playwright`
+```
