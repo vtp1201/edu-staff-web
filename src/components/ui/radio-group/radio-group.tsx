@@ -6,14 +6,33 @@ import type * as React from "react";
 
 import { cn } from "@/shared/utils";
 
+type RadioGroupVariant = "default" | "segmented";
+
+/**
+ * Radix radio group. `variant="segmented"` renders a pill toggle (active =
+ * filled `bg-primary`/white text) instead of the default circle-indicator
+ * radios — a pure visual variant, no new ARIA (root stays native
+ * `role="radiogroup"`, arrow-key nav + focus ring inherited). Used by the
+ * principal-reports term selector (US-E03.1). Keep it in this primitive per
+ * component-organization.md row 1 — do NOT fork a button-group.
+ */
 function RadioGroup({
   className,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Root>) {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Root> & {
+  variant?: RadioGroupVariant;
+}) {
   return (
     <RadioGroupPrimitive.Root
       data-slot="radio-group"
-      className={cn("grid gap-3", className)}
+      data-variant={variant}
+      className={cn(
+        variant === "segmented"
+          ? "inline-flex gap-1 rounded-[var(--edu-radius-btn)] border border-border bg-card p-1"
+          : "grid gap-3",
+        className,
+      )}
       {...props}
     />
   );
@@ -21,8 +40,32 @@ function RadioGroup({
 
 function RadioGroupItem({
   className,
+  variant = "default",
+  children,
   ...props
-}: React.ComponentProps<typeof RadioGroupPrimitive.Item>) {
+}: React.ComponentProps<typeof RadioGroupPrimitive.Item> & {
+  variant?: RadioGroupVariant;
+}) {
+  if (variant === "segmented") {
+    return (
+      <RadioGroupPrimitive.Item
+        data-slot="radio-group-item"
+        data-variant="segmented"
+        className={cn(
+          "flex min-h-11 cursor-pointer items-center rounded-[calc(var(--edu-radius-btn)-1px)] px-3.5 py-1.5 text-[13px] font-medium text-edu-text-secondary outline-none transition-colors",
+          "hover:text-foreground",
+          "focus-visible:ring-[3px] focus-visible:ring-ring/50",
+          "data-[state=checked]:bg-[var(--edu-primary-accessible)] data-[state=checked]:font-bold data-[state=checked]:text-primary-foreground",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </RadioGroupPrimitive.Item>
+    );
+  }
+
   return (
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
