@@ -149,4 +149,65 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+Implemented by `fe-nextjs-engineer` (TDD, red→green→refactor) on branch
+`feat/us-e03.1-principal-reports`. Review gate (`fe-tech-lead-reviewer` /
+`fe-accessibility-auditor` / design-review / `fe-qa-playwright`) is a separate
+follow-up owned by `fe-lead` — NOT self-approved here.
+
+### Proof commands (all run in the worktree, no `--no-verify`)
+
+| Tier | Command | Result |
+| --- | --- | --- |
+| Unit + Integration | `bun vitest run` | **260 files, 1439 tests passed** (incl. 46 new reports tests) |
+| Storybook interaction | `bunx vitest --config vitest.storybook.mts run src/features/principal/presentation/reports` | **5 files, 15 stories passed** |
+| Types | `bunx tsc --noEmit` | **exit 0** (typed i18n keys → no key drift) |
+| Lint/format | `bun lint` | **exit 0** (2 pre-existing warnings in unrelated files, none in reports) |
+| Build | `bun run build` | **exit 0**; `/[locale]/t/[tenant]/principal/reports` route emitted |
+
+### New tests (map to TEST_MATRIX)
+
+- **Unit (domain):** 5 use-case specs — thin-delegate behavior + null-trend
+  pass-through + failure rethrow (15 assertions).
+- **Unit (mapper):** DTO→entity, null-trend preservation, term/status literals.
+- **Unit (mock repo, anti-demo AC-05.3):** fresh instance called 3× never
+  rejects; `forceNextFailure` is the ONLY reject path and is one-shot (negative
+  proof — no hidden default); injected-clock generating→ready transition;
+  2 independent transitions (AC-07.4); no-ghost-row on generate failure
+  (AC-07.3). No ordinal/counter/session forced-failure logic exists.
+- **Unit (poll predicate):** `getReportsPollInterval` pure-function test
+  (generating→5000ms, else false) — no fake timers (state-design §10).
+- **Unit (export):** `buildReportsCsv` deterministic + comma-escaping +
+  throws-on-missing-summary (no partial file).
+- **Integration (repo↔HTTP):** envelope unwrap, cursor pagination read,
+  error-code→failure mapping (network/term-not-found/unauthorized/generation).
+- **Storybook interaction:** per-region loading/empty/error/success + chart
+  `role=img`/dual-flag low-attendance + disabled-download gating + screen-level
+  Success and PartialRegionError (one region errors while the other 3 succeed,
+  AC-01.3).
+
+### Judgment calls / descoping notes (for `fe-lead`)
+
+1. **FR-009 Export Excel — shipped as client-side CSV, not binary `.xlsx`.**
+   A genuine `.xlsx` needs a zip/XML dependency (new dep + ADR). Per plan.md
+   D-3 / spec §8's "minimal or defer" allowance, this ships a pure,
+   unit-tested client-side CSV export (UTF-8 BOM → Excel-openable, Vietnamese
+   safe), triggered by the toolbar's primary "Xuất Excel" button (kept visible
+   per design-spec). Zero TanStack Query involvement (state-design §6). **Flag:**
+   if a true binary `.xlsx` is required, that needs a library + ADR — surfacing
+   for `fe-lead`'s call.
+2. **Repository convention = throwing** (`Promise<Entity>`, Server Action is the
+   catch→`errorKey` boundary), per the packet's `IPrincipalReportsRepository`
+   signature and the `discipline` precedent — NOT the `Result<T,F>` shape the
+   sibling `principal-teachers` uses.
+3. **`RegionEmptyState` takes resolved `title`/`desc` strings** (not `titleKey`)
+   — typed next-intl `t()` rejects an arbitrary `string` key, so the calling
+   region translates and passes strings. Minor deviation from
+   component-architecture §6's `titleKey` prop, made for type-safety.
+4. **`RadioGroup`/`RadioGroupItem` `variant="segmented"`** added in place
+   (no fork, no new token — Radix `data-state` drives styling) per
+   component-architecture §6/§8.
+5. **Term-switch re-fetch is URL-driven** (`?termId=`); Storybook's static
+   `useSearchParams` mock can't reflect `router.replace`, so the term-switch +
+   4-region-settle interaction is left to the Playwright/E2E tier
+   (`fe-qa-playwright`) per spec §10 — the SB layer proves per-region states +
+   partial-failure isolation statically instead.
