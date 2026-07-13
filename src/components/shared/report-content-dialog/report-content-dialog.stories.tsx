@@ -149,6 +149,40 @@ export const TransientError: Story = {
   },
 };
 
+/**
+ * Focus trap (AC-1921.5) — Tab repeatedly from the last focusable element
+ * (Submit) and confirm focus wraps back INSIDE the dialog rather than
+ * escaping to background/document content (Radix Dialog focus-trap contract).
+ */
+export const FocusTrapCyclesWithinDialog: Story = {
+  play: async () => {
+    const body = within(document.body);
+    const dialog = await body.findByRole("dialog");
+    // Select a reason first so Submit is enabled (still focus-trapped either way).
+    await userEvent.click(body.getByRole("radio", { name: rd.reasons.spam }));
+
+    const submit = body.getByRole("button", { name: rd.submit });
+    submit.focus();
+    await expect(submit).toHaveFocus();
+
+    // Tab forward past the last element — focus must land back inside the dialog.
+    await userEvent.tab();
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // Tab all the way around again — still never escapes the dialog.
+    for (let i = 0; i < 6; i++) {
+      await userEvent.tab();
+      await expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+
+    // Shift+Tab (backwards) from the first focusable also stays inside.
+    const cancel = body.getByRole("button", { name: rd.cancel });
+    cancel.focus();
+    await userEvent.tab({ shift: true });
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+  },
+};
+
 /** 409 → informational message (not error toned), no retry. */
 export const AlreadyReportedInfo: Story = {
   args: { infoMessage: rd.errors.alreadyReported },
