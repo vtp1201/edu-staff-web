@@ -25,7 +25,8 @@ export function SubjectAverageChartRegion({
   onRetry,
 }: SubjectAverageChartRegionProps) {
   const t = useTranslations("reports.charts.subjectAverage");
-  if (status === "loading") return <ChartSkeleton columnCount={8} />;
+  if (status === "loading")
+    return <ChartSkeleton columnCount={8} srLabel={t("loading")} />;
   if (status === "error") {
     return (
       <RegionErrorState errorKey={errorKey ?? "unknown"} onRetry={onRetry} />

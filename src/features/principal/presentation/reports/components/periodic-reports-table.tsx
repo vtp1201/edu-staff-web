@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText } from "lucide-react";
+import { CheckCircle2, Download, FileText, Loader2 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -70,13 +70,21 @@ export function PeriodicReportsTable({
               </TableCell>
               <TableCell className="text-center">
                 <StatusBadge tone={ready ? "success" : "warning"}>
+                  {ready ? (
+                    <CheckCircle2 aria-hidden="true" />
+                  ) : (
+                    <Loader2
+                      aria-hidden="true"
+                      className="motion-safe:animate-spin"
+                    />
+                  )}
                   {t(`status.${r.status}`)}
                 </StatusBadge>
               </TableCell>
               <TableCell className="text-center">
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
                   className="border border-border"
                   disabled={!ready}
                   aria-label={t("downloadAria", { name: r.name })}

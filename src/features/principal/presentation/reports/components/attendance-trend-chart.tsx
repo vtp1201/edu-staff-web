@@ -29,6 +29,9 @@ export function AttendanceTrendChart({
   lowThreshold = 96,
 }: AttendanceTrendChartProps) {
   const t = useTranslations("reports.charts.attendanceTrend");
+  const rates = weeks.map((w) => w.rate);
+  const lowest = rates.length ? Math.min(...rates) : 0;
+  const highest = rates.length ? Math.max(...rates) : 0;
   return (
     <div className="rounded-[var(--edu-radius-card)] border border-border bg-card px-6 py-5 shadow-card">
       <div className="mb-5 flex items-baseline justify-between">
@@ -38,7 +41,11 @@ export function AttendanceTrendChart({
       </div>
       <div
         role="img"
-        aria-label={t("ariaLabel", { count: weeks.length })}
+        aria-label={t("ariaLabel", {
+          count: weeks.length,
+          lowest: lowest.toLocaleString("vi-VN"),
+          highest: highest.toLocaleString("vi-VN"),
+        })}
         className="flex h-[180px] items-end gap-3"
       >
         {weeks.map((w) => {
@@ -60,8 +67,10 @@ export function AttendanceTrendChart({
               </span>
               <div
                 className={cn(
-                  "w-full max-w-[30px] rounded-t-md",
-                  low ? "bg-edu-warning" : "bg-edu-success",
+                  "w-full max-w-[30px] rounded-t-md border",
+                  low
+                    ? "border-edu-warning-text bg-edu-warning"
+                    : "border-edu-success-text bg-edu-success",
                 )}
                 style={{ height: `${barHeight(w.rate)}%` }}
               />

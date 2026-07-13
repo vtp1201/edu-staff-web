@@ -52,10 +52,10 @@ function RadioGroupItem({
         data-slot="radio-group-item"
         data-variant="segmented"
         className={cn(
-          "cursor-pointer rounded-[calc(var(--edu-radius-btn)-1px)] px-3.5 py-1.5 text-[13px] font-medium text-edu-text-secondary outline-none transition-colors",
+          "flex min-h-11 cursor-pointer items-center rounded-[calc(var(--edu-radius-btn)-1px)] px-3.5 py-1.5 text-[13px] font-medium text-edu-text-secondary outline-none transition-colors",
           "hover:text-foreground",
           "focus-visible:ring-[3px] focus-visible:ring-ring/50",
-          "data-[state=checked]:bg-primary data-[state=checked]:font-bold data-[state=checked]:text-primary-foreground",
+          "data-[state=checked]:bg-[var(--edu-primary-accessible)] data-[state=checked]:font-bold data-[state=checked]:text-primary-foreground",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className,
         )}

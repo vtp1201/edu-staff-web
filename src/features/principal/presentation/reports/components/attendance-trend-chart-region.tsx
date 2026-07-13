@@ -24,7 +24,8 @@ export function AttendanceTrendChartRegion({
   onRetry,
 }: AttendanceTrendChartRegionProps) {
   const t = useTranslations("reports.charts.attendanceTrend");
-  if (status === "loading") return <ChartSkeleton columnCount={6} />;
+  if (status === "loading")
+    return <ChartSkeleton columnCount={6} srLabel={t("loading")} />;
   if (status === "error") {
     return (
       <RegionErrorState errorKey={errorKey ?? "unknown"} onRetry={onRetry} />

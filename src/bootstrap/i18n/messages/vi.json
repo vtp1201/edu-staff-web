@@ -2218,17 +2218,18 @@
       "loading": "Đang tải chỉ số"
     },
     "charts": {
-      "loading": "Đang tải biểu đồ",
       "subjectAverage": {
         "title": "Điểm trung bình theo môn",
         "scale": "Thang điểm 10",
-        "ariaLabel": "Biểu đồ cột điểm trung bình theo môn, {count} môn",
+        "loading": "Đang tải biểu đồ điểm trung bình",
+        "ariaLabel": "Biểu đồ cột điểm trung bình theo môn, {count} môn, từ {min} đến {max} điểm",
         "emptyTitle": "Chưa có dữ liệu điểm",
         "emptyDesc": "Kỳ này chưa có điểm trung bình theo môn."
       },
       "attendanceTrend": {
         "title": "Chuyên cần 6 tuần gần nhất",
-        "ariaLabel": "Biểu đồ chuyên cần theo tuần, {count} tuần",
+        "loading": "Đang tải biểu đồ chuyên cần",
+        "ariaLabel": "Biểu đồ chuyên cần theo tuần, {count} tuần, thấp nhất {lowest}%, cao nhất {highest}%",
         "emptyTitle": "Chưa có dữ liệu chuyên cần",
         "emptyDesc": "Kỳ này chưa có số liệu chuyên cần theo tuần."
       }

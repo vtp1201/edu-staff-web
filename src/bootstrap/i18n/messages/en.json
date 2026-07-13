@@ -2218,17 +2218,18 @@
       "loading": "Loading metrics"
     },
     "charts": {
-      "loading": "Loading chart",
       "subjectAverage": {
         "title": "Grade average by subject",
         "scale": "Scale of 10",
-        "ariaLabel": "Bar chart of grade average by subject, {count} subjects",
+        "loading": "Loading grade average chart",
+        "ariaLabel": "Bar chart of grade average by subject, {count} subjects, ranging from {min} to {max}",
         "emptyTitle": "No grade data",
         "emptyDesc": "No subject grade averages for this term yet."
       },
       "attendanceTrend": {
         "title": "Attendance, last 6 weeks",
-        "ariaLabel": "Weekly attendance chart, {count} weeks",
+        "loading": "Loading attendance chart",
+        "ariaLabel": "Weekly attendance chart, {count} weeks, lowest {lowest}%, highest {highest}%",
         "emptyTitle": "No attendance data",
         "emptyDesc": "No weekly attendance figures for this term yet."
       }

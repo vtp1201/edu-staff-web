@@ -19,6 +19,9 @@ export function SubjectAverageChart({
   maxScore = 10,
 }: SubjectAverageChartProps) {
   const t = useTranslations("reports.charts.subjectAverage");
+  const averages = subjects.map((s) => s.average);
+  const min = averages.length ? Math.min(...averages) : 0;
+  const max = averages.length ? Math.max(...averages) : 0;
   return (
     <div className="rounded-[var(--edu-radius-card)] border border-border bg-card px-6 py-5 shadow-card">
       <div className="mb-5 flex items-baseline justify-between">
@@ -29,7 +32,11 @@ export function SubjectAverageChart({
       </div>
       <div
         role="img"
-        aria-label={t("ariaLabel", { count: subjects.length })}
+        aria-label={t("ariaLabel", {
+          count: subjects.length,
+          min: min.toFixed(1),
+          max: max.toFixed(1),
+        })}
         className="flex h-[180px] items-end gap-3"
       >
         {subjects.map((s) => (
