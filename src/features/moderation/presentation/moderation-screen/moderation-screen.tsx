@@ -260,6 +260,11 @@ export function ModerationScreen({
       queryClient.invalidateQueries({
         queryKey: moderationKeys.detail(reportId),
       });
+      // Dismiss also records a server-side audit entry (NFR-101) — invalidate
+      // audits() for cache-freshness parity with removeContent's invalidation
+      // (QA finding, US-E19.2: previously only removeContent busted this key,
+      // leaving an already-open/cached audit tab stale after a dismiss).
+      queryClient.invalidateQueries({ queryKey: moderationKeys.audits() });
       toast.success(t("toasts.dismissed"));
       setSelectedReportId(null);
     },

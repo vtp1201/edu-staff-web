@@ -163,4 +163,27 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Design review: pass
+- design-system: conform — tokens-only (grep clean), StatCard/StatusBadge/EmptyState/
+  DestructiveConfirmDialog reused verbatim, no fork; role/accent unaffected.
+- a11y: WCAG AA OK — both dialogs focus-trapped/Escape/return-focus verified in code
+  by `fe-accessibility-auditor`; radiogroup semantics, `aria-live` inline slots,
+  `aria-busy` on submit/confirm, icon+text badges (never color-only) confirmed.
+  2 minor findings (A11Y-001 sr-only actions-column label reused wrong i18n key,
+  A11Y-002 non-keyboard row `onClick` beside an already-keyboard-accessible icon
+  button) — both fixed in commit `e89ac79` (report-table.tsx + i18n `moderation.
+  table.actions` key both locales). 0 blocker/critical/major findings.
+- impeccable audit: `npx impeccable detect` on all new/changed dirs
+  (`features/moderation/presentation`, `components/shared/report-content-dialog`,
+  `components/shared/destructive-confirm-dialog`) → 0 findings.
+- states: loading/empty(-positive)/empty(-filtered)/error/success all implemented
+  and Storybook-proven distinctly (FR-107, never conflated); responsive table→card
+  switch at `md:` breakpoint (768px, nearest to spec's 760px — no new token, flagged
+  by `fe-component-architect`, accepted).
+
+fe-tech-lead-reviewer verdict: **Approved** (all 6 high-risk non-negotiables verified
+by direct code inspection: code-only 403-vs-transient branching w/ misleading-message
+test, zero-`onMutate` never-optimistic remove, exact invalidation asymmetry, forced
+confirm-button-disable on `forbidden` tone, anti-demo fixed-fixture-only, role-gated
+Remove entry point). `bun vitest run` 1442/1442 pass, `bunx tsc --noEmit` clean,
+`bun lint` clean, i18n vi/en 100% key parity.
