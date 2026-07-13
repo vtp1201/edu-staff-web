@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type Ref, useRef } from "react";
 import {
@@ -12,6 +12,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/utils";
+
+/**
+ * Optional inline error slot rendered between body and footer (US-E19.2, added
+ * for the confirm-remove flow). Absent = no behavior change from before.
+ * Tone-differentiated by BOTH icon and color (never color-only, NFR-102).
+ */
+export interface DestructiveConfirmErrorSlot {
+  tone: "forbidden" | "transient";
+  /** Already-i18n'd message text (caller owns i18n). */
+  message: string;
+  /**
+   * Retry callback. STRUCTURALLY ignored when `tone === "forbidden"` — the
+   * component never mounts a retry control for that tone regardless of whether
+   * onRetry is passed. Callers SHOULD omit it for `forbidden`.
+   */
+  onRetry?: () => void;
+}
 
 export interface DestructiveConfirmDialogProps {
   /** Controlled visibility. Parent owns open/close. */
@@ -24,6 +42,13 @@ export interface DestructiveConfirmDialogProps {
   confirmLabel: string;
   /** When true both buttons are disabled and confirm is `aria-busy`. */
   isLoading?: boolean;
+  /**
+   * Inline error slot (US-E19.2). `forbidden` tone force-disables the confirm
+   * button and never shows a retry; `transient` shows a retry and leaves confirm
+   * enabled. Host owns clearing it on re-open / after success (same rule as
+   * `isLoading`).
+   */
+  errorSlot?: DestructiveConfirmErrorSlot;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -44,6 +69,7 @@ export function DestructiveDialogActions({
   confirmLabel,
   cancelLabel,
   isLoading,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   cancelRef,
@@ -51,6 +77,12 @@ export function DestructiveDialogActions({
   confirmLabel: string;
   cancelLabel: string;
   isLoading: boolean;
+  /**
+   * Force-disable confirm independent of `isLoading` (US-E19.2). Used for the
+   * `forbidden` error tone so a user cannot bypass "no retry" by re-clicking
+   * the primary action. Cancel stays enabled — the only way out is to close.
+   */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   /** Forwarded so the dialog can move initial focus here on open (a11y). */
@@ -71,12 +103,67 @@ export function DestructiveDialogActions({
         type="button"
         variant="destructive"
         onClick={onConfirm}
-        disabled={isLoading}
+        disabled={isLoading || confirmDisabled}
         aria-busy={isLoading}
       >
         {confirmLabel}
       </Button>
     </>
+  );
+}
+
+/** Tone → icon + text/bg classes (icon+color, never color-only, NFR-102). */
+const ERROR_SLOT_TONE = {
+  forbidden: {
+    Icon: ShieldAlert,
+    text: "text-edu-error-text",
+    bg: "bg-edu-error/10",
+  },
+  transient: {
+    Icon: AlertTriangle,
+    text: "text-edu-warning-foreground",
+    bg: "bg-edu-warning/15",
+  },
+} as const;
+
+/**
+ * Inline error slot for the confirm dialog (US-E19.2). `role="alert"` so the
+ * failed destructive action is announced assertively. A retry button renders
+ * ONLY for the `transient` tone — never for `forbidden` (structural: the
+ * `forbidden` branch has no retry element at all, not merely a hidden one).
+ */
+function DestructiveErrorSlot({
+  errorSlot,
+  retryLabel,
+}: {
+  errorSlot: DestructiveConfirmErrorSlot;
+  retryLabel: string;
+}) {
+  const { Icon, text, bg } = ERROR_SLOT_TONE[errorSlot.tone];
+  return (
+    <div
+      role="alert"
+      className={cn(
+        "flex flex-col gap-2 rounded-[var(--edu-radius-btn)] px-3 py-2.5",
+        bg,
+      )}
+    >
+      <p className={cn("flex items-start gap-1.5 text-sm", text)}>
+        <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        {errorSlot.message}
+      </p>
+      {errorSlot.tone === "transient" && errorSlot.onRetry && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="self-start"
+          onClick={errorSlot.onRetry}
+        >
+          {retryLabel}
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -92,6 +179,7 @@ export function DestructiveConfirmDialog({
   body,
   confirmLabel,
   isLoading = false,
+  errorSlot,
   onConfirm,
   onCancel,
 }: DestructiveConfirmDialogProps) {
@@ -129,11 +217,18 @@ export function DestructiveConfirmDialog({
             {body}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {errorSlot && (
+          <DestructiveErrorSlot
+            errorSlot={errorSlot}
+            retryLabel={tCommon("confirmDialog.retry")}
+          />
+        )}
         <AlertDialogFooter>
           <DestructiveDialogActions
             confirmLabel={confirmLabel}
             cancelLabel={tCommon("confirmDialog.cancel")}
             isLoading={isLoading}
+            confirmDisabled={errorSlot?.tone === "forbidden"}
             onConfirm={onConfirm}
             onCancel={onCancel}
             cancelRef={cancelRef}

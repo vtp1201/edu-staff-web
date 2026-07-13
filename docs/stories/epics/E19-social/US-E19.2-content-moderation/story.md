@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -141,11 +141,11 @@ When updating durable proof status, use numeric booleans:
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | planned — domain use-cases (submit-report, dismiss, remove-content) + failure mapping (forbidden vs transient vs conflict), mock repository |
-| Integration | planned — repository↔HTTP contract tests for INT-191-01…07, explicit test asserting 403-vs-transient branches on `error.code` not `error.message` (NFR-101) |
-| E2E | planned — Storybook interaction stories per UC: dialog open/reason/submit/cancel/focus-trap, stat row + whole-screen error fallback, filter/search combos + both empty variants, detail sheet states, dismiss happy/conflict/forbidden, remove happy/forbidden/conflict/transient (never-optimistic assertion), audit log read-only, duplicate list |
-| Platform | planned — manual keyboard-only pass (dialog focus trap, alertdialog Escape, detail-sheet Tab loop) |
-| Release | planned — high-risk lane: confirm audit-log entry is retrievable end-to-end for every remove/dismiss before sign-off |
+| Unit | **done** — domain use-cases + `toFailure` mapping incl. a deliberately misleading-message fixture proving code-only branching (forbidden/already-reported/already-resolved/not-found/validation/network-error), mapper, mock repository (dismiss/remove mutate + append audit entries, deterministic `MOCK_FORBIDDEN_REPORT_ID`) |
+| Integration | **done** — repository↔HTTP `toFailure` contract tests for INT-191-01…07; explicit code-only 403-vs-transient test (NFR-101); mock-repo audit-entry write-then-read end-to-end (the release-gate proof) |
+| E2E | **done** — 44 Storybook interaction tests across `ReportContentDialog`, `DestructiveConfirmDialog`'s `errorSlot`, and `ModerationScreen` (5-state queue incl. empty-positive vs empty-filtered never conflated, dismiss/remove happy/cancel/conflict/forbidden(no-retry)/transient(retry) with a never-optimistic assertion via delayed resolver, audit read-only/empty/forbidden, duplicate present/absent, non-principal hides Remove, 320px/375px real-viewport responsive) |
+| Platform | **partial** — automated keyboard-only assertions (Tab loop, Escape, aria-busy) done via Storybook; an actual human click-through pass is still pending — non-blocking per `fe-qa-playwright`, flagged as follow-up |
+| Release | **done** — `moderation.mock.repository.test.ts` proves an audit-log entry is retrievable end-to-end for both dismiss and remove; `fe-qa-playwright` Go verdict (0 blocker/critical/major) |
 
 ## Harness Delta
 
@@ -163,4 +163,27 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Design review: pass
+- design-system: conform — tokens-only (grep clean), StatCard/StatusBadge/EmptyState/
+  DestructiveConfirmDialog reused verbatim, no fork; role/accent unaffected.
+- a11y: WCAG AA OK — both dialogs focus-trapped/Escape/return-focus verified in code
+  by `fe-accessibility-auditor`; radiogroup semantics, `aria-live` inline slots,
+  `aria-busy` on submit/confirm, icon+text badges (never color-only) confirmed.
+  2 minor findings (A11Y-001 sr-only actions-column label reused wrong i18n key,
+  A11Y-002 non-keyboard row `onClick` beside an already-keyboard-accessible icon
+  button) — both fixed in commit `e89ac79` (report-table.tsx + i18n `moderation.
+  table.actions` key both locales). 0 blocker/critical/major findings.
+- impeccable audit: `npx impeccable detect` on all new/changed dirs
+  (`features/moderation/presentation`, `components/shared/report-content-dialog`,
+  `components/shared/destructive-confirm-dialog`) → 0 findings.
+- states: loading/empty(-positive)/empty(-filtered)/error/success all implemented
+  and Storybook-proven distinctly (FR-107, never conflated); responsive table→card
+  switch at `md:` breakpoint (768px, nearest to spec's 760px — no new token, flagged
+  by `fe-component-architect`, accepted).
+
+fe-tech-lead-reviewer verdict: **Approved** (all 6 high-risk non-negotiables verified
+by direct code inspection: code-only 403-vs-transient branching w/ misleading-message
+test, zero-`onMutate` never-optimistic remove, exact invalidation asymmetry, forced
+confirm-button-disable on `forbidden` tone, anti-demo fixed-fixture-only, role-gated
+Remove entry point). `bun vitest run` 1442/1442 pass, `bunx tsc --noEmit` clean,
+`bun lint` clean, i18n vi/en 100% key parity.

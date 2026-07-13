@@ -3,7 +3,8 @@
     "confirmDialog": {
       "cancel": "Cancel",
       "confirm": "Confirm",
-      "irreversible": "This action cannot be undone."
+      "irreversible": "This action cannot be undone.",
+      "retry": "Try again"
     },
     "hello": "Hello",
     "skeleton": {
@@ -2107,6 +2108,144 @@
     "title": "Messages",
     "totalUnread": "{count} unread messages"
   },
+  "moderation": {
+    "reportDialog": {
+      "title": "Report content",
+      "subtitle": "Report a {kind} by {authorName}",
+      "reasonGroupLabel": "Report reason",
+      "reasons": {
+        "spam": "Spam",
+        "inappropriate-language": "Inappropriate language",
+        "bullying": "Bullying",
+        "misinformation": "Misinformation",
+        "other": "Other"
+      },
+      "kinds": {
+        "post": "post",
+        "comment": "comment",
+        "message": "message"
+      },
+      "noteLabel": "Describe the reason",
+      "notePlaceholder": "Describe the issue…",
+      "cancel": "Cancel",
+      "submit": "Send report",
+      "retry": "Try again",
+      "submitSuccessToast": "Report sent. The administration will review it.",
+      "errors": {
+        "validation": "Please choose a reason and describe the issue if you select \"Other\".",
+        "transient": "Could not send the report. Please try again.",
+        "alreadyReported": "You have already reported this content."
+      }
+    },
+    "title": "Content moderation",
+    "subtitle": "Review and act on reported content",
+    "stats": {
+      "pending": "Pending",
+      "resolvedThisWeek": "Resolved this week",
+      "removed": "Content removed"
+    },
+    "tabs": {
+      "queue": "Report queue",
+      "audit": "Moderation log"
+    },
+    "filter": {
+      "statusLabel": "Status",
+      "status": {
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "all": "All"
+      },
+      "typeLabel": "Content type",
+      "type": {
+        "all": "All types",
+        "post": "Posts",
+        "comment": "Comments",
+        "message": "Messages"
+      },
+      "searchLabel": "Search reports",
+      "searchPlaceholder": "Search by author, reporter, content…",
+      "refresh": "Refresh list"
+    },
+    "table": {
+      "content": "Content",
+      "reason": "Reason",
+      "reporter": "Reporter",
+      "status": "Status",
+      "createdAt": "Time",
+      "actions": "Actions",
+      "openDetail": "Open report detail {id}",
+      "duplicateSuffix": "+{count} more reports"
+    },
+    "statusLabels": {
+      "pending": "Pending",
+      "dismissed": "Dismissed",
+      "removed": "Removed"
+    },
+    "kinds": {
+      "post": "Post",
+      "comment": "Comment",
+      "message": "Message"
+    },
+    "detail": {
+      "title": "Report detail",
+      "contentSection": "Reported content",
+      "contextSection": "Context",
+      "reportSection": "Report info",
+      "reporter": "Reporter",
+      "reason": "Reason",
+      "note": "Reporter's note",
+      "resolveSection": "Resolution info",
+      "resolvedBy": "Resolved by",
+      "resolvedAt": "Resolved at",
+      "resolveNote": "Resolution note",
+      "dismiss": "Dismiss",
+      "remove": "Remove content",
+      "close": "Close"
+    },
+    "duplicates": {
+      "heading": "{count} duplicate reports",
+      "none": "No other duplicate reports"
+    },
+    "removeDialog": {
+      "title": "Remove content?",
+      "body": "This action cannot be undone. The content will be removed and its author will be notified.",
+      "confirm": "Remove content"
+    },
+    "audit": {
+      "actionBadge": {
+        "removed": "Removed",
+        "dismissed": "Dismissed"
+      },
+      "actionText": {
+        "removed": "removed content",
+        "dismissed": "dismissed a report"
+      },
+      "reasonPrefix": "Reason",
+      "empty": "No moderation activity yet"
+    },
+    "empty": {
+      "positiveTitle": "No reports pending review",
+      "positiveBody": "Everything looks good right now.",
+      "filteredTitle": "No reports found",
+      "filteredBody": "Try adjusting the filters or search term."
+    },
+    "loadMore": "Load more",
+    "loadMoreError": "Could not load more. Click to retry.",
+    "retry": "Try again",
+    "errorTitle": "Could not load data",
+    "toasts": {
+      "dismissed": "Report dismissed",
+      "removed": "Content removed and the author notified"
+    },
+    "errors": {
+      "validation": "Invalid data.",
+      "already-reported": "This content has already been reported.",
+      "not-found": "Report not found. It may have been deleted.",
+      "already-resolved": "This report was just resolved by someone else.",
+      "forbidden": "You do not have permission to perform this action.",
+      "network-error": "A connection error occurred. Please try again."
+    }
+  },
   "notifications": {
     "allLoaded": "All notifications shown",
     "ariaRead": "read",
@@ -2379,6 +2518,7 @@
       "expandSidebar": "Expand sidebar",
       "grades": "Grades",
       "messages": "Messages",
+      "moderation": "Moderation",
       "overview": "Overview",
       "profile": "Profile",
       "reports": "Reports",
