@@ -113,6 +113,13 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - dark text (#2a3547) on --edu-primary (#5d87ff) avatar circle: 3.75:1 — FAILS 4.5:1 (use --edu-primary-accessible bg + white text = 4.88:1 instead)
 - --edu-primary-accessible (#4468E0) on white: 4.88:1 — PASS. Confirmed for avatar circle bg with white initials text.
 
+## Additional ratios confirmed (US-E03.1 principal-reports-dashboard audit, 2026-07-14)
+- --edu-success (#13deb9) on white card (chart bar fill): 1.72:1 — FAILS WCAG 1.4.11 Non-text Contrast (need 3:1 for "parts of graphs"/bar fills, not just text). Fix: add a 1px border in `--edu-success-text` (#007a6e, 5.24:1) around the fill.
+- --edu-warning (#ffae1f) on white card (chart bar fill): 1.85:1 — same FAIL; border fix: `--edu-warning-text` (#9a6a0f, 4.73:1).
+- --edu-primary (#5d87ff) on white card (bar fill): 3.29:1 — PASSES 1.4.11 (only bar fill color that clears 3:1 among primary/success/warning).
+- --edu-warning-text (#9a6a0f) on white/plain card bg (NOT --edu-warning-light): 4.73:1 — PASSES even for non-bold normal text. The token's own code comment ("bold ≥14px only") is calibrated against `--edu-warning-light` (4.37:1); on a plain white card the ratio is higher and clears the normal-text floor too. Don't auto-flag `--edu-warning-text` on white/card bg as the ADR-0046 misuse pattern — check the actual adjacent surface first.
+- white on --primary (which resolves to --edu-primary-dark #4570ea, NOT raw --edu-primary #5d87ff) at 13px font-bold: 4.41:1 — FAILS 4.5:1 (13px bold doesn't meet the ≥14px-bold large-text threshold). Recurs on any new small (<14px) bold UI chrome using the default Button/segmented-control checked-state color pair. Fix: `--edu-primary-accessible` (#4468e0, 4.88:1).
+
 ## Additional ratios confirmed (US-E17.10 Skeleton primitive audit, 2026-07-05)
 - bg-accent (light, #ECF2FF = --edu-primary-light) on card #FFFFFF: ~1.12:1 — decorative/non-text, but visually near-invisible.
 - bg-accent (dark, #1C2541) on card dark #131A2E: ~1.14:1 — same near-invisible issue in dark mode.
