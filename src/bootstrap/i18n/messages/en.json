@@ -2334,6 +2334,92 @@
     "teacherCount": "{count} teachers",
     "title": "Teacher Management"
   },
+  "reports": {
+    "pageTitle": "School-wide reports",
+    "pageSubtitle": "Term overview of school-wide academic performance, attendance and conduct",
+    "toolbar": {
+      "termRadioGroupAriaLabel": "Reporting term",
+      "termOptions": {
+        "hk1": "Semester I",
+        "hk2": "Semester II",
+        "fullYear": "Full year"
+      },
+      "refresh": "Refresh",
+      "refreshingAria": "Refreshing data",
+      "exportExcel": "Export Excel"
+    },
+    "stats": {
+      "totalStudents": "Total students",
+      "schoolAverage": "School grade average",
+      "attendanceRate": "Attendance rate",
+      "incidents": "Incidents this term",
+      "trendLabel": "vs last term",
+      "loading": "Loading metrics"
+    },
+    "charts": {
+      "subjectAverage": {
+        "title": "Grade average by subject",
+        "scale": "Scale of 10",
+        "loading": "Loading grade average chart",
+        "ariaLabel": "Bar chart of grade average by subject, {count} subjects, ranging from {min} to {max}",
+        "emptyTitle": "No grade data",
+        "emptyDesc": "No subject grade averages for this term yet."
+      },
+      "attendanceTrend": {
+        "title": "Attendance, last 6 weeks",
+        "loading": "Loading attendance chart",
+        "ariaLabel": "Weekly attendance chart, {count} weeks, lowest {lowest}%, highest {highest}%",
+        "emptyTitle": "No attendance data",
+        "emptyDesc": "No weekly attendance figures for this term yet."
+      }
+    },
+    "table": {
+      "title": "Periodic reports",
+      "newReport": "New report",
+      "loading": "Loading report list",
+      "columns": {
+        "name": "Report",
+        "term": "Term",
+        "createdAt": "Created",
+        "status": "Status",
+        "download": "Download"
+      },
+      "termLabels": {
+        "HK1": "Sem I",
+        "HK2": "Sem II",
+        "FULL_YEAR": "Full year"
+      },
+      "status": {
+        "ready": "Ready",
+        "generating": "Generating…"
+      },
+      "downloadAria": "Download report {name}",
+      "emptyTitle": "No reports",
+      "emptyDesc": "No periodic reports for this term yet.",
+      "generateError": "Could not create the report. Please try again.",
+      "generateSuccess": "Started generating a new report."
+    },
+    "retry": "Retry",
+    "errorTitle": "Could not load data",
+    "errors": {
+      "network-error": "The reporting service did not respond. Please try again.",
+      "term-not-found": "No data found for the selected term.",
+      "generation-failed": "Could not create the report. Please try again.",
+      "unauthorized": "You do not have permission to view these reports.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "export": {
+      "title": "Consolidated report",
+      "statsHeading": "Overview metrics",
+      "subjectsHeading": "Grade average by subject",
+      "subjectCol": "Subject",
+      "averageCol": "Average",
+      "attendanceHeading": "Weekly attendance",
+      "weekCol": "Week",
+      "rateCol": "Rate (%)",
+      "reportsHeading": "Periodic reports"
+    }
+  },
   "profile": {
     "accountRequests": {
       "contact": "Contact administrator",

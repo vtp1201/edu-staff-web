@@ -2334,6 +2334,92 @@
     "teacherCount": "{count} giáo viên",
     "title": "Quản lý giáo viên"
   },
+  "reports": {
+    "pageTitle": "Báo cáo toàn trường",
+    "pageSubtitle": "Tổng quan kết quả học tập, chuyên cần và nề nếp toàn trường theo kỳ",
+    "toolbar": {
+      "termRadioGroupAriaLabel": "Kỳ báo cáo",
+      "termOptions": {
+        "hk1": "Học kỳ I",
+        "hk2": "Học kỳ II",
+        "fullYear": "Cả năm"
+      },
+      "refresh": "Làm mới",
+      "refreshingAria": "Đang làm mới dữ liệu",
+      "exportExcel": "Xuất Excel"
+    },
+    "stats": {
+      "totalStudents": "Tổng số học sinh",
+      "schoolAverage": "Điểm TB toàn trường",
+      "attendanceRate": "Tỷ lệ chuyên cần",
+      "incidents": "Vi phạm trong kỳ",
+      "trendLabel": "so với HK trước",
+      "loading": "Đang tải chỉ số"
+    },
+    "charts": {
+      "subjectAverage": {
+        "title": "Điểm trung bình theo môn",
+        "scale": "Thang điểm 10",
+        "loading": "Đang tải biểu đồ điểm trung bình",
+        "ariaLabel": "Biểu đồ cột điểm trung bình theo môn, {count} môn, từ {min} đến {max} điểm",
+        "emptyTitle": "Chưa có dữ liệu điểm",
+        "emptyDesc": "Kỳ này chưa có điểm trung bình theo môn."
+      },
+      "attendanceTrend": {
+        "title": "Chuyên cần 6 tuần gần nhất",
+        "loading": "Đang tải biểu đồ chuyên cần",
+        "ariaLabel": "Biểu đồ chuyên cần theo tuần, {count} tuần, thấp nhất {lowest}%, cao nhất {highest}%",
+        "emptyTitle": "Chưa có dữ liệu chuyên cần",
+        "emptyDesc": "Kỳ này chưa có số liệu chuyên cần theo tuần."
+      }
+    },
+    "table": {
+      "title": "Báo cáo định kỳ",
+      "newReport": "Tạo báo cáo",
+      "loading": "Đang tải danh sách báo cáo",
+      "columns": {
+        "name": "Tên báo cáo",
+        "term": "Kỳ",
+        "createdAt": "Ngày tạo",
+        "status": "Trạng thái",
+        "download": "Tải về"
+      },
+      "termLabels": {
+        "HK1": "HK I",
+        "HK2": "HK II",
+        "FULL_YEAR": "Cả năm"
+      },
+      "status": {
+        "ready": "Sẵn sàng",
+        "generating": "Đang tạo…"
+      },
+      "downloadAria": "Tải báo cáo {name}",
+      "emptyTitle": "Chưa có báo cáo",
+      "emptyDesc": "Kỳ này chưa có báo cáo định kỳ nào.",
+      "generateError": "Không tạo được báo cáo. Vui lòng thử lại.",
+      "generateSuccess": "Đã bắt đầu tạo báo cáo mới."
+    },
+    "retry": "Thử lại",
+    "errorTitle": "Không tải được dữ liệu",
+    "errors": {
+      "network-error": "Máy chủ báo cáo không phản hồi. Vui lòng thử lại.",
+      "term-not-found": "Không tìm thấy dữ liệu cho kỳ đã chọn.",
+      "generation-failed": "Không tạo được báo cáo. Vui lòng thử lại.",
+      "unauthorized": "Bạn không có quyền xem báo cáo này.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+    },
+    "export": {
+      "title": "Báo cáo tổng hợp",
+      "statsHeading": "Chỉ số chung",
+      "subjectsHeading": "Điểm TB theo môn",
+      "subjectCol": "Môn",
+      "averageCol": "Điểm TB",
+      "attendanceHeading": "Chuyên cần theo tuần",
+      "weekCol": "Tuần",
+      "rateCol": "Tỷ lệ (%)",
+      "reportsHeading": "Báo cáo định kỳ"
+    }
+  },
   "profile": {
     "accountRequests": {
       "contact": "Liên hệ quản trị viên",

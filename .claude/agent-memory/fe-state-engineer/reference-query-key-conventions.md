@@ -245,3 +245,68 @@ the spec explicitly requires live cross-session push (see the "self-navigate,
 not live push" precedent in the academic-record-seal entry above) — eager
 `invalidateQueries` from the triggering mutation, not staleTime expiry, is what
 actually guarantees a fresh fetch on next mount.
+
+## Multi-region dashboard, independent-failure isolation + polling (US-E03.1, principal reports)
+
+First feature with `refetchInterval`-based polling in this repo (confirmed by
+repo-wide grep — zero prior usage). Pattern for an N-region dashboard where
+each region must fail/load/empty independently and one term/filter selector
+drives all of them:
+
+```ts
+principalReportsKeys = {
+  all:             ()             => ["principal", "reports"]                         as const,
+  summary:         (termId: Term) => ["principal", "reports", "summary", termId]       as const,
+  subjectAverages: (termId: Term) => ["principal", "reports", "subject-averages", termId] as const,
+  attendanceTrend: (termId: Term) => ["principal", "reports", "attendance-trend", termId] as const,
+  list:            (termId: Term) => ["principal", "reports", "list", termId]          as const,
+}
+```
+
+- **Partial-failure isolation (N independent regions) = N independent
+  `useQuery` calls, full stop.** Do not combine them into one query/one
+  `Promise.all` — that's what would create a race/isolation problem in the
+  first place. Each region maps its own query result to a shared
+  `{ status: 'loading'|'error'|'empty'|'success', data, onRetry }` prop shape
+  so leaf components stay `useQuery`-free (Storybook-friendly, matches the
+  fe-component-architect boundary contract).
+- **Stale-response discard on rapid filter switch (e.g. term A→B→C before A
+  resolves) is solved natively by putting the filter IN the query key** —
+  distinct keys are distinct cache entries; a late response for the
+  no-longer-selected value updates only its own (now unobserved) cache entry
+  and can never bleed into what's rendered for the currently-selected one.
+  No hand-rolled `AbortController`/ignore-flag needed.
+- **Explicit gap to avoid: do NOT set `placeholderData: keepPreviousData`**
+  (or v4's `keepPreviousData: true`) on filter-keyed queries whose spec wants
+  a fresh skeleton per filter change (not a stale-value flash while the new
+  key loads). This option is a common TanStack recommendation for
+  pagination/filters generally, but it directly contradicts a
+  "show skeleton, then re-render" requirement — call this out explicitly in
+  any state-design doc rather than assuming it's a safe default add.
+- **Poll loop**: `refetchInterval: (query) => <predicate over query.state.data>
+  ? INTERVAL_MS : false`. Extract the predicate into a standalone **pure
+  function** unit-tested with plain data fixtures (no timers) rather than
+  attempting a `renderHook` + `vi.useFakeTimers()` + live `QueryClient`
+  integration test — no precedent in this repo for that combo, and
+  TanStack's internal scheduling is known to interact unreliably with faked
+  timers. Prove the actual data-transition-over-time (e.g. "generating" →
+  "ready") at the mock-repository layer instead, via an injected `now: () =>
+  number` clock (no real timers, per `tdd.md`) — that's where the
+  time-dependent logic actually lives, not in the query hook.
+- **`refetchIntervalInBackground` left at default `false`** for a
+  Should-priority polling feature — pauses while tab hidden, catches up on
+  refocus; avoids justifying background network usage for a non-critical
+  status transition.
+- **Mutation with no optimistic update, by deliberate choice**: when a new
+  row's very first optimistic-rendered state would be visually identical to
+  the eventual server-confirmed state (e.g. a "generating" placeholder row),
+  skip `onMutate` entirely — invalidate-on-success only. This makes a "no
+  ghost row on failure" AC trivial (nothing was ever added to cache) instead
+  of something to get right in `onError`/rollback logic. Contrast with
+  [[query-key-conventions]]'s discipline `recordViolation` example, which DOES
+  optimistically prepend — the difference is whether the optimistic and
+  confirmed states are visually distinguishable/worth the latency win.
+
+See also: `docs/stories/epics/E03-principal-reports/US-E03.1-principal-reports-dashboard/state-design.md`
+for the full write-up (RSC↔client boundary, invalidation map, race-condition
+table).

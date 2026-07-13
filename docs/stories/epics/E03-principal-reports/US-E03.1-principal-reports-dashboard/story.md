@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -149,4 +149,122 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+Implemented by `fe-nextjs-engineer` (TDD, red→green→refactor) on branch
+`feat/us-e03.1-principal-reports`. Review gate (`fe-tech-lead-reviewer` /
+`fe-accessibility-auditor` / design-review / `fe-qa-playwright`) is a separate
+follow-up owned by `fe-lead` — NOT self-approved here.
+
+### Proof commands (all run in the worktree, no `--no-verify`)
+
+| Tier | Command | Result |
+| --- | --- | --- |
+| Unit + Integration | `bun vitest run` | **260 files, 1439 tests passed** (incl. 46 new reports tests) |
+| Storybook interaction | `bunx vitest --config vitest.storybook.mts run src/features/principal/presentation/reports` | **5 files, 15 stories passed** |
+| Types | `bunx tsc --noEmit` | **exit 0** (typed i18n keys → no key drift) |
+| Lint/format | `bun lint` | **exit 0** (2 pre-existing warnings in unrelated files, none in reports) |
+| Build | `bun run build` | **exit 0**; `/[locale]/t/[tenant]/principal/reports` route emitted |
+
+### New tests (map to TEST_MATRIX)
+
+- **Unit (domain):** 5 use-case specs — thin-delegate behavior + null-trend
+  pass-through + failure rethrow (15 assertions).
+- **Unit (mapper):** DTO→entity, null-trend preservation, term/status literals.
+- **Unit (mock repo, anti-demo AC-05.3):** fresh instance called 3× never
+  rejects; `forceNextFailure` is the ONLY reject path and is one-shot (negative
+  proof — no hidden default); injected-clock generating→ready transition;
+  2 independent transitions (AC-07.4); no-ghost-row on generate failure
+  (AC-07.3). No ordinal/counter/session forced-failure logic exists.
+- **Unit (poll predicate):** `getReportsPollInterval` pure-function test
+  (generating→5000ms, else false) — no fake timers (state-design §10).
+- **Unit (export):** `buildReportsCsv` deterministic + comma-escaping +
+  throws-on-missing-summary (no partial file).
+- **Integration (repo↔HTTP):** envelope unwrap, cursor pagination read,
+  error-code→failure mapping (network/term-not-found/unauthorized/generation).
+- **Storybook interaction:** per-region loading/empty/error/success + chart
+  `role=img`/dual-flag low-attendance + disabled-download gating + screen-level
+  Success and PartialRegionError (one region errors while the other 3 succeed,
+  AC-01.3).
+
+### Judgment calls / descoping notes (for `fe-lead`)
+
+1. **FR-009 Export Excel — shipped as client-side CSV, not binary `.xlsx`.**
+   A genuine `.xlsx` needs a zip/XML dependency (new dep + ADR). Per plan.md
+   D-3 / spec §8's "minimal or defer" allowance, this ships a pure,
+   unit-tested client-side CSV export (UTF-8 BOM → Excel-openable, Vietnamese
+   safe), triggered by the toolbar's primary "Xuất Excel" button (kept visible
+   per design-spec). Zero TanStack Query involvement (state-design §6). **Flag:**
+   if a true binary `.xlsx` is required, that needs a library + ADR — surfacing
+   for `fe-lead`'s call.
+2. **Repository convention = throwing** (`Promise<Entity>`, Server Action is the
+   catch→`errorKey` boundary), per the packet's `IPrincipalReportsRepository`
+   signature and the `discipline` precedent — NOT the `Result<T,F>` shape the
+   sibling `principal-teachers` uses.
+3. **`RegionEmptyState` takes resolved `title`/`desc` strings** (not `titleKey`)
+   — typed next-intl `t()` rejects an arbitrary `string` key, so the calling
+   region translates and passes strings. Minor deviation from
+   component-architecture §6's `titleKey` prop, made for type-safety.
+4. **`RadioGroup`/`RadioGroupItem` `variant="segmented"`** added in place
+   (no fork, no new token — Radix `data-state` drives styling) per
+   component-architecture §6/§8.
+5. **Term-switch re-fetch is URL-driven** (`?termId=`); Storybook's static
+   `useSearchParams` mock can't reflect `router.replace`, so the term-switch +
+   4-region-settle interaction is left to the Playwright/E2E tier
+   (`fe-qa-playwright`) per spec §10 — the SB layer proves per-region states +
+   partial-failure isolation statically instead.
+
+### Review gate results (`fe-lead`)
+
+**`fe-tech-lead-reviewer`: Approved.** Independent re-run of `tsc --noEmit` /
+`bun lint` / `bun vitest run` confirmed green (1439 tests). §0 anti-demo check
+(highest-severity risk on this story) independently re-verified clean: the
+mock repository's only reject path is the explicit one-shot
+`forceNextFailure`, empty by default; grep of the whole reports tree +
+route files for ordinal/counter/session/demo-forced-failure patterns found
+none. 4 non-blocking [CONSIDER]/[nit] items noted (CSV-vs-.xlsx button copy
+honesty, global `retry:1` not gated on `error.retryable`, a stale JSDoc, a
+cast) — accepted as-is for this normal-lane Should-adjacent story, no rework
+required.
+
+**`fe-accessibility-auditor`: 1 blocker + 5 major + 1 minor found, ALL FIXED**
+by `fe-nextjs-engineer` (commit `fb50e1f`) and re-verified green
+(`tsc`/`lint`/`vitest run` 1439/`bun run build`):
+- A11Y-001 (blocker) — status badge missing icon+text (FR-006/AC-04.1) → added
+  `CheckCircle2`/`Loader2` icons per status.
+- A11Y-002a/002b (major) — segmented-radio pill + table download button below
+  44×44 touch target → `min-h-11` / `size="icon"`.
+- A11Y-003 (major) — attendance chart bar-fill non-text contrast (WCAG 1.4.11,
+  <3:1) → added `border-edu-warning-text`/`border-edu-success-text` (fills
+  unchanged, semantics preserved).
+- A11Y-004 (major) — segmented-pill selected-state text 4.41:1 → swapped to
+  existing `--edu-primary-accessible` token (4.88:1); confirmed component-local
+  fix using an already-existing token, not a new systemic finding.
+- A11Y-005 (major) — chart `aria-label`s missing value range → interpolated
+  min/max (subject chart) and lowest/highest (attendance chart) into the
+  existing i18n `ariaLabel` keys.
+- A11Y-007 (minor) — 2 regions' simultaneous loading announcements identical
+  → `ChartSkeleton` now takes a distinct `srLabel` per region.
+
+**impeccable / design-system conformance (`fe-lead` review):** read
+`reports-screen.tsx` + `term-radio-group.tsx` + the 4 region components
+against `docs/product/design-spec.jsonc`'s `screens.reports` entry — layout
+`maxWidth 1200` / toolbar / charts grid (`minmax(0,3fr) minmax(0,2fr)`) /
+segmented term-radiogroup all match the spec verbatim; tokens-only throughout
+(no raw color found); `StatCard`/`StatusBadge`/`StatCardSkeletonGrid` reused
+unmodified; no anti-pattern requiring `polish` beyond the a11y findings above
+(already fixed). No conflict between impeccable guidance and the design
+system encountered.
+
+```text
+Design review: pass
+- design-system: conform (token/typography/component OK, verified against
+  design-spec.jsonc screens.reports)
+- a11y: WCAG AA OK after A11Y-001..007 fixes (blocker+5 major+1 minor, all
+  resolved and re-verified); keyboard OK; reduced-motion OK (motion-safe
+  inherited from Skeleton primitive, untouched)
+- impeccable audit: 0 new finding beyond the accessibility-auditor's (already
+  folded in above); no design-system conflict
+- states: loading/empty/error/success OK per region (AC-04.7 distinctness
+  confirmed in component-architecture.md + Storybook coverage); responsive
+  320px grid (`grid-cols-1` → `lg:grid-cols-[...]`) confirmed by layout read;
+  full 320/375/768/1280 viewport matrix left to `fe-qa-playwright`
+```

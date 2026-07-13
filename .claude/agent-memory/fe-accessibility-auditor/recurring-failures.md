@@ -262,3 +262,28 @@ Seen in: US-E11.6 course-card.tsx CTA "not started" state (`border-transparent t
 Pattern: A master-detail layout (chapter list ↔ lesson content pane) swaps the entire detail pane's h1/body on `<button>` click inside the master list. The clicked button stays in the DOM (not unmounted, unlike the class-log-screen precedent), so focus is not literally lost — but there's no live-region or focus-shift to confirm the content change to a screen reader user who has since moved focus elsewhere.
 Fix (non-blocking, best-practice): on the id-changing state update, move focus to the new content pane's heading via `ref` + `useEffect` (`tabIndex={-1}` + `.focus()`), matching the class-log-screen precedent for SPA-style transitions.
 Seen in: US-E11.6 lesson-player.tsx (setActiveLessonId from ChapterList click).
+
+## Contrast — Div-based chart bar fill vs card background (WCAG 1.4.11 Non-text Contrast)
+Pattern: A solid, borderless colored div used as a bar/column fill in a custom (non-library) chart, on a white/`bg-card` background. WCAG 1.4.11's understanding doc explicitly lists "bars in a bar chart" as a graphical object requiring 3:1 against its adjacent background — this is NOT covered by the usual text-contrast check. `--edu-success` (1.72:1) and `--edu-warning` (1.85:1) both fail; only `--edu-primary` (3.29:1) clears 3:1 among the tokens tried.
+Fix: add a 1px border in the matching AA-safe `-text` token (`--edu-success-text`/`--edu-warning-text`, both >4.5:1 on white) around the fill — keeps the light/tinted visual language while making the boundary itself pass 3:1. Don't darken the fill itself (breaks the design system's visual intent).
+Seen in: US-E03.1 attendance-trend-chart.tsx (div-based bar chart, first chart-shaped component in the app — check every future custom chart for this).
+
+## A11y — `role="img"` on a chart wrapper prunes visually-visible per-item text from the accessibility tree
+Pattern: A custom div-chart wraps its bars in a single `role="img"` container with one summarizing `aria-label`. Per ARIA, `role="img"` treats all descendants as presentational — the individual bar's visible numeric/name `<span>` text (put there specifically so "every value is also visible text, never chart-only") is NOT read by screen readers; only the one container `aria-label` is announced. If that label is just a bare count (not a data summary), screen-reader users get materially less information than sighted users, even though the intent ("never chart-only") was to make it equivalent.
+Fix: make the `aria-label` a genuine data summary (count + min/max, or count + lowest/highest) computed from the actual dataset, not just `{count}`. If per-item detail must be available to AT users, consider `aria-describedby` pointing to a visually-hidden (`sr-only`) list/table duplicating the visible labels, keeping `role="img"` purely on the graphical container.
+Seen in: US-E03.1 subject-average-chart.tsx / attendance-trend-chart.tsx (aria-label only interpolates `{count}`, spec's own AC-02.2/AC-03.3 explicitly asked for range/extremes too).
+
+## Table — sr-only actions-column header reuses another column's i18n key
+Pattern: A data table's trailing "actions" column (icon-only open/detail button) gets an `sr-only` `<TableHead>` label, but the implementer reuses the SAME i18n key as the first (content) column instead of a dedicated "Thao tác"/"Actions" key. SR users hear two columns both named the same thing; the actions column's real purpose isn't announced.
+Fix: Add a dedicated `<namespace>.table.actions` key; never reuse a visible column's key for a hidden one.
+Seen in: US-E19.2 report-table.tsx (moderation).
+
+## Table — row onClick + nested icon button: works but deviates from "one interactive per row" contract
+Pattern: `<TableRow onClick={...} className="cursor-pointer">` (plain `<tr>`, no `role="button"`/`tabIndex`/`onKeyDown`) wrapping a nested keyboard-accessible icon `<Button aria-label>`. Not a hard WCAG 2.1.1 violation (the row itself isn't semantically interactive, so there's no ARIA nested-interactive issue, and the button gives full keyboard parity) — but it's a common component-architecture ask ("entire row is one button/role=button, no nested button") that gets shipped as "row onClick (mouse-only) + separate keyboard-accessible button" instead. SR/keyboard users only discover the row is clickable by reaching the trailing button at the end of the row.
+Fix: either make TableRow itself `role="button" tabIndex={0}` + `onKeyDown` (Enter/Space), or (simpler, matches spec) drop the row-level onClick/cursor-pointer entirely and keep only the explicit button as the row's sole interactive element.
+Seen in: US-E19.2 report-table.tsx (moderation) — mobile ReportCardList variant of the same story got this right (whole card is one `<button>`).
+
+## A11y — Status badge missing required icon despite explicit spec AC (text differs but no icon)
+Pattern: `StatusBadge` is a pure children-wrapper (doesn't itself render an icon) — callers must pass one manually alongside text (established precedent: `unseal-request-card.tsx` passes `<Clock aria-hidden />` + text). A new call site renders text-only (`{t('status.ready')}` / `{t('status.generating')}`) even though the story's own FR/AC explicitly says "icon+text badge, never color alone." Because the text itself already differs per status, this isn't a strict WCAG 1.4.1 color-alone violation, but it IS an explicit Must-priority AC failure — treat as blocking for the design-review gate, not just a nice-to-have.
+Fix: add a small `aria-hidden` icon (e.g. `CheckCircle2`/`Loader2`) before the badge text, matching the `unseal-request-card.tsx` pattern.
+Seen in: US-E03.1 periodic-reports-table.tsx (FR-006/AC-04.1).

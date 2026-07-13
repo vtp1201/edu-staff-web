@@ -48,6 +48,31 @@ hex/token color (e.g. `var(--edu-teal)`) for a semantically "success"-like badge
 picking the closest literal-color tone over the semantically-obvious one is a one-word
 implementation detail worth flagging to the reviewer, not a new component/token.
 
+**EduSkeleton/EduError/EduEmpty (US-E03.1) — do NOT assume these are real shared
+components.** They exist ONLY as demo primitives in `design_src/edu/states.jsx`
+(mockup-only); nothing under that name was ever ported to `components/shared/`.
+Real shared skeleton inventory in `src/`: `components/ui/skeleton/` (base
+primitive) + `components/shared/stat-card-skeleton/` (`StatCardSkeletonGrid`,
+cards-shaped only — exact canonical fit for any "4 StatCards loading" region,
+reuse directly). No shared chart-shaped or generic scoped-error/empty
+component exists — every screen (`discipline-screen`, `audit-log-screen`,
+`notifications-center`, `teacher-classes-screen`, `academic-record-screen`,
+`staff-leave-screen`, ~20+ total) hand-rolls its own feature-local
+`ErrorState`/`EmptyState`/`TableRowSkeleton` from the base primitives. This is
+an established (if debt-accumulating) precedent — `US-E12.12`'s architect
+pass already found and accepted the same gap. Follow it: build new
+region-state chrome feature-local, cite the precedent, and flag promotion to
+`fe-lead` as a future consolidation story rather than doing it unilaterally.
+
+**Segmented/pill-style radiogroup or tab-like toggle (US-E03.1):** when
+design-spec wants a filled-pill active state (not the default shadcn circle
+radio or default tab underline), the correct move is a `variant` prop
+addition on the EXISTING primitive (`components/ui/radio-group/`,
+`components/ui/tabs/`), keyed off Radix's built-in `data-state="checked"`/
+`data-state="active"` attribute — no new ARIA, no new component. Mirrors the
+LMS lesson-player precedent (`variant` prop on `Tabs` for visually-distinct
+tab groups).
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.
