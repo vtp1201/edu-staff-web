@@ -2107,6 +2107,36 @@
     "title": "Messages",
     "totalUnread": "{count} unread messages"
   },
+  "moderation": {
+    "reportDialog": {
+      "title": "Report content",
+      "subtitle": "Report a {kind} by {authorName}",
+      "reasonGroupLabel": "Report reason",
+      "reasons": {
+        "spam": "Spam",
+        "inappropriate-language": "Inappropriate language",
+        "bullying": "Bullying",
+        "misinformation": "Misinformation",
+        "other": "Other"
+      },
+      "kinds": {
+        "post": "post",
+        "comment": "comment",
+        "message": "message"
+      },
+      "noteLabel": "Describe the reason",
+      "notePlaceholder": "Describe the issue…",
+      "cancel": "Cancel",
+      "submit": "Send report",
+      "retry": "Try again",
+      "submitSuccessToast": "Report sent. The administration will review it.",
+      "errors": {
+        "validation": "Please choose a reason and describe the issue if you select \"Other\".",
+        "transient": "Could not send the report. Please try again.",
+        "alreadyReported": "You have already reported this content."
+      }
+    }
+  },
   "notifications": {
     "allLoaded": "All notifications shown",
     "ariaRead": "read",

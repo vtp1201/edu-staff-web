@@ -206,3 +206,42 @@ retry eligibility (`error.retryable === true` per api-integration.md), the Serve
 must return it explicitly (`{ ok: false, errorKey, retryable }`), not just a bare
 `errorKey` string — the client can't otherwise recover `ApiError.retryable` through a
 Server Action boundary.
+
+## Stat-counts-embedded-in-list-response → broad list invalidation (US-E19.2, moderation)
+
+When a list endpoint's response embeds a derived summary/stat object (e.g.
+`GET /reports` returns `{ reports[], stats: { pendingCount, ... } }`) rather than
+exposing stats via a separate endpoint, **any mutation that changes an item's
+status must invalidate the entire `keys.lists()` subtree** (every cached
+filter/tab variant), not just `keys.list(activeFilter)` or `keys.detail(id)`.
+Reason: every filter variant's cached page carries its own now-stale copy of
+`stats` — busting only the active tab leaves other already-visited tabs (and
+their StatCards) stale until a hard refresh. This is the resolution to a
+common "planner flags stats delivery as an open BE question" scenario — the
+invalidation-breadth decision does not need to wait for BE confirmation of
+*where* stats come from, only needs stats-are-embedded to be the working
+assumption (mock-first safe).
+
+**Never-optimistic mutation's `onError` still invalidates on the specific
+409/already-resolved-style race branch** — "never optimistic" (no
+`onMutate`/pre-emptive `setQueryData`) is a distinct rule from "never
+invalidate on error." When a 409 means someone else's concurrent action
+already changed server state (a real state change, not this mutation's own
+failure), the `onError` handler for that specific error branch should still
+invalidate `lists()`/`detail()` so the UI reflects the actual current state —
+only the 403/forbidden and transient-error branches invalidate nothing (content
+must stay exactly as it was pre-mutation there).
+
+**Detail/sheet queries needing zero-stale-tolerance** (e.g. a 404 must never
+render cached/stale content per an explicit AC): `staleTime: 0` + default
+refetch-on-mount, rather than a manual `removeQueries` call on every open —
+simpler and equally correct since the query naturally refetches each time
+`enabled` flips true.
+
+**Read-only compliance/audit-trail queries** (no realtime/SSE requirement in
+scope): a short `staleTime` (~15s) is enough to make a just-performed action's
+audit entry visible on next tab visit; don't reach for polling or SSE unless
+the spec explicitly requires live cross-session push (see the "self-navigate,
+not live push" precedent in the academic-record-seal entry above) — eager
+`invalidateQueries` from the triggering mutation, not staleTime expiry, is what
+actually guarantees a fresh fetch on next mount.

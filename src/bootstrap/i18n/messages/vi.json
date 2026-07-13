@@ -2107,6 +2107,36 @@
     "title": "Tin nhắn",
     "totalUnread": "{count} tin nhắn chưa đọc"
   },
+  "moderation": {
+    "reportDialog": {
+      "title": "Báo cáo nội dung",
+      "subtitle": "Báo cáo {kind} của {authorName}",
+      "reasonGroupLabel": "Lý do báo cáo",
+      "reasons": {
+        "spam": "Spam",
+        "inappropriate-language": "Ngôn từ không phù hợp",
+        "bullying": "Bắt nạt",
+        "misinformation": "Thông tin sai",
+        "other": "Khác"
+      },
+      "kinds": {
+        "post": "bài viết",
+        "comment": "bình luận",
+        "message": "tin nhắn"
+      },
+      "noteLabel": "Mô tả lý do báo cáo",
+      "notePlaceholder": "Mô tả cụ thể vấn đề…",
+      "cancel": "Hủy",
+      "submit": "Gửi báo cáo",
+      "retry": "Thử lại",
+      "submitSuccessToast": "Đã gửi báo cáo. BGH sẽ xem xét.",
+      "errors": {
+        "validation": "Vui lòng chọn lý do và mô tả cụ thể nếu chọn \"Khác\".",
+        "transient": "Không thể gửi báo cáo. Vui lòng thử lại.",
+        "alreadyReported": "Bạn đã báo cáo nội dung này trước đó."
+      }
+    }
+  },
   "notifications": {
     "allLoaded": "Đã hiển thị tất cả",
     "ariaRead": "đã đọc",
