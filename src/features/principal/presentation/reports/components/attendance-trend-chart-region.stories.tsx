@@ -29,6 +29,28 @@ const meta: Meta<typeof AttendanceTrendChartRegion> = {
 export default meta;
 type Story = StoryObj<typeof AttendanceTrendChartRegion>;
 
+export const Loading: Story = {
+  args: { status: "loading", data: [], errorKey: null, onRetry: () => {} },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("status")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+  },
+};
+
+export const ErrorState: Story = {
+  args: {
+    status: "error",
+    data: [],
+    errorKey: "network-error",
+    onRetry: () => {},
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole("alert")).toBeInTheDocument();
+  },
+};
+
 export const Success: Story = {
   args: { status: "success", data: weeks, errorKey: null, onRetry: () => {} },
   play: async ({ canvasElement }) => {

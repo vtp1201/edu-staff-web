@@ -123,3 +123,81 @@ export const PartialRegionError: Story = {
     ).toBeInTheDocument();
   },
 };
+
+/** Viewport matrix (NFR-002). The charts row is
+ *  `grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]` — below the
+ *  `lg` breakpoint (1024px) it MUST compute to a single column (charts stack,
+ *  no horizontal overflow); at/above it, two tracks. Verified via
+ *  `getComputedStyle` (real Chromium layout), not just a class-name string
+ *  match, so a broken/renamed Tailwind class would actually fail this. */
+function chartsGridColumnCount(canvasElement: HTMLElement): number {
+  const grid = within(canvasElement)
+    .getByText(messages.reports.charts.subjectAverage.title)
+    .closest("[class*='grid-cols-1']") as HTMLElement | null;
+  if (!grid) throw new Error("charts grid container not found");
+  const template = getComputedStyle(grid).gridTemplateColumns;
+  return template.split(" ").filter(Boolean).length;
+}
+
+const viewport = (width: number, height: number) => ({
+  viewport: {
+    viewports: {
+      custom: {
+        name: `custom-${width}`,
+        styles: { width: `${width}px`, height: `${height}px` },
+        type: "mobile" as const,
+      },
+    },
+    defaultViewport: "custom",
+  },
+});
+
+export const Viewport320: Story = {
+  args: baseActions,
+  parameters: { viewport: viewport(320, 700).viewport },
+  play: async ({ canvasElement }) => {
+    await waitFor(() =>
+      expect(
+        within(canvasElement).getByText(
+          messages.reports.charts.subjectAverage.title,
+        ),
+      ).toBeInTheDocument(),
+    );
+    // No horizontal overflow at the narrowest supported width.
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(321);
+    // Charts stack to a single column below the lg breakpoint.
+    expect(chartsGridColumnCount(canvasElement)).toBe(1);
+  },
+};
+
+export const Viewport768: Story = {
+  args: baseActions,
+  parameters: { viewport: viewport(768, 900).viewport },
+  play: async ({ canvasElement }) => {
+    await waitFor(() =>
+      expect(
+        within(canvasElement).getByText(
+          messages.reports.charts.subjectAverage.title,
+        ),
+      ).toBeInTheDocument(),
+    );
+    // 768px is still below the `lg` (1024px) breakpoint — still single column.
+    expect(chartsGridColumnCount(canvasElement)).toBe(1);
+  },
+};
+
+export const Viewport1280: Story = {
+  args: baseActions,
+  parameters: { viewport: viewport(1280, 900).viewport },
+  play: async ({ canvasElement }) => {
+    await waitFor(() =>
+      expect(
+        within(canvasElement).getByText(
+          messages.reports.charts.subjectAverage.title,
+        ),
+      ).toBeInTheDocument(),
+    );
+    // At/above `lg`, the 2-column chart layout is in effect.
+    expect(chartsGridColumnCount(canvasElement)).toBe(2);
+  },
+};
