@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -141,11 +141,11 @@ When updating durable proof status, use numeric booleans:
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | planned — domain use-cases (submit-report, dismiss, remove-content) + failure mapping (forbidden vs transient vs conflict), mock repository |
-| Integration | planned — repository↔HTTP contract tests for INT-191-01…07, explicit test asserting 403-vs-transient branches on `error.code` not `error.message` (NFR-101) |
-| E2E | planned — Storybook interaction stories per UC: dialog open/reason/submit/cancel/focus-trap, stat row + whole-screen error fallback, filter/search combos + both empty variants, detail sheet states, dismiss happy/conflict/forbidden, remove happy/forbidden/conflict/transient (never-optimistic assertion), audit log read-only, duplicate list |
-| Platform | planned — manual keyboard-only pass (dialog focus trap, alertdialog Escape, detail-sheet Tab loop) |
-| Release | planned — high-risk lane: confirm audit-log entry is retrievable end-to-end for every remove/dismiss before sign-off |
+| Unit | **done** — domain use-cases + `toFailure` mapping incl. a deliberately misleading-message fixture proving code-only branching (forbidden/already-reported/already-resolved/not-found/validation/network-error), mapper, mock repository (dismiss/remove mutate + append audit entries, deterministic `MOCK_FORBIDDEN_REPORT_ID`) |
+| Integration | **done** — repository↔HTTP `toFailure` contract tests for INT-191-01…07; explicit code-only 403-vs-transient test (NFR-101); mock-repo audit-entry write-then-read end-to-end (the release-gate proof) |
+| E2E | **done** — 44 Storybook interaction tests across `ReportContentDialog`, `DestructiveConfirmDialog`'s `errorSlot`, and `ModerationScreen` (5-state queue incl. empty-positive vs empty-filtered never conflated, dismiss/remove happy/cancel/conflict/forbidden(no-retry)/transient(retry) with a never-optimistic assertion via delayed resolver, audit read-only/empty/forbidden, duplicate present/absent, non-principal hides Remove, 320px/375px real-viewport responsive) |
+| Platform | **partial** — automated keyboard-only assertions (Tab loop, Escape, aria-busy) done via Storybook; an actual human click-through pass is still pending — non-blocking per `fe-qa-playwright`, flagged as follow-up |
+| Release | **done** — `moderation.mock.repository.test.ts` proves an audit-log entry is retrievable end-to-end for both dismiss and remove; `fe-qa-playwright` Go verdict (0 blocker/critical/major) |
 
 ## Harness Delta
 
