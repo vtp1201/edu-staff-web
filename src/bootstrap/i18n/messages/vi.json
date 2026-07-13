@@ -2172,6 +2172,7 @@
       "reporter": "Người báo cáo",
       "status": "Trạng thái",
       "createdAt": "Thời gian",
+      "actions": "Thao tác",
       "openDetail": "Mở chi tiết báo cáo {id}",
       "duplicateSuffix": "+{count} báo cáo khác"
     },

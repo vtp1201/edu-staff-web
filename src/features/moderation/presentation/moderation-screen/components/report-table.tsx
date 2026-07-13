@@ -37,18 +37,14 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
             <TableHead>{t("reporter")}</TableHead>
             <TableHead>{t("status")}</TableHead>
             <TableHead>{t("createdAt")}</TableHead>
-            <TableHead className="sr-only">{t("content")}</TableHead>
+            <TableHead className="sr-only">{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {reports.map((report) => {
             const row = formatReportRow(report);
             return (
-              <TableRow
-                key={row.id}
-                className="cursor-pointer"
-                onClick={() => onOpen(row.id)}
-              >
+              <TableRow key={row.id}>
                 <TableCell className="max-w-xs">
                   <span className="line-clamp-2 font-medium text-foreground text-sm">
                     {row.contentPreview}
@@ -75,10 +71,7 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t("openDetail", { id: row.id })}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpen(row.id);
-                    }}
+                    onClick={() => onOpen(row.id)}
                   >
                     <ChevronRight aria-hidden="true" className="size-4" />
                   </Button>

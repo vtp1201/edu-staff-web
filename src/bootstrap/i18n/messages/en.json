@@ -2172,6 +2172,7 @@
       "reporter": "Reporter",
       "status": "Status",
       "createdAt": "Time",
+      "actions": "Actions",
       "openDetail": "Open report detail {id}",
       "duplicateSuffix": "+{count} more reports"
     },
