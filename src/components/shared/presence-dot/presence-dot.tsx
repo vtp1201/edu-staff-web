@@ -50,9 +50,11 @@ export function PresenceDot({
           "absolute rounded-full ring-2 ring-card",
           SIZE_CLASS[size],
           presence === "online"
-            ? "bg-edu-success"
-            : // recent → hollow: card fill + 2px success border (visually distinct)
-              "border-2 border-edu-success bg-card",
+            ? // --edu-success-text (5.24:1) not --edu-success (1.72:1) — the dot
+              // is the state signal, needs ≥3:1 non-text contrast (WCAG 1.4.11).
+              "bg-edu-success-text"
+            : // recent → hollow: card fill + 2px success-text border (visually distinct)
+              "border-2 border-edu-success-text bg-card",
           className,
         )}
       />

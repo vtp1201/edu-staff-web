@@ -220,7 +220,7 @@ export function GroupInfoPanel({
               <div className="-mx-4 mb-2 flex items-center gap-1.5 bg-edu-bg px-[18px] py-[7px]">
                 <span
                   aria-hidden="true"
-                  className="size-[7px] flex-shrink-0 rounded-full bg-edu-success"
+                  className="size-[7px] flex-shrink-0 rounded-full bg-edu-success-text"
                 />
                 <span className="font-extrabold text-[11px] text-edu-text-secondary">
                   {tPresence("onlineCount", { n: onlineCount })}

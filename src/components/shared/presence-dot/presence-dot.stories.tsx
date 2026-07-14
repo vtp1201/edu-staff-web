@@ -40,7 +40,8 @@ export const Recent: Story = {
   play: async ({ canvasElement }) => {
     const dot = canvasElement.querySelector('[data-presence="recent"]');
     await expect(dot).not.toBeNull();
-    await expect(dot?.className).toContain("border-edu-success");
+    // A11Y-002 — border uses --edu-success-text (5.24:1), not --edu-success (1.72:1).
+    await expect(dot?.className).toContain("border-edu-success-text");
     await expect(
       within(canvasElement).getByText("vừa hoạt động gần đây"),
     ).toBeInTheDocument();
