@@ -8,6 +8,40 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-07-14 — Student Assignments net-new (DR-020, US-E11.7) `[EXTERNAL]`
+
+**What changed**: new reference mockup `design_src/edu/assignments.jsx`
+(`StudentAssignmentsScreen`) — assignments list with filter tabs (Tất cả/Chưa
+nộp/Đã nộp/Đã chấm), assignment card (course-color icon, days-left/overdue
+badge per the fixed status→color mapping, submitted/graded variants), a submit
+sheet (file picker mock + textarea + overdue confirm dialog), and a graded
+feedback view (score chip + teacher comment). No new design-system token —
+reuses existing status badge mapping, `states.jsx` (`EduSkeleton`/`EduEmpty`/
+`EduError`), and the score/GPA color mapping. Mock-first (no real `lms`
+assignment endpoint yet, per decision `0014`).
+
+- `docs/product/design-spec.jsonc`: extended the pre-existing skeletal
+  `lms.assignments` key in place (was a ~13-line stub) with full card/
+  submitSheet/gradedSheet anatomy, states, a11y, responsive notes.
+- `messages/{vi,en}.json`: new `assignments` namespace (filters, card copy,
+  empty states, submit sheet, graded feedback, confirm dialogs, a11y labels).
+- `docs/product/screens.md`: Student row 109 flipped `⬜ (E11)` →
+  `🎨 design-ready (US-E11.7; assignments.jsx, DR-020 2026-07-14)`; added
+  `design_src/edu/assignments.jsx` to the design-file mapping list next to the
+  other Epic E11 entries (lesson-bank/exam-bank/teaching-plan).
+- `docs/design-requests/README.md`: added DR-020 row, `[x] delivered
+  (2026-07-14)`.
+
+**Refs**: DR-020 (`docs/design-requests/DR-020-student-assignments.md`) ·
+US-E11.7 (new, registered via `harness-cli story add`) · Epic E11 (LMS).
+
+**Rationale**: genuine net-new authoring (grepped `src/features/lms`,
+`src/features/student`, `src/app/**/student` — no assignment list/detail
+implementation exists, only a dashboard stat widget), so this closes a real
+gap in the Student LMS surface ahead of `/ba` → `/fe` handoff.
+
+---
+
 ## 2026-07-14 — Presence spec contrast correction (US-E10.6, DR-017) `[INTERNAL]`
 
 **What changed**: `docs/product/design-spec.jsonc` `screens.messaging.presence`

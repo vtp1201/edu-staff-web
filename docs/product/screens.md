@@ -106,7 +106,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | --- | --- | --- | --- |
 | Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
 | Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ✅ US-E11.6 (grid+tabs, 2-col player, video/pdf/text, notes/Q&A, mark-complete; mock-first) |
-| Assignments | `(app)/student/assignments` | `features/lms` | ⬜ (E11) |
+| Assignments | `(app)/student/assignments` | `features/lms` | 🎨 design-ready (US-E11.7; `assignments.jsx`, DR-020 2026-07-14) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
@@ -157,6 +157,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/lesson-bank.jsx` — Lesson Bank (US-E11.2)
   - `design_src/edu/exam-bank.jsx` — Exam Bank + Builder (US-E11.3)
   - `design_src/edu/teaching-plan.jsx` — Teaching Plan / PPCT (US-E11.4)
+  - `design_src/edu/assignments.jsx` — Student Assignments list + submit sheet + graded feedback (US-E11.7, DR-020 2026-07-14)
   - `design_src/edu/staff-leave.jsx` — Staff Leave Management (US-E09.3)
   - `design_src/edu/audit-log.jsx` — Audit Log (US-E12.12)
   - `design_src/edu/admin-settings.jsx` — Admin Settings / gradePublishMode (US-E12.11)

@@ -1,6 +1,6 @@
 # DR-020 — Student Assignments (Bài tập được giao)
 
-Status: in-progress
+Status: delivered (2026-07-14)
 US: US-E11.7 (new — next available under Epic E11 LMS; not yet under `docs/stories/epics/E11-lms-exams/`)
 Route: `/student/assignments` (list) — no detail sub-route in scope (submission happens inline via a submit sheet/dialog, see Layout 2)
 Roles: `student` only
@@ -179,10 +179,10 @@ File upload is UI-only (accept + preview filename), no real storage integration.
 
 ## Delivery checklist
 
-- [ ] `design_src/edu/assignments.jsx` created
-- [ ] `docs/product/design-spec.jsonc` `lms.assignments` extended
-- [ ] `assignments` i18n keys added to `vi.json` + `en.json`
-- [ ] `docs/product/screens.md` row 109 updated (⬜ → 🎨 design-ready)
-- [ ] `docs/design-requests/README.md` Active Requests row added + marked delivered
-- [ ] Design-review gate (`/impeccable` audit + critique) passed
-- [ ] Harness story `US-E11.7` registered via `harness-cli story add`
+- [x] `design_src/edu/assignments.jsx` created
+- [x] `docs/product/design-spec.jsonc` `lms.assignments` extended
+- [x] `assignments` i18n keys added to `vi.json` + `en.json`
+- [x] `docs/product/screens.md` row 109 updated (⬜ → 🎨 design-ready)
+- [x] `docs/design-requests/README.md` Active Requests row added + marked delivered
+- [x] Design-review gate (`/impeccable` audit + critique) passed
+- [x] Harness story `US-E11.7` registered via `harness-cli story add`
