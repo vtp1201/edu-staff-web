@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { AssignmentDto } from "../../dtos/assignment-response.dto";
 import type { CourseLessonsDto } from "../../dtos/course-lessons-response.dto";
 import type { CourseDto } from "../../dtos/course-response.dto";
 import {
+  mapAssignment,
   mapColorToTone,
   mapCourseLessons,
   mapCourseSummary,
@@ -104,5 +106,65 @@ describe("mapCourseLessons", () => {
     const video = mapCourseLessons(dto).chapters[0]?.lessons[0];
     expect(video?.downloadHref).toBeUndefined();
     expect(video?.blocks).toBeUndefined();
+  });
+});
+
+describe("mapAssignment", () => {
+  const base: AssignmentDto = {
+    id: "a1",
+    title: "Giải phương trình bậc 2",
+    description: "Hoàn thành bài tập trang 62.",
+    subject: "Toán học",
+    className: "10A1",
+    teacherName: "Nguyễn Văn A",
+    courseColor: "#5D87FF",
+    dueDate: "2026-07-20T00:00:00.000Z",
+    status: "pending",
+    submittedAt: null,
+    gradedAt: null,
+    score: null,
+    maxScore: null,
+    teacherComment: null,
+    fileName: null,
+    answerText: null,
+    gradedFileName: null,
+  };
+
+  it("resolves the hex courseColor to a semantic tone (no hex leaks)", () => {
+    const entity = mapAssignment({ ...base, courseColor: "#13DEB9" });
+    expect(entity.tone).toBe("success");
+    expect(JSON.stringify(entity)).not.toContain("#");
+  });
+
+  it("preserves an empty-string teacherComment (not coerced to null)", () => {
+    const entity = mapAssignment({
+      ...base,
+      status: "graded",
+      teacherComment: "",
+      score: 7,
+      maxScore: 10,
+    });
+    expect(entity.teacherComment).toBe("");
+  });
+
+  it("carries all graded fields through unchanged", () => {
+    const entity = mapAssignment({
+      ...base,
+      status: "graded",
+      submittedAt: "2026-07-04T21:02:00.000Z",
+      gradedAt: "2026-07-06T09:30:00.000Z",
+      score: 9,
+      maxScore: 10,
+      teacherComment: "Tốt.",
+      gradedFileName: "nhan-xet.pdf",
+    });
+    expect(entity).toMatchObject({
+      score: 9,
+      maxScore: 10,
+      teacherComment: "Tốt.",
+      gradedFileName: "nhan-xet.pdf",
+      submittedAt: "2026-07-04T21:02:00.000Z",
+      gradedAt: "2026-07-06T09:30:00.000Z",
+    });
   });
 });

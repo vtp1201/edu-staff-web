@@ -1,3 +1,4 @@
+import type { AssignmentDto } from "../../dtos/assignment-response.dto";
 import type {
   ChapterDto,
   CourseLessonsDto,
@@ -157,6 +158,146 @@ export const COURSE_IDS = new Set(COURSES_DTO.map((c) => c.id));
 export const NOTES_SEED: Record<string, string> = {
   l1: "Ghi nhớ: mệnh đề phải có giá trị chân lý xác định.",
 };
+
+/** ISO timestamp `days` from now (negative = past). Dynamic so the pending
+ *  seeds keep a stable overdue / non-overdue state as the mock demo is used on
+ *  any date — the badge/overdue derivation is exercised against real deltas. */
+function isoDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString();
+}
+
+/**
+ * Assignment seeds — one per FR-002/003/008 visual branch (spec.md §4):
+ * pending non-overdue, pending overdue, submitted, graded-with-comment,
+ * graded-empty-comment (`teacherComment: ""`), graded-with-file. Raw hex
+ * `courseColor` (mapped to tone by `lms.mapper.ts`, exercising the lookup).
+ * Names/subjects are mock data, not i18n copy (i18n.md).
+ */
+export const ASSIGNMENTS_DTO: AssignmentDto[] = [
+  {
+    id: "a1",
+    title: "Giải phương trình bậc 2",
+    description:
+      "Hoàn thành bài tập 12 câu trong SGK trang 62, trình bày lời giải chi tiết từng bước.",
+    subject: "Toán học",
+    className: "10A1",
+    teacherName: "Nguyễn Văn A",
+    courseColor: "#5D87FF",
+    dueDate: isoDaysFromNow(5),
+    status: "pending",
+    submittedAt: null,
+    gradedAt: null,
+    score: null,
+    maxScore: null,
+    teacherComment: null,
+    fileName: null,
+    answerText: null,
+    gradedFileName: null,
+  },
+  {
+    id: "a2",
+    title: "Bài tập cân bằng phản ứng oxi hoá khử",
+    description:
+      "Hoàn thành 10 phương trình cân bằng oxi hoá khử theo phương pháp thăng bằng electron.",
+    subject: "Hóa Học",
+    className: "10A1",
+    teacherName: "Lê Thị Hoa",
+    courseColor: "#FFAE1F",
+    dueDate: isoDaysFromNow(-4),
+    status: "pending",
+    submittedAt: null,
+    gradedAt: null,
+    score: null,
+    maxScore: null,
+    teacherComment: null,
+    fileName: null,
+    answerText: null,
+    gradedFileName: null,
+  },
+  {
+    id: "a3",
+    title: "Phân tích đoạn trích Trao duyên",
+    description:
+      "Phân tích tâm trạng nhân vật Thuý Kiều trong đoạn trích, liên hệ bối cảnh xã hội.",
+    subject: "Ngữ Văn",
+    className: "10A1",
+    teacherName: "Phạm Quốc Bảo",
+    courseColor: "#7B5EA7",
+    dueDate: isoDaysFromNow(-2),
+    status: "submitted",
+    submittedAt: isoDaysFromNow(-3),
+    gradedAt: null,
+    score: null,
+    maxScore: null,
+    teacherComment: null,
+    fileName: "phan-tich-trao-duyen.docx",
+    answerText: null,
+    gradedFileName: null,
+  },
+  {
+    id: "a4",
+    title: "Bài kiểm tra 15 phút — Hàm số bậc nhất",
+    description:
+      "Làm 8 câu trắc nghiệm về đồ thị và tính chất hàm số bậc nhất.",
+    subject: "Toán học",
+    className: "10A1",
+    teacherName: "Nguyễn Văn A",
+    courseColor: "#5D87FF",
+    dueDate: isoDaysFromNow(-10),
+    status: "graded",
+    submittedAt: isoDaysFromNow(-11),
+    gradedAt: isoDaysFromNow(-9),
+    score: 9,
+    maxScore: 10,
+    teacherComment:
+      "Bài làm tốt, trình bày rõ ràng. Chú ý câu 6 nên vẽ đồ thị minh hoạ để dễ theo dõi hơn.",
+    fileName: "ham-so-bac-nhat.pdf",
+    answerText: null,
+    gradedFileName: null,
+  },
+  {
+    id: "a5",
+    title: "Bài tập từ vựng Unit 5",
+    description: "Hoàn thành phiếu bài tập từ vựng và ngữ pháp Unit 5.",
+    subject: "Tiếng Anh",
+    className: "10A1",
+    teacherName: "Đỗ Thị Mai",
+    courseColor: "#00B8A9",
+    dueDate: isoDaysFromNow(-13),
+    status: "graded",
+    submittedAt: isoDaysFromNow(-14),
+    gradedAt: isoDaysFromNow(-12),
+    score: 7,
+    maxScore: 10,
+    teacherComment: "",
+    fileName: null,
+    answerText: null,
+    gradedFileName: null,
+  },
+  {
+    id: "a6",
+    title: "Bài tập chương Động lực học",
+    description:
+      "Giải 15 bài tập về lực ma sát, lực đàn hồi và định luật III Newton.",
+    subject: "Vật Lý",
+    className: "10A1",
+    teacherName: "Trần Văn Minh",
+    courseColor: "#13DEB9",
+    dueDate: isoDaysFromNow(-18),
+    status: "graded",
+    submittedAt: isoDaysFromNow(-19),
+    gradedAt: isoDaysFromNow(-17),
+    score: 4,
+    maxScore: 10,
+    teacherComment:
+      "Nhiều câu chưa xác định đúng chiều lực. Em cần ôn lại cách vẽ giản đồ lực trước khi giải bài.",
+    fileName: "dong-luc-hoc.pdf",
+    answerText: null,
+    gradedFileName: "dong-luc-hoc-nhanxet.pdf",
+  },
+];
 
 /** Seed Q&A keyed by lessonId (l1 has an answered question; others empty). */
 export const QUESTIONS_SEED: Record<

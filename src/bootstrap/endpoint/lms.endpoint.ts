@@ -12,4 +12,8 @@ export const LMS_EP = {
     `/lms/api/v1/lessons/${lessonId}/complete`,
   note: (lessonId: string) => `/lms/api/v1/lessons/${lessonId}/note`,
   questions: (lessonId: string) => `/lms/api/v1/lessons/${lessonId}/questions`,
+  assignments: (studentId: string, statusFilter?: string) =>
+    `/lms/api/v1/students/${studentId}/assignments${statusFilter && statusFilter !== "all" ? `?status=${statusFilter}` : ""}`,
+  submitAssignment: (assignmentId: string) =>
+    `/lms/api/v1/assignments/${assignmentId}/submissions`,
 } as const;
