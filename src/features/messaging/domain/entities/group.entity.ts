@@ -4,6 +4,8 @@
  * `ConversationEntity` shown in the inbox. Colour values are semantic token
  * keys (or a hex from the 8-swatch create palette) — never resolved here.
  */
+import type { PresenceState } from "./presence";
+
 export type GroupKind = "class" | "dept" | "club" | "other";
 
 export type GroupMember = {
@@ -14,6 +16,10 @@ export type GroupMember = {
   color: string;
   role: "admin" | "member";
   isOnline: boolean;
+  /** US-E10.6 — 3-state presence (additive; `isOnline` stays as the fallback). */
+  presence?: PresenceState;
+  /** US-E10.6 — coarse minute/day bucket of last activity (never precise). */
+  lastActiveAt?: string;
 };
 
 export type PinnedMessage = {
