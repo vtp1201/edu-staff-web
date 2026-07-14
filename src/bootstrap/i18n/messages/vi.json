@@ -691,7 +691,7 @@
       "daysLeft": {
         "remaining": "Còn {days} ngày",
         "dueToday": "Hết hạn hôm nay",
-        "overdue": "Quá hạn"
+        "overdue": "Quá hạn {days} ngày"
       },
       "status": {
         "pending": "Chưa nộp",
@@ -759,6 +759,7 @@
       "commentEmpty": "Giáo viên chưa để lại nhận xét.",
       "attachedFileLabel": "Tệp giáo viên đính kèm",
       "downloadAriaLabel": "Tải xuống tệp giáo viên đính kèm",
+      "mockDownloadToast": "Đây là bản demo — không có tệp thật để tải.",
       "submittedAtLabel": "Đã nộp lúc",
       "gradedAtLabel": "Đã chấm lúc"
     }

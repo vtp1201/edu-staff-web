@@ -691,7 +691,7 @@
       "daysLeft": {
         "remaining": "{days} days left",
         "dueToday": "Due today",
-        "overdue": "Overdue"
+        "overdue": "{days}d overdue"
       },
       "status": {
         "pending": "Pending",
@@ -759,6 +759,7 @@
       "commentEmpty": "The teacher hasn't left any feedback yet.",
       "attachedFileLabel": "Teacher's attached file",
       "downloadAriaLabel": "Download teacher's attached file",
+      "mockDownloadToast": "This is a demo — there's no real file to download.",
       "submittedAtLabel": "Submitted at",
       "gradedAtLabel": "Graded at"
     }
