@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -216,3 +216,42 @@ badge/score-tone, plus sibling-mock updates). Component/E2E: 21/21 Storybook
 interaction tests across 3 story files (screen, submit-sheet, graded-sheet).
 `bunx tsc --noEmit`: clean. `bun build`: success (route
 `/[locale]/t/[tenant]/student/assignments` registered).
+
+## QA gate + fix pass (fe-qa-playwright → fe-nextjs-engineer)
+
+First QA pass (`fe-qa-playwright`) mapped all 62 AC to tests, wrote 21
+additional Storybook interaction cases (42 total across the 3 story files),
+and issued a **FAIL** verdict: 6 of the new cases were intentionally red,
+documenting 3 real production defects the prior review/audit gates missed —
+
+- **DEF-1 (critical)**: submit sheet didn't auto-close on `already-submitted`/
+  `not-found` failures (AC-1177.4/.5) — fixed via a deliberate 700ms
+  stale-close delay in `student-assignments-screen.tsx` so the inline error
+  paints for a beat before the sheet closes; `network-error`/`forbidden`/
+  `unknown` unaffected (sheet stays open for retry, unchanged).
+- **DEF-2 (critical)**: focus was not restored to the triggering CTA on
+  Escape/Cancel across all 3 dialogs (AC-1174.5, AC-1176.3) — root cause:
+  these are **controlled** Radix Dialog/AlertDialog instances with no
+  `<SheetTrigger>`/`<AlertDialogTrigger>` wrapping the card CTA, so Radix's
+  built-in `triggerRef`-based focus-restore had nothing to restore to. Fixed
+  with a new shared hook `src/shared/use-dialog-return-focus.ts` (snapshots
+  `document.activeElement` on open, restores it via `onCloseAutoFocus`) —
+  no shared `Sheet`/`AlertDialog` primitive was modified, so other
+  triggerless consumers (`destructive-confirm-dialog`, `email-verify-dialog`)
+  are unaffected by this story and remain candidates for the same fix if
+  ever audited.
+- **DEF-3 (major)**: card title/badge row didn't wrap at ≤480px (AC-1172.10)
+  — fixed by adding `flex-wrap` + `gap-x-2.5 gap-y-1.5` to the row in
+  `assignment-card.tsx`.
+
+Re-verification after the fix pass: all 6 previously-red cases now pass;
+Storybook interaction suite for this slice is **42/42 green**; full
+`bun vitest run` unchanged at **1588/1588**; `tsc`/`bun build` clean. QA
+verdict on re-check: **Go**.
+
+Deferred follow-up (not blocking, tracked in Design Notes): platform-layer
+manual keyboard-only pass (story.md Validation table) has not been performed
+by a human tester — automated Storybook interaction coverage already
+exercises tablist arrow-keys, Escape-to-close, and focus-restore for all 3
+dialogs, but a literal manual pass is still owed per `.claude/rules/tdd.md`'s
+Platform proof tier before the `platform` harness flag can flip to 1.
