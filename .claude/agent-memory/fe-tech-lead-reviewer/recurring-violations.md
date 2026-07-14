@@ -133,6 +133,21 @@ Watch for these (each has bitten a story here):
   (US-E22.1 EmailVerifyBanner dismiss `email-verify-banner.tsx:130` size-8; banner send/resend inline
   controls also compact — auditor owns full sweep.)
 
+- **Spec copy silently dropped instead of adding the missing i18n key** — when `design-spec.jsonc` /
+  the reference mockup / an AC specifies literal display copy (e.g. card title `"Bài tập: {title}"`,
+  or a zero-state subtitle variant `pendingCount 0 → "Không có bài tập nào cần nộp"`) but no staged
+  i18n key exists for it, engineers render the raw value (bare `{title}`) or reuse the non-zero key
+  ("Còn 0 bài…") rather than ADD the key in both vi+en. tsc/tests/parity stay green (no new key = no
+  drift). This is a design-spec/AC conformance gap, not a nit — design-spec is normative/supreme. Fix
+  = add the key to both locales and use it. Cross-check every design-spec `title`/`subtitle`/label
+  literal against the rendered output, not just against existing keys. (US-E11.7 assignment-card title
+  prefix missing in card + both sheets; header zero-state subtitle.)
+- **Header/count state seeded into `useState` and decoupled from the query cache** — a page-header
+  count (`pendingCount`) initialized from an RSC prop into `useState` then only mutated by hand
+  (decrement on submit) never re-syncs with the authoritative query data after a client cold-fetch,
+  so it's wrong whenever the RSC seed failed or the list refetches. Acceptable for a mock-first MVP
+  happy path but flag as CONSIDER. (US-E11.7.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

@@ -99,6 +99,20 @@ Confirmed facts (verify before citing if stale):
   interaction stories. Non-vacuous requires BOTH the positive (new class) and negative (old class
   gone) assertions — a test that only checks the new class present is vacuous, flag it. Don't
   demand a render test the toolchain can't run.
+- **RSC `page.tsx` importing `@/bootstrap/di/*` is ESTABLISHED repo-wide convention** — despite the
+  CLAUDE.md layer table listing `app/page.tsx` as NOT importing `bootstrap/di/`, dozens of RSC pages
+  (student/courses, student/grades, principal/*, shared/messages, shared/profile…) call
+  `makeXxxUseCase()` directly for the initial server-side fetch. It's safe (DI is `server-only`, RSC is
+  server-side, no client-bundle leak) and the plans explicitly direct it. Do NOT block a story for it;
+  the table is doc-drift for fe-lead to reconcile, not a per-story defect.
+- **Per-tab cold-mount query pattern (US-E11.7 assignments)** — a list keyed by an active filter tab
+  where each tab must be its own loading→state cycle is done by (a) `<Region key={activeTab} .../>` so
+  React unmounts the prior subtree+query, (b) per-tab `useQuery({ queryKey: keys.list(tab), gcTime:0,
+  staleTime:0 })`, (c) default RSC-seeded tab gets `initialData` + `staleTime:30_000`. Non-optimistic
+  submit mutation: no `onMutate`; `onSuccess` patches the active tab's cache directly then
+  `invalidateQueries({ refetchType:"inactive" })` for the rest (they're `gcTime:0`-evicted anyway).
+  This is a deliberate, sanctioned divergence from the sibling single-flat-key client-filter screen —
+  don't flag it as inconsistency.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
