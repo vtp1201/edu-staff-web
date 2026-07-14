@@ -8,6 +8,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
 import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
@@ -24,6 +25,7 @@ import {
   paneAriaHidden,
   paneInert,
 } from "./pane-visibility";
+import { isGroupPresenceQueryEnabled } from "./presence-gating";
 import { useIsMobile } from "./use-is-mobile";
 
 export interface MessagingScreenProps
@@ -33,6 +35,28 @@ export interface MessagingScreenProps
 const messagesKey = (id: string) => ["messaging", "messages", id] as const;
 const conversationsKey = () => ["messaging", "conversations"] as const;
 const groupKey = (id: string) => ["messaging", "group", id] as const;
+// US-E10.6 — presence queries. Both sit under the ["messaging","presence"]
+// prefix so the presence.changed SSE invalidation (event-invalidation.ts) hits
+// them via prefix match without listing each key.
+const presenceListKey = () => ["messaging", "presence", "list"] as const;
+const presenceGroupKey = (id: string) =>
+  ["messaging", "presence", "group", id] as const;
+
+/** Apply presence records onto direct conversations (group rows untouched). */
+function mergeConversationPresence(
+  conversations: ConversationEntity[],
+  records: PresenceRecord[],
+): ConversationEntity[] {
+  if (records.length === 0) return conversations;
+  const byId = new Map(records.map((r) => [r.memberId, r]));
+  return conversations.map((c) => {
+    if (c.type !== "direct") return c;
+    const rec = byId.get(c.id);
+    return rec
+      ? { ...c, presence: rec.presence, lastActiveAt: rec.lastActiveAt }
+      : c;
+  });
+}
 
 type ReplyState = { messageId: string; senderName: string; excerpt: string };
 
@@ -44,6 +68,7 @@ export function MessagingScreen({
   sendMessageAction,
   createConversationAction,
   getMessagesAction,
+  getPresenceAction,
   createGroupAction,
   getGroupAction,
   pinMessageAction,
@@ -69,6 +94,26 @@ export function MessagingScreen({
     initialData: initialConversations,
   });
 
+  // US-E10.6 — direct-contact presence, batched per rendered list. Progressive
+  // and non-blocking (NFR-005): rows render immediately with no dot; the dot
+  // fills in once this resolves. A failure resolves to [] (offline-equivalent).
+  const directContactIds = useMemo(
+    () => conversations.filter((c) => c.type === "direct").map((c) => c.id),
+    [conversations],
+  );
+  const { data: presenceRecords = [] } = useQuery({
+    queryKey: presenceListKey(),
+    queryFn: async () => {
+      const res = await getPresenceAction(directContactIds);
+      return res.ok ? res.value : [];
+    },
+    enabled: directContactIds.length > 0,
+  });
+  const conversationsWithPresence = useMemo(
+    () => mergeConversationPresence(conversations, presenceRecords),
+    [conversations, presenceRecords],
+  );
+
   const [activeId, setActiveId] = useState<string | null>(
     deepLinkId ?? initialConversations[0]?.id ?? null,
   );
@@ -78,6 +123,9 @@ export function MessagingScreen({
   const [isModalOpen, setModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
+  // US-E10.6 AC-10.6.3.2 — lifted from ChatWindow so the member-panel presence
+  // query is gated on the panel actually being open, not on group selection.
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
 
   useEffect(() => {
     if (deepLinkId) {
@@ -87,8 +135,8 @@ export function MessagingScreen({
   }, [deepLinkId]);
 
   const activeConversation = useMemo<ConversationEntity | undefined>(
-    () => conversations.find((c) => c.id === activeId),
-    [conversations, activeId],
+    () => conversationsWithPresence.find((c) => c.id === activeId),
+    [conversationsWithPresence, activeId],
   );
   const isGroup = activeConversation?.type === "group";
 
@@ -111,6 +159,43 @@ export function MessagingScreen({
     },
     enabled: Boolean(activeId) && isGroup,
   });
+
+  // US-E10.6 — presence for the open group's members (INT-401 scoped to this
+  // group). AC-10.6.3.2: this is an INDEPENDENT fetch gated on the group-info
+  // panel actually being open — selecting a group (rendering its header) must
+  // NOT trigger it. Non-blocking once it does run.
+  const groupMemberIds = useMemo(
+    () => group?.members.map((m) => m.userId) ?? [],
+    [group],
+  );
+  const { data: groupPresence = [] } = useQuery({
+    queryKey: activeId
+      ? presenceGroupKey(activeId)
+      : ["messaging", "presence", "group"],
+    queryFn: async () => {
+      const res = await getPresenceAction(groupMemberIds);
+      return res.ok ? res.value : [];
+    },
+    enabled: isGroupPresenceQueryEnabled({
+      hasActiveConversation: Boolean(activeId),
+      isGroup,
+      isPanelOpen: groupInfoOpen,
+      memberCount: groupMemberIds.length,
+    }),
+  });
+  const groupWithPresence = useMemo<GroupEntity | undefined>(() => {
+    if (!group || groupPresence.length === 0) return group;
+    const byId = new Map(groupPresence.map((r) => [r.memberId, r]));
+    return {
+      ...group,
+      members: group.members.map((m) => {
+        const rec = byId.get(m.userId);
+        return rec
+          ? { ...m, presence: rec.presence, lastActiveAt: rec.lastActiveAt }
+          : m;
+      }),
+    };
+  }, [group, groupPresence]);
 
   const sendMutation = useMutation({
     mutationFn: async (vars: {
@@ -306,7 +391,7 @@ export function MessagingScreen({
         inert={paneInert(isMobile, mobilePane, "list")}
       >
         <ConversationList
-          conversations={conversations}
+          conversations={conversationsWithPresence}
           activeConversationId={activeId}
           isLoading={isLoading}
           loadError={loadError}
@@ -330,8 +415,9 @@ export function MessagingScreen({
             onBack={handleBack}
             inputRef={chatInputRef}
             selfId={selfId}
-            group={group}
+            group={groupWithPresence}
             groupLoading={groupLoading}
+            onGroupInfoOpenChange={setGroupInfoOpen}
             onPinMessage={(messageId) => {
               if (activeId)
                 pinMutation.mutate({ conversationId: activeId, messageId });

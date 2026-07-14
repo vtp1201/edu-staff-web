@@ -14,6 +14,7 @@ import type {
   CreateGroupResult,
   GetGroupResult,
   GetMessagesResult,
+  GetPresenceResult,
   SendMessageResult,
 } from "./messaging-screen.i-vm";
 
@@ -169,6 +170,18 @@ const getMessagesAction = async (
   value: STORE[conversationId] ?? [],
 });
 
+// US-E10.6 — default presence: u1 online, u3 recent (dot + caption states).
+const getPresenceAction = async (
+  memberIds: string[],
+): Promise<GetPresenceResult> => ({
+  ok: true,
+  value: memberIds.map((memberId) => ({
+    memberId,
+    presence: memberId === "u3" ? ("recent" as const) : ("online" as const),
+    lastActiveAt: "2026-07-14T09:57:00.000Z",
+  })),
+});
+
 const meta: Meta<typeof MessagingScreen> = {
   title: "Features/Messaging/MessagingScreen",
   component: MessagingScreen,
@@ -195,13 +208,14 @@ const meta: Meta<typeof MessagingScreen> = {
     sendMessageAction,
     createConversationAction,
     getMessagesAction,
+    getPresenceAction,
   },
 };
 export default meta;
 
 type Story = StoryObj<typeof MessagingScreen>;
 
-/** AC-2: Direct tab — avatar, name, last message, time, unread badge, online dot (AC-7) */
+/** AC-2: Direct tab — avatar, name, last message, time, unread badge, presence dot (US-E10.6) */
 export const DirectTabPopulated: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -215,8 +229,14 @@ export const DirectTabPopulated: Story = {
     expect(
       canvas.getByText("Cô có thể tham dự họp hội đồng lúc 15h không?"),
     ).toBeInTheDocument();
-    // AC-7: online indicator sr-only text — at least one "Đang online" present
-    expect(canvas.getAllByText("Đang online").length).toBeGreaterThanOrEqual(1);
+    // US-E10.6 AC-10.6.1.1/.2.1: online presence — sr-only "đang hoạt động"
+    // (list + header dots) plus the DM header caption "Đang hoạt động".
+    await waitFor(() =>
+      expect(
+        canvas.getAllByText("đang hoạt động").length,
+      ).toBeGreaterThanOrEqual(1),
+    );
+    expect(canvas.getByText("Đang hoạt động")).toBeInTheDocument();
     // AC-2: conversation items accessible by role
     const items = canvas.getAllByRole("button", {
       name: /mở cuộc trò chuyện/i,

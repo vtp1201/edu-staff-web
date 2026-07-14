@@ -2020,6 +2020,7 @@
       "leave-group-failed": "Không thể rời nhóm.",
       "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
       "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
+      "load-presence-failed": "Không thể tải trạng thái hoạt động.",
       "not-group-admin": "Chỉ admin nhóm mới có quyền thực hiện.",
       "pin-failed": "Không thể ghim tin nhắn.",
       "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
@@ -2088,6 +2089,14 @@
       "title": "Tin nhắn mới"
     },
     "openConversation": "Mở cuộc trò chuyện với {name}",
+    "presence": {
+      "activeMinutesAgo": "Hoạt động {n} phút trước",
+      "activeYesterday": "Hoạt động hôm qua",
+      "onlineCount": "{n} đang hoạt động",
+      "onlineNow": "Đang hoạt động",
+      "srOnline": "đang hoạt động",
+      "srRecentlyActive": "vừa hoạt động gần đây"
+    },
     "reply": {
       "cancelAriaLabel": "Huỷ trả lời",
       "placeholder": "Trả lời tin nhắn… (Enter để gửi)",

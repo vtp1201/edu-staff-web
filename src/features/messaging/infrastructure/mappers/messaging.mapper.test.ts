@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
+import type { PresenceResponseDto } from "../dtos/presence-response.dto";
 import {
   toContactEntity,
   toConversationEntity,
   toMessageEntity,
+  toPresenceRecord,
 } from "./messaging.mapper";
 
 describe("messaging.mapper", () => {
@@ -119,6 +121,77 @@ describe("messaging.mapper", () => {
         avatarInitials: "TQ",
         color: "success",
         isOnline: true,
+      });
+    });
+
+    // US-E10.6 — additive presence passthrough.
+    it("carries presence/lastActiveAt when present on the DTO", () => {
+      const dto: ContactResponseDto = {
+        id: "u2",
+        name: "Phạm Quốc Bảo",
+        role: "Giáo viên Văn",
+        avatarInitials: "PB",
+        color: "purple",
+        isOnline: false,
+        presence: "recent",
+        lastActiveAt: "2026-07-14T09:57:00Z",
+      };
+
+      const entity = toContactEntity(dto);
+      expect(entity.presence).toBe("recent");
+      expect(entity.lastActiveAt).toBe("2026-07-14T09:57:00Z");
+    });
+
+    it("leaves presence/lastActiveAt undefined when absent (never defaults)", () => {
+      const dto: ContactResponseDto = {
+        id: "u3",
+        name: "Nguyễn Văn Đức",
+        role: "Phụ huynh",
+        avatarInitials: "ND",
+        color: "purple",
+        isOnline: true,
+      };
+
+      const entity = toContactEntity(dto);
+      expect(entity.presence).toBeUndefined();
+      expect(entity.lastActiveAt).toBeUndefined();
+    });
+  });
+
+  describe("toConversationEntity — presence passthrough (US-E10.6)", () => {
+    it("carries a direct conversation's presence/lastActiveAt", () => {
+      const dto: ConversationResponseDto = {
+        id: "u1",
+        type: "direct",
+        name: "Trần Minh Quân",
+        avatarInitials: "TQ",
+        color: "success",
+        lastMessage: "Chào cô",
+        lastMessageTime: "10:15",
+        unreadCount: 0,
+        isOnline: true,
+        presence: "online",
+        lastActiveAt: "2026-07-14T10:00:00Z",
+      };
+
+      const entity = toConversationEntity(dto);
+      expect(entity.presence).toBe("online");
+      expect(entity.lastActiveAt).toBe("2026-07-14T10:00:00Z");
+    });
+  });
+
+  describe("toPresenceRecord (INT-401, US-E10.6)", () => {
+    it("maps status → presence and keeps memberId/lastActiveAt", () => {
+      const dto: PresenceResponseDto = {
+        memberId: "u1",
+        status: "recent",
+        lastActiveAt: "2026-07-14T09:57:00Z",
+      };
+
+      expect(toPresenceRecord(dto)).toEqual({
+        memberId: "u1",
+        presence: "recent",
+        lastActiveAt: "2026-07-14T09:57:00Z",
       });
     });
   });

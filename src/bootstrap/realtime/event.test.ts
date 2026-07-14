@@ -85,6 +85,23 @@ describe("queryKeysFor (taxonomy)", () => {
     expect(queryKeysFor(e)).toEqual([]);
   });
 
+  // US-E10.6: presence.changed invalidates the conversations list + presence prefix
+  it("invalidates conversations + presence prefix on presence.changed", () => {
+    const e = parseEvent(
+      frame({
+        type: "presence.changed",
+        payload: {
+          memberId: "u5",
+          status: "online",
+          lastActiveAt: "2026-07-14T10:00:00Z",
+        },
+      }),
+    ) as RealtimeEvent;
+    const keys = queryKeysFor(e);
+    expect(keys).toContainEqual(["messaging", "conversations"]);
+    expect(keys).toContainEqual(["messaging", "presence"]);
+  });
+
   // US-E10.2: notification.new invalidates list variants + unread count
   it("invalidates all/unread list caches and unread-count on notification.new", () => {
     const e = parseEvent(
@@ -184,6 +201,52 @@ describe("parseEvent — message.new (US-E08.6)", () => {
 
   it("tenant-scoping: drops message.new from a different tenant", () => {
     const e = parseEvent(msgFrame()) as RealtimeEvent;
+    expect(shouldHandle(e, "school-b")).toBe(false);
+    expect(shouldHandle(e, "school-a")).toBe(true);
+  });
+});
+
+describe("parseEvent — presence.changed (US-E10.6)", () => {
+  function presFrame(over: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      type: "presence.changed",
+      eventId: "evt-pres-1",
+      tenantId: "school-a",
+      occurredAt: "2026-07-14T10:00:00Z",
+      payload: {
+        memberId: "u5",
+        status: "online",
+        lastActiveAt: "2026-07-14T10:00:00Z",
+      },
+      ...over,
+    });
+  }
+
+  it("parses a well-formed presence.changed frame", () => {
+    const e = parseEvent(presFrame());
+    expect(e?.type).toBe("presence.changed");
+    expect(e?.tenantId).toBe("school-a");
+  });
+
+  it("carries the presence payload fields", () => {
+    const e = parseEvent(presFrame()) as RealtimeEvent;
+    if (e?.type !== "presence.changed") throw new Error("wrong type");
+    expect(e.payload.memberId).toBe("u5");
+    expect(e.payload.status).toBe("online");
+    expect(e.payload.lastActiveAt).toBe("2026-07-14T10:00:00Z");
+  });
+
+  it("returns null for a malformed frame (payload not an object)", () => {
+    expect(parseEvent(presFrame({ payload: "nope" }))).toBeNull();
+  });
+
+  it("returns null when eventId or tenantId is missing", () => {
+    expect(parseEvent(presFrame({ eventId: undefined }))).toBeNull();
+    expect(parseEvent(presFrame({ tenantId: 42 }))).toBeNull();
+  });
+
+  it("tenant-scoping: drops presence.changed from a different tenant", () => {
+    const e = parseEvent(presFrame()) as RealtimeEvent;
     expect(shouldHandle(e, "school-b")).toBe(false);
     expect(shouldHandle(e, "school-a")).toBe(true);
   });

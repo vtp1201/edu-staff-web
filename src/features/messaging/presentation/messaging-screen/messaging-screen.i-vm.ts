@@ -2,6 +2,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type { CreateGroupFormValues } from "@/features/messaging/presentation/create-group-modal";
 
@@ -36,6 +37,11 @@ export type GetGroupResult =
   | { ok: true; value: GroupEntity }
   | { ok: false; errorKey: MessagingFailure["type"] };
 
+/** US-E10.6 — presence snapshot (INT-401) for a batch of member ids. */
+export type GetPresenceResult =
+  | { ok: true; value: PresenceRecord[] }
+  | { ok: false; errorKey: MessagingFailure["type"] };
+
 /** Boolean-result action shape shared by pin / delete / leave / delete-group. */
 export type ActionResult =
   | { ok: true }
@@ -51,6 +57,9 @@ export interface MessagingScreenActions {
     name?: string,
   ) => Promise<CreateConversationResult>;
   getMessagesAction: (conversationId: string) => Promise<GetMessagesResult>;
+
+  // --- US-E10.6 presence (INT-401) ---
+  getPresenceAction: (memberIds: string[]) => Promise<GetPresenceResult>;
 
   // --- US-E10.4 ---
   createGroupAction: (

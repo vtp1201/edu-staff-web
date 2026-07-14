@@ -35,5 +35,17 @@ export function queryKeysFor(event: RealtimeEvent): QueryKey[] {
       // US-E08.6: no query invalidated — pendingMsgCount is hook-local React
       // state, not cache. Messaging screen queries stay US-E10.x scope.
       return [];
+    case "presence.changed":
+      // US-E10.6: refetch-driven, no hand-patched cache. The event payload
+      // carries only `memberId` (not a conversationId/groupId), so the group
+      // panel can't be precisely scoped from the payload alone in v1 — we
+      // invalidate the whole `["messaging","presence"]` prefix (covers both the
+      // list query and every open group presence query) plus the conversations
+      // list key so the DM header re-derives. If BE later adds a conversationId
+      // to the payload, add the scoped `["messaging","group", id]` key here.
+      return [
+        ["messaging", "conversations"],
+        ["messaging", "presence"],
+      ];
   }
 }

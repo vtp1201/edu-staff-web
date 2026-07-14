@@ -8,6 +8,7 @@ import {
   makeDeleteMessageUseCase,
   makeGetGroupUseCase,
   makeGetMessagesUseCase,
+  makeGetPresenceUseCase,
   makeLeaveGroupUseCase,
   makePinMessageUseCase,
   makeRemoveGroupMemberUseCase,
@@ -21,6 +22,7 @@ import type {
   CreateGroupResult,
   GetGroupResult,
   GetMessagesResult,
+  GetPresenceResult,
   SendMessageResult,
 } from "@/features/messaging/presentation/messaging-screen";
 
@@ -53,6 +55,18 @@ export async function getMessagesAction(
   const result = await useCase.execute(conversationId);
   return result.ok
     ? { ok: true, value: result.value.messages }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+// --- US-E10.6 presence (INT-401, noti — mock-first) ---
+
+export async function getPresenceAction(
+  memberIds: string[],
+): Promise<GetPresenceResult> {
+  const useCase = await makeGetPresenceUseCase();
+  const result = await useCase.execute(memberIds);
+  return result.ok
+    ? { ok: true, value: result.value }
     : { ok: false, errorKey: result.failure.type };
 }
 

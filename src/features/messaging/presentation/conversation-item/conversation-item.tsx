@@ -1,7 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
+import {
+  msgPresence,
+  type PresenceState,
+} from "@/features/messaging/domain/entities/presence";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 
@@ -11,6 +16,21 @@ import { cn } from "@/shared/utils";
  */
 export function conversationItemStateClass(isActive: boolean): string {
   return isActive ? "bg-primary/14" : "hover:bg-muted";
+}
+
+/**
+ * A11Y-001 (WCAG 4.1.2): an explicit `aria-label` on the row button replaces
+ * "name from content" per ARIA accname, so a nested sr-only presence span is
+ * never announced. Fold the presence status into the label itself — but only
+ * when a dot actually renders (direct conversation + not offline; group/offline
+ * show no dot, so no announcement). Returns the `, <label>` suffix or "".
+ */
+export function conversationPresenceSuffix(
+  isGroup: boolean,
+  presence: PresenceState,
+  presenceLabel: string,
+): string {
+  return !isGroup && presence !== "offline" ? `, ${presenceLabel}` : "";
 }
 
 export interface ConversationItemProps {
@@ -34,10 +54,23 @@ export function ConversationItem({
     lastMessage,
     lastMessageTime,
     unreadCount,
-    isOnline,
     lastSenderName,
   } = conversation;
   const isGroup = type === "group";
+  // Direct-only presence (group avatars never show a dot, AC-10.6.1.4).
+  const presence = msgPresence(conversation);
+  const presenceLabel =
+    presence === "recent"
+      ? t("presence.srRecentlyActive")
+      : t("presence.srOnline");
+  // Fold presence into the button's own aria-label (see conversationPresenceSuffix):
+  // an explicit aria-label replaces "name from content", so the nested sr-only
+  // status span inside PresenceDot would otherwise never be announced.
+  const presenceAnnouncement = conversationPresenceSuffix(
+    isGroup,
+    presence,
+    presenceLabel,
+  );
   const hasUnread = unreadCount > 0;
   const preview =
     isGroup && lastSenderName
@@ -48,7 +81,7 @@ export function ConversationItem({
     <button
       type="button"
       onClick={() => onSelect(id)}
-      aria-label={t("openConversation", { name })}
+      aria-label={`${t("openConversation", { name })}${presenceAnnouncement}`}
       aria-current={isActive ? "true" : undefined}
       className={cn(
         "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
@@ -66,14 +99,8 @@ export function ConversationItem({
         >
           {avatarInitials}
         </span>
-        {!isGroup && isOnline && (
-          <>
-            <span
-              aria-hidden="true"
-              className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-            />
-            <span className="sr-only">{t("chat.online")}</span>
-          </>
+        {!isGroup && (
+          <PresenceDot presence={presence} size="list" label={presenceLabel} />
         )}
       </span>
 

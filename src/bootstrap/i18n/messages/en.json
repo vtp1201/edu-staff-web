@@ -2020,6 +2020,7 @@
       "leave-group-failed": "Could not leave group.",
       "load-conversations-failed": "Could not load conversations. Please try again.",
       "load-messages-failed": "Could not load messages. Please try again.",
+      "load-presence-failed": "Could not load presence.",
       "not-group-admin": "Only group admins can perform this action.",
       "pin-failed": "Could not pin message.",
       "send-message-failed": "Could not send the message. Please try again."
@@ -2088,6 +2089,14 @@
       "title": "New message"
     },
     "openConversation": "Open conversation with {name}",
+    "presence": {
+      "activeMinutesAgo": "Active {n} minutes ago",
+      "activeYesterday": "Active yesterday",
+      "onlineCount": "{n} online now",
+      "onlineNow": "Active now",
+      "srOnline": "online now",
+      "srRecentlyActive": "recently active"
+    },
     "reply": {
       "cancelAriaLabel": "Cancel reply",
       "placeholder": "Reply to message… (Enter to send)",

@@ -12,9 +12,11 @@ import {
   useRef,
   useState,
 } from "react";
+import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import { msgPresence } from "@/features/messaging/domain/entities/presence";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 import { ChatBubble, DateDivider } from "../chat-bubble/chat-bubble";
@@ -26,6 +28,7 @@ import { MessageContextMenu } from "../message-context-menu";
 import { BACK_BUTTON_CLASS } from "../messaging-screen/pane-visibility";
 import { TypingIndicator } from "../typing-indicator/typing-indicator";
 import { scheduleHighlightClear } from "./highlight-timer";
+import { derivePresenceCaptionKey } from "./presence-caption";
 
 type ReplyState = { messageId: string; senderName: string; excerpt: string };
 
@@ -59,6 +62,13 @@ export interface ChatWindowProps {
   groupLoading?: boolean;
   selfId?: string;
   groupActions?: Omit<GroupInfoPanelActions, "onOpenChange" | "onPinnedClick">;
+  /**
+   * US-E10.6 AC-10.6.3.2 — notified when the group-info panel opens/closes so
+   * the screen can gate the member-panel presence fetch on the panel's own open
+   * state (the fetch must NOT fire from merely selecting a group). Optional:
+   * standalone ChatWindow stories fall back to local state.
+   */
+  onGroupInfoOpenChange?: (open: boolean) => void;
 }
 
 type Row =
@@ -79,6 +89,7 @@ export function ChatWindow({
   groupLoading = false,
   selfId = "me",
   groupActions,
+  onGroupInfoOpenChange,
 }: ChatWindowProps) {
   const t = useTranslations("messaging");
   const tReply = useTranslations("messaging.reply");
@@ -91,7 +102,16 @@ export function ChatWindow({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const contextTriggerRef = useRef<HTMLElement | null>(null);
   const [replyState, setReplyState] = useState<ReplyState | null>(null);
-  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [groupInfoOpen, setGroupInfoOpenState] = useState(false);
+  // Notify the owning screen (AC-10.6.3.2) so it can gate the member-panel
+  // presence fetch on the panel's actual open state, not on group selection.
+  const setGroupInfoOpen = useCallback(
+    (open: boolean) => {
+      setGroupInfoOpenState(open);
+      onGroupInfoOpenChange?.(open);
+    },
+    [onGroupInfoOpenChange],
+  );
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -100,6 +120,14 @@ export function ChatWindow({
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, conversation.id]);
+
+  // US-E10.6 AC-10.6.3.2 — switching conversations closes the group-info panel,
+  // so the member-panel presence fetch never carries over to the newly selected
+  // group until its own panel is opened.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only on conversation switch
+  useEffect(() => {
+    setGroupInfoOpen(false);
+  }, [conversation.id]);
 
   // DEF-01: clear any pending highlight timer when the component unmounts so we
   // never call setHighlightId on an unmounted component (no timer leak).
@@ -149,11 +177,26 @@ export function ChatWindow({
     return out;
   }, [messages]);
 
-  const subtitle = isGroup
-    ? t("chat.members", { count: conversation.memberCount ?? 0 })
-    : conversation.isOnline
-      ? t("chat.online")
-      : "";
+  // DM presence (direct only). Group header stays member-count only (FR-003).
+  const presence = msgPresence(conversation);
+  const presenceLabel =
+    presence === "recent"
+      ? t("presence.srRecentlyActive")
+      : t("presence.srOnline");
+
+  const subtitle = (() => {
+    if (isGroup)
+      return t("chat.members", { count: conversation.memberCount ?? 0 });
+    const caption = derivePresenceCaptionKey(
+      presence,
+      conversation.lastActiveAt,
+    );
+    if (caption.key === null) return "";
+    if (caption.key === "activeMinutesAgo")
+      return t("presence.activeMinutesAgo", { n: caption.n });
+    if (caption.key === "onlineNow") return t("presence.onlineNow");
+    return t("presence.activeYesterday");
+  })();
 
   const handleSend = () => {
     const text = input.trim();
@@ -230,14 +273,12 @@ export function ChatWindow({
           >
             {conversation.avatarInitials}
           </span>
-          {!isGroup && conversation.isOnline && (
-            <>
-              <span
-                aria-hidden="true"
-                className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-              />
-              <span className="sr-only">{t("chat.online")}</span>
-            </>
+          {!isGroup && (
+            <PresenceDot
+              presence={presence}
+              size="header"
+              label={presenceLabel}
+            />
           )}
         </span>
         {isGroup ? (

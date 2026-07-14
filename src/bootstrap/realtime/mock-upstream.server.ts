@@ -37,6 +37,19 @@ export function createMockUpstream(
         period: 2,
       },
     },
+    {
+      // US-E10.6 INT-402 mock — flip a seeded contact offline → online a few
+      // seconds after connect, exercising the presence.changed invalidation path.
+      type: "presence.changed",
+      eventId: "mock-3",
+      tenantId,
+      occurredAt: "2026-06-06T10:00:08Z",
+      payload: {
+        memberId: "u5",
+        status: "online",
+        lastActiveAt: "2026-06-06T10:00:08Z",
+      },
+    },
   ];
 
   let timer: ReturnType<typeof setInterval> | undefined;
