@@ -2,6 +2,11 @@ import "server-only";
 
 import type { AxiosInstance } from "axios";
 import { LMS_EP } from "@/bootstrap/endpoint/lms.endpoint";
+import type {
+  AssignmentEntity,
+  AssignmentStatusFilter,
+  SubmitAssignmentInput,
+} from "../../domain/entities/assignment.entity";
 import type { CourseSummary } from "../../domain/entities/course.entity";
 import type { LessonNoteEntity } from "../../domain/entities/lesson-note.entity";
 import type { LessonQuestionEntity } from "../../domain/entities/lesson-question.entity";
@@ -10,9 +15,17 @@ import type {
   ILmsRepository,
   MarkCompleteData,
 } from "../../domain/repositories/i-lms.repository";
+import type {
+  AssignmentDto,
+  AssignmentsListDto,
+} from "../dtos/assignment-response.dto";
 import type { CourseLessonsDto } from "../dtos/course-lessons-response.dto";
 import type { CoursesListDto } from "../dtos/course-response.dto";
-import { mapCourseLessons, mapCourseSummary } from "../mappers/lms.mapper";
+import {
+  mapAssignment,
+  mapCourseLessons,
+  mapCourseSummary,
+} from "../mappers/lms.mapper";
 
 /**
  * Real HTTP implementation — wiring-ready against the documented `lms` endpoints.
@@ -69,5 +82,26 @@ export class LmsRepository implements ILmsRepository {
     return (await this.http.post(LMS_EP.questions(lessonId), {
       question,
     })) as unknown as LessonQuestionEntity;
+  }
+
+  async listAssignments(
+    studentId: string,
+    statusFilter?: AssignmentStatusFilter,
+  ): Promise<AssignmentEntity[]> {
+    const data = (await this.http.get(
+      LMS_EP.assignments(studentId, statusFilter),
+    )) as unknown as AssignmentsListDto;
+    return data.assignments.map(mapAssignment);
+  }
+
+  async submitAssignment(
+    assignmentId: string,
+    input: SubmitAssignmentInput,
+  ): Promise<AssignmentEntity> {
+    const data = (await this.http.post(
+      LMS_EP.submitAssignment(assignmentId),
+      input,
+    )) as unknown as AssignmentDto;
+    return mapAssignment(data);
   }
 }

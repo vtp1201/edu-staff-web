@@ -6,10 +6,12 @@ import type { ILmsRepository } from "@/features/lms/domain/repositories/i-lms.re
 import { AskQuestionUseCase } from "@/features/lms/domain/use-cases/ask-question.use-case";
 import { GetCourseLessonsUseCase } from "@/features/lms/domain/use-cases/get-course-lessons.use-case";
 import { GetNoteUseCase } from "@/features/lms/domain/use-cases/get-note.use-case";
+import { ListAssignmentsUseCase } from "@/features/lms/domain/use-cases/list-assignments.use-case";
 import { ListCoursesUseCase } from "@/features/lms/domain/use-cases/list-courses.use-case";
 import { ListQuestionsUseCase } from "@/features/lms/domain/use-cases/list-questions.use-case";
 import { MarkLessonCompleteUseCase } from "@/features/lms/domain/use-cases/mark-lesson-complete.use-case";
 import { SaveNoteUseCase } from "@/features/lms/domain/use-cases/save-note.use-case";
+import { SubmitAssignmentUseCase } from "@/features/lms/domain/use-cases/submit-assignment.use-case";
 import { LmsRepository } from "@/features/lms/infrastructure/repositories/lms.repository";
 import { MockLmsRepository } from "@/features/lms/infrastructure/repositories/mocks/lms.mock.repository";
 
@@ -44,4 +46,12 @@ export async function makeListQuestionsUseCase() {
 
 export async function makeAskQuestionUseCase() {
   return new AskQuestionUseCase(await makeRepo());
+}
+
+export async function makeListAssignmentsUseCase() {
+  return new ListAssignmentsUseCase(await makeRepo());
+}
+
+export async function makeSubmitAssignmentUseCase() {
+  return new SubmitAssignmentUseCase(await makeRepo());
 }

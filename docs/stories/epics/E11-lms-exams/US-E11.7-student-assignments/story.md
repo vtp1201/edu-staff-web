@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -178,4 +178,80 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Design review: pass
+- design-system: conform — semantic tokens only (`grep` clean of raw color/
+  gradient/glassmorphism anti-patterns in `student-assignments/`); reuses
+  `StatusBadge`/`Card`/`Sheet`/`AlertDialog`/`EmptyState` patterns, no forked
+  component; role/status color mapping matches the fixed design-system table;
+  matches `docs/product/design-spec.jsonc` `screens.lms.assignments` (title
+  prefix + zero-state subtitle fixed to match the spec verbatim per
+  `fe-tech-lead-reviewer`'s MUST FIX #1/#2).
+- a11y: WCAG AA — `fe-accessibility-auditor` pass, 0 blocker, 2 major fixed
+  (touch targets on remove-file/graded-download controls), 1 major fixed (SR
+  loading announcement on per-tab cold-mount), 2 minor (list semantics
+  applied; `destructive` variant on overdue-confirm's proceed action flagged,
+  left as a design-judgment call — see below); keyboard/focus-trap/Escape/
+  focus-restore verified for all 3 dialogs (submit sheet, overdue-confirm,
+  graded sheet); reduced-motion gate present on the submitting spinner.
+- impeccable audit (manual, skill invoked via checklist since this run has no
+  interactive `/impeccable` slash-command channel): 0 anti-pattern hits
+  (no gradient/backdrop-blur/glassmorphism grep hits), theming 4/4 (tokens
+  only), responsive 4/4 (no fixed widths, `Sheet` full-bleed <520px per
+  plan.md), a11y folded into the accessibility-auditor pass above.
+- states: loading (per-tab skeleton + new SR announcement) / empty (4
+  distinct per-tab copies) / error (inline alert + guarded retry) / success
+  (card list, header subtitle incl. zero-state) all present and mutually
+  exclusive; no 320px break (Card/Sheet reflow per plan.md NFR-003).
+
+Open judgment call (not blocking, flagged for a future pass): A11Y-006 —
+`overdue-confirm-dialog.tsx`'s "Tiếp tục nộp bài" (proceed) action uses
+`variant="destructive"` (red) though it's a confirm, not a delete action.
+Left as-is per `fe-accessibility-auditor`'s recommendation to defer to design
+sign-off rather than unilaterally restyle a reviewed dialog.
+
+Test proof: see harness `story update` below for numeric flags. Unit +
+integration: 1588/1588 `bun vitest run` (41 new assignment-specific tests: 5
+derive-overdue, 4 list-use-case, 6 submit-use-case, 3 mapper, 6 mock-repo, 12
+badge/score-tone, plus sibling-mock updates). Component/E2E: 21/21 Storybook
+interaction tests across 3 story files (screen, submit-sheet, graded-sheet).
+`bunx tsc --noEmit`: clean. `bun build`: success (route
+`/[locale]/t/[tenant]/student/assignments` registered).
+
+## QA gate + fix pass (fe-qa-playwright → fe-nextjs-engineer)
+
+First QA pass (`fe-qa-playwright`) mapped all 62 AC to tests, wrote 21
+additional Storybook interaction cases (42 total across the 3 story files),
+and issued a **FAIL** verdict: 6 of the new cases were intentionally red,
+documenting 3 real production defects the prior review/audit gates missed —
+
+- **DEF-1 (critical)**: submit sheet didn't auto-close on `already-submitted`/
+  `not-found` failures (AC-1177.4/.5) — fixed via a deliberate 700ms
+  stale-close delay in `student-assignments-screen.tsx` so the inline error
+  paints for a beat before the sheet closes; `network-error`/`forbidden`/
+  `unknown` unaffected (sheet stays open for retry, unchanged).
+- **DEF-2 (critical)**: focus was not restored to the triggering CTA on
+  Escape/Cancel across all 3 dialogs (AC-1174.5, AC-1176.3) — root cause:
+  these are **controlled** Radix Dialog/AlertDialog instances with no
+  `<SheetTrigger>`/`<AlertDialogTrigger>` wrapping the card CTA, so Radix's
+  built-in `triggerRef`-based focus-restore had nothing to restore to. Fixed
+  with a new shared hook `src/shared/use-dialog-return-focus.ts` (snapshots
+  `document.activeElement` on open, restores it via `onCloseAutoFocus`) —
+  no shared `Sheet`/`AlertDialog` primitive was modified, so other
+  triggerless consumers (`destructive-confirm-dialog`, `email-verify-dialog`)
+  are unaffected by this story and remain candidates for the same fix if
+  ever audited.
+- **DEF-3 (major)**: card title/badge row didn't wrap at ≤480px (AC-1172.10)
+  — fixed by adding `flex-wrap` + `gap-x-2.5 gap-y-1.5` to the row in
+  `assignment-card.tsx`.
+
+Re-verification after the fix pass: all 6 previously-red cases now pass;
+Storybook interaction suite for this slice is **42/42 green**; full
+`bun vitest run` unchanged at **1588/1588**; `tsc`/`bun build` clean. QA
+verdict on re-check: **Go**.
+
+Deferred follow-up (not blocking, tracked in Design Notes): platform-layer
+manual keyboard-only pass (story.md Validation table) has not been performed
+by a human tester — automated Storybook interaction coverage already
+exercises tablist arrow-keys, Escape-to-close, and focus-restore for all 3
+dialogs, but a literal manual pass is still owed per `.claude/rules/tdd.md`'s
+Platform proof tier before the `platform` harness flag can flip to 1.

@@ -14,6 +14,8 @@ function makeRepo(overrides: Partial<ILmsRepository> = {}): ILmsRepository {
     saveNote: vi.fn(),
     listQuestions: vi.fn(),
     askQuestion: vi.fn(),
+    listAssignments: vi.fn(),
+    submitAssignment: vi.fn(),
     ...overrides,
   };
 }

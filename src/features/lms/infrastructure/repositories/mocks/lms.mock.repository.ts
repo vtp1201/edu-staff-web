@@ -1,6 +1,11 @@
 import "server-only";
 
 import { mockDelay } from "@/bootstrap/lib/mock";
+import type {
+  AssignmentEntity,
+  AssignmentStatusFilter,
+  SubmitAssignmentInput,
+} from "../../../domain/entities/assignment.entity";
 import type { ChapterEntity } from "../../../domain/entities/chapter.entity";
 import type {
   CourseHeader,
@@ -15,8 +20,13 @@ import type {
   MarkCompleteData,
 } from "../../../domain/repositories/i-lms.repository";
 import { calculateCourseProgress } from "../../../domain/use-cases/calculate-course-progress";
-import { mapCourseHeader, mapCourseSummary } from "../../mappers/lms.mapper";
 import {
+  mapAssignment,
+  mapCourseHeader,
+  mapCourseSummary,
+} from "../../mappers/lms.mapper";
+import {
+  ASSIGNMENTS_DTO,
   COURSE_IDS,
   COURSE_LESSONS_DTO,
   COURSES_DTO,
@@ -36,6 +46,7 @@ interface MockStore {
   headers: Record<string, CourseHeader>;
   notes: Map<string, LessonNoteEntity>;
   questions: Map<string, LessonQuestionEntity[]>;
+  assignments: AssignmentEntity[];
 }
 
 function seedStore(): MockStore {
@@ -66,7 +77,8 @@ function seedStore(): MockStore {
       list.map((q) => ({ ...q, lessonId })),
     );
   }
-  return { summaries, lessons, headers, notes, questions };
+  const assignments = ASSIGNMENTS_DTO.map(mapAssignment);
+  return { summaries, lessons, headers, notes, questions, assignments };
 }
 
 let store: MockStore = seedStore();
@@ -167,5 +179,31 @@ export class MockLmsRepository implements ILmsRepository {
     const existing = store.questions.get(lessonId) ?? [];
     store.questions.set(lessonId, [entry, ...existing]);
     return { ...entry };
+  }
+
+  async listAssignments(
+    _studentId: string,
+    statusFilter?: AssignmentStatusFilter,
+  ): Promise<AssignmentEntity[]> {
+    await mockDelay(200);
+    const all = store.assignments.map((a) => ({ ...a }));
+    if (!statusFilter || statusFilter === "all") return all;
+    return all.filter((a) => a.status === statusFilter);
+  }
+
+  async submitAssignment(
+    assignmentId: string,
+    input: SubmitAssignmentInput,
+  ): Promise<AssignmentEntity> {
+    await mockDelay(250);
+    const found = store.assignments.find((a) => a.id === assignmentId);
+    if (!found) throw new Error("not-found");
+    // Concurrent-transition guard: a re-opened stale sheet must not double-submit.
+    if (found.status !== "pending") throw new Error("already-submitted");
+    found.status = "submitted";
+    found.submittedAt = new Date().toISOString();
+    if (input.answerText !== undefined) found.answerText = input.answerText;
+    if (input.fileName !== undefined) found.fileName = input.fileName;
+    return { ...found };
   }
 }

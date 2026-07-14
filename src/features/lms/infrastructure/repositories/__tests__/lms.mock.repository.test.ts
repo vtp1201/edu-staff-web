@@ -98,4 +98,70 @@ describe("MockLmsRepository", () => {
     expect(after[0]?.question).toBe("Câu hỏi mới?");
     expect(after[0]?.answer).toBeNull();
   });
+
+  describe("assignments", () => {
+    it("seeds six assignments with semantic tones (no raw hex) covering every status", async () => {
+      const all = await repo.listAssignments("student-1");
+      expect(all).toHaveLength(6);
+      expect(JSON.stringify(all)).not.toContain("#");
+      const statuses = all.map((a) => a.status).sort();
+      expect(statuses).toEqual([
+        "graded",
+        "graded",
+        "graded",
+        "pending",
+        "pending",
+        "submitted",
+      ]);
+      // graded-empty-comment seed preserves "" (not null).
+      const emptyComment = all.find((a) => a.teacherComment === "");
+      expect(emptyComment).toBeDefined();
+      // graded-with-file seed carries gradedFileName.
+      expect(all.some((a) => a.gradedFileName !== null)).toBe(true);
+    });
+
+    it("filters by status when a filter is given, returns all for 'all'", async () => {
+      expect(await repo.listAssignments("s", "pending")).toHaveLength(2);
+      expect(await repo.listAssignments("s", "submitted")).toHaveLength(1);
+      expect(await repo.listAssignments("s", "graded")).toHaveLength(3);
+      expect(await repo.listAssignments("s", "all")).toHaveLength(6);
+    });
+
+    it("submits a pending assignment, flipping it to submitted and persisting", async () => {
+      const updated = await repo.submitAssignment("a1", {
+        answerText: "Bài làm",
+        fileName: "bai-lam.pdf",
+        overdueConfirmed: false,
+      });
+      expect(updated.status).toBe("submitted");
+      expect(updated.submittedAt).not.toBeNull();
+      expect(updated.answerText).toBe("Bài làm");
+      expect(updated.fileName).toBe("bai-lam.pdf");
+
+      // Persisted: it now appears under the submitted filter, not pending.
+      expect(await repo.listAssignments("s", "pending")).toHaveLength(1);
+      expect(await repo.listAssignments("s", "submitted")).toHaveLength(2);
+    });
+
+    it("throws not-found submitting an unknown assignment id", async () => {
+      await expect(
+        repo.submitAssignment("nope", { overdueConfirmed: false }),
+      ).rejects.toThrow("not-found");
+    });
+
+    it("throws already-submitted submitting a non-pending assignment", async () => {
+      // a3 is seeded as submitted.
+      await expect(
+        repo.submitAssignment("a3", { overdueConfirmed: false }),
+      ).rejects.toThrow("already-submitted");
+    });
+
+    it("resetLmsMockStore reseeds assignments back to pending", async () => {
+      await repo.submitAssignment("a1", { overdueConfirmed: false });
+      expect(await repo.listAssignments("s", "pending")).toHaveLength(1);
+      resetLmsMockStore();
+      const fresh = new MockLmsRepository();
+      expect(await fresh.listAssignments("s", "pending")).toHaveLength(2);
+    });
+  });
 });

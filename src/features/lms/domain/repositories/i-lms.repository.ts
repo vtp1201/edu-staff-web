@@ -1,3 +1,8 @@
+import type {
+  AssignmentEntity,
+  AssignmentStatusFilter,
+  SubmitAssignmentInput,
+} from "../entities/assignment.entity";
 import type { ChapterEntity } from "../entities/chapter.entity";
 import type {
   CourseHeader,
@@ -36,4 +41,24 @@ export interface ILmsRepository {
     lessonId: string,
     question: string,
   ): Promise<LessonQuestionEntity>;
+
+  /**
+   * The student's own assignments, optionally filtered by status. Errors are
+   * thrown (`Error("network-error")`); the use-case maps them to
+   * `AssignmentFailure`.
+   */
+  listAssignments(
+    studentId: string,
+    statusFilter?: AssignmentStatusFilter,
+  ): Promise<AssignmentEntity[]>;
+
+  /**
+   * Submits a pending assignment, returning the updated entity
+   * (`status: "submitted"`). Throws `Error("not-found")` /
+   * `Error("already-submitted")` / `Error("forbidden")` / `Error("network-error")`.
+   */
+  submitAssignment(
+    assignmentId: string,
+    input: SubmitAssignmentInput,
+  ): Promise<AssignmentEntity>;
 }

@@ -675,7 +675,8 @@
   "assignments": {
     "page": {
       "title": "Assignments",
-      "subtitle": "{count} assignments pending"
+      "subtitle": "{count} assignments pending",
+      "subtitleZero": "No assignments to submit"
     },
     "tabs": {
       "groupLabel": "Filter assignments",
@@ -685,13 +686,14 @@
       "graded": "Graded"
     },
     "card": {
+      "title": "Assignment: {title}",
       "meta": "{subject} · Class {className} · Teacher: {teacherName}",
       "dueDate": "Due: {date}",
       "submittedAt": "Submitted: {date}",
       "daysLeft": {
         "remaining": "{days} days left",
         "dueToday": "Due today",
-        "overdue": "Overdue"
+        "overdue": "{days}d overdue"
       },
       "status": {
         "pending": "Pending",
@@ -759,6 +761,7 @@
       "commentEmpty": "The teacher hasn't left any feedback yet.",
       "attachedFileLabel": "Teacher's attached file",
       "downloadAriaLabel": "Download teacher's attached file",
+      "mockDownloadToast": "This is a demo — there's no real file to download.",
       "submittedAtLabel": "Submitted at",
       "gradedAtLabel": "Graded at"
     }
