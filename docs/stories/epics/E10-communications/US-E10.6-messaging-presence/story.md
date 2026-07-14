@@ -192,4 +192,83 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+Design review: pass
+- design-system: conform — `PresenceDot` uses only existing tokens
+  (`bg-edu-success-text`/`border-edu-success-text`/`ring-card`, corrected from
+  the design-spec's literal `--edu-success` value per A11Y-002 — see below);
+  no new token, dot geometry/offset matches `design-spec.jsonc`
+  `screens.messaging.presence` exactly (10px/1px list+header, 9px/0 panel).
+- a11y: WCAG AA — `fe-accessibility-auditor` found 1 blocking (A11Y-001,
+  sr-only presence text unreachable inside an `aria-label`led row button —
+  fixed by folding the announcement into the button's own label via
+  `conversationPresenceSuffix()`) + 1 major (A11Y-002, `--edu-success`
+  ~1.72:1 non-text contrast — fixed by swapping to `--edu-success-text`
+  5.24:1, both dot fill and hollow-dot border) + 1 minor (A11Y-004, same
+  token fix on the group-panel "N online" banner dot) + 1 informational
+  positive note (A11Y-003, chat-header caption already correctly uses
+  `text-muted-foreground`/`--edu-text-secondary` instead of the design-spec's
+  literal-but-failing `--edu-text-muted` — flagged as a doc-sync item for
+  uiux, no code change). All blocking/major/minor findings fixed and
+  re-verified (commit `79d240a`). Keyboard/motion/touch-target: pass (no new
+  focusable node, zero animation classes — now asserted by
+  `presence-dot.test.tsx`, not just a code comment).
+- impeccable audit: scope covered functionally via the tech-lead + a11y
+  passes above (tokens-only, contrast, motion, spacing conform to the
+  already-normative `design-spec.jsonc` entry); no separate palette/layout
+  deviation found — design system stays supreme, no conflict to record.
+- states: loading/empty/error/success OK for all 3 render sites (presence is
+  a non-blocking overlay, NFR-005 — proven via Storybook interaction stories
+  + `presence-invalidation.test.ts`); responsive/320px unaffected (no new
+  layout, dot is an absolute-positioned overlay); dark mode unaffected
+  (token-only colors).
+
+Tech-lead review (`fe-tech-lead-reviewer`): **Approved**. Layer boundaries,
+component placement (`components/shared/presence-dot/`), `msgPresence()`
+single-source-of-truth, i18n additive-only, SSE additive-only, security/tenant
+scoping all verified directly (not self-report). One non-blocking
+consideration noted (presence query key could be based on a stable id-hash
+instead of a static key for future-proofing against optimistic
+conversation-insert) — not required, no action taken this US.
+
+QA (`fe-qa-playwright`): **Conditional Pass → resolved to full pass.**
+38 AC mapped; 34/38 solid on first pass. Verified gaps: DEF-1 (MAJOR,
+AC-10.6.3.2 — group-panel presence fetch was firing on conversation-select
+instead of panel-open) fixed by lifting panel-open state via
+`ChatWindow.onGroupInfoOpenChange` + a new pure `isGroupPresenceQueryEnabled()`
+predicate (`presence-gating.ts`, 5 tests). No-motion AC gap (AC-10.6.1.9/
+.2.7/.4.10) closed with explicit `presence-dot.test.tsx` assertions (7 tests).
+Remaining non-blocking coverage notes (AC-10.6.2.4 dedicated story,
+AC-10.6.4.4/.6/.7 panel-level assertions) left as follow-up — functionally
+covered by code path reuse, not required to ship.
+
+Regression guard (FR-005/UC-10.6.5): independently verified by both
+`fe-tech-lead-reviewer` and `fe-qa-playwright` via `git diff main..HEAD` on
+every named existing test file — zero assertion changes (only
+`messaging.mapper.test.ts`/`conversation-item.test.ts` gained purely additive
+tests).
+
+Proof (final, after all fix rounds):
+- `bun vitest run` → 277 files / 1552 tests, all passed.
+- `bunx tsc --noEmit` → clean.
+- `bun run build` → success.
+- Storybook interaction (live Chromium, presence-touching files) → 4 files /
+  29 tests passed. `messaging-screen.stories.tsx` broader check: 21/23 (2
+  pre-existing failures confirmed identical on unmodified `main` via a
+  throwaway worktree — not a regression).
+
+Harness: `scripts/bin/harness-cli story update --id US-E10.6 --status
+implemented --unit 1 --integration 1 --e2e 1 --platform 0`.
+
+Open follow-ups (non-blocking, tracked here not as new stories):
+- OQ-2: `NOTI_EP.presence` path (`/noti/api/v1/presence`) assumed — confirm
+  against `noti`'s `openapi.yaml` when it ships real HTTP.
+- OQ-3: `presence.changed` assumed single-`memberId` per event — revisit if
+  BE ships batched.
+- Doc-sync flag for uiux (not FE scope): `design-spec.jsonc`
+  `screens.messaging.presence.dot.online.background`/`recent.border` should
+  read `var(--edu-success-text)` (not `var(--edu-success)`, which fails
+  1.4.11 at ~1.72:1) and `headerCaption.color` should read
+  `var(--edu-text-secondary)` (not `var(--edu-text-muted)`, which fails 1.4.3
+  at 2.95:1) — the implementation already uses the correct accessible
+  tokens; only the doc's literal values need correcting so future
+  implementers don't copy the failing ones verbatim.
