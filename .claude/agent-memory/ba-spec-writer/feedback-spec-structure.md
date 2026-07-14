@@ -86,3 +86,27 @@ spec's §10 Handoff had to explicitly instruct fe-nextjs-engineer to add ALL of 
 reference it as done. Also: integration.md/use-cases.md can surface a BE error code (here
 `USER_TOO_MANY_ATTEMPTS`/429 lockout) that the upstream DR's copy block never anticipated —
 flag the resulting missing i18n key as a `[GAP]` needing exactly one new key, not a redesign.
+
+## US-E11.7 addenda — pre-existing i18n content gaps found deep in an already-staged namespace (2026-07-14)
+
+When upstream docs (requirements.md/use-cases.md) already flag i18n gaps found
+INSIDE an "already fully staged" namespace (not net-new, not missing entirely —
+just missing an interpolation placeholder, or missing one specific key within an
+otherwise-complete namespace):
+
+- Don't re-derive or re-verify the gap yourself if `ba-use-case-modeler` already
+  quoted the exact line/key (e.g. `assignments.card.daysLeft.overdue` = "Quá hạn"
+  with no `{n}` placeholder, vi.json line 694) — trust and cite it, restate the
+  fix direction in spec.md §8 as a `[GAP]`, and hand off to fe-lead/fe-nextjs-engineer
+  (i18n keys are app-source, owned by implementation, never added by BA).
+- Explicitly state in the spec these gaps are **NOT ADR-worthy** (pure content/copy
+  fix, no design-system/token/architecture decision) — otherwise ba-lead or fe-lead
+  may over-escalate a one-line JSON fix into a decision record.
+- When a resolved-but-not-yet-keyed UX decision exists (e.g. AC already specifies
+  "show a mock-download toast" but no i18n key was ever created for it), state the
+  decision is settled (cite the AC), suggest a key name, but flag that final
+  microcopy wording is still `ba-lead`/`uiux-ux-writer`'s call if a change is wanted —
+  this doesn't block fe-lead from implementing with the suggested copy.
+- Story that is 100% mock-first (`lms` has zero `openapi.yaml`) still gets a full
+  Traceability Matrix + AC-coverage cross-check (62/62 here) — mock-first status
+  changes §6 Data & Integration content (all "logical" endpoints), not spec rigor.

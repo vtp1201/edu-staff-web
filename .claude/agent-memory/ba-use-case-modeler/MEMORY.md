@@ -6,3 +6,4 @@
 - [E17 UX Polish DR-011 patterns](project-e17-ux-polish-patterns.md) — shared component UC patterns (DestructiveConfirmDialog, DetailPanelHeader), skeleton/toast/stepper AC patterns, cross-story dependency notes
 - [E19 Social shared-dialog split pattern](project-e19-social-shared-dialog-pattern.md) — owning-story-full-AC vs consuming-story-single-cross-story-AC pattern for shared components (ReportContentDialog); mock-first test-note AC; 403-vs-transient paired AC
 - [E21 invitation flows](project-e21-invitation-flows.md) — role-vocabulary mapping (manager→principal), ADR 0051 security-AC pattern for public account-creation endpoints, 4th-state + open-question-proof AC style
+- [E11 assignments mock-first pattern](project-e11-assignments-mockfirst-pattern.md) — i18n-gap-found-not-invented pattern, mock-download honest-signal toast, file-validation/double-click/focus-trap edge-case decision templates
