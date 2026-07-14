@@ -20,6 +20,7 @@ import type {
 } from "@/features/lms/domain/entities/assignment.entity";
 import type { AssignmentFailure } from "@/features/lms/domain/failures/assignment.failure";
 import { isOverdue } from "@/features/lms/domain/use-cases/derive-overdue";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
 import { OverdueConfirmDialog } from "./overdue-confirm-dialog";
 import { useAssignmentDraft } from "./use-assignment-draft";
@@ -51,6 +52,7 @@ export function SubmitSheet({
   const format = useFormatter();
   const { getDraft, saveDraft, clearDraft } = useAssignmentDraft(assignment.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const restoreFocusOnClose = useDialogReturnFocus(open);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -140,6 +142,7 @@ export function SubmitSheet({
         side="right"
         closeLabel={t("submit.closeAriaLabel")}
         className="w-full gap-0 sm:max-w-lg"
+        onCloseAutoFocus={restoreFocusOnClose}
       >
         <SheetHeader className="border-border border-b">
           <SheetTitle className="font-extrabold text-[15px]">

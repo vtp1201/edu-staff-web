@@ -70,7 +70,7 @@ export function AssignmentCard({ assignment, onOpen }: AssignmentCardProps) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2.5">
+          <div className="flex flex-wrap items-start justify-between gap-x-2.5 gap-y-1.5">
             <h2 className="font-extrabold text-[15px] text-foreground leading-snug">
               {t("card.title", { title: assignment.title })}
             </h2>

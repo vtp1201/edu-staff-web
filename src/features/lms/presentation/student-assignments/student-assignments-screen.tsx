@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import type {
@@ -29,6 +29,12 @@ const assignmentsKeys = {
   lists: () => ["lms", "assignments", "list"] as const,
   list: (tab: AssignmentTab) => ["lms", "assignments", "list", tab] as const,
 };
+
+/** How long the inline error stays visible before a stale-state failure
+ *  (`not-found` / `already-submitted`) auto-closes the sheet to the refreshed
+ *  list (AC-1177.4/AC-1177.5) — long enough to read, short enough to feel like a
+ *  guided handoff rather than a dead-end. */
+const STALE_CLOSE_DELAY_MS = 700;
 
 /** Carries a stable failure key from a failed Server Action through the query /
  *  mutation error channel so presentation can translate it. */
@@ -133,6 +139,22 @@ export function StudentAssignmentsScreen({
   const [activeTab, setActiveTab] = useState<AssignmentTab>("all");
   const [sheet, setSheet] = useState<SheetState>(null);
   const [pendingCount, setPendingCount] = useState(initialPendingCount);
+  // Pending "auto-close on stale-state failure" timer (DEF-1) — cleared on any
+  // manual open/close so a re-opened sheet is never yanked shut by a stale one.
+  const staleCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearStaleCloseTimer = () => {
+    if (staleCloseTimer.current !== null) {
+      clearTimeout(staleCloseTimer.current);
+      staleCloseTimer.current = null;
+    }
+  };
+  useEffect(() => {
+    return () => {
+      if (staleCloseTimer.current !== null) {
+        clearTimeout(staleCloseTimer.current);
+      }
+    };
+  }, []);
 
   const submitMutation = useMutation({
     mutationFn: async ({
@@ -163,7 +185,12 @@ export function StudentAssignmentsScreen({
       setSheet(null);
     },
     onError: (err) => {
-      // The assignment's true state changed underneath us — refetch on next visit.
+      // `not-found` / `already-submitted`: the assignment's true state changed
+      // underneath us. Refetch on next visit AND auto-close the now-stale sheet
+      // (AC-1177.4/AC-1177.5) — editing something already-submitted/gone is
+      // wrong. The inline error shows briefly first, then the sheet hands off to
+      // the refreshed list. `network-error`/`forbidden`/`unknown` deliberately
+      // keep the sheet open for inline retry (AC-1177.3/1177.6/1177.7).
       if (
         err instanceof AssignmentActionError &&
         (err.errorKey === "not-found" || err.errorKey === "already-submitted")
@@ -172,11 +199,17 @@ export function StudentAssignmentsScreen({
           queryKey: assignmentsKeys.lists(),
           refetchType: "inactive",
         });
+        clearStaleCloseTimer();
+        staleCloseTimer.current = setTimeout(() => {
+          staleCloseTimer.current = null;
+          setSheet(null);
+        }, STALE_CLOSE_DELAY_MS);
       }
     },
   });
 
   const openCard = (a: AssignmentEntity) => {
+    clearStaleCloseTimer();
     submitMutation.reset();
     const mode =
       a.status === "graded"
@@ -188,6 +221,7 @@ export function StudentAssignmentsScreen({
   };
 
   const closeSheet = () => {
+    clearStaleCloseTimer();
     submitMutation.reset();
     setSheet(null);
   };

@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 
 export interface OverdueConfirmDialogProps {
   open: boolean;
@@ -19,9 +20,10 @@ export interface OverdueConfirmDialogProps {
 
 /**
  * "Nộp bài trễ hạn?" confirm gate for submitting an overdue assignment.
- * Radix AlertDialog handles focus-trap, Escape, and focus-restore to the
- * element focused when it opened (the "Nộp bài" trigger) — Cancel therefore
- * restores focus with no state change (AC-1176.3).
+ * Radix AlertDialog handles focus-trap and Escape, but its modal `Content`
+ * focus-restore defers to a `<Trigger>` ref that is null for this controlled
+ * dialog — so `useDialogReturnFocus` restores focus to the invoking "Nộp bài"
+ * button on Cancel/Escape with no state change (AC-1176.3).
  */
 export function OverdueConfirmDialog({
   open,
@@ -29,9 +31,10 @@ export function OverdueConfirmDialog({
   onConfirm,
 }: OverdueConfirmDialogProps) {
   const t = useTranslations("assignments.submit.confirmOverdue");
+  const restoreFocusOnClose = useDialogReturnFocus(open);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent size="sm">
+      <AlertDialogContent size="sm" onCloseAutoFocus={restoreFocusOnClose}>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("description")}</AlertDialogDescription>
