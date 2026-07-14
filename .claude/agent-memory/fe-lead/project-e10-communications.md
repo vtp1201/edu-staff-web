@@ -87,9 +87,22 @@ US-E10.5 Messaging QA defect fixes — IMPLEMENTED (merged to main 2026-06-20, 8
 - `src/features/messaging/presentation/add-members-modal/` — add-members-modal.tsx + .i-vm.ts + index.ts + .stories.tsx
 - Extended: messaging-screen.tsx, messaging-screen.i-vm.ts, messaging-screen.stories.tsx, actions.ts, page.tsx, vi.json+en.json (messaging.addMembersModal block)
 
-**E10 status:** ALL 5 US complete. E10 COMPLETE (US-E10.5 closes the QA defect list).
+US-E10.6 Messaging Presence Indicator (DR-017) — IMPLEMENTED (merged to main 2026-07-14, commit d9eac0c, 1552 total tests).
 
-**How to apply:** E10 feature module (`src/features/messaging/`) is complete. Any future messaging work must be a new US extending it, not modifying the closed stories. Social service is still mock-first (decision 0017). Note: `storybook/test` does NOT export `vi`/`useFakeTimers` — use pure Vitest for timer-based tests, Storybook for wiring assertions only.
+**What was built (E10.6):** 3-state presence (online/recent/offline) additive to existing `isOnline` boolean on `ContactEntity`/`ConversationEntity`/`GroupMember`. New pure `domain/entities/presence.ts` (`msgPresence()`/`presenceRank()`/`isPresenceCountable()`/`sortByPresence()`). New shared `components/shared/presence-dot/` (`PresenceDot`, dumb, no `useTranslations` inside, caller passes translated sr-only label). INT-401 (`GET /noti/api/v1/presence`, mock-first) got its OWN small `IPresenceRepository`/`get-presence.use-case.ts` — deliberately NOT bolted onto `IMessagingRepository`'s existing contract, since presence is `noti`'s domain not `social`'s. `presence.changed` SSE event additive to `RealtimeEvent` union + `queryKeysFor()`. Wired into conversation-list avatar, DM chat-header dot+caption (`presence-caption.ts` pure derivation fn), group-info-panel dot+online-first-sort+"N online" count.
+
+**Key decisions/gotchas (E10.6):**
+- BA-provided story packet (spec.md/use-cases.md/requirements.md/integration.md) was unusually thorough — full FR/AC/traceability already done, so fe-planner only needed to sequence + lock 2 open design decisions (component home, INT-401 repo shape) rather than re-derive requirements. When intake handoff is this complete, skip re-deriving and go straight to a build-sequencing plan.
+- Skipped `fe-component-architect`/`fe-state-engineer` for this US — justified explicitly in plan.md ("single small shared primitive + query additions following an exact existing pattern, no new component tree or state category"). Correct call in hindsight; nothing surfaced in review that needed architecture-pass rework.
+- a11y audit caught a REAL blocking issue self-report/reviewer missed: `aria-label` on a parent button suppresses "name from content" — a nested `sr-only` span inside an `aria-label`led `<button>` is invisible to the accessible name (WCAG 4.1.2). Any future "icon/dot/badge with sr-only text nested inside an aria-labelled interactive wrapper" pattern needs the same check — fold the sr-only text into the wrapper's own `aria-label` instead of relying on nested content.
+- a11y audit also caught the design-spec.jsonc itself specifying a failing contrast value (`--edu-success` ~1.72:1 non-text) as the NORMATIVE dot color — design-spec being normative doesn't mean it's always correct; `--edu-success-text` (5.24:1) was the right accessible substitute, already existed as a token. Flagged doc-sync back to uiux rather than silently deviating.
+- fe-qa-playwright's independent AC-by-AC verification (not trusting engineer/reviewer self-report) caught a genuine spec violation the tech-lead review missed: a presence query's `enabled` condition fired on conversation-select rather than panel-open, violating an explicit AC ("no fetch attributable to header render, only when panel opens"). Confirms the recurring pattern (see E14.6 memory): QA re-deriving tests from AC text, not reading the report, finds real gaps tech-lead review doesn't.
+- No-motion ACs (explicit AC items across 3 UCs) had ZERO test assertion — just a source code comment — until QA flagged it. "No animation" needs an explicit `className` assertion, a comment is not proof.
+- Solo-mode branch (no in-flight feat/* branches at claim time) — straight main-checkout workflow, no worktree needed.
+
+**E10 status:** ALL 6 US complete (E10.6 extends, doesn't reopen, the closed E10.1-E10.5 stories). E10 COMPLETE.
+
+**How to apply:** E10 feature module (`src/features/messaging/`) is complete. Any future messaging work must be a new US extending it, not modifying the closed stories. Social service is still mock-first (decision 0017); `noti` presence REST surface also mock-first (OQ-2, path assumed `/noti/api/v1/presence`). Note: `storybook/test` does NOT export `vi`/`useFakeTimers` — use pure Vitest for timer-based tests, Storybook for wiring assertions only.
 
 **Why:** noti service not yet built → mock-first (decision 0014). SSE fan-out deferred to when noti service ships.
 
