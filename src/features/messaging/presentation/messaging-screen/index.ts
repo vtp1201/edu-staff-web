@@ -5,6 +5,7 @@ export type {
   CreateGroupResult,
   GetGroupResult,
   GetMessagesResult,
+  GetPresenceResult,
   MessagingScreenActions,
   MessagingScreenVM,
   SendMessageResult,

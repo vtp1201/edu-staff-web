@@ -14,6 +14,7 @@ import type {
   CreateGroupResult,
   GetGroupResult,
   GetMessagesResult,
+  GetPresenceResult,
   SendMessageResult,
 } from "./messaging-screen.i-vm";
 
@@ -169,6 +170,18 @@ const getMessagesAction = async (
   value: STORE[conversationId] ?? [],
 });
 
+// US-E10.6 — default presence: u1 online, u3 recent (dot + caption states).
+const getPresenceAction = async (
+  memberIds: string[],
+): Promise<GetPresenceResult> => ({
+  ok: true,
+  value: memberIds.map((memberId) => ({
+    memberId,
+    presence: memberId === "u3" ? ("recent" as const) : ("online" as const),
+    lastActiveAt: "2026-07-14T09:57:00.000Z",
+  })),
+});
+
 const meta: Meta<typeof MessagingScreen> = {
   title: "Features/Messaging/MessagingScreen",
   component: MessagingScreen,
@@ -195,6 +208,7 @@ const meta: Meta<typeof MessagingScreen> = {
     sendMessageAction,
     createConversationAction,
     getMessagesAction,
+    getPresenceAction,
   },
 };
 export default meta;

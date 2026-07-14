@@ -11,6 +11,7 @@ import {
   deleteMessageAction,
   getGroupAction,
   getMessagesAction,
+  getPresenceAction,
   leaveGroupAction,
   pinMessageAction,
   removeGroupMemberAction,
@@ -37,6 +38,7 @@ export default async function MessagesPage() {
       sendMessageAction={sendMessageAction}
       createConversationAction={createConversationAction}
       getMessagesAction={getMessagesAction}
+      getPresenceAction={getPresenceAction}
       createGroupAction={createGroupAction}
       getGroupAction={getGroupAction}
       updateGroupAction={updateGroupAction}
