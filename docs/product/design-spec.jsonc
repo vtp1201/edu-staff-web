@@ -2929,7 +2929,7 @@
       // group-panel member list (~1015–1053). BE: notification service
       // GET /api/v1/presence + SSE /api/v1/stream (decision-0009, mock in this file).
       "presence": {
-        "us": "US-E10.x (planned)",
+        "us": "US-E10.6 (implemented)",
         "source": "design_src/edu/messaging.jsx — msgPresence()/MSGPresenceDot()/msgPresenceCaption()",
         // presence value union: 'online' | 'recent' (left <5 min ago) | 'offline'.
         // Contacts without an explicit `presence` field derive it from legacy `online` boolean
@@ -2943,13 +2943,15 @@
           "groupPanelOffset": 0,
           "position": "absolute bottom-right of avatar",
           "online": {
-            "background": "var(--edu-success)",
+            // --edu-success-text, NOT --edu-success: the raw success token is ~1.72:1
+            // against card (fails WCAG 1.4.11 non-text contrast); -text variant is 5.24:1.
+            "background": "var(--edu-success-text)",
             "border": "none",
             "ring": "0 0 0 2px var(--edu-card)"
           },
           "recent": {
             "background": "var(--edu-card)",
-            "border": "2px solid var(--edu-success)",
+            "border": "2px solid var(--edu-success-text)",
             "ring": "0 0 0 2px var(--edu-card)",
             "note": "hollow ring, not solid — visually distinct from online"
           },
@@ -2970,7 +2972,8 @@
         // DM chat-header caption under the contact name (msgPresenceCaption)
         "headerCaption": {
           "fontSize": 12,
-          "color": "var(--edu-text-muted)",
+          // --edu-text-secondary (5.48:1), NOT --edu-text-muted (2.95:1 — decorative only, ADR 0049)
+          "color": "var(--edu-text-secondary)",
           "values": {
             "online": { "vi": "Đang hoạt động", "en": "Active now" },
             "recent": {
@@ -2990,7 +2993,7 @@
             "position": "top of members list, before the sorted rows",
             "padding": "7px 18px",
             "background": "var(--edu-bg)",
-            "dot": { "size": 7, "background": "var(--edu-success)" },
+            "dot": { "size": 7, "background": "var(--edu-success-text)" },
             "label": {
               "fontSize": 11,
               "fontWeight": 800,

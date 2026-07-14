@@ -8,6 +8,20 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-07-14 — Presence spec contrast correction (US-E10.6, DR-017) `[INTERNAL]`
+
+**What changed**: `docs/product/design-spec.jsonc` `screens.messaging.presence`
+literally specified `var(--edu-success)` for the presence dots (~1.72:1 vs card
+— fails WCAG 1.4.11) and `var(--edu-text-muted)` for the DM header caption
+(2.95:1 — decorative-only per ADR 0049). The US-E10.6 implementation (a11y
+findings A11Y-001/002, fixed pre-merge) correctly uses `var(--edu-success-text)`
+(5.24:1) and `var(--edu-text-secondary)` (5.48:1); the spec entry now matches so
+future implementers don't copy the failing values. Also flipped the block's `us`
+ref from "US-E10.x (planned)" to "US-E10.6 (implemented)". Doc-only — no token
+or runtime change.
+
+---
+
 ## 2026-07-12 — Group B handoff v2.2 reconcile (DR-012..019) `[INTERNAL]`
 
 **What changed**: doc-sync pass for 8 net-new reference mockups merged in
