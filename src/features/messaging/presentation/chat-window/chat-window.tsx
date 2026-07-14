@@ -62,6 +62,13 @@ export interface ChatWindowProps {
   groupLoading?: boolean;
   selfId?: string;
   groupActions?: Omit<GroupInfoPanelActions, "onOpenChange" | "onPinnedClick">;
+  /**
+   * US-E10.6 AC-10.6.3.2 — notified when the group-info panel opens/closes so
+   * the screen can gate the member-panel presence fetch on the panel's own open
+   * state (the fetch must NOT fire from merely selecting a group). Optional:
+   * standalone ChatWindow stories fall back to local state.
+   */
+  onGroupInfoOpenChange?: (open: boolean) => void;
 }
 
 type Row =
@@ -82,6 +89,7 @@ export function ChatWindow({
   groupLoading = false,
   selfId = "me",
   groupActions,
+  onGroupInfoOpenChange,
 }: ChatWindowProps) {
   const t = useTranslations("messaging");
   const tReply = useTranslations("messaging.reply");
@@ -94,7 +102,16 @@ export function ChatWindow({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const contextTriggerRef = useRef<HTMLElement | null>(null);
   const [replyState, setReplyState] = useState<ReplyState | null>(null);
-  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
+  const [groupInfoOpen, setGroupInfoOpenState] = useState(false);
+  // Notify the owning screen (AC-10.6.3.2) so it can gate the member-panel
+  // presence fetch on the panel's actual open state, not on group selection.
+  const setGroupInfoOpen = useCallback(
+    (open: boolean) => {
+      setGroupInfoOpenState(open);
+      onGroupInfoOpenChange?.(open);
+    },
+    [onGroupInfoOpenChange],
+  );
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -103,6 +120,14 @@ export function ChatWindow({
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, conversation.id]);
+
+  // US-E10.6 AC-10.6.3.2 — switching conversations closes the group-info panel,
+  // so the member-panel presence fetch never carries over to the newly selected
+  // group until its own panel is opened.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset only on conversation switch
+  useEffect(() => {
+    setGroupInfoOpen(false);
+  }, [conversation.id]);
 
   // DEF-01: clear any pending highlight timer when the component unmounts so we
   // never call setHighlightId on an unmounted component (no timer leak).

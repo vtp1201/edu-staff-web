@@ -25,6 +25,7 @@ import {
   paneAriaHidden,
   paneInert,
 } from "./pane-visibility";
+import { isGroupPresenceQueryEnabled } from "./presence-gating";
 import { useIsMobile } from "./use-is-mobile";
 
 export interface MessagingScreenProps
@@ -122,6 +123,9 @@ export function MessagingScreen({
   const [isModalOpen, setModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
+  // US-E10.6 AC-10.6.3.2 — lifted from ChatWindow so the member-panel presence
+  // query is gated on the panel actually being open, not on group selection.
+  const [groupInfoOpen, setGroupInfoOpen] = useState(false);
 
   useEffect(() => {
     if (deepLinkId) {
@@ -157,7 +161,9 @@ export function MessagingScreen({
   });
 
   // US-E10.6 — presence for the open group's members (INT-401 scoped to this
-  // group). Fetched only once the group itself has loaded; non-blocking.
+  // group). AC-10.6.3.2: this is an INDEPENDENT fetch gated on the group-info
+  // panel actually being open — selecting a group (rendering its header) must
+  // NOT trigger it. Non-blocking once it does run.
   const groupMemberIds = useMemo(
     () => group?.members.map((m) => m.userId) ?? [],
     [group],
@@ -170,7 +176,12 @@ export function MessagingScreen({
       const res = await getPresenceAction(groupMemberIds);
       return res.ok ? res.value : [];
     },
-    enabled: Boolean(activeId) && isGroup && groupMemberIds.length > 0,
+    enabled: isGroupPresenceQueryEnabled({
+      hasActiveConversation: Boolean(activeId),
+      isGroup,
+      isPanelOpen: groupInfoOpen,
+      memberCount: groupMemberIds.length,
+    }),
   });
   const groupWithPresence = useMemo<GroupEntity | undefined>(() => {
     if (!group || groupPresence.length === 0) return group;
@@ -406,6 +417,7 @@ export function MessagingScreen({
             selfId={selfId}
             group={groupWithPresence}
             groupLoading={groupLoading}
+            onGroupInfoOpenChange={setGroupInfoOpen}
             onPinMessage={(messageId) => {
               if (activeId)
                 pinMutation.mutate({ conversationId: activeId, messageId });
