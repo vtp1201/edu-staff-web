@@ -71,6 +71,23 @@ export type RealtimeEvent =
       tenantId: string;
       occurredAt: string;
       payload: { conversationId: string };
+    }
+  | {
+      /**
+       * US-E10.6 — a DM contact / group member's presence changed. Additive to
+       * the typed union; reuses the SAME single EventSource (decision 0041), not
+       * a second SSE mechanism. `lastActiveAt` is a coarse minute/day bucket
+       * (never precise — NFR-006/PII). Assumes single-member events per OQ-3.
+       */
+      type: "presence.changed";
+      eventId: string;
+      tenantId: string;
+      occurredAt: string;
+      payload: {
+        memberId: string;
+        status: "online" | "recent" | "offline";
+        lastActiveAt: string;
+      };
     };
 
 export type RealtimeEventType = RealtimeEvent["type"];
@@ -82,6 +99,7 @@ export const REALTIME_EVENT_TYPES: readonly RealtimeEventType[] = [
   "attendance.updated",
   "session.revoked",
   "message.new",
+  "presence.changed",
 ];
 
 const KNOWN_TYPES = new Set<RealtimeEventType>(REALTIME_EVENT_TYPES);

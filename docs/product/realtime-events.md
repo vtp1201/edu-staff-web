@@ -55,6 +55,7 @@ Bám theo typed events nội bộ của BE (BE decision `0019-shared-rabbitmq-ty
 | `notification.created` | Có thông báo mới cho user | `{ notificationId, title, body, level }` | invalidate list thông báo; toast |
 | `attendance.updated` | Buổi điểm danh thay đổi | `{ classId, periodId, date, period }` | invalidate roster/history của lớp |
 | `session.revoked` | Phiên bị thu hồi (signout nơi khác) | `{ sessionId }` | ép logout client |
+| `presence.changed` | Trạng thái hoạt động của 1 contact/thành viên đổi (US-E10.6) | `{ memberId, status: online\|recent\|offline, lastActiveAt }` (bucket thô, không precise) | invalidate `["messaging","conversations"]` + prefix `["messaging","presence"]` (refetch, không patch cache). Single-member/event (OQ-3). |
 
 > Danh sách mở rộng dần khi BE thêm typed event. Mỗi `type` mới phải kèm payload
 > camelCase và quy tắc phản ứng phía web ở bảng này.
