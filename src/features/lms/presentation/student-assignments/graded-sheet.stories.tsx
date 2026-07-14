@@ -106,3 +106,34 @@ export const LowScoreTone: Story = {
     await expect(body().getByText("4/10")).toBeInTheDocument();
   },
 };
+
+/** AC-1178.3 — mid-range score (neither ≥8 success nor <5 error) renders the
+ *  text-primary tone. Verified by CLASS, not just the numeric text, since a
+ *  wrong tone with the right number would otherwise pass silently. */
+export const MidRangeScoreTone: Story = {
+  args: { assignment: { ...BASE, score: 6, maxScore: 10 } },
+  play: async () => {
+    const chip = body().getByText("6/10");
+    // Neither success nor error tone classes present (StatusBadge tone map).
+    await expect(chip.closest("span")).not.toHaveClass(
+      "bg-edu-success/15",
+      "text-edu-success-text",
+    );
+    await expect(chip.closest("span")).not.toHaveClass(
+      "bg-edu-error/15",
+      "text-edu-error-text",
+    );
+    await expect(chip.closest("span")).toHaveClass("text-edu-text-primary");
+  },
+};
+
+/** NFR-001/AC-1178.10 — Escape closes the graded sheet (dialog contract
+ *  shared with the submit sheet). */
+export const EscapeClosesTheGradedSheet: Story = {
+  args: { assignment: BASE, onOpenChange: fn() },
+  play: async ({ args }) => {
+    await body().findByRole("dialog");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledWith(false));
+  },
+};

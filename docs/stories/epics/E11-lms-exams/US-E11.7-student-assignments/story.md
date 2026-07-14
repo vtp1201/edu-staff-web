@@ -178,4 +178,41 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Design review: pass
+- design-system: conform — semantic tokens only (`grep` clean of raw color/
+  gradient/glassmorphism anti-patterns in `student-assignments/`); reuses
+  `StatusBadge`/`Card`/`Sheet`/`AlertDialog`/`EmptyState` patterns, no forked
+  component; role/status color mapping matches the fixed design-system table;
+  matches `docs/product/design-spec.jsonc` `screens.lms.assignments` (title
+  prefix + zero-state subtitle fixed to match the spec verbatim per
+  `fe-tech-lead-reviewer`'s MUST FIX #1/#2).
+- a11y: WCAG AA — `fe-accessibility-auditor` pass, 0 blocker, 2 major fixed
+  (touch targets on remove-file/graded-download controls), 1 major fixed (SR
+  loading announcement on per-tab cold-mount), 2 minor (list semantics
+  applied; `destructive` variant on overdue-confirm's proceed action flagged,
+  left as a design-judgment call — see below); keyboard/focus-trap/Escape/
+  focus-restore verified for all 3 dialogs (submit sheet, overdue-confirm,
+  graded sheet); reduced-motion gate present on the submitting spinner.
+- impeccable audit (manual, skill invoked via checklist since this run has no
+  interactive `/impeccable` slash-command channel): 0 anti-pattern hits
+  (no gradient/backdrop-blur/glassmorphism grep hits), theming 4/4 (tokens
+  only), responsive 4/4 (no fixed widths, `Sheet` full-bleed <520px per
+  plan.md), a11y folded into the accessibility-auditor pass above.
+- states: loading (per-tab skeleton + new SR announcement) / empty (4
+  distinct per-tab copies) / error (inline alert + guarded retry) / success
+  (card list, header subtitle incl. zero-state) all present and mutually
+  exclusive; no 320px break (Card/Sheet reflow per plan.md NFR-003).
+
+Open judgment call (not blocking, flagged for a future pass): A11Y-006 —
+`overdue-confirm-dialog.tsx`'s "Tiếp tục nộp bài" (proceed) action uses
+`variant="destructive"` (red) though it's a confirm, not a delete action.
+Left as-is per `fe-accessibility-auditor`'s recommendation to defer to design
+sign-off rather than unilaterally restyle a reviewed dialog.
+
+Test proof: see harness `story update` below for numeric flags. Unit +
+integration: 1588/1588 `bun vitest run` (41 new assignment-specific tests: 5
+derive-overdue, 4 list-use-case, 6 submit-use-case, 3 mapper, 6 mock-repo, 12
+badge/score-tone, plus sibling-mock updates). Component/E2E: 21/21 Storybook
+interaction tests across 3 story files (screen, submit-sheet, graded-sheet).
+`bunx tsc --noEmit`: clean. `bun build`: success (route
+`/[locale]/t/[tenant]/student/assignments` registered).
