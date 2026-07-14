@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
+import { msgPresence } from "@/features/messaging/domain/entities/presence";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 
@@ -34,10 +36,15 @@ export function ConversationItem({
     lastMessage,
     lastMessageTime,
     unreadCount,
-    isOnline,
     lastSenderName,
   } = conversation;
   const isGroup = type === "group";
+  // Direct-only presence (group avatars never show a dot, AC-10.6.1.4).
+  const presence = msgPresence(conversation);
+  const presenceLabel =
+    presence === "recent"
+      ? t("presence.srRecentlyActive")
+      : t("presence.srOnline");
   const hasUnread = unreadCount > 0;
   const preview =
     isGroup && lastSenderName
@@ -66,14 +73,8 @@ export function ConversationItem({
         >
           {avatarInitials}
         </span>
-        {!isGroup && isOnline && (
-          <>
-            <span
-              aria-hidden="true"
-              className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-            />
-            <span className="sr-only">{t("chat.online")}</span>
-          </>
+        {!isGroup && (
+          <PresenceDot presence={presence} size="list" label={presenceLabel} />
         )}
       </span>
 

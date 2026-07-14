@@ -4,6 +4,7 @@ import { Pencil, UserPlus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { DetailPanelHeader } from "@/components/shared/detail-panel-header";
+import { PresenceDot } from "@/components/shared/presence-dot";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { GroupMember } from "@/features/messaging/domain/entities/group.entity";
+import {
+  isPresenceCountable,
+  msgPresence,
+  sortByPresence,
+} from "@/features/messaging/domain/entities/presence";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 import type {
@@ -53,6 +59,7 @@ export function GroupInfoPanel({
   const tDialog = useTranslations("messaging.deleteDialog");
   const tGroup = useTranslations("messaging.group");
   const tChat = useTranslations("messaging.chat");
+  const tPresence = useTranslations("messaging.presence");
   const [editing, setEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -69,6 +76,13 @@ export function GroupInfoPanel({
 
   const canRemove = (m: GroupMember) =>
     selfIsAdmin && m.userId !== selfId && m.role !== "admin";
+
+  // US-E10.6 — online-first stable sort + "N online" count, both derived from
+  // msgPresence() (never the legacy isOnline boolean). AC-10.6.4.2/.3.
+  const sortedMembers = sortByPresence(group?.members ?? [], msgPresence);
+  const onlineCount = sortedMembers.filter((m) =>
+    isPresenceCountable(msgPresence(m)),
+  ).length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -202,51 +216,75 @@ export function GroupInfoPanel({
                   </button>
                 )}
               </div>
+              {/* AC-10.6.4.3 — "N online now" banner: online + recent count. */}
+              <div className="-mx-4 mb-2 flex items-center gap-1.5 bg-edu-bg px-[18px] py-[7px]">
+                <span
+                  aria-hidden="true"
+                  className="size-[7px] flex-shrink-0 rounded-full bg-edu-success"
+                />
+                <span className="font-extrabold text-[11px] text-edu-text-secondary">
+                  {tPresence("onlineCount", { n: onlineCount })}
+                </span>
+              </div>
               <ul className="space-y-0.5">
-                {group.members.map((m) => (
-                  <li
-                    key={m.userId}
-                    className="flex items-center gap-2.5 rounded-lg px-1 py-1.5"
-                  >
-                    <span
-                      className={cn(
-                        "flex size-8 flex-shrink-0 items-center justify-center rounded-full font-bold text-[11px]",
-                        avatarToneClasses(m.color),
-                        !m.isOnline && "opacity-60 grayscale",
-                      )}
-                      aria-hidden="true"
+                {sortedMembers.map((m) => {
+                  const presence = msgPresence(m);
+                  return (
+                    <li
+                      key={m.userId}
+                      className="flex items-center gap-2.5 rounded-lg px-1 py-1.5"
                     >
-                      {m.initials}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate font-semibold text-foreground text-sm">
-                          {m.name}
-                          {m.userId === selfId && (
-                            <span className="ml-1 text-muted-foreground">
-                              {t("memberSelf")}
+                      <span className="relative flex-shrink-0">
+                        <span
+                          className={cn(
+                            "flex size-8 items-center justify-center rounded-full font-bold text-[11px]",
+                            avatarToneClasses(m.color),
+                            presence === "offline" && "opacity-60 grayscale",
+                          )}
+                          aria-hidden="true"
+                        >
+                          {m.initials}
+                        </span>
+                        <PresenceDot
+                          presence={presence}
+                          size="panel"
+                          label={
+                            presence === "recent"
+                              ? tPresence("srRecentlyActive")
+                              : tPresence("srOnline")
+                          }
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate font-semibold text-foreground text-sm">
+                            {m.name}
+                            {m.userId === selfId && (
+                              <span className="ml-1 text-muted-foreground">
+                                {t("memberSelf")}
+                              </span>
+                            )}
+                          </span>
+                          {m.role === "admin" && (
+                            <span className="rounded-full bg-edu-error-light px-1.5 py-0.5 font-bold text-[10px] text-edu-error-text">
+                              {t("adminBadge")}
                             </span>
                           )}
                         </span>
-                        {m.role === "admin" && (
-                          <span className="rounded-full bg-edu-error-light px-1.5 py-0.5 font-bold text-[10px] text-edu-error-text">
-                            {t("adminBadge")}
-                          </span>
-                        )}
                       </span>
-                    </span>
-                    {canRemove(m) && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveMember(m.userId)}
-                        aria-label={t("removeMemberAria", { name: m.name })}
-                        className="flex size-[22px] flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-edu-error-light hover:text-edu-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <X className="size-3.5" aria-hidden="true" />
-                      </button>
-                    )}
-                  </li>
-                ))}
+                      {canRemove(m) && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveMember(m.userId)}
+                          aria-label={t("removeMemberAria", { name: m.name })}
+                          className="flex size-[22px] flex-shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-edu-error-light hover:text-edu-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <X className="size-3.5" aria-hidden="true" />
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
 

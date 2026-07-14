@@ -12,9 +12,11 @@ import {
   useRef,
   useState,
 } from "react";
+import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import { msgPresence } from "@/features/messaging/domain/entities/presence";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 import { ChatBubble, DateDivider } from "../chat-bubble/chat-bubble";
@@ -26,6 +28,7 @@ import { MessageContextMenu } from "../message-context-menu";
 import { BACK_BUTTON_CLASS } from "../messaging-screen/pane-visibility";
 import { TypingIndicator } from "../typing-indicator/typing-indicator";
 import { scheduleHighlightClear } from "./highlight-timer";
+import { derivePresenceCaptionKey } from "./presence-caption";
 
 type ReplyState = { messageId: string; senderName: string; excerpt: string };
 
@@ -149,11 +152,26 @@ export function ChatWindow({
     return out;
   }, [messages]);
 
-  const subtitle = isGroup
-    ? t("chat.members", { count: conversation.memberCount ?? 0 })
-    : conversation.isOnline
-      ? t("chat.online")
-      : "";
+  // DM presence (direct only). Group header stays member-count only (FR-003).
+  const presence = msgPresence(conversation);
+  const presenceLabel =
+    presence === "recent"
+      ? t("presence.srRecentlyActive")
+      : t("presence.srOnline");
+
+  const subtitle = (() => {
+    if (isGroup)
+      return t("chat.members", { count: conversation.memberCount ?? 0 });
+    const caption = derivePresenceCaptionKey(
+      presence,
+      conversation.lastActiveAt,
+    );
+    if (caption.key === null) return "";
+    if (caption.key === "activeMinutesAgo")
+      return t("presence.activeMinutesAgo", { n: caption.n });
+    if (caption.key === "onlineNow") return t("presence.onlineNow");
+    return t("presence.activeYesterday");
+  })();
 
   const handleSend = () => {
     const text = input.trim();
@@ -230,14 +248,12 @@ export function ChatWindow({
           >
             {conversation.avatarInitials}
           </span>
-          {!isGroup && conversation.isOnline && (
-            <>
-              <span
-                aria-hidden="true"
-                className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
-              />
-              <span className="sr-only">{t("chat.online")}</span>
-            </>
+          {!isGroup && (
+            <PresenceDot
+              presence={presence}
+              size="header"
+              label={presenceLabel}
+            />
           )}
         </span>
         {isGroup ? (
