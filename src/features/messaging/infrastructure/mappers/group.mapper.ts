@@ -15,6 +15,9 @@ export function toGroupMember(dto: GroupMemberResponseDto): GroupMember {
     color: dto.color,
     role: dto.role,
     isOnline: dto.isOnline,
+    // US-E10.6 — additive presence passthrough (undefined when absent on wire).
+    presence: dto.presence,
+    lastActiveAt: dto.lastActiveAt,
   };
 }
 

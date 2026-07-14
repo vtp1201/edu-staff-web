@@ -14,4 +14,7 @@ export type MessagingFailure =
   | { type: "leave-group-failed"; cause?: string }
   | { type: "pin-failed"; cause?: string }
   | { type: "delete-message-failed"; cause?: string }
-  | { type: "not-group-admin" };
+  | { type: "not-group-admin" }
+  // US-E10.6 — presence snapshot (INT-401). One generic member: the UI treats
+  // every presence failure identically (render no dot), so no need to over-model.
+  | { type: "load-presence-failed"; cause?: string };

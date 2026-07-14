@@ -8,6 +8,12 @@
 export const NOTI_EP = {
   /** Upstream SSE event stream proxied by `app/[locale]/api/stream`. */
   stream: "/events/stream",
+  /**
+   * Presence snapshot (INT-401, US-E10.6 — mock-first). Path prefix assumed per
+   * the ANNOUNCEMENTS_EP `/noti/api/v1/*` precedent (OQ-2); confirm against
+   * `noti`'s openapi.yaml when its REST surface ships.
+   */
+  presence: "/noti/api/v1/presence",
 } as const;
 
 /**
