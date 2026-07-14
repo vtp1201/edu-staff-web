@@ -60,6 +60,7 @@ function AssignmentsListRegion({
   emptyTitle: string;
   onOpenCard: (assignment: AssignmentEntity) => void;
 }) {
+  const t = useTranslations("assignments");
   const seeded = tab === "all" && initialData !== undefined;
   const query = useQuery({
     queryKey: assignmentsKeys.list(tab),
@@ -75,7 +76,16 @@ function AssignmentsListRegion({
     retry: false,
   });
 
-  if (query.isPending) return <AssignmentsSkeleton />;
+  if (query.isPending) {
+    return (
+      <>
+        <span className="sr-only" role="status">
+          {t("skeleton.loading")}
+        </span>
+        <AssignmentsSkeleton />
+      </>
+    );
+  }
   if (query.isError) {
     return (
       <AssignmentsError
@@ -96,11 +106,13 @@ function AssignmentsListRegion({
     );
   }
   return (
-    <div className="flex flex-col gap-3">
+    <ul className="flex flex-col gap-3">
       {list.map((a) => (
-        <AssignmentCard key={a.id} assignment={a} onOpen={onOpenCard} />
+        <li key={a.id}>
+          <AssignmentCard assignment={a} onOpen={onOpenCard} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -203,7 +215,9 @@ export function StudentAssignmentsScreen({
           {t("page.title")}
         </h1>
         <p className="text-edu-text-secondary text-sm">
-          {t("page.subtitle", { count: pendingCount })}
+          {pendingCount === 0
+            ? t("page.subtitleZero")
+            : t("page.subtitle", { count: pendingCount })}
         </p>
       </header>
 

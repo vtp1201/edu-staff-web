@@ -61,7 +61,7 @@ export function GradedSheet({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-4 py-5">
           <h3 className="font-bold text-foreground text-sm">
-            {assignment.title}
+            {t("card.title", { title: assignment.title })}
           </h3>
 
           {assignment.score !== null && (
@@ -102,7 +102,7 @@ export function GradedSheet({
           {assignment.gradedFileName && (
             <button
               type="button"
-              className="inline-flex items-center gap-2 font-bold text-edu-primary-accessible text-sm hover:underline"
+              className="inline-flex min-h-11 items-center gap-2 py-2 font-bold text-edu-primary-accessible text-sm hover:underline"
               aria-label={t("graded.downloadAriaLabel")}
               onClick={() => toast.info(t("graded.mockDownloadToast"))}
             >

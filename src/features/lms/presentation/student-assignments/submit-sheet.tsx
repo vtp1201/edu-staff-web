@@ -156,7 +156,7 @@ export function SubmitSheet({
 
         <div className="flex-1 overflow-y-auto px-4 py-5">
           <h3 className="font-bold text-foreground text-sm">
-            {assignment.title}
+            {t("card.title", { title: assignment.title })}
           </h3>
           <p className="mt-1.5 whitespace-pre-line text-edu-text-secondary text-sm leading-relaxed">
             {assignment.description}
@@ -228,7 +228,7 @@ export function SubmitSheet({
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon"
                       aria-label={t("submit.attachRemoveAriaLabel")}
                       onClick={removeFile}
                     >

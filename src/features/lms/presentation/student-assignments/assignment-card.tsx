@@ -72,7 +72,7 @@ export function AssignmentCard({ assignment, onOpen }: AssignmentCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2.5">
             <h2 className="font-extrabold text-[15px] text-foreground leading-snug">
-              {assignment.title}
+              {t("card.title", { title: assignment.title })}
             </h2>
             <StatusBadge tone={badge.tone} className="shrink-0 gap-1">
               <badge.icon className="size-3" aria-hidden="true" />

@@ -140,9 +140,11 @@ export const AllTab: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText("Giải phương trình bậc 2"),
+      canvas.getByText("Bài tập: Giải phương trình bậc 2"),
     ).toBeInTheDocument();
-    await expect(canvas.getByText("Kiểm tra 15 phút")).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Bài tập: Kiểm tra 15 phút"),
+    ).toBeInTheDocument();
     // Header subtitle reflects pendingCount.
     await expect(
       canvas.getByText("Còn 2 bài đang chờ nộp"),
@@ -170,11 +172,13 @@ export const PendingTabSwitch: Story = {
     await userEvent.click(tab);
     await expect(tab).toHaveAttribute("aria-selected", "true");
     await waitFor(() =>
-      expect(canvas.getByText("Giải phương trình bậc 2")).toBeInTheDocument(),
+      expect(
+        canvas.getByText("Bài tập: Giải phương trình bậc 2"),
+      ).toBeInTheDocument(),
     );
     // The graded item is not in the pending tab.
     await expect(
-      canvas.queryByText("Kiểm tra 15 phút"),
+      canvas.queryByText("Bài tập: Kiểm tra 15 phút"),
     ).not.toBeInTheDocument();
   },
 };
@@ -191,6 +195,10 @@ export const EmptyPendingTab: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // pendingCount === 0 → header shows the zero-state subtitle, not "Còn 0 bài".
+    await expect(
+      canvas.getByText("Không có bài tập nào cần nộp"),
+    ).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("tab", { name: "Chưa nộp" }));
     await waitFor(() =>
       expect(

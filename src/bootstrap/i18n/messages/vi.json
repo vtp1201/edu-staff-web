@@ -675,7 +675,8 @@
   "assignments": {
     "page": {
       "title": "Bài tập",
-      "subtitle": "Còn {count} bài đang chờ nộp"
+      "subtitle": "Còn {count} bài đang chờ nộp",
+      "subtitleZero": "Không có bài tập nào cần nộp"
     },
     "tabs": {
       "groupLabel": "Lọc bài tập",
@@ -685,6 +686,7 @@
       "graded": "Đã chấm"
     },
     "card": {
+      "title": "Bài tập: {title}",
       "meta": "{subject} · Lớp {className} · GV: {teacherName}",
       "dueDate": "Hạn nộp: {date}",
       "submittedAt": "Đã nộp lúc: {date}",
