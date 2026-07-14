@@ -1210,16 +1210,245 @@
     },
 
     "assignments": {
+      // ── Student Assignments (US-E11.7, DR-020) ─────────────────────────────
+      // Source: design_src/edu/assignments.jsx — StudentAssignmentsScreen
+      // Role: student only. Mock-first (decision 0014) — lms has no real
+      // assignment endpoint yet; submit flow is local state transition
+      // (pending → submitted) with a simulated async delay.
       "route": "/student/assignments",
+      "role": "student",
+      "designFile": "design_src/edu/assignments.jsx",
+      "i18nNamespace": "assignments",
+      "layout": "single column, maxWidth 900, page header + filter tabs + vertical card list",
       "filters": ["Tất cả", "Chưa nộp", "Đã nộp", "Đã chấm"],
+
+      "pageHeader": {
+        "title": "Bài tập",
+        "subtitle": "đếm số bài đang chờ nộp (pendingCount) — 0 → 'Không có bài tập nào cần nộp'"
+      },
+
+      "filterTabs": {
+        "pattern": "pill tab-bar (invitations.jsx TABS / exam.jsx filter) — role='tablist'/'tab'",
+        "active": {
+          "background": "primaryColor/14 (0x14 alpha)",
+          "color": "primaryColor",
+          "fontWeight": 800
+        },
+        "inactive": { "color": "text-secondary", "fontWeight": 600 },
+        "container": {
+          "background": "card",
+          "border": "1px solid border",
+          "borderRadius": 10,
+          "padding": 4
+        },
+        "responsive": "horizontal scroll (overflow-x: auto) when tabs overflow container width"
+      },
+
+      // ── Card anatomy (Layout 1) ───────────────────────────────────────────
       "card": {
-        "iconBox": { "size": 44, "borderRadius": 10 },
+        "background": "card",
+        "borderRadius": 12,
+        "border": "1px solid border",
+        "boxShadow": "0 2px 12px rgba(0,0,0,0.04)",
+        "padding": "18px 20px",
+        "iconBox": {
+          "size": 44,
+          "borderRadius": 10,
+          "background": "courseColor/18",
+          "icon": "fileText (pending) | checkSquare (submitted) | award (graded)"
+        },
+        "titleRow": {
+          "title": "Bài tập: {title}",
+          "titleWeight": 800,
+          "titleSize": 14.5,
+          "badge": "flex-end, same row as title on ≥481px; wraps below title at ≤480px"
+        },
+        "metaLine": "{subject} · Lớp {class} · GV: {teacher} — 12px text-secondary",
+        "dueLine": {
+          "icon": "calendar",
+          "text": "Hạn nộp: {dueDate}",
+          "colorNormal": "text-muted",
+          "colorOverdue": "error (bold)"
+        },
+        "submittedLine": {
+          "shownWhen": "status in [submitted, graded]",
+          "icon": "check",
+          "text": "Đã nộp lúc {submittedAt}",
+          "color": "text-muted"
+        },
+        "scoreChip": {
+          "shownWhen": "status === 'graded'",
+          "component": "AsgScoreChip — icon award + score/maxScore, color per score mapping"
+        },
+        "cta": {
+          "pending": {
+            "label": "Nộp bài",
+            "icon": "upload",
+            "variant": "primary"
+          },
+          "submitted": {
+            "label": "Xem bài đã nộp",
+            "icon": "eye",
+            "variant": "secondary"
+          },
+          "graded": {
+            "label": "Xem điểm & nhận xét",
+            "icon": "award",
+            "variant": "secondary"
+          }
+        },
         "daysLeftBadge": {
           "lte1day": "error",
           "lte3days": "warning",
-          "gt3days": "success"
+          "gt3days": "success",
+          "labelPattern": "Còn {n} ngày | Còn 1 ngày | Hạn hôm nay | Quá hạn {n} ngày",
+          "icon": "clock (pending) | alertTriangle (overdue/dueToday) — never color-only (decision 0013)"
         },
-        "overdue": { "borderColor": "error/40" }
+        "submittedBadge": {
+          "label": "Đã nộp",
+          "color": "primary",
+          "icon": "check"
+        },
+        "gradedBadge": {
+          "label": "Đã chấm",
+          "color": "success",
+          "icon": "checkSquare"
+        },
+        "overdue": {
+          "borderColor": "error/40",
+          "dueLineColor": "error",
+          "badge": "Quá hạn {n} ngày (error)"
+        }
+      },
+
+      // ── Submit sheet anatomy (Layout 2) ───────────────────────────────────
+      "submitSheet": {
+        "shell": "side sheet — position fixed top/right/bottom, width 520, maxWidth 100vw (full-bleed <520px), scrim rgba(20,30,50,0.45)",
+        "pattern": "subjects-dialogs.jsx SubjectDetailSheet shell",
+        "a11y": "role='dialog' aria-modal='true' aria-labelledby, focus trap (Tab/Shift+Tab cycle), Escape closes + restores focus to trigger",
+        "header": {
+          "iconBox": 40,
+          "title": "Nộp bài / Bài đã nộp",
+          "subtitle": "{subject} · Lớp {class}",
+          "closeButton": "icon x, aria-label Đóng"
+        },
+        "body": {
+          "assignmentSummary": "title (read-only) + description (read-only) + due line",
+          "fileAttach": {
+            "label": "Đính kèm tệp (+ '(không bắt buộc)' when allowFile-optional)",
+            "control": "mock file-picker button (paperclip icon, dashed border, minHeight 44) → hidden <input type=file multiple>",
+            "attachedList": "filename chip row (fileText icon + name + remove x), background primaryColor/light-tint",
+            "validationError": "role='alert', errorText color, e.g. 'Tệp quá lớn (tối đa 20MB)'"
+          },
+          "contentTextarea": {
+            "label": "Nội dung bài làm (không bắt buộc)",
+            "rows": 6,
+            "border": "1.5px solid border",
+            "borderRadius": 9
+          },
+          "alreadySubmittedView": "read-only card (bg) — submittedAt + fileName, no edit controls"
+        },
+        "footer": {
+          "default": [
+            "Lưu nháp (secondary, icon penLine)",
+            "Nộp bài (primary, icon send)"
+          ],
+          "submitting": "primary CTA replaced with spinner (asg-spinner, motion-safe, 0.7s linear) + 'Đang nộp…', disabled",
+          "overdueConfirm": {
+            "trigger": "clicking Nộp bài when assignment is overdue (pending + daysLeft < 0)",
+            "prompt": "Bạn đang nộp trễ hạn, tiếp tục? (icon alertTriangle, errorText color)",
+            "actions": [
+              "Quay lại (ghost, back to form)",
+              "Vẫn nộp bài (danger, confirms submit)"
+            ]
+          },
+          "postSubmit": "card status → submitted, sheet closes, toast confirmation (bottom-center, 3.2s auto-dismiss)"
+        }
+      },
+
+      // ── Graded feedback anatomy (Layout 3) ────────────────────────────────
+      "gradedSheet": {
+        "shell": "same side-sheet shell as submitSheet (520/100vw), separate component (GradedSheet) — read-only",
+        "a11y": "role='dialog' aria-modal='true' aria-labelledby, Escape closes + restores focus",
+        "scoreChip": {
+          "icon": "award",
+          "layout": "icon + value(20px/800) + '/'+maxScore(13px/600)",
+          "color": "score mapping (score≥8 success · <5 error · else text-primary)"
+        },
+        "teacherComment": {
+          "sectionLabel": "Nhận xét của giáo viên — 11.5px/800 uppercase text-muted",
+          "block": "background bg, border 1px solid border, borderRadius 10, padding 14px 16px, text 13.5px/1.65"
+        },
+        "gradedFileLink": {
+          "shownWhen": "gradedFileName present",
+          "icon": "download",
+          "text": "Tải tệp GV đã chấm — {gradedFileName}",
+          "color": "primary"
+        },
+        "timestamps": [
+          "Đã nộp lúc {submittedAt} (icon check)",
+          "Đã chấm lúc {gradedAt} (icon award)"
+        ]
+      },
+
+      // ── States (mandatory) ────────────────────────────────────────────────
+      "states": {
+        "loading": {
+          "component": "EduSkeleton",
+          "variant": "rows",
+          "count": 4
+        },
+        "empty": {
+          "component": "EduEmpty",
+          "perTab": {
+            "pending": {
+              "icon": "checkSquare",
+              "color": "success",
+              "title": "Không có bài tập nào cần nộp 🎉"
+            },
+            "submitted": {
+              "icon": "inbox",
+              "color": "primaryColor",
+              "title": "Chưa có bài nộp nào"
+            },
+            "graded": {
+              "icon": "inbox",
+              "color": "primaryColor",
+              "title": "Chưa có bài nộp nào"
+            },
+            "all": {
+              "icon": "inbox",
+              "color": "primaryColor",
+              "title": "Chưa có bài tập nào được giao"
+            }
+          }
+        },
+        "error": {
+          "component": "EduError",
+          "trigger": "fetch failure",
+          "action": "onRetry — Thử lại button"
+        },
+        "submitting": {
+          "buttonState": "spinner + disabled",
+          "inlineError": "mock file-too-large validation message, role='alert'"
+        }
+      },
+
+      // ── Accessibility notes ───────────────────────────────────────────────
+      "a11y": {
+        "statusNeverColorOnly": "every badge pairs an icon (clock/alertTriangle/check/checkSquare) with a text label — decision 0013",
+        "focusManagement": "sheets trap focus (Tab cycle), Escape closes, focus restored to the triggering element on close",
+        "touchTargets": "CTA buttons + file-picker control ≥44px minHeight at <820px viewport (isMobile)",
+        "motionSafe": "spinner + sheet-slide-in + toast-in animations gated behind @media (prefers-reduced-motion: reduce) → animation: none",
+        "ariaLive": "toast role='status'; validation error role='alert'; overdue confirm prompt uses errorText color + icon (not color-only)",
+        "contrast": "overdue due-line + badge text use --edu-error-text (not raw --edu-error) per ADR 0027/0049"
+      },
+
+      // ── Responsive ────────────────────────────────────────────────────────
+      "responsive": {
+        "375": "card stacks full-width (single column, always); title-row wraps to column at ≤480px so badge moves under title instead of inline; meta line wraps to 2 lines naturally (flex-wrap not needed, text wraps); sheet becomes full-bleed (maxWidth 100vw)",
+        "768": "1-column list retained (list-first content, unlike courses grid); filter tabs scroll horizontally (overflow-x auto) if they overflow the tab-bar width",
+        "1024+": "content maxWidth 900, centered"
       }
     },
 

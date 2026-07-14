@@ -672,6 +672,97 @@
     "yearLabel": "Năm học",
     "yearLabelPlaceholder": "2024-2025"
   },
+  "assignments": {
+    "page": {
+      "title": "Bài tập",
+      "subtitle": "Còn {count} bài đang chờ nộp"
+    },
+    "tabs": {
+      "groupLabel": "Lọc bài tập",
+      "all": "Tất cả",
+      "pending": "Chưa nộp",
+      "submitted": "Đã nộp",
+      "graded": "Đã chấm"
+    },
+    "card": {
+      "meta": "{subject} · Lớp {className} · GV: {teacherName}",
+      "dueDate": "Hạn nộp: {date}",
+      "submittedAt": "Đã nộp lúc: {date}",
+      "daysLeft": {
+        "remaining": "Còn {days} ngày",
+        "dueToday": "Hết hạn hôm nay",
+        "overdue": "Quá hạn"
+      },
+      "status": {
+        "pending": "Chưa nộp",
+        "submitted": "Đã nộp",
+        "graded": "Đã chấm",
+        "overdue": "Quá hạn"
+      },
+      "cta": {
+        "viewDetail": "Xem chi tiết",
+        "submit": "Nộp bài",
+        "viewSubmission": "Xem bài đã nộp",
+        "viewGrade": "Xem điểm & nhận xét"
+      }
+    },
+    "empty": {
+      "allTab": "Bạn chưa có bài tập nào.",
+      "pendingTab": "Không có bài tập nào cần nộp 🎉",
+      "submittedTab": "Chưa có bài nộp nào.",
+      "gradedTab": "Chưa có bài nộp nào."
+    },
+    "skeleton": {
+      "loading": "Đang tải danh sách bài tập..."
+    },
+    "error": {
+      "title": "Không thể tải danh sách bài tập",
+      "description": "Đã có lỗi xảy ra. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "errors": {
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy bài tập.",
+      "forbidden": "Bạn không có quyền xem bài tập này.",
+      "already-submitted": "Bài tập này đã được nộp.",
+      "file-too-large": "Tệp đính kèm vượt quá dung lượng cho phép (tối đa 20MB).",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+    },
+    "submit": {
+      "sheetTitle": "Nộp bài tập",
+      "closeAriaLabel": "Đóng",
+      "descriptionLabel": "Mô tả bài tập",
+      "attachLabel": "Đính kèm tệp",
+      "attachPlaceholder": "Chọn tệp hoặc kéo thả vào đây",
+      "attachHelper": "Hỗ trợ PDF, DOCX, JPG, PNG (tối đa 20MB).",
+      "attachRemoveAriaLabel": "Xoá tệp đính kèm",
+      "fileSelectedLabel": "Đã chọn: {fileName}",
+      "answerLabel": "Nội dung bài làm",
+      "answerPlaceholder": "Nhập nội dung bài làm của bạn…",
+      "answerHelper": "Không bắt buộc với một số loại bài tập.",
+      "saveDraftButton": "Lưu nháp",
+      "submitButton": "Nộp bài",
+      "submittingButton": "Đang nộp bài…",
+      "draftSavedToast": "Đã lưu nháp.",
+      "submitSuccessToast": "Nộp bài thành công.",
+      "confirmOverdue": {
+        "title": "Nộp bài trễ hạn?",
+        "description": "Bạn đang nộp bài trễ hạn, bạn có muốn tiếp tục?",
+        "cancel": "Huỷ",
+        "confirm": "Tiếp tục nộp bài"
+      }
+    },
+    "graded": {
+      "scoreLabel": "Điểm số",
+      "scoreValue": "{score}/{max}",
+      "commentLabel": "Nhận xét của giáo viên",
+      "commentEmpty": "Giáo viên chưa để lại nhận xét.",
+      "attachedFileLabel": "Tệp giáo viên đính kèm",
+      "downloadAriaLabel": "Tải xuống tệp giáo viên đính kèm",
+      "submittedAtLabel": "Đã nộp lúc",
+      "gradedAtLabel": "Đã chấm lúc"
+    }
+  },
   "attendance": {
     "actions": {
       "allPresent": "Tất cả có mặt",

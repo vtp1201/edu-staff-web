@@ -35,3 +35,4 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-017 | Presence Indicator (Messaging) | US-E10.5 | [x] delivered (2026-07-12) |
 | DR-018 | Multi-Tenant Switch (đa trường) | US-E23.1 + US-E23.2 | [x] delivered (2026-07-12) |
 | DR-019 | Principal Reports Dashboard | US-E03.1 | [x] delivered (2026-07-12) |
+| DR-020 | Student Assignments | US-E11.7 | [x] delivered (2026-07-14) |

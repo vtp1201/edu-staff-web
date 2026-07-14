@@ -25,6 +25,16 @@ Canonical docs this role maintains (never create parallel trees):
   `[EXTERNAL]` tags, What changed / Refs / Rationale sections per entry. No
   other changelog file existed anywhere in the repo to mirror style from.
 
+Note on "who flips [x] delivered": the DR-012..019 pass established that
+`uiux-lead` does the final `[x] delivered` flip after validating the batch.
+DR-020 (2026-07-14) is a counter-example — the lead's task brief explicitly
+directed `uiux-docs-manager` to mark DR-020 `[x] delivered` + check every
+Delivery-checklist box (jsx/spec/i18n/screens.md/README/gate/harness-story all
+already done by prior specialists in the same run) as part of THIS sync pass.
+Read the actual task brief for who owns the flip in a given run rather than
+assuming the DR-012..019 precedent always applies — the lead can delegate the
+flip explicitly when it has already confirmed the artifacts exist.
+
 Golden rules learned from the DR-012..019 group-B reconcile pass:
 - ALWAYS extend an existing row (Profile, Messaging, Reports placeholder)
   in-place rather than duplicating — grep the target screen name in the table
