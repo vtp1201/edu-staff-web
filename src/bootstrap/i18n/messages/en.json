@@ -672,6 +672,97 @@
     "yearLabel": "Academic year",
     "yearLabelPlaceholder": "2024-2025"
   },
+  "assignments": {
+    "page": {
+      "title": "Assignments",
+      "subtitle": "{count} assignments pending"
+    },
+    "tabs": {
+      "groupLabel": "Filter assignments",
+      "all": "All",
+      "pending": "Pending",
+      "submitted": "Submitted",
+      "graded": "Graded"
+    },
+    "card": {
+      "meta": "{subject} · Class {className} · Teacher: {teacherName}",
+      "dueDate": "Due: {date}",
+      "submittedAt": "Submitted: {date}",
+      "daysLeft": {
+        "remaining": "{days} days left",
+        "dueToday": "Due today",
+        "overdue": "Overdue"
+      },
+      "status": {
+        "pending": "Pending",
+        "submitted": "Submitted",
+        "graded": "Graded",
+        "overdue": "Overdue"
+      },
+      "cta": {
+        "viewDetail": "View details",
+        "submit": "Submit",
+        "viewSubmission": "View submission",
+        "viewGrade": "View grade & feedback"
+      }
+    },
+    "empty": {
+      "allTab": "You don't have any assignments yet.",
+      "pendingTab": "No assignments due 🎉",
+      "submittedTab": "No submissions yet.",
+      "gradedTab": "No submissions yet."
+    },
+    "skeleton": {
+      "loading": "Loading assignments..."
+    },
+    "error": {
+      "title": "Couldn't load assignments",
+      "description": "Something went wrong. Please try again.",
+      "retry": "Retry"
+    },
+    "errors": {
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Assignment not found.",
+      "forbidden": "You don't have permission to view this assignment.",
+      "already-submitted": "This assignment has already been submitted.",
+      "file-too-large": "Attached file exceeds the allowed size (max 20MB).",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "submit": {
+      "sheetTitle": "Submit assignment",
+      "closeAriaLabel": "Close",
+      "descriptionLabel": "Assignment description",
+      "attachLabel": "Attach file",
+      "attachPlaceholder": "Choose a file or drag and drop here",
+      "attachHelper": "Supports PDF, DOCX, JPG, PNG (max 20MB).",
+      "attachRemoveAriaLabel": "Remove attached file",
+      "fileSelectedLabel": "Selected: {fileName}",
+      "answerLabel": "Your answer",
+      "answerPlaceholder": "Enter your answer…",
+      "answerHelper": "Optional for some assignment types.",
+      "saveDraftButton": "Save draft",
+      "submitButton": "Submit",
+      "submittingButton": "Submitting…",
+      "draftSavedToast": "Draft saved.",
+      "submitSuccessToast": "Assignment submitted successfully.",
+      "confirmOverdue": {
+        "title": "Submit late?",
+        "description": "You're submitting this assignment after the deadline. Do you want to continue?",
+        "cancel": "Cancel",
+        "confirm": "Continue submitting"
+      }
+    },
+    "graded": {
+      "scoreLabel": "Score",
+      "scoreValue": "{score}/{max}",
+      "commentLabel": "Teacher's feedback",
+      "commentEmpty": "The teacher hasn't left any feedback yet.",
+      "attachedFileLabel": "Teacher's attached file",
+      "downloadAriaLabel": "Download teacher's attached file",
+      "submittedAtLabel": "Submitted at",
+      "gradedAtLabel": "Graded at"
+    }
+  },
   "attendance": {
     "actions": {
       "allPresent": "All present",
