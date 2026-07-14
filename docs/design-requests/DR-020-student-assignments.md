@@ -186,3 +186,39 @@ File upload is UI-only (accept + preview filename), no real storage integration.
 - [x] `docs/design-requests/README.md` Active Requests row added + marked delivered
 - [x] Design-review gate (`/impeccable` audit + critique) passed
 - [x] Harness story `US-E11.7` registered via `harness-cli story add`
+
+---
+
+## Evidence (design-review gate, `docs/DESIGN_REVIEW.md`, self-audit by uiux-lead)
+
+Design review: pass
+
+- **design-system**: conform — tokens-only (`T.*` from `design_src/edu/tokens.js`),
+  no raw color introduced; status→badge mapping matches
+  `.claude/rules/design-system.md` §Status mappings exactly (pending ≤1d error /
+  ≤3d warning / >3d success; submitted primary; graded success). Badge/Button
+  primitives reused from `ui.jsx` (no re-forked component). Score chip reuses
+  the `≥8 success / <5 error / else text-primary` mapping. `screens.md` row 109
+  updated to match.
+- **a11y**: WCAG AA — status never color-only (icon + text label on every
+  badge); `role="tablist"`/`"tab"`/`aria-selected` on filter tabs; submit + graded
+  sheets are `role="dialog"` + `aria-modal` + `aria-labelledby`, with focus-trap +
+  ESC-to-close + focus-restore on close (mirrors `ReportContentDialog` pattern);
+  icon-only buttons (close, remove-file) have Vietnamese `aria-label`s; toast is
+  `role="status"`; file-too-large / submit errors use `role="alert"`. 32×32 icon-only
+  close button matches the pre-existing repo-wide convention already used in
+  `invitations.jsx`/`moderation.jsx` sheets — not a new deviation introduced by
+  this DR (a systemic bump to 44px would be a cross-cutting fix like DR-009/011,
+  out of scope here). Primary CTAs get `minHeight: 44` on mobile.
+- **motion**: all custom animations (`asg-spin`, `asg-sheet-in`, `asg-toast-in`)
+  gated behind `@media (prefers-reduced-motion: reduce)`.
+- **impeccable**: no anti-pattern found on manual audit against
+  `.claude/rules/impeccable.md` scope (no side-stripe misuse, no palette/layout
+  reinvention, no destructive-text-on-`--edu-warning` case, no motion outside
+  the approved catalogue). No `/impeccable` CLI suggestion conflicted with the
+  design system.
+- **states**: loading (`EduSkeleton`), 4 distinct empty states (all/pending/
+  submitted/graded tabs, per DR), error with retry (`EduError`), success (card
+  list) — all present. Responsive: verified card stacks + badge wraps below
+  480px, tabs scroll horizontally on overflow, sheet is full-bleed on mobile
+  (maxWidth 100vw) — no breakage anticipated at 320px.
