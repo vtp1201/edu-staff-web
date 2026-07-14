@@ -190,3 +190,121 @@ export const Mobile_375: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
   globals: { viewport: { value: "mobile1" } },
 };
+
+// ── US-E10.6 presence (FR-004) ──────────────────────────────────────────────
+
+const MIXED_PRESENCE: GroupEntity = {
+  ...GROUP,
+  members: [
+    // Deliberately pre-shuffled so the online-first sort is observable.
+    {
+      userId: "u-c1",
+      name: "Lê Thị Cẩm",
+      initials: "LC",
+      color: "purple",
+      role: "member",
+      isOnline: false,
+      presence: "offline",
+    },
+    {
+      userId: "u-l1",
+      name: "Hoàng Thị Linh",
+      initials: "HL",
+      color: "error",
+      role: "member",
+      isOnline: false,
+      presence: "recent",
+      lastActiveAt: "2026-07-14T09:57:00.000Z",
+    },
+    {
+      userId: "me",
+      name: "Nguyễn Thị Hương",
+      initials: "NH",
+      color: "primary",
+      role: "admin",
+      isOnline: true,
+      presence: "online",
+    },
+    {
+      userId: "u-b1",
+      name: "Trần Văn Bình",
+      initials: "TB",
+      color: "teal",
+      role: "member",
+      isOnline: true,
+      presence: "online",
+    },
+  ],
+};
+
+/**
+ * AC-10.6.4.1/.2/.3 — dot per row, online-first stable sort, and a count banner
+ * that includes recent members (2 online + 1 recent = "3 đang hoạt động").
+ */
+export const PresenceMixedSortAndCount: Story = {
+  args: { group: MIXED_PRESENCE },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("3 đang hoạt động")).toBeInTheDocument(),
+    );
+    // Online + recent members carry a dot; offline does not → 3 dots.
+    await waitFor(() =>
+      expect(document.body.querySelectorAll("[data-presence]").length).toBe(3),
+    );
+    // Sort: an online member DOM-precedes the offline member.
+    const online = body().getByText("Trần Văn Bình");
+    const offline = body().getByText("Lê Thị Cẩm");
+    await expect(
+      online.compareDocumentPosition(offline) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  },
+};
+
+/** AC-10.6.4.8 — single-member group: count reflects that one member. */
+export const PresenceSingleMember: Story = {
+  args: {
+    group: {
+      ...GROUP,
+      members: [
+        {
+          userId: "me",
+          name: "Nguyễn Thị Hương",
+          initials: "NH",
+          color: "primary",
+          role: "admin",
+          isOnline: true,
+          presence: "online",
+        },
+      ],
+    },
+  },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("1 đang hoạt động")).toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * AC-10.6.4.5/.9 — presence unavailable (fetch failed / no records merged):
+ * every row falls back to offline-equivalent, count 0, no dots, no error UI.
+ */
+export const PresenceUnavailable: Story = {
+  args: {
+    group: {
+      ...GROUP,
+      members: GROUP.members.map((m) => ({
+        ...m,
+        isOnline: false,
+        presence: "offline" as const,
+      })),
+    },
+  },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("0 đang hoạt động")).toBeInTheDocument(),
+    );
+    await expect(document.body.querySelector("[data-presence]")).toBeNull();
+  },
+};

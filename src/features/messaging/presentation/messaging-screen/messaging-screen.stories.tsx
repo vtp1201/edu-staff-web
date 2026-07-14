@@ -215,7 +215,7 @@ export default meta;
 
 type Story = StoryObj<typeof MessagingScreen>;
 
-/** AC-2: Direct tab — avatar, name, last message, time, unread badge, online dot (AC-7) */
+/** AC-2: Direct tab — avatar, name, last message, time, unread badge, presence dot (US-E10.6) */
 export const DirectTabPopulated: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -229,8 +229,14 @@ export const DirectTabPopulated: Story = {
     expect(
       canvas.getByText("Cô có thể tham dự họp hội đồng lúc 15h không?"),
     ).toBeInTheDocument();
-    // AC-7: online indicator sr-only text — at least one "Đang online" present
-    expect(canvas.getAllByText("Đang online").length).toBeGreaterThanOrEqual(1);
+    // US-E10.6 AC-10.6.1.1/.2.1: online presence — sr-only "đang hoạt động"
+    // (list + header dots) plus the DM header caption "Đang hoạt động".
+    await waitFor(() =>
+      expect(
+        canvas.getAllByText("đang hoạt động").length,
+      ).toBeGreaterThanOrEqual(1),
+    );
+    expect(canvas.getByText("Đang hoạt động")).toBeInTheDocument();
     // AC-2: conversation items accessible by role
     const items = canvas.getAllByRole("button", {
       name: /mở cuộc trò chuyện/i,

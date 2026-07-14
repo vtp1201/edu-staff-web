@@ -86,3 +86,90 @@ export const ErrorState: Story = {
     await expect(canvas.getByRole("alert")).toBeInTheDocument();
   },
 };
+
+// ── US-E10.6 presence dot (FR-001) ──────────────────────────────────────────
+
+const DIRECT = (
+  presence: "online" | "recent" | "offline" | undefined,
+): ConversationEntity => ({
+  id: "u1",
+  type: "direct",
+  name: "Trần Minh Quân",
+  avatarInitials: "TQ",
+  color: "success",
+  lastMessage: "Xin chào cô",
+  lastMessageTime: "10:15",
+  unreadCount: 0,
+  presence,
+});
+
+/** AC-10.6.1.1 — online → filled success dot + sr-only "đang hoạt động". */
+export const PresenceOnline: Story = {
+  args: { conversations: [DIRECT("online")] },
+  play: async ({ canvasElement }) => {
+    await expect(
+      canvasElement.querySelector('[data-presence="online"]'),
+    ).not.toBeNull();
+    await expect(
+      within(canvasElement).getByText("đang hoạt động"),
+    ).toBeInTheDocument();
+  },
+};
+
+/** AC-10.6.1.2 — recent → hollow dot + sr-only "vừa hoạt động gần đây". */
+export const PresenceRecent: Story = {
+  args: { conversations: [DIRECT("recent")] },
+  play: async ({ canvasElement }) => {
+    const dot = canvasElement.querySelector('[data-presence="recent"]');
+    await expect(dot).not.toBeNull();
+    await expect(dot?.className).toContain("border-edu-success");
+    await expect(
+      within(canvasElement).getByText("vừa hoạt động gần đây"),
+    ).toBeInTheDocument();
+  },
+};
+
+/** AC-10.6.1.3 — offline → no dot at all (never grey). */
+export const PresenceOffline: Story = {
+  args: { conversations: [DIRECT("offline")] },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector("[data-presence]")).toBeNull();
+  },
+};
+
+/** AC-10.6.1.4 — group conversation row → never a presence dot. */
+export const PresenceGroupNoDot: Story = {
+  args: {
+    conversations: [
+      {
+        id: "g1",
+        type: "group",
+        name: "Lớp 11B2 — Toán",
+        avatarInitials: "11B2",
+        color: "primary",
+        lastMessage: "Bài tập trang 87",
+        lastMessageTime: "08:15",
+        unreadCount: 0,
+        memberCount: 33,
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector("[data-presence]")).toBeNull();
+  },
+};
+
+/**
+ * AC-10.6.1.5/.7 — presence unresolved (records not merged yet) or fetch failed
+ * → row renders offline-equivalent: no dot, no banner. The list itself is not
+ * in a loading state (progressive, non-blocking).
+ */
+export const PresencePendingOrError: Story = {
+  args: { conversations: [DIRECT(undefined)] },
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).getByText("Trần Minh Quân"),
+    ).toBeInTheDocument();
+    await expect(canvasElement.querySelector("[data-presence]")).toBeNull();
+  },
+};
