@@ -310,3 +310,40 @@ principalReportsKeys = {
 See also: `docs/stories/epics/E03-principal-reports/US-E03.1-principal-reports-dashboard/state-design.md`
 for the full write-up (RSC↔client boundary, invalidation map, race-condition
 table).
+
+## Per-tab COLD refetch vs. client-filter-of-one-list — decide by AC wording, not by sibling precedent (US-E11.7, lms/student-assignments)
+
+Two screens in the same `lms` feature made **opposite** calls on "does a tab
+switch trigger a real fetch or just filter an already-cached list":
+- US-E11.6 `student-courses-screen.tsx` (3 tabs): client-filter, single
+  `coursesListKey()`, `useMemo` filter — correct there because its AC never
+  claimed a per-tab loading cycle.
+- US-E11.7 `student-assignments` (4 tabs): REAL per-tab query
+  (`assignmentsKeys.list(tab)`), because its own AC (AC-1171.9) explicitly
+  said "the previous list **unmounts**... independent loading→state **cycle
+  begins**" and AC-1171.1 said "**the active tab's fetch** is pending" —
+  wording a BA doesn't use casually when a client-filter precedent already
+  existed to imitate.
+
+**Rule of thumb**: don't default to copying a sibling screen's tab-filtering
+pattern just because it's in the same feature module. Read the literal AC
+verbs — "unmount"/"independent cycle"/"the active tab's fetch" signal a real
+per-tab query is intended; plain "shows only matching items" signals a
+client-side filter is fine. When the AC does want a real per-tab cycle:
+- Key the subtree by tab (`key={activeTab}` on the list-rendering region) so
+  React actually unmounts the previous tab's `useQuery` instance.
+- `gcTime: 0` on every non-default tab (and even the default, once it
+  unmounts) — guarantees a cold fetch (real loading state) on every
+  re-activation, not just the first. `staleTime: 0` to match.
+- RSC-seeded default tab keeps a modest `staleTime` (e.g. `30_000`) so first
+  paint doesn't immediately background-refetch and waste the RSC round trip.
+- Mutation-driven cache update in this shape: patch the *currently active*
+  tab's cache directly with the mutation's own returned entity (cheap,
+  no drift), then `invalidateQueries({ queryKey: keys.lists(), refetchType:
+  "inactive" })` for the other 3 — cheap/no-op given they're `gcTime:0`
+  evicted already, just defense-in-depth. Do NOT hand-roll the other 3 tabs'
+  filter predicates client-side (drift risk vs. the mock/BE's own filter
+  logic) and do NOT do a blanket active-refetch invalidate (causes a visible
+  post-mutation skeleton flicker for data you already have).
+
+See full write-up: `docs/stories/epics/E11-lms-exams/US-E11.7-student-assignments/plan.md` §13.
