@@ -176,7 +176,7 @@ export function FeedPostCard({
           onClick={() => setShowComments((s) => !s)}
           aria-label={t("post.toggleComments", { author: post.authorName })}
           className={cn(
-            "inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 py-1.5 font-semibold text-[12.5px]",
+            "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 font-semibold text-[12.5px]",
             showComments
               ? "bg-primary/12 text-primary"
               : "text-edu-text-secondary hover:bg-muted",

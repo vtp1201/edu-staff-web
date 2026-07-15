@@ -66,7 +66,7 @@ export function FeedReactionBar({
             disabled={disabled}
             onClick={() => onReact(type)}
             className={cn(
-              "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold text-[12.5px] transition-colors",
+              "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold text-[12.5px] transition-colors",
               mine
                 ? "border-primary bg-primary/12 font-bold text-primary"
                 : "border-border bg-card text-edu-text-secondary hover:bg-muted",
@@ -84,7 +84,7 @@ export function FeedReactionBar({
             type="button"
             aria-label={addReactionAriaLabel}
             disabled={disabled}
-            className="inline-flex size-8 items-center justify-center rounded-full border border-border border-dashed text-edu-text-secondary hover:bg-muted disabled:opacity-60"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border border-dashed text-edu-text-secondary hover:bg-muted disabled:opacity-60"
           >
             <SmilePlus aria-hidden="true" className="size-4" />
           </button>
@@ -101,7 +101,7 @@ export function FeedReactionBar({
                 setPickerOpen(false);
               }}
               className={cn(
-                "inline-flex size-9 items-center justify-center rounded-full text-lg transition-transform hover:scale-110 motion-reduce:transition-none motion-reduce:hover:scale-100",
+                "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg transition-transform hover:scale-110 motion-reduce:transition-none motion-reduce:hover:scale-100",
                 reactions.myReaction === type && "bg-primary/12",
               )}
             >

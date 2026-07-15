@@ -19,7 +19,7 @@ export interface ScopeTabsProps {
 }
 
 const TAB_CLASS =
-  "inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 font-semibold text-[13px] transition-colors";
+  "inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 font-semibold text-[13px] transition-colors";
 
 /**
  * Scope tablist (FR-001). Hand-rolled `role=tablist` with MANUAL activation
@@ -57,8 +57,11 @@ export function ScopeTabs({
   };
 
   const activateClassTab = () => {
-    if (isSchool && activeClassId) onSelectScope(activeClassId);
-    else if (multiClass) setListboxOpen((o) => !o);
+    // Multi-class: always open the listbox chooser first — never silently jump
+    // to a specific class (A11Y-002). Single-class: no listbox exists, so
+    // activate that one class directly.
+    if (multiClass) setListboxOpen((o) => !o);
+    else if (myClasses[0]) onSelectScope(myClasses[0].classId);
   };
 
   return (

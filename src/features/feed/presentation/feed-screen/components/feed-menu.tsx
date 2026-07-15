@@ -44,7 +44,7 @@ export function FeedMenu({
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
           aria-label={ariaLabel}
           className="shrink-0 text-edu-text-secondary"
         >

@@ -136,7 +136,7 @@ export const FeedComposer = forwardRef<HTMLTextAreaElement, FeedComposerProps>(
                 aria-label={t("attachImage")}
                 onClick={() => setAttach((a) => !a)}
                 className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-semibold text-[12.5px]",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-semibold text-[12.5px]",
                   attach
                     ? "bg-primary/12 text-primary"
                     : "text-edu-text-secondary hover:bg-muted",

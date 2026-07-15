@@ -278,7 +278,12 @@ export const StudentComposerScopeMatrix: Story = {
   },
 };
 
-/** AC-1901.6 — scope switch triggers an independent load cycle. */
+/**
+ * AC-1901.6 — scope switch triggers an independent load cycle.
+ * A11Y-002 — a MULTI-CLASS viewer's first click on the class tab opens the
+ * listbox chooser; it must NOT silently jump to a specific class. Only after
+ * picking an option does the class feed load.
+ */
 export const ScopeSwitch: Story = {
   args: baseVM({
     fetchFeedPageAction: fn(async ({ selection }) => ({
@@ -299,7 +304,16 @@ export const ScopeSwitch: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await canvas.findAllByRole("article");
+    // First click on the class tab opens the listbox (portal) — NO silent switch.
     await userEvent.click(canvas.getByRole("tab", { name: /Lớp 11A2/ }));
+    const body = within(document.body);
+    await waitFor(() => expect(body.getByRole("listbox")).toBeInTheDocument());
+    // The class feed has NOT loaded yet — no class was silently selected.
+    await expect(
+      canvas.queryByText("Bài viết của lớp 11A2"),
+    ).not.toBeInTheDocument();
+    // Picking an option performs the actual scope switch.
+    await userEvent.click(body.getByRole("option", { name: /Lớp 11A2/ }));
     await waitFor(() =>
       expect(canvas.getByText("Bài viết của lớp 11A2")).toBeInTheDocument(),
     );

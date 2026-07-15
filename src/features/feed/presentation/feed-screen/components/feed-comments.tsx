@@ -171,7 +171,7 @@ export function FeedComments({
           aria-label={t("comments.send")}
           aria-busy={addMutation.isPending}
           className={cn(
-            "inline-flex size-8 shrink-0 items-center justify-center rounded-full text-primary-foreground transition-colors",
+            "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-primary-foreground transition-colors",
             draft.trim() ? "bg-primary" : "bg-border",
           )}
         >
