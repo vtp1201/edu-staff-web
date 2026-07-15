@@ -131,3 +131,42 @@ every fixed repo hoists correctly + fresh grep for misses" review brief caught
 everything). **Lesson for future bug-class sweeps**: when the task brief
 asserts a specific site is "already correct," still independently verify via
 Read — don't propagate an unverified assumption into the story packet.
+
+**US-E18.4 (class-management, 2026-07-16) — the epic table's assumed fix can
+itself be wrong; verify BE has the endpoint before committing to a remediation
+plan.** The table said "teacher list đổi nguồn sang IAM members" — reading
+`edu-api/services/iam/docs/openapi.yaml` directly (`Members` tag) found IAM's
+PUBLIC API has NO `GET` listing endpoint and NO single-member lookup at all
+(only `POST` add / `PATCH` roles / `DELETE` remove on
+`/api/v1/tenants/{id}/members`; the one lookup path,
+`/internal/v1/.../members/{userId}`, is internal-only, bypasses Kong). This is
+a level worse than US-E18.2's finding (staffing found IAM has no *name* field;
+this found IAM has no *listing* at all). **Lesson**: don't assume the epic
+table's stated remediation is achievable — grep the actual target service's
+`openapi.yaml` for the specific HTTP method before writing the story's AC
+around it. Decision made: `listTeachers` stays mock-first permanently
+(unchanged from before — it already was mock-only); logged cross-repo ask #7
+(IAM listing endpoint) + #8 (put `studentCount`/homeroom fields directly on
+`ClassResponse`, same ask-class as `activeAssignmentCount`/`childCount`).
+Also: `ClassResponse` carries neither `studentCount` nor homeroom fields —
+derived per-row via 2 fan-out calls (roster count paginated-to-completion +
+homeroom-assignment with `404 CLASS_ASSIGNMENT_NOT_FOUND`→`null`), but scoped
+to the CURRENT LIST PAGE only (not a tenant-wide fan-out like E18.2/E18.3) —
+cheaper, worth calling out explicitly as a distinct pattern when a "counts"
+gap appears on a paginated list endpoint vs a "list everything" endpoint.
+**Cross-feature coupling discovered**: `features/principal/.../
+principal-teachers.repository.ts` (a separate, not-yet-wired feature) directly
+imports class-management's DTO/mapper — changing the shared mapper's `toClass`
+signature broke that file's compile. Fixed with a minimal, clearly-commented
+neutral-enrichment call site (that repo's real mode was already non-functional
+before this US — its own `/core/api/v1/teachers` endpoint doesn't exist per
+the epic's "KHÔNG thuộc wave này" list), plus one test-fixture update for
+compile/test parity — NOT a full wiring of that sibling feature (out of scope
+for this US's card). **Lesson**: before rewriting a shared mapper/DTO
+signature, grep for cross-feature importers (`grep -rl <MapperName>
+src/features`) — Clean Architecture per-feature intent doesn't stop another
+feature from reusing types in practice in this codebase, and a compile break
+there is your responsibility to resolve within the same US, scoped minimally.
+287 files/1712 tests (baseline 286/1680), tech-lead APPROVED first pass (no
+revision round — independently re-verified all 7 scrutiny points against the
+edu-api specs itself, confirmed the IAM/ClassResponse claims).
