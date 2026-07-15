@@ -1,14 +1,27 @@
+/**
+ * Real wire shape — `core` `ClassResponse` (US-E18.4). No `studentCount` and
+ * no homeroom fields on the wire; those are derived separately (see
+ * `class-management.repository.ts`). `id`→`classId`, `academicYear`→
+ * `academicYearLabel` vs the mock-first guess (US-E06.3).
+ */
 export interface ClassResponseDto {
-  id: string;
+  classId: string;
+  tenantId: string;
   name: string;
   gradeLevel: number;
+  academicYearLabel: string;
   status: "ACTIVE" | "ARCHIVED";
-  academicYear: string;
-  studentCount: number;
-  homeroomTeacherId: string | null;
-  homeroomTeacherName: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ClassListResponseDto {
-  items: ClassResponseDto[];
+export interface CreateClassRequestDto {
+  name: string;
+  gradeLevel: number;
+  academicYearLabel: string;
+}
+
+export interface UpdateClassRequestDto {
+  name: string;
+  gradeLevel: number;
 }

@@ -176,6 +176,28 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    raw `memberId`. Ask: thêm `fullName` vào `MemberResponse` (hoặc một batch
    `GET /iam/api/v1/users?ids=`) để service tiêu thụ join tên mà không cần
    endpoint internal-only.
+7. **(US-E18.4, 2026-07-16) [MAJOR — corrects #6's premise] IAM có KHÔNG MỘT
+   endpoint listing member nào trên public API.** Đọc trực tiếp
+   `edu-api/services/iam/docs/openapi.yaml` (tag `Members`) xác nhận
+   `/api/v1/tenants/{id}/members` chỉ có `POST` (add); `/members/{userId}` chỉ
+   có `PATCH` (đổi roles) + `DELETE` (remove) — **không có `GET` list, không có
+   `GET` single-member lookup** trên public API. Endpoint lookup duy nhất
+   (`GET /internal/v1/tenants/{tenantId}/members/{userId}`) là internal
+   service-to-service, không qua Kong, web không gọi được. Hệ quả: US-E18.4's
+   epic-table note "teacher list đổi nguồn sang IAM members" **không khả thi**
+   với contract hiện tại — không chỉ thiếu tên hiển thị (ask #6) mà còn thiếu
+   hẳn khả năng liệt kê. `class-management`'s `listTeachers` giữ nguyên
+   mock-first vĩnh viễn cho tới khi có ask này. Ask: thêm
+   `GET /api/v1/tenants/{id}/members` (list, cursor-paginated, optional
+   `?role=`) trước khi bất kỳ màn admin nào (homeroom picker, "assign
+   teacher"...) có thể wiring thật cho việc chọn người.
+8. **(US-E18.4, 2026-07-16)** `ClassResponse` không có `studentCount` hay
+   homeroom fields (`homeroomTeacherId`/`homeroomTeacherName`) — web phải
+   fan-out `GET .../students` (đếm roster, phân trang tới hết) +
+   `GET .../homeroom-teacher` cho MỖI lớp trên trang danh sách hiện tại (2×N
+   round-trip/trang, không phải toàn tenant như US-E18.2/E18.3's fan-out).
+   Ask: thêm 3 field này thẳng vào `ClassResponse` (cùng nhóm ask như
+   `activeAssignmentCount`/`childCount` đã xin ở US-E18.2/US-E18.3).
 
 ## Dependencies & thứ tự
 

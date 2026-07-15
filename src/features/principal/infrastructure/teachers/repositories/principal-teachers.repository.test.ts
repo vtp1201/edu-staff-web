@@ -211,14 +211,14 @@ describe("PrincipalTeachersRepository", () => {
       const get = interceptedGet(() =>
         listEnvelope([
           {
-            id: "c-10a1",
+            classId: "c-10a1",
+            tenantId: "tenant-1",
             name: "10A1",
             gradeLevel: 10,
             status: "ACTIVE",
-            academicYear: "2025-2026",
-            studentCount: 30,
-            homeroomTeacherId: null,
-            homeroomTeacherName: null,
+            academicYearLabel: "2025-2026",
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
           },
         ]),
       );

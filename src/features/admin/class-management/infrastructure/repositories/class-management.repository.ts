@@ -20,12 +20,17 @@ import type {
 } from "../../domain/repositories/i-class-management.repository";
 import { fail, ok, type Result } from "../../domain/use-cases/result";
 import type { ClassResponseDto } from "../dtos/class-response.dto";
-import type { TeacherMemberResponseDto } from "../dtos/teacher-member-response.dto";
-import { ClassManagementMapper } from "../mappers/class-management.mapper";
+import type { EnrollmentResponseDto } from "../dtos/enrollment-response.dto";
+import type { HomeroomAssignmentResponseDto } from "../dtos/homeroom-assignment-response.dto";
+import {
+  type ClassEnrichment,
+  ClassManagementMapper,
+} from "../mappers/class-management.mapper";
 
 /**
  * Map a normalised ApiError to the class-management failure union.
  * Branch on error.code (UPPER_SNAKE), never on message (TR-026, decision 0008).
+ * Full `Class + TeachingAssignment (US-041)` matrix — see story US-E18.4.
  */
 function toFailure(err: unknown): ClassManagementFailure {
   const code = errorCodeOf(err);
@@ -34,16 +39,35 @@ function toFailure(err: unknown): ClassManagementFailure {
   if (code === "NETWORK_ERROR" || status === undefined) {
     return { type: "network-error" };
   }
-  if (code === "CLASS_ALREADY_EXISTS" || status === 409) {
+  if (code === "CLASS_ALREADY_EXISTS") {
     return { type: "duplicate-class" };
   }
-  if (code === "CLASS_GRADE_LEVEL_OUTSIDE_TENANT_RANGE" || status === 422) {
+  if (code === "CLASS_ARCHIVED") {
+    return { type: "class-archived" };
+  }
+  if (
+    code === "CLASS_GRADE_LEVEL_OUTSIDE_TENANT_RANGE" ||
+    code === "CLASS_INVALID_GRADE_LEVEL" ||
+    code === "SCHOOL_GRADE_LEVEL_RANGE_NOT_CONFIGURED"
+  ) {
     return { type: "grade-level-out-of-range" };
+  }
+  if (code === "CLASS_ASSIGNMENT_TEACHER_NOT_FOUND") {
+    return { type: "homeroom-teacher-not-found" };
+  }
+  if (code === "CLASS_ASSIGNMENT_NOT_TEACHER_ROLE") {
+    return { type: "assignee-not-teacher" };
+  }
+  if (code === "CLASS_INVALID_NAME") {
+    return { type: "invalid-name" };
+  }
+  if (code === "CLASS_INVALID_ACADEMIC_YEAR") {
+    return { type: "invalid-academic-year" };
   }
   if (code === "CLASS_NOT_FOUND" || status === 404) {
     return { type: "not-found" };
   }
-  if (status === 403) {
+  if (code === "CLASS_FORBIDDEN" || status === 403) {
     return { type: "forbidden" };
   }
   if ((err as { retryable?: boolean })?.retryable) {
@@ -55,20 +79,81 @@ function toFailure(err: unknown): ClassManagementFailure {
 export class ClassManagementRepository implements IClassManagementRepository {
   constructor(private readonly http: AxiosInstance) {}
 
+  /** Paginate a class's roster to completion and count enrollments. */
+  private async countRoster(classId: string): Promise<number> {
+    let count = 0;
+    let cursor: string | undefined;
+    for (;;) {
+      const envelope = (await this.http.get(CLASS_EP.classStudents(classId), {
+        params: { cursor, limit: 100 },
+        raw: true,
+      })) as unknown as ApiEnvelope<EnrollmentResponseDto[]>;
+      const { data, pagination } = parseEnvelope(envelope);
+      count += data.length;
+      if (!pagination?.hasMore || !pagination.nextCursor) break;
+      cursor = pagination.nextCursor;
+    }
+    return count;
+  }
+
+  /** `404 CLASS_ASSIGNMENT_NOT_FOUND` means "no homeroom" — not an error. */
+  private async fetchHomeroom(
+    classId: string,
+  ): Promise<{ id: string | null; name: string | null }> {
+    try {
+      const dto = (await this.http.get(
+        CLASS_EP.classHomeroomTeacher(classId),
+      )) as unknown as HomeroomAssignmentResponseDto;
+      const teacher = ClassManagementMapper.toTeacherMemberFromHomeroom(dto);
+      return { id: teacher.userId, name: teacher.displayName };
+    } catch (err) {
+      if (errorCodeOf(err) === "CLASS_ASSIGNMENT_NOT_FOUND") {
+        return { id: null, name: null };
+      }
+      throw err;
+    }
+  }
+
+  private async enrich(classId: string): Promise<ClassEnrichment> {
+    const [studentCount, homeroom] = await Promise.all([
+      this.countRoster(classId),
+      this.fetchHomeroom(classId),
+    ]);
+    return {
+      studentCount,
+      homeroomTeacherId: homeroom.id,
+      homeroomTeacherName: homeroom.name,
+    };
+  }
+
   async listClasses(params: {
     academicYear?: string;
     gradeLevel?: number;
     cursor?: string;
   }): Promise<Result<ClassListPage, ClassManagementFailure>> {
     try {
-      // cursor-paginated list: { raw: true } + parseEnvelope (TR-026).
+      // cursor-paginated list: { raw: true } + parseEnvelope (TR-026). No
+      // `gradeLevel` query filter on the real wire (US-E18.4) — apply
+      // client-side after fetching the page.
       const envelope = (await this.http.get(CLASS_EP.classes, {
-        params: { ...params },
+        params: { academicYear: params.academicYear, cursor: params.cursor },
         raw: true,
       })) as unknown as ApiEnvelope<ClassResponseDto[]>;
       const { data, pagination } = parseEnvelope(envelope);
+      const filtered =
+        params.gradeLevel === undefined
+          ? data
+          : data.filter((dto) => dto.gradeLevel === params.gradeLevel);
+
+      const classes = await Promise.all(
+        filtered.map(async (dto) => {
+          const enrichment = await this.enrich(dto.classId);
+          return ClassManagementMapper.toClass(dto, enrichment);
+        }),
+      );
+
       return ok({
-        data: data.map(ClassManagementMapper.toClass),
+        data: classes,
         nextCursor: pagination?.nextCursor ?? null,
         hasMore: pagination?.hasMore ?? false,
       });
@@ -83,9 +168,17 @@ export class ClassManagementRepository implements IClassManagementRepository {
     try {
       const data = (await this.http.post(
         CLASS_EP.classes,
-        input,
+        ClassManagementMapper.toCreateClassBody(input),
       )) as unknown as ClassResponseDto;
-      return ok(ClassManagementMapper.toClass(data));
+      // A brand-new class has no students/homeroom yet — cheap accurate
+      // defaults, no extra round-trips.
+      return ok(
+        ClassManagementMapper.toClass(data, {
+          studentCount: 0,
+          homeroomTeacherId: null,
+          homeroomTeacherName: null,
+        }),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -96,11 +189,22 @@ export class ClassManagementRepository implements IClassManagementRepository {
     input: RenameClassInput,
   ): Promise<Result<Class, ClassManagementFailure>> {
     try {
+      let { name, gradeLevel } = input;
+      if (name === undefined || gradeLevel === undefined) {
+        // Real `UpdateClassRequest` requires BOTH fields — backfill any
+        // missing one from the current class (US-E18.4).
+        const current = (await this.http.get(
+          CLASS_EP.class(classId),
+        )) as unknown as ClassResponseDto;
+        name = name ?? current.name;
+        gradeLevel = gradeLevel ?? current.gradeLevel;
+      }
       const data = (await this.http.patch(
         CLASS_EP.class(classId),
-        input,
+        ClassManagementMapper.toUpdateClassBody({ name, gradeLevel }),
       )) as unknown as ClassResponseDto;
-      return ok(ClassManagementMapper.toClass(data));
+      const enrichment = await this.enrich(classId);
+      return ok(ClassManagementMapper.toClass(data, enrichment));
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -123,7 +227,7 @@ export class ClassManagementRepository implements IClassManagementRepository {
   ): Promise<Result<void, ClassManagementFailure>> {
     try {
       await this.http.put(CLASS_EP.classHomeroomTeacher(classId), {
-        teacherUserId,
+        teacherMemberId: teacherUserId,
       });
       return ok(undefined);
     } catch (err) {
@@ -135,21 +239,28 @@ export class ClassManagementRepository implements IClassManagementRepository {
     classId: string,
   ): Promise<Result<TeacherMember | null, ClassManagementFailure>> {
     try {
-      const data = (await this.http.get(
+      const dto = (await this.http.get(
         CLASS_EP.classHomeroomTeacher(classId),
-      )) as unknown as TeacherMemberResponseDto | null;
-      return ok(data ? ClassManagementMapper.toTeacherMember(data) : null);
+      )) as unknown as HomeroomAssignmentResponseDto;
+      return ok(ClassManagementMapper.toTeacherMemberFromHomeroom(dto));
     } catch (err) {
+      if (errorCodeOf(err) === "CLASS_ASSIGNMENT_NOT_FOUND") {
+        return ok(null);
+      }
       return fail(toFailure(err));
     }
   }
 
-  // MOCK-FIRST (decision 0014): the IAM member-list contract for a TEACHER-role
-  // filter is not finalised, and resolving tenantId from the session cookie is
-  // out of scope for this story. The DI factory always serves listTeachers from
-  // the mock repository; this real implementation is a placeholder.
-  // TODO(US-E12.10 follow-up): wire GET /iam/api/v1/tenants/:tenantId/members?role=TEACHER
-  // with tenantId decoded from the session JWT once the contract is confirmed.
+  // MOCK-FIRST, permanently, until BE ships a listing endpoint (US-E18.4):
+  // IAM's public API (`edu-api/services/iam/docs/openapi.yaml`, `Members`
+  // tag) exposes only `POST` (add), `PATCH` (change roles), `DELETE`
+  // (remove) on `/api/v1/tenants/{id}/members` — NO `GET` list and NO `GET`
+  // single-member lookup. The only member-lookup endpoint
+  // (`GET /internal/v1/tenants/{tenantId}/members/{userId}`) is explicitly
+  // internal service-to-service only (bypasses Kong). There is currently no
+  // way for the web app to list members (with or without a role filter) from
+  // IAM. Cross-repo ask #7 logged in EPIC-OVERVIEW.md. The DI factory always
+  // serves this method from the mock repository, regardless of `USE_MOCK`.
   async listTeachers(): Promise<
     Result<TeacherMember[], ClassManagementFailure>
   > {
