@@ -4,6 +4,7 @@ export type SubjectCatalogueFailure =
   | { type: "code-format" }
   | { type: "archive-blocked-parent" }
   | { type: "archive-blocked-subject" }
+  | { type: "subject-archived" }
   | { type: "already-exists" }
   | { type: "parent-in-use" }
   | { type: "parent-archived" }

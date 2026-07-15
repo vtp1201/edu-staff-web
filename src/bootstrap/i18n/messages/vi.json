@@ -3145,6 +3145,7 @@
       "parent-forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "parent-in-use": "Bộ môn đang có môn học hoạt động, không thể lưu trữ.",
       "parent-not-active": "Bộ môn không còn hoạt động.",
+      "subject-archived": "Môn học đã được lưu trữ, không thể chỉnh sửa.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."
     },
     "subjectDetail": {

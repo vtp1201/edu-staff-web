@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ISubjectCatalogueRepository } from "@/features/admin/subject-catalogue/domain/repositories/i-subject-catalogue.repository";
@@ -11,6 +12,10 @@ import { SubjectCatalogueRepository } from "@/features/admin/subject-catalogue/i
 
 async function makeRepo(): Promise<ISubjectCatalogueRepository> {
   if (USE_MOCK) return new MockSubjectCatalogueRepository();
+  // Proactive refresh (decision 0018): rotate the access token BEFORE the
+  // protected core call if it's about to expire, avoiding a wasted 401.
+  // EPIC-OVERVIEW.md playbook step 6 (US-E18.3).
+  await ensureFreshSession();
   return new SubjectCatalogueRepository(await createServerHttpClient());
 }
 
