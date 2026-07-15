@@ -6,14 +6,18 @@ import {
 } from "./roster.mapper";
 
 describe("roster.mapper", () => {
-  it("toClassSummary passes camelCase fields through", () => {
-    const result = toClassSummary({
-      id: "cls-10a1",
-      name: "10A1",
-      gradeLevel: 10,
-      homeroomTeacher: "Nguyễn Thị Hương",
-      year: "2025–2026",
-    });
+  it("toClassSummary maps wire classId/academicYearLabel + injected homeroom name", () => {
+    // US-E18.5: wire `ClassResponse` carries classId/academicYearLabel and NO
+    // homeroom field — the display name is fetched separately and injected.
+    const result = toClassSummary(
+      {
+        classId: "cls-10a1",
+        name: "10A1",
+        gradeLevel: 10,
+        academicYearLabel: "2025–2026",
+      },
+      "Nguyễn Thị Hương",
+    );
     expect(result).toEqual({
       id: "cls-10a1",
       name: "10A1",
@@ -23,14 +27,16 @@ describe("roster.mapper", () => {
     });
   });
 
-  it("toClassSummary preserves null homeroomTeacher", () => {
-    const result = toClassSummary({
-      id: "cls-10b3",
-      name: "10B3",
-      gradeLevel: 10,
-      homeroomTeacher: null,
-      year: "2025–2026",
-    });
+  it("toClassSummary passes null homeroom through (no assignment)", () => {
+    const result = toClassSummary(
+      {
+        classId: "cls-10b3",
+        name: "10B3",
+        gradeLevel: 10,
+        academicYearLabel: "2025–2026",
+      },
+      null,
+    );
     expect(result.homeroomTeacher).toBeNull();
   });
 

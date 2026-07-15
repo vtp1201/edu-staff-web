@@ -13,13 +13,22 @@ function toStatus(raw: string): RosterStudent["status"] {
   return raw === "transferred" ? "transferred" : "active";
 }
 
-export function toClassSummary(dto: ClassDto): ClassSummary {
+/**
+ * Wire `ClassResponse` carries no homeroom field (US-E18.5) — the display name
+ * is fetched separately (`GET .../homeroom-teacher`) and injected here; the
+ * mapper never reads a `homeroomTeacher` field off the DTO. `null` = no
+ * homeroom assigned.
+ */
+export function toClassSummary(
+  dto: ClassDto,
+  homeroomTeacherName: string | null,
+): ClassSummary {
   return {
-    id: dto.id,
+    id: dto.classId,
     name: dto.name,
     gradeLevel: dto.gradeLevel,
-    homeroomTeacher: dto.homeroomTeacher,
-    year: dto.year,
+    homeroomTeacher: homeroomTeacherName,
+    year: dto.academicYearLabel,
   };
 }
 
