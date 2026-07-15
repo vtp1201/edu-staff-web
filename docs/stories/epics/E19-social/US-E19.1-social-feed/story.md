@@ -180,6 +180,51 @@ Implemented by `fe-nextjs-engineer` (feat/us-e19.1-social-feed).
   moderation's two call sites updated to pass `label`/`errorLabel`. (Note: `audit-log` has its own
   richer, divergent `LoadMoreButton` — intentionally left untouched, out of scope.)
 
+**Tech-lead review (`fe-tech-lead-reviewer`): Approved.** Layering, reuse discipline (no duplicated
+dialogs/use-cases/i18n), ADR-0052 correctness, `LoadMoreButton` promotion, TanStack Query cache
+recipes, tokens, i18n parity (62/62 keys vi/en, zero drift), and security (client visibility policies
+are render-only, never trusted for authz) all verified directly (94 tests, `tsc`, `bun build` re-run
+by the reviewer, not just read from the engineer's claim). 2 non-blocking notes: an existing
+`text-[11px]` arbitrary-value pattern (matches 5+ other features, not a new issue) and the local-state
+vs. URL-searchParam scope choice (confirmed acceptable, non-AC).
+
+**Accessibility audit (`fe-accessibility-auditor`): PASS after fix.** Initial pass found 1 Major
+(A11Y-001 — 6 controls below the 44×44px touch-target floor: `FeedMenu` trigger, scope tabs, composer
+attach-toggle, post-card comments-toggle, reaction chips + add-reaction picker, comment send button)
+and 1 Minor (A11Y-002 — multi-class scope-tab first-click silently selected `myClasses[0]` instead of
+opening the listbox chooser). Both fixed by `fe-nextjs-engineer` (commit `590436f`, 50 unit/integration
++ 20 Storybook tests re-verified green after the fix). Full WCAG 2.1 AA coverage table (contrast,
+keyboard, focus order/visible, ARIA name/role/value, status messages) — all PASS. One informational,
+NOT-new finding (A11Y-003): reconfirms the already-flagged US-E19.2 `use-dialog-return-focus` gap in
+`ReportContentDialog`/`DestructiveConfirmDialog` — correctly left untouched, out of this story's scope.
+
+**Design-review gate (`docs/DESIGN_REVIEW.md`, owned by `fe-lead`): PASS.**
+```text
+Design review: pass
+- design-system: conform (tokens-only — text-edu-error-text for error/destructive per ADR 0049, no
+  raw colors, no side-stripe/gradient-text/glassmorphism anti-patterns found on grep spot-check;
+  pinned marker icon+text not color-only; role badges reuse StatusBadge tone map; LoadMoreButton
+  promoted to components/shared/ on its 2nd caller per component-organization.md)
+- a11y: WCAG AA OK after A11Y-001/002 fix; keyboard OK; reduced-motion OK (transition-colors without
+  an explicit motion-reduce guard matches this repo's existing ui/button convention — not a new
+  violation; the one real hover-scale transform already gates motion-reduce)
+- impeccable audit: 0 findings on spot-check against the Absolute-bans list (side-stripe borders,
+  gradient text, glassmorphism, hero-metric template) — full interactive impeccable audit/critique
+  session not run in this non-interactive harness context; design-system conformance + a11y gate
+  substitute for it per `.claude/rules/impeccable.md`'s own scope note (impeccable may only catch
+  a11y/spacing/state gaps here, which the mandatory reviewer+auditor gate already covered)
+- states: loading (FeedSkeletonRows, 3 rows) / empty (EmptyState, CTA gated on canPost) / error
+  (FeedErrorState, retryable vs non-retryable distinct copy) / success (pinned-first) all present,
+  Storybook-tested; 320px responsive OK (scope tabs scroll horizontally)
+```
+
+Fast-follows flagged (out of this story's scope, not blocking, recommended as separate follow-up
+work by `fe-lead`): (1) add `use-dialog-return-focus.ts` to `ReportContentDialog`/
+`DestructiveConfirmDialog` (US-E19.2 latent gap, independently confirmed by both
+`fe-component-architect` and `fe-accessibility-auditor`); (2) promote the now-4th-occurrence inline
+error-state shape (`FeedErrorState` ~ `ReportErrorBanner` ~ `RegionErrorState`) to
+`components/shared/inline-error-state/`.
+
 **Fast-follows flagged to fe-lead (NOT fixed here — out of scope):**
 - `ReportContentDialog` + `DestructiveConfirmDialog` (US-E19.2) do NOT use `use-dialog-return-focus`
   → latent focus-restore gap on close (component-architecture §0.4).
