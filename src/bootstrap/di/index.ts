@@ -11,6 +11,7 @@ export * from "./class-log.di";
 export * from "./class-management.di";
 export * from "./exam.di";
 export * from "./exam-bank.di";
+export * from "./feed.di";
 export * from "./grades.di";
 export * from "./lesson-bank.di";
 export * from "./lms.di";
