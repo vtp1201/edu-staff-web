@@ -112,7 +112,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.2 | Staffing wiring (departments/titles/assignments) | MATCH | normal | Error: `DEPARTMENT_*`, `POSITION_*`. **Done** — as with US-E18.1 the "MATCH" label held at the path level only; the DTO-shape audit found real drift (id renames `departmentId`/`positionTitleId`/`positionAssignmentId`; department `conceptLabel`→`conceptLabelSuggested`+`conceptLabelCustom`; wrong 4-value `Permission` enum→real 6-value; `assignedAt`→`createdAt`; wire `ARCHIVED`→domain `REVOKED`; no `activeAssignmentCount`/`memberName`/`positionTitleName`/`scopeEntityType` on the wire). `activeAssignmentCount` derived via real paginated count fan-out; `positionTitleName` joined; `memberName` falls back to `memberId` (cross-repo gap — IAM has no name source). See `US-E18.2-staffing-wiring/story.md`. |
 | US-E18.3 | Subject catalogue wiring | MATCH− | normal | `restore` là WEB-ONLY (BE chỉ có `archive`) → giữ mock/ẩn nút + flag BE |
 | US-E18.4 | Class management wiring | MATCH− | normal | `/core/api/v1/teachers` KHÔNG tồn tại → nguồn teacher list đổi sang IAM members (decision trong packet) |
-| US-E18.5 | Admin roster wiring | MATCH− | normal | `students/unassigned` search pool WEB-ONLY → decision: derive từ IAM members − enrolled, hoặc chờ BE |
+| US-E18.5 | Admin roster wiring | MATCH− | normal | **In progress** — the epic table's assumed fix ("derive từ IAM members − enrolled") is not achievable (IAM has no listing/lookup, ask #7); worse, `EnrollmentResponse` itself carries zero display fields (no name/dob/gender/status), so BOTH `getClassRoster` (roster listing, not just the search pool) and `getSearchPool` stay mock-first permanently. Only `getClasses` (class picker, homeroom-name fan-out) + enroll/unenroll/transfer wired real. See `US-E18.5-admin-roster-wiring/story.md` + cross-repo ask #9. |
 | US-E18.6 | IAM member + tenant wiring | MATCH | normal | ⚠️ iam ERROR_CODES.md gần rỗng — xác nhận taxonomy với BE trước khi map failure |
 
 ### Wave 2 — drift nhỏ (path fix) + workflow bổ sung
@@ -198,6 +198,29 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    round-trip/trang, không phải toàn tenant như US-E18.2/E18.3's fan-out).
    Ask: thêm 3 field này thẳng vào `ClassResponse` (cùng nhóm ask như
    `activeAssignmentCount`/`childCount` đã xin ở US-E18.2/US-E18.3).
+9. **(US-E18.5, 2026-07-16) [MAJOR — roster display data doesn't exist
+   anywhere on the public API]** `EnrollmentResponse`
+   (`GET /classes/{classId}/students`, the class roster listing) carries only
+   `enrollmentId`/`classId`/`studentMemberId`/`academicYearLabel`/`enrolledAt`
+   — no student name, DOB, gender, or status. This is worse than ask #6/#7
+   (missing display name): even IF IAM shipped the member-listing endpoint
+   requested in ask #7, IAM's `UserProfileResponse` still has **no `gender`
+   field at all** (confirmed by reading `edu-api/services/iam/docs/openapi.yaml`
+   in full), and `fullName`/`dob` are only readable via `GET /users/me`
+   (self) — there is no batch/by-id profile read for arbitrary other users.
+   A single raw-UUID fallback is tolerable for one field (homeroom-teacher
+   display name, ask #6); rendering raw UUIDs for every row of a roster table
+   (name/DOB/gender for potentially 30+ students) is not a shippable
+   approximation. Decision (US-E18.5): the roster-listing screen
+   (`getClassRoster`) and the unassigned-student search pool (`getSearchPool`,
+   already known to have no core endpoint at all — `/students/unassigned`
+   doesn't exist) both stay mock-first permanently. Ask: either (a) add
+   `studentName`/`dob`/`gender` directly onto `EnrollmentResponse` (denormalize
+   at read time, core already owns the enrollment↔student edge), or (b) ship
+   a batch profile-lookup endpoint on IAM (`GET /api/v1/users?ids=`) that
+   ALSO adds a `gender` field to `UserProfileResponse` (net-new field, not
+   just newly-exposed) — needed before any admin-facing roster/search screen
+   can show real student data instead of raw ids.
 
 ## Dependencies & thứ tự
 
