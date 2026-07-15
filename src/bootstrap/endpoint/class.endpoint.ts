@@ -9,6 +9,8 @@ export const CLASS_EP = {
   classArchive: (classId: string) => `/core/api/v1/classes/${classId}/archive`,
   classHomeroomTeacher: (classId: string) =>
     `/core/api/v1/classes/${classId}/homeroom-teacher`,
+  classStudents: (classId: string) =>
+    `/core/api/v1/classes/${classId}/students`,
   classSubjects: (classId: string) =>
     `/core/api/v1/classes/${classId}/subjects`,
   classSubjectTeacher: (classId: string, subjectId: string) =>

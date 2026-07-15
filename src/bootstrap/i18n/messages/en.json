@@ -1114,9 +1114,14 @@
       "yearPlaceholder": "e.g. 2025-2026"
     },
     "errors": {
+      "assignee-not-teacher": "The selected person does not have the teacher role.",
+      "class-archived": "This class is archived and cannot be modified.",
       "duplicate-class": "A class with this name already exists for this academic year.",
       "forbidden": "You do not have permission to perform this action.",
       "grade-level-out-of-range": "The grade level is outside the configured range. Please check School Setup.",
+      "homeroom-teacher-not-found": "This teacher could not be found in the system.",
+      "invalid-academic-year": "The academic year is invalid.",
+      "invalid-name": "The class name is invalid.",
       "network-error": "Connection error. Please try again.",
       "not-found": "Class not found.",
       "unknown": "Something went wrong. Please try again."

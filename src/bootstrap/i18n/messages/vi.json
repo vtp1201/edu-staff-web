@@ -1114,9 +1114,14 @@
       "yearPlaceholder": "Ví dụ: 2025-2026"
     },
     "errors": {
+      "assignee-not-teacher": "Người được chọn không có vai trò giáo viên.",
+      "class-archived": "Không thể thao tác trên lớp đã lưu trữ.",
       "duplicate-class": "Lớp đã tồn tại trong năm học này.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi đã cấu hình. Vui lòng kiểm tra lại Thiết lập trường học.",
+      "homeroom-teacher-not-found": "Không tìm thấy giáo viên này trong hệ thống.",
+      "invalid-academic-year": "Năm học không hợp lệ.",
+      "invalid-name": "Tên lớp không hợp lệ.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "not-found": "Không tìm thấy lớp học.",
       "unknown": "Đã xảy ra lỗi. Vui lòng thử lại."

@@ -67,7 +67,24 @@ export class PrincipalTeachersRepository
         raw: true,
       })) as unknown as ApiEnvelope<ClassResponseDto[]>;
       const { data } = parseEnvelope(envelope);
-      return ok(data.map(ClassManagementMapper.toClass));
+      // KNOWN GAP (out of scope for US-E18.4, logged in EPIC-OVERVIEW.md):
+      // this repository is a separate, not-yet-wired feature that reuses
+      // class-management's DTO/mapper. `ClassResponse` carries neither
+      // `studentCount` nor homeroom fields on the wire (US-E18.4 finding) —
+      // this call site does not (yet) run the enrichment fan-out
+      // `class-management.repository.ts` does, so real mode still shows
+      // 0 students / no homeroom until a dedicated wiring story covers this
+      // screen (CLASS_EP.principalTeachers itself has no BE endpoint either —
+      // see EPIC-OVERVIEW.md "KHÔNG thuộc wave này").
+      return ok(
+        data.map((dto) =>
+          ClassManagementMapper.toClass(dto, {
+            studentCount: 0,
+            homeroomTeacherId: null,
+            homeroomTeacherName: null,
+          }),
+        ),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
