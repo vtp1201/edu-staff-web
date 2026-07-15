@@ -44,7 +44,13 @@ export interface CreateReportInput {
 export interface RemoveContentRepoInput {
   kind: "post" | "comment";
   contentId: string;
-  reportId: string;
+  /**
+   * Originating report id. OPTIONAL per ADR 0052: the moderation queue always
+   * has one in scope, but the social feed's direct-removal path (US-E19.1)
+   * moderates a post/comment with no prior report. When absent the real repo
+   * omits it from the request body and the mock skips its report-lookup branch.
+   */
+  reportId?: string;
   /**
    * Parent post id — ONLY needed for `kind: "comment"`, whose canonical
    * moderate-delete path is `/feeds/posts/{postId}/comments/{commentId}/...`.

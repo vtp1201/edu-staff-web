@@ -1,24 +1,35 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export interface LoadMoreButtonProps {
   hasMore: boolean;
   isLoadingMore: boolean;
   onLoadMore: () => void;
+  /** Already-translated default label (caller owns i18n). */
+  label: string;
+  /** Already-translated label shown when the last "load more" failed. */
+  errorLabel: string;
   /** True when the last "load more" failed — shows retry copy, keeps rows. */
   hasError?: boolean;
 }
 
-/** Cursor "load more" — removed from the DOM (not disabled) when !hasMore. */
+/**
+ * Cursor "load more" control — canonical home (promoted from
+ * `moderation-screen` on its 2nd caller, US-E19.1, per
+ * component-organization.md "promote, don't copy"). Removed from the DOM (not
+ * disabled) when `!hasMore` so it is never a dead tab-stop. `aria-busy` while a
+ * fetch is in flight; `disabled` guards against double-submission. Labels are
+ * props so any feature's i18n namespace can drive it.
+ */
 export function LoadMoreButton({
   hasMore,
   isLoadingMore,
   onLoadMore,
+  label,
+  errorLabel,
   hasError = false,
 }: LoadMoreButtonProps) {
-  const t = useTranslations("moderation");
   if (!hasMore) return null;
 
   return (
@@ -30,7 +41,7 @@ export function LoadMoreButton({
         disabled={isLoadingMore}
         aria-busy={isLoadingMore}
       >
-        {hasError ? t("loadMoreError") : t("loadMore")}
+        {hasError ? errorLabel : label}
       </Button>
     </div>
   );

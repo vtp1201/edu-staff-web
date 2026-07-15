@@ -355,6 +355,11 @@ export class MockModerationRepository implements IModerationRepository {
     if (input.reportId === MOCK_FORBIDDEN_REPORT_ID) {
       return { ok: false, error: { type: "forbidden" } };
     }
+    // ADR 0052: feed's direct-removal path has no report in scope — there is no
+    // queue row to look up or resolve, so succeed without the report branch.
+    if (!input.reportId) {
+      return { ok: true };
+    }
     const r = this.reports.find((x) => x.id === input.reportId);
     if (!r) return { ok: false, error: { type: "not-found" } };
     if (r.status !== "pending") {

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -121,11 +121,11 @@ When updating durable proof status, use numeric booleans:
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | planned — domain use-cases (create/react/comment/pin-mock) + failure mapping, mock repository |
-| Integration | planned — repository↔HTTP contract tests for INT-190-01…06 (envelope/error mapping per `.claude/rules/api-integration.md`); INT-190-07 tested as pure local-reducer, no HTTP |
-| E2E | planned — Storybook interaction stories per UC (scope switch, composer gating, reaction toggle/rollback, comment thread, "…" menu matrix, report entry point invokes shared dialog, pinned ordering, pagination/end-of-feed, pin/unpin mock non-persistence) |
-| Platform | planned — manual keyboard-only pass (tablist arrow-keys, menu Escape/outside-click, comment input) |
-| Release | planned |
+| Unit | **done** — 105 tests (`bun vitest run` on feed domain/mapper/repository + `feed/actions.test.ts` + moderation, incl. ADR-0052 direct-removal test) |
+| Integration | **done** — `feed.repository.test.ts` covers envelope/error mapping for INT-190-01…05 by `error.code`; `togglePinMock` asserted zero-HTTP-call (spy) for INT-190-07 |
+| E2E | **done** — 41 Storybook interaction stories (feed) + 4 (`LoadMoreButton`) + 22 (moderation), covering all 10 UCs incl. cross-story report/remove seams; QA mapped 42/44 AC to a direct test, 2 documented MINOR gaps (comment-thread loading skeleton, exact load-more→end-marker transition moment) |
+| Platform | 0 — no separate human manual keyboard-only pass executed; reasoned via Storybook keyboard-interaction stories (`ScopeTabsKeyboardNav`, `MenuEscapeReturnsFocusToTrigger`) instead, flagged honestly as not a substitute for a real manual pass |
+| Release | ready — tech-lead Approved, a11y PASS-after-fix, design-review gate PASS, QA Go |
 
 ## Harness Delta
 
@@ -141,4 +141,92 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Implemented by `fe-nextjs-engineer` (feat/us-e19.1-social-feed).
+
+**Proof (all run locally, green):**
+- Unit + integration: `bun vitest run src/features/feed src/features/moderation` → 94 passed
+  (feed domain 32, feed mapper/repo 18, plus moderation incl. the new ADR-0052 direct-removal test).
+- E2E/Storybook interaction: `bun vitest:storybook run` feed screen → 20 stories passed
+  (loading / empty±CTA / error retryable+forbidden / populated pinned-first / composer role×scope
+  matrix / scope switch / reaction add+rollback / menu role×author matrix / report-opens-shared-dialog
+  / remove-opens-confirm / pin-no-network+resort / pagination / end-of-feed / comments empty); shared
+  `LoadMoreButton` → 4 stories passed.
+- `bunx tsc --noEmit` clean; `bun lint` clean for all feed/shared/moderation files touched
+  (2 remaining warnings are pre-existing in messaging/academic-records, untouched); `bun run build`
+  succeeds, `/[locale]/t/[tenant]/feed` route compiles.
+
+**Scope notes / deviations (flagged, not silent):**
+- Comment-item "…" menu is **Report-only** (never pin/remove) per component-architecture §0.3,
+  resolving the design_src-vs-AC discrepancy in favour of the AC table. Comment removal has no AC in
+  this story and is out of scope.
+- Repository uses the **Result-returning** convention (`FeedResult<T>`), matching the moderation
+  precedent + the Server-Action `{ok,errorKey,retryable}` shape in `state-design.md`, rather than
+  plan.md Phase 0's "repo throws" wording — a deliberate, consistent-with-moderation choice.
+- Active scope is **local component state**, not a URL searchParam (state-design §10 recommended URL
+  as a free, non-AC choice); local keeps the screen Storybook-testable with no router and `ScopeTabs`
+  stays agnostic to where the state lives. Easy to promote to URL later with no contract change.
+- Pin "not yet persisted" copy implemented exactly as directed: `feed.pin.notPersisted` — vi "Chỉ
+  hiển thị tạm thời trên thiết bị này" / en "Only shown temporarily on this device" (AC-1909.3).
+- A full `MockFeedRepository` (all methods, in-memory seed) backs `NEXT_PUBLIC_USE_MOCK` so the screen
+  is demonstrable without a `social` backend; `togglePinMock` is HTTP-free in BOTH the mock and real
+  repo (INT-190-07 has no endpoint, ever, until BE US-101).
+
+**Sanctioned cross-story edits (ADR 0052 + promotion):**
+- `RemoveContentRepoInput.reportId` widened to optional; `ModerationRepository.removeContent` omits it
+  from the request body when absent; `MockModerationRepository.removeContent` short-circuits ok without
+  the report-lookup branch when absent (+ new test). No other `features/moderation/` change.
+- `LoadMoreButton` MOVED (not copied) from `moderation-screen/components/` to
+  `components/shared/load-more-button/` (+ `index.ts` + `.stories.tsx`); labels are now props;
+  moderation's two call sites updated to pass `label`/`errorLabel`. (Note: `audit-log` has its own
+  richer, divergent `LoadMoreButton` — intentionally left untouched, out of scope.)
+
+**Tech-lead review (`fe-tech-lead-reviewer`): Approved.** Layering, reuse discipline (no duplicated
+dialogs/use-cases/i18n), ADR-0052 correctness, `LoadMoreButton` promotion, TanStack Query cache
+recipes, tokens, i18n parity (62/62 keys vi/en, zero drift), and security (client visibility policies
+are render-only, never trusted for authz) all verified directly (94 tests, `tsc`, `bun build` re-run
+by the reviewer, not just read from the engineer's claim). 2 non-blocking notes: an existing
+`text-[11px]` arbitrary-value pattern (matches 5+ other features, not a new issue) and the local-state
+vs. URL-searchParam scope choice (confirmed acceptable, non-AC).
+
+**Accessibility audit (`fe-accessibility-auditor`): PASS after fix.** Initial pass found 1 Major
+(A11Y-001 — 6 controls below the 44×44px touch-target floor: `FeedMenu` trigger, scope tabs, composer
+attach-toggle, post-card comments-toggle, reaction chips + add-reaction picker, comment send button)
+and 1 Minor (A11Y-002 — multi-class scope-tab first-click silently selected `myClasses[0]` instead of
+opening the listbox chooser). Both fixed by `fe-nextjs-engineer` (commit `590436f`, 50 unit/integration
++ 20 Storybook tests re-verified green after the fix). Full WCAG 2.1 AA coverage table (contrast,
+keyboard, focus order/visible, ARIA name/role/value, status messages) — all PASS. One informational,
+NOT-new finding (A11Y-003): reconfirms the already-flagged US-E19.2 `use-dialog-return-focus` gap in
+`ReportContentDialog`/`DestructiveConfirmDialog` — correctly left untouched, out of this story's scope.
+
+**Design-review gate (`docs/DESIGN_REVIEW.md`, owned by `fe-lead`): PASS.**
+```text
+Design review: pass
+- design-system: conform (tokens-only — text-edu-error-text for error/destructive per ADR 0049, no
+  raw colors, no side-stripe/gradient-text/glassmorphism anti-patterns found on grep spot-check;
+  pinned marker icon+text not color-only; role badges reuse StatusBadge tone map; LoadMoreButton
+  promoted to components/shared/ on its 2nd caller per component-organization.md)
+- a11y: WCAG AA OK after A11Y-001/002 fix; keyboard OK; reduced-motion OK (transition-colors without
+  an explicit motion-reduce guard matches this repo's existing ui/button convention — not a new
+  violation; the one real hover-scale transform already gates motion-reduce)
+- impeccable audit: 0 findings on spot-check against the Absolute-bans list (side-stripe borders,
+  gradient text, glassmorphism, hero-metric template) — full interactive impeccable audit/critique
+  session not run in this non-interactive harness context; design-system conformance + a11y gate
+  substitute for it per `.claude/rules/impeccable.md`'s own scope note (impeccable may only catch
+  a11y/spacing/state gaps here, which the mandatory reviewer+auditor gate already covered)
+- states: loading (FeedSkeletonRows, 3 rows) / empty (EmptyState, CTA gated on canPost) / error
+  (FeedErrorState, retryable vs non-retryable distinct copy) / success (pinned-first) all present,
+  Storybook-tested; 320px responsive OK (scope tabs scroll horizontally)
+```
+
+Fast-follows flagged (out of this story's scope, not blocking, recommended as separate follow-up
+work by `fe-lead`): (1) add `use-dialog-return-focus.ts` to `ReportContentDialog`/
+`DestructiveConfirmDialog` (US-E19.2 latent gap, independently confirmed by both
+`fe-component-architect` and `fe-accessibility-auditor`); (2) promote the now-4th-occurrence inline
+error-state shape (`FeedErrorState` ~ `ReportErrorBanner` ~ `RegionErrorState`) to
+`components/shared/inline-error-state/`.
+
+**Fast-follows flagged to fe-lead (NOT fixed here — out of scope):**
+- `ReportContentDialog` + `DestructiveConfirmDialog` (US-E19.2) do NOT use `use-dialog-return-focus`
+  → latent focus-restore gap on close (component-architecture §0.4).
+- 4th occurrence of the inline error-state shape (`FeedErrorState` ~ `ReportErrorBanner` /
+  `RegionErrorState`) — candidate to promote to `components/shared/inline-error-state/`.

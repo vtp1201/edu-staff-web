@@ -14,6 +14,7 @@ import {
   DestructiveConfirmDialog,
   type DestructiveConfirmErrorSlot,
 } from "@/components/shared/destructive-confirm-dialog";
+import { LoadMoreButton } from "@/components/shared/load-more-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ReportQueueFilter } from "../../domain/entities/report-queue-filter.entity";
 import type { ModerationFailure } from "../../domain/failures/moderation.failure";
@@ -28,7 +29,6 @@ import {
   parseTabFromParams,
   toQueryString,
 } from "./components/filter-search-params";
-import { LoadMoreButton } from "./components/load-more-button";
 import { QueueFilterBar } from "./components/queue-filter-bar";
 import {
   type DetailSheetStatus,
@@ -419,6 +419,8 @@ export function ModerationScreen({
               isLoadingMore={queueQuery.isFetchingNextPage}
               onLoadMore={() => queueQuery.fetchNextPage()}
               hasError={queueQuery.isError && reports.length > 0}
+              label={t("loadMore")}
+              errorLabel={t("loadMoreError")}
             />
           )}
         </div>
@@ -437,6 +439,8 @@ export function ModerationScreen({
               isLoadingMore={auditQuery.isFetchingNextPage}
               onLoadMore={() => auditQuery.fetchNextPage()}
               hasError={auditQuery.isError && auditEntries.length > 0}
+              label={t("loadMore")}
+              errorLabel={t("loadMoreError")}
             />
           )}
         </div>

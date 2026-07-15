@@ -347,3 +347,47 @@ client-side filter is fine. When the AC does want a real per-tab cycle:
   post-mutation skeleton flicker for data you already have).
 
 See full write-up: `docs/stories/epics/E11-lms-exams/US-E11.7-student-assignments/plan.md` §13.
+
+## Mock-first no-HTTP mutation still modeled as `useMutation`, not a bare reducer (US-E19.1, social feed pin/unpin)
+
+When a feature has a client-only, "never persists, cannot fail" toggle (e.g.
+pin/unpin mock-first behind `IFeedRepository.togglePinMock`, INT-190-07, BE
+endpoint not shipped yet): still model it as `useMutation` with a **no-op
+`mutationFn`** (calls the thin Server Action which calls the mock repo method,
+returns synchronously-ish) + `onMutate`/`onError` writing directly into the
+SAME list query cache other real mutations touch (`setQueryData`), rather than
+a parallel `useReducer`/local state duplicate of post data. Reasons: (1)
+uniform mental model — one cache is the single source of truth for post state,
+no drift between "the pin flag" and "the rest of the post fields"; (2) if a
+`select`-level derived sort (e.g. pinned-first) reads the SAME cache, flipping
+`pinned` via `setQueryData` automatically re-triggers `select` and re-sorts —
+no second manual re-sort call; (3) the "must not survive full reload" AC
+requires **zero extra code** — it's just what already happens by not
+persisting anywhere durable (localStorage/cookie) — do NOT add any such sync,
+that would silently violate the non-persistence AC.
+
+**Never-optimistic destructive-remove precedent generalizes across features**:
+`moderation-screen.tsx`'s established "remove is never optimistic, invalidate
+only" rule (see the entry above) was directly reused, unmodified, by a SECOND
+feature (feed) that delegates to the SAME `makeRemoveContentUseCase()` — when
+a new feature's mutation calls an EXISTING cross-feature use-case/action that
+already has an established optimistic-or-not convention in its owning
+feature's container, inherit that convention rather than re-deciding per
+consuming feature. Consistency of a shared destructive action's UX (does it
+flash-then-rollback, or wait-then-refetch) matters more than a small latency
+win for a moderator-only, low-frequency action.
+
+**Cross-feature repository signature gap surfaces at the consuming feature,
+not the owning one** — `IModerationRepository.removeContent()`'s
+`RemoveContentRepoInput.reportId` is a REQUIRED field because its only
+existing caller (`moderation-screen.tsx`) always operates from within a report
+detail context. A second consumer (feed) that wants to remove content
+directly, with no report in scope, exposes that the field should probably be
+optional — this is a real signature/data-contract issue to flag to `fe-lead`
+(and the owning feature's team) before wiring, not something to route around
+by inventing a placeholder value. Watch for this shape of gap whenever a
+"thin action wraps an existing cross-feature use-case" reuse pattern
+(`.claude/CLAUDE.md`'s Reuse ledger convention) is used from a second call
+site with a different precondition than the first.
+
+See full write-up: `docs/stories/epics/E19-social/US-E19.1-social-feed/state-design.md`.

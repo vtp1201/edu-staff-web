@@ -1802,6 +1802,96 @@
       "published": "Exam published"
     }
   },
+  "feed": {
+    "scopeTabs": {
+      "ariaLabel": "Feed scope",
+      "school": "Whole school",
+      "class": "Class {className}",
+      "chooseClass": "Choose class",
+      "classListboxAriaLabel": "Choose a class to view its feed"
+    },
+    "composer": {
+      "contentLabel": "Post content",
+      "placeholderSchool": "Share with the whole school…",
+      "placeholderClass": "Share with class {className}…",
+      "photo": "Photo",
+      "attachImage": "Attach image",
+      "removeImage": "Remove image",
+      "attachedMock": "1 image attached (mock)",
+      "post": "Post",
+      "posting": "Posting…"
+    },
+    "post": {
+      "seeMore": "See more",
+      "showLess": "Show less",
+      "wholeSchool": "Whole school",
+      "inClass": "Class {className}",
+      "comments": "Comments",
+      "toggleComments": "View comments on {author}'s post"
+    },
+    "reactions": {
+      "like": "Like",
+      "love": "Love",
+      "celebrate": "Celebrate",
+      "clap": "Applaud",
+      "ariaLabel": "React {reaction}, {count} people",
+      "add": "Add a reaction"
+    },
+    "comments": {
+      "writeLabel": "Write a comment",
+      "writePlaceholder": "Write a comment…",
+      "send": "Send comment",
+      "empty": "No comments yet",
+      "postGone": "This post no longer exists"
+    },
+    "menu": {
+      "postOptions": "Options for {author}'s post",
+      "commentOptions": "Options for {author}'s comment",
+      "pin": "Pin post",
+      "unpin": "Unpin post",
+      "remove": "Remove content",
+      "report": "Report"
+    },
+    "pin": {
+      "badge": "Pinned",
+      "notPersisted": "Only shown temporarily on this device"
+    },
+    "pagination": {
+      "loadMore": "Load more posts",
+      "loadMoreError": "Could not load more. Tap to retry.",
+      "endOfFeed": "You're all caught up"
+    },
+    "empty": {
+      "title": "No posts yet",
+      "body": "This feed is empty. New posts will appear here.",
+      "cta": "Write the first post"
+    },
+    "errors": {
+      "fetch-failed": "Could not load the feed. Please try again.",
+      "forbidden": "You do not have permission to view this feed.",
+      "scope-not-found": "This class was not found. It may have changed.",
+      "validation": "The data is invalid.",
+      "network-error": "A connection error occurred. Please try again.",
+      "post-not-found": "This post no longer exists.",
+      "errorTitle": "Could not load the feed",
+      "retry": "Retry"
+    },
+    "toasts": {
+      "postCreated": "Post published",
+      "removed": "Content removed"
+    },
+    "removeDialog": {
+      "title": "Remove this content?",
+      "body": "The content will be removed from the feed. This action cannot be undone.",
+      "confirm": "Remove content"
+    },
+    "roles": {
+      "teacher": "Teacher",
+      "principal": "Principal",
+      "student": "Student",
+      "parent": "Parent"
+    }
+  },
   "gradeApproval": {
     "actionApprove": "Approve & Publish",
     "actionBulkLock": "Lock Grades",

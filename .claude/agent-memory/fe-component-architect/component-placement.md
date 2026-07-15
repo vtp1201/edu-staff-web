@@ -73,6 +73,48 @@ addition on the EXISTING primitive (`components/ui/radio-group/`,
 LMS lesson-player precedent (`variant` prop on `Tabs` for visually-distinct
 tab groups).
 
+**LoadMoreButton (US-E19.1):** `moderation-screen/components/load-more-button.tsx`
+(`hasMore`/`isLoadingMore`/`onLoadMore`/`hasError?`) is a promotion candidate the
+MOMENT a 2nd screen needs identical cursor-pagination UI (feed's AC-1908.1-.5 maps
+1:1) — flagged it as "promote now, don't wait for a 3rd" since it's already fully
+generic/presentational with zero feature logic. `ReportErrorBanner`-shaped inline
+error state (role=alert + icon + title + message + optional retry, pre-translated
+strings) has now recurred 3-4x (`RegionErrorState`, `ReportErrorBanner`, feed) —
+flagged as promotion-worthy but did NOT promote unilaterally (bigger reconcile
+lift than LoadMoreButton since existing copies differ slightly in i18n-binding
+style) — that's a fast-follow flag to `fe-lead`, not a same-story fix.
+
+**FeedMenu compound-slot pattern (US-E19.1):** one menu component serving both a
+post-level (up to 3 items: pin/remove/report) and comment-level (report-only)
+call site via OPTIONAL named slot props (`pin?: {pinned,label,onToggle}`,
+`remove?: {label,onRemove}`), never two menu components. Built on
+`DropdownMenuTrigger asChild` wrapping a real `<Button>` (exact `ExamCard`
+precedent, `features/exam-bank/presentation/exam-bank-screen/exam-card.tsx`) —
+gives native Radix trigger-ref focus-restore for free, no custom hook needed.
+
+**Leaf container exception to "one container owns all queries" (US-E19.1):**
+established precedent (`moderation-screen.tsx`) centralizes ALL TanStack Query
+hooks in the single screen container, even a lazily-enabled tab query. Broke
+that pattern deliberately for `FeedComments` (expand-on-demand comment thread
+per post) because N independently mounted/unmounted instances (one per
+expanded post) is a different shape than one always-mounted tab — hoisting
+would need hooks-in-a-loop or manual `useQueries` array-tracking for zero
+Clean-Architecture benefit. Rule of thumb: centralize query ownership in the
+screen container UNLESS the sub-tree is itself an N-cardinality,
+independently-mounted list item (then let that leaf own its own query/mutation
+via Server-Action-ref props — still legal presentation-layer TanStack Query
+usage, same as any container).
+
+**use-dialog-return-focus.ts gap (US-E19.2's shared dialogs, found during
+US-E19.1 architecture pass):** neither `ReportContentDialog` nor
+`DestructiveConfirmDialog` uses `src/shared/use-dialog-return-focus.ts`, and
+both are invoked with NO mounted `<DialogTrigger>`/`<AlertDialogTrigger>` (bare
+`open`/`onOpenChange`) — exactly the hook's documented failure mode (focus falls
+to `<body>` on close instead of returning to the invoking button). Confirmed by
+reading both `.tsx` sources directly, not assumed. Flag to `fe-lead` as a
+fast-follow ON those two shared components — do not patch them from inside a
+consumer story's scope.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

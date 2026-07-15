@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Feed + Storybook portal bleed](pattern-feed-and-storybook-portal-bleed.md) — E19.1: reset body pointer-events + retryDelay:0 in SB decorator (Radix portal lock bleeds between stories); cross-story shared-dialog reuse (thin actions→moderation.di, one root dialog); ADR-0052 optional-field widening; LoadMoreButton promotion w/ label props; Result-repo + local scope state + Intl relative time
 - [Destructive-confirm errorSlot + moderation high-risk](pattern-destructive-confirm-and-moderation.md) — errorSlot(forbidden force-disables confirm/no-retry); never-optimistic remove; toFailure(err,conflictAs) code-only 409 disambig; MOCK_FORBIDDEN_REPORT_ID; screen-owning-router Storybook (appDirectory+retryDelay:0); ~70 baseline SB failures
 - [Use-case Result pattern](pattern-usecase-result.md) — domain use-cases return discriminated Result<T> + CalendarFailure, not throw
 - [Mock-first feature wiring](pattern-mock-first-wiring.md) — USE_MOCK toggle in DI factory; module-level mutable seed in mock repo
