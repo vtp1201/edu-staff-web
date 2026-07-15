@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -121,11 +121,11 @@ When updating durable proof status, use numeric booleans:
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | planned — domain use-cases (create/react/comment/pin-mock) + failure mapping, mock repository |
-| Integration | planned — repository↔HTTP contract tests for INT-190-01…06 (envelope/error mapping per `.claude/rules/api-integration.md`); INT-190-07 tested as pure local-reducer, no HTTP |
-| E2E | planned — Storybook interaction stories per UC (scope switch, composer gating, reaction toggle/rollback, comment thread, "…" menu matrix, report entry point invokes shared dialog, pinned ordering, pagination/end-of-feed, pin/unpin mock non-persistence) |
-| Platform | planned — manual keyboard-only pass (tablist arrow-keys, menu Escape/outside-click, comment input) |
-| Release | planned |
+| Unit | **done** — 105 tests (`bun vitest run` on feed domain/mapper/repository + `feed/actions.test.ts` + moderation, incl. ADR-0052 direct-removal test) |
+| Integration | **done** — `feed.repository.test.ts` covers envelope/error mapping for INT-190-01…05 by `error.code`; `togglePinMock` asserted zero-HTTP-call (spy) for INT-190-07 |
+| E2E | **done** — 41 Storybook interaction stories (feed) + 4 (`LoadMoreButton`) + 22 (moderation), covering all 10 UCs incl. cross-story report/remove seams; QA mapped 42/44 AC to a direct test, 2 documented MINOR gaps (comment-thread loading skeleton, exact load-more→end-marker transition moment) |
+| Platform | 0 — no separate human manual keyboard-only pass executed; reasoned via Storybook keyboard-interaction stories (`ScopeTabsKeyboardNav`, `MenuEscapeReturnsFocusToTrigger`) instead, flagged honestly as not a substitute for a real manual pass |
+| Release | ready — tech-lead Approved, a11y PASS-after-fix, design-review gate PASS, QA Go |
 
 ## Harness Delta
 
