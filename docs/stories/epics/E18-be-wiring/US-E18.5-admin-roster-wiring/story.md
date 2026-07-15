@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -227,4 +227,71 @@ is bigger than the epic table assumed:
 
 ## Evidence
 
-(filled in by `fe-nextjs-engineer` / `fe-tech-lead-reviewer` on completion)
+- **DTO** (`classes-response.dto.ts`) rewritten to the real `ClassResponse`
+  wire shape: `classId`/`academicYearLabel`/`name`/`gradeLevel`, homeroom field
+  removed (now an injected enrichment).
+- **Mapper** (`roster.mapper.ts`) `toClassSummary(dto, homeroomTeacherName)`
+  builds `id` from `classId`, `year` from `academicYearLabel`, `homeroomTeacher`
+  from the injected value; `toRosterStudent`/`toSearchStudent` kept
+  (production-dead post-this-US, exercised only by their own unit tests —
+  candidate cleanup once cross-repo ask #9 lands).
+- **Repository** (`roster.repository.ts`): `getClasses` fans out one
+  `GET .../homeroom-teacher` per class on the current page, reusing
+  class-management's `CLASS_EP.classHomeroomTeacher` +
+  `HomeroomAssignmentResponseDto` (no duplicate DTO/endpoint minted); `404
+  CLASS_ASSIGNMENT_NOT_FOUND` → `null` homeroom. `getClassRoster`/
+  `getSearchPool` reduced to documented dead-code stubs
+  (`{ ok: false, error: { type: "unknown" } }`) — the old wrong-shape
+  real-HTTP code (guessed `RosterStudentDto`/`SearchStudentDto` against the
+  real `EnrollmentResponse`, which carries no display fields) deleted.
+  Enroll/unenroll/unenrollStudents/transferStudent kept unchanged (already
+  correct request shape + two-step transfer + idempotent-404-unenroll).
+- **Error mapping** (`roster-failure.mapper.ts`): removed guessed
+  `STUDENT_NOT_FOUND`/`CLASS_ACCESS_FORBIDDEN` (confirmed absent from
+  `core/docs/ERROR_CODES.md`); added `CLASS_FORBIDDEN` → `forbidden` (confirmed
+  present, US-041 section, applies to class reads). No new `RosterFailure`
+  variants — i18n (`adminRoster.errors.*`) unchanged, full vi/en parity
+  confirmed for all 8 union keys.
+- **DI** (`admin-roster.di.ts`): hybrid composite — `getClasses`/
+  `enrollStudent`/`unenrollStudent`/`unenrollStudents`/`transferStudent` bound
+  to the real repo; `getClassRoster`/`getSearchPool` delegated to
+  `MockRosterRepository` even in real mode (mirrors class-management's
+  `listTeachers` precedent). `ensureFreshSession()` wired before
+  `createServerHttpClient()` in the `!USE_MOCK` branch — first time in this DI
+  factory (predates the playbook).
+- **Endpoint** (`admin-roster.endpoint.ts`): paths unchanged (already correct);
+  comments corrected to cite the confirmed `EnrollmentResponse` display-field
+  gap (roster listing, not just the search pool, is now known to be
+  unwireable) instead of the old "contract not finalised" framing.
+- **Cross-repo ask #9** logged in `EPIC-OVERVIEW.md` (`EnrollmentResponse`
+  needs `studentName`/`dob`/`gender`, or IAM needs a batch profile-lookup that
+  also adds a net-new `gender` field).
+- **Proof**: `roster.mapper.test.ts` (rewritten) + `roster.repository.test.ts`
+  (rewritten — `getClasses` full error matrix incl. `CLASS_FORBIDDEN`,
+  multi-class homeroom fan-out incl. 404-as-null, stub tests asserting no HTTP
+  call for `getClassRoster`/`getSearchPool`, enroll/unenroll/transfer kept,
+  raw-flag real-interceptor regression guard adapted to the new DTO shape);
+  full suite **287 files / 1714 tests pass** (baseline 287/1712 — zero
+  regression, net +2 from stub-behavior tests replacing removed wrong-shape
+  tests); `bunx tsc --noEmit` clean; `bun run build` green; `bun lint` clean
+  (pre-existing warnings in untouched files only).
+- **Tech-lead review**: APPROVED. Independently re-verified `ClassResponse`
+  (no homeroom field), `EnrollmentResponse` (no display fields — the central
+  scope-deciding finding), `HomeroomAssignmentResponse`, `AddStudentRequest`,
+  and the full error-code matrix directly against
+  `edu-api/services/core/docs/{openapi.yaml,ERROR_CODES.md}`; confirmed the
+  hybrid-DI-composite pattern routes `getClassRoster`/`getSearchPool` to mock
+  in both `USE_MOCK` branches; confirmed `ensureFreshSession()` ordering;
+  confirmed domain/presentation untouched; independently ran
+  `bunx tsc --noEmit` / `bun vitest run` / `bun run build` — all green,
+  matching the engineer's report. One non-blocking CONSIDER: add a dedicated
+  test for a non-404 homeroom-fetch error propagating through `getClasses`
+  (behavior is already correct — try/catch surfaces it as a failure — just
+  not explicitly asserted). Not required before merge; logged here as a
+  follow-up nicety, not acted on in this US.
+- **Design-review gate / a11y audit / QA-Playwright E2E**: n/a — zero UI/
+  ViewModel/behavior change (per Epic E18's "Design Source" mandate; matches
+  the E18.1–E18.4 precedent).
+- **Untouched** (as mandated): domain entities (`ClassSummary`/`RosterStudent`/
+  `SearchStudent`), `RosterFailure` union, all presentation
+  (`student-roster-screen` + sub-components), mock repository + fixtures.

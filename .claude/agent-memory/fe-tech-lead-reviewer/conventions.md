@@ -113,6 +113,18 @@ Confirmed facts (verify before citing if stale):
   `invalidateQueries({ refetchType:"inactive" })` for the rest (they're `gcTime:0`-evicted anyway).
   This is a deliberate, sanctioned divergence from the sibling single-flat-key client-filter screen —
   don't flag it as inconsistency.
+- **E18 BE-wiring hybrid-DI composite + permanent-mock stub = ACCEPTED pattern** (confirmed
+  US-E18.4 class-management `listTeachers`, US-E18.5 admin-roster `getClassRoster`/`getSearchPool`):
+  when a real `core` endpoint's wire shape can't render a shippable screen (e.g. `EnrollmentResponse`
+  carries only ids — no name/dob/gender/status — and IAM has no public batch/by-id profile lookup),
+  the real repo method is reduced to a documented dead-code stub (`return { ok:false, error:{ type:
+  "unknown" } }`, no HTTP call) and the DI factory's `!USE_MOCK` branch delegates THAT method to a
+  `MockRepository` instance via an anonymous `class implements IRepo` composite (real methods
+  `.bind(real)`, mock-first methods `.bind(mock)`). Do NOT flag the dead stub as an unused-impl
+  violation or demand the method be removed from the interface — it's the sanctioned precedent and
+  the DI composite guarantees the stub is never invoked. Verify: (a) stub makes no HTTP call
+  (`expect(http.get).not.toHaveBeenCalled()`), (b) DI routes it to mock in the real branch too,
+  (c) a cross-repo ask is logged in EPIC-OVERVIEW.md for the missing BE field/endpoint.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
