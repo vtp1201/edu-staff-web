@@ -1802,6 +1802,96 @@
       "published": "Đã publish đề thi"
     }
   },
+  "feed": {
+    "scopeTabs": {
+      "ariaLabel": "Phạm vi bảng tin",
+      "school": "Toàn trường",
+      "class": "Lớp {className}",
+      "chooseClass": "Chọn lớp",
+      "classListboxAriaLabel": "Chọn lớp để xem bảng tin"
+    },
+    "composer": {
+      "contentLabel": "Nội dung bài viết",
+      "placeholderSchool": "Chia sẻ với cả trường…",
+      "placeholderClass": "Chia sẻ với lớp {className}…",
+      "photo": "Ảnh",
+      "attachImage": "Đính kèm ảnh",
+      "removeImage": "Gỡ ảnh",
+      "attachedMock": "1 ảnh đính kèm (mô phỏng)",
+      "post": "Đăng",
+      "posting": "Đang đăng…"
+    },
+    "post": {
+      "seeMore": "Xem thêm",
+      "showLess": "Thu gọn",
+      "wholeSchool": "Toàn trường",
+      "inClass": "Lớp {className}",
+      "comments": "Bình luận",
+      "toggleComments": "Xem bình luận bài viết của {author}"
+    },
+    "reactions": {
+      "like": "Thích",
+      "love": "Yêu thích",
+      "celebrate": "Chúc mừng",
+      "clap": "Tuyệt vời",
+      "ariaLabel": "Thả cảm xúc {reaction}, {count} lượt",
+      "add": "Thả cảm xúc khác"
+    },
+    "comments": {
+      "writeLabel": "Viết bình luận",
+      "writePlaceholder": "Viết bình luận…",
+      "send": "Gửi bình luận",
+      "empty": "Chưa có bình luận",
+      "postGone": "Bài viết không còn tồn tại"
+    },
+    "menu": {
+      "postOptions": "Tuỳ chọn cho bài viết của {author}",
+      "commentOptions": "Tuỳ chọn cho bình luận của {author}",
+      "pin": "Ghim bài viết",
+      "unpin": "Bỏ ghim bài viết",
+      "remove": "Gỡ nội dung",
+      "report": "Báo cáo"
+    },
+    "pin": {
+      "badge": "Đã ghim",
+      "notPersisted": "Chỉ hiển thị tạm thời trên thiết bị này"
+    },
+    "pagination": {
+      "loadMore": "Tải thêm bài viết",
+      "loadMoreError": "Không thể tải thêm. Nhấn để thử lại.",
+      "endOfFeed": "Bạn đã xem hết bảng tin"
+    },
+    "empty": {
+      "title": "Chưa có bài viết nào",
+      "body": "Bảng tin này còn trống. Bài viết mới sẽ xuất hiện tại đây.",
+      "cta": "Đăng bài viết đầu tiên"
+    },
+    "errors": {
+      "fetch-failed": "Không tải được bảng tin. Vui lòng thử lại.",
+      "forbidden": "Bạn không có quyền xem bảng tin này.",
+      "scope-not-found": "Không tìm thấy lớp này. Có thể lớp đã thay đổi.",
+      "validation": "Dữ liệu không hợp lệ.",
+      "network-error": "Đã xảy ra lỗi kết nối. Vui lòng thử lại.",
+      "post-not-found": "Bài viết không còn tồn tại.",
+      "errorTitle": "Không tải được bảng tin",
+      "retry": "Thử lại"
+    },
+    "toasts": {
+      "postCreated": "Đã đăng bài viết",
+      "removed": "Đã gỡ nội dung"
+    },
+    "removeDialog": {
+      "title": "Gỡ nội dung này?",
+      "body": "Nội dung sẽ bị gỡ khỏi bảng tin. Hành động này không thể hoàn tác.",
+      "confirm": "Gỡ nội dung"
+    },
+    "roles": {
+      "teacher": "Giáo viên",
+      "principal": "Hiệu trưởng",
+      "student": "Học sinh",
+      "parent": "Phụ huynh"
+    }
+  },
   "gradeApproval": {
     "actionApprove": "Phê duyệt & Công bố",
     "actionBulkLock": "Khóa điểm",

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -141,4 +141,47 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — story is `planned`)
+Implemented by `fe-nextjs-engineer` (feat/us-e19.1-social-feed).
+
+**Proof (all run locally, green):**
+- Unit + integration: `bun vitest run src/features/feed src/features/moderation` → 94 passed
+  (feed domain 32, feed mapper/repo 18, plus moderation incl. the new ADR-0052 direct-removal test).
+- E2E/Storybook interaction: `bun vitest:storybook run` feed screen → 20 stories passed
+  (loading / empty±CTA / error retryable+forbidden / populated pinned-first / composer role×scope
+  matrix / scope switch / reaction add+rollback / menu role×author matrix / report-opens-shared-dialog
+  / remove-opens-confirm / pin-no-network+resort / pagination / end-of-feed / comments empty); shared
+  `LoadMoreButton` → 4 stories passed.
+- `bunx tsc --noEmit` clean; `bun lint` clean for all feed/shared/moderation files touched
+  (2 remaining warnings are pre-existing in messaging/academic-records, untouched); `bun run build`
+  succeeds, `/[locale]/t/[tenant]/feed` route compiles.
+
+**Scope notes / deviations (flagged, not silent):**
+- Comment-item "…" menu is **Report-only** (never pin/remove) per component-architecture §0.3,
+  resolving the design_src-vs-AC discrepancy in favour of the AC table. Comment removal has no AC in
+  this story and is out of scope.
+- Repository uses the **Result-returning** convention (`FeedResult<T>`), matching the moderation
+  precedent + the Server-Action `{ok,errorKey,retryable}` shape in `state-design.md`, rather than
+  plan.md Phase 0's "repo throws" wording — a deliberate, consistent-with-moderation choice.
+- Active scope is **local component state**, not a URL searchParam (state-design §10 recommended URL
+  as a free, non-AC choice); local keeps the screen Storybook-testable with no router and `ScopeTabs`
+  stays agnostic to where the state lives. Easy to promote to URL later with no contract change.
+- Pin "not yet persisted" copy implemented exactly as directed: `feed.pin.notPersisted` — vi "Chỉ
+  hiển thị tạm thời trên thiết bị này" / en "Only shown temporarily on this device" (AC-1909.3).
+- A full `MockFeedRepository` (all methods, in-memory seed) backs `NEXT_PUBLIC_USE_MOCK` so the screen
+  is demonstrable without a `social` backend; `togglePinMock` is HTTP-free in BOTH the mock and real
+  repo (INT-190-07 has no endpoint, ever, until BE US-101).
+
+**Sanctioned cross-story edits (ADR 0052 + promotion):**
+- `RemoveContentRepoInput.reportId` widened to optional; `ModerationRepository.removeContent` omits it
+  from the request body when absent; `MockModerationRepository.removeContent` short-circuits ok without
+  the report-lookup branch when absent (+ new test). No other `features/moderation/` change.
+- `LoadMoreButton` MOVED (not copied) from `moderation-screen/components/` to
+  `components/shared/load-more-button/` (+ `index.ts` + `.stories.tsx`); labels are now props;
+  moderation's two call sites updated to pass `label`/`errorLabel`. (Note: `audit-log` has its own
+  richer, divergent `LoadMoreButton` — intentionally left untouched, out of scope.)
+
+**Fast-follows flagged to fe-lead (NOT fixed here — out of scope):**
+- `ReportContentDialog` + `DestructiveConfirmDialog` (US-E19.2) do NOT use `use-dialog-return-focus`
+  → latent focus-restore gap on close (component-architecture §0.4).
+- 4th occurrence of the inline error-state shape (`FeedErrorState` ~ `ReportErrorBanner` /
+  `RegionErrorState`) — candidate to promote to `components/shared/inline-error-state/`.
