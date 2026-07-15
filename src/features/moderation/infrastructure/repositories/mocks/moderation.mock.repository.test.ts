@@ -101,6 +101,15 @@ describe("MockModerationRepository", () => {
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 
+  it("ADR 0052: removing content WITHOUT a reportId (feed direct-removal) succeeds", async () => {
+    const repo = new MockModerationRepository();
+    const res = await repo.removeContent({
+      kind: "post",
+      contentId: "feed-post-1",
+    });
+    expect(res).toEqual({ ok: true });
+  });
+
   it("dismissing an already-resolved report returns already-resolved", async () => {
     const repo = new MockModerationRepository();
     const id = await firstPendingId(repo);

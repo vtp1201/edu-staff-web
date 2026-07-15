@@ -180,7 +180,8 @@ export class ModerationRepository implements IModerationRepository {
             );
       await this.http.delete(url, {
         data: {
-          reportId: input.reportId,
+          // reportId omitted when absent (ADR 0052 — feed direct-removal path).
+          ...(input.reportId ? { reportId: input.reportId } : {}),
           ...(input.resolveNote ? { reason: input.resolveNote } : {}),
         },
       });
