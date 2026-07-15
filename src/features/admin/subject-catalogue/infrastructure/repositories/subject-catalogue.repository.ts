@@ -21,89 +21,96 @@ import type {
 import type { SubjectCatalogueFailure } from "../../domain/failures/subject-catalogue.failure";
 import type { ISubjectCatalogueRepository } from "../../domain/repositories/i-subject-catalogue.repository";
 import { fail, ok, type Result } from "../../domain/use-cases/result";
-import type { ClassSubjectResponseDto } from "../dtos/class-subject-response.dto";
 import type { SubjectParentResponseDto } from "../dtos/subject-parent-response.dto";
 import type { SubjectResponseDto } from "../dtos/subject-response.dto";
-import { SubjectCatalogueMapper } from "../mappers/subject-catalogue.mapper";
+import {
+  type ParentChildCounts,
+  SubjectCatalogueMapper,
+} from "../mappers/subject-catalogue.mapper";
+
+const ZERO_COUNTS: ParentChildCounts = { childCount: 0, activeChildCount: 0 };
 
 /**
- * Map a normalised ApiError to the subject-catalogue failure union.
- * Branch on error.code (UPPER_SNAKE), never on message (TR-026, US-E06.6).
+ * Map a normalised ApiError to the subject-catalogue failure union. Branch on
+ * error.code (UPPER_SNAKE), never on message (TR-026). Covers the full
+ * `SubjectParent`/`Subject`/`ClassSubject` sections of core ERROR_CODES.md
+ * (US-E18.3).
  */
 function toFailure(err: unknown): SubjectCatalogueFailure {
   const code = errorCodeOf(err);
   const status = statusOf(err);
 
-  // Network/transport error
+  // Network/transport error (no HTTP response received).
   if (code === "NETWORK_ERROR" || status === undefined) {
     return { type: "network-error" };
   }
 
-  // SubjectParent error codes
-  if (
-    code === "SUBJECT_PARENT_NOT_FOUND" ||
-    code === "SUBJECT_NOT_FOUND" ||
-    code === "CLASS_SUBJECT_NOT_FOUND" ||
-    status === 404
-  ) {
-    return { type: "not-found" };
-  }
-  if (
-    code === "SUBJECT_PARENT_ALREADY_EXISTS" ||
-    code === "SUBJECT_ALREADY_EXISTS"
-  ) {
-    return { type: "already-exists" };
-  }
-  if (code === "SUBJECT_PARENT_IN_USE") {
-    return { type: "parent-in-use" };
-  }
-  if (code === "SUBJECT_PARENT_ARCHIVED") {
-    return { type: "parent-archived" };
-  }
-  if (
-    code === "SUBJECT_PARENT_FORBIDDEN" ||
-    code === "ROSTER_ACCESS_FORBIDDEN"
-  ) {
-    return { type: "parent-forbidden" };
-  }
-  if (status === 403) {
-    return { type: "forbidden" };
+  switch (code) {
+    // not-found (404)
+    case "SUBJECT_PARENT_NOT_FOUND":
+    case "SUBJECT_NOT_FOUND":
+    case "CLASS_SUBJECT_NOT_FOUND":
+      return { type: "not-found" };
+
+    // already-exists (409)
+    case "SUBJECT_PARENT_ALREADY_EXISTS":
+    case "SUBJECT_ALREADY_EXISTS":
+      return { type: "already-exists" };
+
+    // parent archive blocked — group still has active subjects (409)
+    case "SUBJECT_PARENT_IN_USE":
+      return { type: "parent-in-use" };
+
+    // parent already archived — cannot modify (409)
+    case "SUBJECT_PARENT_ARCHIVED":
+      return { type: "parent-archived" };
+
+    // parent-scoped forbidden (403)
+    case "SUBJECT_PARENT_FORBIDDEN":
+      return { type: "parent-forbidden" };
+
+    // subject archive blocked — active GVBM assignments (409)
+    case "SUBJECT_IN_USE":
+      return { type: "archive-blocked-subject" };
+
+    // modify-while-archived — subject or its class-offering (409)
+    case "SUBJECT_ARCHIVED":
+    case "CLASS_SUBJECT_ARCHIVED":
+      return { type: "subject-archived" };
+
+    // grade level outside the tenant range (422)
+    case "SUBJECT_GRADE_LEVEL_OUTSIDE_TENANT_RANGE":
+      return { type: "grade-level-out-of-range" };
+
+    // referenced bộ môn is archived / not active (422)
+    case "SUBJECT_PARENT_NOT_ACTIVE":
+      return { type: "parent-not-active" };
+
+    // class-subject offering codes
+    case "CLASS_SUBJECT_ALREADY_EXISTS":
+      return { type: "class-subject-already-exists" };
+    case "CLASS_SUBJECT_LOCKED_FIELD_UPDATE":
+      return { type: "class-subject-locked-field-update" };
+    case "CLASS_SUBJECT_IN_USE":
+      return { type: "class-subject-in-use" };
+
+    // subject code format validation (400) — real code is SUBJECT_INVALID_CODE.
+    case "SUBJECT_INVALID_CODE":
+      return { type: "code-format" };
+
+    default:
+      break;
   }
 
-  // Subject error codes
-  if (code === "SUBJECT_IN_USE") {
-    return { type: "archive-blocked-subject" };
-  }
-  // Legacy code kept for backwards compat with mock
-  if (code === "SUBJECT_PARENT_HAS_ACTIVE_CHILDREN") {
-    return { type: "archive-blocked-parent" };
-  }
-  if (code === "SUBJECT_GRADE_LEVEL_OUTSIDE_TENANT_RANGE") {
-    return { type: "grade-level-out-of-range" };
-  }
-  if (code === "SUBJECT_PARENT_NOT_ACTIVE") {
-    return { type: "parent-not-active" };
-  }
+  // Generic status fallbacks (branch on code first, status last). Covers
+  // SUBJECT_FORBIDDEN / CLASS_SUBJECT_FORBIDDEN (403) with no dedicated key.
+  if (status === 403) return { type: "forbidden" };
+  if (status === 404) return { type: "not-found" };
 
-  // ClassSubject error codes
-  if (code === "CLASS_SUBJECT_ALREADY_EXISTS") {
-    return { type: "class-subject-already-exists" };
+  // Retryable transport-class errors (decision 0008).
+  if ((err as { retryable?: boolean })?.retryable) {
+    return { type: "network-error" };
   }
-  if (code === "CLASS_SUBJECT_LOCKED_FIELD_UPDATE") {
-    return { type: "class-subject-locked-field-update" };
-  }
-  if (code === "CLASS_SUBJECT_IN_USE") {
-    return { type: "class-subject-in-use" };
-  }
-
-  // Code/format validation
-  if (code === "INVALID_SUBJECT_CODE") {
-    return { type: "code-format" };
-  }
-
-  // Retryable errors (network-level, decision 0008)
-  const isRetryable = (err as { retryable?: boolean })?.retryable;
-  if (isRetryable) return { type: "network-error" };
 
   return { type: "unknown" };
 }
@@ -111,16 +118,91 @@ function toFailure(err: unknown): SubjectCatalogueFailure {
 export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
   constructor(private readonly http: AxiosInstance) {}
 
+  // --- Fan-out helpers (fields/filters the BE does not provide) ---
+
+  /**
+   * Fully page through `GET /subject-parents`. No failure mapping — callers sit
+   * inside their own try/catch.
+   */
+  private async fetchAllParentDtos(): Promise<SubjectParentResponseDto[]> {
+    const out: SubjectParentResponseDto[] = [];
+    let cursor: string | undefined;
+    do {
+      const env = (await this.http.get(SUBJECT_CATALOGUE_EP.parents, {
+        params: { ...(cursor ? { cursor } : {}) },
+        raw: true,
+      })) as unknown as ApiEnvelope<SubjectParentResponseDto[]>;
+      const { data, pagination } = parseEnvelope(env);
+      out.push(...data);
+      cursor =
+        pagination?.hasMore && pagination.nextCursor
+          ? pagination.nextCursor
+          : undefined;
+    } while (cursor);
+    return out;
+  }
+
+  /**
+   * Fully page through `GET /subjects` with NO `status` filter — both ACTIVE
+   * and ARCHIVED are needed: for count derivation (childCount vs activeChild-
+   * Count) AND to preserve the subjects screen, which lists archived subjects
+   * too. The wire has no `subjectParentId` filter, so `listParents` and
+   * `listSubjects` share this full fetch and group/filter client-side (§3/§6).
+   */
+  private async fetchAllSubjectDtos(): Promise<SubjectResponseDto[]> {
+    const out: SubjectResponseDto[] = [];
+    let cursor: string | undefined;
+    do {
+      const env = (await this.http.get(SUBJECT_CATALOGUE_EP.subjects, {
+        params: { ...(cursor ? { cursor } : {}) },
+        raw: true,
+      })) as unknown as ApiEnvelope<SubjectResponseDto[]>;
+      const { data, pagination } = parseEnvelope(env);
+      out.push(...data);
+      cursor =
+        pagination?.hasMore && pagination.nextCursor
+          ? pagination.nextCursor
+          : undefined;
+    } while (cursor);
+    return out;
+  }
+
+  /** parentId → derived child counts, from the full subjects list. */
+  private countByParent(
+    subjects: SubjectResponseDto[],
+  ): Map<string, ParentChildCounts> {
+    const map = new Map<string, ParentChildCounts>();
+    for (const s of subjects) {
+      const counts = map.get(s.subjectParentId) ?? {
+        childCount: 0,
+        activeChildCount: 0,
+      };
+      counts.childCount += 1;
+      if (s.status === "ACTIVE") counts.activeChildCount += 1;
+      map.set(s.subjectParentId, counts);
+    }
+    return map;
+  }
+
+  // --- SubjectParent ---
+
   async listParents(): Promise<
     Result<SubjectParent[], SubjectCatalogueFailure>
   > {
     try {
-      // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
-      const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.parents, {
-        raw: true,
-      })) as unknown as ApiEnvelope<SubjectParentResponseDto[]>;
-      const { data } = parseEnvelope(envelope);
-      return ok(data.map(SubjectCatalogueMapper.toSubjectParent));
+      const [parentDtos, subjectDtos] = await Promise.all([
+        this.fetchAllParentDtos(),
+        this.fetchAllSubjectDtos(),
+      ]);
+      const counts = this.countByParent(subjectDtos);
+      return ok(
+        parentDtos.map((dto) =>
+          SubjectCatalogueMapper.toSubjectParent(
+            dto,
+            counts.get(dto.subjectParentId) ?? ZERO_COUNTS,
+          ),
+        ),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -132,9 +214,10 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       const data = (await this.http.post(
         SUBJECT_CATALOGUE_EP.parents,
-        input,
+        SubjectCatalogueMapper.toCreateParentBody(input),
       )) as unknown as SubjectParentResponseDto;
-      return ok(SubjectCatalogueMapper.toSubjectParent(data));
+      // A freshly-created bộ môn has no subjects yet.
+      return ok(SubjectCatalogueMapper.toSubjectParent(data, ZERO_COUNTS));
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -145,11 +228,20 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     input: PatchParentInput,
   ): Promise<Result<SubjectParent, SubjectCatalogueFailure>> {
     try {
-      const data = (await this.http.patch(
-        SUBJECT_CATALOGUE_EP.parent(id),
-        input,
-      )) as unknown as SubjectParentResponseDto;
-      return ok(SubjectCatalogueMapper.toSubjectParent(data));
+      const [data, subjectDtos] = await Promise.all([
+        this.http.patch(
+          SUBJECT_CATALOGUE_EP.parent(id),
+          SubjectCatalogueMapper.toUpdateParentBody(input),
+        ) as unknown as Promise<SubjectParentResponseDto>,
+        this.fetchAllSubjectDtos(),
+      ]);
+      const counts = this.countByParent(subjectDtos);
+      return ok(
+        SubjectCatalogueMapper.toSubjectParent(
+          data,
+          counts.get(data.subjectParentId) ?? ZERO_COUNTS,
+        ),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -166,28 +258,36 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     }
   }
 
+  /**
+   * WEB-ONLY optimistic success (story §9). The BE exposes no un-archive /
+   * restore endpoint anywhere in `SubjectParents` — only archive. This method
+   * exists solely so the `restoreParentAction` UI flow keeps working end-to-end
+   * in real mode: it returns success (no HTTP call) so the screen's optimistic
+   * flip-to-ACTIVE applies. There is NO server-side persistence — on reload the
+   * parent is still ARCHIVED. Delegating to the mock repository was rejected: a
+   * fresh MockSubjectCatalogueRepository's `restoreParent` looks the parent up
+   * in its fixture seed and returns `not-found` for real (non-fixture) UUIDs,
+   * which would break the flow. Flagged as a cross-repo BE gap (need a
+   * `POST /subject-parents/{id}/restore`).
+   */
   async restoreParent(
-    id: string,
+    _id: string,
   ): Promise<Result<void, SubjectCatalogueFailure>> {
-    try {
-      await this.http.post(SUBJECT_CATALOGUE_EP.restoreParent(id));
-      return ok(undefined);
-    } catch (err) {
-      return fail(toFailure(err));
-    }
+    return ok(undefined);
   }
+
+  // --- Subject ---
 
   async listSubjects(
     parentId: string,
   ): Promise<Result<Subject[], SubjectCatalogueFailure>> {
     try {
-      // cursor-paginated list: use { raw: true } + parseEnvelope (TR-026)
-      const envelope = (await this.http.get(SUBJECT_CATALOGUE_EP.subjects, {
-        params: { parentId },
-        raw: true,
-      })) as unknown as ApiEnvelope<SubjectResponseDto[]>;
-      const { data } = parseEnvelope(envelope);
-      return ok(data.map(SubjectCatalogueMapper.toSubject));
+      const subjectDtos = await this.fetchAllSubjectDtos();
+      return ok(
+        subjectDtos
+          .filter((dto) => dto.subjectParentId === parentId)
+          .map(SubjectCatalogueMapper.toSubject),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -199,7 +299,7 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       const data = (await this.http.post(
         SUBJECT_CATALOGUE_EP.subjects,
-        input,
+        SubjectCatalogueMapper.toCreateSubjectBody(input),
       )) as unknown as SubjectResponseDto;
       return ok(SubjectCatalogueMapper.toSubject(data));
     } catch (err) {
@@ -218,15 +318,14 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       const data = (await this.http.get(
         SUBJECT_CATALOGUE_EP.subject(id),
-      )) as unknown as {
-        subject: SubjectResponseDto;
-        classOfferings: ClassSubjectResponseDto[];
-      };
+      )) as unknown as SubjectResponseDto;
+      // `classOfferings` (classes teaching this subject) has NO BE reverse-
+      // lookup endpoint — always empty in real mode (story §8). The UI already
+      // renders the `classOfferingsEmpty` state. Cross-repo ask: a
+      // `GET /subjects/{id}/classes` endpoint would populate this.
       return ok({
-        subject: SubjectCatalogueMapper.toSubject(data.subject),
-        classOfferings: data.classOfferings.map(
-          SubjectCatalogueMapper.toClassSubject,
-        ),
+        subject: SubjectCatalogueMapper.toSubject(data),
+        classOfferings: [],
       });
     } catch (err) {
       return fail(toFailure(err));
@@ -240,7 +339,7 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     try {
       const data = (await this.http.patch(
         SUBJECT_CATALOGUE_EP.subject(id),
-        input,
+        SubjectCatalogueMapper.toUpdateSubjectBody(input),
       )) as unknown as SubjectResponseDto;
       return ok(SubjectCatalogueMapper.toSubject(data));
     } catch (err) {

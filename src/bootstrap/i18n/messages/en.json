@@ -3145,6 +3145,7 @@
       "parent-forbidden": "You do not have permission to perform this action.",
       "parent-in-use": "Department has active subjects and cannot be archived.",
       "parent-not-active": "Department is no longer active.",
+      "subject-archived": "This subject has been archived and can no longer be edited.",
       "unknown": "An error occurred. Please try again."
     },
     "subjectDetail": {
