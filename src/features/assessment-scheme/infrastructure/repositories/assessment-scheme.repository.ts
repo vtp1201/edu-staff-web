@@ -18,6 +18,8 @@ import {
   mapAssessmentScheme,
   mapGradeScale,
   mapSubjectForGrade,
+  toSetAssessmentSchemeRequestDto,
+  toSetGradeScaleRequestDto,
 } from "../mappers/assessment-scheme.mapper";
 
 type Result<T> =
@@ -26,7 +28,10 @@ type Result<T> =
 
 /**
  * Map a normalised {@link ApiError} (via its UPPER_SNAKE `code`) to the
- * assessment-scheme failure union. Branch on `code`, never the localised message.
+ * assessment-scheme failure union. Codes ground-truthed against the Go source
+ * (`services/core/internal/assessment/core/domain/error/config.go` +
+ * `pkg/kit/response/error.go`, decision 0008 holds for `core`) — US-E18.7 /
+ * ADR 0053. Branch on `code`, never the localised message.
  */
 function mapFailure(err: unknown): AssessmentSchemeFailure {
   const code = errorCodeOf(err);
@@ -35,13 +40,19 @@ function mapFailure(err: unknown): AssessmentSchemeFailure {
     case "ASSESSMENT_SCHEME_NOT_FOUND":
     case "SUBJECT_NOT_FOUND":
       return { type: "not-found" };
-    case "ASSESSMENT_FORBIDDEN":
-    case "FORBIDDEN":
+    case "GRADE_SCALE_FORBIDDEN":
+    case "ASSESSMENT_SCHEME_FORBIDDEN":
       return { type: "forbidden" };
-    case "ASSESSMENT_WEIGHTS_INVALID":
-      return { type: "invalid-weights" };
-    case "GRADE_SCALE_THRESHOLDS_INVALID":
-      return { type: "invalid-thresholds" };
+    case "GRADE_SCALE_INVALID_TYPE":
+      return { type: "invalid-scale-type" };
+    case "GRADE_SCALE_LETTER_GRADES_REQUIRED":
+      return { type: "letter-grades-required" };
+    case "ASSESSMENT_SCHEME_COLUMN_IN_USE":
+      return { type: "column-in-use" };
+    case "ASSESSMENT_SCHEME_MAX_COLUMNS":
+      return { type: "max-columns" };
+    case "ASSESSMENT_SCHEME_INVALID_COLUMN":
+      return { type: "invalid-column" };
     case "NETWORK_ERROR":
       return { type: "network-error" };
     default:
@@ -67,7 +78,10 @@ export class AssessmentSchemeRepository implements IAssessmentSchemeRepository {
     scale: GradeScale,
   ): Promise<{ ok: true } | { ok: false; error: AssessmentSchemeFailure }> {
     try {
-      await this.http.put(ASSESSMENT_EP.gradeScale, scale);
+      await this.http.put(
+        ASSESSMENT_EP.gradeScale,
+        toSetGradeScaleRequestDto(scale),
+      );
       return { ok: true };
     } catch (err) {
       return { ok: false, error: mapFailure(err) };
@@ -90,10 +104,11 @@ export class AssessmentSchemeRepository implements IAssessmentSchemeRepository {
   async getAssessmentScheme(
     subjectId: string,
     yearLabel: string,
+    termId: string,
   ): Promise<Result<AssessmentScheme>> {
     try {
       const data = (await this.http.get(
-        ASSESSMENT_EP.assessmentScheme(subjectId, yearLabel),
+        ASSESSMENT_EP.assessmentScheme(subjectId, yearLabel, termId),
       )) as unknown as AssessmentSchemeResponseDto;
       return { ok: true, data: mapAssessmentScheme(data) };
     } catch (err) {
@@ -106,8 +121,12 @@ export class AssessmentSchemeRepository implements IAssessmentSchemeRepository {
   ): Promise<{ ok: true } | { ok: false; error: AssessmentSchemeFailure }> {
     try {
       await this.http.put(
-        ASSESSMENT_EP.assessmentScheme(scheme.subjectId, scheme.yearLabel),
-        scheme,
+        ASSESSMENT_EP.assessmentScheme(
+          scheme.subjectId,
+          scheme.yearLabel,
+          scheme.termId,
+        ),
+        toSetAssessmentSchemeRequestDto(scheme),
       );
       return { ok: true };
     } catch (err) {

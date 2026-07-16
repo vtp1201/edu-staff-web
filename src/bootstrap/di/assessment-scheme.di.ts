@@ -4,6 +4,7 @@ import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IAssessmentSchemeRepository } from "@/features/assessment-scheme/domain/repositories/i-assessment-scheme.repository";
 import { AssessmentSchemeRepository } from "@/features/assessment-scheme/infrastructure/repositories/assessment-scheme.repository";
 import { MockAssessmentSchemeRepository } from "@/features/assessment-scheme/infrastructure/repositories/mock-assessment-scheme.repository";
+import { ensureFreshSession } from "./auth.di";
 
 /**
  * Per-request factory for the assessment-scheme repository.
@@ -16,6 +17,7 @@ export async function makeAssessmentSchemeRepository(): Promise<IAssessmentSchem
   if (USE_MOCK) {
     return new MockAssessmentSchemeRepository();
   }
+  await ensureFreshSession();
   const http = await createServerHttpClient();
   return new AssessmentSchemeRepository(http);
 }

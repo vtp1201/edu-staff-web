@@ -31,5 +31,6 @@ export interface AssessmentSchemeScreenProps extends AssessmentSchemeScreenVM {
   onLoadAssessmentScheme: (
     subjectId: string,
     yearLabel: string,
+    termId: string,
   ) => Promise<AssessmentScheme | null>;
 }

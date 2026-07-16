@@ -11,6 +11,7 @@ export interface AssessmentColumn {
 export interface AssessmentScheme {
   subjectId: string;
   yearLabel: string; // e.g. "2024-2025"
+  termId: string; // e.g. "HK1" — wire path/response field (US-E18.7)
   columns: AssessmentColumn[];
 }
 

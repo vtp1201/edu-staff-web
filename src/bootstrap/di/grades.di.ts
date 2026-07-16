@@ -52,28 +52,30 @@ async function resolvePublishMode(): Promise<GradePublishMode> {
 async function resolveScheme(
   subjectId: string,
   yearLabel: string,
+  termId: string,
 ): Promise<AssessmentScheme> {
   try {
     const repo = await makeAssessmentSchemeRepository();
-    const result = await repo.getAssessmentScheme(subjectId, yearLabel);
+    const result = await repo.getAssessmentScheme(subjectId, yearLabel, termId);
     if (result.ok) {
       return result.data;
     }
   } catch {
     // fall through to preset
   }
-  return { subjectId, yearLabel, columns: TT22_PRESET };
+  return { subjectId, yearLabel, termId, columns: TT22_PRESET };
 }
 
 async function makeRepo(
   subjectId: string,
   yearLabel: string,
+  termId: string,
 ): Promise<IGradesRepository> {
   const publishMode = await resolvePublishMode();
   if (USE_MOCK) {
     return new MockGradesRepository(publishMode);
   }
-  const scheme = await resolveScheme(subjectId, yearLabel);
+  const scheme = await resolveScheme(subjectId, yearLabel, termId);
   const http = await createServerHttpClient();
   return new GradesRepository(http, scheme, publishMode);
 }
@@ -81,22 +83,25 @@ async function makeRepo(
 export async function makeGetGradeSheetUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new GetGradeSheetUseCase(await makeRepo(subjectId, yearLabel));
+  return new GetGradeSheetUseCase(await makeRepo(subjectId, yearLabel, termId));
 }
 
 export async function makeSaveScoreUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new SaveScoreUseCase(await makeRepo(subjectId, yearLabel));
+  return new SaveScoreUseCase(await makeRepo(subjectId, yearLabel, termId));
 }
 
 export async function makePublishGradesUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new PublishGradesUseCase(await makeRepo(subjectId, yearLabel));
+  return new PublishGradesUseCase(await makeRepo(subjectId, yearLabel, termId));
 }
 
 // ─── US-E13.6 — read-only multi-role grade book ──────────────────────────────
@@ -104,12 +109,13 @@ export async function makePublishGradesUseCase(
 async function makeGradeBookRepo(
   subjectId: string,
   yearLabel: string,
+  termId: string,
 ): Promise<IGradeBookRepository> {
   const publishMode = await resolvePublishMode();
   if (USE_MOCK) {
     return new MockGradeBookRepository(publishMode);
   }
-  const scheme = await resolveScheme(subjectId, yearLabel);
+  const scheme = await resolveScheme(subjectId, yearLabel, termId);
   const http = await createServerHttpClient();
   return new GradeBookRepository(http, scheme, publishMode);
 }
@@ -117,23 +123,30 @@ async function makeGradeBookRepo(
 export async function makeGetGradeBookUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new GetGradeBookUseCase(await makeGradeBookRepo(subjectId, yearLabel));
+  return new GetGradeBookUseCase(
+    await makeGradeBookRepo(subjectId, yearLabel, termId),
+  );
 }
 
 export async function makeGetMyGradesUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new GetMyGradesUseCase(await makeGradeBookRepo(subjectId, yearLabel));
+  return new GetMyGradesUseCase(
+    await makeGradeBookRepo(subjectId, yearLabel, termId),
+  );
 }
 
 export async function makeGetChildGradesUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
   return new GetChildGradesUseCase(
-    await makeGradeBookRepo(subjectId, yearLabel),
+    await makeGradeBookRepo(subjectId, yearLabel, termId),
   );
 }
 
@@ -141,8 +154,11 @@ export async function makeGetChildGradesUseCase(
 export async function makeGetChildListUseCase(
   subjectId = "subj-toan-10",
   yearLabel = "2024-2025",
+  termId = "HK1",
 ) {
-  return new GetChildListUseCase(await makeGradeBookRepo(subjectId, yearLabel));
+  return new GetChildListUseCase(
+    await makeGradeBookRepo(subjectId, yearLabel, termId),
+  );
 }
 
 // ─── US-E14.4 — grade approval pipeline (admin) ──────────────────────────────
