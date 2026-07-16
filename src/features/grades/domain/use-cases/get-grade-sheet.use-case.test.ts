@@ -15,7 +15,12 @@ function makeRepo(over: Partial<IGradesRepository> = {}): IGradesRepository {
 const sheet: GradeSheet = {
   classSubjectId: "cs-001",
   term: "HK1",
-  scheme: { subjectId: "subj-1", yearLabel: "2024-2025", columns: [] },
+  scheme: {
+    subjectId: "subj-1",
+    yearLabel: "2024-2025",
+    termId: "HK1",
+    columns: [],
+  },
   rows: [],
   publishMode: "SELF_PUBLISH",
 };

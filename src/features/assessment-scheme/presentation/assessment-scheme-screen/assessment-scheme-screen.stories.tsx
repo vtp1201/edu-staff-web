@@ -28,6 +28,7 @@ const errorSave = async () => ({ ok: false, errorKey: "network-error" });
 const baseScheme: AssessmentScheme = {
   subjectId: "s10-toan",
   yearLabel: "2024-2025",
+  termId: "HK1",
   columns: structuredClone(TT22_PRESET),
 };
 
@@ -118,6 +119,103 @@ export const ErrorState: Story = {
   },
 };
 
+/** Open a shadcn Select (by its associated label) and pick an option by text. */
+async function selectByLabel(
+  canvas: ReturnType<typeof within>,
+  labelName: string,
+  optionName: string,
+) {
+  // findByRole retries until the previous Select's portal fully closes and the
+  // transient aria-hidden it puts on the background is cleared (Radix bleed).
+  const trigger = await canvas.findByRole("combobox", { name: labelName });
+  await userEvent.click(trigger);
+  const listbox = within(document.body);
+  await userEvent.click(
+    await listbox.findByRole("option", { name: optionName }),
+  );
+}
+
+// Term selector — no term chosen: scheme editor is gated, a prompt is shown.
+export const TermNotSelected: Story = {
+  render: () => withProviders(baseProps),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await selectByLabel(
+      canvas,
+      messages.assessmentScheme.gradeLevelLabel,
+      `${messages.assessmentScheme.gradePrefix} 10`,
+    );
+    await selectByLabel(canvas, messages.assessmentScheme.subjectLabel, "Toán");
+    // Term still unset → prompt visible, TT22 preset button not rendered.
+    await expect(
+      await canvas.findByText(messages.assessmentScheme.termPromptBody),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByText(messages.assessmentScheme.applyPresetTT22),
+    ).not.toBeInTheDocument();
+  },
+};
+
+// Term HK1 selected → scheme editor loads.
+export const TermHK1Selected: Story = {
+  render: () => withProviders(baseProps),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await selectByLabel(
+      canvas,
+      messages.assessmentScheme.gradeLevelLabel,
+      `${messages.assessmentScheme.gradePrefix} 10`,
+    );
+    await selectByLabel(canvas, messages.assessmentScheme.subjectLabel, "Toán");
+    await selectByLabel(canvas, messages.assessmentScheme.termLabel, "HK1");
+    await expect(
+      await canvas.findByText(messages.assessmentScheme.applyPresetTT22),
+    ).toBeInTheDocument();
+  },
+};
+
+// Term HK2 selected → scheme editor loads (per-term).
+export const TermHK2Selected: Story = {
+  render: () => withProviders(baseProps),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await selectByLabel(
+      canvas,
+      messages.assessmentScheme.gradeLevelLabel,
+      `${messages.assessmentScheme.gradePrefix} 10`,
+    );
+    await selectByLabel(canvas, messages.assessmentScheme.subjectLabel, "Toán");
+    await selectByLabel(canvas, messages.assessmentScheme.termLabel, "HK2");
+    await expect(
+      await canvas.findByText(messages.assessmentScheme.applyPresetTT22),
+    ).toBeInTheDocument();
+  },
+};
+
+// Scheme load fails for a selected term → inline error.
+export const SchemeLoadError: Story = {
+  render: () =>
+    withProviders({
+      ...baseProps,
+      onLoadAssessmentScheme: async () => {
+        throw new Error("boom");
+      },
+    }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await selectByLabel(
+      canvas,
+      messages.assessmentScheme.gradeLevelLabel,
+      `${messages.assessmentScheme.gradePrefix} 10`,
+    );
+    await selectByLabel(canvas, messages.assessmentScheme.subjectLabel, "Toán");
+    await selectByLabel(canvas, messages.assessmentScheme.termLabel, "HK1");
+    await expect(await canvas.findByRole("alert")).toHaveTextContent(
+      messages.assessmentScheme.errorNetwork,
+    );
+  },
+};
+
 export const WeightValidationError: Story = {
   render: () =>
     withProviders({
@@ -127,6 +225,7 @@ export const WeightValidationError: Story = {
       onLoadAssessmentScheme: async () => ({
         subjectId: "s10-toan",
         yearLabel: "2024-2025",
+        termId: "HK1",
         columns: [
           { id: "tx", type: "TX", label: "TX", count: 2, weight: 20 },
           { id: "ck", type: "CK", label: "CK", count: 1, weight: 30 },

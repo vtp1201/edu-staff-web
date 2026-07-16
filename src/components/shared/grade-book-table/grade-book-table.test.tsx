@@ -22,6 +22,7 @@ import type { GradeBookTableVM } from "./grade-book-table.i-vm";
 const SCHEME = {
   subjectId: "subj-toan-10",
   yearLabel: "2024-2025",
+  termId: "HK1",
   columns: [
     {
       id: "tx",
