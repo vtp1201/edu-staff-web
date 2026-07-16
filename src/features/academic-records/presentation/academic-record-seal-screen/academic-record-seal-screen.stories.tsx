@@ -253,6 +253,48 @@ export const AllLockedGate_NotOK: Story = {
 };
 
 /**
+ * US-E18.13 QA gate — the NOT-OK warning card now crams 2 buttons (link to
+ * approval + Seal) instead of 1 into the same banner. Prove at a REAL 375px
+ * viewport (`@vitest/browser-playwright`, same technique as
+ * discipline-screen.stories.tsx's TouchTarget_Mobile375) that `flex-col` on
+ * the button-group wrapper actually stacks them — no horizontal overflow —
+ * rather than trusting the Tailwind classes by inspection alone.
+ */
+export const AllLockedGate_NotOK_Mobile375: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: NOT_LOCKED_BATCH }) }) },
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const canvas = within(canvasElement);
+
+    const approvalBtn = canvas.getByRole("button", {
+      name: M.gate.notAllLocked.linkToApproval,
+    });
+    const sealBtn = canvas.getByRole("button", { name: M.sealButton });
+    await expect(approvalBtn).toBeVisible();
+    await expect(sealBtn).toBeVisible();
+
+    // Real layout check: the two buttons must NOT sit side-by-side (that's
+    // what overflowed) — at 375px the button-group has stacked into a column,
+    // so the Seal button's top must be at/after the approval button's bottom.
+    const approvalRect = approvalBtn.getBoundingClientRect();
+    const sealRect = sealBtn.getBoundingClientRect();
+    await expect(sealRect.top).toBeGreaterThanOrEqual(approvalRect.bottom - 1);
+
+    // No horizontal overflow anywhere in the card at this viewport.
+    const card = approvalBtn.closest("div.rounded-xl") as HTMLElement | null;
+    await expect(card).not.toBeNull();
+    await expect((card as HTMLElement).scrollWidth).toBeLessThanOrEqual(
+      (card as HTMLElement).clientWidth + 1,
+    );
+
+    // Touch target floor (a11y baseline) holds for both buttons at mobile.
+    await expect(approvalRect.height).toBeGreaterThanOrEqual(36);
+    await expect(sealRect.height).toBeGreaterThanOrEqual(36);
+  },
+};
+
+/**
  * US-E18.13 (ADR 0055) — reseal on an already-SEALED batch is idempotent: the
  * Seal button stays ENABLED and its label switches to "Ký lại học bạ".
  */
