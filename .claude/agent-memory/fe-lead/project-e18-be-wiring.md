@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7 done, findings for remaining Wave 2-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8 done, findings for remaining Wave 2-4
 metadata:
   type: project
 ---
@@ -298,3 +298,39 @@ independently re-ran with a file-path arg (`bun vitest:storybook run
 src/features/assessment-scheme`) and got a clean 10/10 pass — always
 verify a claimed tooling failure with a differently-scoped invocation
 before accepting it into the record.
+
+**US-E18.8 (staff-leave, 2026-07-16, Wave 2) — a "tiny/path fix" label can hide
+a "this cannot be wired at all" finding, not just deeper DTO drift.** Beyond
+the epic table's stated `/conduct/` segment fix, ground-truthing (openapi.yaml
++ Go source, not just prose) found: (1) the real `GET` requires a **mandatory**
+`staffMemberId` query param with **no tenant-wide oversight list** at all
+(table partitions on `(tenantId, staffMemberId)`) — the admin screen lists
+every staff member's requests in one view, which the real API structurally
+cannot serve in one call; (2) even a single-member list would be useless:
+`StaffLeaveRequestResponse` has **zero display fields** (no `staffName`/
+`department`, and the whole leave-*type* concept — annual/sick/personal/family
+— doesn't exist on the wire, only free-text `reason`) — 4th time this exact
+"IAM has no name/lookup source" gap (asks #6/#7) has blocked a screen, now
+compounded by a brand-new resource-specific gap (no leave-type modeling at
+all). Decision: **the entire feature stays mock-first, not just the read
+path** — `approve`/`reject` are equally unreachable since their only id source
+is that blocked (mock) list. First-of-its-kind DI factory: previous
+"permanently mock" cases (`admin-roster.di.ts`, `class-management.di.ts`) were
+**hybrid** (some ops real, most methods delegate per-method); this one
+force-mocks the WHOLE factory regardless of `USE_MOCK` since literally zero
+operations survive. The real repository class still exists (all 3 methods as
+documented permanent blocked stubs, mirroring `ClassManagementRepository.
+listTeachers()`) so the shape is ready for the day BE ships a tenant-wide list
++ display fields. **Reviewer catch worth repeating**: independently verifying
+error-code claims against the Go source (not just my own read) caught a real
+mismap — I had `LEAVE_REQUEST_FORBIDDEN` for the `forbidden` failure, but
+`list`/`approve`/`reject` actually emit `VIOLATION_FORBIDDEN` (the shared
+`ApprovalTransition` domain service's `ErrViolationForbidden()`);
+`LEAVE_REQUEST_FORBIDDEN` is submit-only, a path this repo never calls. Fixed
+same-commit (map both codes) after the reviewer's independent re-verification
+— even "this code is provably unreachable" dead code deserves the same
+ground-truth rigor, because the whole point of keeping it was "correct for
+the day this unblocks." 290 files/1763 tests (baseline 289/1751, +1 file/+12
+tests), tsc/build/lint clean, tech-lead APPROVED after the 1 fix (no revision
+round needed — reviewer verdict was Approved-with-a-should-fix, applied
+immediately rather than looping back). Cross-repo ask #13 logged.
