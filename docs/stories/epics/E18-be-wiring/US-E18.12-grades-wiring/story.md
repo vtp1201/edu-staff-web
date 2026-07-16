@@ -2,7 +2,63 @@
 
 ## Status
 
-planned
+implemented
+
+## Evidence
+
+Design review: pass
+- design-system: conform — only existing `StatusBadge` tones (`info` for
+  DRAFT per lead decision, `warning`/`success`/`muted`), `DestructiveConfirmDialog`
+  reused verbatim for term-lock, no new token, no raw color (1 arbitrary
+  `text-[10px]` slip fixed in review — A11Y-105).
+- a11y: WCAG AA — status never color-only (icon+label), keyboard-operable
+  submit affordances (real `<button>`s), 44×44 touch targets, focus ring
+  preserved (Radix `AlertDialog`), per-cell partial-failure indicator
+  (`aria-invalid`+`aria-describedby`, A11Y-101), dialog `errorSlot` retry
+  path (A11Y-102), dead "mixed" branch removed rather than mis-implemented
+  (A11Y-103) — all independently re-verified after fix.
+- impeccable audit: scoped self-review (no new tokens/layout to redesign,
+  pattern reuse only) — 0 blocking findings beyond the a11y auditor's 5
+  (all fixed + re-verified).
+- states: loading/empty/error/success + partial-failure (new) covered;
+  responsive via existing `overflow-x-auto` wide-table pattern (320px OK,
+  horizontal scroll, consistent with timetable/staffing precedent).
+
+Tech-lead review: Revision Required → fixed same-branch → Approved.
+Blocking finding: `makeApprovalRepo()` had a live real/mock branch despite
+ADR 0054 claiming force-mock — fixed to unconditional mock return
+(`grades.di.ts`), matching `staff-leave.di.ts`'s pattern.
+
+Accessibility audit: 1 blocking (A11Y-101) + 2 should-fix (A11Y-102/103)
++ 2 minor (A11Y-104/105) — all fixed same-branch, independently re-verified
+PASS.
+
+QA gate: **GO**. AC coverage audited against story/ADR contract (all PASS);
+13 new Storybook interaction tests added (partial-submit-failure cell
+indicators, submit-button enablement, term-lock success/failure/forbidden
+dialog flows) — verify the A11Y-101/A11Y-102 fixes end-to-end, not just
+statically. Full Storybook interaction suite diffed byte-identical (71/71
+pre-existing failures) against a clean `main` worktree — confirms zero
+regression and that `grade-approval-screen`/`child-switcher` (ADR 0054
+out-of-scope) are genuinely untouched. Mobile/responsive: PASS
+(`overflow-x-auto` + 44px targets).
+
+Proof:
+- `bun vitest run`: 301 files / 1852 tests pass (baseline US-E18.11:
+  299/1837 — zero regression, +2 files/+15 tests from the domain/infra
+  rewrite; Storybook interaction tests run under a separate config and
+  don't add to this count).
+- `bun run vitest:storybook`: 109/126 files pass; 71 pre-existing failures
+  byte-identical to `main`; 0 failures in any `grades` file.
+- `bunx tsc --noEmit`: clean.
+- `bun lint`: clean (2 pre-existing warnings + 1 info in unrelated files).
+- `NEXT_PUBLIC_USE_MOCK= bun run build`: green, all grade routes compiled.
+
+Non-blocking follow-ups (logged, not required for this US to close):
+dead `csId`-named params in `grade-keys.ts`/`grade-book-keys.ts` (zero call
+sites, harmless); `gradeBook.lockTermError*` i18n keys unused (component
+reuses the generic `ERROR_KEY_MAP` instead) — cosmetic i18n-hygiene cleanup
+for a future tiny-lane US.
 
 ## Lane
 
