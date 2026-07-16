@@ -5,6 +5,7 @@ import {
   makeApproveEntryUseCase,
   makeRejectEntryUseCase,
 } from "@/bootstrap/di/class-log.di";
+import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { ClassLogFailure } from "@/features/class-log/domain/failures/class-log.failure";
 
 const PRINCIPAL_PATH = "/[locale]/t/[tenant]/(app)/principal/class-log";
@@ -34,15 +35,25 @@ export async function submitEntryAction(): Promise<{
   return { ok: false, errorKey: "unauthorized" };
 }
 
+export async function reviseEntryAction(): Promise<{
+  ok: false;
+  errorKey: ClassLogFailure["type"];
+}> {
+  return { ok: false, errorKey: "unauthorized" };
+}
+
 export async function approveEntryAction(
   classId: string,
   entryId: string,
-): Promise<{ ok: true } | { ok: false; errorKey: ClassLogFailure["type"] }> {
+): Promise<
+  | { ok: true; entry: HomeroomEntry }
+  | { ok: false; errorKey: ClassLogFailure["type"] }
+> {
   try {
     const useCase = await makeApproveEntryUseCase();
-    await useCase.execute(classId, entryId);
+    const entry = await useCase.execute(classId, entryId);
     revalidatePath(PRINCIPAL_PATH, "page");
-    return { ok: true };
+    return { ok: true, entry };
   } catch (err) {
     return { ok: false, errorKey: toErrorKey(err) };
   }
@@ -52,12 +63,15 @@ export async function rejectEntryAction(
   classId: string,
   entryId: string,
   reason?: string,
-): Promise<{ ok: true } | { ok: false; errorKey: ClassLogFailure["type"] }> {
+): Promise<
+  | { ok: true; entry: HomeroomEntry }
+  | { ok: false; errorKey: ClassLogFailure["type"] }
+> {
   try {
     const useCase = await makeRejectEntryUseCase();
-    await useCase.execute(classId, entryId, reason);
+    const entry = await useCase.execute(classId, entryId, reason);
     revalidatePath(PRINCIPAL_PATH, "page");
-    return { ok: true };
+    return { ok: true, entry };
   } catch (err) {
     return { ok: false, errorKey: toErrorKey(err) };
   }

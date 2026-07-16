@@ -7,6 +7,8 @@ export const CLASS_LOG_EP = {
     `/core/api/v1/classes/${classId}/homeroom-entries`,
   submit: (classId: string, entryId: string) =>
     `/core/api/v1/classes/${classId}/homeroom-entries/${entryId}/submit`,
+  revise: (classId: string, entryId: string) =>
+    `/core/api/v1/classes/${classId}/homeroom-entries/${entryId}/revise`,
   approve: (classId: string, entryId: string) =>
     `/core/api/v1/classes/${classId}/homeroom-entries/${entryId}/approve`,
   reject: (classId: string, entryId: string) =>

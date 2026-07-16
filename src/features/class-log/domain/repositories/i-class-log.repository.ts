@@ -29,6 +29,7 @@ export interface IClassLogRepository {
   ): Promise<HomeroomEntry>;
   listEntries(params: ListEntriesParams): Promise<ListEntriesResult>;
   submitEntry(classId: string, entryId: string): Promise<HomeroomEntry>;
+  reviseEntry(classId: string, entryId: string): Promise<HomeroomEntry>;
   approveEntry(classId: string, entryId: string): Promise<HomeroomEntry>;
   rejectEntry(
     classId: string,

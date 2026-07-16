@@ -24,6 +24,7 @@ function makeRepo(
     createEntry: vi.fn(),
     listEntries: vi.fn(),
     submitEntry: vi.fn(),
+    reviseEntry: vi.fn(),
     approveEntry: vi.fn(),
     rejectEntry: vi.fn(),
     ...over,
@@ -58,7 +59,7 @@ describe("CreateEntryUseCase", () => {
 
     await expect(
       useCase.execute("c-1", "2026-04-29", "   "),
-    ).rejects.toMatchObject({ type: "unknown" });
+    ).rejects.toMatchObject({ type: "summary-required" });
     expect(createEntry).not.toHaveBeenCalled();
   });
 });

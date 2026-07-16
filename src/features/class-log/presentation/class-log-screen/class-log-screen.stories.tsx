@@ -72,8 +72,6 @@ const okEntry =
     };
   };
 
-const okVoid = async () => ({ ok: true as const });
-
 const baseVm: ClassLogScreenVM = {
   classId: "11b2",
   className: "11B2",
@@ -82,8 +80,9 @@ const baseVm: ClassLogScreenVM = {
   isPrincipal: false,
   createEntryAction: okEntry("DRAFT"),
   submitEntryAction: okEntry("SUBMITTED"),
-  approveEntryAction: okVoid,
-  rejectEntryAction: okVoid,
+  reviseEntryAction: okEntry("SUBMITTED"),
+  approveEntryAction: okEntry("APPROVED"),
+  rejectEntryAction: okEntry("REJECTED"),
 };
 
 const meta: Meta<typeof ClassLogScreen> = {
@@ -151,6 +150,48 @@ export const TeacherEntryDetail: Story = {
         canvas.getByRole("button", { name: /Quay lại danh sách/ }),
       ).toBeInTheDocument(),
     );
+  },
+};
+
+/**
+ * Teacher detail of a REJECTED entry — shows the distinct "Revise & resubmit"
+ * action (not "Submit for approval"). Clicking it transitions to SUBMITTED.
+ */
+export const TeacherReviseRejectedEntry: Story = {
+  args: {
+    ...baseVm,
+    entries: [
+      makeEntry({
+        entryId: "e-1",
+        status: "REJECTED",
+        summary: "Tích phân — Bài tập tổng hợp",
+        decidedBy: "Trần Minh Quân",
+        reason: "Thiếu nội dung bài tập về nhà.",
+      }),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText("Tích phân — Bài tập tổng hợp"));
+    // The revise action, not the submit action, is offered for REJECTED.
+    const reviseBtn = await waitFor(() =>
+      canvas.getByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: /Gửi BGH phê duyệt/ }),
+    ).not.toBeInTheDocument();
+    // The rejection reason stays visible while the teacher revises.
+    await expect(
+      canvas.getByText(/Thiếu nội dung bài tập về nhà/),
+    ).toBeInTheDocument();
+    // Clicking revise transitions the entry to SUBMITTED (Chờ duyệt).
+    await userEvent.click(reviseBtn);
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+      ).not.toBeInTheDocument(),
+    );
+    await expect(canvas.getByText("Chờ duyệt")).toBeInTheDocument();
   },
 };
 

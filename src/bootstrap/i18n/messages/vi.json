@@ -1050,14 +1050,17 @@
       "rejectReasonPlaceholder": "VD: Thiếu nội dung bài tập về nhà...",
       "rejectedLabel": "Đã từ chối",
       "rejectionReason": "Lý do từ chối:",
+      "revise": "Chỉnh sửa & gửi lại",
+      "revising": "Đang gửi lại...",
       "teacherSignature": "Giáo viên ký tên"
     },
     "errors": {
-      "already-submitted": "Bản ghi đã được gửi",
-      "duplicate-date": "Đã có bản ghi cho ngày này",
+      "already-exists": "Đã có bản ghi cho ngày này",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này trên lớp này",
+      "invalid-transition": "Thao tác này không hợp lệ với trạng thái hiện tại của bản ghi",
       "network-error": "Lỗi kết nối mạng",
       "not-found": "Không tìm thấy bản ghi",
-      "not-submitted": "Bản ghi chưa được gửi để phê duyệt",
+      "summary-required": "Nội dung bài học là bắt buộc",
       "unauthorized": "Bạn không có quyền thực hiện thao tác này",
       "unknown": "Đã xảy ra lỗi không xác định"
     },

@@ -7,6 +7,7 @@ import {
   approveEntryAction,
   createEntryAction,
   rejectEntryAction,
+  reviseEntryAction,
   submitEntryAction,
 } from "./actions";
 
@@ -51,6 +52,7 @@ export default async function TeacherClassLogPage({
       filterStatus={filterStatus}
       createEntryAction={createEntryAction}
       submitEntryAction={submitEntryAction}
+      reviseEntryAction={reviseEntryAction}
       approveEntryAction={approveEntryAction}
       rejectEntryAction={rejectEntryAction}
     />

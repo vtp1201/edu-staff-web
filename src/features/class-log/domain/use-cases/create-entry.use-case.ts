@@ -12,10 +12,7 @@ export class CreateEntryUseCase {
     notableEvents?: string,
   ): Promise<HomeroomEntry> {
     if (summary.trim().length === 0) {
-      const failure: ClassLogFailure = {
-        type: "unknown",
-        message: "summary-required",
-      };
+      const failure: ClassLogFailure = { type: "summary-required" };
       throw failure;
     }
     return this.repo.createEntry(classId, entryDate, summary, notableEvents);
