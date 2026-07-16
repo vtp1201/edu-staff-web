@@ -280,3 +280,153 @@ export const EmptyClass: Story = {
     ).toBeInTheDocument();
   },
 };
+
+// ─── QA gate (fe-qa-playwright, US-E18.12) — new interaction tests closing
+// gaps the tech-lead/a11y review only inspected statically ────────────────
+
+/** 5-column single-row scheme so a bulk-submit fan-out has an exact,
+ * assertable target count (2 succeed / 3 fail) — the A11Y-101 partial-failure
+ * fix end-to-end, not just the banner text asserted by `PartialSubmitFailure`
+ * above. */
+const SCHEME_5COL: AssessmentScheme = {
+  subjectId: "subj-toan-10",
+  yearLabel: "2024-2025",
+  termId: "HK1",
+  columns: [
+    { id: "c1", type: "TX", label: "Cột 1", count: 1, weight: 20 },
+    { id: "c2", type: "TX", label: "Cột 2", count: 1, weight: 20 },
+    { id: "c3", type: "TX", label: "Cột 3", count: 1, weight: 20 },
+    { id: "c4", type: "TX", label: "Cột 4", count: 1, weight: 20 },
+    { id: "c5", type: "TX", label: "Cột 5", count: 1, weight: 20 },
+  ],
+};
+
+const ONE_ROW_5COL: StudentScoreRow[] = [
+  {
+    studentId: "hs-001",
+    studentName: "Nguyễn Văn An",
+    studentCode: "HS001",
+    scores: {
+      c1: cell(8),
+      c2: cell(7),
+      c3: cell(6),
+      c4: cell(9),
+      c5: cell(5),
+    },
+    average: 7,
+  },
+];
+
+export const PartialSubmitFailureCellIndicators: Story = {
+  name: "Partial submit failure — per-cell aria-invalid indicators (A11Y-101)",
+  args: {
+    vm: {
+      ...baseVM,
+      sheet: {
+        classId: "class-001",
+        subjectId: "subj-toan-10",
+        termId: "HK1",
+        academicYearLabel: "2025-2026",
+        scheme: SCHEME_5COL,
+        rows: ONE_ROW_5COL,
+        publishMode: "SELF_PUBLISH",
+      },
+      // 2 succeed (c1, c2) / 3 fail (c3, c4, c5) — exactly the fixed target
+      // set the row-submit fans out, regardless of call order.
+      submitScoresAction: async (targets) => ({
+        ok: true,
+        result: {
+          submitted: targets.filter(
+            (t) => t.columnId === "c1" || t.columnId === "c2",
+          ),
+          failed: targets
+            .filter(
+              (t) =>
+                t.columnId === "c3" ||
+                t.columnId === "c4" ||
+                t.columnId === "c5",
+            )
+            .map((target) => ({
+              target,
+              failure: { type: "not-draft" as const },
+            })),
+        },
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const submitRowBtn = canvas.getByRole("button", {
+      name: messages.gradeEntry.submitRowButton,
+    });
+    await userEvent.click(submitRowBtn);
+
+    // Aggregate banner reflects "2/5" (submitted/total), 3 failed.
+    const banner = canvas.getByRole("status");
+    await expect(banner.textContent).toContain("2/5");
+    await expect(banner.textContent).toContain("3");
+
+    // The 3 specific failed cells (c3/c4/c5) show aria-invalid + a visible
+    // error message; the 2 succeeded cells (c1/c2) do NOT.
+    const failedLabels = ["Cột 3", "Cột 4", "Cột 5"];
+    for (const label of failedLabels) {
+      const input = canvas.getByRole("spinbutton", {
+        name: messages.gradeEntry.cellLabel
+          .replace("{column}", label)
+          .replace("{student}", "Nguyễn Văn An"),
+      });
+      await expect(input).toHaveAttribute("aria-invalid", "true");
+      const describedBy = input.getAttribute("aria-describedby");
+      if (!describedBy)
+        throw new Error("expected aria-describedby on failed cell");
+      const errorEl = canvasElement.querySelector(`#${describedBy}`);
+      await expect(errorEl?.textContent?.length).toBeGreaterThan(0);
+    }
+
+    const succeededLabels = ["Cột 1", "Cột 2"];
+    for (const label of succeededLabels) {
+      const input = canvas.getByRole("spinbutton", {
+        name: messages.gradeEntry.cellLabel
+          .replace("{column}", label)
+          .replace("{student}", "Nguyễn Văn An"),
+      });
+      await expect(input).toHaveAttribute("aria-invalid", "false");
+    }
+  },
+};
+
+export const SubmitButtonsDisabledWithoutDraft: Story = {
+  name: "Row + bulk submit buttons disabled with zero DRAFT cells",
+  args: { vm: { ...baseVM, sheet: sheet(withStatus("PUBLISHED")) } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const bulkBtn = canvas.getByRole("button", {
+      name: messages.gradeEntry.submitAllDraftsButton,
+    });
+    await expect(bulkBtn).toBeDisabled();
+    const rowBtns = canvas.getAllByRole("button", {
+      name: messages.gradeEntry.submitRowButton,
+    });
+    for (const btn of rowBtns) {
+      await expect(btn).toBeDisabled();
+    }
+  },
+};
+
+export const SubmitButtonsEnabledWithDraft: Story = {
+  name: "Row + bulk submit buttons enabled with ≥1 DRAFT cell",
+  args: { vm: baseVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const bulkBtn = canvas.getByRole("button", {
+      name: messages.gradeEntry.submitAllDraftsButton,
+    });
+    await expect(bulkBtn).toBeEnabled();
+    const rowBtns = canvas.getAllByRole("button", {
+      name: messages.gradeEntry.submitRowButton,
+    });
+    for (const btn of rowBtns) {
+      await expect(btn).toBeEnabled();
+    }
+  },
+};
