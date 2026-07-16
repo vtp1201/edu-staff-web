@@ -221,6 +221,39 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    ALSO adds a `gender` field to `UserProfileResponse` (net-new field, not
    just newly-exposed) — needed before any admin-facing roster/search screen
    can show real student data instead of raw ids.
+10. **(US-E18.7, 2026-07-16)** `GradeScaleResponse`/`SetGradeScaleRequest`
+    have no banding concept for numeric scales (`HE_10`/`HE_4_GPA`) — only
+    `LETTER_ABCD` carries `letterGrades`. Web's editor lets admins define
+    named threshold bands with colors for ANY scale type (a legitimate,
+    already-shipped UX — `docs/product/design-spec.jsonc`); under the real
+    contract this customization is decorative-only for the two numeric types
+    (falls back to a local preset, never persisted). Ask: add an optional
+    `bands: [{ label, minThreshold }]` array to `GradeScaleResponse`/
+    `SetGradeScaleRequest` for numeric scale types too (mirrors what
+    `letterGrades` already does for `LETTER_ABCD`).
+11. **(US-E18.7, 2026-07-16)** `AssessmentColumnRequest`/`AssessmentColumnResponse`
+    have no "number of assessments folded into this column" concept (web
+    calls it `count` — e.g. "2 bài kiểm tra thường xuyên" under one TX
+    column) — only `name`/`columnType`/`coefficient`/`ordinal`. Confirmed by
+    reading the full schema in `services/core/docs/openapi.yaml`
+    (`AssessmentColumnRequest`/`Response`, `GradeEntryResponse`'s composite
+    key `classId+subjectId+termId+studentMemberId+columnId` implies exactly
+    one recorded value per column per student). Ask: either add an optional
+    `requiredCount`/`assessmentCount` field to `AssessmentColumnResponse`
+    (display-only, since `GradeEntryResponse` still stores one value per
+    column), or confirm this is intentionally a client-only UI label with no
+    BE meaning (in which case web should stop implying it persists).
+12. **(US-E18.7, 2026-07-16)** `GET /api/v1/subjects` has no `gradeLevel`
+    query filter (only `status` + cursor pagination), even though
+    `SubjectResponse.gradeLevel` exists as a field. The assessment-scheme
+    screen's grade-scoped subject picker (`ASSESSMENT_EP.subjectsByGrade`)
+    stays mock-first because of this — wiring it needs either a `gradeLevel`
+    query param added to the list endpoint, or an explicit decision that
+    grade-scoped filtering happens client-side across a fully-paginated
+    fetch (expensive at scale, same fan-out-to-completion pattern already
+    used elsewhere in this epic). Coordinate with whoever picks up
+    US-E18.3 (subject-catalogue wiring, not yet done) since that US owns
+    the real `Subject` listing.
 
 ## Dependencies & thứ tự
 
