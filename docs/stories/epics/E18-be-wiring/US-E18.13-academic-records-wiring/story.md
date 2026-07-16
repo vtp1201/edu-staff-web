@@ -114,7 +114,270 @@ Full 9-code error taxonomy — see Scope section above.
 
 ## Plan (fe-planner to detail phases in this section)
 
-_To be filled in by `fe-planner` — see delegation below._
+Grounded in ADR `0055` + current code
+(`src/features/academic-records/**`, `src/bootstrap/di/academic-records.di.ts`,
+`src/app/[locale]/t/[tenant]/(app)/admin/academic-records/actions.ts`). No new
+screens; `academic-record-seal-screen` reused. `IAcademicRecordsRepository`
+(viewer) and 4 unseal-surface methods are untouched code (confirm force-mock,
+no edits needed beyond a comment).
+
+### Key design calls (fe-planner decisions — flag disagreement before Phase 1)
+
+1. **Hybrid DI = two repo instances behind a delegating facade**, not a
+   single mock-or-real swap. `HybridAcademicRecordsSealRepository` (new,
+   `infrastructure/repositories/academic-records-seal-hybrid.repository.ts`)
+   implements `IAcademicRecordsSealRepository`; constructor takes
+   `(real: AcademicRecordsSealRepository, mock: MockAcademicRecordsSealRepository)`;
+   `sealBatch` delegates to `real`, every other method delegates to `mock`.
+   Chosen over "one repo class with an internal if-branch per method" because
+   it keeps `AcademicRecordsSealRepository` a pure HTTP adapter (only
+   `sealBatch` gets a real implementation, the rest stay `notImplemented()`
+   dead code, same scaffold shape already in the file) and keeps
+   `MockAcademicRecordsSealRepository` the single source of truth for every
+   mocked method's in-memory state — mirrors how `grades.di.ts` composes
+   `GradeBookRepository` with an injected `resolveSchemeFor` callback rather
+   than branching per-method inside one class.
+2. **`sealBatch`'s return shape changes** from `SealBatchStatus` to a new
+   `SealBatchResult` entity (`{ sealedCount, failedCount, errors }`, 1:1 with
+   the real `SealAcademicRecordResponse`). Verified safe: the container's
+   `sealMutation` never reads seal-result fields for the UI — the seal-tab's
+   displayed `batch` (status/sealedAt/sealedBy) comes from the separate
+   `getSealStatus` query, which the mutation's `onSuccess` merely
+   invalidates. Only the success toast copy needs updating (can interpolate
+   `sealedCount`/`failedCount` instead of `batchKey.classId`+`term`, or keep
+   the existing copy — presentation's call, not blocking).
+3. **`already-sealed` is dropped**; **`not-all-locked` is renamed/replaced**
+   by `unlocked-grades-exist` (keep `not-all-locked` OUT of the union — it
+   described a client pre-check that no longer runs). `too-many-reseals` is
+   added. `not-sealed` (unseal-initiate gate) is UNRELATED to seal and stays
+   untouched (still force-mocked surface).
+4. **`getSealStatus`'s "X/Y locked" hint stops being a hard gate.**
+   `AllLockedGate`'s NOT-OK branch currently hides the Seal button entirely
+   (link-to-approval only). It must now show a warning banner AND a Seal
+   button (decorative-not-blocking), matching the "reactive gate" pattern.
+   Reseal (batch already `SEALED`) must also stop disabling the Seal button.
+   Both reactive failures (`unlocked-grades-exist`, `too-many-reseals`) are
+   surfaced by the existing `showError(res.errorKey)` → `toast.error` path in
+   `academic-record-seal-container.tsx` (generic over
+   `AcademicRecordsFailure["type"]` already — no dialog restructuring
+   needed). This is the UI-touch-minimal choice per EPIC-OVERVIEW precedent;
+   flag to fe-lead if a dedicated inline error slot in
+   `seal-confirm-dialog.tsx` is preferred instead of toast.
+
+### Phase 1 — Domain (failure union + use-case rewrite + entity)
+
+Files:
+- `domain/failures/academic-records.failure.ts` — remove `not-all-locked`,
+  `already-sealed`; add `unlocked-grades-exist`, `too-many-reseals`.
+- `domain/entities/seal-batch.entity.ts` — add
+  `export interface SealBatchResult { sealedCount: number; failedCount: number; errors: string[] }`.
+- `domain/repositories/i-academic-records-seal.repository.ts` — change
+  `sealBatch(...): Promise<SealResult<SealBatchStatus>>` →
+  `Promise<SealResult<SealBatchResult>>`.
+- `domain/use-cases/seal-academic-record.use-case.ts` — DELETE the
+  `getSealStatus` pre-check block entirely; `execute()` becomes a thin
+  pass-through: `return this.repo.sealBatch(key, actorId)`. Update the class
+  doc-comment (currently claims it "enforces the two hard gates" — that's
+  now false).
+
+Test first (red before rewrite):
+- `seal-academic-record.use-case.test.ts` — replace the 4 existing cases:
+  - "seals without calling getSealStatus first" (spy/throw in
+    `getSealStatus` mock to prove it's never invoked).
+  - "does not block when batch is already sealed" (repo mock's `sealBatch`
+    returns `{sealedCount, failedCount:0, errors:[]}` even if fed a
+    pre-sealed key — use-case just forwards it).
+  - "bubbles `unlocked-grades-exist` from the repo" (repo mock's `sealBatch`
+    returns `{ok:false, error:{type:"unlocked-grades-exist"}}`).
+  - "bubbles `too-many-reseals` from the repo".
+  - Delete the `not-all-locked`/`already-sealed` cases (behavior no longer
+    exists in the use-case).
+- Fixed `makeRepo()` test helper: keep the full-interface fake shape (per
+  new `sealBatch` return type), drop nothing else.
+
+Done when: `bun vitest run seal-academic-record.use-case.test.ts` green,
+`bunx tsc --noEmit` green (catches every call-site still expecting
+`SealBatchStatus` from `sealBatch`).
+
+### Phase 2 — Infrastructure (real sealBatch, hybrid DI, mock update)
+
+Files:
+- `bootstrap/endpoint/academic-records.endpoint.ts` (new — endpoint constants
+  didn't exist for this feature yet; magic-string rule in CLAUDE.md) — add
+  `sealBatch: (classId: string, termId: string) => \`/classes/${classId}/terms/${termId}/academic-records/seal\``.
+  (Confirm no existing endpoint file for this feature via grep before adding —
+  if `AcademicRecordsSealRepository` already inlines the path, replace the
+  inline string with this constant.)
+- `infrastructure/dtos/seal-response.dto.ts` — add
+  `SealAcademicRecordResponseDto { sealedCount: number; failedCount: number; errors?: string[] }`.
+- `infrastructure/mappers/seal-batch.mapper.ts` — add
+  `sealBatchResultMapper(dto): SealBatchResult` (`errors: dto.errors ?? []`).
+- `infrastructure/repositories/academic-records-seal.repository.ts` —
+  implement `sealBatch` for real: `POST` to the new endpoint with
+  `{ actorId }` body (confirm exact body shape against
+  `seal_academic_record.go` — ADR 0055 doesn't specify a request body beyond
+  path params + implicit actor-from-JWT; if the real endpoint takes NO body,
+  drop `actorId` from the request, it's inferred server-side from the
+  Bearer token same as every other US-E18.x real-mode POST). Catch/normalize
+  errors via `errorCodeOf`/`statusOf` (`@/bootstrap/lib/api-envelope`) →
+  `AcademicRecordsFailure`:
+  - `ACADEMIC_RECORD_FORBIDDEN` / 403 → `forbidden`
+  - `ACADEMIC_RECORD_NOT_FOUND` / 404 → `not-found`
+  - `ACADEMIC_RECORD_UNLOCKED_GRADES_EXIST` / 422 → `unlocked-grades-exist`
+  - `ACADEMIC_RECORD_TOO_MANY_RESEALS` / 422 → `too-many-reseals`
+  - `NETWORK_ERROR` / 5xx → `network-error`
+  - else → `unknown`
+  Keep every other method `notImplemented()` (dead — hybrid never calls
+  them) but update the class doc-comment: no longer "scaffold only, BE
+  hasn't shipped" — `sealBatch` IS real now, only the other 8 methods are
+  permanently dormant.
+- `infrastructure/repositories/academic-records-seal-hybrid.repository.ts`
+  (new) — the facade from design-call #1.
+- `infrastructure/repositories/mocks/academic-records-seal.mock.repository.ts`
+  — rewrite `sealBatch` to model the corrected contract: no `not-all-locked`/
+  `already-sealed` blocks; if `!match.allLocked` → reactive
+  `unlocked-grades-exist`; track a `resealCount` field per batch (extend
+  `SealBatchStatus` fixture data — check `seal-fixtures.ts` first, add
+  `resealCount` there), increment on each successful reseal, return
+  `too-many-reseals` at `resealCount >= 5`; success path returns
+  `{sealedCount: match.totalStudents, failedCount: 0, errors: []}` and still
+  updates `match.status`/`sealedAt`/`sealedBy`/audit trail (so the decorative
+  `getSealStatus` hint stays coherent for the demo/mock experience).
+  `getSealStatus` unchanged (still returns `SealBatchStatus`, still
+  decorative — comment update only, noting it's approximate now for real
+  mode too).
+- `bootstrap/di/academic-records.di.ts` — replace `makeSealRepository()`'s
+  single if/else with the hybrid composition:
+  ```ts
+  async function makeSealRepository(): Promise<IAcademicRecordsSealRepository> {
+    const mock = new MockAcademicRecordsSealRepository();
+    if (USE_MOCK) return mock;
+    await ensureFreshSession(); // decision 0018, playbook step 6
+    const real = new AcademicRecordsSealRepository(await createServerHttpClient());
+    return new HybridAcademicRecordsSealRepository(real, mock);
+  }
+  ```
+  Add a one-line comment on `makeRepository()` (the viewer factory)
+  confirming it stays untouched/force-mock-eligible per ADR 0055 §viewer.
+
+Test first (red before code):
+- `academic-records-seal-hybrid.repository.ts` unit test (new) — construct
+  with fake real/mock stubs, assert `sealBatch` calls only the real stub and
+  every other method calls only the mock stub (spy counts).
+- `academic-records-seal.repository.ts` — add a `sealBatch` integration test
+  (envelope success → `sealBatchResultMapper` shape; each of the 4 error
+  codes above → correct failure type; confirm `notImplemented()` still
+  throws for one other method, e.g. `getSealAuditTrail`, proving the class
+  hasn't accidentally gone fully real).
+- `academic-records-seal.mock.repository.test.ts` — update/add cases: reseal
+  succeeds (no `already-sealed`), `unlocked-grades-exist` on `!allLocked`,
+  `too-many-reseals` after 5 successful seals on the same key.
+
+Done when: new + updated unit/integration tests green; `bun vitest run` full
+suite green; `bunx tsc --noEmit` green.
+
+### Phase 3 — Presentation (reactive gate UI + decorative labeling + i18n)
+
+Files:
+- `presentation/academic-record-seal-screen/components/all-locked-gate.tsx`
+  — NOT-OK branch: keep the warning banner, ADD the Seal button (same
+  `onSeal` handler) instead of only the "go to approval" link; both branches
+  now always render a Seal button. Reseal: OK branch's Seal button — remove
+  `disabled={alreadySealed}` (idempotent reseal allowed); button label may
+  switch to a "reseal" copy when `batch.status === "SEALED"` (nice-to-have,
+  confirm with design-review).
+- `presentation/academic-record-seal-screen/components/seal-confirm-dialog.tsx`
+  — no structural change if toast is the agreed error surface (design call
+  #4); if fe-lead prefers inline, add an `errorKey` prop rendered above the
+  footer, mirroring how `unseal-same-admin-dialog.tsx` surfaces its gate
+  (check that file's pattern before choosing).
+- `presentation/academic-record-seal-screen/academic-record-seal-screen.i-vm.ts`
+  — `SealActionResult<SealBatchStatus>` on the `seal` action signature →
+  `SealActionResult<SealBatchResult>`; import `SealBatchResult`. Add a
+  comment on `SealTabVM.batch` making the decorative/approximate nature of
+  `getSealStatus` explicit (e.g. `/** Decorative "X/Y locked" hint only —
+  NOT authoritative; the real seal action's reactive result is the source of
+  truth. */`).
+- `app/[locale]/t/[tenant]/(app)/admin/academic-records/actions.ts` —
+  `sealAction`'s return type annotation → `SealActionResult<SealBatchResult>`
+  (body unchanged, generic `result.ok ? {data: result.data} : {errorKey}`
+  already forwards whatever shape the use-case returns).
+- `presentation/academic-record-seal-screen/academic-record-seal-container.tsx`
+  — no structural change (already generic `showError(errorKey)`); optionally
+  enrich `sealSuccess.toast` copy with `sealedCount`/`failedCount` from
+  `res.data` if design wants it (open question, not blocking).
+- i18n (`src/bootstrap/i18n/messages/{vi,en}.json`, `academicRecordSeal`
+  namespace): under `errors.*` — REMOVE `already-sealed`, `not-all-locked`
+  keys (dead union members after Phase 1); ADD `unlocked-grades-exist`,
+  `too-many-reseals` (Vietnamese source first, mirror English). Suggested vi
+  copy: `unlocked-grades-exist`: "Còn điểm chưa được khoá — vui lòng khoá
+  toàn bộ điểm trước khi ký học bạ." / `too-many-reseals`: "Đã đạt giới hạn
+  số lần ký lại (tối đa 5 lần) cho học bạ này." Update
+  `gate.notAllLocked.*` copy if the NOT-OK banner's wording needs to soften
+  from "chưa thể ký" (blocking) to a warning-but-still-actionable tone, given
+  the Seal button now also renders there.
+
+Test first (red before code):
+- `academic-record-seal-screen.stories.tsx` — add/update interaction stories:
+  "seal succeeds when decoratively not-all-locked (reactive gate allows
+  attempt, mock action returns error, toast shows unlocked-grades-exist)",
+  "reseal on an already-SEALED batch succeeds", "too-many-reseals surfaces
+  via toast". Existing "not-all-locked hides seal button" story (if any) —
+  update to "not-all-locked still shows seal button + warning".
+- i18n key check: `bunx tsc --noEmit` fails if a removed key is still
+  referenced anywhere (typed messages) — run after removing
+  `already-sealed`/`not-all-locked` from `vi.json` to confirm no dangling
+  reference in code/tests.
+
+Done when: Storybook interaction tests green; a11y unchanged (banner still
+`role="alert"` where applicable, Seal button meets 44px touch target
+already established); ready for design-review gate.
+
+### Phase 4 — Review + gates
+
+- `fe-tech-lead-reviewer` + `fe-accessibility-auditor` (parallel): verify
+  hybrid DI facade doesn't leak `infrastructure/` into `presentation/`,
+  verify no raw color introduced, verify `already-sealed`/`not-all-locked`
+  fully purged (grep clean) vs. intentionally-kept `not-sealed` (unrelated
+  surface) not accidentally touched.
+- Design-review gate (`docs/DESIGN_REVIEW.md` + `/impeccable`) — REQUIRED
+  per EPIC-OVERVIEW.md's "Design Source" flag for US-E18.13 (seal-flow
+  workflow-state change: NOT-OK banner now co-exists with an actionable Seal
+  button — verify hierarchy/contrast reads as "warning, not blocked").
+- `fe-qa-playwright` — Storybook interaction coverage for Phase 3 stories +
+  Playwright E2E smoke on the seal flow if the existing E2E suite already
+  covers this screen (check `e2e/` for an existing academic-record-seal
+  spec before writing a new one).
+- Harness proof: `docs/TEST_MATRIX.md` US-E18.13 row → `implemented` only
+  after unit (Phase 1) + integration (Phase 2) + Storybook (Phase 3) proof
+  all exist; `scripts/bin/harness-cli story update` per parallel-workflow.md
+  step 4; merge `feat/us-e18.13-academic-records-wiring` → `main` per
+  decision `0025`.
+
+### Open questions — RESOLVED by fe-lead (2026-07-16)
+
+- **Real `sealBatch` request body: NO body.** Re-ground-truthed directly:
+  `openapi.yaml`'s `POST /api/v1/classes/{classId}/terms/{termId}/academic-records/seal`
+  operation declares only `parameters: [ClassId, TermId]` — no
+  `requestBody` block at all. The Go handler
+  (`academic_record_handler.go`'s `Seal()`) does not call
+  `bindAndValidate`/read any body (unlike `RequestUnseal`, which does bind a
+  body) — it builds `SealAcademicRecordInput` purely from path params +
+  `actorFrom(c)` (JWT-derived). **Decision: bare POST, no request body.**
+  `actorId` stays a parameter of the domain-level `sealBatch(key, actorId)`
+  signature (still needed by the mock repo for its audit-actor-name
+  lookup) but the REAL repository must NOT put it on the wire.
+- **Error surface: toast, not an inline dialog slot.** Approved — zero
+  structural change, consistent with the screen's existing generic
+  `showError(errorKey)` → `toast.error` path for every other reactive
+  failure. No new prop on `seal-confirm-dialog.tsx`.
+- **Reseal button copy:** approved — switch label to "Ký lại học bạ" when
+  `batch.status === "SEALED"`, "Ký học bạ" otherwise. Non-blocking UX
+  nicety; keep if it fits cleanly, otherwise a single static label is
+  acceptable — engineer's call, flag in Evidence either way.
+
+Engineer: proceed with Phases 1–4 as written above, applying the three
+resolutions in this section.
 
 ## Test Matrix
 
