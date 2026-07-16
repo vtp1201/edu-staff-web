@@ -1,22 +1,22 @@
 import "server-only";
 import { mockDelay } from "@/bootstrap/lib/mock";
 import type { GradePublishMode } from "@/features/admin-school-setup/domain/entities/school-config.entity";
+import type { ClassSubjectTermKey } from "../../../domain/entities/class-subject-term-key.entity";
 import type {
   ChildSummary,
   GradeBook,
+  GradeBookRow,
 } from "../../../domain/entities/grade-book.entity";
 import type { IGradeBookRepository } from "../../../domain/repositories/i-grade-book.repository";
-import type { GradeBookRowDto } from "../../dtos/grade-book-response.dto";
-import { mapGradeBook } from "../../mappers/grade-book.mapper";
 import { MOCK_SCHEME } from "./fixtures";
 import {
+  MOCK_GRADE_BOOK_CLASS_ID,
   MOCK_GRADE_BOOK_CLASS_NAME,
-  MOCK_GRADE_BOOK_CS_ID,
   MOCK_GRADE_BOOK_ROWS,
   MOCK_GRADE_BOOK_ROWS_CHILD_0,
   MOCK_GRADE_BOOK_ROWS_CHILD_1,
+  MOCK_GRADE_BOOK_SUBJECT_ID,
   MOCK_GRADE_BOOK_SUBJECT_NAME,
-  MOCK_GRADE_BOOK_TERM,
   MOCK_VIEWER_CHILDREN,
 } from "./grade-book-fixtures";
 
@@ -29,50 +29,89 @@ export class MockGradeBookRepository implements IGradeBookRepository {
     private readonly publishMode: GradePublishMode = "SELF_PUBLISH",
   ) {}
 
-  private build(rowDtos: typeof MOCK_GRADE_BOOK_ROWS, csId: string): GradeBook {
-    return mapGradeBook(
-      {
-        classSubjectId: csId,
-        term: MOCK_GRADE_BOOK_TERM,
-        className: MOCK_GRADE_BOOK_CLASS_NAME,
-        subjectName: MOCK_GRADE_BOOK_SUBJECT_NAME,
-        rows: rowDtos,
-      },
-      structuredClone(MOCK_SCHEME),
-      this.publishMode,
+  private build(
+    rows: GradeBookRow[],
+    key: ClassSubjectTermKey,
+    className: string,
+    subjectName: string,
+  ): GradeBook {
+    return {
+      classId: key.classId,
+      subjectId: key.subjectId,
+      termId: key.termId,
+      academicYearLabel: key.academicYearLabel,
+      className,
+      subjectName,
+      scheme: structuredClone(MOCK_SCHEME),
+      rows: structuredClone(rows),
+      publishMode: this.publishMode,
+    };
+  }
+
+  async getGradeBook(key: ClassSubjectTermKey): Promise<GradeBook> {
+    await mockDelay();
+    return this.build(
+      MOCK_GRADE_BOOK_ROWS,
+      key,
+      MOCK_GRADE_BOOK_CLASS_NAME,
+      MOCK_GRADE_BOOK_SUBJECT_NAME,
     );
   }
 
-  private buildForChild(rows: GradeBookRowDto[], className: string): GradeBook {
-    return mapGradeBook(
-      {
-        classSubjectId: MOCK_GRADE_BOOK_CS_ID,
-        term: MOCK_GRADE_BOOK_TERM,
-        className,
-        subjectName: MOCK_GRADE_BOOK_SUBJECT_NAME,
+  async getMyGrades(
+    studentMemberId: string,
+    academicYearLabel: string,
+  ): Promise<GradeBook[]> {
+    await mockDelay();
+    const key: ClassSubjectTermKey = {
+      classId: MOCK_GRADE_BOOK_CLASS_ID,
+      subjectId: MOCK_GRADE_BOOK_SUBJECT_ID,
+      termId: "HK1",
+      academicYearLabel,
+    };
+    const mine = MOCK_GRADE_BOOK_ROWS.filter(
+      (r) => r.studentId === studentMemberId,
+    );
+    const rows = mine.length > 0 ? mine : [MOCK_GRADE_BOOK_ROWS[0]];
+    return [
+      this.build(
         rows,
-      },
-      structuredClone(MOCK_SCHEME),
-      this.publishMode,
-    );
+        key,
+        MOCK_GRADE_BOOK_CLASS_NAME,
+        MOCK_GRADE_BOOK_SUBJECT_NAME,
+      ),
+    ];
   }
 
-  async getGradeBook(csId: string, _term: string): Promise<GradeBook> {
+  async getChildGrades(
+    childId: string,
+    academicYearLabel: string,
+  ): Promise<GradeBook[]> {
     await mockDelay();
-    return this.build(MOCK_GRADE_BOOK_ROWS, csId);
-  }
-
-  async getMyGrades(_term: string): Promise<GradeBook> {
-    await mockDelay();
-    return this.build([MOCK_GRADE_BOOK_ROWS[0]], MOCK_GRADE_BOOK_CS_ID);
-  }
-
-  async getChildGrades(childId: string, _term: string): Promise<GradeBook> {
-    await mockDelay();
+    const key: ClassSubjectTermKey = {
+      classId: MOCK_GRADE_BOOK_CLASS_ID,
+      subjectId: MOCK_GRADE_BOOK_SUBJECT_ID,
+      termId: "HK1",
+      academicYearLabel,
+    };
     if (childId === "c2") {
-      return this.buildForChild(MOCK_GRADE_BOOK_ROWS_CHILD_1, "8B1");
+      return [
+        this.build(
+          MOCK_GRADE_BOOK_ROWS_CHILD_1,
+          key,
+          "8B1",
+          MOCK_GRADE_BOOK_SUBJECT_NAME,
+        ),
+      ];
     }
-    return this.buildForChild(MOCK_GRADE_BOOK_ROWS_CHILD_0, "11A2");
+    return [
+      this.build(
+        MOCK_GRADE_BOOK_ROWS_CHILD_0,
+        key,
+        "11A2",
+        MOCK_GRADE_BOOK_SUBJECT_NAME,
+      ),
+    ];
   }
 
   async getChildList(): Promise<ChildSummary[]> {

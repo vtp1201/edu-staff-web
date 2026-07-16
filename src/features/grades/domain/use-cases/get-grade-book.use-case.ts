@@ -1,3 +1,4 @@
+import type { ClassSubjectTermKey } from "../entities/class-subject-term-key.entity";
 import type { GradeBook } from "../entities/grade-book.entity";
 import type { GradesFailure } from "../failures/grades.failure";
 import type { IGradeBookRepository } from "../repositories/i-grade-book.repository";
@@ -12,12 +13,9 @@ function toFailure(err: unknown): GradesFailure {
 export class GetGradeBookUseCase {
   constructor(private readonly repo: IGradeBookRepository) {}
 
-  async execute(
-    csId: string,
-    term: string,
-  ): Promise<GradeBook | GradesFailure> {
+  async execute(key: ClassSubjectTermKey): Promise<GradeBook | GradesFailure> {
     try {
-      return await this.repo.getGradeBook(csId, term);
+      return await this.repo.getGradeBook(key);
     } catch (err) {
       return toFailure(err);
     }

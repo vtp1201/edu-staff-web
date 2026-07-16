@@ -10,7 +10,6 @@ function row(average: number | null): GradeBookRow {
     scores: {},
     average,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   };
 }
 

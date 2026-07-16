@@ -1,8 +1,13 @@
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
-import type { StudentScoreRowDto } from "../../dtos/grades-response.dto";
+import type { ClassSubjectTermKey } from "../../../domain/entities/class-subject-term-key.entity";
+import type { StudentScoreRow } from "../../../domain/entities/grade-sheet.entity";
 
-export const MOCK_CS_ID = "cs-001";
-export const MOCK_TERM = "HK1";
+export const MOCK_KEY: ClassSubjectTermKey = {
+  classId: "class-001",
+  subjectId: "subj-toan-10",
+  termId: "HK1",
+  academicYearLabel: "2025-2026",
+};
 
 export const MOCK_SCHEME: AssessmentScheme = {
   subjectId: "subj-toan-10",
@@ -15,40 +20,72 @@ export const MOCK_SCHEME: AssessmentScheme = {
   ],
 };
 
-export interface MockClassSubject {
-  id: string;
-  label: string;
+/**
+ * Class-subject picker fixture (US-E18.12, ADR 0054) — mock-mode fallback for
+ * `resolve-my-grade-subjects.ts`, shaped like the real composed
+ * `GradeSubjectOption` (no more invented `csId`).
+ */
+export interface MockGradeSubject {
+  classId: string;
+  subjectId: string;
+  className: string;
+  subjectName: string;
 }
 
-export const MOCK_CLASS_SUBJECTS: MockClassSubject[] = [
-  { id: "cs-001", label: "10A1 — Toán" },
-  { id: "cs-002", label: "10A2 — Toán" },
-  { id: "cs-003", label: "11B1 — Toán" },
+export const MOCK_GRADE_SUBJECT_OPTIONS: MockGradeSubject[] = [
+  {
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    className: "10A1",
+    subjectName: "Toán",
+  },
+  {
+    classId: "class-002",
+    subjectId: "subj-toan-10",
+    className: "10A2",
+    subjectName: "Toán",
+  },
+  {
+    classId: "class-003",
+    subjectId: "subj-toan-11",
+    className: "11B1",
+    subjectName: "Toán",
+  },
 ];
 
-export const MOCK_ROWS: StudentScoreRowDto[] = [
+/** Per-cell status rows (US-E18.12 — status lives per cell, not per row). */
+export const MOCK_ROWS: StudentScoreRow[] = [
   {
     studentId: "hs-001",
     studentName: "Nguyễn Văn An",
     studentCode: "HS001",
-    scores: { tx: 8, gk: 7.5, ck: 9 },
+    scores: {
+      tx: { value: 8, status: "DRAFT" },
+      gk: { value: 7.5, status: "DRAFT" },
+      ck: { value: 9, status: "DRAFT" },
+    },
     average: null,
-    publishStatus: "DRAFT",
   },
   {
     studentId: "hs-002",
     studentName: "Trần Thị Bình",
     studentCode: "HS002",
-    scores: { tx: 4, gk: 5, ck: null },
+    scores: {
+      tx: { value: 4, status: "DRAFT" },
+      gk: { value: 5, status: "DRAFT" },
+      ck: { value: null, status: "DRAFT" },
+    },
     average: null,
-    publishStatus: "DRAFT",
   },
   {
     studentId: "hs-003",
     studentName: "Lê Hoàng Cường",
     studentCode: "HS003",
-    scores: { tx: 9, gk: 9.5, ck: 10 },
+    scores: {
+      tx: { value: 9, status: "DRAFT" },
+      gk: { value: 9.5, status: "DRAFT" },
+      ck: { value: 10, status: "DRAFT" },
+    },
     average: null,
-    publishStatus: "DRAFT",
   },
 ];

@@ -14,17 +14,23 @@ export function GradeBookContainer({ vm }: { vm: GradeBookScreenVM }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  function onSelectionChange(next: { csId?: string; term?: string }) {
+  function onSelectionChange(next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) {
     const params = new URLSearchParams(searchParams.toString());
-    if (next.csId !== undefined) params.set("csId", next.csId);
+    if (next.classId !== undefined) params.set("classId", next.classId);
+    if (next.subjectId !== undefined) params.set("subjectId", next.subjectId);
     if (next.term !== undefined) params.set("term", next.term);
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  function onEnterGrades(csId: string) {
+  function onEnterGrades(classId: string, subjectId: string) {
     if (!vm.gradeEntryPath) return;
     const params = new URLSearchParams();
-    params.set("csId", csId);
+    params.set("classId", classId);
+    params.set("subjectId", subjectId);
     if (vm.selectedTerm) params.set("term", vm.selectedTerm);
     router.push(`${vm.gradeEntryPath}?${params.toString()}`);
   }

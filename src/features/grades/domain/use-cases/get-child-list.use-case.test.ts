@@ -24,8 +24,8 @@ const CHILDREN: ChildSummary[] = [
 function makeRepo(over: Partial<IGradeBookRepository>): IGradeBookRepository {
   return {
     getGradeBook: async () => ({}) as GradeBook,
-    getMyGrades: async () => ({}) as GradeBook,
-    getChildGrades: async () => ({}) as GradeBook,
+    getMyGrades: async () => [{}] as GradeBook[],
+    getChildGrades: async () => [{}] as GradeBook[],
     getChildList: async () => CHILDREN,
     ...over,
   };

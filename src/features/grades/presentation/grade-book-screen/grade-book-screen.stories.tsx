@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   GradeBook,
@@ -31,8 +31,18 @@ const SCHEME = {
 };
 
 const CLASS_SUBJECTS: ClassSubjectOption[] = [
-  { id: "cs-001", label: "10A1 — Toán" },
-  { id: "cs-002", label: "10A2 — Toán" },
+  {
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    className: "10A1",
+    subjectName: "Toán",
+  },
+  {
+    classId: "class-002",
+    subjectId: "subj-toan-10",
+    className: "10A2",
+    subjectName: "Toán",
+  },
 ];
 
 const ROWS: GradeBookRow[] = [
@@ -40,34 +50,45 @@ const ROWS: GradeBookRow[] = [
     studentId: "hs-001",
     studentName: "Nguyễn Văn An",
     studentCode: "HS001",
-    scores: { tx: 8, gk: 8, ck: 9 },
+    scores: {
+      tx: { value: 8, status: "PUBLISHED" },
+      gk: { value: 8, status: "PUBLISHED" },
+      ck: { value: 9, status: "PUBLISHED" },
+    },
     average: 8.5,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-002",
     studentName: "Trần Thị Bình",
     studentCode: "HS002",
-    scores: { tx: 3, gk: 4, ck: 4.6 },
+    scores: {
+      tx: { value: 3, status: "PUBLISHED" },
+      gk: { value: 4, status: "PUBLISHED" },
+      ck: { value: 4.6, status: "PUBLISHED" },
+    },
     average: 4.1,
     conductGrade: "TB",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-003",
     studentName: "Lê Hoàng Cường",
     studentCode: "HS003",
-    scores: { tx: 9.4, gk: 9.6, ck: 9.9 },
+    scores: {
+      tx: { value: 9.4, status: "PUBLISHED" },
+      gk: { value: 9.6, status: "PUBLISHED" },
+      ck: { value: 9.9, status: "PUBLISHED" },
+    },
     average: 9.7,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
 ];
 
 const book: GradeBook = {
-  classSubjectId: "cs-001",
-  term: "HK1",
+  classId: "class-001",
+  subjectId: "subj-toan-10",
+  termId: "HK1",
+  academicYearLabel: "2025-2026",
   className: "10A1",
   subjectName: "Toán",
   scheme: SCHEME,
@@ -79,7 +100,8 @@ function vm(over: Partial<GradeBookScreenVM> = {}): GradeBookScreenVM {
   return {
     role: "teacher",
     classSubjects: CLASS_SUBJECTS,
-    selectedCsId: "cs-001",
+    selectedClassId: "class-001",
+    selectedSubjectId: "subj-toan-10",
     selectedTerm: "HK1",
     gradeBook: book,
     isPublished: true,
@@ -148,7 +170,8 @@ export const StudentView_SingleRow: Story = {
     vm: vm({
       role: "student",
       classSubjects: [],
-      selectedCsId: null,
+      selectedClassId: null,
+      selectedSubjectId: null,
       gradeBook: { ...book, rows: [ROWS[0]] },
     }),
   },
@@ -165,7 +188,8 @@ export const ParentView_SingleRow: Story = {
     vm: vm({
       role: "parent",
       classSubjects: [],
-      selectedCsId: null,
+      selectedClassId: null,
+      selectedSubjectId: null,
       gradeBook: { ...book, rows: [ROWS[1]] },
     }),
   },
@@ -185,10 +209,13 @@ const child1Book: GradeBook = {
       studentId: "c2-hs-001",
       studentName: "Nguyễn Thu Hà",
       studentCode: "HS201",
-      scores: { tx: 7, gk: 7.5, ck: 8 },
+      scores: {
+        tx: { value: 7, status: "PUBLISHED" },
+        gk: { value: 7.5, status: "PUBLISHED" },
+        ck: { value: 8, status: "PUBLISHED" },
+      },
       average: 7.7,
       conductGrade: "Kha",
-      publishStatus: "PUBLISHED",
     },
   ],
 };
@@ -197,7 +224,8 @@ function parentVm(over: Partial<GradeBookScreenVM> = {}): GradeBookScreenVM {
   return vm({
     role: "parent",
     classSubjects: [],
-    selectedCsId: null,
+    selectedClassId: null,
+    selectedSubjectId: null,
     gradeBook: { ...book, rows: [ROWS[0]] },
     gradeEntryPath: undefined,
     ...over,
@@ -284,7 +312,8 @@ export const PublishGateBanner: Story = {
     vm: vm({
       role: "student",
       classSubjects: [],
-      selectedCsId: null,
+      selectedClassId: null,
+      selectedSubjectId: null,
       isPublished: false,
       gradeBook: { ...book, rows: [ROWS[0]] },
     }),
@@ -296,7 +325,9 @@ export const PublishGateBanner: Story = {
 };
 
 export const NoSelection: Story = {
-  args: { vm: vm({ selectedCsId: null, gradeBook: null }) },
+  args: {
+    vm: vm({ selectedClassId: null, selectedSubjectId: null, gradeBook: null }),
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     expect(
@@ -331,7 +362,9 @@ export const EmptyState: Story = {
 export const NoSelectionUnchanged: Story = {
   // AC-02.1/02.2: no-selection prompt keeps the legacy dashed-border look and
   // does NOT render the canonical role="status" empty state.
-  args: { vm: vm({ selectedCsId: null, gradeBook: null }) },
+  args: {
+    vm: vm({ selectedClassId: null, selectedSubjectId: null, gradeBook: null }),
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const status = canvas.getByRole("status");
@@ -354,9 +387,185 @@ export const ErrorState: Story = {
   },
 };
 
+// ─── QA gate (fe-qa-playwright, US-E18.12) — new interaction tests for the
+// admin/principal-only term-lock action (A11Y-102 fix), not previously
+// covered by any Storybook interaction test. ──────────────────────────────
+
+function adminVmWithLock(
+  lockTermAction: GradeBookScreenVM["lockTermAction"],
+  over: Partial<GradeBookScreenVM> = {},
+): GradeBookScreenVM {
+  return vm({
+    role: "admin",
+    gradeEntryPath: undefined,
+    lockTermAction,
+    ...over,
+  });
+}
+
+const DRAFT_ONLY_BOOK: GradeBook = {
+  ...book,
+  rows: [
+    {
+      ...ROWS[0],
+      scores: {
+        tx: { value: 5, status: "DRAFT" },
+        gk: { value: 5, status: "DRAFT" },
+        ck: { value: null, status: "DRAFT" },
+      },
+    },
+  ],
+};
+
+export const LockTermButtonDisabledWithoutPublished: Story = {
+  name: "Lock-term button disabled with zero PUBLISHED cells",
+  args: {
+    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 0 }), {
+      gradeBook: DRAFT_ONLY_BOOK,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lockBtn = canvas.getByRole("button", {
+      name: messages.gradeBook.lockTermButton,
+    });
+    await expect(lockBtn).toBeDisabled();
+  },
+};
+
+export const LockTermButtonEnabledWithPublished: Story = {
+  name: "Lock-term button enabled with ≥1 PUBLISHED cell",
+  args: {
+    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 0 })),
+  },
+  play: async ({ canvasElement }) => {
+    // default `book` fixture rows are all PUBLISHED.
+    const canvas = within(canvasElement);
+    const lockBtn = canvas.getByRole("button", {
+      name: messages.gradeBook.lockTermButton,
+    });
+    await expect(lockBtn).toBeEnabled();
+  },
+};
+
+export const LockTermConfirmSuccess: Story = {
+  name: "Lock-term confirm success — dialog closes, banner shows count",
+  args: {
+    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 3 })),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lockBtn = canvas.getByRole("button", {
+      name: messages.gradeBook.lockTermButton,
+    });
+    await userEvent.click(lockBtn);
+
+    const dialog = within(canvasElement.ownerDocument.body);
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+
+    const confirmBtn = dialog.getByRole("button", {
+      name: messages.gradeBook.lockTermConfirmOk,
+    });
+    await userEvent.click(confirmBtn);
+
+    // Dialog closes on success (Radix exit-animation timing — wait it out).
+    await waitFor(() =>
+      expect(
+        dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
+      ).not.toBeInTheDocument(),
+    );
+
+    // Success banner reports the locked count.
+    const banner = canvas.getByRole("status");
+    await expect(banner.textContent).toContain("3");
+  },
+};
+
+export const LockTermConfirmFailureStaysOpen: Story = {
+  name: "Lock-term confirm failure — dialog stays open, shows errorSlot (A11Y-102)",
+  args: {
+    vm: adminVmWithLock(async () => ({
+      ok: false,
+      errorKey: "network-error",
+    })),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lockBtn = canvas.getByRole("button", {
+      name: messages.gradeBook.lockTermButton,
+    });
+    await userEvent.click(lockBtn);
+
+    const dialog = within(canvasElement.ownerDocument.body);
+    const confirmBtn = dialog.getByRole("button", {
+      name: messages.gradeBook.lockTermConfirmOk,
+    });
+    await userEvent.click(confirmBtn);
+
+    // A11Y-102: dialog must STAY open (not close-then-banner) and show its
+    // own errorSlot content.
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert).toBeInTheDocument();
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorNetworkError,
+    );
+    // transient tone → retry control present.
+    await expect(
+      dialog.getByRole("button", { name: messages.Common.confirmDialog.retry }),
+    ).toBeInTheDocument();
+  },
+};
+
+export const LockTermConfirmFailureForbiddenNoRetry: Story = {
+  name: "Lock-term confirm forbidden failure — no retry, confirm disabled",
+  args: {
+    vm: adminVmWithLock(async () => ({
+      ok: false,
+      errorKey: "forbidden",
+    })),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lockBtn = canvas.getByRole("button", {
+      name: messages.gradeBook.lockTermButton,
+    });
+    await userEvent.click(lockBtn);
+
+    const dialog = within(canvasElement.ownerDocument.body);
+    const confirmBtn = dialog.getByRole("button", {
+      name: messages.gradeBook.lockTermConfirmOk,
+    });
+    await userEvent.click(confirmBtn);
+
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorForbidden,
+    );
+    // forbidden tone → no retry button, confirm itself force-disabled.
+    await expect(
+      dialog.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).not.toBeInTheDocument();
+    await expect(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    ).toBeDisabled();
+  },
+};
+
 export const SelectionChange: Story = {
   args: {
-    vm: vm({ selectedCsId: null, gradeBook: null }),
+    vm: vm({ selectedClassId: null, selectedSubjectId: null, gradeBook: null }),
     onSelectionChange: fn(),
   },
   play: async ({ canvasElement, args }) => {

@@ -2,7 +2,11 @@
 
 import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
+import {
+  DestructiveConfirmDialog,
+  type DestructiveConfirmErrorSlot,
+} from "@/components/shared/destructive-confirm-dialog";
 import { GradeBookTable } from "@/components/shared/grade-book-table";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,9 +32,14 @@ type ErrorMsgKey =
 const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "not-found": "errorNotFound",
   forbidden: "errorForbidden",
-  "score-out-of-range": "errorUnknown",
-  "already-published": "errorUnknown",
-  "incomplete-scores": "errorUnknown",
+  "teacher-not-assigned": "errorForbidden",
+  "invalid-value": "errorUnknown",
+  "not-draft": "errorUnknown",
+  locked: "errorUnknown",
+  "scale-not-configured": "errorUnknown",
+  "scheme-not-configured": "errorUnknown",
+  "column-not-in-scheme": "errorUnknown",
+  "student-not-enrolled": "errorUnknown",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
   "not-pending-approval": "errorUnknown",
@@ -45,9 +54,13 @@ export interface GradeBookScreenProps {
   vm: GradeBookScreenVM;
   isLoading?: boolean;
   /** invoked when the viewer changes class-subject or term (RSC re-fetch) */
-  onSelectionChange?: (next: { csId?: string; term?: string }) => void;
+  onSelectionChange?: (next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) => void;
   /** teacher CTA navigation (router-driven; stories omit it) */
-  onEnterGrades?: (csId: string) => void;
+  onEnterGrades?: (classId: string, subjectId: string) => void;
   /** retry the current query (RSC refresh) */
   onRetry?: () => void;
   /** parent only — called when a different child tab is clicked */
@@ -64,12 +77,18 @@ export function GradeBookScreen({
 }: GradeBookScreenProps) {
   const t = useTranslations("gradeBook");
   const [, startTransition] = useTransition();
+  const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [lockPending, setLockPending] = useState(false);
+  const [lockBanner, setLockBanner] = useState<string | null>(null);
+  const [lockErrorKey, setLockErrorKey] = useState<
+    GradesFailure["type"] | null
+  >(null);
 
   const showSelectors =
     vm.role === "teacher" || vm.role === "principal" || vm.role === "admin";
   const needsSelection = showSelectors;
   const hasSelection = needsSelection
-    ? Boolean(vm.selectedCsId && vm.selectedTerm)
+    ? Boolean(vm.selectedClassId && vm.selectedSubjectId && vm.selectedTerm)
     : Boolean(vm.selectedTerm);
 
   // parent-only child switcher: only shown when ≥2 children are linked.
@@ -90,9 +109,56 @@ export function GradeBookScreen({
         } as const)
       : {};
 
-  function changeSelection(next: { csId?: string; term?: string }) {
+  function changeSelection(next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) {
     startTransition(() => onSelectionChange?.(next));
   }
+
+  const hasPublishedCell =
+    vm.gradeBook?.rows.some((r) =>
+      Object.values(r.scores).some((c) => c.status === "PUBLISHED"),
+    ) ?? false;
+
+  const canLockTerm =
+    Boolean(vm.lockTermAction) &&
+    Boolean(vm.selectedClassId && vm.selectedSubjectId && vm.selectedTerm) &&
+    hasPublishedCell;
+
+  async function confirmLockTerm() {
+    if (!vm.lockTermAction) return;
+    setLockPending(true);
+    setLockErrorKey(null);
+    const result = await vm.lockTermAction();
+    setLockPending(false);
+    if (result.ok) {
+      setLockDialogOpen(false);
+      setLockBanner(t("lockTermSuccess", { count: result.lockedCount ?? 0 }));
+      startTransition(() => onSelectionChange?.({}));
+    } else {
+      // A11Y-102: keep the dialog open on failure — surface the error via
+      // the dialog's own errorSlot (forbidden = no retry, transient = retry)
+      // instead of closing it and forcing a full re-open/re-confirm cycle.
+      setLockErrorKey(result.errorKey);
+    }
+  }
+
+  const lockErrorSlot: DestructiveConfirmErrorSlot | undefined = (() => {
+    if (!lockErrorKey) return undefined;
+    if (
+      lockErrorKey === "forbidden" ||
+      lockErrorKey === "teacher-not-assigned"
+    ) {
+      return { tone: "forbidden", message: t(ERROR_KEY_MAP[lockErrorKey]) };
+    }
+    return {
+      tone: "transient",
+      message: t(ERROR_KEY_MAP[lockErrorKey]),
+      onRetry: confirmLockTerm,
+    };
+  })();
 
   return (
     <div className="flex flex-col gap-5 p-5">
@@ -103,10 +169,27 @@ export function GradeBookScreen({
         {vm.role === "teacher" && vm.gradeEntryPath ? (
           <Button
             type="button"
-            onClick={() => vm.selectedCsId && onEnterGrades?.(vm.selectedCsId)}
-            disabled={!vm.selectedCsId}
+            onClick={() =>
+              vm.selectedClassId &&
+              vm.selectedSubjectId &&
+              onEnterGrades?.(vm.selectedClassId, vm.selectedSubjectId)
+            }
+            disabled={!(vm.selectedClassId && vm.selectedSubjectId)}
           >
             {t("enterGradesCta")}
+          </Button>
+        ) : null}
+        {vm.lockTermAction ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setLockErrorKey(null);
+              setLockDialogOpen(true);
+            }}
+            disabled={!canLockTerm}
+          >
+            {t("lockTermButton")}
           </Button>
         ) : null}
       </header>
@@ -118,16 +201,26 @@ export function GradeBookScreen({
               {t("selectClass")}
             </Label>
             <Select
-              value={vm.selectedCsId ?? undefined}
-              onValueChange={(v) => changeSelection({ csId: v })}
+              value={
+                vm.selectedClassId && vm.selectedSubjectId
+                  ? `${vm.selectedClassId}:${vm.selectedSubjectId}`
+                  : undefined
+              }
+              onValueChange={(v) => {
+                const [classId, subjectId] = v.split(":");
+                changeSelection({ classId, subjectId });
+              }}
             >
               <SelectTrigger id="gb-cs">
                 <SelectValue placeholder={t("selectClass")} />
               </SelectTrigger>
               <SelectContent>
                 {vm.classSubjects.map((cs) => (
-                  <SelectItem key={cs.id} value={cs.id}>
-                    {cs.label}
+                  <SelectItem
+                    key={`${cs.classId}:${cs.subjectId}`}
+                    value={`${cs.classId}:${cs.subjectId}`}
+                  >
+                    {cs.className} — {cs.subjectName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,6 +248,15 @@ export function GradeBookScreen({
             </Select>
           </div>
         </div>
+      ) : null}
+
+      {lockBanner ? (
+        <p
+          className="rounded-[8px] bg-muted px-4 py-2 text-foreground text-sm"
+          role="status"
+        >
+          {lockBanner}
+        </p>
       ) : null}
 
       {showChildSwitcher && vm.childrenList ? (
@@ -188,6 +290,24 @@ export function GradeBookScreen({
           </>
         )}
       </div>
+
+      <DestructiveConfirmDialog
+        open={lockDialogOpen}
+        title={t("lockTermConfirmTitle")}
+        body={t("lockTermConfirmBody", {
+          className: vm.gradeBook?.className ?? "",
+          subjectName: vm.gradeBook?.subjectName ?? "",
+          term: vm.selectedTerm ?? "",
+        })}
+        confirmLabel={t("lockTermConfirmOk")}
+        isLoading={lockPending}
+        errorSlot={lockErrorSlot}
+        onConfirm={confirmLockTerm}
+        onCancel={() => {
+          setLockDialogOpen(false);
+          setLockErrorKey(null);
+        }}
+      />
     </div>
   );
 }

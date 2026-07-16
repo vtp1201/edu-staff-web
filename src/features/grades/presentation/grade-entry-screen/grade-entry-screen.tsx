@@ -3,17 +3,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,6 +15,7 @@ import {
 import type { GradeSheet } from "../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 import { calculateWeightedAverage } from "../../domain/use-cases/calculate-weighted-average.use-case";
+import type { SubmitTarget } from "../../domain/use-cases/submit-column-scores.use-case";
 import type {
   ActionResult,
   GradeEntryScreenVM,
@@ -35,18 +25,28 @@ import { GradeEntryTable } from "./grade-entry-table";
 
 type ErrorMsgKey =
   | "errorOutOfRange"
-  | "errorAlreadyPublished"
-  | "errorIncompleteScores"
   | "errorForbidden"
+  | "errorTeacherNotAssigned"
+  | "errorNotDraft"
+  | "errorLocked"
+  | "errorScaleNotConfigured"
+  | "errorSchemeNotConfigured"
+  | "errorColumnNotInScheme"
+  | "errorStudentNotEnrolled"
   | "errorNetworkError"
   | "errorUnknown";
 
 const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "not-found": "errorUnknown",
   forbidden: "errorForbidden",
-  "score-out-of-range": "errorOutOfRange",
-  "already-published": "errorAlreadyPublished",
-  "incomplete-scores": "errorIncompleteScores",
+  "teacher-not-assigned": "errorTeacherNotAssigned",
+  "invalid-value": "errorOutOfRange",
+  "not-draft": "errorNotDraft",
+  locked: "errorLocked",
+  "scale-not-configured": "errorScaleNotConfigured",
+  "scheme-not-configured": "errorSchemeNotConfigured",
+  "column-not-in-scheme": "errorColumnNotInScheme",
+  "student-not-enrolled": "errorStudentNotEnrolled",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
   // US-E14.4 approval-pipeline failures are not reachable in grade-entry,
@@ -64,11 +64,11 @@ export interface GradeEntryScreenProps {
   /** loading flag for the grade sheet (RSC-driven) */
   isLoading?: boolean;
   /** invoked when the teacher changes class-subject or term */
-  onSelectionChange?: (next: { csId?: string; term?: string }) => void;
-}
-
-function isLocked(sheet: GradeSheet): boolean {
-  return sheet.rows.some((r) => r.publishStatus !== "DRAFT");
+  onSelectionChange?: (next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) => void;
 }
 
 export function GradeEntryScreen({
@@ -79,13 +79,23 @@ export function GradeEntryScreen({
   const t = useTranslations("gradeEntry");
   const queryClient = useQueryClient();
   const [, startTransition] = useTransition();
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
+  // A11Y-101: per-cell submit failures, keyed `${studentId}:${columnId}` →
+  // the failure type — surfaced directly on the offending cell (aria-invalid
+  // + message), not just aggregated into the banner, so a partial-failure
+  // outcome tells the user exactly which cells to retry and why.
+  const [failedCells, setFailedCells] = useState<
+    Map<string, GradesFailure["type"]>
+  >(new Map());
+
+  function cellKey(studentId: string, columnId: string): string {
+    return `${studentId}:${columnId}`;
+  }
 
   // Local working copy of the sheet so optimistic edits render immediately.
   const [sheet, setSheet] = useState<GradeSheet | null>(vm.sheet);
   // Keep local copy in sync when RSC delivers a new sheet (selection changed).
-  const sheetKey = `${vm.selectedCsId}|${vm.selectedTerm}|${vm.sheet?.rows.length}`;
+  const sheetKey = `${vm.selectedClassId}|${vm.selectedSubjectId}|${vm.selectedTerm}|${vm.sheet?.rows.length}`;
   const [syncKey, setSyncKey] = useState(sheetKey);
   if (syncKey !== sheetKey) {
     setSyncKey(sheetKey);
@@ -94,11 +104,6 @@ export function GradeEntryScreen({
 
   const maxScore = 10;
   const columns = sheet?.scheme.columns ?? [];
-  const locked = sheet ? isLocked(sheet) : false;
-  const pending =
-    sheet?.rows.some((r) => r.publishStatus === "PENDING_APPROVAL") ?? false;
-  const publishedDone =
-    sheet?.rows.some((r) => r.publishStatus === "PUBLISHED") ?? false;
 
   const saveMutation = useMutation({
     mutationFn: async (vars: {
@@ -106,32 +111,37 @@ export function GradeEntryScreen({
       columnId: string;
       value: number;
     }): Promise<ActionResult> => {
-      if (!vm.selectedCsId) return { ok: false, errorKey: "unknown" };
-      return vm.saveScoreAction(
-        vm.selectedCsId,
-        vars.studentId,
-        vars.columnId,
-        vars.value,
-      );
+      return vm.saveScoreAction(vars.studentId, vars.columnId, vars.value);
     },
     onMutate: (vars) => {
+      // Editing a cell again clears any prior failed-submit indicator on it.
+      setFailedCells((prevFailed) => {
+        const key = cellKey(vars.studentId, vars.columnId);
+        if (!prevFailed.has(key)) return prevFailed;
+        const next = new Map(prevFailed);
+        next.delete(key);
+        return next;
+      });
       // Optimistic: patch the working copy + recompute the row average.
       const prev = sheet;
       if (sheet) {
         setSheet({
           ...sheet,
-          rows: sheet.rows.map((r) =>
-            r.studentId === vars.studentId
-              ? {
-                  ...r,
-                  scores: { ...r.scores, [vars.columnId]: vars.value },
-                  average: calculateWeightedAverage(
-                    { ...r.scores, [vars.columnId]: vars.value },
-                    columns,
-                  ),
-                }
-              : r,
-          ),
+          rows: sheet.rows.map((r) => {
+            if (r.studentId !== vars.studentId) return r;
+            const nextScores = {
+              ...r.scores,
+              [vars.columnId]: { value: vars.value, status: "DRAFT" as const },
+            };
+            const values: Record<string, number | null> = {};
+            for (const [colId, c] of Object.entries(nextScores))
+              values[colId] = c.value;
+            return {
+              ...r,
+              scores: nextScores,
+              average: calculateWeightedAverage(values, columns),
+            };
+          }),
         });
       }
       return { prev };
@@ -151,31 +161,55 @@ export function GradeEntryScreen({
   });
 
   function errorMessage(key: GradesFailure["type"]): string {
-    if (key === "score-out-of-range") {
+    if (key === "invalid-value") {
       return t("errorOutOfRange", { max: maxScore });
     }
     return t(ERROR_KEY_MAP[key]);
   }
 
-  const publishMutation = useMutation({
-    mutationFn: async () => {
-      if (!(vm.selectedCsId && vm.selectedTerm && sheet)) {
-        const fail: ActionResult = { ok: false, errorKey: "unknown" };
-        return fail;
-      }
-      return vm.publishAction(vm.selectedCsId, vm.selectedTerm, sheet.rows);
+  const submitMutation = useMutation({
+    mutationFn: async (targets: SubmitTarget[]) => {
+      return vm.submitScoresAction(targets);
     },
     onSuccess: (result) => {
-      setConfirmOpen(false);
-      if (result.ok) {
-        const adminApproval = sheet?.publishMode === "ADMIN_APPROVAL";
-        setBanner(
-          adminApproval ? t("publishPendingApproval") : t("publishSuccess"),
-        );
-        queryClient.invalidateQueries({ queryKey: ["grades"] });
-      } else {
-        setBanner(errorMessage(result.errorKey));
+      if (!result) {
+        setBanner(t("errorUnknown"));
+        return;
       }
+      if (!result.ok) {
+        setBanner(errorMessage(result.errorKey));
+        return;
+      }
+      const { submitted, failed } = result.result;
+      const total = submitted.length + failed.length;
+      // A11Y-101: replace the failed-cell set with exactly this attempt's
+      // failures — succeeded targets (this attempt or a prior one) are
+      // implicitly cleared since they're no longer in the new set.
+      setFailedCells(
+        new Map(
+          failed.map((f) => [
+            cellKey(f.target.studentId, f.target.columnId),
+            f.failure.type,
+          ]),
+        ),
+      );
+      if (failed.length === 0) {
+        setBanner(t("submitSuccess", { count: submitted.length }));
+      } else if (submitted.length > 0) {
+        setBanner(
+          t("submitPartialFailure", {
+            submitted: submitted.length,
+            total,
+            failed: failed.length,
+          }),
+        );
+      } else {
+        setBanner(t("submitFullFailure", { failed: failed.length }));
+      }
+      // Server-authoritative — never trust a client-side guess about which
+      // cells actually landed. Re-fetch the sheet (US-E18.12, ADR 0054 §2.2).
+      queryClient.invalidateQueries({ queryKey: ["grades"] });
+      startTransition(() => onSelectionChange?.({}));
     },
   });
 
@@ -192,12 +226,51 @@ export function GradeEntryScreen({
     return { ok: result.ok };
   }
 
-  function changeSelection(next: { csId?: string; term?: string }) {
+  function handleSubmitCell(studentId: string, columnId: string) {
+    submitMutation.mutate([{ studentId, columnId }]);
+  }
+
+  function handleSubmitRow(studentId: string) {
+    if (!sheet) return;
+    const row = sheet.rows.find((r) => r.studentId === studentId);
+    if (!row) return;
+    const targets: SubmitTarget[] = Object.entries(row.scores)
+      .filter(([, cell]) => cell.status === "DRAFT" && cell.value !== null)
+      .map(([columnId]) => ({ studentId, columnId }));
+    if (targets.length > 0) submitMutation.mutate(targets);
+  }
+
+  function handleSubmitAllDrafts() {
+    if (!sheet) return;
+    const targets: SubmitTarget[] = [];
+    for (const row of sheet.rows) {
+      for (const [columnId, cell] of Object.entries(row.scores)) {
+        if (cell.status === "DRAFT" && cell.value !== null) {
+          targets.push({ studentId: row.studentId, columnId });
+        }
+      }
+    }
+    if (targets.length > 0) submitMutation.mutate(targets);
+  }
+
+  function changeSelection(next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) {
     setBanner(null);
     startTransition(() => onSelectionChange?.(next));
   }
 
-  const hasSelection = Boolean(vm.selectedCsId && vm.selectedTerm);
+  const hasSelection = Boolean(
+    vm.selectedClassId && vm.selectedSubjectId && vm.selectedTerm,
+  );
+  const hasAnyDraft =
+    sheet?.rows.some((r) =>
+      Object.values(r.scores).some(
+        (c) => c.status === "DRAFT" && c.value !== null,
+      ),
+    ) ?? false;
 
   return (
     <div className="flex flex-col gap-5 p-5">
@@ -205,21 +278,15 @@ export function GradeEntryScreen({
         <h1 className="font-extrabold text-2xl text-foreground">
           {t("title")}
         </h1>
-        {sheet && !locked ? (
+        {sheet ? (
           <Button
             type="button"
-            onClick={() => setConfirmOpen(true)}
-            disabled={publishMutation.isPending}
+            onClick={handleSubmitAllDrafts}
+            disabled={submitMutation.isPending || !hasAnyDraft}
           >
-            {t("publishButton")}
+            {t("submitAllDraftsButton")}
           </Button>
         ) : null}
-        {pending ? (
-          <Badge variant="secondary" className="text-edu-text-primary">
-            {t("pendingApproval")}
-          </Badge>
-        ) : null}
-        {publishedDone ? <Badge>{t("published")}</Badge> : null}
       </header>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -228,16 +295,26 @@ export function GradeEntryScreen({
             {t("selectClass")}
           </Label>
           <Select
-            value={vm.selectedCsId ?? undefined}
-            onValueChange={(v) => changeSelection({ csId: v })}
+            value={
+              vm.selectedClassId && vm.selectedSubjectId
+                ? `${vm.selectedClassId}:${vm.selectedSubjectId}`
+                : undefined
+            }
+            onValueChange={(v) => {
+              const [classId, subjectId] = v.split(":");
+              changeSelection({ classId, subjectId });
+            }}
           >
             <SelectTrigger id="grade-cs">
               <SelectValue placeholder={t("selectClass")} />
             </SelectTrigger>
             <SelectContent>
               {vm.classSubjects.map((cs) => (
-                <SelectItem key={cs.id} value={cs.id}>
-                  {cs.label}
+                <SelectItem
+                  key={`${cs.classId}:${cs.subjectId}`}
+                  value={`${cs.classId}:${cs.subjectId}`}
+                >
+                  {cs.className} — {cs.subjectName}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -290,32 +367,13 @@ export function GradeEntryScreen({
           columns={columns}
           rows={sheet.rows}
           maxScore={maxScore}
-          readOnly={locked}
+          failedCells={failedCells}
+          getFailureMessage={errorMessage}
           onSaveScore={handleSaveScore}
+          onSubmitCell={handleSubmitCell}
+          onSubmitRow={handleSubmitRow}
         />
       )}
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("publishConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("publishConfirmDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("publishConfirmCancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                publishMutation.mutate();
-              }}
-            >
-              {t("publishConfirmOk")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

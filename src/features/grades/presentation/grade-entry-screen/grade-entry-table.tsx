@@ -2,53 +2,89 @@
 
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import {
+  GradeEntryStatusBadge,
+  GradeRowStatusSummaryBadge,
+} from "@/components/shared/grade-entry-status-badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils";
+import { deriveRowStatus } from "../../domain/entities/derive-row-status";
 import type {
   AssessmentColumn,
   StudentScoreRow,
 } from "../../domain/entities/grade-sheet.entity";
+import type { GradesFailure } from "../../domain/failures/grades.failure";
 import { getScoreColorClass } from "./score-color";
 
 interface Props {
   columns: AssessmentColumn[];
   rows: StudentScoreRow[];
   maxScore: number;
-  /** true when the whole sheet is locked (PUBLISHED/PENDING_APPROVAL) */
-  readOnly: boolean;
-  /** returns the out-of-range error key for the cell, or null on success */
   onSaveScore: (
     studentId: string,
     columnId: string,
     value: number,
   ) => Promise<{ ok: boolean }>;
+  /** submits ONE cell (clicking the DRAFT badge) */
+  onSubmitCell: (studentId: string, columnId: string) => void;
+  /** submits every DRAFT cell in one row ("Nộp dòng này") */
+  onSubmitRow: (studentId: string) => void;
+  /**
+   * A11Y-101 — cells whose most recent submit attempt failed, keyed
+   * `${studentId}:${columnId}`. Rendered as a per-cell aria-invalid +
+   * aria-describedby indicator so a partial fan-out failure is retryable
+   * cell-by-cell, not just visible as an aggregate banner count.
+   */
+  failedCells: Map<string, GradesFailure["type"]>;
+  /** translates a failure type to already-localized copy (screen owns i18n). */
+  getFailureMessage: (type: GradesFailure["type"]) => string;
 }
 
 interface CellProps {
   row: StudentScoreRow;
   col: AssessmentColumn;
   maxScore: number;
-  readOnly: boolean;
   onSaveScore: Props["onSaveScore"];
+  onSubmitCell: Props["onSubmitCell"];
+  submitFailure?: GradesFailure["type"];
+  getFailureMessage: Props["getFailureMessage"];
 }
 
-function ScoreCell({ row, col, maxScore, readOnly, onSaveScore }: CellProps) {
+function ScoreCell({
+  row,
+  col,
+  maxScore,
+  onSaveScore,
+  onSubmitCell,
+  submitFailure,
+  getFailureMessage,
+}: CellProps) {
   const t = useTranslations("gradeEntry");
   const errorId = useId();
-  const current = row.scores[col.id];
+  const cell = row.scores[col.id];
+  const current = cell?.value ?? null;
+  const status = cell?.status ?? "DRAFT";
   const [hasError, setHasError] = useState(false);
+  const editable = status === "DRAFT";
 
-  if (readOnly) {
+  if (!editable) {
     return (
-      // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-readonly marks the locked cell intent (A11Y-048); the table-level role="note" notice is the primary lock signal
-      <td aria-readonly="true" className="px-3 py-2 text-center text-sm">
-        <span className={getScoreColorClass(current ?? null, maxScore)}>
-          {current ?? "—"}
-        </span>
+      <td className="px-3 py-2 text-center">
+        <div className="flex flex-col items-center gap-1">
+          <span className={getScoreColorClass(current, maxScore)}>
+            {current ?? "—"}
+          </span>
+          <GradeEntryStatusBadge status={status} />
+        </div>
       </td>
     );
   }
 
   const ariaLabel = t("cellLabel", {
+    column: col.label,
+    student: row.studentName,
+  });
+  const submitAriaLabel = t("submitCellLabel", {
     column: col.label,
     student: row.studentName,
   });
@@ -67,35 +103,57 @@ function ScoreCell({ row, col, maxScore, readOnly, onSaveScore }: CellProps) {
     setHasError(!result.ok);
   }
 
+  // Local validation error (out-of-range value) takes precedence over a
+  // stale submit-failure indicator — both render the same aria/visual
+  // treatment, just from different sources.
+  const invalid = hasError || Boolean(submitFailure);
+  const errorMessage = hasError
+    ? t("errorOutOfRange", { max: maxScore })
+    : submitFailure
+      ? getFailureMessage(submitFailure)
+      : null;
+
   return (
     <td className="px-2 py-1.5 text-center">
-      <input
-        type="number"
-        min={0}
-        max={maxScore}
-        step={0.1}
-        defaultValue={current ?? ""}
-        aria-label={ariaLabel}
-        aria-invalid={hasError}
-        aria-describedby={hasError ? errorId : undefined}
-        onBlur={(e) => void commit(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        className={cn(
-          "h-9 min-h-[44px] w-16 rounded-[8px] border border-border bg-background px-2 text-center text-sm",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          hasError && "border-destructive ring-1 ring-destructive",
-        )}
-      />
-      {hasError ? (
-        <span id={errorId} className="mt-0.5 block text-xs text-edu-error-text">
-          {t("errorOutOfRange", { max: maxScore })}
-        </span>
-      ) : null}
+      <div className="flex flex-col items-center gap-1">
+        <input
+          type="number"
+          min={0}
+          max={maxScore}
+          step={0.1}
+          defaultValue={current ?? ""}
+          aria-label={ariaLabel}
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
+          onBlur={(e) => void commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          className={cn(
+            "h-9 min-h-[44px] w-16 rounded-[8px] border border-border bg-background px-2 text-center text-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            invalid && "border-destructive ring-1 ring-destructive",
+          )}
+        />
+        {errorMessage ? (
+          <span id={errorId} className="block text-xs text-edu-error-text">
+            {errorMessage}
+          </span>
+        ) : null}
+        {!hasError && current !== null ? (
+          <button
+            type="button"
+            aria-label={submitAriaLabel}
+            onClick={() => onSubmitCell(row.studentId, col.id)}
+            className="min-h-[44px] min-w-11 rounded-full"
+          >
+            <GradeEntryStatusBadge status="DRAFT" />
+          </button>
+        ) : null}
+      </div>
     </td>
   );
 }
@@ -104,18 +162,16 @@ export function GradeEntryTable({
   columns,
   rows,
   maxScore,
-  readOnly,
   onSaveScore,
+  onSubmitCell,
+  onSubmitRow,
+  failedCells,
+  getFailureMessage,
 }: Props) {
   const t = useTranslations("gradeEntry");
 
   return (
     <div className="overflow-x-auto rounded-card border border-border bg-card shadow-card">
-      {readOnly && (
-        <p className="sr-only" role="note">
-          {t("tableLockedNotice")}
-        </p>
-      )}
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{t("tableCaption")}</caption>
         <thead className="sticky top-0 z-10 bg-muted">
@@ -148,34 +204,63 @@ export function GradeEntryTable({
             >
               {t("averageColumn")}
             </th>
+            <th scope="col" className="px-3 py-2.5">
+              <span className="sr-only">{t("submitRowButton")}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.studentId} className="border-border border-t">
-              <td className="px-3 py-2 text-muted-foreground text-sm">
-                {row.studentCode}
-              </td>
-              <td className="px-3 py-2 font-medium text-foreground text-sm">
-                {row.studentName}
-              </td>
-              {columns.map((col) => (
-                <ScoreCell
-                  key={`${row.studentId}-${col.id}`}
-                  row={row}
-                  col={col}
-                  maxScore={maxScore}
-                  readOnly={readOnly}
-                  onSaveScore={onSaveScore}
-                />
-              ))}
-              <td className="px-3 py-2 text-center font-bold text-sm">
-                <span className={getScoreColorClass(row.average, maxScore)}>
-                  {row.average ?? "—"}
-                </span>
-              </td>
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const rowStatus = deriveRowStatus(row.scores);
+            const hasDraft = Object.values(row.scores).some(
+              (c) => c.status === "DRAFT" && c.value !== null,
+            );
+            return (
+              <tr key={row.studentId} className="border-border border-t">
+                <td className="px-3 py-2 text-muted-foreground text-sm">
+                  {row.studentCode}
+                </td>
+                <td className="px-3 py-2 font-medium text-foreground text-sm">
+                  <span className="block">{row.studentName}</span>
+                  {rowStatus !== "empty" ? (
+                    <span className="mt-1 block">
+                      <GradeRowStatusSummaryBadge rowStatus={rowStatus} />
+                    </span>
+                  ) : null}
+                </td>
+                {columns.map((col) => (
+                  <ScoreCell
+                    key={`${row.studentId}-${col.id}`}
+                    row={row}
+                    col={col}
+                    maxScore={maxScore}
+                    onSaveScore={onSaveScore}
+                    onSubmitCell={onSubmitCell}
+                    submitFailure={failedCells.get(
+                      `${row.studentId}:${col.id}`,
+                    )}
+                    getFailureMessage={getFailureMessage}
+                  />
+                ))}
+                <td className="px-3 py-2 text-center font-bold text-sm">
+                  <span className={getScoreColorClass(row.average, maxScore)}>
+                    {row.average ?? "—"}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={!hasDraft}
+                    onClick={() => onSubmitRow(row.studentId)}
+                  >
+                    {t("submitRowButton")}
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

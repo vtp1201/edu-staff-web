@@ -14,9 +14,14 @@ export function GradeEntryContainer({ vm }: { vm: GradeEntryScreenVM }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  function onSelectionChange(next: { csId?: string; term?: string }) {
+  function onSelectionChange(next: {
+    classId?: string;
+    subjectId?: string;
+    term?: string;
+  }) {
     const params = new URLSearchParams(searchParams.toString());
-    if (next.csId !== undefined) params.set("csId", next.csId);
+    if (next.classId !== undefined) params.set("classId", next.classId);
+    if (next.subjectId !== undefined) params.set("subjectId", next.subjectId);
     if (next.term !== undefined) params.set("term", next.term);
     router.replace(`${pathname}?${params.toString()}`);
   }

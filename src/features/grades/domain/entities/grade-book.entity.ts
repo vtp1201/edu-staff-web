@@ -1,6 +1,6 @@
 import type { GradePublishMode } from "@/features/admin-school-setup/domain/entities/school-config.entity";
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
-import type { GradePublishStatus } from "./grade-sheet.entity";
+import type { GradeCell } from "./grade-sheet.entity";
 
 export type ConductGrade = "Tot" | "Kha" | "TB" | "Yeu";
 
@@ -13,17 +13,18 @@ export interface GradeBookRow {
   studentId: string;
   studentName: string;
   studentCode: string;
-  /** key = AssessmentColumn.id; null = not yet entered */
-  scores: Record<string, number | null>;
+  /** key = AssessmentColumn.id */
+  scores: Record<string, GradeCell>;
   /** weighted average (reuses calculateWeightedAverage); null if incomplete */
   average: number | null;
   conductGrade: ConductGrade;
-  publishStatus: GradePublishStatus;
 }
 
 export interface GradeBook {
-  classSubjectId: string;
-  term: string;
+  classId: string;
+  subjectId: string;
+  termId: string;
+  academicYearLabel: string;
   className: string;
   subjectName: string;
   scheme: AssessmentScheme;
