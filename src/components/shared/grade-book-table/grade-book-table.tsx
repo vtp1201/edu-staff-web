@@ -217,10 +217,7 @@ function GradeRow({
             ) : (
               <span className="flex flex-col items-center gap-0.5">
                 {score}
-                <GradeEntryStatusBadge
-                  status={cell.status}
-                  className="text-[10px]"
-                />
+                <GradeEntryStatusBadge status={cell.status} />
               </span>
             )}
           </td>

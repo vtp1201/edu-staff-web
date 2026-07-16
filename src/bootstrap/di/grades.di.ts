@@ -25,7 +25,6 @@ import { LockTermUseCase } from "@/features/grades/domain/use-cases/lock-term.us
 import { RequestGradeRevisionUseCase } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
 import { SaveScoreUseCase } from "@/features/grades/domain/use-cases/save-score.use-case";
 import { SubmitColumnScoresUseCase } from "@/features/grades/domain/use-cases/submit-column-scores.use-case";
-import { GradeApprovalRepository } from "@/features/grades/infrastructure/repositories/grade-approval.repository";
 import { GradeBookRepository } from "@/features/grades/infrastructure/repositories/grade-book.repository";
 import { GradesRepository } from "@/features/grades/infrastructure/repositories/grades.repository";
 import { MockGradeApprovalRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-approval.mock.repository";
@@ -205,14 +204,17 @@ export async function resolveCurrentStudentMemberId(): Promise<string | null> {
 
 // ─── US-E14.4 — grade approval pipeline (admin, PERMANENTLY MOCK, ADR 0054) ──
 
-/** Approval repo only needs http (no scheme / publish-mode). Force-mock permanently. */
+/**
+ * Force-mocked permanently (ADR 0054) — regardless of `USE_MOCK`, matching
+ * `staff-leave.di.ts`'s unconditional-mock pattern. There is no batchId
+ * resolution path, no tenant-wide pending-approval rollup, and no reject
+ * transition for `GradeEntry` on the wire — a real branch here would 404/
+ * silently misbehave the moment `USE_MOCK` flips false app-wide. The real
+ * `GradeApprovalRepository`/`createServerHttpClient()` construction is
+ * intentionally UNREACHABLE from this factory.
+ */
 async function makeApprovalRepo(): Promise<IGradeApprovalRepository> {
-  if (USE_MOCK) {
-    return new MockGradeApprovalRepository();
-  }
-  await ensureFreshSession();
-  const http = await createServerHttpClient();
-  return new GradeApprovalRepository(http);
+  return new MockGradeApprovalRepository();
 }
 
 /** List / detail have no domain rules → the RSC page can call the repo directly. */

@@ -2076,7 +2076,6 @@
   "gradeCellStatus": {
     "draft": "Draft",
     "locked": "Locked",
-    "mixed": "Mixed status",
     "pendingApproval": "Pending approval",
     "published": "Published"
   },

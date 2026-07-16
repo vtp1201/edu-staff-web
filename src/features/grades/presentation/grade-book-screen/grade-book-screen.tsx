@@ -3,7 +3,10 @@
 import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
+import {
+  DestructiveConfirmDialog,
+  type DestructiveConfirmErrorSlot,
+} from "@/components/shared/destructive-confirm-dialog";
 import { GradeBookTable } from "@/components/shared/grade-book-table";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -77,6 +80,9 @@ export function GradeBookScreen({
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
   const [lockPending, setLockPending] = useState(false);
   const [lockBanner, setLockBanner] = useState<string | null>(null);
+  const [lockErrorKey, setLockErrorKey] = useState<
+    GradesFailure["type"] | null
+  >(null);
 
   const showSelectors =
     vm.role === "teacher" || vm.role === "principal" || vm.role === "admin";
@@ -124,16 +130,35 @@ export function GradeBookScreen({
   async function confirmLockTerm() {
     if (!vm.lockTermAction) return;
     setLockPending(true);
+    setLockErrorKey(null);
     const result = await vm.lockTermAction();
     setLockPending(false);
-    setLockDialogOpen(false);
     if (result.ok) {
+      setLockDialogOpen(false);
       setLockBanner(t("lockTermSuccess", { count: result.lockedCount ?? 0 }));
       startTransition(() => onSelectionChange?.({}));
     } else {
-      setLockBanner(t(ERROR_KEY_MAP[result.errorKey]));
+      // A11Y-102: keep the dialog open on failure — surface the error via
+      // the dialog's own errorSlot (forbidden = no retry, transient = retry)
+      // instead of closing it and forcing a full re-open/re-confirm cycle.
+      setLockErrorKey(result.errorKey);
     }
   }
+
+  const lockErrorSlot: DestructiveConfirmErrorSlot | undefined = (() => {
+    if (!lockErrorKey) return undefined;
+    if (
+      lockErrorKey === "forbidden" ||
+      lockErrorKey === "teacher-not-assigned"
+    ) {
+      return { tone: "forbidden", message: t(ERROR_KEY_MAP[lockErrorKey]) };
+    }
+    return {
+      tone: "transient",
+      message: t(ERROR_KEY_MAP[lockErrorKey]),
+      onRetry: confirmLockTerm,
+    };
+  })();
 
   return (
     <div className="flex flex-col gap-5 p-5">
@@ -158,7 +183,10 @@ export function GradeBookScreen({
           <Button
             type="button"
             variant="outline"
-            onClick={() => setLockDialogOpen(true)}
+            onClick={() => {
+              setLockErrorKey(null);
+              setLockDialogOpen(true);
+            }}
             disabled={!canLockTerm}
           >
             {t("lockTermButton")}
@@ -273,8 +301,12 @@ export function GradeBookScreen({
         })}
         confirmLabel={t("lockTermConfirmOk")}
         isLoading={lockPending}
+        errorSlot={lockErrorSlot}
         onConfirm={confirmLockTerm}
-        onCancel={() => setLockDialogOpen(false)}
+        onCancel={() => {
+          setLockDialogOpen(false);
+          setLockErrorKey(null);
+        }}
       />
     </div>
   );

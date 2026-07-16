@@ -80,6 +80,17 @@ export function GradeEntryScreen({
   const queryClient = useQueryClient();
   const [, startTransition] = useTransition();
   const [banner, setBanner] = useState<string | null>(null);
+  // A11Y-101: per-cell submit failures, keyed `${studentId}:${columnId}` →
+  // the failure type — surfaced directly on the offending cell (aria-invalid
+  // + message), not just aggregated into the banner, so a partial-failure
+  // outcome tells the user exactly which cells to retry and why.
+  const [failedCells, setFailedCells] = useState<
+    Map<string, GradesFailure["type"]>
+  >(new Map());
+
+  function cellKey(studentId: string, columnId: string): string {
+    return `${studentId}:${columnId}`;
+  }
 
   // Local working copy of the sheet so optimistic edits render immediately.
   const [sheet, setSheet] = useState<GradeSheet | null>(vm.sheet);
@@ -103,6 +114,14 @@ export function GradeEntryScreen({
       return vm.saveScoreAction(vars.studentId, vars.columnId, vars.value);
     },
     onMutate: (vars) => {
+      // Editing a cell again clears any prior failed-submit indicator on it.
+      setFailedCells((prevFailed) => {
+        const key = cellKey(vars.studentId, vars.columnId);
+        if (!prevFailed.has(key)) return prevFailed;
+        const next = new Map(prevFailed);
+        next.delete(key);
+        return next;
+      });
       // Optimistic: patch the working copy + recompute the row average.
       const prev = sheet;
       if (sheet) {
@@ -163,6 +182,17 @@ export function GradeEntryScreen({
       }
       const { submitted, failed } = result.result;
       const total = submitted.length + failed.length;
+      // A11Y-101: replace the failed-cell set with exactly this attempt's
+      // failures — succeeded targets (this attempt or a prior one) are
+      // implicitly cleared since they're no longer in the new set.
+      setFailedCells(
+        new Map(
+          failed.map((f) => [
+            cellKey(f.target.studentId, f.target.columnId),
+            f.failure.type,
+          ]),
+        ),
+      );
       if (failed.length === 0) {
         setBanner(t("submitSuccess", { count: submitted.length }));
       } else if (submitted.length > 0) {
@@ -337,6 +367,8 @@ export function GradeEntryScreen({
           columns={columns}
           rows={sheet.rows}
           maxScore={maxScore}
+          failedCells={failedCells}
+          getFailureMessage={errorMessage}
           onSaveScore={handleSaveScore}
           onSubmitCell={handleSubmitCell}
           onSubmitRow={handleSubmitRow}

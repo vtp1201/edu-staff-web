@@ -2076,7 +2076,6 @@
   "gradeCellStatus": {
     "draft": "Nháp",
     "locked": "Đã khóa",
-    "mixed": "Nhiều trạng thái",
     "pendingApproval": "Chờ duyệt",
     "published": "Đã công bố"
   },

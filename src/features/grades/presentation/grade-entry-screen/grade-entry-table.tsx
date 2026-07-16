@@ -13,6 +13,7 @@ import type {
   AssessmentColumn,
   StudentScoreRow,
 } from "../../domain/entities/grade-sheet.entity";
+import type { GradesFailure } from "../../domain/failures/grades.failure";
 import { getScoreColorClass } from "./score-color";
 
 interface Props {
@@ -28,6 +29,15 @@ interface Props {
   onSubmitCell: (studentId: string, columnId: string) => void;
   /** submits every DRAFT cell in one row ("Nộp dòng này") */
   onSubmitRow: (studentId: string) => void;
+  /**
+   * A11Y-101 — cells whose most recent submit attempt failed, keyed
+   * `${studentId}:${columnId}`. Rendered as a per-cell aria-invalid +
+   * aria-describedby indicator so a partial fan-out failure is retryable
+   * cell-by-cell, not just visible as an aggregate banner count.
+   */
+  failedCells: Map<string, GradesFailure["type"]>;
+  /** translates a failure type to already-localized copy (screen owns i18n). */
+  getFailureMessage: (type: GradesFailure["type"]) => string;
 }
 
 interface CellProps {
@@ -36,6 +46,8 @@ interface CellProps {
   maxScore: number;
   onSaveScore: Props["onSaveScore"];
   onSubmitCell: Props["onSubmitCell"];
+  submitFailure?: GradesFailure["type"];
+  getFailureMessage: Props["getFailureMessage"];
 }
 
 function ScoreCell({
@@ -44,6 +56,8 @@ function ScoreCell({
   maxScore,
   onSaveScore,
   onSubmitCell,
+  submitFailure,
+  getFailureMessage,
 }: CellProps) {
   const t = useTranslations("gradeEntry");
   const errorId = useId();
@@ -89,6 +103,16 @@ function ScoreCell({
     setHasError(!result.ok);
   }
 
+  // Local validation error (out-of-range value) takes precedence over a
+  // stale submit-failure indicator — both render the same aria/visual
+  // treatment, just from different sources.
+  const invalid = hasError || Boolean(submitFailure);
+  const errorMessage = hasError
+    ? t("errorOutOfRange", { max: maxScore })
+    : submitFailure
+      ? getFailureMessage(submitFailure)
+      : null;
+
   return (
     <td className="px-2 py-1.5 text-center">
       <div className="flex flex-col items-center gap-1">
@@ -99,8 +123,8 @@ function ScoreCell({
           step={0.1}
           defaultValue={current ?? ""}
           aria-label={ariaLabel}
-          aria-invalid={hasError}
-          aria-describedby={hasError ? errorId : undefined}
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
           onBlur={(e) => void commit(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -111,19 +135,20 @@ function ScoreCell({
           className={cn(
             "h-9 min-h-[44px] w-16 rounded-[8px] border border-border bg-background px-2 text-center text-sm",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            hasError && "border-destructive ring-1 ring-destructive",
+            invalid && "border-destructive ring-1 ring-destructive",
           )}
         />
-        {hasError ? (
+        {errorMessage ? (
           <span id={errorId} className="block text-xs text-edu-error-text">
-            {t("errorOutOfRange", { max: maxScore })}
+            {errorMessage}
           </span>
-        ) : current !== null ? (
+        ) : null}
+        {!hasError && current !== null ? (
           <button
             type="button"
             aria-label={submitAriaLabel}
             onClick={() => onSubmitCell(row.studentId, col.id)}
-            className="min-h-[44px] rounded-full"
+            className="min-h-[44px] min-w-11 rounded-full"
           >
             <GradeEntryStatusBadge status="DRAFT" />
           </button>
@@ -140,6 +165,8 @@ export function GradeEntryTable({
   onSaveScore,
   onSubmitCell,
   onSubmitRow,
+  failedCells,
+  getFailureMessage,
 }: Props) {
   const t = useTranslations("gradeEntry");
 
@@ -209,6 +236,10 @@ export function GradeEntryTable({
                     maxScore={maxScore}
                     onSaveScore={onSaveScore}
                     onSubmitCell={onSubmitCell}
+                    submitFailure={failedCells.get(
+                      `${row.studentId}:${col.id}`,
+                    )}
+                    getFailureMessage={getFailureMessage}
                   />
                 ))}
                 <td className="px-3 py-2 text-center font-bold text-sm">

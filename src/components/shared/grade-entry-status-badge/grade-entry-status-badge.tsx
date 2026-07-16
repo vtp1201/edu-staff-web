@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle, Clock, Layers, Lock } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   StatusBadge,
@@ -66,20 +66,29 @@ export function GradeEntryStatusBadge({
 }
 
 /**
- * Row-summary variant (component-design.md §2) — derived, never stored. A
- * single clean state reuses the per-cell badge; `mixed` gets a distinct
- * compound affordance (never a 5th color) with a counted breakdown for
- * assistive tech.
+ * Row-summary variant (component-design.md §2) — derived, never stored. Every
+ * row collapses to exactly one of `RowGradeStatus`'s 5 literals via
+ * `deriveRowStatus`'s deliberate worst-progress-wins precedence
+ * (state-architecture.md §1.3) — there is no separate "mixed" state to render:
+ * a row with 2 DRAFT + 3 LOCKED cells IS the `draft` status (draft outranks
+ * everything), not a distinct 6th visual case. A11Y-103 (design review):
+ * an earlier draft of this component carried a dead `mixed` branch (using
+ * `aria-label` instead of `aria-describedby`, unreachable given
+ * `deriveRowStatus`'s return type) — removed rather than implemented, since
+ * inventing a real "mixed" state would mean deliberately UNDOING the
+ * worst-progress-wins precedence this exact component/rule was designed
+ * around. If a future screen genuinely needs a per-row breakdown (e.g. "2
+ * nháp · 3 đã khóa") independent of the single worst-status summary, that is
+ * a new, explicitly-scoped design decision — not a fallback branch here.
  */
 export interface GradeRowStatusSummaryBadgeProps {
   rowStatus: RowGradeStatus;
-  /** e.g. "2 nháp · 1 chờ duyệt · 3 đã khóa" — only used when rowStatus spans ≥2 statuses */
-  breakdown?: string;
   className?: string;
 }
 
-const ROW_STATUS_TO_ENTRY_STATUS: Partial<
-  Record<RowGradeStatus, GradeEntryStatus>
+const ROW_STATUS_TO_ENTRY_STATUS: Record<
+  Exclude<RowGradeStatus, "empty">,
+  GradeEntryStatus
 > = {
   draft: "DRAFT",
   "pending-approval": "PENDING_APPROVAL",
@@ -89,30 +98,15 @@ const ROW_STATUS_TO_ENTRY_STATUS: Partial<
 
 export function GradeRowStatusSummaryBadge({
   rowStatus,
-  breakdown,
   className,
 }: GradeRowStatusSummaryBadgeProps) {
-  const t = useTranslations("gradeCellStatus");
-
   if (rowStatus === "empty") {
     return null;
   }
-
-  const entryStatus = ROW_STATUS_TO_ENTRY_STATUS[rowStatus];
-  if (entryStatus) {
-    return <GradeEntryStatusBadge status={entryStatus} className={className} />;
-  }
-
-  // "mixed" is impossible per deriveRowStatus's current return type, but kept
-  // for forward-compat with a caller that pre-aggregates multiple rows.
   return (
-    <StatusBadge
-      tone="info"
-      className={cn("gap-1", className)}
-      aria-label={breakdown}
-    >
-      <Layers className="size-3.5" aria-hidden="true" />
-      {t("mixed")}
-    </StatusBadge>
+    <GradeEntryStatusBadge
+      status={ROW_STATUS_TO_ENTRY_STATUS[rowStatus]}
+      className={className}
+    />
   );
 }
