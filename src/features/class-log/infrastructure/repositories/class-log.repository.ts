@@ -32,16 +32,19 @@ export function toFailure(err: unknown): ClassLogFailure {
   if (code === "HOMEROOM_ENTRY_NOT_FOUND" || status === 404) {
     return { type: "not-found" };
   }
-  if (code === "HOMEROOM_ENTRY_ALREADY_SUBMITTED") {
-    return { type: "already-submitted" };
+  if (code === "HOMEROOM_ENTRY_ALREADY_EXISTS") {
+    return { type: "already-exists" };
   }
-  if (code === "HOMEROOM_ENTRY_NOT_SUBMITTED") {
-    return { type: "not-submitted" };
+  if (code === "HOMEROOM_INVALID_TRANSITION") {
+    return { type: "invalid-transition" };
   }
-  if (code === "HOMEROOM_ENTRY_DUPLICATE_DATE") {
-    return { type: "duplicate-date" };
+  if (code === "HOMEROOM_SUMMARY_REQUIRED") {
+    return { type: "summary-required" };
   }
-  if (code === "FORBIDDEN" || code === "UNAUTHORIZED" || status === 403) {
+  if (code === "HOMEROOM_FORBIDDEN" || status === 403) {
+    return { type: "forbidden" };
+  }
+  if (code === "UNAUTHORIZED" || status === 401) {
     return { type: "unauthorized" };
   }
   return { type: "unknown", message: code };
@@ -90,6 +93,17 @@ export class ClassLogRepository implements IClassLogRepository {
     try {
       const dto = (await this.http.post(
         CLASS_LOG_EP.submit(classId, entryId),
+      )) as unknown as HomeroomEntryResponseDto;
+      return ClassLogMapper.toEntity(dto);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  async reviseEntry(classId: string, entryId: string): Promise<HomeroomEntry> {
+    try {
+      const dto = (await this.http.post(
+        CLASS_LOG_EP.revise(classId, entryId),
       )) as unknown as HomeroomEntryResponseDto;
       return ClassLogMapper.toEntity(dto);
     } catch (err) {

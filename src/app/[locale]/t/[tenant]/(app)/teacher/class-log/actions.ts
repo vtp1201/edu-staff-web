@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   makeCreateEntryUseCase,
+  makeReviseEntryUseCase,
   makeSubmitEntryUseCase,
 } from "@/bootstrap/di/class-log.di";
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
@@ -50,6 +51,23 @@ export async function submitEntryAction(
 > {
   try {
     const useCase = await makeSubmitEntryUseCase();
+    const entry = await useCase.execute(classId, entryId);
+    revalidatePath(TEACHER_PATH, "page");
+    return { ok: true, entry };
+  } catch (err) {
+    return { ok: false, errorKey: toErrorKey(err) };
+  }
+}
+
+export async function reviseEntryAction(
+  classId: string,
+  entryId: string,
+): Promise<
+  | { ok: true; entry: HomeroomEntry }
+  | { ok: false; errorKey: ClassLogFailure["type"] }
+> {
+  try {
+    const useCase = await makeReviseEntryUseCase();
     const entry = await useCase.execute(classId, entryId);
     revalidatePath(TEACHER_PATH, "page");
     return { ok: true, entry };

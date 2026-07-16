@@ -41,6 +41,13 @@ export class MockClassLogRepository implements IClassLogRepository {
     notableEvents?: string,
   ): Promise<HomeroomEntry> {
     await mockDelay();
+    const exists = _entries.some(
+      (e) => e.classId === classId && e.entryDate === entryDate,
+    );
+    if (exists) {
+      const failure: ClassLogFailure = { type: "already-exists" };
+      throw failure;
+    }
     const entry: HomeroomEntry = {
       entryId: genId(),
       classId,
@@ -75,11 +82,26 @@ export class MockClassLogRepository implements IClassLogRepository {
   async submitEntry(classId: string, entryId: string): Promise<HomeroomEntry> {
     await mockDelay();
     const entry = this.find(classId, entryId);
-    if (entry.status === "SUBMITTED" || entry.status === "APPROVED") {
-      const failure: ClassLogFailure = { type: "already-submitted" };
+    if (entry.status !== "DRAFT") {
+      const failure: ClassLogFailure = { type: "invalid-transition" };
       throw failure;
     }
     entry.status = "SUBMITTED";
+    entry.updatedAt = nowIso();
+    return structuredClone(entry);
+  }
+
+  async reviseEntry(classId: string, entryId: string): Promise<HomeroomEntry> {
+    await mockDelay();
+    const entry = this.find(classId, entryId);
+    if (entry.status !== "REJECTED") {
+      const failure: ClassLogFailure = { type: "invalid-transition" };
+      throw failure;
+    }
+    entry.status = "SUBMITTED";
+    entry.decidedBy = undefined;
+    entry.decidedAt = undefined;
+    entry.reason = undefined;
     entry.updatedAt = nowIso();
     return structuredClone(entry);
   }
@@ -88,7 +110,7 @@ export class MockClassLogRepository implements IClassLogRepository {
     await mockDelay();
     const entry = this.find(classId, entryId);
     if (entry.status !== "SUBMITTED") {
-      const failure: ClassLogFailure = { type: "not-submitted" };
+      const failure: ClassLogFailure = { type: "invalid-transition" };
       throw failure;
     }
     entry.status = "APPROVED";
@@ -106,7 +128,7 @@ export class MockClassLogRepository implements IClassLogRepository {
     await mockDelay();
     const entry = this.find(classId, entryId);
     if (entry.status !== "SUBMITTED") {
-      const failure: ClassLogFailure = { type: "not-submitted" };
+      const failure: ClassLogFailure = { type: "invalid-transition" };
       throw failure;
     }
     entry.status = "REJECTED";

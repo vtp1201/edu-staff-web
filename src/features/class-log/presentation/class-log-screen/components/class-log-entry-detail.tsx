@@ -16,6 +16,7 @@ type Props = {
   isPending: boolean;
   onBack: () => void;
   onSubmit: (entry: HomeroomEntry) => void;
+  onRevise: (entry: HomeroomEntry) => void;
   onApprove: (entry: HomeroomEntry) => void;
   onReject: (entry: HomeroomEntry, reason: string) => void;
 };
@@ -26,6 +27,7 @@ export function ClassLogEntryDetail({
   isPending,
   onBack,
   onSubmit,
+  onRevise,
   onApprove,
   onReject,
 }: Props) {
@@ -34,8 +36,8 @@ export function ClassLogEntryDetail({
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
 
-  const canTeacherSubmit =
-    !isPrincipal && (entry.status === "DRAFT" || entry.status === "REJECTED");
+  const canTeacherSubmit = !isPrincipal && entry.status === "DRAFT";
+  const canTeacherRevise = !isPrincipal && entry.status === "REJECTED";
   const canPrincipalReview = isPrincipal && entry.status === "SUBMITTED";
 
   return (
@@ -126,7 +128,7 @@ export function ClassLogEntryDetail({
             </div>
           )}
 
-          {/* Teacher submit action */}
+          {/* Teacher submit action (DRAFT) */}
           {canTeacherSubmit && (
             <div className="flex justify-end border-border border-t pt-4">
               <Button
@@ -135,6 +137,19 @@ export function ClassLogEntryDetail({
                 onClick={() => onSubmit(entry)}
               >
                 {isPending ? t("form.submitting") : t("form.submit")}
+              </Button>
+            </div>
+          )}
+
+          {/* Teacher revise-and-resubmit action (REJECTED) */}
+          {canTeacherRevise && (
+            <div className="flex justify-end border-border border-t pt-4">
+              <Button
+                type="button"
+                disabled={isPending}
+                onClick={() => onRevise(entry)}
+              >
+                {isPending ? t("detail.revising") : t("detail.revise")}
               </Button>
             </div>
           )}

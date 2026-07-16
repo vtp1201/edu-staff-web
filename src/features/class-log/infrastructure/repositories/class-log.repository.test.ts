@@ -92,6 +92,18 @@ describe("ClassLogRepository — happy paths", () => {
     expect(res.status).toBe("SUBMITTED");
   });
 
+  it("reviseEntry posts to the revise endpoint with no body", async () => {
+    const post = vi.fn().mockResolvedValue({ ...dto, status: "SUBMITTED" });
+    const repo = new ClassLogRepository(makeHttp({ post }));
+
+    const res = await repo.reviseEntry("c-1", "e-1");
+
+    expect(post).toHaveBeenCalledWith(
+      "/core/api/v1/classes/c-1/homeroom-entries/e-1/revise",
+    );
+    expect(res.status).toBe("SUBMITTED");
+  });
+
   it("rejectEntry posts reason in body", async () => {
     const post = vi.fn().mockResolvedValue({
       ...dto,
@@ -144,10 +156,11 @@ describe("ClassLogRepository — real interceptor pipeline (raw-flag placement)"
 describe("ClassLogRepository — error-code mapping", () => {
   const cases: Array<[string, number, ClassLogFailure["type"]]> = [
     ["HOMEROOM_ENTRY_NOT_FOUND", 404, "not-found"],
-    ["HOMEROOM_ENTRY_ALREADY_SUBMITTED", 409, "already-submitted"],
-    ["HOMEROOM_ENTRY_NOT_SUBMITTED", 409, "not-submitted"],
-    ["HOMEROOM_ENTRY_DUPLICATE_DATE", 409, "duplicate-date"],
-    ["FORBIDDEN", 403, "unauthorized"],
+    ["HOMEROOM_ENTRY_ALREADY_EXISTS", 409, "already-exists"],
+    ["HOMEROOM_INVALID_TRANSITION", 409, "invalid-transition"],
+    ["HOMEROOM_SUMMARY_REQUIRED", 400, "summary-required"],
+    ["HOMEROOM_FORBIDDEN", 403, "forbidden"],
+    ["UNAUTHORIZED", 401, "unauthorized"],
     ["NETWORK_ERROR", 0, "network-error"],
     ["SOMETHING_ELSE", 500, "unknown"],
   ];

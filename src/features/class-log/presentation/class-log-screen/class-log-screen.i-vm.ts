@@ -33,13 +33,26 @@ export interface ClassLogScreenVM {
     | { ok: true; entry: HomeroomEntry }
     | { ok: false; errorKey: ClassLogFailure["type"] }
   >;
+  reviseEntryAction: (
+    classId: string,
+    entryId: string,
+  ) => Promise<
+    | { ok: true; entry: HomeroomEntry }
+    | { ok: false; errorKey: ClassLogFailure["type"] }
+  >;
   approveEntryAction: (
     classId: string,
     entryId: string,
-  ) => Promise<{ ok: true } | { ok: false; errorKey: ClassLogFailure["type"] }>;
+  ) => Promise<
+    | { ok: true; entry: HomeroomEntry }
+    | { ok: false; errorKey: ClassLogFailure["type"] }
+  >;
   rejectEntryAction: (
     classId: string,
     entryId: string,
     reason?: string,
-  ) => Promise<{ ok: true } | { ok: false; errorKey: ClassLogFailure["type"] }>;
+  ) => Promise<
+    | { ok: true; entry: HomeroomEntry }
+    | { ok: false; errorKey: ClassLogFailure["type"] }
+  >;
 }

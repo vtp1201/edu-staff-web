@@ -27,6 +27,7 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
     filterStatus: initialFilter,
     createEntryAction,
     submitEntryAction,
+    reviseEntryAction,
     approveEntryAction,
     rejectEntryAction,
   } = props;
@@ -92,6 +93,19 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
     });
   };
 
+  const handleRevise = (entry: HomeroomEntry) => {
+    startTransition(async () => {
+      const res = await reviseEntryAction(classId, entry.entryId);
+      if (!res.ok) {
+        toast.error(t(`errors.${res.errorKey}`));
+        return;
+      }
+      upsert(res.entry);
+      setSelected(res.entry);
+      toast.success(t("form.saved"));
+    });
+  };
+
   const handleApprove = (entry: HomeroomEntry) => {
     startTransition(async () => {
       const res = await approveEntryAction(classId, entry.entryId);
@@ -99,9 +113,8 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
         toast.error(t(`errors.${res.errorKey}`));
         return;
       }
-      const updated: HomeroomEntry = { ...entry, status: "APPROVED" };
-      upsert(updated);
-      setSelected(updated);
+      upsert(res.entry);
+      setSelected(res.entry);
       toast.success(t("detail.approvedLabel"));
     });
   };
@@ -117,12 +130,7 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
         toast.error(t(`errors.${res.errorKey}`));
         return;
       }
-      const updated: HomeroomEntry = {
-        ...entry,
-        status: "REJECTED",
-        reason: reason || undefined,
-      };
-      upsert(updated);
+      upsert(res.entry);
       setView("list");
       toast.success(t("detail.rejectedLabel"));
     });
@@ -185,6 +193,7 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
           isPending={isPending}
           onBack={() => setView("list")}
           onSubmit={handleSubmit}
+          onRevise={handleRevise}
           onApprove={handleApprove}
           onReject={handleReject}
         />

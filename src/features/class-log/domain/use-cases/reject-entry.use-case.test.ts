@@ -24,6 +24,7 @@ function makeRepo(
     createEntry: vi.fn(),
     listEntries: vi.fn(),
     submitEntry: vi.fn(),
+    reviseEntry: vi.fn(),
     approveEntry: vi.fn(),
     rejectEntry: vi.fn(),
     ...over,

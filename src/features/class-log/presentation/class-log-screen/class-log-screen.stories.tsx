@@ -72,8 +72,6 @@ const okEntry =
     };
   };
 
-const okVoid = async () => ({ ok: true as const });
-
 const baseVm: ClassLogScreenVM = {
   classId: "11b2",
   className: "11B2",
@@ -82,8 +80,9 @@ const baseVm: ClassLogScreenVM = {
   isPrincipal: false,
   createEntryAction: okEntry("DRAFT"),
   submitEntryAction: okEntry("SUBMITTED"),
-  approveEntryAction: okVoid,
-  rejectEntryAction: okVoid,
+  reviseEntryAction: okEntry("SUBMITTED"),
+  approveEntryAction: okEntry("APPROVED"),
+  rejectEntryAction: okEntry("REJECTED"),
 };
 
 const meta: Meta<typeof ClassLogScreen> = {
@@ -138,7 +137,11 @@ export const TeacherNewEntryForm: Story = {
   },
 };
 
-/** Teacher detail of a draft entry — shows the submit action. */
+/**
+ * Teacher detail of a draft entry — shows the submit action (not the revise
+ * action, which is REJECTED-only). Clicking it transitions to SUBMITTED via
+ * `submitEntryAction` (zero regression from the REJECTED→revise addition).
+ */
 export const TeacherEntryDetail: Story = {
   args: baseVm,
   play: async ({ canvasElement }) => {
@@ -151,6 +154,151 @@ export const TeacherEntryDetail: Story = {
         canvas.getByRole("button", { name: /Quay lại danh sách/ }),
       ).toBeInTheDocument(),
     );
+    const submitBtn = canvas.getByRole("button", {
+      name: /Gửi BGH phê duyệt/,
+    });
+    await expect(submitBtn).toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(submitBtn);
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", { name: /Gửi BGH phê duyệt/ }),
+      ).not.toBeInTheDocument(),
+    );
+    await expect(canvas.getByText("Chờ duyệt")).toBeInTheDocument();
+  },
+};
+
+/**
+ * Teacher detail of a REJECTED entry — shows the distinct "Revise & resubmit"
+ * action (not "Submit for approval"). Clicking it transitions to SUBMITTED.
+ */
+export const TeacherReviseRejectedEntry: Story = {
+  args: {
+    ...baseVm,
+    entries: [
+      makeEntry({
+        entryId: "e-1",
+        status: "REJECTED",
+        summary: "Tích phân — Bài tập tổng hợp",
+        decidedBy: "Trần Minh Quân",
+        reason: "Thiếu nội dung bài tập về nhà.",
+      }),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText("Tích phân — Bài tập tổng hợp"));
+    // The revise action, not the submit action, is offered for REJECTED.
+    const reviseBtn = await waitFor(() =>
+      canvas.getByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: /Gửi BGH phê duyệt/ }),
+    ).not.toBeInTheDocument();
+    // The rejection reason stays visible while the teacher revises.
+    await expect(
+      canvas.getByText(/Thiếu nội dung bài tập về nhà/),
+    ).toBeInTheDocument();
+    // Clicking revise transitions the entry to SUBMITTED (Chờ duyệt).
+    await userEvent.click(reviseBtn);
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+      ).not.toBeInTheDocument(),
+    );
+    await expect(canvas.getByText("Chờ duyệt")).toBeInTheDocument();
+  },
+};
+
+/**
+ * Principal viewing a REJECTED entry must NEVER see a revise affordance —
+ * `revise` is a teacher-only transition (`canTeacherRevise = !isPrincipal &&
+ * status === "REJECTED"`); the principal-only `canPrincipalReview` branch only
+ * activates for SUBMITTED, so a REJECTED entry shows neither revise nor
+ * approve/reject for a principal viewer.
+ */
+export const PrincipalCannotRevise: Story = {
+  args: {
+    ...baseVm,
+    isPrincipal: true,
+    entries: [
+      makeEntry({
+        entryId: "e-4",
+        status: "REJECTED",
+        summary: "Tích phân — Bài tập tổng hợp",
+        decidedBy: "Trần Minh Quân",
+        reason: "Thiếu nội dung bài tập về nhà.",
+      }),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText("Tích phân — Bài tập tổng hợp"));
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", { name: /Quay lại danh sách/ }),
+      ).toBeInTheDocument(),
+    );
+    // No revise action for a principal viewer.
+    await expect(
+      canvas.queryByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+    ).not.toBeInTheDocument();
+    // No approve/reject either — those only activate for SUBMITTED.
+    await expect(
+      canvas.queryByRole("button", { name: /Phê duyệt/ }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: /^Từ chối$/ }),
+    ).not.toBeInTheDocument();
+    // The rejection banner + reason is still visible (read-only view).
+    await expect(
+      canvas.getByText(/Thiếu nội dung bài tập về nhà/),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * Revise action fails (mapped `invalid-transition` failure) — the generic
+ * error-toast mechanism (shared with create/submit/approve/reject) surfaces
+ * the i18n-mapped message; the entry stays REJECTED (no optimistic mutation).
+ */
+export const TeacherReviseFails: Story = {
+  args: {
+    ...baseVm,
+    entries: [
+      makeEntry({
+        entryId: "e-1",
+        status: "REJECTED",
+        summary: "Tích phân — Bài tập tổng hợp",
+        decidedBy: "Trần Minh Quân",
+        reason: "Thiếu nội dung bài tập về nhà.",
+      }),
+    ],
+    reviseEntryAction: async () => ({
+      ok: false as const,
+      errorKey: "invalid-transition" as const,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByText("Tích phân — Bài tập tổng hợp"));
+    const reviseBtn = await waitFor(() =>
+      canvas.getByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+    );
+    await userEvent.click(reviseBtn);
+    // Failure keeps the entry REJECTED — the revise button is still offered
+    // (no optimistic transition), and the rejection reason stays visible.
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", { name: /Chỉnh sửa & gửi lại/ }),
+      ).toBeInTheDocument(),
+    );
+    await expect(
+      canvas.getByText(/Thiếu nội dung bài tập về nhà/),
+    ).toBeInTheDocument();
   },
 };
 

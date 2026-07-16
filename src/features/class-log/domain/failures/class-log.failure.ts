@@ -5,9 +5,10 @@
  */
 export type ClassLogFailure =
   | { type: "not-found" }
-  | { type: "already-submitted" }
-  | { type: "not-submitted" }
+  | { type: "already-exists" }
+  | { type: "invalid-transition" }
+  | { type: "summary-required" }
+  | { type: "forbidden" }
   | { type: "unauthorized" }
-  | { type: "duplicate-date" }
   | { type: "network-error" }
   | { type: "unknown"; message?: string };

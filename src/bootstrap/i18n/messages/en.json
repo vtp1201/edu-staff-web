@@ -1050,14 +1050,17 @@
       "rejectReasonPlaceholder": "e.g. Missing homework details...",
       "rejectedLabel": "Rejected",
       "rejectionReason": "Rejection reason:",
+      "revise": "Revise & resubmit",
+      "revising": "Resubmitting...",
       "teacherSignature": "Teacher signature"
     },
     "errors": {
-      "already-submitted": "Entry has already been submitted",
-      "duplicate-date": "An entry already exists for this date",
+      "already-exists": "An entry already exists for this date",
+      "forbidden": "You don't have permission to do this for this class",
+      "invalid-transition": "This action isn't valid for the entry's current status",
       "network-error": "Network error",
       "not-found": "Entry not found",
-      "not-submitted": "Entry has not been submitted for approval",
+      "summary-required": "Lesson content is required",
       "unauthorized": "You are not allowed to perform this action",
       "unknown": "An unknown error occurred"
     },
