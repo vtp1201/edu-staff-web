@@ -171,7 +171,60 @@ use the server response instead of a client-side guess.
 
 ## Evidence
 
-(filled in after implementation + review + QA)
+- Implementation (`fe-nextjs-engineer`, commit `5dc4e69`): `ClassLogFailure`
+  renamed to the ground-truthed taxonomy (`not-found`, `already-exists`,
+  `invalid-transition`, `summary-required`, `forbidden`, `unauthorized`,
+  `network-error`, `unknown`); `toFailure()` rewritten to the 5 real
+  `HOMEROOM_*` codes; new `reviseEntry` on the repository (posts to
+  `.../revise`, no body) + `ReviseEntryUseCase` + `makeReviseEntryUseCase()`;
+  `ensureFreshSession()` wired into `class-log.di.ts`'s `!USE_MOCK` branch
+  (first time for this factory); `MockClassLogRepository` now models the real
+  state machine (duplicate-date create guard, submit-only-DRAFT,
+  revise-only-REJECTED clearing `decidedBy`/`decidedAt`/`reason`,
+  approve/reject-only-SUBMITTED); teacher `reviseEntryAction` (real) +
+  principal `reviseEntryAction` (unauthorized stub); approve/reject actions
+  now return `{ ok: true; entry }`; `ClassLogEntryDetail` splits
+  `canTeacherSubmit`(DRAFT)/`canTeacherRevise`(REJECTED) with a distinct
+  "Revise & resubmit" action; vi/en `classLog` i18n updated (4 new error
+  keys, 2 removed, 2 new `detail` keys).
+- Test proof: 292 files / 1790 tests pass (baseline before this US: 290/1777
+  — zero regression, +13 new tests: `revise-entry.use-case.test.ts`,
+  `class-log.mock.repository.test.ts` (9 tests), extended
+  `class-log.repository.test.ts` error matrix + `reviseEntry` happy path,
+  updated `create-entry.use-case.test.ts`); `bunx tsc --noEmit` clean;
+  `bun run build` green; `bun lint` clean for class-log files.
+- `fe-tech-lead-reviewer` verdict: **Approved**. Independently re-opened
+  `edu-api/services/core/internal/school/core/domain/error/homeroom.go` +
+  `.../entity/homeroom_entry.go` and confirmed the 5-code error map and state
+  machine 1:1 against Go source (not taken on the story packet's word);
+  independently re-ran `tsc`/`vitest`/`build`/`lint`; confirmed scope
+  discipline (mapper/DTOs/entities untouched, no `getEntry` added, only
+  class-log files + `classLog` i18n namespace + `TEST_MATRIX.md` touched).
+  One non-blocking `[CONSIDER]`: mock `approveEntry` doesn't clear `reason`
+  the way the real `Approve()` does — currently unobservable (no path reaches
+  SUBMITTED with a stale reason) but noted for full mock fidelity.
+- `fe-accessibility-auditor` verdict: **PASS** (0 blocking/critical/major).
+  1 minor, non-blocking, pre-existing-pattern finding (A11Y-001: no explicit
+  `aria-live`/`aria-busy` on the pending-state button label swap — identical
+  pattern already shipped on the sibling submit/approve/reject buttons under
+  US-E13.3, not a new regression; optional follow-up, not scoped to this US).
+  Touch target ≥44px confirmed (`min-h-11` on the shared `Button` primitive);
+  rejection-reason text confirmed using the correct `text-edu-error-text`
+  token per ADR 0049; status still paired with icon+label, not color-only.
+- Design review gate (`fe-lead`, `docs/DESIGN_REVIEW.md` checklist):
+  - Design-system conformance: **pass** — no raw color, no new token;
+    100% reuse of the existing `Button`/`StatusBadge` primitives and `edu-*`
+    tokens already on this screen; role/tone mapping unchanged.
+  - Accessibility: **pass** — see auditor verdict above.
+  - impeccable critique: **pass, no findings requiring action** — this is a
+    small, contained addition (one new button + a relabeled/split conditional)
+    reusing an already-shipped, already-audited interaction pattern 1:1;
+    nothing to redesign, no anti-pattern introduced.
+  - States & responsive: **pass** — loading (`isPending`/"Đang gửi lại..."),
+    the REJECTED banner+reason state, and the post-action success/error toast
+    all covered; no layout/breakpoint change (same detail-view shell as
+    US-E13.3, already verified at 320px).
+- QA (`fe-qa-playwright`): see below.
 
 ## Harness Delta
 
