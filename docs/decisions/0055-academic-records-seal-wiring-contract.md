@@ -121,11 +121,20 @@ scale, `0054` grades):
   `UNSEAL_REQUEST_NOT_FOUND`, `UNSEAL_REQUEST_ALREADY_APPROVED`) is kept in
   the repository's dormant real-mode branch, unit-tested, for the day a
   listing endpoint unblocks it.
-- **The viewer repository (`IAcademicRecordsRepository`) stays a FORCE-
-  MOCKED permanently-blocked stub** — the epic's fifth such factory. No
-  redesign of the multi-year timeline UI is in scope for this US (that would
-  be a `uiux`/`ba`-level model change, not an `fe`-wiring remap); the screen
-  keeps its current mock-backed behavior unchanged.
+- **The viewer repository (`IAcademicRecordsRepository`) stays mock-first,
+  unchanged, and is explicitly OUT of scope for this US** — no redesign of
+  the multi-year timeline UI is in scope (that would be a `uiux`/`ba`-level
+  model change, not an `fe`-wiring remap). **Correction (2026-07-17, added
+  after `fe-tech-lead-reviewer`'s US-E18.13 review):** this ADR originally
+  claimed the viewer "stays a FORCE-MOCKED permanently-blocked stub," which
+  misstated the actual baseline — `makeRepository()` in
+  `bootstrap/di/academic-records.di.ts` was `USE_MOCK ? mock : real` on
+  `main` already (never force-mocked), and this US correctly left it
+  unchanged (adding only an explanatory comment) rather than force-mocking
+  it, since that would have been an out-of-scope behavior change. Forcing
+  the viewer to permanent-mock (matching the `staff-leave`/`teaching-plan`
+  pattern this ADR intended to invoke) is a genuine but SEPARATE follow-up
+  — see §Follow-Up.
 - ADMIN/MANAGER role gate for `sealBatch` (`isAdmin(IsSuperAdmin,
   ActorRoles)`, ground-truthed from `seal_academic_record.go` line 57) is
   enforced server-side; the web keeps its existing client-side role gate on
@@ -173,8 +182,23 @@ Tradeoffs:
 
 ## Follow-Up
 
-Cross-repo ask (added to `EPIC-OVERVIEW.md` §Cross-repo requests, #21): add a
-`GET /api/v1/classes/{classId}/terms/{termId}/academic-records/unseal-requests`
-(or tenant-wide) listing endpoint — without it, the unseal two-admin
-confirmation workflow cannot be wired to the real backend at all, regardless
-of how the two existing `POST` endpoints are used.
+- Cross-repo ask (added to `EPIC-OVERVIEW.md` §Cross-repo requests, #21): add
+  a `GET /api/v1/classes/{classId}/terms/{termId}/academic-records/unseal-requests`
+  (or tenant-wide) listing endpoint — without it, the unseal two-admin
+  confirmation workflow cannot be wired to the real backend at all,
+  regardless of how the two existing `POST` endpoints are used.
+- **Internal follow-up (in-repo, not cross-repo):** force-mock
+  `makeRepository()` (the viewer factory) in `academic-records.di.ts` to
+  match the `staff-leave`/`teaching-plan` permanently-blocked pattern this
+  ADR intends, instead of the current `USE_MOCK ? mock : real` branch
+  inherited unchanged from before this US. Low urgency (a real call there
+  would 404 against paths that don't match the real BE shape — see the ADR's
+  §Context point 6 — not crash or leak data) but should be closed out the
+  next time `academic-records` is touched, so the DI factory's behavior
+  matches its documented intent.
+- **`key.term` vs real `termId`:** `SealBatchKey.term` is a label
+  (`"HK1"`/`"HK2"`), not the real BE's UUID `termId`. The class/term selector
+  feeding `sealBatch` is itself mock-sourced, so a real seal call isn't
+  meaningfully reachable end-to-end until that selector is wired to the real
+  `calendar` feature (US-E18.1) — noted as a code comment in
+  `academic-records-seal.repository.ts` for whoever wires the selector next.
