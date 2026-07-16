@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — US-E18.0 gateway smoke done, findings for Wave 1-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 US-E18.0-E18.5+E18.6+E18.19 all done, findings for Wave 2-4
 metadata:
   type: project
 ---
@@ -170,3 +170,76 @@ there is your responsibility to resolve within the same US, scoped minimally.
 287 files/1712 tests (baseline 286/1680), tech-lead APPROVED first pass (no
 revision round — independently re-verified all 7 scrutiny points against the
 edu-api specs itself, confirmed the IAM/ClassResponse claims).
+
+**US-E18.5 (admin-roster, 2026-07-16) — the epic table's own remediation note
+can be too narrow; the real gap can be strictly bigger than what it names.**
+Epic table said only "search pool WEB-ONLY, decision needed" (implying roster
+*listing* itself was fine). Reading `EnrollmentResponse` directly
+(`core/docs/openapi.yaml`) found it carries ONLY `enrollmentId`/`classId`/
+`studentMemberId`/`academicYearLabel`/`enrolledAt` — zero display fields at
+all (no name/dob/gender/status). This is qualitatively worse than a missing
+single display-name field (US-E18.4's homeroom precedent, tolerable raw-uuid
+fallback): a multi-row table can't render 30+ raw UUIDs as a shippable
+screen. **Lesson**: when a US's epic-table note only flags "search pool" or
+similar as the gap, still independently re-read the *listing* endpoint's own
+response schema — don't assume the epic audit already validated the read
+path just because it didn't call it out. Decision: both `getClassRoster` AND
+`getSearchPool` stay mock-first permanently (hybrid DI composite, same
+pattern as `listTeachers`); only `getClasses` (class picker, single-field
+homeroom-name fan-out reusing `class-management`'s `CLASS_EP.
+classHomeroomTeacher` + `HomeroomAssignmentResponseDto` directly — no
+duplicate DTO/endpoint) + enroll/unenroll/transfer wired real. Cross-repo ask
+#9 logged: `EnrollmentResponse` needs `studentName`/`dob`/`gender`, or IAM
+needs a batch lookup that ALSO adds a net-new `gender` field (confirmed:
+`gender` doesn't exist ANYWHERE in IAM's schemas, not even for self via
+`/users/me` — a genuinely new field ask, not just "expose what already
+exists" like ask #6). Error-map cleanup: two guessed codes from the original
+mock-first authoring (`STUDENT_NOT_FOUND`, `CLASS_ACCESS_FORBIDDEN`) turned
+out not to exist on the real API at all — grepping `ERROR_CODES.md` directly
+is the only reliable way to catch a guessed-but-plausible-sounding code that
+was never validated. 287 files/1714 tests (baseline 287/1712), tsc/build
+clean, tech-lead APPROVED first pass (1 non-blocking CONSIDER: add an
+explicit test for a non-404 homeroom-fetch error propagating through
+`getClasses` — logged as a follow-up, not required for merge).
+
+**US-E18.6 (iam-member+tenant, 2026-07-16) — the ONLY Wave 1 cluster with
+zero path drift, but `ERROR_CODES.md` prose alone is NOT enough to trust an
+error-code mapping; ground-truth against the Go source.** Paths in
+`bootstrap/endpoint/{iam-member,tenant}.endpoint.ts` matched
+`iam/docs/openapi.yaml` 100% (already flipped real in an earlier US). The
+epic table itself flagged the real risk: "iam ERROR_CODES.md gần rỗng — xác
+nhận taxonomy với BE." Reading `ERROR_CODES.md` confirmed the *values*
+looked right (lowercase snake_case), but the *existing* `mapIamFailure`
+switch was hard-coded to **UPPER_SNAKE guessed codes** (`FORBIDDEN_ACTION`,
+`USER_EMAIL_ALREADY_EXISTS`, `INVITATION_NOT_FOUND`,
+`LAST_ADMIN_INVARIANT_VIOLATION`) that don't exist anywhere on the wire —
+grepped the actual Go source (`services/iam/internal/membership/core/domain/
+error/member.go` + `.../tenant/core/domain/error/tenant.go` +
+every `membership/core/application/usecase/*.go`) to confirm the literal
+`apperror.Conflict("member_already_exists")`-style calls, which is the only
+way to be sure (ERROR_CODES.md documents i18n keys, and is generated FROM the
+same source, but reading the doc alone doesn't prove the repo's switch
+statement matches it — you have to diff the repo against the doc/source, not
+just read the doc). Every real IAM member/invitation error was silently
+falling through to `unknown` before this fix. Also found 4 wire codes
+(`member_tenant_inactive`, `member_invalid_transition`, `invitation_expired`,
+`invitation_email_mismatch`) that were completely unmapped (not even wrong —
+just absent), and 2 failure-type names that were actively misleading given
+the real semantics (`email-exists`→ renamed `member-exists`: the real 409 is
+a duplicate `userId` membership, not an email collision; `invitation-not-
+found`→renamed `invitation-invalid`: real status is 410 Gone, covers
+unknown/used/revoked tokens, not literally "not found"). **Lesson for any
+future error-taxonomy US**: don't stop at "the ERROR_CODES.md values look
+plausible" — actually diff the existing repository's switch statement
+against them line-by-line; a plausible-looking table doesn't prove the code
+that consumes it is correct. Also found (not fixed, just flagged):
+`IamMemberRepository.listMyTenants/switchTenant` duplicate `tenant` feature's
+`TenantRepository` (same 2 endpoints) and are currently 100% dead code — no
+Server Action calls `makeInviteMemberAction()` anywhere in `src/`; left as a
+note for whoever eventually builds a member-invite admin screen. `ensureFreshSession()`
+wired into `iam-member.di.ts` + `tenant.di.ts` (first time in either — same
+playbook-step-6 gap recurring per new DI factory, now check `grep -rl
+ensureFreshSession src/bootstrap/di` before assuming any given factory has
+it). 288 files/1725 tests (baseline 287/1714), tsc/build clean, tech-lead
+APPROVED first pass (independently re-verified the error-code claims against
+edu-api's Go source itself, not just the story prose).
