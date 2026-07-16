@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 US-E18.0-E18.5+E18.6+E18.19 all done, findings for Wave 2-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7 done, findings for remaining Wave 2-4
 metadata:
   type: project
 ---
@@ -243,3 +243,58 @@ ensureFreshSession src/bootstrap/di` before assuming any given factory has
 it). 288 files/1725 tests (baseline 287/1714), tsc/build clean, tech-lead
 APPROVED first pass (independently re-verified the error-code claims against
 edu-api's Go source itself, not just the story prose).
+
+**US-E18.7 (assessment-scheme + grade-scale, 2026-07-16, Wave 2) — a "path
+fix" label can hide the deepest drift yet: separate Request/Response
+schemas AND several domain concepts with zero wire representation.** Beyond
+the epic table's stated path fix (drop `/config/`, add trailing
+`/terms/{termId}`), ground-truthing found: (1) BE's `GradeScaleResponse` has
+no banding concept at all for numeric scales (`HE_10`/`HE_4_GPA`) — only
+`LETTER_ABCD` gets `letterGrades`; the web's band-threshold/color editor for
+numeric scales is decorative-only under the real contract (falls back to the
+existing local `GRADE_SCALE_PRESETS`, never persisted); (2) BE's assessment
+column model (`coefficient` ≤10.0, no sum constraint) and the web's
+percentage-`weight` model (1-100, must sum to 100) are mathematically
+equivalent under a constant scale factor — solved with a **lossless
+`coefficient = weight/10` / `weight = coefficient*10` unit conversion**
+rather than either redesigning the domain or weakening the sum-to-100
+validation (validation stayed byte-for-byte unchanged, keeping the lane
+`normal` not `high-risk`); (3) `count` (assessments folded into one column)
+has ZERO wire representation anywhere (confirmed via `GradeEntryResponse`'s
+composite key implying one value per column per student) — became a fixed
+non-persistent default, same class of finding as E18.3's `restore`/E18.5's
+roster fields. **Key design principle applied**: kept the domain entities
+(`GradeScale`/`AssessmentScheme`/`AssessmentColumn`) **100% unchanged** and
+put ALL translation in the infra mapper layer — this fully insulated the
+already-shipped `grades` feature (687+ tests, reuses these same domain types
+for its weighted-average calc) from any ripple; only compile-only `termId`/
+`effectiveFrom` literal additions were needed there. Also: `termId` was a
+genuinely new required concept the screen never modeled (no term selector
+existed) — added a minimal hardcoded `["HK1","HK2"]` Select, reusing the
+`teaching-plan` feature's existing `subject-class-term-selector.tsx` pattern,
+rather than inventing calendar-service integration out of scope. Registered
+ADR `0053` for these wire-mapping conventions (this is the kind of judgment
+call — unit-scaling a validated business rule instead of redesigning it —
+that's genuinely ADR-worthy, not just a repo fix). Ground-truthed error
+codes from `services/core/internal/assessment/core/domain/error/config.go`
++ `pkg/kit/response/error.go`'s `codeFromKey()` (`strings.ToUpper`) —
+confirms **decision 0008 (UPPER_SNAKE) DOES hold for `core`**, unlike `iam`
+(US-E18.6's divergence) — worth checking per-service each time, don't
+generalize one service's convention to another. `listSubjectsForGrade`
+correctly left mock (real `GET /subjects` has no `gradeLevel` filter,
+belongs to a future US-E18.3) rather than over-scoping this US. 289
+files/1751 tests (baseline 288/1725, +26/+1 file), tsc/build/lint clean,
+tech-lead APPROVED first pass (one non-blocking CONSIDER: `effectiveFrom`'s
+first-save value used a deterministic preset constant instead of the story
+prose's stated `new Date().toISOString()` — corrected the doc to match
+reality rather than the code, since deterministic is strictly better for
+tests), a11y PASS on the new term-selector (0 blocking; flagged the shared
+`Select` primitive's pre-existing missing `motion-safe:` prefix as a
+batchable follow-up alongside the known `Dialog` gap). **Process note**: the
+a11y auditor's `bun vitest:storybook run -t "<name>"` invocation matched 0
+tests (wrong flag — `-t` filters by test name, not file path) and it
+misread the resulting all-skipped run as "tooling broken"; fe-lead
+independently re-ran with a file-path arg (`bun vitest:storybook run
+src/features/assessment-scheme`) and got a clean 10/10 pass — always
+verify a claimed tooling failure with a differently-scoped invocation
+before accepting it into the record.
