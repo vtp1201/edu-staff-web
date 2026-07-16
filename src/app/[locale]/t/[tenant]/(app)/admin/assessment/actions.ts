@@ -21,7 +21,11 @@ export async function saveGradeScaleAction(
     input.scale.maxScore,
   );
   if (validation) {
-    return { ok: false, errorKey: "invalid-thresholds" };
+    // Client-side band-continuity/coverage rejection — NOT a server failure key.
+    // `SaveResult.errorKey` is a plain string (not the failure union); the screen
+    // shows its own per-error message from the validation-error map, so a generic
+    // "invalid grade scale" key is the honest catch-all here (US-E18.7).
+    return { ok: false, errorKey: "invalid-grade-scale" };
   }
   const repo = await makeAssessmentSchemeRepository();
   const result = await repo.saveGradeScale(input.scale);
@@ -34,7 +38,10 @@ export async function saveAssessmentSchemeAction(
 ): Promise<SaveResult> {
   const validation = validateAssessmentScheme(input.scheme.columns);
   if (validation) {
-    return { ok: false, errorKey: "invalid-weights" };
+    // Client-side weight-sum/count rejection — NOT a server failure key. The
+    // screen renders the specific validation message; this generic key is the
+    // save-boundary fallback (US-E18.7).
+    return { ok: false, errorKey: "invalid-scheme" };
   }
   const repo = await makeAssessmentSchemeRepository();
   const result = await repo.saveAssessmentScheme(input.scheme);
@@ -53,8 +60,9 @@ export async function loadSubjectsForGradeAction(
 export async function loadAssessmentSchemeAction(
   subjectId: string,
   yearLabel: string,
+  termId: string,
 ): Promise<AssessmentScheme | null> {
   const repo = await makeAssessmentSchemeRepository();
-  const result = await repo.getAssessmentScheme(subjectId, yearLabel);
+  const result = await repo.getAssessmentScheme(subjectId, yearLabel, termId);
   return result.ok ? result.data : null;
 }

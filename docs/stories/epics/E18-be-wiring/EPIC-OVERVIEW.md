@@ -119,7 +119,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
-| US-E18.7 | Assessment scheme + grade scale wiring | path | normal | Bỏ prefix `/config/` ở grade-scale; scheme cần trailing `/terms/{termId}` |
+| US-E18.7 | Assessment scheme + grade scale wiring | path | normal | **Done** — path label held (drop `/config/`, add trailing `/terms/{termId}`) but, as with every other Wave-1/2 cluster, the DTO-shape audit found deeper drift: separate Request/Response wire schemas, `coefficient`↔`weight` unit scaling (÷10/×10, lossless), grade-scale bands derived from real `letterGrades` for `LETTER_ABCD` else fall back to local presets (BE has no numeric-scale banding concept), `count` non-persistent (no wire representation), 9-code error matrix (ground-truthed from Go source, confirms decision 0008 UPPER_SNAKE holds for `core`). Domain model + `grades` feature's reuse of it kept fully unchanged (compile-only literal additions). Added a minimal `["HK1","HK2"]` term selector (BE requires `termId`, screen never modeled it) reusing the existing `Select` pattern. `listSubjectsForGrade` stays mock (no `gradeLevel` filter on real `GET /subjects` — belongs to US-E18.3). See `US-E18.7-assessment-scheme-wiring/story.md` + ADR `0053`. |
 | US-E18.8 | Staff-leave wiring | path | tiny | Thêm segment `/conduct/`: `/core/api/v1/conduct/staff-leave-requests` |
 | US-E18.9 | Teaching-plan wiring | path | normal | BE nest `/lms/teaching-plans`; `/cells` WEB-ONLY → decision (gộp vào PUT plan hay chờ BE) |
 | US-E18.10 | Class-log wiring + trạng thái `revise` | path + state | normal | Web thiếu `revise` + GET/PUT entry detail — thêm state UI theo máy trạng thái BE |
@@ -221,6 +221,39 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    ALSO adds a `gender` field to `UserProfileResponse` (net-new field, not
    just newly-exposed) — needed before any admin-facing roster/search screen
    can show real student data instead of raw ids.
+10. **(US-E18.7, 2026-07-16)** `GradeScaleResponse`/`SetGradeScaleRequest`
+    have no banding concept for numeric scales (`HE_10`/`HE_4_GPA`) — only
+    `LETTER_ABCD` carries `letterGrades`. Web's editor lets admins define
+    named threshold bands with colors for ANY scale type (a legitimate,
+    already-shipped UX — `docs/product/design-spec.jsonc`); under the real
+    contract this customization is decorative-only for the two numeric types
+    (falls back to a local preset, never persisted). Ask: add an optional
+    `bands: [{ label, minThreshold }]` array to `GradeScaleResponse`/
+    `SetGradeScaleRequest` for numeric scale types too (mirrors what
+    `letterGrades` already does for `LETTER_ABCD`).
+11. **(US-E18.7, 2026-07-16)** `AssessmentColumnRequest`/`AssessmentColumnResponse`
+    have no "number of assessments folded into this column" concept (web
+    calls it `count` — e.g. "2 bài kiểm tra thường xuyên" under one TX
+    column) — only `name`/`columnType`/`coefficient`/`ordinal`. Confirmed by
+    reading the full schema in `services/core/docs/openapi.yaml`
+    (`AssessmentColumnRequest`/`Response`, `GradeEntryResponse`'s composite
+    key `classId+subjectId+termId+studentMemberId+columnId` implies exactly
+    one recorded value per column per student). Ask: either add an optional
+    `requiredCount`/`assessmentCount` field to `AssessmentColumnResponse`
+    (display-only, since `GradeEntryResponse` still stores one value per
+    column), or confirm this is intentionally a client-only UI label with no
+    BE meaning (in which case web should stop implying it persists).
+12. **(US-E18.7, 2026-07-16)** `GET /api/v1/subjects` has no `gradeLevel`
+    query filter (only `status` + cursor pagination), even though
+    `SubjectResponse.gradeLevel` exists as a field. The assessment-scheme
+    screen's grade-scoped subject picker (`ASSESSMENT_EP.subjectsByGrade`)
+    stays mock-first because of this — wiring it needs either a `gradeLevel`
+    query param added to the list endpoint, or an explicit decision that
+    grade-scoped filtering happens client-side across a fully-paginated
+    fetch (expensive at scale, same fan-out-to-completion pattern already
+    used elsewhere in this epic). Coordinate with whoever picks up
+    US-E18.3 (subject-catalogue wiring, not yet done) since that US owns
+    the real `Subject` listing.
 
 ## Dependencies & thứ tự
 

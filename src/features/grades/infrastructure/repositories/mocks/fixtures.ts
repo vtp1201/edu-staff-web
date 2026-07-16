@@ -7,6 +7,7 @@ export const MOCK_TERM = "HK1";
 export const MOCK_SCHEME: AssessmentScheme = {
   subjectId: "subj-toan-10",
   yearLabel: "2024-2025",
+  termId: "HK1",
   columns: [
     { id: "tx", type: "TX", label: "Thường xuyên", count: 2, weight: 20 },
     { id: "gk", type: "GK", label: "Giữa kỳ", count: 1, weight: 30 },

@@ -18,6 +18,7 @@ export interface IAssessmentSchemeRepository {
   getAssessmentScheme(
     subjectId: string,
     yearLabel: string,
+    termId: string,
   ): Promise<Result<AssessmentScheme>>;
   saveAssessmentScheme(
     scheme: AssessmentScheme,

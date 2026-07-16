@@ -104,11 +104,15 @@ const SUBJECTS_BY_GRADE: Record<number, SubjectForGrade[]> = {
   ],
 };
 
-// Keyed by `${subjectId}:${yearLabel}`.
+// Keyed by `${subjectId}:${yearLabel}:${termId}` (US-E18.7 — term-scoped).
 const mockSchemes = new Map<string, AssessmentScheme>();
 
-function schemeKey(subjectId: string, yearLabel: string): string {
-  return `${subjectId}:${yearLabel}`;
+function schemeKey(
+  subjectId: string,
+  yearLabel: string,
+  termId: string,
+): string {
+  return `${subjectId}:${yearLabel}:${termId}`;
 }
 
 export class MockAssessmentSchemeRepository
@@ -135,15 +139,17 @@ export class MockAssessmentSchemeRepository
   async getAssessmentScheme(
     subjectId: string,
     yearLabel: string,
+    termId: string,
   ): Promise<Result<AssessmentScheme>> {
-    const existing = mockSchemes.get(schemeKey(subjectId, yearLabel));
+    const existing = mockSchemes.get(schemeKey(subjectId, yearLabel, termId));
     if (existing) return { ok: true, data: structuredClone(existing) };
-    // Default to TT22 preset for any not-yet-configured subject.
+    // Default to TT22 preset for any not-yet-configured subject/term.
     return {
       ok: true,
       data: {
         subjectId,
         yearLabel,
+        termId,
         columns: structuredClone(TT22_PRESET),
       },
     };
@@ -153,7 +159,7 @@ export class MockAssessmentSchemeRepository
     scheme: AssessmentScheme,
   ): Promise<{ ok: true } | { ok: false; error: AssessmentSchemeFailure }> {
     mockSchemes.set(
-      schemeKey(scheme.subjectId, scheme.yearLabel),
+      schemeKey(scheme.subjectId, scheme.yearLabel, scheme.termId),
       structuredClone(scheme),
     );
     return { ok: true };

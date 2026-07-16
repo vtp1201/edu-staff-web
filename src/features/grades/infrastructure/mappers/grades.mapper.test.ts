@@ -9,6 +9,7 @@ import { mapGradeSheet, mapStudentScoreRow } from "./grades.mapper";
 const scheme: AssessmentScheme = {
   subjectId: "subj-1",
   yearLabel: "2024-2025",
+  termId: "HK1",
   columns: [
     { id: "tx", type: "TX", label: "Thường xuyên", count: 2, weight: 20 },
     { id: "gk", type: "GK", label: "Giữa kỳ", count: 1, weight: 30 },

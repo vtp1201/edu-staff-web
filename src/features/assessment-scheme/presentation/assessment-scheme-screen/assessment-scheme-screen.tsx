@@ -39,6 +39,11 @@ import type { AssessmentSchemeScreenProps } from "./assessment-scheme-screen.i-v
 
 const DEFAULT_YEAR = "2024-2025";
 
+// Hardcoded term list — matches the existing precedent in
+// `teacher/teaching-plan/page.tsx` (`MOCK_TERMS`). No calendar-service round
+// trip is wired to this screen yet (US-E18.7 / ADR 0053).
+const MOCK_TERMS = ["HK1", "HK2"] as const;
+
 const BAND_COLOR_TONE: Record<GradeScaleBand["colorToken"], StatusTone> = {
   success: "success",
   primary: "primary",
@@ -65,13 +70,23 @@ const SCHEME_VALIDATION_KEY: Record<SchemeValidationError, string> = {
   INVALID_COUNT: "errorInvalidCount",
 };
 
+// Maps both server failure `type`s (AssessmentSchemeFailure) and the two
+// client-only save-boundary keys ("invalid-grade-scale"/"invalid-scheme",
+// returned by the Server Actions when client validation rejects) to i18n keys.
+// `SaveResult.errorKey` is a plain string, so client + server keys coexist here.
 const FAILURE_KEY: Record<string, string> = {
   "not-found": "errorNotFound",
   forbidden: "errorForbidden",
-  "invalid-weights": "errorWeightSumNot100",
-  "invalid-thresholds": "errorOverlappingThresholds",
+  "invalid-scale-type": "errorInvalidScaleType",
+  "letter-grades-required": "errorLetterGradesRequiredServer",
+  "invalid-column": "errorInvalidColumn",
+  "column-in-use": "errorColumnInUse",
+  "max-columns": "errorMaxColumns",
   "network-error": "errorNetwork",
   unknown: "errorUnknown",
+  // client-side validation fallbacks (US-E18.7)
+  "invalid-grade-scale": "errorInvalidGradeScale",
+  "invalid-scheme": "errorInvalidScheme",
 };
 
 let bandSeq = 0;
@@ -406,9 +421,11 @@ function SchemeEditor({
 >) {
   const t = useTranslations("assessmentScheme");
   const errorId = useId();
+  const termSelectId = useId();
 
   const [gradeLevel, setGradeLevel] = useState<number | null>(null);
   const [subjectId, setSubjectId] = useState<string | null>(null);
+  const [termId, setTermId] = useState<string | null>(null);
   const [columns, setColumns] = useState<AssessmentColumn[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{
@@ -427,9 +444,14 @@ function SchemeEditor({
   });
 
   const schemeQuery = useQuery({
-    queryKey: ["assessment-scheme", subjectId, DEFAULT_YEAR],
-    queryFn: () => onLoadAssessmentScheme(subjectId as string, DEFAULT_YEAR),
-    enabled: subjectId !== null,
+    queryKey: ["assessment-scheme", subjectId, DEFAULT_YEAR, termId],
+    queryFn: () =>
+      onLoadAssessmentScheme(
+        subjectId as string,
+        DEFAULT_YEAR,
+        termId as string,
+      ),
+    enabled: subjectId !== null && termId !== null,
   });
 
   // Sync loaded scheme columns into editable local state.
@@ -473,11 +495,11 @@ function SchemeEditor({
   }
 
   async function handleSave() {
-    if (validationError || !subjectId) return;
+    if (validationError || !subjectId || !termId) return;
     setSaving(true);
     setSaveMessage(null);
     const result = await onSaveAssessmentScheme({
-      scheme: { subjectId, yearLabel: DEFAULT_YEAR, columns },
+      scheme: { subjectId, yearLabel: DEFAULT_YEAR, termId, columns },
     });
     setSaving(false);
     if (result.ok) {
@@ -550,6 +572,27 @@ function SchemeEditor({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={termSelectId} className="text-xs">
+            {t("termLabel")}
+          </Label>
+          <Select
+            value={termId ?? undefined}
+            onValueChange={(v) => setTermId(v)}
+          >
+            <SelectTrigger id={termSelectId} className="w-40">
+              <SelectValue placeholder={t("termPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {MOCK_TERMS.map((term) => (
+                <SelectItem key={term} value={term}>
+                  {term}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* A11Y-046: live region so SR announces when no subjects found after grade selection */}
@@ -565,8 +608,19 @@ function SchemeEditor({
         </p>
       ) : null}
 
+      {/* Prompt to pick a term before the scheme can load (US-E18.7). */}
+      {subjectId && !termId ? (
+        <p
+          className="text-muted-foreground text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          {t("termPromptBody")}
+        </p>
+      ) : null}
+
       {/* A11Y-043: skeleton loading state — accessible name + aria-hidden bones */}
-      {subjectId && schemeQuery.isLoading ? (
+      {subjectId && termId && schemeQuery.isLoading ? (
         <div
           className="flex flex-col gap-2"
           role="status"
@@ -586,13 +640,13 @@ function SchemeEditor({
         </p>
       ) : null}
 
-      {subjectId && schemeQuery.isError ? (
+      {subjectId && termId && schemeQuery.isError ? (
         <p role="alert" className="text-sm text-edu-error-text">
           {t("errorNetwork")}
         </p>
       ) : null}
 
-      {subjectId && !schemeQuery.isLoading && !schemeQuery.isError ? (
+      {subjectId && termId && !schemeQuery.isLoading && !schemeQuery.isError ? (
         <>
           <div className="mb-3">
             <Button

@@ -19,7 +19,12 @@ const book: GradeBook = {
   term: "HK1",
   className: "10A1",
   subjectName: "Toán",
-  scheme: { subjectId: "subj-1", yearLabel: "2024-2025", columns: [] },
+  scheme: {
+    subjectId: "subj-1",
+    yearLabel: "2024-2025",
+    termId: "HK1",
+    columns: [],
+  },
   rows: [],
   publishMode: "SELF_PUBLISH",
 };
