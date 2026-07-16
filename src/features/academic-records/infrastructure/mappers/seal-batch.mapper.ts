@@ -1,6 +1,7 @@
 import type {
   ClassOption,
   SealAuditEntry,
+  SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
   TenantAdminSummary,
@@ -8,12 +9,24 @@ import type {
 } from "../../domain/entities/seal-batch.entity";
 import type {
   ClassOptionResponseDto,
+  SealAcademicRecordResponseDto,
   SealAuditEntryResponseDto,
   SealBatchResponseDto,
   SealedStudentResponseDto,
   TenantAdminResponseDto,
   UnsealRequestResponseDto,
 } from "../dtos/seal-response.dto";
+
+/** US-E18.13 — real seal POST response → `SealBatchResult` (errors default []). */
+export function sealBatchResultMapper(
+  dto: SealAcademicRecordResponseDto,
+): SealBatchResult {
+  return {
+    sealedCount: dto.sealedCount,
+    failedCount: dto.failedCount,
+    errors: dto.errors ?? [],
+  };
+}
 
 /** DTO → entity mappers for the US-E14.6 seal surface. Wire is camelCase and
  * already 1:1 with the entities, so these are structural pass-throughs that pin

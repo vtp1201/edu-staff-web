@@ -18,6 +18,7 @@ import type {
   ClassOption,
   SealAuditEntry,
   SealBatchKey,
+  SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
   TenantAdminSummary,
@@ -84,7 +85,7 @@ export async function getSealStatusAction(
 
 export async function sealAction(
   key: SealBatchKey,
-): Promise<SealActionResult<SealBatchStatus>> {
+): Promise<SealActionResult<SealBatchResult>> {
   const guard = await requireRole(["admin"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   const adminId = await currentAdminId();

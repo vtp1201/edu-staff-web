@@ -11,7 +11,17 @@ export interface AllLockedGateProps {
   onGoToApproval: () => void; // NOT-OK branch — link to E14.4 grade-approval
 }
 
-/** AC-2 (OK, green) vs AC-3 (NOT-OK, warning banner role="alert"). */
+/**
+ * AC-2 (OK, green) vs AC-3 (NOT-OK, warning banner role="alert").
+ *
+ * US-E18.13 (ADR 0055): the "all grades locked" check is REACTIVE (server-side)
+ * — this banner's `allLocked`/`status` come from the mocked, decorative
+ * `getSealStatus` and NEVER gate the Seal button. Both branches render a Seal
+ * button; the NOT-OK branch additionally warns + links to Approval & Lock. The
+ * server rejects with `unlocked-grades-exist` / `too-many-reseals` if the
+ * attempt isn't allowed (surfaced via toast by the container). Reseal (batch
+ * already SEALED) is idempotent, so the button is never disabled.
+ */
 export function AllLockedGate({
   batch,
   onSeal,
@@ -19,6 +29,7 @@ export function AllLockedGate({
 }: AllLockedGateProps) {
   const t = useTranslations("academicRecordSeal");
   const alreadySealed = batch.status === "SEALED";
+  const sealButtonLabel = alreadySealed ? t("resealButton") : t("sealButton");
 
   if (batch.allLocked) {
     const sealedCount = alreadySealed ? batch.totalStudents : 0;
@@ -40,13 +51,8 @@ export function AllLockedGate({
             })}
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={onSeal}
-          disabled={alreadySealed}
-          className="shrink-0"
-        >
-          {t("sealButton")}
+        <Button type="button" onClick={onSeal} className="shrink-0">
+          {sealButtonLabel}
         </Button>
       </div>
     );
@@ -79,15 +85,20 @@ export function AllLockedGate({
           </p>
         )}
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onGoToApproval}
-        className="shrink-0"
-      >
-        {t("gate.notAllLocked.linkToApproval")}
-        <ArrowRight aria-hidden className="size-4" />
-      </Button>
+      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onGoToApproval}
+          className="shrink-0"
+        >
+          {t("gate.notAllLocked.linkToApproval")}
+          <ArrowRight aria-hidden className="size-4" />
+        </Button>
+        <Button type="button" onClick={onSeal} className="shrink-0">
+          {sealButtonLabel}
+        </Button>
+      </div>
     </div>
   );
 }

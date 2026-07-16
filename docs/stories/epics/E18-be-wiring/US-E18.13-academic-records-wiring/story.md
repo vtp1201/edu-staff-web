@@ -386,4 +386,94 @@ per `.claude/rules/tdd.md`).
 
 ## Evidence
 
-_Filled in on completion — gate verdicts, proof counts, harness update._
+Implemented Phases 1–3 (Phase 4 = review/design-review/QA gates, owned by
+fe-lead) strict-TDD (red → green → refactor) on
+`feat/us-e18.13-academic-records-wiring`.
+
+### Proof counts (zero regression)
+
+- Baseline on `main` (re-confirmed this session): **301 files / 1852 tests**.
+- After: **303 files / 1866 tests**, all passing (`bun vitest run`).
+- Delta = +2 test files, +14 tests:
+  - NEW `academic-records-seal.repository.test.ts` (10 — real `sealBatch`
+    integration: bare-POST path + no body, result mapper, 6-case error matrix,
+    bare-5xx, dormant-method guard).
+  - NEW `academic-records-seal-hybrid.repository.test.ts` (2 — `sealBatch`→real
+    only, all 8 other methods→mock only, via spy stubs).
+  - UPDATED `seal-academic-record.use-case.test.ts` (4 → 5; getSealStatus spy
+    throws to prove it's never called; bubbles both new reactive failures +
+    forbidden; dropped the `not-all-locked`/`already-sealed` cases).
+  - UPDATED `academic-records-seal.mock.repository.test.ts` (12 → 13; idempotent
+    reseal, reactive `unlocked-grades-exist`, `too-many-reseals` after 5 seals).
+- `bunx tsc --noEmit`: clean (caught every stale `SealBatchStatus`-from-`sealBatch`
+  call-site + the missing i18n keys in BOTH dynamic-lookup namespaces).
+- `bun lint`: clean for all touched files (the only remaining 1 warning + 1 info
+  are pre-existing in `messaging/message-context-menu.tsx`, untouched here).
+- `NEXT_PUBLIC_USE_MOCK= bun run build`: ✓ Compiled successfully (real-mode guard).
+- Storybook interaction (`bun run vitest:storybook run` on the seal-screen
+  stories): 16/16 pass, incl. the flipped `AllLockedGate_NotOK` (Seal button now
+  present + clickable) and new `AllLockedGate_Reseal` (reseal label + enabled).
+
+### Per-phase
+
+- **Phase 1 (domain):** dropped `already-sealed`/`not-all-locked`, added
+  `unlocked-grades-exist`/`too-many-reseals` (kept `not-sealed` untouched — it is
+  the unrelated unseal-initiate surface). Added `SealBatchResult`
+  (`{sealedCount, failedCount, errors}`) + optional decorative `resealCount?` on
+  `SealBatchStatus`. `sealBatch` interface return → `SealResult<SealBatchResult>`.
+  `SealAcademicRecordUseCase` is now a thin pass-through (pre-check block deleted,
+  doc-comment corrected).
+- **Phase 2 (infra):** real `sealBatch` = **bare POST, no body** to
+  `/core/api/v1/classes/{classId}/terms/{termId}/academic-records/seal`
+  (new `ACADEMIC_RECORDS_EP.sealBatch(classId, termId)`); result via new
+  `sealBatchResultMapper` (`errors ?? []`); errors normalised via
+  `errorCodeOf`/`statusOf` → the full ground-truthed matrix (FORBIDDEN/403,
+  NOT_FOUND/404, UNLOCKED_GRADES_EXIST, TOO_MANY_RESEALS, NETWORK_ERROR/5xx,
+  else unknown). New `HybridAcademicRecordsSealRepository` facade (real
+  `sealBatch` + mock for the other 8). Mock `sealBatch` rewritten to model the
+  idempotent/reactive contract (no block on reseal; `!allLocked` →
+  `unlocked-grades-exist`; `resealCount` cap 5 → `too-many-reseals`; returns
+  `SealBatchResult` while still updating status/audit for the decorative hint).
+  `ensureFreshSession()` wired into the real branch of `makeSealRepository()`
+  (playbook step 6, first time for this factory).
+- **Phase 3 (presentation + i18n):** `AllLockedGate` NOT-OK branch now renders a
+  Seal button alongside the warning + approval link (decorative-not-blocking);
+  reseal never disabled; label switches `sealButton`↔`resealButton`. VM `seal`
+  action signature → `SealActionResult<SealBatchResult>`; `sealAction` return
+  annotation updated; decorative/non-authoritative comment added to
+  `SealTabVM.batch`. Container/dialog unchanged (toast surface = the existing
+  generic `showError`). i18n: removed dead `already-sealed`/`not-all-locked` keys
+  and added `unlocked-grades-exist`/`too-many-reseals` + `resealButton` in BOTH
+  namespaces that do a full-union dynamic `t()` lookup (`academicRecord.error`
+  AND `academicRecordSeal.errors`), vi source + en mirror; softened the NOT-OK
+  `warning` copy from blocking to advisory.
+
+### 3 lead-resolved open questions — implemented exactly as specified
+
+1. **Bare POST, no request body** — `AcademicRecordsSealRepository.sealBatch`
+   calls `http.post(url)` with no body; `actorId` stays on the domain signature
+   (mock audit-actor lookup) but is NOT on the wire. Integration test asserts
+   `post` called with the path only.
+2. **Toast, not an inline dialog slot** — no structural change to
+   `seal-confirm-dialog.tsx`; both reactive failures surface through the
+   existing generic `showError(errorKey)` → `toast.error` path (type-checked
+   against the new union keys via `tsc`).
+3. **Reseal button copy** — kept: label is `resealButton` ("Ký lại học bạ") when
+   `batch.status === "SEALED"`, else `sealButton` ("Ký học bạ"). Fit cleanly;
+   covered by the new `AllLockedGate_Reseal` story.
+
+### Notes for reviewers
+
+- **Plan-vs-ADR wording (viewer DI):** the lead scope reminder assumed
+  `makeRepository()` (viewer) "already force-mocks correctly", but on `main` it
+  was `USE_MOCK ? mock : real`. Plan Phase 2 says keep it "untouched + add a
+  comment", so I left the `if/else` as-is and added the ADR-0055 §viewer comment
+  (no behaviour change; the viewer stays mock in mock-mode as before). If the
+  lead wants the viewer literally force-mocked (per ADR 0055's "FORCE-MOCKED"
+  wording, matching US-E18.8/E18.9/E18.11 precedent), that's a one-line follow-up
+  — flagged rather than silently changed since it's out of the stated scope.
+- **term vs termId:** the real seal path takes `{termId}`; `SealBatchKey` only
+  carries `term` ("HK1"/"HK2"), so the real repo passes `key.term` as the term
+  dimension (per Plan design-call #2). The selector feeding these values is
+  itself mock-sourced, so a real seal is only meaningfully reachable once the
+  class/term selector is also wired — consistent with ADR 0055's framing.

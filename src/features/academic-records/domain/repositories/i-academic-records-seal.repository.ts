@@ -3,6 +3,7 @@ import type {
   InitiateUnsealInput,
   SealAuditEntry,
   SealBatchKey,
+  SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
   TenantAdminSummary,
@@ -27,10 +28,16 @@ export interface IAcademicRecordsSealRepository {
     year: string;
   }): Promise<SealResult<ClassOption[]>>;
   getSealStatus(key: SealBatchKey): Promise<SealResult<SealBatchStatus>>;
+  /**
+   * Batch-seal a (class, term) — US-E18.13 wired REAL against
+   * `POST .../academic-records/seal`. `actorId` is used by the mock repo for
+   * its audit-actor lookup; the REAL repository does NOT put it on the wire
+   * (server derives the actor from the Bearer token — bare POST, no body).
+   */
   sealBatch(
     key: SealBatchKey,
     actorId: string,
-  ): Promise<SealResult<SealBatchStatus>>;
+  ): Promise<SealResult<SealBatchResult>>;
   getSealAuditTrail(
     filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealAuditEntry[]>>;

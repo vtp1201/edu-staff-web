@@ -29,11 +29,9 @@
       "title": "Không có dữ liệu học bạ"
     },
     "error": {
-      "already-sealed": "Học bạ đã được ký trước đó.",
       "forbidden": "Bạn không có quyền xem học bạ này.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "no-pending-request": "Không tìm thấy yêu cầu mở học bạ.",
-      "not-all-locked": "Chưa thể ký: vẫn còn điểm chưa được khoá.",
       "not-found": "Không tìm thấy học bạ của học sinh này.",
       "not-sealed": "Học bạ chưa được ký nên không thể mở.",
       "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
@@ -41,7 +39,9 @@
       "same-admin-as-initiator": "Cần một admin khác xác nhận.",
       "self-approve-not-allowed": "Không thể tự phê duyệt: trường có nhiều hơn một quản trị viên nên cần admin khác xác nhận.",
       "title": "Không thể tải học bạ",
-      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
+      "too-many-reseals": "Đã đạt giới hạn số lần ký lại (tối đa 5 lần) cho học bạ này.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+      "unlocked-grades-exist": "Còn điểm chưa được khoá — vui lòng khoá toàn bộ điểm trước khi ký học bạ."
     },
     "pageSubtitle": "Lịch sử học bạ đã ký theo từng năm học và học kỳ. Mỗi bản ghi là ảnh chụp điểm tại thời điểm ký.",
     "pageTitle": "Học bạ học sinh",
@@ -136,17 +136,17 @@
     },
     "emptyBatch": "Chưa có dữ liệu cho lựa chọn này",
     "errors": {
-      "already-sealed": "Học bạ đã được ký trước đó.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "no-pending-request": "Không tìm thấy yêu cầu mở học bạ.",
-      "not-all-locked": "Chưa thể ký: vẫn còn điểm chưa được khoá.",
       "not-found": "Không tìm thấy dữ liệu học bạ.",
       "not-sealed": "Học bạ chưa được ký nên không thể mở.",
       "reason-too-short": "Lý do phải có ít nhất 20 ký tự.",
       "same-admin-as-initiator": "Cần một admin khác xác nhận.",
       "self-approve-not-allowed": "Không thể tự phê duyệt: trường có nhiều hơn một quản trị viên nên cần admin khác xác nhận.",
-      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
+      "too-many-reseals": "Đã đạt giới hạn số lần ký lại (tối đa 5 lần) cho học bạ này.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+      "unlocked-grades-exist": "Còn điểm chưa được khoá — vui lòng khoá toàn bộ điểm trước khi ký học bạ."
     },
     "gate": {
       "allLocked": {
@@ -157,9 +157,10 @@
         "linkToApproval": "Đến màn Duyệt & khoá",
         "subjectsLabel": "Môn chưa khoá",
         "title": "Còn {count} học sinh chưa khoá điểm.",
-        "warning": "Vui lòng khoá toàn bộ điểm tại màn hình Duyệt & khoá điểm trước khi ký học bạ."
+        "warning": "Bạn nên khoá toàn bộ điểm tại màn hình Duyệt & khoá điểm trước khi ký. Nếu vẫn còn điểm chưa khoá, thao tác ký học bạ sẽ bị từ chối."
       }
     },
+    "resealButton": "Ký lại học bạ",
     "roleAdmin": "ADMIN",
     "sealButton": "Ký học bạ",
     "sealDialog": {

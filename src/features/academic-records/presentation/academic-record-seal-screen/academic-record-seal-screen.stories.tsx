@@ -226,10 +226,14 @@ export const AllLockedGate_OK: Story = {
   },
 };
 
-/** AC-3 */
+/**
+ * AC-3 + US-E18.13 (ADR 0055) — the NOT-OK "X/Y locked" hint is decorative and
+ * REACTIVE: it warns + links to Approval & Lock AND still offers a Seal button
+ * (the server, not the client, decides). Clicking Seal opens the confirm flow.
+ */
 export const AllLockedGate_NotOK: Story = {
   args: { vm: baseVM({ seal: sealVM({ batch: NOT_LOCKED_BATCH }) }) },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(
       canvas.getByText(M.gate.notAllLocked.warning),
@@ -237,10 +241,32 @@ export const AllLockedGate_NotOK: Story = {
     await expect(
       canvas.getByRole("button", { name: M.gate.notAllLocked.linkToApproval }),
     ).toBeInTheDocument();
-    // Seal button is absent in the NOT-OK branch.
+    // Seal button is now PRESENT + enabled in the NOT-OK branch (reactive gate).
+    const sealBtn = canvas.getByRole("button", { name: M.sealButton });
+    await expect(sealBtn).toBeEnabled();
+    await userEvent.click(sealBtn);
+    await expect(args.vm.seal.onOpenConfirmDialog).toHaveBeenCalled();
+  },
+};
+
+/**
+ * US-E18.13 (ADR 0055) — reseal on an already-SEALED batch is idempotent: the
+ * Seal button stays ENABLED and its label switches to "Ký lại học bạ".
+ */
+export const AllLockedGate_Reseal: Story = {
+  args: {
+    vm: baseVM({ seal: sealVM({ batch: SEALED_BATCH, classId: "12C1" }) }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const resealBtn = canvas.getByRole("button", { name: M.resealButton });
+    await expect(resealBtn).toBeEnabled();
+    // The plain "Ký học bạ" label is NOT shown once already sealed.
     await expect(
       canvas.queryByRole("button", { name: M.sealButton }),
     ).not.toBeInTheDocument();
+    await userEvent.click(resealBtn);
+    await expect(args.vm.seal.onOpenConfirmDialog).toHaveBeenCalled();
   },
 };
 

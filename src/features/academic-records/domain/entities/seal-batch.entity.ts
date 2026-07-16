@@ -23,6 +23,26 @@ export interface SealBatchStatus extends SealBatchKey {
   status: TermStatus; // derived: PENDING (not sealed) | SEALED | UNSEALED
   sealedAt: string | null;
   sealedBy: string | null; // admin display name
+  /**
+   * US-E18.13 — number of times this batch has been (re)sealed. Decorative-only
+   * mock state used to simulate the real `ACADEMIC_RECORD_TOO_MANY_RESEALS`
+   * cap (5) reactively; NOT a wire field on `getSealStatus` (there is no
+   * seal-status GET endpoint at all — see ADR 0055). Defaults to 0 when absent.
+   */
+  resealCount?: number;
+}
+
+/**
+ * US-E18.13 — result of a real batch-seal POST, 1:1 with the `core` service's
+ * `SealAcademicRecordResponse` (`{sealedCount, failedCount, errors[]}`). A plain
+ * success-report; per-student detail is only a free-text `errors` string list.
+ * This is the authoritative outcome of a seal attempt — unlike the decorative
+ * `SealBatchStatus` "X/Y locked" hint from the mocked `getSealStatus`.
+ */
+export interface SealBatchResult {
+  sealedCount: number;
+  failedCount: number;
+  errors: string[];
 }
 
 export interface SealAuditEntry {
