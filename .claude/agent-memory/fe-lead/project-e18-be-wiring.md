@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8/E18.9 done, findings for remaining Wave 2-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8/E18.9/E18.10 done, findings for remaining Wave 2-4
 metadata:
   type: project
 ---
@@ -375,3 +375,40 @@ CONSIDER: `reject`'s 422 `VALIDATION_FAILED` isn't in the 6-code domain
 taxonomy and falls to `unknown`, addressed same-commit with a clarifying
 comment). Cross-repo ask #14 logged (wire `UpdateEntries()` to a `PUT`
 endpoint — flagged as likely the cheapest unblock in the whole epic).
+
+**US-E18.10 (class-log, 2026-07-16, Wave 2) — the ONLY zero-DTO-drift cluster
+in the whole epic; the real bug was a workflow-state gap, not a repo remap.**
+`class-log`'s path prefix AND `HomeroomEntryResponseDto` already matched
+`internal/school/adapter/http/dto/homeroom.go` field-for-field — first time in
+this epic zero mapper/entity/DTO change was needed. The real gaps were (1) a
+missing `revise` transition: BE state machine is `DRAFT→SUBMITTED→APPROVED`/
+`→REJECTED→SUBMITTED` via a SEPARATE `revise` endpoint (`HomeroomEntry.Revise()`
+guards `IsRejected`, distinct from `Submit()`'s `IsDraft` guard) — the shipped
+UI (US-E13.3) routed BOTH DRAFT and REJECTED through the same `submitEntryAction`,
+which would 409 for real once wired; (2) the guessed error taxonomy
+(`already-submitted`/`not-submitted`/`duplicate-date`) never matched any real
+code — ground-truthed against `internal/school/core/domain/error/homeroom.go`
++ `codeFromKey`'s uppercase confirms the real 5 codes are `HOMEROOM_ENTRY_
+NOT_FOUND`/`HOMEROOM_ENTRY_ALREADY_EXISTS`/`HOMEROOM_INVALID_TRANSITION`
+(ONE code for every illegal transition, not two)/`HOMEROOM_SUMMARY_REQUIRED`/
+`HOMEROOM_FORBIDDEN`. **Lesson**: "zero DTO drift" doesn't mean "nothing to
+fix" — always independently trace the actual domain entity's transition
+methods (not just the response shape) against what the UI's action buttons
+call, since a state-machine gap can hide behind a perfectly correct DTO.
+Also fixed a parity bug found while touching the same surface: `approve`/
+`rejectEntryAction` discarded the repository's already-correctly-mapped
+returned entity and had the client fabricate `{ ...entry, status: "..." }`
+instead — unlike `create`/`submitEntryAction` which already returned the real
+entity. Made all three transition actions consistent
+(`{ ok: true; entry }`). QA (`fe-qa-playwright`) found 2 real Storybook
+interaction-coverage gaps missed by the engineer's self-report (a story
+named for an AC that only asserted an unrelated button; zero test for the
+principal-can't-revise role+status combination) and closed both with
+test-only additions — same recurring pattern as US-E19.2: budget for QA to
+rewrite/extend interaction tests, not just review existing ones. 292
+files/1790 tests (baseline 290/1777, +2 files/+13 tests), tsc/build/lint
+clean, tech-lead APPROVED first pass (independently re-opened the Go source
+for both the error taxonomy and the transition guards, not just the story
+prose), a11y PASS (0 blocking; 1 optional non-blocking pre-existing-pattern
+note on toast-only pending-state announcement, deferred as a cross-cutting
+follow-up not scoped to this US).
