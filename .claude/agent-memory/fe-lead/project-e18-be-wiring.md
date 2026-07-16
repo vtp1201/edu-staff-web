@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 US-E18.11 done, findings for remaining Wave 3-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11, E18.12) done, findings for remaining Wave 3-4
 metadata:
   type: project
 ---
@@ -456,3 +456,99 @@ guard that silently returned an empty result instead of a typed failure.
 299 files/1837 tests (baseline 292/1790, +7/+47), tsc/build/lint clean,
 tech-lead APPROVED first pass after ground-truthing the full contract
 independently against edu-api Go source (not just re-reading story prose).
+
+**US-E18.12 (grades, 2026-07-16, Wave 3, high-risk lane) — the epic's biggest
+model-granularity mismatch: real BE tracks workflow status PER CELL
+(student×column), web's mock model tracked it PER ROW; no batch/reject
+concept exists on the wire at all for the admin approval screen.** Ground-
+truthing `core`'s `GradeEntry`/`GradeReport` tags + Go source
+(`grade_entry.go`, `grade.go`) found the state machine is
+`DRAFT→(PUBLISHED|PENDING_APPROVAL)→PUBLISHED→LOCKED`, strictly forward, keyed
+per `(classId,subjectId,termId,studentMemberId,columnId)` — not per class-
+subject-row like the invented `classSubjectId`/`GradeApprovalBatch` mock
+model. No bulk-submit endpoint exists (only per-cell `POST .../submit`); no
+reject/request-revision transition exists for `GradeEntry` at all (unlike
+`StudentConductGrade`, which has one); no tenant-wide "pending approval"
+rollup exists (same `GET .../grades` needs an already-known triple). Decision
+(ADR `0054`): wire teacher entry (`IGradesRepository`) + multi-role read
+(`IGradeBookRepository`, incl. student-self/parent-linked via
+`GET /members/{id}/grades` — genuinely wireable, unlike timetable's blocked
+self-scope, because it needs only a memberId not a classId) + term `lock`
+real; force-mock `IGradeApprovalRepository` (admin batch dashboard) and the
+parent child-switcher (`get-child-list`) PERMANENTLY — third fully-blocked DI
+factory after staff-leave/teaching-plan, confirming the "no display-name/
+rollup source" gap-class (asks #6/7/9/13/15) a 6th time. **Key design
+decisions that generalize:**
+1. Row-level status is NEVER stored — a pure `deriveRowStatus()` function
+   (worst-progress-wins: draft > pending-approval > locked-only-if-all >
+   published) derives an "at a glance" roster badge from the row's per-cell
+   statuses. When a real per-cell/per-entity granularity replaces an invented
+   per-row one, don't invent a parallel row-level server field — derive it.
+2. "Publish" (bulk, whole-sheet) → "submit" (per-cell) with NO bulk endpoint
+   → solved with ONE use-case taking a caller-supplied target LIST (1 cell,
+   one row's DRAFT cells, or the whole visible sheet's DRAFT cells — same
+   use-case, different call-site granularity), sequential `for` loop (never
+   `Promise.all`, never short-circuits), returning `{submitted, failed}` —
+   reusable pattern for any future "no bulk endpoint but the UI wants bulk-ish
+   convenience" gap in this codebase.
+3. **First-implementation self-contradiction caught by tech-lead review**:
+   the engineer's own commit updated the ADR/story to claim
+   `IGradeApprovalRepository` is "force-mocked permanently" while leaving the
+   actual `makeApprovalRepo()` DI factory with a live `if (USE_MOCK) {...}
+   else {...real...}` branch — the docs and the code disagreed within the
+   SAME commit. Lesson: when a story claims "force-mock, matching
+   `staff-leave.di.ts`'s pattern," a reviewer must diff the ACTUAL function
+   body against that cited precedent's shape (zero-branch), not just check
+   the doc's prose matches the ADR's prose — self-consistent-sounding docs
+   can still describe code that doesn't exist.
+4. **A11y found what static-code review missed**: a11y auditor's A11Y-101
+   (blocking, WCAG 3.3.1) caught that a partial fan-out submit failure
+   (2/5 succeed, 3/5 fail) only surfaced an AGGREGATE banner count — no way
+   to tell WHICH 3 cells to retry. Required threading the use-case's
+   `failed: Array<{target, failure}>` result all the way down to per-cell
+   `aria-invalid`/`aria-describedby`, not just a top-level toast. Generalizes:
+   any fan-out/partial-failure operation needs a per-item retry surface, not
+   just an aggregate count, or it fails WCAG 3.3.1 regardless of whether the
+   aggregate message is itself `role="status"`-correct.
+5. A design doc explicitly flagging "your call, this is a judgment call, not
+   deciding unilaterally" (component-design.md's `DRAFT` tone choice between
+   `muted`/`info`) is a real signal the fe-lead should resolve BEFORE
+   briefing the engineer, not leave for the engineer to guess — resolved it
+   as `info` (clearer visual separation from `LOCKED`'s `muted` on a dense
+   grid) directly in the engineer's brief.
+6. **A dead-but-implemented branch is worse than no branch**: the engineer's
+   first pass built a "mixed" row-status case per the ORIGINAL component
+   design doc's suggestion, but `deriveRowStatus`'s own (correct, deliberate)
+   worst-progress-wins precedence makes "mixed" mathematically unreachable —
+   AND the dead branch used `aria-label` instead of the spec'd
+   `aria-describedby` (silently overriding the accessible name rather than
+   supplementing it). A11y found both problems at once (A11Y-103). Fix was
+   to REMOVE the dead branch with a comment explaining why "mixed" is
+   impossible by design, rather than retrofit a real mixed-state that would
+   have meant deliberately undoing the precedence rule the same story
+   designed on purpose two files over — always check whether a "kept for
+   forward-compat" branch is reachable before shipping it.
+7. **Two background `fe-nextjs-engineer` async-agent resume cycles both made
+   real, substantive progress concurrently with fe-lead's own manual fixes on
+   the SAME files** (not just the "surprise commit" race noted in US-E18.2) —
+   `Read`-before-`Edit` failures ("file has been modified since read") were
+   the correct signal to re-read and reconcile rather than force-overwrite;
+   in one case the engineer had ALREADY implemented ~80% of a11y fix
+   (A11Y-101's `failedCells`/`getFailureMessage` threading) that fe-lead was
+   independently starting to write from scratch — re-reading before editing
+   caught the duplicate-work early and let fe-lead finish just the missing
+   wire-up (the `<ScoreCell>` call site's 2 missing props) instead of
+   clobbering good work. **Lesson**: when resuming a background agent for a
+   fix round and then ALSO fixing things yourself in the same worktree (no
+   dedicated worktree isolation was used here, solo mode), re-`Read` every
+   file immediately before each `Edit` — don't trust your last-known content,
+   the background agent may have kept working after its last notification.
+301 files/1852 tests (baseline 299/1837, +2/+15 from the domain rewrite,
++13 Storybook interaction tests from QA in a separate config), tsc/build/lint
+clean. tech-lead: Revision Required (the makeApprovalRepo contradiction) →
+fixed → Approved. A11y: 1 blocking (A11Y-101) + 2 should-fix (A11Y-102/103)
++ 2 minor (A11Y-104/105) → all fixed same-branch → re-verified PASS by a
+fresh audit pass (not just self-report). QA: GO, full Storybook interaction
+suite diffed byte-identical (71/71 pre-existing failures) against a clean
+`main` worktree to prove the ADR's scope boundary (`grade-approval-screen`/
+`child-switcher` untouched) held end-to-end, not just at review time.
