@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ITenantRepository } from "@/features/tenant/domain/repositories/i-tenant.repository";
@@ -9,6 +10,10 @@ import { TenantRepository } from "@/features/tenant/infrastructure/repositories/
 
 async function makeRepo(): Promise<ITenantRepository> {
   if (USE_MOCK) return new MockTenantRepository();
+  // Proactive refresh (decision 0018): both methods (`listMyMemberships`,
+  // `switchTenant`) are protected IAM calls. See EPIC-OVERVIEW.md playbook
+  // step 6 (US-E18.6).
+  await ensureFreshSession();
   return new TenantRepository(await createServerHttpClient());
 }
 

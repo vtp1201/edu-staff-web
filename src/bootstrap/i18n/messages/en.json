@@ -2051,12 +2051,16 @@
   },
   "iamMember": {
     "errors": {
-      "email-exists": "Email already exists in the system",
       "forbidden": "You do not have permission to perform this action",
-      "invitation-not-found": "Invitation not found or has expired",
+      "invalid-transition": "This member's status cannot be changed",
+      "invitation-email-mismatch": "The verified email does not match the invitation",
+      "invitation-expired": "The invitation has expired",
+      "invitation-invalid": "The invitation is invalid or has already been used",
       "last-admin": "Cannot remove the last admin of the organization",
+      "member-exists": "This user is already a member of the organization",
       "network-error": "Connection error, please try again",
       "not-found": "Member or invitation not found",
+      "tenant-inactive": "The organization is not active",
       "unknown": "An unexpected error occurred"
     }
   },

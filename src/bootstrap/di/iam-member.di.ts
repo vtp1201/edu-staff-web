@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { OAUTH_CLIENT_ID } from "@/bootstrap/endpoint/iam-member.endpoint";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
@@ -8,6 +9,9 @@ import { MockIamMemberRepository } from "@/features/auth/infrastructure/reposito
 
 async function makeRepo(): Promise<IIamMemberRepository> {
   if (USE_MOCK) return new MockIamMemberRepository();
+  // Proactive refresh (decision 0018): every method this repo exposes is a
+  // protected IAM call. See EPIC-OVERVIEW.md playbook step 6 (US-E18.6).
+  await ensureFreshSession();
   return new IamMemberRepository(await createServerHttpClient());
 }
 
