@@ -22,3 +22,21 @@ for domain/integration proof, and flag to fe-lead.
 Next router context may be absent → `useSearchParams()` returns null. Guard with
 `searchParams?.get(...) ?? null` so the component renders under both Next runtime
 and the storybook runner.
+
+**Reconfirmed working 2026-07-16 (US-E18.7):** `bun vitest:storybook run <name>`
+executed all 10 `play` fns in the chromium browser project. Default `bun vitest run`
+is the **node** env (`vitest.config.mts`, `include: *.{test,spec}`) and does NOT run
+`.stories.tsx` — stories only run via `vitest:storybook` (playwright browser). So the
+node-env baseline count never changes when you add/edit stories.
+
+**Driving a shadcn/Radix `Select` in a `play` fn (US-E18.7 idiom):**
+- Trigger has `role="combobox"`; its accessible name = the `<Label htmlFor>` text
+  (associate every Select via `useId`/id). Query `canvas.findByRole("combobox",
+  { name: <labelText> })` — use `findBy` (async retry), NOT `getBy`: after one Select
+  closes it leaves a **transient `aria-hidden` on the background** that makes the next
+  combobox briefly unqueryable (Radix bleed). `findBy` waits it out.
+- Options render in a portal on `document.body` with `role="option"`:
+  `await within(document.body).findByRole("option", { name })`, then click.
+- Don't reuse the Select's own `placeholder` string for a sibling prompt paragraph —
+  the placeholder text lives in the trigger too, so `findByText` matches 2 nodes and
+  fails. Give the prompt its own i18n key.

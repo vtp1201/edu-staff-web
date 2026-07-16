@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -119,8 +119,14 @@ model must NOT change):
   `maxScore` for the top band) → `maxScore`); omitted for numeric types (BE
   schema allows it optional). `effectiveFrom` is a genuinely new required wire
   field the domain didn't have — added `effectiveFrom: string` (ISO
-  date-time) to `GradeScale`, round-tripped from the last GET, defaulted to
-  `new Date().toISOString()` when there is no prior read (first-ever save).
+  date-time) to `GradeScale`, round-tripped from the last GET; when there is
+  no prior read (first-ever save, GET returned not-found), the deterministic
+  local preset's `PRESET_EFFECTIVE_FROM` constant is used instead of
+  `new Date().toISOString()` — a valid ISO date-time is always sent (BE's
+  required field is satisfied) and this keeps behavior deterministic for
+  tests, at the cost of not literally being "now." (Reviewer-flagged
+  doc/impl drift, non-blocking — corrected here to match the actual
+  implementation.)
 
   **Residual risk (documented, not blocking)**: band threshold/color
   customization for `HE_10`/`HE_4_GPA` scales has **no BE-side persistence** —
@@ -257,4 +263,50 @@ real listing work. Left as a forward note in `EPIC-OVERVIEW.md`.
 
 ## Evidence
 
-(added after implementation + review)
+- Implementation: `feat/us-e18.7-assessment-scheme-wiring` commits `951b2c1`
+  (feat) + `cf94aae` (test), on top of `e0d64d6` (docs/ADR).
+- TDD: mapper tests written first (red) covering scaleType round-trip both
+  directions, `LETTER_ABCD` real `letterGrades`→bands, `HE_10`/`HE_4_GPA`
+  fallback to `GRADE_SCALE_PRESETS`, `coefficient`↔`weight` both directions,
+  ordinal-from-index, `count` fixed-default + never serialized on write;
+  repository tests (full 9-code error matrix + request-body shape assertions
+  + termId path threading); mock repository tests (term-scoped key).
+- `bun vitest run`: **289 files / 1751 tests pass** (baseline captured before
+  editing: 288 files / 1725 tests) — **+1 file / +26 tests, zero regression**.
+  Independently re-run by `fe-tech-lead-reviewer` — confirmed identical counts.
+- `bun vitest:storybook run src/features/assessment-scheme` (chromium,
+  Storybook interaction): **10/10 stories pass**, including the 4 new
+  term-selector states (`TermNotSelected`, `TermHK1Selected`,
+  `TermHK2Selected`, `SchemeLoadError`). Independently re-run by fe-lead after
+  the a11y auditor's `-t`-filter invocation produced a false "broken tooling"
+  read (wrong flag, not a real regression — confirmed via a correctly-scoped
+  re-run).
+- `bunx tsc --noEmit`: clean (0 errors) — confirmed independently by reviewer.
+- `bun lint`: clean (only a pre-existing warning in `messaging/`, outside this
+  diff — confirmed via `git diff --name-only`).
+- `bun run build`: green — confirmed independently by reviewer.
+- `fe-tech-lead-reviewer` verdict: **APPROVED**. Independently re-verified the
+  9-code error matrix against `edu-api`'s Go source (not just the packet),
+  the DTO string-typing, the `coefficient`/`weight` scaling, `ordinal`
+  derivation, and `count` non-persistence — all confirmed correct. One
+  `[CONSIDER]` (non-blocking): `effectiveFrom`'s first-save fallback uses the
+  deterministic preset constant rather than `new Date().toISOString()` as the
+  original prose said — corrected in this packet + ADR 0053 to match the
+  actual (better, deterministic-for-tests) implementation.
+- `fe-accessibility-auditor` verdict: **PASS** for the new term-selector
+  surface (0 blocking/critical/major findings). 2 minor notes, both
+  pre-existing/out of this story's blast radius: (a) the shared `Select`
+  primitive's open/close animation lacks a `motion-safe:` prefix (inherited
+  unmodified by every Select on this screen, not introduced here — routed to
+  the design-system/primitive owner for a batched fix alongside the known
+  `Dialog` motion-safe gap); (b) an incorrectly-scoped `-t` filter invocation
+  produced a false "Storybook tooling broken" read, resolved by a correctly
+  targeted re-run (see above) showing the true 10/10 pass.
+- Design-review gate: no new tokens introduced; term selector is a 1:1 reuse
+  of the existing `Select`/`Label`/`useId` pattern already used by the
+  grade-level/subject selectors on this same screen and by
+  `teaching-plan`'s `subject-class-term-selector.tsx` — confirmed by both
+  reviewer and a11y auditor independently. PASS (no redesign, tokens-only,
+  a11y-clean).
+- Harness: `US-E18.7` → `implemented`, `--unit 1 --integration 1 --e2e 1
+  --platform 1`; `docs/TEST_MATRIX.md` row updated in place.
