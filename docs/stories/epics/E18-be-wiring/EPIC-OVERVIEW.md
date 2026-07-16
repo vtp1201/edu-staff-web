@@ -121,7 +121,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 |-------|-------|-------|------|---------|
 | US-E18.7 | Assessment scheme + grade scale wiring | path | normal | **Done** — path label held (drop `/config/`, add trailing `/terms/{termId}`) but, as with every other Wave-1/2 cluster, the DTO-shape audit found deeper drift: separate Request/Response wire schemas, `coefficient`↔`weight` unit scaling (÷10/×10, lossless), grade-scale bands derived from real `letterGrades` for `LETTER_ABCD` else fall back to local presets (BE has no numeric-scale banding concept), `count` non-persistent (no wire representation), 9-code error matrix (ground-truthed from Go source, confirms decision 0008 UPPER_SNAKE holds for `core`). Domain model + `grades` feature's reuse of it kept fully unchanged (compile-only literal additions). Added a minimal `["HK1","HK2"]` term selector (BE requires `termId`, screen never modeled it) reusing the existing `Select` pattern. `listSubjectsForGrade` stays mock (no `gradeLevel` filter on real `GET /subjects` — belongs to US-E18.3). See `US-E18.7-assessment-scheme-wiring/story.md` + ADR `0053`. |
 | US-E18.8 | Staff-leave wiring | path | normal | **Done** — the "add `/conduct/` segment" label held at the path level only. Real finding: `GET` requires a **mandatory** `staffMemberId` query param (no tenant-wide oversight list exists at all — the admin screen lists every staff member's requests at once) AND `StaffLeaveRequestResponse` has zero display fields (no `staffName`/`department`/`leaveType` — the leave-*type* concept itself doesn't exist on the wire). `approve`/`reject` are therefore also unreachable (their only id source is the blocked list). Whole feature stays mock-first **permanently** — first fully-blocked DI factory in the epic (`staff-leave.di.ts` now force-mocks regardless of `USE_MOCK`, vs. the hybrid/partial pattern used by US-E18.4/US-E18.5). Ground-truthed error taxonomy (7 codes, confirmed UPPER_SNAKE from Go source `pkg/kit/response/error.go`'s `codeFromKey`) kept correct + unit-tested for the day this unblocks; 2 new failure types (`forbidden`, `same-actor`). See `US-E18.8-staff-leave-wiring/story.md` + cross-repo ask #13. |
-| US-E18.9 | Teaching-plan wiring | path | normal | BE nest `/lms/teaching-plans`; `/cells` WEB-ONLY → decision (gộp vào PUT plan hay chờ BE) |
+| US-E18.9 | Teaching-plan wiring | path | normal | **Done** — the "nest `/lms/`, decide `/cells`" label held at the path level only. Real finding: composite-key mismatch (web keys by `(subjectId, classId, term)`; real key is `(classSubjectId, academicYear, planId)` — no term dimension, one BE plan spans a full academic year), no period axis on the wire (`WeeklyEntryResponse` is week-only), and — the `/cells` answer — **zero HTTP surface to edit an existing plan's entries at all**: `create` sets `weeklyEntries` once, no update route exists, and the domain aggregate's `UpdateEntries()` method is dead code (unit-tested BE-side, never wired to a route). Whole feature stays mock-first permanently — second fully-blocked DI factory in the epic after US-E18.8's `staff-leave.di.ts`. Ground-truthed 6-code error taxonomy replaces the old guessed one (matched zero real codes). See `US-E18.9-teaching-plan-wiring/story.md` + cross-repo ask #14. |
 | US-E18.10 | Class-log wiring + trạng thái `revise` | path + state | normal | Web thiếu `revise` + GET/PUT entry detail — thêm state UI theo máy trạng thái BE |
 | US-E13.2 *(packet có sẵn, epic E13)* | Attendance wiring | **cao** | normal | Re-scope theo audit: prefix `/core/api/v1/classes/{id}/attendance` + `/members/{id}/attendance`; mô hình period-based của web ≠ class/date-based BE → remap |
 
@@ -274,6 +274,29 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     raw ids. Until then `staff-leave`'s `StaffLeaveRepository` stays a
     permanent blocked stub (US-E18.8) — the epic's first DI factory forced to
     mock 100% of its operations, not just a subset.
+14. **(US-E18.9, 2026-07-16)** `edu-api/services/core/internal/lms/teachingplan`
+    has NO HTTP route to edit an existing teaching plan's weekly entries —
+    `POST /api/v1/lms/teaching-plans` sets `weeklyEntries` exactly once at
+    create time; `routes.go` mounts only `POST /`, `GET /`, `GET /:id`,
+    `PUT /:id/{submit,approve,reject}`. The domain aggregate already HAS the
+    capability: `TeachingPlan.UpdateEntries()`
+    (`core/domain/entity/teaching_plan.go`) replaces the weekly entries and is
+    unit-tested (`TestTeachingPlan_UpdateEntries_ReplacesEntries`) but is
+    never called by any use-case or handler — dead code. Ask: expose it as
+    `PUT /api/v1/lms/teaching-plans/{planId}?classSubjectId=&academicYear=`
+    (entries-replace while `DRAFT`, mirroring the existing submit/approve/
+    reject param shape) — this is likely the cheapest unblock in the whole
+    epic, since the domain logic is already written and tested. Separately
+    (a product decision, not purely a BE ask): the real contract has no
+    per-term concept (one plan spans a full academic year) and no period axis
+    (`WeeklyEntryResponse` is week-only, `{weekNumber, topic, notes}`) — the
+    web screen's term-scoped, week×period grid has no lossless mapping onto
+    this model regardless of what HTTP surface exists; unblocking `/cells`
+    alone would not make the current UI wireable without also resolving this
+    modeling gap (flagged for `uiux`/`ba`, not resolvable by `fe` alone).
+    Until either lands, `teaching-plan`'s `TeachingPlanRepository` stays a
+    permanent blocked stub (US-E18.9) — the epic's second fully-blocked DI
+    factory after US-E18.8.
 
 ## Dependencies & thứ tự
 

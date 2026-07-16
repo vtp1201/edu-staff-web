@@ -125,6 +125,20 @@ Confirmed facts (verify before citing if stale):
   the DI composite guarantees the stub is never invoked. Verify: (a) stub makes no HTTP call
   (`expect(http.get).not.toHaveBeenCalled()`), (b) DI routes it to mock in the real branch too,
   (c) a cross-repo ask is logged in EPIC-OVERVIEW.md for the missing BE field/endpoint.
+- **E18 FULLY-BLOCKED (force-mock) DI factory = ACCEPTED pattern** (confirmed US-E18.8 staff-leave,
+  US-E18.9 teaching-plan): when NO operation of a feature can go real (e.g. composite-key granularity
+  mismatch, missing grid axis, and zero HTTP surface to edit an existing plan — teaching-plan's real
+  `UpdateEntries()` is dead code, ground-truthed: only referenced in the entity def + its own Go unit
+  test, no use-case/handler calls it), the DI factory's `makeRepo()` returns the Mock repo
+  UNCONDITIONALLY (drops the `USE_MOCK`/`createServerHttpClient` branch entirely) and ALL real-repo
+  methods become permanent blocked stubs that `throw`/return a failure without touching `this.http`.
+  The real class + a ground-truthed `toFailure` taxonomy are kept correct + unit-tested for the day BE
+  unblocks. Proof shape: `toFailure` matrix (all real codes + network + unknown fallback) + one
+  "never-calls-http" guard per interface method (`expect(http.get/post).not.toHaveBeenCalled()`).
+  Because there's no `!USE_MOCK` branch, playbook step 6 (`ensureFreshSession()`) is correctly N/A.
+  Don't demand the real class be deleted or the endpoint constants removed — both are kept as
+  documentation for the unblock, with a cross-repo ask logged (asks #13/#14). `core` error codes are
+  UPPER_SNAKE on the wire (`codeFromKey` = `strings.ToUpper`), so branch `toFailure` on UPPER_SNAKE.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
