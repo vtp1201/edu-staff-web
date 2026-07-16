@@ -9,15 +9,21 @@ function toFailure(err: unknown): GradesFailure {
   return { type: "network-error" };
 }
 
+/**
+ * Parent-linked child self-view (US-E18.12, ADR 0054) — same shape as
+ * {@link GetMyGradesUseCase}: `GET /members/{childId}/grades?year=` returns
+ * every subject for the year, once a childId is already known (child-switcher
+ * itself stays mock — see `get-child-list.use-case.ts`, untouched).
+ */
 export class GetChildGradesUseCase {
   constructor(private readonly repo: IGradeBookRepository) {}
 
   async execute(
     childId: string,
-    term: string,
-  ): Promise<GradeBook | GradesFailure> {
+    academicYearLabel: string,
+  ): Promise<GradeBook[] | GradesFailure> {
     try {
-      return await this.repo.getChildGrades(childId, term);
+      return await this.repo.getChildGrades(childId, academicYearLabel);
     } catch (err) {
       return toFailure(err);
     }

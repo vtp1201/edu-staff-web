@@ -4,7 +4,10 @@ import type {
   GradeBookRole,
 } from "../../domain/entities/grade-book.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
-import type { ClassSubjectOption } from "../grade-entry-screen/grade-entry-screen.i-vm";
+import type {
+  ActionResult,
+  ClassSubjectOption,
+} from "../grade-entry-screen/grade-entry-screen.i-vm";
 
 export type { ClassSubjectOption };
 
@@ -12,7 +15,8 @@ export interface GradeBookScreenVM {
   role: GradeBookRole;
   /** for teacher / principal / admin selectors */
   classSubjects: ClassSubjectOption[];
-  selectedCsId: string | null;
+  selectedClassId: string | null;
+  selectedSubjectId: string | null;
   selectedTerm: string | null;
   gradeBook: GradeBook | null;
   /** whether grades are visible to the viewer (student / parent gate) */
@@ -25,4 +29,12 @@ export interface GradeBookScreenVM {
   childrenList?: ChildSummary[];
   /** parent role only — currently active child id; undefined for other roles */
   activeChildId?: string;
+  /**
+   * NEW (US-E18.12, ADR 0054 §4) — admin/manager only (irreversible term
+   * lock). Undefined for teacher/student/parent — the screen gates the lock
+   * button's render on this being present, not just on `vm.role`, so the
+   * container/DI layer is the single source of truth for whether the actor is
+   * actually authorized (belt-and-suspenders with the BE's own 403 gate).
+   */
+  lockTermAction?: () => Promise<ActionResult & { lockedCount?: number }>;
 }

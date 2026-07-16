@@ -41,17 +41,22 @@ const ROWS: GradeBookRow[] = [
     studentId: "hs-001",
     studentName: "Nguyễn Văn An",
     studentCode: "HS001",
-    scores: { tx: 8, gk: 8, ck: 9 },
+    scores: {
+      tx: { value: 8, status: "PUBLISHED" },
+      gk: { value: 8, status: "PUBLISHED" },
+      ck: { value: 9, status: "PUBLISHED" },
+    },
     average: 8.5,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
 ];
 
 function book(rows: GradeBookRow[]): GradeBook {
   return {
-    classSubjectId: "cs-001",
-    term: "HK1",
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    termId: "HK1",
+    academicYearLabel: "2025-2026",
     className: "10A1",
     subjectName: "Toán",
     scheme: SCHEME,

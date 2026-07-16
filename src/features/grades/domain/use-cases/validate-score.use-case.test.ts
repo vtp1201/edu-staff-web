@@ -18,14 +18,14 @@ describe("validateScore", () => {
     const result = validateScore(-1, 10);
     expect(result.valid).toBe(false);
     if (!result.valid) {
-      expect(result.failure.type).toBe("score-out-of-range");
+      expect(result.failure.type).toBe("invalid-value");
     }
   });
 
   it("rejects 10.1 on SCALE_10", () => {
     const result = validateScore(10.1, 10);
     expect(result.valid).toBe(false);
-    if (!result.valid && result.failure.type === "score-out-of-range") {
+    if (!result.valid && result.failure.type === "invalid-value") {
       expect(result.failure.maxScore).toBe(10);
     }
   });

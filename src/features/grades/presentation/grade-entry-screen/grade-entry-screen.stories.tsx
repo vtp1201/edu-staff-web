@@ -5,7 +5,8 @@ import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   AssessmentScheme,
-  GradePublishStatus,
+  GradeCell,
+  GradeEntryStatus,
   GradeSheet,
   StudentScoreRow,
 } from "../../domain/entities/grade-sheet.entity";
@@ -27,17 +28,36 @@ const SCHEME: AssessmentScheme = {
 };
 
 const CLASS_SUBJECTS: ClassSubjectOption[] = [
-  { id: "cs-001", label: "10A1 — Toán" },
-  { id: "cs-002", label: "10A2 — Toán" },
+  {
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    className: "10A1",
+    subjectName: "Toán",
+  },
+  {
+    classId: "class-002",
+    subjectId: "subj-toan-10",
+    className: "10A2",
+    subjectName: "Toán",
+  },
 ];
+
+function cell(
+  value: number | null,
+  status: GradeEntryStatus = "DRAFT",
+): GradeCell {
+  return { value, status };
+}
 
 function sheet(
   rows: StudentScoreRow[],
   publishMode: GradeSheet["publishMode"] = "SELF_PUBLISH",
 ): GradeSheet {
   return {
-    classSubjectId: "cs-001",
-    term: "HK1",
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    termId: "HK1",
+    academicYearLabel: "2025-2026",
     scheme: SCHEME,
     rows,
     publishMode,
@@ -49,40 +69,46 @@ const POPULATED: StudentScoreRow[] = [
     studentId: "hs-001",
     studentName: "Nguyễn Văn An",
     studentCode: "HS001",
-    scores: { tx: 8, gk: 7.5, ck: 9 },
+    scores: { tx: cell(8), gk: cell(7.5), ck: cell(9) },
     average: 8.2,
-    publishStatus: "DRAFT",
   },
   {
     studentId: "hs-002",
     studentName: "Trần Thị Bình",
     studentCode: "HS002",
-    scores: { tx: 4, gk: 5, ck: null },
+    scores: { tx: cell(4), gk: cell(5), ck: cell(null) },
     average: null,
-    publishStatus: "DRAFT",
   },
   {
     studentId: "hs-003",
     studentName: "Lê Hoàng Cường",
     studentCode: "HS003",
-    scores: { tx: 9, gk: 9.5, ck: 10 },
+    scores: { tx: cell(9), gk: cell(9.5), ck: cell(10) },
     average: 9.6,
-    publishStatus: "DRAFT",
   },
 ];
 
-function withStatus(status: GradePublishStatus): StudentScoreRow[] {
-  return POPULATED.map((r) => ({ ...r, publishStatus: status }));
+function withStatus(status: GradeEntryStatus): StudentScoreRow[] {
+  return POPULATED.map((r) => ({
+    ...r,
+    scores: Object.fromEntries(
+      Object.entries(r.scores).map(([k, c]) => [k, { ...c, status }]),
+    ),
+  }));
 }
 
 const baseVM: GradeEntryScreenVM = {
   classSubjects: CLASS_SUBJECTS,
-  selectedCsId: "cs-001",
+  selectedClassId: "class-001",
+  selectedSubjectId: "subj-toan-10",
   selectedTerm: "HK1",
   sheet: sheet(POPULATED),
   error: null,
   saveScoreAction: async () => ({ ok: true }),
-  publishAction: async () => ({ ok: true as const }),
+  submitScoresAction: async (targets) => ({
+    ok: true,
+    result: { submitted: targets, failed: [] },
+  }),
 };
 
 const meta: Meta<typeof GradeEntryScreen> = {
@@ -118,7 +144,8 @@ export const NoSelection: Story = {
   args: {
     vm: {
       ...baseVM,
-      selectedCsId: null,
+      selectedClassId: null,
+      selectedSubjectId: null,
       selectedTerm: null,
       sheet: null,
     },
@@ -138,24 +165,22 @@ export const WithScores: Story = {
     await expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
     // average for An = 8.2, rendered colored
     await expect(canvas.getByText("8.2")).toBeInTheDocument();
-    // editable inputs exist (3 students × 3 columns)
+    // editable inputs exist (3 students × 3 columns, all DRAFT)
     const inputs = canvas.getAllByRole("spinbutton");
     await expect(inputs.length).toBe(9);
   },
 };
 
-export const PublishConfirmDialog: Story = {
+export const SubmitAllDrafts: Story = {
   args: { vm: baseVM },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const publishBtn = canvas.getByRole("button", {
-      name: messages.gradeEntry.publishButton,
+    const submitBtn = canvas.getByRole("button", {
+      name: messages.gradeEntry.submitAllDraftsButton,
     });
-    await userEvent.click(publishBtn);
-    const dialog = within(document.body);
-    await expect(
-      dialog.getByText(messages.gradeEntry.publishConfirmTitle),
-    ).toBeInTheDocument();
+    await expect(submitBtn).toBeEnabled();
+    await userEvent.click(submitBtn);
+    await expect(canvas.getByRole("status")).toBeInTheDocument();
   },
 };
 
@@ -163,11 +188,11 @@ export const PublishedReadonly: Story = {
   args: { vm: { ...baseVM, sheet: sheet(withStatus("PUBLISHED")) } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // no editable inputs when published
+    // no editable inputs when every cell is PUBLISHED
     await expect(canvas.queryAllByRole("spinbutton").length).toBe(0);
     await expect(
-      canvas.getByText(messages.gradeEntry.published),
-    ).toBeInTheDocument();
+      canvas.getAllByText(messages.gradeCellStatus.published).length,
+    ).toBeGreaterThan(0);
   },
 };
 
@@ -181,8 +206,19 @@ export const PendingApproval: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(messages.gradeEntry.pendingApproval),
-    ).toBeInTheDocument();
+      canvas.getAllByText(messages.gradeCellStatus.pendingApproval).length,
+    ).toBeGreaterThan(0);
+  },
+};
+
+export const Locked: Story = {
+  args: { vm: { ...baseVM, sheet: sheet(withStatus("LOCKED")) } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryAllByRole("spinbutton").length).toBe(0);
+    await expect(
+      canvas.getAllByText(messages.gradeCellStatus.locked).length,
+    ).toBeGreaterThan(0);
   },
 };
 
@@ -192,7 +228,7 @@ export const ValidationError: Story = {
       ...baseVM,
       saveScoreAction: async () => ({
         ok: false,
-        errorKey: "score-out-of-range",
+        errorKey: "invalid-value",
       }),
     },
   },
@@ -205,6 +241,33 @@ export const ValidationError: Story = {
     await userEvent.type(first, "15");
     await userEvent.tab();
     await expect(first).toHaveAttribute("aria-invalid", "true");
+  },
+};
+
+export const PartialSubmitFailure: Story = {
+  args: {
+    vm: {
+      ...baseVM,
+      submitScoresAction: async (targets) => ({
+        ok: true,
+        result: {
+          submitted: targets.slice(0, 1),
+          failed: targets.slice(1).map((target) => ({
+            target,
+            failure: { type: "not-draft" as const },
+          })),
+        },
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const submitBtn = canvas.getByRole("button", {
+      name: messages.gradeEntry.submitAllDraftsButton,
+    });
+    await userEvent.click(submitBtn);
+    const banner = canvas.getByRole("status");
+    await expect(banner.textContent?.length).toBeGreaterThan(0);
   },
 };
 

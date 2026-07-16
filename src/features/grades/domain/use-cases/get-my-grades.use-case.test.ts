@@ -10,13 +10,16 @@ function makeRepo(
     getGradeBook: vi.fn(),
     getMyGrades: vi.fn(),
     getChildGrades: vi.fn(),
+    getChildList: vi.fn(),
     ...over,
   } as IGradeBookRepository;
 }
 
 const book: GradeBook = {
-  classSubjectId: "cs-001",
-  term: "HK1",
+  classId: "class-1",
+  subjectId: "subj-1",
+  termId: "HK1",
+  academicYearLabel: "2025-2026",
   className: "10A1",
   subjectName: "Toán",
   scheme: {
@@ -30,23 +33,27 @@ const book: GradeBook = {
 };
 
 describe("GetMyGradesUseCase", () => {
-  it("returns the student's grade book on success", async () => {
-    const getMyGrades = vi.fn().mockResolvedValue(book);
+  it("returns the student's grade books (all subjects) on success", async () => {
+    const getMyGrades = vi.fn().mockResolvedValue([book]);
     const uc = new GetMyGradesUseCase(makeRepo({ getMyGrades }));
-    const result = await uc.execute("HK1");
-    expect(getMyGrades).toHaveBeenCalledWith("HK1");
-    expect(result).toEqual(book);
+    const result = await uc.execute("student-1", "2025-2026");
+    expect(getMyGrades).toHaveBeenCalledWith("student-1", "2025-2026");
+    expect(result).toEqual([book]);
   });
 
-  it("maps a thrown not-published failure", async () => {
-    const getMyGrades = vi.fn().mockRejectedValue({ type: "not-published" });
+  it("maps a thrown forbidden failure", async () => {
+    const getMyGrades = vi.fn().mockRejectedValue({ type: "forbidden" });
     const uc = new GetMyGradesUseCase(makeRepo({ getMyGrades }));
-    expect(await uc.execute("HK1")).toEqual({ type: "not-published" });
+    expect(await uc.execute("student-1", "2025-2026")).toEqual({
+      type: "forbidden",
+    });
   });
 
   it("maps a generic error to network-error", async () => {
     const getMyGrades = vi.fn().mockRejectedValue(new Error("boom"));
     const uc = new GetMyGradesUseCase(makeRepo({ getMyGrades }));
-    expect(await uc.execute("HK1")).toEqual({ type: "network-error" });
+    expect(await uc.execute("student-1", "2025-2026")).toEqual({
+      type: "network-error",
+    });
   });
 });

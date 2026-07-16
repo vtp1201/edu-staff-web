@@ -1,17 +1,21 @@
-export interface GradeBookRowDto {
-  studentId: string;
-  studentName: string;
-  studentCode: string;
-  scores: Record<string, number | null>;
-  average: number | null;
-  conductGrade: "Tot" | "Kha" | "TB" | "Yeu";
-  publishStatus: "DRAFT" | "PENDING_APPROVAL" | "PUBLISHED";
+import type { GradeEntryResponseDto } from "./grades-response.dto";
+
+export type {
+  GradeColumnResponseDto,
+  ListGradesResponseDto,
+  StudentGradeRowResponseDto,
+} from "./grades-response.dto";
+
+/** One (subject, term) group within a student's year-scoped self-view. */
+export interface SubjectTermGradesResponseDto {
+  subjectId: string;
+  termId: string;
+  entries: GradeEntryResponseDto[];
 }
 
-export interface GradeBookResponseDto {
-  classSubjectId: string;
-  term: string;
-  className: string;
-  subjectName: string;
-  rows: GradeBookRowDto[];
+/** `GET /members/{memberId}/grades?year=` — student self / parent-linked / admin. */
+export interface StudentGradesResponseDto {
+  studentMemberId: string;
+  academicYearLabel: string;
+  groups: SubjectTermGradesResponseDto[];
 }

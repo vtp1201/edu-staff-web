@@ -35,3 +35,22 @@ export async function resolveCurrentTermId(
   }
   return termId;
 }
+
+/**
+ * Sibling composition (US-E18.12 BE wiring) — resolves the active academic
+ * year's label (e.g. `"2025-2026"`), the `year` query param every real
+ * `core` grades endpoint requires. Reuses the same `ListYearsUseCase` call as
+ * {@link resolveCurrentTermId} rather than re-deriving the "which year is
+ * active" logic a second time.
+ */
+export async function resolveCurrentAcademicYear(): Promise<string> {
+  const years = await (await makeListYearsUseCase()).execute();
+  const activeYear = years.find((y) => y.isActive) ?? years[0];
+  if (!activeYear) {
+    throw {
+      type: "invalid-term",
+      message: "No academic year configured",
+    };
+  }
+  return activeYear.label;
+}

@@ -1,7 +1,8 @@
-import {
-  MOCK_CLASS_SUBJECTS,
-  makeGetGradeBookUseCase,
-} from "@/bootstrap/di/grades.di";
+import { lockTermAction } from "@/app/[locale]/t/[tenant]/(app)/admin/grade-book/actions";
+import { makeGetGradeBookUseCase } from "@/bootstrap/di/grades.di";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
+import { resolveMyGradeSubjects } from "@/bootstrap/lib/resolve-my-grade-subjects";
+import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/class-subject-term-key.entity";
 import type { GradeBook } from "@/features/grades/domain/entities/grade-book.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
 import {
@@ -11,7 +12,11 @@ import {
 import { GradeBookContainer } from "@/features/grades/presentation/grade-book-screen/grade-book-container";
 import type { GradeBookScreenVM } from "@/features/grades/presentation/grade-book-screen/grade-book-screen.i-vm";
 
-type SearchParams = Promise<{ csId?: string; term?: string }>;
+type SearchParams = Promise<{
+  classId?: string;
+  subjectId?: string;
+  term?: string;
+}>;
 
 export default async function PrincipalGradeBookPage({
   searchParams,
@@ -19,17 +24,30 @@ export default async function PrincipalGradeBookPage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const selectedCsId = sp.csId ?? null;
+  const selectedClassId = sp.classId ?? null;
+  const selectedSubjectId = sp.subjectId ?? null;
   const selectedTerm = sp.term ?? null;
+
+  const classSubjects = await resolveMyGradeSubjects();
+  const academicYearLabel = await resolveCurrentAcademicYear().catch(
+    () => "2025-2026",
+  );
 
   let gradeBook: GradeBook | null = null;
   let error: GradesFailure["type"] | null = null;
 
-  if (selectedCsId && selectedTerm) {
-    const result = await (await makeGetGradeBookUseCase()).execute(
-      selectedCsId,
-      selectedTerm,
-    );
+  const key: ClassSubjectTermKey | null =
+    selectedClassId && selectedSubjectId && selectedTerm
+      ? {
+          classId: selectedClassId,
+          subjectId: selectedSubjectId,
+          termId: selectedTerm,
+          academicYearLabel,
+        }
+      : null;
+
+  if (key) {
+    const result = await (await makeGetGradeBookUseCase(key)).execute(key);
     if (isGradeBookFailure(result)) {
       error = result.type;
     } else {
@@ -39,12 +57,14 @@ export default async function PrincipalGradeBookPage({
 
   const vm: GradeBookScreenVM = {
     role: "principal",
-    classSubjects: MOCK_CLASS_SUBJECTS,
-    selectedCsId,
+    classSubjects,
+    selectedClassId,
+    selectedSubjectId,
     selectedTerm,
     gradeBook,
     isPublished: isGradeBookPublished(gradeBook),
     error,
+    lockTermAction: key ? () => lockTermAction(key) : undefined,
   };
 
   return <GradeBookContainer vm={vm} />;

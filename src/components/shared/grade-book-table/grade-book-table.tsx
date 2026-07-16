@@ -3,10 +3,15 @@
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 import {
+  GradeEntryStatusBadge,
+  GradeRowStatusSummaryBadge,
+} from "@/components/shared/grade-entry-status-badge";
+import {
   StatusBadge,
   type StatusTone,
 } from "@/components/shared/status-badge/status-badge";
 import type { ColumnType } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
+import { deriveRowStatus } from "@/features/grades/domain/entities/derive-row-status";
 import type {
   ConductGrade,
   GradeBookRow,
@@ -176,6 +181,7 @@ function GradeRow({
   columnIds: string[];
 }) {
   const t = useTranslations("gradeBook");
+  const rowStatus = deriveRowStatus(row.scores);
   return (
     <tr className="border-border border-b last:border-0">
       <th
@@ -186,9 +192,15 @@ function GradeRow({
         <span className="block text-edu-text-secondary text-xs">
           {row.studentCode}
         </span>
+        {rowStatus !== "empty" ? (
+          <span className="mt-1 block">
+            <GradeRowStatusSummaryBadge rowStatus={rowStatus} />
+          </span>
+        ) : null}
       </th>
       {columnIds.map((colId) => {
-        const score = row.scores[colId] ?? null;
+        const cell = row.scores[colId];
+        const score = cell?.value ?? null;
         return (
           <td
             key={colId}
@@ -203,7 +215,13 @@ function GradeRow({
                 <span className="sr-only">{t("scoreNotEntered")}</span>
               </>
             ) : (
-              score
+              <span className="flex flex-col items-center gap-0.5">
+                {score}
+                <GradeEntryStatusBadge
+                  status={cell.status}
+                  className="text-[10px]"
+                />
+              </span>
             )}
           </td>
         );

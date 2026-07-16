@@ -1,8 +1,12 @@
-import type { ChildSummary } from "../../../domain/entities/grade-book.entity";
-import type { GradeBookRowDto } from "../../dtos/grade-book-response.dto";
+import type {
+  ChildSummary,
+  GradeBookRow,
+} from "../../../domain/entities/grade-book.entity";
 
-export const MOCK_GRADE_BOOK_CS_ID = "cs-001";
+export const MOCK_GRADE_BOOK_CLASS_ID = "class-001";
+export const MOCK_GRADE_BOOK_SUBJECT_ID = "subj-toan-10";
 export const MOCK_GRADE_BOOK_TERM = "HK1";
+export const MOCK_GRADE_BOOK_YEAR = "2025-2026";
 export const MOCK_GRADE_BOOK_CLASS_NAME = "10A1";
 export const MOCK_GRADE_BOOK_SUBJECT_NAME = "Toán";
 
@@ -15,55 +19,70 @@ export const MOCK_GRADE_BOOK_SUBJECT_NAME = "Toán";
  *   Dũng 6*20 + 6.6*30 + 7.2*50 = 678 / 100 = 6.8       (kha)
  *   Em   5*20 + 5*30 + 5*50   = 500 / 100 = 5.0          (trung-binh)
  */
-export const MOCK_GRADE_BOOK_ROWS: GradeBookRowDto[] = [
+export const MOCK_GRADE_BOOK_ROWS: GradeBookRow[] = [
   {
     studentId: "hs-001",
     studentName: "Nguyễn Văn An",
     studentCode: "HS001",
-    scores: { tx: 8, gk: 8, ck: 9 },
+    scores: {
+      tx: { value: 8, status: "PUBLISHED" },
+      gk: { value: 8, status: "PUBLISHED" },
+      ck: { value: 9, status: "PUBLISHED" },
+    },
     average: 8.5,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-002",
     studentName: "Trần Thị Bình",
     studentCode: "HS002",
-    scores: { tx: 3, gk: 4, ck: 4.6 },
+    scores: {
+      tx: { value: 3, status: "PUBLISHED" },
+      gk: { value: 4, status: "PUBLISHED" },
+      ck: { value: 4.6, status: "PUBLISHED" },
+    },
     average: 4.1,
     conductGrade: "TB",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-003",
     studentName: "Lê Hoàng Cường",
     studentCode: "HS003",
-    scores: { tx: 9.4, gk: 9.6, ck: 9.9 },
+    scores: {
+      tx: { value: 9.4, status: "PUBLISHED" },
+      gk: { value: 9.6, status: "PUBLISHED" },
+      ck: { value: 9.9, status: "PUBLISHED" },
+    },
     average: 9.7,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-004",
     studentName: "Phạm Tiến Dũng",
     studentCode: "HS004",
-    scores: { tx: 6, gk: 6.6, ck: 7.2 },
+    scores: {
+      tx: { value: 6, status: "PUBLISHED" },
+      gk: { value: 6.6, status: "PUBLISHED" },
+      ck: { value: 7.2, status: "PUBLISHED" },
+    },
     average: 6.8,
     conductGrade: "Kha",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "hs-005",
     studentName: "Vũ Thị Em",
     studentCode: "HS005",
-    scores: { tx: 5, gk: 5, ck: 5 },
+    scores: {
+      tx: { value: 5, status: "PUBLISHED" },
+      gk: { value: 5, status: "PUBLISHED" },
+      ck: { value: 5, status: "PUBLISHED" },
+    },
     average: 5.0,
     conductGrade: "Yeu",
-    publishStatus: "PUBLISHED",
   },
 ];
 
-// ─── US-E13.7 — parent child-switcher fixtures ───────────────────────────────
+// ─── US-E13.7 — parent child-switcher fixtures (permanently mock, ADR 0054) ──
 
 /** Children linked to the signed-in parent viewer. */
 export const MOCK_VIEWER_CHILDREN: ChildSummary[] = [
@@ -87,50 +106,65 @@ export const MOCK_VIEWER_CHILDREN: ChildSummary[] = [
 export const MOCK_GRADE_BOOK_ROWS_CHILD_0 = MOCK_GRADE_BOOK_ROWS;
 
 /** child 1 — 8B1; 5 subjects with slightly different data. */
-export const MOCK_GRADE_BOOK_ROWS_CHILD_1: GradeBookRowDto[] = [
+export const MOCK_GRADE_BOOK_ROWS_CHILD_1: GradeBookRow[] = [
   {
     studentId: "c2-hs-001",
     studentName: "Nguyễn Thu Hà",
     studentCode: "HS201",
-    scores: { tx: 7, gk: 7.5, ck: 8 },
+    scores: {
+      tx: { value: 7, status: "PUBLISHED" },
+      gk: { value: 7.5, status: "PUBLISHED" },
+      ck: { value: 8, status: "PUBLISHED" },
+    },
     average: 7.7,
     conductGrade: "Kha",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "c2-hs-002",
     studentName: "Phạm Minh Đức",
     studentCode: "HS202",
-    scores: { tx: 5, gk: 5.5, ck: 6 },
+    scores: {
+      tx: { value: 5, status: "PUBLISHED" },
+      gk: { value: 5.5, status: "PUBLISHED" },
+      ck: { value: 6, status: "PUBLISHED" },
+    },
     average: 5.7,
     conductGrade: "TB",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "c2-hs-003",
     studentName: "Trần Anh Tú",
     studentCode: "HS203",
-    scores: { tx: 9, gk: 9, ck: 9.5 },
+    scores: {
+      tx: { value: 9, status: "PUBLISHED" },
+      gk: { value: 9, status: "PUBLISHED" },
+      ck: { value: 9.5, status: "PUBLISHED" },
+    },
     average: 9.2,
     conductGrade: "Tot",
-    publishStatus: "PUBLISHED",
   },
   {
     studentId: "c2-hs-004",
     studentName: "Lê Thị Mai",
     studentCode: "HS204",
-    scores: { tx: 4, gk: 4, ck: 4.5 },
+    scores: {
+      tx: { value: 4, status: "DRAFT" },
+      gk: { value: 4, status: "DRAFT" },
+      ck: { value: 4.5, status: "DRAFT" },
+    },
     average: 4.2,
     conductGrade: "TB",
-    publishStatus: "DRAFT",
   },
   {
     studentId: "c2-hs-005",
     studentName: "Vũ Hoàng Nam",
     studentCode: "HS205",
-    scores: { tx: 6.5, gk: 7, ck: 7.5 },
+    scores: {
+      tx: { value: 6.5, status: "PUBLISHED" },
+      gk: { value: 7, status: "PUBLISHED" },
+      ck: { value: 7.5, status: "PUBLISHED" },
+    },
     average: 7.1,
     conductGrade: "Kha",
-    publishStatus: "PUBLISHED",
   },
 ];

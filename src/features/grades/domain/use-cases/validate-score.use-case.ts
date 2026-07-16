@@ -8,6 +8,9 @@ export type ValidateScoreResult =
  * A score is valid when 0 <= value <= maxScore (inclusive). 1-decimal
  * precision is accepted. `columnId` is threaded into the failure so the UI can
  * mark the offending cell.
+ *
+ * Failure type renamed `score-out-of-range` → `invalid-value` (US-E18.12,
+ * ADR 0054 — matches the real `GRADE_ENTRY_INVALID_VALUE` code), same shape.
  */
 export function validateScore(
   value: number,
@@ -17,7 +20,7 @@ export function validateScore(
   if (Number.isNaN(value) || value < 0 || value > maxScore) {
     return {
       valid: false,
-      failure: { type: "score-out-of-range", columnId, maxScore },
+      failure: { type: "invalid-value", columnId, maxScore },
     };
   }
   return { valid: true };

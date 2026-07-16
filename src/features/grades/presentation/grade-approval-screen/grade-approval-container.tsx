@@ -21,13 +21,28 @@ type ErrorMsgKey =
   | "errorNetworkError"
   | "errorUnknown";
 
-/** Maps a stable failure key → the localized error toast message. */
+/**
+ * Maps a stable failure key → the localized error toast message.
+ * NOTE (US-E18.12, ADR 0054): `GradesFailure` is a shared union with the now
+ * real-wired `IGradesRepository`/`IGradeBookRepository` — the extra members
+ * below (`teacher-not-assigned`, `invalid-value`, `not-draft`, `locked`,
+ * `scale-not-configured`, `scheme-not-configured`, `column-not-in-scheme`,
+ * `student-not-enrolled`) are unreachable from this screen (it never calls
+ * those repositories) but must be present for this Record to stay exhaustive.
+ * This screen itself is UNCHANGED/out of scope for US-E18.12 (ADR 0054 — stays
+ * mock-first permanently).
+ */
 const ERROR_KEY: Record<GradesFailure["type"], ErrorMsgKey> = {
   "not-found": "errorUnknown",
   forbidden: "errorForbidden",
-  "score-out-of-range": "errorUnknown",
-  "already-published": "errorUnknown",
-  "incomplete-scores": "errorUnknown",
+  "teacher-not-assigned": "errorUnknown",
+  "invalid-value": "errorUnknown",
+  "not-draft": "errorUnknown",
+  locked: "errorUnknown",
+  "scale-not-configured": "errorUnknown",
+  "scheme-not-configured": "errorUnknown",
+  "column-not-in-scheme": "errorUnknown",
+  "student-not-enrolled": "errorUnknown",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
   "not-pending-approval": "errorNotPendingApproval",

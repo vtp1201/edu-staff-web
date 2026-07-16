@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import type {
-  GradeSheetResponseDto,
-  StudentScoreRowDto,
+  GradeEntryResponseDto,
+  ListGradesResponseDto,
+  StudentGradeRowResponseDto,
 } from "../dtos/grades-response.dto";
-import { mapGradeSheet, mapStudentScoreRow } from "./grades.mapper";
+import {
+  mapGradeCell,
+  mapGradeSheet,
+  mapStudentScoreRow,
+} from "./grades.mapper";
 
 const scheme: AssessmentScheme = {
   subjectId: "subj-1",
@@ -17,61 +22,97 @@ const scheme: AssessmentScheme = {
   ],
 };
 
-const rowDto: StudentScoreRowDto = {
-  studentId: "s1",
-  studentName: "Nguyễn Văn An",
-  studentCode: "HS001",
-  scores: { tx: 8, gk: 7, ck: 9 },
-  average: 8.2,
-  publishStatus: "DRAFT",
+function entry(
+  columnId: string,
+  value: string,
+  status: GradeEntryResponseDto["status"] = "DRAFT",
+): GradeEntryResponseDto {
+  return {
+    classId: "class-1",
+    subjectId: "subj-1",
+    termId: "HK1",
+    studentMemberId: "s1",
+    columnId,
+    value,
+    status,
+    enteredBy: "teacher-1",
+    enteredAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+  };
+}
+
+const rowDto: StudentGradeRowResponseDto = {
+  studentMemberId: "s1",
+  entries: [entry("tx", "8"), entry("gk", "7"), entry("ck", "9")],
+  termAverage: "8.2",
 };
 
-describe("grades.mapper", () => {
-  it("maps a row's identity and scores correctly", () => {
+describe("mapGradeCell", () => {
+  it("maps value + status from a GradeEntryResponse", () => {
+    expect(mapGradeCell(entry("tx", "8.5", "PUBLISHED"))).toEqual({
+      value: 8.5,
+      status: "PUBLISHED",
+    });
+  });
+});
+
+describe("mapStudentScoreRow", () => {
+  it("maps a row's identity and per-cell scores correctly", () => {
     const row = mapStudentScoreRow(rowDto, scheme);
     expect(row.studentId).toBe("s1");
-    expect(row.studentName).toBe("Nguyễn Văn An");
-    expect(row.scores).toEqual({ tx: 8, gk: 7, ck: 9 });
+    expect(row.scores).toEqual({
+      tx: { value: 8, status: "DRAFT" },
+      gk: { value: 7, status: "DRAFT" },
+      ck: { value: 9, status: "DRAFT" },
+    });
   });
 
-  it("maps a null score and recomputes average to null", () => {
+  it("fills a missing column entry with a null/DRAFT cell", () => {
     const row = mapStudentScoreRow(
-      { ...rowDto, scores: { tx: 8, gk: null, ck: 9 }, average: null },
+      { ...rowDto, entries: [entry("tx", "8"), entry("ck", "9")] },
       scheme,
     );
-    expect(row.scores.gk).toBeNull();
+    expect(row.scores.gk).toEqual({ value: null, status: "DRAFT" });
     expect(row.average).toBeNull();
   });
 
-  it("recomputes the average from scores via the scheme", () => {
+  it("recomputes the average from cell values via the scheme (ignores wire termAverage)", () => {
     const row = mapStudentScoreRow(rowDto, scheme);
     expect(row.average).toBe(8.2);
   });
 
-  it("maps an unknown publishStatus string to a safe default", () => {
+  it("preserves a non-DRAFT per-cell status", () => {
     const row = mapStudentScoreRow(
-      { ...rowDto, publishStatus: "weird" },
+      {
+        ...rowDto,
+        entries: [
+          entry("tx", "8", "LOCKED"),
+          entry("gk", "7", "PUBLISHED"),
+          entry("ck", "9", "PENDING_APPROVAL"),
+        ],
+      },
       scheme,
     );
-    expect(row.publishStatus).toBe("DRAFT");
+    expect(row.scores.tx.status).toBe("LOCKED");
+    expect(row.scores.gk.status).toBe("PUBLISHED");
+    expect(row.scores.ck.status).toBe("PENDING_APPROVAL");
   });
+});
 
-  it("maps PENDING_APPROVAL publishStatus to the union", () => {
-    const row = mapStudentScoreRow(
-      { ...rowDto, publishStatus: "PENDING_APPROVAL" },
-      scheme,
-    );
-    expect(row.publishStatus).toBe("PENDING_APPROVAL");
-  });
-
-  it("maps a full grade sheet with scheme and publishMode", () => {
-    const dto: GradeSheetResponseDto = {
-      classSubjectId: "cs-001",
-      term: "HK1",
-      rows: [rowDto],
+describe("mapGradeSheet", () => {
+  it("maps the envelope fields and injects scheme + publishMode + year", () => {
+    const dto: ListGradesResponseDto = {
+      classId: "class-1",
+      subjectId: "subj-1",
+      termId: "HK1",
+      columns: [],
+      students: [rowDto],
     };
-    const sheet = mapGradeSheet(dto, scheme, "ADMIN_APPROVAL");
-    expect(sheet.classSubjectId).toBe("cs-001");
+    const sheet = mapGradeSheet(dto, scheme, "ADMIN_APPROVAL", "2025-2026");
+    expect(sheet.classId).toBe("class-1");
+    expect(sheet.subjectId).toBe("subj-1");
+    expect(sheet.termId).toBe("HK1");
+    expect(sheet.academicYearLabel).toBe("2025-2026");
     expect(sheet.scheme).toBe(scheme);
     expect(sheet.publishMode).toBe("ADMIN_APPROVAL");
     expect(sheet.rows).toHaveLength(1);
