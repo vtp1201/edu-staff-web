@@ -2793,10 +2793,12 @@
     "error": "Unable to load leave requests.",
     "errors": {
       "already-processed": "This request has already been processed.",
+      "forbidden": "You are not allowed to perform this action on this leave request.",
       "missing-reject-reason": "Please enter a rejection reason.",
       "network-error": "Connection error. Please try again.",
       "not-found": "Leave request not found.",
-      "reason-too-short": "Rejection reason must be at least 10 characters."
+      "reason-too-short": "Rejection reason must be at least 10 characters.",
+      "same-actor": "The approver must be different from the requester of this leave request."
     },
     "filters": {
       "all": "All",

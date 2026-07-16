@@ -120,7 +120,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
 | US-E18.7 | Assessment scheme + grade scale wiring | path | normal | **Done** — path label held (drop `/config/`, add trailing `/terms/{termId}`) but, as with every other Wave-1/2 cluster, the DTO-shape audit found deeper drift: separate Request/Response wire schemas, `coefficient`↔`weight` unit scaling (÷10/×10, lossless), grade-scale bands derived from real `letterGrades` for `LETTER_ABCD` else fall back to local presets (BE has no numeric-scale banding concept), `count` non-persistent (no wire representation), 9-code error matrix (ground-truthed from Go source, confirms decision 0008 UPPER_SNAKE holds for `core`). Domain model + `grades` feature's reuse of it kept fully unchanged (compile-only literal additions). Added a minimal `["HK1","HK2"]` term selector (BE requires `termId`, screen never modeled it) reusing the existing `Select` pattern. `listSubjectsForGrade` stays mock (no `gradeLevel` filter on real `GET /subjects` — belongs to US-E18.3). See `US-E18.7-assessment-scheme-wiring/story.md` + ADR `0053`. |
-| US-E18.8 | Staff-leave wiring | path | tiny | Thêm segment `/conduct/`: `/core/api/v1/conduct/staff-leave-requests` |
+| US-E18.8 | Staff-leave wiring | path | normal | **Done** — the "add `/conduct/` segment" label held at the path level only. Real finding: `GET` requires a **mandatory** `staffMemberId` query param (no tenant-wide oversight list exists at all — the admin screen lists every staff member's requests at once) AND `StaffLeaveRequestResponse` has zero display fields (no `staffName`/`department`/`leaveType` — the leave-*type* concept itself doesn't exist on the wire). `approve`/`reject` are therefore also unreachable (their only id source is the blocked list). Whole feature stays mock-first **permanently** — first fully-blocked DI factory in the epic (`staff-leave.di.ts` now force-mocks regardless of `USE_MOCK`, vs. the hybrid/partial pattern used by US-E18.4/US-E18.5). Ground-truthed error taxonomy (7 codes, confirmed UPPER_SNAKE from Go source `pkg/kit/response/error.go`'s `codeFromKey`) kept correct + unit-tested for the day this unblocks; 2 new failure types (`forbidden`, `same-actor`). See `US-E18.8-staff-leave-wiring/story.md` + cross-repo ask #13. |
 | US-E18.9 | Teaching-plan wiring | path | normal | BE nest `/lms/teaching-plans`; `/cells` WEB-ONLY → decision (gộp vào PUT plan hay chờ BE) |
 | US-E18.10 | Class-log wiring + trạng thái `revise` | path + state | normal | Web thiếu `revise` + GET/PUT entry detail — thêm state UI theo máy trạng thái BE |
 | US-E13.2 *(packet có sẵn, epic E13)* | Attendance wiring | **cao** | normal | Re-scope theo audit: prefix `/core/api/v1/classes/{id}/attendance` + `/members/{id}/attendance`; mô hình period-based của web ≠ class/date-based BE → remap |
@@ -254,6 +254,26 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     used elsewhere in this epic). Coordinate with whoever picks up
     US-E18.3 (subject-catalogue wiring, not yet done) since that US owns
     the real `Subject` listing.
+13. **(US-E18.8, 2026-07-16) [confirms #6/#7's premise a 4th time, for a
+    different resource]** `StaffLeaveRequestResponse`
+    (`GET /api/v1/conduct/staff-leave-requests`) has **zero display fields**
+    — no `staffName`, no `department`, and no leave-*type* concept at all
+    (only free-text `reason`) — and the `GET` itself requires a mandatory
+    `staffMemberId` query param with **no tenant-wide oversight list**
+    (records partition on `(tenantId, staffMemberId)`, same partitioning
+    choice as `student-leave-requests`/`staff-violations`). The admin
+    staff-leave screen shows every staff member's pending/approved/rejected
+    requests in one view — the real API cannot serve that in one call, and
+    even a single-member call would render raw UUIDs for every row (ask
+    #6/#7's gap, again). Ask: (a) add a tenant-wide oversight list variant
+    (e.g. `staffMemberId` optional for `ADMIN`/`MANAGER`, or a dedicated
+    `/tenants/{id}/staff-leave-requests` rollup), and (b) either denormalize
+    a display name onto `StaffLeaveRequestResponse` or ship the IAM
+    batch/by-id profile lookup already requested in ask #6/#7 — needed before
+    ANY admin oversight screen across `conduct` can show real data instead of
+    raw ids. Until then `staff-leave`'s `StaffLeaveRepository` stays a
+    permanent blocked stub (US-E18.8) — the epic's first DI factory forced to
+    mock 100% of its operations, not just a subset.
 
 ## Dependencies & thứ tự
 
