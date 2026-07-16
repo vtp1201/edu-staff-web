@@ -352,6 +352,29 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     Parent child-switchers (grades AND timetable) stay mock-first until IAM
     ships a batch profile lookup (ask #6/#7) or this endpoint gets a
     denormalized display name + current class.
+21. **(US-E18.13, 2026-07-16) [confirms #6/#7/#9/#13/#15/#18/#20's premise a
+    7th time, different resource]** No `GET` listing endpoint exists for
+    unseal requests at all — `services/core/docs/openapi.yaml`'s
+    `AcademicRecords` tag defines only `POST
+    .../academic-records/unseal-requests` (create) and `POST
+    /academic-records/unseal-requests/{requestId}/approve` (approve); there
+    is no way for a second admin, in a different session, to discover a
+    pending `requestId` to approve. The two-admin async confirmation
+    workflow this feature exists to serve is therefore unreachable end-to-
+    end even though both POST actions individually exist. Ask: add `GET
+    /api/v1/classes/{classId}/terms/{termId}/academic-records/unseal-requests`
+    (or a tenant-wide variant) returning at least `{requestId, classId,
+    termId, studentMemberId, requestedBy, reason, status, createdAt}`.
+    Until then `academic-records`'s unseal workflow (`initiateUnseal`/
+    `confirmUnseal`/`getPendingUnsealRequests`/`listTenantAdmins`) stays a
+    permanent blocked stub (US-E18.13, ADR `0055`) — the epic's fourth fully-
+    blocked operation set after US-E18.8/US-E18.9/US-E18.11's self-view. Only
+    `sealBatch` (the batch-seal POST) is wired real. Separately, the read-
+    only viewer (`getRecord`/`listYears`) also stays permanently mock — no
+    wire year-grouping concept, no fixed `tx1`/`tx2`/`giuaKy`/`cuoiKy` column
+    shape (real snapshot is `GradeSnapshotItemResponse[]`, a dynamic column
+    array matching US-E18.7's real assessment-scheme model), and no student-
+    identity fields on this endpoint (ask #9's gap, an 8th confirmation).
 
 ## Dependencies & thứ tự
 
