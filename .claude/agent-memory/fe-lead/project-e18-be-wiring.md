@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8 done, findings for remaining Wave 2-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8/E18.9 done, findings for remaining Wave 2-4
 metadata:
   type: project
 ---
@@ -334,3 +334,44 @@ the day this unblocks." 290 files/1763 tests (baseline 289/1751, +1 file/+12
 tests), tsc/build/lint clean, tech-lead APPROVED after the 1 fix (no revision
 round needed — reviewer verdict was Approved-with-a-should-fix, applied
 immediately rather than looping back). Cross-repo ask #13 logged.
+
+**US-E18.9 (teaching-plan, 2026-07-16, Wave 2) — a "path fix + `/cells`
+decision" label undersold BOTH halves: nesting `/lms/` was real but trivial;
+`/cells` turned out to be "no HTTP surface exists, not a missing segment,"
+plus TWO more independent blockers the table never mentioned.** Ground-truthing
+`edu-api/services/core/internal/lms/teachingplan` (routes.go, handler,
+domain entity, domainerror) found: (1) composite-key granularity mismatch —
+web keys a plan by `(subjectId, classId, term)`; the real key is
+`(classSubjectId, academicYear, planId)` with no term dimension at all (one
+BE plan spans a full academic year, not a term) — `classSubjectId` itself IS
+resolvable via an already-used fan-out (`CLASS_EP.classSubjects(classId)`,
+same as `principal-teachers.repository.ts`), but the term-to-academicYear
+collapse is a genuine product/semantic decision, same class of out-of-scope
+decision the epic reserves for Wave 3; (2) the grid's period axis has zero
+wire representation (`WeeklyEntryResponse` = `{weekNumber, topic, notes}`,
+week-only); (3) the `/cells` answer: grepping the whole module for
+`UpdateEntries` found exactly 3 hits — the domain method definition, its own
+unit test, and nothing else. The BE built and unit-tested the capability to
+replace a plan's entries and never wired it to any use-case or HTTP route
+(`routes.go` mounts only `POST /`, `GET /`, `GET /:id`,
+`PUT /:id/{submit,approve,reject}`). This is a stronger and more useful
+finding than "the endpoint doesn't exist" — the cheapest possible BE unblock
+is a thin handler wrapping already-tested domain logic, not new business
+logic. Lesson reinforced from US-E18.8: when a screen's core interaction
+(here, per-cell autosave) has zero wire equivalent AND additional independent
+blockers stack on top (key mismatch + missing axis), don't try to partially
+wire the "easy" ops (list/get/submit) — partial wiring would still require
+resolving the term-vs-academicYear question to even construct correct
+request params, so the whole repository became the epic's second fully-
+blocked DI factory (after `staff-leave.di.ts`), not a hybrid like
+US-E18.4/US-E18.5. No new `TeachingPlanFailure` types were needed (unlike
+E18.8's 2 new types) — the existing union's `not-draft` already covered the
+real `TEACHING_PLAN_INVALID_STATUS_TRANSITION` semantics once correctly
+branched. 290 files/1777 tests (baseline 290/1763, +14 new), tsc/build clean,
+tech-lead APPROVED first pass (independently re-verified every ground-truth
+claim against the Go source, including re-running the `UpdateEntries`
+dead-code grep itself rather than trusting the story prose — 1 non-blocking
+CONSIDER: `reject`'s 422 `VALIDATION_FAILED` isn't in the 6-code domain
+taxonomy and falls to `unknown`, addressed same-commit with a clarifying
+comment). Cross-repo ask #14 logged (wire `UpdateEntries()` to a `PUT`
+endpoint — flagged as likely the cheapest unblock in the whole epic).
