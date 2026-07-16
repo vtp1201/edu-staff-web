@@ -31,6 +31,7 @@ export const MOCK_SEAL_BATCHES: SealBatchStatus[] = [
     status: "SEALED",
     sealedAt: "2026-01-15T14:32:00.000Z",
     sealedBy: "Trần Minh Quân",
+    resealCount: 1, // US-E18.13 — already sealed once; idempotent reseal still allowed (< cap 5)
   },
   {
     classId: "11B2",

@@ -131,7 +131,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 |-------|-------|-------|------|---------|
 | US-E18.11 | Timetable wiring (builder + consumer views) | cao | normal | **Done** — admin builder GET/PUT(read-modify-write, real BE has no per-slot PUT, only full-replace)/DELETE-slot wired real against `/classes/{id}/timetable(/slots)`; reactive `TIMETABLE_TEACHER_CONFLICT` 409 surfaced as new `teacher-conflict` failure through the existing save-error toast (no new UI); whole-school proactive `getConflicts` stays mock-first permanently (no bulk endpoint — ask #16). Consumer `getByTeacher` wired real via `GET /classes` (TEACHER-role auto-filtered) fan-out + per-class GET + merge on `teacherMemberId === currentUserId` (reuses `teacher-class.repository.ts`'s precedent). **Implementation-time correction**: consumer `getByClass` also stays mock (not real, contra the epic table's assumption) — its only caller, `GetChildTimetableUseCase` (parent flow), is itself permanently blocked, so a real fetch would just 404 against the mock roster's fixture classIds. `getMyTimetable` (student) + `getChildren`/child view (parent) permanently mock — ground-truthed 403 on `GET /classes` for non-ADMIN/non-TEACHER (`list_classes.go`) + no classId on `linked-students` (ask #15, confirming #6/#7/#9/#13's pattern a 5th time). Full 11-code `TIMETABLE_*` error taxonomy; day-enum bridge (`MON..FRI`, no Saturday on the wire); term resolved via the already-real `calendar` feature (US-E18.1) composed in a new shared `resolve-current-term.ts`. `room` has no wire field (ask #17, non-persistent like US-E18.7's `count`). `ensureFreshSession()` wired into both `timetable.di.ts`+`timetable-view.di.ts`. Zero UI/ViewModel change (existing `TimetableScreen` already threaded `TimetableFailure["type"]` generically). |
 | US-E18.12 | Grades contract remap | **rất cao** | high-risk | **Done** — ground-truthed against `core`'s `GradeEntry`/`GradeReport` tags + Go source. Confirms `classSubjectId`/batch ≠ real `(classId,subjectId,termId)` + per-cell status (not per-row). Teacher entry/submit + multi-role read (incl. student self + parent-linked via `/members/{id}/grades`) wired real; term `lock` (irreversible, admin/manager) wired real. `IGradeApprovalRepository` (admin cross-class batch dashboard) + parent child-switcher stay **permanently mock** — no wire batchId/rollup/display-name source, and no reject transition exists for `GradeEntry` at all (tech-lead review caught + fixed a live real-branch that contradicted this force-mock claim in the first implementation pass). Per-cell workflow status required new UI (`GradeEntryStatusBadge`, per-cell partial-submit-failure indicator, term-lock confirm dialog) — passed design-review + a11y (1 blocking + 4 non-blocking findings, all fixed) + QA gate. ADR `0054`. See `US-E18.12-grades-wiring/story.md`. |
-| US-E18.13 | Academic-records seal remap | cao | high-risk | BE seal theo class+term; web flat `/academic-records/*`; initiate/confirm 2 bước → `unseal-requests`+`approve`; `seal-status`/`sealed-students`/`audit-trail` không có BE tương đương → phần đó giữ mock + flag |
+| US-E18.13 | Academic-records seal remap | cao | high-risk | **Done** — ground-truthed against `core`'s `AcademicRecords` tag + Go source (`assessment/*` use-cases). Confirms `sealBatch` matches the web's existing class+term model almost exactly and wires real (bare POST, no body) via a hybrid facade; the hard client pre-check (`getSealStatus`) is replaced by a reactive gate (real 422 `unlocked-grades-exist`/`too-many-reseals`) since seal is idempotent on the real contract (drops old blocking `already-sealed`). **Implementation-time correction to the epic table's assumption**: the two-admin unseal workflow's `initiate`/`confirm` POSTs exist, but there is NO GET listing endpoint for pending unseal requests at all — a second admin in a different session can never discover a real `requestId` to approve, so the whole unseal workflow (not just `seal-status`/`sealed-students`/`audit-trail`) stays permanently mock (cross-repo ask #21, 4th fully-blocked operation set in the epic). Separately, the read-only viewer (`getRecord`/`listYears`) also stays mock — no wire year-grouping, no fixed tx1/tx2/giuaKy/cuoiKy columns (real snapshot is a dynamic column array matching US-E18.7's model), no student-identity fields. `AllLockedGate` UI updated for the reactive-not-blocking gate (design-review + a11y pass, 1 should-fix fixed). See `US-E18.13-academic-records-wiring/story.md` + ADR `0055`. |
 | US-E18.14 | Discipline → conduct remap | cao | high-risk | Prefix `discipline`→`conduct`; tách student/staff; full submit/approve/reject trên violations + conduct-grades (web đang collapse thành override); absences có `/{date}/flag` |
 | US-E18.15 | LMS exam family wiring | naming | normal | `exam-bank`→`/lms/exam-papers` (+`/status`); `exams`→`/lms/class-exams` (+`activate/complete/submissions`) — lifecycle giàu hơn mock |
 | US-E18.16 | LMS lesson + question bank wiring | naming | normal | `lessons`→`/lms/lesson-plans` (+`publish`, `/subject/{id}`); questions có `/search`+`/publish`. `courses`/lesson-complete/notes: BE không có → giữ mock + flag |
@@ -352,6 +352,29 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     Parent child-switchers (grades AND timetable) stay mock-first until IAM
     ships a batch profile lookup (ask #6/#7) or this endpoint gets a
     denormalized display name + current class.
+21. **(US-E18.13, 2026-07-16) [confirms #6/#7/#9/#13/#15/#18/#20's premise a
+    7th time, different resource]** No `GET` listing endpoint exists for
+    unseal requests at all — `services/core/docs/openapi.yaml`'s
+    `AcademicRecords` tag defines only `POST
+    .../academic-records/unseal-requests` (create) and `POST
+    /academic-records/unseal-requests/{requestId}/approve` (approve); there
+    is no way for a second admin, in a different session, to discover a
+    pending `requestId` to approve. The two-admin async confirmation
+    workflow this feature exists to serve is therefore unreachable end-to-
+    end even though both POST actions individually exist. Ask: add `GET
+    /api/v1/classes/{classId}/terms/{termId}/academic-records/unseal-requests`
+    (or a tenant-wide variant) returning at least `{requestId, classId,
+    termId, studentMemberId, requestedBy, reason, status, createdAt}`.
+    Until then `academic-records`'s unseal workflow (`initiateUnseal`/
+    `confirmUnseal`/`getPendingUnsealRequests`/`listTenantAdmins`) stays a
+    permanent blocked stub (US-E18.13, ADR `0055`) — the epic's fourth fully-
+    blocked operation set after US-E18.8/US-E18.9/US-E18.11's self-view. Only
+    `sealBatch` (the batch-seal POST) is wired real. Separately, the read-
+    only viewer (`getRecord`/`listYears`) also stays permanently mock — no
+    wire year-grouping concept, no fixed `tx1`/`tx2`/`giuaKy`/`cuoiKy` column
+    shape (real snapshot is `GradeSnapshotItemResponse[]`, a dynamic column
+    array matching US-E18.7's real assessment-scheme model), and no student-
+    identity fields on this endpoint (ask #9's gap, an 8th confirmation).
 
 ## Dependencies & thứ tự
 

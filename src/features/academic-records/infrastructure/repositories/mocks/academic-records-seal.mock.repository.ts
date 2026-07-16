@@ -5,6 +5,7 @@ import type {
   InitiateUnsealInput,
   SealAuditEntry,
   SealBatchKey,
+  SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
   TenantAdminSummary,
@@ -79,21 +80,32 @@ export class MockAcademicRecordsSealRepository
     return { ok: true, data: structuredClone(match) };
   }
 
+  /**
+   * US-E18.13 (ADR 0055) — models the REAL, reactive, idempotent seal contract:
+   *  - no `already-sealed` block — reseal is allowed (idempotent);
+   *  - `!allLocked` → reactive `unlocked-grades-exist` (the server-side check);
+   *  - `resealCount` cap at 5 → `too-many-reseals`;
+   *  - returns a `SealBatchResult` (`{sealedCount, failedCount, errors}`), and
+   *    still updates status/sealedAt/sealedBy/audit so the decorative
+   *    `getSealStatus` hint stays coherent for the mock/demo experience.
+   */
   async sealBatch(
     key: SealBatchKey,
     actorId: string,
-  ): Promise<SealResult<SealBatchStatus>> {
+  ): Promise<SealResult<SealBatchResult>> {
     await mockDelay(300);
     const match = this.batches.find((b) => keyOf(b) === keyOf(key));
     if (!match) return { ok: false, error: { type: "not-found" } };
     if (!match.allLocked) {
-      return { ok: false, error: { type: "not-all-locked" } };
+      return { ok: false, error: { type: "unlocked-grades-exist" } };
     }
-    if (match.status === "SEALED") {
-      return { ok: false, error: { type: "already-sealed" } };
+    const resealCount = match.resealCount ?? 0;
+    if (resealCount >= 5) {
+      return { ok: false, error: { type: "too-many-reseals" } };
     }
     const now = new Date().toISOString();
     const actorName = this.adminName(actorId);
+    match.resealCount = resealCount + 1;
     match.status = "SEALED";
     match.sealedAt = now;
     match.sealedBy = actorName;
@@ -106,7 +118,14 @@ export class MockAcademicRecordsSealRepository
       action: "SEAL",
       occurredAt: now,
     });
-    return { ok: true, data: structuredClone(match) };
+    return {
+      ok: true,
+      data: {
+        sealedCount: match.totalStudents,
+        failedCount: 0,
+        errors: [],
+      },
+    };
   }
 
   async getSealAuditTrail(

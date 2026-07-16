@@ -47,15 +47,19 @@ describe("MockAcademicRecordsSealRepository", () => {
     expect(result).toEqual({ ok: false, error: { type: "not-found" } });
   });
 
-  it("seals a pending, all-locked batch and appends a SEAL audit entry", async () => {
+  it("seals a pending, all-locked batch (SealBatchResult) and appends a SEAL audit entry", async () => {
     const before = await repo.getSealAuditTrail();
     const beforeCount = before.ok ? before.data.length : 0;
 
     const sealed = await repo.sealBatch(SEALABLE, "admin-1");
     expect(sealed.ok).toBe(true);
     if (sealed.ok) {
-      expect(sealed.data.status).toBe("SEALED");
-      expect(sealed.data.sealedBy).toBe("Trần Minh Quân");
+      // Real contract returns a plain success-report, not the batch status.
+      expect(sealed.data).toEqual({
+        sealedCount: 6,
+        failedCount: 0,
+        errors: [],
+      });
     }
 
     const after = await repo.getSealAuditTrail();
@@ -63,16 +67,39 @@ describe("MockAcademicRecordsSealRepository", () => {
       expect(after.data.length).toBe(beforeCount + 1);
       expect(after.data[0].action).toBe("SEAL");
     }
+
+    // Decorative getSealStatus stays coherent — status flips to SEALED.
+    const status = await repo.getSealStatus(SEALABLE);
+    if (status.ok) {
+      expect(status.data.status).toBe("SEALED");
+      expect(status.data.sealedBy).toBe("Trần Minh Quân");
+    }
   });
 
-  it("refuses to seal an already-sealed batch", async () => {
+  it("allows an idempotent reseal of an already-sealed batch (no already-sealed block)", async () => {
     const result = await repo.sealBatch(SEALED, "admin-1");
-    expect(result).toEqual({ ok: false, error: { type: "already-sealed" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.failedCount).toBe(0);
+      expect(result.data.sealedCount).toBeGreaterThan(0);
+    }
   });
 
-  it("refuses to seal a not-all-locked batch", async () => {
+  it("reactively rejects a not-all-locked batch with unlocked-grades-exist", async () => {
     const result = await repo.sealBatch(NOT_LOCKED, "admin-1");
-    expect(result).toEqual({ ok: false, error: { type: "not-all-locked" } });
+    expect(result).toEqual({
+      ok: false,
+      error: { type: "unlocked-grades-exist" },
+    });
+  });
+
+  it("returns too-many-reseals after 5 successful seals on the same key", async () => {
+    for (let i = 0; i < 5; i++) {
+      const ok = await repo.sealBatch(SEALABLE, "admin-1");
+      expect(ok.ok).toBe(true);
+    }
+    const capped = await repo.sealBatch(SEALABLE, "admin-1");
+    expect(capped).toEqual({ ok: false, error: { type: "too-many-reseals" } });
   });
 
   it("initiates an unseal against a sealed batch", async () => {

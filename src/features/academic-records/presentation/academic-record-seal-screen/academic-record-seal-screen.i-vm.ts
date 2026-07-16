@@ -1,6 +1,7 @@
 import type {
   SealAuditEntry,
   SealBatchKey,
+  SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
   TenantAdminSummary,
@@ -36,7 +37,7 @@ export interface AcademicRecordSealActions {
   getSealStatus: (
     key: SealBatchKey,
   ) => Promise<SealActionResult<SealBatchStatus>>;
-  seal: (key: SealBatchKey) => Promise<SealActionResult<SealBatchStatus>>;
+  seal: (key: SealBatchKey) => Promise<SealActionResult<SealBatchResult>>;
   getAuditTrail: (
     key?: Partial<SealBatchKey>,
   ) => Promise<SealActionResult<SealAuditEntry[]>>;
@@ -74,6 +75,13 @@ export interface SealTabVM {
   onTermChange: (term: Term) => void;
   onClassChange: (classId: string) => void;
 
+  /**
+   * Decorative "X/Y locked" hint only (from the mocked `getSealStatus`) — NOT
+   * authoritative. There is no seal-status GET endpoint on the real backend
+   * (ADR 0055); the real seal action's reactive result (`unlocked-grades-exist`
+   * / `too-many-reseals`) is the source of truth. Never gate the Seal button on
+   * this — the NOT-OK branch still offers Seal (the server decides).
+   */
   batch: SealBatchStatus | null;
   isBatchLoading: boolean;
   batchError: AcademicRecordsFailure["type"] | null;

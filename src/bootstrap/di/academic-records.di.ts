@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IAcademicRecordsRepository } from "@/features/academic-records/domain/repositories/i-academic-records.repository";
@@ -16,17 +17,30 @@ import { ListTenantAdminsUseCase } from "@/features/academic-records/domain/use-
 import { SealAcademicRecordUseCase } from "@/features/academic-records/domain/use-cases/seal-academic-record.use-case";
 import { AcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/academic-records.repository";
 import { AcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal.repository";
+import { HybridAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal-hybrid.repository";
 import { MockAcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records.mock.repository";
 import { MockAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records-seal.mock.repository";
 
+// US-E18.13 (ADR 0055 §viewer): the read-only student/parent viewer stays
+// mock-first and is UNTOUCHED by this wiring remap. The real
+// `AcademicRecordResponse` has no year-grouping concept, no fixed
+// tx1/tx2/giuaKy/cuoiKy column shape, and no student-identity fields — wiring it
+// would be a uiux/ba-level redesign, not a wiring remap. Left as-is.
 async function makeRepository(): Promise<IAcademicRecordsRepository> {
   if (USE_MOCK) return new MockAcademicRecordsRepository();
   return new AcademicRecordsRepository(await createServerHttpClient());
 }
 
+// US-E18.13 (ADR 0055) hybrid: `sealBatch` runs REAL; every other seal/unseal
+// method (no BE listing/discovery endpoint — ask #21) delegates to the mock.
 async function makeSealRepository(): Promise<IAcademicRecordsSealRepository> {
-  if (USE_MOCK) return new MockAcademicRecordsSealRepository();
-  return new AcademicRecordsSealRepository(await createServerHttpClient());
+  const mock = new MockAcademicRecordsSealRepository();
+  if (USE_MOCK) return mock;
+  await ensureFreshSession(); // decision 0018, playbook step 6
+  const real = new AcademicRecordsSealRepository(
+    await createServerHttpClient(),
+  );
+  return new HybridAcademicRecordsSealRepository(real, mock);
 }
 
 export async function makeGetAcademicRecordUseCase(): Promise<GetAcademicRecordUseCase> {

@@ -1,6 +1,6 @@
 import type {
   SealBatchKey,
-  SealBatchStatus,
+  SealBatchResult,
 } from "../entities/seal-batch.entity";
 import type {
   IAcademicRecordsSealRepository,
@@ -8,28 +8,21 @@ import type {
 } from "../repositories/i-academic-records-seal.repository";
 
 /**
- * Bulk-seal a (class, term, year) batch (AC-2/AC-4). Enforces the two hard
- * gates in the domain before delegating to the repo:
- *  - `not-all-locked` — every underlying grade batch must be LOCKED first;
- *  - `already-sealed`  — idempotency guard against a double-seal race.
+ * Batch-seal a (class, term, year) batch (AC-2/AC-4). US-E18.13 (ADR 0055):
+ * a thin pass-through to the repo. The old client-side pre-check gates
+ * (`not-all-locked`, `already-sealed` via a `getSealStatus` read) are GONE —
+ * the real `POST .../academic-records/seal` performs the "all grades locked"
+ * check server-side and returns a reactive `unlocked-grades-exist` (422), and
+ * reseal is idempotent (capped server-side → `too-many-reseals`). The mocked
+ * `getSealStatus` is now decorative-only, never a gate.
  */
 export class SealAcademicRecordUseCase {
   constructor(private readonly repo: IAcademicRecordsSealRepository) {}
 
-  async execute(
+  execute(
     key: SealBatchKey,
     actorId: string,
-  ): Promise<SealResult<SealBatchStatus>> {
-    const status = await this.repo.getSealStatus(key);
-    if (!status.ok) return status;
-
-    if (!status.data.allLocked) {
-      return { ok: false, error: { type: "not-all-locked" } };
-    }
-    if (status.data.status === "SEALED") {
-      return { ok: false, error: { type: "already-sealed" } };
-    }
-
+  ): Promise<SealResult<SealBatchResult>> {
     return this.repo.sealBatch(key, actorId);
   }
 }

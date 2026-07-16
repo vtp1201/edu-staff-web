@@ -3,6 +3,16 @@ import type { Term } from "../../domain/entities/seal-batch.entity";
 
 /** Wire shapes for the US-E14.6 admin seal/unseal surface (camelCase, core US-064). */
 
+/**
+ * US-E18.13 — REAL `SealAcademicRecordResponse` (core `AcademicRecords` tag).
+ * `errors` is an optional free-text per-student message list (camelCase wire).
+ */
+export interface SealAcademicRecordResponseDto {
+  sealedCount: number;
+  failedCount: number;
+  errors?: string[];
+}
+
 export interface SealBatchResponseDto {
   classId: string;
   term: Term;
