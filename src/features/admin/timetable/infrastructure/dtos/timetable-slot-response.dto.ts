@@ -1,27 +1,36 @@
+import type { DayEnum } from "../../domain/day-enum";
+
 /**
- * Wire shape for a timetable slot (camelCase, per api-integration rule). Mirrors
- * what `GET /core/api/v1/timetable` returns once the `core` service exists.
+ * Wire shapes for the real `core` timetable contract (camelCase, decision 0008;
+ * `services/core/docs/openapi.yaml` `SlotRequest`/`SlotResponse`/
+ * `TimetableResponse`/`SetTimetableRequest`).
+ *
+ * Note what the wire does NOT carry: no `slotKey`, no `room`, no `subjectName`,
+ * no `teacherName` — only ids. `day` is the Mon–Fri enum (not a number). The
+ * mapper joins the day-index / synthesises `slotKey` client-side and documents
+ * `room` as non-persistent (no wire field; cross-repo ask #17).
  */
-export interface TimetableSlotDto {
-  slotKey: string;
-  classId: string;
-  day: number;
+export interface SlotResponseDto {
+  day: DayEnum;
   period: number;
   subjectId: string;
-  teacherId: string;
-  room: string;
+  teacherMemberId: string;
 }
 
-export interface ConflictInfoDto {
-  teacherId: string;
-  day: number;
+export interface SlotRequestDto {
+  day: DayEnum;
   period: number;
-  classIds: string[];
+  subjectId: string;
+  teacherMemberId: string;
 }
 
 export interface TimetableResponseDto {
   classId: string;
-  yearId: string;
-  slots: TimetableSlotDto[];
-  conflicts: ConflictInfoDto[];
+  termId: string;
+  slots: SlotResponseDto[];
+}
+
+export interface SetTimetableRequestDto {
+  termId: string;
+  slots: SlotRequestDto[];
 }

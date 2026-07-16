@@ -3443,8 +3443,18 @@
     },
     "errors": {
       "fetch-failed": "Could not load the timetable. Please try again.",
+      "forbidden": "You do not have permission to do this.",
+      "invalid-class": "Invalid class.",
+      "invalid-day": "Invalid day.",
+      "invalid-member": "Invalid teacher.",
+      "invalid-period": "Invalid period.",
+      "invalid-slot": "Invalid slot.",
+      "invalid-subject": "Invalid subject.",
+      "invalid-tenant": "Invalid tenant.",
+      "invalid-term": "Invalid term.",
       "save-failed": "Could not save the slot. Please try again.",
-      "slot-not-found": "Slot not found."
+      "slot-not-found": "Slot not found.",
+      "teacher-conflict": "This teacher is already assigned to another class at this time."
     },
     "exportPdf": "Export PDF",
     "exportPdfToast": "PDF export is coming soon.",
