@@ -89,6 +89,12 @@ export class AcademicRecordsSealRepository
     try {
       // Bare POST, no body: `_actorId` stays in the domain signature (the mock
       // repo needs it) but the server derives the actor from the Bearer token.
+      //
+      // NOTE: `SealBatchKey.term` is 'HK1'/'HK2' (a label), NOT a real termId
+      // (UUID). The class/term selector feeding this key is itself mock-sourced
+      // (ADR 0055), so a real seal isn't meaningfully reachable end-to-end until
+      // that selector is wired to the real calendar/term feature. Do NOT assume
+      // `key.term` is a valid termId once the selector changes.
       const dto = (await this.http.post(
         ACADEMIC_RECORDS_EP.sealBatch(key.classId, key.term),
       )) as unknown as SealAcademicRecordResponseDto;

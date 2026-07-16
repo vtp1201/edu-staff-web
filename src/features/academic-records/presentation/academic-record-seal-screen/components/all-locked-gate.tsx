@@ -59,31 +59,34 @@ export function AllLockedGate({
   }
 
   return (
-    <div
-      role="alert"
-      className="flex flex-col gap-4 rounded-xl border border-edu-warning/30 bg-edu-warning/10 p-5 sm:flex-row sm:items-center"
-    >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-edu-warning/15">
-        <AlertTriangle
-          aria-hidden
-          className="size-6 text-edu-warning-foreground"
-        />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-extrabold text-base text-foreground">
-          {t("gate.notAllLocked.title", { count: batch.unlockedStudents })}
-        </p>
-        <p className="mt-0.5 text-muted-foreground text-sm">
-          {t("gate.notAllLocked.warning")}
-        </p>
-        {batch.unlockedSubjectNames.length > 0 && (
-          <p className="mt-2 text-foreground text-sm">
-            <span className="font-bold text-muted-foreground text-xs uppercase tracking-wide">
-              {t("gate.notAllLocked.subjectsLabel")}:{" "}
-            </span>
-            {batch.unlockedSubjectNames.join(", ")}
+    // A11Y-001: `role="alert"` scopes to the non-interactive message ONLY. The
+    // action buttons live in a SIBLING div so a `refetchOnWindowFocus`
+    // re-render (sealStatusQuery has staleTime:0) never re-announces focusable
+    // controls the user may already be interacting with (ARIA APG).
+    <div className="flex flex-col gap-4 rounded-xl border border-edu-warning/30 bg-edu-warning/10 p-5 sm:flex-row sm:items-center">
+      <div role="alert" className="flex min-w-0 flex-1 items-start gap-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-edu-warning/15">
+          <AlertTriangle
+            aria-hidden
+            className="size-6 text-edu-warning-foreground"
+          />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-extrabold text-base text-foreground">
+            {t("gate.notAllLocked.title", { count: batch.unlockedStudents })}
           </p>
-        )}
+          <p className="mt-0.5 text-muted-foreground text-sm">
+            {t("gate.notAllLocked.warning")}
+          </p>
+          {batch.unlockedSubjectNames.length > 0 && (
+            <p className="mt-2 text-foreground text-sm">
+              <span className="font-bold text-muted-foreground text-xs uppercase tracking-wide">
+                {t("gate.notAllLocked.subjectsLabel")}:{" "}
+              </span>
+              {batch.unlockedSubjectNames.join(", ")}
+            </p>
+          )}
+        </div>
       </div>
       <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
         <Button

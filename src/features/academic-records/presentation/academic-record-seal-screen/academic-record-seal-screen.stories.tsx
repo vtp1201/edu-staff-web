@@ -246,6 +246,9 @@ export const AllLockedGate_NotOK: Story = {
     await expect(sealBtn).toBeEnabled();
     await userEvent.click(sealBtn);
     await expect(args.vm.seal.onOpenConfirmDialog).toHaveBeenCalled();
+    // A11Y-001: role="alert" scopes to message-only — no focusable control nested.
+    const alert = canvas.getByRole("alert");
+    await expect(within(alert).queryByRole("button")).toBeNull();
   },
 };
 
