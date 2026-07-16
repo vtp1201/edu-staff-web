@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 US-E18.7/E18.8/E18.9/E18.10 done, findings for remaining Wave 2-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 US-E18.11 done, findings for remaining Wave 3-4
 metadata:
   type: project
 ---
@@ -412,3 +412,47 @@ for both the error taxonomy and the transition guards, not just the story
 prose), a11y PASS (0 blocking; 1 optional non-blocking pre-existing-pattern
 note on toast-only pending-state announcement, deferred as a cross-cutting
 follow-up not scoped to this US).
+
+**US-E18.11 (timetable, 2026-07-16, Wave 3, first "cao"-drift US) — a spawned
+`fe-nextjs-engineer` agent stalling mid-task (session-limit) is recoverable
+without losing work; re-verify state, don't assume.** The engineer finished
+only the admin-builder half (GET/RMW-PUT/DELETE, day-enum, error taxonomy)
+before stalling with uncommitted changes and zero commits on the branch.
+Resumed directly as `fe-lead`: `git status`/`bun vitest run`/`tsc` first to see
+real state (296/1824, not "nothing done") before continuing — the coordinator
+resume-prompt's own "current observed state" summary was accurate and saved
+re-discovery time. Completed the consumer-view half (`getByTeacher` fan-out)
+myself. **Two scope corrections found only by actually tracing call sites,
+not by trusting the pre-written packet**: (1) `GET /classes` (teacher-scope
+fan-out for `getByTeacher`) is real and ground-truthed against
+`list_classes.go` — TEACHER auto-filtered, STUDENT/PARENT hit
+`ErrClassForbidden()` (line 59) — confirms the "no self-scope discovery
+endpoint for STUDENT/PARENT" gap-class (asks #6/#7/#9/#13) recurs a 5th time,
+now for timetable; (2) the packet ASSUMED the consumer feature's `getByClass`
+would be real too ("class-scoped consumer view", direct analog to the admin
+builder's) — grepping actual call sites found its ONLY caller in
+`features/timetable` is `GetChildTimetableUseCase` (the parent flow), which is
+itself permanently mock (blocked on ask #15) — wiring `getByClass` real would
+feed real HTTP a mock-fixture classId (`"11A2"`) and always 404. Corrected to
+mock-in-this-feature (the admin builder's OWN `getByClass`/`getTimetable` is
+still real — same operation name, two different features, two different
+wireability verdicts, because the CALLER differs). **Lesson**: when a packet
+states "operation X is real" for a consumer feature, verify by grepping who
+actually calls it in THIS feature before wiring — don't assume symmetry with a
+sibling feature that happens to expose the same-named method. Also: BE has
+literally no bulk/whole-school timetable-conflicts endpoint (only reactive
+409 `TIMETABLE_TEACHER_CONFLICT` on write) — the admin screen's proactive
+"conflict summary across all classes" card stays permanently mock (ask #16,
+no attempt at a full-tenant fan-out reconstruction — flagged as a genuine
+product-scope question, not silently built). `room` has zero wire field on
+`SlotRequest`/`SlotResponse` (ask #17, same non-persistent-field class as
+E18.7's `count`/`bands`). Reviewer's 2 non-blocking findings both worth
+fixing same-commit even though non-blocking: a merge filter that matched on
+a MAPPED display field (`slot.teacherName`) which only worked because the
+mapper's id-as-name fallback happened to equal the compared id — decouple by
+filtering the RAW wire slots (`teacherMemberId`) before mapping, so a future
+real name-join doesn't silently break the filter; and a null-`currentUserId`
+guard that silently returned an empty result instead of a typed failure.
+299 files/1837 tests (baseline 292/1790, +7/+47), tsc/build/lint clean,
+tech-lead APPROVED first pass after ground-truthing the full contract
+independently against edu-api Go source (not just re-reading story prose).
