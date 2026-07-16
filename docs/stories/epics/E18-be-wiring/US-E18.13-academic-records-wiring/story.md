@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -447,6 +447,61 @@ fe-lead) strict-TDD (red → green → refactor) on
   namespaces that do a full-union dynamic `t()` lookup (`academicRecord.error`
   AND `academicRecordSeal.errors`), vi source + en mirror; softened the NOT-OK
   `warning` copy from blocking to advisory.
+- **Phase 4 (review + gates):**
+  - `fe-tech-lead-reviewer`: **APPROVED**, zero blocking findings. Independently
+    re-ground-truthed the bare-POST-no-body contract + UPPER_SNAKE error codes
+    against `edu-api`'s `openapi.yaml` + Go source. Two non-blocking follow-ups
+    (resolved by fe-lead, see below): viewer `makeRepository()` force-mock
+    question, and a `key.term` vs real `termId` code-comment note (added).
+  - `fe-accessibility-auditor`: **PASS with 1 should-fix (A11Y-001)** — the
+    NOT-OK banner's `role="alert"` wrapped both action buttons (ARIA APG
+    discourages nesting focusable controls in an assertive live region,
+    risk from `sealStatusQuery`'s `staleTime:0` refetch-on-focus). Fixed
+    same-branch (commit `da40911`): `role="alert"` now scopes to the
+    message-only content; both buttons moved to a sibling div. Re-verified
+    PASS — contrast computed (11.6:1 title, 5.14:1 subtitle, 10.65:1 icon,
+    all ≥ AA thresholds), keyboard/focus/touch-target/motion all held, no
+    new regression.
+  - Design-review gate (`docs/DESIGN_REVIEW.md`): **PASS** — scoped
+    self-review (workflow-state change only, no new screen/tokens/layout
+    to redesign, matching US-E18.12's precedent). Tokens-only confirmed by
+    both reviewers (`bg-edu-warning/success`, `text-edu-*`, no raw color,
+    no new token). Hierarchy reads as "warning, not blocked": both branches
+    render an equally-styled primary Seal button; the NOT-OK branch adds a
+    warning banner + secondary outline link alongside it, not instead of
+    the action. States (OK/NOT-OK/reseal, loading/error via existing
+    generic toast path) all covered.
+  - `fe-qa-playwright`: **GO**. Independently re-verified every engineer
+    claim (bare-POST-no-body, `getSealStatus` non-invocation, hybrid
+    spy-count routing, i18n hygiene) rather than trusting the report — all
+    held. Found and closed one genuine gap: the NOT-OK gate's new second
+    button had no responsive-layout proof at 320–375px — added
+    `AllLockedGate_NotOK_Mobile375` (real 375×812 viewport,
+    `getBoundingClientRect` proof of vertical stacking + no horizontal
+    overflow + touch-target floor), commit `959ac76`. Final counts:
+    **303 files / 1866 tests** (unit/integration, zero regression vs
+    301/1852 baseline); Storybook interaction full suite **109/126 files,
+    668/739 tests** — same 17 pre-existing-failure files as before
+    (unrelated router/env-context Storybook-harness gap, byte-identical to
+    established E18.x baseline), `academic-record-seal-screen.stories.tsx`
+    NOT among them (17/17 pass in that file after the addition). One
+    non-blocking observation: reactive-error toast rendering has no
+    container-level test harness anywhere in this repo (pre-existing,
+    codebase-wide gap, not specific to this US) — the error-key routing
+    itself is fully proven end-to-end.
+  - **Non-blocking follow-ups resolved/logged by fe-lead:** amended ADR
+    0055 (commit `285ae11`) — corrected a misstatement (the viewer DI
+    factory was never force-mocked on `main`, so leaving it unchanged was
+    correct, not a compliance gap) and logged two explicit internal
+    follow-ups (force-mock the viewer factory to match staff-leave/
+    teaching-plan precedent; the `key.term`-vs-real-`termId` gap once the
+    class/term selector is wired to the real calendar feature).
+
+### Final verdict
+
+All gates green. Zero blocking findings anywhere in the pipeline. Merged to
+`main` per decision `0025` (see commit `chore(academic-records): merge
+feat/us-e18.13-academic-records-wiring (US-E18.13)`).
 
 ### 3 lead-resolved open questions — implemented exactly as specified
 
