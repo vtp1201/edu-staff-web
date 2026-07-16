@@ -3443,8 +3443,18 @@
     },
     "errors": {
       "fetch-failed": "Không tải được thời khoá biểu. Vui lòng thử lại.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "invalid-class": "Lớp học không hợp lệ.",
+      "invalid-day": "Ngày trong tuần không hợp lệ.",
+      "invalid-member": "Giáo viên không hợp lệ.",
+      "invalid-period": "Tiết học không hợp lệ.",
+      "invalid-slot": "Tiết học không hợp lệ.",
+      "invalid-subject": "Môn học không hợp lệ.",
+      "invalid-tenant": "Đơn vị không hợp lệ.",
+      "invalid-term": "Học kỳ không hợp lệ.",
       "save-failed": "Không lưu được tiết học. Vui lòng thử lại.",
-      "slot-not-found": "Không tìm thấy tiết học."
+      "slot-not-found": "Không tìm thấy tiết học.",
+      "teacher-conflict": "Giáo viên đã được phân công ở lớp khác cùng khung giờ này."
     },
     "exportPdf": "Xuất TKB (PDF)",
     "exportPdfToast": "Tính năng xuất PDF sẽ sớm có.",

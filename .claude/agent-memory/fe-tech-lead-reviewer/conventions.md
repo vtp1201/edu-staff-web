@@ -139,6 +139,19 @@ Confirmed facts (verify before citing if stale):
   Don't demand the real class be deleted or the endpoint constants removed — both are kept as
   documentation for the unblock, with a cross-repo ask logged (asks #13/#14). `core` error codes are
   UPPER_SNAKE on the wire (`codeFromKey` = `strings.ToUpper`), so branch `toFailure` on UPPER_SNAKE.
+- **E18 "raw-id-in-display-name" fallback → filter fragility** (US-E18.11 timetable, and any epic
+  screen where names fall back to raw id): when a mapper stores an id into a DISPLAY field because no
+  name source exists (`teacherName: slot.teacherMemberId`, `subjectName: slot.subjectId`), any downstream
+  logic that filters/matches on that display field (e.g. `getByTeacher` merge `slot.teacherName ===
+  currentUserId`) works TODAY only because the field secretly holds the id. It silently breaks the day a
+  real name join lands (the mapper comments usually anticipate exactly that join). Correct today + tested,
+  so SHOULD FIX not blocking — but flag it: prefer matching on a preserved id field, or at minimum a code
+  comment pinning the coupling. Don't approve it silently.
+- **E18 hybrid partial-real repo — `getByClass` force-mock when its ONLY caller is itself blocked**
+  (US-E18.11): a `RealX.getByClass` can be contract-correct + tested yet still routed to mock in the
+  hybrid composite because its sole in-feature caller (`GetChildTimetableUseCase`) is permanently mock
+  and feeds mock-fixture ids — a real call would 403/404. Verify the "only caller" claim by grepping the
+  interface method's call sites before accepting the routing; here it held (one caller, the parent flow).
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

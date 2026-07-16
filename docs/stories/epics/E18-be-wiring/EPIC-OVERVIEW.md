@@ -129,7 +129,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
-| US-E18.11 | Timetable wiring (builder + consumer views) | cao | normal | BE class-scoped `/classes/{id}/timetable(/slots)`; `/timetable/conflicts` không tồn tại (conflict = error `TIMETABLE_TEACHER_CONFLICT` khi ghi slot); `/me`,`/teacher/me`,`/my-children` không tồn tại → resolve classId phía web (roster/linked-students) — decision trong packet |
+| US-E18.11 | Timetable wiring (builder + consumer views) | cao | normal | **Done** — admin builder GET/PUT(read-modify-write, real BE has no per-slot PUT, only full-replace)/DELETE-slot wired real against `/classes/{id}/timetable(/slots)`; reactive `TIMETABLE_TEACHER_CONFLICT` 409 surfaced as new `teacher-conflict` failure through the existing save-error toast (no new UI); whole-school proactive `getConflicts` stays mock-first permanently (no bulk endpoint — ask #16). Consumer `getByTeacher` wired real via `GET /classes` (TEACHER-role auto-filtered) fan-out + per-class GET + merge on `teacherMemberId === currentUserId` (reuses `teacher-class.repository.ts`'s precedent). **Implementation-time correction**: consumer `getByClass` also stays mock (not real, contra the epic table's assumption) — its only caller, `GetChildTimetableUseCase` (parent flow), is itself permanently blocked, so a real fetch would just 404 against the mock roster's fixture classIds. `getMyTimetable` (student) + `getChildren`/child view (parent) permanently mock — ground-truthed 403 on `GET /classes` for non-ADMIN/non-TEACHER (`list_classes.go`) + no classId on `linked-students` (ask #15, confirming #6/#7/#9/#13's pattern a 5th time). Full 11-code `TIMETABLE_*` error taxonomy; day-enum bridge (`MON..FRI`, no Saturday on the wire); term resolved via the already-real `calendar` feature (US-E18.1) composed in a new shared `resolve-current-term.ts`. `room` has no wire field (ask #17, non-persistent like US-E18.7's `count`). `ensureFreshSession()` wired into both `timetable.di.ts`+`timetable-view.di.ts`. Zero UI/ViewModel change (existing `TimetableScreen` already threaded `TimetableFailure["type"]` generically). |
 | US-E18.12 | Grades contract remap | **rất cao** | high-risk | Web `class-subjects/{csId}` + grade-batches ≠ BE `classId/subjectId/termId/columnId` + per-column `submit`/`approve` + term `lock`. Semantic remap publish/request-revision → submit/lock. Student đọc qua `/members/{id}/grades`, parent qua `/members/{id}/grade-report`. Cân nhắc tách 2 US khi intake (entry+submit / approval+lock+report) |
 | US-E18.13 | Academic-records seal remap | cao | high-risk | BE seal theo class+term; web flat `/academic-records/*`; initiate/confirm 2 bước → `unseal-requests`+`approve`; `seal-status`/`sealed-students`/`audit-trail` không có BE tương đương → phần đó giữ mock + flag |
 | US-E18.14 | Discipline → conduct remap | cao | high-risk | Prefix `discipline`→`conduct`; tách student/staff; full submit/approve/reject trên violations + conduct-grades (web đang collapse thành override); absences có `/{date}/flag` |
@@ -297,6 +297,44 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     Until either lands, `teaching-plan`'s `TeachingPlanRepository` stays a
     permanent blocked stub (US-E18.9) — the epic's second fully-blocked DI
     factory after US-E18.8.
+15. **(US-E18.11, 2026-07-16) [confirms #6/#7/#9/#13's premise a 5th time, for
+    timetable]** No STUDENT/PARENT self-scope discovery endpoint exists for
+    "which class am I/my linked child enrolled in". `GET /api/v1/classes` is
+    ADMIN/SUPER_ADMIN(all)/TEACHER(assigned-only) — any other role hits
+    `domainerror.ErrClassForbidden()` (ground-truthed in
+    `services/core/internal/class/core/application/usecase/list_classes.go`
+    line 59). `GET /api/v1/members/{memberId}/linked-students` (parent→student,
+    real, callable) returns only `{linkId, parentMemberId, studentMemberId,
+    createdAt}` — no classId. There is no other endpoint any STUDENT/PARENT
+    actor can call to resolve a classId. Consequence: the timetable feature's
+    `getMyTimetable` (student self-view) and `getChildren`+child view (parent)
+    stay mock-first permanently — the epic's third fully-blocked operation set
+    after US-E18.8/US-E18.9 (partial here — `getByClass`/`getByTeacher` on the
+    same repository ARE wireable). Ask: either (a) add a
+    `GET /members/{memberId}/enrollment`-style endpoint any STUDENT/PARENT-for-
+    their-own-linked-student can call to resolve current classId, or (b) accept
+    this stays mock-first indefinitely.
+16. **(US-E18.11, 2026-07-16)** No bulk/whole-school timetable-conflicts
+    endpoint exists — `services/core/docs/openapi.yaml`'s `Timetable` tag has
+    only `PUT`/`GET .../timetable` and `DELETE .../timetable/slots`; conflicts
+    are detectable ONLY reactively, as a `409 TIMETABLE_TEACHER_CONFLICT` on
+    the per-class `PUT`. The admin builder screen's proactive whole-school
+    "conflict summary" card (listing every teacher double-booking across all
+    classes, with jump-to-conflict) has no way to populate itself without an
+    expensive full-tenant fan-out (every class × its timetable, cross-
+    referenced client-side by `(teacherMemberId, day, period)`) — out of scope
+    for US-E18.11. `getConflicts()` stays mock-first permanently; the reactive
+    409 is wired instead (new `teacher-conflict` failure, surfaced on save).
+    Ask: either a bulk conflict-scan endpoint, or a materialized/precomputed
+    conflicts view, if the proactive dashboard is a real product requirement.
+17. **(US-E18.11, 2026-07-16)** `SlotRequest`/`SlotResponse`
+    (`services/core/docs/openapi.yaml`) have no `room` field at all — only
+    `day`/`period`/`subjectId`/`teacherMemberId`. The web builder's per-slot
+    room input (already-shipped UX) is decorative-only in real mode: it
+    survives within a single editing session but is not persisted past a
+    reload (same non-persistent-field category as ask #10/#11's `bands`/
+    `count`). Ask: add `room` (optional string) to both schemas if per-slot
+    room assignment is a real requirement.
 
 ## Dependencies & thứ tự
 
