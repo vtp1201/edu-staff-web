@@ -17,20 +17,35 @@ import { mapMembershipSummary } from "../mappers/iam-member.mapper";
 /**
  * Maps a normalised {@link ApiError} (branch on `code`, never message) into the
  * domain {@link IamMemberFailure} union.
+ *
+ * Corrected in US-E18.6: IAM's real wire `error.code` is always the lowercase
+ * snake_case i18n key emitted by the Go `apperror` helpers (ground-truthed
+ * against `services/iam/internal/membership/core/domain/error/member.go` +
+ * `.../tenant/core/domain/error/tenant.go` in edu-api), never UPPER_SNAKE.
+ * `member_suspended` (403) is defined BE-side but never thrown by any of the
+ * use-cases this repository calls — intentionally left unmapped (falls to
+ * `unknown`); revisit if a future BE change starts emitting it.
  */
 function mapIamFailure(err: unknown): IamMemberFailure {
   const code = errorCodeOf(err);
   switch (code) {
-    case "FORBIDDEN_ACTION":
+    case "forbidden_action":
       return { type: "forbidden" };
-    case "RESOURCE_NOT_FOUND":
+    case "member_not_found":
       return { type: "not-found" };
-    case "USER_EMAIL_ALREADY_EXISTS":
-      return { type: "email-exists" };
-    case "INVITATION_NOT_FOUND":
-    case "INVITATION_EXPIRED":
-      return { type: "invitation-not-found" };
-    case "LAST_ADMIN_INVARIANT_VIOLATION":
+    case "member_already_exists":
+      return { type: "member-exists" };
+    case "member_tenant_inactive":
+      return { type: "tenant-inactive" };
+    case "member_invalid_transition":
+      return { type: "invalid-transition" };
+    case "invitation_invalid":
+      return { type: "invitation-invalid" };
+    case "invitation_expired":
+      return { type: "invitation-expired" };
+    case "invitation_email_mismatch":
+      return { type: "invitation-email-mismatch" };
+    case "member_last_admin":
       return { type: "last-admin" };
     case "NETWORK_ERROR":
       return { type: "network-error" };

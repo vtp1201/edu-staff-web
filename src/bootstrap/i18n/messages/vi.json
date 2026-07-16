@@ -2051,12 +2051,16 @@
   },
   "iamMember": {
     "errors": {
-      "email-exists": "Email đã tồn tại trong hệ thống",
       "forbidden": "Không có quyền thực hiện thao tác này",
-      "invitation-not-found": "Lời mời không tồn tại hoặc đã hết hạn",
+      "invalid-transition": "Không thể thay đổi trạng thái thành viên này",
+      "invitation-email-mismatch": "Email xác thực không khớp với lời mời",
+      "invitation-expired": "Lời mời đã hết hạn",
+      "invitation-invalid": "Lời mời không hợp lệ hoặc đã được sử dụng",
       "last-admin": "Không thể xóa admin cuối cùng của tổ chức",
+      "member-exists": "Người dùng đã là thành viên của tổ chức",
       "network-error": "Lỗi kết nối, vui lòng thử lại",
       "not-found": "Không tìm thấy thành viên hoặc lời mời",
+      "tenant-inactive": "Tổ chức chưa được kích hoạt",
       "unknown": "Đã có lỗi xảy ra"
     }
   },
