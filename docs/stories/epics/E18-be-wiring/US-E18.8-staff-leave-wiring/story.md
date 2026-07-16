@@ -57,10 +57,15 @@ that it cannot be wired at all, and must stay mock-first permanently.**
   `submittedAt`/`approvedBy`/`approvedAt`/`rejectedBy`/`rejectedAt` (only
   `createdAt`/`updatedAt` + `approverMemberId` as a raw id).
 - Error taxonomy (ground-truthed from
-  `internal/conduct/core/domain/error/leave.go` shared `ApprovalTransition`
-  errors + `pkg/kit/response/error.go`'s `codeFromKey` — confirms decision
-  `0008` UPPER_SNAKE holds for `core`, same as US-E18.1/.2/.6/.7):
-  `LEAVE_REQUEST_NOT_FOUND` (404), `LEAVE_REQUEST_FORBIDDEN` (403),
+  `internal/conduct/core/application/usecase/{approve,reject,list}_staff_leave_request*.go`
+  + `pkg/kit/response/error.go`'s `codeFromKey` — confirms decision `0008`
+  UPPER_SNAKE holds for `core`, same as US-E18.1/.2/.6/.7):
+  `LEAVE_REQUEST_NOT_FOUND` (404), `VIOLATION_FORBIDDEN` (403 — all three of
+  `list`/`approve`/`reject` call the shared `ApprovalTransition` domain
+  service's `ErrViolationForbidden()`; `LEAVE_REQUEST_FORBIDDEN` is emitted
+  only by `submit_staff_leave_request.go`'s self-service path, which this
+  repository never calls, but is mapped too for completeness — tech-lead
+  review round 1 caught this mismap, fixed same-commit),
   `LEAVE_REQUEST_INVALID_DATE_RANGE` (400, submit-only),
   `LEAVE_REQUEST_INVALID_INPUT` (422), `VIOLATION_SAME_ACTOR` (409, approve
   distinct-actor rule), `VIOLATION_INVALID_TRANSITION` (409),

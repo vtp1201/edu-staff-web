@@ -2793,10 +2793,12 @@
     "error": "Không thể tải danh sách đơn nghỉ phép.",
     "errors": {
       "already-processed": "Đơn đã được xử lý trước đó.",
+      "forbidden": "Bạn không có quyền thực hiện hành động này trên đơn nghỉ phép này.",
       "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "not-found": "Không tìm thấy đơn nghỉ phép.",
-      "reason-too-short": "Lý do từ chối phải có ít nhất 10 ký tự."
+      "reason-too-short": "Lý do từ chối phải có ít nhất 10 ký tự.",
+      "same-actor": "Người phê duyệt phải khác với người lập đơn nghỉ phép này."
     },
     "filters": {
       "all": "Tất cả",
