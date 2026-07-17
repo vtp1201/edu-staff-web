@@ -7,3 +7,5 @@
 - [E19 Social shared-dialog split pattern](project-e19-social-shared-dialog-pattern.md) — owning-story-full-AC vs consuming-story-single-cross-story-AC pattern for shared components (ReportContentDialog); mock-first test-note AC; 403-vs-transient paired AC
 - [E21 invitation flows](project-e21-invitation-flows.md) — role-vocabulary mapping (manager→principal), ADR 0051 security-AC pattern for public account-creation endpoints, 4th-state + open-question-proof AC style
 - [E11 assignments mock-first pattern](project-e11-assignments-mockfirst-pattern.md) — i18n-gap-found-not-invented pattern, mock-download honest-signal toast, file-validation/double-click/focus-trap edge-case decision templates
+- [E11.9 question-bank pattern](project-e11-question-bank-pattern.md) — mandatory-filter-gate as 5th first-class state, split-by-call-site failure variants from one wire code, ground-truth-beats-design-spec correction, server/client secondary-filter split
+- [E11 lesson-plan authoring](project-e11-lesson-plan-authoring.md) — client-filter-over-fetched-page AC phrasing, one-way-publish dual-race pattern, teacher-only-v1-despite-BE-support settled-decision pattern

@@ -50,3 +50,24 @@ Golden rules learned from the DR-012..019 group-B reconcile pass:
 - Confirm retired bespoke component names (e.g. `FeedSkeleton`/`ModSkeleton`)
   are actually thin wrappers around the new shared primitive (grep the file)
   before writing "supersedes" language — don't assume from the DR prose alone.
+
+DR-021 (2026-07-17, Lesson Plan + Question Bank, US-E18.16 design follow-up):
+- Working on a `docs/dr-NNN-*` branch alongside other in-flight agent memory
+  edits (fe-lead, uiux-ux-writer) in the same working tree — `git status`
+  showed unrelated modified memory files. Stage only the docs files this role
+  owns (`git add docs/design-changelog.md docs/design-requests/README.md
+  docs/product/screens.md`), never a blanket `git add -A`, to avoid sweeping
+  another agent's in-progress edits into this commit.
+- Verified i18n key counts by counting leaf nodes in `vi.json` with a small
+  Python script (namespace dict may nest, so a raw `grep -c` overcounts) —
+  more reliable than trusting the design-spec.jsonc comment count at face
+  value, though in this case they matched (80 lessonPlan, 94 questionBank).
+- When two net-new screens both get Teacher-section rows, model the row
+  format on the *closest sibling* already in the table (Lesson Bank →
+  lesson-plan row placed directly below it; Exam Bank → question-bank row
+  placed directly below it) rather than grouping both new rows together —
+  keeps domain adjacency (bank vs. authoring-tool pairs) readable.
+- Lead's brief here explicitly said "do NOT mark the design-review gate
+  checkbox" and reserved that self-audit step for itself — another
+  confirmation that gate-flip ownership is stated per-run, not assumed from
+  precedent (see existing note above on DR-020 vs DR-012..019).

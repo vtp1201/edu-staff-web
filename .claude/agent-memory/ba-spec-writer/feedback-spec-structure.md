@@ -110,3 +110,42 @@ otherwise-complete namespace):
 - Story that is 100% mock-first (`lms` has zero `openapi.yaml`) still gets a full
   Traceability Matrix + AC-coverage cross-check (62/62 here) — mock-first status
   changes §6 Data & Integration content (all "logical" endpoints), not spec rigor.
+
+## US-E11.9 addenda — verifying "no new i18n keys needed" claims by diffing the shipped namespace (2026-07-17)
+
+When upstream docs (requirements.md/use-cases.md) assert an existing i18n namespace
+already covers everything ("94 keys, no new keys should be needed"), still grep +
+read the actual `messages/vi.json` section yourself and diff it against every UI
+state/failure-copy the spec's own §6 error-mapping table demands — don't just trust
+the assertion. For US-E11.9 this surfaced two real, precise gaps inside an
+already-shipped namespace: (1) a missing `clearFilters`-style button-label key for
+the `emptyFiltered` state (every other feature namespace in this repo has one;
+`questionBank` didn't), and (2) only ONE generic `errors.forbidden` key when the
+integration analyst's failure-union design required THREE textually distinct 403
+variants (`forbidden-browse`/`forbidden-edit`/`not-visible`, same wire code,
+different UX meaning per §6.4's mapper-branch-by-call-site rule). Also flag (don't
+fix) orphaned keys the opposite direction — `expected-answer-required` existed in
+the namespace but is now permanently unreachable once a "corrected" requirement
+(expectedAnswer optional for all types) landed; note it as dead code to leave
+alone, not a gap to wire up. Precise gaps (exact key path + vi/en copy proposal)
+belong in §8 Constraints/Open Questions AND §10 Handoff (as a numbered
+pre-implementation action) — not just one or the other.
+
+## US-E11.8 addenda — reusing an "already-shipped" i18n namespace against a proposed failure union (2026-07-17)
+
+When `integration.md` proposes a `XxxFailure` union (e.g. 13 variants) for a
+feature whose i18n namespace was already fully landed by an earlier `/uiux` DR
+pass (80 keys, not net-new-by-this-BA-pass), don't assume the existing
+`errors{}` map covers every failure variant — it was written against the
+requirements-analyst's error list at DR time, which is often a subset. Grep
+the actual `vi.json` namespace block yourself and diff key-by-key against the
+proposed failure union (§6/§9 pattern): list precisely which keys are missing
+(exact path + vi + en copy) as a `[GAP]` table for `/fe`, and explicitly call
+out which failure types need **no** key at all because they're handled
+silently (e.g. `invalid-cursor` → drop+refetch, never shown to the user) —
+otherwise `/fe` may invent a toast for a state the UX explicitly wants silent.
+Also: when a requirement demands two states be **visually/semantically
+distinct** (e.g. FR-008 "access-denied must not look like not-found"), don't
+let `/fe` reuse the existing generic key for both — mint the second key even
+though a same-shaped key already exists, and say so explicitly in the gap
+note so the distinction isn't silently collapsed back into one string.

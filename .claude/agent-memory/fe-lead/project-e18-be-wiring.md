@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.15) done, findings for remaining Wave 3-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.16, E18.16 descoped-zero-code) done, findings for remaining Wave 4
 metadata:
   type: project
 ---
@@ -649,4 +649,63 @@ PASS (1 should-fix + 2 minor, all fixed same-branch by fe-lead directly —
 cheap copy/heading fixes don't need a round-trip back to the engineer),
 QA GO (wrote new Storybook/unit coverage for the real-mode gating +
 blocked-route + 3-value-status + error-path claims rather than trusting
-the self-report, per the epic's now-standard QA brief).
+the self-report, per the epic's now-standard QA brief). **Follow-up resolved
+(2026-07-17, tiny lane, branch `fix/exam-builder-validation-story`,
+merged)**: the logged `Builder Validation`/`aria-disabled` mismatch was two
+bugs, not one, and they were masking each other — `toBeDisabled()` always
+failed first, so the story's second assertion (`getByLabelText` against a
+plain sr-only `<span>`, not a form-control label — never matches, wrong
+query for that DOM shape) had never actually executed even on a "passing"
+run. Kept `aria-disabled` on the component (intentional keep-focusable
+pattern, matches `builder-action-bar.stories.tsx`'s own correct assertion);
+fixed the story to `toHaveAttribute("aria-disabled","true")` + a click-
+is-no-op check + swapped to `getByText`. **Lesson**: when a component
+intentionally uses `aria-disabled` over native `disabled`, check every
+OTHER story asserting against that same button too — a fix scoped to "the
+one failing assertion" can still leave a second, adjacent bug that was
+only invisible because test execution never reached it.
+
+**US-E18.16 (lesson-plan + question-bank, 2026-07-17, Wave 3) — the epic
+table's own naming assumption can be wrong at the DOMAIN level, not just
+DTO/path drift; when ground-truthing BOTH sides finds zero existing web
+feature at all, stop and descope rather than force a wire.** Every prior
+"blocked" US in this epic (E18.8/9/11/13/14/15) had an EXISTING mock feature/
+screen to remap into a hybrid or force-mock repository. Here, ground-truthing
+`edu-api/services/core/internal/lms/{lessonplan,exercisebank}` (routes.go +
+DTOs + `ERROR_CODES.md`) confirmed BOTH real BE contracts are clean and
+well-formed (11-code `LESSON_PLAN_*`, ~12-code `QUESTION_*`) — but grepping
+the web side found: (1) the epic table's `"lessons"→"/lms/lesson-plans"`
+label conflated two UNRELATED domain objects that happen to share the English
+word "lesson" — `src/features/lesson-bank` is a teacher file/resource-sharing
+repository (`fileType`/`fileUrl`/`visibility`/`viewCount`, no publish
+workflow), while BE's `lesson-plans` is a structured DRAFT→PUBLISHED planning
+DOCUMENT (`objectives`/`contentOutline`/`activities`/`assessmentMethod`) —
+zero field overlap beyond `subjectId`/`title`, no lossless mapping in either
+direction; (2) no web feature (mock or otherwise) exists at all for BE's
+`exercisebank` question-bank service — the only "questions"-named code
+(`LMS_EP.questions`, `ListQuestionsUseCase`/`AskQuestionUseCase`) is an
+unrelated per-lesson Q&A comment thread with a completely different shape.
+**Decision**: zero code changes. Unlike the "flagged for uiux/ba" language
+used alongside a still-executed partial wire (E18.9/E18.11's self-view),
+here NOTHING is wireable because nothing pre-exists to wire INTO — building
+new repository/DI/UI code for a feature with no consuming screen would be
+inventing net-new product surface under a "BE-wiring" epic whose explicit
+goal is "UI không đổi hành vi." Registered the ground-truth BE contract
+summary in the story packet + `EPIC-OVERVIEW.md` finding #27 so a future
+`/uiux`→`/ba` pass (if "teacher lesson-plan authoring"/"teacher question
+bank" screens become a real product ask) starts from an accurate contract
+instead of re-discovering it. Harness story kept `status planned` (not
+`implemented` — no proof exists because no code exists; `tdd.md`'s "no story
+implemented without real proof" bars marking this done as if it shipped
+something). Still ran the full branch-claim→docs-edit→merge→cleanup
+lifecycle (branch/push/commit/merge/delete) even for a docs-only, zero-`src/`
+change — kept the pipeline discipline uniform rather than special-casing a
+"nothing to wire" story into a shortcut. 307 files/1950 tests unchanged
+(no source touched), tsc/build green (sanity re-run, not required by any
+gate since nothing changed). **Lesson generalizing beyond this epic**: when
+a US assumes an existing mock feature maps 1:1 to a named real endpoint,
+verify BOTH directions before writing any code — read the real DTO fields
+AND the existing web entity's fields side-by-side and ask whether they
+describe the same real-world object, not just whether the English names
+rhyme. A shared noun ("lesson", "question") is not evidence of a shared
+domain model.

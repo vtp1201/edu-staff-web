@@ -46,3 +46,25 @@ guessing, since guessing wrong here is a security bug, not a UX nit. Always reco
 to ba-lead when this is the FIRST occurrence of a new auth pattern in the repo (e.g. first
 account-creation-via-public-link flow) — link to [[actor-role-patterns]] for the sensitive-gate
 list this falls under.
+
+## One-way DRAFT->PUBLISHED publish + no-delete (recurring authoring-bank pattern)
+Confirmed on exam-bank, lesson-plan (US-E11.8), question-bank: when a BE contract models
+`PUT /:id/publish` as one-way (no unpublish route) and has no delete endpoint, always write
+these as explicit Won't-priority FRs (not just omissions) — "system SHALL NOT provide
+delete/unpublish" — so spec.md's traceability matrix records the absence as a deliberate
+scope decision, not a gap FE might "helpfully" fill in. Pair with a Must FR that the
+PUBLISHED state renders fully read-only/locked (mirrors the pattern once one screen
+establishes it — reuse the same locked-banner/disabled-fields FR wording across screens
+for consistency). Also always add a single-GET visibility-gating FR when the contract
+distinguishes owner-any-status vs non-owner-PUBLISHED-only — don't fold this into the list
+FR, it's a distinct access-control behavior worth its own FR/AC.
+
+## design-spec.jsonc vs ground-truthed BE contract conflict (confirmed, US-E11.9 question-bank)
+When a design-spec.jsonc entry encodes a stricter UX rule (e.g. "expectedAnswer required" +
+publish-disabled-until-filled) but the ground-truthed BE contract (verified directly from Go
+source, e.g. `omitempty` validator tags with no per-type required rule) is looser, resolve the
+FR in favor of the BE contract — a client that's stricter than the BE just blocks valid saves
+for no reason. Write the FR to explicitly name the conflict and state which side wins and why,
+then add an openQuestion flagging the design-spec correction to `ba-lead` (this is a data-contract
+fix, not a redesign — no ADR needed, just correct the jsonc). Don't silently pick one side without
+naming the conflict; the next reader needs to know design-spec.jsonc is currently wrong, not stale.

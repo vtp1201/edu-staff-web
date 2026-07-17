@@ -12,3 +12,5 @@
 - [Parent-student links E20 baseline](parent-student-links-e20-baseline.md) — E20.1/E20.2 mock-first core, no real member-search endpoint, audit-log reuse recommendation for unlink history
 - [Email verification E22 baseline](email-verification-e22-baseline.md) — iam OTP verify endpoints all REAL, emailVerified DTO gap (web-side, not BE), wrong/expired/too-many-attempts already mapped via CODE_MAP
 - [Principal Reports E03 baseline](principal-reports-e03-baseline.md) — no school-wide core rollup exists anywhere; all-mock-first; poll-vs-SSE and export recommendation pattern
+- [LMS exercisebank E11.9 baseline](lms-exercisebank-e11-9-baseline.md) — core/exercisebank is REAL (exception to core=mock-first); FORBIDDEN_ACTION dual-use gap, difficulty immutable-on-update, narrow filter support matrix
+- [Lesson Plan E11.8 baseline](lesson-plan-e11.8-baseline.md) — core lessonplan real 6-route contract, Kong `/core/api/v1` convention, list-endpoint query-param gap pattern, publishedAt omitempty
