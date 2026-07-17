@@ -2218,6 +2218,110 @@
     "loadingAriaLabel": "Loading lesson list",
     "loadingSR": "Loading..."
   },
+  "lessonPlan": {
+    "title": "My lesson plans",
+    "subtitle": "Draft, edit and publish lesson plans for your classes.",
+    "subtitleBrowse": "Browse published lesson plans across the school.",
+    "createButton": "Draft new lesson plan",
+    "ownerToggle": {
+      "mine": "Mine",
+      "school": "School-wide",
+      "ariaLabel": "Choose lesson plan scope"
+    },
+    "filter": {
+      "allSubjects": "All subjects",
+      "subjectAriaLabel": "Filter by subject",
+      "allGrades": "All grade levels",
+      "gradeAriaLabel": "Filter by grade level",
+      "allStatuses": "All statuses",
+      "statusAriaLabel": "Filter by status",
+      "searchPlaceholder": "Search by title...",
+      "searchAriaLabel": "Search lesson plans by title"
+    },
+    "card": {
+      "updatedAt": "Updated {date}",
+      "tagsLabel": "Tags",
+      "menuAriaLabel": "Open lesson plan actions menu",
+      "edit": "Edit",
+      "view": "View"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "loading": "Loading...",
+    "loadingAriaLabel": "Loading lesson plan list",
+    "resultsHeading": "{count} lesson plans",
+    "empty": {
+      "title": "No lesson plans yet",
+      "body": "Start by drafting your first lesson plan.",
+      "cta": "Draft your first lesson plan",
+      "noMatch": "No lesson plans found",
+      "noMatchBody": "Try changing your filters or search keyword."
+    },
+    "error": {
+      "title": "Couldn't load lesson plans",
+      "description": "Something went wrong while loading the data. Please try again.",
+      "retry": "Retry"
+    },
+    "builder": {
+      "createTitle": "Draft new lesson plan",
+      "editTitle": "Edit lesson plan",
+      "back": "Back",
+      "backAriaLabel": "Back to lesson plan list",
+      "titleLabel": "Lesson plan title",
+      "titlePlaceholder": "Enter lesson plan title",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "gradeLevelLabel": "Grade level",
+      "gradeLevelPlaceholder": "Select a grade level",
+      "tagsLabel": "Tags",
+      "tagsPlaceholder": "Type a tag and press Enter",
+      "tagsHelper": "Add tags to make this lesson plan easier to find and categorize.",
+      "objectivesLabel": "Learning objectives",
+      "objectivesPlaceholder": "Describe what students should achieve by the end of this lesson",
+      "contentOutlineLabel": "Content outline",
+      "contentOutlinePlaceholder": "Summarize the main content to be taught",
+      "activitiesLabel": "Teaching activities",
+      "activitiesPlaceholder": "Describe the teaching and learning activities",
+      "assessmentMethodLabel": "Assessment method",
+      "assessmentMethodPlaceholder": "Describe how learning outcomes will be assessed",
+      "saveDraft": "Save draft",
+      "saving": "Saving...",
+      "publish": "Publish",
+      "publishing": "Publishing..."
+    },
+    "publishDialog": {
+      "title": "Publish this lesson plan?",
+      "body": "Once published, this lesson plan will be visible school-wide and can't be reverted to draft. You'll still be able to view it, but not edit its content.",
+      "cancel": "Cancel",
+      "confirm": "Publish",
+      "publishing": "Publishing..."
+    },
+    "lockedNotice": {
+      "title": "This lesson plan has been published",
+      "body": "Published lesson plans can't be edited. This is a read-only view."
+    },
+    "toast": {
+      "draftSaved": "Draft saved",
+      "published": "Lesson plan published"
+    },
+    "errors": {
+      "title-required": "Please enter a lesson plan title.",
+      "title-too-long": "Lesson plan title must not exceed 200 characters.",
+      "subject-required": "Please select a subject.",
+      "grade-level-required": "Please select a grade level.",
+      "objectives-required": "Please enter the learning objectives.",
+      "content-outline-required": "Please enter the content outline.",
+      "activities-required": "Please enter the teaching activities.",
+      "assessment-method-required": "Please enter the assessment method.",
+      "not-editable": "Published lesson plans can't be edited.",
+      "not-found": "Lesson plan not found.",
+      "forbidden": "You don't have permission to perform this action.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "An unknown error occurred."
+    }
+  },
   "messaging": {
     "chat": {
       "attach": "Attach",
@@ -2588,6 +2692,130 @@
     },
     "teacherCount": "{count} teachers",
     "title": "Teacher Management"
+  },
+  "questionBank": {
+    "title": "Question bank",
+    "subtitle": "Create and manage essay, short-answer and fill-in-the-blank questions to reuse across exams.",
+    "createButton": "Create new question",
+    "scopeToggle": {
+      "mine": "Mine",
+      "search": "Search",
+      "ariaLabel": "Choose question view scope"
+    },
+    "filter": {
+      "allSubjects": "All subjects",
+      "subjectAriaLabel": "Filter by subject",
+      "allGrades": "All grade levels",
+      "gradeAriaLabel": "Filter by grade level",
+      "tagPlaceholder": "Search by tag...",
+      "tagAriaLabel": "Filter by tag",
+      "allTypes": "All question types",
+      "typeAriaLabel": "Filter by question type",
+      "allDifficulties": "All difficulty levels",
+      "difficultyAriaLabel": "Filter by difficulty",
+      "allStatuses": "All statuses",
+      "statusAriaLabel": "Filter by status",
+      "searchPlaceholder": "Search by question content...",
+      "searchAriaLabel": "Search questions",
+      "mandatorySatisfied": "Search filter satisfied",
+      "mandatoryRequired": "Select a subject or tag"
+    },
+    "requiredFilterPrompt": {
+      "title": "Select a subject or tag to find questions",
+      "body": "Please select at least one subject or enter a tag to show results."
+    },
+    "questionType": {
+      "ESSAY": "Essay",
+      "SHORT_ANSWER": "Short answer",
+      "FILL_IN": "Fill in the blank"
+    },
+    "difficulty": {
+      "EASY": "Easy",
+      "MEDIUM": "Medium",
+      "HARD": "Hard"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "card": {
+      "tagsLabel": "Tags",
+      "updatedAt": "Updated {date}",
+      "menuAriaLabel": "Open question actions menu",
+      "edit": "Edit",
+      "view": "View"
+    },
+    "loading": "Loading...",
+    "loadingAriaLabel": "Loading question list",
+    "resultsHeading": "{count} questions",
+    "empty": {
+      "title": "No questions yet",
+      "body": "Start by creating your first question.",
+      "cta": "Create your first question",
+      "noMatch": "No questions found",
+      "noMatchBody": "Try changing your filters or search keyword."
+    },
+    "error": {
+      "title": "Couldn't load questions",
+      "description": "Something went wrong while loading the data. Please try again.",
+      "retry": "Retry"
+    },
+    "builder": {
+      "createTitle": "Create new question",
+      "editTitle": "Edit question",
+      "back": "Back",
+      "backAriaLabel": "Back to question bank",
+      "questionTypeLabel": "Question type",
+      "questionTypeAriaLabel": "Choose question type",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "gradeLevelLabel": "Grade level",
+      "gradeLevelPlaceholder": "Select a grade level",
+      "difficultyLabel": "Difficulty",
+      "bodyLabel": "Question content",
+      "bodyPlaceholderEssay": "Enter the essay prompt",
+      "bodyPlaceholderShortAnswer": "Enter the short-answer question",
+      "bodyPlaceholderFillIn": "Enter the content with a blank, e.g.: The capital of Vietnam is ___.",
+      "expectedAnswerLabel": "Reference answer",
+      "expectedAnswerPlaceholderEssay": "Enter guidance or an answer outline",
+      "expectedAnswerPlaceholderShortAnswer": "Enter the short reference answer",
+      "expectedAnswerPlaceholderFillIn": "Enter the word or phrase that fills the blank",
+      "tagsLabel": "Tags",
+      "tagsPlaceholder": "Type a tag and press Enter",
+      "tagsHelper": "Add tags to make this question easier to find and filter by topic.",
+      "saveDraft": "Save draft",
+      "saving": "Saving...",
+      "publish": "Publish",
+      "publishing": "Publishing..."
+    },
+    "publishDialog": {
+      "title": "Publish this question?",
+      "body": "Once published, this question can be used school-wide and can't be reverted to draft.",
+      "cancel": "Cancel",
+      "confirm": "Publish",
+      "publishing": "Publishing..."
+    },
+    "lockedNotice": {
+      "title": "This question has been published",
+      "body": "Published questions can't be edited. This is a read-only view."
+    },
+    "toast": {
+      "draftSaved": "Draft saved",
+      "published": "Question published"
+    },
+    "errors": {
+      "body-required": "Please enter the question content.",
+      "expected-answer-required": "Please enter a reference answer.",
+      "subject-required": "Please select a subject.",
+      "grade-level-required": "Please select a grade level.",
+      "question-type-required": "Please select a question type.",
+      "search-filter-required": "Please select a subject or enter a tag to search.",
+      "not-editable": "Published questions can't be edited.",
+      "not-found": "Question not found.",
+      "forbidden": "You don't have permission to perform this action.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "An unknown error occurred."
+    }
   },
   "reports": {
     "pageTitle": "School-wide reports",

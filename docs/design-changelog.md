@@ -8,6 +8,58 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-07-17 — Lesson Plan Authoring + Question Bank net-new (DR-021, US-E18.16) `[EXTERNAL]`
+
+**What changed**: two brand-new reference mockups, no existing screen touched:
+
+- `design_src/edu/lesson-plan.jsx` (`LessonPlanScreen` + `LessonPlanBuilderScreen`)
+  — Teacher Lesson Plan Authoring: list with owner toggle (mine/school),
+  subject/grade filters, create button; builder with title/subject/grade/tags
+  fields, save-draft/publish actions, locked-notice state for published plans.
+  Routes `/teacher/lesson-plans`, `/teacher/lesson-plans/create`,
+  `/teacher/lesson-plans/:id/edit`. Role `teacher`.
+- `design_src/edu/question-bank.jsx` (`QuestionBankScreen` +
+  `QuestionBankBuilderScreen`) — Teacher Question Bank: search/filter by
+  subject/grade/difficulty, question card, builder with difficulty (GPA-tier
+  color convention reused) and scope toggle. Routes `/teacher/question-bank`,
+  `/teacher/question-bank/create`, `/teacher/question-bank/:id/edit`. Role
+  `teacher`.
+
+Both reuse existing conventions with **zero new tokens**: the exam-bank
+DRAFT/PUBLISHED status convention (`exam-bank.jsx`) and the GPA-tier
+score/difficulty color mapping (`design-system.md` §Score/performance màu).
+`docs/product/design-system.md` was intentionally NOT touched — no new
+component pattern or token was introduced.
+
+- `docs/product/design-spec.jsonc`: new `screens.lessonPlan` and
+  `screens.questionBank` entries (routes, anatomy, states, a11y, mock-first BE
+  contract notes against `core`/`lms`).
+- `messages/{vi,en}.json`: new `lessonPlan` namespace (80 keys) and
+  `questionBank` namespace (94 keys — uiux-ux-writer's initial pass delivered
+  87; uiux-lead reconciled a spec/copy gap afterward and added 7 more:
+  `scopeToggle.*`, `filter.allGrades`/`filter.gradeAriaLabel`,
+  `filter.mandatorySatisfied`/`filter.mandatoryRequired`).
+- `docs/product/screens.md`: added two new Teacher-section rows ("Lesson Plan
+  Authoring + Builder", "Question Bank + Builder") next to the existing Lesson
+  Bank / Exam Bank rows; extended the top-of-file design-file inventory line
+  with `lesson-plan.jsx, question-bank.jsx`.
+- `docs/design-requests/README.md`: DR-021 row flipped `[x] delivered
+  (2026-07-17)`.
+
+**Refs**: DR-021 (`docs/design-requests/DR-021-lesson-plan-question-bank.md`) ·
+US-E18.16 (design follow-up to a ground-truth finding — the original US-E18.16
+story stayed `planned`/descoped since there was nothing to wire; this DR is the
+net-new design work it called for) · Epic E18.
+
+**Rationale**: closes the gap identified by the E18.14/E18.16 ground-truth
+audit (finding #27) — teachers had no lesson-plan authoring or question-bank
+surface in the design system at all; both are genuinely net-new (no
+`src/features/lesson-plan` or `src/features/question-bank` exists), so this is
+net-new authoring, not a redesign. Design-review gate self-audit is owned by
+`uiux-lead`, not part of this doc-sync pass.
+
+---
+
 ## 2026-07-14 — Student Assignments net-new (DR-020, US-E11.7) `[EXTERNAL]`
 
 **What changed**: new reference mockup `design_src/edu/assignments.jsx`

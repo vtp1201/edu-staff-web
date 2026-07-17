@@ -9801,5 +9801,415 @@
         "counterText": "text-muted-foreground"
       }
     }
+  },
+
+  // ── DR-021 (2026-07-17): Lesson Plan Authoring + Question Bank (net-new) ──
+  "lessonPlan": {
+    "story": "US-E18.16 (design follow-up, DR-021)",
+    "routes": [
+      "/teacher/lesson-plans",
+      "/teacher/lesson-plans/create",
+      "/teacher/lesson-plans/:id/edit"
+    ],
+    "roles": ["teacher"], // no admin/principal aggregate ground-truthed for this BE contract
+    "designSrc": "design_src/edu/lesson-plan.jsx",
+    "components": [
+      "LessonPlanScreen",
+      "LessonPlanBuilderScreen",
+      "LPCard",
+      "LPStatusChip",
+      "LPTagChipsInput",
+      "LPDropdown",
+      "LPConfirmDialog"
+    ],
+    "i18nNamespace": "lessonPlan",
+    "i18nKeyCount": 80, // keys in src/bootstrap/i18n/messages/vi.json lessonPlan section (uiux-ux-writer, DR-021)
+    "status": "design-ready (DR-021, 2026-07-17)",
+    "beContract": {
+      "service": "core (lessonplan sub-domain)",
+      "routes": "POST/GET /api/v1/lms/lesson-plans, GET /:id, PUT /:id (DRAFT only), PUT /:id/publish (one-way), GET /subject/:subjectId (PUBLISHED browse)",
+      "responseFields": "planId, teacherId, subjectId, gradeLevel, title, objectives, contentOutline, activities, assessmentMethod, status (DRAFT|PUBLISHED), tags, publishedAt, createdAt, updatedAt",
+      "errorTaxonomy": "11-code LESSON_PLAN_* — edu-api/services/core/docs/ERROR_CODES.md:337-346",
+      "noDeleteEndpoint": "No delete endpoint ground-truthed — list/card design has NO destructive delete CTA"
+    },
+
+    // ── SCREEN A1: Lesson Plan List (/teacher/lesson-plans) ─────────────────
+    "listScreen": {
+      "layout": "single-column, maxWidth 1280, margin 0 auto, padding 24px 32px (mobile 20px 16px), background var(--edu-bg)",
+      "gap": 16,
+      "pageHeader": {
+        "display": "flex, alignItems flex-end, gap 16, flexWrap wrap",
+        "breadcrumb": "US-E18.16 · Soạn giáo án — 11px/700 muted uppercase, letterSpacing 0.07em",
+        "title": {
+          "i18nKey": "lessonPlan.title",
+          "note": "static title, same for both owner-toggle scopes",
+          "fontSize": 22,
+          "fontWeight": 800,
+          "color": "var(--edu-text-primary)"
+        },
+        "subtitle": {
+          "i18nKey": "lessonPlan.subtitle (owner=me) / lessonPlan.subtitleBrowse (owner=all)",
+          "fontSize": 12.5,
+          "color": "var(--edu-text-muted)"
+        },
+        "ownerToggle": {
+          "note": "Của tôi (own DRAFT+PUBLISHED) vs Toàn trường (cross-teacher, PUBLISHED-only browse via GET /subject/:subjectId)",
+          "options": [
+            "me (lessonPlan.ownerToggle.mine)",
+            "all (lessonPlan.ownerToggle.school)"
+          ],
+          "i18nKey": "lessonPlan.ownerToggle.{mine,school,ariaLabel}",
+          "style": "same as examBank.listScreen.pageHeader.ownerToggle — border 1.5px solid var(--edu-border), active bg primary/14",
+          "a11y": "role='group' + aria-label (lessonPlan.ownerToggle.ariaLabel); active button aria-pressed=true"
+        },
+        "createCTA": {
+          "i18nKey": "lessonPlan.createButton",
+          "icon": "plus",
+          "variant": "primary",
+          "visibleFor": "teacher only"
+        }
+      },
+      "filterBar": {
+        "containerStyle": "white card, padding 14px 16px, borderRadius 12, border 1px solid var(--edu-border)",
+        "search": {
+          "placeholder": "lessonPlan.filter.searchPlaceholder",
+          "leadingIcon": "search"
+        },
+        "subjectDropdown": {
+          "icon": "bookOpen",
+          "i18nKey": "lessonPlan.filter.allSubjects"
+        },
+        "gradeDropdown": {
+          "icon": "graduationCap",
+          "i18nKey": "lessonPlan.filter.allGrades"
+        },
+        "statusDropdown": {
+          "visibleFor": "owner=me only (Toàn trường scope is PUBLISHED-only, no status filter needed)",
+          "options": ["all", "DRAFT (Nháp)", "PUBLISHED (Đã phát hành)"]
+        }
+      },
+      "cardGrid": {
+        "note": "Grid card layout — mirrors lesson-bank.jsx grid (NOT exam-bank's row-list)",
+        "grid": {
+          "templateColumns": "repeat(auto-fill, minmax(260px, 1fr))",
+          "gap": 16
+        },
+        "card": {
+          "background": "var(--edu-card)",
+          "borderRadius": 12,
+          "border": "1px solid var(--edu-border)",
+          "boxShadow": "var(--edu-shadow-card)",
+          "hoverShadow": "var(--edu-shadow-card-hover)",
+          "hoverTransform": "translateY(-2px)"
+        },
+        "headerStrip": {
+          "height": 64,
+          "background": "linear-gradient(135deg, subject.color+'12' 0%, subject.color+'26' 100%)",
+          "iconBox": "40x40, borderRadius 10, background #fff, icon 'scrollText' size 19",
+          "statusBadge": "LPStatusChip — DRAFT=warning/PUBLISHED=success (2-value, exam-bank convention, no new token)"
+        },
+        "body": {
+          "title": { "fontSize": 14, "fontWeight": 700, "lineClamp": 2 },
+          "sectionsProgress": "N/4 mục đã soạn — icon checkSquare, fontSize 11, muted",
+          "tags": "pill chips, bg var(--edu-bg), fontSize 10/700",
+          "metaLine": "Cập nhật: <date> · GV: <owner> (owner shown only when scope=all)",
+          "actionButton": "Xem/Sửa (own) or Xem chi tiết (others), icon penLine/eye"
+        },
+        "noDeleteCTA": true,
+        "noDuplicateCTA": "kept minimal per DR scope — not in BE contract for this screen"
+      },
+      "states": {
+        "loading": "EduSkeleton variant='cards' count=6",
+        "error": "EduError + onRetry",
+        "emptyAll": {
+          "icon": "scrollText",
+          "action": "Soạn giáo án mới (owner=me only)"
+        },
+        "emptyFiltered": { "icon": "search", "action": "Bỏ lọc" }
+      }
+    },
+
+    // ── SCREEN A2: Lesson Plan Builder (/teacher/lesson-plans/create, /:id/edit) ─
+    "builderScreen": {
+      "layout": "2-column (mirrors ExamBuilderScreen) — left 320px plan-meta card, right flex-1 stacked 4 document-section cards. Mobile (<860px): stacks to single column.",
+      "topBar": {
+        "back": "chevronLeft + Về danh sách",
+        "titleArea": "breadcrumb US-E18.16 + draft.title or placeholder",
+        "statusChip": "LPStatusChip",
+        "actions": {
+          "visibleWhen": "status !== PUBLISHED",
+          "saveDraft": {
+            "icon": "penLine",
+            "i18nKey": "lessonPlan.builder.saveDraft"
+          },
+          "publish": {
+            "icon": "check",
+            "i18nKey": "lessonPlan.builder.publish",
+            "disabledUntil": "title (4-200 chars) AND all 4 sections non-empty",
+            "confirmDialog": "one-way DRAFT→PUBLISHED, irreversible — mirrors exam-bank builder's confirm pattern"
+          }
+        },
+        "lockedBanner": {
+          "visibleWhen": "status === PUBLISHED",
+          "icon": "lock",
+          "background": "var(--edu-success)/light",
+          "i18nKey": "lessonPlan.lockedNotice.{title,body}",
+          "note": "Once PUBLISHED, all fields render disabled/read-only — mirrors exam-bank's published-exam lock intent"
+        },
+        "unsavedIndicator": "dot + Chưa lưu, warning tone, same pattern as exam-bank builder"
+      },
+      "leftColumn_planMeta": {
+        "width": 320,
+        "fields": [
+          {
+            "key": "title",
+            "type": "text",
+            "required": true,
+            "validation": "4-200 chars",
+            "i18nKey": "lessonPlan.builder.{titleLabel,titlePlaceholder}"
+          },
+          {
+            "key": "subjectId",
+            "type": "select",
+            "i18nKey": "lessonPlan.builder.{subjectLabel,subjectPlaceholder}"
+          },
+          {
+            "key": "gradeLevel",
+            "type": "select",
+            "i18nKey": "lessonPlan.builder.{gradeLevelLabel,gradeLevelPlaceholder}"
+          },
+          {
+            "key": "tags",
+            "type": "tag-chips-input",
+            "i18nKey": "lessonPlan.builder.{tagsLabel,tagsPlaceholder,tagsHelper}"
+          }
+        ],
+        "metaFooter": "Tạo: <date> / Phát hành: <date> — 11px muted"
+      },
+      "rightColumn_documentSections": {
+        "note": "Exactly 4 named sections — do NOT invent a richer schema",
+        "sections": [
+          {
+            "key": "objectives",
+            "icon": "flag",
+            "i18nKey": "lessonPlan.builder.{objectivesLabel,objectivesPlaceholder}"
+          },
+          {
+            "key": "contentOutline",
+            "icon": "list",
+            "i18nKey": "lessonPlan.builder.{contentOutlineLabel,contentOutlinePlaceholder}"
+          },
+          {
+            "key": "activities",
+            "icon": "users",
+            "i18nKey": "lessonPlan.builder.{activitiesLabel,activitiesPlaceholder}"
+          },
+          {
+            "key": "assessmentMethod",
+            "icon": "checkSquare",
+            "i18nKey": "lessonPlan.builder.{assessmentMethodLabel,assessmentMethodPlaceholder}"
+          }
+        ],
+        "fieldStyle": "card shell, label uppercase 10.5px/800 muted + required asterisk, textarea rows=4",
+        "validation": "each required to publish — inline field-level error banner (role=alert, aria-invalid, aria-describedby) per 11-code LESSON_PLAN_* taxonomy; /ba maps exact codes"
+      }
+    },
+
+    "a11y": {
+      "contrast": "DRAFT/PUBLISHED badges reuse exam-bank's proven-AA warning/success token pairing",
+      "focus": "all inputs/selects/buttons use default browser + var(--ring) focus visibility",
+      "keyboard": "tab order = reading order (meta column → 4 sections top-to-bottom)",
+      "motion": "toast/dialog fade-in gated behind prefers-reduced-motion: reduce",
+      "statusNotColorOnly": "every status/badge pairs icon + text label"
+    }
+  },
+
+  "questionBank": {
+    "story": "US-E18.16 (design follow-up, DR-021)",
+    "routes": [
+      "/teacher/question-bank",
+      "/teacher/question-bank/create",
+      "/teacher/question-bank/:id/edit"
+    ],
+    "roles": ["teacher"], // staff-only search per BE contract; no admin aggregate ground-truthed
+    "designSrc": "design_src/edu/question-bank.jsx",
+    "components": [
+      "QuestionBankScreen",
+      "QuestionBankBuilderScreen",
+      "QBQuestionCard",
+      "QBStatusChip",
+      "QBTypeBadge",
+      "QBDifficultyBadge",
+      "QBFilterRequiredPrompt",
+      "QBTagChipsInput",
+      "QBDropdown",
+      "QBConfirmDialog"
+    ],
+    "i18nNamespace": "questionBank",
+    "i18nKeyCount": 94, // keys in src/bootstrap/i18n/messages/vi.json questionBank section (uiux-ux-writer DR-021 base 87 + uiux-lead reconcile +7: scopeToggle.*, filter.allGrades/gradeAriaLabel, filter.mandatorySatisfied/mandatoryRequired)
+    "status": "design-ready (DR-021, 2026-07-17)",
+    "beContract": {
+      "service": "core (exercisebank sub-domain)",
+      "routes": "GET /api/v1/lms/questions/search (staff-only, PUBLISHED only, requires subjectId or tag else 422 QUESTION_SEARCH_FILTER_REQUIRED), POST/GET /questions (own, no filter required), GET/PUT /:id, PUT /:id/publish (one-way)",
+      "responseFields": "id, tenantId, authorId, questionType (ESSAY|SHORT_ANSWER|FILL_IN), subjectId, gradeLevel, difficulty (EASY|MEDIUM|HARD), body, expectedAnswer, status (DRAFT|PUBLISHED), tags, createdAt, updatedAt, publishedAt",
+      "errorTaxonomy": "~12-code QUESTION_* incl. search 422 — edu-api/services/core/docs/ERROR_CODES.md:457-468",
+      "noMcqOptions": "No options array on the wire — do NOT design an MCQ options-editor UI (cross-repo ask #24, out of scope)"
+    },
+
+    // ── SCREEN B1: Question Bank List (/teacher/question-bank) ──────────────
+    "listScreen": {
+      "layout": "single-column, maxWidth 1280, margin 0 auto, padding 24px 32px (mobile 20px 16px), background var(--edu-bg)",
+      "note": "Row-card list layout — mirrors exam-bank.jsx list (NOT lesson-bank's grid)",
+      "pageHeader": {
+        "breadcrumb": "US-E18.16 · Ngân hàng câu hỏi",
+        "title": {
+          "i18nKey": "questionBank.title",
+          "note": "static title, same for both scopes"
+        },
+        "subtitle": {
+          "i18nKey": "questionBank.subtitle",
+          "note": "static subtitle, same for both scopes"
+        },
+        "scopeToggle": {
+          "note": "Của tôi (own DRAFT+PUBLISHED, GET /questions — no mandatory filter) vs Tìm kiếm (cross-teacher PUBLISHED, GET /questions/search — mandatory subjectId OR tag, 422 gate)",
+          "options": [
+            "mine (questionBank.scopeToggle.mine)",
+            "search (questionBank.scopeToggle.search)"
+          ],
+          "i18nKey": "questionBank.scopeToggle.{mine,search,ariaLabel}",
+          "a11y": "role='group' + aria-label (questionBank.scopeToggle.ariaLabel); active button aria-pressed=true"
+        },
+        "createCTA": { "i18nKey": "questionBank.createButton", "icon": "plus" }
+      },
+      "filterBar": {
+        "search": {
+          "i18nKey": "questionBank.filter.searchPlaceholder",
+          "note": "In scope=search, this input (as free-text tag) OR the subject dropdown satisfies the mandatory-filter gate; entering either flips the 422-prevention indicator to satisfied"
+        },
+        "subjectDropdown": {
+          "icon": "bookOpen",
+          "i18nKey": "questionBank.filter.allSubjects",
+          "note": "one of the two mandatory-filter satisfiers in scope=search"
+        },
+        "gradeDropdown": {
+          "icon": "graduationCap",
+          "i18nKey": "questionBank.filter.allGrades"
+        },
+        "typeDropdown": {
+          "icon": "layers",
+          "options": [
+            "all",
+            "ESSAY (Tự luận)",
+            "SHORT_ANSWER (Trả lời ngắn)",
+            "FILL_IN (Điền khuyết)"
+          ]
+        },
+        "difficultyDropdown": {
+          "icon": "flag",
+          "options": ["all", "EASY (Dễ)", "MEDIUM (Trung bình)", "HARD (Khó)"]
+        },
+        "statusDropdown": {
+          "visibleFor": "scope=mine only",
+          "options": ["all", "DRAFT", "PUBLISHED"]
+        },
+        "mandatoryFilterIndicator": {
+          "visibleFor": "scope=search only",
+          "satisfied": {
+            "icon": "check",
+            "color": "var(--edu-success)",
+            "i18nKey": "questionBank.filter.mandatorySatisfied"
+          },
+          "unsatisfied": {
+            "icon": "alertTriangle",
+            "color": "var(--edu-warning-foreground) / var(--edu-warning-text)",
+            "i18nKey": "questionBank.filter.mandatoryRequired"
+          }
+        }
+      },
+      "requiredFilterPrompt": {
+        "note": "DISTINCT from generic empty-state — shown when scope=search AND neither subjectId nor tag set (client-side gate mirrors BE 422 QUESTION_SEARCH_FILTER_REQUIRED; no request fires until satisfied)",
+        "component": "QBFilterRequiredPrompt",
+        "icon": "search",
+        "iconSize": 32,
+        "title": {
+          "i18nKey": "questionBank.requiredFilterPrompt.title",
+          "text": "Chọn môn học hoặc thẻ để tìm"
+        },
+        "desc": { "i18nKey": "questionBank.requiredFilterPrompt.body" },
+        "style": "dashed border card, 64px 24px padding — visually distinct from EduEmpty (solid border)"
+      },
+      "rowCard": {
+        "note": "Row layout — mirrors EBExamCard structure in exam-bank.jsx",
+        "iconBlock": "52x52, borderRadius 12, gradient by questionType color",
+        "bodyPreview": "truncated body (140 chars), fontSize 14/700",
+        "metaLine": "subject (colored) · grade · QBTypeBadge · QBDifficultyBadge (+ author when scope=search)",
+        "difficultyBadgeMapping": "EASY→success, MEDIUM→warning, HARD→error — reuses EXISTING GPA-tier convention (design-system.md §Score/performance màu), NOT a new token",
+        "typeBadgeMapping": "ESSAY(purple)/SHORT_ANSWER(primary)/FILL_IN(teal) — distinct hues from existing palette, no new token",
+        "tags": "pill chips",
+        "statusBadge": "QBStatusChip — DRAFT=warning/PUBLISHED=success (2-value, exam-bank convention)",
+        "actionButton": "Xem/Sửa (scope=mine) or Xem chi tiết (scope=search), icon penLine/eye"
+      },
+      "states": {
+        "requiredFilterGate": "QBFilterRequiredPrompt (scope=search, no filter set)",
+        "loading": "EduSkeleton variant='rows' count=4",
+        "error": "EduError + onRetry",
+        "emptyAll": {
+          "icon": "clipboardList",
+          "action": "Tạo câu hỏi mới (scope=mine only)"
+        },
+        "emptyFiltered": { "icon": "search", "action": "Bỏ lọc" }
+      }
+    },
+
+    // ── SCREEN B2: Question Bank Builder (/teacher/question-bank/create, /:id/edit) ─
+    "builderScreen": {
+      "layout": "single-column form, maxWidth 760, stacked cards — questionType selector → subject/grade/difficulty grid → body → expectedAnswer → tags",
+      "topBar": "same pattern as lessonPlan.builderScreen.topBar (back, breadcrumb+title truncated body, QBStatusChip, saveDraft/publish OR locked banner)",
+      "questionTypeSelector": {
+        "note": "3-option segmented control (NOT 2-option like exam-bank MCQ/Essay) — ESSAY / SHORT_ANSWER / FILL_IN, icon+label, active tinted by type color",
+        "icons": {
+          "ESSAY": "scrollText",
+          "SHORT_ANSWER": "edit",
+          "FILL_IN": "list"
+        }
+      },
+      "metaGrid": {
+        "columns": "1.4fr 1fr 1fr (subject / grade / difficulty), mobile: stacks to 1 col",
+        "fields": [
+          "subjectId (select)",
+          "gradeLevel (select)",
+          "difficulty (select, EASY/MEDIUM/HARD)"
+        ]
+      },
+      "bodyField": {
+        "i18nKey": "questionBank.builder.bodyLabel (+ bodyPlaceholderEssay/bodyPlaceholderShortAnswer/bodyPlaceholderFillIn by questionType)",
+        "required": true,
+        "validation": "min 4 chars",
+        "rows": "6 for ESSAY, 3 for FILL_IN, 4 for SHORT_ANSWER (longer for essay per DR)",
+        "fillInHint": "placeholder text (questionBank.builder.bodyPlaceholderFillIn) shown only when questionType=FILL_IN"
+      },
+      "expectedAnswerField": {
+        "i18nKey": "questionBank.builder.expectedAnswerLabel (+ expectedAnswerPlaceholderEssay/expectedAnswerPlaceholderShortAnswer/expectedAnswerPlaceholderFillIn by questionType)",
+        "required": true,
+        "rows": "4 for ESSAY, 2 for SHORT_ANSWER/FILL_IN"
+      },
+      "tagsField": {
+        "i18nKey": "questionBank.builder.{tagsLabel,tagsPlaceholder,tagsHelper}",
+        "component": "tag-chips-input (shared shape with lessonPlan)"
+      },
+      "publish": {
+        "disabledUntil": "body (>=4 chars) AND expectedAnswer non-empty",
+        "confirmDialog": "one-way DRAFT→PUBLISHED, irreversible",
+        "lockedBanner": "same as lessonPlan — all fields disabled/read-only once PUBLISHED"
+      }
+    },
+
+    "a11y": {
+      "contrast": "difficulty badges reuse the AA-proven GPA-tier success/warning/error pairing; warning badge uses var(--edu-warning-foreground) text tone, never white-on-yellow",
+      "statusNotColorOnly": "type/difficulty/status badges always pair icon + text label",
+      "focus": "segmented questionType selector and all form fields keyboard-operable, visible focus ring",
+      "requiredFilterA11y": "mandatory-filter indicator uses icon+text (check/alertTriangle), not color alone",
+      "motion": "toast/dialog fade-in gated behind prefers-reduced-motion: reduce"
+    }
   }
 }
