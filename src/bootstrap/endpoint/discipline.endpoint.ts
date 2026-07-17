@@ -81,10 +81,13 @@ export const DISCIPLINE_EP = {
   myLeaveRequests: "/core/api/v1/conduct/student-leave-requests",
 
   // --- Parent multi-child view (US-E09.4) ---
-  // PERMANENTLY UNMAPPED: there is no real parent↔child linkage or
-  // parent-resolvable child `classId` discovery endpoint (ask #15). These have
-  // no `/core/api/v1/conduct/*` equivalent at all; kept as the legacy
-  // documentation paths, never called by the real repo (force-mocked DI).
+  // PERMANENTLY UNMAPPED: real BE conduct-grade listing DOES resolve a
+  // parent's linked children server-side (`ParentStudentLinkReader`, US-096),
+  // but the operative web blocker is unchanged — there is still no endpoint a
+  // PARENT can call to discover a linked child's `classId`/`termId` to even
+  // form the list request (ask #15/#22). These have no
+  // `/core/api/v1/conduct/*` equivalent reachable from the web; kept as the
+  // legacy documentation paths, never called by the real repo (force-mocked DI).
   parentChildren: "/core/api/v1/parent/children",
   childConductSummary: (childId: string) =>
     `/core/api/v1/discipline/children/${childId}/conduct-summary`,

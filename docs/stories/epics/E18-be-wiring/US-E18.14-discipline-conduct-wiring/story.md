@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -247,6 +247,27 @@ alone.
 - `scripts/bin/harness-cli story update --id US-E18.14 --status implemented --unit 1 --integration 0 --e2e 0 --platform 1` (run after proof).
 
 ## Evidence
+
+- `bun vitest run`: 303 files / 1902 tests pass (zero regression vs pre-US
+  baseline 303/1866, +36 new tests, same file count).
+- `bunx tsc --noEmit`: clean.
+- `bun run build`: green.
+- `bun lint`: clean on touched files.
+- `fe-tech-lead-reviewer`: **APPROVED** — independently ground-truthed the
+  force-mock premise against `edu-api`'s Go source (confirmed `classId` is
+  genuinely mandatory on the STUDENT-self branch of
+  `ListStudentViolationsUseCase`/`ListStudentConductGradesUseCase`, and on
+  `CreateStudentLeaveRequestRequest`; no live real-branch contradicts the
+  stub claim — the US-E18.12-class failure mode this check exists to catch).
+  0 blocking findings; 2 non-blocking CONSIDER notes (a slightly-stale
+  parent-linkage comment in `discipline.endpoint.ts`, and two
+  error-message-length judgment calls in `toFailure`) — the comment was
+  tightened same-branch, the judgment calls left as documented (mirrors
+  US-E18.8 precedent, acceptable while force-mocked).
+- Design-review + a11y gates: not triggered (zero UI surface, mirrors
+  US-E18.8/US-E18.9).
+- QA gate: n/a (no UI/behavior change, existing Storybook stories for all 4
+  discipline screens pass unchanged, mirrors US-E18.8/US-E18.9).
 
 See merge commit `chore(discipline): merge feat/us-e18.14-discipline-conduct-wiring (US-E18.14)`
 for the full test run output.
