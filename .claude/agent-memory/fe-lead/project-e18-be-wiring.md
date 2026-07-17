@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.14) done, findings for remaining Wave 3-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.15) done, findings for remaining Wave 3-4
 metadata:
   type: project
 ---
@@ -602,3 +602,51 @@ against edu-api Go source, specifically checking for the US-E18.12-class
 failure mode — a live real-branch contradicting a force-mock claim — found
 none; 2 non-blocking CONSIDER notes, one comment-accuracy fix applied
 same-branch).
+
+**US-E18.15 (exam-bank, 2026-07-17, Wave 3) — `openapi.yaml` itself can be
+drifted from the Go source it's supposed to document, not just path-vs-DTO
+naming drift; a mid-flight scope correction (Option A/B/C escalation from the
+engineer) is a legitimate outcome of ground-truthing, not a planning
+failure.** The ADR I wrote pre-implementation (0056) trusted `openapi.yaml`'s
+`ExamBank` write-path docs (`CreateExamPaperRequest.questions`, a
+`SetExamQuestionsRequest` full-replace endpoint) — both fictional. The real
+Go source (`internal/lms/exambank/adapter/http/{routes.go,dto/request.go}`)
+has: metadata-only create, one-question-per-call DRAFT-only append (no
+replace, no options-text array field), and literally no update/delete
+endpoint. `fe-nextjs-engineer` caught this mid-implementation (independent-
+option-only work first, per its own briefing to not block on the
+ambiguous parts) and escalated 3 options rather than guessing or silently
+descoping. **Lesson**: even this epic's own playbook step 1 ("ground-truth
+the Go source, don't trust openapi.yaml") can still be violated by the LEAD
+during pre-implementation ADR-writing if the lead reads `openapi.yaml`
+first and the Go source only for the parts that "felt risky" (I did read
+Go source for errors/entities but trusted openapi.yaml's request/response
+shape tables verbatim) — the fix going forward: for every write-path
+operation, open the actual handler+request-DTO Go file, not just the
+schema in openapi.yaml, even when the path/response read-shape checks out.
+**Escalation handling**: independently re-verified the engineer's claim
+against the same 3 Go files before deciding (found identical) — then
+amended the ADR in-place with a dated "Amendment" section (this repo's
+established correction pattern, see ADR 0037) rather than minting a new
+ADR number, and renumbered the cross-repo asks to slot into
+`EPIC-OVERVIEW.md`'s canonical registry (the story packet's own draft
+numbering collided with two already-claimed numbers from parallel/prior
+stories — always check the CANONICAL file's last number, not just what
+the draft used). **Decision (Option A)**: wire list/get/publish real
+(maximizes the genuinely wireable surface); create/update/delete become
+permanently-blocked stubs (hybrid DI, matching US-E18.5/US-E18.13); the
+entire teacher builder route (create/edit) gets blocked in real mode — a
+bigger UI-behavior change than the story's original "hide delete only"
+framing, explicitly flagged for and passed through the design-review gate
+rather than silently shipped. Independent-worktree pre-existing-failure
+verification (a recurring epic technique, `git worktree add <path> <sha>
+--detach`) confirmed a Storybook test/`aria-disabled` mismatch predates
+this US, logged as a follow-up rather than fixed in-scope. 307 files/1950
+tests (baseline 303/1902, +4/+48), tsc/build clean, tech-lead APPROVED
+first pass (independently re-verified error-code mapping + raw:true
+placement + blocked-stub unconditional-throw against the Go source), a11y
+PASS (1 should-fix + 2 minor, all fixed same-branch by fe-lead directly —
+cheap copy/heading fixes don't need a round-trip back to the engineer),
+QA GO (wrote new Storybook/unit coverage for the real-mode gating +
+blocked-route + 3-value-status + error-path claims rather than trusting
+the self-report, per the epic's now-standard QA brief).
