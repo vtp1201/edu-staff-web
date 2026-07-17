@@ -15,7 +15,9 @@ exam-bank.jsx, teaching-plan.jsx, staff-leave.jsx, audit-log.jsx, admin-settings
 feed.jsx, moderation.jsx, parent-links.jsx, invitations.jsx, email-verify.jsx,
 tenant-switch.jsx, reports.jsx, plus messaging.jsx extended in place (presence),
 and the shared `states.jsx` state-primitive set (see `design-system.md`).
-Current design version: 1506 (+ group B v2.2 additions above).
+DR-021 (2026-07-17) adds: lesson-plan.jsx, question-bank.jsx (net-new,
+US-E18.16 design follow-up).
+Current design version: 1506 (+ group B v2.2 additions above, + DR-021 above).
 
 Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design, chưa impl).
 
@@ -59,7 +61,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Grade Entry | `(app)/teacher/grades/enter` | `features/grades` | 🎨 design-ready (US-E14.2; `grade-entry.jsx` 1506) |
 | Grade Book | `(app)/teacher/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
+| Lesson Plan Authoring + Builder | `(app)/teacher/lesson-plans`,`/lesson-plans/create`,`/lesson-plans/:id/edit` | `features/lesson-plan` (proposed) | 🎨 design-ready (US-E18.16 design follow-up; `lesson-plan.jsx` `LessonPlanScreen`+`LessonPlanBuilderScreen`, DR-021 2026-07-17) |
 | Exam Bank + Builder | `(app)/teacher/exam-bank`,`/exam-bank/create`,`/exam-bank/:id/edit` | `features/exam-bank` | 🎨 design-ready (US-E11.3; `exam-bank.jsx` 1506) |
+| Question Bank + Builder | `(app)/teacher/question-bank`,`/question-bank/create`,`/question-bank/:id/edit` | `features/question-bank` (proposed) | 🎨 design-ready (US-E18.16 design follow-up; `question-bank.jsx` `QuestionBankScreen`+`QuestionBankBuilderScreen`, DR-021 2026-07-17) |
 | Teaching Plan / PPCT | `(app)/teacher/teaching-plan` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
 | Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | ✅ US-E15.2 (`timetable-view.jsx` edustaff_5) |
 | Classes / Students | `(app)/teacher/classes`,`/students` | `features/teacher` | ✅ US-E13.1 |
