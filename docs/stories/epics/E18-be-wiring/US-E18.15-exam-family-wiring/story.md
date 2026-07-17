@@ -164,3 +164,65 @@ change than the original "hide delete only" scope**, per the Amendment:
 
 No new screen. Existing `exam-bank-screen`/`exam-builder-screen` keep their
 layout; only the status badge (3-value) and delete-affordance change.
+
+## Evidence
+
+**Status: engineer-complete, awaiting review/a11y/design-review/QA gates**
+(Status left `planned` for fe-lead to finalize per workflow).
+
+Implementation (Option A — ADR 0056 amendment, ground-truthed against the Go
+source, NOT `openapi.yaml` which is drifted for the write path):
+
+- **Wired REAL** (`ExamBankRepository`): `listExamBank` (`GET
+  /core/api/v1/lms/exam-papers`, cursor-paginated with `raw:true` top-level,
+  `status` sent as the UPPER wire value, `subjectName` resolved via a
+  `subject-catalogue` fan-out, `teacherName` falls back to `authorId`),
+  `getExamDetail` (`GET .../{id}`), `publishExam` (`PUT .../{id}/status`
+  `{status:"PUBLISHED"}`, DRAFT→PUBLISHED). Admin exam-bank screen (read-only)
+  is now 100% real; teacher list + publish are real.
+- **Permanently blocked stubs** (no wire endpoint): `createExam`/`updateExam`/
+  `deleteExam` throw `"not-supported"`. Teacher "Create" + delete affordances
+  hidden in real mode (`authoringEnabled = USE_MOCK`); teacher builder routes
+  (`create`, `[id]/edit`) render an `ExamBuilderUnavailable` explanatory state
+  in real mode instead of a form that would fail on submit. Publish stays
+  available (it IS wired). A translated note explains the disabled authoring.
+- **3-value status** (DRAFT/PUBLISHED/CONFIDENTIAL): entity/DTO/mapper/VM +
+  `ExamCard` tone map (draft→warning, published→success, confidential→muted)
+  + `StatusBadge` reuse (text label always present → never color-only) +
+  filter option. CONFIDENTIAL not surfaced as an action (no UI for it).
+- **Error taxonomy**: full 13-code UPPER_SNAKE matrix
+  (`map-exam-bank-error.ts`, `errorCodeOf`-based) → `ExamBankFailure` union
+  extended with `not-supported`/`invalid-transition`/`not-editable`/
+  `question-body-required`/`question-marks-invalid`/`answer-key-required`/
+  `answer-key-not-allowed`/`title-required`/`title-too-long`/`duration-invalid`/
+  `invalid-cursor`. Real repo maps code→failure key then throws it
+  (throwing-repo idiom → domain `mapRepoError`).
+- **Validation-trap fix**: `validateQuestion` passes through when `options` is
+  absent/empty (real questions have no options model, validated server-side).
+- **DI**: `ensureFreshSession()` wired into the real branch of
+  `exam-bank.di.ts` (first time — decision 0018 playbook step 6). Hybrid
+  factory (real reads/publish + blocked write stubs).
+- **i18n**: 11 new `examBank.errors.*` keys + `status.confidential` +
+  `authoringDisabledNote` + `unavailable.*` added to both `vi.json` (source)
+  and `en.json` (mirror).
+
+Proof (run on this branch):
+- `bunx vitest run`: **306 files / 1944 tests pass** (baseline 303/1902 —
+  zero regression, +3 files/+42 tests from the mapper/error-map/validate +
+  real-repo tests).
+- `bunx vitest run --config vitest.storybook.mts src/features/exam-bank`:
+  12/13 pass. The 5 `exam-bank-screen` stories that previously failed
+  (baseline — screen owns `useRouter`, no App Router mounted) now PASS after
+  adding `nextjs: { appDirectory: true }` (baseline improved by +5). The 1
+  remaining failure (`ExamBuilderScreen > Builder Validation`) is a
+  PRE-EXISTING baseline failure (verified failing on a clean-HEAD `git stash`
+  run): `BuilderActionBar`'s publish button uses `aria-disabled` while the
+  story asserts native `toBeDisabled()` — untouched by this US, out of scope.
+- `bunx tsc --noEmit`: clean.
+- `bun lint` (biome, changed surface): clean.
+- `bun run build`: green — all exam-bank routes compiled (teacher list/create/
+  edit, admin list).
+
+New cross-repo asks (registered in `EPIC-OVERVIEW.md` as #24–26): no
+options-text field (MCQ choices unstorable), `openapi.yaml` write-path drift,
+no update/edit/remove/delete endpoint.

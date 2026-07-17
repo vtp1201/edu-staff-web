@@ -1,6 +1,7 @@
 import type { ExamBankSummaryDto } from "./exam-bank-list-response.dto";
-import type { ExamBankQuestionDto } from "./exam-bank-question-response.dto";
 
-export interface ExamBankDetailResponseDto extends ExamBankSummaryDto {
-  questions: ExamBankQuestionDto[];
-}
+/**
+ * The single-get response is the same `ExamPaperResponse` shape as a list item
+ * (it always carries the full `questions` array). Aliased for call-site clarity.
+ */
+export type ExamBankDetailResponseDto = ExamBankSummaryDto;

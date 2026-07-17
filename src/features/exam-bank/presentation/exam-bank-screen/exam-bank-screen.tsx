@@ -53,6 +53,7 @@ function toCardVM(
   viewerRole: "teacher" | "admin",
   currentTeacherId: string,
   editPathPrefix: string,
+  authoringEnabled: boolean,
 ): ExamCardVM {
   const isOwner =
     viewerRole === "teacher" && exam.teacherId === currentTeacherId;
@@ -63,8 +64,10 @@ function toCardVM(
     totalQuestions: exam.totalQuestions,
     status: exam.status,
     createdAtDisplay: exam.createdAt,
-    canEdit: isOwner,
-    canDelete: isOwner && exam.status === "draft",
+    // Edit/delete need paper authoring (blocked in real mode). Publish IS wired
+    // real, so it stays available to the owner regardless (US-E18.15/ADR 0056).
+    canEdit: isOwner && authoringEnabled,
+    canDelete: isOwner && exam.status === "draft" && authoringEnabled,
     canPublish: isOwner && exam.status === "draft",
     editPath: `${editPathPrefix}/${exam.id}/edit`,
   };
@@ -78,6 +81,7 @@ export function ExamBankScreen({
   currentTeacherId,
   createPath,
   editPathPrefix,
+  authoringEnabled,
   publishAction,
   deleteAction,
   isLoading = false,
@@ -92,7 +96,11 @@ export function ExamBankScreen({
   const [isPublishing, startPublish] = useTransition();
   const [isDeleting, startDelete] = useTransition();
 
-  const canCreate = viewerRole === "teacher";
+  const canCreate = viewerRole === "teacher" && authoringEnabled;
+  // Teacher, but authoring is unavailable in this environment → explain (not a
+  // silently-missing button). Publishing existing papers still works.
+  const showAuthoringDisabledNote =
+    viewerRole === "teacher" && !authoringEnabled;
 
   const displayed = useMemo(
     () => applyFilters(exams, filters),
@@ -101,9 +109,15 @@ export function ExamBankScreen({
   const cards = useMemo(
     () =>
       displayed.map((e) =>
-        toCardVM(e, viewerRole, currentTeacherId, editPathPrefix),
+        toCardVM(
+          e,
+          viewerRole,
+          currentTeacherId,
+          editPathPrefix,
+          authoringEnabled,
+        ),
       ),
-    [displayed, viewerRole, currentTeacherId, editPathPrefix],
+    [displayed, viewerRole, currentTeacherId, editPathPrefix, authoringEnabled],
   );
   const activeFilter = hasActiveFilter(filters);
 
@@ -164,6 +178,15 @@ export function ExamBankScreen({
           </Button>
         )}
       </header>
+
+      {showAuthoringDisabledNote && (
+        <p
+          role="status"
+          className="rounded-[var(--edu-radius-card)] border border-border bg-muted px-4 py-3 text-muted-foreground text-sm"
+        >
+          {t("authoringDisabledNote")}
+        </p>
+      )}
 
       <ExamBankFilterBar
         filters={filters}

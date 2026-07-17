@@ -1720,6 +1720,7 @@
     }
   },
   "examBank": {
+    "authoringDisabledNote": "Việc tạo và chỉnh sửa đề thi chưa khả dụng trong môi trường này. Bạn vẫn có thể xem và publish đề thi hiện có.",
     "builder": {
       "addQuestion": "Thêm câu",
       "back": "Quay lại",
@@ -1778,15 +1779,26 @@
       "title": "Chưa có đề thi nào"
     },
     "errors": {
+      "answer-key-not-allowed": "Loại câu hỏi này không cho phép đáp án.",
+      "answer-key-required": "Câu hỏi trắc nghiệm cần có đáp án.",
       "cannot-delete-published": "Không thể xoá đề thi đã publish.",
+      "duration-invalid": "Thời lượng thi phải lớn hơn 0.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "insufficient-options": "Mỗi câu hỏi cần ít nhất 2 phương án.",
+      "invalid-cursor": "Không thể tải thêm đề thi.",
+      "invalid-transition": "Không thể chuyển trạng thái đề thi này.",
       "missing-title": "Vui lòng nhập tiêu đề đề thi.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "no-questions": "Đề thi cần ít nhất một câu hỏi.",
+      "not-editable": "Không thể chỉnh sửa đề thi ở trạng thái hiện tại.",
       "not-found": "Không tìm thấy đề thi.",
+      "not-supported": "Thao tác này không được API hỗ trợ.",
+      "question-body-required": "Câu hỏi chưa có nội dung.",
       "question-empty-content": "Câu hỏi chưa có nội dung.",
+      "question-marks-invalid": "Điểm của câu hỏi phải lớn hơn 0.",
       "question-missing-answer": "Câu hỏi chưa chọn đáp án đúng.",
+      "title-required": "Vui lòng nhập tiêu đề đề thi.",
+      "title-too-long": "Tiêu đề đề thi không được vượt quá 200 ký tự.",
       "unknown": "Đã xảy ra lỗi không xác định."
     },
     "filter": {
@@ -1813,6 +1825,7 @@
     "removeQuestionAriaLabel": "Xoá câu hỏi {index}",
     "resultsHeading": "{count} đề thi",
     "status": {
+      "confidential": "Bảo mật",
       "draft": "Nháp",
       "published": "Đã publish"
     },
@@ -1823,6 +1836,11 @@
       "deleted": "Đã xoá đề thi",
       "draftSaved": "Đã lưu nháp",
       "published": "Đã publish đề thi"
+    },
+    "unavailable": {
+      "title": "Không khả dụng",
+      "body": "Việc tạo và chỉnh sửa đề thi chưa được hỗ trợ trong môi trường này. Bạn vẫn có thể xem và publish đề thi hiện có.",
+      "back": "Quay lại kho đề thi"
     }
   },
   "feed": {

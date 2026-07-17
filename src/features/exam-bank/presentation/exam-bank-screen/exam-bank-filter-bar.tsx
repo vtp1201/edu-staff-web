@@ -28,7 +28,7 @@ type ExamBankFilterBarProps = {
   onFilterChange: (patch: Partial<ExamBankFilterState>) => void;
 };
 
-const STATUS_OPTIONS: ExamBankStatus[] = ["draft", "published"];
+const STATUS_OPTIONS: ExamBankStatus[] = ["draft", "published", "confidential"];
 
 // Radix Select forbids an empty-string item value; use a sentinel for "all".
 const ALL = "__all__";

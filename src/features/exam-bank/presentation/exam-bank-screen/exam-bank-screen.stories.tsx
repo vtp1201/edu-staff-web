@@ -33,6 +33,7 @@ const baseProps: ExamBankScreenVM = {
   currentTeacherId: "u-teacher-1",
   createPath: "/teacher/exam-bank/create",
   editPathPrefix: "/teacher/exam-bank",
+  authoringEnabled: true,
   publishAction,
   deleteAction,
 };
@@ -40,7 +41,9 @@ const baseProps: ExamBankScreenVM = {
 const meta: Meta<typeof ExamBankScreen> = {
   title: "Features/ExamBank/ExamBankScreen",
   component: ExamBankScreen,
-  parameters: { layout: "fullscreen" },
+  // The screen owns `useRouter` (create/empty-state navigation) → mount the App
+  // Router so the interaction runner can render it (US-E18.15).
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
@@ -93,12 +96,37 @@ export const ExamList_EmptyState: Story = {
   },
 };
 
+/**
+ * US-E18.15/ADR 0056: real mode — paper authoring (create/edit/delete) has no
+ * wire endpoint, so the Create button is hidden and a translated note explains
+ * why. Publish stays available (it IS wired real) — the owner's draft still
+ * shows its action menu.
+ */
+export const TeacherRealMode_AuthoringDisabled: Story = {
+  args: { ...baseProps, authoringEnabled: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: /Tạo đề thi mới/i }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByText(/chưa khả dụng trong môi trường này/i),
+    ).toBeInTheDocument();
+    // Publish still available → owner drafts keep their action menu.
+    await expect(
+      canvas.getAllByRole("button", { name: /Mở menu thao tác đề thi/i })
+        .length,
+    ).toBeGreaterThan(0);
+  },
+};
+
 /** AC-9: admin read-only — no create button, no card action menus. */
 export const AdminReadOnly_NotApplicable: Story = {
   args: {
     ...baseProps,
     viewerRole: "admin",
     createPath: "",
+    authoringEnabled: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
