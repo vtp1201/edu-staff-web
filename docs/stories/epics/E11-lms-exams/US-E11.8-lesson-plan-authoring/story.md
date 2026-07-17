@@ -76,3 +76,40 @@ To be filled by `/fe` when implemented. Add a `docs/TEST_MATRIX.md` row now at
 
 BA analysis artifacts: `requirements.md`, `integration.md`, `use-cases.md`,
 `spec.md` in this packet.
+
+## FE Resolution Notes (fe-lead, pre-implementation, 2026-07-17)
+
+Resolving `spec.md` §8's 4 `[OPEN QUESTION]`s so `fe-nextjs-engineer` doesn't
+guess or invent new endpoints (grepped the codebase first, per each question's
+own "raise before inventing" instruction):
+
+1. **Subject reference-data source (blocks FR-001 picker).** No existing
+   teacher-facing feature currently consumes a subject picker (exam-bank's
+   create/update paths are permanently-blocked stubs, US-E18.15/ADR 0056).
+   However `src/bootstrap/di/subject-catalogue.di.ts` already exports a
+   reusable `makeSubjectCatalogueRepository()` factory (mock/real-swapped,
+   `USE_MOCK`-gated) wired to `SUBJECT_CATALOGUE_EP`. **Decision:** reuse this
+   factory read-only from a new `list-subjects-for-picker` use-case (or call
+   the repo directly from a Server Action) inside `lesson-plan`'s DI/actions —
+   do NOT build a second subject-list integration. Loading/error sub-states
+   for the picker: skeleton `<select>` while fetching, inline retry on error,
+   matches `SUBJECT_NOT_FOUND`/`LESSON_PLAN_INVALID_SUBJECT_ID` handling in
+   FR-001 AC-001.4/.5.
+2. **`teacherId` → display-name resolution (blocks FR-007 card attribution).**
+   No existing teacher-facing lookup resolves a bare uuid to a name (the only
+   staff-directory-like feature, `admin/staffing`, is principal/admin-scoped,
+   not reachable from teacher routes). **Decision:** per spec.md's own
+   documented fallback, render `lessonPlan.card.unknownOwner` ("Giáo viên
+   khác"/"Another teacher") as the "GV: <name>" attribution on browse-scope
+   cards for ALL owners (not just unresolvable ones) until a real lookup is
+   wired — do not invent a new name-resolution endpoint. Flagged as a backlog
+   gap (name resolution), not silently dropped.
+3. **FR-010 leave-confirmation scope.** No answer surfaced from user/ba-lead
+   before implementation start. **Decision:** ship dot-only per spec.md's
+   explicit default (passive "Chưa lưu" indicator, no navigation guard) —
+   satisfies the "Should" priority without inventing new confirm-dialog UX.
+4. **Error-code casing transform.** Deferred to `fe-nextjs-engineer` per
+   spec.md's instruction — do one real integration-test round-trip (or best-
+   effort verification against `../edu-api` source if no live instance) before
+   finalizing `map-lesson-plan-error.ts`; `fe-tech-lead-reviewer` to confirm
+   this was actually done, not just claimed.
