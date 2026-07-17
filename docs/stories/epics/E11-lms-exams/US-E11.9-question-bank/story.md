@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -148,8 +148,40 @@ BA analysis artifacts: `requirements.md`, `integration.md`, `use-cases.md`,
   codebase-wide cleanup out of this story's scope, revisit at a 3rd
   consumer or as its own cleanup story).
 
+### QA gate (fe-qa-playwright) — final verdict: GO
+
+- Independent AC↔test traceability re-derived from actual test files (not
+  the engineer's self-report) against all 72 ACs (spec.md §7). Found genuine
+  gaps and closed them with new tests (not production changes): AC-902.1/.2/.4
+  (gate zero-request/subject-satisfies/clear-reverts), AC-904.8/AC-905.6
+  (already-published race, previously zero Storybook coverage despite being
+  implemented), AC-906.6 (explicit Edit-CTA-hidden assertion), AC-907.1/.2/.4
+  on the `create` route (had no test file at all before this pass).
+- **1 CRITICAL found and fixed**: AC-902.8 (defense-in-depth `422
+  QUESTION_SEARCH_FILTER_REQUIRED` while the client gate reads satisfied) fell
+  through to the generic `QuestionBankErrorState` banner instead of
+  `QBFilterRequiredPrompt` — proven against real rendered Chromium DOM, not
+  code reading. Fixed in `question-bank-list-screen.tsx` by folding a
+  `serverRequiresFilter` check (derived from the thrown query error) into
+  `showSearchGate`, checked ahead of the generic `isError` branch. The
+  `Search_DefenseInDepth422` story that reproduced it now passes and is kept
+  in the suite as a permanent regression guard.
+- **1 MAJOR found and fixed**: `currentTeacherId` was threaded through the VM
+  but never read (`isMine` was computed from `scope === "mine"` instead,
+  contradicting its own doc-comment). Resolved by wiring
+  `isMine: q.authorId === vm.currentTeacherId` per spec §6.6's ownership-check
+  basis — behavior-neutral for all shipped scenarios, future-proofs the case
+  where a teacher's own PUBLISHED question surfaces in a `scope=search`
+  result set.
+- Re-verified after fixes: `Search_DefenseInDepth422` + all list-screen
+  stories 11/11 pass; AC-906.6 unaffected for shipped scenarios; full suite
+  338 files / 2179 tests; tsc clean; `bun lint` clean; `NEXT_PUBLIC_USE_MOCK=
+  bun run build` exit 0.
+- **Verdict: GO for merge.**
+
 ### Harness
 
 - `docs/TEST_MATRIX.md` US-E11.9 row updated with real proof flags (see
-  below); story `## Status` set to `in-progress` during build, finalized to
-  `implemented` on merge.
+  above); story `## Status` finalized to `implemented`.
+- `harness-cli story update --id US-E11.9 --status implemented --unit 1
+  --integration 1 --e2e 1` run by `fe-lead` after QA GO verdict.
