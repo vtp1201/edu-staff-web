@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11, E18.12) done, findings for remaining Wave 3-4
+description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.14) done, findings for remaining Wave 3-4
 metadata:
   type: project
 ---
@@ -552,3 +552,53 @@ fresh audit pass (not just self-report). QA: GO, full Storybook interaction
 suite diffed byte-identical (71/71 pre-existing failures) against a clean
 `main` worktree to prove the ADR's scope boundary (`grade-approval-screen`/
 `child-switcher` untouched) held end-to-end, not just at review time.
+
+**US-E18.14 (discipline→conduct, 2026-07-17, Wave 3, high-risk lane) — a gap
+documented for one role can turn out to also block a different role once
+ground-truthed line-by-line; when EVERY operation in a feature is blocked
+(not a subset), skip a11y/design-review/QA gates entirely.** Epic table's
+"tách student/staff + full submit/approve/reject" label was directionally
+right about what real BE has (genuine staff/student split — `staff-
+violations`/`staff-conduct-notes`/`student-absences` — and a real
+DRAFT→SUBMIT→APPROVE/REJECT workflow replacing web's single-action
+`overrideConductGrade`) but wrong that any of it is wireable: (1) every real
+endpoint keys on a real `studentMemberId` UUID the mock-first roster can't
+supply (extends ask #9's roster-lookup gap); (2) **new finding**: ask #15
+(US-E18.11) documented that PARENT has no `classId`-discovery endpoint for a
+linked child — reading `list_student_violations.go`/
+`list_student_conduct_grades.go` line-by-line found the identical gap ALSO
+blocks the STUDENT's own self-view (`classId` is parsed as mandatory BEFORE
+the role switch; the student-self `ownOnly` branch only post-filters an
+already-classId-scoped page, it never drops the requirement) — meaning even
+a student querying strictly their own records can't do so for real. This is
+the first blocked cluster in the epic where the gap hits self-service, not
+just oversight/admin screens (US-E18.8/09/11/13 were all "someone looking at
+someone else's data" gaps). **Lesson**: a cross-repo ask scoped to one role
+("PARENT can't discover X") is worth re-checking against every OTHER role
+branch in the same use-case before assuming it's role-specific — don't take
+the original ask's stated scope as the full extent of the gap. Third fully-
+blocked DI factory (after staff-leave/teaching-plan) — force-mocked
+`discipline.di.ts` regardless of `USE_MOCK`, real `DisciplineRepository`'s
+every method a permanent stub. Confirmed the shared-domain-service pattern
+from US-E18.8 generalizes further: `ApprovalTransition` (ADR 0073) is reused
+verbatim by violations/conduct-grades/leave alike, so `VIOLATION_SAME_ACTOR`/
+`VIOLATION_INVALID_TRANSITION`/`VIOLATION_REJECTION_REASON_REQUIRED` appear
+as the literal error code for conduct-grade and leave-request 409s/422s too
+— reviewer should expect this cross-resource code reuse, not flag it as a
+mapping bug. `staff-violations`/`staff-conduct-notes`/`student-absences` have
+literally no web screen anywhere (grepped `src/features`+`src/app`, confirmed
+by both engineer and reviewer independently) — correctly descoped as a
+product/design gap (flag for `/uiux`+`/ba`), not a BE gap, per the epic's "no
+new screens" Design Source directive. **Process win**: since literally every
+operation was blocked (a stronger claim than US-E18.8/09's "every operation
+for THIS screen"), skipped `fe-accessibility-auditor` + the design-review
+gate + `fe-qa-playwright` entirely (zero UI surface, mirrors US-E18.8/09) —
+kept the pipeline to just engineer→tech-lead-review, which is the right
+scope for a repository/DTO/error-taxonomy/DI-only US; don't over-invoke the
+full pipeline when there's no UI to gate. 303 files/1902 tests (baseline
+303/1866, +36 tests same file count), tsc/build/lint clean, tech-lead
+APPROVED first pass (independently re-ground-truthed the force-mock premise
+against edu-api Go source, specifically checking for the US-E18.12-class
+failure mode — a live real-branch contradicting a force-mock claim — found
+none; 2 non-blocking CONSIDER notes, one comment-accuracy fix applied
+same-branch).
