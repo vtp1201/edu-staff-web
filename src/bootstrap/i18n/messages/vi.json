@@ -1377,12 +1377,16 @@
       "invalid-conduct-grade": "Xếp loại hạnh kiểm không hợp lệ",
       "invalid-date": "Ngày nghỉ phải từ hôm nay trở đi",
       "invalid-severity": "Mức độ vi phạm không hợp lệ",
+      "invalid-transition": "Không thể chuyển trạng thái ở bước này",
+      "locked": "Hạnh kiểm đã duyệt, không thể chỉnh sửa",
       "missing-description": "Vui lòng nhập mô tả vi phạm",
       "missing-reject-reason": "Vui lòng nhập lý do từ chối (tối thiểu 10 ký tự)",
       "missing-student": "Vui lòng nhập tên học sinh",
       "network-error": "Lỗi kết nối, vui lòng thử lại",
       "not-found": "Không tìm thấy thông tin học sinh",
-      "reason-too-short": "Lý do phải có ít nhất 10 ký tự"
+      "reason-too-short": "Lý do phải có ít nhất 10 ký tự",
+      "same-actor": "Bạn không thể tự phê duyệt bản ghi do chính mình tạo",
+      "student-not-enrolled": "Học sinh không thuộc lớp này"
     },
     "leave": {
       "approve": "Duyệt",
