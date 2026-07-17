@@ -89,10 +89,10 @@ export function QuestionBankBuilderScreen({
           <ChevronLeft className="size-4 sm:mr-1.5" aria-hidden="true" />
           <span className="sr-only sm:not-sr-only">{tBuilder("back")}</span>
         </Button>
-        <p className="min-w-0 flex-1 truncate font-extrabold text-base text-foreground">
+        <h1 className="min-w-0 flex-1 truncate font-extrabold text-base text-foreground">
           {b.draft.body.trim() ||
             tBuilder(b.isEdit ? "editTitle" : "createTitle")}
-        </p>
+        </h1>
         <QBStatusChip status={b.status} />
         {!b.isLocked && (
           <>
@@ -179,6 +179,8 @@ export function QuestionBankBuilderScreen({
             subjects={vm.subjects}
             gradeOptions={vm.gradeOptions}
             disabled={b.isLocked || b.isEdit}
+            subjectError={b.subjectError}
+            onSubjectBlur={b.markSubjectTouched}
             onSubjectChange={(subjectId) => b.updateImmutable({ subjectId })}
             onGradeChange={(gradeLevel) => b.updateImmutable({ gradeLevel })}
             onDifficultyChange={(difficulty) =>
@@ -237,11 +239,14 @@ export function QuestionBankBuilderScreen({
 
           {/* Tags */}
           <div className="rounded-xl border border-border bg-card p-4.5">
-            <Label className={FIELD_LABEL_CLASS}>{tBuilder("tagsLabel")}</Label>
+            <Label id="qb-tags-label" className={FIELD_LABEL_CLASS}>
+              {tBuilder("tagsLabel")}
+            </Label>
             <QBTagChipsInput
               tags={b.draft.tags}
               isLocked={b.isLocked}
               onChange={b.updateTags}
+              labelledBy="qb-tags-label"
             />
             <p className="mt-2 text-edu-text-secondary text-xs">
               {tBuilder("tagsHelper")}

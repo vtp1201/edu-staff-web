@@ -203,6 +203,16 @@ export function QuestionBankListScreen({
   const showSearchGate = scope === "search" && !filterSatisfied;
   const isLoading = activeQuery.isLoading && activeQuery.fetchStatus !== "idle";
   const isError = activeQuery.isError;
+  // The gate flips on the immediate `filters.tag`, but the request keys off the
+  // debounced value — during that ~350ms window the disabled query is idle with
+  // no data, which would briefly render the "no match" empty state. Treat that
+  // window as loading (only when nothing is shown yet, so subject-mode results
+  // already on screen are never blanked out).
+  const searchDebouncePending =
+    scope === "search" &&
+    filterSatisfied &&
+    !querySatisfied &&
+    fetched.length === 0;
 
   // Route guard rejected a non-teacher — full-page access-denied (NFR-008).
   // No query ever runs (both queries stay disabled via the early return).
@@ -304,7 +314,7 @@ export function QuestionBankListScreen({
 
       {showSearchGate ? (
         <QBFilterRequiredPrompt />
-      ) : isLoading ? (
+      ) : isLoading || searchDebouncePending ? (
         <QBSkeleton />
       ) : isError ? (
         <QuestionBankErrorState

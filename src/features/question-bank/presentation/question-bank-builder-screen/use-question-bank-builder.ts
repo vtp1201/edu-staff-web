@@ -32,8 +32,9 @@ type ErrorMsgKey =
  * Map any failure to a translatable error key (only ones present in the
  * `questionBank.errors` namespace). BE-defensive field errors the client
  * already prevents (body-too-long, tag limits, invalid-difficulty,
- * type-not-supported, subject-not-found, invalid-cursor) collapse to the
- * generic `unknown` toast — they are unreachable in practice.
+ * type-not-supported, invalid-cursor) collapse to the generic `unknown`
+ * toast — they are unreachable in practice. `subject-not-found` is routed
+ * to the inline subject-field error (FR-008), NOT here.
  */
 function toErrorMsgKey(key: QuestionBankFailure["type"]): ErrorMsgKey {
   switch (key) {
@@ -100,6 +101,12 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
   );
 
   const [bodyTouched, setBodyTouched] = useState(false);
+  // FR-008: subject required (client) + `subject-not-found` API error both
+  // surface on the subject field, never as a generic toast.
+  const [subjectTouched, setSubjectTouched] = useState(false);
+  const [subjectApiError, setSubjectApiError] = useState<string | undefined>(
+    undefined,
+  );
   const [isDirty, setIsDirty] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isSaving, startSave] = useTransition();
@@ -116,6 +123,11 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
     draft.body.length <= MAX_BODY_LENGTH;
   const isPublishable = bodyValid;
   const bodyInvalid = bodyTouched && !bodyValid;
+
+  const subjectInvalid = subjectTouched && !draft.subjectId;
+  // API error (subject archived/deleted) takes precedence over the required hint.
+  const subjectError =
+    subjectApiError ?? (subjectInvalid ? tErr("subject-required") : undefined);
 
   const busInvalidate = useCallback(() => {
     queryClient.invalidateQueries({
@@ -145,6 +157,8 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
   const updateImmutable = useCallback(
     (patch: Partial<QuestionBankDraftInput>) => {
       if (isLocked || isEdit) return;
+      // Picking a subject clears a stale `subject-not-found` API error.
+      if (patch.subjectId !== undefined) setSubjectApiError(undefined);
       setDraft((d) => ({ ...d, ...patch }));
       setIsDirty(true);
     },
@@ -153,6 +167,12 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
 
   const applyFailure = useCallback(
     (errorKey: QuestionBankFailure["type"]) => {
+      // FR-008: subject archived/deleted → inline field error, not a toast.
+      if (errorKey === "subject-not-found") {
+        setSubjectTouched(true);
+        setSubjectApiError(tErr("subject-not-found"));
+        return;
+      }
       if (
         errorKey === "not-found" ||
         errorKey === "not-visible" ||
@@ -190,6 +210,7 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
 
   const handleSaveDraft = useCallback(() => {
     if (isBusy || isLocked) return;
+    setSubjectTouched(true);
     startSave(async () => {
       const res = await vm.saveQuestionAction({ ...draft, id: questionId });
       if (!res.ok) {
@@ -252,6 +273,7 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
 
   const handlePublishClick = useCallback(() => {
     setBodyTouched(true);
+    setSubjectTouched(true);
     if (!isPublishable) {
       toast.error(t("builder.publishDisabledHelper"));
       return;
@@ -290,12 +312,14 @@ export function useQuestionBankBuilder(vm: QuestionBankBuilderScreenVM) {
     isPublishing,
     isBusy,
     bodyInvalid,
+    subjectError,
     isPublishable,
     publishDialogOpen,
     updateField,
     updateTags,
     updateImmutable,
     markBodyTouched: () => setBodyTouched(true),
+    markSubjectTouched: () => setSubjectTouched(true),
     handleSaveDraft,
     handlePublishClick,
     handleConfirmPublish,

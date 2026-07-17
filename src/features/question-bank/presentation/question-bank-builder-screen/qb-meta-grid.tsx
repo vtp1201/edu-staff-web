@@ -27,6 +27,8 @@ export interface QBMetaGridProps {
   onDifficultyChange: (value: Difficulty) => void;
   /** Already-translated inline error for the subject field (undefined = none). */
   subjectError?: string;
+  /** Marks the subject field touched when the select closes without a value. */
+  onSubjectBlur?: () => void;
 }
 
 /**
@@ -46,6 +48,7 @@ export function QBMetaGrid({
   onGradeChange,
   onDifficultyChange,
   subjectError,
+  onSubjectBlur,
 }: QBMetaGridProps) {
   const t = useTranslations("questionBank.builder");
   const tDiff = useTranslations("questionBank.difficulty");
@@ -63,8 +66,16 @@ export function QBMetaGrid({
           value={subjectId}
           disabled={disabled}
           onValueChange={onSubjectChange}
+          onOpenChange={(open) => {
+            if (!open) onSubjectBlur?.();
+          }}
         >
-          <SelectTrigger id="qb-subject" className="w-full">
+          <SelectTrigger
+            id="qb-subject"
+            className="w-full"
+            aria-invalid={subjectError ? true : undefined}
+            aria-describedby={subjectError ? "qb-subject-err" : undefined}
+          >
             <SelectValue placeholder={t("subjectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -76,7 +87,11 @@ export function QBMetaGrid({
           </SelectContent>
         </Select>
         {subjectError && (
-          <p role="alert" className="mt-1.5 text-edu-error-text text-xs">
+          <p
+            id="qb-subject-err"
+            role="alert"
+            className="mt-1.5 text-edu-error-text text-xs"
+          >
             {subjectError}
           </p>
         )}

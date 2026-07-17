@@ -2842,6 +2842,7 @@
       "body-required": "Please enter the question content.",
       "expected-answer-required": "Please enter a reference answer.",
       "subject-required": "Please select a subject.",
+      "subject-not-found": "This subject no longer exists, please pick another.",
       "grade-level-required": "Please select a grade level.",
       "question-type-required": "Please select a question type.",
       "search-filter-required": "Please select a subject or enter a tag to search.",

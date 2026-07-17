@@ -198,6 +198,58 @@ export const Edit_LoadFailed: Story = {
   },
 };
 
+/**
+ * FR-008 (a): attempting to save with no subject shows the inline required
+ * error on the subject field with correct ARIA wiring (not a generic toast).
+ */
+export const Create_SubjectRequiredInline: Story = {
+  args: { vm: baseVM({ subjects: [] }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: /Lưu nháp/ }),
+    );
+    const err = await canvas.findByText("Vui lòng chọn môn học.");
+    await expect(err).toBeVisible();
+    await expect(err).toHaveAttribute("role", "alert");
+    await expect(err).toHaveAttribute("id", "qb-subject-err");
+    // Trigger is wired to the error via aria-invalid + aria-describedby.
+    const trigger = canvasElement.querySelector("#qb-subject");
+    await expect(trigger).toHaveAttribute("aria-invalid", "true");
+    await expect(trigger).toHaveAttribute("aria-describedby", "qb-subject-err");
+  },
+};
+
+/**
+ * FR-008 (b): a `subject-not-found` API response (subject archived/deleted)
+ * surfaces on the subject field, NOT as a generic toast.
+ */
+export const Create_SubjectNotFoundApi: Story = {
+  args: {
+    vm: baseVM({
+      saveQuestionAction: async () => ({
+        ok: false,
+        errorKey: "subject-not-found",
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(
+      await canvas.findByLabelText(/Nội dung câu hỏi/),
+      "Nội dung câu hỏi hợp lệ để lưu.",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/ }));
+    const err = await canvas.findByText(
+      "Môn học không còn tồn tại, vui lòng chọn môn khác.",
+    );
+    await expect(err).toBeVisible();
+    await expect(err).toHaveAttribute("role", "alert");
+    const trigger = canvasElement.querySelector("#qb-subject");
+    await expect(trigger).toHaveAttribute("aria-describedby", "qb-subject-err");
+  },
+};
+
 /** Save-draft success toast path (create). */
 export const Create_SaveDraft: Story = {
   args: { vm: baseVM() },

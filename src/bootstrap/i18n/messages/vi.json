@@ -2842,6 +2842,7 @@
       "body-required": "Vui lòng nhập nội dung câu hỏi.",
       "expected-answer-required": "Vui lòng nhập đáp án tham khảo.",
       "subject-required": "Vui lòng chọn môn học.",
+      "subject-not-found": "Môn học không còn tồn tại, vui lòng chọn môn khác.",
       "grade-level-required": "Vui lòng chọn khối lớp.",
       "question-type-required": "Vui lòng chọn dạng câu hỏi.",
       "search-filter-required": "Vui lòng chọn môn học hoặc nhập thẻ để tìm kiếm.",
