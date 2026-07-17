@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { QuestionEntity } from "../../domain/entities/question.entity";
 import { QuestionBankListScreen } from "./question-bank-list-screen";
@@ -175,10 +175,16 @@ export const Mine_Error: Story = {
   },
 };
 
-/** Search scope, no filter — DISTINCT required-filter gate, no request fires. */
+/**
+ * Search scope, no filter — DISTINCT required-filter gate, no request fires.
+ * AC-902.1 requires this to be proven at the network-call level, not just
+ * visually — spy on `searchAction` and assert it is NEVER invoked while the
+ * gate is unsatisfied (TanStack Query `enabled:false` should keep queryFn
+ * from ever running).
+ */
 export const Search_Gate: Story = {
-  args: { vm: baseVM() },
-  play: async ({ canvasElement }) => {
+  args: { vm: baseVM({ searchAction: fn(baseVM().searchAction) }) },
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: /Tìm kiếm/ }));
     await expect(
@@ -186,6 +192,103 @@ export const Search_Gate: Story = {
     ).toBeVisible();
     // Indicator shows the unsatisfied (warning) copy.
     await expect(canvas.getByText("Cần chọn môn học hoặc thẻ")).toBeVisible();
+    // Give any (incorrect) in-flight request a chance to resolve, then assert
+    // the queryFn was truly never invoked (AC-902.1's network-level proof).
+    await new Promise((r) => setTimeout(r, 200));
+    await expect(args.vm.searchAction).not.toHaveBeenCalled();
+  },
+};
+
+/** Search scope satisfied via SUBJECT (not tag) — indicator flips + request fires (AC-902.2). */
+export const Search_SubjectSatisfies: Story = {
+  args: { vm: baseVM({ searchAction: fn(baseVM().searchAction) }) },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Tìm kiếm/ }));
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: /Lọc theo môn học/ }),
+    );
+    const listbox = within(document.body);
+    await userEvent.click(await listbox.findByText("Vật Lý"));
+    // Indicator flips satisfied synchronously (no debounce needed via subject).
+    await expect(
+      await canvas.findByText("Đã đủ điều kiện tìm kiếm"),
+    ).toBeVisible();
+    await waitFor(() => expect(args.vm.searchAction).toHaveBeenCalled());
+    const [params] = (args.vm.searchAction as ReturnType<typeof fn>).mock
+      .calls[0] as [{ subjectId?: string }];
+    expect(params.subjectId).toBe("sub-phys");
+  },
+};
+
+/**
+ * AC-902.4 — clearing both subjectId and tag after a satisfied search reverts
+ * to the required-filter-prompt (gate re-imposed), no further request fires.
+ */
+export const Search_ClearRevertsToGate: Story = {
+  args: { vm: baseVM({ searchAction: fn(baseVM().searchAction) }) },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Tìm kiếm/ }));
+    const tagInput = canvas.getByRole("searchbox", { name: /Lọc theo thẻ/ });
+    await userEvent.type(tagInput, "Lượng giác");
+    await waitFor(() => expect(args.vm.searchAction).toHaveBeenCalled());
+    await expect(
+      await canvas.findByText("Câu hỏi đã phát hành của giáo viên khác."),
+    ).toBeVisible();
+
+    // Clear the tag back to empty — gate must re-impose (subjectId is also unset).
+    await userEvent.clear(tagInput);
+    await expect(
+      await canvas.findByText("Chọn môn học hoặc thẻ để tìm câu hỏi"),
+    ).toBeVisible();
+    await expect(canvas.getByText("Cần chọn môn học hoặc thẻ")).toBeVisible();
+
+    const callsAtClear = (args.vm.searchAction as ReturnType<typeof fn>).mock
+      .calls.length;
+    await new Promise((r) => setTimeout(r, 500)); // past the 350ms debounce
+    expect(
+      (args.vm.searchAction as ReturnType<typeof fn>).mock.calls.length,
+    ).toBe(callsAtClear);
+  },
+};
+
+/**
+ * AC-902.8 — defense-in-depth: the client gate is satisfied (a tag is typed)
+ * but the BE still returns 422 QUESTION_SEARCH_FILTER_REQUIRED (stale
+ * state/regression). Must render the SAME QBFilterRequiredPrompt, never a
+ * generic error banner.
+ */
+export const Search_DefenseInDepth422: Story = {
+  args: {
+    vm: baseVM({
+      searchAction: async () => ({
+        ok: false,
+        errorKey: "search-filter-required",
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Tìm kiếm/ }));
+    await userEvent.type(
+      canvas.getByRole("searchbox", { name: /Lọc theo thẻ/ }),
+      "Lượng giác",
+    );
+    await expect(
+      await canvas.findByText("Đã đủ điều kiện tìm kiếm"),
+    ).toBeVisible();
+    // AC-902.8: same QBFilterRequiredPrompt, NOT the generic error banner.
+    await waitFor(
+      () =>
+        expect(
+          canvas.getByText("Chọn môn học hoặc thẻ để tìm câu hỏi"),
+        ).toBeVisible(),
+      { timeout: 3000 },
+    );
+    await expect(
+      canvas.queryByText("Không tải được danh sách câu hỏi"),
+    ).not.toBeInTheDocument();
   },
 };
 
@@ -213,6 +316,12 @@ export const Search_TagSatisfies: Story = {
     );
     // Author attribution shown on search cards.
     await expect(canvas.getByText("Giáo viên khác")).toBeVisible();
+    // AC-906.6 — no Edit CTA rendered on a cross-teacher PUBLISHED search
+    // card; only the "Xem" (view) action.
+    await expect(canvas.getByRole("button", { name: /Xem:/ })).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: /Chỉnh sửa:/ }),
+    ).not.toBeInTheDocument();
   },
 };
 

@@ -76,4 +76,80 @@ To be filled by `/fe` when implemented. Add a `docs/TEST_MATRIX.md` row now at
 ## Evidence
 
 BA analysis artifacts: `requirements.md`, `integration.md`, `use-cases.md`,
-`spec.md` in this packet.
+`spec.md` in this packet. FE analysis/design artifacts: `plan.md`,
+`component-architecture.md`, `state-architecture.md`.
+
+### Implementation proof (2026-07-17)
+
+- `bun vitest run`: 337 files / 2176 tests pass (130 new for this story:
+  45 domain unit + 49 infra + 19 route + 17 Storybook interaction, plus 2 more
+  added in the review-fix pass).
+- `bunx tsc --noEmit`: clean. `bun lint`: clean (1 pre-existing unrelated
+  warning in `message-context-menu.tsx`, not touched by this story).
+- `NEXT_PUBLIC_USE_MOCK= bun run build`: exit 0; all 3 routes emitted
+  (`/teacher/question-bank`, `/create`, `/[id]/edit`).
+- `fe-tech-lead-reviewer`: **Approved**. Verified the highest-risk detail
+  (the `forbidden-browse`/`forbidden-edit` call-site branch on the shared
+  `403 FORBIDDEN_ACTION` wire code) explicitly correct; route guards precede
+  DI in all 3 pages + re-checked in all 8 Server Actions; FR-007/FR-009
+  boundaries hold; `{raw:true}` correctly placed; shared-component promotions
+  clean; layering/i18n/TDD proof all pass.
+- `fe-accessibility-auditor`: 1 Major (A11Y-001, subject-field error dead-wired)
+  + 3 Minor (A11Y-002 builder title semantics, A11Y-003 tag-remove touch
+  target, A11Y-004 tags-label linkage) — **all 4 fixed** in the review-fix
+  pass, verified by re-run.
+- Review-fix pass also closed the tech-lead's non-blocking SHOULD-FIX
+  (`subject-not-found` now surfaces inline on the subject field, not a
+  generic toast) and a CONSIDER (search-scope debounce-window empty-state
+  flash, closed via a render-guard, no state-architecture change).
+
+### Design review: pass
+
+- design-system: conform — zero raw color (`grep` clean across
+  `src/features/question-bank/presentation` + the 3 promoted shared
+  components); badges/status/tags follow the existing `StatusBadge`/`Badge`
+  pattern (icon+text, `/15` tint, rounded pills) with no forked variant;
+  `QBQuestionCard` mirrors the established row-card shape (icon box, shadow-card
+  → shadow-card-hover), no nested cards, no nonexistent primitive
+  reinvented (`QBDropdown` correctly resolved to plain shadcn `Select`, see
+  `component-architecture.md` §1).
+- a11y: WCAG AA — see above (auditor findings fixed); keyboard-operable
+  (segmented selector, 5 filter `Select`s, `ScopeToggle`, dialogs); focus
+  rings via shared primitives; `prefers-reduced-motion` gated on the shared
+  `PublishConfirmDialog`/`AlertDialog`; touch targets ≥44×44px after
+  A11Y-003 fix.
+- impeccable audit (manual pass, this session — no AI-slop tells: no
+  gradient text, no glassmorphism, no generic hero-metric/icon-card grid, no
+  nested cards, no bounce easing): zero raw-color findings; single-column
+  responsive confirmed (`QBMetaGrid` is `grid` default, `md:grid-cols-[1.4fr_1fr_1fr]`
+  only ≥768px, per NFR-005/DR-021); zero P0/P1 findings. No fixes required
+  beyond what the accessibility audit already drove.
+- states: all 9 UI states (spec §5) implemented and Storybook-covered —
+  loading/`QBFilterRequiredPrompt` (distinct 5th state)/emptyAll/emptyFiltered/
+  error/success/form-validation-error/locked/publish-confirm; responsive
+  320px not manually screenshotted this pass but the grid/flex classes used
+  throughout are the same audited pattern as `lesson-plan` (US-E11.8), which
+  passed this check.
+
+### Component promotions (decision 0026)
+
+- `TagChipsInput` → `src/components/shared/tag-chips-input/` (2nd consumer:
+  `question-bank`; touch-target fix applied in review pass, benefits both
+  consumers).
+- `PublishConfirmDialog` → `src/components/shared/publish-confirm-dialog/`
+  (2nd consumer: `question-bank`).
+- `OwnerToggle` → generalized to `ScopeToggle` at
+  `src/components/shared/scope-toggle/` (2nd consumer: `question-bank`'s
+  mine/search toggle).
+- Deferred (not promoted this story, logged as follow-up candidates):
+  `LessonPlanErrorState`/`QuestionBankErrorState` (accepted a 2nd
+  feature-local fork — this generic alert+retry shape already has ~15 ad-hoc
+  inline implementations across the codebase; consolidating it is a
+  codebase-wide cleanup out of this story's scope, revisit at a 3rd
+  consumer or as its own cleanup story).
+
+### Harness
+
+- `docs/TEST_MATRIX.md` US-E11.9 row updated with real proof flags (see
+  below); story `## Status` set to `in-progress` during build, finalized to
+  `implemented` on merge.

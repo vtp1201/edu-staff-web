@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type { QuestionEntity } from "../../domain/entities/question.entity";
 import { QuestionBankBuilderScreen } from "./question-bank-builder-screen";
 import type { QuestionBankBuilderScreenVM } from "./question-bank-builder-screen.i-vm";
@@ -73,6 +74,7 @@ const meta: Meta<typeof QuestionBankBuilderScreen> = {
             <div className="flex min-h-screen flex-col bg-background">
               <Story />
             </div>
+            <Toaster />
           </QueryClientProvider>
         </NextIntlClientProvider>
       );
@@ -247,6 +249,106 @@ export const Create_SubjectNotFoundApi: Story = {
     await expect(err).toHaveAttribute("role", "alert");
     const trigger = canvasElement.querySelector("#qb-subject");
     await expect(trigger).toHaveAttribute("aria-describedby", "qb-subject-err");
+  },
+};
+
+/**
+ * AC-904.8 — already-published race on SAVE: the question was published in
+ * another tab/session between load and submit. The screen must resync to the
+ * locked/PUBLISHED view with an INFORMATIONAL toast, NEVER a red destructive
+ * error banner.
+ */
+export const Edit_AlreadyPublishedRaceOnSave: Story = {
+  args: {
+    vm: baseVM({
+      initial: draftQuestion,
+      questionId: "q-9",
+      saveQuestionAction: async () => ({
+        ok: false,
+        errorKey: "already-published",
+      }),
+      refetchAction: async (id) => ({
+        ok: true,
+        question: {
+          ...draftQuestion,
+          id,
+          status: "PUBLISHED",
+          publishedAt: "2026-07-10T00:00:00Z",
+        },
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(
+      await canvas.findByLabelText(/Nội dung câu hỏi/),
+      " thêm nội dung",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/ }));
+    // Resyncs to the locked view.
+    await expect(
+      await canvas.findByText("Câu hỏi đã được xuất bản"),
+    ).toBeVisible();
+    // Informational toast (sonner renders it with role="status", not "alert").
+    // Sonner also renders an offscreen a11y-announcer duplicate of the text —
+    // assert at least one rendered node is actually visible.
+    const toaster = within(document.body);
+    await waitFor(async () => {
+      const nodes = await toaster.findAllByText("Đã xuất bản câu hỏi");
+      expect(nodes.some((n) => n.checkVisibility())).toBe(true);
+    });
+    // NEVER a red destructive error banner/toast for this race.
+    await expect(
+      toaster.queryByText("Không tải được danh sách câu hỏi"),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * AC-905.6 — already-published race on the PUBLISH confirm itself (duplicate
+ * click / published elsewhere). Same benign resync + informational toast.
+ */
+export const Publish_AlreadyPublishedRaceBenign: Story = {
+  args: {
+    vm: baseVM({
+      publishAction: async () => ({
+        ok: false,
+        errorKey: "already-published",
+      }),
+      refetchAction: async (id) => ({
+        ok: true,
+        question: {
+          ...draftQuestion,
+          id,
+          status: "PUBLISHED",
+          publishedAt: "2026-07-10T00:00:00Z",
+        },
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(
+      await canvas.findByLabelText(/Nội dung câu hỏi/),
+      "Một câu hỏi đủ dài để xuất bản.",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: /Xuất bản/ }));
+    const dialog = within(document.body);
+    await userEvent.click(
+      await dialog.findByRole("button", { name: /Xác nhận|Xuất bản/ }),
+    );
+    // Confirm dialog closes; screen resyncs to locked view.
+    await expect(
+      await canvas.findByText("Câu hỏi đã được xuất bản"),
+    ).toBeVisible();
+    const toaster = within(document.body);
+    await waitFor(async () => {
+      const nodes = await toaster.findAllByText("Đã xuất bản câu hỏi");
+      expect(nodes.some((n) => n.checkVisibility())).toBe(true);
+    });
+    await expect(
+      toaster.queryByText("Không tải được danh sách câu hỏi"),
+    ).not.toBeInTheDocument();
   },
 };
 

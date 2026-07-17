@@ -171,7 +171,11 @@ export function QuestionBankListScreen({
     gradeLevel: q.gradeLevel,
     bodyPreview: truncate(q.body, PREVIEW_MAX),
     tags: q.tags,
-    isMine: scope === "mine",
+    // FR-004/§6.6: ownership drives the Edit-vs-View CTA by authorId, NOT by
+    // scope. On scope=mine this is always the caller's own questions; on
+    // scope=search it correctly surfaces "Chỉnh sửa" for the caller's own
+    // PUBLISHED hit and "Xem" for cross-teacher ones (UX nicety, not security).
+    isMine: q.authorId === vm.currentTeacherId,
     authorLabel: scope === "search" ? tCard("unknownAuthor") : undefined,
     openPath: `${vm.editPathPrefix}/${q.id}/edit`,
   }));
@@ -200,7 +204,18 @@ export function QuestionBankListScreen({
     setDebouncedTag("");
   };
 
-  const showSearchGate = scope === "search" && !filterSatisfied;
+  // AC-902.8 / §6.5 — defense-in-depth: even when the client gate is satisfied,
+  // the server may still reject with 422 QUESTION_SEARCH_FILTER_REQUIRED (stale
+  // state/regression). The queryFn throws `new Error(res.errorKey)`, so the key
+  // surfaces on `error.message`. This MUST re-impose the same prompt, never the
+  // generic error banner.
+  const serverRequiresFilter =
+    scope === "search" &&
+    activeQuery.error instanceof Error &&
+    activeQuery.error.message === "search-filter-required";
+
+  const showSearchGate =
+    scope === "search" && (!filterSatisfied || serverRequiresFilter);
   const isLoading = activeQuery.isLoading && activeQuery.fetchStatus !== "idle";
   const isError = activeQuery.isError;
   // The gate flips on the immediate `filters.tag`, but the request keys off the
