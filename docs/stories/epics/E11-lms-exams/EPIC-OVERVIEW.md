@@ -13,6 +13,8 @@ Tat ca deu mock-first voi `lms` / `core` service (BE chua ship).
 - `design_src/edu/lesson-bank.jsx`   — 1506 handoff (E11.2)
 - `design_src/edu/exam-bank.jsx`     — 1506 handoff (E11.3)
 - `design_src/edu/teaching-plan.jsx` — 1506 handoff (E11.4)
+- `design_src/edu/lesson-plan.jsx` — DR-021 2026-07-17 (E11.8)
+- `design_src/edu/question-bank.jsx` — DR-021 2026-07-17 (E11.9)
 
 ## Scope
 
@@ -22,6 +24,8 @@ Tat ca deu mock-first voi `lms` / `core` service (BE chua ship).
 | E11.2 | Lesson Bank: grid/list + upload drawer + detail sheet | teacher, principal (read) | lms mock-first | `lesson-bank.jsx` |
 | E11.3 | Exam Bank + Builder: list + 2-col MCQ editor, draft/publish | teacher, admin | lms mock-first | `exam-bank.jsx` |
 | E11.4 | Teaching Plan / PPCT: weekly grid, draft/submit/approve workflow | teacher (submit), principal (approve) | core mock-first | `teaching-plan.jsx` |
+| E11.8 | Lesson Plan Authoring: list (own DRAFT+PUBLISHED + browse-by-subject) + 2-col builder, one-way publish | teacher | core — real contract ground-truthed (`lessonplan`, US-E18.16), mock-first dev default | `lesson-plan.jsx` (DR-021) |
+| E11.9 | Question Bank: list + mandatory subjectId/tag search filter (422 gate) + builder (ESSAY/SHORT_ANSWER/FILL_IN), one-way publish | teacher (staff-only search) | core — real contract ground-truthed (`exercisebank`, US-E18.16), mock-first dev default | `question-bank.jsx` (DR-021) |
 
 ## BE Dependencies
 

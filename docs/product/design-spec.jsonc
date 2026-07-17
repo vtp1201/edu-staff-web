@@ -10190,7 +10190,8 @@
       },
       "expectedAnswerField": {
         "i18nKey": "questionBank.builder.expectedAnswerLabel (+ expectedAnswerPlaceholderEssay/expectedAnswerPlaceholderShortAnswer/expectedAnswerPlaceholderFillIn by questionType)",
-        "required": true,
+        "required": false,
+        "note": "optional for ALL questionTypes (ESSAY/SHORT_ANSWER/FILL_IN) — corrected 2026-07-17 (US-E11.9 BA pass, OQ-1) after ground-truthing edu-api Go source (`CreateQuestionRequest`/`UpdateQuestionRequest.ExpectedAnswer *string` with only `omitempty,max=5000`, no per-type required validation). Was incorrectly marked required:true; placeholder copy per type still encourages filling it in, it just isn't enforced.",
         "rows": "4 for ESSAY, 2 for SHORT_ANSWER/FILL_IN"
       },
       "tagsField": {
@@ -10198,7 +10199,7 @@
         "component": "tag-chips-input (shared shape with lessonPlan)"
       },
       "publish": {
-        "disabledUntil": "body (>=4 chars) AND expectedAnswer non-empty",
+        "disabledUntil": "body (>=4 chars) — expectedAnswer is NOT a publish gate (corrected 2026-07-17, see expectedAnswerField.note)",
         "confirmDialog": "one-way DRAFT→PUBLISHED, irreversible",
         "lockedBanner": "same as lessonPlan — all fields disabled/read-only once PUBLISHED"
       }
