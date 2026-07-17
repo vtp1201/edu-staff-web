@@ -1,6 +1,4 @@
 import "server-only";
-import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IDisciplineRepository } from "@/features/discipline/domain/repositories/i-discipline.repository";
 import { ApproveLeaveUseCase } from "@/features/discipline/domain/use-cases/approve-leave.use-case";
 import { DeleteViolationUseCase } from "@/features/discipline/domain/use-cases/delete-violation.use-case";
@@ -19,12 +17,25 @@ import { RecordViolationUseCase } from "@/features/discipline/domain/use-cases/r
 import { RejectLeaveUseCase } from "@/features/discipline/domain/use-cases/reject-leave.use-case";
 import { SubmitChildLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-child-leave-request.use-case";
 import { SubmitLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-leave-request.use-case";
-import { DisciplineRepository } from "@/features/discipline/infrastructure/repositories/discipline.repository";
 import { MockDisciplineRepository } from "@/features/discipline/infrastructure/repositories/mocks/discipline.mock.repository";
 
+/**
+ * Discipline repository factory (per-request).
+ *
+ * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.14) — the third
+ * fully-blocked DI factory in this epic after `staff-leave.di.ts` (US-E18.8)
+ * and `teaching-plan.di.ts` (US-E18.9). The real `DisciplineRepository`
+ * exists only as permanent blocked stubs: two categorical blockers — no real
+ * student-roster UUID lookup (roster stays mock-first, US-E18.5 / ask #9) and
+ * no self-scope `classId` discovery for STUDENT or PARENT (ask #15 / #22) —
+ * make EVERY operation in this feature unreachable on the real API (see the
+ * `DisciplineRepository` class doc and
+ * `docs/stories/epics/E18-be-wiring/US-E18.14-discipline-conduct-wiring/story.md`).
+ * Forcing mock here guards against the day the app-wide `USE_MOCK` flag flips
+ * to `false` and would otherwise silently break all four discipline screens.
+ */
 async function makeRepo(): Promise<IDisciplineRepository> {
-  if (USE_MOCK) return new MockDisciplineRepository();
-  return new DisciplineRepository(await createServerHttpClient());
+  return new MockDisciplineRepository();
 }
 
 export async function makeDisciplineRepository(): Promise<IDisciplineRepository> {
