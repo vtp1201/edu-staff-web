@@ -36,3 +36,4 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-018 | Multi-Tenant Switch (đa trường) | US-E23.1 + US-E23.2 | [x] delivered (2026-07-12) |
 | DR-019 | Principal Reports Dashboard | US-E03.1 | [x] delivered (2026-07-12) |
 | DR-020 | Student Assignments | US-E11.7 | [x] delivered (2026-07-14) |
+| DR-021 | Lesson Plan Authoring + Question Bank (net-new, finding #27) | US-E18.16 (design follow-up) | [ ] in progress |
