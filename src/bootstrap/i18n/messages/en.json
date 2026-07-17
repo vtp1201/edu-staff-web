@@ -2243,7 +2243,13 @@
       "tagsLabel": "Tags",
       "menuAriaLabel": "Open lesson plan actions menu",
       "edit": "Edit",
-      "view": "View"
+      "view": "View",
+      "unknownOwner": "Another teacher"
+    },
+    "browse": {
+      "promptTitle": "Choose a subject to browse lesson plans",
+      "promptBody": "Select a subject in the filter above to view published lesson plans.",
+      "emptyTitle": "No published lesson plans for this subject yet"
     },
     "status": {
       "draft": "Draft",
@@ -2251,6 +2257,7 @@
     },
     "loading": "Loading...",
     "loadingAriaLabel": "Loading lesson plan list",
+    "loadMore": "Load more",
     "resultsHeading": "{count} lesson plans",
     "empty": {
       "title": "No lesson plans yet",
@@ -2289,7 +2296,10 @@
       "saveDraft": "Save draft",
       "saving": "Saving...",
       "publish": "Publish",
-      "publishing": "Publishing..."
+      "publishing": "Publishing...",
+      "unsaved": "Unsaved changes",
+      "publishDisabledHelper": "Enter a title and fill all 4 content sections before publishing.",
+      "tagRemoveAriaLabel": "Remove tag {tag}"
     },
     "publishDialog": {
       "title": "Publish this lesson plan?",
@@ -2317,9 +2327,19 @@
       "assessment-method-required": "Please enter the assessment method.",
       "not-editable": "Published lesson plans can't be edited.",
       "not-found": "Lesson plan not found.",
+      "not-visible": "You don't have permission to view this lesson plan.",
+      "already-published": "This lesson plan was already published elsewhere.",
+      "tag-limit-exceeded": "Maximum 10 tags per lesson plan.",
+      "tag-too-long": "Tag must not exceed 50 characters.",
+      "subject-not-found": "This subject no longer exists, please pick another.",
+      "invalid-id": "Invalid link.",
       "forbidden": "You don't have permission to perform this action.",
       "network-error": "Connection error. Please try again.",
-      "unknown": "An unknown error occurred."
+      "unknown": "An unknown error occurred.",
+      "accessDenied": {
+        "title": "Access denied",
+        "body": "You don't have permission to view this lesson plan. It may still be in draft."
+      }
     }
   },
   "messaging": {

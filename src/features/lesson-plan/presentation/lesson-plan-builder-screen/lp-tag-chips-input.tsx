@@ -1,0 +1,122 @@
+"use client";
+
+import { X } from "lucide-react";
+import { useId, useState } from "react";
+import { cn } from "@/shared/utils";
+import {
+  MAX_TAG_LENGTH,
+  MAX_TAGS,
+} from "../../domain/entities/lesson-plan.entity";
+
+export interface LPTagChipsInputProps {
+  tags: string[];
+  isLocked: boolean;
+  onChange: (tags: string[]) => void;
+  labels: {
+    placeholder: string;
+    inputAriaLabel: string;
+    maxTagsHelper: string;
+    tagTooLongError: string;
+    removeAriaLabelOf: (tag: string) => string;
+  };
+}
+
+/**
+ * Tag-chips input (FR-009). Owns only its uncommitted draft text; the committed
+ * `tags[]` is a controlled prop. Enter/comma/blur commits; duplicates are
+ * silently ignored (AC-009.2); the 11th add is blocked with an inline helper
+ * (AC-009.3); a >50-char tag shows an inline error and is not added (AC-009.4);
+ * each remove button names its specific tag (AC-009.6) and is hidden entirely
+ * when locked. Feature-local for now — promote to shared on question-bank (0026).
+ */
+export function LPTagChipsInput({
+  tags,
+  isLocked,
+  onChange,
+  labels,
+}: LPTagChipsInputProps) {
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<"max" | "long" | null>(null);
+  const helpId = useId();
+
+  const commit = () => {
+    const value = draft.trim();
+    if (!value) return;
+    if (tags.includes(value)) {
+      setDraft("");
+      return; // silent duplicate ignore
+    }
+    if (value.length > MAX_TAG_LENGTH) {
+      setError("long");
+      return;
+    }
+    if (tags.length >= MAX_TAGS) {
+      setError("max");
+      return;
+    }
+    onChange([...tags, value]);
+    setDraft("");
+    setError(null);
+  };
+
+  const remove = (tag: string) => onChange(tags.filter((x) => x !== tag));
+
+  return (
+    <div>
+      <div
+        className={cn(
+          "flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5",
+          isLocked ? "bg-muted" : "bg-card",
+        )}
+      >
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1 rounded-md bg-primary/12 px-2 py-0.5 font-bold text-[11.5px] text-primary"
+          >
+            {tag}
+            {!isLocked && (
+              <button
+                type="button"
+                onClick={() => remove(tag)}
+                aria-label={labels.removeAriaLabelOf(tag)}
+                className="inline-flex items-center rounded-sm hover:text-primary/70"
+              >
+                <X className="size-3" aria-hidden="true" />
+              </button>
+            )}
+          </span>
+        ))}
+        {!isLocked && (
+          <input
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (error) setError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                commit();
+              }
+            }}
+            onBlur={commit}
+            placeholder={tags.length === 0 ? labels.placeholder : ""}
+            aria-label={labels.inputAriaLabel}
+            aria-describedby={error ? helpId : undefined}
+            className="min-w-24 flex-1 bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
+          />
+        )}
+      </div>
+      {error && (
+        <p
+          id={helpId}
+          role="alert"
+          className="mt-1.5 text-edu-error-text text-xs"
+        >
+          {error === "max" ? labels.maxTagsHelper : labels.tagTooLongError}
+        </p>
+      )}
+    </div>
+  );
+}

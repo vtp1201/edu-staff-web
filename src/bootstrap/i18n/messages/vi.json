@@ -2243,7 +2243,13 @@
       "tagsLabel": "Thẻ",
       "menuAriaLabel": "Mở menu thao tác giáo án",
       "edit": "Chỉnh sửa",
-      "view": "Xem"
+      "view": "Xem",
+      "unknownOwner": "Giáo viên khác"
+    },
+    "browse": {
+      "promptTitle": "Chọn một môn học để xem giáo án",
+      "promptBody": "Chọn môn học ở bộ lọc phía trên để xem các giáo án đã phát hành.",
+      "emptyTitle": "Chưa có giáo án nào được phát hành cho môn này"
     },
     "status": {
       "draft": "Nháp",
@@ -2251,6 +2257,7 @@
     },
     "loading": "Đang tải...",
     "loadingAriaLabel": "Đang tải danh sách giáo án",
+    "loadMore": "Xem thêm",
     "resultsHeading": "{count} giáo án",
     "empty": {
       "title": "Chưa có giáo án nào",
@@ -2289,7 +2296,10 @@
       "saveDraft": "Lưu nháp",
       "saving": "Đang lưu...",
       "publish": "Xuất bản",
-      "publishing": "Đang xuất bản..."
+      "publishing": "Đang xuất bản...",
+      "unsaved": "Chưa lưu",
+      "publishDisabledHelper": "Cần nhập tiêu đề và điền đủ 4 mục nội dung trước khi phát hành.",
+      "tagRemoveAriaLabel": "Xoá thẻ {tag}"
     },
     "publishDialog": {
       "title": "Xuất bản giáo án này?",
@@ -2317,9 +2327,19 @@
       "assessment-method-required": "Vui lòng nhập phương pháp đánh giá.",
       "not-editable": "Không thể chỉnh sửa giáo án đã xuất bản.",
       "not-found": "Không tìm thấy giáo án.",
+      "not-visible": "Bạn không có quyền xem giáo án này.",
+      "already-published": "Giáo án này đã được phát hành ở nơi khác.",
+      "tag-limit-exceeded": "Tối đa 10 thẻ cho mỗi giáo án.",
+      "tag-too-long": "Thẻ không được vượt quá 50 ký tự.",
+      "subject-not-found": "Môn học không còn tồn tại, vui lòng chọn môn khác.",
+      "invalid-id": "Đường dẫn không hợp lệ.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "unknown": "Đã xảy ra lỗi không xác định."
+      "unknown": "Đã xảy ra lỗi không xác định.",
+      "accessDenied": {
+        "title": "Không có quyền truy cập",
+        "body": "Bạn không có quyền xem giáo án này. Giáo án có thể vẫn ở trạng thái nháp."
+      }
     }
   },
   "messaging": {
