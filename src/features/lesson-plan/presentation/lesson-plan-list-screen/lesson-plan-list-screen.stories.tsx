@@ -165,6 +165,14 @@ export const AccessDeniedNotice: Story = {
     await expect(
       await canvas.findByText("Không có quyền truy cập"),
     ).toBeVisible();
+    // Dismiss "×" carries the dedicated "Đóng" label, not "Thử lại"/Retry
+    // (DEF-lesson-plan-01 #2 fixed).
+    const dismiss = canvas.getByRole("button", { name: "Đóng" });
+    await expect(dismiss).toBeVisible();
+    await userEvent.click(dismiss);
+    await expect(
+      canvas.queryByText("Không có quyền truy cập"),
+    ).not.toBeInTheDocument();
   },
 };
 
@@ -184,12 +192,9 @@ export const NotFoundNotice: Story = {
  * empty state) — a genuinely DIFFERENT title/body from Mine_Empty (no create
  * CTA here, since plans DO exist, they're just filtered out).
  *
- * QA NOTE: the clear-filters button is currently wired to `t("error.retry")`
- * ("Thử lại"/"Retry") instead of a dedicated "Bỏ lọc"/"Clear filters" copy —
- * confirmed via i18n JSON, no such key exists in the shipped `lessonPlan`
- * namespace. Functionally it does clear filters (asserted below), but the
- * label is misleading (reads as "Retry" on a non-error empty state) — flagged
- * as a QA defect (DEF-lesson-plan-01), not fixed here.
+ * The clear-filters CTA uses the dedicated `lessonPlan.filter.clearFilters`
+ * copy ("Bỏ lọc"/"Clear filters"), not the error-state "Thử lại"/"Retry" label
+ * (DEF-lesson-plan-01 fixed) — asserted both by label and by function below.
  */
 export const Mine_FilteredEmpty: Story = {
   args: { vm: baseVM() },
@@ -210,8 +215,11 @@ export const Mine_FilteredEmpty: Story = {
     await expect(
       canvas.queryByText("Chưa có giáo án nào"),
     ).not.toBeInTheDocument();
-    // Functional proof the CTA clears filters (mislabeled "Thử lại" — DEF-lesson-plan-01).
-    await userEvent.click(canvas.getByRole("button", { name: "Thử lại" }));
+    // Correct "Bỏ lọc" label (not "Thử lại"), and it functionally clears filters.
+    await expect(
+      canvas.queryByRole("button", { name: "Thử lại" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Bỏ lọc" }));
     await expect(await canvas.findByText("Giáo án — Đạo hàm")).toBeVisible();
   },
 };

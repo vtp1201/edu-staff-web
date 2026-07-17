@@ -92,3 +92,17 @@ export const MAX_TAG_LENGTH = 50;
 export const MAX_TITLE_LENGTH = 200;
 /** Client-side publish-readiness min title length (FR-003; BE only enforces required). */
 export const MIN_TITLE_LENGTH = 4;
+
+/**
+ * Per-section max content length (FR-002 AC-002.3, integration.md request-field
+ * table): objectives/assessmentMethod ≤ 5000, contentOutline/activities ≤ 20000.
+ * The BE has NO error code for section length, so this is a CLIENT-ONLY guard
+ * (enforced in presentation like the FR-003 publish gate) — never a
+ * `LessonPlanFailure` variant.
+ */
+export const SECTION_MAX_LENGTH: Record<DocumentSectionKey, number> = {
+  objectives: 5000,
+  contentOutline: 20000,
+  activities: 20000,
+  assessmentMethod: 5000,
+};

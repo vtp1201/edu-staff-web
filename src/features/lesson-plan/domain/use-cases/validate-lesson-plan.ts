@@ -1,8 +1,11 @@
 import {
   type CreateLessonPlanInput,
+  DOCUMENT_SECTION_KEYS,
+  type DocumentSectionKey,
   MAX_TAG_LENGTH,
   MAX_TAGS,
   MAX_TITLE_LENGTH,
+  SECTION_MAX_LENGTH,
   type UpdateLessonPlanInput,
 } from "../entities/lesson-plan.entity";
 import type { LessonPlanFailure } from "../failures/lesson-plan.failure";
@@ -25,4 +28,19 @@ export function validateWriteInput(
     return { type: "tag-too-long" };
 
   return null;
+}
+
+/**
+ * Client-only per-section length guard (FR-002 AC-002.3). The BE exposes NO
+ * error code for section length, so this deliberately does NOT return a
+ * `LessonPlanFailure` — it is a presentation guard (like the FR-003
+ * publish-readiness gate) that blocks Save Draft locally. Returns the section
+ * keys whose content exceeds its configured limit (`[]` when all pass).
+ */
+export function sectionLengthViolations(
+  sections: Partial<Record<DocumentSectionKey, string>>,
+): DocumentSectionKey[] {
+  return DOCUMENT_SECTION_KEYS.filter(
+    (k) => (sections[k]?.length ?? 0) > SECTION_MAX_LENGTH[k],
+  );
 }

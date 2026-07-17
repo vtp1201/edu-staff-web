@@ -194,7 +194,7 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
             variant="ghost"
             size="icon"
             onClick={() => setNoticeDismissed(true)}
-            aria-label={t("error.retry")}
+            aria-label={t("dismiss")}
             className="shrink-0"
           >
             <X className="size-4" aria-hidden="true" />
@@ -262,7 +262,7 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
             title={t("empty.noMatch")}
             body={t("empty.noMatchBody")}
             cta={{
-              label: t("error.retry"),
+              label: t("filter.clearFilters"),
               icon: X,
               onClick: clearFilters,
               variant: "secondary",

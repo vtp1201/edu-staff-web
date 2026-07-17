@@ -12,11 +12,15 @@ export interface DocumentSectionFieldProps {
   icon: LucideIcon;
   label: string;
   placeholder: string;
-  requiredError: string;
+  /** Browser-level defense-in-depth cap (FR-002 AC-002.3). */
+  maxLength: number;
   value: string;
   isLocked: boolean;
-  /** touched && trimmed-empty (AC-003.2 per-field required marking). */
-  isInvalid: boolean;
+  /**
+   * Resolved inline error message — required-empty (AC-003.2) OR over-limit
+   * (AC-002.3). Presence marks the field invalid; `undefined` = valid.
+   */
+  error?: string;
   onChange: (value: string) => void;
   onBlur: () => void;
 }
@@ -31,15 +35,16 @@ export function DocumentSectionField({
   icon: Icon,
   label,
   placeholder,
-  requiredError,
+  maxLength,
   value,
   isLocked,
-  isInvalid,
+  error,
   onChange,
   onBlur,
 }: DocumentSectionFieldProps) {
   const id = `lp-section-${sectionKey}`;
   const errorId = `${id}-err`;
+  const isInvalid = Boolean(error);
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <Label
@@ -55,6 +60,7 @@ export function DocumentSectionField({
       <Textarea
         id={id}
         rows={4}
+        maxLength={maxLength}
         value={value}
         disabled={isLocked}
         aria-invalid={isInvalid}
@@ -71,7 +77,7 @@ export function DocumentSectionField({
           className="mt-1.5 flex items-center gap-1 text-edu-error-text text-xs"
         >
           <AlertTriangle className="size-3" aria-hidden="true" />
-          {requiredError}
+          {error}
         </p>
       )}
     </div>

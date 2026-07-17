@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { LessonPlanEntity } from "../../domain/entities/lesson-plan.entity";
 import { GRADE_OPTIONS } from "../shared.i-vm";
@@ -245,6 +245,39 @@ export const PublishGateBlocked: Story = {
     // Both empty sections now show a simultaneous inline required error.
     const alerts = canvas.getAllByRole("alert");
     await expect(alerts.length).toBeGreaterThanOrEqual(2);
+  },
+};
+
+/**
+ * AC-002.3 (DEF-lesson-plan-02) — a section over its char limit (objectives >
+ * 5000) shows an inline too-long error and BLOCKS Save Draft client-side: the
+ * save action is never invoked, and the error persists after the click. Mirrors
+ * `PublishGateBlocked` (seeded problem state + inline-error assertion).
+ */
+export const SaveDraftSectionTooLong: Story = {
+  args: {
+    vm: vmOf({
+      initial: { ...fullDraft, objectives: "x".repeat(5001) },
+      planId: "lp-1",
+      saveDraftAction: fn(async (input) => ({
+        ok: true as const,
+        plan: { ...fullDraft, ...input, planId: input.id ?? "lp-1" },
+      })),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    // Inline too-long error is present (message carries the 5000 limit).
+    await expect(
+      await canvas.findByText(/không được vượt quá 5000 ký tự/i),
+    ).toBeVisible();
+    // Save Draft is blocked client-side — the action is never called.
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/i }));
+    await expect(args.vm.saveDraftAction).not.toHaveBeenCalled();
+    // Error remains after the blocked attempt.
+    await expect(
+      canvas.getByText(/không được vượt quá 5000 ký tự/i),
+    ).toBeVisible();
   },
 };
 

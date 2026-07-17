@@ -2236,8 +2236,10 @@
       "allStatuses": "All statuses",
       "statusAriaLabel": "Filter by status",
       "searchPlaceholder": "Search by title...",
-      "searchAriaLabel": "Search lesson plans by title"
+      "searchAriaLabel": "Search lesson plans by title",
+      "clearFilters": "Clear filters"
     },
+    "dismiss": "Dismiss",
     "card": {
       "updatedAt": "Updated {date}",
       "tagsLabel": "Tags",
@@ -2299,6 +2301,8 @@
       "publishing": "Publishing...",
       "unsaved": "Unsaved changes",
       "publishDisabledHelper": "Enter a title and fill all 4 content sections before publishing.",
+      "sectionTooLong": "This section must not exceed {max} characters.",
+      "sectionTooLongHelper": "A content section exceeds its character limit.",
       "tagRemoveAriaLabel": "Remove tag {tag}"
     },
     "publishDialog": {

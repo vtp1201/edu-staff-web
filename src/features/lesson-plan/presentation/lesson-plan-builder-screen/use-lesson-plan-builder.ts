@@ -8,8 +8,10 @@ import {
   type DocumentSectionKey,
   MAX_TITLE_LENGTH,
   MIN_TITLE_LENGTH,
+  SECTION_MAX_LENGTH,
 } from "../../domain/entities/lesson-plan.entity";
 import type { LessonPlanFailure } from "../../domain/failures/lesson-plan.failure";
+import { sectionLengthViolations } from "../../domain/use-cases/validate-lesson-plan";
 import type {
   LessonPlanBuilderScreenVM,
   LessonPlanDraftInput,
@@ -115,7 +117,12 @@ export function useLessonPlanBuilder(vm: LessonPlanBuilderScreenVM) {
     titleTrimmed.length >= MIN_TITLE_LENGTH &&
     draft.title.length <= MAX_TITLE_LENGTH;
   const sectionsFilled = SECTION_KEYS.every((k) => draft[k].trim().length > 0);
-  const isPublishable = titleValid && sectionsFilled;
+  const overLimitSections = useMemo(
+    () => sectionLengthViolations(draft),
+    [draft],
+  );
+  const isPublishable =
+    titleValid && sectionsFilled && overLimitSections.length === 0;
 
   const updateField = useCallback(
     (key: BuilderFieldKey, value: string) => {
@@ -199,6 +206,18 @@ export function useLessonPlanBuilder(vm: LessonPlanBuilderScreenVM) {
 
   const handleSaveDraft = useCallback(() => {
     if (isBusy || isLocked) return;
+    // Client-only section-length gate (FR-002 AC-002.3) — no BE code exists, so
+    // block the submission locally and surface the inline errors.
+    const over = sectionLengthViolations(draft);
+    if (over.length > 0) {
+      setTouched((tt) => {
+        const next = { ...tt };
+        for (const k of over) next[k] = true;
+        return next;
+      });
+      toast.error(t("builder.sectionTooLongHelper"));
+      return;
+    }
     startSave(async () => {
       const res = await vm.saveDraftAction({ ...draft, subjectId, id: planId });
       if (!res.ok) {
@@ -291,10 +310,18 @@ export function useLessonPlanBuilder(vm: LessonPlanBuilderScreenVM) {
     });
   }, [applyFailure, doPublish, draft, isBusy, planId, subjectId, vm]);
 
-  const invalidSections = useMemo(() => {
-    const map: Partial<Record<DocumentSectionKey, boolean>> = {};
+  // Per-section inline error kind: "too-long" (over the char limit — shown
+  // immediately, an active error) takes precedence over "required" (touched &&
+  // empty). `undefined` = no error.
+  const sectionErrors = useMemo(() => {
+    const map: Partial<Record<DocumentSectionKey, "required" | "too-long">> =
+      {};
     for (const k of SECTION_KEYS) {
-      map[k] = Boolean(touched[k]) && draft[k].trim().length === 0;
+      if (draft[k].length > SECTION_MAX_LENGTH[k]) {
+        map[k] = "too-long";
+      } else if (touched[k] && draft[k].trim().length === 0) {
+        map[k] = "required";
+      }
     }
     return map;
   }, [draft, touched]);
@@ -313,7 +340,7 @@ export function useLessonPlanBuilder(vm: LessonPlanBuilderScreenVM) {
     isBusy,
     touched,
     fieldErrors,
-    invalidSections,
+    sectionErrors,
     titleValid,
     isPublishable,
     publishBlocked,

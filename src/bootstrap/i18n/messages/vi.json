@@ -2236,8 +2236,10 @@
       "allStatuses": "Tất cả trạng thái",
       "statusAriaLabel": "Lọc theo trạng thái",
       "searchPlaceholder": "Tìm theo tiêu đề...",
-      "searchAriaLabel": "Tìm kiếm giáo án theo tiêu đề"
+      "searchAriaLabel": "Tìm kiếm giáo án theo tiêu đề",
+      "clearFilters": "Bỏ lọc"
     },
+    "dismiss": "Đóng",
     "card": {
       "updatedAt": "Cập nhật {date}",
       "tagsLabel": "Thẻ",
@@ -2299,6 +2301,8 @@
       "publishing": "Đang xuất bản...",
       "unsaved": "Chưa lưu",
       "publishDisabledHelper": "Cần nhập tiêu đề và điền đủ 4 mục nội dung trước khi phát hành.",
+      "sectionTooLong": "Nội dung không được vượt quá {max} ký tự.",
+      "sectionTooLongHelper": "Có mục nội dung vượt quá giới hạn ký tự cho phép.",
       "tagRemoveAriaLabel": "Xoá thẻ {tag}"
     },
     "publishDialog": {

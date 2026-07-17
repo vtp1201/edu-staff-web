@@ -4,6 +4,7 @@ import { CheckSquare, Flag, List, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { SECTION_MAX_LENGTH } from "../../domain/entities/lesson-plan.entity";
 import { LessonPlanErrorState } from "../lesson-plan-list-screen/lesson-plan-error-state";
 import { BuilderTopBar } from "./builder-top-bar";
 import { DocumentSectionField } from "./document-section-field";
@@ -122,7 +123,7 @@ export function LessonPlanBuilderScreen({
             variant="ghost"
             size="icon"
             onClick={b.dismissRaceBanner}
-            aria-label={t("error.retry")}
+            aria-label={t("dismiss")}
           >
             <X className="size-4" aria-hidden="true" />
           </Button>
@@ -150,21 +151,32 @@ export function LessonPlanBuilderScreen({
           />
 
           <div className="flex flex-col gap-4">
-            {SECTIONS.map((sec) => (
-              <DocumentSectionField
-                key={sec.key}
-                sectionKey={sec.key}
-                icon={sec.icon}
-                label={tBuilder(sec.labelKey)}
-                placeholder={tBuilder(sec.placeholderKey)}
-                requiredError={tErr(sec.requiredErrorKey)}
-                value={b.draft[sec.key]}
-                isLocked={b.isLocked}
-                isInvalid={Boolean(b.invalidSections[sec.key])}
-                onChange={(v) => b.updateField(sec.key, v)}
-                onBlur={() => b.markTouched(sec.key)}
-              />
-            ))}
+            {SECTIONS.map((sec) => {
+              const kind = b.sectionErrors[sec.key];
+              const error =
+                kind === "too-long"
+                  ? tBuilder("sectionTooLong", {
+                      max: String(SECTION_MAX_LENGTH[sec.key]),
+                    })
+                  : kind === "required"
+                    ? tErr(sec.requiredErrorKey)
+                    : undefined;
+              return (
+                <DocumentSectionField
+                  key={sec.key}
+                  sectionKey={sec.key}
+                  icon={sec.icon}
+                  label={tBuilder(sec.labelKey)}
+                  placeholder={tBuilder(sec.placeholderKey)}
+                  maxLength={SECTION_MAX_LENGTH[sec.key]}
+                  value={b.draft[sec.key]}
+                  isLocked={b.isLocked}
+                  error={error}
+                  onChange={(v) => b.updateField(sec.key, v)}
+                  onBlur={() => b.markTouched(sec.key)}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
