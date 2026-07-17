@@ -3,6 +3,7 @@
 import { CheckSquare, Flag, List, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { PublishConfirmDialog } from "@/components/shared/publish-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { SECTION_MAX_LENGTH } from "../../domain/entities/lesson-plan.entity";
 import { LessonPlanErrorState } from "../lesson-plan-list-screen/lesson-plan-error-state";
@@ -10,7 +11,6 @@ import { BuilderTopBar } from "./builder-top-bar";
 import { DocumentSectionField } from "./document-section-field";
 import type { LessonPlanBuilderScreenVM } from "./lesson-plan-builder-screen.i-vm";
 import { PlanMetaPanel } from "./plan-meta-panel";
-import { PublishConfirmDialog } from "./publish-confirm-dialog";
 import { PublishedLockedBanner } from "./published-locked-banner";
 import { useLessonPlanBuilder } from "./use-lesson-plan-builder";
 
