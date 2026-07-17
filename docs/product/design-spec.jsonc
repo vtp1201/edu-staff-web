@@ -9841,21 +9841,26 @@
         "display": "flex, alignItems flex-end, gap 16, flexWrap wrap",
         "breadcrumb": "US-E18.16 · Soạn giáo án — 11px/700 muted uppercase, letterSpacing 0.07em",
         "title": {
-          "i18nKey": "lessonPlan.title.mine / lessonPlan.title.school",
+          "i18nKey": "lessonPlan.title",
+          "note": "static title, same for both owner-toggle scopes",
           "fontSize": 22,
           "fontWeight": 800,
           "color": "var(--edu-text-primary)"
         },
         "subtitle": {
-          "i18nKey": "lessonPlan.subtitle.mine / .school",
+          "i18nKey": "lessonPlan.subtitle (owner=me) / lessonPlan.subtitleBrowse (owner=all)",
           "fontSize": 12.5,
           "color": "var(--edu-text-muted)"
         },
         "ownerToggle": {
           "note": "Của tôi (own DRAFT+PUBLISHED) vs Toàn trường (cross-teacher, PUBLISHED-only browse via GET /subject/:subjectId)",
-          "options": ["me (Của tôi)", "all (Toàn trường)"],
+          "options": [
+            "me (lessonPlan.ownerToggle.mine)",
+            "all (lessonPlan.ownerToggle.school)"
+          ],
+          "i18nKey": "lessonPlan.ownerToggle.{mine,school,ariaLabel}",
           "style": "same as examBank.listScreen.pageHeader.ownerToggle — border 1.5px solid var(--edu-border), active bg primary/14",
-          "a11y": "role='group' + aria-label; active button aria-pressed=true"
+          "a11y": "role='group' + aria-label (lessonPlan.ownerToggle.ariaLabel); active button aria-pressed=true"
         },
         "createCTA": {
           "i18nKey": "lessonPlan.createButton",
@@ -9948,7 +9953,7 @@
           "visibleWhen": "status === PUBLISHED",
           "icon": "lock",
           "background": "var(--edu-success)/light",
-          "i18nKey": "lessonPlan.builder.lockedBanner",
+          "i18nKey": "lessonPlan.lockedNotice.{title,body}",
           "note": "Once PUBLISHED, all fields render disabled/read-only — mirrors exam-bank's published-exam lock intent"
         },
         "unsavedIndicator": "dot + Chưa lưu, warning tone, same pattern as exam-bank builder"
@@ -9961,22 +9966,22 @@
             "type": "text",
             "required": true,
             "validation": "4-200 chars",
-            "i18nKey": "lessonPlan.builder.field.title"
+            "i18nKey": "lessonPlan.builder.{titleLabel,titlePlaceholder}"
           },
           {
             "key": "subjectId",
             "type": "select",
-            "i18nKey": "lessonPlan.builder.field.subject"
+            "i18nKey": "lessonPlan.builder.{subjectLabel,subjectPlaceholder}"
           },
           {
             "key": "gradeLevel",
             "type": "select",
-            "i18nKey": "lessonPlan.builder.field.grade"
+            "i18nKey": "lessonPlan.builder.{gradeLevelLabel,gradeLevelPlaceholder}"
           },
           {
             "key": "tags",
             "type": "tag-chips-input",
-            "i18nKey": "lessonPlan.builder.field.tags"
+            "i18nKey": "lessonPlan.builder.{tagsLabel,tagsPlaceholder,tagsHelper}"
           }
         ],
         "metaFooter": "Tạo: <date> / Phát hành: <date> — 11px muted"
@@ -9987,22 +9992,22 @@
           {
             "key": "objectives",
             "icon": "flag",
-            "i18nKey": "lessonPlan.builder.field.objectives"
+            "i18nKey": "lessonPlan.builder.{objectivesLabel,objectivesPlaceholder}"
           },
           {
             "key": "contentOutline",
             "icon": "list",
-            "i18nKey": "lessonPlan.builder.field.contentOutline"
+            "i18nKey": "lessonPlan.builder.{contentOutlineLabel,contentOutlinePlaceholder}"
           },
           {
             "key": "activities",
             "icon": "users",
-            "i18nKey": "lessonPlan.builder.field.activities"
+            "i18nKey": "lessonPlan.builder.{activitiesLabel,activitiesPlaceholder}"
           },
           {
             "key": "assessmentMethod",
             "icon": "checkSquare",
-            "i18nKey": "lessonPlan.builder.field.assessmentMethod"
+            "i18nKey": "lessonPlan.builder.{assessmentMethodLabel,assessmentMethodPlaceholder}"
           }
         ],
         "fieldStyle": "card shell, label uppercase 10.5px/800 muted + required asterisk, textarea rows=4",
@@ -10041,7 +10046,7 @@
       "QBConfirmDialog"
     ],
     "i18nNamespace": "questionBank",
-    "i18nKeyCount": 87, // keys in src/bootstrap/i18n/messages/vi.json questionBank section (uiux-ux-writer, DR-021)
+    "i18nKeyCount": 94, // keys in src/bootstrap/i18n/messages/vi.json questionBank section (uiux-ux-writer DR-021 base 87 + uiux-lead reconcile +7: scopeToggle.*, filter.allGrades/gradeAriaLabel, filter.mandatorySatisfied/mandatoryRequired)
     "status": "design-ready (DR-021, 2026-07-17)",
     "beContract": {
       "service": "core (exercisebank sub-domain)",
@@ -10057,18 +10062,28 @@
       "note": "Row-card list layout — mirrors exam-bank.jsx list (NOT lesson-bank's grid)",
       "pageHeader": {
         "breadcrumb": "US-E18.16 · Ngân hàng câu hỏi",
-        "title": { "i18nKey": "questionBank.title.mine / .search" },
-        "subtitle": { "i18nKey": "questionBank.subtitle.mine / .search" },
+        "title": {
+          "i18nKey": "questionBank.title",
+          "note": "static title, same for both scopes"
+        },
+        "subtitle": {
+          "i18nKey": "questionBank.subtitle",
+          "note": "static subtitle, same for both scopes"
+        },
         "scopeToggle": {
           "note": "Của tôi (own DRAFT+PUBLISHED, GET /questions — no mandatory filter) vs Tìm kiếm (cross-teacher PUBLISHED, GET /questions/search — mandatory subjectId OR tag, 422 gate)",
-          "options": ["mine (Của tôi)", "search (Tìm kiếm)"],
-          "a11y": "role='group' + aria-label; active button aria-pressed=true"
+          "options": [
+            "mine (questionBank.scopeToggle.mine)",
+            "search (questionBank.scopeToggle.search)"
+          ],
+          "i18nKey": "questionBank.scopeToggle.{mine,search,ariaLabel}",
+          "a11y": "role='group' + aria-label (questionBank.scopeToggle.ariaLabel); active button aria-pressed=true"
         },
         "createCTA": { "i18nKey": "questionBank.createButton", "icon": "plus" }
       },
       "filterBar": {
         "search": {
-          "i18nKey": "questionBank.filter.searchPlaceholder / .searchPlaceholderMandatory",
+          "i18nKey": "questionBank.filter.searchPlaceholder",
           "note": "In scope=search, this input (as free-text tag) OR the subject dropdown satisfies the mandatory-filter gate; entering either flips the 422-prevention indicator to satisfied"
         },
         "subjectDropdown": {
@@ -10102,12 +10117,12 @@
           "satisfied": {
             "icon": "check",
             "color": "var(--edu-success)",
-            "i18nKey": "questionBank.filter.satisfied"
+            "i18nKey": "questionBank.filter.mandatorySatisfied"
           },
           "unsatisfied": {
             "icon": "alertTriangle",
             "color": "var(--edu-warning-foreground) / var(--edu-warning-text)",
-            "i18nKey": "questionBank.filter.required"
+            "i18nKey": "questionBank.filter.mandatoryRequired"
           }
         }
       },
@@ -10117,10 +10132,10 @@
         "icon": "search",
         "iconSize": 32,
         "title": {
-          "i18nKey": "questionBank.searchGate.title",
+          "i18nKey": "questionBank.requiredFilterPrompt.title",
           "text": "Chọn môn học hoặc thẻ để tìm"
         },
-        "desc": { "i18nKey": "questionBank.searchGate.desc" },
+        "desc": { "i18nKey": "questionBank.requiredFilterPrompt.body" },
         "style": "dashed border card, 64px 24px padding — visually distinct from EduEmpty (solid border)"
       },
       "rowCard": {
@@ -10167,19 +10182,19 @@
         ]
       },
       "bodyField": {
-        "i18nKey": "questionBank.builder.field.body",
+        "i18nKey": "questionBank.builder.bodyLabel (+ bodyPlaceholderEssay/bodyPlaceholderShortAnswer/bodyPlaceholderFillIn by questionType)",
         "required": true,
         "validation": "min 4 chars",
         "rows": "6 for ESSAY, 3 for FILL_IN, 4 for SHORT_ANSWER (longer for essay per DR)",
-        "fillInHint": "Dùng ___ để đánh dấu chỗ trống (shown only when questionType=FILL_IN)"
+        "fillInHint": "placeholder text (questionBank.builder.bodyPlaceholderFillIn) shown only when questionType=FILL_IN"
       },
       "expectedAnswerField": {
-        "i18nKey": "questionBank.builder.field.expectedAnswer",
+        "i18nKey": "questionBank.builder.expectedAnswerLabel (+ expectedAnswerPlaceholderEssay/expectedAnswerPlaceholderShortAnswer/expectedAnswerPlaceholderFillIn by questionType)",
         "required": true,
         "rows": "4 for ESSAY, 2 for SHORT_ANSWER/FILL_IN"
       },
       "tagsField": {
-        "i18nKey": "questionBank.builder.field.tags",
+        "i18nKey": "questionBank.builder.{tagsLabel,tagsPlaceholder,tagsHelper}",
         "component": "tag-chips-input (shared shape with lessonPlan)"
       },
       "publish": {

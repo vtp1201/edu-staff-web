@@ -2218,6 +2218,110 @@
     "loadingAriaLabel": "Đang tải danh sách bài giảng",
     "loadingSR": "Đang tải..."
   },
+  "lessonPlan": {
+    "title": "Giáo án của tôi",
+    "subtitle": "Soạn, chỉnh sửa và xuất bản giáo án cho các tiết dạy của bạn.",
+    "subtitleBrowse": "Xem giáo án đã xuất bản của toàn trường.",
+    "createButton": "Soạn giáo án mới",
+    "ownerToggle": {
+      "mine": "Của tôi",
+      "school": "Toàn trường",
+      "ariaLabel": "Chọn phạm vi xem giáo án"
+    },
+    "filter": {
+      "allSubjects": "Tất cả môn học",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "allGrades": "Tất cả khối lớp",
+      "gradeAriaLabel": "Lọc theo khối lớp",
+      "allStatuses": "Tất cả trạng thái",
+      "statusAriaLabel": "Lọc theo trạng thái",
+      "searchPlaceholder": "Tìm theo tiêu đề...",
+      "searchAriaLabel": "Tìm kiếm giáo án theo tiêu đề"
+    },
+    "card": {
+      "updatedAt": "Cập nhật {date}",
+      "tagsLabel": "Thẻ",
+      "menuAriaLabel": "Mở menu thao tác giáo án",
+      "edit": "Chỉnh sửa",
+      "view": "Xem"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã phát hành"
+    },
+    "loading": "Đang tải...",
+    "loadingAriaLabel": "Đang tải danh sách giáo án",
+    "resultsHeading": "{count} giáo án",
+    "empty": {
+      "title": "Chưa có giáo án nào",
+      "body": "Bắt đầu bằng cách soạn giáo án đầu tiên của bạn.",
+      "cta": "Soạn giáo án đầu tiên",
+      "noMatch": "Không tìm thấy giáo án",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "error": {
+      "title": "Không tải được danh sách giáo án",
+      "description": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "builder": {
+      "createTitle": "Soạn giáo án mới",
+      "editTitle": "Chỉnh sửa giáo án",
+      "back": "Quay lại",
+      "backAriaLabel": "Quay lại danh sách giáo án",
+      "titleLabel": "Tiêu đề giáo án",
+      "titlePlaceholder": "Nhập tiêu đề giáo án",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "gradeLevelLabel": "Khối lớp",
+      "gradeLevelPlaceholder": "Chọn khối lớp",
+      "tagsLabel": "Thẻ",
+      "tagsPlaceholder": "Nhập thẻ và nhấn Enter",
+      "tagsHelper": "Thêm thẻ để dễ tìm kiếm và phân loại giáo án.",
+      "objectivesLabel": "Mục tiêu bài học",
+      "objectivesPlaceholder": "Mô tả mục tiêu học sinh cần đạt được sau bài học",
+      "contentOutlineLabel": "Nội dung bài học",
+      "contentOutlinePlaceholder": "Tóm tắt nội dung chính sẽ dạy",
+      "activitiesLabel": "Hoạt động dạy học",
+      "activitiesPlaceholder": "Mô tả các hoạt động dạy và học",
+      "assessmentMethodLabel": "Phương pháp đánh giá",
+      "assessmentMethodPlaceholder": "Mô tả cách đánh giá kết quả học tập",
+      "saveDraft": "Lưu nháp",
+      "saving": "Đang lưu...",
+      "publish": "Xuất bản",
+      "publishing": "Đang xuất bản..."
+    },
+    "publishDialog": {
+      "title": "Xuất bản giáo án này?",
+      "body": "Sau khi xuất bản, giáo án sẽ hiển thị cho toàn trường và không thể chuyển lại về trạng thái nháp. Bạn vẫn có thể xem nhưng không thể chỉnh sửa nội dung.",
+      "cancel": "Huỷ",
+      "confirm": "Xuất bản",
+      "publishing": "Đang xuất bản..."
+    },
+    "lockedNotice": {
+      "title": "Giáo án đã được xuất bản",
+      "body": "Giáo án đã xuất bản không thể chỉnh sửa. Đây là bản xem, chỉ đọc."
+    },
+    "toast": {
+      "draftSaved": "Đã lưu nháp",
+      "published": "Đã xuất bản giáo án"
+    },
+    "errors": {
+      "title-required": "Vui lòng nhập tiêu đề giáo án.",
+      "title-too-long": "Tiêu đề giáo án không được vượt quá 200 ký tự.",
+      "subject-required": "Vui lòng chọn môn học.",
+      "grade-level-required": "Vui lòng chọn khối lớp.",
+      "objectives-required": "Vui lòng nhập mục tiêu bài học.",
+      "content-outline-required": "Vui lòng nhập nội dung bài học.",
+      "activities-required": "Vui lòng nhập hoạt động dạy học.",
+      "assessment-method-required": "Vui lòng nhập phương pháp đánh giá.",
+      "not-editable": "Không thể chỉnh sửa giáo án đã xuất bản.",
+      "not-found": "Không tìm thấy giáo án.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    }
+  },
   "messaging": {
     "chat": {
       "attach": "Đính kèm",
@@ -2588,6 +2692,130 @@
     },
     "teacherCount": "{count} giáo viên",
     "title": "Quản lý giáo viên"
+  },
+  "questionBank": {
+    "title": "Kho câu hỏi",
+    "subtitle": "Tạo và quản lý câu hỏi tự luận, trả lời ngắn và điền khuyết dùng lại cho nhiều đề thi.",
+    "createButton": "Tạo câu hỏi mới",
+    "scopeToggle": {
+      "mine": "Của tôi",
+      "search": "Tìm kiếm",
+      "ariaLabel": "Chọn phạm vi xem câu hỏi"
+    },
+    "filter": {
+      "allSubjects": "Tất cả môn học",
+      "subjectAriaLabel": "Lọc theo môn học",
+      "allGrades": "Tất cả khối lớp",
+      "gradeAriaLabel": "Lọc theo khối lớp",
+      "tagPlaceholder": "Tìm theo thẻ...",
+      "tagAriaLabel": "Lọc theo thẻ",
+      "allTypes": "Tất cả dạng câu hỏi",
+      "typeAriaLabel": "Lọc theo dạng câu hỏi",
+      "allDifficulties": "Tất cả độ khó",
+      "difficultyAriaLabel": "Lọc theo độ khó",
+      "allStatuses": "Tất cả trạng thái",
+      "statusAriaLabel": "Lọc theo trạng thái",
+      "searchPlaceholder": "Tìm theo nội dung câu hỏi...",
+      "searchAriaLabel": "Tìm kiếm câu hỏi",
+      "mandatorySatisfied": "Đã đủ điều kiện tìm kiếm",
+      "mandatoryRequired": "Cần chọn môn học hoặc thẻ"
+    },
+    "requiredFilterPrompt": {
+      "title": "Chọn môn học hoặc thẻ để tìm câu hỏi",
+      "body": "Vui lòng chọn ít nhất một môn học hoặc nhập thẻ để hiển thị kết quả."
+    },
+    "questionType": {
+      "ESSAY": "Tự luận",
+      "SHORT_ANSWER": "Trả lời ngắn",
+      "FILL_IN": "Điền khuyết"
+    },
+    "difficulty": {
+      "EASY": "Dễ",
+      "MEDIUM": "Trung bình",
+      "HARD": "Khó"
+    },
+    "status": {
+      "draft": "Nháp",
+      "published": "Đã phát hành"
+    },
+    "card": {
+      "tagsLabel": "Thẻ",
+      "updatedAt": "Cập nhật {date}",
+      "menuAriaLabel": "Mở menu thao tác câu hỏi",
+      "edit": "Chỉnh sửa",
+      "view": "Xem"
+    },
+    "loading": "Đang tải...",
+    "loadingAriaLabel": "Đang tải danh sách câu hỏi",
+    "resultsHeading": "{count} câu hỏi",
+    "empty": {
+      "title": "Chưa có câu hỏi nào",
+      "body": "Bắt đầu bằng cách tạo câu hỏi đầu tiên của bạn.",
+      "cta": "Tạo câu hỏi đầu tiên",
+      "noMatch": "Không tìm thấy câu hỏi",
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+    },
+    "error": {
+      "title": "Không tải được danh sách câu hỏi",
+      "description": "Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "builder": {
+      "createTitle": "Tạo câu hỏi mới",
+      "editTitle": "Chỉnh sửa câu hỏi",
+      "back": "Quay lại",
+      "backAriaLabel": "Quay lại kho câu hỏi",
+      "questionTypeLabel": "Dạng câu hỏi",
+      "questionTypeAriaLabel": "Chọn dạng câu hỏi",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học",
+      "gradeLevelLabel": "Khối lớp",
+      "gradeLevelPlaceholder": "Chọn khối lớp",
+      "difficultyLabel": "Độ khó",
+      "bodyLabel": "Nội dung câu hỏi",
+      "bodyPlaceholderEssay": "Nhập đề bài tự luận",
+      "bodyPlaceholderShortAnswer": "Nhập câu hỏi trả lời ngắn",
+      "bodyPlaceholderFillIn": "Nhập nội dung có chỗ trống, ví dụ: Thủ đô của Việt Nam là ___.",
+      "expectedAnswerLabel": "Đáp án tham khảo",
+      "expectedAnswerPlaceholderEssay": "Nhập gợi ý hoặc dàn ý đáp án",
+      "expectedAnswerPlaceholderShortAnswer": "Nhập đáp án ngắn gọn",
+      "expectedAnswerPlaceholderFillIn": "Nhập từ/cụm từ cần điền vào chỗ trống",
+      "tagsLabel": "Thẻ",
+      "tagsPlaceholder": "Nhập thẻ và nhấn Enter",
+      "tagsHelper": "Thêm thẻ để dễ tìm kiếm và lọc câu hỏi theo chủ đề.",
+      "saveDraft": "Lưu nháp",
+      "saving": "Đang lưu...",
+      "publish": "Xuất bản",
+      "publishing": "Đang xuất bản..."
+    },
+    "publishDialog": {
+      "title": "Xuất bản câu hỏi này?",
+      "body": "Sau khi xuất bản, câu hỏi sẽ dùng được cho toàn trường và không thể chuyển lại về trạng thái nháp.",
+      "cancel": "Huỷ",
+      "confirm": "Xuất bản",
+      "publishing": "Đang xuất bản..."
+    },
+    "lockedNotice": {
+      "title": "Câu hỏi đã được xuất bản",
+      "body": "Câu hỏi đã xuất bản không thể chỉnh sửa. Đây là bản xem, chỉ đọc."
+    },
+    "toast": {
+      "draftSaved": "Đã lưu nháp",
+      "published": "Đã xuất bản câu hỏi"
+    },
+    "errors": {
+      "body-required": "Vui lòng nhập nội dung câu hỏi.",
+      "expected-answer-required": "Vui lòng nhập đáp án tham khảo.",
+      "subject-required": "Vui lòng chọn môn học.",
+      "grade-level-required": "Vui lòng chọn khối lớp.",
+      "question-type-required": "Vui lòng chọn dạng câu hỏi.",
+      "search-filter-required": "Vui lòng chọn môn học hoặc nhập thẻ để tìm kiếm.",
+      "not-editable": "Không thể chỉnh sửa câu hỏi đã xuất bản.",
+      "not-found": "Không tìm thấy câu hỏi.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    }
   },
   "reports": {
     "pageTitle": "Báo cáo toàn trường",
