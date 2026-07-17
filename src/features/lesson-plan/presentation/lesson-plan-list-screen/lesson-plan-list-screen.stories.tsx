@@ -178,3 +178,152 @@ export const NotFoundNotice: Story = {
     );
   },
 };
+
+/**
+ * Mine scope, filters active but no client-side match (AC-006.7, 2nd distinct
+ * empty state) — a genuinely DIFFERENT title/body from Mine_Empty (no create
+ * CTA here, since plans DO exist, they're just filtered out).
+ *
+ * QA NOTE: the clear-filters button is currently wired to `t("error.retry")`
+ * ("Thử lại"/"Retry") instead of a dedicated "Bỏ lọc"/"Clear filters" copy —
+ * confirmed via i18n JSON, no such key exists in the shipped `lessonPlan`
+ * namespace. Functionally it does clear filters (asserted below), but the
+ * label is misleading (reads as "Retry" on a non-error empty state) — flagged
+ * as a QA defect (DEF-lesson-plan-01), not fixed here.
+ */
+export const Mine_FilteredEmpty: Story = {
+  args: { vm: baseVM() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("Giáo án — Đạo hàm")).toBeVisible();
+    await userEvent.type(
+      canvas.getByRole("searchbox", { name: /Tìm kiếm giáo án theo tiêu đề/i }),
+      "không tồn tại chuỗi này",
+    );
+    await expect(
+      await canvas.findByText("Không tìm thấy giáo án"),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: /Soạn giáo án đầu tiên/i }),
+    ).not.toBeInTheDocument();
+    // Distinct from Mine_Empty's title — not the same generic empty state.
+    await expect(
+      canvas.queryByText("Chưa có giáo án nào"),
+    ).not.toBeInTheDocument();
+    // Functional proof the CTA clears filters (mislabeled "Thử lại" — DEF-lesson-plan-01).
+    await userEvent.click(canvas.getByRole("button", { name: "Thử lại" }));
+    await expect(await canvas.findByText("Giáo án — Đạo hàm")).toBeVisible();
+  },
+};
+
+/**
+ * Browse scope, subject chosen, results render (AC-007.3) — owner attribution
+ * on every card, no status filter dropdown, no "create new plan" CTA anywhere.
+ */
+export const Browse_Success: Story = {
+  args: { vm: baseVM() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Toàn trường/i }));
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: /Lọc theo môn học/i }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole("option", { name: "Toán học" }),
+    );
+    await expect(
+      await canvas.findByText("Giáo án — của GV khác"),
+    ).toBeVisible();
+    await expect(canvas.getByText(/Giáo viên khác/i)).toBeVisible();
+    await expect(
+      canvas.queryByRole("combobox", { name: /Lọc theo trạng thái/i }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: /Soạn giáo án mới/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Browse scope, subject chosen, 0 published plans (AC-007.8) — distinct from Mine's empty states, no create CTA. */
+export const Browse_Empty: Story = {
+  args: {
+    vm: baseVM({
+      listBySubjectAction: async () => ({
+        ok: true,
+        page: { items: [], hasMore: false },
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Toàn trường/i }));
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: /Lọc theo môn học/i }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole("option", { name: "Toán học" }),
+    );
+    await expect(
+      await canvas.findByText("Chưa có giáo án nào được phát hành cho môn này"),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: /Soạn giáo án mới/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Browse scope fetch failure (AC-007.6) — EduError + retry, same surface as mine-scope failures. */
+export const Browse_Error: Story = {
+  args: {
+    vm: baseVM({
+      listBySubjectAction: async () => ({
+        ok: false,
+        errorKey: "network-error",
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Toàn trường/i }));
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: /Lọc theo môn học/i }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole("option", { name: "Toán học" }),
+    );
+    await expect(
+      await canvas.findByText("Không tải được danh sách giáo án"),
+    ).toBeVisible();
+  },
+};
+
+/**
+ * NFR-002 responsive — 320px: card grid collapses to 1 column, filter bar
+ * wraps, no horizontal scroll (real Chromium resize via `page.viewport`, per
+ * the exam-bank precedent — `@storybook/addon-viewport` params alone don't
+ * resize the vitest-browser render frame).
+ */
+export const Viewport320_NoOverflow: Story = {
+  args: { vm: baseVM() },
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(320, 800);
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("Giáo án — Đạo hàm")).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(321);
+  },
+};
+
+/** NFR-002 — 1280px: full desktop layout, still no horizontal overflow. */
+export const Viewport1280_NoOverflow: Story = {
+  args: { vm: baseVM() },
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 800);
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("Giáo án — Đạo hàm")).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      1281,
+    );
+  },
+};
