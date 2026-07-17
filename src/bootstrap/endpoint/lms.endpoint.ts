@@ -17,3 +17,20 @@ export const LMS_EP = {
   submitAssignment: (assignmentId: string) =>
     `/lms/api/v1/assignments/${assignmentId}/submissions`,
 } as const;
+
+/**
+ * core service — `exercisebank` sub-domain (teacher Question Bank, US-E11.9).
+ * REAL (ground-truthed against the running `core` source this session), routed
+ * through Kong (ADR 0030): `/core/api/v1/...` → Kong strips `/core` → core
+ * receives `/api/v1/lms/questions...`.
+ *
+ * Additive, per spec §6.1 — deliberately co-located here rather than a new
+ * file. UNRELATED to `LMS_EP.questions` above (the per-lesson Q&A thread on the
+ * still-unbuilt `lms` service) — do NOT confuse or merge the two.
+ */
+export const QUESTION_BANK_EP = {
+  search: "/core/api/v1/lms/questions/search", // GET (cross-teacher PUBLISHED)
+  list: "/core/api/v1/lms/questions", // GET (own) / POST (create)
+  detail: (id: string) => `/core/api/v1/lms/questions/${id}`, // GET / PUT
+  publish: (id: string) => `/core/api/v1/lms/questions/${id}/publish`, // PUT
+} as const;

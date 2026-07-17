@@ -2,6 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { TagChipsInput } from "@/components/shared/tag-chips-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,10 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils";
-import { MAX_TITLE_LENGTH } from "../../domain/entities/lesson-plan.entity";
+import {
+  MAX_TAG_LENGTH,
+  MAX_TAGS,
+  MAX_TITLE_LENGTH,
+} from "../../domain/entities/lesson-plan.entity";
 import type { LessonPlanFailure } from "../../domain/failures/lesson-plan.failure";
 import type { SubjectOption } from "../shared.i-vm";
-import { LPTagChipsInput } from "./lp-tag-chips-input";
 
 type ErrorFieldKey = "title" | "tags" | "subjectId";
 
@@ -168,10 +172,12 @@ export function PlanMetaPanel({
         <Label className="mb-1.5 block font-extrabold text-[10.5px] text-edu-text-secondary uppercase tracking-wide">
           {t("tagsLabel")}
         </Label>
-        <LPTagChipsInput
+        <TagChipsInput
           tags={tags}
           isLocked={isLocked}
           onChange={onTagsChange}
+          maxTags={MAX_TAGS}
+          maxTagLength={MAX_TAG_LENGTH}
           labels={{
             placeholder: t("tagsPlaceholder"),
             inputAriaLabel: t("tagsLabel"),

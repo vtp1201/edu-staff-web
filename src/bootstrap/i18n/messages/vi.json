@@ -2765,19 +2765,24 @@
     "card": {
       "tagsLabel": "Thẻ",
       "updatedAt": "Cập nhật {date}",
+      "grade": "Lớp {grade}",
+      "unknownAuthor": "Giáo viên khác",
       "menuAriaLabel": "Mở menu thao tác câu hỏi",
       "edit": "Chỉnh sửa",
       "view": "Xem"
     },
     "loading": "Đang tải...",
     "loadingAriaLabel": "Đang tải danh sách câu hỏi",
+    "loadMore": "Xem thêm",
+    "dismiss": "Đóng",
     "resultsHeading": "{count} câu hỏi",
     "empty": {
       "title": "Chưa có câu hỏi nào",
       "body": "Bắt đầu bằng cách tạo câu hỏi đầu tiên của bạn.",
       "cta": "Tạo câu hỏi đầu tiên",
       "noMatch": "Không tìm thấy câu hỏi",
-      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm."
+      "noMatchBody": "Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.",
+      "clearFilters": "Xoá bộ lọc"
     },
     "error": {
       "title": "Không tải được danh sách câu hỏi",
@@ -2807,6 +2812,12 @@
       "tagsLabel": "Thẻ",
       "tagsPlaceholder": "Nhập thẻ và nhấn Enter",
       "tagsHelper": "Thêm thẻ để dễ tìm kiếm và lọc câu hỏi theo chủ đề.",
+      "tagRemoveAriaLabel": "Xoá thẻ {tag}",
+      "tagLimitHelper": "Chỉ được thêm tối đa 10 thẻ.",
+      "tagTooLongHelper": "Mỗi thẻ tối đa 50 ký tự.",
+      "bodyMinHelper": "Nội dung câu hỏi cần tối thiểu 4 ký tự.",
+      "publishDisabledHelper": "Cần nhập nội dung câu hỏi (tối thiểu 4 ký tự) trước khi xuất bản.",
+      "unsaved": "Chưa lưu",
       "saveDraft": "Lưu nháp",
       "saving": "Đang lưu...",
       "publish": "Xuất bản",
@@ -2831,12 +2842,16 @@
       "body-required": "Vui lòng nhập nội dung câu hỏi.",
       "expected-answer-required": "Vui lòng nhập đáp án tham khảo.",
       "subject-required": "Vui lòng chọn môn học.",
+      "subject-not-found": "Môn học không còn tồn tại, vui lòng chọn môn khác.",
       "grade-level-required": "Vui lòng chọn khối lớp.",
       "question-type-required": "Vui lòng chọn dạng câu hỏi.",
       "search-filter-required": "Vui lòng chọn môn học hoặc nhập thẻ để tìm kiếm.",
       "not-editable": "Không thể chỉnh sửa câu hỏi đã xuất bản.",
       "not-found": "Không tìm thấy câu hỏi.",
+      "not-visible": "Câu hỏi nháp này không hiển thị với bạn.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "forbidden-browse": "Bạn không có quyền tìm kiếm trong kho câu hỏi.",
+      "forbidden-edit": "Bạn không phải là người tạo câu hỏi này nên không thể chỉnh sửa.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã xảy ra lỗi không xác định."
     }

@@ -115,19 +115,49 @@ reading both `.tsx` sources directly, not assumed. Flag to `fe-lead` as a
 fast-follow ON those two shared components — do not patch them from inside a
 consumer story's scope.
 
-**PublishConfirmDialog (US-E11.8, lesson-plan):** exam-bank (US-E11.3) already has its own
-feature-local non-destructive `publish-confirm-dialog.tsx` (AlertDialog, check icon,
-success/primary tone — distinct from `DestructiveConfirmDialog` which is red/AlertTriangle
-and semantically wrong for a positive one-way action). Lesson-plan needs an identical shape
-plus `isLoading`/`aria-busy` (exam-bank's version lacks it). Two near-identical feature-local
-copies = the textbook decision-0026 promotion trigger — flagged to `fe-lead` to extract
-`components/shared/publish-confirm-dialog/` rather than let a 3rd near-duplicate appear when
-question-bank (US-E11.9, same DR-021) needs it too. Lesson: **when a design mockup's own code
-comment says "reused shape for X + Y"** (e.g. lesson-plan.jsx's `LPTagChipsInput` comment), take
-that as a strong 2nd-consumer signal even before the 2nd screen is actually built — still stay
-feature-local per the conservative rule (component-organization.md), but flag the promotion
-explicitly with the anticipated consumer named, so the next story's architect doesn't have to
-rediscover the connection.
+**PublishConfirmDialog / TagChipsInput — PROMOTED (US-E11.9, question-bank, 2026-07-17):**
+both moved `lesson-plan`'s feature-local versions to `components/shared/publish-confirm-dialog/`
+and `components/shared/tag-chips-input/` (folder + `index.ts` + `.stories.tsx` each), updated
+`lesson-plan`'s 2 importers (`lesson-plan-builder-screen.tsx`, `plan-meta-panel.tsx`).
+`TagChipsInput` was generalized: `maxTags`/`maxTagLength` became caller-supplied props instead
+of reading `lesson-plan`'s entity-file constants (zero feature-domain import in the shared
+version now). Found during this pass: `exam-bank` (US-E11.3) actually reuses
+`DestructiveConfirmDialog` (red/destructive tone) for ITS publish flow — a pre-existing
+inconsistency, out of scope to fix, but confirms `lesson-plan`'s non-destructive dialog (not
+exam-bank's) is the correct precedent to promote/reuse for any future publish-confirm need.
+**Tooling gap hit during this promotion**: `fe-component-architect` has no shell/Bash/file-delete
+tool in its toolset (Read/Write/Edit/Glob/Grep/SendMessage only) — could not physically `git rm`
+the 2 old feature-local files or run `bun vitest run` to prove zero regression. Stopgap used:
+overwrote the old files with a `// MOVED, see <shared path>` comment + `export {}` (compiles
+clean, zero remaining importers per grep) and flagged in the handoff message that `fe-lead`/
+`fe-nextjs-engineer` must `git rm` those 2 files and run the lesson-plan regression suite before
+merge. **Lesson for next promotion**: if doing this again from this role, expect the same
+tool gap — do the grep-verified import-rewiring + stub-out, then explicitly hand off the
+literal `git rm` + test-run step rather than silently assuming it happened.
+
+**OwnerToggle → QBScopeToggle (flagged, not executed, US-E11.9):** `lesson-plan`'s
+`owner-toggle.tsx` has its own doc-comment: "Feature-local for now — anticipated 2nd consumer is
+question-bank (promote on that story, decision 0026)." Confirms the "mockup/code-comment names
+the anticipated consumer" pattern below. Did NOT promote it in this pass — plan.md only
+authorized 2 promotions (tag-chips-input, publish-confirm-dialog); a 3rd unscoped move risked
+compounding regression surface on `lesson-plan` beyond what was reviewed for this story. Flagged
+to `fe-lead`/`fe-nextjs-engineer` as a legitimate 3rd promotion candidate for whoever implements
+`QBScopeToggle`. Same-pass second flag: `lesson-plan-error-state.tsx` (generic role=alert+icon+
+title+message+retry) is about to get a structurally identical 2nd instance in question-bank's
+list error state — also flagged, also not executed (bigger reconcile risk, same "flag don't
+force" call).
+
+**PublishConfirmDialog (US-E11.8, lesson-plan) — historical note, now resolved above:** exam-bank
+(US-E11.3) already had its own feature-local non-destructive `publish-confirm-dialog.tsx`
+(AlertDialog, check icon, success/primary tone — distinct from `DestructiveConfirmDialog` which
+is red/AlertTriangle and semantically wrong for a positive one-way action). Lesson-plan needed an
+identical shape plus `isLoading`/`aria-busy` (exam-bank's version lacked it). Two near-identical
+feature-local copies = the textbook decision-0026 promotion trigger. Lesson: **when a design
+mockup's own code comment says "reused shape for X + Y"** (e.g. lesson-plan.jsx's
+`LPTagChipsInput` comment), take that as a strong 2nd-consumer signal even before the 2nd screen
+is actually built — still stay feature-local per the conservative rule
+(component-organization.md), but flag the promotion explicitly with the anticipated consumer
+named, so the next story's architect doesn't have to rediscover the connection.
 
 **EmptyState covers "N distinct empty states" without N components:** US-E11.8's list screen
 had 4 distinct empty/prompt states (mine-no-filters, mine-filtered, browse-no-subject-prompt,

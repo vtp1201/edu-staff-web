@@ -3,15 +3,21 @@
 import { X } from "lucide-react";
 import { useId, useState } from "react";
 import { cn } from "@/shared/utils";
-import {
-  MAX_TAG_LENGTH,
-  MAX_TAGS,
-} from "../../domain/entities/lesson-plan.entity";
 
-export interface LPTagChipsInputProps {
+export interface TagChipsInputProps {
   tags: string[];
   isLocked: boolean;
   onChange: (tags: string[]) => void;
+  /** Caller-supplied cap on tag count (was a lesson-plan entity constant pre-promotion). */
+  maxTags: number;
+  /** Caller-supplied cap on a single tag's char length. */
+  maxTagLength: number;
+  /**
+   * Optional id of a visible `<label>` to link the input to (`aria-labelledby`),
+   * making the visible label the single source of truth. Falls back to
+   * `labels.inputAriaLabel` when omitted (backward-compatible).
+   */
+  labelledBy?: string;
   labels: {
     placeholder: string;
     inputAriaLabel: string;
@@ -22,19 +28,27 @@ export interface LPTagChipsInputProps {
 }
 
 /**
- * Tag-chips input (FR-009). Owns only its uncommitted draft text; the committed
+ * Tag-chips input. Owns only its uncommitted draft text; the committed
  * `tags[]` is a controlled prop. Enter/comma/blur commits; duplicates are
- * silently ignored (AC-009.2); the 11th add is blocked with an inline helper
- * (AC-009.3); a >50-char tag shows an inline error and is not added (AC-009.4);
- * each remove button names its specific tag (AC-009.6) and is hidden entirely
- * when locked. Feature-local for now — promote to shared on question-bank (0026).
+ * silently ignored; the `maxTags + 1`th add is blocked with an inline helper;
+ * a tag over `maxTagLength` shows an inline error and is not added; each
+ * remove button names its specific tag and is hidden entirely when locked.
+ *
+ * Promoted from `features/lesson-plan/presentation/lesson-plan-builder-screen/
+ * lp-tag-chips-input.tsx` (US-E11.9, component-organization.md decision 0026)
+ * — `question-bank` is the 2nd consumer. Zero feature-domain import: caller
+ * passes `maxTags`/`maxTagLength` instead of this component reading a
+ * feature's entity-file constants.
  */
-export function LPTagChipsInput({
+export function TagChipsInput({
   tags,
   isLocked,
   onChange,
+  maxTags,
+  maxTagLength,
+  labelledBy,
   labels,
-}: LPTagChipsInputProps) {
+}: TagChipsInputProps) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<"max" | "long" | null>(null);
   const helpId = useId();
@@ -46,11 +60,11 @@ export function LPTagChipsInput({
       setDraft("");
       return; // silent duplicate ignore
     }
-    if (value.length > MAX_TAG_LENGTH) {
+    if (value.length > maxTagLength) {
       setError("long");
       return;
     }
-    if (tags.length >= MAX_TAGS) {
+    if (tags.length >= maxTags) {
       setError("max");
       return;
     }
@@ -80,7 +94,7 @@ export function LPTagChipsInput({
                 type="button"
                 onClick={() => remove(tag)}
                 aria-label={labels.removeAriaLabelOf(tag)}
-                className="inline-flex items-center justify-center rounded-sm hover:text-primary/70 max-sm:min-h-11 max-sm:min-w-11"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm hover:text-primary/70"
               >
                 <X className="size-3" aria-hidden="true" />
               </button>
@@ -102,7 +116,8 @@ export function LPTagChipsInput({
             }}
             onBlur={commit}
             placeholder={tags.length === 0 ? labels.placeholder : ""}
-            aria-label={labels.inputAriaLabel}
+            aria-labelledby={labelledBy}
+            aria-label={labelledBy ? undefined : labels.inputAriaLabel}
             aria-describedby={error ? helpId : undefined}
             className="min-w-24 flex-1 bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
           />

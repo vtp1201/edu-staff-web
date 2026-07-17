@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadMoreButton } from "@/components/shared/load-more-button";
+import { ScopeToggle } from "@/components/shared/scope-toggle";
 import { Button } from "@/components/ui/button";
 import type { LessonPlanEntity } from "../../domain/entities/lesson-plan.entity";
 import { DOCUMENT_SECTION_KEYS } from "../../domain/entities/lesson-plan.entity";
@@ -29,7 +30,6 @@ import type {
 } from "./lesson-plan-list-screen.i-vm";
 import { LessonPlanSkeleton } from "./lesson-plan-skeleton";
 import { LPCard } from "./lp-card";
-import { OwnerToggle } from "./owner-toggle";
 
 const EMPTY_FILTERS: LessonPlanFilterState = {
   search: "",
@@ -211,16 +211,22 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
             {scope === "mine" ? t("subtitle") : t("subtitleBrowse")}
           </p>
         </div>
-        <OwnerToggle
-          scope={scope}
-          mineCount={scope === "mine" ? fetched.length : 0}
-          publishedCount={scope === "browse" ? fetched.length : 0}
-          onScopeChange={onScopeChange}
-          labels={{
-            groupAriaLabel: t("ownerToggle.ariaLabel"),
-            mine: t("ownerToggle.mine"),
-            school: t("ownerToggle.school"),
-          }}
+        <ScopeToggle<ListScope>
+          value={scope}
+          options={[
+            {
+              id: "mine",
+              label: t("ownerToggle.mine"),
+              count: scope === "mine" ? fetched.length : 0,
+            },
+            {
+              id: "browse",
+              label: t("ownerToggle.school"),
+              count: scope === "browse" ? fetched.length : 0,
+            },
+          ]}
+          onChange={onScopeChange}
+          groupAriaLabel={t("ownerToggle.ariaLabel")}
         />
         {scope === "mine" && (
           <Button type="button" onClick={() => router.push(vm.createPath)}>

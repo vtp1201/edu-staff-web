@@ -26,14 +26,19 @@ export interface PublishConfirmDialogProps {
 }
 
 /**
- * One-way publish confirm (FR-004). Non-destructive tone (check icon + primary
- * button, NOT the destructive variant — publishing is a positive action, D4).
- * Feature-local for this US (fe-lead deferred promoting exam-bank's dialog).
+ * One-way publish confirm. Non-destructive tone (check icon + primary button,
+ * NOT the destructive variant — publishing is a positive action). Do NOT reuse
+ * `DestructiveConfirmDialog` for this flow — that component's red/destructive
+ * tone is semantically wrong for a positive one-way action.
+ *
+ * Promoted from `features/lesson-plan/presentation/lesson-plan-builder-screen/
+ * publish-confirm-dialog.tsx` (US-E11.9, component-organization.md decision
+ * 0026) — `question-bank` is the 2nd consumer.
  *
  * Plain `Button`s (not `AlertDialogAction`) so the confirm callback fires
- * exactly once and the dialog stays OPEN with a spinner while the publish PUT is
- * in flight (AC-004.2); the hook closes it on the result. Escape/overlay routes
- * to `onCancel` (no request fires, AC-004.4).
+ * exactly once and the dialog stays OPEN with a spinner while the publish PUT
+ * is in flight; the caller's hook closes it on the result. Escape/overlay
+ * routes to `onCancel` (no request fires).
  */
 export function PublishConfirmDialog({
   open,

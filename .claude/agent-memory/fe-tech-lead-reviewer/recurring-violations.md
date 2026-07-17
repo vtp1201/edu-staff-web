@@ -148,6 +148,22 @@ Watch for these (each has bitten a story here):
   so it's wrong whenever the RSC seed failed or the list refetches. Acceptable for a mock-first MVP
   happy path but flag as CONSIDER. (US-E11.7.)
 
+- **Toast error-key narrowing switch silently drops spec-mandated INLINE field errors** — a
+  `toErrorMsgKey()`-style switch that collapses every failure not in a small whitelist to a generic
+  `unknown` toast. Fine for defensive/client-prevented codes (body-too-long, tag limits — the UI
+  blocks them first), but it also swallows genuinely-reachable server races the spec's error→UI table
+  maps to an INLINE field error. Classic case: `subject-not-found` on create (subject archived between
+  page-load and submit) → spec §6.5 wants inline-on-subject-selector, code shows generic toast; the
+  meta-grid even had an unused `subjectError` prop plumbed. SHOULD-FIX (edge race, still surfaced
+  non-silently, not a crash). Cross-check the error→UI mapping table for any row that says "inline on
+  X field" and confirm that path isn't collapsed to a toast. (US-E11.9 use-question-bank-builder.ts.)
+- **Debounced-gate list flashes emptyFiltered during the debounce window** — search screen derives
+  the gate/prompt visibility from the IMMEDIATE filter value but keys/enables the query off the
+  DEBOUNCED value. Typing a tag flips the gate off instantly while the query stays disabled for the
+  debounce interval → `cards.length===0 && scope==="search"` renders the "no results" empty state for
+  ~350ms before the request even fires. CONSIDER: treat debounce-pending (immediate-satisfied but
+  not-yet-debounced) as a loading state. (US-E11.9 question-bank-list-screen.tsx.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

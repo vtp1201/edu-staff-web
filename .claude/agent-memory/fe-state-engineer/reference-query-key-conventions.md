@@ -120,6 +120,65 @@ request) and let the **display name** be derived client-side via
 second server round-trip just for a cosmetic label. Only resolve the name server-side if
 it gates something before the client query can run.
 
+## Mode-conditional key shape when the SAME filter is a real server param in one mode but client-only in another (US-E11.9, question-bank)
+
+When a spec's own split table says a secondary filter (`gradeLevel`/
+`difficulty`) narrows server results in mode A (e.g. subject-driven search)
+but is silently ignored server-side in mode B (e.g. tag-driven search) of the
+*same* endpoint, do NOT pick one blanket rule ("always in the key" or "never
+in the key") for that filter — branch the key factory itself on the mode
+discriminator (here: whether `subjectId` is set):
+
+```ts
+searchRoot: (p: { subjectId?: string; tag?: string; gradeLevel?: string; difficulty?: string }) =>
+  p.subjectId
+    ? ["ns","search","subject", p.subjectId, p.tag ?? null, p.gradeLevel ?? null, p.difficulty ?? null] as const
+    : ["ns","search","tag", p.tag ?? null] as const,
+```
+
+Reasoning: including it unconditionally in mode-B wastes cache entries on a
+param the server ignores AND makes the code lie about what drives the
+request (the same "misrepresent narrowing" bug the BA's AC warns about, just
+moved into code); excluding it unconditionally breaks mode-A correctness
+(server really does return different results per value there — must be a
+distinct cache entry, not a client-side filter, or a same-subject
+gradeLevel/difficulty change would silently keep serving the old page).
+Bonus: a mode switch (A↔B) always changes which branch runs, so the key
+shape itself changes — this is what protects a mode toggle from ever serving
+a stale/wrong-looking page from the other mode's cache entry, no extra
+race-condition code needed (see [[query-key-conventions]]'s general
+"put the filter in the key when it's a real request param" rule — this
+extends it to a per-mode-conditional real/not-real determination instead of
+a fixed determination).
+
+## Design doc vs. shipped reality can diverge — read the actual code, not just the sibling's own state-architecture.md (US-E11.8 lesson-plan, precedent checked while designing US-E11.9)
+
+Before mirroring a sibling feature's "established pattern" cited in a plan.md
+hand-off note, actually grep/read the sibling's shipped code — its own
+prior `state-architecture.md` may describe a MORE elaborate mechanism
+(`useQuery`+`useMutation`+`onError`+`invalidateQueries` for a single-item
+detail/builder screen) than what was actually implemented. Confirmed case:
+lesson-plan's design doc specced a `detail(id)` `useQuery` + `useMutation`
+with `invalidateQueries`/`refetchType:"active"` for the already-published
+race; the shipped `use-lesson-plan-builder.ts` instead uses plain Server
+Actions + `useTransition` + local `useState`, with a direct `refetchAction`
+call for the race (no client query for detail at all, no `useMutation`
+anywhere) — only the LIST screen ended up as real `useInfiniteQuery`. Two
+follow-on consequences when designing a new sibling feature (question-bank):
+(1) mirror the simpler, proven-shipped pattern, not the more elaborate
+never-fully-realized design; (2) note explicitly in the new design doc
+which pattern you're mirroring and why, since the plan.md hand-off brief
+itself may describe the more elaborate (undelivered) version, having
+inherited the description from the OLD design doc rather than the code.
+Also worth flagging as a real, closeable gap rather than silently
+re-copying: shipped lesson-plan never calls client-side `invalidateQueries`
+at all (only server-side `revalidatePath`), so its list's TanStack cache can
+serve pre-mutation data for up to its `staleTime` window after navigating
+back from the builder. Cheap to fix in a new sibling (call
+`useQueryClient().invalidateQueries(...)` directly from the same client hook
+that already awaits the Server Action, no `useMutation` wrapper required) —
+don't treat "the sibling didn't do this" as proof it's unnecessary.
+
 **See also:** [[rsc-readonly-pattern]]
 
 ## RSC-seeded useInfiniteQuery + draft/applied URL filters (US-E12.12, audit-log)
