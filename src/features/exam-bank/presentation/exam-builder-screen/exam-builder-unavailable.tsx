@@ -19,6 +19,12 @@ export function ExamBuilderUnavailable() {
 
   return (
     <div className="grid flex-1 place-items-center p-6">
+      {/* sr-only heading — this state replaces the whole builder route, but
+       * EmptyState renders its title as a <p> (it's normally a sub-region of
+       * an already-headed page). A11Y-201: give SR users navigating by
+       * heading something to land on, matching exam-builder-screen.tsx's own
+       * sr-only <h1>. */}
+      <h1 className="sr-only">{t("unavailable.title")}</h1>
       <EmptyState
         icon={Lock}
         title={t("unavailable.title")}

@@ -1720,7 +1720,7 @@
     }
   },
   "examBank": {
-    "authoringDisabledNote": "Creating and editing exams is not available in this environment. You can still view and publish existing exams.",
+    "authoringDisabledNote": "Creating, editing, and deleting exams is not available in this environment. You can still view and publish existing exams.",
     "builder": {
       "addQuestion": "Add question",
       "back": "Back",
@@ -1792,7 +1792,7 @@
       "no-questions": "An exam needs at least one question.",
       "not-editable": "This exam cannot be edited in its current status.",
       "not-found": "Exam not found.",
-      "not-supported": "This action is not supported by the API.",
+      "not-supported": "This action isn't available yet.",
       "question-body-required": "A question is missing its content.",
       "question-empty-content": "Question content is empty.",
       "question-marks-invalid": "Question marks must be greater than zero.",

@@ -226,3 +226,210 @@ Proof (run on this branch):
 New cross-repo asks (registered in `EPIC-OVERVIEW.md` as #24–26): no
 options-text field (MCQ choices unstorable), `openapi.yaml` write-path drift,
 no update/edit/remove/delete endpoint.
+
+## Accessibility Audit (WCAG 2.1 AA) — `fe-accessibility-auditor`
+
+### 1. Audit Summary
+
+Scope: diff `55275e1..HEAD` on `feat/us-e18.15-exam-family-wiring` —
+`src/features/exam-bank/presentation/**` (3-value status badge, authoring-
+disabled note, new `ExamBuilderUnavailable` state) + route-level gating
+(`teacher/exam-bank/{page,create/page,[id]/edit/page}.tsx`,
+`admin/exam-bank/page.tsx`). Audited from two lenses: keyboard-only
+screen-reader user, and WCAG 2.1 AA against the school-device baseline in
+`.claude/rules/accessibility.md`.
+
+Criteria checked: 1.3.1 (info/relationships — heading structure), 1.4.1
+(color-only status), 1.4.3/1.4.11 (contrast, resolved against `tokens.css`
+not eyeballed), 2.1.1/2.1.2 (keyboard operable, no trap), 2.4.3 (focus
+order), 2.4.6 (headings/labels), 2.4.7 (focus visible — unchanged, Radix
+preserved), 3.3.1/3.3.2 (error/status identification, microcopy), 4.1.2
+(name/role/value — Radix semantics intact).
+
+Findings: 0 blocking, 1 should-fix, 2 minor. **Overall: PASS** — the gate is
+green; the should-fix (missing page heading on the new blocked-builder
+state) should land before/alongside merge since it's a small, mechanical fix
+that closes a genuine heading-navigation gap for SR users, but it does not
+rise to blocking (the route is still keyboard-reachable, has a clear title/
+body/back-CTA via `EmptyState`, and no content is lost — only the heading
+landmark is missing).
+
+### 2. WCAG 2.1 AA Coverage
+
+| Criterion | Description | PASS/FAIL | Finding ID |
+| --- | --- | --- | --- |
+| 1.3.1 Info and Relationships | Blocked-builder route has a discoverable heading for SR heading-navigation | FAIL | A11Y-201 |
+| 1.4.1 Use of Color | 3-value status (DRAFT/PUBLISHED/CONFIDENTIAL) not color-only | PASS | — |
+| 1.4.3 / 1.4.11 Contrast | `StatusBadge` tones (`warning`/`success`/`muted`) + authoring-note text on `bg-muted` | PASS | — |
+| 2.1.1 / 2.1.2 Keyboard | Filter bar (Radix `Select`), card dropdown menu (Radix `DropdownMenu`), builder-unavailable back button all keyboard-operable, no trap | PASS | — |
+| 2.4.6 Headings and Labels | `authoringDisabledNote` copy doesn't name all 3 gated actions (create/edit/**delete**) | Minor | A11Y-202 |
+| 3.3.1 Error Identification | `not-supported` error copy references "API" (mildly technical) | Minor | A11Y-203 |
+| 4.1.2 Name, Role, Value | Icon-only menu trigger `aria-label`, dropdown items removed (not disabled) when unavailable — clear SR experience | PASS | — |
+
+### 3. Findings Catalogue
+
+```
+A11Y-201
+Severity: Should-fix (WCAG 1.3.1 Info and Relationships, 2.4.6 Headings and Labels)
+Component: src/features/exam-bank/presentation/exam-builder-screen/exam-builder-unavailable.tsx
+Issue: The mock builder route (exam-builder-screen.tsx) renders a screen-reader-
+  only <h1> for page identity:
+    <h1 className="sr-only">{t("builder.editTitle"|"createTitle")}</h1>
+  ExamBuilderUnavailable — which now REPLACES that entire route's content in
+  real mode (!USE_MOCK, both create/page.tsx and [id]/edit/page.tsx) — has no
+  heading at all. EmptyState (the shared component it wraps) deliberately
+  renders its title as a <p> "so it does not disrupt heading hierarchy" (by
+  design, since EmptyState is normally a sub-region inside an already-headed
+  page). Here it IS the whole page. A screen-reader user who navigates by
+  heading (very common — NVDA/VoiceOver "next heading" is a primary nav
+  method) lands on /teacher/exam-bank/create or /teacher/exam-bank/{id}/edit
+  in real mode and finds ZERO headings on the page — a regression vs. the
+  same route in mock mode.
+Evidence:
+  exam-builder-screen.tsx:141-143 → <h1 className="sr-only">{...}</h1>
+  exam-builder-unavailable.tsx → no <h1>/<h2> anywhere; only EmptyState's <p>.
+Fix: Add the same sr-only <h1> pattern used by the sibling mock screen, above
+  the EmptyState:
+    export function ExamBuilderUnavailable() {
+      const t = useTranslations("examBank");
+      const router = useRouter();
+      return (
+        <div className="grid flex-1 place-items-center p-6">
+          <h1 className="sr-only">{t("unavailable.title")}</h1>
+          <EmptyState
+            icon={Lock}
+            title={t("unavailable.title")}
+            body={t("unavailable.body")}
+            cta={{ label: t("unavailable.back"), variant: "secondary",
+                   onClick: () => router.push(EXAM_BANK_LIST_PATH) }}
+          />
+        </div>
+      );
+    }
+  (EmptyState's visible <p> title stays as-is for sighted users; the sr-only
+  <h1> gives SR users a heading landmark without visually duplicating text —
+  same idiom already used by exam-builder-screen.tsx, no new pattern invented.)
+Reference: WCAG 2.1 §1.3.1 (https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships.html), §2.4.6; ARIA APG heading-navigation practice.
+
+A11Y-202
+Severity: Minor (WCAG 2.4.6 Headings and Labels / 3.3.2-adjacent microcopy clarity)
+Component: messages/vi.json + messages/en.json → examBank.authoringDisabledNote; src/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen.tsx
+Issue: `authoringEnabled=false` gates THREE affordances (create, edit, delete
+  — see exam-bank-screen.tsx toCardVM: canEdit/canDelete both AND authoringEnabled).
+  The explanatory banner text only names two:
+    vi: "Việc tạo và chỉnh sửa đề thi chưa khả dụng..." (create + edit only)
+    en: "Creating and editing exams is not available..." (create + edit only)
+  A teacher who previously (mock) could delete their own DRAFT paper will see
+  the delete item silently vanish from the card's dropdown menu with no
+  textual explanation covering that specific action — the banner reads as if
+  only create/edit are affected. Not a blocking barrier (the delete option is
+  cleanly removed, not left as a broken disabled button), but it under-informs.
+Evidence: messages/vi.json examBank.authoringDisabledNote (line ~1723);
+  exam-bank-screen.tsx toCardVM: `canDelete: isOwner && exam.status === "draft" && authoringEnabled`.
+Fix: Extend the copy to name all three gated actions, e.g.
+  vi: "Việc tạo, chỉnh sửa và xoá đề thi chưa khả dụng trong môi trường này. Bạn vẫn có thể xem và publish đề thi hiện có."
+  en: "Creating, editing, and deleting exams is not available in this environment. You can still view and publish existing exams."
+  (Same key, no new i18n key needed — edit vi.json + en.json in place.)
+Reference: WCAG 2.1 §2.4.6 (labels describe purpose); accessibility.md "thông báo lỗi hướng dẫn cách sửa" / clear microcopy rule.
+
+A11Y-203
+Severity: Minor (WCAG 3.3.1 Error Identification — clarity for a non-technical, multi-age audience)
+Component: messages/vi.json / en.json → examBank.errors.not-supported
+Issue: `"not-supported": "Thao tác này không được API hỗ trợ."` names "API" —
+  a technical term that leaks an implementation detail to end users (teachers,
+  some may be non-technical). This error is reachable if `createExam`/
+  `updateExam`/`deleteExam` throw client-side (defense-in-depth, since the UI
+  already hides these actions in real mode) — low reachability, but if it DOES
+  surface (e.g. a stale tab that still has the builder mounted from before an
+  environment flip) the message should stay in plain language, matching the
+  rest of the catalogue's non-technical tone (e.g. `not-found`: "Không tìm
+  thấy đề thi.").
+Evidence: messages/vi.json examBank.errors.not-supported.
+Fix: vi: "Thao tác này chưa được hỗ trợ trong môi trường này."
+  en: "This action isn't supported in this environment yet." (drop "API").
+Reference: WCAG 2.1 §3.3.1; accessibility.md "Microcopy rõ, không viết tắt khó hiểu".
+```
+
+### 4. Keyboard Navigation Map
+
+**Teacher exam-bank list** (`/teacher/exam-bank`, real mode, `authoringEnabled=false`):
+Tab 1 → skip/nav (layout, unchanged) → Tab → (no "Create" button — `canCreate=false`, correctly absent from tab order, not a disabled ghost button) → Tab → authoring-disabled note (static text, not focusable — correct, it's `role="status"` informational, not interactive) → Tab → filter bar: search input → subject `Select` (Enter/Space opens, Arrow keys move, Esc closes) → status `Select` (same, now offers Draft/Published/Confidential) → teacher `Select` (admin only) → Tab → each `ExamCard`'s menu-trigger `Button` (`aria-label` "Mở menu thao tác đề thi") → Enter/Space opens `DropdownMenu` (Radix: Arrow keys navigate items, Enter/Space activates, Esc closes and returns focus to trigger — unmodified, verified intact) → menu items present are exactly `{Publish}` when `authoringEnabled=false` (Edit/Delete correctly absent, not disabled).
+
+**Blocked builder route** (`/teacher/exam-bank/create` or `/{id}/edit`, real mode): route renders `ExamBuilderUnavailable` only. Tab 1 (after layout chrome) → "Quay lại kho đề thi" button (keyboard-reachable, `type="button"`, standard `Button` component → visible focus ring via `--ring`, unmodified). No trap; Enter/Space activates `router.push` back to the list. **Gap**: no heading to jump to via SR heading-navigation (A11Y-201) — the content itself is still linearly reachable by Tab/read-order, so this is a discoverability gap, not a keyboard trap.
+
+**Admin exam-bank** (`authoringEnabled=false` always): identical to teacher list's blocked state — no Create button, no Edit/Delete menu items ever (admin never owns papers), Publish absent too (`publishAction={forbiddenAction}` — pre-existing, unchanged by this diff).
+
+### 5. Screen Reader Script
+
+**Exam card status badge** — before this US: "Nháp" or "Đã publish" (2-value). After: "Nháp" / "Đã publish" / "Bảo mật" (confidential) — all announced as plain text inside the `Badge` (no `aria-label`-only color swatch), consistent before/after.
+
+**Teacher list, real mode** — after landing: heading "Kho đề thi" (h1) → subtitle → (no Create button announced) → status text "Việc tạo và chỉnh sửa đề thi chưa khả dụng trong môi trường này..." (role="status", announced once on mount by most SR/live-region timing, then reachable by Tab-adjacent reading since it's a `<p>`, not `aria-live` polite-only-announce — it's static content so it's also linearly readable) → filter controls → each card: title, "Mở menu thao tác đề thi" button → menu opens: "Publish" only (no "Chỉnh sửa"/"Xoá" announced, matching that they're genuinely gone, not silently broken).
+
+**Blocked builder route, before fix**: SR user tabs in, hears button "Quay lại kho đề thi" with no preceding heading — if they instead try "next heading" (H key in NVDA/JAWS, VO+Cmd+H in VoiceOver), they get **no result** and may assume the page is still loading or broken (worse than merely inconvenient — it can read as a failure state to a screen-reader user who relies on headings to confirm a page has loaded).
+
+**Blocked builder route, after A11Y-201 fix**: "next heading" lands on sr-only "Không khả dụng" (or "Not available") — confirms page landed, then continues to visible title "Không khả dụng", body text explaining create/edit/delete are unavailable, and the back button.
+
+### 6. Quick Wins (< 30 min each, sorted by severity)
+
+1. **A11Y-201** (should-fix) — add one `<h1 className="sr-only">` line to `exam-builder-unavailable.tsx`. ~5 min.
+2. **A11Y-202** (minor) — extend `authoringDisabledNote` string in `vi.json`+`en.json` to name delete alongside create/edit. ~5 min.
+3. **A11Y-203** (minor) — reword `errors.not-supported` in `vi.json`+`en.json` to drop "API". ~5 min.
+
+### Gate verdict
+
+**PASS** for design-review gate purposes (0 blocking findings). A11Y-201 is
+recommended to land in this same branch before merge (trivial, closes a real
+SR heading-navigation gap on a brand-new route state); A11Y-202/203 are
+optional polish, safe to defer to a follow-up if the team wants to keep this
+branch's diff minimal.
+
+**Fixes applied (fe-lead, same branch, 2026-07-17)**: all 3 findings landed
+before merge — A11Y-201 (sr-only `<h1>` added to
+`exam-builder-unavailable.tsx`), A11Y-202 (`authoringDisabledNote` reworded
+in `vi.json`+`en.json` to name create/edit/**delete**), A11Y-203
+(`errors.not-supported` reworded in both files to drop "API"). Re-verified
+after fix: `bunx vitest run src/features/exam-bank` 7 files/55 tests pass,
+full suite `bunx vitest run` 306 files/1944 tests pass (unchanged — copy-only
++ one heading, no new/removed tests), `tsc --noEmit` clean, `bun lint` clean
+(2 pre-existing warnings in unrelated files only).
+
+## Tech-Lead Review — `fe-tech-lead-reviewer`
+
+**Verdict: APPROVED**, no blocking issues (first pass, no revision round).
+Independently re-verified against the Go source
+(`edu-api/services/core/internal/lms/exambank/**`): all 5 real routes match,
+all 13 error codes map 1:1 to `exam_paper.go`'s constructors branched on
+`errorCodeOf(err)` (never message), `raw:true` correctly top-level in both
+`listExamBank` and the subject-name fan-out (not the US-E18.2/19 nested-raw
+bug class), blocked write stubs make no HTTP call (unconditional throw, no
+live `if (USE_MOCK)` escape hatch contradicting the "permanently blocked"
+claim — the US-E18.12-class self-consistency bug was checked for and not
+found here), `ensureFreshSession()` wired correctly, shared `StatusBadge`/
+`EmptyState` reused (no fork), tokens-only, i18n vi/en parity. Re-ran
+`bunx tsc --noEmit` (clean), `bunx vitest run` (306/1944, matches claim),
+`NEXT_PUBLIC_USE_MOCK= bun run build` (green, all exam-bank routes compiled
+real-mode) independently. Two non-blocking CONSIDER notes (subject-name
+fan-out pages the whole catalogue — fine at current scale, same as
+US-E18.4/5 precedent; `teacherName` raw-id fallback — documented, ask #23),
+neither required a fix.
+
+## Design Review Gate
+
+This US changes UI behavior more than its original framing (per ADR 0056's
+Amendment): the teacher exam-builder route (create/edit) is now blocked in
+real mode, not just the delete button. Reviewed against `docs/DESIGN_REVIEW.md`
++ `.claude/rules/impeccable.md` scope (tokens/layout supremacy, a11y/spacing/
+state gaps only):
+- **Design system conformance**: PASS — no new token, no raw color, reuses
+  `StatusBadge` (3-value, text-always-present) and `EmptyState` (blocked
+  route) verbatim; no palette/layout reinvention.
+- **States**: loading/empty/error/success + the new "unavailable" state all
+  covered; blocked route explicitly designed as a first-class state (icon +
+  title + body + back-CTA), not a bare error page.
+- **A11y**: PASS post-fix (see Accessibility Audit above) — 0 blocking, all
+  3 findings fixed and re-verified.
+- **Scope-creep disclosure**: the builder-route-blocking (bigger than "hide
+  delete only") is documented in ADR 0056's Amendment, the story's Design
+  Notes, and this gate explicitly — not silently shipped as a minor tweak.
+
+**Verdict: PASS.**

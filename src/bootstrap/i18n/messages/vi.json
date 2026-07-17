@@ -1720,7 +1720,7 @@
     }
   },
   "examBank": {
-    "authoringDisabledNote": "Việc tạo và chỉnh sửa đề thi chưa khả dụng trong môi trường này. Bạn vẫn có thể xem và publish đề thi hiện có.",
+    "authoringDisabledNote": "Việc tạo, chỉnh sửa và xoá đề thi chưa khả dụng trong môi trường này. Bạn vẫn có thể xem và xuất bản đề thi hiện có.",
     "builder": {
       "addQuestion": "Thêm câu",
       "back": "Quay lại",
@@ -1792,7 +1792,7 @@
       "no-questions": "Đề thi cần ít nhất một câu hỏi.",
       "not-editable": "Không thể chỉnh sửa đề thi ở trạng thái hiện tại.",
       "not-found": "Không tìm thấy đề thi.",
-      "not-supported": "Thao tác này không được API hỗ trợ.",
+      "not-supported": "Thao tác này hiện chưa được hỗ trợ.",
       "question-body-required": "Câu hỏi chưa có nội dung.",
       "question-empty-content": "Câu hỏi chưa có nội dung.",
       "question-marks-invalid": "Điểm của câu hỏi phải lớn hơn 0.",
