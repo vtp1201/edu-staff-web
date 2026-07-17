@@ -2765,19 +2765,24 @@
     "card": {
       "tagsLabel": "Tags",
       "updatedAt": "Updated {date}",
+      "grade": "Grade {grade}",
+      "unknownAuthor": "Another teacher",
       "menuAriaLabel": "Open question actions menu",
       "edit": "Edit",
       "view": "View"
     },
     "loading": "Loading...",
     "loadingAriaLabel": "Loading question list",
+    "loadMore": "Load more",
+    "dismiss": "Close",
     "resultsHeading": "{count} questions",
     "empty": {
       "title": "No questions yet",
       "body": "Start by creating your first question.",
       "cta": "Create your first question",
       "noMatch": "No questions found",
-      "noMatchBody": "Try changing your filters or search keyword."
+      "noMatchBody": "Try changing your filters or search keyword.",
+      "clearFilters": "Clear filters"
     },
     "error": {
       "title": "Couldn't load questions",
@@ -2807,6 +2812,12 @@
       "tagsLabel": "Tags",
       "tagsPlaceholder": "Type a tag and press Enter",
       "tagsHelper": "Add tags to make this question easier to find and filter by topic.",
+      "tagRemoveAriaLabel": "Remove tag {tag}",
+      "tagLimitHelper": "You can add at most 10 tags.",
+      "tagTooLongHelper": "Each tag can be at most 50 characters.",
+      "bodyMinHelper": "The question content must be at least 4 characters.",
+      "publishDisabledHelper": "Enter the question content (at least 4 characters) before publishing.",
+      "unsaved": "Unsaved changes",
       "saveDraft": "Save draft",
       "saving": "Saving...",
       "publish": "Publish",
@@ -2836,7 +2847,10 @@
       "search-filter-required": "Please select a subject or enter a tag to search.",
       "not-editable": "Published questions can't be edited.",
       "not-found": "Question not found.",
+      "not-visible": "This draft question isn't visible to you.",
       "forbidden": "You don't have permission to perform this action.",
+      "forbidden-browse": "You don't have permission to search the question bank.",
+      "forbidden-edit": "You're not the author of this question, so you can't edit it.",
       "network-error": "Connection error. Please try again.",
       "unknown": "An unknown error occurred."
     }
