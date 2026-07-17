@@ -398,6 +398,47 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     this finding raises its priority, since it now blocks self-service, not
     just cross-entity oversight.
 
+23. **(US-E18.15, 2026-07-17) [confirms #6/#7/#9/#13/#15/#18/#20/#21/#22's
+    premise a 10th time]** `ExamPaperResponse` (`core`'s `exambank` context)
+    carries only `authorId` (UUID) — no author display name. Same recurring
+    IAM-name-lookup gap.
+
+24. **(US-E18.15, 2026-07-17)** `AddQuestionRequest`/`ExamQuestionResponse`
+    (`internal/lms/exambank/adapter/http/dto`) have no options-text array
+    field — MCQ questions with more than one answer choice cannot fully
+    round-trip through the real contract as currently defined (only
+    `{questionType, body, answerKey, marks}` per question). Ask: add an
+    `options: string[]` (or similar) field if MCQ-authoring parity with the
+    web's current mock builder is a real product need.
+
+25. **(US-E18.15, 2026-07-17) [BE-side doc-hygiene, not a web blocker]**
+    `services/core/docs/openapi.yaml`'s `ExamBank` write-path documentation
+    is drifted from the actual Go source/routes: it documents
+    `CreateExamPaperRequest.questions` (optional inline question array on
+    create) and a `SetExamQuestionsRequest` full-replace endpoint at
+    `POST /exam-papers/{id}/questions`; the real handler
+    (`exam_paper_handler.go`) binds a metadata-only `CreateExamPaperRequest`
+    (no `questions` field) and the real `/questions` endpoint appends
+    exactly ONE question per call (`AddQuestionRequest`), DRAFT-only, with
+    no replace/edit/remove semantics. Ask: regenerate/reconcile
+    `openapi.yaml` for the `ExamBank` tag against the Go source. (The epic's
+    own playbook step 1 already mandates ground-truthing the Go source, not
+    trusting `openapi.yaml` alone — this is the first US where the doc was
+    caught describing a materially richer contract than what is deployed,
+    not just a path/field-naming drift.)
+
+26. **(US-E18.15, 2026-07-17)** No update or delete endpoint exists for exam
+    papers at all (`internal/lms/exambank/adapter/http/routes.go` mounts
+    only create/add-question/change-status/get/list). If editing a DRAFT
+    paper's metadata or discarding a mistaken DRAFT is a real product need,
+    ask BE for `PATCH`/`DELETE` restricted to DRAFT + author-only.
+    Separately: no `POST /lms/class-exams` UI exists anywhere in the web
+    app — publishing an exam paper to a class, admin
+    activate/complete/retract, and the submissions viewer (US-055/US-062)
+    are net-new screens with zero prior design/BA work. Route to `/uiux` +
+    `/ba` if this becomes a real product priority — BE already ships the
+    full contract, this is a product/design gap, not a BE gap.
+
 ## Dependencies & thứ tự
 
 - Wave 0 trước tất cả (proof-of-pattern). Wave 1 các US độc lập module → chạy

@@ -138,3 +138,80 @@ is narrower than the real gap" pattern.
   `0054` (grades wiring, force-mock precedent for admin-only clusters),
   `0055` (academic-records seal, force-mock precedent for viewer clusters).
 - `docs/stories/epics/E18-be-wiring/US-E18.15-exam-family-wiring/story.md`.
+
+## Amendment (2026-07-17, US-E18.15 implementation — write-path premise corrected)
+
+**`openapi.yaml`'s `ExamBank` write-path documentation is itself drifted from
+the real Go source and must NOT be trusted for `exam-papers` writes** — this
+amendment supersedes the "wireable REAL" write-path claims in the Context/
+Decision sections above. `fe-nextjs-engineer` (and fe-lead, independently
+re-verified against `internal/lms/exambank/adapter/http/{routes.go,
+dto/request.go,exam_paper_handler.go}`) found:
+
+1. **`POST /exam-papers` is metadata-only** (`CreateExamPaperRequest =
+   {subjectId, gradeLevel, title, durationMinutes}`) — it does NOT accept an
+   inline `questions[]` array despite `openapi.yaml`'s
+   `CreateExamPaperRequest` schema claiming an optional `questions` field.
+2. **There is no `SetExamQuestionsRequest`/full-replace endpoint at all.**
+   `openapi.yaml`'s documented `POST /exam-papers/{id}/questions` ("Replace
+   question list … atomically replaces the complete question list") does not
+   match the real handler: `AddQuestionRequest` is `{questionType, body,
+   answerKey, marks}` — **one question per call, append-only, DRAFT-only**
+   (no `positions[]`, no replace semantics, no edit/remove of an existing
+   question). There is no update-question or delete-question use case
+   anywhere in the Go source.
+3. **The wire question shape has no `options` array.** `AddQuestionRequest`/
+   `ExamQuestionResponse` carry only `{questionType, body, answerKey, marks}`
+   — the web MCQ builder's 4-option-text array (`ExamBankOption[]`,
+   `{id, text}`) has **no field to round-trip through on the real contract**.
+   Only `answerKey` (a single string, e.g. the correct option's identifying
+   text/letter) is representable.
+4. **There is no update-exam-paper endpoint and no delete-exam-paper
+   endpoint** — both confirmed absent from `routes.go` (only
+   `POST /`, `POST /:id/questions`, `PUT /:id/status`, `GET /:id`, `GET /`
+   are mounted).
+
+### Corrected decision (Option A — maximize the genuinely wireable surface, invent nothing)
+
+- **Wire REAL**: `listExamBank` (`GET /exam-papers`), `getExamDetail`
+  (`GET /exam-papers/{id}`), `publishExam`/status-transition
+  (`PUT /exam-papers/{id}/status`, DRAFT→PUBLISHED only, matching the
+  existing UI action). The admin exam-bank screen is **read-only** already —
+  it becomes 100% real. The teacher exam-bank **list** + **publish** action
+  wire real.
+- **STAYS PERMANENTLY MOCK (blocked stub, hybrid DI — same class as
+  US-E18.5's `getSearchPool`/US-E18.13's blocked viewer methods)**:
+  `createExam`, `updateExam`, `deleteExam` — none has a real wire equivalent
+  that can carry the builder's current MCQ-with-4-options authoring model
+  without inventing a contract the BE doesn't expose (per-question
+  add-one-at-a-time would also lose the option-text array — Option B,
+  rejected as fragile and lossy). The teacher **exam-builder screen
+  (create/edit routes)** must be hidden or blocked in real mode — this is a
+  **larger UI change than the original "hide delete only" scope** (an entire
+  route becomes unreachable/blocked, not just one button) and MUST go
+  through the design-review gate as a UI change, same rigor as any other
+  screen-behavior change in this epic.
+- Rejected: Option C (mock the whole feature, forfeiting the cleanly
+  wireable read+publish surface) — leaves real, working, low-risk read/
+  lifecycle wiring on the table for no benefit.
+
+### Cross-repo findings (append to `EPIC-OVERVIEW.md` §Cross-repo requests, folded into existing ask numbering)
+
+24. **(US-E18.15 amendment, 2026-07-17)** `AddQuestionRequest`/
+    `ExamQuestionResponse` have no options-text array field — MCQ questions
+    with >1 answer choice cannot fully round-trip through the real contract
+    as currently defined. Ask: add an `options: string[]` (or similar) field
+    if the product intends MCQ authoring parity with the current mock
+    builder.
+25. **(US-E18.15 amendment, 2026-07-17)** `services/core/docs/openapi.yaml`'s
+    `ExamBank` write-path documentation (`CreateExamPaperRequest.questions`,
+    `SetExamQuestionsRequest` full-replace endpoint) is drifted from the
+    actual Go source/routes — the doc describes a richer contract than what
+    is implemented. Ask: regenerate/reconcile `openapi.yaml` from the Go
+    source for the `ExamBank` tag (BE-side doc hygiene, not a web blocker
+    since we ground-truth the Go source directly per epic playbook step 1).
+26. **(US-E18.15 amendment, 2026-07-17)** No update or delete endpoint
+    exists for exam papers at all (not just delete, per the original
+    Decision above) — if editing a DRAFT paper's metadata or discarding a
+    mistaken DRAFT is a real product need, ask BE for `PATCH`/`DELETE`
+    restricted to DRAFT + author-only.
