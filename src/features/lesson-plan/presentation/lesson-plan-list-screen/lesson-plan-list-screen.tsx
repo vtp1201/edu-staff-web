@@ -10,6 +10,7 @@ import {
   SearchX,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -44,6 +45,7 @@ function filledSections(p: LessonPlanEntity): number {
 export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
   const t = useTranslations("lessonPlan");
   const tErr = useTranslations("lessonPlan.errors");
+  const router = useRouter();
 
   const [scope, setScope] = useState<ListScope>("mine");
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(
@@ -221,11 +223,9 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
           }}
         />
         {scope === "mine" && (
-          <Button type="button" asChild>
-            <a href={vm.createPath}>
-              <Plus className="mr-1.5 size-4" aria-hidden="true" />
-              {t("createButton")}
-            </a>
+          <Button type="button" onClick={() => router.push(vm.createPath)}>
+            <Plus className="mr-1.5 size-4" aria-hidden="true" />
+            {t("createButton")}
           </Button>
         )}
       </div>
@@ -276,9 +276,7 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
             cta={{
               label: t("empty.cta"),
               icon: Plus,
-              onClick: () => {
-                window.location.href = vm.createPath;
-              },
+              onClick: () => router.push(vm.createPath),
             }}
           />
         )
@@ -289,9 +287,7 @@ export function LessonPlanListScreen({ vm }: { vm: LessonPlanListScreenVM }) {
               <LPCard
                 key={card.id}
                 plan={card}
-                onOpen={() => {
-                  window.location.href = card.openPath;
-                }}
+                onOpen={() => router.push(card.openPath)}
               />
             ))}
           </div>

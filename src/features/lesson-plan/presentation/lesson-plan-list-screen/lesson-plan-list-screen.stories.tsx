@@ -86,7 +86,7 @@ const meta: Meta<typeof LessonPlanListScreen> = {
       return (
         <NextIntlClientProvider locale="vi" messages={messages}>
           <QueryClientProvider client={qc}>
-            <div className="min-h-screen bg-[color:var(--edu-bg)]">
+            <div className="min-h-screen bg-background">
               <Story />
             </div>
           </QueryClientProvider>

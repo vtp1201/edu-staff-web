@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DetailPanelHeader } from "@/components/shared/detail-panel-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/utils";
 import type { LessonPlanStatus } from "../../domain/entities/lesson-plan.entity";
 
 export interface BuilderTopBarProps {
@@ -80,6 +81,7 @@ export function BuilderTopBar({
                   aria-disabled={!isPublishable}
                   aria-describedby={!isPublishable ? helperId : undefined}
                   disabled={isBusy}
+                  className={cn(!isPublishable && "opacity-70")}
                 >
                   <Check className="size-4 sm:mr-1.5" aria-hidden="true" />
                   <span className="sr-only sm:not-sr-only">

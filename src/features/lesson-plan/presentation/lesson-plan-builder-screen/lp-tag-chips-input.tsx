@@ -80,7 +80,7 @@ export function LPTagChipsInput({
                 type="button"
                 onClick={() => remove(tag)}
                 aria-label={labels.removeAriaLabelOf(tag)}
-                className="inline-flex items-center rounded-sm hover:text-primary/70"
+                className="inline-flex items-center justify-center rounded-sm hover:text-primary/70 max-sm:min-h-11 max-sm:min-w-11"
               >
                 <X className="size-3" aria-hidden="true" />
               </button>

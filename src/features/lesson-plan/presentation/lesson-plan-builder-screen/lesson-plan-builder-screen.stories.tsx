@@ -65,7 +65,7 @@ const meta: Meta<typeof LessonPlanBuilderScreen> = {
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
-        <div className="flex min-h-screen flex-col bg-[color:var(--edu-bg)]">
+        <div className="flex min-h-screen flex-col bg-background">
           <Story />
         </div>
       </NextIntlClientProvider>
