@@ -2,7 +2,18 @@
 
 ## Status
 
-planned
+implemented
+
+## Follow-ups (not fixed in this US — logged, out of scope)
+
+- `ExamBuilderScreen > Builder Validation` Storybook interaction test asserts
+  native `toBeDisabled()` against `BuilderActionBar`'s publish button, which
+  actually uses `aria-disabled` — a pre-existing mismatch, confirmed failing
+  identically on the pre-US baseline (commit `55275e1`) via an isolated
+  worktree, unrelated to this US's wiring change. Fix: either change the
+  button to native `disabled` (if no `aria-disabled`-preserving-focus reason
+  exists) or change the story assertion to `toHaveAttribute("aria-disabled",
+  "true")` — tiny-lane follow-up.
 
 ## Lane
 
