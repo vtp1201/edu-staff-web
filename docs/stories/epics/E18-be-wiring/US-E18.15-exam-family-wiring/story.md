@@ -6,14 +6,25 @@ implemented
 
 ## Follow-ups (not fixed in this US — logged, out of scope)
 
-- `ExamBuilderScreen > Builder Validation` Storybook interaction test asserts
+- ~~`ExamBuilderScreen > Builder Validation` Storybook interaction test asserts
   native `toBeDisabled()` against `BuilderActionBar`'s publish button, which
   actually uses `aria-disabled` — a pre-existing mismatch, confirmed failing
   identically on the pre-US baseline (commit `55275e1`) via an isolated
-  worktree, unrelated to this US's wiring change. Fix: either change the
-  button to native `disabled` (if no `aria-disabled`-preserving-focus reason
-  exists) or change the story assertion to `toHaveAttribute("aria-disabled",
-  "true")` — tiny-lane follow-up.
+  worktree, unrelated to this US's wiring change.~~ **Resolved** (tiny-lane
+  follow-up, branch `fix/exam-builder-validation-story`, merged into `main`):
+  kept `aria-disabled` on the component (intentional — keeps the Publish
+  button focusable so screen-reader users can tab to it and discover why it's
+  disabled via its `aria-label` + the adjacent sr-only "Câu hỏi này còn thiếu
+  thông tin" status, matching the idiom already asserted correctly in
+  `builder-action-bar.stories.tsx`). Fixed the story instead:
+  `exam-builder-screen.stories.tsx` `Builder_Validation` now asserts
+  `toHaveAttribute("aria-disabled", "true")`, adds a click-is-no-op check
+  (confirm dialog must not appear), and swaps a second latent bug —
+  `getByLabelText` against a plain sr-only `<span>` (not a form-control label,
+  so it never matched even on a passing run) — for `getByText`. Both bugs were
+  masked together: the first assertion always failed first, so the second one
+  was never actually exercised. Proof: exam-bank Storybook 15/15, full suite
+  1950/1950 (307 files), `tsc --noEmit` clean, `bun build` clean.
 
 ## Lane
 
