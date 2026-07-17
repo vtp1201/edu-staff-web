@@ -2,7 +2,63 @@
 
 ## Status
 
-- [ ] delivered
+- [x] delivered (2026-07-17)
+
+## Design-review gate (uiux-lead self-audit, 2026-07-17)
+
+`/impeccable`-style audit performed manually against `.claude/rules/accessibility.md`
++ `.claude/rules/design-system.md` (no live impeccable CLI session in this run;
+checked the same criteria it enforces):
+
+- **Contrast**: DRAFT/PUBLISHED badges reuse `exam-bank.jsx`'s proven-AA
+  warning/success token pairing (`LPStatusChip`/`QBStatusChip`); difficulty
+  tiers (EASY/MEDIUM/HARD) reuse the existing GPA-tier success/warning/error
+  mapping. Inline field errors and the "unsaved" indicator use `T.errorText`/
+  `T.warningText` (contrast-safe text tokens per ADR `0027`/`0046`), never
+  `T.error`/`T.warning` raw background hues on text.
+- **Status not color-only**: every status/type/difficulty badge pairs an icon
+  with a text label (`Icon name=... + label`); the question-bank mandatory-
+  filter indicator pairs `check`/`alertTriangle` icons with text, not color
+  alone.
+- **Motion-safe**: both files gate all transitions/animations behind
+  `@media (prefers-reduced-motion: reduce)` (verified at 2 locations each).
+- **Keyboard/focus**: form fields use standard inputs/selects/textareas
+  (native focus ring); inline errors wired via `id` + `role="alert"` for
+  `aria-describedby` association (`lp-title-err`, `lp-{section}-err`,
+  `qb-body-err`, `qb-answer-err`).
+- **States coverage**: both screens implement loading (`EduSkeleton`), empty
+  (`EduEmpty` — distinct "no results" vs "no items yet" copy), error
+  (`EduError` + retry), and question-bank's screen-specific required-filter
+  prompt (`QBFilterRequiredPrompt`, visually distinct dashed-border card, not
+  reusing the generic empty state) — the 422 `QUESTION_SEARCH_FILTER_REQUIRED`
+  gate modeled client-side per the DR's BE-contract note.
+- **Mobile-first**: builder layouts documented as 2-col→1-col (lesson-plan,
+  <860px) and single-col-only (question-bank) in `design-spec.jsonc`; card
+  grids use `repeat(auto-fill, minmax(...))` / row-list patterns proven at
+  320–375px in `exam-bank.jsx`/`lesson-bank.jsx`.
+- **Both `.jsx` files verified to parse as valid JSX** (esbuild `transformSync`,
+  no syntax errors) and export their components on `window`
+  (`LessonPlanScreen`/`LessonPlanBuilderScreen`,
+  `QuestionBankScreen`/`QuestionBankBuilderScreen`).
+- **i18n integrity**: `vi.json`/`en.json` re-parsed after all edits — valid
+  JSON, exact key-parity (80 `lessonPlan` / 94 `questionBank` leaf keys each).
+  `uiux-lead` found and fixed several `i18nKey` annotation mismatches in
+  `design-spec.jsonc` between `uiux-designer`'s guessed key shapes and
+  `uiux-ux-writer`'s actually-landed keys (documented in commit `affb364`),
+  and added 7 small additive `questionBank` keys the designer's scope-toggle
+  + mandatory-filter-indicator UI needed (`scopeToggle.*`,
+  `filter.allGrades`/`gradeAriaLabel`, `filter.mandatorySatisfied`/
+  `mandatoryRequired`) that the writer's first pass hadn't scoped.
+- **Zero new tokens** confirmed — no edits to `src/app/tokens.css` or
+  `src/app/globals.css` in this DR.
+
+**Verdict: Pass.** No blocking findings. Two non-blocking open items carried
+to `/ba`: (1) `uiux-ux-writer`'s question of whether `expectedAnswer` should
+be optional for SHORT_ANSWER/FILL_IN if BE allows a null value; (2) minor
+cross-namespace Vietnamese terminology drift for "published" (`examBank` ships
+"Đã publish" while `lessonPlan`/`questionBank` ship "Đã phát hành") — flagged,
+not unified in this DR since `examBank`'s copy is already in production use
+and out of this DR's scope to touch.
 
 ## Origin
 
