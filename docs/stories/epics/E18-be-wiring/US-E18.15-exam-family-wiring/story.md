@@ -433,3 +433,123 @@ state gaps only):
   Notes, and this gate explicitly — not silently shipped as a minor tweak.
 
 **Verdict: PASS.**
+
+## QA Gate — `fe-qa-playwright`
+
+**Gate check**: `fe-tech-lead-reviewer` = APPROVED → proceeded.
+
+### 1. Verification method
+
+Read the full packet + ADR 0056 (incl. 2026-07-17 Amendment). Ground-truthed
+every claim against the actual diff (`git diff 55275e1..HEAD`) rather than
+trusting the Evidence section at face value (recurring pattern in this epic —
+prior US's self-reported coverage has had real gaps, e.g. US-E18.10/E19.2/
+E18.12). Confirmed `src/features/exam/**` diff is **empty** (zero regression,
+not just "assumed unaffected"). Wrote/extended tests for every gap called out
+in the assignment brief; ran the full suite before and after.
+
+### 2. Findings (by severity)
+
+No BLOCKER/CRITICAL/MAJOR found. Two coverage gaps closed (test additions, no
+production code touched):
+
+| ID | Severity | Area | Detail |
+| --- | --- | --- | --- |
+| QA-1 | MINOR (closed) | `exam-bank-screen.stories.tsx` | `TeacherRealMode_AuthoringDisabled` asserted the menu *trigger* existed but never opened the `DropdownMenu` to inspect its contents — the "Edit/Delete genuinely omitted, not disabled" claim was unverified at the interaction level. Extended the story to open the menu and assert exactly `{Publish}` is present, `Chỉnh sửa`/`Xoá` are absent. |
+| QA-2 | MINOR (closed) | 3-value status | No story exercised the `confidential` tone at all (mock fixtures only ever produce draft/published — confidential is wire-only per the entity's own doc comment). Added `AdminView_ThreeValueStatus` injecting a confidential summary into the fixture set (not mutating the shared `fixtures.ts`, which other tests depend on staying 2-value) and asserting a distinguishable, non-warning/non-success tone class. |
+| QA-3 | MINOR (closed) | error-path use-case coverage | `publish-exam.use-case.test.ts` only tested client-side pre-submit validation failures; no test proved a REAL repo error (thrown failure-key string, the "throwing-repo idiom") actually reaches the use-case's typed `ExamBankFailure` output — `mapRepoError`/`mapExamBankApiError` were each unit-tested in isolation but never chained end-to-end through the use-case, which is the seam the UI's `t(\`errors.${result.errorKey}\`)` toast depends on. Added 4 tests: `getExamDetail` throwing `not-found`/`forbidden`, `publishExam` throwing `invalid-transition`, and an unmapped code falling through to `unknown` with the raw message preserved. |
+
+Not a defect, but worth recording: `authoringDisabledNote` correctly reads
+"Không khả dụng" duplicated between the sr-only `<h1>` and the visible
+`EmptyState` title on the blocked-builder route — by design (A11Y-201 fix),
+not a regression; the new `Default` story for `ExamBuilderUnavailable`
+accounts for the duplicate match rather than treating it as a bug.
+
+### 3. Coverage verification against the assignment brief
+
+1. **Real-mode UI gating end-to-end** — VERIFIED. `queryByRole`/`queryByText`
+   confirm the Create button is genuinely absent (not CSS-hidden) from the DOM
+   for both teacher-real-mode and admin. Extended
+   `TeacherRealMode_AuthoringDisabled` to actually **open** the card dropdown
+   and assert Edit/Delete menu items are absent while Publish is present and
+   in the accessibility tree (`getByRole("menuitem")`) — this is the concrete
+   proof the prior story lacked.
+2. **Blocked builder route** — VERIFIED. New
+   `exam-builder-unavailable.stories.tsx` (`Default` story) asserts: the
+   sr-only `<h1>` is discoverable via `getByRole("heading", { level: 1 })`
+   (closes A11Y-201's own claim with an automated check, not just manual SR
+   script), the back button is present and clickable
+   (`userEvent.click` does not throw — proves `router.push` wiring under the
+   App-Router-mounted decorator), and — the "no orphaned form fields/submit
+   handlers" ask — explicit `queryByLabelText`/`queryByRole` absence checks
+   for the MCQ content field, Publish button, Save-draft button, and any
+   `<form>` element (there are none; the component is a pure `EmptyState`
+   wrapper, confirmed by reading the source, not just by testing).
+3. **3-value status rendering** — VERIFIED. `ExamCard`'s `STATUS_TONE` map
+   (`draft→warning, published→success, confidential→muted`) reused via
+   `StatusBadge` (text always present, decision 0027 contrast tokens — code
+   review confirms no color-only path exists structurally). New
+   `AdminView_ThreeValueStatus` story proves all three render with text labels
+   simultaneously and the confidential badge's class list is disjoint from
+   warning/success. The filter dropdown's `STATUS_OPTIONS` array is
+   unconditionally `["draft","published","confidential"]` (not data-derived),
+   confirmed by code read — always offers all 3 regardless of what's in the
+   list, so no separate story was needed to prove the filter dropdown itself
+   (a data-store round-trip through Radix `Select` wouldn't add signal beyond
+   reading the literal array).
+4. **Error-path coverage** — VERIFIED for 4 of the 13 codes end-to-end at the
+   use-case boundary (not-found, forbidden, invalid-transition, plus an
+   unmapped-code→unknown fallback), on top of the pre-existing full 13/13
+   code→failure-type mapping test at the `map-exam-bank-error.test.ts` layer.
+   Confirmed by code read that every `ExamBankFailure["type"]` has a
+   corresponding `examBank.errors.*` key in both `vi.json`/`en.json` (no
+   missing i18n key that would silently render `errors.xyz` literal text to a
+   user).
+5. **Zero regression on `src/features/exam`** — VERIFIED by diff, not
+   assumption: `git diff 55275e1..HEAD --stat -- src/features/exam/` returns
+   **empty**. The student exam-taking feature was not touched at all.
+6. **Mobile/responsive (320px)** — VERIFIED by source-assertion regression
+   guard (same idiom as `exam-result/responsive-stat-grid.test.ts`, US-E17.1):
+   the card grid is `grid-cols-1` by default (sm:2, lg:3) and cards have no
+   fixed width (`flex flex-col`), so it is structurally 320px-safe; a
+   dedicated test locks the class string and guards against a regression to a
+   cramped multi-column default.
+
+### 4. Test additions (files + before/after counts)
+
+| File | Change |
+| --- | --- |
+| `src/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen.stories.tsx` | Extended `TeacherRealMode_AuthoringDisabled` (opens menu, asserts Edit/Delete absent + Publish present); added `AdminView_ThreeValueStatus` (new story) |
+| `src/features/exam-bank/presentation/exam-builder-screen/exam-builder-unavailable.stories.tsx` | New file — `Default` story (heading, back-nav, no orphaned form fields) |
+| `src/features/exam-bank/domain/use-cases/__tests__/publish-exam.use-case.test.ts` | Added `describe("real-repo error passthrough")` — 4 new tests |
+| `src/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen.responsive.test.ts` | New file — 2 tests, 320px card-grid regression guard |
+
+**Storybook (`bunx vitest run --config vitest.storybook.mts src/features/exam-bank`)**:
+before 12/13 pass (1 pre-existing, documented `Builder Validation` failure) →
+after **14/15 pass** (same 1 pre-existing failure; +1 file/+2 tests net after
+formatting — the extended story and the two new files each add a story/test).
+
+**Full suite (`bunx vitest run`)**: before 306 files/1944 tests → after
+**307 files/1950 tests**, all passing (+1 file, +6 tests: 4 use-case + 2
+responsive-guard). Zero regression.
+
+**`bunx tsc --noEmit`**: clean.
+
+**`bunx biome check --write`** on all touched/new test files: clean (2 files
+auto-formatted, no lint errors).
+
+### 5. Go/No-Go Decision
+
+**GO.** Tech-lead APPROVED, a11y PASS (all 3 findings fixed and independently
+re-verified here — the A11Y-201 heading fix is now also covered by an
+automated `getByRole("heading", { level: 1 })` assertion, not just manual SR
+script), design-review PASS, zero regression on the explicitly out-of-scope
+`src/features/exam` surface (confirmed by diff), and all 6 QA verification
+asks from the assignment brief are now backed by passing tests (not just code
+review). The 3 coverage gaps found (QA-1/2/3) were closed in this same pass
+via new/extended tests — no production code was modified. The 1 known
+pre-existing Storybook failure (`Builder Validation` / `aria-disabled` vs
+`toBeDisabled()`) is unrelated to this US's diff and out of scope per the
+assignment brief.
+
+**Not merge owner** — `fe-lead` runs the final gate/merge.
