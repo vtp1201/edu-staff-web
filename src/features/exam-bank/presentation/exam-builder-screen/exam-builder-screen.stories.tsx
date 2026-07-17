@@ -113,10 +113,21 @@ export const Builder_Validation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const publishBtn = canvas.getByRole("button", { name: /^Publish$/i });
-    await expect(publishBtn).toBeDisabled();
+    // Kept focusable via aria-disabled (not native `disabled`) so screen-reader
+    // users can still tab to it and discover why it's disabled — matches the
+    // idiom asserted in builder-action-bar.stories.tsx.
+    await expect(publishBtn).toHaveAttribute("aria-disabled", "true");
+    // sr-only status text inside the question row (not a form-control label),
+    // so assert via getByText rather than getByLabelText.
     await expect(
-      canvas.getByLabelText(/Câu hỏi này còn thiếu thông tin/i),
+      canvas.getByText(/Câu hỏi này còn thiếu thông tin/i),
     ).toBeInTheDocument();
+
+    // Click must be a no-op while aria-disabled — the confirm dialog must not open.
+    await userEvent.click(publishBtn);
+    await expect(
+      within(document.body).queryByText(/Publish đề thi này\?/i),
+    ).not.toBeInTheDocument();
   },
 };
 
