@@ -1,4 +1,7 @@
-import type { ExamBankSummary } from "../../domain/entities/exam-bank-summary.entity";
+import type {
+  ExamBankStatus,
+  ExamBankSummary,
+} from "../../domain/entities/exam-bank-summary.entity";
 import type { ExamBankFailure } from "../../domain/failures/exam-bank.failure";
 
 export interface SubjectOption {
@@ -20,7 +23,7 @@ export interface ExamCardVM {
   title: string;
   subjectName: string;
   totalQuestions: number;
-  status: "draft" | "published";
+  status: ExamBankStatus;
   createdAtDisplay: string;
   canEdit: boolean;
   canDelete: boolean;
@@ -38,6 +41,11 @@ export interface ExamBankScreenVM {
   /** Path prefix for edit routes; client builds `${editPathPrefix}/${id}/edit`.
    *  A string (not a function) so it serializes across the RSC→client boundary. */
   editPathPrefix: string;
+  /** Whether paper authoring (create/edit/delete) is supported in this
+   *  environment. False in real mode: the core contract has no create-with-
+   *  questions / metadata-update / delete endpoint (US-E18.15/ADR 0056), so the
+   *  builder + delete affordance are hidden. Publish stays enabled (it IS wired). */
+  authoringEnabled: boolean;
   publishAction(id: string): Promise<ActionResult>;
   deleteAction(id: string): Promise<ActionResult>;
 }

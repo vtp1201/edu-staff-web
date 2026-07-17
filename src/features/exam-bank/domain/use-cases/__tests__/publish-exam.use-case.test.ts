@@ -111,4 +111,59 @@ describe("PublishExamUseCase", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.failure.type).toBe("insufficient-options");
   });
+
+  // QA (US-E18.15): end-to-end proof that a REAL repo error (thrown as the
+  // mapped failure key by `mapExamBankApiError` → repo, per the throwing-repo
+  // idiom) actually reaches the use-case's typed failure output — not just
+  // that `mapRepoError`/`mapExamBankApiError` are individually unit-tested in
+  // isolation. This is the seam the presentation layer's
+  // `t(`errors.${result.errorKey}`)` toast depends on.
+  describe("real-repo error passthrough (US-E18.15)", () => {
+    it("getExamDetail throwing not-found surfaces as failure.type=not-found", async () => {
+      const detail = makeDetail([makeQuestion()]);
+      const repo = makeRepo(detail, {
+        getExamDetail: vi.fn().mockRejectedValue(new Error("not-found")),
+      });
+      const uc = new PublishExamUseCase(repo);
+      const result = await uc.execute("e-1");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.failure.type).toBe("not-found");
+    });
+
+    it("getExamDetail throwing forbidden surfaces as failure.type=forbidden", async () => {
+      const detail = makeDetail([makeQuestion()]);
+      const repo = makeRepo(detail, {
+        getExamDetail: vi.fn().mockRejectedValue(new Error("forbidden")),
+      });
+      const uc = new PublishExamUseCase(repo);
+      const result = await uc.execute("e-1");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.failure.type).toBe("forbidden");
+    });
+
+    it("publishExam throwing invalid-transition (already published/confidential) surfaces correctly", async () => {
+      const detail = makeDetail([makeQuestion()]);
+      const repo = makeRepo(detail, {
+        publishExam: vi.fn().mockRejectedValue(new Error("invalid-transition")),
+      });
+      const uc = new PublishExamUseCase(repo);
+      const result = await uc.execute("e-1");
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.failure.type).toBe("invalid-transition");
+    });
+
+    it("publishExam throwing an unmapped message surfaces as unknown with the raw message preserved", async () => {
+      const detail = makeDetail([makeQuestion()]);
+      const repo = makeRepo(detail, {
+        publishExam: vi.fn().mockRejectedValue(new Error("SOME_WEIRD_CODE")),
+      });
+      const uc = new PublishExamUseCase(repo);
+      const result = await uc.execute("e-1");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.failure.type).toBe("unknown");
+        expect(result.failure).toMatchObject({ message: "SOME_WEIRD_CODE" });
+      }
+    });
+  });
 });

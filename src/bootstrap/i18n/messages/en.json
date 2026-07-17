@@ -1720,6 +1720,7 @@
     }
   },
   "examBank": {
+    "authoringDisabledNote": "Creating, editing, and deleting exams is not available in this environment. You can still view and publish existing exams.",
     "builder": {
       "addQuestion": "Add question",
       "back": "Back",
@@ -1778,15 +1779,26 @@
       "title": "No exams yet"
     },
     "errors": {
+      "answer-key-not-allowed": "This question type does not allow an answer key.",
+      "answer-key-required": "MCQ questions require an answer key.",
       "cannot-delete-published": "Cannot delete a published exam.",
+      "duration-invalid": "The exam duration must be greater than zero.",
       "forbidden": "You don't have permission for this action.",
       "insufficient-options": "Each question needs at least 2 options.",
+      "invalid-cursor": "Could not load more exams.",
+      "invalid-transition": "This exam status change is not allowed.",
       "missing-title": "Please enter an exam title.",
       "network-error": "Connection error. Please try again.",
       "no-questions": "An exam needs at least one question.",
+      "not-editable": "This exam cannot be edited in its current status.",
       "not-found": "Exam not found.",
+      "not-supported": "This action isn't available yet.",
+      "question-body-required": "A question is missing its content.",
       "question-empty-content": "Question content is empty.",
+      "question-marks-invalid": "Question marks must be greater than zero.",
       "question-missing-answer": "Question is missing a correct answer.",
+      "title-required": "Please enter an exam title.",
+      "title-too-long": "The exam title must not exceed 200 characters.",
       "unknown": "An unknown error occurred."
     },
     "filter": {
@@ -1813,6 +1825,7 @@
     "removeQuestionAriaLabel": "Delete question {index}",
     "resultsHeading": "{count} exams",
     "status": {
+      "confidential": "Confidential",
       "draft": "Draft",
       "published": "Published"
     },
@@ -1823,6 +1836,11 @@
       "deleted": "Exam deleted",
       "draftSaved": "Draft saved",
       "published": "Exam published"
+    },
+    "unavailable": {
+      "title": "Not available",
+      "body": "Creating and editing exams is not supported in this environment. You can still view and publish existing exams.",
+      "back": "Back to exam bank"
     }
   },
   "feed": {

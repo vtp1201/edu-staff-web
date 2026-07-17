@@ -3,6 +3,7 @@
 import { FileText, MoreVertical, Pencil, Send, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import type { StatusTone } from "@/components/shared/status-badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ExamBankStatus } from "../../domain/entities/exam-bank-summary.entity";
 import type { ExamCardVM } from "./exam-bank-screen.i-vm";
+
+// 3-value lifecycle tone (US-E18.15). Text label always accompanies the tone
+// (StatusBadge renders `children`), so status is never conveyed by color alone
+// (accessibility.md). confidential is admin-only, muted.
+const STATUS_TONE: Record<ExamBankStatus, StatusTone> = {
+  draft: "warning",
+  published: "success",
+  confidential: "muted",
+};
 
 type ExamCardProps = {
   exam: ExamCardVM;
@@ -78,7 +89,7 @@ export function ExamCard({ exam, onPublish, onDelete }: ExamCardProps) {
 
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant="outline">{exam.subjectName}</Badge>
-        <StatusBadge tone={exam.status === "published" ? "success" : "warning"}>
+        <StatusBadge tone={STATUS_TONE[exam.status]}>
           {t(`status.${exam.status}`)}
         </StatusBadge>
       </div>

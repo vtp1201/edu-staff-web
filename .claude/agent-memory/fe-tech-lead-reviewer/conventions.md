@@ -152,6 +152,20 @@ Confirmed facts (verify before citing if stale):
   hybrid composite because its sole in-feature caller (`GetChildTimetableUseCase`) is permanently mock
   and feeds mock-fixture ids — a real call would 403/404. Verify the "only caller" claim by grepping the
   interface method's call sites before accepting the routing; here it held (one caller, the parent flow).
+- **E18 HYBRID-DI single-repo variant (real reads + throwing write-stubs) = ACCEPTED** (confirmed
+  US-E18.15 exam-bank): distinct from the composite (US-E18.4/5) and the fully-blocked force-mock
+  (US-E18.8/9). Here ONE real repo wires list/get/publish real while `createExam/updateExam/deleteExam`
+  UNCONDITIONALLY `throw new Error("not-supported")` (no `if(USE_MOCK)` escape hatch inside the method)
+  because the real contract has no such endpoint. Because a `!USE_MOCK` branch EXISTS, `ensureFreshSession()`
+  IS required before `createServerHttpClient()` (unlike fully-blocked, where it's N/A). UI gates the
+  blocked ops with `authoringEnabled = USE_MOCK` (hides create/edit/delete, shows a translated note;
+  publish stays reachable) + route pages `if(!USE_MOCK) return <XUnavailable/>`. Verify: write stubs make
+  no HTTP call, DI has ensureFreshSession, publish (the wired one) is NOT accidentally gated.
+- **Pure infra helpers (mappers, `map-*-error.ts`) do NOT carry `server-only` — only repositories do**
+  (confirmed repo-wide: assessment-scheme, discipline, exam-bank all 0). The CLAUDE.md "infrastructure/ =
+  server-only" rule is satisfied at the repository boundary; pure DTO→entity mappers and code→failure
+  maps are framework-free and safe. Don't flag a mapper/error-map lacking `server-only` as a layer defect,
+  provided presentation never imports it (stories importing mock fixtures is the only accepted infra→pres edge).
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

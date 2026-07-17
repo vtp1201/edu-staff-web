@@ -12,6 +12,13 @@ export function validateQuestion(
   question: ExamBankQuestion,
 ): QuestionFailureType | null {
   if (!question.content?.trim()) return "question-empty-content";
+  // Real-mode questions (US-E18.15/ADR 0056) carry no client-side options model
+  // — the wire question shape is `{questionType, body, answerKey, marks}` with no
+  // options array, and each question was already validated server-side at write
+  // time. There is no write path here to re-validate against, so when `options`
+  // is absent/empty (real data) the MCQ-specific checks pass through. Only the
+  // mock builder authors the 4-option MCQ model these checks target.
+  if (!question.options || question.options.length === 0) return null;
   const nonEmptyOptions = question.options.filter((o) => o.text?.trim());
   if (nonEmptyOptions.length < 2) return "insufficient-options";
   if (!question.correctOptionId?.trim()) return "question-missing-answer";

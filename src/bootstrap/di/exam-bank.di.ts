@@ -1,5 +1,6 @@
 import "server-only";
 
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IExamBankRepository } from "@/features/exam-bank/domain/repositories/i-exam-bank.repository";
@@ -14,6 +15,11 @@ import { MockExamBankRepository } from "@/features/exam-bank/infrastructure/repo
 
 async function makeRepo(): Promise<IExamBankRepository> {
   if (USE_MOCK) return new MockExamBankRepository();
+  // Hybrid factory (US-E18.15/ADR 0056): list/getDetail/publish wire real;
+  // create/update/delete are permanently blocked stubs inside the real repo.
+  // Proactive refresh (decision 0018, playbook step 6) before the protected
+  // core call — first time wired into this factory.
+  await ensureFreshSession();
   return new ExamBankRepository(await createServerHttpClient());
 }
 

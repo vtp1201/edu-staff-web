@@ -1,4 +1,5 @@
 import { makeListExamBankUseCase } from "@/bootstrap/di/exam-bank.di";
+import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ExamBankSummary } from "@/features/exam-bank/domain/entities/exam-bank-summary.entity";
 import { ExamBankScreen } from "@/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen";
 import type {
@@ -40,6 +41,9 @@ export default async function TeacherExamBankPage() {
       currentTeacherId={MOCK_CURRENT_TEACHER_ID}
       createPath="/teacher/exam-bank/create"
       editPathPrefix="/teacher/exam-bank"
+      // Authoring (create/edit/delete) has no real wire endpoint (US-E18.15/ADR
+      // 0056); enabled only against the mock store. Publish stays wired real.
+      authoringEnabled={USE_MOCK}
       publishAction={publishExamAction}
       deleteAction={deleteExamAction}
     />
