@@ -12,6 +12,12 @@ export interface TagChipsInputProps {
   maxTags: number;
   /** Caller-supplied cap on a single tag's char length. */
   maxTagLength: number;
+  /**
+   * Optional id of a visible `<label>` to link the input to (`aria-labelledby`),
+   * making the visible label the single source of truth. Falls back to
+   * `labels.inputAriaLabel` when omitted (backward-compatible).
+   */
+  labelledBy?: string;
   labels: {
     placeholder: string;
     inputAriaLabel: string;
@@ -40,6 +46,7 @@ export function TagChipsInput({
   onChange,
   maxTags,
   maxTagLength,
+  labelledBy,
   labels,
 }: TagChipsInputProps) {
   const [draft, setDraft] = useState("");
@@ -87,7 +94,7 @@ export function TagChipsInput({
                 type="button"
                 onClick={() => remove(tag)}
                 aria-label={labels.removeAriaLabelOf(tag)}
-                className="inline-flex items-center justify-center rounded-sm hover:text-primary/70 max-sm:min-h-11 max-sm:min-w-11"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm hover:text-primary/70"
               >
                 <X className="size-3" aria-hidden="true" />
               </button>
@@ -109,7 +116,8 @@ export function TagChipsInput({
             }}
             onBlur={commit}
             placeholder={tags.length === 0 ? labels.placeholder : ""}
-            aria-label={labels.inputAriaLabel}
+            aria-labelledby={labelledBy}
+            aria-label={labelledBy ? undefined : labels.inputAriaLabel}
             aria-describedby={error ? helpId : undefined}
             className="min-w-24 flex-1 bg-transparent text-foreground text-sm outline-none placeholder:text-muted-foreground"
           />

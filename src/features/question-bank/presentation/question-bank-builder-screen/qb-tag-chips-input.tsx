@@ -11,6 +11,8 @@ export interface QBTagChipsInputProps {
   tags: string[];
   isLocked: boolean;
   onChange: (tags: string[]) => void;
+  /** id of the visible Tags label to link the input to (aria-labelledby). */
+  labelledBy?: string;
 }
 
 /**
@@ -22,6 +24,7 @@ export function QBTagChipsInput({
   tags,
   isLocked,
   onChange,
+  labelledBy,
 }: QBTagChipsInputProps) {
   const t = useTranslations("questionBank.builder");
   return (
@@ -29,6 +32,7 @@ export function QBTagChipsInput({
       tags={tags}
       isLocked={isLocked}
       onChange={onChange}
+      labelledBy={labelledBy}
       maxTags={MAX_TAGS}
       maxTagLength={MAX_TAG_LENGTH}
       labels={{
