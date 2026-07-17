@@ -391,3 +391,47 @@ by inventing a placeholder value. Watch for this shape of gap whenever a
 site with a different precondition than the first.
 
 See full write-up: `docs/stories/epics/E19-social/US-E19.1-social-feed/state-design.md`.
+
+## "Already published"-style race: invalidate + forced active refetch + explicit form `reset()` bridge, NOT a persistent local lock flag (US-E11.8, lesson-plan)
+
+When a save/publish mutation can fail because another actor already
+transitioned the resource server-side (e.g. `LESSON_PLAN_ALREADY_PUBLISHED`
+on a DRAFT-only `PUT`), and the read-only/locked rendering is **already**
+specified elsewhere as a pure function of the entity's own status field
+(e.g. `status === "PUBLISHED"`), do NOT add a second, independent
+"force-locked" boolean to represent the same fact — that creates two sources
+of truth that must be hand-synced. Instead:
+
+1. `onError` for that specific failure branch: `invalidateQueries({ queryKey:
+   detail(id), refetchType: "active" })` (explicit, even though `"active"` is
+   already the v5 default — states intent/audit trail) to pull canonical
+   server state.
+2. A `useEffect` (or equivalent) watching the detail query's `data.status`
+   calls `form.reset(mapEntityToFormValues(data), { keepDirty: false })` the
+   moment the real transition is observed — react-hook-form does **not**
+   auto-resync fields to a query's background-refetched data by design (that
+   safety is what makes RHF safe during normal in-progress typing), so
+   invalidation *alone* updates the cache but leaves stale-looking editable
+   fields on screen until this explicit bridge runs.
+3. The only NEW local state this adds is a short-lived "race banner visible"
+   boolean purely for the error-message UI — never consulted to decide lock
+   state; lock state always derives from the query data, keeping FR-005-style
+   "is this locked" checks singular across the codebase.
+
+Generalizes to any one-way-transition write (publish, seal, approve) that
+already has a spec'd pure-status-driven read-only view AND a form that seeds
+its `defaultValues` once from that same query on mount.
+
+## Cross-feature read-only reference-data query key — keep it feature-neutral, not scoped to the first consumer (US-E11.8)
+
+When a NEW feature's client-side picker/select becomes the **first**
+`useQuery` consumer of an existing repository/DI factory that another
+feature already owns server-side only (e.g. `ISubjectCatalogueRepository` /
+`makeSubjectCatalogueRepository()`, previously consumed only by an RSC-only
+admin screen with zero client query keys), name the query key after the
+**shared resource**, not the new feature (`["subject-catalogue", "options"]`,
+not `["lesson-plan", "subject-options"]`). Reasoning: a second future client
+consumer of the same repository should share the cache entry, not duplicate
+it under a different feature's namespace. Confirm first (grep the owning
+feature's `presentation/`) that no query-key convention already exists there
+to collide with or that should be reused as-is instead of minted fresh.

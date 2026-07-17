@@ -115,6 +115,37 @@ reading both `.tsx` sources directly, not assumed. Flag to `fe-lead` as a
 fast-follow ON those two shared components — do not patch them from inside a
 consumer story's scope.
 
+**PublishConfirmDialog (US-E11.8, lesson-plan):** exam-bank (US-E11.3) already has its own
+feature-local non-destructive `publish-confirm-dialog.tsx` (AlertDialog, check icon,
+success/primary tone — distinct from `DestructiveConfirmDialog` which is red/AlertTriangle
+and semantically wrong for a positive one-way action). Lesson-plan needs an identical shape
+plus `isLoading`/`aria-busy` (exam-bank's version lacks it). Two near-identical feature-local
+copies = the textbook decision-0026 promotion trigger — flagged to `fe-lead` to extract
+`components/shared/publish-confirm-dialog/` rather than let a 3rd near-duplicate appear when
+question-bank (US-E11.9, same DR-021) needs it too. Lesson: **when a design mockup's own code
+comment says "reused shape for X + Y"** (e.g. lesson-plan.jsx's `LPTagChipsInput` comment), take
+that as a strong 2nd-consumer signal even before the 2nd screen is actually built — still stay
+feature-local per the conservative rule (component-organization.md), but flag the promotion
+explicitly with the anticipated consumer named, so the next story's architect doesn't have to
+rediscover the connection.
+
+**EmptyState covers "N distinct empty states" without N components:** US-E11.8's list screen
+had 4 distinct empty/prompt states (mine-no-filters, mine-filtered, browse-no-subject-prompt,
+browse-empty-for-subject) per spec. Resist the urge to build a feature-local
+"LessonPlanEmpty"/"FooEmpty" wrapper (that's what pre-`EmptyState` features like exam-bank did,
+`ExamBankEmpty`) — if `components/shared/empty-state/` already exists, route all N variants
+through it via a pure prop-deriving function in the container, and only flag the *older*
+feature-local Empty components (exam-bank's, lesson-bank's) as backfill candidates rather than
+duplicating their pre-EmptyState pattern in new work.
+
+**StatusBadge composes an icon inside it via `children`, no separate "chip" component:** when a
+design mockup names a bespoke status-chip component (e.g. `LPStatusChip`) that is icon+text+
+tone-matched to the existing `StatusBadge` tone set, don't build it — it's just
+`<StatusBadge tone="..."><Icon aria-hidden />{label}</StatusBadge>`. Same reasoning applies to
+mockup-named dropdown components (`LPDropdown`) that map 1:1 onto the existing `Select` Radix
+primitive — the mockup hand-rolls these only because it has no component library, not because
+the real app needs a new component.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.
