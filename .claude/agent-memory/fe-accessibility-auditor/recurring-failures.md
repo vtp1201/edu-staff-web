@@ -327,3 +327,23 @@ Seen in: US-E21.1 invitations-skeleton.tsx.
 Pattern: A single boolean flag (e.g. `authoringEnabled`) gates MULTIPLE affordances (create + edit + delete), but the explanatory banner text names only 1-2 of them ("creating and editing exams is not available") while delete is also silently removed. Users who previously had delete access see it vanish with no textual link to the reason.
 Fix: enumerate every gated action in the banner copy, not just the most prominent one(s).
 Seen in: US-E18.15 examBank.authoringDisabledNote (named create+edit, omitted delete).
+
+## Contrast — Dark-mode collapses `--edu-error-text` to raw `--edu-error` while `--edu-*-light` stays light
+Pattern: `globals.css` `.dark {}` block sets `--edu-error-text: var(--edu-error)` (raw #fa896b) but does NOT override `--edu-error-light`/`--edu-warning-light` (still the light-mode near-white values #fff5f2/#fef5e5). Any component using the standard `bg-edu-error-light text-edu-error-text` badge/banner pattern (which is otherwise the CORRECT AA pattern in light mode, ~5:1) silently regresses to ~2.2:1 in dark mode. Root cause: tokens.css comment explicitly says "Status/role tokens are deliberately untouched (future full dark-mode pass)" — this is a known, accepted gap, but it bites hardest on PUBLIC routes with `defaultTheme="system"` where an unauthenticated visitor's OS dark mode triggers it on first contact.
+Fix: add `.dark` overrides for `--edu-error-light`/`--edu-warning-light` (dark-tinted, not raw light values) and stop collapsing `-text` variants to the raw status color. Flag to uiux-design-system-builder for the "future full dark-mode pass" — but treat as blocking on any NEW public/unauthenticated screen since first-contact risk is higher there than on authenticated dashboards.
+Seen in: US-E21.2 invite-accept-screen.tsx (join-error banner, switch-account-failed text, TokenError icon circles all use this pattern).
+
+## Contrast — Decorative gradient brand panel: white tagline text fails on its own gradient
+Pattern: `AuthBrandPanel` (shared, `components/shared/auth-brand-panel/`) renders a `text-primary-foreground/80` tagline (14px, not bold) over a `linear-gradient(150deg, --edu-primary → --edu-success)`. White-on-raw-edu-primary is already only 3.29:1 (fails 4.5:1 normal text); blending toward edu-success (white-on-success 1.72:1) is worse everywhere past the first gradient stop. `aria-hidden="true"` does NOT exempt this from WCAG 1.4.3 — that attribute only affects the accessibility tree, not visual contrast for sighted low-vision users. Promoted verbatim from `login/page.tsx` (US-E21.2, component-organization.md "promote on 2nd use") — pre-existing, not a regression, but now baked into 2 screens at once (same high-leverage-shared-component lesson as `detail-panel-header.tsx`).
+Fix: darken the gradient under the text (scrim) or fix text color/opacity; verify fix across BOTH `login` and `invitations/accept` since it's now a shared component.
+Seen in: US-E21.2 auth-brand-panel.tsx lines 35-43 (first time this component was audited).
+
+## Touch target — Bare inline `<button>` text link (no Button primitive) skips the 44px min-height
+Pattern: a plain `<button type="button" className="font-bold text-primary hover:underline">` used for a secondary text-style action (e.g. "switch account") instead of the shadcn `Button` primitive (which bakes in `min-h-11` on every size variant) — inherits none of that protection, hit area collapses to the text's own line-height (~16-18px).
+Fix: add `min-h-11` (or `p-2 -m-2` to expand hit area without affecting visual layout) to any bare `<button>`/`<a>` styled as inline text but meant to be tapped on mobile.
+Seen in: US-E21.2 invite-accept-screen.tsx "Đổi tài khoản?" link-styled button.
+
+## Landmark — New standalone public page has no `<main>` at all
+Pattern: a new public/standalone route (not wrapped by the authenticated `AppShell`, which normally injects `<main>`) renders its content directly under a plain `<div>` root — zero landmarks anywhere on the page for SR landmark-navigation users.
+Fix: wrap the primary content column in `<main>` explicitly on any route outside the dashboard shell.
+Seen in: US-E21.2 invite-accept-screen.tsx (root `<div className="flex min-h-screen ...">`, no `<main>`).

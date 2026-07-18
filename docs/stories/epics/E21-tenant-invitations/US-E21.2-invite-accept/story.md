@@ -180,4 +180,159 @@ ask #31 filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`.
     (typed `t()` keys, `tsc` enforces parity); no unlabeled icon-only
     controls (all decorative icons `aria-hidden`, all icon+text pairs).
 
-Design-review gate + `fe-qa-playwright` proof recorded below once run.
+## Design Review Gate (`docs/DESIGN_REVIEW.md`, fe-lead, 2026-07-18)
+
+```text
+Design review: pass
+- design-system: conform — tokens-only throughout (bg-primary, text-foreground,
+  text-muted-foreground, bg-edu-error-light/text-edu-error-text,
+  bg-edu-warning-light/text-edu-warning-text, border-border, bg-card,
+  bg-background); typography matches auth-screen scale (text-xl/extrabold
+  title, text-sm body); route + component location match
+  docs/product/screens.md's "Accept tenant invitation" row
+  (`/invitations/accept?token=...`, `features/auth/presentation`); no new
+  component pattern invented — reuses Card/Button primitives +
+  the newly-promoted shared AuthBrandPanel (component-organization.md
+  "promote on 2nd use" compliance, confirmed by fe-tech-lead-reviewer).
+- a11y: WCAG AA confirmed after self-audit fixes (see Evidence above) —
+  dark-mode error/warning contrast now ≥9.5:1, brand-panel scrim ≥6:1,
+  ≥44px touch targets, role="alert" + icon+text on every error state
+  (never color-only), aria-busy on Join, <main> landmark, keyboard-operable
+  end to end with visible focus rings (no custom outline removal).
+- impeccable audit: the impeccable design hook ran automatically on every
+  Edit to `globals.css`/`auth-brand-panel.tsx` during the self-audit pass —
+  "No anti-patterns" both times (typography hierarchy/spacing rhythm/color
+  contrast flagged as intentional). No conflicting suggestion arose against
+  the design system.
+- states: auth-gate / signed-in-idle / signed-in-loading (aria-busy) /
+  email-mismatch / switch-account-failure / network-error / token-expired /
+  token-invalid / missing-token — all 9 covered by Storybook interaction
+  tests, all green. No "empty" surface applicable (no list on this screen).
+  Responsive: Card is `max-w-[440px]` with `p-6 sm:p-8` outer padding — no
+  fixed-width overflow below 320px; brand panel already hides `<lg`
+  (matches `login`'s established breakpoint). Dark mode verified via the
+  A11Y-001 fix above (previously broken, now ≥9.5:1).
+```
+PASS — gate cleared, story may proceed to `fe-qa-playwright`.
+
+## QA Verdict (`fe-qa-playwright`, 2026-07-18)
+
+**Gate check**: `fe-tech-lead-reviewer` = Approved (security-diff PASS, 5/5
+checks) → proceeding.
+
+**Scope re-derivation**: independently re-read ADR `0059`, `use-cases.md` §7,
+`spec.md` §11, and the ACTUAL shipped files (`invite-accept-screen.tsx`,
+`.stories.tsx`, `page.tsx`, `actions.ts`, `accept-invitation.use-case.ts`,
+`iam-member.repository.ts`) — confirmed the corrected scope (no guest
+signup/preview/account-conflict; 2 terminal states; auth-gate + signed-in-join
++ email-mismatch + switch-account) and audited against that, not the
+superseded UC-101/102/104.
+
+### AC Coverage Matrix (corrected scope)
+
+| AC ID | Criterion | Test ID(s) | Type | Status |
+| --- | --- | --- | --- | --- |
+| UC-101'.1 | Auth-gate state, no form/password/email display | `AuthGate` story | Storybook interaction | Covered |
+| UC-101'.1 | Missing/blank token → `invalid`, ZERO network call (page-level, not just component-level) | `page.test.ts` "missing token"/"blank/whitespace token" (NEW) | Unit (node, RSC) | Covered (was previously only proven at the use-case layer, not the actual RSC branch) |
+| UC-101'.2 | Token + no session cookie → auth-gate | `page.test.ts` "no session cookie" (NEW) | Unit | Covered (NEW — untested before) |
+| UC-101'.3 | Token + stale/broken session (profile lookup fails) → falls back to auth-gate, no crash | `page.test.ts` "profile lookup returns no data" (NEW) | Unit | Covered (NEW — untested before) |
+| UC-103.1 | Signed-in single Join action | `SignedInJoinIdle` | Storybook | Covered |
+| UC-103.2 (security) | Payload EXACTLY `{token}` — no role/tenantId | `iam-member.repository.test.ts` ("acceptInvitation posts { token }…") + `actions.test.ts` "posts { token } only…" (NEW, action-layer) | Unit + Integration | Covered |
+| UC-103.3 (corrected) | Redirect role from `accept` response `roles[]`, no `/users/me` follow-up | `actions.test.ts` "posts { token } only…", "multi-role…", "empty roles[]…" (NEW) | Unit | Covered (NEW — this exact wiring, incl. the `switchTenant(tenantId)` call using the SERVER-returned id, had ZERO test before) |
+| UC-103.4 | Email-mismatch (403) confirmed, explicit error shown | `EmailMismatchError` story + repo test `invitation_email_mismatch` | Storybook + Integration | Covered |
+| UC-103.6/.7 | Loading (aria-busy), network error (retry) | `SignedInJoinLoading`, `NetworkError` stories | Storybook | Covered |
+| UC-104 (session refresh) | `switchTenant` mint via existing path, `setAuthCookies` called with returned tokens | `actions.test.ts` "posts { token } only…" (NEW) | Unit | Covered (NEW) |
+| UC-105.1/.3 | Terminal `expired` / `invalid` (covers used/revoked), no raw error text | `TokenExpired`, `TokenInvalid` stories | Storybook | Covered |
+| UC-106 | Success redirect target = server truth, multi-role reuses `role ? /role : /` | `actions.test.ts` "multi-role…"/"empty roles[]…" (NEW) | Unit | Covered (NEW) |
+| UC-107 | Switch-account: logout + re-render, failure leaves session intact | `SwitchAccountFailure` story + `actions.test.ts` "signs out…"/"logout failure leaves the session INTACT…" (NEW, action-layer proof of "no partial clear") | Storybook + Unit | Covered |
+| Cross-cutting | Keyboard-only operability (Join, switch-account, back-to-login) | `KeyboardOnlyJoin`, `KeyboardOnlySwitchAccount`, `KeyboardOnlyBackToLogin` (NEW) | Storybook | Covered (NEW — previously only asserted via code review, no test) |
+| Cross-cutting | Responsive 320px / 768px (no overflow, brand panel hidden) | `Viewport320`, `Viewport768` (NEW) | Storybook | Covered (NEW) |
+| Cross-cutting | Dark-mode contrast regression guard (A11Y-001 fix) | `DarkModeEmailMismatchContrast`, `DarkModeTokenExpiredContrast` (NEW) | Storybook | Covered (NEW — the self-audit fix had NO regression-guard test; a future `globals.css` edit could silently reintroduce the ~2.2:1 contrast bug undetected) |
+
+**Coverage: 100%** of the corrected/surviving AC set (UC-101'/103/105/106/107).
+Dropped UC-101/102/104 correctly have no tests (would be testing a
+non-existent code path, per ADR 0059).
+
+### Findings
+
+- **MAJOR (closed by this QA pass, not a defect for `fe-lead` to route)**: the
+  actual security-critical wiring — `joinAction`'s `switchTenant(tenantId)`
+  call using the SERVER-returned id (not any client value), the redirect-URL
+  construction from `roles[0]`, and `switchAccountAction`'s
+  "logout failure leaves session intact" guarantee — had **zero test
+  coverage** before this pass. The tech-lead's security-diff traced this by
+  manual code read ("(2) `switchTenant` session refresh uses ONLY the
+  server-returned `Member.tenantId`… (3) `switchAccountAction` fully signs out
+  … no partial/silent-merge path"), which is a real and correct manual
+  verification, but had no regression-guard test backing it — a future edit
+  to `actions.ts` could silently break these invariants with no red test.
+  Added `src/app/[locale]/(auth)/invitations/accept/actions.test.ts` (11
+  tests) and `page.test.ts` (7 tests) closing this gap. No production bug was
+  found — the shipped code is correct, only the proof was missing.
+- **MINOR (informational, not blocking)**: `bootstrap/di/auth.di.ts`'s
+  `makeAcceptInvitationUseCase` constructs `IamMemberRepository` directly,
+  bypassing the `USE_MOCK` gate that `bootstrap/di/iam-member.di.ts`'s
+  `makeRepo()` applies to every other `IIamMemberRepository` consumer. Not a
+  security issue (this endpoint has no mock-data risk — it mutates real
+  membership), but means `USE_MOCK=1` local dev can't exercise this flow
+  against `MockIamMemberRepository`. Flag to `fe-lead` as a follow-up
+  consistency nit, not release-blocking.
+- No PII in logs/console: confirmed by code read — no `console.*` calls
+  anywhere in the touched files; the token is only ever passed through props/
+  Server Action args, never persisted (matches the tech-lead's own note).
+- Role-gated UI: N/A for this screen (public, unauthenticated route by
+  design — no role branching to hide).
+- Mapped-failure messages: confirmed user-safe — every error path renders a
+  curated `invitations.accept.errors.*`/`tokenError.*` i18n key, never raw
+  server text (`errorMsgKey()` maps unmapped codes to `unknown`, no
+  passthrough).
+
+### Test Run Evidence (this session)
+
+- `bun vitest run` (full suite): **355 files / 2285 tests, all green**
+  (+2 files / +18 tests vs. the reviewer's 353/2267 baseline — the 2 new
+  `actions.test.ts`/`page.test.ts` files).
+- `bun run vitest:storybook run
+  src/features/auth/presentation/invite-accept/invite-accept-screen.stories.tsx`:
+  **16/16 green** (9 pre-existing + 7 new: `KeyboardOnlyJoin`,
+  `KeyboardOnlySwitchAccount`, `KeyboardOnlyBackToLogin`, `Viewport320`,
+  `Viewport768`, `DarkModeEmailMismatchContrast`,
+  `DarkModeTokenExpiredContrast`).
+- `bun run vitest:storybook run src/features/auth/presentation`: **37/37
+  green** (includes `auth-brand-panel`, confirming the shared component isn't
+  regressed).
+- `bunx tsc --noEmit`: clean.
+- `bun lint`: clean for all touched files (2 pre-existing warnings in
+  `message-context-menu.tsx`, unrelated to this story).
+
+### Files changed (test-only, no production code)
+
+- `src/app/[locale]/(auth)/invitations/accept/page.test.ts` (NEW)
+- `src/app/[locale]/(auth)/invitations/accept/actions.test.ts` (NEW)
+- `src/features/auth/presentation/invite-accept/invite-accept-screen.stories.tsx`
+  (extended — 7 new stories)
+
+### Release Readiness Decision: **PASS**
+
+Rationale: tech-lead approval confirmed; AC coverage 100% against the
+corrected/shipped scope; no BLOCKER/CRITICAL/MAJOR defects found in
+production code (the one MAJOR finding was a test-coverage gap, now closed
+within this QA pass, not a code defect); one MINOR informational nit
+(`USE_MOCK` bypass) flagged as a non-blocking follow-up. Full suite green,
+`tsc`/`lint` clean.
+
+### Post-QA follow-up closed (fe-lead, 2026-07-18)
+
+The MINOR `USE_MOCK` bypass nit above was fixed before merge (small, safe,
+already the established convention elsewhere — no reason to defer):
+`makeAcceptInvitationUseCase` in `bootstrap/di/auth.di.ts` now branches on
+`USE_MOCK` and constructs `MockIamMemberRepository` when set, exactly
+matching `iam-member.di.ts`'s `makeRepo()` / `admin-invitations.di.ts`'s
+convention for every other `IIamMemberRepository` consumer. Re-verified
+after the fix: `bunx tsc --noEmit` clean, full `bun vitest run` **355 files /
+2285 tests green** (unchanged from QA's count — no new tests needed, this
+was a DI-wiring fix only), `bun lint:fix` clean for the touched file.
+
+**Final status: all gates green — tech-lead Approved (security-diff PASS),
+a11y fixed (self-audit, 5 findings closed), design-review gate PASS, QA
+PASS + follow-up nit closed. Ready for `implemented`.**
