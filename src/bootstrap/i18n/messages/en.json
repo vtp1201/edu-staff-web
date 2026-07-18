@@ -785,32 +785,42 @@
       "saved": "Attendance saved",
       "saving": "Saving..."
     },
-    "empty": "Pick class/date/period to start",
+    "empty": "Pick class/date to start",
+    "errors": {
+      "correction-window-expired": "Attendance can only be corrected on the same day",
+      "forbidden": "You don't have permission to record attendance for this class",
+      "invalid-request": "Invalid attendance data",
+      "network-error": "Network error, please try again",
+      "not-found": "Attendance data not found",
+      "student-not-enrolled": "Student is not enrolled in this class",
+      "unknown": "Something went wrong"
+    },
     "filters": {
       "class": "Class",
       "date": "Date",
-      "period": "Period",
-      "selectClass": "Select class",
-      "selectPeriod": "Select period"
+      "selectClass": "Select class"
     },
     "history": {
       "date": "Date",
       "empty": "No attendance history",
-      "period": "Period",
-      "subject": "Subject"
+      "error": "Failed to load attendance history",
+      "loading": "Loading attendance history...",
+      "summary": "Summary"
     },
     "roster": {
-      "code": "Code",
       "status": "Status",
       "student": "Student"
     },
     "status": {
       "absent": "Absent",
-      "excused": "Excused",
+      "excusedAbsent": "Excused",
+      "late": "Late",
       "present": "Present"
     },
     "summary": {
       "absent": "Absent",
+      "excusedAbsent": "Excused",
+      "late": "Late",
       "present": "Present",
       "rate": "Rate",
       "total": "Total"

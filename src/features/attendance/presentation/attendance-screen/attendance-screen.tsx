@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { CheckCheck, Save } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useReducer, useTransition } from "react";
@@ -10,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
 import type { AttendanceStatus } from "../../domain/entities/attendance-status.entity";
 import { AttendanceFilters } from "./attendance-filters";
-import { AttendanceHistoryTab } from "./attendance-history-tab";
+import { AttendanceHistoryContainer } from "./attendance-history-container";
+import { attendanceKeys } from "./attendance-query-keys";
 import { AttendanceRosterTable } from "./attendance-roster-table";
 import type { AttendanceScreenVM } from "./attendance-screen.i-vm";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
@@ -53,11 +55,13 @@ function reducer(state: State, action: Action): State {
 export function AttendanceScreen({
   classes,
   roster,
-  history,
   filters,
   saveAction,
+  getHistoryAction,
 }: AttendanceScreenVM) {
   const t = useTranslations("attendance");
+  const tErrors = useTranslations("attendance.errors");
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(reducer, {
     records: roster?.records ?? [],
     dirty: false,
@@ -69,15 +73,26 @@ export function AttendanceScreen({
     dispatch({ type: "init", records: roster?.records ?? [] });
   }, [roster?.records]);
 
+  const className =
+    classes.find((c) => c.id === roster?.classDate.classId)?.name ??
+    roster?.classDate.classId;
+
   function onSave() {
     if (!roster) return;
     startTransition(async () => {
-      const result = await saveAction(roster.period.id, state.records);
+      const result = await saveAction(
+        roster.classDate.classId,
+        roster.classDate.date,
+        state.records,
+      );
       if (result.ok) {
         toast.success(t("actions.saved"));
         dispatch({ type: "mark-clean" });
+        queryClient.invalidateQueries({
+          queryKey: attendanceKeys.historyPrefix(roster.classDate.classId),
+        });
       } else {
-        toast.error(result.message || t("actions.saveFailed"));
+        toast.error(tErrors(result.errorKey));
       }
     });
   }
@@ -94,7 +109,6 @@ export function AttendanceScreen({
             classes={classes}
             classId={filters.classId}
             date={filters.date}
-            period={filters.period}
           />
         </CardContent>
       </Card>
@@ -117,9 +131,7 @@ export function AttendanceScreen({
               <Card>
                 <CardHeader className="flex-row items-center justify-between gap-3 pb-3">
                   <div className="text-sm text-muted-foreground">
-                    {roster.period.className} · {roster.period.subject} ·{" "}
-                    {roster.period.date} · {t("filters.period")}{" "}
-                    {roster.period.period}
+                    {className} · {roster.classDate.date}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -154,7 +166,10 @@ export function AttendanceScreen({
         </TabsContent>
 
         <TabsContent value="history">
-          <AttendanceHistoryTab history={history} />
+          <AttendanceHistoryContainer
+            classId={filters.classId}
+            getHistoryAction={getHistoryAction}
+          />
         </TabsContent>
       </Tabs>
     </div>

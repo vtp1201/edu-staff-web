@@ -5,12 +5,25 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/shared/utils";
 import type { AttendanceStatus } from "../../domain/entities/attendance-status.entity";
 
-const STATUSES: AttendanceStatus[] = ["present", "excused", "absent"];
+const STATUSES: AttendanceStatus[] = [
+  "present",
+  "late",
+  "excusedAbsent",
+  "absent",
+];
 
+/** `late` reuses the tinted `bg-edu-info/15` + `text-edu-text-primary`
+ *  treatment already established by `status-badge.tsx`'s `TONE_CLASS.info`
+ *  (A11Y-101: solid `bg-edu-info` + `text-edu-text-primary` measures 4.42:1,
+ *  just under the 4.5:1 AA threshold for this 12px/non-bold label; the tint
+ *  variant measures ~11.5:1). A `border-edu-info` keeps the selected state
+ *  visually distinct from the unselected bordered state. No new `tokens.css`
+ *  entry (ADR `0058`). */
 const VARIANT_CLASS: Record<AttendanceStatus, string> = {
   present:
     "data-[state=on]:bg-edu-success data-[state=on]:text-edu-success-foreground",
-  excused:
+  late: "data-[state=on]:bg-edu-info/15 data-[state=on]:text-edu-text-primary data-[state=on]:border-edu-info",
+  excusedAbsent:
     "data-[state=on]:bg-edu-warning data-[state=on]:text-edu-warning-foreground",
   absent:
     "data-[state=on]:bg-edu-error data-[state=on]:text-edu-error-foreground",

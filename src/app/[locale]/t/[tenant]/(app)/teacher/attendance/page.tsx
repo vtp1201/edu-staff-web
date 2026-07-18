@@ -1,15 +1,13 @@
 import {
-  makeGetRosterUseCase,
-  makeListAttendanceHistoryUseCase,
-  makeListMyClassesUseCase,
+  makeGetClassAttendanceUseCase,
+  makeListMyHomeroomClassesUseCase,
 } from "@/bootstrap/di/attendance.di";
 import { AttendanceScreen } from "@/features/attendance/presentation/attendance-screen/attendance-screen";
-import { saveAttendanceAction } from "./actions";
+import { getAttendanceHistoryAction, saveAttendanceAction } from "./actions";
 
 type SearchParams = Promise<{
   class?: string;
   date?: string;
-  period?: string;
 }>;
 
 export default async function AttendancePage({
@@ -20,30 +18,21 @@ export default async function AttendancePage({
   const sp = await searchParams;
   const classId = sp.class;
   const date = sp.date;
-  const periodStr = sp.period;
 
-  const classes = await (await makeListMyClassesUseCase()).execute();
+  const classes = await (await makeListMyHomeroomClassesUseCase()).execute();
 
   const roster =
-    classId && date && periodStr
-      ? await (await makeGetRosterUseCase()).execute(
-          classId,
-          date,
-          Number(periodStr),
-        )
+    classId && date
+      ? await (await makeGetClassAttendanceUseCase()).execute(classId, date)
       : null;
-
-  const history = classId
-    ? await (await makeListAttendanceHistoryUseCase()).execute(classId, "", "")
-    : [];
 
   return (
     <AttendanceScreen
       classes={classes}
       roster={roster}
-      history={history}
-      filters={{ classId, date, period: periodStr }}
+      filters={{ classId, date }}
       saveAction={saveAttendanceAction}
+      getHistoryAction={getAttendanceHistoryAction}
     />
   );
 }

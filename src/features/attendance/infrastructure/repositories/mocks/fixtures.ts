@@ -43,7 +43,6 @@ function pick<T>(arr: T[], idx: number): T {
 export interface MockStudent {
   studentId: string;
   studentName: string;
-  studentCode: string;
 }
 
 function buildStudents(classId: string, count = 30): MockStudent[] {
@@ -54,7 +53,6 @@ function buildStudents(classId: string, count = 30): MockStudent[] {
     list.push({
       studentId: `${classId}-S${String(i + 1).padStart(2, "0")}`,
       studentName: name,
-      studentCode: `${classId}${String(i + 1).padStart(2, "0")}`,
     });
   }
   return list;
@@ -70,10 +68,4 @@ export const MOCK_STUDENTS_BY_CLASS: Record<string, MockStudent[]> = {
   "10A1": buildStudents("10A1"),
   "10A2": buildStudents("10A2"),
   "11B1": buildStudents("11B1"),
-};
-
-export const SUBJECTS_BY_CLASS: Record<string, string> = {
-  "10A1": "Toán",
-  "10A2": "Vật lý",
-  "11B1": "Ngữ văn",
 };

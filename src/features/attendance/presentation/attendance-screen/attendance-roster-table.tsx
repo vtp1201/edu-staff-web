@@ -37,7 +37,6 @@ export function AttendanceRosterTable({ records, onChange }: Props) {
           <TableRow>
             <TableHead className="w-12">#</TableHead>
             <TableHead>{t("student")}</TableHead>
-            <TableHead className="w-24">{t("code")}</TableHead>
             <TableHead className="w-[18rem] text-right">
               {t("status")}
             </TableHead>
@@ -56,9 +55,6 @@ export function AttendanceRosterTable({ records, onChange }: Props) {
                   </Avatar>
                   <span className="font-medium">{r.studentName}</span>
                 </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {r.studentCode}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end">

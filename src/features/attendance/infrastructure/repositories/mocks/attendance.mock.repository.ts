@@ -1,104 +1,89 @@
 import "server-only";
 import { mockDelay } from "@/bootstrap/lib/mock";
+import { enumerateDates } from "../../../domain/date-range";
+import type { AttendanceDaySummary } from "../../../domain/entities/attendance-day-summary.entity";
 import type { AttendanceRecord } from "../../../domain/entities/attendance-record.entity";
 import type { AttendanceRoster } from "../../../domain/entities/attendance-roster.entity";
 import type { AttendanceStatus } from "../../../domain/entities/attendance-status.entity";
-import type { ClassPeriod } from "../../../domain/entities/class-period.entity";
+import type { AttendanceFailure } from "../../../domain/failures/attendance.failure";
 import type {
   ClassSummary,
   IAttendanceRepository,
 } from "../../../domain/repositories/i-attendance.repository";
-import {
-  MOCK_CLASSES,
-  MOCK_STUDENTS_BY_CLASS,
-  SUBJECTS_BY_CLASS,
-} from "./fixtures";
+import { countStatuses } from "../../mappers/attendance.mapper";
+import { MOCK_CLASSES, MOCK_STUDENTS_BY_CLASS } from "./fixtures";
 
-const STATUSES: AttendanceStatus[] = ["present", "excused", "absent"];
-
+/** Same shape as `deterministicStatus`'s old 3-state bias, extended to the
+ *  real 4-state contract (~70% present, one late, one excusedAbsent, one absent). */
 function deterministicStatus(seed: number): AttendanceStatus {
-  // Bias toward 'present' (~80%)
   const m = seed % 10;
-  if (m < 8) return "present";
-  if (m === 8) return "excused";
+  if (m < 7) return "present";
+  if (m === 7) return "late";
+  if (m === 8) return "excusedAbsent";
   return "absent";
 }
 
-function periodId(classId: string, date: string, period: number) {
-  return `${classId}-${date}-P${period}`;
+function dateSeed(date: string): number {
+  return date.split("-").reduce((a, b) => a + Number(b), 0);
 }
 
+/**
+ * Mock repository (US-E13.2, ADR `0058`) — models the SAME contract as the
+ * real one: class+date keyed, 4-state, bounded history aggregate, no
+ * lying-green shortcuts (AC-1). All 3 fixture classes are homeroom classes.
+ */
 export class MockAttendanceRepository implements IAttendanceRepository {
-  async listMyClasses(): Promise<ClassSummary[]> {
+  async getMyHomeroomClasses(): Promise<ClassSummary[]> {
     await mockDelay(150);
     return MOCK_CLASSES.map((c) => ({ id: c.id, name: c.name }));
   }
 
-  async getRoster(
+  async getClassAttendance(
     classId: string,
     date: string,
-    period: number,
   ): Promise<AttendanceRoster> {
     await mockDelay(250);
     const students = MOCK_STUDENTS_BY_CLASS[classId];
-    if (!students) throw new Error("period-not-found");
+    if (!students) throw { type: "not-found" } satisfies AttendanceFailure;
     const records: AttendanceRecord[] = students.map((s, idx) => ({
       studentId: s.studentId,
       studentName: s.studentName,
-      studentCode: s.studentCode,
-      status: deterministicStatus(
-        idx + period + date.split("-").reduce((a, b) => a + Number(b), 0),
-      ),
+      status: deterministicStatus(idx + dateSeed(date)),
     }));
-    const classPeriod: ClassPeriod = {
-      id: periodId(classId, date, period),
-      classId,
-      className: classId,
-      subject: SUBJECTS_BY_CLASS[classId] ?? "Môn học",
-      date,
-      period,
-    };
-    return { period: classPeriod, records };
+    return { classDate: { classId, date }, records };
   }
 
-  async saveAttendance(
-    periodId: string,
+  async saveClassAttendance(
+    classId: string,
+    date: string,
     records: AttendanceRecord[],
   ): Promise<void> {
     await mockDelay(300);
     if (process.env.NODE_ENV !== "production") {
       console.info(
-        `[mock] saveAttendance ${periodId} count=${records.length} present=${records.filter((r) => r.status === "present").length}`,
+        `[mock] saveClassAttendance ${classId}/${date} count=${records.length} present=${records.filter((r) => r.status === "present").length}`,
       );
     }
   }
 
-  async listHistory(
+  async getAttendanceHistory(
     classId: string,
-    _from: string,
-    _to: string,
-  ): Promise<ClassPeriod[]> {
+    from: string,
+    to: string,
+  ): Promise<AttendanceDaySummary[]> {
     await mockDelay(200);
-    if (!MOCK_STUDENTS_BY_CLASS[classId]) return [];
-    const today = new Date();
-    const items: ClassPeriod[] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const date = d.toISOString().slice(0, 10);
-      const period = ((i % 5) + 1) as number;
-      items.push({
-        id: periodId(classId, date, period),
-        classId,
-        className: classId,
-        subject: SUBJECTS_BY_CLASS[classId] ?? "Môn học",
+    const students = MOCK_STUDENTS_BY_CLASS[classId];
+    if (!students) return [];
+    const dates = enumerateDates(from, to);
+    return dates.map((date) => {
+      const statuses = students.map((_, idx) =>
+        deterministicStatus(idx + dateSeed(date)),
+      );
+      return {
         date,
-        period,
-      });
-    }
-    return items;
+        counts: countStatuses(statuses),
+        totalStudents: students.length,
+      };
+    });
   }
 }
-
-// satisfy unused-var lint (referenced for possible future use)
-void STATUSES;

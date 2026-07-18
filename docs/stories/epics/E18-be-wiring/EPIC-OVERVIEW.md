@@ -123,7 +123,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.8 | Staff-leave wiring | path | normal | **Done** — the "add `/conduct/` segment" label held at the path level only. Real finding: `GET` requires a **mandatory** `staffMemberId` query param (no tenant-wide oversight list exists at all — the admin screen lists every staff member's requests at once) AND `StaffLeaveRequestResponse` has zero display fields (no `staffName`/`department`/`leaveType` — the leave-*type* concept itself doesn't exist on the wire). `approve`/`reject` are therefore also unreachable (their only id source is the blocked list). Whole feature stays mock-first **permanently** — first fully-blocked DI factory in the epic (`staff-leave.di.ts` now force-mocks regardless of `USE_MOCK`, vs. the hybrid/partial pattern used by US-E18.4/US-E18.5). Ground-truthed error taxonomy (7 codes, confirmed UPPER_SNAKE from Go source `pkg/kit/response/error.go`'s `codeFromKey`) kept correct + unit-tested for the day this unblocks; 2 new failure types (`forbidden`, `same-actor`). See `US-E18.8-staff-leave-wiring/story.md` + cross-repo ask #13. |
 | US-E18.9 | Teaching-plan wiring | path | normal | **Done** — the "nest `/lms/`, decide `/cells`" label held at the path level only. Real finding: composite-key mismatch (web keys by `(subjectId, classId, term)`; real key is `(classSubjectId, academicYear, planId)` — no term dimension, one BE plan spans a full academic year), no period axis on the wire (`WeeklyEntryResponse` is week-only), and — the `/cells` answer — **zero HTTP surface to edit an existing plan's entries at all**: `create` sets `weeklyEntries` once, no update route exists, and the domain aggregate's `UpdateEntries()` method is dead code (unit-tested BE-side, never wired to a route). Whole feature stays mock-first permanently — second fully-blocked DI factory in the epic after US-E18.8's `staff-leave.di.ts`. Ground-truthed 6-code error taxonomy replaces the old guessed one (matched zero real codes). See `US-E18.9-teaching-plan-wiring/story.md` + cross-repo ask #14. |
 | US-E18.10 | Class-log wiring + trạng thái `revise` | path + state | normal | Web thiếu `revise` + GET/PUT entry detail — thêm state UI theo máy trạng thái BE |
-| US-E13.2 *(packet có sẵn, epic E13)* | Attendance wiring | **cao** | normal | Re-scope theo audit: prefix `/core/api/v1/classes/{id}/attendance` + `/members/{id}/attendance`; mô hình period-based của web ≠ class/date-based BE → remap |
+| US-E13.2 *(packet có sẵn, epic E13)* | Attendance wiring | **cao** | normal | **Done** — ground-truthed against `internal/attendance` Go source. Confirms + extends the note: no period AND no subject axis at all (daily class-wide GVCN roll call); 4-state status (`PRESENT/ABSENT/LATE/EXCUSED_ABSENT`, web only had 3) adds `late`→`--edu-info` (no new token); class list + name-resolution reuse the already-real `TeacherClassRepository` (`isHomeroom` filter + `getClassStudents()` join, same graceful raw-id-fallback precedent as the teacher's own roster) — nothing permanently blocked, unlike most high-drift US's in this epic; history has no bulk endpoint (cross-repo ask #28) → bounded (≤31d) client fan-out + day-summary aggregate. UI changes (drop period selector, 4th toggle, day-summary history) go through design-review + a11y. See `US-E13.2-attendance-be-wiring/US-E13.2-attendance-be-wiring.md` + ADR `0058`. |
 
 ### Wave 3 — drift lớn, redesign contract phía web
 
@@ -474,6 +474,19 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     are net-new screens with zero prior design/BA work. Route to `/uiux` +
     `/ba` if this becomes a real product priority — BE already ships the
     full contract, this is a product/design gap, not a BE gap.
+
+28. **(US-E13.2, 2026-07-18)** No bulk/range endpoint exists for a class's
+    attendance history — `internal/attendance/adapter/http/routes.go` only
+    mounts a single-date class GET (`GET /classes/:classId/attendance?date=`)
+    and a single-STUDENT range GET (`GET /members/:memberId/attendance?
+    startDate=&endDate=`, scoped to one member, not a class). The web's
+    history tab needs "this class's attendance across the last N days" —
+    served today via a bounded (≤31 days) client-side fan-out of the
+    single-date GET, aggregated into a per-day status-count summary. Ask: add
+    a class-scoped date-range endpoint (e.g.
+    `GET /classes/{classId}/attendance?startDate=&endDate=`, mirroring the
+    member-range shape) to remove the fan-out. See ADR `0058` +
+    `US-E13.2-attendance-be-wiring/US-E13.2-attendance-be-wiring.md`.
 
 ## Dependencies & thứ tự
 
