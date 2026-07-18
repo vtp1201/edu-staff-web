@@ -24,45 +24,40 @@ export function AttendanceHistoryTab({
 }: Props) {
   const t = useTranslations("attendance.history");
 
-  if (isLoading) {
-    return (
-      <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-muted-foreground">
-        {t("loading")}
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-edu-error-text">
-        {t("error")}
-      </div>
-    );
-  }
-
-  if (history.length === 0) {
-    return (
-      <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-muted-foreground">
-        {t("empty")}
-      </div>
-    );
-  }
-
+  // A11Y-103: the wrapper persists across loading/error/data so a
+  // screen-reader announces the state TRANSITION on tab-switch fetch — not
+  // just a one-off message inside a div that's swapped out and back in.
   return (
-    <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-32">{t("date")}</TableHead>
-            <TableHead>{t("summary")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history.map((day) => (
-            <AttendanceHistoryDaySummaryRow key={day.date} summary={day} />
-          ))}
-        </TableBody>
-      </Table>
+    <div role="status" aria-live="polite">
+      {isLoading ? (
+        <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-muted-foreground">
+          {t("loading")}
+        </div>
+      ) : isError ? (
+        <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-edu-error-text">
+          {t("error")}
+        </div>
+      ) : history.length === 0 ? (
+        <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-muted-foreground">
+          {t("empty")}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-32">{t("date")}</TableHead>
+                <TableHead>{t("summary")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {history.map((day) => (
+                <AttendanceHistoryDaySummaryRow key={day.date} summary={day} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
