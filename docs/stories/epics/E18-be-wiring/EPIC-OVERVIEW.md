@@ -475,6 +475,39 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     `/ba` if this becomes a real product priority — BE already ships the
     full contract, this is a product/design gap, not a BE gap.
 
+29. **(US-E21.1, 2026-07-18)** No listing endpoint exists for tenant
+    invitations at all — `services/iam/internal/membership/adapter/http/routes.go`
+    mounts only `POST .../invitations` (invite), `DELETE
+    .../invitations/:invitationId` (revoke), `POST /invitations/accept`
+    (accept). `InvitationRepository`'s port (`core/application/port/
+    invitation_repository.go`) only has `Save`/`Get(tenant+id)`/`GetByToken`
+    — no `List`, confirming the Scylla model is point-lookup-shaped
+    (`member_invitations` + `invitations_by_token`, both TTL-keyed), not a
+    tenant-wide scan today. The admin invitations screen (US-E21.1) needs
+    `GET /api/v1/tenants/{tenantId}/invitations` returning
+    `{invitationId, email, roles[], status, invitedBy, createdAt, expiresAt}`
+    (cursor-paginated) — `InvitationResponse` today has none of
+    `status`/`invitedBy`/`createdAt` either (only `invitationId`/`email`/
+    `roles`/`expiresAt`, returned solely from the invite POST). Until this
+    ships, the admin invitation table stays permanently mock-first — the
+    5th fully-blocked operation in the epic after US-E18.8/US-E18.9/
+    US-E18.13/US-E18.14.
+30. **(US-E21.1, 2026-07-18)** No resend endpoint exists for an
+    expired invitation (`routes.go` has no `.../resend` route, no use-case,
+    no repository method). Ask: add a dedicated action endpoint mirroring
+    this same service's `activate`/`deactivate` tenant-action convention,
+    e.g. `POST /api/v1/tenants/{tenantId}/invitations/{invitationId}/resend`,
+    reusing the SAME `invitationId` (server regenerates token + `expiresAt`,
+    flips status back to `pending` in place — not a new invitation record).
+    Separately, `InviteRequest` has no `expiryDays`/TTL field at all — the
+    invitation's TTL is entirely server-computed
+    (`entity.MemberInvitation.RemainingTTL`), so the web's 7/14/30-day expiry
+    selector (`docs/product/design-spec.jsonc` → `screens.invitations.
+    sendDialog.expirySelect`) has no real wire effect today; ask BE whether
+    invite-time TTL should become client-configurable, or keep it
+    server-policy-only (in which case a future design pass should reconsider
+    whether the expiry selector belongs in the UI at all).
+
 28. **(US-E13.2, 2026-07-18)** No bulk/range endpoint exists for a class's
     attendance history — `internal/attendance/adapter/http/routes.go` only
     mounts a single-date class GET (`GET /classes/:classId/attendance?date=`)

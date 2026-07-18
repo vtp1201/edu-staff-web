@@ -249,3 +249,101 @@ QUESTIONS below are resolved, a `bootstrap/lib/mock.ts` entry keyed on
   fetched pages (simpler, but breaks pagination combined with filters at
   scale — acceptable for a per-tenant invitation list which is unlikely to be
   huge, but flag the assumption).
+
+## 6. Ground-Truth Correction (fe-lead, 2026-07-18)
+
+Read directly against edu-api Go source (not openapi.yaml, per the
+`api-integration.md` mandate to prefer the source when in doubt) —
+`services/iam/internal/membership/adapter/http/{routes.go,invitation_handler.go,dto/invitation_dto.go}`
++ `core/application/port/invitation_repository.go` + `core/domain/valueobject/invitation.go`.
+This **replaces** every `[OPEN QUESTION]`/best-effort item above, not merely
+answers it — several of this story's core assumptions do not hold:
+
+1. **Only 3 invitation routes exist on the real BE, period**:
+   `POST /api/v1/tenants/:id/invitations` (invite), `DELETE
+   /api/v1/tenants/:id/invitations/:invitationId` (revoke), `POST
+   /api/v1/invitations/accept` (accept, US-E21.2 scope). **There is no GET
+   list route and no resend route anywhere in `routes.go`.** The
+   `InvitationRepository` port itself only exposes `Save`/`Get(by tenant+id)`/
+   `GetByToken` — no `List`, confirming this isn't a wiring gap but a genuine
+   absence of the underlying query capability (Scylla model keyed for point
+   lookups, not a tenant-wide scan). **INT-001 (list) and INT-004 (resend)
+   cannot be wired real under any circumstance today — they are mock-first
+   PERMANENTLY**, not "pending BE confirmation." New cross-repo asks #29/#30
+   filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md` §Cross-repo
+   requests.
+2. **INT-002 send is single-email, confirmed, not a batch shape** —
+   `InviteRequest{ email string, roles []string }` is the entire real
+   request body; there is no `emails[]`/`expiryDays` field and no
+   batch-shape variant exists to discover. Resolution: the send-dialog's
+   1..N chip batch is a **client-side fan-out** of N sequential real
+   `POST .../invitations` calls (one per email, same `roles` array), exactly
+   the "target-list fan-out use-case" pattern already used for attendance
+   history (US-E13.2) and admin-roster enroll (US-E18.5) in this repo —
+   reconcile partial success/failure per-item in the use-case, not by
+   inventing a batch endpoint. `expiryDays` has **no wire field at all** —
+   `MemberInvitation`'s TTL is server-computed (see
+   `entity/invitation.go`/`RemainingTTL`), not client-supplied. The
+   7/14/30-day expiry SELECT in the send dialog therefore has **no effect on
+   the real request** — flag this to the user/ba-lead as a UI-vs-BE mismatch
+   (§ new open question below); do not silently drop the control since the
+   design-spec/AC mandate it, but do not send it either.
+3. **Real response shape** (`InvitationResponse`, returned only from the
+   POST-invite call): `{ invitationId, email, roles[], expiresAt }` — **no**
+   `tenantId`, `status`, `invitedBy`, `createdAt`/`sentAt`, `token`, or
+   `inviteUrl`. None of these can be sourced from any real BE call. The
+   entire table (status, sent date, invited-by, countdown base data beyond
+   the one just-sent row) is therefore **necessarily mock/local-state
+   composed**, not "list wired real once the DTO is extended."
+4. **Role vocabulary — real wire is 6 values, UPPERCASE, and needs NO
+   alias mapping**: `InviteRequest.Roles` validates
+   `oneof=ADMIN MANAGER TEACHER STAFF STUDENT PARENT`. The design-spec's
+   `sendDialog.roleRadioGroup.options` (`teacher|student|parent|manager|admin`)
+   maps **1:1** onto 5 of these 6 wire values by simple uppercasing — `manager`
+   → wire `"MANAGER"` (a real, distinct wire role, NOT an alias for
+   `principal`/`ADMIN` — the spec.md §2/§3 "manager is a display alias for
+   principal" framing is **incorrect** and superseded by this ground-truth;
+   ignore spec.md's alias table for the wire payload, keep it only for how
+   the *existing tenant-membership* `ROLE_ENUM_TO_APP` login-time mapping
+   separately collapses `MANAGER`+`ADMIN` → appRole `principal` — a DIFFERENT,
+   unrelated mapping in `role-meta.ts`, decision `0036`, that this story does
+   not touch). `admin` → wire `"ADMIN"`. `STAFF` is unused by this UI (no
+   6th radio option) — fine, the dialog need not expose every wire value.
+   Send exactly `roles: ["TEACHER"|"STUDENT"|"PARENT"|"MANAGER"|"ADMIN"]`
+   (single-element array; the wire field is plural/array-shaped but this
+   story's UI always sends exactly one role per batch per FR-003).
+5. **Status values on the wire (for when/if list ever ships) are UPPERCASE**:
+   `PENDING|ACCEPTED|EXPIRED|REVOKED` (`valueobject/invitation.go`) — mapper
+   must lowercase for the existing lowercase `status` union used in
+   `iam-member.mapper.ts`/entities, consistent with how `TenantMembership`
+   already handles `MembershipStatus` as UPPERCASE-on-wire.
+6. **Revoke error is confirmed `invitation_invalid`** (BE `Get()` returns
+   this apperror code when the row is absent — see
+   `revoke_invitation.go` line 43's own comment), which **already matches**
+   the existing `IamMemberFailure` union's `{ type: "invitation-invalid" }`
+   (corrected in US-E18.6) — no failure-union change needed for revoke; the
+   spec.md/integration.md's assumed `INVITATION_NOT_FOUND` code does not
+   exist on this wire and must not be used.
+7. **Net effect on this story's scope**:
+   - REAL: send (fan-out N single-email POSTs), revoke (as originally wired,
+     US-E06.4's `revokeInvitation` reused as-is).
+   - PERMANENTLY MOCK (not "temporary until BE ships"): list (table
+     population), resend, copy-link data source (no token ever returned),
+     invitedBy/sentDate columns, expiry countdown base data beyond a
+     freshly-sent row's own `expiresAt`.
+   - The 7/14/30-day expiry select is UI-only in the mocked model and has no
+     effect once/if a real request is ever sent — call this out in a code
+     comment at the mock boundary, not silently.
+   - This matches the established "hybrid/hard-blocked" precedent from
+     US-E18.8/US-E18.9/US-E18.13/US-E18.14 (permanently-mocked feature
+     wrapped in a real Clean-Architecture shape, ready to flip when BE ships)
+     — `invitations.di.ts` should force-mock list/resend regardless of
+     `USE_MOCK`, matching `staff-leave.di.ts`'s precedent, while send/revoke
+     go through the real/mock branch per `USE_MOCK` as usual.
+
+**New open question (not in the original set)**: should the send-dialog even
+keep the expiry SELECT given it has zero wire effect today? Recommendation:
+keep it (per AC-003.6/AC-003.7 + design-spec, since removing it is a scope
+decision beyond this story and the mock model can still honor it locally for
+the countdown display of freshly-sent rows), but this is worth a `ba-lead`
+follow-up once BE ships real expiry control.
