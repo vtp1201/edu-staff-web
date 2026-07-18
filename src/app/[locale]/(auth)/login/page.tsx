@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { AuthBrandPanel } from "@/components/shared/auth-brand-panel";
 import { GoogleAuthWrapper } from "@/features/auth/presentation/login-form/google-auth-wrapper";
 import { loginAction, socialSigninAction } from "./actions";
 
@@ -8,29 +9,7 @@ export default async function LoginPage() {
 
   return (
     <div className="flex h-screen">
-      <div
-        className="hidden w-[42%] flex-col items-center justify-center lg:flex"
-        style={{
-          background:
-            "linear-gradient(150deg, var(--edu-primary) 0%, color-mix(in srgb, var(--edu-primary) 80%, transparent) 55%, color-mix(in srgb, var(--edu-success) 53%, transparent) 100%)",
-        }}
-      >
-        {/* Decorative brand panel (hidden on mobile). The page's real h1 is the
-            login form title below, so this visual heading is aria-hidden to keep
-            a single, mobile-safe heading hierarchy (A11Y-004). */}
-        <p
-          aria-hidden="true"
-          className="text-3xl font-extrabold text-primary-foreground"
-        >
-          {t("brand.name")}
-        </p>
-        <p
-          aria-hidden="true"
-          className="mt-2 text-sm text-primary-foreground/80"
-        >
-          {t("brand.tagline")}
-        </p>
-      </div>
+      <AuthBrandPanel title={t("brand.name")} tagline={t("brand.tagline")} />
 
       <div className="flex flex-1 items-center justify-center p-8">
         <div className="w-full max-w-100">
