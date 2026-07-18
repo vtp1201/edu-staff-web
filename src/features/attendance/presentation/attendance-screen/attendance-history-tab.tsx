@@ -4,17 +4,41 @@ import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ClassPeriod } from "../../domain/entities/class-period.entity";
+import type { AttendanceDaySummary } from "../../domain/entities/attendance-day-summary.entity";
+import { AttendanceHistoryDaySummaryRow } from "./attendance-history-day-summary-row";
 
-type Props = { history: ClassPeriod[] };
+type Props = {
+  history: AttendanceDaySummary[];
+  isLoading?: boolean;
+  isError?: boolean;
+};
 
-export function AttendanceHistoryTab({ history }: Props) {
+export function AttendanceHistoryTab({
+  history,
+  isLoading = false,
+  isError = false,
+}: Props) {
   const t = useTranslations("attendance.history");
+
+  if (isLoading) {
+    return (
+      <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-muted-foreground">
+        {t("loading")}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-[var(--edu-radius-card)] border border-border p-8 text-center text-sm text-edu-error-text">
+        {t("error")}
+      </div>
+    );
+  }
 
   if (history.length === 0) {
     return (
@@ -29,20 +53,13 @@ export function AttendanceHistoryTab({ history }: Props) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("date")}</TableHead>
-            <TableHead>{t("period")}</TableHead>
-            <TableHead>{t("subject")}</TableHead>
+            <TableHead className="w-32">{t("date")}</TableHead>
+            <TableHead>{t("summary")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {history.map((p) => (
-            <TableRow key={p.id}>
-              <TableCell className="font-medium">{p.date}</TableCell>
-              <TableCell>{p.period}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {p.subject}
-              </TableCell>
-            </TableRow>
+          {history.map((day) => (
+            <AttendanceHistoryDaySummaryRow key={day.date} summary={day} />
           ))}
         </TableBody>
       </Table>

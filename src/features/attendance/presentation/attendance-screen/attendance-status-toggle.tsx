@@ -5,12 +5,21 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/shared/utils";
 import type { AttendanceStatus } from "../../domain/entities/attendance-status.entity";
 
-const STATUSES: AttendanceStatus[] = ["present", "excused", "absent"];
+const STATUSES: AttendanceStatus[] = [
+  "present",
+  "late",
+  "excusedAbsent",
+  "absent",
+];
 
+/** `late` reuses `--edu-info` with `text-edu-text-primary` (NOT white) — same
+ *  precedent as `status-badge.tsx`'s `TONE_CLASS.info` (vibrant hues fail AA
+ *  with white text, A11Y-001/002). No new `tokens.css` entry (ADR `0058`). */
 const VARIANT_CLASS: Record<AttendanceStatus, string> = {
   present:
     "data-[state=on]:bg-edu-success data-[state=on]:text-edu-success-foreground",
-  excused:
+  late: "data-[state=on]:bg-edu-info data-[state=on]:text-edu-text-primary",
+  excusedAbsent:
     "data-[state=on]:bg-edu-warning data-[state=on]:text-edu-warning-foreground",
   absent:
     "data-[state=on]:bg-edu-error data-[state=on]:text-edu-error-foreground",

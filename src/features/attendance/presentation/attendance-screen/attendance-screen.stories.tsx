@@ -1,48 +1,52 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import type { AttendanceDaySummary } from "../../domain/entities/attendance-day-summary.entity";
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
-import type { ClassPeriod } from "../../domain/entities/class-period.entity";
+import type { AttendanceRoster } from "../../domain/entities/attendance-roster.entity";
 import { AttendanceScreen } from "./attendance-screen";
 
-const period: ClassPeriod = {
-  id: "p-1",
+const classDate: AttendanceRoster["classDate"] = {
   classId: "c-1",
-  className: "10A1",
-  subject: "Toán",
   date: "2026-06-07",
-  period: 2,
 };
 
 const records: AttendanceRecord[] = [
+  { studentId: "s1", studentName: "Nguyễn Văn An", status: "present" },
+  { studentId: "s2", studentName: "Trần Thị Bình", status: "absent" },
+  { studentId: "s3", studentName: "Lê Quốc Châu", status: "excusedAbsent" },
+  { studentId: "s4", studentName: "Phạm Minh Dũng", status: "present" },
+  { studentId: "s5", studentName: "Hoàng Văn Em", status: "late" },
+];
+
+const historyFixture: AttendanceDaySummary[] = [
   {
-    studentId: "s1",
-    studentName: "Nguyễn Văn An",
-    studentCode: "HS001",
-    status: "present",
+    date: "2026-06-06",
+    counts: { present: 4, absent: 1, late: 0, excusedAbsent: 0 },
+    totalStudents: 5,
   },
   {
-    studentId: "s2",
-    studentName: "Trần Thị Bình",
-    studentCode: "HS002",
-    status: "absent",
-  },
-  {
-    studentId: "s3",
-    studentName: "Lê Quốc Châu",
-    studentCode: "HS003",
-    status: "excused",
-  },
-  {
-    studentId: "s4",
-    studentName: "Phạm Minh Dũng",
-    studentCode: "HS004",
-    status: "present",
+    date: "2026-06-05",
+    counts: { present: 3, absent: 0, late: 1, excusedAbsent: 1 },
+    totalStudents: 5,
   },
 ];
 
 const saveAction = () => Promise.resolve({ ok: true } as const);
+const getHistoryAction = () =>
+  Promise.resolve({ ok: true, data: historyFixture } as const);
+const getHistoryActionEmpty = () =>
+  Promise.resolve({ ok: true, data: [] as AttendanceDaySummary[] } as const);
+const getHistoryActionError = () =>
+  Promise.resolve({ ok: false, errorKey: "network-error" } as const);
+
+function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+}
 
 const meta: Meta<typeof AttendanceScreen> = {
   title: "Attendance/AttendanceScreen",
@@ -50,11 +54,13 @@ const meta: Meta<typeof AttendanceScreen> = {
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
-      <NextIntlClientProvider locale="vi" messages={messages}>
-        <div className="p-6">
-          <Story />
-        </div>
-      </NextIntlClientProvider>
+      <QueryClientProvider client={makeQueryClient()}>
+        <NextIntlClientProvider locale="vi" messages={messages}>
+          <div className="p-6">
+            <Story />
+          </div>
+        </NextIntlClientProvider>
+      </QueryClientProvider>
     ),
   ],
 };
@@ -64,25 +70,77 @@ type Story = StoryObj<typeof AttendanceScreen>;
 
 const classes = [{ id: "c-1", name: "10A1" }];
 
-/** Roster loaded: editable table, summary, save/all-present controls. */
+/** Roster loaded: editable 4-state table, summary, save/all-present controls. */
 export const WithRoster: Story = {
   args: {
     classes,
-    roster: { period, records },
-    history: [],
-    filters: { classId: "c-1", date: "2026-06-07", period: "2" },
+    roster: { classDate, records },
+    filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
+    getHistoryAction,
   },
 };
 
-/** No class/date/period selected yet — friendly empty state. */
+/** No class/date selected yet — friendly empty state (period selector removed). */
 export const Empty: Story = {
   args: {
     classes,
     roster: null,
-    history: [],
     filters: {},
     saveAction,
+    getHistoryAction: getHistoryActionEmpty,
+  },
+};
+
+/** History tab: per-day status-count summary (no more date/period/subject rows). */
+export const HistoryTab: Story = {
+  args: {
+    classes,
+    roster: { classDate, records },
+    filters: { classId: "c-1", date: "2026-06-07" },
+    saveAction,
+    getHistoryAction,
+  },
+  play: async ({ canvas, userEvent }) => {
+    const historyTab = canvas.getByRole("tab", { name: /lịch sử/i });
+    await userEvent.click(historyTab);
+    await expect(await canvas.findByText("2026-06-06")).toBeInTheDocument();
+  },
+};
+
+/** History tab empty state. */
+export const HistoryEmpty: Story = {
+  args: {
+    classes,
+    roster: { classDate, records },
+    filters: { classId: "c-1", date: "2026-06-07" },
+    saveAction,
+    getHistoryAction: getHistoryActionEmpty,
+  },
+  play: async ({ canvas, userEvent }) => {
+    const historyTab = canvas.getByRole("tab", { name: /lịch sử/i });
+    await userEvent.click(historyTab);
+    await expect(
+      await canvas.findByText("Chưa có lịch sử điểm danh"),
+    ).toBeInTheDocument();
+  },
+};
+
+/** History tab error state (e.g. every day in the range unreachable). */
+export const HistoryError: Story = {
+  args: {
+    classes,
+    roster: { classDate, records },
+    filters: { classId: "c-1", date: "2026-06-07" },
+    saveAction,
+    getHistoryAction: getHistoryActionError,
+  },
+  play: async ({ canvas, userEvent }) => {
+    const historyTab = canvas.getByRole("tab", { name: /lịch sử/i });
+    await userEvent.click(historyTab);
+    await expect(
+      await canvas.findByText("Không tải được lịch sử điểm danh"),
+    ).toBeInTheDocument();
   },
 };
 
@@ -102,10 +160,10 @@ const VIEWPORT_375 = {
 export const Viewport375: Story = {
   args: {
     classes,
-    roster: { period, records },
-    history: [],
-    filters: { classId: "c-1", date: "2026-06-07", period: "2" },
+    roster: { classDate, records },
+    filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
+    getHistoryAction,
   },
   parameters: { viewport: VIEWPORT_375 },
   play: async ({ canvasElement }) => {

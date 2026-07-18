@@ -10,7 +10,11 @@ export function AttendanceSummaryCard({ records }: Props) {
   const t = useTranslations("attendance.summary");
   const total = records.length;
   const present = records.filter((r) => r.status === "present").length;
-  const absent = total - present;
+  const late = records.filter((r) => r.status === "late").length;
+  const excusedAbsent = records.filter(
+    (r) => r.status === "excusedAbsent",
+  ).length;
+  const absent = records.filter((r) => r.status === "absent").length;
   const rate = total > 0 ? Math.round((present / total) * 100) : 0;
 
   return (
@@ -21,6 +25,18 @@ export function AttendanceSummaryCard({ records }: Props) {
         label={t("present")}
         value={String(present)}
         tone="success"
+      />
+      <StatCard
+        variant="compact"
+        label={t("late")}
+        value={String(late)}
+        tone="info"
+      />
+      <StatCard
+        variant="compact"
+        label={t("excusedAbsent")}
+        value={String(excusedAbsent)}
+        tone="warning"
       />
       <StatCard
         variant="compact"

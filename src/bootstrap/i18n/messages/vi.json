@@ -785,32 +785,42 @@
       "saved": "Đã lưu điểm danh",
       "saving": "Đang lưu..."
     },
-    "empty": "Chưa chọn lớp/ngày/tiết",
+    "empty": "Chưa chọn lớp/ngày",
+    "errors": {
+      "correction-window-expired": "Chỉ được sửa điểm danh trong ngày",
+      "forbidden": "Bạn không có quyền điểm danh lớp này",
+      "invalid-request": "Dữ liệu điểm danh không hợp lệ",
+      "network-error": "Lỗi kết nối mạng, vui lòng thử lại",
+      "not-found": "Không tìm thấy dữ liệu điểm danh",
+      "student-not-enrolled": "Học sinh không thuộc lớp này",
+      "unknown": "Đã có lỗi xảy ra"
+    },
     "filters": {
       "class": "Lớp",
       "date": "Ngày",
-      "period": "Tiết",
-      "selectClass": "Chọn lớp",
-      "selectPeriod": "Chọn tiết"
+      "selectClass": "Chọn lớp"
     },
     "history": {
       "date": "Ngày",
       "empty": "Chưa có lịch sử điểm danh",
-      "period": "Tiết",
-      "subject": "Môn"
+      "error": "Không tải được lịch sử điểm danh",
+      "loading": "Đang tải lịch sử điểm danh...",
+      "summary": "Tổng hợp"
     },
     "roster": {
-      "code": "Mã",
       "status": "Trạng thái",
       "student": "Học sinh"
     },
     "status": {
       "absent": "Vắng KP",
-      "excused": "Vắng phép",
+      "excusedAbsent": "Vắng phép",
+      "late": "Muộn",
       "present": "Có mặt"
     },
     "summary": {
       "absent": "Vắng",
+      "excusedAbsent": "Vắng phép",
+      "late": "Muộn",
       "present": "Có mặt",
       "rate": "Tỷ lệ",
       "total": "Sĩ số"
