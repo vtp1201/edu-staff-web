@@ -27,6 +27,13 @@ export interface TenantSwitchDialogProps {
     tenantId: string,
     role: string,
   ) => Promise<SwitchTenantResult>;
+  /**
+   * Optional override for focus-restore on close. When the dialog is opened from
+   * an overlay (e.g. a DropdownMenuItem) whose own focus-scope resets focus while
+   * closing, the shared Dialog's auto-capture can miss the true invoker — pass a
+   * handler that `preventDefault()`s and focuses the invoking control directly.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /**
@@ -40,6 +47,7 @@ export function TenantSwitchDialog({
   onOpenChange,
   memberships,
   onSwitchTenant,
+  onCloseAutoFocus,
 }: TenantSwitchDialogProps) {
   const t = useTranslations("tenant.switch");
   const [loadingTenantId, setLoadingTenantId] = useState<string | null>(null);
@@ -85,7 +93,12 @@ export function TenantSwitchDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent
+        className="sm:max-w-[440px]"
+        // Only override the shared Dialog's default focus-restore when a handler
+        // is provided; passing `undefined` would clobber it for other callers.
+        {...(onCloseAutoFocus ? { onCloseAutoFocus } : {})}
+      >
         <DialogHeader>
           <span
             aria-hidden="true"

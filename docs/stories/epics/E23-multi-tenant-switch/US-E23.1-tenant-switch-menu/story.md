@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -204,6 +204,93 @@ precedent) reads it ONCE on mount via `useSearchParams` in a `useEffect`, fires
 toast. Engineer implements this in Phase 4; a11y auditor should confirm the
 toast is announced via `sonner`'s existing `aria-live` region (already used
 elsewhere in this repo, not a new pattern).
+
+## Evidence — Design Review Gate (fe-lead, 2026-07-19)
+
+Design review: pass
+- design-system: conform — `TenantCard`/`TenantLogo`/`TenantSwitchDialog` use
+  only semantic tokens (`bg-card`, `border-primary`/`border-border`,
+  `bg-primary/15`, `text-muted-foreground`, `text-edu-error-text`,
+  `shadow-card`/`shadow-card-hover`, `var(--edu-radius-card)`); zero raw
+  color/hex found on inspection. Dialog `sm:max-w-[440px]` matches
+  `design-spec.jsonc` `screens.tenantSwitch.dialog.maxWidth`; card `min-h-20`
+  (80px) matches `dialog.tenantCard.minHeight`; `TenantLogo` sizes 36
+  (header block)/56 (dialog cards) match spec exactly. Reused `StatusBadge`
+  (role + "Hiện tại" badges, no hand-rolled badge), reused `Dialog`/
+  `DialogContent`/`DialogHeader` primitives (no custom modal). Role→color
+  mapping matches design-system.md's closed 4-value table
+  (teacher→primary/principal→success/student→warning/parent→purple).
+  `TenantSwitchOverlay` deliberately not built (descoped, see decision above,
+  no FR/AC backs it) — design-spec's over-specification there is a known,
+  accepted gap, not a conformance failure for THIS story's AC set.
+- a11y: WCAG AA — `fe-accessibility-auditor` ran a full audit incl. a real
+  headless-Chromium interaction pass; found 1 Blocking (A11Y-001, genuine
+  keyboard trap in the DropdownMenu→Dialog composition) + 1 Major (A11Y-002,
+  missing `aria-hidden` on the menu-item icon) + 1 Minor (A11Y-003, missing
+  regression test) — all 3 fixed by `fe-nextjs-engineer` and re-verified
+  (contract's `MultiTenant_CloseRestoresFocus` + `DismissIdle` stories now
+  prove Escape-closes-while-idle + focus-restores-to-trigger). Contrast,
+  keyboard, ARIA/Radix semantics, touch targets, `motion-safe:` gating on
+  hover-lift/spinner — all confirmed PASS in the audit (see `a11y-audit.md`).
+- impeccable audit: not run via the CLI script (that tooling targets
+  whole-page/brand-level critique); instead a direct token/pattern
+  conformance read was performed (this entry) on top of the completed a11y
+  audit + tech-lead review, per `.claude/rules/impeccable.md`'s scope note
+  that design-system conformance + a11y are the load-bearing checks for a
+  scoped component addition — 0 anti-pattern findings (no raw color, no
+  fabricated badge, no nested-card smell, no non-motion-safe animation).
+- states: loading (per-card `aria-busy`/spinner)/empty (`tenant.switch.empty`
+  defensive copy)/error (403 inline `role=alert`, network toast)/success
+  (redirect + one-shot `?switched=1` toast) all covered, incl. Storybook
+  interaction proof for each. Zero-noise (menu item absent) verified via
+  negative DOM assertion, not a disabled/greyed state. **Correction
+  (2026-07-19, post-QA)**: this entry originally claimed "no fixed-width
+  breakpoints to break at 320px" — `fe-qa-playwright` disproved this with a
+  real headless-Chromium viewport-resize test (`DEF-E23.1-01`, genuine
+  horizontal overflow at 320/375px caused by the shared `DialogContent`
+  grid's missing `min-w-0` on its children) and it was fixed (see QA/fix
+  Evidence below) — corrected here so this record is accurate, not
+  re-asserting the original (wrong) claim.
+
+## Evidence — QA Gate + Final Defect Fix (2026-07-19)
+
+`fe-qa-playwright` independently re-verified every prior claim (re-ran all
+suites itself rather than trusting self-reports) and re-derived AC coverage
+from the actual test files against `spec.md`'s 25 AC. Verdict: **CONDITIONAL
+PASS** — 25/25 AC traced (2 real coverage gaps closed by QA itself: AC-004.5
+no-op-on-current-card had no spy-based proof, AC-004.9's backdrop-dismiss
+half was untested; both now have committed Storybook tests). One real MAJOR
+defect found: `DEF-E23.1-01`, the dialog horizontal-overflow at 320/375px
+noted above. Full report: `qa-report.md` in this packet.
+
+`DEF-E23.1-01` was routed back to `fe-nextjs-engineer` and fixed: added
+`[&>*]:min-w-0` to the shared `DialogContent` primitive
+(`src/components/ui/dialog/dialog.tsx`) so its CSS-grid children can shrink
+below their content's intrinsic min-width; verified no regression on other
+`DialogContent` consumers (`email-verify-dialog`, `alert-dialog`, etc. — 34
+tests across the blast-radius scope, all pass) and that QA's own
+intentionally-failing `Viewport375`/`Viewport320` tests now pass for real
+(`tenant-switch-dialog.stories.tsx`, 10/10 passing).
+
+Final gate (re-run by `fe-lead` after the fix, not just trusted from the
+fix agent's self-report):
+- `bunx tsc --noEmit`: exit 0
+- `bun lint`: 1 warning + 1 info, both pre-existing in
+  `features/messaging/presentation/message-context-menu` (unrelated to this
+  story, confirmed by 3 independent passes — tech-lead, QA, fe-lead)
+- `bun vitest run`: **362 files / 2326 tests pass**
+- `bun run build` (real mode, `NEXT_PUBLIC_USE_MOCK` unset): exit 0
+- Storybook interaction, scoped (`dialog`, `tenant-card`, `header`,
+  `email-verify-dialog`): **7 files / 38 tests pass**. Full-suite Storybook
+  run has 15 unrelated pre-existing failures (timetable/lesson-bank/
+  discipline/messaging — confirmed by 2 independent sessions as env-wide
+  baseline issues, not a regression from this story).
+
+**Release readiness: GO** (fe-lead, after the QA-found defect fix + full
+independent gate re-run). QA-002 (AppShell one-shot-toast effect has only
+pure-function-level test proof, no component-level test) and QA-004/QA-005
+(both MINOR, near-zero-risk coverage nits) are accepted as non-blocking
+follow-ups, not required before merge.
 
 ## Harness Delta
 

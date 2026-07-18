@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { StatusTone } from "@/components/shared/status-badge/status-badge";
@@ -82,7 +82,9 @@ export function Header({
   const tSwitch = useTranslations("tenant.switch");
   const tRoles = useTranslations("shell.roles");
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -94,6 +96,37 @@ export function Header({
     currentTenantId,
     onSwitchTenant !== undefined,
   );
+
+  /**
+   * Open the "Chọn trường" dialog from the user-menu item without a keyboard
+   * trap (US-E23.1 A11Y-001). Radix keeps `DropdownMenuContent` mounted through
+   * its close animation (Presence); while it is mounted, the menu's dismissable
+   * layer swallows the Escape meant for the Dialog — the menu and dialog resolve
+   * to SEPARATE `@radix-ui/react-dismissable-layer` module copies, so they don't
+   * share a layer stack and the closing menu always "wins" Escape in its own
+   * context. So: close the (controlled) menu, then open the dialog only once the
+   * menu content has fully unmounted — checked per animation frame (bounded, so
+   * the dialog always opens even if the node lingers). This also lets focus land
+   * inside the dialog instead of snapping back to the trigger. Focus RETURN on
+   * close is handled by the dialog's explicit `onCloseAutoFocus` (below) focusing
+   * `menuTriggerRef` — the shared Dialog's auto-capture snapshots `<body>` here
+   * because the unmounting dropdown's focus-scope resets focus in the same tick.
+   */
+  function openSwitchDialog() {
+    setMenuOpen(false);
+    let frames = 0;
+    const openWhenMenuGone = () => {
+      const menuGone = !document.querySelector(
+        '[data-slot="dropdown-menu-content"]',
+      );
+      if (menuGone || frames++ > 30) {
+        setDialogOpen(true);
+      } else {
+        requestAnimationFrame(openWhenMenuGone);
+      }
+    };
+    requestAnimationFrame(openWhenMenuGone);
+  }
 
   const initials = userName
     .split(" ")
@@ -144,9 +177,10 @@ export function Header({
 
             <ThemeToggle />
 
-            <DropdownMenu>
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
+                  ref={menuTriggerRef}
                   variant="ghost"
                   className="size-9 rounded-full p-0"
                   aria-label={t("userMenu")}
@@ -184,8 +218,20 @@ export function Header({
                 )}
                 <DropdownMenuSeparator />
                 {canSwitch && (
-                  <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-                    <ArrowLeftRight className="mr-2 size-4" />
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      // preventDefault so Radix's own select-close doesn't fight
+                      // openSwitchDialog over focus/dismiss; openSwitchDialog
+                      // then closes the menu and opens the dialog after the menu
+                      // unmounts (see its doc — avoids the Escape keyboard trap).
+                      event.preventDefault();
+                      openSwitchDialog();
+                    }}
+                  >
+                    <ArrowLeftRight
+                      className="mr-2 size-4"
+                      aria-hidden="true"
+                    />
                     {tSwitch("menuItem")}
                   </DropdownMenuItem>
                 )}
@@ -209,6 +255,13 @@ export function Header({
                 onOpenChange={setDialogOpen}
                 memberships={memberships}
                 onSwitchTenant={onSwitchTenant}
+                onCloseAutoFocus={(event) => {
+                  // Return focus to the user-menu trigger on close (WCAG 2.4.3).
+                  // Explicit (not the Dialog's auto-capture) because the dialog
+                  // was opened after the dropdown unmounted — see openSwitchDialog.
+                  event.preventDefault();
+                  menuTriggerRef.current?.focus();
+                }}
               />
             )}
           </>

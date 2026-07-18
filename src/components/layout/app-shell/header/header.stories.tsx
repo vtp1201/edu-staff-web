@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import {
+  expect,
+  userEvent,
+  waitForElementToBeRemoved,
+  within,
+} from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   SwitchTenantResult,
@@ -76,6 +81,48 @@ export const MultiTenant: Story = {
     await expect(item).toBeInTheDocument();
     await userEvent.click(item);
     await expect(await body.findByRole("dialog")).toBeInTheDocument();
+  },
+};
+
+/**
+ * Regression guard for A11Y-001 (US-E23.1): the dialog is opened via the REAL
+ * composed flow (avatar trigger → dropdown → "Đổi trường" menuitem), then Escape
+ * must dismiss it AND return focus to the user-menu trigger — proving the
+ * DropdownMenu→Dialog handoff is not a keyboard trap (WCAG 2.1.2 / 2.4.3).
+ */
+export const MultiTenant_CloseRestoresFocus: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    memberships: twoTenants,
+    currentTenantId: "tenant-acme",
+    onSwitchTenant: noopSwitch,
+  },
+  play: async ({ canvas }) => {
+    const trigger = await canvas.findByRole("button", {
+      name: "Menu người dùng",
+    });
+    await userEvent.click(trigger);
+    const body = within(document.body);
+    await userEvent.click(
+      await body.findByRole("menuitem", { name: /Đổi trường/ }),
+    );
+    // The dialog opens only after the dropdown has fully unmounted (see
+    // Header.openSwitchDialog). Two invariants that were broken before the fix:
+    const dialog = await body.findByRole("dialog");
+    await expect(dialog).toBeInTheDocument();
+    // (1) focus moves INTO the dialog, not stuck on the trigger behind the modal
+    await expect(dialog.contains(document.activeElement)).toBe(true);
+    // (2) the dropdown is gone — otherwise its dismissable layer swallows the
+    //     Escape meant for the dialog (the original keyboard trap).
+    await expect(body.queryByRole("menu")).not.toBeInTheDocument();
+
+    // Escape dismisses the dialog (proves it is NOT a keyboard trap). Wait for
+    // the close animation to unmount the node before asserting absence.
+    await userEvent.keyboard("{Escape}");
+    await waitForElementToBeRemoved(() => body.queryByRole("dialog"));
+    // ...and focus returns to the header's user-menu trigger, not <body>.
+    await expect(document.activeElement).toBe(trigger);
   },
 };
 

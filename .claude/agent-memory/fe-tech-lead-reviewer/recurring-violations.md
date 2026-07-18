@@ -164,6 +164,24 @@ Watch for these (each has bitten a story here):
   ~350ms before the request even fires. CONSIDER: treat debounce-pending (immediate-satisfied but
   not-yet-debounced) as a loading state. (US-E11.9 question-bank-list-screen.tsx.)
 
+- **Radix Dialog opened from a `DropdownMenuItem` without `e.preventDefault()` in `onSelect`** — the
+  menu's default select closes the menu and returns focus to the trigger, racing the Dialog's
+  focus-trap → ESC-dismiss / focus-return can misbehave even though the dialog visibly OPENS. Interaction
+  stories that only assert "dialog appears" pass while the a11y dismiss AC is unverified. When a story has
+  an ESC-dismiss/focus AC (AC-10/NFR-002), require a committed interaction test that opens via the
+  `menuitem`, presses Escape, asserts dialog gone AND focus back on the trigger. (US-E23.1 header.tsx.)
+- **Uncommitted fix / untracked debug `*.stories.tsx` left in the working tree** — always `git status`
+  at review start. A functional fix living only in the working tree (not in `main..HEAD`) won't merge;
+  untracked `*audit*.stories.tsx` / stories containing `console.log` must never be committed. Note: the
+  tree can change under you mid-review if a parallel `/fe` session is active — re-check `git status` +
+  re-run this story's storybook against clean HEAD before finalizing. (US-E23.1.)
+- **Full storybook-vitest suite has broad PRE-EXISTING failures** — many unrelated story files
+  (lesson-bank, discipline, timetable, announcements, messaging…) fail both in the full run and in
+  ISOLATION with a real Radix error (`A <Select.Item /> must have a value prop that is not an empty
+  string`) plus worker contention. Don't attribute these to the story under review — confirm by running
+  the story's OWN files in isolation (they pass) and spot-check one unrelated failing file in isolation
+  (still fails). Flag as repo-health to fe-lead, not a per-story blocker. (Observed US-E23.1, 2026-07-19.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

@@ -1,7 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import {
+  expect,
+  fn,
+  userEvent,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   SwitchTenantResult,
@@ -117,6 +124,25 @@ export const ForbiddenInlineError: Story = {
   },
 };
 
+/**
+ * Idle-dismiss companion to DismissBlockedWhileBusy: with no switch in flight,
+ * Escape MUST close the dialog. Uses waitForElementToBeRemoved because the
+ * `motion-safe` close animation keeps the node in the DOM briefly after
+ * `data-state` flips to "closed" (asserting absence synchronously here would
+ * false-fail). US-E23.1 A11Y-001.
+ */
+export const DismissIdle: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Mở" }));
+    const body = within(document.body);
+    const dialog = await body.findByRole("dialog");
+    await expect(dialog).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await waitForElementToBeRemoved(() => body.queryByRole("dialog"));
+    await expect(body.queryByRole("dialog")).not.toBeInTheDocument();
+  },
+};
+
 export const DismissBlockedWhileBusy: Story = {
   args: {
     // never-resolving switch keeps the card in its loading state
@@ -132,5 +158,146 @@ export const DismissBlockedWhileBusy: Story = {
     // busy → Escape must NOT close the dialog (FR-006)
     await userEvent.keyboard("{Escape}");
     await expect(body.getByRole("dialog")).toBeInTheDocument();
+  },
+};
+
+/**
+ * Backdrop-click companion to `DismissIdle` (QA gap — Escape-only was tested,
+ * never a real overlay pointerdown). Radix's `Dialog.Overlay` is the element
+ * `onPointerDownOutside` fires from; clicking it directly (not Escape) must
+ * dismiss when idle (AC-004.10/AC-005.1).
+ */
+export const DismissIdle_Backdrop: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Mở" }));
+    const body = within(document.body);
+    const dialog = await body.findByRole("dialog");
+    await expect(dialog).toBeInTheDocument();
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+    if (!overlay) throw new Error("dialog overlay not found");
+    await userEvent.click(overlay);
+    await waitForElementToBeRemoved(() => body.queryByRole("dialog"));
+    await expect(body.queryByRole("dialog")).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * Backdrop-click companion to `DismissBlockedWhileBusy` (QA gap — only
+ * Escape-while-busy was proven). Clicking the overlay while a card is mid-flow
+ * must ALSO be blocked (AC-004.9), not just the keyboard path.
+ */
+export const DismissBlockedWhileBusy_Backdrop: Story = {
+  args: {
+    onSwitchTenant: () => new Promise<never>(() => {}),
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Mở" }));
+    const body = within(document.body);
+    const dialog = await body.findByRole("dialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /Nguyễn Du/ }),
+    );
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+    if (!overlay) throw new Error("dialog overlay not found");
+    await userEvent.click(overlay);
+    await expect(body.getByRole("dialog")).toBeInTheDocument();
+  },
+};
+
+/**
+ * AC-004.5/FR-005 no-op on the current card (QA gap — no test previously
+ * asserted zero network calls, only that nothing visibly broke). Activating
+ * the "Hiện tại" card must NEVER invoke `onSwitchTenant` — asserted via a spy,
+ * not merely "no toast/no crash".
+ */
+export const NoOpOnCurrentCard: Story = {
+  args: {
+    onSwitchTenant: fn(async () => ({ ok: true }) as SwitchTenantResult),
+  },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Mở" }));
+    const body = within(document.body);
+    const dialog = await body.findByRole("dialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: /Chu Văn An/ }),
+    );
+    // no network call was made for the no-op activation
+    await expect(args.onSwitchTenant).not.toHaveBeenCalled();
+    // dialog stays open (FR-005: no navigation/close forced by a no-op)
+    await expect(body.getByRole("dialog")).toBeInTheDocument();
+    // no card ever entered a loading/error state as a side effect
+    await expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * NFR-004 responsive — real 320/375px viewport (not the inert
+ * `parameters.viewport`, addon-viewport isn't installed; resize via the
+ * underlying Playwright page, same technique as
+ * `email-verify-dialog.stories.tsx`/`detail-panel-header.stories.tsx`).
+ *
+ * DEFECT (fe-qa-playwright, US-E23.1 QA pass): both of these currently FAIL —
+ * contradicts the design-review Evidence block's claim ("card layout is a
+ * simple flex row … no fixed-width breakpoints to break at 320px"). Root
+ * cause (confirmed via a throwaway diagnostic pass, not committed): the
+ * shared `DialogContent` (`src/components/ui/dialog/dialog.tsx`) is a CSS
+ * `grid` container; its direct children (`DialogHeader`, the card `<ul>`) are
+ * grid items with NO `min-w-0`, so per CSS Grid's default `min-width: auto`
+ * track sizing they refuse to shrink below their content's intrinsic
+ * min-content width — the un-wrapped "name + role badge" row inside
+ * `TenantCard` forces that intrinsic width to ~350px, wider than the dialog's
+ * own shrunk box (`max-w-[calc(100%-2rem)]`: ~342px at 375px viewport, ~287px
+ * at 320px) — producing 8px/63px of REAL horizontal overflow inside the
+ * dialog (`scrollWidth` 350 vs `clientWidth` 342/287, measured empirically).
+ * This is a `components/ui/dialog` primitive-level gap, not scoped to this
+ * story's card content, so it likely affects other dialogs too. Fix belongs
+ * to `fe-nextjs-engineer`/design-system owner: add `min-w-0` to
+ * `DialogContent`'s grid item children (or make `DialogContent` itself
+ * `overflow-x-hidden` + give the header/list `min-w-0`). NOT fixed here (QA
+ * writes test code only) — kept as a red test per this repo's convention
+ * (see `email-verify-dialog.stories.tsx` `Viewport320`).
+ */
+async function resizeTo(width: number) {
+  const { page } = await import("vitest/browser");
+  await page.viewport(width, 700);
+}
+
+async function assertNoOverflowAt(
+  canvas: ReturnType<typeof within>,
+  width: number,
+) {
+  await resizeTo(width);
+  await waitFor(() => expect(window.innerWidth).toBe(width));
+  await userEvent.click(canvas.getByRole("button", { name: "Mở" }));
+  const body = within(document.body);
+  const dialog = await body.findByRole("dialog");
+  await expect(dialog).toBeInTheDocument();
+  const content = dialog as HTMLElement;
+  // No horizontal overflow inside the dialog itself.
+  await waitFor(() =>
+    expect(content.scrollWidth).toBeLessThanOrEqual(content.clientWidth + 1),
+  );
+  const cards = within(dialog).getAllByRole("button", {
+    name: /Chu Văn An|Nguyễn Du/,
+  });
+  for (const card of cards) {
+    const rect = card.getBoundingClientRect();
+    // card's right edge must stay inside the dialog's own right edge (no clipping)
+    expect(rect.right).toBeLessThanOrEqual(
+      content.getBoundingClientRect().right + 0.5,
+    );
+  }
+  await resizeTo(1280);
+}
+
+export const Viewport375: Story = {
+  play: async ({ canvas }) => {
+    await assertNoOverflowAt(canvas, 375);
+  },
+};
+
+export const Viewport320: Story = {
+  play: async ({ canvas }) => {
+    await assertNoOverflowAt(canvas, 320);
   },
 };
