@@ -3887,6 +3887,18 @@
       "subtitle": "You belong to these organizations",
       "switching": "Switching…",
       "title": "Choose a workspace"
+    },
+    "switch": {
+      "cardAriaLabel": "{name}, {address}, role {role}{current, select, yes {, current school} other {}}",
+      "current": "Current",
+      "dialogDescription": "Choose the school you want to switch to. You will be taken into that school's workspace.",
+      "dialogTitle": "Choose a school",
+      "empty": "No schools available to switch to",
+      "error403": "Can't switch to this school. You are no longer an active member.",
+      "errorGeneric": "Switching school failed. Please try again.",
+      "menuItem": "Switch school",
+      "switched": "Switched to {school}",
+      "switching": "Switching…"
     }
   },
   "timetable": {

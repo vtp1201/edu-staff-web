@@ -1,9 +1,25 @@
 "use client";
 
-import { Bell, LogOut, Menu, Search, Sun, User } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Bell,
+  LogOut,
+  Menu,
+  Search,
+  Sun,
+  User,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { StatusBadge } from "@/components/shared/status-badge";
+import type { StatusTone } from "@/components/shared/status-badge/status-badge";
+import {
+  type SwitchTenantResult,
+  type TenantCardViewModel,
+  TenantLogo,
+  TenantSwitchDialog,
+} from "@/components/shared/tenant-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +31,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import type { Role } from "../sidebar/nav-config";
+import { deriveTenantMenu } from "./derive-tenant-menu";
 import { RoleSwitcher } from "./role-switcher";
+
+/** Role → semantic badge tone (design-system.md "Role → màu"). */
+const ROLE_TONE: Record<Role, StatusTone> = {
+  teacher: "primary",
+  principal: "success",
+  student: "warning",
+  parent: "purple",
+  admin: "primary",
+};
 
 /**
  * Notification dot. DR-009 US-E16.2: error-ramp contrast — the bell badge dot
@@ -30,6 +56,17 @@ type HeaderProps = {
   userName?: string;
   onMenuClick?: () => void;
   onRoleChange?: (role: Role) => void;
+  // NEW (US-E23.1) — all optional, default to "feature absent" so existing
+  // stories/tests that don't pass them keep compiling/passing unchanged.
+  /** Caller's enriched tenant memberships (RSC-fetched, fail-closed []). */
+  memberships?: TenantCardViewModel[];
+  /** Current-session tenantId (decoded from the access-token claim). */
+  currentTenantId?: string;
+  /** `switchTenantAction` server-action-as-prop (Path A). */
+  onSwitchTenant?: (
+    tenantId: string,
+    role: string,
+  ) => Promise<SwitchTenantResult>;
 };
 
 export function Header({
@@ -37,12 +74,26 @@ export function Header({
   userName = "User",
   onMenuClick,
   onRoleChange,
+  memberships = [],
+  currentTenantId,
+  onSwitchTenant,
 }: HeaderProps) {
   const t = useTranslations("shell.header");
+  const tSwitch = useTranslations("tenant.switch");
+  const tRoles = useTranslations("shell.roles");
   const [mounted, setMounted] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Zero-noise gate (FR-001/002) + current-tenant match (FR-007) — pure
+  // derivation, unit-tested in derive-tenant-menu.test.ts.
+  const { canSwitch, currentMembership } = deriveTenantMenu(
+    memberships,
+    currentTenantId,
+    onSwitchTenant !== undefined,
+  );
 
   const initials = userName
     .split(" ")
@@ -107,11 +158,37 @@ export function Header({
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-64">
                 <div className="px-2 py-1.5">
                   <div className="text-sm font-medium">{userName}</div>
                 </div>
+                {currentMembership && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="flex items-center gap-2 px-2 py-1.5">
+                      <TenantLogo
+                        size={36}
+                        tenantName={currentMembership.tenantName}
+                        accentTone={currentMembership.logoColor}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold text-sm text-foreground">
+                          {currentMembership.tenantName}
+                        </div>
+                        <StatusBadge tone={ROLE_TONE[role]}>
+                          {tRoles(role)}
+                        </StatusBadge>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <DropdownMenuSeparator />
+                {canSwitch && (
+                  <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
+                    <ArrowLeftRight className="mr-2 size-4" />
+                    {tSwitch("menuItem")}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem>
                   <User className="mr-2 size-4" />
                   {t("profile")}
@@ -122,6 +199,18 @@ export function Header({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Sibling to the DropdownMenu (not nested, Risk B) — controlled
+                dialog; the shared Dialog primitive restores focus to the
+                user-menu trigger on close. */}
+            {canSwitch && onSwitchTenant && (
+              <TenantSwitchDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                memberships={memberships}
+                onSwitchTenant={onSwitchTenant}
+              />
+            )}
           </>
         ) : (
           <HeaderPlaceholder initials={initials} />

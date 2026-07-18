@@ -3,12 +3,16 @@
 import { Building2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
+import type { SwitchTenantResult } from "@/components/shared/tenant-card";
 import { Button } from "@/components/ui/button";
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 
 type Props = {
   memberships: TenantMembership[];
-  onSelect: (tenantId: string, role: string) => Promise<void>;
+  /** Path A (US-E23.1): `switchTenantAction` returns a discriminated result and
+   *  redirects on success. This caller ignores the return value (it has no
+   *  try/catch); the type just tracks the shared action signature. */
+  onSelect: (tenantId: string, role: string) => Promise<SwitchTenantResult>;
 };
 
 export function SelectTenant({ memberships, onSelect }: Props) {
@@ -39,7 +43,9 @@ export function SelectTenant({ memberships, onSelect }: Props) {
             size="sm"
             disabled={isPending}
             onClick={() =>
-              startTransition(() => onSelect(m.tenantId, m.roles[0] ?? ""))
+              startTransition(() => {
+                void onSelect(m.tenantId, m.roles[0] ?? "");
+              })
             }
           >
             {isPending ? t("switching") : t("enter")}
