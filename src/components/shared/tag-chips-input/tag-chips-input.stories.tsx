@@ -11,11 +11,15 @@ const LABELS = {
   removeAriaLabelOf: (tag: string) => `Xoá thẻ ${tag}`,
 };
 
+const isValidEmail = (tag: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(tag);
+
 function Controlled(props: {
   initial?: string[];
   isLocked?: boolean;
   maxTags?: number;
   maxTagLength?: number;
+  validate?: (tag: string) => boolean;
 }) {
   const [tags, setTags] = useState(props.initial ?? []);
   return (
@@ -25,7 +29,8 @@ function Controlled(props: {
         onChange={setTags}
         isLocked={props.isLocked ?? false}
         maxTags={props.maxTags ?? 10}
-        maxTagLength={props.maxTagLength ?? 50}
+        maxTagLength={props.maxTagLength ?? 254}
+        validate={props.validate}
         labels={LABELS}
       />
     </div>
@@ -141,5 +146,45 @@ export const Locked: Story = {
     await expect(
       canvas.queryByRole("button", { name: "Xoá thẻ Toán" }),
     ).toBeNull();
+  },
+};
+
+/** Validated mode: a well-formed value commits as a valid (primary) chip. */
+export const ValidChip: Story = {
+  render: () => <Controlled validate={isValidEmail} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByLabelText(LABELS.inputAriaLabel);
+    await userEvent.type(input, "lan.pham@email.com{Enter}");
+    await expect(canvas.getByText("lan.pham@email.com")).toBeInTheDocument();
+  },
+};
+
+/** Validated mode: a malformed value still commits, but as an invalid chip. */
+export const InvalidChipInline: Story = {
+  render: () => (
+    <Controlled validate={isValidEmail} initial={["not-an-email"]} />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The invalid chip renders its text; its container carries the error-dark
+    // tint (color is paired with the inline AlertTriangle icon, never alone).
+    const chip = canvas.getByText("not-an-email").closest("span");
+    await expect(chip).toHaveClass("text-edu-error-dark");
+  },
+};
+
+/** Validated mode: a pasted/typed multi-email string splits into N chips,
+ *  each validated independently (mixed valid + invalid). */
+export const PasteMultipleMixedValidity: Story = {
+  render: () => <Controlled validate={isValidEmail} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const input = canvas.getByLabelText(LABELS.inputAriaLabel);
+    await userEvent.type(input, "a@x.com, b@x.com nope{Enter}");
+    await expect(canvas.getByText("a@x.com")).toBeInTheDocument();
+    await expect(canvas.getByText("b@x.com")).toBeInTheDocument();
+    const invalidChip = canvas.getByText("nope").closest("span");
+    await expect(invalidChip).toHaveClass("text-edu-error-dark");
   },
 };

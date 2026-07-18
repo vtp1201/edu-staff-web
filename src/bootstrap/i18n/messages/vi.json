@@ -2127,6 +2127,113 @@
       "unknown": "Đã có lỗi xảy ra"
     }
   },
+  "invitations": {
+    "pageTitle": "Mời thành viên",
+    "pageSubtitle": "Gửi và quản lý lời mời tham gia trường theo email.",
+    "refresh": "Làm mới",
+    "sendInvite": "Gửi lời mời",
+    "tabs": {
+      "all": "Tất cả",
+      "pending": "Chờ chấp nhận",
+      "accepted": "Đã chấp nhận",
+      "expired": "Hết hạn",
+      "revoked": "Đã thu hồi"
+    },
+    "search": {
+      "placeholder": "Tìm theo email…",
+      "ariaLabel": "Tìm theo email"
+    },
+    "table": {
+      "columns": {
+        "email": "Email",
+        "role": "Vai trò",
+        "invitedBy": "Người mời",
+        "sentDate": "Ngày gửi",
+        "expiry": "Hết hạn",
+        "status": "Trạng thái",
+        "actions": "Hành động"
+      }
+    },
+    "roleLabels": {
+      "teacher": "Giáo viên",
+      "student": "Học sinh",
+      "parent": "Phụ huynh",
+      "manager": "BGH",
+      "admin": "Admin"
+    },
+    "statusLabels": {
+      "pending": "Chờ chấp nhận",
+      "accepted": "Đã chấp nhận",
+      "expired": "Hết hạn",
+      "revoked": "Đã thu hồi"
+    },
+    "countdown": {
+      "daysLeft": "Còn {days} ngày",
+      "expiredOn": "Hết hạn {date}",
+      "notApplicable": "—"
+    },
+    "empty": {
+      "noInvitationsTitle": "Chưa có lời mời nào",
+      "noInvitationsBody": "Mời giáo viên, học sinh và phụ huynh tham gia trường bằng email — họ sẽ nhận link kích hoạt tài khoản.",
+      "noInvitationsCta": "Gửi lời mời",
+      "noMatchTitle": "Không có lời mời nào khớp bộ lọc",
+      "noMatchBody": "Thử từ khóa khác hoặc chuyển tab trạng thái.",
+      "clearFiltersCta": "Xoá bộ lọc"
+    },
+    "error": {
+      "title": "Không tải được danh sách lời mời",
+      "description": "Đã xảy ra lỗi khi kết nối. Vui lòng thử lại.",
+      "retry": "Thử lại"
+    },
+    "sendDialog": {
+      "title": "Gửi lời mời tham gia",
+      "subtitle": "Người nhận sẽ nhận email kèm link tham gia trường.",
+      "emailChipsLabel": "Email người được mời",
+      "emailChipsPlaceholder": "ten@truong.edu.vn, nhấn Enter để thêm…",
+      "emailChipsHelper": "Có thể dán nhiều email, phân tách bằng dấu phẩy hoặc khoảng trắng.",
+      "invalidEmailError": "Một số email không đúng định dạng — xóa hoặc sửa trước khi gửi.",
+      "duplicateEmailError": "Email này đã có lời mời trong trường.",
+      "roleLabel": "Vai trò được mời",
+      "expiryLabel": "Thời hạn lời mời",
+      "expiryOption": "{days} ngày",
+      "submitOne": "Gửi lời mời",
+      "submitMany": "Gửi {count} lời mời",
+      "cancel": "Hủy",
+      "close": "Đóng"
+    },
+    "toast": {
+      "sentOne": "Đã gửi lời mời tới {email}",
+      "sentMany": "Đã gửi {count} lời mời ({role})",
+      "sentPartial": "Đã gửi {succeeded} lời mời, {failed} lời mời gặp lỗi",
+      "duplicateEmail": "{email} đã có lời mời trong trường",
+      "networkError": "Không thể gửi lời mời. Vui lòng thử lại.",
+      "copiedLink": "Đã sao chép link mời",
+      "clipboardDenied": "Không thể sao chép link. Vui lòng thử lại.",
+      "resentTo": "Đã gửi lại lời mời tới {email}",
+      "resendRaceError": "Không thể gửi lại — lời mời đã thay đổi trạng thái",
+      "resendNetworkError": "Không thể gửi lại lời mời. Vui lòng thử lại.",
+      "revokedOf": "Đã thu hồi lời mời của {email}",
+      "revokeNotFoundRace": "Không thể thu hồi lời mời (có thể đã được xử lý)",
+      "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại."
+    },
+    "revokeDialog": {
+      "title": "Thu hồi lời mời?",
+      "body": "Link mời gửi tới {email} sẽ vô hiệu ngay lập tức. Người nhận không thể dùng lời mời này để tham gia trường; bạn có thể gửi lời mời mới bất cứ lúc nào.",
+      "cancel": "Hủy",
+      "confirm": "Thu hồi lời mời"
+    },
+    "a11y": {
+      "removeChip": "Xóa email {email}",
+      "rowActionsLabel": "Hành động cho {email}",
+      "copyLink": "Copy link mời cho {email}",
+      "resend": "Gửi lại lời mời cho {email}",
+      "revoke": "Thu hồi lời mời của {email}"
+    },
+    "summary": {
+      "count": "{count} lời mời",
+      "filtered": " (đã lọc)"
+    }
+  },
   "lessonBank": {
     "detail": {
       "author": "Người tải lên",

@@ -1,9 +1,18 @@
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import type { AuthTokens } from "../entities/auth-user.entity";
+import type {
+  Invitation,
+  InvitationStatus,
+} from "../entities/invitation.entity";
 
 export interface InviteMemberRequest {
   email: string;
   roles: string[];
+}
+
+export interface ListInvitationsParams {
+  status?: InvitationStatus;
+  q?: string;
 }
 
 /**
@@ -27,4 +36,24 @@ export interface IIamMemberRepository {
   removeMember(tenantId: string, userId: string): Promise<void>;
   /** POST /iam/api/v1/invitations/accept */
   acceptInvitation(token: string): Promise<void>;
+  /**
+   * List tenant invitations.
+   *
+   * **MOCK-ONLY** (US-E21.1) — the real IAM service has NO `GET` list route
+   * (the `InvitationRepository` port exposes only `Save`/`Get`/`GetByToken`,
+   * no `List`; see integration.md §6). The real `IamMemberRepository` throws a
+   * "no real route" guard here; only `MockIamMemberRepository` implements it.
+   */
+  listInvitations(
+    tenantId: string,
+    params?: ListInvitationsParams,
+  ): Promise<Invitation[]>;
+  /**
+   * Resend an expired invitation (same row, refreshed expiry + back to
+   * pending).
+   *
+   * **MOCK-ONLY** (US-E21.1) — no real resend route exists on IAM (see
+   * integration.md §6). Real class throws a guard; only the mock implements it.
+   */
+  resendInvitation(tenantId: string, invitationId: string): Promise<Invitation>;
 }

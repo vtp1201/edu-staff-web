@@ -23,6 +23,9 @@ export const Warning: Story = {
 export const ErrorTone: Story = {
   args: { tone: "error", children: "Vắng mặt" },
 };
+export const ErrorDark: Story = {
+  args: { tone: "error-dark", children: "Đã thu hồi" },
+};
 export const Info: Story = { args: { tone: "info", children: "Thông tin" } };
 export const Purple: Story = {
   args: { tone: "purple", children: "Phụ huynh" },

@@ -22,9 +22,28 @@ export interface MemberResponseDto {
   status: string;
 }
 
+/**
+ * Real wire `InvitationResponse` (returned only from the POST-invite call) is
+ * exactly `{ invitationId, email, roles[], expiresAt }` — ground-truthed
+ * against edu-api Go source (US-E21.1, integration.md §6.3).
+ *
+ * The `tenantId`/`status`/`invitedBy`/`sentAt` fields below are **MOCK-ONLY**:
+ * they are NEVER present on the real wire response and are here purely to
+ * document the shape the mock repo composes for the (permanently-mocked) list
+ * screen. Do NOT "finish" this DTO by treating them as real — there is no real
+ * list route to source them from.
+ */
 export interface InvitationResponseDto {
   invitationId: string;
   email: string;
   roles: string[];
   expiresAt: string;
+  /** MOCK-ONLY — not on the real wire. */
+  tenantId?: string;
+  /** MOCK-ONLY — not on the real wire. */
+  status?: string;
+  /** MOCK-ONLY — not on the real wire. */
+  invitedBy?: string;
+  /** MOCK-ONLY — not on the real wire. */
+  sentAt?: string;
 }
