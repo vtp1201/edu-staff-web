@@ -197,3 +197,87 @@ Cross-cutting SECURITY AC (applies to the whole story, both UC-102 and UC-103)
 - `[OPEN QUESTION]` OQ-2.1 (new, this pass): is there a client-side max-length on fullName/password fields for the guest form? Not specified in requirements.md — recommend a reasonable UX cap (e.g. 100 chars fullName) but flag to `ba-lead`/design before `/fe` hardcodes a number not in the design-spec.
 - `[OPEN QUESTION]` OQ-2.2 (new, this pass): if the signed-in user's OWN session expires mid-flow (distinct from the invitation token expiring), does this screen need bespoke messaging, or does the existing generic 401/reactive-refresh handling (decision 0018) suffice silently? Recommend the latter (no new UX) unless `ba-lead` says otherwise — flagging so `/fe` doesn't invent a special case unprompted.
 - Carried over from `integration.md` §5 (contract-shape questions, block `/fe` implementation but not this AC pass): INT-001 preview endpoint path/method unconfirmed; new failure-union codes (`INVITATION_EXPIRED`/`INVITATION_USED`/`INVITATION_INVALID`) need confirmation against BE; signed-in-join response shape (empty vs inline membership data) unconfirmed.
+
+## 7. Ground-Truth Correction (fe-lead, 2026-07-18) — SUPERSEDES UC-101/102/104 above
+
+Read directly against `edu-api` Go source before implementation (per
+`api-integration.md`'s mandate to prefer source over inferred shapes) —
+`services/iam/internal/membership/adapter/http/{routes.go,invitation_handler.go,
+dto/invitation_dto.go}` + `core/application/usecase/accept_invitation.go` +
+`core/domain/{entity/invitation.go,valueobject/invitation.go}` +
+`docs/ERROR_CODES.md`. Full finding + rationale: ADR `0059` (amends `0051`).
+This section is authoritative over UC-101/102/104 and their AC above, which
+are **historical/superseded**, kept for audit trail only:
+
+- **UC-101 (preview) does not exist and is dropped.** No `GET .../invitations/
+  preview` route (or any GET route) exists on `iam`'s invitation surface —
+  only invite/revoke/accept (`routes.go`). The invite token is a fully opaque
+  256-bit random value (`invitation_token_codec.go`), so no client-side
+  decode is possible either. There is no pre-action summary card. AC-101.1
+  through AC-101.9 do not apply.
+- **UC-102 (guest creates account) does not exist and is dropped.**
+  `POST /api/v1/invitations/accept` requires `RequireAuth` (Bearer JWT); its
+  body (`dto.AcceptRequest`) is `{token}` only — no `fullName`/`password`
+  field exists anywhere in the DTO or use-case input. The use case
+  (`accept_invitation.go`) only creates a tenant `Member` for the
+  ALREADY-authenticated caller (`ActorUserID`/`ActorEmail` from verified JWT
+  claims) — it never creates a user account. AC-102.1 through AC-102.12 do
+  not apply (no such branch exists to build).
+- **UC-104 (account-conflict) is unreachable and is dropped.** It modeled a
+  `USER_EMAIL_ALREADY_EXISTS` response from account-creation-via-accept,
+  which cannot occur since accept never creates an account. AC-104.1–.3 do
+  not apply.
+- **NEW UC-101': Auth-gate for an unauthenticated visitor.** Primary actor:
+  guest (no session). The page renders directly (no preview/loading step) to
+  an informational state: "Bạn cần đăng nhập để tham gia lời mời này" +
+  a plain link to `/login` (no `returnTo` param — the visitor re-opens the
+  SAME emailed link, which still carries `?token=`, after signing in
+  manually; see ADR `0059` Alternative 2 for why `returnTo` is deliberately
+  not added to the shared login flow in this story). No form fields, no
+  password, no email display (there is no server-resolved invitation data to
+  show pre-action).
+- **UC-103 (signed-in join) is CONFIRMED, real, and is now the entire
+  actionable surface** — unchanged in shape from the original UC-103 (single
+  "Tham gia" action, `{token}` only body), but its follow-up mechanics are
+  corrected: on success, session refresh reuses
+  `IIamMemberRepository.switchTenant(tenantId, clientId)` (the SAME method
+  `select-tenant/actions.ts` already calls) — minting a tenant-scoped token
+  for the server-returned `tenantId` from `MemberResponse` — rather than a
+  `GET /users/me` follow-up (there is no need to re-derive role; `accept`'s
+  own response already returns `roles[]` for the newly joined tenant).
+  AC-103.1/103.6/103.7 hold as written. AC-103.2 holds as written (still the
+  primary privilege-escalation guard — now the ONLY code path, not one of
+  two). AC-103.3 is corrected: "assigned role" comes directly from the
+  `accept` response (`MemberResponse.roles`), reused as the `switchTenant`
+  redirect role, no separate `/users/me` call needed. AC-103.4 (email
+  mismatch) is corrected from `[OPEN QUESTION]` to CONFIRMED: BE returns
+  `invitation_email_mismatch` (403) whenever the authenticated caller's own
+  verified email differs from the invited address (F8, hard reject, no
+  conditional-allow branch exists) — the switch-account affordance (UC-107)
+  is offered exactly as originally specified. AC-103.5 (already-member) —
+  BE-side idempotency behavior on re-accepting when already an ACTIVE member
+  of that tenant is not separately coded in `accept_invitation.go` (it will
+  attempt to re-`Save` the member, likely succeeding as a no-op or upserting)
+  — no distinct "already member" error code was found; treat any non-listed
+  error as the network/5xx generic path rather than inventing a specific
+  "already member" copy block.
+- **UC-105 (token-invalid states) is corrected to TWO states, not three.**
+  `invitation_invalid` (410) covers unknown/already-used/revoked as ONE code
+  (`ERROR_CODES.md` line 116); `invitation_expired` (410) is separate. AC-105.2
+  ("used", a distinct 3rd illustration) is dropped — a used token renders the
+  SAME "invalid" state as a not-found/revoked token, not a 3rd illustration.
+  AC-105.1 (expired) and AC-105.3 (invalid, now also covering "used") hold;
+  AC-105.4 (no raw error leakage) holds unchanged.
+- **UC-106 (success) is corrected**: redirect target comes from the
+  `switchTenant` mint (point above), not a `/users/me` follow-up; multi-role
+  handling within the JUST-joined tenant reuses the same `role ? /${role} :
+  /` pattern `switch-tenant/actions.ts` already uses (no new `/select-role`
+  branch is introduced by this story — that existing rule is for
+  multi-TENANT accounts at login time, a different concern from a single
+  tenant's multi-role membership).
+- **UC-107 (switch account) is unchanged** — still logout + re-render the
+  (new) auth-gate state (UC-101') for the same token/URL.
+- **Net use-case set for implementation**: UC-101' (auth-gate, new) ·
+  UC-103 (signed-in join, corrected mechanics) · UC-105 (2 terminal states,
+  corrected) · UC-106 (success, corrected redirect source) · UC-107
+  (switch account, unchanged). UC-101/102/104 are dropped entirely.

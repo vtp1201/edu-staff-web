@@ -89,3 +89,23 @@ When updating durable proof status, use numeric booleans:
 - `docs/product/screens.md`: already has a design-ready row for this screen (see Relevant Product Docs) — update status to spec-ready once this spec lands
 - ADR `0051` already exists and is binding for this story — no new ADR needed for the core contract; the email-mismatch behavior (ADR 0051's own unresolved Follow-Up item) may warrant an ADR amendment once BE confirms, flag to `ba-lead` at that time
 - Open contract questions (preview endpoint shape, 3 new failure-union codes, email-mismatch trigger, `USER_EMAIL_ALREADY_EXISTS` exact code, signed-in-join response shape) are carried to `fe-lead`/BE team in `spec.md` §8 — not blocking spec completion, but MUST block `/fe` implementation of the affected branches until resolved (do not ship guessed security-relevant behavior)
+
+## Ground-Truth Correction (fe-lead, 2026-07-18)
+
+**ADR `0059` (amends `0051`) is now also BINDING.** Ground-truthing edu-api's
+IAM Go source before implementation found `POST /api/v1/invitations/accept`
+requires prior authentication (`RequireAuth`), its body is `{token}` only —
+no `fullName`/`password`/account-creation capability exists anywhere on this
+endpoint or use-case — and no preview/resolve GET endpoint exists at all.
+The "guest creates an account inline" premise in this story's Product
+Contract above (and UC-102/UC-104 in `use-cases.md`) is **dropped, not
+buildable against the real BE**. Corrected scope: an auth-gate state for
+unauthenticated visitors (sign-in link, no inline form) + the signed-in
+"Join" action (unchanged security shape: `{token}` only) with session refresh
+via the EXISTING `switchTenant` mint (not a new session-issuance path) + two
+terminal error states (invalid, expired — not three) + a CONFIRMED
+email-mismatch state. Full detail: `docs/decisions/0059-*.md` +
+`spec.md` §11 + `use-cases.md` §7 (all authoritative over the
+now-historical/superseded sections above). Lane stays **high-risk**; the
+mandatory security-diff on the accept payload still applies. New cross-repo
+ask #31 filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`.

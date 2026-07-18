@@ -508,6 +508,29 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     server-policy-only (in which case a future design pass should reconsider
     whether the expiry selector belongs in the UI at all).
 
+31. **(US-E21.2, 2026-07-18) [MAJOR — corrects ADR 0051's premise]**
+    `POST /api/v1/invitations/accept` requires `RequireAuth` (Bearer JWT) —
+    it is NOT public/unauthenticated, and its body (`dto.AcceptRequest`) is
+    `{token}` only, no `fullName`/`password`/account-creation field
+    anywhere in the DTO or use-case (`accept_invitation.go` only creates a
+    tenant `Member` for the ALREADY-authenticated caller — it never touches
+    the user/auth bounded context). There is no capability, anywhere on this
+    endpoint, for an unauthenticated guest to create an account by accepting
+    an invite. Separately, this app's own frontend has no self-serve
+    `/register` screen either (`src/app/[locale]/(auth)/` only has
+    `forgot-password`/`login`/`select-role`/`select-tenant`). See ADR `0059`
+    (amends `0051`) + `US-E21.2-invite-accept/spec.md` §"Ground-Truth
+    Correction". Ask: if self-serve public registration tied to an
+    invitation token is ever wanted, it needs new BE surface (account
+    creation + invitation consumption in one transaction) plus a new FE
+    registration screen — track as a future joint ask, not solved by
+    US-E21.2. Also confirms only 2 real terminal error codes exist for
+    accept (`invitation_invalid` covers not-found/used/revoked as ONE code;
+    `invitation_expired` separate) plus `invitation_email_mismatch` (403,
+    confirms ADR `0051` rule 6's "no silent merge" concern as a hard reject)
+    — no distinct "used" code and no `USER_EMAIL_ALREADY_EXISTS`
+    account-conflict path exists on this endpoint.
+
 28. **(US-E13.2, 2026-07-18)** No bulk/range endpoint exists for a class's
     attendance history — `internal/attendance/adapter/http/routes.go` only
     mounts a single-date class GET (`GET /classes/:classId/attendance?date=`)
