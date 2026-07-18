@@ -1,6 +1,6 @@
 ---
 name: project-e21-tenant-invitations
-description: E21 Tenant Invitations epic — US-E21.1 admin invitations implemented; ground-truth found BE list/resend endpoints don't exist at all
+description: E21 Tenant Invitations epic — US-E21.1 admin invitations + US-E21.2 invite-accept implemented; ADR 0059 ground-truth correction on the accept flow
 metadata:
   type: project
 ---
@@ -46,3 +46,62 @@ delegating to planner/engineer — packet assumptions can be wrong in ways that
 change the canonical-home decision, the DI force-mock scoping, and even
 whether an AC (like 422 field validation, DEF-2 this story) is reachable at
 all. See also [[feedback-concurrent-agent-file-collision]].
+
+## US-E21.2 Public Invitation Accept (merged `c6ff397`, 2026-07-18)
+
+**ADR 0059 (amends 0051) — the BA spec's entire premise was unbuildable.**
+The sibling packet's ADR `0051` assumed an unauthenticated guest submits
+`{token, fullName, password}` to create an account inline. Ground-truthing
+the real IAM Go source (`routes.go`, `invitation_handler.go`,
+`accept_invitation.go`, `invitation.go` entity/valueobject, `ERROR_CODES.md`)
+**before** briefing the planner found: `POST /api/v1/invitations/accept`
+requires `RequireAuth` (Bearer), body is `{token}` only (no
+`fullName`/`password` field exists anywhere in the DTO/use-case), response is
+`MemberResponse{tenantId, userId, roles, status}` (not a session/token
+shape), and no preview/resolve GET endpoint exists at all (consistent with
+E21.1's "only 3 invitation routes" finding — invite/revoke/accept, period).
+Corrected scope: auth-gate for guests (plain `/login` link, deliberately NO
+`returnTo` param — the visitor just re-opens the same emailed link after
+signing in, avoiding a shared-file touch to `login/actions.ts`) + a
+signed-in "Join" action only, session refresh via the EXISTING
+`switchTenant` mint (reused verbatim from `select-tenant/actions.ts`, not a
+new session-issuance path), 2 terminal error codes (`invitation-invalid`
+covers not-found/used/revoked as ONE code, `invitation-expired` separate)
+plus a CONFIRMED `invitation-email-mismatch` (403, F8 hard reject — resolves
+ADR 0051's own open "email-mismatch" question). **This roughly halved the
+BA spec's use cases (dropped UC-102 guest-signup, UC-101 preview, UC-104
+account-conflict) — do the Go-source ground-truth pass BEFORE writing the
+engineer brief, not after; an ADR amendment this size is far cheaper to
+absorb pre-implementation.**
+
+**Canonical DI home missed by planner+engineer**: `bootstrap/di/iam-member.di.ts`
+already existed with a `USE_MOCK`-gated `makeRepo()` facade
+(`makeInviteMemberAction()`) exposing `acceptInvitation`/`switchTenant` for
+exactly this repository — but the plan (and engineer) built a NEW,
+mock-unaware `makeAcceptInvitationUseCase` factory in `auth.di.ts` instead.
+QA caught the `USE_MOCK` bypass as a "minor nit"; fixed by adding the
+`USE_MOCK` branch matching every other `IIamMemberRepository` consumer (a
+fuller fix would route through `iam-member.di.ts` directly, but the
+minimal fix was sufficient here). **Lesson: when briefing a planner for a
+new DI factory touching an EXISTING repository interface, explicitly tell
+it to grep `bootstrap/di/*.ts` for existing facades over that repository
+first** — checking only domain/infrastructure for reuse isn't enough.
+
+**Spawned-agent relay failure (real incident)**: `fe-accessibility-auditor`'s
+structured A11Y-001..006 findings did not relay through the background-agent
+notification channel with sufficient detail (summary was thin; a follow-up
+`SendMessage` resume also didn't recover it). Re-derived the findings
+directly by reading the flagged files against `.claude/rules/accessibility.md`
+and fixed them in place (self-audit fallback) rather than idling. Findings
+of note: (1) `.dark{}` in `globals.css` had overridden `--edu-error-text`
+but NOT `--edu-error-light`/`--edu-warning-light` — a **dark-mode token
+override COMPLETENESS** bug (not just a light-mode token-choice issue like
+prior `text-muted-foreground` findings), ~2.2:1 in dark mode, fixed to
+≥9.5:1 via WCAG relative-luminance calculation (python one-liner, no
+external tool needed); (2) decorative gradient text needing a `bg-black/45`
+scrim for contrast (2nd occurrence of this pattern after E10.6); (3) inline
+text-buttons <44px touch target; (4) missing `<main>` landmark on a new
+public route; (5) terminal error states being dead-ends with no way back to
+sign-in. **When a spawned auditor/reviewer's findings don't relay with
+enough specificity to act on, don't wait/re-spawn — re-derive directly from
+the flagged files + rule file and fix, recording it in the story packet.**
