@@ -1,6 +1,7 @@
 # Memory Index
 
 - [No Playwright harness](gotcha-no-playwright-harness.md) — repo has NO standalone Playwright E2E (no config/e2e dir); Playwright is only the Storybook vitest browser provider → interaction stories ARE the E2E layer; don't scaffold unrunnable Playwright specs
+- [Tenant switch E23.1](pattern-tenant-switch-e23-1.md) — 'use server' CANNOT export type (build breaks); Path A server-action result + isRedirectError rethrow inside try (Risk A); framework-free runSwitchActivation controller = redirect-passthrough unit proof; vitest:storybook WORKS now (old broken-memory stale); adding useTranslations/useSearchParams to AppShell breaks SSR node test → mock next-intl+next/navigation; shared TenantCard + enrichMemberships + closed TenantAccentTone tint (no hex)
 
 - [Feed + Storybook portal bleed](pattern-feed-and-storybook-portal-bleed.md) — E19.1: reset body pointer-events + retryDelay:0 in SB decorator (Radix portal lock bleeds between stories); cross-story shared-dialog reuse (thin actions→moderation.di, one root dialog); ADR-0052 optional-field widening; LoadMoreButton promotion w/ label props; Result-repo + local scope state + Intl relative time
 - [Destructive-confirm errorSlot + moderation high-risk](pattern-destructive-confirm-and-moderation.md) — errorSlot(forbidden force-disables confirm/no-retry); never-optimistic remove; toFailure(err,conflictAs) code-only 409 disambig; MOCK_FORBIDDEN_REPORT_ID; screen-owning-router Storybook (appDirectory+retryDelay:0); ~70 baseline SB failures
