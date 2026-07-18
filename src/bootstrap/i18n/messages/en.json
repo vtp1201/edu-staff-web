@@ -2267,7 +2267,8 @@
           "title": "This invitation has expired",
           "body": "Invite links are only valid for a limited time. Please contact the school office to receive a new invitation."
         },
-        "contactOffice": "Contact the school office for help."
+        "contactOffice": "Contact the school office for help.",
+        "backToLogin": "Back to sign in"
       }
     }
   },

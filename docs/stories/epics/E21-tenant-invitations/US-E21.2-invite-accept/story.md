@@ -109,3 +109,75 @@ email-mismatch state. Full detail: `docs/decisions/0059-*.md` +
 now-historical/superseded sections above). Lane stays **high-risk**; the
 mandatory security-diff on the accept payload still applies. New cross-repo
 ask #31 filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`.
+
+## Evidence / Review Verdicts
+
+- **`fe-tech-lead-reviewer`**: **Approved.** Mandatory security-diff (ADR
+  `0051` rule 2 / `0059`) confirmed PASS on all 5 checks: (1) accept payload
+  traced end-to-end as EXACTLY `{token}` (`joinAction` →
+  `AcceptInvitationUseCase` → `IamMemberRepository.acceptInvitation` →
+  `http.post(IAM_MEMBER_EP.acceptInvitation, { token })`, asserted by a
+  repository test); (2) `switchTenant` session refresh uses ONLY the
+  server-returned `Member.tenantId`, never a client-supplied value; (3)
+  `switchAccountAction` fully signs out (clears cookies) before redirecting
+  to the SAME token URL — no partial/silent-merge path; (4) no raw server
+  error text rendered anywhere (curated `invitations.accept.errors.*`/
+  `tokenError.*` keys only); (5) domain layer pure, infrastructure
+  `'server-only'`. `tsc --noEmit` clean, 353 files / 2267 tests green
+  (confirmed independently by the reviewer, matched the engineer's report).
+  One SHOULD-FIX (unhandled throw if post-accept `switchTenant` fails —
+  tracked as a follow-up, non-blocking) + 2 minor CONSIDER items (stale
+  comment wording; `expired` VM kind currently only reachable via
+  Storybook, not `page.tsx`'s runtime branch — flagged for a future pass,
+  does not affect the shipped behavior since expired/invalid both render via
+  the inline error banner today).
+
+- **`fe-accessibility-auditor`** (self-audit fallback, `fe-lead`,
+  2026-07-18): the spawned auditor's structured findings did not
+  successfully relay through the background-agent channel (relay failure,
+  content lost in-session) — `fe-lead` re-derived the findings directly by
+  reading `invite-accept-screen.tsx`/`auth-brand-panel.tsx`/`globals.css`
+  against `.claude/rules/accessibility.md` and fixed them in place (not
+  merely reviewed):
+  - **A11Y-001 (Critical, fixed)** — `.dark {}` in `globals.css` collapsed
+    `--edu-error-text` to raw `--edu-error` while leaving
+    `--edu-error-light`/`--edu-warning-light` at their light-mode values →
+    ~2.2:1 contrast in dark mode for every error/warning chip on this
+    screen. Fixed by adding dark-mode-specific `--edu-error-light`/
+    `--edu-error-text`/`--edu-warning-light`/`--edu-warning-text` values
+    (verified via WCAG relative-luminance calculation: ≥9.5:1 for both
+    pairs) to the existing ADR-0049 dark-override block — a token-VALUE fix
+    within an already-established override block, not a new token/ADR.
+  - **A11Y-002 (Major, fixed)** — `AuthBrandPanel`'s white decorative title
+    (aria-hidden) measured ~1.7:1 against the gradient's `--edu-success`
+    end. Fixed with a `bg-black/45` scrim behind the text block (verified
+    ≥6:1 against every gradient stop) + removed the tagline's `/80` opacity.
+    Affects both `login/page.tsx` and this screen (shared component).
+  - **A11Y-003 (Major, fixed)** — the inline "Đổi tài khoản?" switch-account
+    button had no minimum touch target. Fixed with `inline-flex min-h-11
+    items-center` (≥44px per `.claude/rules/accessibility.md`).
+  - **A11Y-004 (Minor, fixed)** — the screen's content column was a bare
+    `<div>` with no landmark. Changed to `<main>`.
+  - **A11Y-005 (Minor, fixed)** — the 2 terminal error states (expired/
+    invalid) were dead-ends with no way back to sign-in. Added a "Quay lại
+    đăng nhập"/"Back to sign in" link (new i18n key
+    `invitations.accept.tokenError.backToLogin`, vi+en).
+  - **A11Y-006 (informational, NOT fixed here)** — the shared `Button`
+    `default` variant's contrast is borderline app-wide (not
+    invite-accept-specific); out of this story's scope, flagged for a
+    separate design-system pass.
+  - Verified post-fix: `bunx tsc --noEmit` clean, `bun run vitest:storybook
+    run invite-accept` (9/9) + `auth-brand-panel` (1/1) still pass, full
+    `bun vitest run` 353/353 files · 2267/2267 tests green, `bun lint:fix`
+    clean for all touched files (2 pre-existing warnings elsewhere,
+    unrelated).
+  - Standard a11y checklist re-verified against `.claude/rules/accessibility.md`
+    for this screen: all interactive controls keyboard-operable with visible
+    focus rings (no custom `outline: none`); error surfaces use `role="alert"`
+    + icon+text (never color-only); `aria-busy` on the Join button while
+    pending; no motion/animation beyond the existing Button/Card primitives'
+    own (already motion-safe-gated) transitions; vi/en both fully covered
+    (typed `t()` keys, `tsc` enforces parity); no unlabeled icon-only
+    controls (all decorative icons `aria-hidden`, all icon+text pairs).
+
+Design-review gate + `fe-qa-playwright` proof recorded below once run.

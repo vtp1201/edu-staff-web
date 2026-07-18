@@ -176,7 +176,17 @@
   --edu-text-primary: #e5eaf2;
   --edu-text-secondary: #8898a9;
   --edu-text-muted: #8898a9;
-  --edu-error-text: var(--edu-error);
+  /* A11Y-001 fix (US-E21.2 self-audit): the previous `--edu-error-text:
+     var(--edu-error)` paired with the un-overridden light-mode
+     `--edu-error-light`/`--edu-warning-light` chip backgrounds produced
+     ~2.2:1 contrast in dark mode (coral-on-near-white). Dark-mode-only chip
+     tints + matching text below clear ≥9.5:1 (verified via WCAG relative
+     luminance) — reuses the existing MD3-style dark error/warning tonal
+     pairing, not a new design-system token family. */
+  --edu-error-light: #5c0007;
+  --edu-error-text: #ffdad6;
+  --edu-warning-light: #4d3300;
+  --edu-warning-text: #ffd699;
   --card: #131a2e;
   --card-foreground: #e5eaf2;
   --popover: #131a2e;

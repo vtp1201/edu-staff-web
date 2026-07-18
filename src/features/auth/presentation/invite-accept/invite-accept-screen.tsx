@@ -95,7 +95,7 @@ export function InviteAcceptScreen({
   return (
     <div className="flex min-h-screen bg-background">
       <AuthBrandPanel title={tBrand("name")} tagline={tBrand("tagline")} />
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-8">
+      <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
         <div className="w-full max-w-[440px]">
           <Card className="p-8">
             {vm.kind === "auth-gate" && (
@@ -161,7 +161,7 @@ export function InviteAcceptScreen({
                   {" — "}
                   <button
                     type="button"
-                    className="font-bold text-primary hover:underline disabled:opacity-60"
+                    className="inline-flex min-h-11 items-center font-bold text-primary hover:underline disabled:opacity-60"
                     disabled={isPending}
                     onClick={() => {
                       void handleSwitch(vm.token);
@@ -183,16 +183,22 @@ export function InviteAcceptScreen({
             )}
 
             {(vm.kind === "invalid" || vm.kind === "expired") && (
-              <TokenError kind={vm.kind} />
+              <TokenError kind={vm.kind} loginHref={loginHref} />
             )}
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-function TokenError({ kind }: { kind: "invalid" | "expired" }) {
+function TokenError({
+  kind,
+  loginHref,
+}: {
+  kind: "invalid" | "expired";
+  loginHref: string;
+}) {
   const t = useTranslations("invitations.accept.tokenError");
   const isExpired = kind === "expired";
   const Icon = isExpired ? Clock : AlertTriangle;
@@ -232,6 +238,12 @@ function TokenError({ kind }: { kind: "invalid" | "expired" }) {
         <MessageCircle className="size-3.5 shrink-0" aria-hidden="true" />
         {t("contactOffice")}
       </div>
+      <a
+        href={loginHref}
+        className="inline-flex min-h-11 items-center font-bold text-primary hover:underline"
+      >
+        {t("backToLogin")}
+      </a>
     </div>
   );
 }

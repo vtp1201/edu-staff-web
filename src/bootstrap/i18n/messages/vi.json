@@ -2267,7 +2267,8 @@
           "title": "Lời mời đã hết hạn",
           "body": "Link mời chỉ có hiệu lực trong thời hạn được cấp. Vui lòng liên hệ nhà trường để được gửi lời mời mới."
         },
-        "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ."
+        "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
+        "backToLogin": "Quay lại đăng nhập"
       }
     }
   },
