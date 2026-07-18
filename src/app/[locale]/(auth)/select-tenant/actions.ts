@@ -10,8 +10,6 @@ import type { SwitchTenantResult } from "@/components/shared/tenant-card/tenant-
 import type { TenantFailure } from "@/features/tenant/domain/failures/tenant.failure";
 import { resolveTenantDisplay } from "@/features/tenant/infrastructure/mocks/tenant-display.mock";
 
-export type { SwitchTenantResult };
-
 /** Fold the typed TenantFailure into the client-safe stable key. Only 403
  *  stays distinct (inline card error, FR-008); everything else is the generic
  *  retryable toast (FR-009, incl. today's 401 per the AC-9 descope). */

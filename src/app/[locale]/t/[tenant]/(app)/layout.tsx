@@ -8,9 +8,7 @@ import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell } from "@/components/layout/app-shell";
-import type { TenantCardViewModel } from "@/components/shared/tenant-card";
-import { isSwitchable } from "@/features/tenant/domain/entities/tenant-membership.entity";
-import { resolveTenantDisplay } from "@/features/tenant/infrastructure/mocks/tenant-display.mock";
+import { enrichMemberships } from "@/features/tenant/infrastructure/enrich-memberships";
 import { requestEmailVerificationAction } from "./email-verification.actions";
 
 /**
@@ -61,12 +59,7 @@ export default async function AppLayout({
   const rawMemberships = await makeListMyMembershipsUseCase()
     .then((uc) => uc.execute())
     .catch(() => []);
-  const memberships: TenantCardViewModel[] = rawMemberships.map((m) => ({
-    ...m,
-    ...resolveTenantDisplay(m.tenantId),
-    isCurrent: m.tenantId === tokenTenantId,
-    isSwitchable: isSwitchable(m),
-  }));
+  const memberships = enrichMemberships(rawMemberships, tokenTenantId);
 
   return (
     <AppShell
