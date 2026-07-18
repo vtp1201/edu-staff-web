@@ -23,9 +23,11 @@ metadata:
 ### Implemented (cont.)
 - **US-E13.7**: Grade Book Parent Child-Switcher (DR-002) — `ChildSwitcher` tablist above GradeBookTable for parent role with ≥2 children; `GetChildListUseCase` + `getChildList()` on `IGradeBookRepository`; mock-first (core `GET /core/api/v1/parent/children` unconfirmed OQ-001); `MockGradeBookRepository` childId-aware (c1=11A2, c2=8B1); `GRADES_EP.childList`; `GradeBookScreenVM` extended with optional `childrenList`/`activeChildId`; ARIA tablist/tab/tabpanel pattern with roving tabindex + ArrowLeft/Right/Enter/Space; `aria-disabled` (not native `disabled`) for loading state; `color-mix(in srgb, var(--edu-*) 8%, transparent)` for tint; 873/873 tests pass; TLR-002 follow-up: RSC page not yet wired to pass `childrenList` to VM.
 
+### Implemented (cont.)
+- **US-E13.2**: Attendance BE Wiring — packet assumed BE US-046 `planned`; ground-truthing found it's shipped. Real contract has NO period/subject axis at all (daily class-wide GVCN roll call, not per-subject-period) — replaced `ClassPeriod`/`period` entirely, not just remapped. 4-state status (`present/absent/late/excusedAbsent`, was 3-state) — `late`→existing `--edu-info` token, no new token. No display-name on wire (recurring epic gap) but NOT permanently blocked here: reused the established "duplicate the small fetch inline, don't cross-import another feature's repo" precedent (`real-weekly-timetable.repository.ts`) to resolve names via `GET /classes/:id/students` and homeroom class list via `GET /classes` — both self-contained in `attendance.repository.ts`, zero cross-feature import. History has no bulk endpoint → bounded (≤31d) client fan-out + day-summary aggregate (cross-repo ask #28). ADR `0058`. 343/2216 tests (was 338/2179). a11y FAIL→fixed (solid-bg contrast on new `late` toggle state 4.42:1, missing `aria-live` on new client-fetch history tab)→re-verified PASS. Merged 51432ca.
+
 ### Remaining (all planned)
 - **US-E13.1**: Teacher Class View (shares classes API)
-- **US-E13.2**: Attendance BE Wiring (mock-first, BE US-046 pending)
 
 ### A11y lessons from E13.4
 - `text-muted-foreground` (#8898a9 = 2.95:1) fails WCAG for text ≤12px → use `text-edu-text-secondary` (#5a6a85 = 5.9:1)

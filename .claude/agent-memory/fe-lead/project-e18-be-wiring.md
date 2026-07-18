@@ -709,3 +709,56 @@ AND the existing web entity's fields side-by-side and ask whether they
 describe the same real-world object, not just whether the English names
 rhyme. A shared noun ("lesson", "question") is not evidence of a shared
 domain model.
+
+**US-E13.2 (attendance, 2026-07-18, cross-referenced from E13-teacher-workspace,
+Wave 2 "cao" drift/normal lane) — packet said BE US-046 was `planned`; it had
+shipped. Real drift was bigger than "period-based ≠ class/date-based": no
+subject axis EITHER (a daily homeroom roll call, not a per-subject-period
+session) — replaced the entity, didn't remap it.** 4-state status
+(`PRESENT/ABSENT/LATE/EXCUSED_ABSENT`) vs the mock's 3-state — `late` mapped
+to the EXISTING `--edu-info` token (no new token, so stayed `normal` lane
+despite the intake heuristic that flags "new design-system token" as a
+high-risk trigger — reusing an existing token for a new semantic role is not
+the same as minting one). **Two parallel planning docs
+(fe-component-architect + fe-state-engineer) both independently proposed
+cross-feature repository composition** (an `IStudentNameResolver` port+adapter
+vs. direct `ITeacherClassRepository` constructor injection) to resolve the
+name-on-wire gap (yet another confirmation of the recurring asks
+#6/7/9/13/15/18/20/21/22 pattern) — but the actual established codebase
+precedent (`real-weekly-timetable.repository.ts`, US-E18.11) is to DUPLICATE
+the small `GET /classes`/`GET /classes/:id/students` fetch inline with local
+DTOs, never cross-import another feature's concrete repository. Caught this
+conflict by re-reading the actual precedent file myself before briefing the
+engineer, rather than letting two independently-correct-sounding subagent
+plans silently diverge into the implementation — the engineer was briefed
+with an explicit override citing the precedent, and it followed it cleanly
+(zero cross-feature import in the final `attendance.repository.ts`). Unlike
+most high-drift US's in this epic, NOTHING ended up permanently blocked —
+class-list, name-resolution, record, read, and (bounded ≤31-day fan-out)
+history are all real; logged cross-repo ask #28 for a bulk history-range
+endpoint as a nice-to-have, not a blocker. a11y found a genuine NEW-in-branch
+contrast fail (`late` toggle's solid `bg-edu-info`+`text-edu-text-primary` =
+4.42:1, just under 4.5 AA) that the component-architecture doc had explicitly
+flagged as "must re-verify" — the fix (tint `bg-edu-info/15` matching
+`StatusBadge`'s already-AA-safe `info` tone) reused an existing pattern, no
+new token; also caught a missing `aria-live` on the history tab's new
+client-`useQuery` surface (RSC→client conversions that add async loading
+states need a fresh a11y look even when the underlying data didn't change).
+**Two concurrent background-agent races observed and handled cleanly this
+session**: (1) the resumed a11y-fix `fe-nextjs-engineer` agent committed its
+own fix to the SAME 2 files while fe-lead was independently editing one of
+them — re-checking `git log`/`git diff` before assuming "nothing landed yet"
+found the agent's commit already covered both fixes correctly, so fe-lead's
+own edit to the first file was superseded cleanly (no conflict, just
+redundant work avoided by checking first); (2) confirms the now-standard
+practice: always `git status`/`git log --oneline main..HEAD` before assuming
+a background fix hasn't landed. 343 files/2216 tests (baseline 338/2179),
+tsc/build clean, tech-lead APPROVED first pass (independently re-verified
+error taxonomy/raw:true/ensureFreshSession/route-prefix/status-round-trip/
+history-fan-out/i18n-boundary/layering against the Go source and ran the
+suite itself), a11y FAIL (2 blocking: contrast + aria-live) → both fixed →
+re-verified green, QA GO (closed 7 AC-coverage gaps with new interaction
+assertions: period-selector-absence guard, 4-state toggle incl. `late`'s
+tint class, roster 3-column guard, summary-card 4-tile count math,
+history `aria-live`+per-day badges, save success + correction-window-expired
+toast). ADR `0058`.
