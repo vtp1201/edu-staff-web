@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -126,6 +126,84 @@ stay in the header as orthogonal controls (ba-lead decision, no ADR needed).
 | E2E | Storybook: MenuItem_Hidden(1-tenant) / MenuItem_Hidden(fetch-fail) / MenuItem_Shown / DialogOpen_CardList / DialogOpen_Empty / SwitchSuccess / Switch403 / SwitchNetworkError / DismissBlockedWhileBusy / DismissIdle / CurrentTenantHeaderBlock / CurrentTenantFallback |
 | Platform | `bun build` + `bunx tsc --noEmit` |
 | Release | design-review gate pass; a11y audit (focus-trap, aria-busy/live, contrast) |
+
+## fe-lead Decision (2026-07-17) — AC-9/FR-010 descope
+
+Verified `src/bootstrap/lib/http.ts` still marks the reactive 401→refresh→retry
+interceptor as deferred (decision `0018` follow-up, not yet built — same status
+`.claude/rules/api-integration.md` documents). This story will NOT build a
+one-off retry-once shim inside `switchTenantAction`/the dialog (would diverge
+from the real cross-cutting single-flight design). **Decision**: AC-9/FR-010
+is descoped to today's actual behavior — a 401 mid-flow falls into the
+generic FR-009 (network/5xx) branch: error toast, card returns to idle,
+dialog stays open for retry. Test proof for AC-9 asserts THIS behavior
+(401 → FR-009 path), not the aspirational retry-once path. Revisit AC-9 when
+the reactive interceptor ships (tracked as a pre-existing repo-wide gap, not
+new debt from this story).
+
+## fe-lead Decision (2026-07-18) — TenantSwitchOverlay descoped
+
+`fe-component-architect` flagged that `docs/product/design-spec.jsonc` describes
+a full-screen `TenantSwitchOverlay` ("Đang tải dữ liệu {name}…", blurred
+backdrop) shown between card-loading and landing in the target workspace —
+but no FR/AC in `spec.md`/`use-cases.md`/`plan.md` backs this surface.
+**Decision**: descope it from this story. The per-card loading state
+(`aria-busy`, sr-only "Đang chuyển…", AC-5) plus the existing full-route
+navigation on success is sufficient to satisfy AC-5/NFR-008 without a new
+full-screen overlay component. Treat `design-spec.jsonc`'s `tenantSwitch`
+entry as over-specified relative to the finalized BA spec for this narrow
+slice — not a design-review blocker, since design-review checks a11y/tokens/
+states against what's BUILT, and this story's AC set doesn't include the
+overlay. Flagged for `uiux-docs-manager`/a future story to reconcile
+`design-spec.jsonc` (either add the overlay as an explicit follow-up AC in a
+later US, or trim the entry) — not blocking this story's close.
+
+## fe-lead Decision (2026-07-18) — Path A approved: `switchTenantAction` returns a discriminated result
+
+`fe-state-engineer` (`state-design.md` §0) found `switchTenantAction` currently
+lets a raw `ApiError` throw uncaught across the Server Action boundary — the
+opposite of this repo's own convention (`loginAction` returns `{errorKey?}`,
+never raw-throws, per `.claude/rules/i18n.md` §Nơi dịch) — and that Next.js
+redacts custom thrown-error properties (`.status`/`.code`) across the
+server→client boundary in production builds, so a client `try/catch` reading
+`err.status === 403` would silently misclassify FR-008 vs FR-009 in prod even
+though it works in dev.
+
+**Decision: approve Path A.** Add `src/features/tenant/domain/failures/
+tenant.failure.ts` (`TenantFailure` union, mirroring `AnnouncementRepository
+.toFailure()`'s `errorCodeOf`/`statusOf` pattern) + a `toFailure()` mapper in
+`TenantRepository`. Change `switchTenantAction`'s contract from `Promise<void>`
+(throws) to:
+
+```ts
+type SwitchTenantResult =
+  | { ok: true }
+  | { ok: false; errorKey: "forbidden" | "network" };
+```
+
+`redirect()` still fires unconditionally on the success path (inside the try,
+after `setAuthCookies`) — its throw is NEVER caught/converted, only the
+`useCase.execute()` failure path is wrapped and mapped to `{ok:false,
+errorKey}`. This is additive/non-breaking to the existing `select-tenant.tsx`
+caller (it has no try/catch today and can simply ignore the return value —
+verify with a regression test that `select-tenant.tsx`'s existing behavior/
+tests are unaffected). Engineer implements this as part of Phase 2/4; tech-lead
+reviewer must confirm no other caller of `switchTenantAction` breaks.
+
+## fe-lead Decision (2026-07-18) — Success-toast sequencing via one-shot `?switched=1`
+
+Per `state-design.md` §5: `switchTenantAction` calls `redirect()` before ever
+returning `{ok:true}` to the client, so a client-side `toast.success(...)`
+after `await onSwitchTenant(...)` is unreachable on the success path. **Decision:
+`switchTenantAction` appends `?switched=1` to its `redirect()` target URL**
+(via `tenantUrl(...)`, already computed); `AppShell` (already the natural
+shell-level home for cross-cutting UI concerns per the `EmailVerifyProvider`
+precedent) reads it ONCE on mount via `useSearchParams` in a `useEffect`, fires
+`toast.success(t("tenant.switch.switched"))`, then strips the param via
+`router.replace(...)` (no full reload) so a page refresh doesn't re-fire the
+toast. Engineer implements this in Phase 4; a11y auditor should confirm the
+toast is announced via `sonner`'s existing `aria-live` region (already used
+elsewhere in this repo, not a new pattern).
 
 ## Harness Delta
 

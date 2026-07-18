@@ -176,6 +176,51 @@ mockup-named dropdown components (`LPDropdown`) that map 1:1 onto the existing `
 primitive — the mockup hand-rolls these only because it has no component library, not because
 the real app needs a new component.
 
+**TenantCard/TenantLogo/TenantSwitchDialog (US-E23.1, 2026-07-18):** placed directly
+in `components/shared/tenant-card/` from day one (not build-then-promote) because the
+sibling packet (US-E23.2) explicitly declares an identical-shape 2nd consumer in its
+own `story.md`/`spec.md` AND `design-spec.jsonc`'s 2nd screen entry literally says
+`"cardComponent": "TenantCard (same as ...)"` — always read the sibling packet's own
+docs directly to confirm a claimed shared-from-day-1 placement rather than trusting
+the claim secondhand. `TenantSwitchDialog` (the modal shell) stayed colocated but NOT
+promoted-for-reuse, since the 2nd consumer is a full-page grid, not a dialog — only
+the leaf card/logo components are the actual shared unit, not every component that
+happens to compose them.
+
+**Existing shared primitive already fixes a plan-flagged risk (US-E23.1):** plan.md
+flagged "Dialog opened from inside an already-open DropdownMenu" as a focus-restore
+risk needing bespoke triggerRef handling. Reading `components/ui/dialog/dialog.tsx`
+directly showed `DialogContent` already wraps `onCloseAutoFocus` with
+`useDialogReturnFocus(true)` (built in US-E22.1 for exactly this "controlled `open`,
+no `<DialogTrigger>`" failure mode) — no bespoke fix needed, just use the primitive
+normally. Lesson: always read the actual current primitive source before accepting an
+upstream plan's risk assessment as still-accurate; primitives get hardened over time
+and a stale risk note in a plan can overstate remaining work.
+
+**Per-entity "accent color" from mock/display data must be a closed token enum, not
+raw hex (US-E23.1):** when mock display data includes a `color`/`logoColor`-style
+field and the jsx design reference does `entity.color + '1A'` string concatenation,
+that's mockup-only convenience (decision 0011), not license to pipe an arbitrary hex
+through `style`. Resolution pattern: define a closed union type (e.g.
+`TenantAccentTone = "primary"|"success"|"warning"|"info"|"purple"|"teal"`) restricted
+to tones that already have a `bg-edu-*`/`bg-primary` token + an existing `/15`-tint
+Tailwind class (reuse `StatusBadge`'s `TONE_CLASS` convention), have the mock lookup
+assign one deterministically per entity id (hash-based, not `Math.random()`, for
+Storybook/test stability), and consume via existing semantic classes. No ADR needed
+since no new token is introduced — just a disciplined *closed-enum* consumption of
+tokens that already exist. Don't reach for role-color enums either if the entity axis
+(tenant/school) is conceptually different from the role axis — reuse the same
+underlying tokens, but as a distinct named enum.
+
+**ViewModel that separates "server-fetched display data" from "transient UI/loading
+state" (US-E23.1):** when an upstream plan says "type X = data + a loading flag,"
+consider splitting: keep the data-only shape as the `.i-vm.ts` type (survives
+RSC→client serialization, immutable per render), and pass transient per-item
+interaction state (loading/error) as a SEPARATE controlled prop from the stateful
+parent (e.g. `status: {kind:"idle"|"loading"|"error"}` prop on a `TenantCard`, owned
+by the dialog's local state, not baked into the list-item type). Keeps list items
+referentially simple and the presentational leaf a pure controlled component.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.
