@@ -2,6 +2,7 @@ import "server-only";
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import type { AuthTokens } from "../../../domain/entities/auth-user.entity";
 import type { Invitation } from "../../../domain/entities/invitation.entity";
+import type { Member } from "../../../domain/entities/member.entity";
 import type { IamMemberFailure } from "../../../domain/failures/iam-member.failure";
 import type {
   IIamMemberRepository,
@@ -100,7 +101,14 @@ export class MockIamMemberRepository implements IIamMemberRepository {
     _roles: string[],
   ): Promise<void> {}
   async removeMember(_tenantId: string, _userId: string): Promise<void> {}
-  async acceptInvitation(_token: string): Promise<void> {}
+  async acceptInvitation(_token: string): Promise<Member> {
+    return {
+      tenantId: "tenant-acme",
+      userId: "user-mock",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+    };
+  }
 
   async listInvitations(
     _tenantId: string,
