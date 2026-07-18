@@ -53,6 +53,29 @@ export function SendInvitationDialog({
   const [serverRejected, setServerRejected] = useState<
     Record<string, InvitationFailure["type"]>
   >({});
+  // DEF-1 (US-E21.1 QA): the expiry Select's listbox is a Radix portal outside
+  // this Dialog's DOM subtree. Select and Dialog each run their own
+  // independent Escape-key handling (uncoordinated), so pressing Escape to
+  // close JUST the listbox was ALSO closing the whole Dialog and discarding
+  // in-progress chips. Fix: make the Select's open state fully controlled
+  // here, and intercept Escape ourselves via a document-level CAPTURE-phase
+  // listener while it's open — capture-phase runs before either Select's or
+  // Dialog's own (bubble-phase) Escape handling, so `stopPropagation` there
+  // reliably suppresses both, and we close the Select ourselves instead.
+  const [expiryOpen, setExpiryOpen] = useState(false);
+
+  useEffect(() => {
+    if (!expiryOpen) return;
+    function onKeyDownCapture(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setExpiryOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDownCapture, true);
+    return () =>
+      document.removeEventListener("keydown", onKeyDownCapture, true);
+  }, [expiryOpen]);
 
   // Reset the form each time the dialog opens.
   useEffect(() => {
@@ -62,6 +85,7 @@ export function SendInvitationDialog({
       setExpiry(14);
       setSubmitting(false);
       setServerRejected({});
+      setExpiryOpen(false);
     }
   }, [open]);
 
@@ -149,6 +173,8 @@ export function SendInvitationDialog({
             <InvitationExpirySelect
               value={expiry}
               onChange={setExpiry}
+              open={expiryOpen}
+              onOpenChange={setExpiryOpen}
               triggerAriaLabel={t("sendDialog.expiryLabel")}
               options={expiryOptions.map((value) => ({
                 value,
