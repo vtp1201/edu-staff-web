@@ -2152,7 +2152,8 @@
         "expiry": "Expires",
         "status": "Status",
         "actions": "Actions"
-      }
+      },
+      "loadingAriaLabel": "Loading invitation list"
     },
     "roleLabels": {
       "teacher": "Teacher",

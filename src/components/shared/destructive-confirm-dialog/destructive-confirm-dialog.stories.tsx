@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { useState } from "react";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Button } from "@/components/ui/button";
 import { DestructiveConfirmDialog } from "./destructive-confirm-dialog";
 
 const CANCEL_LABEL = messages.Common.confirmDialog.cancel;
@@ -300,5 +302,43 @@ export const StaffLeaveReject: Story = {
         name: messages.staffLeave.actions.confirmReject,
       }),
     ).toBeInTheDocument();
+  },
+};
+
+/**
+ * DEF-01 (US-E22.1 → shared fix, US-E21.1): a dialog opened via a controlled
+ * `open` (no <AlertDialogTrigger>) must return focus to the invoking control on
+ * close. Radix's default would drop focus to <body>. This story opens from a
+ * real button, cancels, and asserts focus lands back on that button.
+ */
+export const FocusRestoreToInvoker: StoryObj = {
+  render: () => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div>
+        <Button type="button" onClick={() => setOpen(true)}>
+          Mở hộp thoại
+        </Button>
+        <DestructiveConfirmDialog
+          open={open}
+          title="Xóa vi phạm?"
+          body="Hành động này không thể hoàn tác."
+          confirmLabel="Xóa vi phạm"
+          onConfirm={() => setOpen(false)}
+          onCancel={() => setOpen(false)}
+        />
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const invoker = canvas.getByRole("button", { name: "Mở hộp thoại" });
+    await userEvent.click(invoker);
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await userEvent.click(body.getByRole("button", { name: CANCEL_LABEL }));
+    await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+    // Focus returned to the invoking button (not dropped to <body>).
+    await waitFor(() => expect(invoker).toHaveFocus());
   },
 };

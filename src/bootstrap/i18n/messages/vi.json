@@ -2152,7 +2152,8 @@
         "expiry": "Hết hạn",
         "status": "Trạng thái",
         "actions": "Hành động"
-      }
+      },
+      "loadingAriaLabel": "Đang tải danh sách lời mời"
     },
     "roleLabels": {
       "teacher": "Giáo viên",

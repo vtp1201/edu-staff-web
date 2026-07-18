@@ -26,6 +26,13 @@ export interface TagChipsInputProps {
    */
   validate?: (tag: string) => boolean;
   /**
+   * Id of the caller's aggregate error message (the `role="alert"` element).
+   * When set, each invalid chip (per `validate`) gets `aria-invalid` +
+   * `aria-describedby` pointing here, so a screen reader ties the invalid chip
+   * to the explanation. Optional — omitted by the non-validating consumers.
+   */
+  invalidDescribedBy?: string;
+  /**
    * Optional id of a visible `<label>` to link the input to (`aria-labelledby`),
    * making the visible label the single source of truth. Falls back to
    * `labels.inputAriaLabel` when omitted (backward-compatible).
@@ -62,6 +69,7 @@ export function TagChipsInput({
   maxTagLength,
   validate,
   labelledBy,
+  invalidDescribedBy,
   labels,
 }: TagChipsInputProps) {
   const [draft, setDraft] = useState("");
@@ -136,6 +144,8 @@ export function TagChipsInput({
           return (
             <span
               key={tag}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? invalidDescribedBy : undefined}
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-bold text-[11.5px]",
                 invalid

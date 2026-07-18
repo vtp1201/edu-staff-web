@@ -37,15 +37,19 @@ export function InvitationsStatusTabs({
       value={value}
       onValueChange={(v) => onChange(v as InvitationsStatusFilter)}
     >
-      <TabsList className="flex-wrap">
+      <TabsList className="h-11 flex-wrap sm:h-9">
         {ORDER.map((key) => (
-          <TabsTrigger key={key} value={key} className="gap-1.5">
+          <TabsTrigger
+            key={key}
+            value={key}
+            className="gap-1.5 max-[820px]:py-2.5"
+          >
             {labels[key]}
             <span
               className={cn(
                 "inline-flex min-w-4 items-center justify-center rounded-full px-1.5 py-px font-extrabold text-[10px]",
                 value === key
-                  ? "bg-primary/20 text-primary"
+                  ? "bg-primary/15 text-edu-text-primary"
                   : "bg-muted text-muted-foreground",
               )}
             >

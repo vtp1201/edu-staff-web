@@ -43,6 +43,7 @@ export function InvitationEmailChipsInput({
   onChange,
 }: InvitationEmailChipsInputProps) {
   const labelId = useId();
+  const errorId = useId();
   const rejected = serverRejectedEmails ?? {};
 
   const isRejected = (email: string) =>
@@ -73,6 +74,9 @@ export function InvitationEmailChipsInput({
         maxTagLength={254}
         validate={validate}
         labelledBy={labelId}
+        invalidDescribedBy={
+          hasFormatInvalid || hasRejected ? errorId : undefined
+        }
         labels={{
           placeholder: labels.placeholder,
           inputAriaLabel: labels.inputAriaLabel,
@@ -83,6 +87,7 @@ export function InvitationEmailChipsInput({
       />
       {hasFormatInvalid || hasRejected ? (
         <p
+          id={errorId}
           role="alert"
           className="mt-1.5 flex items-center gap-1.5 font-bold text-edu-error-dark text-xs"
         >

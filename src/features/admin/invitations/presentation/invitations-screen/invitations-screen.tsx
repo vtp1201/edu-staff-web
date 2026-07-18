@@ -156,6 +156,8 @@ export function InvitationsScreen({
 
   async function handleCopyLink(row: InvitationRowVM) {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
+    // NOTE: `row.id` is a token stand-in — the real invite token is never on the
+    // wire today (ground-truth #7). Revisit once US-E21.2 ships a real token.
     const url = `${origin}/invitations/accept?token=${row.id}`;
     try {
       if (!navigator.clipboard?.writeText) throw new Error("no clipboard");
@@ -254,7 +256,9 @@ export function InvitationsScreen({
         />
       </div>
 
-      {showLoading && <InvitationsSkeleton />}
+      {showLoading && (
+        <InvitationsSkeleton loadingAriaLabel={t("table.loadingAriaLabel")} />
+      )}
 
       {showError && (
         <InvitationsErrorState

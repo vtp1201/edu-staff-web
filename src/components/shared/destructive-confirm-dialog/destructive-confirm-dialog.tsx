@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
 
 /**
@@ -185,6 +186,11 @@ export function DestructiveConfirmDialog({
 }: DestructiveConfirmDialogProps) {
   const tCommon = useTranslations("Common");
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // Restore focus to the invoking control on close (DEF-01, US-E22.1). This
+  // dialog is always controlled via `open` (no <AlertDialogTrigger>), so Radix's
+  // triggerRef is null and its default onCloseAutoFocus would drop focus to
+  // <body>. Benefits all ~16 consumers of this shared dialog.
+  const returnFocus = useDialogReturnFocus(open);
 
   return (
     <AlertDialog
@@ -202,6 +208,7 @@ export function DestructiveConfirmDialog({
           event.preventDefault();
           cancelRef.current?.focus();
         }}
+        onCloseAutoFocus={returnFocus}
       >
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
