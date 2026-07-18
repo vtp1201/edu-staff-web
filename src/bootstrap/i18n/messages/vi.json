@@ -2233,6 +2233,43 @@
     "summary": {
       "count": "{count} lời mời",
       "filtered": " (đã lọc)"
+    },
+    "accept": {
+      "authGate": {
+        "title": "Đăng nhập để tham gia",
+        "body": "Bạn cần đăng nhập bằng tài khoản được mời để tham gia tổ chức này. Nếu chưa có tài khoản, hãy liên hệ quản trị viên nhà trường.",
+        "loginCta": "Đăng nhập"
+      },
+      "join": {
+        "title": "Tham gia tổ chức",
+        "body": "Bạn đã được mời tham gia một tổ chức trên EduPortal.",
+        "cta": "Tham gia lời mời",
+        "loading": "Đang tham gia…",
+        "currentEmailLabel": "Đang đăng nhập với"
+      },
+      "switchAccount": {
+        "link": "Đổi tài khoản?",
+        "failedBody": "Không thể đăng xuất. Bạn vẫn đang đăng nhập — vui lòng thử lại."
+      },
+      "errors": {
+        "invitationInvalid": "Lời mời không hợp lệ hoặc đã được sử dụng.",
+        "invitationExpired": "Lời mời đã hết hạn.",
+        "invitationEmailMismatch": "Lời mời này dành cho một địa chỉ email khác. Đăng nhập bằng đúng tài khoản được mời để tham gia.",
+        "network": "Không thể kết nối. Vui lòng thử lại.",
+        "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+      },
+      "tokenError": {
+        "invalid": {
+          "title": "Liên kết không hợp lệ",
+          "body": "Link mời bị thiếu hoặc sai token. Hãy mở lại đúng đường link trong email mời, hoặc yêu cầu nhà trường gửi lại lời mời."
+        },
+        "expired": {
+          "title": "Lời mời đã hết hạn",
+          "body": "Link mời chỉ có hiệu lực trong thời hạn được cấp. Vui lòng liên hệ nhà trường để được gửi lời mời mới."
+        },
+        "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
+        "backToLogin": "Quay lại đăng nhập"
+      }
     }
   },
   "lessonBank": {

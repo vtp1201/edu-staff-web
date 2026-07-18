@@ -346,3 +346,50 @@ code path; Storybook interaction stories for every state in §5; `bun build` +
 `fe-tech-lead-reviewer` security-diff** on the accept Server Action payload
 (§"Security Contract") recorded in the story's Evidence section before this
 story may be marked `implemented`.
+
+## 11. Ground-Truth Correction (fe-lead, 2026-07-18) — SUPERSEDES §1-§10 in part
+
+**ADR `0059` (amends `0051`) is now BINDING alongside `0051`** —
+`docs/decisions/0059-invitation-accept-requires-prior-authentication.md`.
+Ground-truthing `edu-api`'s IAM Go source (routes, handler, DTO, use-case,
+domain entity/valueobject, `ERROR_CODES.md`) before implementation found this
+spec's entire "guest creates an account inline" premise (UC-102, most of §3
+FR-002/003/004, ADR `0051` rules 3/5) does not exist on the real BE:
+`POST /api/v1/invitations/accept` requires `RequireAuth`, its body is
+`{token}` only, and the use case never touches the user/auth bounded context
+— it only creates a tenant `Member` for the ALREADY-authenticated caller.
+Additionally, no preview/resolve GET endpoint exists (consistent with
+US-E21.1's finding of only 3 total invitation routes), the invite token is
+fully opaque (no client-side decode), this app has no self-serve `/register`
+screen, and only 2 real terminal error codes exist (`invitation_invalid`
+covering not-found/used/revoked as ONE code, `invitation_expired` separate)
+plus a CONFIRMED `invitation_email_mismatch` (403, resolves ADR `0051`
+rule 6's `[OPEN QUESTION]`).
+
+**Corrected scope for `/fe` implementation** (full detail: ADR `0059` +
+`use-cases.md` §7, which is authoritative over §3/§5/§6 above for the
+affected use cases):
+
+- **In scope**: auth-gate state for unauthenticated visitors (message + plain
+  `/login` link, no `returnTo`); signed-in single "Tham gia" join action
+  (`{token}` only, unchanged security invariant); session refresh via the
+  EXISTING `IIamMemberRepository.switchTenant(tenantId, clientId)` +
+  `setAuthCookies()` path (same one `select-tenant/actions.ts` already uses)
+  using the server-returned `tenantId`/`roles` from `MemberResponse`; two
+  terminal error states (invalid — covers not-found/used/revoked, and
+  expired); email-mismatch error + switch-account (sign-out) affordance;
+  success state driven by the real `MemberResponse` fields.
+- **Out of scope, dropped**: UC-101 preview/summary card (no real data
+  source), UC-102 guest account-creation form (no BE capability), UC-104
+  account-conflict state (unreachable), the 3rd "used" illustration (folds
+  into "invalid"), any `TokenResponseDto`/`AuthTokens`-from-scratch session
+  issuance (this flow refreshes an EXISTING session, it doesn't create one).
+- **Lane stays high-risk** — still Auth + Authorization + public-route +
+  tenant-role-assignment, per ADR `0059`'s own re-analysis; the correction
+  narrows implementation surface, it does not relax the lane or the security
+  review requirement (§"Security Contract" security-diff is STILL mandatory,
+  now scoped to the single signed-in-join payload).
+- New cross-repo ask filed: `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`
+  §Cross-repo requests #31 (self-serve registration + invite-token
+  consumption is unbuilt on both BE and FE; future joint work, not this
+  story).

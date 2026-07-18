@@ -175,6 +175,27 @@ describe("IamMemberRepository — happy paths", () => {
     ]);
   });
 
+  it("acceptInvitation posts { token } and maps MemberResponse → Member", async () => {
+    const { repo, http } = makeRepo();
+    http.post.mockResolvedValue({
+      tenantId: "t-9",
+      userId: "u-9",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+    });
+    const result = await repo.acceptInvitation("tok-abc");
+    expect(result).toEqual({
+      tenantId: "t-9",
+      userId: "u-9",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+    });
+    // Security-critical: payload is EXACTLY { token } — never role/tenantId/email.
+    expect(http.post).toHaveBeenCalledWith("/iam/api/v1/invitations/accept", {
+      token: "tok-abc",
+    });
+  });
+
   it("switchTenant maps TokenResponseDto → AuthTokens", async () => {
     const { repo, http } = makeRepo();
     http.post.mockResolvedValue({

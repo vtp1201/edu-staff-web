@@ -3,10 +3,10 @@
  *
  * Shape corrected in US-E18.6 against `edu-api/services/iam/docs/openapi.yaml`
  * `MembershipSummary`/`MemberResponse`/`InvitationResponse` schemas — the real
- * wire has no `tenantName`/`email`/`name` on these. `MemberResponseDto` /
- * `InvitationResponseDto` are currently unused (every mutating
- * `IamMemberRepository` call is fire-and-forget `void` — no method parses a
- * member/invitation response body); kept for wire-shape documentation.
+ * wire has no `tenantName`/`email`/`name` on these. `MemberResponseDto` is the
+ * body `POST /invitations/accept` returns (parsed by `IamMemberRepository`'s
+ * `acceptInvitation`, US-E21.2). `InvitationResponseDto` remains documentation
+ * for the (mostly mock-only) list shape.
  */
 
 export interface MembershipSummaryDto {

@@ -5,15 +5,22 @@ import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import type { AuthTokens } from "../../domain/entities/auth-user.entity";
 import type { Invitation } from "../../domain/entities/invitation.entity";
+import type { Member } from "../../domain/entities/member.entity";
 import type { IamMemberFailure } from "../../domain/failures/iam-member.failure";
 import type {
   IIamMemberRepository,
   InviteMemberRequest,
 } from "../../domain/repositories/i-iam-member.repository";
-import type { MembershipSummaryDto } from "../dtos/iam-member-response.dto";
+import type {
+  MemberResponseDto,
+  MembershipSummaryDto,
+} from "../dtos/iam-member-response.dto";
 import type { TokenResponseDto } from "../dtos/token-response.dto";
 import { mapTokens } from "../mappers/auth.mapper";
-import { mapMembershipSummary } from "../mappers/iam-member.mapper";
+import {
+  mapMemberResponse,
+  mapMembershipSummary,
+} from "../mappers/iam-member.mapper";
 
 /**
  * Maps a normalised {@link ApiError} (branch on `code`, never message) into the
@@ -127,9 +134,14 @@ export class IamMemberRepository implements IIamMemberRepository {
     }
   }
 
-  async acceptInvitation(token: string): Promise<void> {
+  async acceptInvitation(token: string): Promise<Member> {
     try {
-      await this.http.post(IAM_MEMBER_EP.acceptInvitation, { token });
+      // Payload is EXACTLY { token } — role/tenantId/email are resolved
+      // server-side from the invitation + JWT (ADR 0059 rule 2, F8).
+      const dto = (await this.http.post(IAM_MEMBER_EP.acceptInvitation, {
+        token,
+      })) as unknown as MemberResponseDto;
+      return mapMemberResponse(dto);
     } catch (err) {
       throw mapIamFailure(err);
     }

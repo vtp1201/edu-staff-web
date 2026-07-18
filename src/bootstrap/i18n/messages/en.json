@@ -2233,6 +2233,43 @@
     "summary": {
       "count": "{count, plural, one {# invite} other {# invites}}",
       "filtered": " (filtered)"
+    },
+    "accept": {
+      "authGate": {
+        "title": "Sign in to join",
+        "body": "You need to sign in with the invited account to join this organization. If you don't have an account yet, contact your school administrator.",
+        "loginCta": "Sign in"
+      },
+      "join": {
+        "title": "Join the organization",
+        "body": "You've been invited to join an organization on EduPortal.",
+        "cta": "Accept invitation",
+        "loading": "Joining…",
+        "currentEmailLabel": "Signed in as"
+      },
+      "switchAccount": {
+        "link": "Switch account?",
+        "failedBody": "Could not sign out. You're still signed in — please try again."
+      },
+      "errors": {
+        "invitationInvalid": "This invitation is not valid or has already been used.",
+        "invitationExpired": "This invitation has expired.",
+        "invitationEmailMismatch": "This invitation is for a different email address. Sign in with the invited account to join.",
+        "network": "Could not connect. Please try again.",
+        "unknown": "Something went wrong. Please try again."
+      },
+      "tokenError": {
+        "invalid": {
+          "title": "This link is not valid",
+          "body": "The invite token is missing or malformed. Re-open the exact link from your invitation email, or ask the school to resend it."
+        },
+        "expired": {
+          "title": "This invitation has expired",
+          "body": "Invite links are only valid for a limited time. Please contact the school office to receive a new invitation."
+        },
+        "contactOffice": "Contact the school office for help.",
+        "backToLogin": "Back to sign in"
+      }
     }
   },
   "lessonBank": {

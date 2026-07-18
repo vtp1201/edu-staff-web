@@ -4,6 +4,7 @@ import type {
   Invitation,
   InvitationStatus,
 } from "../entities/invitation.entity";
+import type { Member } from "../entities/member.entity";
 
 export interface InviteMemberRequest {
   email: string;
@@ -34,8 +35,13 @@ export interface IIamMemberRepository {
   changeRoles(tenantId: string, userId: string, roles: string[]): Promise<void>;
   /** DELETE /iam/api/v1/tenants/:tenantId/members/:userId */
   removeMember(tenantId: string, userId: string): Promise<void>;
-  /** POST /iam/api/v1/invitations/accept */
-  acceptInvitation(token: string): Promise<void>;
+  /**
+   * POST /iam/api/v1/invitations/accept (US-E21.2). `RequireAuth`-gated; body
+   * is `{token}` only (`ActorUserID`/`ActorEmail` come from the JWT, never the
+   * body — ADR 0059). Returns the created `MemberResponse` for the invited
+   * tenant; throws a typed {@link IamMemberFailure} on error.
+   */
+  acceptInvitation(token: string): Promise<Member>;
   /**
    * List tenant invitations.
    *
