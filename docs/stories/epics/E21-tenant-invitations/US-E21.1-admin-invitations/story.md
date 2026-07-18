@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -164,7 +164,9 @@ formally N/A per above.
 
 ## Harness Delta
 
-- `docs/TEST_MATRIX.md`: add row US-E21.1 (planned, normal lane)
-- `docs/product/screens.md`: already has a design-ready row for this screen (see Relevant Product Docs) — update status to spec-ready once this spec lands
-- No ADR required for this story — OQ-1 (role vocabulary) already resolved by `ba-lead` without a new decision record (existing decision `0022` covers it, see `spec.md` §8)
-- Open contract questions (batch-send shape, resend endpoint shape, missing DTO fields `invitedBy`/`createdAt`/`token`, server- vs client-side filter/search) are carried to `fe-lead`/BE team in `spec.md` §8 — not blocking spec completion, but block `/fe` implementation of the affected FRs until resolved
+- `docs/TEST_MATRIX.md`: US-E21.1 row updated to `implemented` (unit/integration/e2e/platform all yes) — see row for full proof summary.
+- `docs/product/screens.md`: status can now move from spec-ready to implemented for this screen.
+- No ADR required for this story — OQ-1 (role vocabulary) resolved by `ba-lead` without a new decision record (decision `0022`); the ground-truth correction in `integration.md` §6 additionally confirmed the wire mapping is a clean 1:1 (no alias collapsing needed), which is a contract clarification, not an architecture decision, so still no ADR.
+- Former open contract questions (batch-send shape, resend endpoint shape, missing DTO fields `invitedBy`/`createdAt`/`token`, server- vs client-side filter/search) are all RESOLVED by the ground-truth correction (`integration.md` §6, 2026-07-18): no batch/resend/list endpoint exists on the real BE at all — permanently mock-first, not pending confirmation. Cross-repo asks #29/#30 filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md` for BE follow-up if/when this becomes a priority.
+- New cross-cutting fix (not scoped to this story alone): `components/ui/dialog/dialog.tsx` + `components/shared/destructive-confirm-dialog/destructive-confirm-dialog.tsx` now restore focus to the invoking control on close (via the pre-existing `useDialogReturnFocus` hook) — benefits every Dialog/AlertDialog consumer repo-wide (~50 combined), closing a defect first flagged (but only locally patched) in US-E22.1's DEF-01.
+- Follow-up flagged, not part of this story: ~66 pre-existing Storybook interaction failures observed as an env-wide baseline during this story's Dialog-fix regression check don't appear tracked by any existing story — worth a dedicated investigation.
