@@ -1,1 +1,1 @@
-export type AttendanceStatus = "present" | "excused" | "absent";
+export type AttendanceStatus = "present" | "absent" | "late" | "excusedAbsent";

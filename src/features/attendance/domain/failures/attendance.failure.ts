@@ -1,6 +1,8 @@
 export type AttendanceFailure =
-  | { type: "period-not-found" }
-  | { type: "save-failed"; message?: string }
-  | { type: "unauthorized" }
+  | { type: "forbidden" }
+  | { type: "not-found" }
+  | { type: "correction-window-expired" }
+  | { type: "student-not-enrolled" }
+  | { type: "invalid-request" }
   | { type: "network-error" }
   | { type: "unknown"; message?: string };

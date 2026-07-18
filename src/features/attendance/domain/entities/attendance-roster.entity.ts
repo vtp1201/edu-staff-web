@@ -1,7 +1,7 @@
 import type { AttendanceRecord } from "./attendance-record.entity";
-import type { ClassPeriod } from "./class-period.entity";
+import type { ClassDate } from "./class-date.entity";
 
 export interface AttendanceRoster {
-  period: ClassPeriod;
+  classDate: ClassDate;
   records: AttendanceRecord[];
 }
