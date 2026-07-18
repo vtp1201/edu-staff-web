@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -77,9 +77,96 @@ When updating durable proof status, use numeric booleans:
 | Platform | `bun build` + `tsc --noEmit` clean |
 | Release | design-review gate pass (`docs/DESIGN_REVIEW.md`) |
 
+## Evidence
+
+Design review: pass
+- design-system: conform — tokens-only (no raw color), role/status badge tones
+  match `design-spec.jsonc` `roleBadgeColors`/`statusBadges` 1:1, `StatusBadge`
+  gains one additive `error-dark` tone (existing tokens, no ADR), `TagChipsInput`
+  gains one additive `validate`/`invalidDescribedBy` prop pair (backward-compatible,
+  `lesson-plan`/`question-bank` consumers unaffected and re-verified green),
+  `DestructiveConfirmDialog`/`EmptyState` reused directly with zero fork.
+- a11y: WCAG AA — 5 findings from `fe-accessibility-auditor` (A11Y-001/002
+  blocking, A11Y-003/004 major, A11Y-005 minor) all fixed and re-verified:
+  invalid email chips now carry `aria-invalid`+`aria-describedby`; status-tab
+  count badge contrast fixed (~2.67:1 → ~11.5:1); Dialog/AlertDialog focus-restore-
+  to-invoker fixed at the SHARED primitive level (`components/ui/dialog/dialog.tsx`
+  + `components/shared/destructive-confirm-dialog/destructive-confirm-dialog.tsx`,
+  via the pre-existing `useDialogReturnFocus` hook) — this is a cross-cutting fix
+  benefiting every Dialog/AlertDialog consumer repo-wide (~50 combined), not just
+  this screen; loading skeleton gains an `sr-only role="status"` announcement;
+  mobile status-tab height bumped to the 44px touch-target floor. Keyboard-only
+  and reduced-motion paths verified.
+- impeccable audit: `node .claude/skills/impeccable/scripts/detect.mjs` on
+  `src/features/admin/invitations/presentation/invitations-screen`,
+  `components/shared/tag-chips-input`, `components/shared/status-badge`,
+  `components/shared/destructive-confirm-dialog`, `components/ui/dialog` — 0
+  findings, no anti-patterns.
+- states: loading/empty(×2)/error+retry/success all present per UC-001/002/009,
+  responsive: desktop table + mobile card-list (<820px) verified.
+
+Disclosure: the shared Dialog/DestructiveConfirmDialog focus-restore fix touches
+~50 consumers repo-wide (every Dialog/AlertDialog usage), not just this screen.
+Regression was A/B-isolated by the engineer (reverting only the 2 shared files
+reproduces an identical pre-existing baseline failure count in this repo's
+Storybook interaction runner, confirming the ~66 failing stories are an
+env-wide/pre-existing issue unrelated to this change, not a regression this
+story introduced) — targeted re-run of all Dialog/DestructiveConfirmDialog
+consumers plus this screen's 17 stories: 77/77 pass. Full suite (`bun vitest run`):
+352 files / 2258 tests pass; `tsc --noEmit` clean; `bun lint` clean (excluding a
+pre-existing unrelated warning/info in `messaging`); `bun run build` green in
+both mock and real mode (`NEXT_PUBLIC_USE_MOCK` unset).
+
+Follow-up (not blocking this story, flagged for `fe-lead`/team): the ~66
+pre-existing Storybook interaction failures observed as an env-wide baseline
+during this story's Dialog-fix regression check do not appear to be tracked by
+any existing story/ticket — worth a dedicated investigation before they mask a
+real regression in a future story.
+
+## QA Gate (fe-qa-playwright, independent AC re-derivation)
+
+Verdict at first pass: **Conditional Pass**. QA independently mapped all 42 ACs
+(UC-001..UC-007) to a specific test, wrote 9 new/extended Storybook interaction
+tests closing real coverage gaps (17→26 passing stories: AC-001.5 retry-still-fails,
+AC-002.5 clear-filters, AC-004.2 clipboard denied/unavailable, AC-005.4/.5
+resend race+network, AC-006.6/.7 revoke race+network, NFR-001 keyboard-only
+completion), and found 2 defects:
+
+- **DEF-1 (MAJOR, FIXED)**: pressing Escape while the send-dialog's expiry
+  `Select` listbox was open closed BOTH the listbox AND the whole Send-Invite
+  `Dialog`, silently discarding all typed email chips — Select and Dialog each
+  ran independent, uncoordinated Escape-key handling. Fixed by making the
+  `Select`'s open state fully controlled (`invitation-expiry-select.tsx`) and
+  intercepting Escape via a document-level CAPTURE-phase listener in
+  `send-invitation-dialog.tsx` while the popover is open — capture-phase runs
+  before either Select's or Dialog's own (bubble-phase) Escape handling, so
+  `stopPropagation`+`preventDefault` there reliably suppresses both, and the
+  Select is closed manually via the controlled `open` prop instead. Regression
+  story added: `SendDialogEscapeOnOpenSelectKeepsDialogOpen` (asserts the
+  listbox closes, the Dialog + already-typed chip remain). Re-verified:
+  `invitations-screen.stories.tsx` 27/27 pass (was 26/26 before this test);
+  full suite unaffected (352 files / 2258 tests); `tsc --noEmit` clean;
+  `bun lint` clean.
+- **DEF-2 (MAJOR, closed as N/A)**: AC-003.11 (422 inline field-validation
+  errors) has no real implementation path — the real IAM wire never returns a
+  `"validation"`-typed failure for the invite endpoint (only this feature's own
+  client-side empty-batch check produces one), and it is practically
+  unreachable via the UI regardless (submit is gated on ≥1 valid chip + role +
+  expiry already at valid defaults). Formally closed as N/A for this story;
+  revisit with `ba-lead` only if BE ever adds real 422 field validation to the
+  invite endpoint.
+
+Final verdict after DEF-1 fix: **Go**. 40/42 ACs fully proven by an existing or
+newly-added test, 1 (AC-003.12 send-network-error) has an implicit-but-not-
+dedicated story (low risk, toast copy reused from other flows — tracked as a
+non-blocking follow-up, not required for this story to close), 1 (AC-003.11)
+formally N/A per above.
+
 ## Harness Delta
 
-- `docs/TEST_MATRIX.md`: add row US-E21.1 (planned, normal lane)
-- `docs/product/screens.md`: already has a design-ready row for this screen (see Relevant Product Docs) — update status to spec-ready once this spec lands
-- No ADR required for this story — OQ-1 (role vocabulary) already resolved by `ba-lead` without a new decision record (existing decision `0022` covers it, see `spec.md` §8)
-- Open contract questions (batch-send shape, resend endpoint shape, missing DTO fields `invitedBy`/`createdAt`/`token`, server- vs client-side filter/search) are carried to `fe-lead`/BE team in `spec.md` §8 — not blocking spec completion, but block `/fe` implementation of the affected FRs until resolved
+- `docs/TEST_MATRIX.md`: US-E21.1 row updated to `implemented` (unit/integration/e2e/platform all yes) — see row for full proof summary.
+- `docs/product/screens.md`: status can now move from spec-ready to implemented for this screen.
+- No ADR required for this story — OQ-1 (role vocabulary) resolved by `ba-lead` without a new decision record (decision `0022`); the ground-truth correction in `integration.md` §6 additionally confirmed the wire mapping is a clean 1:1 (no alias collapsing needed), which is a contract clarification, not an architecture decision, so still no ADR.
+- Former open contract questions (batch-send shape, resend endpoint shape, missing DTO fields `invitedBy`/`createdAt`/`token`, server- vs client-side filter/search) are all RESOLVED by the ground-truth correction (`integration.md` §6, 2026-07-18): no batch/resend/list endpoint exists on the real BE at all — permanently mock-first, not pending confirmation. Cross-repo asks #29/#30 filed in `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md` for BE follow-up if/when this becomes a priority.
+- New cross-cutting fix (not scoped to this story alone): `components/ui/dialog/dialog.tsx` + `components/shared/destructive-confirm-dialog/destructive-confirm-dialog.tsx` now restore focus to the invoking control on close (via the pre-existing `useDialogReturnFocus` hook) — benefits every Dialog/AlertDialog consumer repo-wide (~50 combined), closing a defect first flagged (but only locally patched) in US-E22.1's DEF-01.
+- Follow-up flagged, not part of this story: ~66 pre-existing Storybook interaction failures observed as an env-wide baseline during this story's Dialog-fix regression check don't appear tracked by any existing story — worth a dedicated investigation.

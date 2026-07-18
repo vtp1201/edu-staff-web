@@ -7,6 +7,7 @@ export type StatusTone =
   | "success"
   | "warning"
   | "error"
+  | "error-dark"
   | "info"
   | "purple"
   | "teal"
@@ -26,6 +27,10 @@ const TONE_CLASS: Record<StatusTone, string> = {
   // warning-foreground (#2A3547) = ~11:1 on warning tint — a11y rule (never white).
   warning: "bg-edu-warning/15 text-edu-warning-foreground",
   error: "bg-edu-error/15 text-edu-error-text",
+  // Darker error hue for a heavier/terminal state (e.g. revoked invitation,
+  // US-E21.1). --edu-error-dark (#b91c1c) on --edu-error-dark-light (#fee2e2)
+  // tint = AA-compliant; tokens already exist (no ADR).
+  "error-dark": "bg-edu-error-dark-light text-edu-error-dark",
   // info/teal/purple vibrant hues fail AA on their own tinted bg (A11Y-001/002).
   // text-edu-text-primary (#2A3547) = 11.5:1 on any light tint — guaranteed AA.
   info: "bg-edu-info/15 text-edu-text-primary",

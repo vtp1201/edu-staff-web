@@ -2127,6 +2127,114 @@
       "unknown": "An unexpected error occurred"
     }
   },
+  "invitations": {
+    "pageTitle": "Invitations",
+    "pageSubtitle": "Send and manage email invitations to join the school.",
+    "refresh": "Refresh",
+    "sendInvite": "Send invite",
+    "tabs": {
+      "all": "All",
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "search": {
+      "placeholder": "Search by email…",
+      "ariaLabel": "Search by email"
+    },
+    "table": {
+      "columns": {
+        "email": "Email",
+        "role": "Role",
+        "invitedBy": "Invited by",
+        "sentDate": "Sent",
+        "expiry": "Expires",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "loadingAriaLabel": "Loading invitation list"
+    },
+    "roleLabels": {
+      "teacher": "Teacher",
+      "student": "Student",
+      "parent": "Parent",
+      "manager": "Board",
+      "admin": "Admin"
+    },
+    "statusLabels": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "countdown": {
+      "daysLeft": "{days, plural, =0 {Expires today} one {# day left} other {# days left}}",
+      "expiredOn": "Expired {date}",
+      "notApplicable": "—"
+    },
+    "empty": {
+      "noInvitationsTitle": "No invitations yet",
+      "noInvitationsBody": "Invite teachers, students and parents by email — they receive an activation link.",
+      "noInvitationsCta": "Send invite",
+      "noMatchTitle": "No invites match your filters",
+      "noMatchBody": "Try a different keyword or status tab.",
+      "clearFiltersCta": "Clear filters"
+    },
+    "error": {
+      "title": "Could not load invitations",
+      "description": "Something went wrong while connecting. Please try again.",
+      "retry": "Retry"
+    },
+    "sendDialog": {
+      "title": "Send invitations",
+      "subtitle": "Recipients get an email with a link to join the school.",
+      "emailChipsLabel": "Invitee emails",
+      "emailChipsPlaceholder": "name@school.edu.vn, press Enter to add…",
+      "emailChipsHelper": "Paste multiple emails separated by commas or spaces.",
+      "invalidEmailError": "Some emails are invalid — remove or fix them before sending.",
+      "duplicateEmailError": "This email already has an invitation in this school.",
+      "roleLabel": "Invited role",
+      "expiryLabel": "Invitation validity",
+      "expiryOption": "{days, plural, other {# days}}",
+      "submitOne": "Send invite",
+      "submitMany": "Send {count} invites",
+      "cancel": "Cancel",
+      "close": "Close"
+    },
+    "toast": {
+      "sentOne": "Invite sent to {email}",
+      "sentMany": "Sent {count} invites ({role})",
+      "sentPartial": "{succeeded} invites sent, {failed} failed",
+      "duplicateEmail": "{email} already has an invitation",
+      "networkError": "Could not send invitations. Please try again.",
+      "copiedLink": "Invite link copied",
+      "clipboardDenied": "Could not copy the link. Please try again.",
+      "resentTo": "Invite resent to {email}",
+      "resendRaceError": "Cannot resend — the invitation changed state",
+      "resendNetworkError": "Could not resend the invitation. Please try again.",
+      "revokedOf": "Invite for {email} revoked",
+      "revokeNotFoundRace": "Cannot revoke the invitation (it may already be processed)",
+      "revokeNetworkError": "Could not revoke the invitation. Please try again."
+    },
+    "revokeDialog": {
+      "title": "Revoke this invitation?",
+      "body": "The link sent to {email} becomes invalid immediately. The recipient can no longer join with this invite; you can always send a new one.",
+      "cancel": "Cancel",
+      "confirm": "Revoke invite"
+    },
+    "a11y": {
+      "removeChip": "Remove email {email}",
+      "rowActionsLabel": "Actions for {email}",
+      "copyLink": "Copy invite link for {email}",
+      "resend": "Resend invite for {email}",
+      "revoke": "Revoke invite for {email}"
+    },
+    "summary": {
+      "count": "{count, plural, one {# invite} other {# invites}}",
+      "filtered": " (filtered)"
+    }
+  },
   "lessonBank": {
     "detail": {
       "author": "Uploaded by",

@@ -1,4 +1,5 @@
 export * from "./academic-records.di";
+export * from "./admin-invitations.di";
 export * from "./admin-roster.di";
 export * from "./admin-school-setup.di";
 export * from "./admin-settings.di";

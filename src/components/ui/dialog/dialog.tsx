@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
 
 function Dialog({
@@ -54,11 +55,19 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
 }) {
+  // Restore focus to the invoking control on close (DEF-01, US-E22.1). Dialogs
+  // opened via a controlled `open` (no `<DialogTrigger>`) leave Radix's
+  // triggerRef null, so its default onCloseAutoFocus focuses <body> instead of
+  // the CTA (fails WCAG 2.4.3). Content mounts on open, so capture-on-mount =
+  // capture-at-open. Placed before {...props} so a consumer's own
+  // onCloseAutoFocus still overrides.
+  const returnFocus = useDialogReturnFocus(true);
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onCloseAutoFocus={returnFocus}
         className={cn(
           "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg outline-none motion-safe:duration-200 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:zoom-out-95 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:zoom-in-95 sm:max-w-lg",
           className,

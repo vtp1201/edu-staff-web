@@ -4,6 +4,7 @@ import { IAM_MEMBER_EP } from "@/bootstrap/endpoint/iam-member.endpoint";
 import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import type { AuthTokens } from "../../domain/entities/auth-user.entity";
+import type { Invitation } from "../../domain/entities/invitation.entity";
 import type { IamMemberFailure } from "../../domain/failures/iam-member.failure";
 import type {
   IIamMemberRepository,
@@ -132,5 +133,26 @@ export class IamMemberRepository implements IIamMemberRepository {
     } catch (err) {
       throw mapIamFailure(err);
     }
+  }
+
+  /**
+   * MOCK-ONLY guard (US-E21.1). No real IAM `GET` list route exists (see
+   * integration.md §6) — the DI factory always routes list/resend to
+   * `MockIamMemberRepository`, so this is never reached in real mode. It exists
+   * only so the real class still satisfies `IIamMemberRepository` and the app
+   * compiles with `NEXT_PUBLIC_USE_MOCK` unset. Same "real class = permanent
+   * blocked stub" precedent as `staff-leave` (US-E18.8).
+   */
+  listInvitations(): Promise<Invitation[]> {
+    throw new Error(
+      "listInvitations has no real IAM route (mock-only, US-E21.1); see integration.md §6",
+    );
+  }
+
+  /** MOCK-ONLY guard (US-E21.1) — see {@link listInvitations}. */
+  resendInvitation(): Promise<Invitation> {
+    throw new Error(
+      "resendInvitation has no real IAM route (mock-only, US-E21.1); see integration.md §6",
+    );
   }
 }

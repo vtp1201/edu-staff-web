@@ -481,6 +481,49 @@ Generalizes to any one-way-transition write (publish, seal, approve) that
 already has a spec'd pure-status-driven read-only view AND a form that seeds
 its `defaultValues` once from that same query on mount.
 
+## Row-level pending state via `mutation.variables`, not a second boolean map (US-E21.1, admin invitations)
+
+When a table has per-row actions (resend/revoke) sharing ONE `useMutation`
+instance per action type (not per row), derive the row-level spinner from
+`mutation.isPending && mutation.variables === row.id` rather than a parallel
+`Record<string, boolean>` of in-flight ids. Cheap, single source of truth,
+matches `grade-approval-container.tsx`'s `useQuery`+3×`useMutation` shape
+(closest shipped mock-first-repository container precedent — read it in full
+before designing a similar admin screen). Caveat to flag explicitly in the
+design doc (not silently accept): a single shared mutation only tracks the
+MOST RECENT call's `variables` — if an AC ever requires true independent
+concurrent per-row mutations (two rows resending at once), this shape is
+insufficient and needs per-row `useMutation` keying instead; don't build that
+speculatively when specs only imply one-row-at-a-time admin actions.
+
+## Race-branch invalidation asymmetry: invalidate on success + the SPECIFIC race error, not on generic network error (US-E21.1)
+
+Extends the moderation/US-E19.2 "never-optimistic mutation's onError still
+invalidates on the specific race branch" rule with the negative case made
+explicit: plain network/5xx failure on a resend/revoke-style mutation should
+NOT invalidate the list (nothing changed server-side, AC explicitly says "row
+unchanged" — an invalidate would just cost an unnecessary refetch/skeleton
+flash), while the SAME mutation's specific already-changed-server-side race
+error code (e.g. `invalid-state`, `invitation-invalid`) DOES invalidate. Two
+different `ok:false` branches of the same Server Action result can have
+opposite invalidation behavior — branch on the specific `errorKey`, never a
+blanket `onSettled: () => invalidate()`.
+
+## Fan-out send mutation: invalidate on ANY success, even partial — never a strict "some failed = don't invalidate" gate (US-E21.1)
+
+For a client-side fan-out (N sequential/parallel single-item POSTs
+reconciled into `{succeeded[], failed[]}`, same pattern as US-E13.2
+attendance-history and US-E18.5 admin-roster-enroll), the invalidation rule
+is `succeeded.length > 0` — NOT `failed.length === 0`. Partial success (3 of
+4 emails sent) still means real new rows exist server-side that the cached
+list must reflect; only a TOTAL failure (`succeeded.length === 0`) skips the
+invalidate. Toast composition needs a THIRD tier beyond "success"/"failure":
+a partial-success toast (new i18n key, easy to miss when copying an existing
+toast-key list from a plan.md hand-off that only enumerated the binary
+success/failure cases) — flag this i18n gap explicitly to `fe-lead` rather
+than silently reusing the plain success or failure toast for the partial
+case.
+
 ## Cross-feature read-only reference-data query key — keep it feature-neutral, not scoped to the first consumer (US-E11.8)
 
 When a NEW feature's client-side picker/select becomes the **first**
