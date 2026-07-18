@@ -21,7 +21,17 @@ let mockPathname = "/t/school-a/teacher/dashboard";
 
 vi.mock("@/bootstrap/i18n/routing", () => ({
   usePathname: () => mockPathname,
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+}));
+
+// US-E23.1: AppShell now reads `?switched=1` (next/navigation) and toasts via
+// next-intl. This SSE-wiring test renders in the node env with no intl provider
+// and effects don't run under renderToStaticMarkup, so stub both.
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(""),
+}));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
 }));
 
 let mockRealtime: {

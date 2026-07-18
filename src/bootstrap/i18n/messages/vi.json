@@ -3887,6 +3887,18 @@
       "subtitle": "Bạn là thành viên của các tổ chức sau",
       "switching": "Đang chuyển…",
       "title": "Chọn không gian làm việc"
+    },
+    "switch": {
+      "cardAriaLabel": "{name}, {address}, vai trò {role}{current, select, yes {, trường hiện tại} other {}}",
+      "current": "Hiện tại",
+      "dialogDescription": "Chọn trường bạn muốn chuyển sang. Bạn sẽ được đưa vào không gian làm việc của trường đó.",
+      "dialogTitle": "Chọn trường",
+      "empty": "Không có trường nào để chuyển",
+      "error403": "Không thể chuyển sang trường này. Bạn không còn là thành viên đang hoạt động.",
+      "errorGeneric": "Chuyển trường thất bại. Vui lòng thử lại.",
+      "menuItem": "Đổi trường",
+      "switched": "Đã chuyển sang {school}",
+      "switching": "Đang chuyển…"
     }
   },
   "timetable": {

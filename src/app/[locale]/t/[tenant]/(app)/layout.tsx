@@ -1,11 +1,14 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { switchTenantAction } from "@/app/[locale]/(auth)/select-tenant/actions";
 import { evaluateAccess } from "@/bootstrap/auth-guard";
 import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
+import { makeListMyMembershipsUseCase } from "@/bootstrap/di/tenant.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell } from "@/components/layout/app-shell";
+import { enrichMemberships } from "@/features/tenant/infrastructure/enrich-memberships";
 import { requestEmailVerificationAction } from "./email-verification.actions";
 
 /**
@@ -49,6 +52,15 @@ export default async function AppLayout({
   const email = profile.data?.email ?? "";
   const userName = profile.data?.name ?? "Nguyen Van A";
 
+  // Tenant-switch data (US-E23.1). Fail-closed to [] on a fetch failure so the
+  // header menu item degrades to "hidden" (FR-002) rather than crashing.
+  // Enrich each membership with mock-first display fields (name/address/logo)
+  // + isCurrent (matched against the decoded tokenTenantId) + isSwitchable.
+  const rawMemberships = await makeListMyMembershipsUseCase()
+    .then((uc) => uc.execute())
+    .catch(() => []);
+  const memberships = enrichMemberships(rawMemberships, tokenTenantId);
+
   return (
     <AppShell
       tenantId={tenant}
@@ -58,6 +70,9 @@ export default async function AppLayout({
       emailVerified={emailVerified}
       email={email}
       onRequestEmailVerification={requestEmailVerificationAction}
+      memberships={memberships}
+      currentTenantId={tokenTenantId ?? undefined}
+      onSwitchTenant={switchTenantAction}
     >
       <ReactQueryProvider>{children}</ReactQueryProvider>
     </AppShell>

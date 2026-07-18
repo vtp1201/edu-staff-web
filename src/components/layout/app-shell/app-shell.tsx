@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { EmailVerificationActionResult } from "@/app/[locale]/t/[tenant]/(app)/email-verification.actions";
 import { usePathname, useRouter } from "@/bootstrap/i18n/routing";
 import { useRealtimeEvents } from "@/bootstrap/realtime";
@@ -9,10 +12,15 @@ import {
   SseDisconnectBanner,
   SsePendingPill,
 } from "@/components/shared/sse-status";
+import type {
+  SwitchTenantResult,
+  TenantCardViewModel,
+} from "@/components/shared/tenant-card";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { EmailVerifyBanner } from "@/features/auth/presentation/email-verify/email-verify-banner";
 import { EmailVerifyProvider } from "@/features/auth/presentation/email-verify/email-verify-context";
 import { Header } from "./header/header";
+import { parseSwitchedParam } from "./parse-switched-param";
 import type { Role } from "./sidebar/nav-config";
 import { Sidebar } from "./sidebar/sidebar";
 import { useSidebarCollapsed } from "./sidebar/use-sidebar-collapsed";
@@ -29,6 +37,14 @@ type AppShellProps = {
   email?: string;
   /** Send/resend email-verification server action (server-action-as-prop). */
   onRequestEmailVerification?: () => Promise<EmailVerificationActionResult>;
+  // NEW (US-E23.1) — pass-through to <Header>; all optional (feature absent by
+  // default) so existing callers/tests/stories keep working unchanged.
+  memberships?: TenantCardViewModel[];
+  currentTenantId?: string;
+  onSwitchTenant?: (
+    tenantId: string,
+    role: string,
+  ) => Promise<SwitchTenantResult>;
   children: React.ReactNode;
 };
 
@@ -39,13 +55,31 @@ export function AppShell({
   emailVerified = null,
   email = "",
   onRequestEmailVerification,
+  memberships,
+  currentTenantId,
+  onSwitchTenant,
   children,
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tSwitch = useTranslations("tenant.switch");
   const [role, setRole] = useState<Role>(initialRole);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { collapsed, toggle } = useSidebarCollapsed();
+
+  // Tenant-switch success toast (US-E23.1, fe-lead decision 2026-07-18):
+  // switchTenantAction redirect()s before returning, so the toast fires from
+  // the destination via a one-shot `?switched=1&school=<name>` param, then the
+  // param is stripped so a refresh doesn't re-fire it.
+  const switchedFired = useRef(false);
+  useEffect(() => {
+    const school = parseSwitchedParam(searchParams);
+    if (school === null || switchedFired.current) return;
+    switchedFired.current = true;
+    toast.success(tSwitch("switched", { school }));
+    router.replace(pathname);
+  }, [searchParams, pathname, router, tSwitch]);
 
   // Realtime (SSE) connection — mounted once for the whole shell (US-E08.6).
   // Also activates the dormant notification.created/attendance.updated cache
@@ -91,6 +125,9 @@ export function AppShell({
             userName={userName}
             onMenuClick={() => setMobileOpen(true)}
             onRoleChange={handleRoleChange}
+            memberships={memberships}
+            currentTenantId={currentTenantId}
+            onSwitchTenant={onSwitchTenant}
           />
           <SseDisconnectBanner status={bannerStatus} onReconnect={reconnect} />
           <EmailVerifyBanner onSend={onRequestEmailVerification} />
