@@ -101,6 +101,12 @@ export const KeyboardSelect: Story = {
         canvas.getByRole("button", { name: "Bỏ chọn" }),
       ).toBeInTheDocument(),
     );
+    // Focus must land on the clear button after keyboard selection — the cmdk
+    // input + trigger both unmount, so without an explicit move focus falls to
+    // <body> (A11Y-003).
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: "Bỏ chọn" })).toHaveFocus(),
+    );
   },
 };
 

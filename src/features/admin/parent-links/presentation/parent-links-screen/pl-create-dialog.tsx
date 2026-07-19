@@ -105,6 +105,7 @@ export function PLCreateDialog({
 }: PLCreateDialogProps) {
   const t = useTranslations("parentLinks");
   const parentErrorId = useId();
+  const studentErrorId = useId();
 
   const [student, setStudent] = useState<SearchComboboxCandidate | null>(null);
   const [parent, setParent] = useState<SearchComboboxCandidate | null>(null);
@@ -217,24 +218,37 @@ export function PLCreateDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-3.5">
-          <SearchCombobox
-            label={t("createDialog.studentLabel")}
-            placeholder={t("createDialog.studentPlaceholder")}
-            value={student}
-            onValueChange={setStudent}
-            query={studentQ}
-            onQueryChange={setStudentQ}
-            candidates={studentCandidates}
-            status={comboStatus(studentEnabled, studentQuery)}
-            errorMessage={t("errors.searchNetwork")}
-            onRetry={() => studentQuery.refetch()}
-            emptyMessage={t("createDialog.noResults")}
-            loadingMessage={t("createDialog.searching")}
-            clearSelectionAriaLabel={t("createDialog.clearSelection")}
-            listboxAriaLabel={t("createDialog.studentListboxLabel")}
-            retryLabel={t("errors.retry")}
-            invalid={Boolean(studentFieldError)}
-          />
+          <div>
+            <SearchCombobox
+              label={t("createDialog.studentLabel")}
+              placeholder={t("createDialog.studentPlaceholder")}
+              value={student}
+              onValueChange={setStudent}
+              query={studentQ}
+              onQueryChange={setStudentQ}
+              candidates={studentCandidates}
+              status={comboStatus(studentEnabled, studentQuery)}
+              errorMessage={t("errors.searchNetwork")}
+              onRetry={() => studentQuery.refetch()}
+              emptyMessage={t("createDialog.noResults")}
+              loadingMessage={t("createDialog.searching")}
+              clearSelectionAriaLabel={t("createDialog.clearSelection")}
+              listboxAriaLabel={t("createDialog.studentListboxLabel")}
+              retryLabel={t("errors.retry")}
+              invalid={Boolean(studentFieldError)}
+              describedById={studentFieldError ? studentErrorId : undefined}
+            />
+            {studentFieldError && (
+              <p
+                id={studentErrorId}
+                role="alert"
+                className="mt-1.5 flex items-center gap-1.5 font-bold text-edu-error-dark text-xs"
+              >
+                <AlertTriangle className="size-3" aria-hidden="true" />
+                {studentFieldError.message}
+              </p>
+            )}
+          </div>
 
           <div>
             <SearchCombobox

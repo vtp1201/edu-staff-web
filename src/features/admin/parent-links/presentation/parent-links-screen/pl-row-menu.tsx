@@ -1,4 +1,5 @@
 import { ExternalLink, MoreHorizontal, Trash2 } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +20,26 @@ export interface PLRowMenuProps {
 }
 
 /**
+ * Run `cb` only AFTER the dropdown's own content has fully unmounted (incl. its
+ * exit animation). Opening a controlled dialog on the same tick (or a bare
+ * `setTimeout(0)` that can fire before an animated close finishes) races the
+ * menu's own close, so the dialog snapshots the wrong `activeElement` and focus
+ * later falls to <body> instead of the trigger (A11Y-001). Polling for the
+ * content's removal serialises the two.
+ */
+function afterMenuClosed(cb: () => void): void {
+  const start = performance.now();
+  const poll = () => {
+    const stillOpen = document.querySelector(
+      '[data-slot="dropdown-menu-content"]',
+    );
+    if (!stillOpen || performance.now() - start > 1000) cb();
+    else requestAnimationFrame(poll);
+  };
+  requestAnimationFrame(poll);
+}
+
+/**
  * Row action menu — thin wrapper over shadcn DropdownMenu ("Xem chi tiết" /
  * "Gỡ liên kết" danger-styled). Radix supplies full keyboard semantics + focus
  * return to the trigger on close. Shared identically by table + card list
@@ -33,10 +54,22 @@ export function PLRowMenu({
   onViewDetail,
   onUnlinkRequest,
 }: PLRowMenuProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // After the menu closes, explicitly put focus back on THIS trigger before
+  // opening the dialog, so the dialog's return-focus snapshot captures the
+  // trigger (not <body>) and restores focus here on close (A11Y-001, WCAG 2.4.3).
+  const openAfterClose = (cb: () => void) =>
+    afterMenuClosed(() => {
+      triggerRef.current?.focus();
+      cb();
+    });
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          ref={triggerRef}
           type="button"
           variant="outline"
           size="icon"
@@ -48,7 +81,9 @@ export function PLRowMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-42">
         {canViewDetail && (
-          <DropdownMenuItem onSelect={onViewDetail}>
+          // Do NOT preventDefault — that keeps the menu open, and its dismissable
+          // layer would then swallow the dialog's Escape.
+          <DropdownMenuItem onSelect={() => openAfterClose(onViewDetail)}>
             <ExternalLink
               className="size-4 text-muted-foreground"
               aria-hidden="true"
@@ -58,7 +93,7 @@ export function PLRowMenu({
         )}
         {canUnlink && (
           <DropdownMenuItem
-            onSelect={onUnlinkRequest}
+            onSelect={() => openAfterClose(onUnlinkRequest)}
             className="text-edu-error-dark focus:text-edu-error-dark"
           >
             <Trash2 className="size-4" aria-hidden="true" />

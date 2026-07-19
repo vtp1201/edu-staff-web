@@ -95,6 +95,7 @@ export function SearchCombobox({
 }: SearchComboboxProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
   const generatedId = useId();
   const triggerId = id ?? generatedId;
 
@@ -102,6 +103,9 @@ export function SearchCombobox({
     onValueChange(candidate);
     onQueryChange("");
     setOpen(false);
+    // On selection the cmdk input (holding focus) AND the trigger both unmount;
+    // move focus to the now-rendered clear button so it never falls to <body>.
+    requestAnimationFrame(() => clearButtonRef.current?.focus());
   };
 
   const handleClear = () => {
@@ -143,11 +147,12 @@ export function SearchCombobox({
             )}
           </div>
           <button
+            ref={clearButtonRef}
             type="button"
             onClick={handleClear}
             disabled={disabled}
             aria-label={clearSelectionAriaLabel}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            className="inline-flex size-7 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             <X className="size-3.5" aria-hidden="true" />
           </button>
@@ -165,7 +170,7 @@ export function SearchCombobox({
               aria-invalid={invalid || undefined}
               aria-describedby={describedById}
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg border bg-background px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
+                "flex min-h-11 w-full items-center gap-2 rounded-lg border bg-background px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
                 invalid ? "border-edu-error-dark" : "border-border",
               )}
             >

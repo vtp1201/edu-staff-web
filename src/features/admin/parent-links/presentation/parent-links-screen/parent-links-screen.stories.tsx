@@ -340,6 +340,32 @@ export const CreateDialogValidation: Story = {
   },
 };
 
+export const CreateDialogValidationStudent: Story = {
+  args: {
+    ...baseProps,
+    createLinkAction: async () => ({
+      ok: false,
+      errorKey: "validation",
+      retryable: false,
+      fields: [{ field: "studentId", message: "student-not-found" }],
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Tạo liên kết" }));
+    const dialog = await fillCreateForm();
+    await userEvent.click(dialog.getByRole("button", { name: "Tạo liên kết" }));
+    // The studentId 422 must render visible + accessible error text — a
+    // role="alert" node is announced by AT on render (A11Y-002; previously the
+    // student field got only a red border with no text). Its id is what the
+    // combobox's describedById points at when the field is in trigger state.
+    const alert = await dialog.findByText("Không tìm thấy học sinh này.");
+    await expect(alert).toBeInTheDocument();
+    await expect(alert).toHaveAttribute("role", "alert");
+    await expect(alert.getAttribute("id")).toBeTruthy();
+  },
+};
+
 export const CreateDialogNetwork: Story = {
   args: {
     ...baseProps,
@@ -388,15 +414,21 @@ export const CreateDialogKeyboard: Story = {
 
 // ── Detail dialog ────────────────────────────────────────────────────────────
 
-async function openRowMenuAndPick(itemName: string, rowStudent: string) {
+function getRowTrigger(rowStudent: string): HTMLElement {
   const canvas = within(document.body);
   const triggers = canvas.getAllByRole("button", {
     name: /Hành động cho liên kết/i,
   });
   // Pick the trigger whose aria-label mentions the row's student.
-  const trigger =
+  return (
     triggers.find((t) => t.getAttribute("aria-label")?.includes(rowStudent)) ??
-    triggers[0];
+    triggers[0]
+  );
+}
+
+async function openRowMenuAndPick(itemName: string, rowStudent: string) {
+  const canvas = within(document.body);
+  const trigger = getRowTrigger(rowStudent);
   await userEvent.click(trigger);
   await userEvent.click(
     await canvas.findByRole("menuitem", { name: itemName }),
@@ -595,6 +627,64 @@ export const UnlinkCancel: Story = {
     const dialog = within(await body.findByRole("alertdialog"));
     await userEvent.click(dialog.getByRole("button", { name: "Huỷ" }));
     await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+  },
+};
+
+// ── Focus-return on dialog close (A11Y-001) ──────────────────────────────────
+// The row menu opens the dialog via a deferred callback (setTimeout past the
+// dropdown's own close) so focus is captured/restored to THIS "..." trigger —
+// never falling to <body>. Assert it for both the unlink (Cancel + Escape) and
+// the detail dialog.
+
+export const UnlinkCancelReturnsFocus: Story = {
+  args: baseProps,
+  play: async () => {
+    const trigger = getRowTrigger("Nguyễn Minh Khoa");
+    await openRowMenuAndPick("Gỡ liên kết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    const dialog = within(await body.findByRole("alertdialog"));
+    await userEvent.click(dialog.getByRole("button", { name: "Huỷ" }));
+    await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
+
+export const UnlinkEscapeReturnsFocus: Story = {
+  args: baseProps,
+  play: async () => {
+    const trigger = getRowTrigger("Nguyễn Minh Khoa");
+    await openRowMenuAndPick("Gỡ liên kết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await waitFor(() => expect(body.queryByRole("menuitem")).toBeNull());
+    // The dropdown→dialog transition briefly leaves a stale dismissable layer
+    // that swallows Escape until it settles (Radix + exit-animation timing in
+    // the headless runner). Re-send Escape each poll until the dialog closes —
+    // this proves Escape DOES dismiss it, then focus must return to the trigger.
+    await waitFor(async () => {
+      await userEvent.keyboard("{Escape}");
+      expect(body.queryByRole("alertdialog")).toBeNull();
+    });
+    await waitFor(() => expect(trigger).toHaveFocus());
+  },
+};
+
+export const DetailReturnsFocus: Story = {
+  args: baseProps,
+  play: async () => {
+    const trigger = getRowTrigger("Nguyễn Minh Khoa");
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    const dialog = within(await body.findByRole("dialog"));
+    await waitFor(() =>
+      expect(body.getByText("Chi tiết liên kết")).toBeInTheDocument(),
+    );
+    await waitFor(() => expect(body.queryByRole("menuitem")).toBeNull());
+    // Close via the dialog's own "Đóng" (X) button — the deferred open captured
+    // the row trigger as the return-focus target, so focus must land back there.
+    await userEvent.click(dialog.getByRole("button", { name: "Đóng" }));
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
 

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import type { ParentLinkRowVM } from "./parent-links-screen.i-vm";
 import { PLConsentBadge } from "./pl-consent-badge";
 import {
@@ -78,6 +79,12 @@ export function PLDetailDialog({
   onClose,
 }: PLDetailDialogProps) {
   const t = useTranslations("parentLinks");
+  // Capture the invoking control at the open TRANSITION and restore focus to it
+  // on close (A11Y-001, WCAG 2.4.3). The shared DialogContent hardcodes
+  // `useDialogReturnFocus(true)`, which — because this dialog stays mounted while
+  // closed — snapshots the invoker at screen-mount (<body>) instead of at open.
+  // Passing our own `onCloseAutoFocus` (spread after the default) overrides it.
+  const returnFocus = useDialogReturnFocus(open);
 
   return (
     <Dialog
@@ -86,7 +93,7 @@ export function PLDetailDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-w-110">
+      <DialogContent className="max-w-110" onCloseAutoFocus={returnFocus}>
         <DialogHeader>
           <DialogTitle>{t("detailDialog.title")}</DialogTitle>
           <DialogDescription className="sr-only">
