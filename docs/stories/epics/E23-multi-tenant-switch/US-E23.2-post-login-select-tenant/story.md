@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -140,3 +140,75 @@ FR-008 — DR-018 left this undefined).
   finding as US-E23.1 (`features/tenant/*` vs `features/auth/*/iam-member*`)
   — not this story's job to fix, flagged for future consolidation.
 - Full consolidated spec + traceability matrix: `spec.md` in this packet.
+
+## Evidence
+
+```text
+Design review: pass
+- design-system: conform (tokens-only — bg-edu-error/15, text-edu-error-text,
+  bg-primary/text-primary-foreground, bg-muted, rounded via CSS vars; heading
+  22px/800 via text-2xl per design-system.md's page-title mapping; card grid
+  gap-3 (12px) matches design-spec.jsonc; TenantCard/TenantLogo/Button reused
+  verbatim from US-E23.1, no re-invention; matches screens.md `selectTenant`)
+- a11y: fe-accessibility-auditor FAIL-with-findings (A11Y-001 Blocking,
+  A11Y-002 Critical, A11Y-003 Major, A11Y-004 Minor) → all 4 fixed (heading
+  semantics on error/empty states, focus-on-mount to heading on branch
+  transition, <main> landmark, textual retry-pending label) → re-verified by
+  fe-lead reading the final diff; WCAG AA contrast OK (text-edu-error-text
+  per ADR 0049); keyboard-operable throughout; reduced-motion gated
+  (motion-safe: on shimmer/spinner)
+- impeccable audit: 0 findings requiring action (manual fe-lead pass over the
+  final diff — tokens-only, consistent spacing/hierarchy, no generic-AI-slop
+  patterns); 1 minor non-blocking observation: `loading.tsx`'s Suspense
+  fallback wrapper is a plain <div> (not <main>, unlike the resolved Shell) —
+  acceptable since it's a transient state with its own aria-live status, not
+  worth a re-fix round
+- states: loading (route-level `loading.tsx` skeleton, Decision A) / empty
+  (FR-007, logout escape action) / error (FR-008, retry via router.refresh())
+  / success (card grid) all present and covered by 11 Storybook interaction
+  stories + `page.test.tsx` integration tests; responsive 320px OK (no
+  overflow, single-column reflow); dark mode inherited via semantic tokens
+```
+
+- `fe-tech-lead-reviewer`: **Approved** (all 9 high-risk-lane items verified
+  against the actual diff, incl. the load-bearing single-membership skip
+  branch correctly minting via `switchTenantAction` rather than a bare
+  redirect). One non-blocking follow-up logged: a 401 at `GET
+  /members/me/tenants` list-time currently folds into this screen's generic
+  error+retry state rather than AC-004.4's literal "redirect to login" wording
+  — pre-authorized by the repo's documented deferred reactive-refresh posture
+  (decision `0018`), tracked as a cross-story follow-up, not a defect in this
+  story.
+- `fe-accessibility-auditor`: FAIL-with-findings → fixed → re-verified (see
+  above).
+- Proof: `bun vitest run` 2343/2343 pass (full suite, no regression);
+  `bunx tsc --noEmit` clean; `NEXT_PUBLIC_USE_MOCK=true bun run build` clean
+  (`/select-tenant` route builds); 11/11 Storybook interaction stories pass.
+
+- `fe-qa-playwright`: **CONDITIONAL PASS** (21/21 AC traceable to a real
+  test/story). Found 2 new MAJOR defects by writing genuinely new tests
+  (not just re-reading existing coverage) — both fixed by `fe-lead` before
+  merge:
+  - **DEF-QA-01**: card grid overflow at 320/375px with a realistic
+    long tenant name/address (the happy-path story's short curated mock
+    names masked it) — CSS Grid's default `min-width:auto` on `TenantCard`
+    as a direct grid item defeated the internal `truncate` class. Fixed:
+    `[&>*]:min-w-0` added to `CardsState`'s grid container
+    (`select-tenant.tsx`), same bug class/fix as `dialog.tsx`'s existing
+    precedent. Proven by new story `Viewport_CardGrid_NoOverflow`
+    (was red, now green).
+  - **DEF-QA-02**: `role="alert"` placed directly on the error state's
+    `<h1>` overrode its implicit heading role, silently defeating the
+    A11Y-001 heading-nav fix (`getByRole("heading")` found nothing where
+    `getByRole("alert")` did — the two are mutually exclusive for a single
+    element/role attribute). Fixed: moved `role="alert"` to a wrapping
+    `<div>` around the plain `<h1>` — both the heading-nav and the
+    live-region announcement now hold simultaneously. `Error_FetchFail`
+    story's assertion updated to assert the heading IS present (previously
+    documented the broken state on purpose as a QA regression guard).
+  - QA also added `Viewport_Error_320` (44px touch-target proof) and
+    verified mock-first curated tenant names/addresses render (not raw
+    `tenantId`) via `resolveTenantDelay`'s table.
+  - Post-fix re-run: `bunx vitest run --config vitest.storybook.mts
+    "select-tenant.stories"` → **14/14 pass** (11 original + 3 QA-added,
+    all green, no red tests remaining); `bunx tsc --noEmit` clean.
