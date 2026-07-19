@@ -3892,6 +3892,7 @@
       "postLogin": {
         "emptyTitle": "You do not belong to any organization yet",
         "errorRetry": "Try again",
+        "errorRetrying": "Retrying…",
         "errorTitle": "Couldn't load your schools. Please try again.",
         "footnote": "You can switch schools anytime from the account menu.",
         "heading": "Choose a school to continue",

@@ -2,7 +2,7 @@
 
 import { RotateCw, School } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "@/bootstrap/i18n/routing";
 import {
@@ -29,9 +29,9 @@ type Props = {
 /** Centered auth-shell column (reuses `screens.login` layout, maxWidth 480). */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+    <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-120">{children}</div>
-    </div>
+    </main>
   );
 }
 
@@ -71,6 +71,7 @@ function ErrorState({
   title: string;
   retryLabel: string;
 }) {
+  const t = useTranslations("tenant.switch.postLogin");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -82,9 +83,9 @@ function ErrorState({
       >
         <RotateCw className="size-7" strokeWidth={1.5} />
       </span>
-      <p className="mb-6 text-sm font-medium text-edu-error-text" role="alert">
+      <h1 className="mb-6 text-sm font-medium text-edu-error-text" role="alert">
         {title}
-      </p>
+      </h1>
       <Button
         onClick={() => startTransition(() => router.refresh())}
         disabled={isPending}
@@ -94,7 +95,7 @@ function ErrorState({
           className={cn("size-4", isPending && "motion-safe:animate-spin")}
           aria-hidden="true"
         />
-        {retryLabel}
+        {isPending ? t("errorRetrying") : retryLabel}
       </Button>
     </div>
   );
@@ -114,7 +115,7 @@ function EmptyState({ title }: { title: string }) {
       >
         <School className="size-7" strokeWidth={1.5} />
       </span>
-      <p className="mb-6 text-sm font-medium text-foreground">{title}</p>
+      <h1 className="mb-6 text-sm font-medium text-foreground">{title}</h1>
       <form action={logoutAction}>
         <Button type="submit" variant="outline">
           {tShell("logout")}
@@ -136,6 +137,12 @@ function CardsState({
 }) {
   const t = useTranslations("tenant.switch.postLogin");
   const tSwitch = useTranslations("tenant.switch");
+  // A11Y (WCAG 2.4.3) — on mount (skeleton/error/empty → cards branch flip via
+  // router.refresh()), move focus to the heading so it doesn't drop to <body>.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
   const [loadingTenantId, setLoadingTenantId] = useState<string | null>(null);
   // Single-slot error mirroring TenantSwitchDialog: only one card is ever
   // mid-flow (disabled-while-busy), so 403 needs just one inline error slot.
@@ -177,7 +184,11 @@ function CardsState({
         >
           <School className="size-7" strokeWidth={1.5} />
         </span>
-        <h1 className="mb-1.5 text-2xl font-extrabold text-foreground">
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mb-1.5 text-2xl font-extrabold text-foreground outline-none"
+        >
           {t("heading")}
         </h1>
         <p className="text-sm text-muted-foreground">{subheading}</p>

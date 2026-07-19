@@ -3892,6 +3892,7 @@
       "postLogin": {
         "emptyTitle": "Bạn chưa thuộc tổ chức nào",
         "errorRetry": "Thử lại",
+        "errorRetrying": "Đang thử lại…",
         "errorTitle": "Không tải được danh sách trường. Vui lòng thử lại.",
         "footnote": "Bạn có thể đổi trường bất kỳ lúc nào từ menu tài khoản.",
         "heading": "Chọn trường để tiếp tục",
