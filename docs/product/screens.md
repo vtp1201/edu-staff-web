@@ -29,7 +29,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Select role/tenant (multi-role) | `(auth)/select-role` | `features/auth/presentation` | 🎨 design-ready (US-E01.2) |
 | Forgot password (email→OTP→new pw→done) | `(auth)/forgot-password` | `features/auth/presentation` | ✅ (BE-wired US-030) |
 | Accept tenant invitation (public, no shell) | `/invitations/accept?token=...` | `features/auth/presentation/invite-accept` | ✅ (US-E21.2, corrected per ADR `0059` — auth-gate + signed-in join only, no guest account-creation/preview; `invitations.jsx` `InviteAcceptScreen` visual reference is stale for content/states, kept for shell/tone only) |
-| Select tenant (post-login, ≥2 tenants) | `(auth)/select-tenant` | `features/tenant` | 🎨 design-ready (US-E23.2; `tenant-switch.jsx` `TenantSelectScreen`, DR-018 2026-07-12; coordinate i18n with existing `tenant` namespace, US-E01.2) |
+| Select tenant (post-login, ≥2 tenants) | `(auth)/select-tenant` | `features/tenant` + `app/(auth)/select-tenant` | ✅ implemented (US-E23.2 enhances the E05/US-001-tenant-path-resolver screen in place: DR-018 card grid + error/empty/skip branches; `tenant.switch.postLogin.*` namespace) |
 
 ## All roles (Epic E08 shell + E10 messaging)
 
