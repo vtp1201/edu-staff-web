@@ -3880,14 +3880,6 @@
       "body": "You are inside this organization workspace.",
       "title": "Workspace"
     },
-    "select": {
-      "empty": "You do not belong to any organization yet",
-      "enter": "Enter",
-      "roles": "Roles",
-      "subtitle": "You belong to these organizations",
-      "switching": "Switching…",
-      "title": "Choose a workspace"
-    },
     "switch": {
       "cardAriaLabel": "{name}, {address}, role {role}{current, select, yes {, current school} other {}}",
       "current": "Current",
@@ -3897,6 +3889,16 @@
       "error403": "Can't switch to this school. You are no longer an active member.",
       "errorGeneric": "Switching school failed. Please try again.",
       "menuItem": "Switch school",
+      "postLogin": {
+        "emptyTitle": "You do not belong to any organization yet",
+        "errorRetry": "Try again",
+        "errorTitle": "Couldn't load your schools. Please try again.",
+        "footnote": "You can switch schools anytime from the account menu.",
+        "heading": "Choose a school to continue",
+        "loadingLabel": "Loading your schools…",
+        "subheadingNoName": "Your account belongs to {count, plural, one {# school} other {# schools}}.",
+        "subheadingWithName": "Hi {name} — your account belongs to {count, plural, one {# school} other {# schools}}."
+      },
       "switched": "Switched to {school}",
       "switching": "Switching…"
     }

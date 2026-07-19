@@ -3880,14 +3880,6 @@
       "body": "Bạn đang ở trong không gian của tổ chức này.",
       "title": "Không gian làm việc"
     },
-    "select": {
-      "empty": "Bạn chưa thuộc tổ chức nào",
-      "enter": "Vào",
-      "roles": "Vai trò",
-      "subtitle": "Bạn là thành viên của các tổ chức sau",
-      "switching": "Đang chuyển…",
-      "title": "Chọn không gian làm việc"
-    },
     "switch": {
       "cardAriaLabel": "{name}, {address}, vai trò {role}{current, select, yes {, trường hiện tại} other {}}",
       "current": "Hiện tại",
@@ -3897,6 +3889,16 @@
       "error403": "Không thể chuyển sang trường này. Bạn không còn là thành viên đang hoạt động.",
       "errorGeneric": "Chuyển trường thất bại. Vui lòng thử lại.",
       "menuItem": "Đổi trường",
+      "postLogin": {
+        "emptyTitle": "Bạn chưa thuộc tổ chức nào",
+        "errorRetry": "Thử lại",
+        "errorTitle": "Không tải được danh sách trường. Vui lòng thử lại.",
+        "footnote": "Bạn có thể đổi trường bất kỳ lúc nào từ menu tài khoản.",
+        "heading": "Chọn trường để tiếp tục",
+        "loadingLabel": "Đang tải danh sách trường…",
+        "subheadingNoName": "Tài khoản của bạn thuộc {count} trường.",
+        "subheadingWithName": "Xin chào {name} — tài khoản của bạn thuộc {count} trường."
+      },
       "switched": "Đã chuyển sang {school}",
       "switching": "Đang chuyển…"
     }

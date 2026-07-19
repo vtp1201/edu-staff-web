@@ -1,3 +1,7 @@
+export {
+  runSwitchActivation,
+  type SwitchActivationDeps,
+} from "./switch-activation";
 export { TenantCard, type TenantCardProps } from "./tenant-card";
 export type {
   SwitchTenantResult,
