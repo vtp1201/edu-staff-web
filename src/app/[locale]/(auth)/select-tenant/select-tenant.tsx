@@ -83,9 +83,15 @@ function ErrorState({
       >
         <RotateCw className="size-7" strokeWidth={1.5} />
       </span>
-      <h1 className="mb-6 text-sm font-medium text-edu-error-text" role="alert">
-        {title}
-      </h1>
+      {/* role="alert" on the wrapper (not the <h1> itself) — an explicit ARIA
+       *  role overrides the implicit host-language role for the element it's
+       *  on, so role="alert" directly on an <h1> would expose it as "alert"
+       *  to AT, not "heading" (defeats heading-nav, QA finding). */}
+      <div role="alert">
+        <h1 className="mb-6 text-sm font-medium text-edu-error-text">
+          {title}
+        </h1>
+      </div>
       <Button
         onClick={() => startTransition(() => router.refresh())}
         disabled={isPending}
@@ -194,7 +200,10 @@ function CardsState({
         <p className="text-sm text-muted-foreground">{subheading}</p>
       </div>
 
-      <div className="grid gap-3">
+      {/* [&>*]:min-w-0 — grid items default to min-width:auto, so a long
+       *  tenant name/address can force a card wider than its track at narrow
+       *  viewports (QA finding, same bug class as dialog.tsx's precedent). */}
+      <div className="grid gap-3 [&>*]:min-w-0">
         {cards.map((m) => (
           <TenantCard
             key={m.tenantId}
