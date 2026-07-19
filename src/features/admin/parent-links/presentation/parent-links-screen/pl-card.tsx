@@ -1,7 +1,7 @@
-import { Link2 } from "lucide-react";
 import type { ParentLinkRowVM } from "./parent-links-screen.i-vm";
 import { PLConsentBadge } from "./pl-consent-badge";
 import { PLPersonCell } from "./pl-person-cell";
+import { PLRelationBadge } from "./pl-relation-badge";
 import { PLRowMenu } from "./pl-row-menu";
 import type { PLRowsLabels } from "./pl-rows.i-vm";
 
@@ -29,9 +29,11 @@ export function PLCard({
             sub={labels.studentClassPrefix(row.student.className)}
             avatarUrl={row.student.avatarUrl}
           />
-          <div className="flex items-center gap-1.5 pl-1 text-muted-foreground">
-            <Link2 className="size-3" aria-hidden="true" />
-            <span className="font-bold text-xs">{row.relationshipLabel}</span>
+          <div className="pl-1">
+            <PLRelationBadge
+              relationship={row.relationship}
+              label={row.relationshipLabel}
+            />
           </div>
           <PLPersonCell
             fullName={row.parent.fullName}

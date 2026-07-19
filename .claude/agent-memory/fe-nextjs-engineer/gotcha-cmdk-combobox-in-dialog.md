@@ -29,15 +29,24 @@ dialog). Cluster of install + nested-Radix issues.
   the portalled popover inherits it and every control inside becomes un-clickable
   (userEvent: "element has pointer-events: none"). Real bug for users, not just tests.
 
-- **Dialog focus-trap steals focus from a nested portalled cmdk input** → the
-  search input is UNTYPEABLE (verified: input value stays "" even with explicit
-  `.focus()` + `userEvent.keyboard`; `modal` on the Popover does NOT fix it). The
-  standalone combobox types fine — only fails nested in a Dialog. Fix chosen:
-  fetch candidates on OPEN (`enabled: !selected`, not `debouncedQ.length>0`) so a
-  selection needs NO typing — also better UX (initial list on open). Story then
-  opens the combobox and clicks a pre-loaded option. Full arrow+Enter keyboard
-  SELECT is proven in the STANDALONE combobox story (works outside a dialog); the
-  in-dialog keyboard story asserts keyboard-open + `role="option"` listbox only.
+- **Dialog focus-trap steals focus from a nested PORTALLED cmdk input → RENDER
+  THE PANEL INLINE (no Popover/Portal). This is the real DEF-2 fix.** Root cause
+  (diagnosed via `document.activeElement` after open = the popover-TRIGGER, not
+  the input): Radix Dialog's `FocusScope` is trapped; a Popover portals the cmdk
+  input OUTSIDE the dialog's DOM subtree, so the FocusScope yanks focus back to
+  the trigger. Arrow/Enter then hit the TRIGGER — Enter toggles the popover shut,
+  selecting nothing (exactly the "popover closes, placeholder returns" bug).
+  **`modal` on the Popover does NOT pause the Dialog's FocusScope** (verified in
+  radix-ui 1.6.0 — focus still landed on the trigger). Fix that WORKS: drop the
+  Popover entirely and render the `Command` panel as an inline
+  `absolute top-full` sibling of the trigger inside the same `relative` container
+  — now the cmdk input is a descendant of the dialog's own focus scope, keeps
+  focus, and Arrow+Enter selects for real. Re-implement the popover niceties
+  yourself: `useEffect` focus the input on open, capture-phase `pointerdown`
+  outside-close, `onKeyDown` Escape→close+refocus trigger. A REAL in-dialog
+  arrow+Enter story then asserts the selected chip renders (don't punt to the
+  standalone story). (Earlier fetch-on-open `enabled:!selected` mock stays — good
+  UX + lets keyboard select with no typing.)
 
 - **Radix `Select` inside a Dialog leaves `aria-hidden="true"` on the dialog**
   during its close exit-animation (`hideOthers`), so `getByRole` finds "no

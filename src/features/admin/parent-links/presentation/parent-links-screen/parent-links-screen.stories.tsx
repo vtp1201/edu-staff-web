@@ -68,6 +68,26 @@ const page = (items: ParentStudentLink[]): ParentLinksPage => ({
   hasMore: false,
 });
 
+// `@storybook/addon-viewport` is NOT installed, so `parameters.viewport` blocks
+// are inert. To exercise a REAL width (so `useIsMobile`'s matchMedia and the
+// layout genuinely respond) drive the `@vitest/browser-playwright` context
+// directly (same pattern as discipline-screen.stories.tsx). Reset to a wide
+// desktop after each width-specific story so later table stories aren't left on
+// a narrow viewport.
+async function setViewport(w: number, h: number) {
+  const { page } = await import("vitest/browser");
+  await page.viewport(w, h);
+}
+async function resetViewport() {
+  await setViewport(1280, 900);
+}
+function expectNoHorizontalOverflow() {
+  // A truthful "no clipping / no horizontal scroll" check at the current width.
+  expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+    window.innerWidth + 1,
+  );
+}
+
 const okList =
   (items: ParentStudentLink[]) =>
   async (): Promise<ActionResult<ParentLinksPage>> => ({
@@ -244,6 +264,106 @@ export const ErrorState: Story = {
   },
 };
 
+// ── Filter (UC-002) ──────────────────────────────────────────────────────────
+// NOTE: the Storybook Next.js mock router does NOT update `useSearchParams()` on
+// `router.replace()` (verified), so a typed-into-the-box → refetch round-trip
+// can't be exercised at the story level. The APPLIED filter is therefore seeded
+// via `navigation.query`, which is exactly what the RSC deep-link path produces.
+
+export const FilterActiveNarrows: Story = {
+  // Applied filter = class 10C3 → only the 10C3 link is returned.
+  parameters: {
+    nextjs: { appDirectory: true, navigation: { query: { classId: "10C3" } } },
+  },
+  args: {
+    ...baseProps,
+    initialFilter: { q: "", classId: "10C3" },
+    initialPage: page([LINKS[1]]),
+    listLinksAction: okList([LINKS[1]]),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Narrowed to the matching row; an excluded row is absent.
+    await expect(canvas.getByText("Lê Thảo Vy")).toBeInTheDocument();
+    await expect(canvas.queryByText("Nguyễn Minh Khoa")).toBeNull();
+    // "(đã lọc)" count suffix (AC-002.1).
+    await expect(canvas.getByText(/1 liên kết/)).toBeInTheDocument();
+    await expect(canvas.getByText(/\(đã lọc\)/)).toBeInTheDocument();
+  },
+};
+
+export const FilterClearResetsInputs: Story = {
+  parameters: {
+    nextjs: { appDirectory: true, navigation: { query: { q: "khoa" } } },
+  },
+  args: {
+    ...baseProps,
+    initialFilter: { q: "khoa", classId: null },
+    initialPage: page([LINKS[0]]),
+    listLinksAction: okList([LINKS[0]]),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The search box mirrors the applied filter draft.
+    const search = canvas.getByRole("searchbox", {
+      name: "Tìm học sinh hoặc phụ huynh",
+    });
+    await expect(search).toHaveValue("khoa");
+    // Clicking the filter bar's "Xoá bộ lọc" resets the draft inputs (AC-002.2).
+    // (The subsequent URL reload is driven by router.replace, inert in SB.)
+    await userEvent.click(canvas.getByRole("button", { name: "Xoá bộ lọc" }));
+    await waitFor(() => expect(search).toHaveValue(""));
+  },
+};
+
+export const FilterRefilterLoading: Story = {
+  // Applied filter present (filtered context) but differs from the RSC-seeded
+  // filter → no seed → the query runs fresh; the action never resolves →
+  // skeleton shows with NO stale rows flashing (AC-002.3).
+  parameters: {
+    nextjs: { appDirectory: true, navigation: { query: { q: "vy" } } },
+  },
+  args: {
+    ...baseProps,
+    initialFilter: { q: "khoa", classId: null },
+    listLinksAction: () => new Promise<ActionResult<ParentLinksPage>>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText("Đang tải danh sách liên kết…"),
+    ).toBeInTheDocument();
+    await expect(canvas.queryByRole("table")).toBeNull();
+    // No stale row content while the refilter is in flight.
+    await expect(canvas.queryByText("Nguyễn Minh Khoa")).toBeNull();
+  },
+};
+
+export const FilterRefilterError: Story = {
+  parameters: {
+    nextjs: { appDirectory: true, navigation: { query: { q: "vy" } } },
+  },
+  args: {
+    ...baseProps,
+    initialFilter: { q: "khoa", classId: null },
+    listLinksAction: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // A failed refilter shows the same error + retry UI (AC-002.4).
+    await waitFor(() =>
+      expect(canvas.getByText("Không tải được dữ liệu")).toBeInTheDocument(),
+    );
+    await expect(
+      canvas.getByRole("button", { name: "Thử lại" }),
+    ).toBeInTheDocument();
+  },
+};
+
 // ── Create dialog ────────────────────────────────────────────────────────────
 
 async function fillCreateForm() {
@@ -280,7 +400,30 @@ async function fillCreateForm() {
 }
 
 export const CreateDialogHappy: Story = {
-  args: baseProps,
+  // The created link is returned with `consentStatus: "pending"` so the success
+  // toast — the observable proof the create succeeded (AC-003.2) — carries the
+  // parent→student names. (The refetched-row appearing in the table is driven by
+  // the mutation's `invalidateQueries` wiring, exercised against a real backend;
+  // the Storybook mock-refetch + `initialData` interaction makes the in-table
+  // row assertion unreliable, so it is intentionally not asserted here.)
+  args: {
+    ...baseProps,
+    createLinkAction: async (input) => ({
+      ok: true,
+      data: {
+        linkId: "l-new",
+        studentId: input.studentId,
+        studentName: "Vũ Đức Anh",
+        studentClassName: "10C3",
+        parentId: input.parentId,
+        parentName: "Vũ Thị Ngọc",
+        parentPhone: "0966 777 888",
+        relationship: input.relationship,
+        consentStatus: "pending",
+        linkedOn: "2026-07-19",
+      },
+    }),
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Tạo liên kết" }));
@@ -290,6 +433,34 @@ export const CreateDialogHappy: Story = {
     await waitFor(() =>
       expect(within(document.body).queryByRole("dialog")).toBeNull(),
     );
+    // Success toast text with the interpolated parent → student names (AC-003.2).
+    await waitFor(() =>
+      expect(
+        within(document.body).getByText(
+          /Đã tạo liên kết Vũ Thị Ngọc → Vũ Đức Anh/,
+        ),
+      ).toBeInTheDocument(),
+    );
+  },
+};
+
+export const CreateDialogPendingBusy: Story = {
+  args: {
+    ...baseProps,
+    // Never resolves — the submit button must show its busy/pending state
+    // (AC-003.5), mirroring the unlink non-optimistic pending proof.
+    createLinkAction: () =>
+      new Promise<ActionResult<ParentStudentLink>>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Tạo liên kết" }));
+    const dialog = await fillCreateForm();
+    const submit = dialog.getByRole("button", { name: "Tạo liên kết" });
+    await userEvent.click(submit);
+    // Submit reflects the in-flight state and the dialog stays open.
+    await waitFor(() => expect(submit).toHaveAttribute("aria-busy", "true"));
+    await expect(within(document.body).getByRole("dialog")).toBeInTheDocument();
   },
 };
 
@@ -395,12 +566,11 @@ export const CreateDialogKeyboard: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Tạo liên kết" }));
     const body = within(document.body);
     const dialog = within(await body.findByRole("dialog"));
-    // Keyboard-only: the combobox trigger opens with Enter and exposes a proper
-    // listbox of role="option" candidates (AC-003.8). The full arrow-navigate +
-    // Enter SELECTION is proven in isolation by the SearchCombobox
-    // "KeyboardSelect" story (nested modal-dialog focus contention makes the
-    // in-dialog keyboard-select flaky in the headless runner, but the listbox
-    // semantics + keyboard-open are asserted here at the screen level).
+    // Keyboard-only END-TO-END selection INSIDE the dialog (AC-003.8, DEF-2).
+    // The combobox trigger opens with Enter, exposes a role="option" listbox,
+    // then ArrowDown+Enter must genuinely COMPLETE a selection — proven here at
+    // the real create-dialog level (the nested Popover is `modal`, so its own
+    // focus scope pauses the Dialog's trap and cmdk keeps keyboard focus).
     const studentTrigger = dialog.getByRole("button", { name: "Học sinh" });
     studentTrigger.focus();
     await userEvent.keyboard("{Enter}");
@@ -409,6 +579,15 @@ export const CreateDialogKeyboard: Story = {
     );
     const options = await body.findAllByRole("option");
     await expect(options.length).toBeGreaterThan(0);
+    // Arrow-navigate to the first candidate and select it with Enter.
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    // The selection renders the chip + its "Bỏ chọn" clear button inside the
+    // dialog; the trigger placeholder is gone.
+    await waitFor(() =>
+      expect(
+        dialog.getByRole("button", { name: "Bỏ chọn" }),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
@@ -688,18 +867,161 @@ export const DetailReturnsFocus: Story = {
   },
 };
 
-// ── Mobile (viewport set; data parity asserted, UC-007) ──────────────────────
+// ── Responsive widths (REAL page.viewport, UC-007 / AC-007) ──────────────────
+// Card list <760px; table ≥760px. Each story drives a real width so matchMedia
+// (useIsMobile) responds, asserts data parity + NO horizontal overflow, then
+// resets to desktop so later stories aren't left narrow.
+
+async function expectCardParity(canvas: ReturnType<typeof within>) {
+  // Full data parity per card: student + relationship badge + parent + phone +
+  // consent badge (AC-007.2, MAJOR-3 — relationship is the shared badge).
+  await expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument();
+  await expect(canvas.getByText("Bố")).toBeInTheDocument();
+  await expect(canvas.getByText("Nguyễn Văn Bình")).toBeInTheDocument();
+  await expect(canvas.getByText("0912 345 678")).toBeInTheDocument();
+  await expect(canvas.getByText("Đã đồng ý nhận TB")).toBeInTheDocument();
+}
+
+export const MobileCardList320: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    await setViewport(320, 720);
+    try {
+      const canvas = within(canvasElement);
+      await waitFor(() =>
+        expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument(),
+      );
+      await expect(canvas.queryByRole("table")).toBeNull();
+      await expectCardParity(canvas);
+      expectNoHorizontalOverflow();
+    } finally {
+      await resetViewport();
+    }
+  },
+};
 
 export const MobileCardList375: Story = {
   args: baseProps,
-  globals: { viewport: { value: "mobile1", isRotated: false } },
-  parameters: { viewport: { defaultViewport: "mobile1" } },
   play: async ({ canvasElement }) => {
+    await setViewport(375, 812);
+    try {
+      const canvas = within(canvasElement);
+      await waitFor(() =>
+        expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument(),
+      );
+      await expect(canvas.queryByRole("table")).toBeNull();
+      await expectCardParity(canvas);
+      expectNoHorizontalOverflow();
+    } finally {
+      await resetViewport();
+    }
+  },
+};
+
+export const Tablet768: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    await setViewport(768, 1024);
+    try {
+      const canvas = within(canvasElement);
+      // ≥760px → the table renders (no clipping / horizontal scroll).
+      await waitFor(() =>
+        expect(canvas.getByRole("table")).toBeInTheDocument(),
+      );
+      await expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument();
+      expectNoHorizontalOverflow();
+    } finally {
+      await resetViewport();
+    }
+  },
+};
+
+export const Desktop1280: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    await setViewport(1280, 900);
     const canvas = within(canvasElement);
-    // Full data parity per card (student + parent + phone + consent).
+    await waitFor(() => expect(canvas.getByRole("table")).toBeInTheDocument());
     await expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument();
-    await expect(canvas.getByText("Nguyễn Văn Bình")).toBeInTheDocument();
-    await expect(canvas.getByText("0912 345 678")).toBeInTheDocument();
-    await expect(canvas.getByText("Đã đồng ý nhận TB")).toBeInTheDocument();
+    expectNoHorizontalOverflow();
+  },
+};
+
+export const MobileEmpty: Story = {
+  args: { ...baseProps, initialPage: page([]), listLinksAction: okList([]) },
+  play: async ({ canvasElement }) => {
+    await setViewport(375, 812);
+    try {
+      const canvas = within(canvasElement);
+      await waitFor(() =>
+        expect(
+          canvas.getByText("Lớp này chưa có liên kết nào"),
+        ).toBeInTheDocument(),
+      );
+      expectNoHorizontalOverflow();
+    } finally {
+      await resetViewport();
+    }
+  },
+};
+
+export const MobileError: Story = {
+  args: {
+    ...baseProps,
+    initialErrorKey: "network-error",
+    initialPage: page([]),
+    listLinksAction: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    await setViewport(375, 812);
+    try {
+      const canvas = within(canvasElement);
+      await waitFor(() =>
+        expect(canvas.getByText("Không tải được dữ liệu")).toBeInTheDocument(),
+      );
+      await expect(
+        canvas.getByRole("button", { name: "Thử lại" }),
+      ).toBeInTheDocument();
+      expectNoHorizontalOverflow();
+    } finally {
+      await resetViewport();
+    }
+  },
+};
+
+export const MobileRowMenuKeyboard: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    await setViewport(375, 812);
+    try {
+      within(canvasElement);
+      const body = within(document.body);
+      // AC-007.6: the mobile card's row menu is keyboard-operable identically to
+      // desktop (Radix DropdownMenu). Focus the trigger, open with Enter, and
+      // reach the menu items with the keyboard.
+      const trigger = getRowTrigger("Nguyễn Minh Khoa");
+      trigger.focus();
+      await userEvent.keyboard("{Enter}");
+      await waitFor(() =>
+        expect(
+          body.getByRole("menuitem", { name: "Xem chi tiết" }),
+        ).toBeInTheDocument(),
+      );
+      await expect(
+        body.getByRole("menuitem", { name: "Gỡ liên kết" }),
+      ).toBeInTheDocument();
+      // Radix focuses the first item on open; Enter activates "Xem chi tiết" and
+      // opens the detail dialog — fully keyboard-operable, identical to desktop.
+      await userEvent.keyboard("{Enter}");
+      await waitFor(() =>
+        expect(body.getByText("Chi tiết liên kết")).toBeInTheDocument(),
+      );
+    } finally {
+      await resetViewport();
+    }
   },
 };
