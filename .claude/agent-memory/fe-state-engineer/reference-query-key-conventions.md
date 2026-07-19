@@ -524,6 +524,36 @@ success/failure cases) — flag this i18n gap explicitly to `fe-lead` rather
 than silently reusing the plain success or failure toast for the partial
 case.
 
+## Reserved invalidation-only query key (populated by no query, targeted by a mutation's invalidate call) — US-E20.1, admin parent-links
+
+When a mutation's natural invalidation target (`detail(id)`) has no corresponding
+`useQuery` in the CURRENT story (e.g. row data comes from the already-fetched list
+cache / a prop, not its own fetch), still define the key in the factory and call
+`invalidateQueries({queryKey: keys.detail(id)})` from the mutation's `onSuccess` —
+even though it's a no-op today. Document it explicitly as "reserved, not populated
+by a query yet" in the design doc so `fe-nextjs-engineer` doesn't mistake the
+no-op for a missing implementation, and so a future story that DOES key a fetch
+by it inherits correct invalidation for free.
+
+## Two independent debounced-search gates inside one dialog, no shared debounce hook exists (US-E20.1)
+
+Confirmed by 3rd repo-wide grep (audit-log, moderation, question-bank all repeat
+inline `useEffect`+`setTimeout` debounce) — no `useDebounce` hook exists or should
+be invented. When a dialog has 2+ independent typeahead comboboxes (e.g. student
+search + parent search), each gets its OWN `[rawQ, debouncedQ]` state pair + its
+own query key + its own `enabled: debouncedQ.length > 0` gate — do not share one
+debounce timer across two inputs. Per component-architect coordination: the
+debounce state lives in the DIALOG container (owns both comboboxes), not inside
+the reusable combobox component itself, so the combobox stays a pure controlled
+input (`value`/`onChange` from outside) — keeps it reusable/testable without
+TanStack Query wiring baked into the presentational component.
+
+Typeahead-search cache policy: short `staleTime` (~10s) AND shorter-than-default
+`gcTime` (~60s, vs the global 5 min default) — candidate sets from many
+keystroke-driven keys shouldn't linger in memory; unlike list/detail queries,
+there's no value in serving a stale candidate set on a repeated identical
+keystroke pattern.
+
 ## Cross-feature read-only reference-data query key — keep it feature-neutral, not scoped to the first consumer (US-E11.8)
 
 When a NEW feature's client-side picker/select becomes the **first**

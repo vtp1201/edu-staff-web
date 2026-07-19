@@ -1,0 +1,315 @@
+"use client";
+
+import { Command as CommandPrimitive } from "cmdk";
+import { Loader2, SearchIcon, X } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/shared/utils";
+
+export interface SearchComboboxCandidate {
+  id: string;
+  primaryLabel: string;
+  /** e.g. className (student variant) or phone (parent variant). */
+  subLabel?: string;
+  avatarUrl?: string;
+  /** Caller-computed fallback initials (this component does no name-parsing). */
+  avatarInitials?: string;
+}
+
+export type SearchComboboxStatus = "idle" | "loading" | "error" | "success";
+
+export interface SearchComboboxProps {
+  /** Controlled selection — null = nothing selected. */
+  value: SearchComboboxCandidate | null;
+  onValueChange: (candidate: SearchComboboxCandidate | null) => void;
+  /** Controlled search text (debounce/query state lives OUTSIDE this component). */
+  query: string;
+  onQueryChange: (query: string) => void;
+  /** Fully resolved candidates for the CURRENT query (never filtered here). */
+  candidates: SearchComboboxCandidate[];
+  status: SearchComboboxStatus;
+  /** Already-i18n'd, shown inside the popover when status === "error". */
+  errorMessage?: string;
+  onRetry?: () => void;
+
+  label: string;
+  placeholder: string;
+  /** Shown when status === "success" && candidates.length === 0. */
+  emptyMessage: string;
+  loadingMessage: string;
+  clearSelectionAriaLabel: string;
+  /** aria-label for the listbox (e.g. "Kết quả tìm học sinh"). */
+  listboxAriaLabel: string;
+  retryLabel: string;
+
+  /** Caller-driven invalid state (renders the error border + aria-invalid). */
+  invalid?: boolean;
+  /** Links to the caller's own inline error <p id=...>. */
+  describedById?: string;
+  disabled?: boolean;
+  /** For <label htmlFor> association. */
+  id?: string;
+}
+
+/**
+ * Domain-agnostic searchable combobox (US-E20.1). Composes an inline dropdown
+ * panel + `Command`/cmdk (listbox + keyboard nav) — NOT a feature component
+ * (zero domain types). The debounce lives OUTSIDE: this only renders
+ * `query`/`candidates`/`status` and reports every keystroke via `onQueryChange`.
+ * `Command.shouldFilter={false}` because candidates are server-resolved, not
+ * client-filtered (NFR-008). Placed in `components/shared/` (2 in-screen
+ * consumers — component-organization.md §2).
+ *
+ * IMPORTANT (DEF-2, US-E20.1): the dropdown is rendered INLINE (no Radix
+ * Popover/Portal). This combobox lives inside a modal `Dialog` (the create-link
+ * dialog), whose Radix `FocusScope` is trapped. A portaled popover renders the
+ * cmdk input OUTSIDE the dialog's DOM subtree → the FocusScope immediately yanks
+ * focus back to the trigger, so keyboard nav (Arrow/Enter) hits the trigger
+ * (Enter closes the popover) and NO candidate is ever selected. Rendering the
+ * panel inline keeps the cmdk input inside the dialog's focus scope, so it
+ * retains focus and Arrow+Enter selects for real.
+ */
+export function SearchCombobox({
+  value,
+  onValueChange,
+  query,
+  onQueryChange,
+  candidates,
+  status,
+  errorMessage,
+  onRetry,
+  label,
+  placeholder,
+  emptyMessage,
+  loadingMessage,
+  clearSelectionAriaLabel,
+  listboxAriaLabel,
+  retryLabel,
+  invalid = false,
+  describedById,
+  disabled = false,
+  id,
+}: SearchComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const generatedId = useId();
+  const triggerId = id ?? generatedId;
+  const listboxId = `${generatedId}-listbox`;
+
+  // Focus the cmdk input when the panel opens. Runs after the panel mounts and,
+  // crucially, stays put — because the panel is inside the dialog's own focus
+  // scope, nothing pulls focus back to the trigger (DEF-2).
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  // Close on outside pointerdown (the inline panel has no Radix DismissableLayer).
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [open]);
+
+  const handleSelect = (candidate: SearchComboboxCandidate) => {
+    onValueChange(candidate);
+    onQueryChange("");
+    setOpen(false);
+    // On selection the cmdk input AND the trigger both unmount; move focus to
+    // the now-rendered clear button so it never falls to <body>.
+    requestAnimationFrame(() => clearButtonRef.current?.focus());
+  };
+
+  const handleClear = () => {
+    onValueChange(null);
+    onQueryChange("");
+    // Return focus to the (now visible again) trigger.
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  const handleCloseToTrigger = () => {
+    setOpen(false);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  return (
+    <div ref={containerRef} className="relative flex flex-col gap-1.5">
+      <label
+        htmlFor={triggerId}
+        className="font-bold text-edu-text-secondary text-xs"
+      >
+        {label}
+      </label>
+
+      {value ? (
+        <div
+          className={cn(
+            "flex items-center gap-2.5 rounded-lg border border-primary bg-primary/5 px-2.5 py-2",
+          )}
+        >
+          <Avatar className="size-7 shrink-0">
+            {value.avatarUrl && <AvatarImage src={value.avatarUrl} alt="" />}
+            <AvatarFallback className="text-xs">
+              {value.avatarInitials ?? value.primaryLabel.slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-bold text-foreground text-sm">
+              {value.primaryLabel}
+            </p>
+            {value.subLabel && (
+              <p className="truncate text-muted-foreground text-xs">
+                {value.subLabel}
+              </p>
+            )}
+          </div>
+          <button
+            ref={clearButtonRef}
+            type="button"
+            onClick={handleClear}
+            disabled={disabled}
+            aria-label={clearSelectionAriaLabel}
+            className="inline-flex size-7 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <X className="size-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            ref={triggerRef}
+            id={triggerId}
+            type="button"
+            disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-controls={open ? listboxId : undefined}
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedById}
+            onClick={() => setOpen((o) => !o)}
+            className={cn(
+              "flex min-h-11 w-full items-center gap-2 rounded-lg border bg-background px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
+              invalid ? "border-edu-error-dark" : "border-border",
+            )}
+          >
+            <SearchIcon
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="truncate text-muted-foreground">
+              {placeholder}
+            </span>
+          </button>
+
+          {open && (
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md">
+              <Command
+                shouldFilter={false}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    handleCloseToTrigger();
+                  }
+                }}
+              >
+                <div className="flex h-9 items-center gap-2 border-border border-b px-3">
+                  <SearchIcon
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <CommandPrimitive.Input
+                    ref={inputRef}
+                    data-slot="command-input"
+                    value={query}
+                    onValueChange={onQueryChange}
+                    placeholder={placeholder}
+                    className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                <CommandList id={listboxId} aria-label={listboxAriaLabel}>
+                  {status === "loading" && (
+                    <div
+                      role="status"
+                      className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm"
+                    >
+                      <Loader2
+                        className="size-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                      {loadingMessage}
+                    </div>
+                  )}
+                  {status === "error" && (
+                    <div
+                      role="alert"
+                      className="flex flex-col items-center gap-2 px-3 py-6 text-center"
+                    >
+                      <p className="text-edu-error-text text-sm">
+                        {errorMessage}
+                      </p>
+                      {onRetry && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={onRetry}
+                        >
+                          {retryLabel}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {status === "success" && candidates.length === 0 && (
+                    <CommandEmpty>{emptyMessage}</CommandEmpty>
+                  )}
+                  {(status === "success" || status === "idle") &&
+                    candidates.map((candidate) => (
+                      <CommandItem
+                        key={candidate.id}
+                        value={candidate.id}
+                        onSelect={() => handleSelect(candidate)}
+                        className="gap-2.5"
+                      >
+                        <Avatar className="size-7 shrink-0">
+                          {candidate.avatarUrl && (
+                            <AvatarImage src={candidate.avatarUrl} alt="" />
+                          )}
+                          <AvatarFallback className="text-xs">
+                            {candidate.avatarInitials ??
+                              candidate.primaryLabel.slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-foreground text-sm">
+                            {candidate.primaryLabel}
+                          </p>
+                          {candidate.subLabel && (
+                            <p className="truncate text-muted-foreground text-xs">
+                              {candidate.subLabel}
+                            </p>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                </CommandList>
+              </Command>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
