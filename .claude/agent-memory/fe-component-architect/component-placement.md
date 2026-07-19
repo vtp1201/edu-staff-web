@@ -221,6 +221,41 @@ parent (e.g. `status: {kind:"idle"|"loading"|"error"}` prop on a `TenantCard`, o
 by the dialog's local state, not baked into the list-item type). Keeps list items
 referentially simple and the presentational leaf a pure controlled component.
 
+**SearchCombobox (US-E20.1, parent-links, 2026-07-19):** first-ever combobox/
+typeahead primitive in this repo — none existed anywhere before this story
+(grepped `components/ui`, `components/shared`, all features for
+`combobox`/`typeahead`/`autocomplete`, confirmed empty by both `fe-planner`
+and this pass). Backed by `bun ui:add command` (shadcn/cmdk) + existing
+`Popover` (Trigger=search-input-or-selected-chip, Content=Command listbox).
+Placed directly in `components/shared/search-combobox/` from day one (not
+feature-local `pl-combobox`), justified by TWO independent signals: (a) 2
+consumers already exist within the ONE screen that needs it (student +
+parent variants) — the plan.md itself argued this alone satisfies the
+≥2-use bar even before a 2nd screen exists; (b) the prop contract is fully
+domain-agnostic (`SearchComboboxCandidate{id,primaryLabel,subLabel?,
+avatarUrl?,avatarInitials?}` + controlled `value`/`query`/`candidates`/
+`status`) — zero `Student`/`Parent` types leak into the shared file, so
+naming it `pl-combobox` would have misrepresented its actual reuse shape.
+Key design choice: the component holds **zero internal async/debounce
+state** — `query`/`candidates`/`status` are all controlled props, debounce
+timer lives in the caller (mirrors `fe-state-engineer`'s "debounce in the
+state layer, not the component" boundary). Precedent for next combobox need
+anywhere in the codebase: reuse this directly, don't fork a 2nd one.
+
+**DestructiveConfirmDialog pure-composition confirmation pattern (US-E20.1):**
+when a plan explicitly asks "does this dialog need new props on the shared
+`DestructiveConfirmDialog`, or is it pure composition?" — always read
+`destructive-confirm-dialog.tsx`'s actual current prop interface (not just
+its `.i-vm.ts`-style doc-comment) before answering. For US-E20.1's high-risk
+Unlink flow, all 3 failure branches (403 role/tenant-mismatch, network/5xx,
+404-race) mapped cleanly onto the EXISTING `errorSlot.tone: "forbidden"|
+"transient"` contract added back in US-E19.2 — EXCEPT the 404-race, which
+is NOT an error-slot case at all (it resolves as a success-shaped toast+
+close+refetch, never touches `errorSlot`). Lesson: a 3-branch failure union
+doesn't always need a 3-tone error slot — check whether one branch is
+actually a "the row is already gone, this isn't really a failure from the
+user's perspective" case that bypasses the error UI entirely.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

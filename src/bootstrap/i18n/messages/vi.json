@@ -2824,6 +2824,126 @@
     "type_system": "Hệ thống",
     "unreadCountAriaLabel": "{count} thông báo chưa đọc"
   },
+  "parentLinks": {
+    "pageTitle": "Liên kết Phụ huynh – Học sinh",
+    "pageSubtitle": "Quản lý liên kết tài khoản và trạng thái đồng ý nhận thông báo của phụ huynh.",
+    "createButton": "Tạo liên kết",
+    "classPrefix": "Lớp {class}",
+    "filterBar": {
+      "searchPlaceholder": "Tìm học sinh hoặc phụ huynh…",
+      "searchAriaLabel": "Tìm học sinh hoặc phụ huynh",
+      "classFilterAriaLabel": "Lọc theo lớp",
+      "allClasses": "Tất cả các lớp",
+      "clearFilters": "Xoá bộ lọc"
+    },
+    "table": {
+      "columns": {
+        "student": "Học sinh",
+        "parent": "Phụ huynh",
+        "relationship": "Quan hệ",
+        "consent": "Trạng thái consent",
+        "linkedOn": "Ngày liên kết",
+        "actions": "Hành động"
+      }
+    },
+    "card": {
+      "linkedOnPrefix": "Liên kết ngày"
+    },
+    "rowMenu": {
+      "viewDetail": "Xem chi tiết",
+      "unlink": "Gỡ liên kết",
+      "triggerAriaLabel": "Hành động cho liên kết {student} – {parent}"
+    },
+    "relationshipLabels": {
+      "father": "Bố",
+      "mother": "Mẹ",
+      "guardian": "Người giám hộ"
+    },
+    "consentLabels": {
+      "agreed": "Đã đồng ý nhận TB",
+      "pending": "Chưa phản hồi",
+      "declined": "Đã từ chối"
+    },
+    "summary": {
+      "count": "{count} liên kết",
+      "filtered": " (đã lọc)"
+    },
+    "loadMore": "Tải thêm",
+    "loadMoreError": "Tải thêm thất bại. Nhấn để thử lại.",
+    "states": {
+      "loadingAriaLabel": "Đang tải danh sách liên kết…"
+    },
+    "empty": {
+      "noFilterTitle": "Lớp này chưa có liên kết nào",
+      "noFilterBody": "Tạo liên kết để phụ huynh có thể theo dõi điểm số, chuyên cần và hạnh kiểm của con.",
+      "noFilterCreate": "Tạo liên kết",
+      "filteredTitle": "Không có liên kết nào khớp bộ lọc",
+      "filteredBody": "Thử từ khóa khác hoặc xoá bộ lọc lớp.",
+      "filteredClear": "Xoá bộ lọc"
+    },
+    "createDialog": {
+      "title": "Tạo liên kết Phụ huynh – Học sinh",
+      "subtitle": "Phụ huynh được liên kết sẽ có thể xem dữ liệu học tập của học sinh.",
+      "studentLabel": "Học sinh",
+      "studentPlaceholder": "Tìm theo tên học sinh…",
+      "parentLabel": "Phụ huynh (tài khoản role phụ huynh)",
+      "parentPlaceholder": "Tìm theo tên phụ huynh…",
+      "relationshipLabel": "Quan hệ",
+      "relationshipPlaceholder": "Chọn quan hệ",
+      "noteLabel": "Ghi chú (không bắt buộc)",
+      "notePlaceholder": "VD: người giám hộ hợp pháp, giấy tờ kèm theo…",
+      "cancel": "Hủy",
+      "submit": "Tạo liên kết",
+      "noResults": "Không tìm thấy kết quả.",
+      "searching": "Đang tìm…",
+      "clearSelection": "Bỏ chọn",
+      "studentListboxLabel": "Kết quả tìm học sinh",
+      "parentListboxLabel": "Kết quả tìm phụ huynh"
+    },
+    "unlinkDialog": {
+      "title": "Gỡ liên kết phụ huynh – học sinh?",
+      "body": "Phụ huynh {parent} sẽ mất quyền xem điểm số, hạnh kiểm, chuyên cần và mọi thông báo về học sinh {student} ({class}). Tài khoản của hai bên không bị xoá.",
+      "confirm": "Gỡ liên kết"
+    },
+    "detailDialog": {
+      "title": "Chi tiết liên kết",
+      "description": "Thông tin chi tiết về liên kết phụ huynh – học sinh (chỉ đọc).",
+      "student": "Học sinh",
+      "parent": "Phụ huynh",
+      "relationship": "Quan hệ",
+      "consent": "Consent",
+      "linkedOn": "Ngày liên kết",
+      "note": "Ghi chú",
+      "consentSectionTitle": "Chi tiết quyền nhận thông báo",
+      "consentLoading": "Đang tải chi tiết consent…"
+    },
+    "consentCategories": {
+      "discipline": "Thông báo vi phạm / hạnh kiểm",
+      "absence": "Thông báo vắng học",
+      "grades": "Thông báo điểm số",
+      "on": "Bật",
+      "off": "Tắt"
+    },
+    "toasts": {
+      "created": "Đã tạo liên kết {parent} → {student}. Đã gửi yêu cầu xác nhận consent.",
+      "unlinked": "Đã gỡ liên kết. {parent} không còn quyền xem dữ liệu học sinh.",
+      "alreadyRemoved": "Liên kết đã được gỡ trước đó."
+    },
+    "errors": {
+      "loadTitle": "Không tải được dữ liệu",
+      "loadDescription": "Đã xảy ra lỗi khi tải danh sách. Vui lòng thử lại.",
+      "retry": "Thử lại",
+      "searchNetwork": "Không tải được danh sách. Vui lòng thử lại.",
+      "alreadyLinked": "Liên kết đã tồn tại",
+      "validation": "Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.",
+      "parentNotEligible": "Tài khoản này không phải phụ huynh hoặc không thuộc trường của bạn.",
+      "studentInvalid": "Không tìm thấy học sinh này.",
+      "createNetwork": "Không tạo được liên kết. Vui lòng thử lại.",
+      "unlinkForbidden": "Bạn không có quyền gỡ liên kết này.",
+      "unlinkNetwork": "Không gỡ được liên kết. Vui lòng thử lại.",
+      "consentUnavailable": "Không tải được chi tiết consent."
+    }
+  },
   "principalTeachers": {
     "addTeacher": "Thêm giáo viên",
     "assignClass": "Phân công lớp",

@@ -82,7 +82,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Grade Book (principal read) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Teaching Plan review | `(app)/principal/teaching-plan` | `teaching-plan.jsx` | `features/teaching-plan` | 🎨 design-ready (US-E11.4; `teaching-plan.jsx` 1506) |
 | Reports | `(app)/principal/reports` | `reports.jsx` | `features/principal` | ✅ (US-E03.1; `reports.jsx`, DR-019; mock-first) |
-| **Parent–Student Links** (admin link management) | `(app)/admin/parent-links` | `parent-links.jsx` (US-E20.1) | `features/admin/parent-links` (proposed) | 🎨 design-ready (US-E20.1; `parent-links.jsx` `ParentLinksScreen`, DR-014 2026-07-12; consent counterpart attaches to Profile — see All-roles section) |
+| **Parent–Student Links** (admin link management) | `(app)/admin/parent-links` | `parent-links.jsx` (US-E20.1) | `features/admin/parent-links` | 🚧 in-progress (US-E20.1 implemented, pending review/gate; `ParentLinksScreen` + high-risk server-side re-auth Unlink, DR-014; consent counterpart attaches to Profile — see All-roles section) |
 | **Tenant Invitations** (admin "Mời thành viên") | `(app)/admin/invitations` | `invitations.jsx` (US-E21.1) | `features/admin/invitations` (proposed) | 🎨 design-ready (US-E21.1; `invitations.jsx` `InvitationsScreen`, DR-015 2026-07-12; public accept screen — see Auth section) |
 | **School Setup (grade range + settings)** | `(app)/admin/school-setup` | `school-setup.jsx` (US-049, ADR 0035) | `features/admin-school-setup` | ✅ implemented US-E12.1 (2026-06-13) |
 | **Academic Calendar config** | `(app)/admin/calendar` | `calendar.jsx` (US-042) | `features/admin/calendar` | 🎨 (design done) |

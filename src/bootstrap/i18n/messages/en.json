@@ -2824,6 +2824,126 @@
     "type_system": "System",
     "unreadCountAriaLabel": "{count} unread notifications"
   },
+  "parentLinks": {
+    "pageTitle": "Parent–Student Links",
+    "pageSubtitle": "Manage account links and parents’ notification-consent status.",
+    "createButton": "Create link",
+    "classPrefix": "Class {class}",
+    "filterBar": {
+      "searchPlaceholder": "Search student or parent…",
+      "searchAriaLabel": "Search student or parent",
+      "classFilterAriaLabel": "Filter by class",
+      "allClasses": "All classes",
+      "clearFilters": "Clear filters"
+    },
+    "table": {
+      "columns": {
+        "student": "Student",
+        "parent": "Parent",
+        "relationship": "Relationship",
+        "consent": "Consent status",
+        "linkedOn": "Linked on",
+        "actions": "Actions"
+      }
+    },
+    "card": {
+      "linkedOnPrefix": "Linked"
+    },
+    "rowMenu": {
+      "viewDetail": "View details",
+      "unlink": "Remove link",
+      "triggerAriaLabel": "Actions for the {student} – {parent} link"
+    },
+    "relationshipLabels": {
+      "father": "Father",
+      "mother": "Mother",
+      "guardian": "Guardian"
+    },
+    "consentLabels": {
+      "agreed": "Consented",
+      "pending": "No response",
+      "declined": "Declined"
+    },
+    "summary": {
+      "count": "{count} links",
+      "filtered": " (filtered)"
+    },
+    "loadMore": "Load more",
+    "loadMoreError": "Failed to load more. Click to retry.",
+    "states": {
+      "loadingAriaLabel": "Loading the links list…"
+    },
+    "empty": {
+      "noFilterTitle": "No links in this class yet",
+      "noFilterBody": "Create a link so parents can follow their child’s grades, attendance and conduct.",
+      "noFilterCreate": "Create link",
+      "filteredTitle": "No links match your filters",
+      "filteredBody": "Try a different keyword or clear the class filter.",
+      "filteredClear": "Clear filters"
+    },
+    "createDialog": {
+      "title": "Create parent–student link",
+      "subtitle": "Linked parents can view the student’s academic data.",
+      "studentLabel": "Student",
+      "studentPlaceholder": "Search students…",
+      "parentLabel": "Parent (member with parent role)",
+      "parentPlaceholder": "Search parents…",
+      "relationshipLabel": "Relationship",
+      "relationshipPlaceholder": "Select a relationship",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. legal guardian, supporting documents…",
+      "cancel": "Cancel",
+      "submit": "Create link",
+      "noResults": "No results found.",
+      "searching": "Searching…",
+      "clearSelection": "Clear selection",
+      "studentListboxLabel": "Student search results",
+      "parentListboxLabel": "Parent search results"
+    },
+    "unlinkDialog": {
+      "title": "Remove this parent–student link?",
+      "body": "Parent {parent} will lose access to grades, conduct, attendance and all notifications about {student} ({class}). Neither account is deleted.",
+      "confirm": "Remove link"
+    },
+    "detailDialog": {
+      "title": "Link details",
+      "description": "Read-only details of the parent–student link.",
+      "student": "Student",
+      "parent": "Parent",
+      "relationship": "Relationship",
+      "consent": "Consent",
+      "linkedOn": "Linked on",
+      "note": "Note",
+      "consentSectionTitle": "Notification consent detail",
+      "consentLoading": "Loading consent detail…"
+    },
+    "consentCategories": {
+      "discipline": "Discipline & conduct alerts",
+      "absence": "Absence alerts",
+      "grades": "Grade alerts",
+      "on": "On",
+      "off": "Off"
+    },
+    "toasts": {
+      "created": "Linked {parent} → {student}. Consent request sent.",
+      "unlinked": "Link removed. {parent} no longer has access to the student’s data.",
+      "alreadyRemoved": "This link was already removed."
+    },
+    "errors": {
+      "loadTitle": "Failed to load data",
+      "loadDescription": "Something went wrong while loading. Please try again.",
+      "retry": "Retry",
+      "searchNetwork": "Couldn’t load the list. Please try again.",
+      "alreadyLinked": "This link already exists",
+      "validation": "Some details are invalid. Please check again.",
+      "parentNotEligible": "This account is not a parent or is not in your school.",
+      "studentInvalid": "This student could not be found.",
+      "createNetwork": "Couldn’t create the link. Please try again.",
+      "unlinkForbidden": "You don’t have permission to remove this link.",
+      "unlinkNetwork": "Couldn’t remove the link. Please try again.",
+      "consentUnavailable": "Couldn’t load consent detail."
+    }
+  },
   "principalTeachers": {
     "addTeacher": "Add Teacher",
     "assignClass": "Assign Classes",
