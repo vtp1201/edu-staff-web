@@ -1,57 +1,222 @@
 "use client";
 
-import { Building2 } from "lucide-react";
+import { RotateCw, School } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useTransition } from "react";
-import type { SwitchTenantResult } from "@/components/shared/tenant-card";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
+import { useRouter } from "@/bootstrap/i18n/routing";
+import {
+  runSwitchActivation,
+  type SwitchTenantResult,
+  TenantCard,
+  type TenantCardStatus,
+} from "@/components/shared/tenant-card";
 import { Button } from "@/components/ui/button";
-import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
+import { cn } from "@/shared/utils";
+import { logoutAction } from "../login/actions";
+import type { SelectTenantScreenState } from "./select-tenant.i-vm";
 
 type Props = {
-  memberships: TenantMembership[];
-  /** Path A (US-E23.1): `switchTenantAction` returns a discriminated result and
-   *  redirects on success. This caller ignores the return value (it has no
-   *  try/catch); the type just tracks the shared action signature. */
-  onSelect: (tenantId: string, role: string) => Promise<SwitchTenantResult>;
+  screenState: SelectTenantScreenState;
+  /** `switchTenantAction` (Path A): redirects on success (throws NEXT_REDIRECT),
+   *  returns a discriminated `{ ok:false, errorKey }` on failure. */
+  onSwitchTenant: (
+    tenantId: string,
+    role: string,
+  ) => Promise<SwitchTenantResult>;
 };
 
-export function SelectTenant({ memberships, onSelect }: Props) {
-  const t = useTranslations("tenant.select");
-  const [isPending, startTransition] = useTransition();
+/** Centered auth-shell column (reuses `screens.login` layout, maxWidth 480). */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="w-full max-w-120">{children}</div>
+    </main>
+  );
+}
 
-  if (memberships.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+export function SelectTenant({ screenState, onSwitchTenant }: Props) {
+  const t = useTranslations("tenant.switch.postLogin");
+
+  if (screenState.kind === "error") {
+    return (
+      <Shell>
+        <ErrorState title={t("errorTitle")} retryLabel={t("errorRetry")} />
+      </Shell>
+    );
+  }
+
+  if (screenState.kind === "empty") {
+    return (
+      <Shell>
+        <EmptyState title={t("emptyTitle")} />
+      </Shell>
+    );
   }
 
   return (
-    <ul className="flex flex-col gap-3">
-      {memberships.map((m) => (
-        <li
-          key={m.tenantId}
-          className="flex items-center gap-3 rounded-[var(--edu-radius-card)] border border-border bg-card p-4"
+    <Shell>
+      <CardsState state={screenState} onSwitchTenant={onSwitchTenant} />
+    </Shell>
+  );
+}
+
+/** FR-008 — hard-gate fetch failure: explicit message + user-triggered retry.
+ *  Retry re-executes `page.tsx` on the server via `router.refresh()` (no new
+ *  Server Action) inside a transition; `isPending` drives the button affordance. */
+function ErrorState({
+  title,
+  retryLabel,
+}: {
+  title: string;
+  retryLabel: string;
+}) {
+  const t = useTranslations("tenant.switch.postLogin");
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <span
+        aria-hidden="true"
+        className="mb-4 grid size-15 place-items-center rounded-[var(--edu-radius-role-icon)] bg-edu-error/15 text-edu-error-text"
+      >
+        <RotateCw className="size-7" strokeWidth={1.5} />
+      </span>
+      {/* role="alert" on the wrapper (not the <h1> itself) — an explicit ARIA
+       *  role overrides the implicit host-language role for the element it's
+       *  on, so role="alert" directly on an <h1> would expose it as "alert"
+       *  to AT, not "heading" (defeats heading-nav, QA finding). */}
+      <div role="alert">
+        <h1 className="mb-6 text-sm font-medium text-edu-error-text">
+          {title}
+        </h1>
+      </div>
+      <Button
+        onClick={() => startTransition(() => router.refresh())}
+        disabled={isPending}
+        aria-busy={isPending || undefined}
+      >
+        <RotateCw
+          className={cn("size-4", isPending && "motion-safe:animate-spin")}
+          aria-hidden="true"
+        />
+        {isPending ? t("errorRetrying") : retryLabel}
+      </Button>
+    </div>
+  );
+}
+
+/** FR-007 — 0 ACTIVE memberships: explicit empty state with a keyboard-operable
+ *  escape action (logout). Native `<form action>` → keyboard-operable by
+ *  construction; reuses `logoutAction` (Decision D). */
+function EmptyState({ title }: { title: string }) {
+  const tShell = useTranslations("shell.header");
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <span
+        aria-hidden="true"
+        className="mb-4 grid size-15 place-items-center rounded-[var(--edu-radius-role-icon)] bg-muted text-muted-foreground"
+      >
+        <School className="size-7" strokeWidth={1.5} />
+      </span>
+      <h1 className="mb-6 text-sm font-medium text-foreground">{title}</h1>
+      <form action={logoutAction}>
+        <Button type="submit" variant="outline">
+          {tShell("logout")}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+/** FR-002/003/004 — the card grid: greeting + one `<button>` card per ACTIVE
+ *  membership. Per-card activation reuses the exact single-slot state machine
+ *  `TenantSwitchDialog` uses (`runSwitchActivation` + one loading/error slot). */
+function CardsState({
+  state,
+  onSwitchTenant,
+}: {
+  state: Extract<SelectTenantScreenState, { kind: "cards" }>;
+  onSwitchTenant: Props["onSwitchTenant"];
+}) {
+  const t = useTranslations("tenant.switch.postLogin");
+  const tSwitch = useTranslations("tenant.switch");
+  // A11Y (WCAG 2.4.3) — on mount (skeleton/error/empty → cards branch flip via
+  // router.refresh()), move focus to the heading so it doesn't drop to <body>.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+  const [loadingTenantId, setLoadingTenantId] = useState<string | null>(null);
+  // Single-slot error mirroring TenantSwitchDialog: only one card is ever
+  // mid-flow (disabled-while-busy), so 403 needs just one inline error slot.
+  const [errorTenantId, setErrorTenantId] = useState<string | null>(null);
+
+  const { userName, count, cards } = state;
+  const subheading = userName
+    ? t("subheadingWithName", { name: userName, count })
+    : t("subheadingNoName", { count });
+
+  function handleActivate(tenantId: string) {
+    const target = cards.find((m) => m.tenantId === tenantId);
+    if (!target) return;
+    if (loadingTenantId !== null) return; // guard double / concurrent activation
+    setErrorTenantId(null);
+    // runSwitchActivation rethrows NEXT_REDIRECT (Risk A) on success — the tree
+    // unmounts on navigation, so no cleanup is needed on that path.
+    void runSwitchActivation(tenantId, target.roles[0] ?? "", {
+      onSwitchTenant,
+      onLoading: setLoadingTenantId,
+      onForbidden: (id) => setErrorTenantId(id),
+      onGenericError: () => toast.error(tSwitch("errorGeneric")),
+    });
+  }
+
+  function statusFor(tenantId: string): TenantCardStatus {
+    if (loadingTenantId === tenantId) return { kind: "loading" };
+    if (errorTenantId === tenantId)
+      return { kind: "error", reason: "forbidden" };
+    return { kind: "idle" };
+  }
+
+  return (
+    <div>
+      <div className="mb-8 flex flex-col items-center text-center">
+        <span
+          aria-hidden="true"
+          className="mb-4 grid size-15 place-items-center rounded-[var(--edu-radius-role-icon)] bg-primary text-primary-foreground"
         >
-          <span className="grid size-10 shrink-0 place-items-center rounded-[var(--edu-radius-role-icon)] bg-primary/10 text-primary">
-            <Building2 className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-bold text-sm">{m.tenantId}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {t("roles")}: {m.roles.join(", ") || "—"}
-            </div>
-          </div>
-          <Button
-            size="sm"
-            disabled={isPending}
-            onClick={() =>
-              startTransition(() => {
-                void onSelect(m.tenantId, m.roles[0] ?? "");
-              })
-            }
-          >
-            {isPending ? t("switching") : t("enter")}
-          </Button>
-        </li>
-      ))}
-    </ul>
+          <School className="size-7" strokeWidth={1.5} />
+        </span>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="mb-1.5 text-2xl font-extrabold text-foreground outline-none"
+        >
+          {t("heading")}
+        </h1>
+        <p className="text-sm text-muted-foreground">{subheading}</p>
+      </div>
+
+      {/* [&>*]:min-w-0 — grid items default to min-width:auto, so a long
+       *  tenant name/address can force a card wider than its track at narrow
+       *  viewports (QA finding, same bug class as dialog.tsx's precedent). */}
+      <div className="grid gap-3 [&>*]:min-w-0">
+        {cards.map((m) => (
+          <TenantCard
+            key={m.tenantId}
+            viewModel={m}
+            status={statusFor(m.tenantId)}
+            onActivate={handleActivate}
+          />
+        ))}
+      </div>
+
+      <p className="mt-5 text-center text-xs text-muted-foreground">
+        {t("footnote")}
+      </p>
+    </div>
   );
 }
