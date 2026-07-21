@@ -2942,6 +2942,45 @@
       "unlinkForbidden": "You don’t have permission to remove this link.",
       "unlinkNetwork": "Couldn’t remove the link. Please try again.",
       "consentUnavailable": "Couldn’t load consent detail."
+    },
+    "consentSection": {
+      "title": "Notification consent",
+      "childCard": {
+        "linkedBadge": "Linked"
+      },
+      "toggles": {
+        "discipline": {
+          "label": "Discipline / conduct alerts",
+          "description": "Get notified when your child breaks a rule or receives a conduct note."
+        },
+        "absence": {
+          "label": "Absence alerts",
+          "description": "Get notified when your child is absent or arrives late."
+        },
+        "grades": {
+          "label": "Grade alerts",
+          "description": "Get notified when new grades or academic results are posted."
+        }
+      },
+      "toast": {
+        "success": "Notification consent updated"
+      },
+      "empty": {
+        "title": "No linked children yet",
+        "body": "Please contact the school to link your account with a student."
+      },
+      "error": {
+        "title": "Failed to load data",
+        "body": "Something went wrong loading this section. Please try again.",
+        "retry": "Retry"
+      },
+      "loadingAriaLabel": "Loading notification consent…",
+      "footnote": "The school only sends notifications with your consent, and only about students linked to your account. You can change your choices at any time — turning notifications off does not affect your access to your child’s data in the app.",
+      "errors": {
+        "validation": "Couldn’t update. Please try again.",
+        "forbidden": "You don’t have permission to change this.",
+        "network-error": "Couldn’t update. Please try again."
+      }
     }
   },
   "principalTeachers": {

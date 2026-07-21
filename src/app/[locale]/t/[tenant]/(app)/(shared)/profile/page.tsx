@@ -1,4 +1,5 @@
 import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
+import { getSessionRole } from "@/bootstrap/lib/session-role.server";
 import { ProfileScreen } from "@/features/user/presentation/profile";
 import {
   confirmEmailVerificationAction,
@@ -9,6 +10,11 @@ import {
   linkAccountAction,
   unlinkAccountAction,
 } from "./actions";
+import {
+  fetchParentConsentAction,
+  updateParentConsentAction,
+} from "./consent-actions";
+import { parentConsentVmGate } from "./consent-gate";
 
 // Mock VM — wire to GET /users/me + sessions when the BE profile slice lands.
 const MOCK = {
@@ -38,9 +44,15 @@ export default async function ProfilePage() {
   // profile slice lands (out of scope, plan §0.6). Verification status itself
   // is served reactively from EmailVerifyProvider context, not this VM.
   const profile = await makeGetProfileUseCase().then((uc) => uc.execute());
+  // Resolve the REAL session role server-side (US-E20.2, Option A): drives BOTH
+  // the role-display field AND the parent-consent gate. Fall back to MOCK.role
+  // only pre-auth / dev-mock so the demo stays usable before IAM claims land.
+  const role = (await getSessionRole()) ?? MOCK.role;
+  const isParent = role === "parent";
   return (
     <ProfileScreen
       {...MOCK}
+      role={role}
       email={profile.data?.email ?? MOCK.email}
       linkedAccounts={linkedAccounts}
       onLinkAccount={linkAccountAction}
@@ -48,6 +60,9 @@ export default async function ProfilePage() {
       onFetchLinkedAccounts={getLinkedAccountsAction}
       onConfirmEmailVerification={confirmEmailVerificationAction}
       onRequestEmailVerification={requestEmailVerificationAction}
+      {...parentConsentVmGate(role)}
+      onFetchParentConsent={isParent ? fetchParentConsentAction : undefined}
+      onToggleParentConsent={isParent ? updateParentConsentAction : undefined}
     />
   );
 }
