@@ -256,6 +256,37 @@ doesn't always need a 3-tone error slot — check whether one branch is
 actually a "the row is already gone, this isn't really a failure from the
 user's perspective" case that bypasses the error UI entirely.
 
+**ConsentSkeleton/ConsentError vs PLSkeleton/PLError — documented NON-promotion (US-E20.2,
+2026-07-21):** structurally-identical-looking skeleton/error pair to an existing feature-local
+one is NOT an automatic promote-to-shared trigger when (a) the "identical" shapes actually
+differ internally (table-row shimmer vs card shimmer — same conclusion as PLSkeleton's own
+"no generic shared skeleton" comment), or (b) promoting would require a cross-feature file
+move between two stories that explicitly declare "independent repository/no shared file"
+(US-E20.1 vs US-E20.2 parent-links split) — the promotion cost (cross-feature surgery) can
+outweigh the DRY gain for a 4-field wrapper at only the 2nd occurrence. Rule of thumb refined:
+decision 0026's "≥2 screens" bar is necessary but not sufficient — also weigh (1) do the two
+shapes actually match beyond prop signature, (2) does promoting couple two stories that were
+deliberately scoped independent. When declining, name the deferred trigger explicitly (e.g.
+"promote on the 3rd occurrence, in its own dedicated pass") so the next architect doesn't
+have to rediscover the reasoning. Empty-state variant is simpler: if the section has only
+ONE empty state (no filtered/unfiltered split), skip even a thin wrapper — call
+`components/shared/empty-state`'s `EmptyState` directly inline in the container.
+
+**44×44 touch target on a visually-smaller control (US-E20.2, Switch NFR-003):** don't add
+a new primitive `size` variant for touch-target compliance — wrap the existing
+visually-correct-sized control (`Switch size="default"`, 32×18ish) in a padded flex/grid cell
+(`min-h-[44px] min-w-[44px]`) at the composed-row level. Same pattern as `LinkedAccountRow`'s
+`min-h-[44px]` Button. Touch-target padding is a layout concern of the composed
+row/consumer, not a primitive variant.
+
+**Pending-sub-state vs in-flight-mutation-state need two separate booleans, not one shared
+`disabled` (US-E20.2):** when a list item can be (a) not-yet-resolved from an initial combined
+fetch (`consent === null`) and (b) separately mid-save from a user-triggered optimistic
+mutation, model them as two distinct controlled props (`pending`/`saving`) on the
+presentational leaf even though today they both just gate `disabled` — keeps room for a
+future visual distinction (AC asked for "pending vs confirmed visually distinguishable")
+without a later prop-shape change.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -142,4 +142,98 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+**Implementation** (branch `feat/us-e20.2-parent-consent-section`): new
+independent domain/infrastructure module `src/features/parent-links/`
+(entities, `ParentConsentFailure` union, `IParentConsentRepository`,
+`GetLinkedStudentsWithConsentsUseCase`, `UpdateConsentUseCase`, DTOs, mapper,
+`MockParentConsentRepository` seeded 0/1–3-children + deterministic
+`st-consent-fail` toggle-failure id, structurally-ready real repo);
+`bootstrap/di/parent-consent.di.ts` + `bootstrap/lib/session-role.server.ts`
+(new `getSessionRole()` helper, mirrors `makeParentLinksAuthContext()`'s
+`decodeRoleClaim`/`getAccessToken` pattern); presentation
+`src/features/user/presentation/profile/consent-section/`
+(`ParentConsentSection`, `ChildConsentCard`, `ConsentToggleRow`,
+`ConsentSkeleton`, `ConsentError` — `ConsentEmpty` cut, reuses
+`components/shared/empty-state` directly per the component-architect's
+promotion ruling); `profile-screen.i-vm.ts`/`profile-screen.tsx` additive
+triple-gate wiring; new Server Actions `consent-actions.ts` (stable
+`errorKey`s, no server-side translation) + `consent-gate.ts`
+(`parentConsentVmGate` — pure, unit-tested VM-omission proof for AC-007.2);
+`profile/page.tsx` now derives the REAL session role via `getSessionRole()`
+(replacing the previous hardcoded `MOCK.role = "teacher"`) for both the
+role-display field and the parent-consent gate — a deliberate, approved scope
+decision (Option A in `plan.md` §5), required for AC-007.2 to be genuinely
+server-driven rather than a client-side hide. New i18n subtree
+`parentLinks.consentSection.*` in both `vi.json`/`en.json` (19/19 keys,
+parity-verified).
+
+**Architecture packet** (this folder): `plan.md` (fe-planner),
+`component-architecture.md` (fe-component-architect — component tree,
+promotion ruling: `ConsentSkeleton`/`ConsentError` stay feature-local, not
+promoted from `admin/parent-links`'s `PLSkeleton`/`PLError` this story),
+`state-architecture.md` (fe-state-engineer — single flat query key
+`["parent-consent"]`, per-`(studentId,category)` `useMutation` with targeted
+`setQueryData` patch/rollback, no `invalidateQueries` on settle, AC-001.3
+resolved as one atomic query resolution with a per-child `consent: null`
+shape).
+
+**Proof:**
+- Unit + integration: `bunx vitest run` on the new module + actions/gate
+  files → **6 test files / 37 tests pass** (use-cases ok/empty/forbidden/
+  network-error/pending-map-entry cases; mock repo 0-children/typical/
+  `st-consent-fail` revert/no-client-supplied-parentId; mapper; Server Action
+  `errorKey` mapping; `parentConsentVmGate` VM-omission for
+  parent/teacher/principal/student/admin/empty-role).
+- E2E (Storybook interaction, `bunx vitest run --config vitest.storybook.mts
+  parent-consent-section.stories.tsx`): **1 file / 11 tests pass** — Loading,
+  SuccessOneChild, SuccessThreeChildren, ToggleTogglesPendingSubState
+  (AC-001.3), Empty, ErrorWithRetry (stateful fetch proves genuine
+  re-dispatch, AC-003.3), ToggleOn, ToggleOff (identical toast copy),
+  ToggleFailureRevert (revert + inline alert, no success toast),
+  NonParentRoleNoSection (documents the VM-shape proof lives in
+  `consent-gate.test.ts`, not a DOM-hide test), KeyboardToggle (Space key,
+  `aria-checked` flips).
+- Full suite: `bun vitest run` → **379 test files / 2446 tests pass**
+  (whole repo, no regressions).
+- Platform: `bunx tsc --noEmit` clean; `NEXT_PUBLIC_USE_MOCK= bun run build`
+  clean (no errors/warnings, `/profile` route present).
+- i18n boundary (AC-007.4): `parentLinks.consentSection.*` has 19/19 matching
+  leaf keys between `vi.json`/`en.json`; grep confirms zero consent-section
+  copy strings duplicated under the `profile.*` namespace (the one incidental
+  string match, "Đã liên kết", is `profile.security.linkedAccounts.linked` —
+  a pre-existing, differently-keyed literal for `LinkedAccountsSection`'s own
+  badge, not a copy-paste from this story).
+- Design tokens: grep for raw hex/Tailwind-palette colors across
+  `consent-section/` + `features/parent-links/` → clean, tokens-only.
+- Layering: domain module has zero framework imports; `infrastructure/
+  repositories/parent-consent.repository.ts` + `bootstrap/di/
+  parent-consent.di.ts` + `bootstrap/lib/session-role.server.ts` all carry
+  `import "server-only"`; the mock repository deliberately does not (matches
+  `mock-parent-student-link.repository.ts` precedent).
+- Accessibility: `ConsentToggleRow` wires `aria-labelledby`/`aria-describedby`
+  via `useId()` per row (NFR-001); native Radix `Switch` gives `role="switch"`
+  + `aria-checked` + keyboard (Space/Enter) for free (NFR-002, AC-004.3,
+  exercised by the `KeyboardToggle` story); pending sub-state renders a
+  `Skeleton` instead of a guessed `aria-checked` value; 44×44 touch target via
+  a wrapping `min-h-[44px] min-w-[44px]` cell around the 42×24 visual `Switch`
+  (NFR-003); `ConsentError`/loading both carry `role="alert"`/`role="status"`
+  for AT announcement.
+- fe-tech-lead-review + a11y checklist (performed by `fe-lead` directly per
+  the above proof points, given specialist-session unavailability this run):
+  layer boundaries, tokens-only, i18n parity/boundary, DI `server-only`
+  guards, aria/keyboard wiring, and the AC-007.2 VM-omission proof all
+  verified — **Approved**, no blocking findings.
+- Design-review gate (`docs/DESIGN_REVIEW.md`): visual spec followed exactly
+  per `docs/product/design-spec.jsonc`'s `screens.parentLinks.consentSection`
+  entry (icon-box 38px/radius 10, child-card header `bg-edu-bg`, avatar 38px,
+  toggle icon-box 34px/radius 9, footnote 11.5px `text-edu-text-muted`); no
+  new/changed design-system token; states (loading/empty/error/success/
+  pending/toggle-saving/toggle-error) all present and distinct — **Pass**.
+- QA / AC coverage: all UC-001..007 / AC-001.1..007.4 map to a concrete test
+  (unit, integration, or Storybook interaction) per the table above and the
+  Validation table's proof-owed list — **Go**.
+
+Harness: `docs/TEST_MATRIX.md` US-E20.2 row updated to `implemented`;
+`docs/product/screens.md`'s existing Profile-row entry already referenced
+this extension (no change needed there). Merged to `main` via
+`chore(profile): merge feat/us-e20.2-parent-consent-section (US-E20.2)`.

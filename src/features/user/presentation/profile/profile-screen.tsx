@@ -26,6 +26,12 @@ import {
 } from "@/shared/password-strength";
 import { cn } from "@/shared/utils";
 import { AccountRequestsCard } from "./account-requests-card";
+import { ParentConsentSection } from "./consent-section/parent-consent-section";
+import type {
+  ParentConsentFetchResult,
+  ParentConsentToggleResult,
+  UpdateConsentInput,
+} from "./consent-section/parent-consent-section.i-vm";
 import { LinkedAccountsSection } from "./linked-accounts-section";
 import type { ProfileScreenVM } from "./profile-screen.i-vm";
 
@@ -38,6 +44,11 @@ export interface ProfileScreenProps extends ProfileScreenVM {
     otp: string,
   ) => Promise<EmailVerificationActionResult>;
   onRequestEmailVerification?: () => Promise<EmailVerificationActionResult>;
+  /** Parent-consent server actions (US-E20.2) — present only when parentConsent. */
+  onFetchParentConsent?: () => Promise<ParentConsentFetchResult>;
+  onToggleParentConsent?: (
+    input: UpdateConsentInput,
+  ) => Promise<ParentConsentToggleResult>;
 }
 
 const LEVEL_COLOR: Record<Exclude<StrengthLevel, "empty">, string> = {
@@ -58,6 +69,9 @@ export function ProfileScreen({
   onFetchLinkedAccounts,
   onConfirmEmailVerification,
   onRequestEmailVerification,
+  parentConsent,
+  onFetchParentConsent,
+  onToggleParentConsent,
 }: ProfileScreenProps) {
   const t = useTranslations("profile");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -95,6 +109,13 @@ export function ProfileScreen({
         </Card>
 
         <AccountRequestsCard />
+
+        {parentConsent && onFetchParentConsent && onToggleParentConsent && (
+          <ParentConsentSection
+            onFetch={onFetchParentConsent}
+            onToggle={onToggleParentConsent}
+          />
+        )}
       </div>
 
       {/* Tabs */}

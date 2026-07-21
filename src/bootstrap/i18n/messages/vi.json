@@ -2942,6 +2942,45 @@
       "unlinkForbidden": "Bạn không có quyền gỡ liên kết này.",
       "unlinkNetwork": "Không gỡ được liên kết. Vui lòng thử lại.",
       "consentUnavailable": "Không tải được chi tiết consent."
+    },
+    "consentSection": {
+      "title": "Quyền nhận thông báo",
+      "childCard": {
+        "linkedBadge": "Đã liên kết"
+      },
+      "toggles": {
+        "discipline": {
+          "label": "Thông báo vi phạm / hạnh kiểm",
+          "description": "Nhận thông báo khi con vi phạm nội quy hoặc có ghi nhận về hạnh kiểm."
+        },
+        "absence": {
+          "label": "Thông báo vắng học",
+          "description": "Nhận thông báo khi con vắng học hoặc đi học trễ."
+        },
+        "grades": {
+          "label": "Thông báo điểm số",
+          "description": "Nhận thông báo khi có điểm số hoặc kết quả học tập mới."
+        }
+      },
+      "toast": {
+        "success": "Đã cập nhật quyền nhận thông báo"
+      },
+      "empty": {
+        "title": "Chưa có con nào được liên kết",
+        "body": "Vui lòng liên hệ nhà trường để liên kết tài khoản của bạn với học sinh."
+      },
+      "error": {
+        "title": "Không tải được dữ liệu",
+        "body": "Đã xảy ra lỗi khi tải mục này. Vui lòng thử lại.",
+        "retry": "Thử lại"
+      },
+      "loadingAriaLabel": "Đang tải quyền nhận thông báo…",
+      "footnote": "Nhà trường chỉ gửi thông báo khi bạn đồng ý, và chỉ về những học sinh đã được liên kết với tài khoản của bạn. Bạn có thể thay đổi lựa chọn bất cứ lúc nào — việc tắt thông báo không ảnh hưởng đến quyền xem dữ liệu của con trong ứng dụng.",
+      "errors": {
+        "validation": "Không cập nhật được. Vui lòng thử lại.",
+        "forbidden": "Bạn không có quyền thay đổi mục này.",
+        "network-error": "Không cập nhật được. Vui lòng thử lại."
+      }
     }
   },
   "principalTeachers": {
