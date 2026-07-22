@@ -1,5 +1,8 @@
 import "server-only";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { decodeSubClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IMessagingRepository } from "@/features/messaging/domain/repositories/i-messaging.repository";
 import type { IPresenceRepository } from "@/features/messaging/domain/repositories/i-presence.repository";
@@ -14,10 +17,13 @@ import { GetGroupUseCase } from "@/features/messaging/domain/use-cases/get-group
 import { GetMessagesUseCase } from "@/features/messaging/domain/use-cases/get-messages.use-case";
 import { GetPresenceUseCase } from "@/features/messaging/domain/use-cases/get-presence.use-case";
 import { LeaveGroupUseCase } from "@/features/messaging/domain/use-cases/leave-group.use-case";
+import { MarkConversationReadUseCase } from "@/features/messaging/domain/use-cases/mark-conversation-read.use-case";
 import { PinMessageUseCase } from "@/features/messaging/domain/use-cases/pin-message.use-case";
 import { RemoveGroupMemberUseCase } from "@/features/messaging/domain/use-cases/remove-group-member.use-case";
 import { SendMessageUseCase } from "@/features/messaging/domain/use-cases/send-message.use-case";
+import { SendTypingIndicatorUseCase } from "@/features/messaging/domain/use-cases/send-typing-indicator.use-case";
 import { UpdateGroupUseCase } from "@/features/messaging/domain/use-cases/update-group.use-case";
+import { HybridMessagingRepository } from "@/features/messaging/infrastructure/repositories/hybrid-messaging.repository";
 import { MessagingRepository } from "@/features/messaging/infrastructure/repositories/messaging.repository";
 import { MockMessagingRepository } from "@/features/messaging/infrastructure/repositories/mocks/messaging.mock.repository";
 import { MockPresenceRepository } from "@/features/messaging/infrastructure/repositories/mocks/presence.mock.repository";
@@ -25,7 +31,18 @@ import { PresenceRepository } from "@/features/messaging/infrastructure/reposito
 
 async function makeRepo(): Promise<IMessagingRepository> {
   if (USE_MOCK) return new MockMessagingRepository();
-  return new MessagingRepository(await createServerHttpClient());
+  // decision 0018 — proactive refresh BEFORE the shared http client is created.
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  const token = await getAccessToken();
+  const currentUserId = token ? decodeSubClaim(token) : null;
+  // ADR 0060 partial-real facade: the rooms/messages/read/typing/1:1-DM slice
+  // is served by the real repo; group lifecycle / pin / contacts have no real
+  // contract and are force-mocked regardless of USE_MOCK.
+  return new HybridMessagingRepository(
+    new MessagingRepository(http, currentUserId),
+    new MockMessagingRepository(),
+  );
 }
 
 /**
@@ -99,4 +116,14 @@ export async function makePinMessageUseCase() {
 
 export async function makeDeleteMessageUseCase() {
   return new DeleteMessageUseCase(await makeRepo());
+}
+
+// --- US-E18.17 read-state + typing (real `social` rooms) ---
+
+export async function makeMarkConversationReadUseCase() {
+  return new MarkConversationReadUseCase(await makeRepo());
+}
+
+export async function makeSendTypingIndicatorUseCase() {
+  return new SendTypingIndicatorUseCase(await makeRepo());
 }

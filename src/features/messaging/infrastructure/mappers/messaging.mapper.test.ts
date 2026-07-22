@@ -3,12 +3,17 @@ import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
 import type { PresenceResponseDto } from "../dtos/presence-response.dto";
+import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
+import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import {
   toContactEntity,
   toConversationEntity,
+  toConversationEntityFromRoom,
   toMessageEntity,
+  toMessageEntityFromRoom,
   toPresenceRecord,
 } from "./messaging.mapper";
+import { formatWireTimestamp, roomColorKey, roomInitials } from "./room-derive";
 
 describe("messaging.mapper", () => {
   describe("toConversationEntity", () => {
@@ -177,6 +182,99 @@ describe("messaging.mapper", () => {
       const entity = toConversationEntity(dto);
       expect(entity.presence).toBe("online");
       expect(entity.lastActiveAt).toBe("2026-07-14T10:00:00Z");
+    });
+  });
+
+  // --- US-E18.17 real `social` room → domain mappers ---
+
+  describe("toConversationEntityFromRoom", () => {
+    const base: RoomSummaryResponseDto = {
+      roomId: "room-1",
+      scope: "SCHOOL",
+      tenantId: "t1",
+      roomType: "class_chat",
+      name: "Lớp 11B2 — Toán",
+      lastMessagePreview: "Bài tập trang 87",
+      lastMessageAt: "2026-07-20T08:15:00.000Z",
+      status: "active",
+      requestStatus: "accepted",
+    };
+
+    it("maps a provisioned-group room to a 'group' conversation", () => {
+      const entity = toConversationEntityFromRoom(base);
+      expect(entity.id).toBe("room-1");
+      expect(entity.type).toBe("group");
+      expect(entity.name).toBe("Lớp 11B2 — Toán");
+      expect(entity.lastMessage).toBe("Bài tập trang 87");
+      expect(entity.lastMessageTime).toBe(
+        formatWireTimestamp(base.lastMessageAt).time,
+      );
+      expect(entity.avatarInitials).toBe(roomInitials(base.name));
+      expect(entity.color).toBe(roomColorKey(base.roomId));
+    });
+
+    it("maps a dm room to a 'direct' conversation", () => {
+      const entity = toConversationEntityFromRoom({
+        ...base,
+        roomId: "dm-9",
+        roomType: "dm",
+        name: "Trần Minh Quân",
+      });
+      expect(entity.type).toBe("direct");
+    });
+
+    it("defaults unreadCount to 0 (no unread field on the wire — ADR 0060 gap)", () => {
+      expect(toConversationEntityFromRoom(base).unreadCount).toBe(0);
+    });
+
+    it("empties lastMessage when the preview is null/absent", () => {
+      expect(
+        toConversationEntityFromRoom({ ...base, lastMessagePreview: null })
+          .lastMessage,
+      ).toBe("");
+    });
+  });
+
+  describe("toMessageEntityFromRoom", () => {
+    const base: RoomMessageResponseDto = {
+      messageId: "m-1",
+      roomId: "room-1",
+      senderUserId: "user-self",
+      text: "Chào cả lớp",
+      status: "active",
+      editCount: 0,
+      createdAt: "2026-07-20T03:15:00.000Z",
+    };
+
+    it("marks a message from the current user as 'me'", () => {
+      const entity = toMessageEntityFromRoom(base, "user-self");
+      expect(entity.from).toBe("me");
+      expect(entity.id).toBe("m-1");
+      expect(entity.conversationId).toBe("room-1");
+      expect(entity.text).toBe("Chào cả lớp");
+      expect(entity.sentAt).toBe(base.createdAt);
+      expect(entity.time).toBe(formatWireTimestamp(base.createdAt).time);
+      expect(entity.isDeleted).toBe(false);
+    });
+
+    it("marks a message from another user as 'other' (never 'system')", () => {
+      const entity = toMessageEntityFromRoom(base, "someone-else");
+      expect(entity.from).toBe("other");
+      expect(entity.senderName).toBeUndefined();
+      expect(entity.senderInitials).toBeUndefined();
+    });
+
+    it("treats a null currentUserId as 'other'", () => {
+      expect(toMessageEntityFromRoom(base, null).from).toBe("other");
+    });
+
+    it("flags a deleted message and passes the wire text through untouched", () => {
+      const entity = toMessageEntityFromRoom(
+        { ...base, status: "deleted", text: "social_message_deleted" },
+        "user-self",
+      );
+      expect(entity.isDeleted).toBe(true);
+      expect(entity.text).toBe("social_message_deleted");
     });
   });
 

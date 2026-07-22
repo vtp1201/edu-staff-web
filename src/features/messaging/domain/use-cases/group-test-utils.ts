@@ -21,6 +21,8 @@ export function makeMessagingRepo(
     pinMessage: vi.fn(),
     unpinMessage: vi.fn(),
     deleteMessage: vi.fn(),
+    markConversationRead: vi.fn(),
+    sendTypingIndicator: vi.fn(),
     ...over,
   };
 }

@@ -6,6 +6,9 @@ import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
 import type { PresenceResponseDto } from "../dtos/presence-response.dto";
+import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
+import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
+import { formatWireTimestamp, roomColorKey, roomInitials } from "./room-derive";
 
 export function toConversationEntity(
   dto: ConversationResponseDto,
@@ -38,6 +41,56 @@ export function toMessageEntity(dto: MessageResponseDto): MessageEntity {
     senderName: dto.senderName,
     senderInitials: dto.senderInitials,
     senderColor: dto.senderColor,
+  };
+}
+
+// --- US-E18.17 real `social` room/message → domain (ADR 0060) ---
+
+/**
+ * Map a real `RoomSummary` (rooms endpoint) to a `ConversationEntity`. The real
+ * schema carries NO unread-count and NO avatar/colour — `unreadCount` defaults
+ * to 0 (server-tracked read state is a documented wire gap, cross-repo ask #32),
+ * `avatarInitials`/`color` are derived deterministically from name/roomId.
+ */
+export function toConversationEntityFromRoom(
+  dto: RoomSummaryResponseDto,
+): ConversationEntity {
+  return {
+    id: dto.roomId,
+    type: dto.roomType === "dm" ? "direct" : "group",
+    name: dto.name,
+    avatarInitials: roomInitials(dto.name),
+    color: roomColorKey(dto.roomId),
+    lastMessage: dto.lastMessagePreview ?? "",
+    lastMessageTime: formatWireTimestamp(dto.lastMessageAt).time,
+    // GAP (ADR 0060 / cross-repo ask #32): RoomSummary has no unread field on
+    // the wire. The client mark-read path resets this locally until BE exposes
+    // a server-tracked unread count.
+    unreadCount: 0,
+  };
+}
+
+/**
+ * Map a real `Message` to a `MessageEntity`. `from` is `me` only when the
+ * sender matches the server-resolved current user (never `system` — the wire
+ * has no such concept). `senderName`/`senderInitials`/`senderColor` have no
+ * wire source and stay undefined (the chat bubble renders that case). Deleted
+ * messages carry the i18n key as `text`; the bubble ignores it when isDeleted.
+ */
+export function toMessageEntityFromRoom(
+  dto: RoomMessageResponseDto,
+  currentUserId: string | null,
+): MessageEntity {
+  const { time, date } = formatWireTimestamp(dto.createdAt);
+  return {
+    id: dto.messageId,
+    conversationId: dto.roomId,
+    from: currentUserId && dto.senderUserId === currentUserId ? "me" : "other",
+    text: dto.text,
+    time,
+    date,
+    isDeleted: dto.status === "deleted",
+    sentAt: dto.createdAt,
   };
 }
 
