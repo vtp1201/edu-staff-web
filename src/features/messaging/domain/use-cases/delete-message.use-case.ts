@@ -2,7 +2,10 @@ import type { MessagingFailure } from "../failures/messaging.failure";
 import type { IMessagingRepository } from "../repositories/i-messaging.repository";
 import { fail, type Result } from "./result";
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
+// Real `social` contract: self soft-delete is allowed within a 5-minute
+// mutation window (`DELETE_WINDOW_EXPIRED`, ADR 0060) — NOT the previously
+// web-invented 1 hour.
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
 export type DeleteMessageInput = {
   conversationId: string;
@@ -28,7 +31,7 @@ export class DeleteMessageUseCase {
       return fail({ type: "delete-message-failed", cause: "not-own" });
     }
     const sent = Date.parse(input.sentAt);
-    if (Number.isNaN(sent) || this.now() - sent > ONE_HOUR_MS) {
+    if (Number.isNaN(sent) || this.now() - sent > FIVE_MINUTES_MS) {
       return fail({ type: "delete-message-failed", cause: "expired" });
     }
     return this.repo.deleteMessage(input.conversationId, input.messageId);

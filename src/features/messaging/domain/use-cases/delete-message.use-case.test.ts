@@ -7,7 +7,7 @@ const NOW = Date.parse("2026-06-20T12:00:00.000Z");
 const clock = () => NOW;
 
 describe("DeleteMessageUseCase", () => {
-  it("deletes an own message sent within 1 hour", async () => {
+  it("deletes an own message sent within 5 minutes", async () => {
     const deleteMessage = vi.fn().mockResolvedValue(ok(true));
     const useCase = new DeleteMessageUseCase(
       makeMessagingRepo({ deleteMessage }),
@@ -18,7 +18,8 @@ describe("DeleteMessageUseCase", () => {
       conversationId: "u1",
       messageId: "u1-2",
       isMine: true,
-      sentAt: "2026-06-20T11:30:00.000Z",
+      // 4 minutes ago — inside the real 5-minute window.
+      sentAt: "2026-06-20T11:56:00.000Z",
     });
 
     expect(deleteMessage).toHaveBeenCalledWith("u1", "u1-2");
@@ -46,7 +47,7 @@ describe("DeleteMessageUseCase", () => {
     expect(deleteMessage).not.toHaveBeenCalled();
   });
 
-  it("fails when the message is older than 1 hour", async () => {
+  it("fails when the message is older than 5 minutes", async () => {
     const deleteMessage = vi.fn();
     const useCase = new DeleteMessageUseCase(
       makeMessagingRepo({ deleteMessage }),
@@ -57,7 +58,8 @@ describe("DeleteMessageUseCase", () => {
       conversationId: "u1",
       messageId: "u1-2",
       isMine: true,
-      sentAt: "2026-06-20T10:00:00.000Z",
+      // 6 minutes ago — past the real 5-minute window.
+      sentAt: "2026-06-20T11:54:00.000Z",
     });
 
     expect(res).toEqual({
