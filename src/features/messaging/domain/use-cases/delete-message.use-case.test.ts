@@ -47,6 +47,47 @@ describe("DeleteMessageUseCase", () => {
     expect(deleteMessage).not.toHaveBeenCalled();
   });
 
+  it("allows delete exactly AT the 5-minute boundary (just-inside)", async () => {
+    const deleteMessage = vi.fn().mockResolvedValue(ok(true));
+    const useCase = new DeleteMessageUseCase(
+      makeMessagingRepo({ deleteMessage }),
+      clock,
+    );
+
+    const res = await useCase.execute({
+      conversationId: "u1",
+      messageId: "u1-2",
+      isMine: true,
+      // exactly 5:00 minutes ago — boundary itself must still be allowed.
+      sentAt: "2026-06-20T11:55:00.000Z",
+    });
+
+    expect(deleteMessage).toHaveBeenCalledWith("u1", "u1-2");
+    expect(res).toEqual({ ok: true, value: true });
+  });
+
+  it("fails 1 second past the 5-minute boundary (just-outside)", async () => {
+    const deleteMessage = vi.fn();
+    const useCase = new DeleteMessageUseCase(
+      makeMessagingRepo({ deleteMessage }),
+      clock,
+    );
+
+    const res = await useCase.execute({
+      conversationId: "u1",
+      messageId: "u1-2",
+      isMine: true,
+      // 5:01 minutes ago — 1 second past the boundary.
+      sentAt: "2026-06-20T11:54:59.000Z",
+    });
+
+    expect(res).toEqual({
+      ok: false,
+      failure: { type: "delete-message-failed", cause: "expired" },
+    });
+    expect(deleteMessage).not.toHaveBeenCalled();
+  });
+
   it("fails when the message is older than 5 minutes", async () => {
     const deleteMessage = vi.fn();
     const useCase = new DeleteMessageUseCase(
