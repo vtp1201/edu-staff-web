@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
@@ -26,6 +26,7 @@ import {
   paneInert,
 } from "./pane-visibility";
 import { isGroupPresenceQueryEnabled } from "./presence-gating";
+import { createTypingThrottle, type TypingThrottle } from "./typing-throttle";
 import { useIsMobile } from "./use-is-mobile";
 
 export interface MessagingScreenProps
@@ -78,6 +79,8 @@ export function MessagingScreen({
   leaveGroupAction,
   deleteGroupAction,
   updateGroupAction,
+  markConversationReadAction,
+  sendTypingIndicatorAction,
 }: MessagingScreenProps) {
   const t = useTranslations("messaging");
   const isMobile = useIsMobile();
@@ -346,6 +349,47 @@ export function MessagingScreen({
     },
   });
 
+  // US-E18.17 — opening a conversation marks it read. Optimistically zero the
+  // local unread badge (same visible behavior as before) then fire the
+  // server-side round-trip best-effort (mock mode: local reset). Runs whenever
+  // the active conversation changes — covers select, deep-link, and initial.
+  const markRead = useCallback(
+    (id: string) => {
+      queryClient.setQueryData<ConversationEntity[]>(
+        conversationsKey(),
+        (old = []) =>
+          old.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)),
+      );
+      void markConversationReadAction?.(id).catch(() => {
+        /* best-effort: never surface a mark-read failure */
+      });
+    },
+    [queryClient, markConversationReadAction],
+  );
+
+  useEffect(() => {
+    if (activeId) markRead(activeId);
+  }, [activeId, markRead]);
+
+  // US-E18.17 — outbound typing signal, throttled per active conversation so the
+  // composer's onChange never hammers the ~3s server cooldown. Fire-and-forget:
+  // any failure (incl. 429) is swallowed and never blocks composing/sending.
+  const typingThrottleRef = useRef<TypingThrottle | null>(null);
+  useEffect(() => {
+    if (!activeId || !sendTypingIndicatorAction) {
+      typingThrottleRef.current = null;
+      return;
+    }
+    typingThrottleRef.current = createTypingThrottle(() => {
+      void sendTypingIndicatorAction(activeId, true).catch(() => {
+        /* best-effort: typing failures are silent */
+      });
+    });
+  }, [activeId, sendTypingIndicatorAction]);
+  const handleTyping = useCallback(() => {
+    typingThrottleRef.current?.fire();
+  }, []);
+
   const handleSelect = (id: string) => {
     setActiveId(id);
     setMobilePane("chat");
@@ -412,6 +456,7 @@ export function MessagingScreen({
             messages={messages}
             isLoading={messagesLoading}
             onSend={handleSend}
+            onTyping={handleTyping}
             onBack={handleBack}
             inputRef={chatInputRef}
             selfId={selfId}

@@ -209,6 +209,8 @@ const meta: Meta<typeof MessagingScreen> = {
     createConversationAction,
     getMessagesAction,
     getPresenceAction,
+    markConversationReadAction: async () => ({ ok: true }),
+    sendTypingIndicatorAction: async () => ({ ok: true }),
   },
 };
 export default meta;

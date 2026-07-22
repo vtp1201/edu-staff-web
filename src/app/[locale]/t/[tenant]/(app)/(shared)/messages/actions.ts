@@ -10,9 +10,11 @@ import {
   makeGetMessagesUseCase,
   makeGetPresenceUseCase,
   makeLeaveGroupUseCase,
+  makeMarkConversationReadUseCase,
   makePinMessageUseCase,
   makeRemoveGroupMemberUseCase,
   makeSendMessageUseCase,
+  makeSendTypingIndicatorUseCase,
   makeUpdateGroupUseCase,
 } from "@/bootstrap/di";
 import type { CreateGroupFormValues } from "@/features/messaging/presentation/create-group-modal";
@@ -147,6 +149,31 @@ export async function deleteMessageAction(
     isMine: true,
     sentAt,
   });
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+// --- US-E18.17 read-state + typing (real `social` rooms) ---
+
+export async function markConversationReadAction(
+  conversationId: string,
+): Promise<ActionResult> {
+  const useCase = await makeMarkConversationReadUseCase();
+  const result = await useCase.execute(conversationId);
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function sendTypingIndicatorAction(
+  conversationId: string,
+  typing: boolean,
+): Promise<ActionResult> {
+  // Best-effort: the client throttles + swallows any failure (incl. 429). The
+  // action still returns a stable Result shape for consistency.
+  const useCase = await makeSendTypingIndicatorUseCase();
+  const result = await useCase.execute(conversationId, typing);
   return result.ok
     ? { ok: true }
     : { ok: false, errorKey: result.failure.type };
