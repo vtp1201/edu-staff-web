@@ -52,6 +52,39 @@ describe("MockMessagingRepository", () => {
     );
   });
 
+  // --- US-E18.17 read-state + typing (deterministic mock equivalents) ---
+
+  it("markConversationRead resets that conversation's unreadCount to 0", async () => {
+    const repo = new MockMessagingRepository();
+    const before = await repo.getConversations();
+    expect(before.ok).toBe(true);
+    if (!before.ok) return;
+    // Fixtures seed u1 with unreadCount > 0.
+    expect(
+      before.value.find((c) => c.id === "u1")?.unreadCount,
+    ).toBeGreaterThan(0);
+
+    const res = await repo.markConversationRead("u1");
+    expect(res).toEqual({ ok: true, value: true });
+
+    const after = await repo.getConversations();
+    expect(after.ok).toBe(true);
+    if (!after.ok) return;
+    expect(after.value.find((c) => c.id === "u1")?.unreadCount).toBe(0);
+  });
+
+  it("sendTypingIndicator is a deterministic no-op success", async () => {
+    const repo = new MockMessagingRepository();
+    expect(await repo.sendTypingIndicator("u1", true)).toEqual({
+      ok: true,
+      value: true,
+    });
+    expect(await repo.sendTypingIndicator("u1", false)).toEqual({
+      ok: true,
+      value: true,
+    });
+  });
+
   it("createConversation prepends a new conversation to the list", async () => {
     const repo = new MockMessagingRepository();
     const created = await repo.createConversation(["u1"]);

@@ -13,9 +13,11 @@ import {
   getMessagesAction,
   getPresenceAction,
   leaveGroupAction,
+  markConversationReadAction,
   pinMessageAction,
   removeGroupMemberAction,
   sendMessageAction,
+  sendTypingIndicatorAction,
   updateGroupAction,
 } from "./actions";
 
@@ -48,6 +50,8 @@ export default async function MessagesPage() {
       deleteMessageAction={deleteMessageAction}
       leaveGroupAction={leaveGroupAction}
       deleteGroupAction={deleteGroupAction}
+      markConversationReadAction={markConversationReadAction}
+      sendTypingIndicatorAction={sendTypingIndicatorAction}
     />
   );
 }

@@ -30,6 +30,6 @@ export type MessageEntity = {
   isPinned?: boolean;
   /** Soft-deleted — bubble renders the "Tin nhắn đã bị xoá" placeholder (US-E10.4). */
   isDeleted?: boolean;
-  /** ISO8601 timestamp for the delete-window check (isMine && within 1 hour). */
+  /** ISO8601 timestamp for the delete-window check (isMine && within 5 minutes). */
   sentAt?: string;
 };

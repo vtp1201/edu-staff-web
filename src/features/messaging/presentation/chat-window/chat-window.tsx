@@ -45,8 +45,11 @@ export interface ChatWindowProps {
   messages: MessageEntity[];
   isLoading: boolean;
   onSend: (text: string, replyTo?: ReplyState) => void;
-  /** Show the typing indicator. False by default (mock-first: no real SSE signal yet). */
+  /** Show the (inbound) typing indicator. False by default (no real SSE signal yet). */
   isTyping?: boolean;
+  /** US-E18.17 — best-effort OUTBOUND typing signal, fired as the composer gains
+   *  text. The owner throttles + swallows errors; optional (no-op when absent). */
+  onTyping?: () => void;
   /** Mobile only — back to the conversation list. */
   onBack?: () => void;
   /** Mobile focus management — focus the composer when the chat pane opens. */
@@ -81,6 +84,7 @@ export function ChatWindow({
   isLoading,
   isTyping = false,
   onSend,
+  onTyping,
   onBack,
   inputRef,
   onPinMessage,
@@ -393,7 +397,11 @@ export function ChatWindow({
           <textarea
             id={inputId}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // Best-effort outbound typing signal (owner throttles + swallows).
+              if (e.target.value.length > 0) onTyping?.();
+            }}
             onKeyDown={handleKeyDown}
             placeholder={
               replyState ? tReply("placeholder") : t("chat.placeholder")

@@ -84,4 +84,16 @@ export interface IMessagingRepository {
     conversationId: string,
     messageId: string,
   ): Promise<Result<boolean, MessagingFailure>>;
+
+  // --- US-E18.17 read-state + typing (real `social` rooms) ---
+  /** Mark all messages in a conversation/room as read (`POST /rooms/{id}/read`). */
+  markConversationRead(
+    conversationId: string,
+  ): Promise<Result<boolean, MessagingFailure>>;
+  /** Best-effort outbound typing broadcast (`POST /rooms/{id}/typing`). A
+   *  rate-limit (429) maps to a normal failure Result — never throws. */
+  sendTypingIndicator(
+    conversationId: string,
+    typing: boolean,
+  ): Promise<Result<boolean, MessagingFailure>>;
 }

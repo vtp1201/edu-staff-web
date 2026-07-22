@@ -18,7 +18,9 @@ import type {
 } from "./message-context-menu.i-vm";
 
 const MENU_WIDTH = 200;
-const ONE_HOUR_MS = 60 * 60 * 1000;
+// Real `social` contract self-delete window is 5 minutes (ADR 0060,
+// `DELETE_WINDOW_EXPIRED`) — kept in sync with delete-message.use-case.ts.
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const VIEWPORT_MARGIN = 8;
 
 export interface MessageContextMenuProps
@@ -63,7 +65,7 @@ export function MessageContextMenu({
 
   const pinDisabled = isGroup && !selfIsGroupAdmin;
   const deleteExpired = sentAt
-    ? Date.now() - Date.parse(sentAt) > ONE_HOUR_MS
+    ? Date.now() - Date.parse(sentAt) > FIVE_MINUTES_MS
     : true;
 
   const items: Item[] = [

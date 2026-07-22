@@ -372,6 +372,28 @@ export class MockMessagingRepository implements IMessagingRepository {
     return ok(true);
   }
 
+  // --- US-E18.17 read-state + typing (deterministic mock equivalents) ---
+
+  async markConversationRead(
+    conversationId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    await mockDelay(100);
+    // Local unread reset — the same visible behavior as today's client-side
+    // decrement, now observable through getConversations for tests/Storybook.
+    this.conversations = this.conversations.map((c) =>
+      c.id === conversationId ? { ...c, unreadCount: 0 } : c,
+    );
+    return ok(true);
+  }
+
+  async sendTypingIndicator(
+    _conversationId: string,
+    _typing: boolean,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    // No observable state needed — the real endpoint is a best-effort 204.
+    return ok(true);
+  }
+
   private syncMemberCount(groupId: string, count: number): void {
     this.conversations = this.conversations.map((c) =>
       c.id === groupId ? { ...c, memberCount: count } : c,

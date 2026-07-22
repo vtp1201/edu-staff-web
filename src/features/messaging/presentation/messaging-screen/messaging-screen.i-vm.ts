@@ -90,4 +90,17 @@ export interface MessagingScreenActions {
     name: string,
     description: string,
   ) => Promise<GetGroupResult>;
+
+  // --- US-E18.17 read-state + typing (real `social` rooms) ---
+  /** Called when a conversation is opened; resets its unread state server-side.
+   *  Optional so Storybook stories without a real backend can omit it. */
+  markConversationReadAction?: (
+    conversationId: string,
+  ) => Promise<ActionResult>;
+  /** Best-effort outbound typing broadcast fired (throttled) as the composer
+   *  changes. Failures — incl. 429 — are swallowed and never surfaced. */
+  sendTypingIndicatorAction?: (
+    conversationId: string,
+    typing: boolean,
+  ) => Promise<ActionResult>;
 }

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
@@ -209,6 +209,8 @@ const meta: Meta<typeof MessagingScreen> = {
     createConversationAction,
     getMessagesAction,
     getPresenceAction,
+    markConversationReadAction: async () => ({ ok: true }),
+    sendTypingIndicatorAction: async () => ({ ok: true }),
   },
 };
 export default meta;
@@ -306,6 +308,57 @@ export const SendMessage_Optimistic: Story = {
     );
     // AC-4b: input cleared after send
     await waitFor(() => expect(input).toHaveValue(""));
+  },
+};
+
+/**
+ * US-E18.17 AC — opening a conversation calls markConversationReadAction with
+ * the selected conversation's id (server round-trip on select, not just the
+ * initial/deep-link mount).
+ */
+export const MarkConversationRead_OnSelect: Story = {
+  args: {
+    markConversationReadAction: fn(
+      async (): Promise<ActionResult> => ({ ok: true }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const markRead = args.markConversationReadAction as ReturnType<typeof fn>;
+    // Initial mount selects the first conversation (u1) — asserted first.
+    await waitFor(() => expect(markRead).toHaveBeenCalledWith("u1"));
+    markRead.mockClear();
+
+    // Selecting a different conversation must call it again with the NEW id.
+    const item = await canvas.findByRole("button", {
+      name: /mở cuộc trò chuyện.*Nguyễn Văn Đức/i,
+    });
+    await userEvent.click(item);
+    await waitFor(() => expect(markRead).toHaveBeenCalledWith("u3"));
+  },
+};
+
+/**
+ * US-E18.17 AC — typing in the composer fires sendTypingIndicatorAction with
+ * the active conversation id and typing:true (throttled, so exactly once for
+ * a burst of keystrokes within the cooldown window).
+ */
+export const SendTypingIndicator_OnCompose: Story = {
+  args: {
+    initialConversations: [CONVERSATIONS[2]],
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    sendTypingIndicatorAction: fn(
+      async (): Promise<ActionResult> => ({ ok: true }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const sendTyping = args.sendTypingIndicatorAction as ReturnType<typeof fn>;
+    const input = await canvas.findByLabelText(/nhập tin nhắn/i);
+    await userEvent.type(input, "abc");
+    // Throttled leading-edge fire: called once with (roomId, true) despite 3 keystrokes.
+    await waitFor(() => expect(sendTyping).toHaveBeenCalledWith("g1", true));
+    expect(sendTyping).toHaveBeenCalledTimes(1);
   },
 };
 
