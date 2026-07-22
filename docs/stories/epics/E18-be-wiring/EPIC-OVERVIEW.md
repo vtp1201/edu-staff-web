@@ -140,7 +140,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
-| US-E18.17 | Messaging remodel (rooms/DMs) | **rất cao** | high-risk | Vocabulary đổi hẳn: conversations/groups → `rooms`+`dms`; thêm read/typing/mute/moderation. **Blocked**: Kong chưa route `/social` |
+| US-E18.17 | Messaging remodel (rooms/DMs) | **rất cao** | high-risk | **Done** — the "Blocked: Kong chưa route `/social`" label only blocked LIVE verification, not contract-first wiring (ADR `0060`, decision to proceed anyway). Real-wired: `getConversations`/`getMessages`/`sendMessage`/`deleteMessage`/1:1 `createConversation` (`school-dms`) against ground-truthed `/social/api/v1/rooms...`; two NEW additive capabilities `markConversationRead` (`POST .../read`) + `sendTypingIndicator` (`POST .../typing`, throttled outbound only — inbound still needs SSE, US-E18.18) wired real with zero new UI surface. Self-delete window corrected 1h→5min to match the real `DELETE_WINDOW_EXPIRED` rule (incl. the disabled-hint copy the a11y audit caught still saying "1 hour"). Permanently mock via a new `HybridMessagingRepository` facade (real methods some, mock others, same hybrid pattern as US-E18.4/US-E18.5/US-E18.11): the entire ad hoc group lifecycle (`createGroup`/`getGroup`/`updateGroup`/`addGroupMembers`/`removeGroupMember`/`leaveGroup`/`deleteGroup` — no self-service group-room contract exists, only system-provisioned `class_chat`/`parent_group`), `pinMessage`/`unpinMessage` (no message-pin endpoint at all), and `getContacts` (the only people-directory endpoint is role-gated ADMIN/TEACHER-only). Live-gateway proof still deferred (ask #1). See `US-E18.17-messaging-rooms-remap/story.md` + ADR `0060` + cross-repo/product ask #32. |
 | US-E18.18 | Notification wiring (SSE + unread-counts) | cao | normal | BE chỉ có `/stream`, `/notifications/unread-counts` (số nhiều), `/presence`; list/per-item-read/read-batch KHÔNG có BE → giữ mock phần đó + flag BE story. Sửa SSE path `/events/stream`→`/api/v1/stream`. **Blocked**: Kong chưa route notification |
 
 ## KHÔNG thuộc wave này (BE chưa có endpoint — cần BE story hoặc quyết định giữ mock)
@@ -543,6 +543,47 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     `GET /classes/{classId}/attendance?startDate=&endDate=`, mirroring the
     member-range shape) to remove the fan-out. See ADR `0058` +
     `US-E13.2-attendance-be-wiring/US-E13.2-attendance-be-wiring.md`.
+
+32. **(US-E18.17, 2026-07-22) [product/BE gap — messaging groups/pin/contacts]**
+    Ground-truthing `services/social/docs/openapi.yaml` for the messaging
+    remodel found three permanent blockers, none fixable by a web-side
+    remap:
+    - **No self-service group-room contract.** `POST /api/v1/rooms` only
+      accepts `roomType ∈ {class_chat, announcement, parent_group, dm}` with
+      a MANDATORY `sourceRefId`+`sourceRefType: class|system` pair — a room
+      is always provisioned FROM a system source (a class, a club), never
+      created ad hoc by an end user picking an arbitrary member set + name +
+      color. `custom`/`club_chat`/`staff_internal` exist in `RoomSummary`'s
+      enum but are reachable only via the separate Club endpoints or
+      worker-side provisioning. The web's existing "create a group chat"
+      teacher/admin flow (member picker + name + color + kind) has zero
+      lossless mapping onto this model. Ask: either (a) ship a genuine
+      self-service "create a custom room with an arbitrary member set"
+      endpoint, or (b) accept the group-chat feature needs a product/design
+      redesign around the real `class_chat`/`parent_group`/club model
+      (route to `/uiux`+`/ba`).
+    - **No message-pin endpoint at all** (only feed POSTS have
+      `/feeds/posts/{id}/pin`, an unrelated already-wired feature). The
+      web's pin/unpin-in-chat feature (group info panel pinned-messages
+      list) has nothing to wire against.
+    - **The only people-directory endpoint is role-gated.**
+      `GET /social/api/v1/social/tenants/{tenantId}/members/directory`
+      requires an `ADMIN`/`TEACHER` tenant-wide staff fact —
+      `STUDENT`/`PARENT` callers get `PROFILE_NOT_FOUND` (404)
+      unconditionally (enumeration-safe, by design). The web's "start a new
+      chat" contact picker is role-agnostic today; wiring it real would
+      silently break for non-staff roles with no fallback. Ask: either add
+      a role-appropriate directory variant for STUDENT/PARENT (e.g. their
+      own homeroom teacher(s) + linked-parent/child, mirroring the
+      visibility rule already used for room-membership), or confirm the
+      contact picker should become staff-only in real mode (a product
+      decision, not purely a BE ask).
+    Until any of these land, `createGroup`/`getGroup`/`updateGroup`/
+    `addGroupMembers`/`removeGroupMember`/`leaveGroup`/`deleteGroup`,
+    `pinMessage`/`unpinMessage`, and `getContacts` stay permanently mock —
+    the epic's 6th fully/partially-blocked operation set (after
+    US-E18.8/US-E18.9/US-E18.13's unseal/US-E18.14/US-E21.1). See ADR
+    `0060` + `US-E18.17-messaging-rooms-remap/story.md`.
 
 ## Dependencies & thứ tự
 

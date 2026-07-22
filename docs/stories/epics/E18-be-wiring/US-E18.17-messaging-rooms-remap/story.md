@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -179,5 +179,55 @@ scope decision and rationale (what's wired real vs. permanently mock).
 
 ## Evidence
 
-(Filled in after implementation — unit/integration counts, `tsc`/`build`
-output, reviewer + a11y verdicts, merge commit sha.)
+- **Scope delivered** exactly per ADR `0060`'s scope table: real-wired
+  `getConversations`/`getMessages`/`sendMessage`/`deleteMessage`/1:1
+  `createConversation` against `/social/api/v1/rooms...`; NEW additive
+  `markConversationRead`/`sendTypingIndicator` (real, wired into
+  `messaging-screen.tsx`'s open-conversation effect + `chat-window.tsx`'s
+  throttled compose `onTyping`); `getContacts`/full group lifecycle/
+  `pinMessage`/`unpinMessage` force-mocked via the new
+  `HybridMessagingRepository` facade (never a doomed HTTP call in real mode).
+  Self-delete window corrected 1h→5min (`FIVE_MINUTES_MS`), including the
+  presentation-layer disabled-state copy (`messaging.contextMenu.deleteExpired`,
+  vi+en) that the a11y audit caught still saying "1 hour".
+- **Tests**: full suite `bun vitest run` → **385 files / 2492 tests pass**
+  (zero regression; +2 from the initial 2490 baseline are the QA-added
+  delete-window boundary tests). `bunx tsc --noEmit` clean. `bun run build`
+  clean (no stray `NEXT_PUBLIC_USE_MOCK` leak).
+- **fe-tech-lead-reviewer**: **Approved**. One SHOULD-FIX (dead
+  permanently-mock endpoint constants with a stale-path/misleading comment)
+  — fixed same-session (`705d557`).
+- **fe-accessibility-auditor**: 1 Major finding (A11Y-001 — delete-window
+  disabled-hint copy said "1 hour", the real/corrected rule is 5 minutes) —
+  fixed same-session (`2a062df`). No new UI surface confirmed (no new
+  component/state/animation/aria-live); design-review gate not separately
+  invoked per the epic's own rule (gate applies only when a US adds new
+  state UI — this one doesn't).
+- **fe-qa-playwright**: **GO**. Found + closed (test-only) 2 real coverage
+  gaps: exact 5-minute delete-window boundary test, and call-assertion
+  (`fn()` spies) for the mark-read/typing wiring in
+  `messaging-screen.stories.tsx` (previously only stubbed with no
+  assertion). Confirmed 2 pre-existing, unrelated Storybook failures
+  (`Create Group Optimistic Prepend`, `Reply Strip Active`) via `git stash`
+  bisection — NOT a regression from this US.
+- **Commits** (in order):
+  `66faefa` docs (packet + ADR 0060) ·
+  `860f84e` fix (5-min delete window) ·
+  `6b03bc5` feat (real repo remap) ·
+  `060fe91` feat (mark-read + typing presentation wiring) ·
+  `2530527` chore (engineer agent-memory) ·
+  `2a062df` fix (A11Y-001 copy fix) ·
+  `705d557` chore (dead endpoint constants cleanup) ·
+  `cacbe54` test (QA gap closure) ·
+  `d3a29b3` chore (QA agent-memory).
+- **Deferred** (ADR `0060` §4): live-gateway verification — Kong does not
+  route `/social` yet (cross-repo ask #1). No `make stack-up` smoke exists
+  for this US, unlike US-E18.0's school-config proof-of-pattern.
+- **Cross-repo/product findings** logged to `EPIC-OVERVIEW.md` ask #32: (a)
+  real `RoomSummary` has no unread-count/avatar/color field on the wire
+  (client derives locally); (b) ad hoc self-service group-room creation has
+  no real contract; (c) the only people-directory endpoint is role-gated to
+  ADMIN/TEACHER, blocking a role-agnostic contact picker; (d) real message
+  timestamps are ISO-only (no relative "Hôm nay"/"Hôm qua" label from the
+  wire) — real mode renders a numeric date/time instead, only observable
+  once Kong routes `/social`.
