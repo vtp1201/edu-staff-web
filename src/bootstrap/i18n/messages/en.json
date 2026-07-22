@@ -2517,7 +2517,7 @@
     "contextMenu": {
       "copy": "Copy text",
       "delete": "Delete",
-      "deleteExpired": "More than 1 hour has passed",
+      "deleteExpired": "More than 5 minutes have passed",
       "deleteOwnOnly": "You can only delete your own messages",
       "menuLabel": "Message options menu",
       "openAriaLabel": "Message options",

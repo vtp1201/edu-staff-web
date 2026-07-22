@@ -2517,7 +2517,7 @@
     "contextMenu": {
       "copy": "Sao chép văn bản",
       "delete": "Xóa",
-      "deleteExpired": "Đã quá 1 giờ",
+      "deleteExpired": "Đã quá 5 phút",
       "deleteOwnOnly": "Chỉ xoá tin nhắn của bạn",
       "menuLabel": "Menu tùy chọn tin nhắn",
       "openAriaLabel": "Tùy chọn tin nhắn",
