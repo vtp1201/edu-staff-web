@@ -48,9 +48,9 @@ export function toMessageEntity(dto: MessageResponseDto): MessageEntity {
 
 /**
  * Map a real `RoomSummary` (rooms endpoint) to a `ConversationEntity`. The real
- * schema carries NO unread-count and NO avatar/colour — `unreadCount` defaults
- * to 0 (server-tracked read state is a documented wire gap, cross-repo ask #32),
- * `avatarInitials`/`color` are derived deterministically from name/roomId.
+ * schema carries NO unread-count and NO avatar/colour — `avatarInitials`/`color`
+ * are derived deterministically from name/roomId; `unreadCount` seeds to 0 and
+ * is enriched from the real per-room `unread-counts` endpoint by the repository.
  */
 export function toConversationEntityFromRoom(
   dto: RoomSummaryResponseDto,
@@ -63,9 +63,9 @@ export function toConversationEntityFromRoom(
     color: roomColorKey(dto.roomId),
     lastMessage: dto.lastMessagePreview ?? "",
     lastMessageTime: formatWireTimestamp(dto.lastMessageAt).time,
-    // GAP (ADR 0060 / cross-repo ask #32): RoomSummary has no unread field on
-    // the wire. The client mark-read path resets this locally until BE exposes
-    // a server-tracked unread count.
+    // US-E18.18 closes ADR 0060 ask #32(a): RoomSummary still has no unread field
+    // on the wire, so this seeds to 0; `MessagingRepository.getConversations`
+    // best-effort merges the real count from `GET /notifications/unread-counts`.
     unreadCount: 0,
   };
 }

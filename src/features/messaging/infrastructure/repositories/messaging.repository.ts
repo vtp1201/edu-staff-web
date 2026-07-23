@@ -2,6 +2,10 @@ import "server-only";
 import type { AxiosInstance } from "axios";
 import { MESSAGING_EP } from "@/bootstrap/endpoint/messaging.endpoint";
 import {
+  NOTIFICATION_EP,
+  type RoomUnreadCountDto,
+} from "@/bootstrap/endpoint/notification.endpoint";
+import {
   type ApiEnvelope,
   errorCodeOf,
   parseEnvelope,
@@ -72,12 +76,45 @@ export class MessagingRepository implements IMessagingRepository {
         raw: true,
       })) as unknown as ApiEnvelope<RoomSummaryResponseDto[]>;
       const { data } = parseEnvelope(env);
-      return ok((data ?? []).map(toConversationEntityFromRoom));
+      const conversations = (data ?? []).map(toConversationEntityFromRoom);
+      // US-E18.18 / ADR 0060 ask #32(a): enrich the real per-room unread counts
+      // best-effort — a failure here must never fail the whole list.
+      return ok(await this.enrichUnreadCounts(conversations));
     } catch (err) {
       return fail({
         type: "load-conversations-failed",
         cause: errorCodeOf(err) ?? "social-service-not-available",
       });
+    }
+  }
+
+  /**
+   * US-E18.18 — best-effort per-room unread enrichment via the notification
+   * service `GET /notifications/unread-counts?roomIds=...` (enveloped → the
+   * interceptor unwraps to the array; no pagination, no `raw:true`). Merges the
+   * real `unreadCount` by `roomId`; on ANY failure it degrades to the mapper's
+   * default (`0`) and returns the conversations unchanged — additive, never
+   * blocking (same graceful-degradation precedent as US-E18.2). This closes the
+   * `toConversationEntityFromRoom` GAP (server-tracked unread was a wire gap).
+   */
+  private async enrichUnreadCounts(
+    conversations: ConversationEntity[],
+  ): Promise<ConversationEntity[]> {
+    if (conversations.length === 0) return conversations;
+    try {
+      const roomIds = conversations.map((c) => c.id);
+      const rows = (await this.http.get(
+        NOTIFICATION_EP.unreadCounts(roomIds),
+      )) as unknown as RoomUnreadCountDto[];
+      const byRoom = new Map(
+        (rows ?? []).map((r) => [r.roomId, r.unreadCount]),
+      );
+      return conversations.map((c) => {
+        const unread = byRoom.get(c.id);
+        return unread === undefined ? c : { ...c, unreadCount: unread };
+      });
+    } catch {
+      return conversations;
     }
   }
 

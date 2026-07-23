@@ -202,14 +202,39 @@ describe("NotificationRepository — real interceptor pipeline (raw-flag placeme
 
 // ─── getUnreadCount ───────────────────────────────────────────────────────────
 
-describe("NotificationRepository.getUnreadCount", () => {
-  it("returns count from response", async () => {
-    const http = makeHttp({
-      get: vi.fn().mockResolvedValue({ count: 5 }),
-    });
-    const repo = new NotificationRepository(http, "vi");
+describe("NotificationRepository.getUnreadCount (US-E18.18 real unread-counts)", () => {
+  it("calls the real unread-counts endpoint (no filter) and sums across rooms", async () => {
+    const get = vi.fn().mockResolvedValue([
+      { roomId: "r1", unreadCount: 3 },
+      { roomId: "r2", unreadCount: 0 },
+      { roomId: "r3", unreadCount: 2 },
+    ]);
+    const repo = new NotificationRepository(makeHttp({ get }), "vi");
     const result = await repo.getUnreadCount();
+    expect(get).toHaveBeenCalledWith(
+      "/noti/api/v1/notifications/unread-counts",
+    );
     expect(result.count).toBe(5);
+  });
+
+  it("degrades to 0 when the endpoint returns an empty array", async () => {
+    const http = makeHttp({ get: vi.fn().mockResolvedValue([]) });
+    const repo = new NotificationRepository(http, "vi");
+    expect((await repo.getUnreadCount()).count).toBe(0);
+  });
+
+  it("throws a mapped failure on error", async () => {
+    const err = new ApiError({
+      code: "UNAUTHORIZED",
+      message: "x",
+      retryable: false,
+      status: 401,
+    });
+    const http = makeHttp({ get: vi.fn().mockRejectedValue(err) });
+    const repo = new NotificationRepository(http, "vi");
+    await expect(repo.getUnreadCount()).rejects.toMatchObject({
+      type: "unauthorized",
+    });
   });
 });
 

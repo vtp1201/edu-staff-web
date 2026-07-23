@@ -127,6 +127,52 @@ describe("MessagingRepository (real social contract)", () => {
         },
       });
     });
+
+    // US-E18.18 — best-effort per-room unread-count enrichment (ADR 0060 #32a).
+    it("enriches unreadCount from the unread-counts endpoint by roomId", async () => {
+      const { http, mock } = makeHttp();
+      mock.get
+        .mockResolvedValueOnce(envelope([room])) // GET /rooms
+        .mockResolvedValueOnce([{ roomId: "room-1", unreadCount: 5 }]); // unread-counts
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.getConversations();
+
+      // 2nd call is the notification unread-counts endpoint, filtered by roomId.
+      expect(mock.get).toHaveBeenNthCalledWith(
+        2,
+        "/noti/api/v1/notifications/unread-counts?roomIds=room-1",
+      );
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.value[0]?.unreadCount).toBe(5);
+    });
+
+    it("degrades to unreadCount 0 (never fails the list) when enrichment errors", async () => {
+      const { http, mock } = makeHttp();
+      mock.get
+        .mockResolvedValueOnce(envelope([room])) // GET /rooms ok
+        .mockRejectedValueOnce(apiError("INTERNAL_SERVER_ERROR", 500)); // unread-counts fails
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.getConversations();
+
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.value[0]?.id).toBe("room-1");
+      expect(res.value[0]?.unreadCount).toBe(0);
+    });
+
+    it("skips the enrichment call entirely when there are no rooms", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockResolvedValueOnce(envelope([])); // empty rooms
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.getConversations();
+
+      expect(mock.get).toHaveBeenCalledTimes(1); // no unread-counts call
+      expect(res.ok).toBe(true);
+    });
   });
 
   describe("getMessages", () => {
