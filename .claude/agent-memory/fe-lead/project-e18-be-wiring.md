@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Wave 1 (E18.0-E18.6,E18.19) + Wave 2 (E18.7-E18.10) + Wave 3 (E18.11-E18.16, E18.16 descoped-zero-code) done, findings for remaining Wave 4
+description: E18 BE-wiring epic (mock→real edu-api) — Waves 0-3 done + Wave 4 US-E18.17/E18.18 done; epic's actionable scope now COMPLETE (US-E18.16 descoped zero-code, remaining items are cross-repo asks only)
 metadata:
   type: project
 ---
@@ -762,3 +762,44 @@ assertions: period-selector-absence guard, 4-state toggle incl. `late`'s
 tint class, roster 3-column guard, summary-card 4-tile count math,
 history `aria-live`+per-day badges, save success + correction-window-expired
 toast). ADR `0058`.
+
+**US-E18.18 (notification/SSE, 2026-07-23, Wave 4, normal lane) — the epic
+table's own service-ownership grouping can mislead: "unread-counts" was
+filed under "Notification wiring" because the route lives on the
+`notification` service, but its shape (`{roomId, unreadCount}[]`) is
+exclusively a MESSAGING concept — wire it into the feature that actually
+needs it, not the feature that happens to share the service.** Also: the
+web's own speculative `RealtimeEvent` SSE contract (ADR 0009: "web defines
+first, BE follows") turned out to have ZERO overlap with the real wire once
+BE shipped — real frames are FLAT (no `payload` wrapper), omit `eventId`
+entirely, and `typing` omits `tenantId`/embedded `type` too (SSE `event:`
+line is the sole type signal). Don't assume a pre-BE speculative contract
+survives contact with the real one just because "the team defined it first
+on purpose" — re-ground-truth it like any other mock-first guess once BE
+ships. **New cross-cutting finding for future SSE/proxy work**: a decision in
+the SIBLING repo (edu-api ADR 0047, dated AFTER this repo's original SSE
+proxy design) can silently invalidate an existing architectural choice here
+— the direct-bypass proxy (calls the notification service directly,
+bypassing Kong, per ADR 0009/0030) now structurally 401s once BE adopts
+gateway-injected-claims-only auth, INDEPENDENT of the Kong-routing gap that
+was already the known blocker. Always check the sibling repo's OWN recent
+decisions folder (`edu-api/docs/decisions/`) for anything dated after a
+web-side ADR that assumed a particular BE trust/auth model — don't assume
+the BE side is static. Kept the domain's existing 3-state `PresenceState`
+UNCHANGED (zero VM/UI ripple) by doing the 2-state(real)→3-state(domain)
+derivation entirely in the mapper with an injected clock — same "translate
+in the mapper, don't touch the domain" principle as US-E18.7's coefficient/
+weight unit scaling. tech-lead-reviewer's only Revision-Required items were
+durable-artifact gaps (ADR/TEST_MATRIX/EPIC-OVERVIEW) that the LEAD owns per
+role, not code — closed directly without looping back to the engineer,
+correctly distinguishing "code needs a fix" from "the lead forgot to
+register the paper trail." QA independently re-verified 10/10 AC and closed
+3 real test-coverage gaps (SSE proxy's real-branch fetch had zero test
+despite being the literal path-fix AC; inbound typing only had a
+pure-reducer test, not a rendered Storybook proof; presence's 5-min
+threshold lacked exact ±1s boundary tests) — zero production defects. 389
+files/2527 tests (baseline 385/2492, +4/+35), tsc/build clean. ADR `0061`.
+This closes out E18's actionable Wave 4 scope (US-E18.16 already descoped
+zero-code) — the epic itself is now complete; only cross-repo asks remain
+open (#1/#33 Kong routing + ADR-0047, and the long-running "IAM has no
+name/listing" gap-class asks #6/7/9/13/15/18/20/21/22).
