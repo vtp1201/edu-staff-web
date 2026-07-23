@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -289,4 +289,90 @@ correction #2).
 
 ## Evidence
 
-_(filled in after implementation)_
+- **Scope delivered** exactly per the Scope table: SSE path fixed
+  (`/events/stream`→`/api/v1/stream`); `RealtimeEvent` remapped to the real
+  flat wire vocabulary for `message.new`/`message.edited`/`message.deleted`/
+  `unread.updated`/`typing` (eventId optional, tenantId optional only for
+  `typing`, tenant-scoping confirmed strict for every other type by review);
+  legacy mock-only frame types kept and clearly flagged; `createMockUpstream`
+  extended with real-shaped sample frames. `messaging.getConversations()`
+  real-mode best-effort enriches `unreadCount` via the real per-room
+  endpoint, degrading to 0 on failure (closes ADR 0060 ask #32(a)).
+  `notification.getUnreadCount()` real (sums per-room counts);
+  `listNotifications`/`markRead`/`markAllRead` force-mocked permanently via
+  new `HybridNotificationRepository`. Presence contract fixed (`userIds`,
+  `{items:[...]}` envelope, real 2-state DTO→existing 3-state domain model
+  via an injected-clock 5-min threshold) with zero VM/UI change. Inbound
+  `typing` wired to `ChatWindow`'s dormant indicator, room-scoped correctly.
+  `ensureFreshSession()` added to both `notification.di.ts` and
+  `messaging.di.ts`'s `makePresenceRepo()`.
+- **Tests**: full suite `bun vitest run` → **389 files / 2527 tests pass**
+  (zero regression vs the 385/2492 baseline before this US — +4 files/+35
+  tests). Storybook messaging+notification scope 79/86 (7 pre-existing
+  failures confirmed via `git stash` bisection against `main`, unrelated to
+  this US — `message-context-menu`/`Create Group Optimistic Prepend`/
+  `Reply Strip Active`/`notifications-center` stories). `bunx tsc --noEmit`
+  clean. `bun run build` clean (real mode, `NEXT_PUBLIC_USE_MOCK` unset).
+- **fe-tech-lead-reviewer**: implementation **Approved** — clean layering,
+  correct `raw:true` top-level placement (unread-counts/presence calls don't
+  need it — both are enveloped, non-paginated), graceful-degradation and
+  force-mock claims verified against actual branch logic (not just
+  self-report), tenant-isolation regression risk from the `typing`-only
+  `tenantId` relaxation explicitly checked and cleared, deterministic
+  injected-clock presence derivation confirmed, `ensureFreshSession()`
+  placement confirmed correct in both DI factories. Initial verdict
+  **Revision Required** — scoped ONLY to durable-artifact gaps (missing ADR,
+  missing TEST_MATRIX row, stale EPIC-OVERVIEW row) per the story's own
+  Harness Delta — closed same-session by the lead (ADR `0061` registered,
+  this row added, EPIC-OVERVIEW row + cross-repo asks #33-#35 appended). Two
+  CONSIDER (non-blocking) notes: a second concurrent `EventSource` opened by
+  the messaging screen on `/messages` (pre-existing pattern, precedent
+  `use-notification-new-event.ts`) and an unencoded `roomIds.join(",")` in
+  the unread-counts query string (server-generated ids, low risk) — logged
+  as follow-ups, not blockers.
+- **fe-accessibility-auditor**: **PASS**, no findings. Confirmed the live
+  typing indicator reuses the EXACT SAME already-audited US-E16.5
+  `TypingIndicator` component/markup (diff on that component/keyframe is
+  empty) — no new component, no bypass, motion-safe/aria-live/sr-only
+  treatment unchanged. Room-scoping (no cross-room/stale-status leakage)
+  independently confirmed via `typing-inbound.test.ts`. One non-blocking
+  product observation (out of this US's scope): the indicator is gated
+  `!isGroup && isTyping` in `chat-window.tsx`, so a real `typing` frame for
+  an open GROUP conversation is silently dropped (no misleading state, just
+  no indicator) — flagged as a future-US candidate, needs its own
+  design-review pass if prioritized.
+- **fe-qa-playwright**: **GO**. Independently mapped and verified all 10 ACs
+  against concrete tests (not self-report) — 10/10 covered. Found + closed 3
+  real test-coverage gaps (all test-only, no production code changed): (1)
+  new `route.test.ts` proving the SSE proxy's real branch actually fetches
+  `NOTI_SERVICE_URL + /api/v1/stream` with a Bearer token — AC-1's literal
+  subject had zero direct test before this; (2) a real Storybook interaction
+  test (`InboundTyping_TogglesIndicatorForOpenRoomOnly`) proving the `typing`
+  wiring end-to-end (fake EventSource → dispatch → rendered indicator
+  toggle), not just the pure-reducer unit test; (3) exact ±1-second boundary
+  tests around the presence 5-minute "recent" threshold (would have caught a
+  `>`/`>=` off-by-one silently before). Zero production defects found. One
+  INFO-level note (not a regression, pre-existing, out of scope): `NOTI_EP
+  .presence` still points at `/noti/api/v1/presence` rather than the
+  ground-truthed bare `/api/v1/presence` — correction #5 in this packet only
+  scoped param-name/envelope/cardinality fixes, not the path; flagged for a
+  future US, already had an in-repo TODO comment predating this story.
+- **Commits** (in order): `54166c4` feat (SSE contract remap + path fix) ·
+  `dd8efa4` feat (notification real unread-counts + hybrid force-mock) ·
+  `9051a72` feat (presence fix + inbound typing) · `87cc41f` docs (realtime
+  contract sync) · `4e96680` chore (engineer agent-memory) · `78e5575` docs
+  (ADR 0061 + EPIC-OVERVIEW, lead) · `ed356f8` test (QA gap closure) ·
+  `487651a` chore (QA agent-memory).
+- **Deferred** (ADR `0061` §Consequences): live end-to-end verification —
+  TWO independent reasons: Kong does not route `notification` (cross-repo
+  ask #1/#33), AND edu-api ADR `0047`'s auth trust model makes the existing
+  direct-bypass SSE proxy structurally incompatible even once Kong routes it
+  (a second, separate unblock needed later).
+- **Cross-repo/product findings** logged to `EPIC-OVERVIEW.md` asks #33-#35:
+  (a) Kong routing gap + ADR-0047 direct-bypass incompatibility (two
+  independent blockers, both must clear before live verification); (b) no
+  generic multi-category notification-bell concept exists on the real wire
+  at all — `notification`'s list/mark-read stays permanently mock, needs new
+  BE surface if ever prioritized; (c) presence's 5-minute "recent" threshold
+  is an unconfirmed engineering default, no product/design-spec value
+  exists — flagged for `/uiux`/`/ba` confirmation.
