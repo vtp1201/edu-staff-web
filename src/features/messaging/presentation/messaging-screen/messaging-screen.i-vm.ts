@@ -14,6 +14,13 @@ export interface MessagingScreenVM {
   loadError?: MessagingFailure["type"];
   /** Synthetic id of the current user (mock-first auth). */
   selfId?: string;
+  /**
+   * US-E18.18 — active tenant id, used to scope the inbound `typing` SSE
+   * subscription that drives the chat-window typing indicator. Optional: when
+   * absent (e.g. standalone Storybook), the subscription is disabled and no
+   * EventSource is opened.
+   */
+  tenantId?: string;
 }
 
 /** Result of a sendMessage / createConversation server action. */

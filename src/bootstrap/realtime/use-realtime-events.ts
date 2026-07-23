@@ -100,7 +100,8 @@ export function useRealtimeEvents({
       onTyping: (roomId, userId, typing) =>
         onTypingRef.current?.(roomId, userId, typing),
       onSessionRevoked,
-      isOnMessagesRoute: () => pathnameRef.current.endsWith("/messages"),
+      isOnMessagesRoute: () =>
+        pathnameRef.current?.endsWith("/messages") ?? false,
     });
     connectionRef.current = connection;
 
@@ -115,7 +116,9 @@ export function useRealtimeEvents({
   // clears the counter the moment the user enters the messages route.
   useEffect(() => {
     pathnameRef.current = pathname;
-    if (pathname.endsWith("/messages")) {
+    // `usePathname` can be null in some render contexts (e.g. Storybook's
+    // next/navigation mock) — guard so the effect never throws.
+    if (pathname?.endsWith("/messages")) {
       setPendingMsgCount(0);
     }
   }, [pathname]);

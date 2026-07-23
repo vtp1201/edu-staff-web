@@ -278,19 +278,62 @@ describe("messaging.mapper", () => {
     });
   });
 
-  describe("toPresenceRecord (INT-401, US-E10.6)", () => {
-    it("maps status → presence and keeps memberId/lastActiveAt", () => {
-      const dto: PresenceResponseDto = {
-        memberId: "u1",
-        status: "recent",
-        lastActiveAt: "2026-07-14T09:57:00Z",
-      };
+  describe("toPresenceRecord (US-E18.18 2-state → 3-state)", () => {
+    const NOW = Date.parse("2026-07-14T10:00:00Z");
 
-      expect(toPresenceRecord(dto)).toEqual({
+    it("maps online:true → 'online' (userId → memberId)", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u1",
+        online: true,
+        lastSeen: null,
+      };
+      expect(toPresenceRecord(dto, NOW)).toEqual({
         memberId: "u1",
-        presence: "recent",
-        lastActiveAt: "2026-07-14T09:57:00Z",
+        presence: "online",
+        lastActiveAt: "",
       });
+    });
+
+    it("derives 'recent' when offline but lastSeen is within 5 minutes", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u2",
+        online: false,
+        lastSeen: "2026-07-14T09:57:00Z", // 3 min ago
+      };
+      const rec = toPresenceRecord(dto, NOW);
+      expect(rec.presence).toBe("recent");
+      expect(rec.lastActiveAt).toBe("2026-07-14T09:57:00Z");
+    });
+
+    it("derives 'offline' when lastSeen is older than 5 minutes", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u3",
+        online: false,
+        lastSeen: "2026-07-14T09:50:00Z", // 10 min ago
+      };
+      expect(toPresenceRecord(dto, NOW).presence).toBe("offline");
+    });
+
+    it("derives 'offline' when offline with no lastSeen", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u4",
+        online: false,
+        lastSeen: null,
+      };
+      expect(toPresenceRecord(dto, NOW)).toEqual({
+        memberId: "u4",
+        presence: "offline",
+        lastActiveAt: "",
+      });
+    });
+
+    it("treats exactly-at-the-boundary lastSeen as 'recent'", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u5",
+        online: false,
+        lastSeen: "2026-07-14T09:55:00Z", // exactly 5 min ago
+      };
+      expect(toPresenceRecord(dto, NOW).presence).toBe("recent");
     });
   });
 });
