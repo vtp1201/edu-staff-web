@@ -18,6 +18,11 @@ type Options = {
   tenantId: string;
   /** Forced logout when this session is revoked elsewhere. */
   onSessionRevoked?: (sessionId: string) => void;
+  /**
+   * US-E18.18 — a real inbound `typing` frame arrived. The messaging screen
+   * wires this to the currently-open conversation's typing indicator.
+   */
+  onTyping?: (roomId: string, userId: string, typing: boolean) => void;
   /** Disable the connection (e.g. while logged out). */
   enabled?: boolean;
 };
@@ -52,6 +57,7 @@ export interface UseRealtimeEventsResult {
 export function useRealtimeEvents({
   tenantId,
   onSessionRevoked,
+  onTyping,
   enabled = true,
 }: Options): UseRealtimeEventsResult {
   const queryClient = useQueryClient();
@@ -63,6 +69,10 @@ export function useRealtimeEvents({
   const hasConnectedRef = useRef(false);
   const pathnameRef = useRef(pathname);
   const connectionRef = useRef<SseConnection | null>(null);
+  // Keep `onTyping` in a ref so a caller passing an inline callback never forces
+  // the connection effect (below) to tear down/recreate the EventSource.
+  const onTypingRef = useRef(onTyping);
+  onTypingRef.current = onTyping;
 
   const showBanner = deriveShowBanner(sseStatus, hasConnectedRef.current);
 
@@ -87,8 +97,11 @@ export function useRealtimeEvents({
         }
       },
       onMessageNew: () => setPendingMsgCount((n) => n + 1),
+      onTyping: (roomId, userId, typing) =>
+        onTypingRef.current?.(roomId, userId, typing),
       onSessionRevoked,
-      isOnMessagesRoute: () => pathnameRef.current.endsWith("/messages"),
+      isOnMessagesRoute: () =>
+        pathnameRef.current?.endsWith("/messages") ?? false,
     });
     connectionRef.current = connection;
 
@@ -103,7 +116,9 @@ export function useRealtimeEvents({
   // clears the counter the moment the user enters the messages route.
   useEffect(() => {
     pathnameRef.current = pathname;
-    if (pathname.endsWith("/messages")) {
+    // `usePathname` can be null in some render contexts (e.g. Storybook's
+    // next/navigation mock) — guard so the effect never throws.
+    if (pathname?.endsWith("/messages")) {
       setPendingMsgCount(0);
     }
   }, [pathname]);

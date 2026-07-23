@@ -48,9 +48,9 @@ export function toMessageEntity(dto: MessageResponseDto): MessageEntity {
 
 /**
  * Map a real `RoomSummary` (rooms endpoint) to a `ConversationEntity`. The real
- * schema carries NO unread-count and NO avatar/colour — `unreadCount` defaults
- * to 0 (server-tracked read state is a documented wire gap, cross-repo ask #32),
- * `avatarInitials`/`color` are derived deterministically from name/roomId.
+ * schema carries NO unread-count and NO avatar/colour — `avatarInitials`/`color`
+ * are derived deterministically from name/roomId; `unreadCount` seeds to 0 and
+ * is enriched from the real per-room `unread-counts` endpoint by the repository.
  */
 export function toConversationEntityFromRoom(
   dto: RoomSummaryResponseDto,
@@ -63,9 +63,9 @@ export function toConversationEntityFromRoom(
     color: roomColorKey(dto.roomId),
     lastMessage: dto.lastMessagePreview ?? "",
     lastMessageTime: formatWireTimestamp(dto.lastMessageAt).time,
-    // GAP (ADR 0060 / cross-repo ask #32): RoomSummary has no unread field on
-    // the wire. The client mark-read path resets this locally until BE exposes
-    // a server-tracked unread count.
+    // US-E18.18 closes ADR 0060 ask #32(a): RoomSummary still has no unread field
+    // on the wire, so this seeds to 0; `MessagingRepository.getConversations`
+    // best-effort merges the real count from `GET /notifications/unread-counts`.
     unreadCount: 0,
   };
 }
@@ -108,11 +108,37 @@ export function toContactEntity(dto: ContactResponseDto): ContactEntity {
   };
 }
 
-/** INT-401 — map a presence snapshot DTO (`status`) to the domain record. */
-export function toPresenceRecord(dto: PresenceResponseDto): PresenceRecord {
+/**
+ * How recent a `lastSeen` must be (ms) to count as `recent` rather than
+ * `offline`. No product/design-spec value exists for this — 5 minutes is a sane
+ * documented default (flagged as an open product question, US-E18.18).
+ */
+export const PRESENCE_RECENT_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * US-E18.18 — map the real 2-state presence wire (`{userId, online, lastSeen}`)
+ * to the domain's existing 3-state `PresenceRecord` (zero VM/UI change).
+ * `online` → `"online"`; otherwise `recent` when `lastSeen` is within
+ * `PRESENCE_RECENT_WINDOW_MS` of `nowMs`, else `offline`. `nowMs` is injected
+ * (never `Date.now()` inside the mapper) so the derivation is deterministic
+ * under test (`.claude/rules/tdd.md`).
+ */
+export function toPresenceRecord(
+  dto: PresenceResponseDto,
+  nowMs: number,
+): PresenceRecord {
+  let presence: PresenceRecord["presence"] = "offline";
+  if (dto.online) {
+    presence = "online";
+  } else if (dto.lastSeen) {
+    const seenMs = Date.parse(dto.lastSeen);
+    if (!Number.isNaN(seenMs) && nowMs - seenMs <= PRESENCE_RECENT_WINDOW_MS) {
+      presence = "recent";
+    }
+  }
   return {
-    memberId: dto.memberId,
-    presence: dto.status,
-    lastActiveAt: dto.lastActiveAt,
+    memberId: dto.userId,
+    presence,
+    lastActiveAt: dto.lastSeen ?? "",
   };
 }

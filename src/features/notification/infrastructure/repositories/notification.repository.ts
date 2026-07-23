@@ -1,6 +1,9 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
-import { NOTIFICATION_EP } from "@/bootstrap/endpoint/notification.endpoint";
+import {
+  NOTIFICATION_EP,
+  type RoomUnreadCountDto,
+} from "@/bootstrap/endpoint/notification.endpoint";
 import {
   type ApiEnvelope,
   errorCodeOf,
@@ -77,12 +80,24 @@ export class NotificationRepository implements INotificationRepository {
     }
   }
 
+  /**
+   * US-E18.18 — repurposed to the REAL per-room `unread-counts` endpoint (no
+   * filter = all rooms) and SUMmed into the single `count` the bell badge
+   * renders. Semantically narrower than mock (messaging-room unread only — the
+   * only real "unread" concept that exists; there is no generic grade/
+   * attendance/discipline notification unread on the wire). Never 500s
+   * server-side (FR-084-011); degrades to 0 rows.
+   */
   async getUnreadCount(): Promise<UnreadCount> {
     try {
-      const dto = (await this.http.get(
-        NOTIFICATION_EP.unreadCount,
-      )) as unknown as { count: number };
-      return { count: dto.count ?? 0 };
+      const rows = (await this.http.get(
+        NOTIFICATION_EP.unreadCounts(),
+      )) as unknown as RoomUnreadCountDto[];
+      const count = (rows ?? []).reduce(
+        (sum, row) => sum + (row.unreadCount ?? 0),
+        0,
+      );
+      return { count };
     } catch (err) {
       throw toFailure(err);
     }

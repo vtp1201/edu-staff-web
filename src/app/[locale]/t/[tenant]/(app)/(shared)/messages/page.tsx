@@ -21,7 +21,12 @@ import {
   updateGroupAction,
 } from "./actions";
 
-export default async function MessagesPage() {
+export default async function MessagesPage({
+  params,
+}: {
+  params: Promise<{ tenant: string }>;
+}) {
+  const { tenant } = await params;
   const [convoUseCase, contactsUseCase] = await Promise.all([
     makeGetConversationsUseCase(),
     makeGetContactsUseCase(),
@@ -37,6 +42,7 @@ export default async function MessagesPage() {
       initialContacts={contactsResult.ok ? contactsResult.value : []}
       loadError={convoResult.ok ? undefined : convoResult.failure.type}
       selfId="me"
+      tenantId={tenant}
       sendMessageAction={sendMessageAction}
       createConversationAction={createConversationAction}
       getMessagesAction={getMessagesAction}

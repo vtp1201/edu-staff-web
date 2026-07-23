@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRealtimeEvents } from "@/bootstrap/realtime";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
@@ -26,12 +27,16 @@ import {
   paneInert,
 } from "./pane-visibility";
 import { isGroupPresenceQueryEnabled } from "./presence-gating";
+import { nextInboundTyping } from "./typing-inbound";
 import { createTypingThrottle, type TypingThrottle } from "./typing-throttle";
 import { useIsMobile } from "./use-is-mobile";
 
 export interface MessagingScreenProps
   extends MessagingScreenVM,
     MessagingScreenActions {}
+
+/** US-E18.18 — auto-expire a lingering inbound typing indicator (transient). */
+const TYPING_INDICATOR_TTL_MS = 6_000;
 
 const messagesKey = (id: string) => ["messaging", "messages", id] as const;
 const conversationsKey = () => ["messaging", "conversations"] as const;
@@ -66,6 +71,7 @@ export function MessagingScreen({
   initialContacts,
   loadError,
   selfId = "me",
+  tenantId,
   sendMessageAction,
   createConversationAction,
   getMessagesAction,
@@ -390,6 +396,44 @@ export function MessagingScreen({
     typingThrottleRef.current?.fire();
   }, []);
 
+  // US-E18.17 deferred item, closed in US-E18.18 — INBOUND typing indicator.
+  // A screen-scoped realtime subscription (same hook as the shell) drives the
+  // chat-window's dormant `isTyping` prop, but ONLY for the currently-open
+  // conversation (nextInboundTyping ignores frames for other rooms). Disabled
+  // when no tenantId (standalone Storybook) → no EventSource is opened.
+  const [typingRoomId, setTypingRoomId] = useState<string | null>(null);
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
+  const typingClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  useRealtimeEvents({
+    tenantId: tenantId ?? "",
+    enabled: Boolean(tenantId),
+    onTyping: (roomId, _userId, typing) => {
+      setTypingRoomId((prev) =>
+        nextInboundTyping(prev, activeIdRef.current, roomId, typing),
+      );
+      // Transient frames: auto-expire a lingering typing:true for the open room.
+      if (typing && roomId === activeIdRef.current) {
+        if (typingClearTimerRef.current) {
+          clearTimeout(typingClearTimerRef.current);
+        }
+        typingClearTimerRef.current = setTimeout(() => {
+          setTypingRoomId((prev) => (prev === roomId ? null : prev));
+        }, TYPING_INDICATOR_TTL_MS);
+      }
+    },
+  });
+  useEffect(
+    () => () => {
+      if (typingClearTimerRef.current)
+        clearTimeout(typingClearTimerRef.current);
+    },
+    [],
+  );
+  const isTypingForActive = typingRoomId !== null && typingRoomId === activeId;
+
   const handleSelect = (id: string) => {
     setActiveId(id);
     setMobilePane("chat");
@@ -455,6 +499,7 @@ export function MessagingScreen({
             conversation={activeConversation}
             messages={messages}
             isLoading={messagesLoading}
+            isTyping={isTypingForActive}
             onSend={handleSend}
             onTyping={handleTyping}
             onBack={handleBack}

@@ -1,13 +1,19 @@
 /**
  * noti (notification) service — contract-first (decision `0009`); BE follows.
- * notification is a background worker — **no HTTP route through Kong** (ADR 0030).
- * SSE delivery is via an internal Next.js proxy (`app/[locale]/api/stream`).
- * Path here is the upstream URL the proxy calls directly (not through Kong).
- * Real wiring deferred to US-E06.2.
+ * The notification service has grown a `cmd/server` HTTP+SSE surface
+ * (US-E18.18): the real SSE path is `/api/v1/stream`. The proxy still calls this
+ * upstream URL DIRECTLY (not through Kong) per ADR `0009`/`0030` — that
+ * direct-bypass architecture is unchanged here; only the path string is fixed.
+ *
+ * NOTE (US-E18.18, correction #2): the direct-bypass call carries a `Bearer`
+ * token, but the service now trusts ONLY Kong-injected `X-Edu-Claims` headers
+ * (edu-api ADR `0047`), so a live real stream will 401 until the proxy routes
+ * through Kong (chicken/egg with the Kong-routing gap). Live verification stays
+ * deferred; the path fix is correct regardless.
  */
 export const NOTI_EP = {
   /** Upstream SSE event stream proxied by `app/[locale]/api/stream`. */
-  stream: "/events/stream",
+  stream: "/api/v1/stream",
   /**
    * Presence snapshot (INT-401, US-E10.6 — mock-first). Path prefix assumed per
    * the ANNOUNCEMENTS_EP `/noti/api/v1/*` precedent (OQ-2); confirm against

@@ -13,6 +13,24 @@ function frame(over: Record<string, unknown> = {}): string {
   });
 }
 
+/**
+ * A FLAT real-wire messaging frame (US-E18.18) — fields at the top level, no
+ * `payload` wrapper, no `eventId`. `tenantId` is included for the message.*
+ * / unread frames (the real wire carries it); the `typing` frame supplies its
+ * own body without `type`/`tenantId`.
+ */
+function flatMsg(
+  type: string,
+  fields: Record<string, unknown>,
+  tenantId: string | undefined = "acme",
+): string {
+  return JSON.stringify({
+    type,
+    ...(tenantId !== undefined ? { tenantId } : {}),
+    ...fields,
+  });
+}
+
 describe("parseEvent", () => {
   it("parses a well-formed frame into a typed event", () => {
     const e = parseEvent(frame());
@@ -28,8 +46,14 @@ describe("parseEvent", () => {
     expect(parseEvent(frame({ type: "mystery.event" }))).toBeNull();
   });
 
-  it("returns null when eventId or tenantId is missing", () => {
-    expect(parseEvent(frame({ eventId: undefined }))).toBeNull();
+  it("accepts a missing eventId (optional across the union — US-E18.18)", () => {
+    expect(parseEvent(frame({ eventId: undefined }))?.type).toBe(
+      "attendance.updated",
+    );
+  });
+
+  it("returns null when a non-typing frame's tenantId is missing/invalid", () => {
+    expect(parseEvent(frame({ tenantId: undefined }))).toBeNull();
     expect(parseEvent(frame({ tenantId: 123 }))).toBeNull();
   });
 
@@ -76,11 +100,67 @@ describe("queryKeysFor (taxonomy)", () => {
     expect(queryKeysFor(e)).toEqual([]);
   });
 
-  // US-E08.6: message.new bumps the hook-local pending counter only — no query
-  // cache is invalidated by this story (messaging screen queries stay US-E10.x).
-  it("returns no query keys for message.new (hook-local pendingMsgCount only)", () => {
+  // US-E18.18: real messaging frames invalidate the conversations list + the
+  // room message thread (when a roomId is present).
+  it("invalidates conversations + the room thread on message.new", () => {
     const e = parseEvent(
-      frame({ type: "message.new", payload: { conversationId: "conv-1" } }),
+      flatMsg("message.new", {
+        roomId: "room-9",
+        messageId: "m-1",
+        senderId: "u4",
+        senderName: "Hoa",
+        preview: "hi",
+        createdAt: "2026-07-20T08:00:00Z",
+        roomType: "class_chat",
+      }),
+    ) as RealtimeEvent;
+    expect(queryKeysFor(e)).toEqual([
+      ["messaging", "conversations"],
+      ["messaging", "messages", "room-9"],
+    ]);
+  });
+
+  it("invalidates conversations + the room thread on unread.updated", () => {
+    const e = parseEvent(
+      flatMsg("unread.updated", { roomId: "room-9", unreadCount: 3 }),
+    ) as RealtimeEvent;
+    expect(queryKeysFor(e)).toEqual([
+      ["messaging", "conversations"],
+      ["messaging", "messages", "room-9"],
+    ]);
+  });
+
+  it("invalidates on message.edited and message.deleted", () => {
+    const edited = parseEvent(
+      flatMsg("message.edited", {
+        roomId: "r1",
+        messageId: "m1",
+        editedAt: "2026-07-20T08:00:00Z",
+      }),
+    ) as RealtimeEvent;
+    const deleted = parseEvent(
+      flatMsg("message.deleted", {
+        roomId: "r1",
+        messageId: "m1",
+        deletedAt: "2026-07-20T08:00:00Z",
+      }),
+    ) as RealtimeEvent;
+    expect(queryKeysFor(edited)).toContainEqual([
+      "messaging",
+      "messages",
+      "r1",
+    ]);
+    expect(queryKeysFor(deleted)).toContainEqual([
+      "messaging",
+      "messages",
+      "r1",
+    ]);
+  });
+
+  it("returns no query keys for typing (dispatched via onTyping, never cache)", () => {
+    const e = parseEvent(
+      JSON.stringify({ roomId: "r1", userId: "u2", typing: true }),
+      "typing",
     ) as RealtimeEvent;
     expect(queryKeysFor(e)).toEqual([]);
   });
@@ -171,38 +251,79 @@ describe("parseEvent — notification.new", () => {
   });
 });
 
-describe("parseEvent — message.new (US-E08.6)", () => {
-  function msgFrame(over: Record<string, unknown> = {}): string {
-    return JSON.stringify({
-      type: "message.new",
-      eventId: "evt-msg-1",
-      tenantId: "school-a",
-      occurredAt: "2026-07-08T09:00:00.000Z",
-      payload: { conversationId: "conv-42" },
-      ...over,
-    });
-  }
+describe("parseEvent — message.new (US-E18.18 real flat wire)", () => {
+  const richFields = {
+    roomId: "room-42",
+    messageId: "m-1",
+    senderId: "u4",
+    senderName: "Lê Thị Hoa",
+    preview: "Chào cả lớp",
+    createdAt: "2026-07-08T09:00:00.000Z",
+    roomType: "class_chat",
+  };
 
-  it("parses a well-formed message.new frame", () => {
-    const e = parseEvent(msgFrame());
+  it("normalises the flat wire frame into the payload-wrapped shape", () => {
+    const e = parseEvent(flatMsg("message.new", richFields, "school-a"));
     expect(e?.type).toBe("message.new");
     expect(e?.tenantId).toBe("school-a");
-  });
-
-  it("carries the conversationId payload", () => {
-    const e = parseEvent(msgFrame()) as RealtimeEvent;
     if (e?.type !== "message.new") throw new Error("wrong type");
-    expect(e.payload.conversationId).toBe("conv-42");
+    expect(e.payload.roomId).toBe("room-42");
+    expect(e.payload.senderName).toBe("Lê Thị Hoa");
+    expect(e.payload.roomType).toBe("class_chat");
+    // Real frames never carry an eventId.
+    expect(e.eventId).toBeUndefined();
   });
 
-  it("returns null when the payload is missing", () => {
-    expect(parseEvent(msgFrame({ payload: undefined }))).toBeNull();
+  it("returns null when roomId is missing", () => {
+    const { roomId, ...noRoom } = richFields;
+    void roomId;
+    expect(parseEvent(flatMsg("message.new", noRoom, "school-a"))).toBeNull();
+  });
+
+  it("returns null when tenantId is missing (non-typing frame)", () => {
+    expect(
+      parseEvent(JSON.stringify({ type: "message.new", ...richFields })),
+    ).toBeNull();
   });
 
   it("tenant-scoping: drops message.new from a different tenant", () => {
-    const e = parseEvent(msgFrame()) as RealtimeEvent;
+    const e = parseEvent(
+      flatMsg("message.new", richFields, "school-a"),
+    ) as RealtimeEvent;
     expect(shouldHandle(e, "school-b")).toBe(false);
     expect(shouldHandle(e, "school-a")).toBe(true);
+  });
+});
+
+describe("parseEvent — typing (US-E18.18: no type/tenantId on the wire)", () => {
+  const body = JSON.stringify({ roomId: "room-7", userId: "u9", typing: true });
+
+  it("resolves the type from the listener event name when the body omits it", () => {
+    const e = parseEvent(body, "typing");
+    expect(e?.type).toBe("typing");
+    if (e?.type !== "typing") throw new Error("wrong type");
+    expect(e.payload.roomId).toBe("room-7");
+    expect(e.payload.userId).toBe("u9");
+    expect(e.payload.typing).toBe(true);
+    expect(e.tenantId).toBeUndefined();
+  });
+
+  it("returns null without a knownType and no body type", () => {
+    expect(parseEvent(body)).toBeNull();
+  });
+
+  it("is kept by shouldHandle despite carrying no tenantId (server-scoped)", () => {
+    const e = parseEvent(body, "typing") as RealtimeEvent;
+    expect(shouldHandle(e, "any-tenant")).toBe(true);
+  });
+
+  it("returns null when a mandatory typing field is malformed", () => {
+    expect(
+      parseEvent(JSON.stringify({ roomId: "r", userId: "u" }), "typing"),
+    ).toBeNull();
+    expect(
+      parseEvent(JSON.stringify({ roomId: "r", typing: true }), "typing"),
+    ).toBeNull();
   });
 });
 
@@ -240,9 +361,15 @@ describe("parseEvent — presence.changed (US-E10.6)", () => {
     expect(parseEvent(presFrame({ payload: "nope" }))).toBeNull();
   });
 
-  it("returns null when eventId or tenantId is missing", () => {
-    expect(parseEvent(presFrame({ eventId: undefined }))).toBeNull();
+  it("accepts a missing eventId (optional across the union — US-E18.18)", () => {
+    expect(parseEvent(presFrame({ eventId: undefined }))?.type).toBe(
+      "presence.changed",
+    );
+  });
+
+  it("returns null when tenantId is missing/invalid (non-typing frame)", () => {
     expect(parseEvent(presFrame({ tenantId: 42 }))).toBeNull();
+    expect(parseEvent(presFrame({ tenantId: undefined }))).toBeNull();
   });
 
   it("tenant-scoping: drops presence.changed from a different tenant", () => {

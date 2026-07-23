@@ -362,6 +362,101 @@ export const SendTypingIndicator_OnCompose: Story = {
   },
 };
 
+/**
+ * US-E18.18 — a real (fake-EventSource-driven) `typing` SSE frame drives
+ * ChatWindow's inbound typing indicator ONLY for the currently-open
+ * conversation; a frame for a different roomId is ignored. `tenantId` is set
+ * so `useRealtimeEvents` actually opens a connection (it stays disabled with
+ * no tenantId in every other story here — zero cross-story interference).
+ * `FakeInboundEventSource` stands in for the browser's real `EventSource` so
+ * the frame can be dispatched deterministically without a live SSE upstream.
+ */
+class FakeInboundEventSource {
+  static instances: FakeInboundEventSource[] = [];
+  url: string;
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  private listeners = new Map<string, Set<EventListener>>();
+
+  constructor(url: string) {
+    this.url = url;
+    FakeInboundEventSource.instances.push(this);
+  }
+  addEventListener(type: string, cb: EventListener) {
+    let set = this.listeners.get(type);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(type, set);
+    }
+    set.add(cb);
+  }
+  removeEventListener(type: string, cb: EventListener) {
+    this.listeners.get(type)?.delete(cb);
+  }
+  close() {}
+
+  emitTyping(roomId: string, userId: string, typing: boolean) {
+    const data = JSON.stringify({ roomId, userId, typing });
+    const event = new MessageEvent("message", { data });
+    for (const cb of this.listeners.get("typing") ?? []) {
+      cb(event);
+    }
+  }
+}
+
+export const InboundTyping_TogglesIndicatorForOpenRoomOnly: Story = {
+  args: { tenantId: "school-a" },
+  decorators: [
+    (Story) => {
+      // Install the stub BEFORE the child mounts (decorator body runs during
+      // render, ahead of the connection-opening useEffect inside
+      // useRealtimeEvents). Scoped to this story only via a fresh instance list.
+      FakeInboundEventSource.instances = [];
+      (window as unknown as { EventSource: unknown }).EventSource =
+        FakeInboundEventSource;
+      return <Story />;
+    },
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Default active conversation is CONVERSATIONS[0] = "u1" (direct, not group
+    // — the typing indicator only renders for direct conversations).
+    await waitFor(() =>
+      expect(
+        canvas.getAllByText("Trần Minh Quân").length,
+      ).toBeGreaterThanOrEqual(1),
+    );
+    await waitFor(() =>
+      expect(FakeInboundEventSource.instances.length).toBeGreaterThan(0),
+    );
+    const source = FakeInboundEventSource.instances.at(-1);
+    if (!source) throw new Error("no FakeInboundEventSource instance created");
+
+    // No indicator before any frame arrives.
+    expect(canvas.queryByText("Đang nhập tin nhắn...")).not.toBeInTheDocument();
+
+    // A typing frame for a DIFFERENT room ("u3", not the open "u1") is ignored.
+    source.emitTyping("u3", "peer-1", true);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(canvas.queryByText("Đang nhập tin nhắn...")).not.toBeInTheDocument();
+
+    // A typing frame for the OPEN room ("u1") shows the indicator.
+    source.emitTyping("u1", "peer-1", true);
+    await waitFor(() =>
+      expect(canvas.getByText("Đang nhập tin nhắn...")).toBeInTheDocument(),
+    );
+
+    // typing:false for the same room clears it.
+    source.emitTyping("u1", "peer-1", false);
+    await waitFor(() =>
+      expect(
+        canvas.queryByText("Đang nhập tin nhắn..."),
+      ).not.toBeInTheDocument(),
+    );
+  },
+};
+
 /** AC-6: new-conversation modal opens and contact list is visible */
 export const NewConversationModal_Open: Story = {
   play: async ({ canvasElement }) => {

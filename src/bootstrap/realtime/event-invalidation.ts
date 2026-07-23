@@ -31,9 +31,22 @@ export function queryKeysFor(event: RealtimeEvent): QueryKey[] {
       ];
     case "session.revoked":
       return [];
+    // US-E18.18 — real messaging frames refetch the conversations list (unread
+    // badges + last-message) and, when a roomId is present, that room's message
+    // thread. `message.new` ALSO bumps the shell's hook-local pendingMsgCount in
+    // the dispatcher (sse-connection.ts) — that is separate from invalidation.
     case "message.new":
-      // US-E08.6: no query invalidated — pendingMsgCount is hook-local React
-      // state, not cache. Messaging screen queries stay US-E10.x scope.
+    case "message.edited":
+    case "message.deleted":
+    case "unread.updated": {
+      const keys: QueryKey[] = [["messaging", "conversations"]];
+      const { roomId } = event.payload;
+      if (roomId) keys.push(["messaging", "messages", roomId]);
+      return keys;
+    }
+    case "typing":
+      // US-E18.18 — dispatched via the onTyping callback (drives the chat-window
+      // inbound typing indicator), never a cache invalidation.
       return [];
     case "presence.changed":
       // US-E10.6: refetch-driven, no hand-patched cache. The event payload

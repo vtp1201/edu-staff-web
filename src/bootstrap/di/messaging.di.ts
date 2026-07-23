@@ -51,6 +51,8 @@ async function makeRepo(): Promise<IMessagingRepository> {
  */
 async function makePresenceRepo(): Promise<IPresenceRepository> {
   if (USE_MOCK) return new MockPresenceRepository();
+  // decision 0018 — proactive refresh BEFORE the shared http client is created.
+  await ensureFreshSession();
   return new PresenceRepository(await createServerHttpClient());
 }
 

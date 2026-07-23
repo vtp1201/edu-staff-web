@@ -33,6 +33,12 @@ export interface SseConnectionOptions {
   onInvalidate: (keys: QueryKey[]) => void;
   /** A `message.new` arrived while the user is NOT on the messages route. */
   onMessageNew: () => void;
+  /**
+   * US-E18.18 — a real `typing` frame arrived. The messaging screen wires this
+   * to the currently-open conversation's inbound typing indicator; it is NOT a
+   * cache invalidation (queryKeysFor returns [] for `typing`).
+   */
+  onTyping?: (roomId: string, userId: string, typing: boolean) => void;
   /** Forced logout when this session is revoked elsewhere. */
   onSessionRevoked?: (sessionId: string) => void;
   /** Read (live, at dispatch time) whether the user is on `/messages`. */
@@ -73,8 +79,8 @@ export function openSseConnection(
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
 
-  const handle = (raw: string) => {
-    const event = parseEvent(raw);
+  const handle = (raw: string, knownType?: string) => {
+    const event = parseEvent(raw, knownType);
     if (!event || !shouldHandle(event, options.tenantId)) return;
     dispatch(event);
   };
@@ -84,14 +90,28 @@ export function openSseConnection(
       options.onSessionRevoked?.(event.payload.sessionId);
       return;
     }
+    if (event.type === "typing") {
+      // Transient inbound typing signal — never invalidates the cache.
+      options.onTyping?.(
+        event.payload.roomId,
+        event.payload.userId,
+        event.payload.typing,
+      );
+      return;
+    }
     if (event.type === "message.new") {
+      // Bump the shell's pending-message pill when not on /messages, THEN fall
+      // through to invalidate the conversations + message-thread queries.
       if (!options.isOnMessagesRoute()) options.onMessageNew();
-      return; // no query keys to invalidate (queryKeysFor returns [])
     }
     options.onInvalidate(queryKeysFor(event));
   };
 
-  const listener = (e: MessageEvent) => handle(e.data);
+  // The SSE `event:` line name is passed as `knownType` so the real `typing`
+  // frame (whose JSON body carries no `type`) still resolves its type.
+  const listenerFor = (knownType: string) => (e: MessageEvent) =>
+    handle(e.data, knownType);
+  const fallbackListener = (e: MessageEvent) => handle(e.data);
 
   function connect() {
     const url = `/${options.locale}/api/stream?tenant=${encodeURIComponent(
@@ -119,11 +139,12 @@ export function openSseConnection(
       });
     };
 
-    // Frames carry a named `event:` line → per-type listeners. `onmessage`
-    // stays as a fallback for any unnamed frame.
-    source.onmessage = listener;
+    // Frames carry a named `event:` line → per-type listeners (each supplies its
+    // own event name as `knownType`). `onmessage` stays as a fallback for any
+    // unnamed frame.
+    source.onmessage = fallbackListener;
     for (const type of REALTIME_EVENT_TYPES) {
-      source.addEventListener(type, listener as EventListener);
+      source.addEventListener(type, listenerFor(type) as EventListener);
     }
   }
 

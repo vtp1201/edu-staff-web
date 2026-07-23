@@ -1,12 +1,18 @@
-import type { PresenceState } from "@/features/messaging/domain/entities/presence";
-
 /**
- * Wire shape for one presence snapshot record (INT-401, `noti` service).
- * All fields camelCase per the api-integration rule. `lastActiveAt` is a coarse
- * minute/day bucket — never a precise instant (NFR-006/PII posture).
+ * Wire shape for presence (US-E18.18, ground-truthed against
+ * `GET /api/v1/presence`). The real wire is a flat 2-state model
+ * (`online` boolean + `lastSeen` timestamp), NOT the domain's 3-state
+ * `online|recent|offline` enum — the mapper derives the 3rd state client-side.
+ * `lastSeen` is populated only when the user is offline (and previously seen);
+ * it is `null` when online or never seen. All fields camelCase.
  */
 export type PresenceResponseDto = {
-  memberId: string;
-  status: PresenceState;
-  lastActiveAt: string;
+  userId: string;
+  online: boolean;
+  lastSeen: string | null;
+};
+
+/** The presence endpoint wraps the rows in `{ items: [...] }`. */
+export type PresenceListResponseDto = {
+  items: PresenceResponseDto[];
 };
