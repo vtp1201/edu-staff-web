@@ -335,5 +335,23 @@ describe("messaging.mapper", () => {
       };
       expect(toPresenceRecord(dto, NOW).presence).toBe("recent");
     });
+
+    it("treats just-under-the-boundary lastSeen (5min - 1s) as 'recent'", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u6",
+        online: false,
+        lastSeen: "2026-07-14T09:55:01Z", // 4 min 59s ago
+      };
+      expect(toPresenceRecord(dto, NOW).presence).toBe("recent");
+    });
+
+    it("treats just-over-the-boundary lastSeen (5min + 1s) as 'offline'", () => {
+      const dto: PresenceResponseDto = {
+        userId: "u7",
+        online: false,
+        lastSeen: "2026-07-14T09:54:59Z", // 5 min 1s ago
+      };
+      expect(toPresenceRecord(dto, NOW).presence).toBe("offline");
+    });
   });
 });
