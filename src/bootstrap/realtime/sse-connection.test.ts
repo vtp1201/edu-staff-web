@@ -102,6 +102,7 @@ function setup(overrides: Partial<SseConnectionOptions> = {}) {
   const statusLog: SseStatus[] = [];
   const invalidated: QueryKey[][] = [];
   const messageNew = vi.fn();
+  const typing = vi.fn();
   const sessionRevoked = vi.fn();
   let onMessages = false;
 
@@ -111,6 +112,7 @@ function setup(overrides: Partial<SseConnectionOptions> = {}) {
     onStatus: (s) => statusLog.push(s),
     onInvalidate: (keys) => invalidated.push(keys),
     onMessageNew: messageNew,
+    onTyping: typing,
     onSessionRevoked: sessionRevoked,
     isOnMessagesRoute: () => onMessages,
     ...overrides,
@@ -122,6 +124,7 @@ function setup(overrides: Partial<SseConnectionOptions> = {}) {
     statusLog,
     invalidated,
     messageNew,
+    typing,
     sessionRevoked,
     setOnMessages: (v: boolean) => {
       onMessages = v;
@@ -325,6 +328,66 @@ describe("openSseConnection", () => {
     t.last().emit("session.revoked", { sessionId: "s1" });
     expect(t.sessionRevoked).toHaveBeenCalledExactlyOnceWith("s1");
     expect(t.invalidated).toEqual([]);
+  });
+
+  // US-E18.18 — a real `message.new` bumps the pending pill (when not on
+  // /messages) AND falls through to invalidate the messaging queries.
+  it("both counts and invalidates on message.new (flat real wire)", () => {
+    const t = setup();
+    t.setOnMessages(false);
+    t.last().emitRaw(
+      "message.new",
+      JSON.stringify({
+        type: "message.new",
+        tenantId: TENANT,
+        roomId: "room-9",
+        messageId: "m-1",
+        senderId: "u4",
+        senderName: "Hoa",
+        preview: "hi",
+        createdAt: "2026-07-20T08:00:00Z",
+        roomType: "class_chat",
+      }),
+    );
+    expect(t.messageNew).toHaveBeenCalledTimes(1);
+    expect(t.invalidated).toEqual([
+      [
+        ["messaging", "conversations"],
+        ["messaging", "messages", "room-9"],
+      ],
+    ]);
+  });
+
+  // US-E18.18 — a `typing` frame (no `type`/`tenantId` on the wire) dispatches
+  // via onTyping and never invalidates the cache.
+  it("dispatches typing via onTyping and never invalidates", () => {
+    const t = setup();
+    t.last().emitRaw(
+      "typing",
+      JSON.stringify({ roomId: "room-3", userId: "u9", typing: true }),
+    );
+    expect(t.typing).toHaveBeenCalledExactlyOnceWith("room-3", "u9", true);
+    expect(t.invalidated).toEqual([]);
+    expect(t.messageNew).not.toHaveBeenCalled();
+  });
+
+  it("invalidates the messaging queries on unread.updated", () => {
+    const t = setup();
+    t.last().emitRaw(
+      "unread.updated",
+      JSON.stringify({
+        type: "unread.updated",
+        tenantId: TENANT,
+        roomId: "room-5",
+        unreadCount: 2,
+      }),
+    );
+    expect(t.invalidated).toEqual([
+      [
+        ["messaging", "conversations"],
+        ["messaging", "messages", "room-5"],
+      ],
+    ]);
   });
 });
 
