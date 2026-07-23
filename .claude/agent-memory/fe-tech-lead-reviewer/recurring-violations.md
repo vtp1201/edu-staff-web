@@ -182,6 +182,22 @@ Watch for these (each has bitten a story here):
   the story's OWN files in isolation (they pass) and spot-check one unrelated failing file in isolation
   (still fails). Flag as repo-health to fe-lead, not a per-story blocker. (Observed US-E23.1, 2026-07-19.)
 
+- **Contract-remap / force-mock / invented-default US landing without a registered ADR** — in the E18
+  BE-wiring epic every comparable US registered a decision (`0058` attendance remap, `0059` invitation,
+  `0060` messaging rooms). A US that rewrites a wire contract (SSE event union), makes a force-mock
+  permanent, invents a default with no product/design-spec value (presence 5-min recent-window), OR
+  documents an auth-model incompatibility (ADR-0047 direct-bypass 401) MUST register an ADR + add its
+  `docs/TEST_MATRIX.md` row + flip its `EPIC-OVERVIEW.md` row off "Blocked/planned". `git diff --stat
+  main..HEAD -- docs/decisions/ docs/TEST_MATRIX.md` = empty is the tell (the story's own Harness Delta
+  usually mandates these). Flag as pre-close blocker even when code + gates are green. (US-E18.18.)
+- **"The browser deduplicates the EventSource connection" is FALSE** — `new EventSource(sameUrl)` opens a
+  SEPARATE HTTP connection every time; there is no URL-based dedup. So a feature-level hook that opens its
+  own `useRealtimeEvents`/`new EventSource` (e.g. messaging-screen inbound-typing, notifications-center
+  `use-notification-new-event.ts`) stacks a 2nd/3rd live stream on top of the AppShell's global one when
+  co-mounted. Real BE enforces `TOO_MANY_SSE_CONNECTIONS` (429). Precedent exists so it's not novel-blocking,
+  but flag it: prefer threading the callback (onTyping) through the single shell subscription (context) over
+  a second connection. (US-E18.18 messaging-screen.tsx + use-notification-new-event.ts:47 stale dedup claim.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

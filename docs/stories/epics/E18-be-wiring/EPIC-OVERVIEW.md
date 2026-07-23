@@ -141,7 +141,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
 | US-E18.17 | Messaging remodel (rooms/DMs) | **rất cao** | high-risk | **Done** — the "Blocked: Kong chưa route `/social`" label only blocked LIVE verification, not contract-first wiring (ADR `0060`, decision to proceed anyway). Real-wired: `getConversations`/`getMessages`/`sendMessage`/`deleteMessage`/1:1 `createConversation` (`school-dms`) against ground-truthed `/social/api/v1/rooms...`; two NEW additive capabilities `markConversationRead` (`POST .../read`) + `sendTypingIndicator` (`POST .../typing`, throttled outbound only — inbound still needs SSE, US-E18.18) wired real with zero new UI surface. Self-delete window corrected 1h→5min to match the real `DELETE_WINDOW_EXPIRED` rule (incl. the disabled-hint copy the a11y audit caught still saying "1 hour"). Permanently mock via a new `HybridMessagingRepository` facade (real methods some, mock others, same hybrid pattern as US-E18.4/US-E18.5/US-E18.11): the entire ad hoc group lifecycle (`createGroup`/`getGroup`/`updateGroup`/`addGroupMembers`/`removeGroupMember`/`leaveGroup`/`deleteGroup` — no self-service group-room contract exists, only system-provisioned `class_chat`/`parent_group`), `pinMessage`/`unpinMessage` (no message-pin endpoint at all), and `getContacts` (the only people-directory endpoint is role-gated ADMIN/TEACHER-only). Live-gateway proof still deferred (ask #1). See `US-E18.17-messaging-rooms-remap/story.md` + ADR `0060` + cross-repo/product ask #32. |
-| US-E18.18 | Notification wiring (SSE + unread-counts) | cao | normal | BE chỉ có `/stream`, `/notifications/unread-counts` (số nhiều), `/presence`; list/per-item-read/read-batch KHÔNG có BE → giữ mock phần đó + flag BE story. Sửa SSE path `/events/stream`→`/api/v1/stream`. **Blocked**: Kong chưa route notification |
+| US-E18.18 | Notification wiring (SSE + unread-counts + presence) | cao | normal | **Done** — the "Blocked: Kong chưa route notification" label only blocked LIVE verification, not contract-first wiring (ADR `0061`, same precedent as US-E18.17/ADR `0060`); `kong.yml`'s "notification is a worker (no HTTP)" comment is stale — `INTEGRATION.md` confirms a real `cmd/server` HTTP+SSE surface exists. **Second, independent deferral reason found**: `edu-api` ADR `0047` (kong auth trust model, dated AFTER this repo's original SSE-proxy design) retired per-service Bearer-JWT verification — `notification` now trusts ONLY Kong-injected `X-Edu-Claims` headers, so the web's direct-bypass SSE proxy (`NOTI_SERVICE_URL`, ADR 0009/0030) will 401 even once Kong routes `notification`, until the proxy itself is re-architected to go through Kong. Fixed `NOTI_EP.stream` path (`/events/stream`→`/api/v1/stream`). **Implementation-time correction**: `unread-counts` is per-ROOM (messaging), not a generic notification concept — wired into `MessagingRepository.getConversations()`'s real branch (closes ADR 0060 ask #32(a)'s "no unread field on the wire" gap) rather than the generic `notification` feature; `notification.getUnreadCount()` repurposed to SUM real per-room counts (narrower real meaning than mock's synthetic multi-category count, documented). `listNotifications`/`markRead`/`markAllRead` force-mocked permanently via new `HybridNotificationRepository` — zero real backing exists for any of them. Remapped the web's own speculative `RealtimeEvent` SSE contract (`bootstrap/realtime/event.ts`, ADR 0009's "web defines first") to the REAL flat wire vocabulary (`message.new`/`message.edited`/`message.deleted`/`unread.updated`/`typing` — no `payload` wrapper, no `eventId`, `typing` has no `tenantId`/embedded `type`); legacy mock-only frame types (`notification.new`/`attendance.updated`/`presence.changed`) kept, clearly flagged as having zero real BE equivalent. Wired inbound `typing` to `ChatWindow`'s dormant indicator (closes US-E18.17's explicitly deferred item) and inbound `message.new`/`unread.updated`/etc to conversation-list/chat-window cache invalidation. Fixed presence's real contract (`userIds` param not `memberIds`, `{items:[...]}` envelope not bare array, real 2-state `{online,lastSeen}`→domain's existing 3-state `PresenceState` via an injected-clock 5-minute "recent" threshold — no confirmed product/design-spec value for this threshold, flagged as an open question). See `US-E18.18-notification-sse-wiring/story.md` + ADR `0061` + cross-repo/product asks #33-#35. |
 
 ## KHÔNG thuộc wave này (BE chưa có endpoint — cần BE story hoặc quyết định giữ mock)
 
@@ -584,6 +584,49 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     the epic's 6th fully/partially-blocked operation set (after
     US-E18.8/US-E18.9/US-E18.13's unseal/US-E18.14/US-E21.1). See ADR
     `0060` + `US-E18.17-messaging-rooms-remap/story.md`.
+
+33. **(US-E18.18, 2026-07-23) [BE-side gap — Kong routing AND auth trust
+    model, two independent blockers]** `gateway/kong/kong.yml`'s comment
+    ("notification is a worker (no HTTP) and is not routed here") is stale —
+    `services/notification/docs/INTEGRATION.md` documents a real `cmd/server`
+    HTTP+SSE surface (`/api/v1/stream`, `/api/v1/notifications/unread-counts`,
+    `/api/v1/presence`, plus push endpoints). Ask #1 (Kong routing for
+    `notification`) still stands. SEPARATELY, even once routed, ADR `0047`
+    (kong auth trust model) means `notification`'s `cmd/server` trusts ONLY
+    Kong-injected `X-Edu-Claims`/`X-Edu-Claims-Sig` headers — a direct
+    service call (which is what this repo's SSE proxy does today, bypassing
+    Kong entirely per ADR 0009/0030) will 401 regardless of any Bearer
+    token, confirmed by ADR 0047's own Consequences section ("a direct call
+    to a service carries no HMAC-signed `X-Edu-Claims` header ... returns
+    401 regardless of the bearer token"). Ask: once Kong routes
+    `notification`, this repo's `app/[locale]/api/stream/route.ts` real
+    branch must ALSO be changed from direct-bypass-to-`NOTI_SERVICE_URL` to
+    routing through Kong — a second, separate unblock beyond routing alone.
+    See ADR `0061` + `US-E18.18-notification-sse-wiring/story.md`.
+34. **(US-E18.18, 2026-07-23) [product/BE gap — no generic notification-bell
+    concept exists on the real wire at all]** `GET
+    /api/v1/notifications/unread-counts` is per-ROOM (`{roomId,
+    unreadCount}[]`) — a messaging concept, not a generic
+    grade/attendance/discipline/announcement/system notification concept.
+    There is no `list`/`mark-read`/`mark-all-read`/generic-unread-count
+    route anywhere on the `notification` service. The web's
+    `notification`-feature bell (`getUnreadCount`/`listNotifications`/
+    `markRead`/`markAllRead`) has ZERO real backing of any kind and stays
+    force-mocked permanently (`HybridNotificationRepository`) — the 7th
+    fully/partially-blocked operation set in the epic. If a real
+    multi-category in-app notification center is a genuine product
+    requirement, it needs new BE surface entirely (not a wiring swap); route
+    to `/uiux`/`/ba` if prioritized.
+35. **(US-E18.18, 2026-07-23) [product question, not a BE gap]** The real
+    `GET /api/v1/presence` contract is a flat 2-state model
+    (`{userId, online: boolean, lastSeen: string|null}`) — there is no
+    server-side "recently active" tier. The web's existing 3-state
+    `PresenceState` (`online`/`recent`/`offline`, shipped US-E10.6) is kept
+    (zero UI change) by deriving `recent` client-side from `lastSeen` age
+    with a 5-minute engineering-default threshold — no confirmed
+    product/design-spec value exists for this window. Ask `/uiux`/`/ba` to
+    confirm or override the threshold if presence precision becomes a real
+    product concern.
 
 ## Dependencies & thứ tự
 
