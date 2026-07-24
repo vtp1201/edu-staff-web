@@ -158,8 +158,6 @@ export function LeaveRequestForm({
     );
   }
 
-  const startDateField = form.register("startDate");
-
   return (
     <section
       className="rounded-[var(--edu-radius-card)] border border-border bg-card p-5 shadow-card"
@@ -185,9 +183,10 @@ export function LeaveRequestForm({
 
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit, () => {
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit, (errs) => {
             const firstError = (
-              Object.keys(form.formState.errors) as Array<keyof LeaveFormValues>
+              Object.keys(errs) as Array<keyof LeaveFormValues>
             )[0];
             if (firstError) form.setFocus(firstError);
           })}
@@ -207,7 +206,7 @@ export function LeaveRequestForm({
                       min={today}
                       {...field}
                       ref={(el) => {
-                        startDateField.ref(el);
+                        field.ref(el);
                         startDateRef.current = el;
                       }}
                     />
