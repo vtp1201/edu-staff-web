@@ -84,10 +84,9 @@ export const Populated_AllTab: Story = {
     // At least one notification row visible
     const rows = canvas.getAllByRole("button", { name: /—/ });
     await expect(rows.length).toBeGreaterThan(0);
-    // Unread count badge present
-    await expect(
-      canvas.getByLabelText(/thông báo chưa đọc/i),
-    ).toBeInTheDocument();
+    // Unread count badge present — sr-only text alongside the "Chưa đọc" tab
+    // (not an aria-label, so getByText rather than getByLabelText).
+    await expect(canvas.getByText(/thông báo chưa đọc/i)).toBeInTheDocument();
     // Empty-state copy must NOT render when the list is populated
     // (AC-01.12/AC-02.10).
     await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
@@ -145,7 +144,9 @@ export const MarkAllRead: Story = {
   args: baseProps,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const btn = canvas.getByRole("button", { name: /Đánh dấu tất cả đã đọc/i });
+    const btn = canvas.getByRole("button", {
+      name: /Đánh dấu tất cả thông báo là đã đọc/i,
+    });
     await expect(btn).not.toBeDisabled();
     await userEvent.click(btn);
   },
@@ -160,7 +161,9 @@ export const MarkAllRead_Disabled: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const btn = canvas.getByRole("button", { name: /Đánh dấu tất cả đã đọc/i });
+    const btn = canvas.getByRole("button", {
+      name: /Đánh dấu tất cả thông báo là đã đọc/i,
+    });
     await expect(btn).toBeDisabled();
   },
 };
