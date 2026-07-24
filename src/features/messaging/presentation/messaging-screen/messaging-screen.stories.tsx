@@ -899,6 +899,9 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
+    // The "+ Tạo nhóm" CTA only renders on the "Nhóm" (groups) tab.
+    await userEvent.click(canvas.getByRole("tab", { name: "Nhóm" }));
+
     // Open the create-group modal via the "+ Tạo nhóm" button in the group tab
     const createBtn = await canvas.findByRole("button", {
       name: /tạo nhóm/i,
@@ -922,12 +925,14 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     await waitFor(() => expect(submitBtn).toBeEnabled());
     await userEvent.click(submitBtn);
 
-    // AC-4: new group must appear at the top of the list; modal must close
+    // AC-4: new group must appear at the top of the list; modal must close.
+    // The new group is also auto-selected, so its name renders a second time
+    // in the chat-pane header — assert at least one match, not an exact one.
     await waitFor(() =>
       expect(body.queryByRole("dialog")).not.toBeInTheDocument(),
     );
     await waitFor(() =>
-      expect(canvas.getByText("Nhóm Vật Lý")).toBeInTheDocument(),
+      expect(canvas.getAllByText("Nhóm Vật Lý").length).toBeGreaterThan(0),
     );
   },
 };

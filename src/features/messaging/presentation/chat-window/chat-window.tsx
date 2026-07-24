@@ -245,7 +245,11 @@ export function ChatWindow({
         excerpt: msg.text.slice(0, 80),
       });
     }
-    closeContextMenu();
+    // Unlike other menu actions, "Trả lời" should move focus straight into
+    // the reply textarea (not back to the message bubble) so the user can
+    // start typing immediately (AC-7).
+    setContextMenu(null);
+    requestAnimationFrame(() => inputRef?.current?.focus());
   };
 
   const handleCopyFromMenu = () => {

@@ -4,7 +4,9 @@ import { expect, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { MessageContextMenu } from "./message-context-menu";
 
-const recentSentAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+// Well inside the 5-minute delete window (2a062df shrunk it from 1h) —
+// exactly "5 minutes ago" sits on the boundary and can flip to expired.
+const recentSentAt = new Date(Date.now() - 60 * 1000).toISOString();
 const oldSentAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 const noop = () => {};
 
@@ -80,6 +82,7 @@ export const ContextMenu_OwnMessage_Expired: Story = {
   play: async () => {
     await waitFor(() => body().getByRole("menu"));
     await expect(body().getByRole("menuitem", { name: "Xóa" })).toBeDisabled();
-    await expect(body().getByText("Đã quá 1 giờ")).toBeInTheDocument();
+    // Delete window is 5 minutes (2a062df corrected the stale 1-hour copy).
+    await expect(body().getByText("Đã quá 5 phút")).toBeInTheDocument();
   },
 };
