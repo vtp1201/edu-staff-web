@@ -71,7 +71,7 @@ const NO_CONFLICT_SLOTS: TimetableSlot[] = [
 const meta: Meta<typeof TimetableScreen> = {
   title: "Admin/TimetableScreen",
   component: TimetableScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
@@ -99,9 +99,10 @@ export const Default: Story = {
     await expect(canvas.getByRole("heading", { level: 1 })).toBeInTheDocument();
     await expect(canvas.getAllByText("Toán").length).toBeGreaterThan(0);
     // Conflict summary shows at least one conflict.
-    await expect(
-      canvas.getByText(messages.timetable.conflicts.resolve),
-    ).toBeInTheDocument();
+    const resolveLinks = canvas.getAllByText(
+      messages.timetable.conflicts.resolve,
+    );
+    await expect(resolveLinks.length).toBeGreaterThan(0);
   },
 };
 

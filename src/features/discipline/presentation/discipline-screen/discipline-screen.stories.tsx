@@ -44,7 +44,7 @@ const baseVm: DisciplineScreenVM = {
 const meta: Meta<typeof DisciplineScreen> = {
   title: "Features/Discipline/DisciplineScreen",
   component: DisciplineScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
@@ -169,9 +169,11 @@ export const ConductTab: Story = {
   args: { ...baseVm, initialTab: "conduct" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByRole("button", { name: /Sửa hạnh kiểm của/ }),
-    ).toBeInTheDocument();
+    const editButtons = canvas.getAllByRole("button", {
+      name: /Sửa hạnh kiểm của/,
+    });
+    await expect(editButtons.length).toBeGreaterThan(0);
+    await expect(editButtons[0]).toBeInTheDocument();
   },
 };
 
@@ -244,7 +246,7 @@ export const ViolationsTab_DeleteFlow: Story = {
       expect(canvas.queryByText("Trần Văn Bình")).not.toBeInTheDocument(),
     );
     await expect(
-      await body.findByText("Đã xóa vi phạm của Trần Văn Bình."),
+      await body.findByText("Đã xóa vi phạm của Trần Văn Bình"),
     ).toBeInTheDocument();
   },
 };

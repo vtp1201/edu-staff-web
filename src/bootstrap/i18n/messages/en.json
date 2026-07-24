@@ -3959,7 +3959,7 @@
       "submitSuccess": "Plan submitted for approval",
       "submitting": "Submitting...",
       "approveForPlan": "Approve plan {subject} - {className}",
-      "rejectForPlan": "Reject plan {subject} - {className}"
+      "rejectForPlan": "Return plan {subject} - {className}"
     },
     "approve": {
       "cancel": "Cancel",
