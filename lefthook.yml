@@ -64,5 +64,7 @@ pre-push:
         fi
     - name: test
       run: bunx vitest run
+    - name: test-storybook
+      run: bunx vitest run --config vitest.storybook.mts
     - name: build
       run: bun run build
