@@ -3958,8 +3958,8 @@
       "submit": "Gửi phê duyệt",
       "submitSuccess": "Đã gửi kế hoạch để phê duyệt",
       "submitting": "Đang gửi...",
-      "approveForPlan": "Duyệt kế hoạch {subject} - {className}",
-      "rejectForPlan": "Từ chối kế hoạch {subject} - {className}"
+      "approveForPlan": "Phê duyệt kế hoạch {subject} - {className}",
+      "rejectForPlan": "Trả lại kế hoạch {subject} - {className}"
     },
     "approve": {
       "cancel": "Huỷ",

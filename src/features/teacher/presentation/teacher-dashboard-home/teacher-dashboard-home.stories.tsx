@@ -114,13 +114,18 @@ export const Default: Story = {
     await expect(canvas.getByText("Hoàn thành")).toBeInTheDocument();
     await expect(canvas.getByText("Đang dạy")).toBeInTheDocument();
     await expect(canvas.getByText("Sắp tới")).toBeInTheDocument();
-    // AC-7: live row has left green accent (border-edu-success class)
-    const liveRow = canvasElement.querySelector("li.border-edu-success");
+    // Scope to the schedule section specifically — the pending-grades and
+    // notifications sections share the exact same <section>/<ul> classes.
+    const scheduleSection = canvas
+      .getByText("Lịch dạy hôm nay")
+      .closest("section");
+    if (!scheduleSection) throw new Error("schedule section not found");
+    // AC-7: live row uses full-row success tint (DR-009 US-E16.1 — side-stripe
+    // banned in favor of `border-y border-edu-success/30` + bg tint).
+    const liveRow = scheduleSection.querySelector("li.border-edu-success\\/30");
     await expect(liveRow).not.toBeNull();
     // AC-9: 3 schedule rows rendered
-    const scheduleList = canvasElement.querySelectorAll(
-      "section ul li.border-l-\\[3px\\]",
-    );
+    const scheduleList = scheduleSection.querySelectorAll("ul > li");
     await expect(scheduleList.length).toBe(3);
   },
 };
@@ -130,12 +135,19 @@ export const AllStats: Story = {
   args: { vm: baseVm },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Stat-card labels only — "Chờ chấm điểm" is also the pending-grades
+    // section heading further down, so scope to the stat-card grid.
+    const statGrid = within(
+      canvasElement.querySelector(
+        ".grid-cols-\\[repeat\\(auto-fit\\,minmax\\(200px\\,1fr\\)\\)\\]",
+      ) as HTMLElement,
+    );
     // AC-1/AC-3: all 5 stat card labels present
-    await expect(canvas.getByText("Tổng học sinh")).toBeInTheDocument();
-    await expect(canvas.getByText("Tiết học hôm nay")).toBeInTheDocument();
-    await expect(canvas.getByText("Chờ chấm điểm")).toBeInTheDocument();
-    await expect(canvas.getByText("Điểm chờ duyệt")).toBeInTheDocument();
-    await expect(canvas.getByText("Tin nhắn mới")).toBeInTheDocument();
+    await expect(statGrid.getByText("Tổng học sinh")).toBeInTheDocument();
+    await expect(statGrid.getByText("Tiết học hôm nay")).toBeInTheDocument();
+    await expect(statGrid.getByText("Chờ chấm điểm")).toBeInTheDocument();
+    await expect(statGrid.getByText("Điểm chờ duyệt")).toBeInTheDocument();
+    await expect(statGrid.getByText("Tin nhắn mới")).toBeInTheDocument();
     // AC-4: ADMIN_APPROVAL annotation text visible beneath the card
     await expect(canvas.getByText("Chế độ ADMIN_APPROVAL")).toBeInTheDocument();
     // AC-5: trend arrow label present (pending grades stat has trend)
@@ -186,8 +198,16 @@ export const PendingGradesDetail: Story = {
   args: { vm: baseVm },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // AC-12: header badge shows pendingGradesCount
-    await expect(canvas.getByText("23")).toBeInTheDocument();
+    // AC-12: header badge shows pendingGradesCount — "23" also renders as the
+    // stat-card value further up and schedule rows have their own badges, so
+    // scope to the pending-grades section's own header badge.
+    const pendingGradesSection = canvas
+      .getByText("Chờ chấm điểm", { selector: "h2" })
+      .closest("section");
+    if (!pendingGradesSection)
+      throw new Error("pending-grades section not found");
+    const badge = pendingGradesSection.querySelector('[data-slot="badge"]');
+    await expect(badge?.textContent).toBe("23");
     // AC-10: avatar initials for each item
     await expect(canvas.getByText("VA")).toBeInTheDocument();
     await expect(canvas.getByText("TB")).toBeInTheDocument();

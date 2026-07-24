@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type { Department } from "../../domain/entities/department.entity";
 import { StaffingDepartmentsScreen } from "./staffing-departments-screen";
 
@@ -64,6 +65,7 @@ const meta: Meta<typeof StaffingDepartmentsScreen> = {
         <div className="p-6">
           <Story />
         </div>
+        <Toaster />
       </NextIntlClientProvider>
     ),
   ],

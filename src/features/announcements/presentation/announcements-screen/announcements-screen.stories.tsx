@@ -125,15 +125,21 @@ export default meta;
 
 type Story = StoryObj<typeof AnnouncementsScreen>;
 
-/** Skeleton cards while the list loads. */
+/**
+ * Skeleton cards while the list loads. The "all" filter is SSR-seeded via
+ * `initialData` (see announcements-screen.tsx useQuery), so it never shows
+ * the client-fetch skeleton in practice — switching to another filter tab
+ * (whose query has no `initialData`) is what actually exercises the loading
+ * output while `fetchListAction` never resolves.
+ */
 export const Loading: Story = {
   args: {
     ...baseProps,
-    initialItems: [],
     fetchListAction: () => new Promise(() => []),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("tab", { name: "Đã gửi" }));
     await expect(
       canvas.getByLabelText(/Đang tải danh sách thông báo/i),
     ).toBeInTheDocument();
@@ -155,9 +161,11 @@ export const ListWithAllStatuses: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(/Lịch nghỉ lễ Quốc khánh/i),
+      canvas.getByRole("heading", { name: /Lịch nghỉ lễ Quốc khánh/i }),
     ).toBeInTheDocument();
-    await expect(canvas.getByText(/Khẩn: Tạm dừng học/i)).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("heading", { name: /Khẩn: Tạm dừng học/i }),
+    ).toBeInTheDocument();
   },
 };
 
@@ -268,8 +276,12 @@ export const CardFields_UrgentAndProgress: Story = {
     // Status badges
     const sentBadges = canvas.getAllByText("Đã gửi");
     await expect(sentBadges.length).toBeGreaterThanOrEqual(1);
-    await expect(canvas.getByText("Đã lên lịch")).toBeInTheDocument();
-    await expect(canvas.getByText("Nháp")).toBeInTheDocument();
+    // "Đã lên lịch"/"Nháp" also label the filter-pill tabs, so a card's
+    // status badge is one of possibly several matches.
+    const scheduledBadges = canvas.getAllByText("Đã lên lịch");
+    await expect(scheduledBadges.length).toBeGreaterThanOrEqual(1);
+    const draftBadges = canvas.getAllByText("Nháp");
+    await expect(draftBadges.length).toBeGreaterThanOrEqual(1);
     // Recipient count visible on at least one card
     await expect(canvas.getByText(/1280 người nhận/i)).toBeInTheDocument();
     // Progress bar with role=progressbar exists
@@ -319,10 +331,11 @@ export const CreateDrawer_CharCount: Story = {
     })[0];
     await userEvent.click(createBtn);
     const dialog = within(document.body);
-    // char count pattern "0/200" should appear
-    await expect(await dialog.findByText(/0\/200/i)).toBeInTheDocument();
+    // char count pattern "0/200" (title) should appear — exact match, since
+    // "0/2000" (body) also satisfies a loose /0\/200/ substring match.
+    await expect(await dialog.findByText("0/200")).toBeInTheDocument();
     // body char count "0/2000"
-    await expect(await dialog.findByText(/0\/2000/i)).toBeInTheDocument();
+    await expect(await dialog.findByText("0/2000")).toBeInTheDocument();
     // Send button is disabled when fields are empty
     const sendBtn = await dialog.findByRole("button", { name: /Gửi ngay/i });
     await expect(sendBtn).toBeDisabled();
@@ -459,8 +472,8 @@ export const CreateDrawer_SaveDraft: Story = {
     const draftBtn = await dialog.findByRole("button", { name: /Lưu nháp/i });
     await expect(draftBtn).toBeEnabled();
     await userEvent.click(draftBtn);
-    // Drawer closes — "Lưu nháp" leaves the DOM
-    await expect(draftBtn).not.toBeInTheDocument();
+    // Drawer closes once the async onUpdate resolves — "Lưu nháp" leaves the DOM
+    await waitFor(() => expect(draftBtn).not.toBeInTheDocument());
   },
 };
 
@@ -515,11 +528,13 @@ export const CreateDrawer_PreviewToggle: Story = {
     await expect(previewToggle).toHaveAttribute("aria-pressed", "false");
     await userEvent.click(previewToggle);
     await expect(previewToggle).toHaveAttribute("aria-pressed", "true");
-    // Preview heading appears
-    await expect(await dialog.findByText(/Bản xem trước/i)).toBeInTheDocument();
+    // Preview section label appears (exact match — the typed title below
+    // deliberately starts with the same text, so a loose regex would match
+    // both elements).
+    await expect(await dialog.findByText("Bản xem trước")).toBeInTheDocument();
     // Typed title is shown in preview
     await expect(
-      await dialog.findByText(/Bản xem trước thông báo/i),
+      await dialog.findByText("Bản xem trước thông báo"),
     ).toBeInTheDocument();
   },
 };
@@ -602,8 +617,8 @@ export const DeleteDialog_Confirm: Story = {
     const confirmBtn = dialog.getByRole("button", { name: /^Xóa$/i });
     await expect(confirmBtn).toBeEnabled();
     await userEvent.click(confirmBtn);
-    // Dialog should close after confirm
-    await expect(confirmBtn).not.toBeInTheDocument();
+    // Dialog closes once the async onDelete resolves
+    await waitFor(() => expect(confirmBtn).not.toBeInTheDocument());
   },
 };
 
@@ -632,6 +647,11 @@ export const A11y_DrawerAudienceGroupLabel: Story = {
   args: baseProps,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Filter pills tablist has aria-label — checked before the drawer opens,
+    // since Radix marks the background content `aria-hidden` while the
+    // drawer is open (correctly inert for a11y, so it's unqueryable then).
+    const tabList = canvas.getByRole("tablist");
+    await expect(tabList).toHaveAttribute("aria-label");
     const createBtn = canvas.getAllByRole("button", {
       name: /Tạo thông báo/i,
     })[0];
@@ -644,8 +664,5 @@ export const A11y_DrawerAudienceGroupLabel: Story = {
       name: /^Tất cả$/i,
     });
     await expect(allBtn).toHaveAttribute("aria-pressed");
-    // Filter pills tablist has aria-label
-    const tabList = canvas.getByRole("tablist");
-    await expect(tabList).toHaveAttribute("aria-label");
   },
 };

@@ -29,6 +29,7 @@ type LessonBankFilterBarProps = {
 };
 
 const SORT_OPTIONS = ["newest", "most-viewed", "title-asc"] as const;
+const ALL = "__all__";
 const VISIBILITY_OPTIONS: (LessonVisibility | "")[] = [
   "",
   "private",
@@ -68,8 +69,10 @@ export function LessonBankFilterBar({
 
       {/* Subject filter */}
       <Select
-        value={filters.subjectId ?? ""}
-        onValueChange={(v) => onFilterChange({ subjectId: v || undefined })}
+        value={filters.subjectId ?? ALL}
+        onValueChange={(v) =>
+          onFilterChange({ subjectId: v === ALL ? undefined : v })
+        }
       >
         <SelectTrigger
           className="w-40"
@@ -78,7 +81,7 @@ export function LessonBankFilterBar({
           <SelectValue placeholder={t("filter.allSubjects")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">{t("filter.allSubjects")}</SelectItem>
+          <SelectItem value={ALL}>{t("filter.allSubjects")}</SelectItem>
           {subjects.map((s) => (
             <SelectItem key={s.id} value={s.id}>
               {s.name}
@@ -90,8 +93,10 @@ export function LessonBankFilterBar({
       {/* Department filter */}
       {departments.length > 0 && (
         <Select
-          value={filters.department ?? ""}
-          onValueChange={(v) => onFilterChange({ department: v || undefined })}
+          value={filters.department ?? ALL}
+          onValueChange={(v) =>
+            onFilterChange({ department: v === ALL ? undefined : v })
+          }
         >
           <SelectTrigger
             className="w-44"
@@ -100,7 +105,7 @@ export function LessonBankFilterBar({
             <SelectValue placeholder={t("filter.allDepartments")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("filter.allDepartments")}</SelectItem>
+            <SelectItem value={ALL}>{t("filter.allDepartments")}</SelectItem>
             {departments.map((d) => (
               <SelectItem key={d} value={d}>
                 {d}
@@ -112,9 +117,11 @@ export function LessonBankFilterBar({
 
       {/* Visibility filter */}
       <Select
-        value={filters.visibility ?? ""}
+        value={filters.visibility ?? ALL}
         onValueChange={(v) =>
-          onFilterChange({ visibility: (v as LessonVisibility) || undefined })
+          onFilterChange({
+            visibility: v === ALL ? undefined : (v as LessonVisibility),
+          })
         }
       >
         <SelectTrigger
@@ -125,7 +132,7 @@ export function LessonBankFilterBar({
         </SelectTrigger>
         <SelectContent>
           {VISIBILITY_OPTIONS.map((v) => (
-            <SelectItem key={v === "" ? "__all__" : v} value={v}>
+            <SelectItem key={v === "" ? ALL : v} value={v === "" ? ALL : v}>
               {v === "" ? t("filter.allVisibility") : t(`visibility.${v}`)}
             </SelectItem>
           ))}

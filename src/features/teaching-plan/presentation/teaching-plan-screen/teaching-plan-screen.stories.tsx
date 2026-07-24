@@ -96,7 +96,7 @@ const failAction =
 const teacherMeta: Meta<typeof TeachingPlanScreen> = {
   title: "Features/TeachingPlan/TeachingPlanScreen",
   component: TeachingPlanScreen,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
@@ -139,7 +139,7 @@ export const TeacherGrid_WithContent: TeacherStory = {
     await expect(
       canvas.getByRole("heading", { name: /Kế hoạch bài dạy/ }),
     ).toBeInTheDocument();
-    await expect(canvas.getByRole("grid")).toBeInTheDocument();
+    await expect(canvas.getByRole("table")).toBeInTheDocument();
     // Tuần 1 row header present
     await expect(canvas.getByText("Tuần 1")).toBeInTheDocument();
     // Tiết 1 column header present
@@ -192,26 +192,25 @@ export const InlineEdit_Flow: TeacherStory = {
   args: baseTeacherProps,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Click a filled cell button (Bài Toán 1)
-    const cellBtn = canvas.getByRole("button", { name: "" });
-    // Find any cell button and click it to open the popover
-    const addBtn = canvas.getByLabelText("Thêm nội dung Tuần 1 Tiết 3");
+    const body = within(document.body);
+    // Find the empty-cell "add content" button and click it to open the popover.
+    // baseTeacherProps fills weeks 1-2 (6 cells of 12) — week 3 period 1 is
+    // genuinely empty.
+    const addBtn = canvas.getByLabelText("Thêm nội dung Tuần 3 Tiết 1");
     await userEvent.click(addBtn);
     await waitFor(() =>
-      expect(canvas.getByText("Tiêu đề bài dạy")).toBeInTheDocument(),
+      expect(body.getByText("Tiêu đề bài dạy")).toBeInTheDocument(),
     );
     // Filling in a title and saving
-    const titleInput = canvas.getByPlaceholderText(
+    const titleInput = body.getByPlaceholderText(
       /VD: Đạo hàm — ứng dụng tính cực trị/,
     );
     await userEvent.type(titleInput, "Đạo hàm và vi phân");
-    await userEvent.click(canvas.getByRole("button", { name: /Lưu ô/ }));
+    await userEvent.click(body.getByRole("button", { name: /Lưu ô/ }));
     // Popover should close (form no longer visible)
     await waitFor(() =>
-      expect(canvas.queryByText("Tiêu đề bài dạy")).not.toBeInTheDocument(),
+      expect(body.queryByText("Tiêu đề bài dạy")).not.toBeInTheDocument(),
     );
-    // Suppress unused variable warning
-    void cellBtn;
   },
 };
 
@@ -289,16 +288,17 @@ export const ApproveFlow: StoryObj<typeof PrincipalReviewScreen> = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(document.body);
     // Click Phê duyệt to open confirmation dialog
     await userEvent.click(canvas.getByRole("button", { name: /Phê duyệt/ }));
     await waitFor(() =>
-      expect(canvas.getByText("Xác nhận phê duyệt")).toBeInTheDocument(),
+      expect(body.getByText("Xác nhận phê duyệt")).toBeInTheDocument(),
     );
     await expect(
-      canvas.getByText(/Bạn có chắc chắn muốn phê duyệt/),
+      body.getByText(/Bạn có chắc chắn muốn phê duyệt/),
     ).toBeInTheDocument();
     // Confirm
-    const confirmBtn = canvas.getByRole("button", { name: /^Phê duyệt$/ });
+    const confirmBtn = body.getByRole("button", { name: /^Phê duyệt$/ });
     await userEvent.click(confirmBtn);
   },
 };
@@ -316,22 +316,23 @@ export const RejectFlow: StoryObj<typeof PrincipalReviewScreen> = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(document.body);
     // Click Trả lại to open reject dialog
     await userEvent.click(canvas.getByRole("button", { name: /Trả lại/ }));
     await waitFor(() =>
-      expect(canvas.getByText("Trả lại kế hoạch")).toBeInTheDocument(),
+      expect(body.getByText("Trả lại kế hoạch")).toBeInTheDocument(),
     );
     // Try to confirm with empty reason → client-side validation
     await userEvent.click(
-      canvas.getByRole("button", { name: /Xác nhận trả lại/ }),
+      body.getByRole("button", { name: /Xác nhận trả lại/ }),
     );
     await waitFor(() =>
       expect(
-        canvas.getByText("Lý do phải có ít nhất 10 ký tự"),
+        body.getByText("Lý do phải có ít nhất 10 ký tự"),
       ).toBeInTheDocument(),
     );
     // Fill valid reason and confirm
-    const reasonInput = canvas.getByPlaceholderText(
+    const reasonInput = body.getByPlaceholderText(
       /Nêu rõ lý do trả lại kế hoạch/,
     );
     await userEvent.type(
@@ -339,7 +340,7 @@ export const RejectFlow: StoryObj<typeof PrincipalReviewScreen> = {
       "Chưa đủ nội dung phân phối chương trình",
     );
     await userEvent.click(
-      canvas.getByRole("button", { name: /Xác nhận trả lại/ }),
+      body.getByRole("button", { name: /Xác nhận trả lại/ }),
     );
   },
 };

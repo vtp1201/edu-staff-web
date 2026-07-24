@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { Toaster } from "@/components/ui/sonner";
 import { AdminSettingsScreen } from "./admin-settings-screen";
@@ -86,9 +86,13 @@ export const SaveSuccess: Story = {
     );
     await userEvent.click(canvas.getByRole("button", { name: /Lưu cài đặt/i }));
     const body = within(document.body);
-    await expect(
-      await body.findByText("Đã cập nhật cài đặt"),
-    ).toBeInTheDocument();
+    // The success message renders twice by design: the sr-only live-region
+    // announcement (screen readers) and the visible sonner toast.
+    await waitFor(async () =>
+      expect(
+        (await body.findAllByText("Đã cập nhật cài đặt")).length,
+      ).toBeGreaterThan(0),
+    );
   },
 };
 
@@ -104,8 +108,12 @@ export const SaveError: Story = {
     );
     await userEvent.click(canvas.getByRole("button", { name: /Lưu cài đặt/i }));
     const body = within(document.body);
-    await expect(
-      await body.findByText("Lưu không thành công, vui lòng thử lại"),
-    ).toBeInTheDocument();
+    // Renders twice: sr-only live-region announcement + visible sonner toast.
+    await waitFor(async () =>
+      expect(
+        (await body.findAllByText("Lưu không thành công, vui lòng thử lại"))
+          .length,
+      ).toBeGreaterThan(0),
+    );
   },
 };
