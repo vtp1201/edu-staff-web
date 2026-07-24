@@ -62,7 +62,9 @@ export const Interactive: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const card = canvas.getByRole("button", { name: /Clickable card/i });
-    await expect(card).toHaveAttribute("tabindex", "0");
+    // Native <button> (DR-009 US-E16.3) — focusable by default, no explicit
+    // tabindex needed.
+    await expect(card.tagName).toBe("BUTTON");
 
     card.focus();
     await expect(card).toHaveFocus();
