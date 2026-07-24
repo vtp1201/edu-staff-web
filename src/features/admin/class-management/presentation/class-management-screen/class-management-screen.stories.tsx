@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type { Class } from "@/features/admin/class-management/domain/entities/class.entity";
 import type { TeacherMember } from "@/features/admin/class-management/domain/entities/teacher-member.entity";
 import { ClassManagementScreen } from "./class-management-screen";
@@ -58,6 +59,7 @@ const meta: Meta<typeof ClassManagementScreen> = {
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
         <Story />
+        <Toaster />
       </NextIntlClientProvider>
     ),
   ],
@@ -624,8 +626,12 @@ export const HomeroomPickerShowsCurrent: Story = {
     await step("current GVCN label and name are displayed", async () => {
       const currentLabel = await body.findByText(/gvcn hiện tại/i);
       expect(currentLabel).toBeInTheDocument();
-      const teacherName = body.getByText("Trần Văn Minh");
-      expect(teacherName).toBeInTheDocument();
+      // "Trần Văn Minh" renders in the background table row AND (within the
+      // dialog) both the "current GVCN" callout and the teacher picker list
+      // — assert at least one match inside the dialog, not an exact one.
+      const dialog = within(body.getByRole("dialog"));
+      const teacherNames = dialog.getAllByText("Trần Văn Minh");
+      expect(teacherNames.length).toBeGreaterThan(0);
     });
   },
 };
