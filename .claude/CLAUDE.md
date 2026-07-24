@@ -290,7 +290,7 @@ CSS variables defined in `src/app/globals.css` drive the entire design system. P
 - **Branch format:** `<type>/<short-desc>` — 1 US = 1 branch `feat/us-eXX.Y-<slug>`
   (xem `.claude/rules/parallel-workflow.md`). VD `feat/us-e12.4-student-roster`.
 - `main` and `dev`/`develop` are exempt from branch naming validation.
-- Pre-push hook runs the full test suite and `bun build` — do not bypass with `--no-verify`.
+- Pre-push hook runs the full test suite, the Storybook interaction suite (`vitest.storybook.mts`), and `bun build` — do not bypass with `--no-verify`.
 - **Parallel branch workflow (decision `0025`):** nhiều phiên `/fe` chạy song song.
   Mỗi US: `git fetch --prune` → claim check + dependency check → tạo branch từ `main`
   rồi **push ngay (early push = claim)** → dev + test trên branch → khi xong & gate
