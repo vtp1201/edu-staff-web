@@ -196,8 +196,12 @@ export const RevisionRequestFlow: Story = {
       name: messages.gradeApproval.actionRequestRevision,
     });
     await userEvent.click(revisionBtn);
+    // The dialog title text is identical to the trigger button's label, so
+    // scope to the heading role to disambiguate.
     await expect(
-      body.getByText(messages.gradeApproval.revisionDialog.title),
+      body.getByRole("heading", {
+        name: messages.gradeApproval.revisionDialog.title,
+      }),
     ).toBeInTheDocument();
   },
 };
@@ -218,8 +222,12 @@ export const BulkLockFlow: Story = {
     });
     await userEvent.click(lockBtn);
     const body = within(document.body);
+    // The dialog title text is identical to the trigger button's label, so
+    // scope to the heading role to disambiguate.
     await expect(
-      body.getByText(messages.gradeApproval.bulkLockDialog.title),
+      body.getByRole("heading", {
+        name: messages.gradeApproval.bulkLockDialog.title,
+      }),
     ).toBeInTheDocument();
   },
 };

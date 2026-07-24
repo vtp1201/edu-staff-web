@@ -35,7 +35,9 @@ export const AnswerFlow: Story = {
   args: { exam, questions, startedAt: Date.now(), onSubmit: () => {} },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const optionA = canvas.getByRole("button", { name: "Chọn đáp án A" });
+    // Accessible name = sr-only label prefix + visible option text (the
+    // hidden option letter glyph is aria-hidden).
+    const optionA = canvas.getByRole("button", { name: /^Chọn đáp án A:/ });
     await userEvent.click(optionA);
     await expect(optionA).toHaveAttribute("aria-pressed", "true");
   },
