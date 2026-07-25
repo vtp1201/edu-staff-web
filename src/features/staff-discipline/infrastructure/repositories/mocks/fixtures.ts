@@ -21,9 +21,13 @@ export const SD_OTHER_ADMIN_ID = "admin-2";
 /** The staff member the `teacher` self-view is scoped to. */
 export const SD_SELF_STAFF_ID = "staff-1";
 
+/**
+ * Term picklist. Labels are DATA (a real BE would return term names), not i18n
+ * copy — so they intentionally live here and not in `messages/*.json`.
+ */
 export const SD_TERMS = [
-  { id: "HK1-2025-2026", labelKey: "term1" },
-  { id: "HK2-2024-2025", labelKey: "term2" },
+  { id: "HK1-2025-2026", label: "Học kỳ 1 — 2025–2026" },
+  { id: "HK2-2024-2025", label: "Học kỳ 2 — 2024–2025" },
 ] as const;
 
 export const SD_TERM_IDS: readonly string[] = SD_TERMS.map((t) => t.id);
@@ -111,7 +115,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_SUBMITTED_VIOLATION_ID,
       staffMemberId: "staff-4",
-      category: "late",
+      category: "Đi làm muộn / vắng không phép",
       description:
         "Vào lớp trễ 20 phút không báo trước, không có giáo viên dạy thay.",
       severity: "MODERATE",
@@ -124,7 +128,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_DRAFT_VIOLATION_ID,
       staffMemberId: "staff-2",
-      category: "professional",
+      category: "Vi phạm quy chế chuyên môn",
       description:
         "Không nộp giáo án đúng hạn quy định 2 lần liên tiếp trong tháng.",
       severity: "MINOR",
@@ -138,7 +142,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
       // selfApproved: true (author === approver) — ADR 0073 common case.
       recordId: MOCK_SELF_APPROVED_VIOLATION_ID,
       staffMemberId: SD_SELF_STAFF_ID,
-      category: "dresscode",
+      category: "Vi phạm quy định trang phục/tác phong",
       description:
         "Trang phục không đúng quy định trong buổi lễ chào cờ đầu tuần.",
       severity: "MINOR",
@@ -152,7 +156,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: "sv-004",
       staffMemberId: "staff-5",
-      category: "conduct",
+      category: "Ứng xử không đúng mực với HS/PH",
       description:
         "Phụ huynh phản ánh thái độ chưa đúng mực khi trao đổi qua điện thoại.",
       severity: "SEVERE",
@@ -166,7 +170,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_REJECTED_VIOLATION_ID,
       staffMemberId: "staff-3",
-      category: "late",
+      category: "Đi làm muộn / vắng không phép",
       description: "Đến muộn tiết coi thi giữa kỳ 15 phút.",
       severity: "MODERATE",
       occurredAt: "2026-03-20",
@@ -183,7 +187,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
       // offered (or allowed) a submit on it (AC-003.2 + server backstop).
       recordId: MOCK_FOREIGN_DRAFT_VIOLATION_ID,
       staffMemberId: "staff-3",
-      category: "other",
+      category: "Khác",
       description: "Ghi nhận nháp do thành viên BGH khác lập, chờ hoàn thiện.",
       severity: "MINOR",
       occurredAt: "2026-05-06",

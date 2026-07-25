@@ -287,6 +287,33 @@ presentational leaf even though today they both just gate `disabled` — keeps r
 future visual distinction (AC asked for "pending vs confirmed visually distinguishable")
 without a later prop-shape change.
 
+**Staff Discipline (US-E09.5, 2026-07-25):** confirmed plan.md's ONE
+`IStaffDisciplineRepository` recommendation (mirrors `IDisciplineRepository`'s
+N-sub-resources-1-interface norm within epic E09 — no override needed).
+Reused `StatusBadge`/`EmptyState` as-is for `SDStateBadge`/`SDSeverityBadge`/
+`SDRatingBadge` (thin wrappers) — zero new tone/token. Skipped the mockup's
+`SDTabButton` entirely in favor of the already-used `Tabs`/`TabsList`/
+`TabsTrigger` primitive (proven in this exact repo by
+`discipline-screen.tsx`'s near-identical multi-tab shell) — a concrete
+instance of "mockup hand-rolls X only because it has no component library."
+Key VM refinement: when an RSC page seeds TWO independent lists/tabs that
+must never share error state (AC forbidding "carry-over error on tab
+switch"), the VM needs one `initial<X>ErrorKey` PER list, not a single
+`initialErrorKey` — flag this early if a plan proposes the singular form.
+Key security-pattern note: "form must not even open on state X" (a locked/
+immutable record) is enforced at the CALLER's trigger-render boundary (the
+row component conditionally renders a lock message vs. an open-dialog
+button), never as an `isLocked` prop passed into the dialog itself — the
+dialog's own prop type should have NO variant for "render me anyway, but
+locked," making the gate a type-level guarantee, not just a runtime `if`.
+Also reconfirmed the `MIN_REJECT_LENGTH`-as-local-constant pattern (already
+established by `StaffLeaveRequestCard`): a presentation component computing
+its own client-side validation threshold locally, NOT importing the
+equivalent pure function from `domain/use-cases` (that layer is off-limits to
+presentation; only `domain/entities`-style types + failure-union types cross
+that boundary, confirmed by both `StaffLeaveScreenVM` and
+`ParentLinksScreenProps` already importing `*Failure["type"]` directly).
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.
