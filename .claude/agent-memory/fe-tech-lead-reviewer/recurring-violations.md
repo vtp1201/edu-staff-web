@@ -107,6 +107,17 @@ Watch for these (each has bitten a story here):
   module (feature-local shared file or `components/shared/`) and import in both. (US-E15.2 ExportPdfButton
   copied from timetable-view.tsx into teacher-schedule.tsx verbatim.)
 
+- **Consolidation/extraction stories leave the survey incomplete + dangling doc refs** — when a
+  story promotes N feature-local copies into `components/shared/`, the packet's Investigation grep
+  usually misses 1–2 instances in unrelated features, and the *surviving* copies keep doc comments
+  pointing at the now-DELETED originals (e.g. `features/user/.../consent-section/consent-error.tsx`
+  still says "NOT promoted from `PLError`" after `pl-error.tsx` was deleted by
+  INFRA-shared-list-states). Always re-grep the pattern yourself (`role="alert"` + `AlertTriangle`,
+  `role="status"` + `Skeleton`, `sr-only role="status"`) AND grep for the deleted component names in
+  comments. Also watch for the residual case where the shared component exists but each call site
+  still passes the SAME long class literal (`SD_LIST_ERROR_CLASS` duplicated verbatim in
+  student-absences-screen.tsx) — decision 0026's class-repetition smell survives the refactor; ask
+  for a preset/`shape` prop.
 - **`raw: true` nested inside `params` instead of top-level axios config** — the interceptor's
   `isRawCall` reads `config.raw` at the TOP level (`http.get(url, { params: {...}, raw: true })`),
   NOT `params.raw`. Engineers writing paginated/list calls put `params: { status, raw: true }` →
