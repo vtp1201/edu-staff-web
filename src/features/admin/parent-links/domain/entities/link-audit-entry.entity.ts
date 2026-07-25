@@ -1,9 +1,9 @@
 /**
  * One append-only audit event on a parent-student link (US-E20.3, INT-101).
  *
- * FEATURE-SCOPED BY DESIGN (ADR `0064`): this entity is owned by
+ * FEATURE-SCOPED BY DESIGN (ADR `0064`, binding): this entity is owned by
  * `features/admin/parent-links/` and MUST NOT be folded into the shared
- * `features/audit-log/` feature or its `AuditEntityType` union.
+ * audit feature or its `AuditEntityType` union.
  *
  * No `tenantId`/`ipAddress`/`deviceInfo` — those are not captured by any
  * mutation today and are deliberately not invented (DR-023 exclusion).

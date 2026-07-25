@@ -101,6 +101,7 @@ export function ParentLinksScreen({
   createLinkAction,
   unlinkLinkAction,
   getLinkConsentDetailAction,
+  getLinkAuditTrailAction,
   searchStudentCandidatesAction,
   searchParentCandidatesAction,
 }: ParentLinksScreenProps) {
@@ -187,6 +188,22 @@ export function ParentLinksScreen({
     [locale],
   );
 
+  /** Short date + time for an audit entry (design_src PLAuditEntryRow). */
+  const formatTimestamp = useCallback(
+    (iso: string) => {
+      const dt = new Date(iso);
+      if (Number.isNaN(dt.getTime())) return iso;
+      return dt.toLocaleString(locale === "en" ? "en-GB" : "vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+    [locale],
+  );
+
   const rowVMLabels: RowVMLabels = useMemo(
     () => ({
       relationshipLabelOf: (r) => t(`relationshipLabels.${r}`),
@@ -250,6 +267,23 @@ export function ParentLinksScreen({
     retry: (count, err) => isRetryable(err) && count < 2,
   });
 
+  // ── Audit-trail sub-fetch (detail dialog only, US-E20.3) ───────────────────
+  // Fully independent of the consent query: its own key, its own lifecycle. A
+  // failure here surfaces ONLY inside PLAuditTrailSection (FR-101/INT-105).
+  const auditTrailQuery = useQuery({
+    queryKey: parentLinksKeys.auditTrail(detailRow?.linkId ?? "none"),
+    queryFn: async () => {
+      const res = await getLinkAuditTrailAction(detailRow?.linkId ?? "");
+      if (!res.ok) {
+        throw { type: res.errorKey, retryable: res.retryable } as ThrownFailure;
+      }
+      return res.data;
+    },
+    enabled: detailRow !== null,
+    staleTime: 0,
+    retry: (count, err) => isRetryable(err) && count < 2,
+  });
+
   // ── Create mutation ────────────────────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: async (input: CreateLinkActionInput) => {
@@ -265,6 +299,11 @@ export function ParentLinksScreen({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: parentLinksKeys.lists() });
+      // US-E20.3 (INT-109, nice-to-have): a newly recorded entry is picked up if
+      // the trail for that link is already cached/open.
+      queryClient.invalidateQueries({
+        queryKey: parentLinksKeys.auditTrail(data.linkId),
+      });
       toast.success(
         t("toasts.created", {
           parent: data.parentName,
@@ -322,6 +361,9 @@ export function ParentLinksScreen({
       });
       queryClient.invalidateQueries({
         queryKey: parentLinksKeys.consent(target.studentId, target.parentId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: parentLinksKeys.auditTrail(target.linkId),
       });
       toast.success(t("toasts.unlinked", { parent: target.parentName }));
       setUnlinkTarget(null);
@@ -414,6 +456,30 @@ export function ParentLinksScreen({
       offLabel: t("consentCategories.off"),
       loadingLabel: t("detailDialog.consentLoading"),
       retryLabel: t("errors.retry"),
+    },
+  };
+
+  const auditTrailSection = {
+    status: auditTrailQuery.isLoading
+      ? ("loading" as const)
+      : auditTrailQuery.isError
+        ? ("error" as const)
+        : ("success" as const),
+    entries: auditTrailQuery.data,
+    formatTimestamp,
+    onRetry: () => auditTrailQuery.refetch(),
+    labels: {
+      sectionTitle: t("detailDialog.auditTrail.sectionTitle"),
+      loadingLabel: t("detailDialog.auditTrail.loadingLabel"),
+      emptyTitle: t("detailDialog.auditTrail.empty.title"),
+      emptyBody: t("detailDialog.auditTrail.empty.body"),
+      errorMessage: t("detailDialog.auditTrail.error"),
+      retryLabel: t("detailDialog.auditTrail.retry"),
+      notePrefix: t("detailDialog.auditTrail.notePrefix"),
+      actionLabel: {
+        created: t("detailDialog.auditTrail.action.created"),
+        unlinked: t("detailDialog.auditTrail.action.unlinked"),
+      },
     },
   };
 
@@ -542,6 +608,7 @@ export function ParentLinksScreen({
         open={detailRow !== null}
         row={detailRow}
         consent={consentSection}
+        auditTrail={auditTrailSection}
         onClose={() => setDetailRow(null)}
       />
 

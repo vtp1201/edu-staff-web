@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { Toaster } from "@/components/ui/sonner";
+import type { LinkAuditEntry } from "../../domain/entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../../domain/entities/link-candidate.entity";
 import type { ParentStudentLink } from "../../domain/entities/parent-student-link.entity";
 import { ParentLinksScreen } from "./parent-links-screen";
@@ -115,6 +116,48 @@ const okConsent = async (): Promise<ActionResult<never>> =>
     },
   }) as unknown as ActionResult<never>;
 
+// ── Audit-trail fixtures (US-E20.3) ──────────────────────────────────────────
+// `l6`'s create -> unlink -> re-create lifecycle, NEWEST-FIRST exactly as the
+// repository stores it (AC-101.4/UC-105 — the component must NOT re-sort).
+const AUDIT_L6: LinkAuditEntry[] = [
+  {
+    entryId: "ae-seed-l6-3",
+    linkId: "l6",
+    action: "created",
+    actorId: "admin-seed",
+    actorName: "Quản trị viên demo",
+    occurredAt: "2025-11-01T03:00:00.000Z",
+    note: "Tái tạo liên kết sau khi xác minh lại giấy tờ giám hộ.",
+  },
+  {
+    entryId: "ae-seed-l6-2",
+    linkId: "l6",
+    action: "unlinked",
+    actorId: "admin-seed",
+    actorName: "Quản trị viên demo",
+    occurredAt: "2025-10-20T03:00:00.000Z",
+    note: null,
+  },
+  {
+    entryId: "ae-seed-l6-1",
+    linkId: "l6",
+    action: "created",
+    actorId: "admin-seed",
+    actorName: "Quản trị viên demo",
+    occurredAt: "2025-10-02T02:00:00.000Z",
+    note: null,
+  },
+];
+
+const okEmptyAudit = async (): Promise<ActionResult<LinkAuditEntry[]>> => ({
+  ok: true,
+  data: [],
+});
+const okAuditL6 = async (): Promise<ActionResult<LinkAuditEntry[]>> => ({
+  ok: true,
+  data: AUDIT_L6,
+});
+
 const baseProps: ParentLinksScreenProps = {
   initialFilter: { q: "", classId: null },
   initialPage: page(LINKS),
@@ -139,6 +182,7 @@ const baseProps: ParentLinksScreenProps = {
   }),
   unlinkLinkAction: async () => ({ ok: true, data: undefined }),
   getLinkConsentDetailAction: okConsent,
+  getLinkAuditTrailAction: okEmptyAudit,
   searchStudentCandidatesAction: okStudentSearch,
   searchParentCandidatesAction: okParentSearch,
 };
@@ -1023,5 +1067,179 @@ export const MobileRowMenuKeyboard: Story = {
     } finally {
       await resetViewport();
     }
+  },
+};
+
+// ── Audit trail sub-section (US-E20.3) ───────────────────────────────────────
+// Exercised through the real detail dialog (the section has no story file of its
+// own — same convention as PLConsentDetailSection).
+
+export const AuditTrailLoading: Story = {
+  args: {
+    ...baseProps,
+    // Never resolves → the section stays in its scoped loading state (AC-101.1).
+    getLinkAuditTrailAction: () =>
+      new Promise<ActionResult<LinkAuditEntry[]>>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    within(canvasElement);
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(body.getByText("Lịch sử liên kết")).toBeInTheDocument(),
+    );
+    // sr-only loading label + aria-busy wrapper, scoped to this section only.
+    const loading = body.getByText("Đang tải lịch sử…");
+    await expect(loading).toBeInTheDocument();
+    await expect(loading.closest('[aria-busy="true"]')).not.toBeNull();
+    // The rest of the dialog rendered normally (AC-101.1) — scoped to the dialog
+    // (the parent's name also appears in the table row behind it).
+    const dialog = within(
+      document.querySelector('[data-slot="dialog-content"]') as HTMLElement,
+    );
+    await expect(dialog.getByText("Chi tiết liên kết")).toBeInTheDocument();
+    await expect(dialog.getByText("Nguyễn Văn Bình")).toBeInTheDocument();
+    await expect(dialog.getByText("Ngày liên kết")).toBeInTheDocument();
+  },
+};
+
+export const AuditTrailEmpty: Story = {
+  args: { ...baseProps, getLinkAuditTrailAction: okEmptyAudit },
+  play: async ({ canvasElement }) => {
+    within(canvasElement);
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(body.getByText("Chưa có lịch sử ghi nhận")).toBeInTheDocument(),
+    );
+    await expect(
+      body.getByText(/Lịch sử sẽ ghi nhận các thay đổi/),
+    ).toBeInTheDocument();
+    // Dominant + honest: no CTA and no alert tone in the section (AC-101.2).
+    const section = body
+      .getByText("Chưa có lịch sử ghi nhận")
+      .closest("section") as HTMLElement;
+    await expect(within(section).queryByRole("button")).toBeNull();
+    await expect(within(section).queryByRole("alert")).toBeNull();
+  },
+};
+
+export const AuditTrailError: Story = {
+  args: {
+    ...baseProps,
+    getLinkAuditTrailAction: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    within(canvasElement);
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(
+        body.getByText("Không tải được lịch sử liên kết. Vui lòng thử lại."),
+      ).toBeInTheDocument(),
+    );
+    // Scoped role="alert" — NOT a whole-dialog error (AC-101.3).
+    const alert = body
+      .getByText("Không tải được lịch sử liên kết. Vui lòng thử lại.")
+      .closest('[role="alert"]');
+    await expect(alert).not.toBeNull();
+    const dialog = within(
+      document.querySelector('[data-slot="dialog-content"]') as HTMLElement,
+    );
+    await expect(dialog.getByText("Chi tiết liên kết")).toBeInTheDocument();
+    await expect(dialog.getByText("Nguyễn Văn Bình")).toBeInTheDocument();
+    // Consent sub-section unaffected by the trail failure.
+    await expect(
+      dialog.getByText("Chi tiết quyền nhận thông báo"),
+    ).toBeInTheDocument();
+  },
+};
+
+export const AuditTrailErrorRetry: Story = {
+  args: {
+    ...baseProps,
+    // Fails once, then succeeds → activating "Thử lại" re-issues the query and
+    // the section reaches its success state (AC-101.3, second half).
+    getLinkAuditTrailAction: (() => {
+      let calls = 0;
+      return async (): Promise<ActionResult<LinkAuditEntry[]>> => {
+        calls += 1;
+        if (calls === 1) {
+          return { ok: false, errorKey: "network-error", retryable: false };
+        }
+        return { ok: true, data: AUDIT_L6 };
+      };
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    within(canvasElement);
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    const alert = await body.findByRole("alert");
+    // Keyboard-reachable retry: focus it and activate with Enter (UC-106).
+    const retry = within(alert).getByRole("button", { name: "Thử lại" });
+    retry.focus();
+    await expect(retry).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(body.getByText("Đã gỡ liên kết")).toBeInTheDocument(),
+    );
+  },
+};
+
+export const AuditTrailSuccessOrdering: Story = {
+  args: { ...baseProps, getLinkAuditTrailAction: okAuditL6 },
+  play: async ({ canvasElement }) => {
+    within(canvasElement);
+    await openRowMenuAndPick("Xem chi tiết", "Nguyễn Minh Khoa");
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(body.getByText("Lịch sử liên kết")).toBeInTheDocument(),
+    );
+    const list = await waitFor(() => {
+      const ol = document.querySelector("section ol");
+      expect(ol).not.toBeNull();
+      return ol as HTMLElement;
+    });
+    const rows = Array.from(list.querySelectorAll("li"));
+    await expect(rows).toHaveLength(3);
+
+    // Exact newest-first order, as received — no client-side sort (NFR-102).
+    await expect(rows[0].textContent).toContain("Đã tạo liên kết");
+    await expect(rows[1].textContent).toContain("Đã gỡ liên kết");
+    await expect(rows[2].textContent).toContain("Đã tạo liên kết");
+    await expect(rows[0].textContent).toContain("01/11/2025");
+    await expect(rows[1].textContent).toContain("20/10/2025");
+    await expect(rows[2].textContent).toContain("02/10/2025");
+
+    // The note line appears ONLY on the newest 'created' row (FR-103/UC-104).
+    await expect(rows[0].textContent).toContain(
+      "Ghi chú: Tái tạo liên kết sau khi xác minh lại giấy tờ giám hộ.",
+    );
+    await expect(rows[1].textContent).not.toContain("Ghi chú");
+    await expect(rows[2].textContent).not.toContain("Ghi chú");
+
+    // Actor name on every row (NFR-103 surfaces the acting admin).
+    for (const row of rows) {
+      await expect(row.textContent).toContain("Quản trị viên demo");
+    }
+
+    // Colour-independence (UC-106): each action is conveyed by a TEXT label
+    // plus a decorative (aria-hidden) icon — never colour alone. Readable in
+    // grayscale because the label itself distinguishes the two actions.
+    for (const row of rows) {
+      expect(row.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    }
+
+    // Append-only (FR-109/UC-107): no edit/delete/filter/search affordance and
+    // no interactive control at all inside the trail list.
+    await expect(within(list).queryByRole("button")).toBeNull();
+    await expect(within(list).queryByRole("textbox")).toBeNull();
+    await expect(within(list).queryByRole("searchbox")).toBeNull();
+    await expect(within(list).queryByRole("combobox")).toBeNull();
   },
 };
