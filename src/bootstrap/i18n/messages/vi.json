@@ -8,6 +8,14 @@
       "retry": "Thử lại"
     },
     "hello": "Xin chào",
+    "pagination": {
+      "nav": "Phân trang",
+      "previous": "Trước",
+      "next": "Tiếp",
+      "previousAriaLabel": "Đến trang trước",
+      "nextAriaLabel": "Đến trang sau",
+      "morePages": "Thêm trang"
+    },
     "skeleton": {
       "loading": "Đang tải...",
       "loadingAriaLabel": "Đang tải dữ liệu"
