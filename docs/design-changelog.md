@@ -8,6 +8,52 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-07-25 — Parent–Student Link Audit Trail extension (DR-023, US-E20.3) `[EXTERNAL]`
+
+**What changed**: a scoped read-only extension of the already-delivered
+`parent-links` screen (DR-014, US-E20.1/E20.2) — no new screen, no new route.
+
+- `design_src/edu/parent-links.jsx`: `PLDetailDialog` gains a new
+  `PLAuditTrailSection` sub-component, placed directly below the existing
+  `PLConsentDetailSection` and mirroring its own-scoped loading/error/empty/
+  success state pattern (never blocks the rest of the dialog). Success state
+  renders a reverse-chronological list with a `StatusBadge` (icon + text,
+  never color-only) per entry — `created` → tone `success`, `unlinked` → tone
+  `error` — reusing existing `T.teal`/`T.errorDark` tokens; no new token
+  introduced. Empty state is the dominant initial state (honest "history
+  starts now" copy, not "no history for this link") since every seeded link
+  has zero entries on day one. `PLStateChips` demo-state options extended to
+  cover all 4 states; no new chips component forked.
+- `docs/product/design-spec.jsonc`: extended `screens.parentLinks.detailDialog`
+  with a nested `auditTrailSection` key (component, states, action-badge
+  mapping) — no new top-level screen entry.
+- `messages/{vi,en}.json`: new `parentLinks.detailDialog.auditTrail.*` keys
+  (`sectionTitle`, `loadingLabel`, `empty.title`/`empty.body`, `error`,
+  `retry`, `action.created`/`action.unlinked`, `notePrefix`) added to the
+  existing `parentLinks` namespace in both locales — no parallel namespace
+  minted.
+- `docs/product/screens.md`: appended a note to the existing Parent–Student
+  Links row (Principal/Admin section) rather than adding a new row.
+- `docs/design-requests/README.md`: DR-023 row flipped to `[x] delivered
+  (2026-07-25)`.
+- `docs/design-requests/DR-023-parent-link-audit-trail.md`: `## Status`
+  flipped to `[x] delivered (2026-07-25)`.
+
+**Refs**: DR-023 (`docs/design-requests/DR-023-parent-link-audit-trail.md`) ·
+ADR `docs/decisions/0064-audit-trail-emission-policy.md` (US-E20.3 backlog
+stub) · depends on DR-014 (`parent-links` screen, delivered 2026-07-12).
+
+**Rationale**: ADR `0064` scoped this as the one genuinely missing piece on an
+otherwise fully-implemented screen (`src/features/admin/parent-links/**`) —
+no `LinkAuditEntry` entity/use-case/UI existed anywhere, confirmed by grep.
+Mock-first per ADR `0064` (no `core` audit-emission endpoint yet); the mock
+trail reads from the same mock data source the existing create/unlink
+use-cases already write to. No new design-system token or ADR introduced —
+pure reuse of the `PLConsentDetailSection` scoped-state pattern and existing
+badge/color tokens.
+
+---
+
 ## 2026-07-25 — Staff Discipline + Student Absences net-new (DR-022, US-E18.14) `[EXTERNAL]`
 
 **What changed**: two brand-new reference mockups closing a ground-truthed
