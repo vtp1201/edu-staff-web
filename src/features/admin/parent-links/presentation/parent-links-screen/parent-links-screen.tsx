@@ -11,7 +11,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { DestructiveConfirmErrorSlot } from "@/components/shared/destructive-confirm-dialog";
+import { ListError } from "@/components/shared/list-error";
+import { ListSkeleton } from "@/components/shared/list-skeleton";
 import { LoadMoreButton } from "@/components/shared/load-more-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ParentStudentLinkFailure } from "../../domain/failures/parent-student-link.failure";
 import { buildRowVM, type RowVMLabels } from "./build-row-vm";
 import {
@@ -37,11 +40,9 @@ import {
 } from "./pl-create-dialog";
 import { PLDetailDialog } from "./pl-detail-dialog";
 import { PLEmpty } from "./pl-empty";
-import { PLError } from "./pl-error";
 import { PLFilterBar } from "./pl-filter-bar";
 import { PLPageHeader } from "./pl-page-header";
 import type { PLRowsLabels } from "./pl-rows.i-vm";
-import { PLSkeleton } from "./pl-skeleton";
 import { PLTable } from "./pl-table";
 import { PLUnlinkDialog } from "./pl-unlink-dialog";
 import { useIsMobile } from "./use-is-mobile";
@@ -63,6 +64,26 @@ function failureType(err: unknown): ParentStudentLinkFailure["type"] {
 function failureFields(err: unknown): { field: string; message: string }[] {
   return (err as ThrownFailure | undefined)?.fields ?? [];
 }
+
+/**
+ * One shimmer row of the loading table (AC-001.1, NFR-005; design-spec
+ * `states.loading` rows=5): avatar + 2 text lines + 2 pill badges + trailing
+ * action. The wrapper + a11y wiring come from the shared `ListSkeleton`
+ * (INFRA-shared-list-states).
+ */
+const plSkeletonRow = () => (
+  <div className="flex items-center gap-4 border-border border-b px-4 py-3.5 last:border-b-0">
+    <Skeleton className="size-9 shrink-0 rounded-full" />
+    <div className="flex flex-1 flex-col gap-1.5">
+      <Skeleton className="h-3.5 w-40" />
+      <Skeleton className="h-3 w-24" />
+    </div>
+    <Skeleton className="hidden h-4 w-32 md:block" />
+    <Skeleton className="h-5 w-20 rounded-full" />
+    <Skeleton className="h-5 w-28 rounded-full" />
+    <Skeleton className="ml-auto size-8" />
+  </div>
+);
 
 /**
  * Admin parent-student-link screen container (US-E20.1). The ONLY component
@@ -425,14 +446,26 @@ export function ParentLinksScreen({
       />
 
       {showSkeleton && (
-        <PLSkeleton loadingAriaLabel={t("states.loadingAriaLabel")} />
+        <ListSkeleton
+          loadingAriaLabel={t("states.loadingAriaLabel")}
+          rows={5}
+          variant="bordered"
+          renderRow={plSkeletonRow}
+        />
       )}
 
       {firstPageError && (
-        <PLError
+        <ListError
           title={t("errors.loadTitle")}
           description={t("errors.loadDescription")}
           retryLabel={t("errors.retry")}
+          iconVariant="boxed"
+          iconSize={6}
+          retryIcon="refresh"
+          retryButtonVariant="default"
+          retryButtonSize="sm"
+          retryButtonClassName="mt-4"
+          className="rounded-xl border border-border px-6 py-13"
           onRetry={() => query.refetch()}
         />
       )}

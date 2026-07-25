@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListError } from "@/components/shared/list-error";
+import { ListSkeleton } from "@/components/shared/list-skeleton";
 import type { PublishConfirmErrorSlot } from "@/components/shared/publish-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
   StudentAbsenceEntity,
   StudentAbsenceKey,
@@ -30,8 +33,6 @@ import { SAAbsenceRow } from "./sa-absence-row";
 import { SADateField } from "./sa-date-field";
 import { errorKeyOf, saStudentOf, useSAErrorMessage } from "./sa-error-message";
 import { SAFlagConfirmDialog } from "./sa-flag-confirm-dialog";
-import { SAListError } from "./sa-list-error";
-import { SAListSkeleton } from "./sa-list-skeleton";
 import { SAStatsRow } from "./sa-stats-row";
 import type {
   StudentAbsencesErrorKey,
@@ -70,11 +71,28 @@ interface EditTarget {
   studentDisplay: string;
 }
 
+/**
+ * One shimmer row for the loading list (NFR-007, AC-001.1/AC-002.1; design-spec
+ * `states.loading: EduSkeleton variant='rows' count=4`). No leading avatar —
+ * absence rows have none in the design spec. The wrapper + a11y wiring come from
+ * the shared `ListSkeleton` (INFRA-shared-list-states).
+ */
+const saSkeletonRow = () => (
+  <div className="flex items-center gap-4 p-5">
+    <div className="flex-1 space-y-2">
+      <Skeleton className="h-3.5 w-40" />
+      <Skeleton className="h-3 w-full max-w-md" />
+    </div>
+    <Skeleton className="h-6 w-20 shrink-0 rounded-full" />
+  </div>
+);
+
 export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
   const t = useTranslations("studentAbsences");
   const tFilters = useTranslations("studentAbsences.filters");
   const tForm = useTranslations("studentAbsences.form");
   const tDiscipline = useTranslations("discipline.violations");
+  const tCommon = useTranslations("Common");
   const errorMessage = useSAErrorMessage();
   const queryClient = useQueryClient();
 
@@ -349,13 +367,26 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
   const body = () => {
     if (listErrorKey) {
       return (
-        <SAListError
+        <ListError
           message={errorMessage(listErrorKey)}
+          retryLabel={t("retry")}
+          retryIcon="rotate"
+          retryButtonVariant="outline"
+          iconSize={10}
+          className="gap-3 rounded-[var(--edu-radius-card)] border border-edu-error/20 px-5 py-10 shadow-card"
           onRetry={() => void query.refetch()}
         />
       );
     }
-    if (query.isLoading) return <SAListSkeleton />;
+    if (query.isLoading)
+      return (
+        <ListSkeleton
+          loadingAriaLabel={tCommon("skeleton.loadingAriaLabel")}
+          rows={4}
+          variant="inline"
+          renderRow={saSkeletonRow}
+        />
+      );
     if (rows.length === 0) {
       return (
         <div className="rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">

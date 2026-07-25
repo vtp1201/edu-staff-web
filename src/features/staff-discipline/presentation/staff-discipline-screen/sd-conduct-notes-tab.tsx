@@ -5,6 +5,8 @@ import { ClipboardList, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListError } from "@/components/shared/list-error";
+import { ListSkeleton } from "@/components/shared/list-skeleton";
 import type {
   SetStaffConductNoteInput,
   StaffConductNoteEntity,
@@ -13,8 +15,7 @@ import type {
 import { SDConductNoteRow } from "./sd-conduct-note-row";
 import { SDConductTermBar } from "./sd-conduct-term-bar";
 import { errorKeyOf, useSDErrorMessage } from "./sd-error-message";
-import { SDListError } from "./sd-list-error";
-import { SDListSkeleton } from "./sd-list-skeleton";
+import { SD_LIST_ERROR_CLASS, sdSkeletonRow } from "./sd-list-states";
 import { staffOf } from "./sd-roster-lookup";
 import { SetConductNoteDialog } from "./set-conduct-note-dialog";
 import {
@@ -75,6 +76,8 @@ export function SDConductNotesTab({
   rejectConductNoteAction,
 }: SDConductNotesTabProps) {
   const t = useTranslations("staffDiscipline.conductNotes");
+  const tSD = useTranslations("staffDiscipline");
+  const tCommon = useTranslations("Common");
   const errorMessage = useSDErrorMessage();
   const queryClient = useQueryClient();
 
@@ -201,13 +204,26 @@ export function SDConductNotesTab({
     if (termErrorKey) return null;
     if (listErrorKey) {
       return (
-        <SDListError
+        <ListError
           message={errorMessage(listErrorKey)}
+          retryLabel={tSD("retry")}
+          retryIcon="rotate"
+          retryButtonVariant="outline"
+          iconSize={10}
+          className={SD_LIST_ERROR_CLASS}
           onRetry={() => void query.refetch()}
         />
       );
     }
-    if (query.isLoading) return <SDListSkeleton />;
+    if (query.isLoading)
+      return (
+        <ListSkeleton
+          loadingAriaLabel={tCommon("skeleton.loadingAriaLabel")}
+          rows={4}
+          variant="inline"
+          renderRow={sdSkeletonRow}
+        />
+      );
     if (rows.length === 0) {
       return (
         <div className="rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
