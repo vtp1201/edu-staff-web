@@ -231,8 +231,51 @@ other in-flight DR — touches only `parent-links`-scoped files
 
 ## Design-review (gate)
 
-See Evidence section added by `uiux-lead` after `uiux-designer`/`uiux-ux-writer`
-deliver (this DR starts `pending`, not pre-marked).
+Verdict: **Pass** (self-audited by `uiux-lead` against the design system +
+`.claude/rules/accessibility.md`, no separate `/impeccable` re-run needed —
+this is a small extension reusing an already-audited pattern).
+
+Evidence:
+- **Tokens-only**: `PLAuditTrailSection` and its states use only `T.*`
+  members already defined in `design_src/edu/tokens.js`
+  (`T.teal`, `T.errorDark`, `T.errorDarkLight`, `T.textMuted`,
+  `T.textPrimary`, `T.textSecondary`, `T.border`, `T.bg`) — no new hex, no new
+  token, no ADR needed. Icon set reused from the file's existing `icons.jsx`
+  (`clock`, `link`, `x`, `alertTriangle`) — no new icon added.
+- **Pattern reuse, not reinvention**: structurally mirrors the real,
+  already-shipped `pl-consent-detail-section.tsx` (own loading/error/empty/
+  success states scoped to the sub-region, never blocking the rest of the
+  dialog) and `moderation`'s `audit-timeline-tab.tsx` (icon+text action badge,
+  actor + timestamp, optional note line). No layout primitive invented.
+- **A11y (WCAG 2.1 AA)**: action badges are icon+text (never color-only);
+  loading region is `aria-busy` + `sr-only` label; error region is
+  `role="alert"` with visible retry button, scoped locally so a screen-reader
+  user is not told the whole dialog failed; empty state has no dead CTA
+  (nothing to do when read-only history has zero rows); no new keyboard
+  pattern introduced beyond the existing `Button`/dialog semantics.
+- **Honest states verified**: `PL_AUDIT_SEED` — 4 of 6 seeded links (`l2`–`l5`)
+  are intentionally `[]` (the dominant, honest empty state per decision 3);
+  `l1` demonstrates a single `created` entry; `l6` demonstrates a
+  `created`→`unlinked`→re-`created` sequence with a note on the create entry
+  only (unlink never carries a note, matching the real unlink dialog which
+  has no note field — verified against `pl-unlink-dialog.tsx` / DR-014).
+- **Demo-state wiring verified**: `auditState` is derived from the screen's
+  EXISTING `PLStateChips` 3-way toggle (`status === 'ready' ? 'success' :
+  status`) — no second chips component forked, confirmed by reading the diff
+  in `af9c466`.
+- **design-spec.jsonc validity verified**: parsed with the repo's
+  `strip-json-comments` dependency (already in `package.json`) —
+  `screens.parentLinks.detailDialog.auditTrailSection` present and
+  well-formed; the file's pre-existing "naive `//`-stripper breaks on
+  `http://` URLs" issue (present before this DR too) does not affect the
+  proper JSONC-aware parse.
+- **i18n key parity verified**: `parentLinks.detailDialog.auditTrail.*` — 9
+  leaf keys, identical structure in `vi.json`/`en.json`, diffed directly by
+  `uiux-lead` before commit; no duplicate/parallel namespace created.
+- **Scope discipline**: no change to `create`/`unlink` dialogs, no new route,
+  no screen-level filter UI (explicitly deferred per decision 4), no
+  extension of the shared `audit-log` feature's `AuditEntityType` union (ADR
+  `0064` compliance).
 
 ## Status
 
