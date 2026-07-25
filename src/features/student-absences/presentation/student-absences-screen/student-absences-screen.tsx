@@ -129,6 +129,16 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
   >(undefined);
 
   // --- server state ---------------------------------------------------------
+  /**
+   * The filter the RSC actually fetched with. `initialData` is observer-scoped in
+   * TanStack Query, NOT key-scoped: seeding it unconditionally would re-seed
+   * EVERY changed filter with the first paint's rows, so a class/date-range
+   * change would silently show stale data and never refetch (AC-002.2). Seed only
+   * the initial key; every other filter is a genuinely cold fetch.
+   */
+  const [seededFilterKey] = useState(() => JSON.stringify(filter));
+  const isSeededFilter = JSON.stringify(filter) === seededFilterKey;
+
   const query = useQuery({
     queryKey: studentAbsenceKeys.list(filter),
     queryFn: async () => {
@@ -137,8 +147,9 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
       return res.data;
     },
     // Seed only when the RSC fetch itself succeeded — error stays distinct from
-    // an empty list (spec §5).
-    initialData: vm.initialErrorKey ? undefined : vm.initialAbsences,
+    // an empty list (spec §5) — and only for the filter it fetched.
+    initialData:
+      vm.initialErrorKey || !isSeededFilter ? undefined : vm.initialAbsences,
     ...SA_LIST_QUERY_OPTIONS,
     retry: (count, error) => errorKeyOf(error) === "network-error" && count < 2,
   });
@@ -352,7 +363,10 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
       );
     }
     return (
-      <div className="divide-y divide-border overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
+      <div
+        data-slot="absences-list"
+        className="divide-y divide-border overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card"
+      >
         {rows.map((absence) => {
           const rowKey = studentAbsenceKeyOf(absence);
           const isFlagging =
