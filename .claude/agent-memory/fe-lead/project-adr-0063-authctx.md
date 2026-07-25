@@ -26,9 +26,18 @@ token claims, threaded into the repository (constructor-injected is the
 *preferred* stronger variant per the ADR, not the per-call-param shape used by
 the first two instances), with a dedicated `*.security.test.ts` that forges
 the role/scope and calls the repository directly (not through the UI). Do not
-re-flag this as "needs an ADR" — point authors at `0063` instead. Known open
-gap (not closed by this ADR): no RSC layout guard for principal/teacher route
-groups — a candidate follow-up US if either group is touched again.
+re-flag this as "needs an ADR" — point authors at `0063` instead.
+
+**Update (2026-07-25, INFRA-rsc-layout-guards-role-groups, merged `6f0941a`):**
+the RSC-layout-guard gap noted below IS closed now — every role namespace
+(`admin`/`principal`/`teacher`/`student`/`parent`) has its own `layout.tsx`
+calling the generalized `evaluateNamespaceAccess(role, locale, tenantId,
+requiredRole)` (`src/bootstrap/tenant/role-guard.ts`; `evaluateAdminAccess`
+kept as a thin `"admin"` wrapper, zero call-site breakage). `(shared)` stays
+intentionally ungated by role (multi-role by design), covered only by the
+outer `(app)/layout.tsx` auth+tenant check. Do not re-flag this gap — cite
+this story + ADR 0063's Consequences status-update note instead. See
+[project-rsc-layout-guards](project-rsc-layout-guards.md).
 
 See also [project-e20-parent-links](project-e20-parent-links.md),
 [project-e09-discipline](project-e09-discipline.md).
