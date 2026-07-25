@@ -46,5 +46,30 @@ and by making the note field client-preventive (maxLength + disabled submit).
 Also `discipline.errors.not-found` says "học sinh" (student) — wrong noun for a
 staff screen, but the packet mandates verbatim reuse. Both flagged, not fixed.
 
+**Review-fix pass (2026-07-25) learnings.**
+- Design-spec `"type": "segmented (...)"` ⇒ the canonical control is
+  `ui/radio-group` `variant="segmented"` (US-E03.1), NOT toggle-group: real
+  radiogroup semantics + arrow keys + it accepts `aria-invalid`. A `<label
+  htmlFor>` can't name a radiogroup → visible `<span id>` + `aria-labelledby`.
+  Per-segment "badge-toned selected" = LITERAL `data-[state=checked]:bg-… /
+  text-…` strings (Tailwind v4 can't scan a computed class); reuse the
+  `StatusBadge` tone pairs so no new token is needed.
+- A picklist whose entries are the STORED wire value (category, term label) is
+  DATA → lives in `fixtures.ts` (name the map, derive the array, point the seed
+  rows at it so they can't drift), never in `messages/*.json`.
+- `aria-invalid` must mark a REAL failure. When the confirm button is disabled
+  below the min length, the client guard can never fail on submit ⇒ the only
+  honest `aria-invalid` source is the server error key; requirement is carried
+  by `aria-required` + hint text.
+- **Radix Select inside a Dialog leaves the dialog `aria-hidden` right after the
+  popup closes** ⇒ every subsequent `getByRole` inside that dialog fails
+  ("Unable to find role …") while `getByLabelText` still works and the printed
+  container clearly contains the node. Fix:
+  `await waitFor(() => expect(dialogEl).not.toHaveAttribute("aria-hidden"))`
+  after picking an option. Same family as the cmdk-in-dialog gotcha.
+- **commitlint type-enum has NO `a11y`** (feat|fix|docs|style|refactor|perf|
+  test|build|ci|chore|revert) — an `a11y(scope):` commit is rejected; use `fix`.
+
 Related: [[pattern-high-risk-authctx-reauth]], [[pattern-route-role-guard]],
+[[gotcha-cmdk-combobox-in-dialog]], [[pattern-invitations-e21-1]],
 [[pattern-mock-first-wiring]], [[gotcha-result-shape-and-dynamic-i18n]].
