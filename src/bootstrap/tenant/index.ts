@@ -12,5 +12,8 @@ export {
   type AdminAccessResult,
   type AdminAccessVerdict,
   evaluateAdminAccess,
+  evaluateNamespaceAccess,
+  type NamespaceAccessResult,
+  type NamespaceAccessVerdict,
 } from "./role-guard";
 export { tenantUrl } from "./tenant-url";
