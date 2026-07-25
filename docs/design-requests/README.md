@@ -38,3 +38,4 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-020 | Student Assignments | US-E11.7 | [x] delivered (2026-07-14) |
 | DR-021 | Lesson Plan Authoring + Question Bank (net-new, finding #27) | US-E18.16 (design follow-up) | [x] delivered (2026-07-17) |
 | DR-022 | Staff Discipline (violations + conduct notes) + Student Absences (net-new) | US-E18.14 (design follow-up) | [x] delivered (2026-07-25) |
+| DR-023 | Parent–Student Link Audit Trail (extension of DR-014, backlog per ADR 0064) | US-E20.3 | [x] delivered (2026-07-25) |
