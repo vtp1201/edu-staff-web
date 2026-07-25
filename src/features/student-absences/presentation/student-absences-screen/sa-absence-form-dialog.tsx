@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useId } from "react";
+import { type Ref, useId } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/shared/utils";
 import { STUDENT_ABSENCE_REASON_MAX_LENGTH } from "../../domain/entities/student-absence.entity";
 import type { StudentRosterEntry } from "../../domain/entities/student-roster-entry.entity";
 import { SADateField } from "./sa-date-field";
@@ -80,6 +79,12 @@ export interface SARecordFormDialogProps extends SAAbsenceFormDialogBaseProps {
   onDateChange: (value: string) => void;
   /** VM-seeded "today" bound; presentation never reads a clock. */
   today: string;
+  /**
+   * Ref to the date `<input>`. The container's future-date guard focuses it when
+   * the guard trips, so the field the user must fix retains focus (AC-003.3)
+   * instead of leaving focus on the submit button.
+   */
+  dateInputRef?: Ref<HTMLInputElement>;
 }
 
 export interface SAEditFormDialogProps extends SAAbsenceFormDialogBaseProps {
@@ -200,6 +205,7 @@ export function SAAbsenceFormDialog(props: SAAbsenceFormDialogProps) {
                   onChange={props.onDateChange}
                   max={props.today}
                   errorMessage={dateError}
+                  inputRef={props.dateInputRef}
                 />
                 <p className="text-edu-text-secondary text-xs">
                   {tForm("dateFutureHelper")}
@@ -247,7 +253,7 @@ export function SAAbsenceFormDialog(props: SAAbsenceFormDialogProps) {
               rows={3}
               maxLength={STUDENT_ABSENCE_REASON_MAX_LENGTH}
               placeholder={tForm("reasonPlaceholder")}
-              className={cn("resize-y")}
+              className="resize-y"
             />
           </div>
         </div>

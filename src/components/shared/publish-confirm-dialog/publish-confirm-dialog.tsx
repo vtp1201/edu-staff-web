@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
 
 /**
@@ -85,6 +86,13 @@ export function PublishConfirmDialog({
   errorSlot,
 }: PublishConfirmDialogProps) {
   const slotTone = errorSlot ? ERROR_SLOT_TONE[errorSlot.tone] : undefined;
+  // A11Y-001 (US-E09.6, WCAG 2.4.3). Every consumer drives this dialog purely via
+  // `open` — there is no <AlertDialogTrigger> anywhere — so Radix's `triggerRef`
+  // is null and its default onCloseAutoFocus drops focus to <body>. Restore it to
+  // the invoking control on Cancel/Escape. Same 3-line pattern as
+  // `DestructiveConfirmDialog`; benefits all consumers of this shared dialog.
+  const returnFocus = useDialogReturnFocus(open);
+
   return (
     <AlertDialog
       open={open}
@@ -92,7 +100,7 @@ export function PublishConfirmDialog({
         if (!next && !isLoading) onCancel();
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent onCloseAutoFocus={returnFocus}>
         <AlertDialogHeader>
           <div className="flex items-start gap-3">
             <span

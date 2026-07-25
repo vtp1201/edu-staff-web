@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { useState } from "react";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { PublishConfirmDialog } from "./publish-confirm-dialog";
 
 const LABELS = {
@@ -102,5 +103,104 @@ export const LoadingIgnoresEscape: Story = {
     await body.findByRole("alertdialog");
     await userEvent.keyboard("{Escape}");
     await expect(args.onCancel).not.toHaveBeenCalled();
+  },
+};
+
+/**
+ * `errorSlot` tone `blocked` (US-E09.6) — the message renders in a live
+ * `role="alert"` region, confirm is FORCE-disabled (re-clicking can only fail
+ * again) and Cancel stays the only way out.
+ */
+export const WithBlockedError: Story = {
+  args: {
+    open: true,
+    isLoading: false,
+    errorSlot: {
+      tone: "blocked",
+      message: "Bạn không có quyền thực hiện thao tác này.",
+    },
+  },
+  play: async ({ args }) => {
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await expect(body.getByRole("alert")).toHaveTextContent(
+      "Bạn không có quyền thực hiện thao tác này.",
+    );
+    await expect(
+      body.getByRole("button", { name: LABELS.confirm }),
+    ).toBeDisabled();
+    await expect(
+      body.getByRole("button", { name: LABELS.cancel }),
+    ).toBeEnabled();
+    await expect(args.onConfirm).not.toHaveBeenCalled();
+  },
+};
+
+/**
+ * `errorSlot` tone `transient` — same click retries, so confirm stays ENABLED
+ * (the tone difference is carried by icon + colour, never colour alone).
+ */
+export const WithTransientError: Story = {
+  args: {
+    open: true,
+    isLoading: false,
+    errorSlot: {
+      tone: "transient",
+      message: "Không thể kết nối. Vui lòng thử lại.",
+    },
+  },
+  play: async ({ args }) => {
+    const body = within(document.body);
+    await body.findByRole("alertdialog");
+    await expect(body.getByRole("alert")).toHaveTextContent(
+      "Không thể kết nối. Vui lòng thử lại.",
+    );
+    const confirm = body.getByRole("button", { name: LABELS.confirm });
+    await expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+    await expect(args.onConfirm).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * A11Y-001 (US-E09.6) — WCAG 2.4.3. This dialog is ALWAYS controlled via `open`
+ * with no `<AlertDialogTrigger>`, so Radix's `triggerRef` is null and its default
+ * `onCloseAutoFocus` drops focus to `<body>`. `useDialogReturnFocus` must restore
+ * focus to the control that opened it, on Cancel AND on Escape.
+ */
+export const ReturnsFocusToInvoker: Story = {
+  args: { open: false, isLoading: false },
+  render: (args) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          Mở hộp thoại
+        </button>
+        <PublishConfirmDialog
+          {...args}
+          open={open}
+          onCancel={() => setOpen(false)}
+        />
+      </>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    const invoker = canvas.getByRole("button", { name: "Mở hộp thoại" });
+
+    await userEvent.click(invoker);
+    await body.findByRole("alertdialog");
+    await userEvent.click(body.getByRole("button", { name: LABELS.cancel }));
+    await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+    await waitFor(() => expect(invoker).toHaveFocus());
+
+    // …and the same on Escape.
+    await userEvent.click(invoker);
+    await body.findByRole("alertdialog");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+    await waitFor(() => expect(invoker).toHaveFocus());
   },
 };

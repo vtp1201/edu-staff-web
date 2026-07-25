@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type { StudentAbsenceEntity } from "../../domain/entities/student-absence.entity";
 import type { StudentRosterEntry } from "../../domain/entities/student-roster-entry.entity";
 import {
@@ -143,6 +144,9 @@ const meta: Meta<typeof StudentAbsencesScreen> = {
             <div className="min-h-screen bg-[color:var(--edu-bg)]">
               <Story />
             </div>
+            {/* Mutation outcomes are announced via sonner (WCAG 4.1.3); the app
+                mounts the Toaster in the root layout. */}
+            <Toaster />
           </NextIntlClientProvider>
         </QueryClientProvider>
       );
@@ -444,6 +448,13 @@ export const RecordDialog_Success: Story = {
         }),
       ),
     );
+    // Success is ANNOUNCED, not merely inferred from the dialog closing
+    // (WCAG 4.1.3 status messages).
+    await waitFor(() =>
+      expect(
+        within(document.body).getByText(m.form.recordSuccess),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
@@ -477,6 +488,9 @@ export const RecordDialog_FutureDate: Story = {
     );
     await expect(dateInput).toHaveAttribute("aria-invalid", "true");
     await expect(dateInput).toHaveAttribute("aria-describedby");
+    // AC-003.3 — the field RETAINS focus so the user can correct it without
+    // hunting for it after the submit button took focus.
+    await waitFor(() => expect(dateInput).toHaveFocus());
     // …and NO request was sent.
     await expect(asTeacher(args).recordAbsenceAction).not.toHaveBeenCalled();
     // The dialog stays open with values preserved.
@@ -630,6 +644,11 @@ export const EditDialog_Success: Story = {
         excused: false,
       }),
     );
+    await waitFor(() =>
+      expect(
+        within(document.body).getByText(m.form.editSuccess),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
@@ -775,6 +794,34 @@ export const FlagConfirmDialog_InvalidState: Story = {
   },
 };
 
+/**
+ * AC-005.7 — a 404 race must NEVER look like a success. The row changed
+ * elsewhere: the dialog closes and the list reconciles from the server, but the
+ * outcome is ANNOUNCED via a toast (previously indistinguishable from success).
+ */
+export const FlagConfirmDialog_NotFound: Story = {
+  args: {
+    ...principalBase,
+    flagAbsenceAction: async () => failWith("not-found"),
+  } satisfies ScreenArgs,
+  play: async ({ canvasElement }) => {
+    const list = within(listRegion(canvasElement));
+    await userEvent.click(list.getByRole("button", { name: FLAG_ROW_CAM }));
+    const dialogEl = await screenAlertDialog();
+    await userEvent.click(
+      within(dialogEl).getByRole("button", { name: m.flagConfirm.confirm }),
+    );
+
+    const body = within(document.body);
+    // Dialog closes (server truth wins — reconcile, not an inline retry)…
+    await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+    // …and the failure is surfaced, never silent.
+    await waitFor(() =>
+      expect(body.getByText(m.errors["not-found"])).toBeInTheDocument(),
+    );
+  },
+};
+
 /** AC-005.2 — Cancel closes without firing any request. */
 export const FlagConfirmDialog_CancelFiresNothing: Story = {
   args: {
@@ -783,12 +830,19 @@ export const FlagConfirmDialog_CancelFiresNothing: Story = {
   } satisfies ScreenArgs,
   play: async ({ canvasElement, args }) => {
     const list = within(listRegion(canvasElement));
-    await userEvent.click(list.getByRole("button", { name: FLAG_ROW_CAM }));
+    const trigger = list.getByRole("button", { name: FLAG_ROW_CAM });
+    await userEvent.click(trigger);
     const dialogEl = await screenAlertDialog();
     await userEvent.click(
       within(dialogEl).getByRole("button", { name: m.flagConfirm.cancel }),
     );
     await expect(asPrincipal(args).flagAbsenceAction).not.toHaveBeenCalled();
+    // AC-005.5 / NFR-003 — focus returns to the invoking row action, not <body>
+    // (this dialog is controlled, so Radix has no triggerRef of its own).
+    await waitFor(() =>
+      expect(within(document.body).queryByRole("alertdialog")).toBeNull(),
+    );
+    await waitFor(() => expect(trigger).toHaveFocus());
   },
 };
 

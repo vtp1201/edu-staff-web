@@ -24,7 +24,9 @@ export function SAStatsRow({ total, unexcused, flagged }: SAStatsRowProps) {
       <StatCard
         icon={CalendarX}
         tone="primary"
-        label={t("title")}
+        // Its OWN label — reusing `title` (the page h1) rendered the same string
+        // twice on one screen and made the stat ambiguous.
+        label={t("stats.total")}
         value={String(total)}
       />
       <StatCard

@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarX, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { PublishConfirmErrorSlot } from "@/components/shared/publish-confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -114,6 +115,8 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
   const [recordError, setRecordError] = useState<
     SAAbsenceFormSubmitError | undefined
   >(undefined);
+  /** Focus target for the client-side future-date rejection (AC-003.3). */
+  const recordDateRef = useRef<HTMLInputElement>(null);
 
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editExcused, setEditExcused] = useState(true);
@@ -194,6 +197,9 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
       setRecordError(undefined);
       setRecordOpen(false);
       setRecordReason("");
+      // Announce the outcome (WCAG 4.1.3) — a closing dialog is not a status
+      // message for a screen-reader user.
+      toast.success(tForm("recordSuccess"));
       void invalidate();
     },
     onError: (error: unknown) => {
@@ -223,6 +229,7 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
     onSuccess: () => {
       setEditError(undefined);
       setEditTarget(null);
+      toast.success(tForm("editSuccess"));
       void invalidate();
     },
     onError: (error: unknown) => {
@@ -255,8 +262,13 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
     onError: (error: unknown) => {
       const errorKey = errorKeyOf(error);
       if (errorKey === "not-found") {
-        // Row already changed elsewhere — reconcile and close.
+        // Row already changed elsewhere (AC-005.7): server truth wins, so
+        // reconcile and close instead of offering an inline retry. The failure is
+        // still ANNOUNCED — closing silently would be indistinguishable from
+        // success, which spec §"never a silent failure" forbids.
         setFlagTarget(null);
+        setFlagErrorKey(undefined);
+        toast.error(errorMessage("not-found"));
         void invalidate();
         return;
       }
@@ -296,6 +308,9 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
         errorKey: "invalid-date",
         message: errorMessage("invalid-date"),
       });
+      // AC-003.3 — the field the user must fix keeps focus, rather than leaving
+      // it on the submit button next to an error the user has to hunt for.
+      recordDateRef.current?.focus();
       return;
     }
     if (
@@ -497,6 +512,7 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
               setRecordError(undefined);
             }}
             today={vm.today}
+            dateInputRef={recordDateRef}
             excused={recordExcused}
             onExcusedChange={setRecordExcused}
             reason={recordReason}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { type Ref, useId } from "react";
 
 /**
  * Labelled bare-date input (filter bar ×2, record dialog ×1). Feature-local —
@@ -22,6 +22,11 @@ export interface SADateFieldProps {
   max?: string;
   /** Already-i18n'd; presence also drives `aria-invalid`. */
   errorMessage?: string;
+  /**
+   * Ref to the underlying `<input>` so the owner can return focus to the field
+   * after a client-side validation failure (AC-003.3, WCAG 3.3.1).
+   */
+  inputRef?: Ref<HTMLInputElement>;
 }
 
 const INPUT_CLASS =
@@ -33,6 +38,7 @@ export function SADateField({
   onChange,
   max,
   errorMessage,
+  inputRef,
 }: SADateFieldProps) {
   const inputId = useId();
   const errorId = useId();
@@ -47,6 +53,7 @@ export function SADateField({
         {label}
       </label>
       <input
+        ref={inputRef}
         id={inputId}
         type="date"
         value={value}

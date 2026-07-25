@@ -38,9 +38,12 @@ export function useSAErrorMessage() {
         return tSa("invalid-id");
       case "invalid-input":
         return tSa("invalid-input");
-      default:
+      case "network-error":
         return tShared("network-error");
     }
+    // No `default:` on purpose — the switch is exhaustive over the union, so a
+    // 9th failure member becomes a `tsc` error here instead of silently
+    // rendering "network error" for an unrelated failure.
   };
 }
 

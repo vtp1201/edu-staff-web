@@ -3893,6 +3893,9 @@
     },
     "loading": "Loading absences...",
     "retry": "Retry",
+    "stats": {
+      "total": "Total absences"
+    },
     "subtitle": "Record and track student absence status by class",
     "title": "Student Absences",
     "unexcused": "Unexcused"

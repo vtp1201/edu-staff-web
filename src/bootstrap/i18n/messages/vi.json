@@ -3893,6 +3893,9 @@
     },
     "loading": "Đang tải danh sách nghỉ học...",
     "retry": "Thử lại",
+    "stats": {
+      "total": "Tổng buổi nghỉ"
+    },
     "subtitle": "Ghi nhận và theo dõi tình trạng nghỉ học của học sinh theo lớp",
     "title": "Nghỉ học của học sinh",
     "unexcused": "Không phép"
