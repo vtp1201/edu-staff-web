@@ -149,3 +149,43 @@ distinct** (e.g. FR-008 "access-denied must not look like not-found"), don't
 let `/fe` reuse the existing generic key for both — mint the second key even
 though a same-shaped key already exists, and say so explicitly in the gap
 note so the distinction isn't silently collapsed back into one string.
+
+## US-E09.6 addenda — "normal"-lane story borrowing a "high-risk"-lane security section (2026-07-25)
+
+When a story's lane is `normal` but its use-cases.md/integration.md explicitly
+demand US-E20.1-style server-side re-check rigor (two independent role/scope
+re-checks: teacher class-ownership on record/edit + principal-tier on a
+one-way terminal flag), give it its own named section — `## High-Risk-Grade
+Security Enforcement` — even though the story header says lane: normal. Title
+it exactly that way (not "## Security" or folded into NFR-008's row) so
+`fe-tech-lead-reviewer` treats it as a release-blocking gate, matching how
+US-E20.1's actual high-risk section reads. Also verified via codebase-memory
+grep hook: i18n keys for a DR-022-sourced namespace (`studentAbsences.*`) were
+ALREADY present in both `vi.json`/`en.json` (uiux-ux-writer had run) — unlike
+the US-E22.1 lesson above, "already staged" here proved TRUE on verification
+(confirmed by grepping the actual messages files + `design-spec.jsonc`
+`i18nNew` list, not by trusting the DR's prose) — still always verify, don't
+skip the check just because it's usually false.
+
+## US-E09.5 addenda — design-spec's stated i18n reuse plan can drift from what
+uiux-ux-writer actually authored, even when both exist (2026-07-25)
+
+For the sibling DR-022 story (`staffDiscipline` namespace), `design-spec.jsonc`
+`i18nReuse.verbatim` explicitly said to reuse `discipline.leave.rejectDialog.*`
+for the reject panel. Grepping the actual `messages/vi.json` showed
+`staffDiscipline` already has its OWN `staffDiscipline.rejectDialog.*`
+sub-namespace with near-duplicate copy (missing a `reason` key
+`discipline.leave.rejectDialog` has) — i.e. `uiux-ux-writer` authored a
+parallel namespace instead of the cross-reference the design-spec's plan
+called for. Both the shared `discipline.errors.*` reuse (9 codes) AND the
+new `staffDiscipline.errors.{locked,term-not-found,invalid-rating}` +
+`staffDiscipline.conductNotes.rating.*`/`selfApprovedNote` keys matched the
+design-spec's plan exactly — only the `rejectDialog` sub-namespace diverged.
+**Pattern:** when a design-spec's `i18nReuse` list names a cross-namespace
+reuse (not just "add these new keys"), verify that specific claim by reading
+the actual namespace block, not just confirming the namespace exists. Flag
+the drift as `[CONFLICT: plan vs actual]` in spec.md §8, state which keys
+actually exist and are usable as-is, and give fe-lead an explicit resolution
+(here: use the already-authored `staffDiscipline.rejectDialog.*`, don't wire
+a new cross-reference to `discipline.leave.rejectDialog`) so the harness
+doesn't get treated as a to-do that needs new copy written.

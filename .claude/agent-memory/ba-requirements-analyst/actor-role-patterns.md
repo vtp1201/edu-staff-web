@@ -51,6 +51,25 @@ targeted the same route+trigger for a richer redesign). If found: recommend
 close the Harness stories — write the recommendation into requirements.md §0 and
 report to ba-lead for confirmation.
 
+## BE conduct-domain ADMIN/MANAGER actor names ≠ this app's `admin` route-guard role (ADR 0062, 2026-07-25)
+`edu-api` core's `conduct` sub-domain (staff-violations, staff-conduct-notes)
+authorizes by BE role names `ADMIN` (authoring capacity) and `MANAGER`
+(approving capacity). Both collapse onto this app's **`principal`** role, NOT
+the app's separate narrow `admin` route-guard role (school-setup/roster/
+calendar/parent-links/invitations, decision `0022`, strict guard in
+`(app)/admin/layout.tsx`). A DR (DR-022) initially placed these screens under
+`/admin/*` by naming coincidence; ADR 0062 corrected routes to
+`(app)/principal/staff-discipline` + `(app)/teacher/staff-discipline` after
+the mockup's own role checks (`role === 'principal'`) contradicted the DR's
+route table. **When a BE contract/DR names `ADMIN`/`MANAGER` actors for a
+BGH-tier capacity, verify against the actual reference mockup's role checks
+and `roles-permissions.md` before assuming it maps to this app's `admin`
+role** — default assumption should be `principal` unless the feature is
+genuinely admin-core config. Same "single-admin-tenant fallback" pattern
+(`selfApproved` bool, shown not hidden, ADR 0073) recurs wherever one
+`principal` actor both authors and approves — treat as an established
+convention, not a new decision, for future conduct/approval-workflow stories.
+
 ## Sensitive design-system gate
 Whenever a story adds:
 - A new system RBAC rule (route access, new UserRole variant) → flag to ba-lead for ADR
