@@ -2,6 +2,7 @@ import "server-only";
 import type { AxiosInstance } from "axios";
 import { PARENT_STUDENT_LINKS_EP } from "@/bootstrap/endpoint/parent-student-link.endpoint";
 import { type ApiEnvelope, parseEnvelope } from "@/bootstrap/lib/api-envelope";
+import type { LinkAuditEntry } from "../../domain/entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../../domain/entities/link-candidate.entity";
 import type { ParentStudentConsent } from "../../domain/entities/parent-student-consent.entity";
 import type { ParentStudentLink } from "../../domain/entities/parent-student-link.entity";
@@ -106,6 +107,25 @@ export class ParentStudentLinkRepository
         params: { studentId, parentId },
       })) as unknown as ParentStudentConsentResponseDto;
       return ok(toParentStudentConsent(dto));
+    } catch (err) {
+      return fail(toFailure(err));
+    }
+  }
+
+  /**
+   * US-E20.3, INT-108: NO confirmed `core` audit endpoint exists (ADR `0064`) —
+   * this story is fully mock-first and this branch is never exercised. Kept
+   * wired to the documented contract-first shape (same camelCase field names, no
+   * pagination expected) so flipping USE_MOCK=false needs no rework.
+   */
+  async getLinkAuditTrail(
+    linkId: string,
+  ): Promise<PSLResult<LinkAuditEntry[]>> {
+    try {
+      const dtos = (await this.http.get(
+        PARENT_STUDENT_LINKS_EP.auditTrail(linkId),
+      )) as unknown as LinkAuditEntry[];
+      return ok(dtos ?? []);
     } catch (err) {
       return fail(toFailure(err));
     }

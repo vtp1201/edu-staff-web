@@ -2,19 +2,25 @@ import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
+import {
+  decodeRoleClaim,
+  decodeSubClaim,
+  decodeTenantId,
+} from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type {
   AuthContext,
   IParentStudentLinkRepository,
 } from "@/features/admin/parent-links/domain/repositories/i-parent-student-link.repository";
 import { CreateParentStudentLinkUseCase } from "@/features/admin/parent-links/domain/use-cases/create-parent-student-link.use-case";
+import { GetLinkAuditTrailUseCase } from "@/features/admin/parent-links/domain/use-cases/get-link-audit-trail.use-case";
 import { GetLinkConsentDetailUseCase } from "@/features/admin/parent-links/domain/use-cases/get-link-consent-detail.use-case";
 import { ListParentStudentLinksUseCase } from "@/features/admin/parent-links/domain/use-cases/list-parent-student-links.use-case";
 import { SearchParentCandidatesUseCase } from "@/features/admin/parent-links/domain/use-cases/search-parent-candidates.use-case";
 import { SearchStudentCandidatesUseCase } from "@/features/admin/parent-links/domain/use-cases/search-student-candidates.use-case";
 import { UnlinkParentStudentLinkUseCase } from "@/features/admin/parent-links/domain/use-cases/unlink-parent-student-link.use-case";
 import {
+  MOCK_ACTOR_NAME,
   MOCK_TENANT_ID,
   MockParentStudentLinkRepository,
 } from "@/features/admin/parent-links/infrastructure/repositories/mock-parent-student-link.repository";
@@ -42,12 +48,20 @@ async function makeRepo(): Promise<IParentStudentLinkRepository> {
  * from client input. In mock mode `decodeRoleClaim` returns "admin" and the mock
  * token carries no tenantId, so it falls back to the seed tenant (which the mock
  * store owns) — keeping the re-auth path exercised end-to-end in dev.
+ *
+ * US-E20.3 (INT-106): also carries the acting session's OWN identity, the only
+ * source for an audit entry's actor (NFR-103). `actorId` = the `sub` claim (same
+ * already-shipped seam as role/tenant). `actorName` has NO JWT claim and no real
+ * repository branch to resolve one from yet, so it is the clearly-named
+ * `MOCK_ACTOR_NAME` constant — never presented as BE-supplied (OQ-101 flagged
+ * for whoever wires the real `core` audit endpoint).
  */
 export async function makeParentLinksAuthContext(): Promise<AuthContext> {
   const token = (await getAccessToken()) ?? "";
   const role = decodeRoleClaim(token) ?? "student"; // unknown ⇒ non-admin
   const tenantId = decodeTenantId(token) ?? MOCK_TENANT_ID;
-  return { role, tenantId };
+  const actorId = decodeSubClaim(token) ?? "mock-admin";
+  return { role, tenantId, actorId, actorName: MOCK_ACTOR_NAME };
 }
 
 export async function makeListParentStudentLinksUseCase() {
@@ -64,6 +78,10 @@ export async function makeUnlinkParentStudentLinkUseCase() {
 
 export async function makeGetLinkConsentDetailUseCase() {
   return new GetLinkConsentDetailUseCase(await makeRepo());
+}
+
+export async function makeGetLinkAuditTrailUseCase() {
+  return new GetLinkAuditTrailUseCase(await makeRepo());
 }
 
 export async function makeSearchStudentCandidatesUseCase() {

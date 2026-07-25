@@ -1,4 +1,5 @@
 import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
+import type { LinkAuditEntry } from "../entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../entities/link-candidate.entity";
 import type { ParentStudentConsent } from "../entities/parent-student-consent.entity";
 import type {
@@ -20,6 +21,13 @@ import type { Result } from "../use-cases/result";
 export interface AuthContext {
   role: UserRole;
   tenantId: string;
+  /**
+   * Acting session's own identity — the ONLY source for an audit entry's actor
+   * (US-E20.3, NFR-103). Server-derived (`sub` claim + display name resolved in
+   * DI); never client-supplied, never cross-attributed.
+   */
+  actorId: string;
+  actorName: string;
 }
 
 export interface ListLinksFilter {
@@ -58,6 +66,12 @@ export interface IParentStudentLinkRepository {
     studentId: string,
     parentId: string,
   ): Promise<PSLResult<ParentStudentConsent>>;
+  /**
+   * Append-only audit trail for one link, newest-first (US-E20.3, INT-102). An
+   * unknown linkId resolves to `ok([])` — `not-found`/`forbidden` are NOT
+   * modeled for this read (INT-105); only `network-error` is realistic.
+   */
+  getLinkAuditTrail(linkId: string): Promise<PSLResult<LinkAuditEntry[]>>;
   searchStudentCandidates(
     q: string,
     classId?: string,

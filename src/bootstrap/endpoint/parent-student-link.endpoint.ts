@@ -23,6 +23,14 @@ export const PARENT_STUDENT_LINKS_EP = {
   byId: (linkId: string) => `/core/api/v1/parent-student-links/${linkId}`,
   /** GET consent detail (linkId or studentId+parentId), detail-dialog lazy fetch. */
   consents: "/core/api/v1/parent-student-links/consents",
+  /**
+   * GET one link's append-only audit trail (US-E20.3, INT-108). NO confirmed
+   * `core` endpoint exists — ADR `0064` records that audit emission for
+   * parent-student links has no BE owner yet, so this story is fully mock-first.
+   * Documented here as the contract-first anchor the mock shape degrades into.
+   */
+  auditTrail: (linkId: string) =>
+    `/core/api/v1/parent-student-links/${linkId}/audit-trail`,
   /** Student typeahead — NO real core endpoint exists (mock-first, INT-005). */
   studentSearch: "/core/api/v1/parent-student-links/student-candidates",
   /** Parent typeahead — NO real q/role-filter contract yet (mock-first, INT-006). */

@@ -3,6 +3,7 @@
 import { requireRole } from "@/bootstrap/auth-guard";
 import {
   makeCreateParentStudentLinkUseCase,
+  makeGetLinkAuditTrailUseCase,
   makeGetLinkConsentDetailUseCase,
   makeListParentStudentLinksUseCase,
   makeParentLinksAuthContext,
@@ -10,6 +11,7 @@ import {
   makeSearchStudentCandidatesUseCase,
   makeUnlinkParentStudentLinkUseCase,
 } from "@/bootstrap/di/parent-student-link.di";
+import type { LinkAuditEntry } from "@/features/admin/parent-links/domain/entities/link-audit-entry.entity";
 import type { LinkCandidate } from "@/features/admin/parent-links/domain/entities/link-candidate.entity";
 import type { ParentStudentConsent } from "@/features/admin/parent-links/domain/entities/parent-student-consent.entity";
 import type { ParentStudentLink } from "@/features/admin/parent-links/domain/entities/parent-student-link.entity";
@@ -107,6 +109,22 @@ export async function getLinkConsentDetailAction(
 
   const useCase = await makeGetLinkConsentDetailUseCase();
   return toActionResult(await useCase.execute(studentId, parentId));
+}
+
+/**
+ * Read one link's audit trail (US-E20.3). Same `requireRole` guard + the SAME
+ * `toActionResult` mapping as the consent-detail read — the failure union is
+ * unchanged, so no new failure-mapping code exists. An unknown linkId is
+ * `ok([])`, never an error (INT-105).
+ */
+export async function getLinkAuditTrailAction(
+  linkId: string,
+): Promise<ActionResult<LinkAuditEntry[]>> {
+  const guard = await requireRole(["admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden", retryable: false };
+
+  const useCase = await makeGetLinkAuditTrailUseCase();
+  return toActionResult(await useCase.execute(linkId));
 }
 
 export async function searchStudentCandidatesAction(

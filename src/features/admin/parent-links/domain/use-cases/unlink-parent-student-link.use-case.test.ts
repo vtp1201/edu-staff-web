@@ -6,7 +6,12 @@ import type {
 import { fail, ok } from "./result";
 import { UnlinkParentStudentLinkUseCase } from "./unlink-parent-student-link.use-case";
 
-const adminCtx: AuthContext = { role: "admin", tenantId: "tenant-acme" };
+const adminCtx: AuthContext = {
+  role: "admin",
+  tenantId: "tenant-acme",
+  actorId: "admin-1",
+  actorName: "Quản trị viên demo",
+};
 
 function makeRepo(
   overrides: Partial<IParentStudentLinkRepository> = {},
@@ -16,6 +21,7 @@ function makeRepo(
     createLink: vi.fn(),
     unlinkLink: vi.fn(),
     getLinkConsentDetail: vi.fn(),
+    getLinkAuditTrail: vi.fn(),
     searchStudentCandidates: vi.fn(),
     searchParentCandidates: vi.fn(),
     ...overrides,
@@ -37,10 +43,7 @@ describe("UnlinkParentStudentLinkUseCase", () => {
     const unlinkLink = vi.fn().mockResolvedValue(fail({ type: "forbidden" }));
     const uc = new UnlinkParentStudentLinkUseCase(makeRepo({ unlinkLink }));
 
-    const res = await uc.execute("l1", {
-      role: "teacher",
-      tenantId: "tenant-acme",
-    });
+    const res = await uc.execute("l1", { ...adminCtx, role: "teacher" });
 
     expect(res).toEqual(fail({ type: "forbidden" }));
   });
@@ -50,7 +53,7 @@ describe("UnlinkParentStudentLinkUseCase", () => {
     const uc = new UnlinkParentStudentLinkUseCase(makeRepo({ unlinkLink }));
 
     const res = await uc.execute("l1", {
-      role: "admin",
+      ...adminCtx,
       tenantId: "other-tenant",
     });
 
