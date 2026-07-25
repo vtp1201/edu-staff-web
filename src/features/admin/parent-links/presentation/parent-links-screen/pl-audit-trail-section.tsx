@@ -1,11 +1,11 @@
-import { AlertTriangle, Clock, Link2, X } from "lucide-react";
+import { Clock, Link2, X } from "lucide-react";
 import { StatusBadge, type StatusTone } from "@/components/shared/status-badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type {
   LinkAuditAction,
   LinkAuditEntry,
 } from "../../domain/entities/link-audit-entry.entity";
+import { PLSectionErrorBanner } from "./pl-section-error-banner";
 
 export interface PLAuditTrailSectionProps {
   status: "loading" | "error" | "success";
@@ -98,7 +98,7 @@ export function PLAuditTrailSection({
       </div>
 
       {status === "loading" && (
-        <div aria-busy="true" className="flex flex-col gap-2">
+        <div role="status" aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">{labels.loadingLabel}</span>
           {[0, 1].map((i) => (
             <div
@@ -115,21 +115,11 @@ export function PLAuditTrailSection({
       )}
 
       {status === "error" && (
-        <div
-          role="alert"
-          className="flex flex-col items-start gap-2 rounded-lg bg-edu-error/10 px-3 py-2.5"
-        >
-          <p className="flex items-start gap-1.5 text-edu-error-text text-sm">
-            <AlertTriangle
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            {labels.errorMessage}
-          </p>
-          <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-            {labels.retryLabel}
-          </Button>
-        </div>
+        <PLSectionErrorBanner
+          message={labels.errorMessage}
+          retryLabel={labels.retryLabel}
+          onRetry={onRetry}
+        />
       )}
 
       {status === "success" &&

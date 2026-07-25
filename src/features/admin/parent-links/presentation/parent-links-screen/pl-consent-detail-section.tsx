@@ -1,9 +1,9 @@
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, Award, Bell, CalendarX, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Award, Bell, CalendarX, Shield } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/shared/utils";
 import type { ParentStudentConsent } from "../../domain/entities/parent-student-consent.entity";
+import { PLSectionErrorBanner } from "./pl-section-error-banner";
 
 export interface PLConsentDetailSectionProps {
   status: "loading" | "error" | "success";
@@ -71,21 +71,11 @@ export function PLConsentDetailSection({
       )}
 
       {status === "error" && (
-        <div
-          role="alert"
-          className="flex flex-col items-start gap-2 rounded-lg bg-edu-error/10 px-3 py-2.5"
-        >
-          <p className="flex items-start gap-1.5 text-edu-error-text text-sm">
-            <AlertTriangle
-              className="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
-            />
-            {errorMessage}
-          </p>
-          <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-            {labels.retryLabel}
-          </Button>
-        </div>
+        <PLSectionErrorBanner
+          message={errorMessage ?? ""}
+          retryLabel={labels.retryLabel}
+          onRetry={onRetry}
+        />
       )}
 
       {status === "success" && data && (
