@@ -32,6 +32,31 @@ const PL_SEED_LINKS = [
 
 const PL_CLASSES = ['8B1', '10C3', '11A2', '12A1'];
 
+// DR-023 — Link audit trail mock seed. Keyed by linkId. Per design decision 3,
+// the DOMINANT state is an EMPTY array — this trail did not exist when most
+// seeded links were created, so most links honestly have zero entries. Only
+// l1/l6 get a short realistic sequence to demonstrate the success state.
+// Real entity: LinkAuditEntry { entryId, linkId, action, actorId, actorName,
+// occurredAt, note } — see DR-023 §"entry shape".
+const PL_AUDIT_SEED = {
+  l1: [
+    { entryId: 'ae1', linkId: 'l1', action: 'created', actorId: 'admin1', actorName: 'Đỗ Thị Hạnh', occurredAt: '2025-08-12T09:14:00+07:00', note: null },
+  ],
+  l2: [],
+  l3: [],
+  l4: [],
+  l5: [],
+  l6: [
+    { entryId: 'ae2', linkId: 'l6', action: 'created', actorId: 'admin1', actorName: 'Đỗ Thị Hạnh', occurredAt: '2025-09-18T14:02:00+07:00', note: 'Tạo lại theo yêu cầu phụ huynh sau khi gỡ liên kết cũ.' },
+    { entryId: 'ae3', linkId: 'l6', action: 'unlinked', actorId: 'admin2', actorName: 'Nguyễn Văn Toàn', occurredAt: '2025-09-05T11:30:00+07:00', note: null },
+  ],
+};
+
+const PL_AUDIT_ACTION = {
+  created:  { icon: 'link', color: T.teal,     vi: 'Đã tạo liên kết', en: 'Link created' },
+  unlinked: { icon: 'x',    color: T.errorDark, vi: 'Đã gỡ liên kết',  en: 'Link removed' },
+};
+
 const PL_RELATIONS = {
   father:   { vi: 'Bố',             en: 'Father',   color: T.info },
   mother:   { vi: 'Mẹ',             en: 'Mother',   color: T.purple },
@@ -351,11 +376,134 @@ const PLUnlinkDialog = ({ link, onClose, onConfirm, lang }) => {
   );
 };
 
+// ── Audit trail sub-section (DR-023) ──────────────────────────────────────────
+// Scoped sub-section rendered inside PLDetailDialog, mirroring the established
+// PLConsentDetailSection pattern (real code:
+// src/features/admin/parent-links/presentation/parent-links-screen/pl-consent-detail-section.tsx)
+// — own loading/error/empty/success states, never blocks the rest of the dialog.
+//
+// FE build note: real entity `LinkAuditEntry` (domain), query use-case
+// `getLinkAuditTrail` — mock-first, no `core` BE audit-emission endpoint yet
+// (see docs/decisions/0064-audit-trail-emission-policy.md).
+const PLAuditSkeleton = () => (
+  <div aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    {[0, 1].map(i => (
+      <div key={i} className="pl-shimmer" style={{ height: 44, borderRadius: 10, animationDelay: `${i * 0.08}s` }} />
+    ))}
+  </div>
+);
+
+const PLAuditError = ({ onRetry, lang }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  return (
+    <div role="alert" style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8,
+      borderRadius: 10, background: T.errorDarkLight, padding: '10px 12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12.5, color: T.errorDark }}>
+        <Icon name="alertTriangle" size={14} color={T.errorDark} strokeWidth={2.2} style={{ marginTop: 1, flexShrink: 0 }} />
+        {t('Không tải được lịch sử liên kết. Vui lòng thử lại.', 'Failed to load link history. Please try again.')}
+      </div>
+      <Button variant="ghost" size="sm" onClick={onRetry} style={{ border: `1px solid ${T.border}`, color: T.textSecondary }}>
+        {t('Thử lại', 'Retry')}
+      </Button>
+    </div>
+  );
+};
+
+const PLAuditEmpty = ({ lang }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  return (
+    <div style={{ display: 'flex', gap: 10, padding: '4px 0' }}>
+      <div style={{ width: 30, height: 30, borderRadius: 8, background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon name="clock" size={14} color={T.textMuted} strokeWidth={1.8} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: T.textPrimary }}>
+          {t('Chưa có lịch sử ghi nhận', 'No recorded history yet')}
+        </div>
+        <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2, lineHeight: 1.5 }}>
+          {t(
+            'Lịch sử sẽ ghi nhận các thay đổi (tạo, gỡ liên kết) kể từ khi tính năng này được bật.',
+            'History will record changes — created, removed — from when this feature was enabled.'
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PLAuditEntryRow = ({ entry, lang }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  const m = PL_AUDIT_ACTION[entry.action];
+  const dt = new Date(entry.occurredAt);
+  const stamp = Number.isNaN(dt.getTime())
+    ? entry.occurredAt
+    : dt.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return (
+    <li style={{ display: 'flex', flexDirection: 'column', gap: 4, borderRadius: 9, border: `1px solid ${T.border}`, padding: '9px 11px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Badge color={m.color}>
+          <Icon name={m.icon} size={11} color={m.color} strokeWidth={2.4} />
+          {lang === 'en' ? m.en : m.vi}
+        </Badge>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: T.textPrimary }}>{entry.actorName}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' }}>{stamp}</span>
+      </div>
+      {entry.note && (
+        <div style={{ fontSize: 11.5, color: T.textSecondary, paddingLeft: 2 }}>
+          {t('Ghi chú', 'Note')}: {entry.note}
+        </div>
+      )}
+    </li>
+  );
+};
+
+const PLAuditTrailSection = ({ status, entries, onRetry, lang }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  return (
+    <div style={{ marginTop: 6, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <Icon name="clock" size={13} color={T.textMuted} strokeWidth={1.8} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          {t('Lịch sử liên kết', 'Link history')}
+        </span>
+      </div>
+
+      {status === 'loading' && (
+        <div aria-busy="true">
+          <span className="sr-only">{t('Đang tải lịch sử…', 'Loading history…')}</span>
+          <PLAuditSkeleton />
+        </div>
+      )}
+      {status === 'error' && <PLAuditError onRetry={onRetry} lang={lang} />}
+      {status === 'success' && (
+        entries.length === 0
+          ? <PLAuditEmpty lang={lang} />
+          : (
+            <ol style={{ display: 'flex', flexDirection: 'column', gap: 8, listStyle: 'none', margin: 0, padding: 0 }}>
+              {[...entries].sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt)).map(e => (
+                <PLAuditEntryRow key={e.entryId} entry={e} lang={lang} />
+              ))}
+            </ol>
+          )
+      )}
+    </div>
+  );
+};
+
 // ── Detail dialog ─────────────────────────────────────────────────────────────
-const PLDetailDialog = ({ link, onClose, lang }) => {
+const PLDetailDialog = ({ link, onClose, lang, auditState = 'success' }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const st = PL_STUDENTS.find(s => s.id === link.studentId);
   const pa = PL_PARENTS.find(p => p.id === link.parentId);
+  const [auditStatus, setAuditStatus] = React.useState(auditState);
+  React.useEffect(() => { setAuditStatus(auditState); }, [auditState, link.id]);
+  const auditEntries = PL_AUDIT_SEED[link.id] || [];
+  const retryAudit = () => {
+    setAuditStatus('loading');
+    window.setTimeout(() => setAuditStatus('success'), 700);
+  };
   const Row = ({ label, children }) => (
     <div style={{ display: 'flex', gap: 12, padding: '9px 0', borderBottom: `1px solid ${T.border}` }}>
       <div style={{ width: 120, flexShrink: 0, fontSize: 12, fontWeight: 700, color: T.textMuted }}>{label}</div>
@@ -390,6 +538,7 @@ const PLDetailDialog = ({ link, onClose, lang }) => {
         <Row label={t('Consent', 'Consent')}><PLConsentBadge consent={link.consent} lang={lang} /></Row>
         <Row label={t('Ngày liên kết', 'Linked on')}>{link.linkedAt}</Row>
         {link.note && <Row label={t('Ghi chú', 'Note')}>{link.note}</Row>}
+        <PLAuditTrailSection status={auditStatus} entries={auditEntries} onRetry={retryAudit} lang={lang} />
       </div>
     </PLModal>
   );
@@ -736,7 +885,17 @@ const ParentLinksScreen = ({ lang, primaryColor }) => {
       </div>
 
       {showCreate && <PLCreateDialog links={links} onClose={() => setShowCreate(false)} onCreate={createLink} lang={lang} pColor={pColor} />}
-      {detailLink && <PLDetailDialog link={detailLink} onClose={() => setDetailLink(null)} lang={lang} />}
+      {/* auditState reuses the screen's existing PLStateChips demo toggle (status:
+          'loading'|'ready'|'error') rather than forking a second chips component —
+          'ready' maps to the section's 'success' state, per DR-023 decision. */}
+      {detailLink && (
+        <PLDetailDialog
+          link={detailLink}
+          onClose={() => setDetailLink(null)}
+          lang={lang}
+          auditState={status === 'ready' ? 'success' : status}
+        />
+      )}
       {unlinkTarget && <PLUnlinkDialog link={unlinkTarget} onClose={() => setUnlinkTarget(null)} onConfirm={confirmUnlink} lang={lang} />}
       <PLToast toast={toast} />
 

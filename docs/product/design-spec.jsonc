@@ -4288,7 +4288,58 @@
       "detailDialog": {
         "component": "PLDetailDialog",
         "maxWidth": 440,
-        "layout": "label-value rows (120px label column)"
+        "layout": "label-value rows (120px label column)",
+        "auditTrailSection": {
+          // DR-023 — scoped sub-section below the label-value rows, mirrors
+          // PLConsentDetailSection's own-state pattern (never blocks the rest
+          // of the dialog). FE: entity `LinkAuditEntry`, use-case
+          // `getLinkAuditTrail`, mock-first (no core BE endpoint yet, ADR 0064).
+          "component": "PLAuditTrailSection",
+          "sectionTitle": "Lịch sử liên kết",
+          "demoStateSource": "reuses PLStateChips (screen-level demo toggle: loading/ready/error) — 'ready' maps to this section's 'success' state, no separate chips component",
+          "states": {
+            "loading": {
+              "component": "PLAuditSkeleton",
+              "rows": 2,
+              "aria": "aria-busy on wrapper, sr-only loading label"
+            },
+            "empty": {
+              "component": "PLAuditEmpty",
+              "dominant": true,
+              "title": "Chưa có lịch sử ghi nhận",
+              "body": "Lịch sử sẽ ghi nhận các thay đổi (tạo, gỡ liên kết) kể từ khi tính năng này được bật.",
+              "note": "no CTA — read-only; this is the honest default for every link created before the trail existed"
+            },
+            "error": {
+              "component": "PLAuditError",
+              "role": "alert",
+              "background": "var(--edu-error-dark-light)",
+              "icon": "alertTriangle",
+              "iconColor": "var(--edu-error-dark)",
+              "retry": true,
+              "scoped": "compact, section-local — does not replace the rest of the dialog"
+            },
+            "success": {
+              "component": "PLAuditEntryRow (list, reverse-chronological)",
+              "row": "action badge + actorName + short date/time, optional note on its own muted line"
+            }
+          },
+          "actionBadgeMapping": {
+            "created": {
+              "tone": "success",
+              "color": "var(--edu-teal)",
+              "icon": "link",
+              "label": "Đã tạo liên kết"
+            },
+            "unlinked": {
+              "tone": "error",
+              "color": "var(--edu-error-dark)",
+              "icon": "x",
+              "label": "Đã gỡ liên kết"
+            }
+          },
+          "a11y": "action badges are icon+text, never color-only; loading/error scoped locally (aria-busy/role=alert), never surfaced as a whole-dialog failure"
+        }
       },
       "states": {
         "loading": {
