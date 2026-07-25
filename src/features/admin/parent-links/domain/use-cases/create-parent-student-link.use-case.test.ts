@@ -8,7 +8,12 @@ import type {
 import { CreateParentStudentLinkUseCase } from "./create-parent-student-link.use-case";
 import { fail, ok } from "./result";
 
-const authCtx: AuthContext = { role: "admin", tenantId: "tenant-acme" };
+const authCtx: AuthContext = {
+  role: "admin",
+  tenantId: "tenant-acme",
+  actorId: "admin-1",
+  actorName: "Quản trị viên demo",
+};
 
 const validInput: CreateLinkInput = {
   studentId: "st1",
@@ -38,6 +43,7 @@ function makeRepo(
     createLink: vi.fn(),
     unlinkLink: vi.fn(),
     getLinkConsentDetail: vi.fn(),
+    getLinkAuditTrail: vi.fn(),
     searchStudentCandidates: vi.fn(),
     searchParentCandidates: vi.fn(),
     ...overrides,

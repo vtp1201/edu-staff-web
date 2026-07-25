@@ -17,6 +17,9 @@ export const parentLinksKeys = {
   detail: (linkId: string) => [...parentLinksKeys.details(), linkId] as const,
   consent: (studentId: string, parentId: string) =>
     [...parentLinksKeys.all(), "consent", studentId, parentId] as const,
+  /** One link's append-only audit trail (US-E20.3, detail-dialog sub-fetch). */
+  auditTrail: (linkId: string) =>
+    [...parentLinksKeys.all(), "audit-trail", linkId] as const,
   studentSearch: (q: string, classId?: string) =>
     [...parentLinksKeys.all(), "student-search", q, classId ?? null] as const,
   parentSearch: (q: string) =>

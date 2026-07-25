@@ -221,6 +221,27 @@ Confirmed facts (verify before citing if stale):
   force-mocked features (staff-discipline ×2, student-absences ×2) — the fixtures module carries no
   `server-only` (so stories can import it too) and supplies roster/class picklists the wire has no
   field for. Don't flag it as an app→infrastructure layer breach.
+- **Feature-scoped audit trail = the sanctioned shape (ADR `0064`, binding)** — a high-risk mutation
+  feature that needs a web-side trail builds its OWN `<x>-audit-entry.entity.ts` + `getXAuditTrail`
+  query use-case + mock store inside its feature, and MUST NOT extend `src/features/audit-log/`'s
+  `AuditEntityType` (that feature is a read-only display surface with NO write path; a union member
+  with no producer is dead code). Precedents: `moderation` `AuditEntryEntity`, `academic-records`
+  `SealAuditEntry`, `admin/parent-links` `LinkAuditEntry` (US-E20.3). When reviewing such a story,
+  `grep -r "audit-log" src/features/<x>/` should show ZERO new references.
+- **Mock audit-emission proof shape (US-E20.3, worth reusing as the bar):** a SECOND module-level
+  `AUDIT_STORE` keyed by id, independent of the entity `STORE` (so the trail survives delete);
+  unshift-only writes (never push+sort-at-read, so no comparator can be wrong); injectable
+  `auditClock` + `__setMockAuditClock`/`__reset*` test-only exports for deterministic `occurredAt`;
+  and `recordAuditEntry()` placed strictly AFTER every guard clause on the success path only. The
+  required test matrix is one zero-emission case per failure branch (forged role, cross-tenant,
+  already-exists, validation, not-found) asserting the trail length is UNCHANGED — not just a
+  happy-path emission test.
+- **`components/shared/list-error/` does NOT cover the compact in-dialog banner shape.** Its two
+  `shape` presets (`inline-card` px-5 py-10, `bordered-card` px-6 py-12) are large centered
+  full-section cards. Section-local compact banners inside a Dialog (`bg-edu-error/10 px-3 py-2.5`,
+  size-4 icon, left-aligned, small outline retry) are hand-inlined instead — currently in
+  `pl-consent-detail-section.tsx:73-88` and `pl-audit-trail-section.tsx:117-133`. A third instance
+  should trigger a `compact-banner` preset on `ListError` rather than another copy.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

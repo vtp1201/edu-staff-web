@@ -18,9 +18,12 @@ vi.mock("@/bootstrap/auth-guard", () => ({
 const h = vi.hoisted(() => {
   const createExecute = vi.fn();
   const unlinkExecute = vi.fn();
+  const auditExecute = vi.fn();
   return {
     createExecute,
     unlinkExecute,
+    auditExecute,
+    makeAuditUC: vi.fn(async () => ({ execute: auditExecute })),
     makeAuthCtx: vi.fn(async () => ({
       role: "admin",
       tenantId: "tenant-acme",
@@ -36,6 +39,7 @@ vi.mock("@/bootstrap/di/parent-student-link.di", () => ({
   makeUnlinkParentStudentLinkUseCase: h.makeUnlinkUC,
   makeListParentStudentLinksUseCase: vi.fn(),
   makeGetLinkConsentDetailUseCase: vi.fn(),
+  makeGetLinkAuditTrailUseCase: h.makeAuditUC,
   makeSearchStudentCandidatesUseCase: vi.fn(),
   makeSearchParentCandidatesUseCase: vi.fn(),
 }));
@@ -45,10 +49,15 @@ import {
   fail,
   ok,
 } from "@/features/admin/parent-links/domain/use-cases/result";
-import { createLinkAction, unlinkLinkAction } from "./actions";
+import {
+  createLinkAction,
+  getLinkAuditTrailAction,
+  unlinkLinkAction,
+} from "./actions";
 
 const mockRequireRole = vi.mocked(requireRole);
-const { createExecute, unlinkExecute } = h;
+const { createExecute, unlinkExecute, auditExecute } = h;
+const makeAuditUC = h.makeAuditUC;
 const makeAuthCtx = h.makeAuthCtx;
 const makeCreateUC = h.makeCreateUC;
 const makeUnlinkUC = h.makeUnlinkUC;
@@ -156,6 +165,52 @@ describe("createLinkAction — RBAC short-circuit (AC-006.2)", () => {
       errorKey: "validation",
       retryable: false,
       fields: [{ field: "parentId", message: "not-parent-role" }],
+    });
+  });
+});
+
+describe("getLinkAuditTrailAction (US-E20.3)", () => {
+  const entry = {
+    entryId: "ae-1",
+    linkId: "l6",
+    action: "created" as const,
+    actorId: "admin-1",
+    actorName: "Quản trị viên demo",
+    occurredAt: "2025-11-01T03:00:00.000Z",
+    note: null,
+  };
+
+  it("returns forbidden with ZERO use-case calls when the guard fails", async () => {
+    mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
+
+    const res = await getLinkAuditTrailAction("l6");
+
+    expect(res).toEqual({ ok: false, errorKey: "forbidden", retryable: false });
+    expect(makeAuditUC).not.toHaveBeenCalled();
+    expect(auditExecute).not.toHaveBeenCalled();
+  });
+
+  it("forwards linkId and returns the entries on success", async () => {
+    mockRequireRole.mockResolvedValue({ ok: true, role: "admin" });
+    auditExecute.mockResolvedValue(ok([entry]));
+
+    const res = await getLinkAuditTrailAction("l6");
+
+    expect(res).toEqual({ ok: true, data: [entry] });
+    expect(auditExecute).toHaveBeenCalledWith("l6");
+  });
+
+  it("maps a network-error failure to a retryable errorKey", async () => {
+    mockRequireRole.mockResolvedValue({ ok: true, role: "admin" });
+    auditExecute.mockResolvedValue(fail({ type: "network-error" }));
+
+    const res = await getLinkAuditTrailAction("l6");
+
+    expect(res).toEqual({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+      fields: undefined,
     });
   });
 });

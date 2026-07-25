@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import type { ParentLinkRowVM } from "./parent-links-screen.i-vm";
+import {
+  PLAuditTrailSection,
+  type PLAuditTrailSectionProps,
+} from "./pl-audit-trail-section";
 import { PLConsentBadge } from "./pl-consent-badge";
 import {
   PLConsentDetailSection,
@@ -23,6 +27,7 @@ export interface PLDetailDialogProps {
   open: boolean;
   row: ParentLinkRowVM | null;
   consent: PLConsentDetailSectionProps;
+  auditTrail: PLAuditTrailSectionProps;
   onClose: () => void;
 }
 
@@ -69,13 +74,16 @@ function PersonInline({
 /**
  * Read-only link detail dialog (FR-006/FR-012). student/parent/relationship/
  * consent/linkedOn/note come from the already-fetched row (no fetch); the 3
- * consent categories lazy-load in a scoped sub-section (AC-004.3/.4). No edit
- * control anywhere (AC-004.5) — only Close (inherited from Dialog).
+ * consent categories lazy-load in a scoped sub-section (AC-004.3/.4), as does the
+ * append-only audit trail (US-E20.3, FR-101) — each owns its own state and never
+ * blocks the other. No edit control anywhere (AC-004.5, FR-109) — only Close
+ * (inherited from Dialog).
  */
 export function PLDetailDialog({
   open,
   row,
   consent,
+  auditTrail,
   onClose,
 }: PLDetailDialogProps) {
   const t = useTranslations("parentLinks");
@@ -137,6 +145,7 @@ export function PLDetailDialog({
             )}
 
             <PLConsentDetailSection {...consent} />
+            <PLAuditTrailSection {...auditTrail} />
           </div>
         )}
       </DialogContent>

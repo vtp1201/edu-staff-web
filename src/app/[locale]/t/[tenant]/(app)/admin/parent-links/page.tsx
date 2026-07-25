@@ -13,6 +13,7 @@ import type {
 } from "@/features/admin/parent-links/presentation/parent-links-screen/parent-links-screen.i-vm";
 import {
   createLinkAction,
+  getLinkAuditTrailAction,
   getLinkConsentDetailAction,
   listLinksAction,
   searchParentCandidatesAction,
@@ -90,6 +91,7 @@ export default async function AdminParentLinksPage({
       createLinkAction={createLinkAction}
       unlinkLinkAction={unlinkLinkAction}
       getLinkConsentDetailAction={getLinkConsentDetailAction}
+      getLinkAuditTrailAction={getLinkAuditTrailAction}
       searchStudentCandidatesAction={searchStudentCandidatesAction}
       searchParentCandidatesAction={searchParentCandidatesAction}
     />

@@ -1,3 +1,4 @@
+import type { LinkAuditEntry } from "../../domain/entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../../domain/entities/link-candidate.entity";
 import type { ParentStudentConsent } from "../../domain/entities/parent-student-consent.entity";
 import type {
@@ -70,6 +71,10 @@ export interface ParentLinksScreenProps {
     studentId: string,
     parentId: string,
   ) => Promise<ActionResult<ParentStudentConsent>>;
+  /** US-E20.3 — the detail dialog's audit-trail sub-fetch, keyed by linkId. */
+  getLinkAuditTrailAction: (
+    linkId: string,
+  ) => Promise<ActionResult<LinkAuditEntry[]>>;
   searchStudentCandidatesAction: (
     q: string,
     classId?: string,

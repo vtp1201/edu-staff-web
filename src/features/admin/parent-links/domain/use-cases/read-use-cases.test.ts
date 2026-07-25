@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import type { LinkAuditEntry } from "../entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../entities/link-candidate.entity";
 import type { ParentStudentConsent } from "../entities/parent-student-consent.entity";
 import type { IParentStudentLinkRepository } from "../repositories/i-parent-student-link.repository";
+import { GetLinkAuditTrailUseCase } from "./get-link-audit-trail.use-case";
 import { GetLinkConsentDetailUseCase } from "./get-link-consent-detail.use-case";
 import { ListParentStudentLinksUseCase } from "./list-parent-student-links.use-case";
 import { fail, ok } from "./result";
@@ -16,6 +18,7 @@ function makeRepo(
     createLink: vi.fn(),
     unlinkLink: vi.fn(),
     getLinkConsentDetail: vi.fn(),
+    getLinkAuditTrail: vi.fn(),
     searchStudentCandidates: vi.fn(),
     searchParentCandidates: vi.fn(),
     ...overrides,
@@ -64,6 +67,45 @@ describe("GetLinkConsentDetailUseCase", () => {
 
     expect(res).toEqual(ok(consent));
     expect(getLinkConsentDetail).toHaveBeenCalledWith("st1", "pa1");
+  });
+});
+
+describe("GetLinkAuditTrailUseCase (US-E20.3, pure delegate)", () => {
+  const entry: LinkAuditEntry = {
+    entryId: "ae-1",
+    linkId: "l6",
+    action: "created",
+    actorId: "admin-seed",
+    actorName: "Quản trị viên demo",
+    occurredAt: "2025-11-01T03:00:00.000Z",
+    note: "Tái tạo liên kết sau khi xác minh lại giấy tờ giám hộ.",
+  };
+
+  it("forwards linkId and returns the repository's entries verbatim", async () => {
+    const getLinkAuditTrail = vi.fn().mockResolvedValue(ok([entry]));
+    const uc = new GetLinkAuditTrailUseCase(makeRepo({ getLinkAuditTrail }));
+
+    const res = await uc.execute("l6");
+
+    expect(res).toEqual(ok([entry]));
+    expect(getLinkAuditTrail).toHaveBeenCalledWith("l6");
+    expect(getLinkAuditTrail).toHaveBeenCalledOnce();
+  });
+
+  it("returns the honest empty trail as ok([]) (INT-105 — no not-found)", async () => {
+    const getLinkAuditTrail = vi.fn().mockResolvedValue(ok([]));
+    const uc = new GetLinkAuditTrailUseCase(makeRepo({ getLinkAuditTrail }));
+
+    expect(await uc.execute("never-existed")).toEqual(ok([]));
+  });
+
+  it("propagates a network-error failure unchanged", async () => {
+    const getLinkAuditTrail = vi
+      .fn()
+      .mockResolvedValue(fail({ type: "network-error" }));
+    const uc = new GetLinkAuditTrailUseCase(makeRepo({ getLinkAuditTrail }));
+
+    expect(await uc.execute("l6")).toEqual(fail({ type: "network-error" }));
   });
 });
 

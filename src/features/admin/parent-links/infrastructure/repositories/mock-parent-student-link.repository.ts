@@ -1,4 +1,8 @@
 import "server-only";
+import type {
+  LinkAuditAction,
+  LinkAuditEntry,
+} from "../../domain/entities/link-audit-entry.entity";
 import type { LinkCandidate } from "../../domain/entities/link-candidate.entity";
 import type { ParentStudentConsent } from "../../domain/entities/parent-student-consent.entity";
 import type { ParentStudentLink } from "../../domain/entities/parent-student-link.entity";
@@ -22,6 +26,14 @@ type PSLResult<T> = Result<T, ParentStudentLinkFailure>;
 export const MOCK_TENANT_ID = "tenant-acme";
 /** A foreign tenant used ONLY by the cross-tenant forbidden test (AC-005.5). */
 export const MOCK_OTHER_TENANT_ID = "tenant-other";
+/**
+ * Mock-mode actor display name (US-E20.3, INT-106). No JWT claim carries a
+ * display name today and there is no real repository branch to resolve one
+ * from, so DI uses this clearly-named MOCK constant — it is never presented as
+ * BE-supplied. OQ-101: resolve truthfully when the real `core` audit endpoint
+ * is wired.
+ */
+export const MOCK_ACTOR_NAME = "Quản trị viên demo";
 
 /** Internal store row = entity + its owning tenant (tenant is never displayed). */
 interface SeededLink extends ParentStudentLink {
@@ -244,6 +256,101 @@ export function __resetMockParentLinks(): void {
   STORE = freshSeed();
 }
 
+// ── Audit trail store (US-E20.3, INT-103/104/107) ────────────────────────────
+// A SECOND module-level store, keyed by linkId and deliberately INDEPENDENT of
+// the active-links `STORE` array: `unlinkLink` removes the row from `STORE` but
+// the link's history must survive (FR-108/INT-104).
+
+/** Seed per INT-103 (DR-023's worked example): l1 = 1 entry, l6 = the full
+ *  create→unlink→re-create lifecycle, written NEWEST-FIRST (the unshift
+ *  invariant, so no sort is ever needed). l2..l5/l7/l8 are intentionally absent
+ *  → `AUDIT_STORE[linkId] ?? []` yields the dominant honest empty state. */
+function seedAuditTrail(): Record<string, LinkAuditEntry[]> {
+  return {
+    l1: [
+      {
+        entryId: "ae-seed-l1-1",
+        linkId: "l1",
+        action: "created",
+        actorId: "admin-seed",
+        actorName: MOCK_ACTOR_NAME,
+        occurredAt: "2025-08-12T02:00:00.000Z",
+        note: null,
+      },
+    ],
+    l6: [
+      {
+        entryId: "ae-seed-l6-3",
+        linkId: "l6",
+        action: "created",
+        actorId: "admin-seed",
+        actorName: MOCK_ACTOR_NAME,
+        occurredAt: "2025-11-01T03:00:00.000Z",
+        note: "Tái tạo liên kết sau khi xác minh lại giấy tờ giám hộ.",
+      },
+      {
+        entryId: "ae-seed-l6-2",
+        linkId: "l6",
+        action: "unlinked",
+        actorId: "admin-seed",
+        actorName: MOCK_ACTOR_NAME,
+        occurredAt: "2025-10-20T03:00:00.000Z",
+        note: null,
+      },
+      {
+        entryId: "ae-seed-l6-1",
+        linkId: "l6",
+        action: "created",
+        actorId: "admin-seed",
+        actorName: MOCK_ACTOR_NAME,
+        occurredAt: "2025-10-02T02:00:00.000Z",
+        note: null,
+      },
+    ],
+  };
+}
+
+let AUDIT_STORE: Record<string, LinkAuditEntry[]> = seedAuditTrail();
+let AUDIT_ID_SEQ = 0;
+let auditClock: () => string = () => new Date().toISOString();
+
+/** Test-only: override the clock for deterministic `occurredAt` (NFR-102). */
+export function __setMockAuditClock(clock: () => string): void {
+  auditClock = clock;
+}
+
+/** Test-only: restore seed + clock + id counter between tests. */
+export function __resetMockLinkAuditTrail(): void {
+  AUDIT_STORE = seedAuditTrail();
+  AUDIT_ID_SEQ = 0;
+  auditClock = () => new Date().toISOString();
+}
+
+/**
+ * Append one entry to a link's trail. Called ONLY on a mutation's success path,
+ * strictly after every guard clause — a rejected mutation leaves no trace
+ * (FR-107). Unshift-only, never push/sort-at-read: the array order IS
+ * reverse-chronological by construction (NFR-102). Existing entries are never
+ * mutated or removed (append-only, FR-109).
+ */
+function recordAuditEntry(
+  linkId: string,
+  action: LinkAuditAction,
+  authCtx: AuthContext,
+  note: string | null,
+): void {
+  const entry: LinkAuditEntry = {
+    entryId: `ae-${++AUDIT_ID_SEQ}`,
+    linkId,
+    action,
+    actorId: authCtx.actorId,
+    actorName: authCtx.actorName,
+    occurredAt: auditClock(),
+    note: action === "created" ? note : null,
+  };
+  AUDIT_STORE[linkId] = [entry, ...(AUDIT_STORE[linkId] ?? [])];
+}
+
 function stripTenant(link: SeededLink): ParentStudentLink {
   const { tenantId: _t, ...entity } = link;
   return entity;
@@ -333,6 +440,7 @@ export class MockParentStudentLinkRepository
       tenantId: MOCK_TENANT_ID,
     };
     STORE = [created, ...STORE];
+    recordAuditEntry(created.linkId, "created", authCtx, created.note ?? null);
     return ok(stripTenant(created));
   }
 
@@ -355,7 +463,17 @@ export class MockParentStudentLinkRepository
       return fail({ type: "not-found" });
     }
     STORE = STORE.filter((l) => l.linkId !== linkId);
+    // The trail lives in its OWN store, so the entry (and the link's earlier
+    // history) survives the row's removal (FR-108/INT-104).
+    recordAuditEntry(linkId, "unlinked", authCtx, null);
     return ok(undefined);
+  }
+
+  async getLinkAuditTrail(
+    linkId: string,
+  ): Promise<PSLResult<LinkAuditEntry[]>> {
+    // No sort: unshift-only writes keep the array reverse-chronological.
+    return ok(AUDIT_STORE[linkId] ?? []);
   }
 
   async getLinkConsentDetail(
