@@ -11,9 +11,14 @@ import { ListError, type ListErrorProps } from "./list-error";
  *
  * The "per-screen parity" block is the "zero visual change" proof for the
  * refactor: each expected class set is the literal class list of the DELETED
- * feature-local component this one replaces, with the SINGLE deliberate
- * exception documented there (`min-h-11` is now unconditional — a 44×44px
- * touch-target compliance fix per accessibility.md, not a design change).
+ * feature-local component this one replaces, with two deliberate exceptions:
+ * (1) `min-h-11` is now unconditional — a 44×44px touch-target compliance fix
+ * per accessibility.md, not a design change; (2) the boxed icon variant uses
+ * `bg-edu-error-light`/`text-edu-error-text` instead of the originals'
+ * `bg-edu-error-dark-light`/`text-edu-error-dark` — a dark-mode contrast fix
+ * (fe-accessibility-auditor finding, INFRA-shared-list-states story) swapping
+ * to the equivalent, already dark-mode-safe token pair; same tone family, no
+ * new token, visually near-identical in light mode.
  */
 
 /**
@@ -118,10 +123,10 @@ describe("ListError", () => {
     );
     expect(classesOf(boxed, 1)).toEqual(
       setOf(
-        "flex size-13 items-center justify-center rounded-2xl bg-edu-error-dark-light",
+        "flex size-13 items-center justify-center rounded-2xl bg-edu-error-light",
       ),
     );
-    expect(classesOf(boxed, 2)).toEqual(setOf("size-6 text-edu-error-dark"));
+    expect(classesOf(boxed, 2)).toEqual(setOf("size-6 text-edu-error-text"));
 
     const plain = renderToStaticMarkup(
       <ListError
@@ -132,7 +137,7 @@ describe("ListError", () => {
         onRetry={vi.fn()}
       />,
     );
-    expect(plain).not.toContain("bg-edu-error-dark-light");
+    expect(plain).not.toContain("bg-edu-error-light");
   });
 
   it("renders a type=button retry that is ≥44px tall on every screen", () => {
@@ -301,10 +306,10 @@ describe("ListError", () => {
       );
       expect(classesOf(html, 1)).toEqual(
         setOf(
-          "flex size-13 items-center justify-center rounded-2xl bg-edu-error-dark-light",
+          "flex size-13 items-center justify-center rounded-2xl bg-edu-error-light",
         ),
       );
-      expect(classesOf(html, 2)).toEqual(setOf("size-6 text-edu-error-dark"));
+      expect(classesOf(html, 2)).toEqual(setOf("size-6 text-edu-error-text"));
       expect(classesOf(html, 3)).toEqual(
         setOf("mt-3.5 font-extrabold text-base text-foreground"),
       );

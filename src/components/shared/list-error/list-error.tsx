@@ -121,9 +121,17 @@ export function ListError({
       )}
     >
       {iconVariant === "boxed" ? (
-        <div className="flex size-13 items-center justify-center rounded-2xl bg-edu-error-dark-light">
+        // `edu-error-light`/`edu-error-text` (not `edu-error-dark`/`edu-error-dark-light`
+        // — that pair is reserved for the "Nặng"/severe discipline-severity tone, ADR
+        // 0040, and has no `.dark {}` override in tokens.css). This boxed icon carries
+        // no severity meaning, so `edu-error-light`/`edu-error-text` is both the
+        // semantically-correct AND the dark-mode-safe token pair (US-E21.2 already gave
+        // it a proper `.dark {}` override) — fixes the dark-mode contrast gap
+        // `fe-accessibility-auditor` flagged during INFRA-shared-list-states without a
+        // new token/ADR.
+        <div className="flex size-13 items-center justify-center rounded-2xl bg-edu-error-light">
           <AlertTriangle
-            className={cn(iconClass, "text-edu-error-dark")}
+            className={cn(iconClass, "text-edu-error-text")}
             aria-hidden="true"
           />
         </div>
