@@ -95,7 +95,7 @@ export const BoxedIcon: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const alert = canvas.getByRole("alert");
-    const box = alert.querySelector(".bg-edu-error-dark-light");
+    const box = alert.querySelector(".bg-edu-error-light");
     await expect(box).not.toBeNull();
     await expect(box).toHaveClass("size-13");
     const icon = box?.querySelector("svg");
@@ -105,6 +105,51 @@ export const BoxedIcon: Story = {
     await expect(
       canvas.getByRole("button", { name: /Tải lại/ }).querySelector("svg"),
     ).not.toBeNull();
+  },
+};
+
+/**
+ * Dark-mode contrast proof for the boxed icon (fe-accessibility-auditor
+ * finding, INFRA-shared-list-states — `edu-error-dark`/`edu-error-dark-light`
+ * have no `.dark {}` override in tokens.css, so a boxed icon using that pair
+ * silently keeps its light-mode colors in dark mode). `edu-error-light`/
+ * `edu-error-text` DO have a `.dark {}` override (US-E21.2) — asserts the
+ * actually-rendered computed colors are the dark-mode-safe pair, not the raw
+ * light-mode values, giving real (not just class-name) proof of the fix.
+ */
+export const BoxedIconDarkMode: Story = {
+  ...BoxedIcon,
+  // Scope `.dark` locally to this story's tree — CSS custom properties cascade
+  // from any ancestor with the class, not just `<html>`, so this proves the
+  // same token resolution the app's real dark-mode toggle (`.dark` on
+  // `<html>`, `next-themes`) produces, without depending on the Storybook
+  // theme-toolbar decorator's cross-realm `<html>` targeting inside the
+  // component-test runner.
+  decorators: [
+    (StoryFn) => (
+      <div className="dark bg-background p-4">
+        <StoryFn />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    const box = alert.querySelector(".bg-edu-error-light");
+    await expect(box).not.toBeNull();
+    const icon = box?.querySelector("svg");
+    await expect(icon).not.toBeNull();
+
+    // Dark-mode override values from `.dark {}` in globals.css.
+    const boxBg = window.getComputedStyle(box as Element).backgroundColor;
+    const iconColor = window.getComputedStyle(icon as Element).color;
+    await expect(boxBg).toBe("rgb(92, 0, 7)"); // --edu-error-light dark override #5c0007
+    await expect(iconColor).toBe("rgb(255, 218, 214)"); // --edu-error-text dark override #ffdad6
+
+    // Never the un-overridden `edu-error-dark`/`edu-error-dark-light` raw
+    // light-mode values (#fee2e2 / #b91c1c) — that was the bug.
+    await expect(boxBg).not.toBe("rgb(254, 226, 226)");
+    await expect(iconColor).not.toBe("rgb(185, 28, 28)");
   },
 };
 
