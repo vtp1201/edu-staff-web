@@ -3391,6 +3391,137 @@
       "reconnectingTitle": "Reconnecting..."
     }
   },
+  "staffDiscipline": {
+    "conductNotes": {
+      "actions": {
+        "approve": "Approve",
+        "approving": "Approving...",
+        "reject": "Reject",
+        "rejecting": "Rejecting...",
+        "submit": "Submit",
+        "submitting": "Submitting..."
+      },
+      "columns": {
+        "action": "Action",
+        "rating": "Rating",
+        "staffMember": "Staff Member",
+        "state": "Status",
+        "term": "Term"
+      },
+      "empty": {
+        "adminCta": "No notes recorded for this term yet. Create one.",
+        "readOnly": "No conduct notes recorded."
+      },
+      "error": "Couldn't load conduct notes.",
+      "filters": {
+        "staffMember": "Staff Member",
+        "term": "Term"
+      },
+      "form": {
+        "note": "Note *",
+        "notePlaceholder": "Conduct remarks...",
+        "rating": "Rating *",
+        "staffMember": "Staff Member *",
+        "staffMemberPlaceholder": "Select staff member...",
+        "title": "Set Conduct Note"
+      },
+      "loading": "Loading conduct notes...",
+      "rating": {
+        "needsImprovement": "Needs Improvement",
+        "satisfactory": "Satisfactory",
+        "unsatisfactory": "Unsatisfactory"
+      },
+      "readOnlyLabel": "Read-only",
+      "saving": "Saving...",
+      "selfApprovedNote": "Self-approved (no other administrator available)",
+      "status": {
+        "approved": "Approved",
+        "draft": "Draft",
+        "rejected": "Rejected",
+        "submitted": "Pending Review"
+      },
+      "subtitle": "Rate staff conduct each term",
+      "success": "Conduct note saved",
+      "title": "Staff Conduct Notes"
+    },
+    "errors": {
+      "invalid-rating": "Invalid rating.",
+      "locked": "This note has already been approved and can no longer be edited.",
+      "term-not-found": "The matching academic term could not be found."
+    },
+    "rejectDialog": {
+      "cancel": "Cancel",
+      "confirm": "Confirm rejection",
+      "description": "Please enter a reason for rejection to notify the staff member.",
+      "reasonMinLength": "Please enter at least 10 characters",
+      "reasonPlaceholder": "Reason...",
+      "title": "Reason for rejection"
+    },
+    "retry": "Retry",
+    "subtitle": "Record violations and periodic conduct ratings for staff",
+    "tabs": {
+      "conductNotes": "Conduct Notes",
+      "violations": "Violations"
+    },
+    "title": "Staff Discipline",
+    "violations": {
+      "actions": {
+        "approve": "Approve",
+        "approving": "Approving...",
+        "reject": "Reject",
+        "rejecting": "Rejecting...",
+        "submit": "Submit",
+        "submitting": "Submitting..."
+      },
+      "addNew": "Record New Violation",
+      "columns": {
+        "action": "Action",
+        "category": "Category",
+        "occurredAt": "Date",
+        "severity": "Severity",
+        "staffMember": "Staff Member",
+        "state": "Status"
+      },
+      "empty": {
+        "adminCta": "No violations recorded yet. Record the first one.",
+        "readOnly": "No violations recorded."
+      },
+      "error": "Couldn't load the violation list.",
+      "filters": {
+        "all": "All",
+        "severity": "Severity",
+        "staffMember": "Staff Member",
+        "state": "Status"
+      },
+      "form": {
+        "category": "Violation Category *",
+        "categoryPlaceholder": "e.g. Professional conduct violation",
+        "description": "Description *",
+        "descriptionPlaceholder": "Describe the violation in detail...",
+        "occurredAt": "Date Occurred *",
+        "severity": "Severity *",
+        "staffMember": "Staff Member *",
+        "staffMemberPlaceholder": "Select staff member...",
+        "title": "Record Staff Violation"
+      },
+      "loading": "Loading violations...",
+      "saving": "Saving...",
+      "selfApprovedNote": "Self-approved (no other administrator available)",
+      "severity": {
+        "high": "Severe",
+        "low": "Minor",
+        "medium": "Moderate"
+      },
+      "status": {
+        "approved": "Approved",
+        "draft": "Draft",
+        "rejected": "Rejected",
+        "submitted": "Pending Review"
+      },
+      "success": "Violation recorded successfully",
+      "title": "Staff Violations"
+    }
+  },
   "staffLeave": {
     "actions": {
       "approve": "Approve",
@@ -3710,6 +3841,60 @@
       "departments": "Departments",
       "positionTitles": "Position Titles"
     }
+  },
+  "studentAbsences": {
+    "columns": {
+      "action": "Action",
+      "date": "Date",
+      "excused": "Excused",
+      "reason": "Reason",
+      "state": "Status",
+      "student": "Student"
+    },
+    "empty": "No absences recorded this term",
+    "error": "Couldn't load the absence list.",
+    "errors": {
+      "duplicate-date": "An absence record already exists for this student on the selected date.",
+      "forbidden": "You don't have permission to perform this action.",
+      "invalid-date-future": "A future date cannot be selected.",
+      "invalid-id": "Invalid identifier.",
+      "invalid-input": "Invalid data.",
+      "invalid-state": "Invalid status.",
+      "not-found": "Absence record not found."
+    },
+    "excused": "Excused",
+    "filters": {
+      "class": "Class",
+      "dateFrom": "From date",
+      "dateTo": "To date"
+    },
+    "flagAction": "Flag",
+    "flagConfirm": {
+      "cancel": "Cancel",
+      "confirm": "Confirm flag",
+      "description": "The absence will be marked as unexcused for follow-up. This action cannot be undone.",
+      "title": "Flag this absence?"
+    },
+    "flagged": "Flagged",
+    "form": {
+      "date": "Date *",
+      "dateFutureHelper": "Only today or an earlier date can be selected.",
+      "editSuccess": "Absence updated",
+      "editTitle": "Edit Absence",
+      "excused": "Excused",
+      "reason": "Reason",
+      "reasonPlaceholder": "Reason for absence (if any)...",
+      "recordSuccess": "Absence recorded",
+      "recordTitle": "Record Absence",
+      "save": "Save",
+      "saving": "Saving...",
+      "submit": "Record"
+    },
+    "loading": "Loading absences...",
+    "retry": "Retry",
+    "subtitle": "Record and track student absence status by class",
+    "title": "Student Absences",
+    "unexcused": "Unexcused"
   },
   "subjectCatalogue": {
     "createParentDialog": {

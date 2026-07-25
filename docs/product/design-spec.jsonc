@@ -10212,5 +10212,328 @@
       "requiredFilterA11y": "mandatory-filter indicator uses icon+text (check/alertTriangle), not color alone",
       "motion": "toast/dialog fade-in gated behind prefers-reduced-motion: reduce"
     }
+  },
+
+  "staffDiscipline": {
+    "story": "US-E18.14 (BE ground-truth) → DR-022 (design)",
+    "routes": ["/admin/staff-discipline"],
+    "roles": [
+      "principal (ADMIN/MANAGER/BGH combined actor in this app's role model)",
+      "teacher (staff self read-only view)"
+    ],
+    "designSrc": "design_src/edu/staff-discipline.jsx",
+    "components": [
+      "StaffDisciplineScreen",
+      "SDViolationsTab",
+      "SDConductNotesTab",
+      "SDStateBadge",
+      "SDSeverityBadge",
+      "SDRatingBadge",
+      "SDRejectPanel",
+      "SDSelfApprovedNote"
+    ],
+    "i18nNamespace": "staffDiscipline",
+    "status": "design-ready (DR-022, 2026-07-25)",
+    "beContract": {
+      "service": "core (conduct sub-domain)",
+      "staffViolations": {
+        "routes": "POST /api/v1/conduct/staff-violations (ADMIN, DRAFT), GET ?staffMemberId= (role-scoped), POST /:id/submit (authoring ADMIN), POST /:id/approve|reject (ADMIN/MANAGER)",
+        "responseFields": "recordId, staffMemberId, category, description, severity (MINOR|MODERATE|SEVERE), occurredAt, state (DRAFT|SUBMITTED|APPROVED|REJECTED), authorMemberId, approverMemberId?, selfApproved, rejectionReason?, createdAt, updatedAt",
+        "noDisplayFields": "no staffName/department on the wire — mock resolves client-side against a fixed roster list (SD_STAFF_ROSTER), NOT live search (roster-UUID gap, ask #9/#22)",
+        "errorTaxonomy": "reuses discipline.errors.* verbatim — VIOLATION_FORBIDDEN/NOT_FOUND/INVALID_TRANSITION/REJECTION_REASON_REQUIRED/INVALID_ID/INVALID_SEVERITY/INVALID_STATE/INVALID_INPUT + VIOLATION_SAME_ACTOR"
+      },
+      "staffConductNotes": {
+        "routes": "POST /api/v1/conduct/staff-conduct-notes (ADMIN only, create/overwrite DRAFT, natural key termId+staffMemberId), GET ?staffMemberId=&termId=, POST /:staffMemberId/submit?termId=, .../approve|reject?termId=",
+        "responseFields": "termId, staffMemberId, rating (SATISFACTORY|NEEDS_IMPROVEMENT|UNSATISFACTORY), note (max 5000), state (same 4-value), authorMemberId, approverMemberId?, selfApproved, rejectionReason?, createdAt, updatedAt. academicYearId = validation-only on POST, not stored.",
+        "errorTaxonomy": "reuses discipline.errors.{same-actor,invalid-transition,missing-reject-reason} PLUS 5 new codes: STAFF_CONDUCT_NOTE_FORBIDDEN, STAFF_CONDUCT_NOTE_NOT_FOUND, STAFF_CONDUCT_NOTE_TERM_NOT_FOUND (422/404), STAFF_CONDUCT_NOTE_LOCKED (409, ADR 0074 — re-set attempted after APPROVED), STAFF_CONDUCT_NOTE_INVALID_RATING (422)"
+      }
+    },
+
+    "layout": {
+      "contentPadding": "28px 32px (mobile 20px 16px)",
+      "maxWidth": 1180,
+      "tabs": [
+        "violations (staffDiscipline via tab='violations')",
+        "conductNotes"
+      ],
+      "tabBar": {
+        "component": "role='tablist' + role='tab' + aria-selected, minHeight 44 per tab (touch target)",
+        "activeIndicator": "2.5px solid pColor underline (NOT the sidebar left-accent-bar pattern — matches academic-records.jsx TabButton)"
+      }
+    },
+
+    "stateMachine": {
+      "note": "IDENTICAL ApprovalTransition shape to academic-records.jsx unseal requests + staff-leave.jsx pending/approved/rejected, applied to BOTH tabs — DRAFT authored by ADMIN, submit → SUBMITTED, ADMIN/MANAGER approve → APPROVED or reject (reason required) → REJECTED.",
+      "badge": {
+        "component": "SDStateBadge — Badge + icon, never color-only",
+        "DRAFT": { "color": "var(--edu-text-muted)", "icon": "penLine" },
+        "SUBMITTED": {
+          "color": "var(--edu-warning)",
+          "textColor": "var(--edu-warning-foreground)",
+          "icon": "clock"
+        },
+        "APPROVED": { "color": "var(--edu-success)", "icon": "check" },
+        "REJECTED": { "color": "var(--edu-error)", "icon": "x" }
+      },
+      "selfApproved": {
+        "note": "ADR 0073 single-admin-tenant fallback — shown (not hidden) as a small annotation whenever the approver === the author, audit-transparency requirement from DR-022",
+        "component": "SDSelfApprovedNote",
+        "i18nKey": "staffDiscipline.conductNotes.selfApprovedNote (shared across both tabs)"
+      },
+      "rejectPanel": {
+        "component": "SDRejectPanel — inline (not modal), same shape as staff-leave.jsx's RequestCard rejection editor",
+        "copyReuse": "discipline.leave.rejectDialog.* (title/description/cancel/confirm/reasonPlaceholder/reasonMinLength)",
+        "clientGuard": "min 10 chars UX guard (server only requires non-empty — VIOLATION_REJECTION_REASON_REQUIRED / STAFF_CONDUCT_NOTE_* share the shape)",
+        "i18nKey": "discipline.errors.missing-reject-reason (REUSE — do not duplicate)"
+      }
+    },
+
+    "violationsTab": {
+      "severityBadge": {
+        "component": "SDSeverityBadge",
+        "colorMapping": "MINOR→warning (fg=var(--edu-warning-foreground)) | MODERATE→error | SEVERE→destructive (var(--edu-error-dark)/var(--edu-error-dark-light))",
+        "note": "IDENTICAL enum + mapping to student-violations severity (Nhẹ/Vừa/Nặng) — no new token"
+      },
+      "createForm": {
+        "visibleFor": "principal (ADMIN authoring capacity) only",
+        "fields": [
+          {
+            "id": "staffMemberId",
+            "type": "select (fixed mock roster)",
+            "i18nKey": "staffDiscipline.violations.form.staff"
+          },
+          { "id": "occurredAt", "type": "date" },
+          {
+            "id": "category",
+            "type": "select",
+            "options": "SD_CATEGORIES — staff-specific picklist, distinct from student VIOLATION_TYPES"
+          },
+          { "id": "severity", "type": "segmented (MINOR/MODERATE/SEVERE)" },
+          { "id": "description", "type": "textarea", "required": true }
+        ],
+        "mockRosterNote": "select from SD_STAFF_ROSTER — NOT live search-as-you-type (roster-UUID gap, flagged to /ba per DR-022 mock-first note)"
+      },
+      "listRow": "avatar + staff name/dept + severity badge + category/description + occurredAt; right column: SDStateBadge + submit/approve/reject actions role-gated"
+    },
+
+    "conductNotesTab": {
+      "ratingBadge": {
+        "component": "SDRatingBadge",
+        "colorMapping": "SATISFACTORY→success | NEEDS_IMPROVEMENT→warning (fg=var(--edu-warning-foreground)) | UNSATISFACTORY→error",
+        "note": "reuses the EXISTING GPA/difficulty 3-tier convention verbatim (question-bank.jsx QB_DIFFICULTY precedent for the warning fg-override) — no new token",
+        "i18nKey": "staffDiscipline.conductNotes.rating.{satisfactory,needsImprovement,unsatisfactory}"
+      },
+      "termSelector": {
+        "visibleFor": "principal only (self-view is scoped to the staff member's own record across the selected term implicitly)"
+      },
+      "setForm": {
+        "naturalKey": "termId + staffMemberId — POST overwrites existing DRAFT/REJECTED; blocked (locked) once APPROVED",
+        "fields": [
+          {
+            "id": "rating",
+            "type": "segmented (SATISFACTORY/NEEDS_IMPROVEMENT/UNSATISFACTORY)"
+          },
+          {
+            "id": "note",
+            "type": "textarea",
+            "maxLength": 5000,
+            "required": true
+          }
+        ]
+      },
+      "lockedState": {
+        "trigger": "attempting to re-open the set form on an APPROVED note",
+        "behavior": "blocked — inline toast/lock icon, no form opens",
+        "i18nKey": "staffDiscipline.errors.locked (NEW — staff-specific wording, distinct from discipline.errors.locked which is conduct-grade wording)"
+      },
+      "selfView": {
+        "visibleFor": "teacher role — read-only, filtered to own staffMemberId",
+        "note": "oversight parity with the student's own conduct-grade self-view in discipline.jsx's ParentDisciplineScreen"
+      }
+    },
+
+    "states": {
+      "loading": "EduSkeleton variant='rows' count=4",
+      "empty": {
+        "component": "EduEmpty",
+        "approverCTA": "Ghi nhận vi phạm / Đặt ghi chú — visible for principal only",
+        "selfViewCopy": "static empty copy, no CTA"
+      },
+      "error": "EduError + onRetry (whole-tab reload demo, auto-fails once then succeeds — same pattern as lesson-plan.jsx)",
+      "validation": [
+        "reject-reason min-length client guard (10 chars)",
+        "create/set required fields (staff, description/note)",
+        "conduct-note locked re-edit attempt blocked with inline message"
+      ]
+    },
+
+    "a11y": {
+      "statusNotColorOnly": "state/severity/rating badges always pair icon + text label",
+      "contrast": "warning badges (SUBMITTED state, MINOR severity, NEEDS_IMPROVEMENT rating) use var(--edu-warning-foreground) text tone — never raw warning as text-on-light-bg color",
+      "focus": "tab bar (role=tablist/tab), reject textarea (aria-invalid + aria-describedby), all buttons ≥44px touch target",
+      "motion": "toast/reject-panel expand gated behind prefers-reduced-motion: reduce"
+    },
+
+    "i18nReuse": {
+      "verbatim": [
+        "discipline.errors.same-actor",
+        "discipline.errors.forbidden",
+        "discipline.errors.not-found",
+        "discipline.errors.already-processed",
+        "discipline.errors.invalid-transition",
+        "discipline.errors.invalid-severity",
+        "discipline.errors.invalid-state",
+        "discipline.errors.invalid-input",
+        "discipline.errors.network-error",
+        "discipline.errors.missing-reject-reason",
+        "discipline.leave.rejectDialog.*"
+      ],
+      "new": [
+        "staffDiscipline.errors.term-not-found",
+        "staffDiscipline.errors.locked",
+        "staffDiscipline.errors.invalid-rating",
+        "staffDiscipline.conductNotes.rating.satisfactory",
+        "staffDiscipline.conductNotes.rating.needsImprovement",
+        "staffDiscipline.conductNotes.rating.unsatisfactory",
+        "staffDiscipline.conductNotes.selfApprovedNote"
+      ]
+    }
+  },
+
+  "studentAbsences": {
+    "story": "US-E18.14 (BE ground-truth) → DR-022 (design)",
+    "routes": [
+      "/teacher/absences",
+      "/principal/absences",
+      "/admin/absences (same component, role-conditional)"
+    ],
+    "roles": [
+      "teacher (GVCN/homeroom — record + edit, own class)",
+      "principal (ADMIN/MANAGER — flag-only, schoolwide/class-filtered)"
+    ],
+    "designSrc": "design_src/edu/student-absences.jsx",
+    "components": [
+      "StudentAbsencesScreen",
+      "SAExcusedBadge",
+      "SAFlaggedIndicator",
+      "SAFlagConfirmDialog",
+      "SADateField"
+    ],
+    "i18nNamespace": "studentAbsences",
+    "status": "design-ready (DR-022, 2026-07-25)",
+    "beContract": {
+      "service": "core (conduct sub-domain)",
+      "routes": "POST /api/v1/conduct/student-absences (teacher/GVCN, initial state RECORDED), GET ?classId=&from=&to= (role-scoped), PATCH /:date?classId=&studentMemberId= (GVCN — reason/excused optional, PATCH semantics), POST /:date/flag?classId=&studentMemberId= (ADMIN/MANAGER only, one-way RECORDED→FLAGGED_UNEXCUSED, terminal, no unflag)",
+      "responseFields": "classId, studentMemberId, date (bare YYYY-MM-DD string, NOT datetime), reason? (max 5000), excused (bool), state (RECORDED|FLAGGED_UNEXCUSED), recordedByMemberId, flaggedByMemberId?, createdAt, updatedAt",
+      "immutableIdentity": "date/classId/studentMemberId are the natural key — immutable once created; only reason/excused are PATCH-able",
+      "notApprovalWorkflow": "absence_state.go has its OWN 2-value state with a one-way Flag() — NOT the shared ApprovalTransition (DRAFT/SUBMITTED/APPROVED/REJECTED) used by staffDiscipline/discipline — do not reuse that card shape here",
+      "errorTaxonomy": "all genuinely new, zero shared codes with discipline/staffDiscipline: ABSENCE_FORBIDDEN (403), ABSENCE_NOT_FOUND (404), ABSENCE_DUPLICATE_DATE (409, create conflict), ABSENCE_INVALID_DATE (422 — future date rejected, OPPOSITE direction from discipline.errors.invalid-date which guards leave dates ≥ today), ABSENCE_INVALID_STATE (400), ABSENCE_INVALID_ID (400), ABSENCE_INVALID_INPUT (422)",
+      "noDisplayFields": "no studentName/className on the wire — mock resolves client-side against a fixed roster list (SA_STUDENT_ROSTER), NOT live search (roster-UUID gap, ask #9/#22)"
+    },
+
+    "layout": {
+      "contentPadding": "28px 32px (mobile 20px 16px)",
+      "maxWidth": 1160,
+      "statsRow": "3-up StatCard grid: total absences / unexcused / flagged (schoolwide or class-scoped depending on role)"
+    },
+
+    "twoIndependentBadges": {
+      "note": "MUST NOT be conflated into one badge — two orthogonal signals per row",
+      "excusedBadge": {
+        "component": "SAExcusedBadge",
+        "colorMapping": "excused=true→success (Có phép) | excused=false→warning (Không phép, fg=var(--edu-warning-foreground))",
+        "editable": "by GVCN at record/edit time only",
+        "i18nKey": "studentAbsences.{excused,unexcused}"
+      },
+      "flaggedIndicator": {
+        "component": "SAFlaggedIndicator",
+        "visibility": "ONLY when state === FLAGGED_UNEXCUSED",
+        "style": "icon 'flag' + label, color var(--edu-error), pill bg var(--edu-error-light)",
+        "setBy": "ADMIN/MANAGER only, one-way, no unflag affordance",
+        "i18nKey": "studentAbsences.flagged"
+      }
+    },
+
+    "teacherView": {
+      "scope": "own homeroom class only (GVCN)",
+      "recordForm": {
+        "fields": [
+          {
+            "id": "studentMemberId",
+            "type": "select (fixed mock roster, own class only)"
+          },
+          {
+            "id": "date",
+            "type": "date",
+            "validation": "max=today (HTML attribute) + client re-check on submit — mirrors ABSENCE_INVALID_DATE",
+            "i18nKey": "studentAbsences.errors.invalid-date-future"
+          },
+          { "id": "excused", "type": "segmented (Có phép / Không phép)" },
+          {
+            "id": "reason",
+            "type": "textarea",
+            "maxLength": 5000,
+            "required": false
+          }
+        ],
+        "duplicateDateGuard": "client-side check against classId+studentMemberId+date before submit — inline banner, i18nKey studentAbsences.errors.duplicate-date"
+      },
+      "editMode": {
+        "editableFields": "reason, excused only (PATCH semantics)",
+        "immutableFields": "date, classId, studentMemberId — rendered as static text, never editable inputs once created"
+      }
+    },
+
+    "adminPrincipalView": {
+      "scope": "schoolwide, class-filtered dropdown",
+      "flagAction": {
+        "trigger": "'Gắn cờ' button — visible only on state===RECORDED rows",
+        "confirmDialog": {
+          "component": "SAFlagConfirmDialog",
+          "pattern": "mirrors lesson-plan.jsx LPConfirmDialog one-way publish confirm — irreversible, explicit confirm, no unflag affordance ever offered",
+          "i18nKey": "studentAbsences.flagConfirm.{title,description,cancel,confirm}"
+        }
+      },
+      "noUnflagAffordance": true
+    },
+
+    "states": {
+      "loading": "EduSkeleton variant='rows' count=4",
+      "empty": {
+        "component": "EduEmpty",
+        "i18nKey": "studentAbsences.empty (chưa ghi nhận nghỉ học kỳ này)",
+        "teacherCTA": "Ghi nhận nghỉ học — visible for teacher only"
+      },
+      "error": "EduError + onRetry",
+      "validation": [
+        "duplicate-date (creating a 2nd record for the same class+student+date)",
+        "future-date (date picker max=today + inline error on attempted override)"
+      ]
+    },
+
+    "a11y": {
+      "statusNotColorOnly": "excused/unexcused badge AND flagged indicator always pair icon + text label — and are visually distinct from each other (never merged into one pill)",
+      "contrast": "unexcused (warning) badge uses var(--edu-warning-foreground) text tone — never raw warning as text-on-light-bg color",
+      "focus": "date inputs, segmented excused toggle, flag confirm dialog (role=dialog, aria-modal, focus trap) all keyboard-operable ≥44px touch target",
+      "motion": "toast/dialog fade-in gated behind prefers-reduced-motion: reduce"
+    },
+
+    "i18nNew": [
+      "studentAbsences.excused",
+      "studentAbsences.unexcused",
+      "studentAbsences.flagged",
+      "studentAbsences.flagAction",
+      "studentAbsences.flagConfirm.title",
+      "studentAbsences.flagConfirm.description",
+      "studentAbsences.flagConfirm.cancel",
+      "studentAbsences.flagConfirm.confirm",
+      "studentAbsences.errors.forbidden",
+      "studentAbsences.errors.not-found",
+      "studentAbsences.errors.duplicate-date",
+      "studentAbsences.errors.invalid-date-future",
+      "studentAbsences.errors.invalid-state",
+      "studentAbsences.errors.invalid-id",
+      "studentAbsences.errors.invalid-input"
+    ]
   }
 }

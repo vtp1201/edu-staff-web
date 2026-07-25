@@ -3391,6 +3391,137 @@
       "reconnectingTitle": "Đang kết nối lại..."
     }
   },
+  "staffDiscipline": {
+    "conductNotes": {
+      "actions": {
+        "approve": "Phê duyệt",
+        "approving": "Đang phê duyệt...",
+        "reject": "Từ chối",
+        "rejecting": "Đang từ chối...",
+        "submit": "Gửi duyệt",
+        "submitting": "Đang gửi..."
+      },
+      "columns": {
+        "action": "Thao tác",
+        "rating": "Xếp loại",
+        "staffMember": "Nhân sự",
+        "state": "Trạng thái",
+        "term": "Học kỳ"
+      },
+      "empty": {
+        "adminCta": "Chưa có ghi nhận nào cho học kỳ này. Tạo ghi nhận mới.",
+        "readOnly": "Chưa có ghi nhận hạnh kiểm."
+      },
+      "error": "Không tải được ghi nhận hạnh kiểm.",
+      "filters": {
+        "staffMember": "Nhân sự",
+        "term": "Học kỳ"
+      },
+      "form": {
+        "note": "Ghi chú *",
+        "notePlaceholder": "Nhận xét hạnh kiểm...",
+        "rating": "Xếp loại *",
+        "staffMember": "Nhân sự *",
+        "staffMemberPlaceholder": "Chọn nhân sự...",
+        "title": "Ghi nhận hạnh kiểm"
+      },
+      "loading": "Đang tải ghi nhận hạnh kiểm...",
+      "rating": {
+        "needsImprovement": "Cần cải thiện",
+        "satisfactory": "Đạt yêu cầu",
+        "unsatisfactory": "Chưa đạt"
+      },
+      "readOnlyLabel": "Chỉ xem",
+      "saving": "Đang lưu...",
+      "selfApprovedNote": "Tự phê duyệt (không có quản trị viên khác)",
+      "status": {
+        "approved": "Đã duyệt",
+        "draft": "Nháp",
+        "rejected": "Từ chối",
+        "submitted": "Chờ duyệt"
+      },
+      "subtitle": "Đánh giá hạnh kiểm nhân sự theo học kỳ",
+      "success": "Đã lưu ghi nhận hạnh kiểm",
+      "title": "Ghi nhận hạnh kiểm nhân sự"
+    },
+    "errors": {
+      "invalid-rating": "Xếp loại không hợp lệ.",
+      "locked": "Ghi chú đã được duyệt, không thể chỉnh sửa.",
+      "term-not-found": "Không tìm thấy học kỳ tương ứng."
+    },
+    "rejectDialog": {
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận từ chối",
+      "description": "Vui lòng nhập lý do từ chối để thông báo cho nhân sự.",
+      "reasonMinLength": "Vui lòng nhập ít nhất 10 ký tự",
+      "reasonPlaceholder": "Lý do...",
+      "title": "Lý do từ chối"
+    },
+    "retry": "Thử lại",
+    "subtitle": "Ghi nhận vi phạm và đánh giá hạnh kiểm định kỳ của nhân sự",
+    "tabs": {
+      "conductNotes": "Ghi nhận hạnh kiểm",
+      "violations": "Vi phạm"
+    },
+    "title": "Kỷ luật nhân sự",
+    "violations": {
+      "actions": {
+        "approve": "Phê duyệt",
+        "approving": "Đang phê duyệt...",
+        "reject": "Từ chối",
+        "rejecting": "Đang từ chối...",
+        "submit": "Gửi duyệt",
+        "submitting": "Đang gửi..."
+      },
+      "addNew": "Ghi nhận vi phạm mới",
+      "columns": {
+        "action": "Thao tác",
+        "category": "Loại vi phạm",
+        "occurredAt": "Ngày",
+        "severity": "Mức độ",
+        "staffMember": "Nhân sự",
+        "state": "Trạng thái"
+      },
+      "empty": {
+        "adminCta": "Chưa có vi phạm nào. Ghi nhận vi phạm đầu tiên.",
+        "readOnly": "Chưa có vi phạm nào được ghi nhận."
+      },
+      "error": "Không tải được danh sách vi phạm.",
+      "filters": {
+        "all": "Tất cả",
+        "severity": "Mức độ",
+        "staffMember": "Nhân sự",
+        "state": "Trạng thái"
+      },
+      "form": {
+        "category": "Loại vi phạm *",
+        "categoryPlaceholder": "VD: Vi phạm quy chế chuyên môn",
+        "description": "Mô tả *",
+        "descriptionPlaceholder": "Mô tả chi tiết vi phạm...",
+        "occurredAt": "Ngày xảy ra *",
+        "severity": "Mức độ *",
+        "staffMember": "Nhân sự *",
+        "staffMemberPlaceholder": "Chọn nhân sự...",
+        "title": "Ghi nhận vi phạm nhân sự"
+      },
+      "loading": "Đang tải danh sách vi phạm...",
+      "saving": "Đang lưu...",
+      "selfApprovedNote": "Tự phê duyệt (không có quản trị viên khác)",
+      "severity": {
+        "high": "Nặng",
+        "low": "Nhẹ",
+        "medium": "Vừa"
+      },
+      "status": {
+        "approved": "Đã duyệt",
+        "draft": "Nháp",
+        "rejected": "Từ chối",
+        "submitted": "Chờ duyệt"
+      },
+      "success": "Đã ghi nhận vi phạm thành công",
+      "title": "Danh sách vi phạm nhân sự"
+    }
+  },
   "staffLeave": {
     "actions": {
       "approve": "Phê duyệt",
@@ -3710,6 +3841,60 @@
       "departments": "Tổ bộ môn",
       "positionTitles": "Chức danh"
     }
+  },
+  "studentAbsences": {
+    "columns": {
+      "action": "Thao tác",
+      "date": "Ngày",
+      "excused": "Có phép",
+      "reason": "Lý do",
+      "state": "Trạng thái",
+      "student": "Học sinh"
+    },
+    "empty": "Chưa ghi nhận nghỉ học kỳ này",
+    "error": "Không tải được danh sách nghỉ học.",
+    "errors": {
+      "duplicate-date": "Đã có bản ghi nghỉ học cho học sinh này vào ngày đã chọn.",
+      "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+      "invalid-date-future": "Không thể chọn ngày trong tương lai.",
+      "invalid-id": "Mã định danh không hợp lệ.",
+      "invalid-input": "Dữ liệu không hợp lệ.",
+      "invalid-state": "Trạng thái không hợp lệ.",
+      "not-found": "Không tìm thấy bản ghi nghỉ học."
+    },
+    "excused": "Có phép",
+    "filters": {
+      "class": "Lớp",
+      "dateFrom": "Từ ngày",
+      "dateTo": "Đến ngày"
+    },
+    "flagAction": "Gắn cờ",
+    "flagConfirm": {
+      "cancel": "Huỷ",
+      "confirm": "Xác nhận gắn cờ",
+      "description": "Buổi nghỉ sẽ được đánh dấu là nghỉ không phép cần theo dõi. Hành động này không thể hoàn tác.",
+      "title": "Gắn cờ buổi nghỉ này?"
+    },
+    "flagged": "Đã gắn cờ",
+    "form": {
+      "date": "Ngày *",
+      "dateFutureHelper": "Chỉ có thể chọn ngày hôm nay hoặc trước đó.",
+      "editSuccess": "Đã cập nhật nghỉ học",
+      "editTitle": "Chỉnh sửa nghỉ học",
+      "excused": "Có phép",
+      "reason": "Lý do",
+      "reasonPlaceholder": "Lý do nghỉ học (nếu có)...",
+      "recordSuccess": "Đã ghi nhận nghỉ học",
+      "recordTitle": "Ghi nhận nghỉ học",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "submit": "Ghi nhận"
+    },
+    "loading": "Đang tải danh sách nghỉ học...",
+    "retry": "Thử lại",
+    "subtitle": "Ghi nhận và theo dõi tình trạng nghỉ học của học sinh theo lớp",
+    "title": "Nghỉ học của học sinh",
+    "unexcused": "Không phép"
   },
   "subjectCatalogue": {
     "createParentDialog": {

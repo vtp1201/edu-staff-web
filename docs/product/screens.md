@@ -17,7 +17,10 @@ tenant-switch.jsx, reports.jsx, plus messaging.jsx extended in place (presence),
 and the shared `states.jsx` state-primitive set (see `design-system.md`).
 DR-021 (2026-07-17) adds: lesson-plan.jsx, question-bank.jsx (net-new,
 US-E18.16 design follow-up).
-Current design version: 1506 (+ group B v2.2 additions above, + DR-021 above).
+DR-022 (2026-07-25) adds: staff-discipline.jsx, student-absences.jsx (net-new,
+US-E18.14 design follow-up).
+Current design version: 1506 (+ group B v2.2 additions above, + DR-021 above,
++ DR-022 above).
 
 Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design, chưa impl).
 
@@ -58,6 +61,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Attendance (diem danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ |
 | Class Log (so dau bai + submit) | `(app)/teacher/class-log` | `features/class-log` | ⬜ (E13.3) |
 | Discipline (vi pham/hanh kiem/nghi phep) | `(app)/teacher/discipline` | `features/discipline` | 🎨 design-ready (US-E09.1; `discipline.jsx` 1506) |
+| Student Absences (record/edit, GVCN own class) | `(app)/teacher/absences` | `features/student-absences` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `student-absences.jsx` `StudentAbsencesScreen` teacher mode, DR-022 2026-07-25; role-conditional component also serves Principal/Admin flag mode — see that section) |
 | Grade Entry | `(app)/teacher/grades/enter` | `features/grades` | 🎨 design-ready (US-E14.2; `grade-entry.jsx` 1506) |
 | Grade Book | `(app)/teacher/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
@@ -103,6 +107,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Staffing — Departments** | `(app)/admin/staffing/departments` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
 | **Staffing — Position Titles** | `(app)/admin/staffing/position-titles` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
 | **Staffing — Position Assignments** | `(app)/admin/staffing/assignments` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
+| **Staff Discipline** (violations + conduct notes, tabbed; admin author, principal approve/reject) | `(app)/admin/staff-discipline` | `staff-discipline.jsx` (US-E18.14 design follow-up) | `features/staff-discipline` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `staff-discipline.jsx` `StaffDisciplineScreen`, DR-022 2026-07-25) |
+| **Student Absences** (schoolwide/class-filtered flag view, admin/principal) | `(app)/principal/absences`, `(app)/admin/absences` | `student-absences.jsx` (US-E18.14 design follow-up) | `features/student-absences` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `student-absences.jsx` `StudentAbsencesScreen` flag mode, DR-022 2026-07-25; same component as the Teacher record/edit row above) |
 
 ## Student (Epic E11 LMS + Exams, E09 conduct, E13/E14 grades)
 
@@ -182,3 +188,9 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
   - `design_src/edu/tenant-switch.jsx` — Multi-Tenant post-login select screen; header user-menu + dialog logic embedded in `app.jsx` (US-E23.1/US-E23.2, DR-018)
   - `design_src/edu/reports.jsx` — Principal Reports Dashboard, fills the prior placeholder row (US-E03.1, DR-019)
   - `design_src/edu/states.jsx` — shared `EduSkeleton`/`EduEmpty`/`EduError`/`EduComingSoon` state primitives consumed by the above (see `docs/product/design-system.md` §Component patterns)
+- **DR-021 (2026-07-17)** adds:
+  - `design_src/edu/lesson-plan.jsx` — Teacher Lesson Plan Authoring + Builder (US-E18.16 design follow-up, net-new)
+  - `design_src/edu/question-bank.jsx` — Teacher Question Bank + Builder (US-E18.16 design follow-up, net-new)
+- **DR-022 (2026-07-25)** adds:
+  - `design_src/edu/staff-discipline.jsx` — Staff Discipline: violations + conduct notes tabs, admin author / principal approve-reject (US-E18.14 design follow-up, net-new)
+  - `design_src/edu/student-absences.jsx` — Student Absences: teacher record/edit + admin/principal flag mode, role-conditional (US-E18.14 design follow-up, net-new)
