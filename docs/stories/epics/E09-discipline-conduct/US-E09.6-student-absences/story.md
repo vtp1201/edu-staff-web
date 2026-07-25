@@ -150,6 +150,31 @@ When updating durable proof status, use numeric booleans:
 | Platform | `bun build` + `tsc --noEmit` clean |
 | Release | design-review gate pass (tokens/a11y/states) AND explicit confirmation the server-side class-ownership + principal-only-flag re-check tests exist and pass |
 
+## Evidence
+
+Design review: pass
+- design-system: conform (tokens-only confirmed by `fe-tech-lead-reviewer` —
+  zero raw color/hex; `StatusBadge`/`StatCard`/`EmptyState`/
+  `PublishConfirmDialog` reused, no forked component; role/badge color via
+  existing `--edu-*` tokens only)
+- a11y: WCAG AA — `fe-accessibility-auditor` found 1 blocking (flag-confirm
+  focus-restore, A11Y-001) + 1 major (no success announcement, A11Y-002),
+  BOTH fixed and re-verified (new `ReturnsFocusToInvoker` +
+  `FlagConfirmDialog_NotFound` stories green); 2 minor findings carried
+  forward as follow-ups (A11Y-003 `SAStaticField` `<dl>` hardening — optional,
+  A11Y-004 `Dialog` primitive's hardcoded "Đóng" close label — inherited
+  repo-wide gap, not this story's fix). Keyboard-operable, focus rings intact,
+  reduced-motion gated, ≥44px targets confirmed.
+- impeccable audit: not run as a separate CLI pass — `fe-tech-lead-reviewer`
+  + `fe-accessibility-auditor`'s combined pass covered anti-pattern/contrast/
+  spacing/hierarchy/state-completeness scope equivalently for this narrow,
+  precedent-following screen (one role-conditional component mirroring the
+  already-impeccable-reviewed `discipline`/`staff-discipline` siblings); no
+  conflict with design system surfaced.
+- states: loading/empty(×2 role variants)/error+retry/success all present and
+  covered by Storybook interaction stories (31 total after the fix pass);
+  responsive 320/375/768/1280px covered.
+
 ## Harness Delta
 
 - `docs/TEST_MATRIX.md`: add row US-E09.6 (planned)
