@@ -44,6 +44,7 @@ export type SDViolationsTabProps = Pick<
   | "initialViolations"
   | "initialViolationsErrorKey"
   | "staffRoster"
+  | "violationCategories"
   | "listViolationsAction"
   | "createViolationAction"
   | "submitViolationAction"
@@ -58,6 +59,7 @@ export function SDViolationsTab({
   initialViolations,
   initialViolationsErrorKey,
   staffRoster,
+  violationCategories,
   listViolationsAction,
   createViolationAction,
   submitViolationAction,
@@ -298,6 +300,7 @@ export function SDViolationsTab({
         <CreateViolationDialog
           open={createOpen}
           staffRoster={staffRoster}
+          violationCategories={violationCategories}
           isSubmitting={createMutation.isPending}
           submitError={createError}
           onSubmit={(input) => createMutation.mutate(input)}

@@ -33,6 +33,7 @@ import {
   useSDErrorMessage,
   useSDFieldErrorMessage,
 } from "./sd-error-message";
+import { SDSegmentedField, type SDSegmentedOption } from "./sd-segmented-field";
 import type { StaffDisciplineSubmitError } from "./staff-discipline-screen.i-vm";
 
 /**
@@ -50,9 +51,24 @@ const SEVERITY_LABEL_KEY = {
   SEVERE: "high",
 } as const;
 
+/** Checked tint per severity — mirrors `SDSeverityBadge`'s tone mapping
+ *  (MINOR→warning, MODERATE→error, SEVERE→error-dark) with the same AA-safe
+ *  token pairs used by `StatusBadge`. Literal strings: Tailwind v4 cannot scan a
+ *  computed class. No new token. */
+const SEVERITY_CHECKED_CLASS: Record<StaffViolationSeverity, string> = {
+  MINOR:
+    "data-[state=checked]:bg-edu-warning/15 data-[state=checked]:text-edu-warning-foreground",
+  MODERATE:
+    "data-[state=checked]:bg-edu-error/15 data-[state=checked]:text-edu-error-text",
+  SEVERE:
+    "data-[state=checked]:bg-edu-error-dark-light data-[state=checked]:text-edu-error-dark",
+};
+
 export interface CreateViolationDialogProps {
   open: boolean;
   staffRoster: StaffRosterEntry[];
+  /** Static `SD_CATEGORIES` picklist — DATA, never fetched (AC-002.2). */
+  violationCategories: string[];
   isSubmitting: boolean;
   submitError?: StaffDisciplineSubmitError;
   onSubmit: (input: CreateStaffViolationInput) => void;
@@ -62,6 +78,7 @@ export interface CreateViolationDialogProps {
 export function CreateViolationDialog({
   open,
   staffRoster,
+  violationCategories,
   isSubmitting,
   submitError,
   onSubmit,
@@ -77,10 +94,15 @@ export function CreateViolationDialog({
   const staffId = useId();
   const occurredAtId = useId();
   const categoryId = useId();
-  const severityId = useId();
   const descriptionId = useId();
-  const severityErrorId = useId();
   const descriptionErrorId = useId();
+
+  const severityOptions: SDSegmentedOption<StaffViolationSeverity>[] =
+    STAFF_VIOLATION_SEVERITIES.map((s) => ({
+      value: s,
+      label: tSeverity(SEVERITY_LABEL_KEY[s]),
+      checkedClassName: SEVERITY_CHECKED_CLASS[s],
+    }));
 
   const [staffMemberId, setStaffMemberId] = useState("");
   const [occurredAt, setOccurredAt] = useState("");
@@ -185,53 +207,32 @@ export function CreateViolationDialog({
             >
               {tForm("category")}
             </label>
-            <Input
-              id={categoryId}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder={tForm("categoryPlaceholder")}
-              className="min-h-11"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={severityId}
-              className="font-bold text-foreground text-xs"
-            >
-              {tForm("severity")}
-            </label>
-            <Select
-              value={severity}
-              onValueChange={(v) => setSeverity(v as StaffViolationSeverity)}
-            >
-              <SelectTrigger
-                id={severityId}
-                aria-invalid={showSeverityError}
-                aria-describedby={
-                  showSeverityError ? severityErrorId : undefined
-                }
-                className="min-h-11"
-              >
-                <SelectValue placeholder={tForm("severity")} />
+            {/* Design-spec `createForm.fields[2]`: a select over SD_CATEGORIES,
+                a STATIC picklist prop — like the staff field above, it fires no
+                network request ever (AC-002.2). */}
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id={categoryId} className="min-h-11">
+                <SelectValue placeholder={tForm("categoryPlaceholder")} />
               </SelectTrigger>
               <SelectContent className="pointer-events-auto">
-                {STAFF_VIOLATION_SEVERITIES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {tSeverity(SEVERITY_LABEL_KEY[s])}
+                {violationCategories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {showSeverityError && (
-              <p
-                id={severityErrorId}
-                className="font-semibold text-edu-error-text text-xs"
-              >
-                {fieldErrorMessage("severity")}
-              </p>
-            )}
           </div>
+
+          <SDSegmentedField
+            label={tForm("severity")}
+            value={severity}
+            options={severityOptions}
+            errorMessage={
+              showSeverityError ? fieldErrorMessage("severity") : undefined
+            }
+            onChange={setSeverity}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label
@@ -292,7 +293,10 @@ export function CreateViolationDialog({
             className="min-h-11"
           >
             {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <Loader2
+                className="size-4 motion-safe:animate-spin"
+                aria-hidden="true"
+              />
             )}
             {isSubmitting ? t("saving") : tCommon("confirm")}
           </Button>

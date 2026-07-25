@@ -67,6 +67,9 @@ export function useSDFieldErrorMessage() {
       case "termId":
         return tSd("term-not-found");
       case "note":
+        // NOT the violation copy ("Vui lòng nhập mô tả vi phạm") — a conduct
+        // note is a different noun, so this field owns its own key (S2).
+        return tSd("missing-note");
       case "description":
         return tShared("missing-description");
       default:

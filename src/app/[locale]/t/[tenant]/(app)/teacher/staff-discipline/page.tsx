@@ -7,6 +7,7 @@ import type { StaffConductNoteEntity } from "@/features/staff-discipline/domain/
 import type { StaffViolationEntity } from "@/features/staff-discipline/domain/entities/staff-violation.entity";
 import { toStaffDisciplineFailureType } from "@/features/staff-discipline/domain/failures/staff-discipline.failure";
 import {
+  SD_CATEGORIES,
   SD_DEFAULT_TERM_ID,
   SD_STAFF_ROSTER,
 } from "@/features/staff-discipline/infrastructure/repositories/mocks/fixtures";
@@ -73,6 +74,7 @@ export default async function TeacherStaffDisciplinePage() {
       initialConductNotesErrorKey={initialConductNotesErrorKey}
       initialTermId={SD_DEFAULT_TERM_ID}
       staffRoster={[...SD_STAFF_ROSTER]}
+      violationCategories={[...SD_CATEGORIES]}
       termOptions={[]}
       listViolationsAction={listViolationsAction}
       createViolationAction={createViolationAction}

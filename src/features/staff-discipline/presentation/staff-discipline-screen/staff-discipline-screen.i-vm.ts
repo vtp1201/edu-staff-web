@@ -58,6 +58,12 @@ export interface StaffDisciplineScreenVM {
 
   /** Static, passed once, NEVER refetched (AC-002.2 — zero network calls). */
   staffRoster: StaffRosterEntry[];
+  /**
+   * Static violation-category picklist (`SD_CATEGORIES`, design-spec
+   * `violationsTab.createForm.fields[2]`). Stored WIRE VALUES, i.e. DATA — not
+   * i18n copy. Threaded exactly like `staffRoster`: passed once, never fetched.
+   */
+  violationCategories: string[];
   /** Static term picklist (principal only renders the selector). */
   termOptions: StaffDisciplineTermOption[];
 

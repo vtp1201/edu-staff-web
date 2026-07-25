@@ -33,6 +33,27 @@ export const SD_TERMS = [
 export const SD_TERM_IDS: readonly string[] = SD_TERMS.map((t) => t.id);
 export const SD_DEFAULT_TERM_ID = SD_TERMS[0].id;
 
+/**
+ * Staff-specific violation-category picklist (design-spec
+ * `staffDiscipline.violationsTab.createForm.fields[2]` → `SD_CATEGORIES`,
+ * adapted from `design_src/edu/staff-discipline.jsx`).
+ *
+ * These are the STORED WIRE VALUES of `StaffViolationEntity.category` (a free
+ * string on the BE contract), i.e. DATA — deliberately NOT i18n copy, exactly
+ * like `SD_TERMS[].label`. The seed rows below reference this const so the
+ * picklist and the fixtures can never drift apart.
+ */
+export const SD_CATEGORY = {
+  late: "Đi làm muộn / vắng không phép",
+  professional: "Vi phạm quy chế chuyên môn",
+  conduct: "Ứng xử không đúng mực với HS/PH",
+  dressCode: "Vi phạm quy định trang phục/tác phong",
+  other: "Khác",
+} as const;
+
+/** The picklist rendered by the create-violation dialog (5 options, deduped). */
+export const SD_CATEGORIES: readonly string[] = Object.values(SD_CATEGORY);
+
 export const SD_STAFF_ROSTER: readonly StaffRosterEntry[] = [
   {
     staffMemberId: "staff-1",
@@ -115,7 +136,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_SUBMITTED_VIOLATION_ID,
       staffMemberId: "staff-4",
-      category: "Đi làm muộn / vắng không phép",
+      category: SD_CATEGORY.late,
       description:
         "Vào lớp trễ 20 phút không báo trước, không có giáo viên dạy thay.",
       severity: "MODERATE",
@@ -128,7 +149,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_DRAFT_VIOLATION_ID,
       staffMemberId: "staff-2",
-      category: "Vi phạm quy chế chuyên môn",
+      category: SD_CATEGORY.professional,
       description:
         "Không nộp giáo án đúng hạn quy định 2 lần liên tiếp trong tháng.",
       severity: "MINOR",
@@ -142,7 +163,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
       // selfApproved: true (author === approver) — ADR 0073 common case.
       recordId: MOCK_SELF_APPROVED_VIOLATION_ID,
       staffMemberId: SD_SELF_STAFF_ID,
-      category: "Vi phạm quy định trang phục/tác phong",
+      category: SD_CATEGORY.dressCode,
       description:
         "Trang phục không đúng quy định trong buổi lễ chào cờ đầu tuần.",
       severity: "MINOR",
@@ -156,7 +177,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: "sv-004",
       staffMemberId: "staff-5",
-      category: "Ứng xử không đúng mực với HS/PH",
+      category: SD_CATEGORY.conduct,
       description:
         "Phụ huynh phản ánh thái độ chưa đúng mực khi trao đổi qua điện thoại.",
       severity: "SEVERE",
@@ -170,7 +191,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
     {
       recordId: MOCK_REJECTED_VIOLATION_ID,
       staffMemberId: "staff-3",
-      category: "Đi làm muộn / vắng không phép",
+      category: SD_CATEGORY.late,
       description: "Đến muộn tiết coi thi giữa kỳ 15 phút.",
       severity: "MODERATE",
       occurredAt: "2026-03-20",
@@ -187,7 +208,7 @@ export function seedStaffViolations(): StaffViolationResponseDto[] {
       // offered (or allowed) a submit on it (AC-003.2 + server backstop).
       recordId: MOCK_FOREIGN_DRAFT_VIOLATION_ID,
       staffMemberId: "staff-3",
-      category: "Khác",
+      category: SD_CATEGORY.other,
       description: "Ghi nhận nháp do thành viên BGH khác lập, chờ hoàn thiện.",
       severity: "MINOR",
       occurredAt: "2026-05-06",

@@ -69,6 +69,7 @@ export function StaffDisciplineScreen({
             initialViolations={vm.initialViolations}
             initialViolationsErrorKey={vm.initialViolationsErrorKey}
             staffRoster={vm.staffRoster}
+            violationCategories={vm.violationCategories}
             listViolationsAction={vm.listViolationsAction}
             createViolationAction={vm.createViolationAction}
             submitViolationAction={vm.submitViolationAction}

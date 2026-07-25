@@ -33,6 +33,7 @@ import {
   useSDErrorMessage,
   useSDFieldErrorMessage,
 } from "./sd-error-message";
+import { SDSegmentedField, type SDSegmentedOption } from "./sd-segmented-field";
 import type { StaffDisciplineSubmitError } from "./staff-discipline-screen.i-vm";
 
 /**
@@ -53,6 +54,19 @@ const RATING_LABEL_KEY = {
   NEEDS_IMPROVEMENT: "needsImprovement",
   UNSATISFACTORY: "unsatisfactory",
 } as const;
+
+/** Checked tint per rating — mirrors `SDRatingBadge`'s tone mapping
+ *  (SATISFACTORY→success, NEEDS_IMPROVEMENT→warning, UNSATISFACTORY→error) with
+ *  the same AA-safe token pairs `StatusBadge` uses. Literal strings for the
+ *  Tailwind v4 scanner. No new token. */
+const RATING_CHECKED_CLASS: Record<StaffConductRating, string> = {
+  SATISFACTORY:
+    "data-[state=checked]:bg-edu-success/15 data-[state=checked]:text-edu-success-text",
+  NEEDS_IMPROVEMENT:
+    "data-[state=checked]:bg-edu-warning/15 data-[state=checked]:text-edu-warning-foreground",
+  UNSATISFACTORY:
+    "data-[state=checked]:bg-edu-error/15 data-[state=checked]:text-edu-error-text",
+};
 
 export interface SetConductNoteDialogProps {
   open: boolean;
@@ -86,10 +100,15 @@ export function SetConductNoteDialog({
   const fieldErrorMessage = useSDFieldErrorMessage();
 
   const staffFieldId = useId();
-  const ratingFieldId = useId();
   const noteFieldId = useId();
-  const ratingErrorId = useId();
   const counterId = useId();
+
+  const ratingOptions: SDSegmentedOption<StaffConductRating>[] =
+    STAFF_CONDUCT_RATINGS.map((r) => ({
+      value: r,
+      label: tRating(RATING_LABEL_KEY[r]),
+      checkedClassName: RATING_CHECKED_CLASS[r],
+    }));
 
   const [staffMemberId, setStaffMemberId] = useState("");
   const [rating, setRating] = useState<StaffConductRating | "">("");
@@ -162,42 +181,16 @@ export function SetConductNoteDialog({
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor={ratingFieldId}
-              className="font-bold text-foreground text-xs"
-            >
-              {tForm("rating")}
-            </label>
-            <Select
-              value={rating}
-              onValueChange={(v) => setRating(v as StaffConductRating)}
-            >
-              <SelectTrigger
-                id={ratingFieldId}
-                aria-invalid={showRatingError}
-                aria-describedby={showRatingError ? ratingErrorId : undefined}
-                className="min-h-11"
-              >
-                <SelectValue placeholder={tForm("rating")} />
-              </SelectTrigger>
-              <SelectContent className="pointer-events-auto">
-                {STAFF_CONDUCT_RATINGS.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {tRating(RATING_LABEL_KEY[r])}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {showRatingError && (
-              <p
-                id={ratingErrorId}
-                className="font-semibold text-edu-error-text text-xs"
-              >
-                {fieldErrorMessage("rating")}
-              </p>
-            )}
-          </div>
+          {/* Design-spec `setForm.fields[0]`: segmented, not a dropdown. */}
+          <SDSegmentedField
+            label={tForm("rating")}
+            value={rating}
+            options={ratingOptions}
+            errorMessage={
+              showRatingError ? fieldErrorMessage("rating") : undefined
+            }
+            onChange={setRating}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label
@@ -216,8 +209,12 @@ export function SetConductNoteDialog({
               placeholder={tForm("notePlaceholder")}
               className={cn("resize-y")}
             />
+            {/* Live counter: announced politely as the cap is approached
+                (A11Y-005) — screen-reader users must not discover the 5000-char
+                limit only by the input silently refusing keystrokes. */}
             <p
               id={counterId}
+              aria-live="polite"
               className="text-right text-edu-text-secondary text-xs"
             >
               {note.length}/{STAFF_CONDUCT_NOTE_MAX_LENGTH}
@@ -250,7 +247,10 @@ export function SetConductNoteDialog({
             className="min-h-11"
           >
             {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <Loader2
+                className="size-4 motion-safe:animate-spin"
+                aria-hidden="true"
+              />
             )}
             {isSubmitting ? t("saving") : tCommon("confirm")}
           </Button>
