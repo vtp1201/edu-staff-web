@@ -497,6 +497,54 @@ export const SetConductNoteDialogRatingSegmented: Story = {
   },
 };
 
+/**
+ * AC-002.2 (literal) — the staff-member select itself (not just category): opening
+ * it repeatedly renders the SAME static `SD_STAFF_ROSTER` list and fires ZERO
+ * network requests (no list refetch, no create call) for this field, confirming
+ * FR-009/FR-013.
+ */
+export const CreateViolationDialogStaffMemberStaticSelect: Story = {
+  args: {
+    ...base,
+    listViolationsAction: fn(async () => ok(VIOLATIONS)),
+    createViolationAction: fn(async () => ok(VIOLATIONS[0])),
+  },
+  play: async ({ canvasElement, args }) => {
+    const vmArgs = args as ScreenArgs;
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.violations.addNew }),
+    );
+    const dialog = within(await within(document.body).findByRole("dialog"));
+    const staffTrigger = dialog.getByLabelText(m.violations.form.staffMember);
+
+    // Open once — assert exactly the 3-entry static roster.
+    await userEvent.click(staffTrigger);
+    const firstOpen = await within(document.body).findAllByRole("option");
+    await expect(firstOpen).toHaveLength(ROSTER.length);
+    await expect(firstOpen.map((o) => o.textContent)).toEqual(
+      ROSTER.map((r) => `${r.staffName} — ${r.department}`),
+    );
+    await userEvent.click(firstOpen[0]);
+    await waitFor(() =>
+      expect(staffTrigger).toHaveTextContent(ROSTER[0].staffName),
+    );
+
+    // Re-open — the SAME static list re-renders (not a fresh fetch).
+    await userEvent.click(staffTrigger);
+    const secondOpen = await within(document.body).findAllByRole("option");
+    await expect(secondOpen).toHaveLength(ROSTER.length);
+    await userEvent.click(secondOpen[2]);
+    await waitFor(() =>
+      expect(staffTrigger).toHaveTextContent(ROSTER[2].staffName),
+    );
+
+    // Zero network calls fired for this field, across both opens.
+    await expect(vmArgs.listViolationsAction).not.toHaveBeenCalled();
+    await expect(vmArgs.createViolationAction).not.toHaveBeenCalled();
+  },
+};
+
 export const CreateViolationDialogValidationError: Story = {
   args: {
     ...base,
@@ -517,6 +565,11 @@ export const CreateViolationDialogValidationError: Story = {
   },
 };
 
+/**
+ * AC-002.7 — a network failure keeps the dialog OPEN (not just present at the
+ * moment of click) and PRESERVES the fields the principal already typed, so
+ * retrying doesn't require re-entering everything.
+ */
 export const CreateViolationDialogNetworkError: Story = {
   args: {
     ...base,
@@ -530,9 +583,48 @@ export const CreateViolationDialogNetworkError: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: m.violations.addNew }),
     );
+    const dialogEl = await within(document.body).findByRole("dialog");
+    const dialog = within(dialogEl);
+    const body = within(document.body);
+
+    await userEvent.click(dialog.getByLabelText(m.violations.form.staffMember));
+    await userEvent.click(
+      await body.findByRole("option", { name: /Đỗ Thị Mai/ }),
+    );
+    fireEvent.change(dialog.getByLabelText(m.violations.form.occurredAt), {
+      target: { value: "2026-05-04" },
+    });
+    await userEvent.click(dialog.getByLabelText(m.violations.form.category));
+    await userEvent.click(
+      await body.findByRole("option", { name: CATEGORIES[0] }),
+    );
+    await waitFor(() => expect(dialogEl).not.toHaveAttribute("aria-hidden"));
+    await userEvent.click(
+      within(
+        dialog.getByRole("radiogroup", { name: m.violations.form.severity }),
+      ).getByRole("radio", { name: m.violations.severity.medium }),
+    );
+    const descriptionField = dialog.getByLabelText(
+      m.violations.form.description,
+    );
+    await userEvent.type(descriptionField, "Vào lớp trễ 20 phút.");
+
+    const confirm = dialog.getByRole("button", {
+      name: messages.Common.confirmDialog.confirm,
+    });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await userEvent.click(confirm);
+
+    // Dialog stays open (not swapped for a toast/closed state) with the error
+    // surfaced inline, and every field value is still there for a retry.
+    await waitFor(() =>
+      expect(dialog.getByText(mErr["network-error"])).toBeInTheDocument(),
+    );
+    await expect(dialogEl).toBeInTheDocument();
+    await expect(descriptionField).toHaveValue("Vào lớp trễ 20 phút.");
     await expect(
-      await within(document.body).findByRole("dialog"),
-    ).toBeInTheDocument();
+      dialog.getByLabelText(m.violations.form.staffMember),
+    ).toHaveTextContent("Đỗ Thị Mai");
   },
 };
 
@@ -931,6 +1023,111 @@ export const SetConductNoteDialogLockedNeverOpens: Story = {
     // The term-bar "create new" button has no staff suffix — a row edit trigger
     // would; there must be NONE for the APPROVED row.
     await expect(editTriggers.length).toBe(0);
+    await expect(within(document.body).queryByRole("dialog")).toBeNull();
+  },
+};
+
+/**
+ * AC-007.9 — a network failure on the SET dialog (new-note path) keeps the
+ * dialog OPEN and preserves the values already entered, mirroring
+ * `CreateViolationDialogNetworkError`'s AC-002.7 proof. This is the "stays
+ * open until settled" guarantee spec.md calls out for BOTH dialogs — until
+ * this story, only the create-violation dialog had it asserted.
+ */
+export const SetConductNoteDialogNetworkErrorPreservesFields: Story = {
+  args: {
+    ...base,
+    initialTab: "conductNotes",
+    setConductNoteAction: async () => ({
+      ok: false,
+      errorKey: "network-error",
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.conductNotes.form.title }),
+    );
+    const dialogEl = await within(document.body).findByRole("dialog");
+    const dialog = within(dialogEl);
+    const body = within(document.body);
+
+    // Rating first (no portal involved) to avoid the Radix Select portal's
+    // transient `aria-hidden` lock on the dialog content (see
+    // `MotionSafeGating`'s note on this same pattern).
+    await userEvent.click(
+      within(
+        dialog.getByRole("radiogroup", { name: m.conductNotes.form.rating }),
+      ).getByRole("radio", { name: m.conductNotes.rating.satisfactory }),
+    );
+
+    await userEvent.click(
+      dialog.getByLabelText(m.conductNotes.form.staffMember),
+    );
+    await userEvent.click(
+      await body.findByRole("option", { name: /Nguyễn Thị Hương/ }),
+    );
+
+    // Label-based query, not role-based — unaffected by any transient
+    // `aria-hidden` lock left over from the Select portal. `fireEvent.change`
+    // (not `userEvent.type`) avoids an unrelated keystroke-timing flake with
+    // diacritic text in this textarea.
+    const noteField = dialog.getByLabelText(m.conductNotes.form.note);
+    fireEvent.change(noteField, {
+      target: { value: "Ghi chú cần lưu lại khi lỗi mạng." },
+    });
+
+    // `hidden: true` sidesteps the Select portal's transient `aria-hidden`
+    // lock on the dialog subtree (a11y-tree exclusion, not an actual visual
+    // hide) rather than racing a `waitFor` against it.
+    const confirm = dialog.getByRole("button", {
+      name: messages.Common.confirmDialog.confirm,
+      hidden: true,
+    });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await userEvent.click(confirm);
+
+    // Dialog stays open, error inline, and the typed note is still there.
+    await waitFor(() =>
+      expect(dialog.getByText(mErr["network-error"])).toBeInTheDocument(),
+    );
+    await expect(dialogEl).toBeInTheDocument();
+    await expect(noteField).toHaveValue("Ghi chú cần lưu lại khi lỗi mạng.");
+  },
+};
+
+/**
+ * AC-006.3 extension — the teacher self-view renders ZERO mutating controls on
+ * the Conduct Notes tab too (not merely disabled): no term bar/"Đặt ghi chú"
+ * trigger, no edit/submit/approve/reject buttons on the own-record row. The
+ * Violations-tab equivalent is `ViolationsTabPopulatedTeacherReadOnly`; this
+ * closes the same proof for the second tab.
+ */
+export const ConductNotesTabTeacherZeroMutationControls: Story = {
+  args: { ...teacherBase, initialTab: "conductNotes" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(m.conductNotes.rating.satisfactory),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: m.conductNotes.form.title }),
+    ).toBeNull();
+    await expect(
+      canvas.queryByRole("button", {
+        name: new RegExp(m.conductNotes.actions.submit),
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryByRole("button", {
+        name: new RegExp(m.conductNotes.actions.approve),
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryByRole("button", {
+        name: new RegExp(m.conductNotes.actions.reject),
+      }),
+    ).toBeNull();
     await expect(within(document.body).queryByRole("dialog")).toBeNull();
   },
 };
