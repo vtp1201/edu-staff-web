@@ -17,6 +17,7 @@ export * from "./notification.endpoint";
 export * from "./parent-student-link.endpoint";
 export * from "./staff-discipline.endpoint";
 export * from "./staffing.endpoint";
+export * from "./student-absence.endpoint";
 export * from "./subject-catalogue.endpoint";
 export * from "./teacher.endpoint";
 export * from "./teaching-plan.endpoint";

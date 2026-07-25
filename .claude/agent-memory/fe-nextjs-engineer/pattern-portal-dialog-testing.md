@@ -44,6 +44,25 @@ does NOT reset the dialog's var → the focus-trapped dialog lingers over the cl
 drawer. Reset the dialog's open state in the SAME success branch, not only in a
 reopen `useEffect` (which fires on open, not close).
 
+**Controlled dialog ⇒ ALWAYS wire `useDialogReturnFocus`** (`src/shared/use-dialog-return-focus.ts`,
+3 lines: `const returnFocus = useDialogReturnFocus(open)` + `onCloseAutoFocus={returnFocus}`
+on `*DialogContent`). Radix's default `onCloseAutoFocus` targets `context.triggerRef`,
+populated ONLY by a mounted `<Trigger>` — every shared confirm dialog here is driven
+purely by `open`, so without the hook focus silently falls to `<body>` on Cancel/Escape
+(WCAG 2.4.3). `DestructiveConfirmDialog` had it; `components/shared/publish-confirm-dialog`
+did NOT until US-E09.6 (A11Y-001) — check any *new* controlled dialog. Prove it with a
+story that has its own local-state trigger button (`render:` + `useState`) and asserts
+`toHaveFocus()` on the invoker after Cancel AND after Escape; at consumer level assert
+the row action button regains focus.
+
+**404-race during a mutation must not be silent.** Closing the dialog + `invalidate()`
+alone is visually identical to success. Fire a `sonner` toast alongside. Tone rule
+learned: `toast.info` when the 404 means the user's INTENT was already achieved
+(parent-links unlink → "already removed"), `toast.error` when the action did NOT happen
+(student-absences flag → the record is gone, nothing was flagged). Storybook needs
+`<Toaster />` inside the decorator (the app mounts it in `src/app/layout.tsx`), then
+`within(document.body).getByText(...)`.
+
 **Radix exit-animation lingering node vs `.not.toBeInTheDocument()`:** a Radix
 AlertDialog/Dialog does NOT unmount immediately on close — with `motion-safe`
 `data-[state=closed]:animate-out` it stays mounted with `data-state="closed"`

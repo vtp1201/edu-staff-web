@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Loader2, ShieldAlert } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -10,6 +10,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
+import { cn } from "@/shared/utils";
+
+/**
+ * Optional inline error slot rendered between body and footer (added US-E09.6 for
+ * the one-way flag confirm, which must surface `forbidden`/`invalid-state`
+ * without closing). Absent = no behaviour change for existing consumers.
+ *
+ * Mirrors `DestructiveConfirmDialog`'s already-proven `errorSlot` contract:
+ * `blocked` force-disables confirm (re-clicking can only fail again — the only
+ * way out is Cancel); `transient` leaves confirm enabled so the same click
+ * retries. Tone-differentiated by BOTH icon and colour, never colour alone.
+ */
+export interface PublishConfirmErrorSlot {
+  tone: "blocked" | "transient";
+  /** Already-i18n'd message text (caller owns i18n). */
+  message: string;
+}
 
 export interface PublishConfirmDialogProps {
   open: boolean;
@@ -23,7 +41,26 @@ export interface PublishConfirmDialogProps {
     publishing: string;
     cancel: string;
   };
+  /**
+   * Inline error slot. Host owns clearing it on re-open / after success (same
+   * rule as `isLoading`).
+   */
+  errorSlot?: PublishConfirmErrorSlot;
 }
+
+/** Tone → icon + text/bg classes (icon + colour, never colour-only). */
+const ERROR_SLOT_TONE = {
+  blocked: {
+    Icon: ShieldAlert,
+    text: "text-edu-error-text",
+    bg: "bg-edu-error/10",
+  },
+  transient: {
+    Icon: AlertTriangle,
+    text: "text-edu-warning-foreground",
+    bg: "bg-edu-warning/15",
+  },
+} as const;
 
 /**
  * One-way publish confirm. Non-destructive tone (check icon + primary button,
@@ -46,7 +83,16 @@ export function PublishConfirmDialog({
   onConfirm,
   onCancel,
   labels,
+  errorSlot,
 }: PublishConfirmDialogProps) {
+  const slotTone = errorSlot ? ERROR_SLOT_TONE[errorSlot.tone] : undefined;
+  // A11Y-001 (US-E09.6, WCAG 2.4.3). Every consumer drives this dialog purely via
+  // `open` — there is no <AlertDialogTrigger> anywhere — so Radix's `triggerRef`
+  // is null and its default onCloseAutoFocus drops focus to <body>. Restore it to
+  // the invoking control on Cancel/Escape. Same 3-line pattern as
+  // `DestructiveConfirmDialog`; benefits all consumers of this shared dialog.
+  const returnFocus = useDialogReturnFocus(open);
+
   return (
     <AlertDialog
       open={open}
@@ -54,7 +100,7 @@ export function PublishConfirmDialog({
         if (!next && !isLoading) onCancel();
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent onCloseAutoFocus={returnFocus}>
         <AlertDialogHeader>
           <div className="flex items-start gap-3">
             <span
@@ -71,6 +117,22 @@ export function PublishConfirmDialog({
             </div>
           </div>
         </AlertDialogHeader>
+        {errorSlot && slotTone && (
+          <p
+            role="alert"
+            className={cn(
+              "flex items-start gap-1.5 rounded-[var(--edu-radius-btn)] px-3 py-2.5 text-sm",
+              slotTone.bg,
+              slotTone.text,
+            )}
+          >
+            <slotTone.Icon
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+            {errorSlot.message}
+          </p>
+        )}
         <AlertDialogFooter>
           <Button
             type="button"
@@ -84,7 +146,7 @@ export function PublishConfirmDialog({
             type="button"
             onClick={onConfirm}
             aria-busy={isLoading}
-            disabled={isLoading}
+            disabled={isLoading || errorSlot?.tone === "blocked"}
           >
             {isLoading ? (
               <Loader2
