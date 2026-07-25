@@ -93,6 +93,13 @@ signout → revoke session (server đọc session từ token; không gửi trong
 > `auth_token_exp`. Rotation chạy **proactive server-side** (`ensureFreshSession`);
 > reactive 401-interceptor refresh **defer** (follow-up). Xem `docs/product/auth.md`.
 
+> **Repository-boundary authorization (decision `0063`):** route gates
+> (`requireRole()`, `(app)/admin/layout.tsx`) không đủ cho mutation theo-record
+> — mọi role-gated mutation phải thread một `authCtx` server-derived
+> (`role` + scope key) từ token claim vào `i-<feature>.repository.ts`, assemble
+> CHỈ trong `bootstrap/di/<feature>.di.ts`, chứng minh bằng test forge-role
+> gọi thẳng repository (không qua UI). Xem `docs/decisions/0063-*.md`.
+
 ### Token hết hạn — Hybrid (decision `0018`)
 
 Token nằm trong cookie httpOnly → **chỉ check được exp ở server**, client không

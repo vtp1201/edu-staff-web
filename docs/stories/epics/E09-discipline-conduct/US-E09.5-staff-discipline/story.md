@@ -237,9 +237,9 @@ Known follow-ups (not blocking, recorded for future stories):
   `(app)/admin/**` has one) — AC-009.1 is carried by the shared auth/tenant gate +
   server-side `authCtx` re-check, consistent with all other existing principal/teacher
   routes in this repo; not a regression introduced by this story.
-- `authCtx` explicit-role-param pattern now used by 2 features (US-E20.1, US-E09.5)
-  with no registered ADR — flagged by `fe-tech-lead-reviewer` as ADR-worthy before a
-  3rd feature copies it; not required for this story to close.
+- `authCtx` explicit-role-param pattern — CLOSED: documented in decision `0063`
+  (registered 2026-07-25) after the 3rd instance (US-E09.6) confirmed it as an
+  established, reusable seam.
 - `SDListSkeleton`/`SDListError` promotion-candidate status (component-organization.md)
   — reviewed, judged not blocking (feature-local, screen-specific shape); `sd-list-error`
   is the stronger 4th-instance promotion candidate, routed to fe-lead backlog.

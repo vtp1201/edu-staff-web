@@ -174,7 +174,8 @@ Confirmed facts (verify before citing if stale):
   boundary when a feature is force-mocked (the mock repo IS the authz boundary) because denial is
   reproducible by calling the repo directly with a forged role — which a hidden client `if` is not.
   Verify: mutating gate (`assertCanMutate`) runs BEFORE any find/existence read (else forbidden-vs-
-  not-found leaks existence). NOT yet covered by an ADR at 2 instances — worth flagging to fe-lead.
+  not-found leaks existence). Now covered by ADR `0063` (registered 2026-07-25, after the 3rd
+  instance at US-E09.6) — stop re-flagging "ADR-worthy" for this pattern; cite `0063` instead.
 - **Per-route-file `const ROLE_HINT` for the mock-mode role** (US-E09.5): because `decodeRoleClaim`
   returns synthetic `"admin"` for any token in mock mode, DI takes a route-scoped role hint used ONLY
   when `USE_MOCK`. Safe shape = a module-level `as const` in each route's own `actions.ts`/`page.tsx`
