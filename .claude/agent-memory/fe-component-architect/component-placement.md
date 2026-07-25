@@ -314,6 +314,32 @@ presentation; only `domain/entities`-style types + failure-union types cross
 that boundary, confirmed by both `StaffLeaveScreenVM` and
 `ParentLinksScreenProps` already importing `*Failure["type"]` directly).
 
+**Student Absences (US-E09.6, 2026-07-25):** Two open questions resolved via
+TYPE-LEVEL enforcement rather than runtime checks (same technique as
+US-E09.5's `SetConductNoteDialogProps`/`SDSelfApprovedNote`):
+(1) "must render as static text, never any input even disabled" (AC forbids
+a `disabled` input) → do NOT add a `disabled`/`readOnly` prop to the existing
+input-style field component; build a wholly separate no-`onChange`-in-its-type
+static-text leaf (`SAStaticField`) instead — a `disabled` `<input>` is still
+structurally an input and a future refactor could re-enable it. (2) "one
+shared form component for create+edit, or two separate?" → ONE component with
+a **discriminated union** on `mode` (not a flat optional-everything
+interface): the `edit` arm's prop type has zero `onChange` fields for the
+immutable identity data, so wiring an editable control to it is a compile
+error, not just an unwritten one. Also confirmed: `design-spec.jsonc` can
+directly name which shared dialog a "one-way irreversible" action should
+reuse (`adminPrincipalView.flagAction.confirmDialog.pattern: "mirrors
+lesson-plan.jsx LPConfirmDialog one-way publish confirm"` → that's literally
+`components/shared/publish-confirm-dialog/PublishConfirmDialog`, already
+promoted in US-E11.9) — always check the design-spec entry's own prose for an
+explicit reuse pointer before assuming a mockup's visual styling (this one
+was colored red/error) dictates the destructive-tone dialog; irreversibility
+≠ destructiveness (flagging ≠ deleting). Also re-confirmed the "5th instance
+of a bespoke feature-local list-skeleton/list-error pair" finding (after
+`discipline`, `staff-leave`, `staff-discipline`) — escalated the promotion
+flag more explicitly this time (named all 4 prior instances) since 5 is well
+past the 2-instance promotion bar in `component-organization.md`.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

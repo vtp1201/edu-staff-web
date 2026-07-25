@@ -583,6 +583,35 @@ optimistic UI ... dialogs/panels MUST NOT close until settled") — same
 across create/submit/approve/reject × 2 sub-resources rather than picking
 per-mutation like `discipline`'s original (never-shipped) design did.
 
+## Non-optimistic single-row mutation: invalidate-then-refetch, NEVER setQueryData-from-response — confirmed 2x precedent (US-E09.6, student-absences)
+
+Second confirmation (after moderation/US-E19.2's "remove is never optimistic")
+of a repo-wide convention: `staff-discipline`'s `rowMutation` (submit/approve/
+reject) and `admin/parent-links`' `unlinkMutation` BOTH have zero `onMutate`
+and, critically, their `onSuccess` calls ONLY `invalidateQueries(...)` even
+though the mutation's own resolved value carries the full updated entity —
+neither patches that returned entity into the cache via `setQueryData`. When
+designing a new one-way/terminal-transition mutation (e.g. `flagAbsence`,
+RECORDED→FLAGGED_UNEXCUSED) that must show zero UI change before the server's
+2xx (an explicit AC), specify this exact shape and call out BOTH precedents
+by file path in the design doc — don't let `fe-nextjs-engineer` "optimize" by
+patching from the mutation response instead, since that's a subtly different
+(and per this repo's established taste, not-preferred) mechanism from
+plain invalidate-refetch, even though both are technically non-optimistic
+w.r.t. `onMutate`.
+
+## Filter-bar state = component `useState`, NOT URL params, when there's no tab/deep-link requirement (US-E09.6)
+
+`staff-discipline`'s `sd-violations-tab.tsx` keeps `stateFilter`/
+`severityFilter` as plain component `useState` feeding the query key directly
+(not URL search params) — confirmed convention for filter-bar-driven lists
+where no AC asks for a shareable/deep-linkable filter URL. Contrast with
+`discipline-screen.tsx`'s `useSearchParams`/`router.replace` usage, which is
+for the **tab** (navigational, shareable state), a different concern. Rule:
+check whether the closest sibling with the SAME shape (filter bar over one
+list, no tabs) uses URL or component state — don't generalize from a
+tabbed-navigation sibling's URL usage to a plain filter-bar sibling.
+
 ## Cross-feature read-only reference-data query key — keep it feature-neutral, not scoped to the first consumer (US-E11.8)
 
 When a NEW feature's client-side picker/select becomes the **first**
