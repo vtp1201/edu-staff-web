@@ -4313,9 +4313,17 @@
             "error": {
               "component": "PLAuditError",
               "role": "alert",
-              "background": "var(--edu-error-dark-light)",
+              // Corrected US-E20.3 review (fe-tech-lead-reviewer): AC-101.3
+              // mandates this banner uses the SAME tokens as the sibling
+              // PLConsentDetailSection error state (bg-edu-error/10,
+              // text-edu-error-text) for visual consistency within one
+              // dialog — `--edu-error-dark`/`--edu-error-dark-light` is
+              // reserved for the "Nặng"/severe discipline-severity tone
+              // (ADR 0040) and would misapply severity semantics to a plain
+              // fetch failure. Shipped code is correct; this doc was stale.
+              "background": "var(--edu-error)/10 (bg-edu-error/10)",
               "icon": "alertTriangle",
-              "iconColor": "var(--edu-error-dark)",
+              "iconColor": "var(--edu-error-text) (text-edu-error-text)",
               "retry": true,
               "scoped": "compact, section-local — does not replace the rest of the dialog"
             },
@@ -4325,14 +4333,17 @@
             }
           },
           "actionBadgeMapping": {
+            // tone names align to the shipped shared StatusTone values
+            // (components/shared/status-badge); the underlying colors were
+            // already exactly these — only the label vocabulary changed.
             "created": {
-              "tone": "success",
+              "tone": "teal",
               "color": "var(--edu-teal)",
               "icon": "link",
               "label": "Đã tạo liên kết"
             },
             "unlinked": {
-              "tone": "error",
+              "tone": "error-dark",
               "color": "var(--edu-error-dark)",
               "icon": "x",
               "label": "Đã gỡ liên kết"
