@@ -283,17 +283,16 @@ interface ParentStudentConsent {
 inputs for this story.
 
 **[OPEN QUESTION]s (carried forward, NOT resolved here):**
-1. **Unlink reversibility / audit-trail semantics.** `ba-integration-analyst`
-   found the existing generic audit-log (`AuditEvent`, US-E12.12) a plausible
-   fit for tracking link create/delete history without needing
-   DELETE-vs-archive semantics on the link itself (Unlink stays a hard
-   DELETE; re-linking recreates a fresh `pending` record). This **requires
-   extending the shared `AuditEntityType` union** with a
-   `"parent-student-link"` variant — a shared-domain-type change outside this
-   story's scope to decide unilaterally. **Recommendation to `ba-lead`: this
-   is an ADR candidate (decision ≥ 0023)** — confirm whether CREATE/DELETE on
-   parent-student-links should emit into the existing generic audit-log, and
-   if so, register the `AuditEntityType` extension. Not decided in this spec.
+1. **Unlink reversibility / audit-trail semantics — RESOLVED, see ADR
+   `0064`.** Decision: do NOT extend the shared `AuditEntityType`/generic
+   `audit-log` feature (it is a BE-aggregated, read-only display surface
+   with no emission path today). If a parent-links audit trail is wanted,
+   it follows the feature-scoped pattern already used by `moderation`
+   (`AuditEntryEntity`) and `academic-records`
+   (`SealAuditEntry`/`GetSealAuditTrailUseCase`) — own entity + own query
+   use-case + own mock repository inside
+   `src/features/admin/parent-links/`. Registered as planned backlog
+   `US-E20.3`, not built by this ADR.
 2. **Consent-cascade-on-unlink behavior.** Does DELETE
    `/parent-student-links/{linkId}` cascade-clear the associated consent
    record server-side, or must the web layer issue a separate consent-clear

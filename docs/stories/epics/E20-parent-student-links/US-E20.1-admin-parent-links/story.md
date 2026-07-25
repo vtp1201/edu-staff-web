@@ -132,15 +132,16 @@ When updating durable proof status, use numeric booleans:
 - `docs/TEST_MATRIX.md`: add row US-E20.1 (planned, high-risk)
 - `docs/product/screens.md`: parent-links admin row already present
   ("🎨 design-ready") — update to "🚧 in-progress" when `/fe` claims this story
-- [FLAG for `ba-lead`]: Unlink reversibility/audit-trail semantics — carried
-  from requirements.md/integration.md's open question. `ba-integration-analyst`
-  found the existing generic audit-log (`AuditEvent`, US-E12.12,
-  `entityType: "grade"|"conduct"|"record"|"setting"`) a plausible fit for
-  tracking link create/delete history, but extending `AuditEntityType` with a
-  new `"parent-student-link"` variant is a shared-type change outside this
-  story's unilateral scope — **recommend a decision (ADR candidate, decision
-  ≥ 0023) on whether Unlink/Create should emit into that generic audit-log**.
-  Not decided in this spec.
+- [RESOLVED — see ADR `0064`]: Unlink reversibility/audit-trail semantics.
+  Decision: do NOT extend the shared `AuditEntityType`/generic `audit-log`
+  feature (it is a BE-aggregated, read-only display surface with no emission
+  path — nothing in the repo writes into it). If a parent-links audit trail
+  is wanted, it follows the feature-scoped pattern already used by
+  `moderation` (`AuditEntryEntity`) and `academic-records`
+  (`SealAuditEntry`/`GetSealAuditTrailUseCase`): own entity + own query
+  use-case + own mock repository inside `src/features/admin/parent-links/`.
+  Registered as planned backlog `US-E20.3` (not built by this ADR). See
+  `docs/decisions/0064-audit-trail-emission-policy.md`.
 
 ## Evidence
 
