@@ -2927,7 +2927,22 @@
       "linkedOn": "Linked on",
       "note": "Note",
       "consentSectionTitle": "Notification consent detail",
-      "consentLoading": "Loading consent detail…"
+      "consentLoading": "Loading consent detail…",
+      "auditTrail": {
+        "sectionTitle": "Link history",
+        "loadingLabel": "Loading history…",
+        "empty": {
+          "title": "No recorded history yet",
+          "body": "History will record changes — created, removed — from when this feature was enabled."
+        },
+        "error": "Failed to load link history. Please try again.",
+        "retry": "Retry",
+        "action": {
+          "created": "Link created",
+          "unlinked": "Link removed"
+        },
+        "notePrefix": "Note"
+      }
     },
     "consentCategories": {
       "discipline": "Discipline & conduct alerts",

@@ -2927,7 +2927,22 @@
       "linkedOn": "Ngày liên kết",
       "note": "Ghi chú",
       "consentSectionTitle": "Chi tiết quyền nhận thông báo",
-      "consentLoading": "Đang tải chi tiết consent…"
+      "consentLoading": "Đang tải chi tiết consent…",
+      "auditTrail": {
+        "sectionTitle": "Lịch sử liên kết",
+        "loadingLabel": "Đang tải lịch sử…",
+        "empty": {
+          "title": "Chưa có lịch sử ghi nhận",
+          "body": "Lịch sử sẽ ghi nhận các thay đổi (tạo, gỡ liên kết) kể từ khi tính năng này được bật."
+        },
+        "error": "Không tải được lịch sử liên kết. Vui lòng thử lại.",
+        "retry": "Thử lại",
+        "action": {
+          "created": "Đã tạo liên kết",
+          "unlinked": "Đã gỡ liên kết"
+        },
+        "notePrefix": "Ghi chú"
+      }
     },
     "consentCategories": {
       "discipline": "Thông báo vi phạm / hạnh kiểm",
