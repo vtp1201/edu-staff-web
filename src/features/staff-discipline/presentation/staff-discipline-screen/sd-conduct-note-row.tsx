@@ -147,6 +147,7 @@ export function SDConductNoteRow({
               variant="outline"
               onClick={onOpenSetDialog}
               disabled={isBusy}
+              aria-label={`${t("form.title")} — ${staff.staffName}`}
               className="min-h-11"
             >
               <PenLine className="size-4" aria-hidden="true" />
@@ -162,6 +163,7 @@ export function SDConductNoteRow({
             onClick={onSubmit}
             disabled={isBusy}
             aria-busy={isBusy}
+            aria-label={`${tActions("submit")} — ${staff.staffName}`}
             className="min-h-11"
           >
             <Send className="size-4" aria-hidden="true" />
@@ -176,6 +178,7 @@ export function SDConductNoteRow({
               variant="outline"
               onClick={onStartReject}
               disabled={isBusy}
+              aria-label={`${tActions("reject")} — ${staff.staffName}`}
               className="min-h-11 border-edu-error/40 bg-edu-error/10 text-edu-error-text hover:bg-edu-error/15"
             >
               <X className="size-4" aria-hidden="true" />
@@ -186,6 +189,7 @@ export function SDConductNoteRow({
               onClick={onApprove}
               disabled={isBusy}
               aria-busy={isBusy}
+              aria-label={`${tActions("approve")} — ${staff.staffName}`}
               className="min-h-11 bg-edu-success text-edu-warning-foreground hover:bg-edu-success/90"
             >
               <Check className="size-4" aria-hidden="true" />

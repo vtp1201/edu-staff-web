@@ -39,6 +39,9 @@ const ROSTER: StaffRosterEntry[] = [
   },
 ];
 
+const REJECT_ROW = `${messages.staffDiscipline.violations.actions.reject} — Đỗ Thị Mai`;
+const APPROVE_ROW = `${messages.staffDiscipline.violations.actions.approve} — Đỗ Thị Mai`;
+
 const TERMS = [
   { id: "HK1-2025-2026", label: "Học kỳ 1 — 2025–2026" },
   { id: "HK2-2024-2025", label: "Học kỳ 2 — 2024–2025" },
@@ -210,15 +213,14 @@ export const ViolationsTabPopulatedPrincipal: Story = {
     await expect(
       canvas.getByRole("heading", { name: m.title, level: 1 }),
     ).toBeInTheDocument();
-    await expect(canvas.getByText("Đỗ Thị Mai")).toBeInTheDocument();
+    await expect(canvas.getAllByText("Đỗ Thị Mai").length).toBeGreaterThan(0);
     // Principal-only affordances present.
     await expect(
       canvas.getByRole("button", { name: m.violations.addNew }),
     ).toBeInTheDocument();
     await expect(
-      canvas.getAllByRole("button", { name: m.violations.actions.approve })
-        .length,
-    ).toBeGreaterThan(0);
+      canvas.getByRole("button", { name: APPROVE_ROW }),
+    ).toBeInTheDocument();
   },
 };
 
@@ -232,10 +234,14 @@ export const ViolationsTabPopulatedTeacherReadOnly: Story = {
       canvas.queryByRole("button", { name: m.violations.addNew }),
     ).toBeNull();
     await expect(
-      canvas.queryByRole("button", { name: m.violations.actions.approve }),
+      canvas.queryByRole("button", {
+        name: new RegExp(m.violations.actions.approve),
+      }),
     ).toBeNull();
     await expect(
-      canvas.queryByRole("button", { name: m.violations.actions.submit }),
+      canvas.queryByRole("button", {
+        name: new RegExp(m.violations.actions.submit),
+      }),
     ).toBeNull();
     await expect(
       canvas.getByText(m.conductNotes.readOnlyLabel),
@@ -254,12 +260,15 @@ export const SelfApprovedAlwaysVisible: Story = {
   },
 };
 
-export const ViolationsTabLoading: Story = {
+/**
+ * First paint of the violations tab is ALWAYS RSC-seeded, so there is no
+ * skeleton flash there even with a hanging client action (NFR-006 satisfied by
+ * the seed, not by a spinner). The skeleton is proved on the genuinely cold
+ * query path — `ConductNotesTabLoadingSkeleton` below.
+ */
+export const ViolationsTabRscSeededNoSkeletonFlash: Story = {
   args: {
     ...base,
-    // No seed for this filter → the query hangs and the skeleton shows.
-    initialViolations: [],
-    initialViolationsErrorKey: undefined,
     listViolationsAction: () =>
       new Promise<StaffDisciplineActionResult<StaffViolationEntity[]>>(
         () => {},
@@ -267,10 +276,38 @@ export const ViolationsTabLoading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Seeded-empty renders the empty state; the skeleton belongs to a cold query.
+    await expect(canvas.getAllByText("Đỗ Thị Mai").length).toBeGreaterThan(0);
     await expect(
-      canvas.getByText(m.violations.empty.adminCta),
-    ).toBeInTheDocument();
+      canvas.queryByLabelText(messages.Common.skeleton.loadingAriaLabel),
+    ).toBeNull();
+  },
+};
+
+/** NFR-006 / AC-006.1 — cold query (term change) renders the 4-row skeleton. */
+export const ConductNotesTabLoadingSkeleton: Story = {
+  args: {
+    ...base,
+    initialTab: "conductNotes",
+    listConductNotesAction: (params) =>
+      params.termId === TERMS[1].id
+        ? new Promise<StaffDisciplineActionResult<StaffConductNoteEntity[]>>(
+            () => {},
+          )
+        : Promise.resolve(ok(CONDUCT_NOTES)),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByLabelText(m.conductNotes.filters.term));
+    await userEvent.click(
+      await within(document.body).findByRole("option", {
+        name: TERMS[1].label,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getByText(messages.Common.skeleton.loadingAriaLabel),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
@@ -394,11 +431,7 @@ export const RejectPanelClientGuard: Story = {
   args: base,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getAllByRole("button", {
-        name: m.violations.actions.reject,
-      })[0],
-    );
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
     const confirm = await canvas.findByRole("button", {
       name: m.rejectDialog.confirm,
     });
@@ -418,11 +451,7 @@ export const RejectPanelHappy: Story = {
   play: async ({ canvasElement, args }) => {
     const vmArgs = args as ScreenArgs;
     const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getAllByRole("button", {
-        name: m.violations.actions.reject,
-      })[0],
-    );
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
     const field = await canvas.findByLabelText(
       new RegExp(m.rejectDialog.title, "i"),
     );
@@ -448,11 +477,7 @@ export const RejectPanelServerGuard: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getAllByRole("button", {
-        name: m.violations.actions.reject,
-      })[0],
-    );
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
     const field = await canvas.findByLabelText(
       new RegExp(m.rejectDialog.title, "i"),
     );
@@ -606,7 +631,7 @@ export const SetConductNoteDialogNew: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(
-      canvas.getAllByRole("button", { name: m.conductNotes.form.title })[0],
+      canvas.getByRole("button", { name: m.conductNotes.form.title }),
     );
     const dialog = within(await within(document.body).findByRole("dialog"));
     // Empty form for a brand-new note (AC-007.1) + live 5000-char counter.
@@ -619,10 +644,11 @@ export const SetConductNoteDialogOverwrite: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     // The DRAFT row's edit trigger (the APPROVED row has none).
-    const triggers = canvas.getAllByRole("button", {
-      name: m.conductNotes.form.title,
-    });
-    await userEvent.click(triggers[triggers.length - 1]);
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: `${m.conductNotes.form.title} — Đỗ Thị Mai`,
+      }),
+    );
     const dialog = within(await within(document.body).findByRole("dialog"));
     // Pre-filled with the existing note (AC-007.2).
     await expect(
@@ -644,10 +670,11 @@ export const SetConductNoteDialogLockedNeverOpens: Story = {
     // no dialog can be opened for it (AC-007.4 / NFR-009).
     await expect(canvas.getByText(m.errors.locked)).toBeInTheDocument();
     const editTriggers = canvas.queryAllByRole("button", {
-      name: m.conductNotes.form.title,
+      name: new RegExp(`${m.conductNotes.form.title} — `),
     });
-    // Only the term-bar "create new" button may exist — never a row edit trigger.
-    await expect(editTriggers.length).toBeLessThanOrEqual(1);
+    // The term-bar "create new" button has no staff suffix — a row edit trigger
+    // would; there must be NONE for the APPROVED row.
+    await expect(editTriggers.length).toBe(0);
     await expect(within(document.body).queryByRole("dialog")).toBeNull();
   },
 };
@@ -721,7 +748,7 @@ export const Responsive375: Story = {
   play: async ({ canvasElement, page }) => {
     await page?.setViewportSize?.({ width: 375, height: 800 });
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Đỗ Thị Mai")).toBeInTheDocument();
+    await expect(canvas.getAllByText("Đỗ Thị Mai").length).toBeGreaterThan(0);
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       document.documentElement.clientWidth + 1,
     );
@@ -733,7 +760,7 @@ export const Responsive768: Story = {
   play: async ({ canvasElement, page }) => {
     await page?.setViewportSize?.({ width: 768, height: 900 });
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Đỗ Thị Mai")).toBeInTheDocument();
+    await expect(canvas.getAllByText("Đỗ Thị Mai").length).toBeGreaterThan(0);
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       document.documentElement.clientWidth + 1,
     );
@@ -745,7 +772,7 @@ export const Responsive1280: Story = {
   play: async ({ canvasElement, page }) => {
     await page?.setViewportSize?.({ width: 1280, height: 900 });
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Đỗ Thị Mai")).toBeInTheDocument();
+    await expect(canvas.getAllByText("Đỗ Thị Mai").length).toBeGreaterThan(0);
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
       document.documentElement.clientWidth + 1,
     );
