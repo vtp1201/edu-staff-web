@@ -2,6 +2,7 @@
 
 import { Check, Lock, PenLine, Send, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import type { StaffConductNoteEntity } from "../../domain/entities/staff-conduct-note.entity";
 import type { StaffRosterEntry } from "../../domain/entities/staff-roster.entity";
@@ -67,6 +68,21 @@ export function SDConductNoteRow({
   const t = useTranslations("staffDiscipline.conductNotes");
   const tActions = useTranslations("staffDiscipline.conductNotes.actions");
   const tErrors = useTranslations("staffDiscipline.errors");
+  const rejectTriggerRef = useRef<HTMLButtonElement>(null);
+  const didRejectRef = useRef(false);
+
+  // A11Y-002: focus returns to the reject trigger when the inline panel closes
+  // (WCAG 2.4.3), mirroring `SDViolationRow`/`StaffLeaveRequestCard`.
+  useEffect(() => {
+    if (isRejecting) {
+      didRejectRef.current = true;
+      return;
+    }
+    if (didRejectRef.current) {
+      rejectTriggerRef.current?.focus();
+      didRejectRef.current = false;
+    }
+  }, [isRejecting]);
 
   return (
     <article className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
@@ -118,6 +134,7 @@ export function SDConductNoteRow({
             reason={rejectReason}
             onChangeReason={onChangeRejectReason}
             isBusy={isBusy}
+            busyLabel={tActions("rejecting")}
             serverErrorKey={
               rejectServerErrorKey === "missing-reject-reason"
                 ? "missing-reject-reason"
@@ -174,6 +191,7 @@ export function SDConductNoteRow({
         {canDecide && !isRejecting && (
           <div className="flex gap-2">
             <Button
+              ref={rejectTriggerRef}
               type="button"
               variant="outline"
               onClick={onStartReject}

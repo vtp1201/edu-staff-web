@@ -2,7 +2,7 @@
 
 import { Check, Send, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import type { StaffRosterEntry } from "../../domain/entities/staff-roster.entity";
 import type { StaffViolationEntity } from "../../domain/entities/staff-violation.entity";
@@ -57,6 +57,22 @@ export function SDViolationRow({
   const t = useTranslations("staffDiscipline.violations");
   const tActions = useTranslations("staffDiscipline.violations.actions");
   const rejectTriggerRef = useRef<HTMLButtonElement>(null);
+  const didRejectRef = useRef(false);
+
+  // A11Y-002: return focus to the trigger when the inline panel closes (WCAG
+  // 2.4.3) — same shape as `StaffLeaveRequestCard`. On a SUCCESSFUL reject the
+  // trigger is gone (the row is no longer decidable), so the optional call is a
+  // no-op by design.
+  useEffect(() => {
+    if (isRejecting) {
+      didRejectRef.current = true;
+      return;
+    }
+    if (didRejectRef.current) {
+      rejectTriggerRef.current?.focus();
+      didRejectRef.current = false;
+    }
+  }, [isRejecting]);
 
   return (
     <article className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
@@ -113,6 +129,7 @@ export function SDViolationRow({
             reason={rejectReason}
             onChangeReason={onChangeRejectReason}
             isBusy={isBusy}
+            busyLabel={tActions("rejecting")}
             serverErrorKey={
               rejectServerErrorKey === "missing-reject-reason"
                 ? "missing-reject-reason"

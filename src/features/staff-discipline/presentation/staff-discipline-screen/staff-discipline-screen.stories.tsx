@@ -1,7 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import {
+  expect,
+  fireEvent,
+  fn,
+  userEvent,
+  waitFor,
+  within,
+} from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { StaffConductNoteEntity } from "../../domain/entities/staff-conduct-note.entity";
 import type { StaffRosterEntry } from "../../domain/entities/staff-roster.entity";
@@ -41,6 +48,15 @@ const ROSTER: StaffRosterEntry[] = [
 
 const REJECT_ROW = `${messages.staffDiscipline.violations.actions.reject} — Đỗ Thị Mai`;
 const APPROVE_ROW = `${messages.staffDiscipline.violations.actions.approve} — Đỗ Thị Mai`;
+
+/** Mirrors `SD_CATEGORIES` (mock DATA / stored wire values, not i18n copy). */
+const CATEGORIES = [
+  "Đi làm muộn / vắng không phép",
+  "Vi phạm quy chế chuyên môn",
+  "Ứng xử không đúng mực với HS/PH",
+  "Vi phạm quy định trang phục/tác phong",
+  "Khác",
+];
 
 const TERMS = [
   { id: "HK1-2025-2026", label: "Học kỳ 1 — 2025–2026" },
@@ -150,6 +166,7 @@ const base: StaffDisciplineScreenVM = {
   initialConductNotes: CONDUCT_NOTES,
   initialTermId: "HK1-2025-2026",
   staffRoster: ROSTER,
+  violationCategories: CATEGORIES,
   termOptions: TERMS,
   listViolationsAction: async () => ok(VIOLATIONS),
   createViolationAction: async () => ok(VIOLATIONS[0]),
@@ -386,6 +403,100 @@ export const CreateViolationDialogHappy: Story = {
   },
 };
 
+/**
+ * AC-002.2 (extended to the category field) — `category` is a SELECT over the
+ * static `SD_CATEGORIES` prop (design-spec `createForm.fields[2]`): opening it
+ * lists exactly the 5 options and fires ZERO network calls (no list refetch, no
+ * create call), because the picklist is a prop and there is no search action.
+ */
+export const CreateViolationDialogCategoryStaticSelect: Story = {
+  args: {
+    ...base,
+    listViolationsAction: fn(async () => ok(VIOLATIONS)),
+    createViolationAction: fn(async () => ok(VIOLATIONS[0])),
+  },
+  play: async ({ canvasElement, args }) => {
+    const vmArgs = args as ScreenArgs;
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.violations.addNew }),
+    );
+    const dialog = within(await within(document.body).findByRole("dialog"));
+
+    const categoryTrigger = dialog.getByLabelText(m.violations.form.category);
+    await userEvent.click(categoryTrigger);
+    const options = await within(document.body).findAllByRole("option");
+    await expect(options).toHaveLength(CATEGORIES.length);
+    await expect(options.map((o) => o.textContent)).toEqual(CATEGORIES);
+
+    await userEvent.click(options[1]);
+    await waitFor(() =>
+      expect(categoryTrigger).toHaveTextContent(CATEGORIES[1]),
+    );
+    // Zero network calls for this field, ever.
+    await expect(vmArgs.listViolationsAction).not.toHaveBeenCalled();
+    await expect(vmArgs.createViolationAction).not.toHaveBeenCalled();
+  },
+};
+
+/**
+ * Design-spec `createForm.fields[3]` — severity is a SEGMENTED control (radiogroup
+ * of 3 radios, arrow-key navigable), not a dropdown.
+ */
+export const CreateViolationDialogSeveritySegmented: Story = {
+  args: base,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.violations.addNew }),
+    );
+    const dialog = within(await within(document.body).findByRole("dialog"));
+    const group = dialog.getByRole("radiogroup", {
+      name: m.violations.form.severity,
+    });
+    const segments = within(group).getAllByRole("radio");
+    await expect(segments).toHaveLength(3);
+    await userEvent.click(
+      within(group).getByRole("radio", { name: m.violations.severity.medium }),
+    );
+    await waitFor(() =>
+      expect(
+        within(group).getByRole("radio", {
+          name: m.violations.severity.medium,
+        }),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+  },
+};
+
+/** Design-spec `setForm.fields[0]` — rating is segmented too. */
+export const SetConductNoteDialogRatingSegmented: Story = {
+  args: { ...base, initialTab: "conductNotes" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.conductNotes.form.title }),
+    );
+    const dialog = within(await within(document.body).findByRole("dialog"));
+    const group = dialog.getByRole("radiogroup", {
+      name: m.conductNotes.form.rating,
+    });
+    await expect(within(group).getAllByRole("radio")).toHaveLength(3);
+    await userEvent.click(
+      within(group).getByRole("radio", {
+        name: m.conductNotes.rating.unsatisfactory,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        within(group).getByRole("radio", {
+          name: m.conductNotes.rating.unsatisfactory,
+        }),
+      ).toHaveAttribute("aria-checked", "true"),
+    );
+  },
+};
+
 export const CreateViolationDialogValidationError: Story = {
   args: {
     ...base,
@@ -492,6 +603,151 @@ export const RejectPanelServerGuard: Story = {
       ).toBeInTheDocument(),
     );
     await expect(field).toHaveAttribute("aria-invalid", "true");
+  },
+};
+
+/**
+ * A11Y-001 — `aria-invalid` marks a REAL failure only. On open (and while the
+ * reason is still too short, before any submit is possible) the textarea is NOT
+ * flagged invalid; the requirement is carried by `aria-required` + the hint.
+ * Contrast with `RejectPanelServerGuard`, where the server failure DOES flag it.
+ */
+export const RejectPanelNotInvalidBeforeFailure: Story = {
+  args: base,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
+    const field = await canvas.findByLabelText(
+      new RegExp(m.rejectDialog.title, "i"),
+    );
+    await expect(field).not.toHaveAttribute("aria-invalid", "true");
+    await expect(field).toHaveAttribute("aria-required", "true");
+    await userEvent.type(field, "ngắn");
+    await expect(field).not.toHaveAttribute("aria-invalid", "true");
+  },
+};
+
+/** A11Y-002 — closing the inline panel returns focus to its trigger (WCAG 2.4.3). */
+export const RejectPanelRestoresFocusOnCancel: Story = {
+  args: base,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: REJECT_ROW });
+    await userEvent.click(trigger);
+    const cancel = await canvas.findByRole("button", {
+      name: m.rejectDialog.cancel,
+    });
+    await userEvent.click(cancel);
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: REJECT_ROW })).toHaveFocus(),
+    );
+  },
+};
+
+/** S3 — the confirm button announces its busy label while the reject is in flight. */
+export const RejectPanelBusyLabel: Story = {
+  args: {
+    ...base,
+    rejectViolationAction: () =>
+      new Promise<StaffDisciplineActionResult<StaffViolationEntity>>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
+    const field = await canvas.findByLabelText(
+      new RegExp(m.rejectDialog.title, "i"),
+    );
+    await userEvent.type(field, "Lý do từ chối hợp lệ và đủ dài.");
+    const confirm = canvas.getByRole("button", {
+      name: m.rejectDialog.confirm,
+    });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await userEvent.click(confirm);
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", {
+          name: m.violations.actions.rejecting,
+        }),
+      ).toHaveAttribute("aria-busy", "true"),
+    );
+  },
+};
+
+/**
+ * NFR-004 / A11Y-003 + A11Y-004 — every animation on this screen is gated behind
+ * `prefers-reduced-motion` at the CSS level. Storybook has no reduced-motion
+ * emulation in this repo (see `messaging-screen.stories.tsx`), so — per the
+ * established convention — the story asserts the guard CLASS is present on both
+ * animated surfaces: the inline reject panel's expand animation and the pending
+ * submit spinner.
+ */
+export const MotionSafeGating: Story = {
+  args: {
+    ...base,
+    createViolationAction: () =>
+      new Promise<StaffDisciplineActionResult<StaffViolationEntity>>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // 1. Reject-panel expand animation.
+    await userEvent.click(canvas.getByRole("button", { name: REJECT_ROW }));
+    const field = await canvas.findByLabelText(
+      new RegExp(m.rejectDialog.title, "i"),
+    );
+    const panel = field.parentElement as HTMLElement;
+    await expect(panel.getAttribute("class")).toContain(
+      "motion-safe:animate-in",
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.rejectDialog.cancel }),
+    );
+
+    // 2. Pending-submit spinner — fill every required field, then submit.
+    await userEvent.click(
+      canvas.getByRole("button", { name: m.violations.addNew }),
+    );
+    const dialogEl = await within(document.body).findByRole("dialog");
+    const dialog = within(dialogEl);
+    const body = within(document.body);
+
+    await userEvent.click(dialog.getByLabelText(m.violations.form.staffMember));
+    await userEvent.click(
+      await body.findByRole("option", { name: /Đỗ Thị Mai/ }),
+    );
+    fireEvent.change(dialog.getByLabelText(m.violations.form.occurredAt), {
+      target: { value: "2026-05-04" },
+    });
+    await userEvent.click(dialog.getByLabelText(m.violations.form.category));
+    await userEvent.click(
+      await body.findByRole("option", { name: CATEGORIES[0] }),
+    );
+    // A Radix Select portal marks the dialog `aria-hidden` while it is open and
+    // clears it on exit — role queries below must wait for that, otherwise the
+    // whole dialog subtree is (correctly) absent from the a11y tree.
+    await waitFor(() => expect(dialogEl).not.toHaveAttribute("aria-hidden"));
+    await userEvent.click(
+      within(
+        dialog.getByRole("radiogroup", { name: m.violations.form.severity }),
+      ).getByRole("radio", { name: m.violations.severity.medium }),
+    );
+    await userEvent.type(
+      dialog.getByLabelText(m.violations.form.description),
+      "Vào lớp trễ 20 phút không báo trước.",
+    );
+
+    const confirm = dialog.getByRole("button", {
+      name: messages.Common.confirmDialog.confirm,
+    });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await userEvent.click(confirm);
+
+    const busy = await dialog.findByRole("button", {
+      name: m.violations.saving,
+    });
+    await expect(busy.querySelector("svg")?.getAttribute("class")).toContain(
+      "motion-safe:animate-spin",
+    );
   },
 };
 

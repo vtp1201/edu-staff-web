@@ -25,6 +25,12 @@ export interface SDRejectPanelProps {
   reason: string;
   onChangeReason: (value: string) => void;
   isBusy: boolean;
+  /**
+   * Busy label for the confirm button ("Đang từ chối…"). Passed in because the
+   * copy lives per-tab (`staffDiscipline.{violations,conductNotes}.actions.
+   * rejecting`) while this panel is shared by BOTH tabs.
+   */
+  busyLabel: string;
   /** Server-side bypass of the client guard — distinct from the client hint. */
   serverErrorKey?: "missing-reject-reason";
   onConfirm: () => void;
@@ -35,6 +41,7 @@ export function SDRejectPanel({
   reason,
   onChangeReason,
   isBusy,
+  busyLabel,
   serverErrorKey,
   onConfirm,
   onCancel,
@@ -69,7 +76,12 @@ export function SDRejectPanel({
         onChange={(e) => onChangeReason(e.target.value)}
         rows={3}
         aria-required="true"
-        aria-invalid={!valid || Boolean(serverErrorKey)}
+        // A11Y-001: `aria-invalid` marks an ACTUAL validation failure, never the
+        // still-being-typed state. The client guard can't fail on submit (confirm
+        // stays disabled below `MIN_REJECT_LENGTH`), so the only real failure
+        // reachable here is the server's own guard. The "≥10 chars" requirement
+        // is still conveyed to AT through `aria-required` + the `hintId` text.
+        aria-invalid={Boolean(serverErrorKey)}
         aria-describedby={serverErrorKey ? `${hintId} ${errorId}` : hintId}
         placeholder={t("reasonPlaceholder")}
         className="resize-y bg-card"
@@ -111,7 +123,7 @@ export function SDRejectPanel({
           className="min-h-11"
         >
           <X className="size-4" aria-hidden="true" />
-          {t("confirm")}
+          {isBusy ? busyLabel : t("confirm")}
         </Button>
       </div>
     </div>
