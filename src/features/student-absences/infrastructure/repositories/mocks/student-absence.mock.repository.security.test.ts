@@ -263,6 +263,48 @@ describe("NFR-008 pt.1 — forged classId on editAbsence is denied (AC-006.2/.4)
 });
 
 // ---------------------------------------------------------------------------
+// 1b. List-side role re-check (AC-001.6/AC-002.5 backstop — resolveReadScope)
+// ---------------------------------------------------------------------------
+
+/**
+ * QA gap closed: `resolveReadScope`'s `else throw forbidden` branch (any role
+ * that is neither `teacher` nor `principal`) had ZERO test coverage in either
+ * this file or `student-absence.mock.repository.test.ts` before this pass —
+ * every existing `listAbsences` test only ever constructed a teacher or
+ * principal repo. A `student`/`parent`/`admin` actor reaching INT-002 directly
+ * (e.g. a forged/replayed request, or the real-mode auth context resolving the
+ * caller's own non-teacher/non-principal claim role when they navigate to
+ * either absences route) must be denied — never silently scoped to "all rows"
+ * nor to an empty list that could be confused with AC-001.3/AC-002.4's
+ * legitimate empty state.
+ */
+describe("NFR-008 — listAbsences denies any non-teacher/non-principal role (AC-001.6/AC-002.5)", () => {
+  const NON_LIST_ROLES: readonly UserRole[] = ["student", "parent", "admin"];
+
+  for (const role of NON_LIST_ROLES) {
+    it(`rejects listAbsences for role="${role}" with forbidden — never an empty/partial list`, async () => {
+      await expect(
+        repo({
+          role,
+          memberId: "forged-1",
+          classId: OWN_CLASS,
+        }).listAbsences({}),
+      ).rejects.toEqual({ type: "forbidden" });
+    });
+
+    it(`rejects listAbsences for role="${role}" even when a specific classId is requested`, async () => {
+      await expect(
+        repo({
+          role,
+          memberId: "forged-1",
+          classId: "",
+        }).listAbsences({ classId: OWN_CLASS }),
+      ).rejects.toEqual({ type: "forbidden" });
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // 2. Principal-only flag re-check (FR-009 / NFR-008 pt.2 / AC-006.1/.4)
 // ---------------------------------------------------------------------------
 
