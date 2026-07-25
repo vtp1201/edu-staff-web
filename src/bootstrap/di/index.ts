@@ -24,6 +24,7 @@ export * from "./principal-teachers.di";
 export * from "./staff-discipline.di";
 export * from "./staff-leave.di";
 export * from "./staffing.di";
+export * from "./student-absence.di";
 export * from "./subject-catalogue.di";
 export * from "./teacher-class.di";
 export * from "./teacher-dashboard.di";
