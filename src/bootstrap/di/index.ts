@@ -21,6 +21,7 @@ export * from "./moderation.di";
 export * from "./notification.di";
 export * from "./parent-student-link.di";
 export * from "./principal-teachers.di";
+export * from "./staff-discipline.di";
 export * from "./staff-leave.di";
 export * from "./staffing.di";
 export * from "./subject-catalogue.di";

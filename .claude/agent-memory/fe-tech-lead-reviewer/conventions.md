@@ -166,6 +166,41 @@ Confirmed facts (verify before citing if stale):
   server-only" rule is satisfied at the repository boundary; pure DTO→entity mappers and code→failure
   maps are framework-free and safe. Don't flag a mapper/error-map lacking `server-only` as a layer defect,
   provided presentation never imports it (stories importing mock fixtures is the only accepted infra→pres edge).
+- **`authCtx`-param-on-every-repo-method = ESTABLISHED security seam** (US-E20.1 `admin/parent-links`
+  is the precedent; US-E09.5 `staff-discipline` is the 2nd instance). A `StaffDisciplineAuthContext`/
+  `AuthContext` domain entity `{role, memberId, staffMemberId}` is threaded as an explicit param
+  through `i-*.repository.ts` → use-cases → repo impl, assembled ONLY in `bootstrap/di/<f>.di.ts`
+  from httpOnly-token claims (`decodeRoleClaim`/`decodeSubClaim`). This is the CORRECT enforcement
+  boundary when a feature is force-mocked (the mock repo IS the authz boundary) because denial is
+  reproducible by calling the repo directly with a forged role — which a hidden client `if` is not.
+  Verify: mutating gate (`assertCanMutate`) runs BEFORE any find/existence read (else forbidden-vs-
+  not-found leaks existence). NOT yet covered by an ADR at 2 instances — worth flagging to fe-lead.
+- **Per-route-file `const ROLE_HINT` for the mock-mode role** (US-E09.5): because `decodeRoleClaim`
+  returns synthetic `"admin"` for any token in mock mode, DI takes a route-scoped role hint used ONLY
+  when `USE_MOCK`. Safe shape = a module-level `as const` in each route's own `actions.ts`/`page.tsx`
+  (`principal/…` → `"principal"`, `teacher/…` → `"teacher"`), never a function arg from client input,
+  with a pure resolver test proving real mode ignores the hint and unknown claim ⇒ deny-by-default.
+  Residual dev-only hole: a teacher session can invoke the PRINCIPAL route's Server Action (action ids
+  are build-time, not route-scoped) and get principal authCtx in mock mode. Backstopped by
+  `next.config.ts` throwing on deploy-build+mock AND by `decodeRoleClaim`'s own `NODE_ENV!=="production"`
+  guard. Note `USE_MOCK` (mock.ts) is NOT NODE_ENV-gated, so the resolver's mock branch is looser than
+  jwt.ts's — CONSIDER-level, not blocking, given the two backstops.
+- **`renderToStaticMarkup` + `NextIntlClientProvider` = ACCEPTED DOM-proof shape in node env**
+  (US-E09.5 `sd-self-approved-note.test.tsx`). With no `@testing-library/react`, "always rendered /
+  control absent from the DOM" ACs are proven by `renderToStaticMarkup(<Provider messages={vi}>…)`
+  then asserting on the HTML string against `messages.*` literals (positive + `.not.toContain`,
+  incl. `.not.toContain("<button")` for "absent, not merely disabled"). Broader than my earlier
+  "extract a pure helper" note — prefer this for row/annotation visibility ACs.
+- **Zero-prop component as a structural anti-suppression proof**: for an audit-transparency
+  annotation that must never be hidden, `export type Props = Record<string, never>` + no internal
+  condition makes suppression unrepresentable; the only condition allowed is the caller's single
+  `record.flag &&` mount. Good pattern — accept it as the NFR proof.
+- **Feature-local `*-skeleton.tsx` is a 20+ instance repo-wide NORM** (timetable, exam-bank,
+  question-bank, grades×3, lms×2, discipline, lesson-bank, academic-records×2, principal×2, feed,
+  teaching-plan, staff-discipline…). Each matches its own screen's row shape. Do NOT block a story
+  for adding the Nth one under decision 0026 — the shapes genuinely differ. `*-error.tsx` (error+retry
+  card) is at 4 near-identical instances (assignments, consent, parent-links, staff-discipline) — that
+  IS a real `components/shared/` promotion candidate, but cross-cutting/pre-existing: route to fe-lead.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server

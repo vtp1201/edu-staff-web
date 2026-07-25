@@ -554,6 +554,35 @@ keystroke-driven keys shouldn't linger in memory; unlike list/detail queries,
 there's no value in serving a stale candidate set on a repeated identical
 keystroke pattern.
 
+## Two fully independent sibling sub-resources under one screen — no cross-invalidation, all mutations non-optimistic (US-E09.5, staff-discipline)
+
+Unlike `discipline`'s violations→conduct (one derives the other's score,
+justifying cross-subtree invalidation) or `moderation`'s stats-embedded-in-list
+(justifying whole-subtree busting), `staff-discipline`'s two tabs (violations,
+conduct notes) are genuinely unrelated record types sharing only a lifecycle
+shape (`ApprovalTransition`) and a `selfApproved` derivation convention — NOT
+derived data. Rule: when two sub-resources under one screen don't actually
+derive from each other, keep their invalidation graphs 100% disjoint (each of
+the 8 mutations here invalidates exactly one subtree, never the other) —
+resist the urge to "invalidate broadly just in case." This is also what makes
+a "no carry-over error state between tabs" AC (independent `useQuery` per tab,
+never a shared/derived error) trivially satisfiable — see
+`docs/stories/epics/E09-discipline-conduct/US-E09.5-staff-discipline/state-design.md`.
+
+Also confirmed here: **only params actually documented as real server query
+params belong in the key** — a spec can list several UI-facing "filters" (state/
+severity/staffMember/term) where only some are genuine server params (per an
+explicit integration-analyst open question); the rest are pure in-memory
+narrowing over the already-fetched array and must NOT appear in the query key
+or trigger a refetch. Don't assume "it's a filter in the UI" implies "it's a
+cache-partitioning dimension."
+
+**All 8 mutations here are non-optimistic by explicit spec instruction** ("no
+optimistic UI ... dialogs/panels MUST NOT close until settled") — same
+`onSuccess`-only shape as moderation's `removeContent`, applied uniformly
+across create/submit/approve/reject × 2 sub-resources rather than picking
+per-mutation like `discipline`'s original (never-shipped) design did.
+
 ## Cross-feature read-only reference-data query key — keep it feature-neutral, not scoped to the first consumer (US-E11.8)
 
 When a NEW feature's client-side picker/select becomes the **first**

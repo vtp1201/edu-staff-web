@@ -3447,6 +3447,7 @@
     "errors": {
       "invalid-rating": "Invalid rating.",
       "locked": "This note has already been approved and can no longer be edited.",
+      "missing-note": "Please enter the note content.",
       "term-not-found": "The matching academic term could not be found."
     },
     "rejectDialog": {

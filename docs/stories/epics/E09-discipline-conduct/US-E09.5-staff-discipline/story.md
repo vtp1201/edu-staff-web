@@ -183,4 +183,68 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-Add commands, reports, screenshots, or links after validation exists.
+Design review: pass
+- design-system: conform — zero raw-color hits repo-wide grep (`fe-tech-lead-reviewer`
+  verified); `SDStateBadge`/`SDSeverityBadge`/`SDRatingBadge` reuse `StatusBadge` +
+  existing tokens per `design-spec.jsonc` `staffDiscipline.stateMachine.badge` /
+  `violationsTab.severityBadge` / `conductNotesTab.ratingBadge`; category/severity/
+  rating form-control types aligned to design-spec after fix pass (category → Select
+  over `SD_CATEGORIES`, severity/rating → segmented `radio-group` via new
+  `SDSegmentedField`, canonical `ui/radio-group` `variant="segmented"` primitive, no
+  new token/ADR).
+- a11y: WCAG AA — contrast (warning-foreground token on SUBMITTED/MINOR/
+  NEEDS_IMPROVEMENT), keyboard + ARIA tablist (arrow-key nav verified via Storybook
+  play function), reduced-motion gating (`motion-safe:animate-spin`/`animate-in`),
+  touch targets ≥44px, aria-invalid/aria-describedby on reject textarea (fixed:
+  now only flips on real validation failure, not on render/keystroke), focus-restore
+  after inline reject-panel close (fixed: `rejectTriggerRef` wired both rows),
+  aria-live on the 5000-char note counter (fixed) — `fe-accessibility-auditor`
+  found 3 major + 2 minor (0 blocking), all fixed in the follow-up commit.
+- impeccable audit: scope bounded by design-system supremacy (decision `0011`/`0012`)
+  — anti-pattern checks (contrast/spacing/motion/hierarchy/state coverage) already
+  covered by the dedicated `fe-tech-lead-reviewer` + `fe-accessibility-auditor`
+  passes above; no palette/layout/token redesign proposed or needed.
+- states: loading (EduSkeleton rows×4 on conduct-notes cold-load; violations RSC-seeded
+  no-flash asserted explicitly) / empty×2 role-differentiated / error+retry / success
+  — all present on both tabs; responsive 320/375/768/1280 asserted via Storybook
+  (`scrollWidth` no-overflow checks).
+
+Pipeline proof:
+- `fe-planner` → `plan.md`; `fe-component-architect` → `component-architecture.md`;
+  `fe-state-engineer` → `state-design.md` (all in this packet).
+- `fe-nextjs-engineer` implementation (5 layer-scoped commits) + fix pass (M1 category
+  select, S1 segmented severity/rating, S2 conduct-note error copy, S3 reject-panel
+  busy label, A11Y-001..005) — 2 commits.
+- `fe-tech-lead-reviewer`: verdict Revision Required (M1 must-fix, S1-S3 should-fix;
+  NFR-008/NFR-009 security suite Approved as-is, not re-reviewed) → all must/should-fix
+  items resolved in follow-up commit.
+- `fe-accessibility-auditor`: 3 major + 2 minor, 0 blocking → all resolved.
+- Gates (post-fix, all green): `bunx tsc --noEmit` clean; `bun vitest run` 406 files /
+  2658 tests passed; `bunx vitest run --config vitest.storybook.mts` 146 files / 991
+  tests passed (staff-discipline scope: 37/37); `bun run build` succeeds, both routes
+  present (`/principal/staff-discipline`, `/teacher/staff-discipline`); `bun lint` clean
+  (feature files).
+- Security-grade proof (NFR-008/NFR-009, release-blocking per spec.md): dedicated tests
+  in `src/features/staff-discipline/infrastructure/repositories/mocks/staff-discipline.mock.repository.security.test.ts`
+  (forbidden-role denial × 8 mutating ops × 4 forged roles, check-before-read/no
+  existence-leak, teacher list-scope forced server-side, 409 lock on dedicated
+  APPROVED fixture) + `sd-self-approved-note.test.tsx` (zero-prop unsuppressable
+  component) — verified independently by `fe-tech-lead-reviewer` with file:line
+  references, not taken on the engineer's word.
+
+Known follow-ups (not blocking, recorded for future stories):
+- No RSC role-guard layout exists for `(app)/principal/**`/`(app)/teacher/**` (only
+  `(app)/admin/**` has one) — AC-009.1 is carried by the shared auth/tenant gate +
+  server-side `authCtx` re-check, consistent with all other existing principal/teacher
+  routes in this repo; not a regression introduced by this story.
+- `authCtx` explicit-role-param pattern now used by 2 features (US-E20.1, US-E09.5)
+  with no registered ADR — flagged by `fe-tech-lead-reviewer` as ADR-worthy before a
+  3rd feature copies it; not required for this story to close.
+- `SDListSkeleton`/`SDListError` promotion-candidate status (component-organization.md)
+  — reviewed, judged not blocking (feature-local, screen-specific shape); `sd-list-error`
+  is the stronger 4th-instance promotion candidate, routed to fe-lead backlog.
+- No `staffDiscipline.errors.validation` key; `discipline.errors.not-found` says
+  "học sinh" on a staff screen (verbatim-reuse artifact per spec §8's own resolution,
+  not fixed per instruction).
+- Mock-only assumption: conduct-note overwrite preserves original `authorMemberId`/
+  `createdAt` (spec §8 OQ5) — not BE-confirmed.

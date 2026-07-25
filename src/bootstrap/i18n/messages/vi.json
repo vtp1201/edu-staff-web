@@ -3447,6 +3447,7 @@
     "errors": {
       "invalid-rating": "Xếp loại không hợp lệ.",
       "locked": "Ghi chú đã được duyệt, không thể chỉnh sửa.",
+      "missing-note": "Vui lòng nhập nội dung ghi chú.",
       "term-not-found": "Không tìm thấy học kỳ tương ứng."
     },
     "rejectDialog": {

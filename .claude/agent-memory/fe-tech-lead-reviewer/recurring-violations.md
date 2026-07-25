@@ -198,6 +198,30 @@ Watch for these (each has bitten a story here):
   but flag it: prefer threading the callback (onTyping) through the single shell subscription (context) over
   a second connection. (US-E18.18 messaging-screen.tsx + use-notification-new-event.ts:47 stale dedup claim.)
 
+- **design-spec `fields[].type` silently substituted with a different control** — the per-screen
+  `design-spec.jsonc` `createForm/setForm.fields[]` array declares each field's control `type`, and
+  engineers swap it for whatever is quickest: `"type":"select"` (+ a named options const) shipped as a
+  free-text `<Input>`; `"type":"segmented (A/B/C)"` shipped as a `<Select>` dropdown. tsc/lint/tests/
+  i18n-parity ALL stay green because no key changes and the value still round-trips. Decision 0011 makes
+  the design-spec entry normative for per-screen layout → real conformance gap, not a nit. Check every
+  `fields[]` entry's `type` against the rendered control, not just that the field exists. Two rebuttals
+  engineers offer that usually DON'T hold: (a) "no i18n option-label keys were authored" — if the option
+  labels are stored as the wire VALUE (free-text column) they are mock/seed DATA, explicitly excluded
+  from i18n, so zero new keys are needed; grep the fixtures, the labels are often already there verbatim;
+  (b) "no segmented primitive exists" — `components/ui/toggle-group/` EXISTS with ≥4 feature precedents
+  (attendance-status-toggle, term-radio-group, invitation-role-radio-group, qb-question-type-selector).
+  (US-E09.5 create-violation-dialog `category`; severity/rating segmented→Select.)
+- **Field-error copy borrowed from a sibling field's key instead of adding one** — a `note`-required
+  validation reusing `discipline.errors.missing-description` renders "Vui lòng nhập mô tả vi phạm"
+  ("enter a violation description") on a CONDUCT-NOTE field. Exhaustive switch looks tidy and typed, so
+  it passes review-by-skim. Fix = add `staffDiscipline.errors.missing-note` in vi+en. Cross-check every
+  `case`/`default` in a `use*ErrorMessage()` switch where two distinct fields map to ONE key.
+  (US-E09.5 `sd-error-message.ts` `useSDFieldErrorMessage` note/description collapse.)
+- **Pending-label key authored but only wired for SOME actions** — `actions.submitting`/`approving` used
+  via `isBusy ? t("submitting") : t("submit")` on row buttons while the sibling `actions.rejecting` stays
+  dead because the reject confirm only sets `disabled`+`aria-busy` with a static label. Dead key + a11y/UX
+  inconsistency across three buttons doing the same class of thing. (US-E09.5.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.
