@@ -44,3 +44,11 @@ though the fix is correct.
 
 See [[project-parallel-branch-workflow]] for the branch lifecycle used (solo lane, no
 other in-flight branch besides a stale unrelated `feat/theme-shadcn-skyblue`).
+
+Follow-up closed: `pagination.tsx`'s hardcoded English `aria-label`s/text fixed as its own
+tiny-lane story `INFRA-pagination-aria-i18n` (branch `fix/pagination-aria-label-i18n`,
+merged) — same pattern (`Common.pagination.*` keys, `useTranslations`, explicit-override
+preserved, stale `@storybook/react`-era story rewritten to `@storybook/nextjs-vite` +
+`NextIntlClientProvider` with locale interaction tests). Repo-wide re-sweep confirmed no
+other `components/ui/*` primitive has this defect class (no carousel/breadcrumb exists;
+other "Previous/Next/slide" grep hits were Tailwind animation-class fragments, not text).
