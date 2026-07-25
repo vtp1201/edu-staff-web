@@ -222,6 +222,33 @@ Watch for these (each has bitten a story here):
   dead because the reject confirm only sets `disabled`+`aria-busy` with a static label. Dead key + a11y/UX
   inconsistency across three buttons doing the same class of thing. (US-E09.5.)
 
+- **`not-found` (404-race) mutation branch closes the confirm dialog with NO user feedback = silent
+  false success** — the spec/AC almost always says "toast + refetch" for the 404 race, and engineers
+  implement only the refetch: `onError` → `if (errorKey === "not-found") { setTarget(null);
+  invalidate(); return; }`. The dialog vanishes exactly as it does on success, so on an IRREVERSIBLE
+  action the actor concludes it worked. Tell-tale pair: authored-but-dead `form.recordSuccess`/
+  `form.editSuccess` i18n keys and zero `from "sonner"` import in the whole feature. `toast` IS
+  available and the named precedent (`parent-links` `unlinkMutation`) uses it — so the omission is a
+  gap, not a toolchain limit. Cross-check EVERY `onError` branch that closes a dialog for a visible
+  message. Blocking when the mutation is terminal/irreversible. (US-E09.6 flag mutation.)
+- **`aria-invalid` + inline message shipped but "field retains focus" silently dropped** — an AC that
+  says "inline error renders on the X field AND the field retains focus" gets only the first half:
+  the guard runs in the submit handler, so focus stays on the submit button. Zero `useRef`/`.focus()`
+  in the feature is the tell. The interaction story passes because it asserts `aria-invalid` +
+  "no request sent" and never `toHaveFocus()`. SHOULD FIX; converges with the a11y auditor.
+  (US-E09.6 `submitRecord` future-date/duplicate guards, AC-003.3.)
+- **Page `title`/`subtitle` key reused as a stat-card label / dialog description** — when the authored
+  namespace has no `stats.total` (design-spec names the metric only prosaically, e.g. "3-up StatCard:
+  total absences / unexcused / flagged") engineers reach for `t("title")`, so the h1 copy renders twice
+  on one screen; likewise `t("subtitle")` becomes a `DialogDescription`. Passes parity + tsc (no new
+  key). Fix = add the dedicated key in vi+en. SHOULD FIX. (US-E09.6 `sa-stats-row.tsx`,
+  `sa-absence-form-dialog.tsx`.)
+- **Additive optional prop on a `components/shared/` component without updating THAT component's own
+  `.stories.tsx`** — e.g. `errorSlot` (2 tones + a confirm-force-disable behaviour) added to
+  `publish-confirm-dialog` and covered only from the consuming feature's stories.
+  `component-organization.md` requires the shared component's own story to gain the new state.
+  Non-breaking for existing consumers (verify they don't pass the prop), so SHOULD FIX. (US-E09.6.)
+
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.

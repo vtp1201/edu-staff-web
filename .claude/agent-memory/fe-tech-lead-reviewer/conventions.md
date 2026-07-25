@@ -201,6 +201,25 @@ Confirmed facts (verify before citing if stale):
   for adding the Nth one under decision 0026 — the shapes genuinely differ. `*-error.tsx` (error+retry
   card) is at 4 near-identical instances (assignments, consent, parent-links, staff-discipline) — that
   IS a real `components/shared/` promotion candidate, but cross-cutting/pre-existing: route to fe-lead.
+- **Role-discriminated VM union = the STRONGEST accepted proof for "zero affordance, not merely
+  disabled" ACs** (US-E09.6 `student-absences-screen.i-vm.ts`): `StudentAbsencesScreenVM =
+  TeacherVM{viewerRole:"teacher"; recordAction; editAction} | PrincipalVM{viewerRole:"principal";
+  flagAction}` — the forbidden capability has NO FIELD on the other arm, so the route physically
+  cannot wire it and the screen cannot compile a control that calls it. The screen then narrows via
+  `const teacherVm = vm.viewerRole==="teacher" ? vm : null` (consts, not a bare boolean, to keep
+  narrowing alive at every use site). Accept this in place of a runtime "is the button hidden" test;
+  ask for a Storybook `queryByRole(...)===null` story as the belt-and-braces half only.
+- **`authCtx` CONSTRUCTOR-injected into the repo (not a per-call param) is the stronger variant** of
+  the `authCtx`-seam pattern (US-E09.6, vs. the per-method param in parent-links/staff-discipline):
+  no call site can substitute a role/homeroom, so the only forgeable surface left is the
+  `classId`/key ARGUMENTS — which is exactly what the security tests must forge. Verify the gate
+  (`assertCanWriteClass`/`assertCanFlag`) runs BEFORE any find/existence read so `forbidden` always
+  wins over `not-found` (no existence leak), and that a deny-by-default context (`classId: ""`)
+  can never equal a real class id.
+- **RSC `page.tsx` importing `infrastructure/repositories/mocks/fixtures` is ESTABLISHED** for
+  force-mocked features (staff-discipline ×2, student-absences ×2) — the fixtures module carries no
+  `server-only` (so stories can import it too) and supplies roster/class picklists the wire has no
+  field for. Don't flag it as an app→infrastructure layer breach.
 - `nav-config.ts` (`components/layout/app-shell/sidebar/`) is a PURE data/types module with NO
   `'use client'` — exports `Role`, `NAV_BY_ROLE`, `DEFAULT_ROUTE`, `ROLE_LABEL_KEY`. It imports
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
