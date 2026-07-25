@@ -1,6 +1,14 @@
 {
   "Common": {
     "close": "Close",
+    "pagination": {
+      "nav": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "previousAriaLabel": "Go to previous page",
+      "nextAriaLabel": "Go to next page",
+      "morePages": "More pages"
+    },
     "confirmDialog": {
       "cancel": "Cancel",
       "confirm": "Confirm",
