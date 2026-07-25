@@ -5,11 +5,12 @@ import { FileWarning, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListError } from "@/components/shared/list-error";
+import { ListSkeleton } from "@/components/shared/list-skeleton";
 import type { StaffViolationEntity } from "../../domain/entities/staff-violation.entity";
 import { CreateViolationDialog } from "./create-violation-dialog";
 import { errorKeyOf, useSDErrorMessage } from "./sd-error-message";
-import { SDListError } from "./sd-list-error";
-import { SDListSkeleton } from "./sd-list-skeleton";
+import { sdSkeletonRow } from "./sd-list-states";
 import { staffOf } from "./sd-roster-lookup";
 import {
   SDViolationFilterBar,
@@ -67,6 +68,8 @@ export function SDViolationsTab({
   rejectViolationAction,
 }: SDViolationsTabProps) {
   const t = useTranslations("staffDiscipline.violations");
+  const tSD = useTranslations("staffDiscipline");
+  const tCommon = useTranslations("Common");
   const errorMessage = useSDErrorMessage();
   const queryClient = useQueryClient();
 
@@ -186,13 +189,26 @@ export function SDViolationsTab({
   const body = () => {
     if (listErrorKey) {
       return (
-        <SDListError
+        <ListError
           message={errorMessage(listErrorKey)}
+          retryLabel={tSD("retry")}
+          shape="inline-card"
+          retryIcon="rotate"
+          retryButtonVariant="outline"
+          iconSize={10}
           onRetry={() => void query.refetch()}
         />
       );
     }
-    if (query.isLoading) return <SDListSkeleton />;
+    if (query.isLoading)
+      return (
+        <ListSkeleton
+          loadingAriaLabel={tCommon("skeleton.loadingAriaLabel")}
+          rows={4}
+          variant="inline"
+          renderRow={sdSkeletonRow}
+        />
+      );
     if (rows.length === 0) {
       return (
         <div className="rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">

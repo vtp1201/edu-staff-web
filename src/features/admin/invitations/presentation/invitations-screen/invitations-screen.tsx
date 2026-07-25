@@ -7,12 +7,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog/destructive-confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state/empty-state";
+import { ListError } from "@/components/shared/list-error";
+import { ListSkeleton } from "@/components/shared/list-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { InviteRoleOption } from "../../domain/entities/invitation.entity";
 import { buildRowVM, type RowVMLabels } from "./build-row-vm";
 import { filterInvitations, statusCounts } from "./filter-invitations";
 import { invitationKeys } from "./invitations.query-keys";
 import { InvitationsCardList } from "./invitations-card-list";
-import { InvitationsErrorState } from "./invitations-error-state";
 import { InvitationsPageHeader } from "./invitations-page-header";
 import type { InvitationsRowsLabels } from "./invitations-rows.i-vm";
 import type {
@@ -22,7 +24,6 @@ import type {
   SendBatchActionResult,
 } from "./invitations-screen.i-vm";
 import { InvitationsSearchInput } from "./invitations-search-input";
-import { InvitationsSkeleton } from "./invitations-skeleton";
 import { InvitationsStatusTabs } from "./invitations-status-tabs";
 import { InvitationsTable } from "./invitations-table";
 import { SendInvitationDialog } from "./send-invitation-dialog";
@@ -38,6 +39,21 @@ const ROLE_OPTIONS: InviteRoleOption[] = [
 const EXPIRY_OPTIONS = [7, 14, 30] as const;
 /** Soft client cap on one batch (plan.md §4 OQ-C — guards an unbounded fan-out). */
 const MAX_BATCH_EMAILS = 20;
+
+/**
+ * One shimmer row of the loading table (AC-001.1, design-spec `states.loading`
+ * rows=5): email + status pill + 2 md-only fields + trailing action. The wrapper
+ * + a11y wiring come from the shared `ListSkeleton` (INFRA-shared-list-states).
+ */
+const invitationsSkeletonRow = () => (
+  <div className="flex items-center gap-4 border-border border-b px-4 py-3.5 last:border-b-0">
+    <Skeleton className="h-4 w-48" />
+    <Skeleton className="h-5 w-20 rounded-full" />
+    <Skeleton className="hidden h-4 w-28 md:block" />
+    <Skeleton className="hidden h-4 w-24 md:block" />
+    <Skeleton className="ml-auto h-8 w-24" />
+  </div>
+);
 
 export function InvitationsScreen({
   initialInvitations,
@@ -257,14 +273,26 @@ export function InvitationsScreen({
       </div>
 
       {showLoading && (
-        <InvitationsSkeleton loadingAriaLabel={t("table.loadingAriaLabel")} />
+        <ListSkeleton
+          loadingAriaLabel={t("table.loadingAriaLabel")}
+          rows={5}
+          variant="bordered"
+          renderRow={invitationsSkeletonRow}
+        />
       )}
 
       {showError && (
-        <InvitationsErrorState
+        <ListError
           title={t("error.title")}
           description={t("error.description")}
           retryLabel={t("error.retry")}
+          shape="bordered-card"
+          iconSize={12}
+          retryIcon="none"
+          retryButtonVariant="secondary"
+          className="px-5"
+          titleClassName="mt-4 font-bold text-base text-foreground"
+          descriptionClassName="mt-2 max-w-sm text-edu-text-secondary text-sm"
           onRetry={() => listQuery.refetch()}
         />
       )}

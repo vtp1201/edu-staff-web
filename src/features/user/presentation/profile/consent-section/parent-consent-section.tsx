@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, Lock, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ListError } from "@/components/shared/list-error";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChildConsentCard } from "./child-consent-card";
-import { ConsentError } from "./consent-error";
 import { ConsentSkeleton } from "./consent-skeleton";
 import { PARENT_CONSENT_QUERY_KEY } from "./parent-consent.query-keys";
 import type {
@@ -69,10 +69,17 @@ export function ParentConsentSection({
         )}
 
         {showError && (
-          <ConsentError
+          <ListError
             title={t("error.title")}
             description={t("error.body")}
             retryLabel={t("error.retry")}
+            shape="bordered-card"
+            iconVariant="boxed"
+            iconSize={6}
+            retryIcon="refresh"
+            retryButtonVariant="default"
+            retryButtonSize="sm"
+            className="py-10"
             onRetry={() => query.refetch()}
           />
         )}
