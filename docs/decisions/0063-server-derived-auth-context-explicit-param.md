@@ -201,6 +201,21 @@ Positive:
 - Makes explicit, in one place, that `(app)/principal/**` and
   `(app)/teacher/**` currently have **no** RSC layout-level guard (unlike
   `(app)/admin/**`) — a known gap this ADR does not close (see Follow-Up).
+  **Status update (2026-07-25, INFRA rsc-layout-guards-role-groups):** this gap
+  is now closed. `evaluateAdminAccess` (`src/bootstrap/tenant/role-guard.ts`)
+  was generalized into `evaluateNamespaceAccess(role, locale, tenantId,
+  requiredRole)` — same deny-by-default verdict shape, `evaluateAdminAccess`
+  kept as a thin `requiredRole: "admin"` wrapper. Every role namespace now has
+  its own RSC layout guard mirroring `admin/layout.tsx`: `principal/layout.tsx`,
+  `teacher/layout.tsx`, `student/layout.tsx`, `parent/layout.tsx` (the
+  inventory found these four — plus `admin` — as ALL the role-scoped route
+  groups under `(app)/`; `(app)/(shared)/**` is intentionally multi-role by
+  design, not a gap, and stays covered only by the outer `(app)/layout.tsx`
+  auth+tenant check). The repository-level `authCtx` re-check documented above
+  remains as defense-in-depth for per-record scope (this ADR's actual subject);
+  it was not the only server-side check for these two route groups even before
+  this fix (a route gate can't express per-record scope), but it no longer is
+  the only server-side check on the *route* either.
 
 Tradeoffs:
 
@@ -213,11 +228,13 @@ Tradeoffs:
 
 ## Follow-Up
 
-- Consider adding an RSC layout-level guard for `(app)/principal/**` and
+- ~~Consider adding an RSC layout-level guard for `(app)/principal/**` and
   `(app)/teacher/**` mirroring `(app)/admin/layout.tsx`'s `evaluateAdminAccess`
   — currently these two route groups depend entirely on per-action
   `requireRole()` + the repository-level `authCtx` check, with no
   layout-level backstop. Out of scope for this docs-only ADR; flag to
-  `fe-lead` as a candidate US when next touching either route group.
+  `fe-lead` as a candidate US when next touching either route group.~~ **Closed**
+  2026-07-25 by INFRA rsc-layout-guards-role-groups — see the Consequences
+  status update above.
 - When a 4th feature adopts this pattern, prefer the constructor-injected
   variant (§Decision point 4) over the per-call-param shape.

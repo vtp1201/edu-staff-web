@@ -55,6 +55,16 @@ Hệ quả nghiệp vụ:
   redirect về workspace hợp lệ của chính họ.
 - Authorization là **hard gate** trong intake — mọi thay đổi quy tắc truy cập
   theo role/tenant là high-risk và cần decision.
+- **RSC layout guard cho MỌI namespace theo role** (cập nhật 2026-07-25, INFRA
+  rsc-layout-guards-role-groups, đóng gap ghi trong ADR `0063`): không chỉ
+  `(app)/admin/**` — `(app)/principal/**`, `(app)/teacher/**`,
+  `(app)/student/**`, `(app)/parent/**` mỗi group đều có `layout.tsx` riêng gọi
+  `evaluateNamespaceAccess(role, locale, tenant, requiredRole)`
+  (`src/bootstrap/tenant/role-guard.ts`) — deny-by-default, redirect về
+  default route của role gọi sai, hoặc `/select-tenant` nếu chưa đăng nhập.
+  `(app)/(shared)/**` (profile, feed, messages, notifications) KHÔNG có guard
+  theo role vì cố ý cho mọi role đã đăng nhập — vẫn được bọc bởi auth+tenant
+  check ở `(app)/layout.tsx` ngoài cùng.
 
 ## Chưa chốt
 
