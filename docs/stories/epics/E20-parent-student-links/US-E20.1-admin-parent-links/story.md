@@ -2,7 +2,9 @@
 
 ## Status
 
-planned
+implemented (merged to `main` — commits `7b92e5c`/`9a2a2eb`/`6a30614`/`89c023a`/`431df29`;
+verified by `fe-lead` 2026-07-25 — this header field was stale, contradicting the
+Evidence section below which already documented the completed pipeline)
 
 ## Lane
 
