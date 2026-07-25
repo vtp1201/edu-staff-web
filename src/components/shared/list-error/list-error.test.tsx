@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { ListError } from "./list-error";
+import { ListError, type ListErrorProps } from "./list-error";
 
 /**
  * `ListError` is the canonical list-level error + retry card
@@ -37,6 +37,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={10}
         onRetry={vi.fn()}
       />,
@@ -49,6 +50,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={12}
         onRetry={vi.fn()}
       />,
@@ -58,16 +60,19 @@ describe("ListError", () => {
   });
 
   it("renders the message line and NOT title/description when message is set", () => {
-    const html = renderToStaticMarkup(
-      <ListError
-        message="Không tải được"
-        title="không hiển thị"
-        description="cũng không"
-        retryLabel="Thử lại"
-        iconSize={10}
-        onRetry={vi.fn()}
-      />,
-    );
+    // `ListErrorProps` is a discriminated union — message + title/description is
+    // already a COMPILE error. The cast proves the runtime fallback still favours
+    // `message` if the union is ever bypassed (e.g. props spread from untyped JS).
+    const bothProps = {
+      message: "Không tải được",
+      title: "không hiển thị",
+      description: "cũng không",
+      retryLabel: "Thử lại",
+      shape: "inline-card",
+      iconSize: 10,
+      onRetry: vi.fn(),
+    } as unknown as ListErrorProps;
+    const html = renderToStaticMarkup(<ListError {...bothProps} />);
     expect(html).toContain("Không tải được");
     expect(html).not.toContain("không hiển thị");
     expect(html).not.toContain("cũng không");
@@ -78,6 +83,7 @@ describe("ListError", () => {
       <ListError
         title="Tiêu đề"
         retryLabel="Thử lại"
+        shape="bordered-card"
         iconSize={12}
         onRetry={vi.fn()}
       />,
@@ -90,6 +96,7 @@ describe("ListError", () => {
         title="Tiêu đề"
         description="Mô tả"
         retryLabel="Thử lại"
+        shape="bordered-card"
         iconSize={12}
         onRetry={vi.fn()}
       />,
@@ -103,6 +110,7 @@ describe("ListError", () => {
       <ListError
         title="T"
         retryLabel="Thử lại"
+        shape="bordered-card"
         iconVariant="boxed"
         iconSize={6}
         onRetry={vi.fn()}
@@ -119,6 +127,7 @@ describe("ListError", () => {
       <ListError
         title="T"
         retryLabel="Thử lại"
+        shape="bordered-card"
         iconSize={12}
         onRetry={vi.fn()}
       />,
@@ -131,6 +140,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={10}
         onRetry={vi.fn()}
       />,
@@ -145,6 +155,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={10}
         onRetry={vi.fn()}
       />,
@@ -156,6 +167,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={10}
         retryIcon="rotate"
         onRetry={vi.fn()}
@@ -167,6 +179,7 @@ describe("ListError", () => {
       <ListError
         message="Lỗi"
         retryLabel="Thử lại"
+        shape="inline-card"
         iconSize={10}
         retryIcon="refresh"
         onRetry={vi.fn()}
@@ -181,10 +194,10 @@ describe("ListError", () => {
         <ListError
           message="Không tải được danh sách"
           retryLabel="Thử lại"
+          shape="inline-card"
           retryIcon="rotate"
           retryButtonVariant="outline"
           iconSize={10}
-          className="gap-3 rounded-[var(--edu-radius-card)] border border-edu-error/20 px-5 py-10 shadow-card"
           onRetry={vi.fn()}
         />,
       );
@@ -206,13 +219,13 @@ describe("ListError", () => {
           title="Không tải được"
           description="Thử lại sau"
           retryLabel="Tải lại"
+          shape="bordered-card"
           iconVariant="boxed"
           iconSize={6}
           retryIcon="refresh"
           retryButtonVariant="default"
           retryButtonSize="sm"
-          retryButtonClassName="mt-4"
-          className="rounded-xl border border-border px-6 py-13"
+          className="py-13"
           onRetry={vi.fn()}
         />,
       );
@@ -239,13 +252,13 @@ describe("ListError", () => {
           title="Không tải được lời mời"
           description="Đã xảy ra lỗi"
           retryLabel="Tải lại"
+          shape="bordered-card"
           iconSize={12}
           retryIcon="none"
           retryButtonVariant="secondary"
-          retryButtonClassName="mt-4"
-          className="rounded-xl border border-border px-5 py-12"
-          titleClassName="mt-4 font-bold"
-          descriptionClassName="mt-2 text-edu-text-secondary"
+          className="px-5"
+          titleClassName="mt-4 font-bold text-base text-foreground"
+          descriptionClassName="mt-2 max-w-sm text-edu-text-secondary text-sm"
           onRetry={vi.fn()}
         />,
       );
@@ -263,6 +276,104 @@ describe("ListError", () => {
       );
       // No icon inside the retry button — only the AlertTriangle.
       expect(html.match(/<svg/g)).toHaveLength(1);
+    });
+
+    it("reproduces ConsentError exactly (PLError's card at py-10)", () => {
+      const html = renderToStaticMarkup(
+        <ListError
+          title="Không tải được"
+          description="Thử lại sau"
+          retryLabel="Tải lại"
+          shape="bordered-card"
+          iconVariant="boxed"
+          iconSize={6}
+          retryIcon="refresh"
+          retryButtonVariant="default"
+          retryButtonSize="sm"
+          className="py-10"
+          onRetry={vi.fn()}
+        />,
+      );
+      expect(classesOf(html, 0)).toEqual(
+        setOf(
+          "flex flex-col items-center rounded-xl border border-border bg-card px-6 py-10 text-center",
+        ),
+      );
+      expect(classesOf(html, 1)).toEqual(
+        setOf(
+          "flex size-13 items-center justify-center rounded-2xl bg-edu-error-dark-light",
+        ),
+      );
+      expect(classesOf(html, 2)).toEqual(setOf("size-6 text-edu-error-dark"));
+      expect(classesOf(html, 3)).toEqual(
+        setOf("mt-3.5 font-extrabold text-base text-foreground"),
+      );
+      expect(classesOf(html, 4)).toEqual(
+        setOf("mt-1 max-w-sm text-muted-foreground text-sm"),
+      );
+      expect(html).toContain("mt-4");
+      expect(html).toContain("min-h-11");
+    });
+  });
+
+  describe("shape presets", () => {
+    it("inline-card supplies SD/SA's outer card and keeps retry in the flow gap", () => {
+      const html = renderToStaticMarkup(
+        <ListError
+          message="Lỗi"
+          retryLabel="Thử lại"
+          shape="inline-card"
+          iconSize={10}
+          onRetry={vi.fn()}
+        />,
+      );
+      expect(classesOf(html, 0)).toEqual(
+        setOf(
+          "flex flex-col items-center gap-3 rounded-[var(--edu-radius-card)] border border-edu-error/20 bg-card px-5 py-10 text-center shadow-card",
+        ),
+      );
+      expect(html).not.toContain("mt-4");
+    });
+
+    it("bordered-card supplies the plain card and spaces the retry by mt-4", () => {
+      const html = renderToStaticMarkup(
+        <ListError
+          title="T"
+          retryLabel="Thử lại"
+          shape="bordered-card"
+          iconSize={12}
+          onRetry={vi.fn()}
+        />,
+      );
+      expect(classesOf(html, 0)).toEqual(
+        setOf(
+          "flex flex-col items-center rounded-xl border border-border bg-card px-6 py-12 text-center",
+        ),
+      );
+      expect(html).toContain("mt-4");
+    });
+
+    it("title/description class props REPLACE the defaults (no tailwind-merge reliance)", () => {
+      const html = renderToStaticMarkup(
+        <ListError
+          title="T"
+          description="D"
+          retryLabel="Thử lại"
+          shape="bordered-card"
+          iconSize={12}
+          titleClassName="mt-4 font-bold text-base text-foreground"
+          descriptionClassName="mt-2 max-w-sm text-edu-text-secondary text-sm"
+          onRetry={vi.fn()}
+        />,
+      );
+      expect(classesOf(html, 2)).toEqual(
+        setOf("mt-4 font-bold text-base text-foreground"),
+      );
+      expect(classesOf(html, 3)).toEqual(
+        setOf("mt-2 max-w-sm text-edu-text-secondary text-sm"),
+      );
+      expect(html).not.toContain("font-extrabold");
+      expect(html).not.toContain("text-muted-foreground");
     });
   });
 });

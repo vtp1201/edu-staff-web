@@ -23,11 +23,11 @@ export const MessageVariant: Story = {
   args: {
     message: "Không tải được danh sách. Vui lòng thử lại.",
     retryLabel: "Thử lại",
+    shape: "inline-card",
     iconSize: 10,
     retryIcon: "rotate",
     retryButtonVariant: "outline",
     onRetry: fn(),
-    className: "gap-3 px-5 py-10",
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
@@ -55,6 +55,7 @@ export const TitleAndDescription: Story = {
     title: "Không tải được lời mời",
     description: "Đã xảy ra lỗi khi tải danh sách lời mời.",
     retryLabel: "Tải lại",
+    shape: "bordered-card",
     iconSize: 12,
     retryIcon: "none",
     retryButtonVariant: "secondary",
@@ -84,6 +85,7 @@ export const BoxedIcon: Story = {
     title: "Không tải được danh sách liên kết",
     description: "Vui lòng thử lại sau ít phút.",
     retryLabel: "Tải lại",
+    shape: "bordered-card",
     iconVariant: "boxed",
     iconSize: 6,
     retryIcon: "refresh",
@@ -106,20 +108,43 @@ export const BoxedIcon: Story = {
   },
 };
 
-/** `message` wins over `title`/`description` (they are mutually exclusive). */
-export const MessageTakesPrecedence: Story = {
+/**
+ * The `shape` preset supplies the outer card + retry spacing, so no caller
+ * repeats a class literal. `inline-card` = SD/SA; `bordered-card` = parent-links
+ * / invitations / parent-consent (retry gets `mt-4`).
+ */
+export const ShapePresetSuppliesOuterClasses: Story = {
   args: {
     message: "Lỗi mạng",
-    title: "Không nên hiển thị",
-    description: "Cũng không nên hiển thị",
     retryLabel: "Thử lại",
+    shape: "inline-card",
     iconSize: 10,
     onRetry: fn(),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Lỗi mạng")).toBeInTheDocument();
-    await expect(canvas.queryByText("Không nên hiển thị")).toBeNull();
-    await expect(canvas.queryByText("Cũng không nên hiển thị")).toBeNull();
+    const alert = canvas.getByRole("alert");
+    await expect(alert).toHaveClass("shadow-card", "gap-3", "py-10");
+    // inline-card keeps the retry in the flow gap — no mt-4.
+    await expect(
+      canvas.getByRole("button", { name: "Thử lại" }),
+    ).not.toHaveClass("mt-4");
+  },
+};
+
+/** The `bordered-card` preset moves the retry down by `mt-4`. */
+export const BorderedShapeSpacesTheRetry: Story = {
+  args: {
+    title: "Không tải được",
+    retryLabel: "Tải lại",
+    shape: "bordered-card",
+    iconSize: 12,
+    onRetry: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("alert")).toHaveClass("rounded-xl", "py-12");
+    const retry = canvas.getByRole("button", { name: "Tải lại" });
+    await expect(retry).toHaveClass("mt-4", "min-h-11");
   },
 };

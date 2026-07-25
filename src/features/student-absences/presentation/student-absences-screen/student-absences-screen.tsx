@@ -370,10 +370,10 @@ export function StudentAbsencesScreen(vm: StudentAbsencesScreenProps) {
         <ListError
           message={errorMessage(listErrorKey)}
           retryLabel={t("retry")}
+          shape="inline-card"
           retryIcon="rotate"
           retryButtonVariant="outline"
           iconSize={10}
-          className="gap-3 rounded-[var(--edu-radius-card)] border border-edu-error/20 px-5 py-10 shadow-card"
           onRetry={() => void query.refetch()}
         />
       );

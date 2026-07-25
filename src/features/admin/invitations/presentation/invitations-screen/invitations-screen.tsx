@@ -286,13 +286,13 @@ export function InvitationsScreen({
           title={t("error.title")}
           description={t("error.description")}
           retryLabel={t("error.retry")}
+          shape="bordered-card"
           iconSize={12}
           retryIcon="none"
           retryButtonVariant="secondary"
-          retryButtonClassName="mt-4"
-          className="rounded-xl border border-border px-5 py-12"
-          titleClassName="mt-4 font-bold"
-          descriptionClassName="mt-2 text-edu-text-secondary"
+          className="px-5"
+          titleClassName="mt-4 font-bold text-base text-foreground"
+          descriptionClassName="mt-2 max-w-sm text-edu-text-secondary text-sm"
           onRetry={() => listQuery.refetch()}
         />
       )}

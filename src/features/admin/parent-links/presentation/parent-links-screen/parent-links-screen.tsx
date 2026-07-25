@@ -459,13 +459,13 @@ export function ParentLinksScreen({
           title={t("errors.loadTitle")}
           description={t("errors.loadDescription")}
           retryLabel={t("errors.retry")}
+          shape="bordered-card"
           iconVariant="boxed"
           iconSize={6}
           retryIcon="refresh"
           retryButtonVariant="default"
           retryButtonSize="sm"
-          retryButtonClassName="mt-4"
-          className="rounded-xl border border-border px-6 py-13"
+          className="py-13"
           onRetry={() => query.refetch()}
         />
       )}

@@ -1,13 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Caller-owned pieces of this feature's list states, shared by BOTH tabs
+ * Caller-owned row shape for this feature's loading list, shared by BOTH tabs
  * (conduct-notes + violations) so the two call sites stay one truth.
  *
- * The wrappers themselves are the canonical `ListSkeleton`/`ListError` from
- * `@/components/shared/*` (INFRA-shared-list-states, decision 0026) — what lives
- * here is only the per-screen row shape + the per-screen outer card classes those
- * shared components take as props, NOT a parallel component.
+ * The wrapper itself is the canonical `ListSkeleton` from
+ * `@/components/shared/list-skeleton` (INFRA-shared-list-states, decision 0026);
+ * the error card is `ListError` with `shape="inline-card"`. What lives here is
+ * only the per-screen row markup that `renderRow` takes, NOT a parallel
+ * component.
  */
 
 /**
@@ -24,7 +25,3 @@ export const sdSkeletonRow = () => (
     <Skeleton className="h-6 w-20 shrink-0 rounded-full" />
   </div>
 );
-
-/** Outer card of the list error (AC-001.6/AC-006.7) — error-tinted border. */
-export const SD_LIST_ERROR_CLASS =
-  "gap-3 rounded-[var(--edu-radius-card)] border border-edu-error/20 px-5 py-10 shadow-card";

@@ -10,7 +10,7 @@ import { ListSkeleton } from "@/components/shared/list-skeleton";
 import type { StaffViolationEntity } from "../../domain/entities/staff-violation.entity";
 import { CreateViolationDialog } from "./create-violation-dialog";
 import { errorKeyOf, useSDErrorMessage } from "./sd-error-message";
-import { SD_LIST_ERROR_CLASS, sdSkeletonRow } from "./sd-list-states";
+import { sdSkeletonRow } from "./sd-list-states";
 import { staffOf } from "./sd-roster-lookup";
 import {
   SDViolationFilterBar,
@@ -192,10 +192,10 @@ export function SDViolationsTab({
         <ListError
           message={errorMessage(listErrorKey)}
           retryLabel={tSD("retry")}
+          shape="inline-card"
           retryIcon="rotate"
           retryButtonVariant="outline"
           iconSize={10}
-          className={SD_LIST_ERROR_CLASS}
           onRetry={() => void query.refetch()}
         />
       );

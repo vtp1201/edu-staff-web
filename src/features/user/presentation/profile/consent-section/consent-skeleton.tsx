@@ -7,10 +7,13 @@ export interface ConsentSkeletonProps {
 
 /**
  * Section loading placeholder — 2 CARD-shaped shimmers (header row + 3 toggle
- * rows each), matching the "child-cards" mental model (AC-001.1/NFR-005). NOT
- * `PLSkeleton`'s flat table-row shape (different layout — kept feature-local per
- * component-architecture §5.1). The shimmer is `aria-hidden`; a visually-hidden
- * `role="status"` sibling announces loading.
+ * rows each), matching the "child-cards" mental model (AC-001.1/NFR-005).
+ * Deliberately NOT the shared `ListSkeleton` (@/components/shared/list-skeleton):
+ * that component renders a flat ROW list, while this is a card-of-cards shape —
+ * a genuinely different layout, not a duplicate (INFRA-shared-list-states
+ * ruling; the sibling `ConsentError` WAS migrated to the shared `ListError`).
+ * The shimmer is `aria-hidden`; a visually-hidden `role="status"` sibling
+ * announces loading.
  */
 export function ConsentSkeleton({ loadingAriaLabel }: ConsentSkeletonProps) {
   return (

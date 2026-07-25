@@ -15,7 +15,7 @@ import type {
 import { SDConductNoteRow } from "./sd-conduct-note-row";
 import { SDConductTermBar } from "./sd-conduct-term-bar";
 import { errorKeyOf, useSDErrorMessage } from "./sd-error-message";
-import { SD_LIST_ERROR_CLASS, sdSkeletonRow } from "./sd-list-states";
+import { sdSkeletonRow } from "./sd-list-states";
 import { staffOf } from "./sd-roster-lookup";
 import { SetConductNoteDialog } from "./set-conduct-note-dialog";
 import {
@@ -207,10 +207,10 @@ export function SDConductNotesTab({
         <ListError
           message={errorMessage(listErrorKey)}
           retryLabel={tSD("retry")}
+          shape="inline-card"
           retryIcon="rotate"
           retryButtonVariant="outline"
           iconSize={10}
-          className={SD_LIST_ERROR_CLASS}
           onRetry={() => void query.refetch()}
         />
       );
