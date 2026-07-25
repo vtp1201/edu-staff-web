@@ -48,3 +48,24 @@ was the real per-screen variance, not the container.
   resumed `fe-nextjs-engineer` kept editing files (fixed its own tests to match its new API) after
   its "no live children" notification fired, so re-reading the actual working tree before
   re-applying findings avoided a duplicate/conflicting edit.
+- Follow-up (`INFRA-list-error-dark-mode-contrast`, merged `aac58cc`): fixed the auditor's
+  deferred "1 minor" dark-mode contrast gap. Ground-truthing showed the isolated boxed-icon
+  pairing (`bg-edu-error-dark-light`/`text-edu-error-dark`) actually still passes AA math in both
+  themes (neither var has a `.dark {}` override, so it's unaffected by theme) — the real defect
+  was token CHOICE: that pair is reserved for "Nặng"/severe discipline severity (ADR 0040) and is
+  a dual-role token (also a solid-fill button/badge bg elsewhere) that can't get one safe `.dark`
+  override; `ListError`'s plain non-severity icon had borrowed it verbatim from the deleted
+  `pl-error.tsx` and had no business using the severity-reserved pair. Fix was a **component-level
+  token swap** to `bg-edu-error-light`/`text-edu-error-text` (already `.dark`-safe since US-E21.2,
+  same tone family) — zero ADR, zero new token. General pattern worth repeating: before assuming
+  an a11y "missing `.dark {}` override" finding needs a token-value change (ADR), check whether
+  the token is dual-role (also used as a solid fill elsewhere) — if so, a single override can't
+  serve both roles, and the real fix is usually "this call site is using the wrong token for its
+  semantic (non-severity) meaning," not "add an override." Also: `@storybook/addon-themes`
+  per-story dark-mode override is `parameters: { themes: { themeOverride: "dark" } }`, NOT
+  `globals: { theme: "dark" }` (the latter silently no-ops in the `vitest.storybook.mts` runner —
+  confirmed the `<html>` class-name decorator itself didn't fire in that runner either; the
+  reliable pattern for a rendered-color dark-mode proof is a story-level `decorators: [(Story) =>
+  <div className="dark">...]` wrapping, since `.dark`'s CSS custom properties cascade from any
+  ancestor element, not only `<html>`), then assert real values via
+  `window.getComputedStyle(el).backgroundColor/color` — not just class-name presence.
