@@ -37,3 +37,4 @@ Mỗi file là một design request đầy đủ, sẵn sàng gửi cho designer
 | DR-019 | Principal Reports Dashboard | US-E03.1 | [x] delivered (2026-07-12) |
 | DR-020 | Student Assignments | US-E11.7 | [x] delivered (2026-07-14) |
 | DR-021 | Lesson Plan Authoring + Question Bank (net-new, finding #27) | US-E18.16 (design follow-up) | [x] delivered (2026-07-17) |
+| DR-022 | Staff Discipline (violations + conduct notes) + Student Absences (net-new) | US-E18.14 (design follow-up) | [x] delivered (2026-07-25) |

@@ -2,7 +2,7 @@
 
 ## Status
 
-- [ ] in progress
+- [x] delivered (2026-07-25)
 
 ## Origin
 

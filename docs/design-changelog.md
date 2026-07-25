@@ -8,6 +8,73 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-07-25 — Staff Discipline + Student Absences net-new (DR-022, US-E18.14) `[EXTERNAL]`
+
+**What changed**: two brand-new reference mockups closing a ground-truthed
+BE-vs-design gap (US-E18.14 found three fully-shipped `edu-api` core `conduct`
+sub-resources with zero web screen):
+
+- `design_src/edu/staff-discipline.jsx` (`StaffDisciplineScreen`) — admin/
+  principal-facing, tabbed: **Violations** (admin author/submit DRAFT,
+  principal approve/reject, `selfApproved` single-admin-tenant annotation) and
+  **Conduct Notes** (admin set/submit per term, principal approve/reject,
+  3-tier rating badge, staff self read-only view). Reuses the
+  `ApprovalTransition` card language 1:1 from `discipline.jsx`'s Violations
+  tab and the existing Nhẹ/Vừa/Nặng severity + GPA-tier rating color
+  mappings — zero new tokens. Route `/admin/staff-discipline`, sibling of the
+  existing `staff-leave.jsx` screen (one screen/2 tabs, not 2 screens, since
+  violations and conduct-notes share one actor model).
+- `design_src/edu/student-absences.jsx` (`StudentAbsencesScreen`) — single
+  role-conditional component: teacher record/edit mode (GVCN, own class,
+  future-date guard, PATCH-only edit of reason/excused) and admin/principal
+  flag mode (one-way RECORDED→FLAGGED_UNEXCUSED, irreversible confirm, no
+  approval workflow — confirmed distinct from the shared
+  DRAFT/SUBMITTED/APPROVED/REJECTED state machine). Two independent per-row
+  badges (excused/unexcused + flagged) intentionally not conflated. Routes
+  `/teacher/absences` (record/edit) + `/principal/absences` + `/admin/absences`
+  (flag mode, same file/component per the `staff-leave.jsx`/`discipline.jsx`
+  one-component-multi-role precedent).
+
+- `docs/product/design-spec.jsonc`: new `screens.staffDiscipline` and
+  `screens.studentAbsences` entries (anatomy, states, a11y, BE contract notes,
+  mock-first roster-select scoping per decision `0014`).
+- `messages/{vi,en}.json`: new `staffDiscipline` namespace (reuses
+  `discipline.errors.*`/`discipline.leave.rejectDialog.*` verbatim for the 8
+  shared `VIOLATION_*` codes; adds staff-specific `errors.locked`/
+  `.term-not-found`/`.invalid-rating` + `conductNotes.rating.*` +
+  `.selfApprovedNote`) and new `studentAbsences` namespace (fully independent
+  error taxonomy — `ABSENCE_*` codes share zero keys with discipline; does
+  NOT reuse `discipline.errors.invalid-date`, which guards the opposite date
+  direction).
+- `docs/product/screens.md`: added a Teacher-section row ("Student Absences",
+  `/teacher/absences`) directly below the existing Discipline row; two
+  Principal/Admin-section rows ("Staff Discipline" and "Student Absences" flag
+  view) after the Staffing rows; extended the top-of-file version line and the
+  design-file inventory list with `staff-discipline.jsx`/`student-absences.jsx`
+  (also backfilled the previously-missing DR-021 `lesson-plan.jsx`/
+  `question-bank.jsx` inventory bullets in the same pass, since they were
+  never added to that list).
+- `docs/design-requests/README.md`: added DR-022 row, `[x] delivered
+  (2026-07-25)`.
+- `docs/design-requests/DR-022-staff-conduct-absences.md`: `## Status` flipped
+  to `[x] delivered (2026-07-25)`.
+
+**Refs**: DR-022 (`docs/design-requests/DR-022-staff-conduct-absences.md`) ·
+US-E18.14 (design follow-up to the BE ground-truth finding — `staff-violations`,
+`staff-conduct-notes`, `student-absences` all fully shipped in `edu-api` core
+with no web screen) · also logged as ask #22 in
+`docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`.
+
+**Rationale**: closes a real product/design gap identified by ground-truthing
+the `conduct` domain against `edu-api` Go source directly (not just prose) —
+grepped `src/features/`/`src/app/` for zero hits on all three sub-resources
+before authoring, confirming genuinely net-new work, not reconcile. No new
+design-system token introduced (severity/rating/excused-flagged all reuse
+existing 2-/3-tier badge conventions) — `docs/product/design-system.md`
+intentionally left untouched.
+
+---
+
 ## 2026-07-17 — Lesson Plan Authoring + Question Bank net-new (DR-021, US-E18.16) `[EXTERNAL]`
 
 **What changed**: two brand-new reference mockups, no existing screen touched:
