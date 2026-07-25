@@ -62,7 +62,12 @@ function PLAuditEntryRow({
           {formatTimestamp(entry.occurredAt)}
         </span>
       </div>
-      {entry.note && (
+      {/* Defense-in-depth (UC-104 sc1): the note line is gated on the ACTION,
+          not just on `note` being truthy. `LinkAuditEntry.note` is contractually
+          null for "unlinked" and the repository normalises it, but suppression
+          must also hold by construction here so no future repository or BE
+          payload can leak note text onto an unlinked row. */}
+      {entry.action === "created" && entry.note && (
         <p className="pl-0.5 text-muted-foreground text-xs">
           {labels.notePrefix}: {entry.note}
         </p>
