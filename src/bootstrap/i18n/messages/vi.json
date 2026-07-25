@@ -1,5 +1,6 @@
 {
   "Common": {
+    "close": "Đóng",
     "confirmDialog": {
       "cancel": "Huỷ",
       "confirm": "Xác nhận",
