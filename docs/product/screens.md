@@ -61,7 +61,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Attendance (diem danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ |
 | Class Log (so dau bai + submit) | `(app)/teacher/class-log` | `features/class-log` | ⬜ (E13.3) |
 | Discipline (vi pham/hanh kiem/nghi phep) | `(app)/teacher/discipline` | `features/discipline` | 🎨 design-ready (US-E09.1; `discipline.jsx` 1506) |
-| Student Absences (record/edit, GVCN own class) | `(app)/teacher/absences` | `features/student-absences` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `student-absences.jsx` `StudentAbsencesScreen` teacher mode, DR-022 2026-07-25; role-conditional component also serves Principal/Admin flag mode — see that section) |
+| Staff Discipline self-view (staff member's own violations/conduct notes, read-only) | `(app)/teacher/staff-discipline` | `features/staff-discipline` (proposed) | 🎨 design-ready (US-E09.5; `staff-discipline.jsx` `StaffDisciplineScreen` self-view mode, DR-022 2026-07-25, ADR `0062`) |
+| Student Absences (record/edit, GVCN own class) | `(app)/teacher/absences` | `features/student-absences` (proposed) | 🎨 design-ready (US-E09.6; `student-absences.jsx` `StudentAbsencesScreen` teacher mode, DR-022 2026-07-25; role-conditional component also serves Principal flag mode, ADR `0062` — see that section) |
 | Grade Entry | `(app)/teacher/grades/enter` | `features/grades` | 🎨 design-ready (US-E14.2; `grade-entry.jsx` 1506) |
 | Grade Book | `(app)/teacher/grades` | `features/grades` | 🎨 design-ready (US-E13.6; `gradebook.jsx` 1506) |
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | 🎨 design-ready (US-E11.2; `lesson-bank.jsx` 1506) |
@@ -107,8 +108,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Staffing — Departments** | `(app)/admin/staffing/departments` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
 | **Staffing — Position Titles** | `(app)/admin/staffing/position-titles` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
 | **Staffing — Position Assignments** | `(app)/admin/staffing/assignments` | — (US-E06.8) | `features/admin/staffing` | ✅ US-E12.9 |
-| **Staff Discipline** (violations + conduct notes, tabbed; admin author, principal approve/reject) | `(app)/admin/staff-discipline` | `staff-discipline.jsx` (US-E18.14 design follow-up) | `features/staff-discipline` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `staff-discipline.jsx` `StaffDisciplineScreen`, DR-022 2026-07-25) |
-| **Student Absences** (schoolwide/class-filtered flag view, admin/principal) | `(app)/principal/absences`, `(app)/admin/absences` | `student-absences.jsx` (US-E18.14 design follow-up) | `features/student-absences` (proposed) | 🎨 design-ready (US-E18.14 design follow-up; `student-absences.jsx` `StudentAbsencesScreen` flag mode, DR-022 2026-07-25; same component as the Teacher record/edit row above) |
+| **Staff Discipline** (violations + conduct notes, tabbed; principal authors+approves, teacher self-view) | `(app)/principal/staff-discipline`, `(app)/teacher/staff-discipline` | `staff-discipline.jsx` (US-E09.5, ADR `0062` route fix) | `features/staff-discipline` (proposed) | 🎨 design-ready (US-E09.5; `staff-discipline.jsx` `StaffDisciplineScreen`, DR-022 2026-07-25; route corrected from `/admin/staff-discipline` per ADR `0062`) |
+| **Student Absences** (schoolwide/class-filtered flag view, principal) | `(app)/principal/absences` | `student-absences.jsx` (US-E09.6, ADR `0062` route fix) | `features/student-absences` (proposed) | 🎨 design-ready (US-E09.6; `student-absences.jsx` `StudentAbsencesScreen` flag mode, DR-022 2026-07-25; same component as the Teacher record/edit row above; `/admin/absences` alias dropped per ADR `0062`) |
 
 ## Student (Epic E11 LMS + Exams, E09 conduct, E13/E14 grades)
 

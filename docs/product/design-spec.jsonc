@@ -10215,11 +10215,11 @@
   },
 
   "staffDiscipline": {
-    "story": "US-E18.14 (BE ground-truth) → DR-022 (design)",
-    "routes": ["/admin/staff-discipline"],
+    "story": "US-E09.5 (BA) — US-E18.14 (BE ground-truth) → DR-022 (design) → ADR 0062 (route fix)",
+    "routes": ["/principal/staff-discipline", "/teacher/staff-discipline"],
     "roles": [
-      "principal (ADMIN/MANAGER/BGH combined actor in this app's role model)",
-      "teacher (staff self read-only view)"
+      "principal (ADMIN/MANAGER/BGH combined actor in this app's role model — route corrected from /admin/* per ADR 0062, matches the mockup's own role==='principal' check)",
+      "teacher (staff self read-only view, own route /teacher/staff-discipline)"
     ],
     "designSrc": "design_src/edu/staff-discipline.jsx",
     "components": [
@@ -10401,12 +10401,8 @@
   },
 
   "studentAbsences": {
-    "story": "US-E18.14 (BE ground-truth) → DR-022 (design)",
-    "routes": [
-      "/teacher/absences",
-      "/principal/absences",
-      "/admin/absences (same component, role-conditional)"
-    ],
+    "story": "US-E09.6 (BA) — US-E18.14 (BE ground-truth) → DR-022 (design) → ADR 0062 (route fix, /admin/absences alias dropped)",
+    "routes": ["/teacher/absences", "/principal/absences"],
     "roles": [
       "teacher (GVCN/homeroom — record + edit, own class)",
       "principal (ADMIN/MANAGER — flag-only, schoolwide/class-filtered)"
