@@ -139,6 +139,16 @@ Confirmed facts (verify before citing if stale):
   Don't demand the real class be deleted or the endpoint constants removed — both are kept as
   documentation for the unblock, with a cross-repo ask logged (asks #13/#14). `core` error codes are
   UPPER_SNAKE on the wire (`codeFromKey` = `strings.ToUpper`), so branch `toFailure` on UPPER_SNAKE.
+  - **Retro-force-mocking an existing `USE_MOCK ? mock : real` factory** (US-E18.21 academic-records
+    viewer, closing ADR 0055 §Follow-Up) is the same accepted shape. Two extra things to demand:
+    (a) the DI test must cover ALL THREE `USE_MOCK` states (`"true"`, `"false"`, unset) plus a
+    `createServerHttpClient` "never called" assertion — `USE_MOCK` is `env === "true"` so unset and
+    `"false"` share a branch, but pinning all three is cheap and future-proof; (b) if the SAME DI file
+    also holds a hybrid/real factory (here `makeSealRepository()`, `sealBatch` real), the test MUST
+    carry a regression case proving that factory still resolves the real/hybrid repo under
+    `USE_MOCK=false` — otherwise a later over-eager force-mock of the file silently un-wires the one
+    real operation. Repos are identified by `constructor.name` (not `instanceof`) because
+    `vi.resetModules()` gives each import a fresh class identity.
 - **E18 "raw-id-in-display-name" fallback → filter fragility** (US-E18.11 timetable, and any epic
   screen where names fall back to raw id): when a mapper stores an id into a DISPLAY field because no
   name source exists (`teacherName: slot.teacherMemberId`, `subjectName: slot.subjectId`), any downstream
