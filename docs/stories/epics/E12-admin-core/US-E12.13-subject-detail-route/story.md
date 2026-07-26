@@ -109,6 +109,42 @@ When updating durable proof status, use numeric booleans:
 - On completion: update `docs/product/screens.md:96` to remove NEW-02 flag
   and mark the route ✅.
 
+## Evidence
+
+```text
+Design review: pass
+- design-system: conform — all new files (subject-detail-screen.tsx,
+  subject-detail-fields.tsx, archive-subject-dialog.tsx, [id]/page.tsx) use
+  only semantic tokens (bg-card, text-foreground, text-muted-foreground,
+  edu-radius-*, shadow-card, StatusBadge tones); verified raw-color grep by
+  fe-tech-lead-reviewer returns exactly one pre-existing hit
+  (archive-subject-dialog.tsx text-white, carried verbatim from
+  subjects-screen.tsx, not introduced here). Reuses StatusBadge/Button/
+  Tooltip/AlertDialog patterns verbatim — no new component pattern invented.
+  Role-color rule n/a (admin-only surface).
+- a11y: WCAG AA — fe-accessibility-auditor verdict PASS with minor
+  follow-ups. A11Y-001 (Major, 44x44 touch target on 2 icon-only buttons)
+  fixed same-session (min-w-11). Contrast/status-not-color-only/keyboard/
+  focus/reduced-motion all confirmed passing (no new motion added). One
+  non-blocking follow-up left open (A11Y-002 archiveButton/statusArchived
+  same-copy note — confirmed non-issue on this page since the two never
+  render simultaneously).
+- impeccable audit: pattern-reuse screen (Sheet → full page extraction), no
+  new anti-pattern surface introduced. One pre-existing design-reference
+  divergence carried over (locked-field blue/info treatment vs the
+  design_src mockup's amber treatment) — deliberately NOT reconciled to
+  avoid regressing the Sheet's US-E12.3 visual baseline (Sheet and page
+  must render identical field chrome per the extraction's regression bar);
+  flagged as a candidate follow-up if design wants pixel-parity later.
+- states: not-found (inline, no redirect, no crash) / empty-offerings
+  (UsageCard empty state) / archived read-only (fields disabled + save bar
+  hidden) / save success+error / archive-blocked+confirm all covered by
+  7 Storybook interaction stories in subject-detail-screen.stories.tsx.
+  Responsive: mx-auto max-w-6xl + flex-wrap/grid-cols pattern matches the
+  already-shipped subjects-screen.tsx (passed this gate under US-E12.3);
+  no fixed-width elements that would break at 320px.
+```
+
 ## Implementation Plan
 
 ### Summary
