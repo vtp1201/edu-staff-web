@@ -15,20 +15,34 @@ import { ListPendingUnsealRequestsUseCase } from "@/features/academic-records/do
 import { ListSealedStudentsUseCase } from "@/features/academic-records/domain/use-cases/list-sealed-students.use-case";
 import { ListTenantAdminsUseCase } from "@/features/academic-records/domain/use-cases/list-tenant-admins.use-case";
 import { SealAcademicRecordUseCase } from "@/features/academic-records/domain/use-cases/seal-academic-record.use-case";
-import { AcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/academic-records.repository";
 import { AcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal.repository";
 import { HybridAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal-hybrid.repository";
 import { MockAcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records.mock.repository";
 import { MockAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records-seal.mock.repository";
 
-// US-E18.13 (ADR 0055 §viewer): the read-only student/parent viewer stays
-// mock-first and is UNTOUCHED by this wiring remap. The real
-// `AcademicRecordResponse` has no year-grouping concept, no fixed
-// tx1/tx2/giuaKy/cuoiKy column shape, and no student-identity fields — wiring it
-// would be a uiux/ba-level redesign, not a wiring remap. Left as-is.
+/**
+ * Read-only student/parent academic-record VIEWER repository factory
+ * (per-request).
+ *
+ * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.21, closing ADR
+ * `0055` §Follow-Up's internal item) — same shape as `staff-leave.di.ts`
+ * (US-E18.8), `teaching-plan.di.ts` (US-E18.9) and `feed.di.ts`/
+ * `moderation.di.ts` (US-E18.20). The hold is a domain-model gap in `core`'s
+ * real contract, NOT the app-wide mock toggle: the real
+ * `AcademicRecordResponse` is keyed by `(classId, termId, studentMemberId)`
+ * with a dynamic `gradeSnapshot` column array — no `(studentId, yearId?)`
+ * lookup, no year-grouping, no fixed tx1/tx2/giuaKy/cuoiKy slots, no
+ * student-identity fields (ADR 0055 §Context point 6). Remapping the viewer's
+ * multi-year gradebook UI onto that shape is a `uiux`/`ba`-level model
+ * redesign, not a wiring remap.
+ *
+ * Until then this factory must never hand out `AcademicRecordsRepository` —
+ * flipping `NEXT_PUBLIC_USE_MOCK=false` app-wide would otherwise silently
+ * break this screen. (That class is itself a permanent blocked stub now, see
+ * its doc comment — this factory is the first of the two guards.)
+ */
 async function makeRepository(): Promise<IAcademicRecordsRepository> {
-  if (USE_MOCK) return new MockAcademicRecordsRepository();
-  return new AcademicRecordsRepository(await createServerHttpClient());
+  return new MockAcademicRecordsRepository();
 }
 
 // US-E18.13 (ADR 0055) hybrid: `sealBatch` runs REAL; every other seal/unseal

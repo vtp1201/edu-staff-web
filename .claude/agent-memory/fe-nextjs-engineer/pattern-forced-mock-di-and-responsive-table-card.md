@@ -33,6 +33,24 @@ length 1) → `.constructor.name`. Assert EVERY factory in the file — each cal
 restoring the `if (USE_MOCK)` branch and re-running** — a force-mock guard that can't
 fail is worthless (US-E18.20).
 
+**Force-mocking ONE factory in a multi-factory DI file (US-E18.21).** The RED signal
+for a not-yet-force-mocked viewer factory is `Error: 'cookies' was called outside a
+request scope` (real `createServerHttpClient` in a node test) — a legitimate red, not
+test-harness noise. When the same file also has a genuinely-real hybrid factory, add a
+**regression guard in the same test file** that it still resolves the Hybrid class under
+`USE_MOCK=false`: `vi.doMock("@/bootstrap/lib/http.server", …)` **and**
+`vi.doMock("@/bootstrap/di/auth.di", () => ({ ensureFreshSession }))` (the DI's
+proactive-refresh call), then `doUnmock` both in `afterEach`. Otherwise a later
+over-eager force-mock silently un-wires the one real operation.
+
+**Blocked-stub repo (`staff-leave.repository.ts` shape):** methods return the failure
+**synchronously**, no `try/catch`, no endpoint import; keep + **export** `toFailure` and
+unit-test it as the dormant reference mapping; keep the ctor with
+`// biome-ignore lint/complexity/noUselessConstructor: signature parity`. Pick the
+failure key the feature's own union means by "not reachable" (`network-error`), NOT its
+mapper fallthrough (`unknown`). Dead endpoint constants: comment them `DEAD (US-xx)`
+rather than re-pointing paths at the real routes — that dresses dead code up as wiring.
+
 **CSS-breakpoint table↔card (`hidden md:block` / `md:hidden`) — both branches are in
 the DOM.** Consequences learned the hard way in Storybook (real Chromium, real CSS):
 - `findByText("Chưa phân công")` finds BOTH copies → "multiple elements". Scope every
