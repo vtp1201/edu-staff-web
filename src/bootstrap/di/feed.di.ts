@@ -1,6 +1,4 @@
 import "server-only";
-import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IFeedRepository } from "@/features/feed/domain/repositories/i-feed.repository";
 import { AddCommentUseCase } from "@/features/feed/domain/use-cases/add-comment.use-case";
 import { CreatePostUseCase } from "@/features/feed/domain/use-cases/create-post.use-case";
@@ -8,24 +6,47 @@ import { ListCommentsUseCase } from "@/features/feed/domain/use-cases/list-comme
 import { ListFeedUseCase } from "@/features/feed/domain/use-cases/list-feed.use-case";
 import { ReactToPostUseCase } from "@/features/feed/domain/use-cases/react-to-post.use-case";
 import { TogglePinMockUseCase } from "@/features/feed/domain/use-cases/toggle-pin-mock.use-case";
-import { FeedRepository } from "@/features/feed/infrastructure/repositories/feed.repository";
 import { MockFeedRepository } from "@/features/feed/infrastructure/repositories/mocks/feed.mock.repository";
 
 /**
- * Per-request feed repo factory (US-E19.1). `social` has no published
- * openapi.yaml + several open contract questions (integration.md §5) →
- * NEXT_PUBLIC_USE_MOCK=true is this story's working default (MockFeedRepository).
- * Flip to false once the `social` contract is confirmed by BE.
+ * Per-request feed repo factory (US-E19.1).
  *
- * NOTE (INT-190-07): pin/unpin has NO real endpoint at all, ever — BE US-101 is
- * still in_progress. `togglePinMock` is a local-only passthrough in BOTH the
- * mock AND the real FeedRepository, so it stays HTTP-free regardless of
- * USE_MOCK. This is intentional, not a stale mock leftover; the swap seam is
- * `IFeedRepository.togglePinMock` when US-101 ships.
+ * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.20) — joining
+ * `staff-leave.di.ts` / `teaching-plan.di.ts` / `discipline.di.ts`'s
+ * fully-blocked class. This is deliberately NOT a `USE_MOCK`-conditional
+ * choice: `social`'s `openapi.yaml` IS published now, every path in `FEED_EP`
+ * is real and correct, and the transport works. The hold is a **domain-model /
+ * identity gap** that no wiring fix can close:
+ *
+ * 1. **No author identity.** Real `Post`/`Comment` carry ONLY `authorUserId`
+ *    (a bare uuid) — no `authorName`/`authorRole`/`avatarUrl` on either schema,
+ *    and no batch/by-id display-name join exists anywhere in `social`'s public
+ *    API (the 10th+ confirmation of the recurring IAM-lookup gap, cross-repo
+ *    asks #6/#7/#9/#13/#18/#20…). The one candidate resolver,
+ *    `GET /api/v1/social/members/{targetUserId}/profile` (US-127), is
+ *    visibility-gated on a shared `RoomMember` row OR an ADMIN/TEACHER staff
+ *    fact, so it 404s (`PROFILE_NOT_FOUND`) unpredictably for a SCHOOL-scope
+ *    post (author = tenant ADMIN) read by a STUDENT/PARENT. A per-post fan-out
+ *    would silently degrade to raw ids for an unpredictable subset of rows —
+ *    the feed is a public wall where EVERY row shows avatar+name+role tone, so
+ *    per the epic's own bar (ask #9) that is not a shippable approximation.
+ * 2. **Different reaction taxonomy.** Real `emoji` ∈
+ *    `{like,love,haha,wow,sad,angry}` with a single `reactionCount` +
+ *    `callerReaction`; web's `ReactionType` ∈ `{like,love,celebrate,clap}` with
+ *    per-type counts. No lossless mapping — remapping is a product/design call.
+ * 3. **Different attachment capability.** Real `Post.media` is ONE optional
+ *    image uploaded as `multipart/form-data` at create time; web models
+ *    multiple placeholder `FeedAttachment[]` with no upload pipeline.
+ *
+ * Pin/unpin IS real (`PUT`/`DELETE /feeds/posts/{postId}/pin`, US-101 —
+ * INT-190-07's "no endpoint" note was stale) and `FeedRepository` now issues
+ * the real call, but it is unreachable in practice: its only source of a valid
+ * `postId` is the feed read, which is mock-sourced. Same shape as US-E18.9's
+ * `UpdateEntries()`. Forcing the mock here guards the screen against the day
+ * the app-wide `USE_MOCK` flag flips to `false`.
  */
 async function makeRepo(): Promise<IFeedRepository> {
-  if (USE_MOCK) return new MockFeedRepository();
-  return new FeedRepository(await createServerHttpClient());
+  return new MockFeedRepository();
 }
 
 export async function makeListFeedUseCase() {
