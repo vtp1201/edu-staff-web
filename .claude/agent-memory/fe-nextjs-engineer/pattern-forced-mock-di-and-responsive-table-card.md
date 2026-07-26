@@ -39,6 +39,14 @@ and the filtered-empty state broke `getByRole("button", { name })` with "multipl
 elements" — that test failure was a real UX smell. Suppress the filter-bar copy while
 the empty state owns it (`hasActiveFilter && !(isEmpty && variant === "zero-filtered")`).
 
+**403 is not retryable — at EVERY control, not just the full-page one.** The shared
+`LoadMoreButton`'s `hasError` only swaps the label and keeps the button enabled, which
+is right for network failures and wrong for `forbidden` (QA DEF-E13.8-01). Branch at
+the SCREEN (`loadMoreError === "forbidden" ? <ErrorState variant="forbidden"/> :
+<LoadMoreButton/>`) — never patch the shared component, whose other consumers depend on
+the generic behaviour. Whatever "absent, not disabled" rule the full-page error state
+follows must be applied to every secondary retry affordance on the same screen.
+
 **Empty-variant discriminator:** `classes.length === 0` → "no rows at all" (no
 clear-filters); otherwise rows loaded but none visible → "filtered" (clear-filters).
 Do NOT key it off `hasActiveFilter`, or an all-archived school under the default
