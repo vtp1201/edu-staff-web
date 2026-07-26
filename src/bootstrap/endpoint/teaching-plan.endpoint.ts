@@ -5,9 +5,9 @@
  * Real contract ground-truthed for US-E18.9 against
  * `edu-api/services/core/docs/openapi.yaml` (`TeachingPlan (LMS)` tag) +
  * Go source (`internal/lms/teachingplan/adapter/http/routes.go`): all routes
- * are nested under `/api/v1/lms/teaching-plans` (not `/api/v1/teaching-plans`
+ * are nested under `/api/v1/courseware/teaching-plans` (not `/api/v1/teaching-plans`
  * as the pre-US-E18.9 guess had it), matching the epic's foundational finding
- * #2 (`lms` lives inside `core`, mounted at `/core/api/v1/lms/*` through Kong).
+ * #2 (`lms` lives inside `core`, mounted at `/core/api/v1/courseware/*` through Kong).
  *
  * Kept accurate for documentation even though the real repository never calls
  * these — the whole feature stays mock-first permanently (see
@@ -32,10 +32,11 @@
  *   reject transitions back to `DRAFT` with `rejectReason` set.
  */
 export const TEACHING_PLAN_EP = {
-  create: "/core/api/v1/lms/teaching-plans",
-  list: "/core/api/v1/lms/teaching-plans",
-  get: (id: string) => `/core/api/v1/lms/teaching-plans/${id}`,
-  submit: (id: string) => `/core/api/v1/lms/teaching-plans/${id}/submit`,
-  approve: (id: string) => `/core/api/v1/lms/teaching-plans/${id}/approve`,
-  reject: (id: string) => `/core/api/v1/lms/teaching-plans/${id}/reject`,
+  create: "/core/api/v1/courseware/teaching-plans",
+  list: "/core/api/v1/courseware/teaching-plans",
+  get: (id: string) => `/core/api/v1/courseware/teaching-plans/${id}`,
+  submit: (id: string) => `/core/api/v1/courseware/teaching-plans/${id}/submit`,
+  approve: (id: string) =>
+    `/core/api/v1/courseware/teaching-plans/${id}/approve`,
+  reject: (id: string) => `/core/api/v1/courseware/teaching-plans/${id}/reject`,
 } as const;
