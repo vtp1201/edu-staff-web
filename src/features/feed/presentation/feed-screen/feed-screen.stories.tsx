@@ -948,10 +948,13 @@ export const EmptyClassScopeParentNoCta: Story = {
  * composer on confirmation. Previously untested — every other composer story
  * only exercised the 3 failure paths, never a successful submit.
  */
+// Deferred resolver so the play function confirms the create ONLY after the
+// pending-state assertions ran — a timer-based auto-resolve raced them under
+// pre-push CPU contention (gate flaked 3× on 2026-07-26).
+const composerHappyPathCreate: { confirm: () => void } = { confirm: () => {} };
+
 export const ComposerHappyPath: Story = {
   args: (() => {
-    let resolveCreate: (v: { ok: true; data: FeedPostEntity }) => void =
-      () => {};
     const created = post({
       postId: "p-created",
       authorId: "t-1",
@@ -966,11 +969,8 @@ export const ComposerHappyPath: Story = {
       createPostAction: fn(
         () =>
           new Promise<{ ok: true; data: FeedPostEntity }>((resolve) => {
-            resolveCreate = resolve;
-            // Auto-resolve on next microtask flush isn't controllable inline
-            // here, so resolve after a short delay instead (deterministic
-            // enough for the aria-busy window to be observable).
-            setTimeout(() => resolveCreate({ ok: true, data: created }), 30);
+            composerHappyPathCreate.confirm = () =>
+              resolve({ ok: true, data: created });
           }),
       ),
     });
@@ -987,6 +987,8 @@ export const ComposerHappyPath: Story = {
       expect(submitButton).toHaveAttribute("aria-busy", "true"),
     );
     await expect(textarea).toBeDisabled();
+    // Pending assertions done — now let the create resolve.
+    composerHappyPathCreate.confirm();
     // Confirmed: composer cleared (resetSignal fired) + create action called.
     // (`sonner`'s <Toaster/> is only mounted by the real app layout, not this
     // Storybook decorator, so the toast itself is asserted at the code-review
