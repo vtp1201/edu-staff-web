@@ -22,6 +22,17 @@ non-mock env; a reviewer seeing an unconditional `new MockX()` will otherwise "f
 the factory per case, so the returned class identity differs from a statically
 imported one. Assert `repo.constructor.name === "MockXRepository"` instead.
 
+**The env-matrix DI test only works because `USE_MOCK` is a module-level const**
+(`bootstrap/lib/mock.ts`: `process.env.NEXT_PUBLIC_USE_MOCK === "true"` evaluated at
+import). So `vi.resetModules()` → `vi.stubEnv(...)` → `await import("./x.di")` genuinely
+re-evaluates it. Reach the repo without exporting it: use-cases hold their collaborator
+as their sole object-valued field, so `Object.values(useCase).filter(isObject)` (assert
+length 1) → `.constructor.name`. Assert EVERY factory in the file — each calls
+`makeRepo()` independently, so a partial force-mock leaks the real repo (and its
+`createServerHttpClient()` cookie read) into one path. **Prove red by temporarily
+restoring the `if (USE_MOCK)` branch and re-running** — a force-mock guard that can't
+fail is worthless (US-E18.20).
+
 **CSS-breakpoint table↔card (`hidden md:block` / `md:hidden`) — both branches are in
 the DOM.** Consequences learned the hard way in Storybook (real Chromium, real CSS):
 - `findByText("Chưa phân công")` finds BOTH copies → "multiple elements". Scope every

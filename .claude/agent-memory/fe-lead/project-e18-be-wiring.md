@@ -803,3 +803,54 @@ This closes out E18's actionable Wave 4 scope (US-E18.16 already descoped
 zero-code) — the epic itself is now complete; only cross-repo asks remain
 open (#1/#33 Kong routing + ADR-0047, and the long-running "IAM has no
 name/listing" gap-class asks #6/7/9/13/15/18/20/21/22).
+
+**US-E18.20 (feed+moderation, 2026-07-26, Wave 4b, normal lane) — social's now-
+published contract resolved the "no openapi.yaml" mock-first premise, but the
+recurring IAM-identity gap-class turned out qualitatively WORSE here than
+every prior instance: it blocks EVERY row of a public feed, not one oversight
+field.** Confirmed via `pkg/kit/response/error.go`'s `codeFromKey()`
+(`strings.ToUpper`) that `social`'s `error.code` IS UPPER_SNAKE on the wire —
+same convention as `core`, unlike `iam` (US-E18.6). Feed's real `Post`/
+`Comment` carry ONLY `authorUserId` — zero display-name/role/avatar anywhere,
+and the one candidate resolver (`GET /social/members/{id}/profile`, US-127) is
+visibility-gated (shared room OR staff fact), so it 404s unpredictably for
+SCHOOL-scope posts read by non-staff — worse than a raw-uuid-fallback-for-one-
+field gap since a public feed shows a DIFFERENT author on every row. Reaction
+taxonomy is also a genuinely different domain model (real Facebook-style
+`like/love/haha/wow/sad/angry` single-count vs. web's celebratory `like/love/
+celebrate/clap` per-type) — non-lossless, needs a product decision, not a
+wiring fix. Moderation similarly blocked: `GET /reports` has no filter/stats/
+detail-GET at all, `targetType` excludes `comment`, and `moderation-audit` is
+ROOM-scoped (US-086 capability audit), a different concept than the feature's
+dismiss/remove trail. **Decision**: force-mock BOTH DI factories (join the
+US-E18.8/9/14 permanently-blocked class), but still fix the DEAD real classes'
+error taxonomy + 2 concretely-correctable endpoint facts (real pin `PUT`/
+`DELETE` exists, contrary to the original "no endpoint" premise; moderate-
+delete is bare POST no-body, not DELETE+body) — same "keep dead code correct
+for the day this unblocks" practice as every prior blocked cluster. **New
+generalizing insight**: when an "isolated real endpoint" (pin) depends on an
+id that only a necessarily-mock sibling read can produce (feed list), DON'T
+wire it "real" in isolation even though the HTTP call itself is correct — it
+would only work against a genuine BE id the mock never produces (same shape
+as US-E18.9's dead `UpdateEntries()`). **Reviewer independently re-verified
+every error code against `ERROR_CODES.md` directly** (not the story packet's
+transcription) and caught a factually-wrong doc comment (engineer claimed the
+mock renders `already-reported` — checked `MockModerationRepository.
+createReport`, it unconditionally returns `{ok:true}`, zero producers on
+either path) — fixed post-review by fe-lead directly, no engineer round-trip
+needed for a doc-only inaccuracy. This is the largest ground-truth session yet
+by openapi.yaml size (222KB, 41 real paths) for a single US; skipped
+design-review/a11y/QA entirely (zero UI/behavior change, matches US-E18.8/9/14
+precedent). 421 files/2861 tests (baseline 420/2843, +18/+1 file), tsc/build
+clean, tech-lead APPROVED first pass. Cross-repo/product ask #40 logged (11th
+confirmation of the IAM-identity gap-class + 2 net-new moderation gaps + 1
+BE-doc-drift flag on `REPORT_RESOLVE_DELETE_NOT_IMPLEMENTED` vs. resolve-
+endpoint prose — reviewer confirmed NOT actually contradictory, `ERROR_CODES.md`
+line 356 is unambiguous once read directly, so that sub-item is resolved not
+open). Concurrent-session note: main checkout was mid-merge on US-E13.8 for
+most of this session (dirty, on a feature branch) — worked entirely in a
+`fe-worktree` (decision 0033); by merge time the other session had already
+landed on `main` cleanly, so the final merge-to-main was a normal fast
+`--no-ff` with zero conflicts (the earlier `git commit-tree` trick from
+US-E03.1 wasn't needed here — only required when the primary checkout is
+mid-branch, not just carrying an unrelated dirty file).
