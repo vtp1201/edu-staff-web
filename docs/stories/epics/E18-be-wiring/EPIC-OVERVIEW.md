@@ -134,7 +134,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.13 | Academic-records seal remap | cao | high-risk | **Done** — ground-truthed against `core`'s `AcademicRecords` tag + Go source (`assessment/*` use-cases). Confirms `sealBatch` matches the web's existing class+term model almost exactly and wires real (bare POST, no body) via a hybrid facade; the hard client pre-check (`getSealStatus`) is replaced by a reactive gate (real 422 `unlocked-grades-exist`/`too-many-reseals`) since seal is idempotent on the real contract (drops old blocking `already-sealed`). **Implementation-time correction to the epic table's assumption**: the two-admin unseal workflow's `initiate`/`confirm` POSTs exist, but there is NO GET listing endpoint for pending unseal requests at all — a second admin in a different session can never discover a real `requestId` to approve, so the whole unseal workflow (not just `seal-status`/`sealed-students`/`audit-trail`) stays permanently mock (cross-repo ask #21, 4th fully-blocked operation set in the epic). Separately, the read-only viewer (`getRecord`/`listYears`) also stays mock — no wire year-grouping, no fixed tx1/tx2/giuaKy/cuoiKy columns (real snapshot is a dynamic column array matching US-E18.7's model), no student-identity fields. `AllLockedGate` UI updated for the reactive-not-blocking gate (design-review + a11y pass, 1 should-fix fixed). See `US-E18.13-academic-records-wiring/story.md` + ADR `0055`. |
 | US-E18.14 | Discipline → conduct remap | cao | high-risk | **Done** — ground-truthed against `core`'s `conduct` domain (`student-violations`/`student-conduct-grades`/`student-leave-requests` routes + Go source). Confirms the epic table's premise partially: real BE genuinely has full submit/approve/reject on violations and conduct-grades (replacing web's single-action `overrideConductGrade`), and a genuine staff/student split (`staff-violations`, `staff-conduct-notes`) plus `student-absences` (`/{date}/flag`). But **none of it is wireable today**: every real endpoint keys on a real student `studentMemberId` UUID the web roster can't resolve (extends ask #9), and — a NEW finding — even STUDENT self-service list/submit calls require a `classId` the student has no way to discover (`list_student_violations.go`/`list_student_conduct_grades.go` require `classId` even on the own-record branch; `CreateStudentLeaveRequestRequest.ClassID` is a mandatory body field), extending ask #15 beyond PARENT to STUDENT self-view too. Repository/DTO/error-taxonomy/DI-only remap: real `DisciplineRepository` implements the ground-truthed 19-code error matrix (shared `ApprovalTransition` domain service — `VIOLATION_SAME_ACTOR`/`VIOLATION_INVALID_TRANSITION`/`VIOLATION_REJECTION_REASON_REQUIRED` are reused verbatim across violations/conduct-grades/leave, confirmed by reading the use-cases side-by-side) but every method is a permanent blocked stub; `discipline.di.ts` force-mocks regardless of `USE_MOCK` — the third fully-blocked DI factory in the epic after US-E18.8/US-E18.9. `staff-violations`/`staff-conduct-notes`/`student-absences` have no web screen at all (not a BE gap — a product/design gap, flagged for `uiux`/`ba`). Zero UI/entity/use-case/mock-repo change. See `US-E18.14-discipline-conduct-wiring/story.md` + cross-repo ask #22. |
 | US-E18.15 | LMS exam family wiring | naming | normal | `exam-bank`→`/lms/exam-papers` (+`/status`); `exams`→`/lms/class-exams` (+`activate/complete/submissions`) — lifecycle giàu hơn mock |
-| US-E18.16 | LMS lesson + question bank wiring | **naming assumption false** | normal | **Descoped, zero code** — ground-truthing found `"lessons"→"/lms/lesson-plans"` is a false match: web's only "lesson" feature (`lesson-bank`, file-sharing) and BE's `lesson-plans` (DRAFT→PUBLISHED planning document w/ objectives/contentOutline/activities/assessmentMethod) are unrelated domain models, zero lossless overlap. No web feature exists at all for BE's question-bank (`exercisebank`/`/lms/questions/search`) — only unrelated per-lesson Q&A comments share the word "questions". Not a BE gap (BE ships both contracts cleanly) — a product/design-scope gap; net-new screens needed via `/uiux`→`/ba`→`/fe`, not a wiring swap. `courses`/lesson-complete/notes already stay mock (no action needed, already true). See `US-E18.16-lesson-question-bank-wiring/story.md` + cross-repo/product finding #27. |
+| US-E18.16 | LMS lesson + question bank wiring | **naming assumption false → resolved by later US's** | normal | **Reopened + resolved 2026-07-26.** Original 2026-07-17 descope premise ("no web feature exists") no longer holds: `DR-021`→US-E11.8 (lesson-plan authoring) + US-E11.9 (question-bank) delivered exactly the net-new screens the descope said were needed, and BOTH wired real from the start against `core`'s `lessonplan`/`exercisebank` sub-domains (BE US-136 moved courseware off `lms`→`core`) — confirmed by direct code read (`lesson-plan.repository.ts`, `question-bank.repository.ts`, both DI factories with `ensureFreshSession()`), nothing left to wire, no action needed. New sub-scope added at reopen (US-E18.15 didn't cover it): the `exam` feature (student exam-taking, `exam.endpoint.ts`) vs `core`'s `ClassExam`/`ExamSubmission` — genuine non-lossless gap on 3 axes (MCQ-only real contract vs web's mixed MCQ+essay model, ADR `0048`; no `classId` anywhere in the web model vs `classId` being mandatory on every real endpoint; admin-driven SCHEDULED/ACTIVE/COMPLETED/RETRACTED workflow vs web's client `deadline`/`expired` model) — stays mock-first, same precedent class as US-E18.9/US-E18.11. See `US-E18.16-lesson-question-bank-wiring/story.md` + finding #38. |
 
 ### Wave 4 — blocked bởi Kong route (chờ cross-repo)
 
@@ -149,12 +149,15 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 - **Audit log** — core có error `AUDIT_ENTRY_*` nhưng không expose endpoint.
 - LMS `courses` / lesson-completion / notes (already mock by design, no
   BE-wiring action needed — US-E18.16).
-- LMS `lesson-plans` (real BE contract exists, but web has NO matching
-  feature — `lesson-bank` is an unrelated file-sharing feature, not a
-  planning-document editor) / question-bank `exercisebank` (real BE contract
-  exists, but web has NO feature at all, mock or otherwise) — product/
-  design-scope gap, not a BE gap; net-new screens needed via `/uiux`→`/ba`
-  before any `/fe` wiring is possible (US-E18.16, finding #27).
+- LMS `lesson-plans` / question-bank `exercisebank` — **RESOLVED** (finding
+  #38): US-E11.8/US-E11.9 delivered the net-new screens and wired them real
+  from the start. No longer out of scope.
+- LMS `exam` feature (student exam-taking) vs `core`'s `ClassExam`/
+  `ExamSubmission` — genuine non-lossless gap (MCQ-only real contract vs
+  web's mixed MCQ+essay model + ADR `0048`; no `classId` in the web model at
+  all vs `classId` mandatory on every real endpoint; admin-driven workflow
+  status vs client `deadline`/`expired` model) — stays mock-first (US-E18.16,
+  finding #38).
 - Timetable `/me`-family + conflicts-summary (US-E18.11 giải bằng client-side resolve + error-driven conflict).
 - Roster `students/unassigned`, class `/teachers` list, subject `restore`.
 - Notification list + mark-read.
@@ -649,6 +652,36 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     moved courseware off `lms` service). US-E18.16 giờ là wiring US khả thi
     bình thường (kèm remap `exam.endpoint.ts` `/lms/api/v1/exams` →
     `/core/api/v1/lms/class-exams` mà US-E18.15 chưa phủ phần `exam` feature).
+38. **(Reopen resolution, 2026-07-26) [US-E18.16 — 2/3 already done, 1/3 stays
+    mock: genuine gap, not a redo]** Re-running the ground-truth check per
+    finding #37 found lesson-plan and question-bank were NOT left as bare
+    net-new screens for this epic to wire — US-E11.8/US-E11.9 already wired
+    them real end-to-end (repository/DI/`ensureFreshSession()`/error-map, full
+    TDD+review+a11y+design-review+QA gate history in their own packets),
+    confirmed by direct code read this session (no assumption). Zero
+    additional code needed for either. The `exam` remap finding #37 raised
+    (`exam.endpoint.ts`→`/core/api/v1/lms/class-exams`) turned out to be a
+    genuine, non-lossless domain-model gap on independent examination — not
+    a simple path swap: (a) real `ExamSubmission`/`ClassExam` is MCQ-only
+    (auto-graded purely from the frozen snapshot's `answerKey`s), while the
+    web `exam` feature explicitly models mixed MCQ+essay exams with a
+    pending-grade intermediate state (ADR `0048`, written for the
+    then-target `lms` service); (b) the web model carries no `classId`
+    anywhere, while every real endpoint (`GET .../class-exams`,
+    `POST .../submissions`) requires one (plus `termId`/`academicYearLabel`/
+    `columnId` on submit, to route the score into a specific grade column) —
+    same class of gap as ask #15 (`linked-students` no-`classId`); (c) the
+    web's client-`deadline`/`expired` status model has no real counterpart —
+    the real contract is an admin-driven `SCHEDULED→ACTIVE→COMPLETED`/
+    `RETRACTED` workflow with no wire "deadline" field at all. Per this
+    epic's own established precedent for a non-lossless gap (findings #14,
+    #15, #27), `exam.endpoint.ts`/`src/features/exam/**` stay mock-first,
+    untouched. Net effect: US-E18.16 closes `implemented` — 2 of 3
+    sub-scopes are real (delivered by sibling US's, verified not re-done),
+    1 of 3 is a documented, justified permanent mock-first hold, matching
+    the epic's own definition of "done" for a wiring US (Wave-1/2 precedent:
+    hybrid/partial repositories with a documented blocked remainder count as
+    `Done`, not `planned`).
 
 ## Dependencies & thứ tự
 
