@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -208,4 +208,53 @@ zero reachable real id" reason as feed's pin.
 
 ## Evidence
 
-(added after implementation)
+- `fe-nextjs-engineer`: `feed.di.ts`/`moderation.di.ts` force-mock unconditionally
+  (`USE_MOCK`/`createServerHttpClient` imports dropped entirely — not merely
+  ignored); `toFeedFailure`/`toFailure` rewritten onto the real ground-truthed
+  codes; `FEED_EP.pin` added + `togglePinMock` issues the real `PUT`/`DELETE`
+  with no body; `moderation.repository.ts#removeContent` fixed to a bare `POST`
+  for `kind:"post"` and an explicit zero-HTTP fail Result for `kind:"comment"`;
+  `MODERATION_EP.moderateDeleteComment` removed (no real endpoint, confirmed
+  no remaining references). `already-reported` failure TYPE kept (i18n slot,
+  no live producer on either the real or mock path today — corrected in this
+  repo's doc comment from the engineer's original "shipped UX renders it"
+  claim, which `fe-tech-lead-reviewer` found factually wrong:
+  `MockModerationRepository.createReport` unconditionally returns `{ok:true}`).
+  Zero domain/use-case/presentation/mock-repository/`.stories.tsx` file touched.
+- Tests: 421 files / 2861 tests pass (`bun vitest run`, baseline was 420/2843 —
+  zero regression, +18 new tests for the real error-code branches + the new
+  `feed-moderation-force-mock.di.test.ts`). Storybook interaction suite 146
+  files / 1042 tests pass (unaffected, as expected for a zero-UI-change story).
+  `feed-moderation-force-mock.di.test.ts` verified genuinely falsifiable
+  (red→green: temporarily reverted the DI branch, 2/3 cases failed; restored,
+  green) — asserts real repo-class identity via `constructor.name` after
+  `vi.resetModules()`+`vi.stubEnv`, not merely "no error thrown".
+- `bunx tsc --noEmit` clean. `NEXT_PUBLIC_USE_MOCK= bun run build` green
+  (full route manifest emitted).
+- `fe-tech-lead-reviewer`: **Approved**. Independently re-verified every error
+  code against `ERROR_CODES.md` and both corrected endpoints against
+  `openapi.yaml` directly (no transcription errors found, all 4 of the
+  engineer's own corrections confirmed correct); confirmed zero scope creep
+  (`git diff --stat` = 9 files, all endpoint/DI/real-repo/test); confirmed
+  `raw: true` placed at config top-level (not nested in `params`, avoiding the
+  epic's known `isRawCall` bug class). One SHOULD-FIX (the `already-reported`
+  doc-comment inaccuracy above) — fixed by fe-lead post-review. Follow-ups
+  logged, not blocking: `FEED_CLASS_ARCHIVED` (409) currently maps to
+  `forbidden` (copy says "no permission" for what is actually a state
+  conflict — the correct fix is a new `FeedFailure` member, out of scope for
+  a repository-only story); `REPORT_RATE_LIMITED`/`FEED_RATE_LIMIT_EXCEEDED`
+  (429) land in the generic transient buckets (retryability correct, copy
+  says "network error" for a quota block); `FEED_POST_ALREADY_DELETED` (409)
+  unmapped (falls to `fetch-failed`) but unreachable — no delete op exists on
+  `IFeedRepository` today. None of these are user-visible since the whole
+  cluster is force-mocked; tracked here for whenever the identity gap (ask
+  #40) unblocks and these classes go live.
+- Design-review / a11y gate: not invoked — zero UI/behavior change (per the
+  epic's own "Design Source" rule and confirmed by the reviewer's diffstat
+  check).
+- No ADR registered: this US extends the epic's existing established
+  "permanently-blocked DI factory" class (US-E18.8/US-E18.9/US-E18.14, no
+  individual ADRs), rather than introducing a new architectural pattern.
+- Harness: `docs/TEST_MATRIX.md` US-E18.20 row updated to `implemented`;
+  `harness-cli story update --id US-E18.20 --status implemented --unit 1
+  --integration 1 --e2e 0 --platform 1`.

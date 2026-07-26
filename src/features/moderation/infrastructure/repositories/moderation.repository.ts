@@ -34,9 +34,12 @@ import { ModerationMapper } from "../mappers/moderation.mapper";
  * US-E18.20: the real contract has NO duplicate-report concept — reports are
  * rate-limited (`REPORT_RATE_LIMITED`, 429), never deduped, and
  * `POST /api/v1/reports` cannot return 409. `already-reported` is therefore
- * retained ONLY as create's defensive bare-409 fallback; the failure TYPE stays
- * in the union because the shipped (mock-served) UX + `feed-screen`'s
- * info-toned branch render distinct copy for it. No real error code produces it.
+ * retained ONLY as create's defensive bare-409 fallback — this real class is
+ * unreachable via DI today (force-mocked), and `MockModerationRepository`
+ * (the actually-served path) never produces it either, so the failure has NO
+ * live producer on either path right now. The TYPE stays in the union purely
+ * as the i18n slot / presentation branch for the day a real dedup rule (or
+ * BE's own future 409) exists — not because anything currently renders it.
  */
 type ConflictAs = "already-reported" | "already-resolved";
 
