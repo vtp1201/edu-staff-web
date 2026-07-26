@@ -51,7 +51,15 @@ copy-pasted.
   class-offerings table (or empty state).
 - Given the admin edits an editable field and saves, `patchSubjectAction` is
   called and a success confirmation is shown (mirrors Sheet behavior) —
-  same validation rules (code regex, name required).
+  same validation rules as the Sheet enforces today (code regex via
+  `validate-subject-code.use-case.ts`). **Amended during review
+  (fe-tech-lead-reviewer, 2026-07-26):** name-required is NOT currently
+  enforced anywhere in the stack (`PatchSubjectUseCase` only validates
+  code; this is a pre-existing gap inherited from US-E12.3, not introduced
+  here) — this AC is descoped from "name required" to avoid growing shared
+  validation logic outside this story's boundary. Tracked as a candidate
+  follow-up: add a `missing-name` failure + i18n key to
+  `PatchSubjectUseCase`, applies to both the Sheet and this page.
 - Given the subject id does not exist (or belongs to another tenant),
   the route shows a "not found" state — no crash, no leaked data across
   tenants — instead of rendering stale/empty fields silently.
