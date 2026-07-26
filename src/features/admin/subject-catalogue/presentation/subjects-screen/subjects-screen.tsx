@@ -325,6 +325,10 @@ export function SubjectsScreen({
                                       asChild
                                       variant="ghost"
                                       size="sm"
+                                      // Icon-only: `sm` only guarantees the
+                                      // 44px height, so widen the hit area too
+                                      // (WCAG 2.5.5).
+                                      className="min-w-11"
                                       aria-label={tPage("openFullPageLink")}
                                     >
                                       <Link

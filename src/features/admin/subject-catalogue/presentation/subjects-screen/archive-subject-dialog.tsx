@@ -56,7 +56,7 @@ export function ArchiveSubjectButton({
             aria-disabled="true"
             aria-label={t("archiveButton")}
             onClick={(e) => e.preventDefault()}
-            className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-[var(--edu-radius-btn)] px-2 text-sm font-medium text-muted-foreground opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex h-8 min-h-11 min-w-11 cursor-not-allowed items-center justify-center gap-1.5 rounded-[var(--edu-radius-btn)] px-2 text-sm font-medium text-muted-foreground opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Archive aria-hidden="true" className="size-3.5" />
             {withLabel && t("archiveButton")}
@@ -72,7 +72,9 @@ export function ArchiveSubjectButton({
       variant="ghost"
       size="sm"
       aria-label={t("archiveButton")}
-      className="text-edu-error-text hover:text-edu-error-text"
+      // `min-w-11`: icon-only in the dense table row, where the `sm` size only
+      // guarantees the 44px height (WCAG 2.5.5).
+      className="min-w-11 text-edu-error-text hover:text-edu-error-text"
       onClick={() => onRequest(subject)}
     >
       <Archive aria-hidden="true" className="size-3.5" />
