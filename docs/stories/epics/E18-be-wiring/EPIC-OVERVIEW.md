@@ -705,6 +705,61 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     see the `MANAGER` grep hits already in `openapi.yaml` for those). See
     `US-E13.8-principal-classes/story.md`.
 
+### Wave 4b — feed/moderation (audit 2026-07-26, resolves finding #36's "blocker" premise)
+
+| Story | Title | Drift | Lane | Ghi chú |
+|-------|-------|-------|------|---------|
+| US-E18.20 | Feed + moderation BE wiring | rất cao | normal | Ground-truthed against `social`'s full `openapi.yaml`+`ERROR_CODES.md`+Go source (`pkg/kit/response/error.go` confirms `error.code` on the wire IS UPPER_SNAKE for `social`, same as `core`, via `codeFromKey=strings.ToUpper` — unlike IAM's raw-lowercase finding, US-E18.6). Both features join the epic's permanently-blocked-DI-factory class (after US-E18.8/9/14): feed's `Post`/`Comment` carry only `authorUserId` — zero display-name/role/avatar anywhere in `social`'s public API, and the one candidate resolver (`GET /social/members/{id}/profile`, US-127) is visibility-gated (shared room OR staff fact) so it 404s unpredictably for SCHOOL-scope posts read by non-staff — worse than every prior "raw-id fallback" gap in this epic since feed shows a DIFFERENT author on every row of a public wall, not one oversight field. Reaction taxonomy is a genuinely different domain model (real Facebook-style `like/love/haha/wow/sad/angry` single-count vs. web's celebratory `like/love/celebrate/clap` per-type) and attachments differ (single real multipart image vs. mock multi-placeholder) — neither reconcilable without a product/design decision. Moderation's `GET /reports` has no filter/stats/detail-GET at all, `targetType` excludes `comment`, and `moderation-audit` is ROOM-scoped (US-086 capability audit), a different concept than the feature's own dismiss/remove trail. `feed.di.ts`/`moderation.di.ts` force-mock regardless of `USE_MOCK`; the dead "real" classes are still corrected to the ground-truthed error taxonomy + 2 concretely-fixable endpoint facts (real pin `PUT`/`DELETE` exists per US-101; `moderate-delete` is bare `POST` no-body, not `DELETE`+body) — kept correct for the day the identity gap resolves, per this epic's own established practice. Zero UI/mock/domain change (mocks continue serving the shipped UX unchanged). See `US-E18.20-feed-moderation-wiring/story.md`. |
+
+40. **(US-E18.20, 2026-07-26) [confirms #6/#7/#9/#13/#15/#18/#20/#21/#22/#23's
+    premise an 11th time — AND the worst instance yet, since it blocks a
+    PUBLIC feed, not one oversight field] + 2 net-new moderation gaps + 1
+    BE-doc-drift flag** Ground-truthing `social`'s `Post`/`Comment` schemas
+    found the recurring "no display-name join" gap again, but qualitatively
+    worse: every post/comment in the feed (SCHOOL/CLASS/CLUB) shows a
+    DIFFERENT author, so there is no single fallback field to raw-UUID (unlike
+    a homeroom-teacher-name cell) — the entire feed screen has no reliable
+    author identity source. The one candidate, `GET
+    /api/v1/social/members/{targetUserId}/profile` (US-127), is
+    visibility-gated (shared `RoomMember` row OR ADMIN/TEACHER staff fact) and
+    would 404 unpredictably for SCHOOL-scope posts (author = tenant ADMIN) read
+    by STUDENT/PARENT callers who share no room with that ADMIN. Ask: either
+    (a) add `authorName`/`authorRole`/`avatarUrl` directly onto `Post`/`Comment`
+    (denormalize at write time, same shape as every other ask in this class),
+    or (b) relax the profile-visibility rule for feed-context reads
+    specifically (any tenant member reading a SCHOOL/CLASS post they're
+    already authorized to read should also see that post's author's basic
+    profile, without a separate room-membership check).
+    Separately, TWO independent, net-new moderation gaps (not covered by the
+    asks above): (i) `GET /api/v1/reports` has no `status`/`contentType`/
+    `search` filter and no stats rollup, and there is no `GET
+    /api/v1/reports/{reportId}` detail endpoint at all — the web's queue
+    screen (resolved/all tabs, content-type filter, search, stat row, detail
+    sheet with duplicate-report list) has no real backing beyond the bare
+    PENDING inbox list; and `SubmitReportRequest.targetType` excludes
+    `COMMENT` (only `MESSAGE`/`POST`) — comment-target reports/removal have no
+    real endpoint at all. Ask: add the missing filter params + a stats
+    endpoint/field + a `GET .../reports/{id}` detail route + a `COMMENT`
+    targetType (with its own moderate-delete route, mirroring the existing
+    post/message ones), if the moderation queue's full feature set is a real
+    product requirement. (iii) **BE-side doc-hygiene flag, not confirmed a web
+    blocker**: `services/social/docs/openapi.yaml`'s
+    `POST /reports/{reportId}/resolve` description states "MESSAGE targets
+    (phase 3) and POST targets (phase 4) are both wired", but
+    `ERROR_CODES.md`'s `REPORT_RESOLVE_DELETE_NOT_IMPLEMENTED` (501) row says
+    the POST-target delete path "is a follow-up (phase 4)" — a direct
+    contradiction this US did not have budget to resolve via Go source
+    (mirrors finding #25's doc-vs-code drift class). Ask: reconcile, or
+    confirm via `resolve_report` use-case source which statement is current.
+    Given all of the above, `feed.di.ts`/`moderation.di.ts` force-mock
+    regardless of `USE_MOCK` (see Wave 4b table row); `togglePin`/
+    `removeContent(post)` have real, ground-truthed-correct HTTP surfaces
+    (US-101 pin; direct moderate-delete) but are unreachable in practice since
+    every `postId` a client could pass comes from the necessarily-mock feed
+    read — same "isolated real endpoint, no reachable real id" shape as
+    US-E18.9's dead `UpdateEntries()`. See
+    `US-E18.20-feed-moderation-wiring/story.md`.
+
 ## Dependencies & thứ tự
 
 - Wave 0 trước tất cả (proof-of-pattern). Wave 1 các US độc lập module → chạy
