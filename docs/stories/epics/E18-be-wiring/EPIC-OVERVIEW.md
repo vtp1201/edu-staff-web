@@ -682,6 +682,28 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     the epic's own definition of "done" for a wiring US (Wave-1/2 precedent:
     hybrid/partial repositories with a documented blocked remainder count as
     `Done`, not `planned`).
+39. **(US-E13.8, 2026-07-26) [re-confirms finding under US-E18.11 — MANAGER
+    (principal) cannot call `GET /api/v1/classes` at all, ground-truthed a
+    2nd time]** `core`'s `ListClassesUseCase.Execute`
+    (`internal/class/core/application/usecase/list_classes.go`) branches
+    `isAdmin(...) → ListByYear` / `isTeacher(...) → listForTeacher` /
+    else → `domainerror.ErrClassForbidden()`. `MANAGER` matches neither
+    branch — a principal calling this endpoint in real mode gets a hard
+    403 `CLASS_FORBIDDEN`, not a degraded response. This was already
+    ground-truthed once under US-E18.11 (see that row: "ground-truthed 403
+    on `GET /classes` for non-ADMIN/non-TEACHER"), confirmed again here
+    while resolving US-E13.8 (Principal Classes school-wide list). Since
+    `admin`'s `IClassManagementRepository.listClasses()` is the only
+    correct-data repository (real params/pagination/`enrich()`), US-E13.8
+    forces principal's read of it to mock permanently (same
+    force-mock-one-call-only pattern as `listTeachers` in
+    `class-management.di.ts`) rather than letting principal share admin's
+    real branch and 403 in production. Ask: extend `isAdmin`/the RBAC check
+    in `list_classes.go` to also accept `MANAGER` (principal), matching the
+    tenant-wide-oversight intent already granted to MANAGER on sibling
+    `core` endpoints (grade entries, per-class reports, teaching plans —
+    see the `MANAGER` grep hits already in `openapi.yaml` for those). See
+    `US-E13.8-principal-classes/story.md`.
 
 ### Wave 4b — feed/moderation (audit 2026-07-26, resolves finding #36's "blocker" premise)
 

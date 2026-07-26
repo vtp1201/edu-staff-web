@@ -98,6 +98,7 @@ export class MockClassManagementRepository
     academicYear?: string;
     gradeLevel?: number;
     cursor?: string;
+    limit?: number;
   }): Promise<Result<ClassListPage, ClassManagementFailure>> {
     await mockDelay();
     const filtered = classes.filter((c) => {
@@ -112,7 +113,11 @@ export class MockClassManagementRepository
       }
       return true;
     });
-    return ok({ data: filtered, nextCursor: null, hasMore: false });
+    // Mock realism for US-E13.8's explicit `limit: 100`: honour the page size
+    // so behaviour stays representative if this seed ever grows past a page.
+    const page =
+      params.limit === undefined ? filtered : filtered.slice(0, params.limit);
+    return ok({ data: page, nextCursor: null, hasMore: false });
   }
 
   async createClass(

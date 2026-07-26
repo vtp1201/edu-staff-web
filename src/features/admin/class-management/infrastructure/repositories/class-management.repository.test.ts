@@ -209,7 +209,25 @@ describe("ClassManagementRepository — listClasses (enrichment fan-out)", () =>
     const repo = new ClassManagementRepository(makeHttp({ get }));
     await repo.listClasses({ academicYear: "2025-2026" });
     expect(get).toHaveBeenCalledWith(CLASS_EP.classes, {
-      params: { academicYear: "2025-2026", cursor: undefined },
+      params: {
+        academicYear: "2025-2026",
+        cursor: undefined,
+        limit: undefined,
+      },
+      raw: true,
+    });
+  });
+
+  it("threads an explicit limit into the query params (US-E13.8)", async () => {
+    const get = vi.fn().mockResolvedValue(envelope([]));
+    const repo = new ClassManagementRepository(makeHttp({ get }));
+    await repo.listClasses({
+      academicYear: "2025-2026",
+      cursor: "cur-2",
+      limit: 100,
+    });
+    expect(get).toHaveBeenCalledWith(CLASS_EP.classes, {
+      params: { academicYear: "2025-2026", cursor: "cur-2", limit: 100 },
       raw: true,
     });
   });
