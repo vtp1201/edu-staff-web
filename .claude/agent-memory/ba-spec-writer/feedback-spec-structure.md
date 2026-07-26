@@ -150,6 +150,32 @@ let `/fe` reuse the existing generic key for both — mint the second key even
 though a same-shaped key already exists, and say so explicitly in the gap
 note so the distinction isn't silently collapsed back into one string.
 
+## US-E13.8 addenda — two existing repositories wrap the same endpoint, neither
+is the "obvious" reuse target as-named (2026-07-26)
+
+When `integration.md` finds TWO existing repositories already calling the SAME
+BE endpoint for the SAME entity (here: `IPrincipalTeachersRepository.listClasses()`
+vs `IClassManagementRepository.listClasses()`, both over `GET /api/v1/classes`),
+and one has a documented "KNOWN GAP" (hardcoded placeholder fields, discarded
+pagination) while the other has a proven working precedent (`enrich()` fan-out) —
+give this its own named, prominent section in spec.md (e.g. "THE CENTRAL OPEN
+DECISION"), not just a line in the traceability matrix. State plainly: (a) which
+repo the story.md/requirements.md ASSUMED was reusable and why that assumption
+breaks specific Must-have FRs, (b) the working alternative already in the
+codebase, (c) that choosing between them is explicitly an FE decision (not
+prescribed) but the underlying requirement (real data, not placeholders) is
+non-negotiable. **This is NOT ADR-worthy** — it's a repository-reuse/data-
+completeness finding at the implementation layer, not a new auth/token/
+data-contract/design-system decision. Still log it in story.md's Harness Delta
+(additive paragraph) so it's discoverable without reading the full packet, and
+sharpen the TEST_MATRIX row's Contract description to name the gap explicitly
+(additive edit, don't restructure the table). Also: when integration.md flags
+an unverified BE-role-authorization precedent (e.g. MANAGER claim not named in
+openapi/ERROR_CODES for one specific endpoint, only inferred from a working UI
+dropdown), tag it "launch-blocking-risk" (not just another open question) and
+put it in both §8 and the FE handoff's "risk to verify early" — a 403 for every
+user of a role is categorically worse than a missing filter/sort feature.
+
 ## US-E09.6 addenda — "normal"-lane story borrowing a "high-risk"-lane security section (2026-07-25)
 
 When a story's lane is `normal` but its use-cases.md/integration.md explicitly

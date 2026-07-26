@@ -118,3 +118,18 @@ Off-screen pane: aria-hidden="true" or inert — removes focusable children from
 No-overlap rule: outer container must clip overflow (overflow:hidden) during transition.
 Back button aria-label: reuse existing i18n key under messaging.* or Common.*.
 Desktop (>768px): both panes visible, no transform applied.
+
+### Competing-repository data-source finding (E13.8 principal-classes)
+When integration.md flags TWO existing web repos wrapping the SAME BE endpoint/entity with
+non-equivalent output (one hardcodes placeholder fields as a documented "KNOWN GAP", the other
+does a real per-row enrich() fan-out), write AC assuming the CORRECT/complete data source wins
+(per the Must-have FRs), and add a non-AC "Known Implementation Note" callout in the use-cases
+doc naming both repos + the precedent + the accepted perf tradeoff — don't silently pick a repo
+name in an AC (that's fe-planner's call) and don't write AC against the degraded path just
+because story.md named it as the "obvious" reuse target. Restate the open question (which repo
+wins) for ba-lead rather than deciding it.
+Client-side-only filter/search/sort when openapi confirms no matching query param exists
+(status/gradeLevel/name/sort absent from GET /api/v1/classes): state the "operates on loaded
+rows only, not true global search" limitation explicitly as its own AC, and note the FE's
+"always pass limit=100 (max)" choice as the practical mitigation for small (~38-row) tenants —
+frame the >100-row case as a documented edge case, not a blocker.

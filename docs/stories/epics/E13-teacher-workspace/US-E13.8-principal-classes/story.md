@@ -93,6 +93,16 @@ When updating durable proof status, use numeric booleans:
 - `docs/TEST_MATRIX.md` row added, status `planned`.
 - No ADR expected (pure UI/read-only reuse of an existing real endpoint) unless analysis surfaces a genuine new
   data/contract decision.
+- **Repository-gap finding (added by `ba-spec-writer`, this session):** the "obvious" reuse target named above,
+  `IPrincipalTeachersRepository.listClasses()`, is NOT actually reusable as-is for this screen — it passes no
+  query params, discards pagination, and hardcodes `studentCount: 0` / `homeroomTeacherId: null` /
+  `homeroomTeacherName: null` on every row (its own inline comment calls this a "KNOWN GAP"). A second existing
+  repository, `IClassManagementRepository.listClasses()` (admin's `(app)/admin/classes`, US-E12.10), already wraps
+  the SAME endpoint correctly (real params, real pagination, real `enrich()` fan-out for studentCount/homeroom).
+  This is a data-completeness/repository-reuse finding, not a new auth/token/data-contract/design-system decision
+  — no ADR raised. Full analysis in `integration.md` §5 and consolidated in `spec.md` §6 ("THE CENTRAL OPEN
+  DECISION"); `fe-lead`/`fe-planner` must resolve which repository this screen calls before FR-002/FR-007 can be
+  honestly satisfied.
 
 ## Evidence
 
