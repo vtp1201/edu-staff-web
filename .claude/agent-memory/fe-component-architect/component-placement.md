@@ -340,6 +340,23 @@ of a bespoke feature-local list-skeleton/list-error pair" finding (after
 flag more explicitly this time (named all 4 prior instances) since 5 is well
 past the 2-instance promotion bar in `component-organization.md`.
 
+**Principal Classes (US-E13.8, 2026-07-26):** plan.md assumed no shared
+load-more control existed yet and proposed a 3rd feature-local
+`LoadMoreButton` copy — WRONG, stale. `components/shared/load-more-button/`
+already exists (promoted from `moderation-screen` in US-E19.1, see entry
+above), consumed by `notifications-center`, and ALSO independently
+re-duplicated feature-local in `audit-log` (a pre-existing, unfixed drift —
+flagged as backlog cleanup, not touched). Lesson: always grep for the
+component BY NAME (`LoadMoreButton`/`load-more`) across the whole repo before
+trusting a plan's "no precedent exists" claim, even a plan written earlier
+this same story pipeline — plans can be stale relative to `components/shared/`
+state that changed in a prior, unrelated story. Also confirmed via direct
+same-entity precedent (`class-management-screen.tsx` renders the identical
+`Class.status` field) that `ARCHIVED → tone="muted"` is not just a
+stylistic-convention guess but matches an existing sibling screen exactly —
+when two screens render the SAME entity/enum, check the sibling's actual
+badge-tone mapping before defaulting to a written convention doc.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

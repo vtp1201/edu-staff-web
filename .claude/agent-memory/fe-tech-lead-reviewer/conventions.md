@@ -247,3 +247,22 @@ Confirmed facts (verify before citing if stale):
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
   module. Still a layer-direction smell (bootstrap→components); the clean fix is to move shared
   routing constants (`DEFAULT_ROUTE`, `Role`) to `bootstrap/tenant` or a domain location.
+- **Force-mock DI now also happens OUTSIDE E18** (US-E13.8 `bootstrap/di/principal-classes.di.ts`):
+  a principal-scoped facade over admin's `IClassManagementRepository` that returns
+  `new MockClassManagementRepository()` unconditionally, because `core`'s `ListClassesUseCase.Execute`
+  (verified in `../edu-api/.../class/core/application/usecase/list_classes.go`) branches
+  `isAdmin → ListByYear`, `isTeacher → listForTeacher`, else `ErrClassForbidden()` — `MANAGER`
+  (principal) matches neither, so `GET /api/v1/classes` is a hard 403 for principals (cross-repo
+  ask #39). Same no-UI-notice shape as `staff-leave.di.ts`/`teaching-plan.di.ts`: prod serves mock
+  data silently. Accepted precedent — verify (a) the doc comment cites the Go file + the ask,
+  (b) an env-matrix test locks mock-return for USE_MOCK unset/"false"/"true", (c) `createServerHttpClient`
+  is never called, (d) the ADMIN factory (`class-management.di.ts`) is left real.
+- **`aria-label` on `<li>` instead of a `role="group"` wrapper is an ACCEPTED card-list a11y shape**
+  (US-E13.8 `classes-card-list.tsx`; Biome `useSemanticElements` rejects `role="group"` on a div that
+  could be semantic). `listitem` supports name-from-author, and the proof is a Storybook
+  `findByRole("listitem", { name })` assertion — accept it when that assertion exists, since it
+  demonstrates the name really is in the a11y tree.
+- **Canonical shared list controls to reuse (don't re-copy):** `components/shared/load-more-button/`
+  (`hasMore` → returns null, `hasError` swaps to retry copy, `aria-busy`) and
+  `components/shared/status-badge/`. `Class.status` tone convention is `ACTIVE → success`,
+  `ARCHIVED → muted` (admin `class-management-screen.tsx:253` + `class-status-tone.ts`).

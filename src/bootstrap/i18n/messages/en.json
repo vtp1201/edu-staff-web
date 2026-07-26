@@ -3010,6 +3010,66 @@
       }
     }
   },
+  "principalClasses": {
+    "academicYearBadge": "School year {year}",
+    "classCount": "{count} classes",
+    "empty": {
+      "filtered": "No classes match the current filters.",
+      "tenantWide": "This school has no classes for this school year yet."
+    },
+    "errors": {
+      "assignee-not-teacher": "The assignee is not a teacher.",
+      "class-archived": "This class is archived.",
+      "duplicate-class": "This class already exists.",
+      "forbidden": "You do not have permission to view the school class list.",
+      "grade-level-out-of-range": "The grade level is outside the school's range.",
+      "homeroom-teacher-not-found": "Homeroom teacher not found.",
+      "invalid-academic-year": "Invalid school year.",
+      "invalid-name": "Invalid class name.",
+      "network-error": "Connection error. Please try again.",
+      "not-found": "Class data not found.",
+      "unknown": "An unexpected error occurred."
+    },
+    "filters": {
+      "allGrades": "All grades",
+      "clearFilters": "Clear filters",
+      "gradeLabel": "Grade",
+      "searchLabel": "Search by class name",
+      "searchPlaceholder": "e.g. 10A1",
+      "sortAsc": "Sorted ascending, switch to descending",
+      "sortByGrade": "By grade",
+      "sortByName": "By class name",
+      "sortDesc": "Sorted descending, switch to ascending",
+      "sortLabel": "Sort",
+      "sortNone": "Default",
+      "statusLabel": "Status"
+    },
+    "gradeN": "Grade {n}",
+    "homeroomUnassigned": "Unassigned",
+    "loadMore": {
+      "label": "Load more classes",
+      "retry": "Loading failed, try again"
+    },
+    "retry": "Try again",
+    "status": {
+      "ACTIVE": "Active",
+      "ALL": "All",
+      "ARCHIVED": "Archived"
+    },
+    "subtitle": "Read-only list of every class in the school.",
+    "table": {
+      "caption": "School-wide class list",
+      "cardSummary": "Class {name}, {status}",
+      "gradeLevel": "Grade",
+      "homeroom": "Homeroom teacher",
+      "loading": "Loading class list...",
+      "name": "Class name",
+      "status": "Status",
+      "studentCount": "Students"
+    },
+    "title": "Classes",
+    "viewTeachers": "View teachers"
+  },
   "principalTeachers": {
     "addTeacher": "Add Teacher",
     "assignClass": "Assign Classes",
