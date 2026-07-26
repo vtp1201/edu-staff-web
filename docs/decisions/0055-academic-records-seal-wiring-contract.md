@@ -196,6 +196,22 @@ Tradeoffs:
   §Context point 6 — not crash or leak data) but should be closed out the
   next time `academic-records` is touched, so the DI factory's behavior
   matches its documented intent.
+  **Closed (2026-07-26, US-E18.21):** `makeRepository()` in
+  `bootstrap/di/academic-records.di.ts` now returns
+  `MockAcademicRecordsRepository` unconditionally, and
+  `AcademicRecordsRepository` was converted into a permanent blocked stub
+  (both methods resolve `{type: "network-error"}` without performing any HTTP
+  call; `toFailure` kept correct + unit-tested for a future unblock) —
+  matching the `staff-leave.di.ts`/`teaching-plan.di.ts` pattern this ADR
+  intended. `academic-records.endpoint.ts`'s viewer/unseal constants are now
+  documented as permanently unreachable dead constants. Guarded by
+  `bootstrap/di/academic-records-force-mock.di.test.ts` (all 3 `USE_MOCK`
+  states + a regression case proving `makeSealRepository()` is UNAFFECTED and
+  still hybrid/real) and
+  `academic-records.repository.test.ts` (dormant-method guard: `http.get`
+  never called). `sealBatch` remains wired REAL, unchanged.
+  Cross-repo ask #21 (the unseal listing endpoint) stays OPEN — this closes
+  only the in-repo DI item.
 - **`key.term` vs real `termId`:** `SealBatchKey.term` is a label
   (`"HK1"`/`"HK2"`), not the real BE's UUID `termId`. The class/term selector
   feeding `sealBatch` is itself mock-sourced, so a real seal call isn't
