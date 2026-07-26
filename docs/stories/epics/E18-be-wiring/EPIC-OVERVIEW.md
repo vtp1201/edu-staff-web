@@ -627,6 +627,28 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     product/design-spec value exists for this window. Ask `/uiux`/`/ba` to
     confirm or override the threshold if presence precision becomes a real
     product concern.
+36. **(Audit 2026-07-26) [re-up ask #1 với evidence mới — Kong + compose gaps]**
+    Đọc trực tiếp `edu-api/gateway/kong/kong.yml` + `docker/docker-compose.yml`:
+    (a) Kong vẫn CHƯA route `social` (41 paths), `notification` (7 paths kể cả
+    SSE `/api/v1/stream`), `lms`; comment dòng 3 kong.yml "notification is a
+    worker (no HTTP)" đã STALE — `services/notification/docs/INTEGRATION.md`
+    xác nhận `cmd/server` HTTP+SSE thật. (b) `docker-compose.yml` không định
+    nghĩa service `social` lẫn `lms` — social đã full-implemented (528 files,
+    57 routes) nhưng không bật được trong stack local. Ask: route Kong cho
+    `social` + `notification`, thêm `social` vào compose, sửa comment stale.
+    Đây là blocker duy nhất còn lại cho live-proof của US-E18.17/US-E18.18 và
+    cho wiring thật feed/moderation (mock-first hiện tại). Lưu ý kèm ask #33:
+    SSE proxy của web phải đi QUA Kong (ADR 0047 X-Edu-Claims) — route Kong
+    xong thì web re-architect proxy (đã ghi ADR 0061).
+37. **(Audit 2026-07-26) [reopen US-E18.16 — premise descope đã hết đúng]**
+    US-E18.16 descoped 2026-07-17 vì "web không có feature lesson-plan /
+    question-bank". Từ đó: DR-021 → US-E11.8 (lesson-plan authoring + builder)
+    + US-E11.9 (question-bank + builder) đã implemented (routes
+    `/teacher/lesson-plans*`, `/teacher/question-bank*`), và core đã expose
+    `/core/api/v1/lms/lesson-plans` + `/core/api/v1/lms/questions` (BE US-136
+    moved courseware off `lms` service). US-E18.16 giờ là wiring US khả thi
+    bình thường (kèm remap `exam.endpoint.ts` `/lms/api/v1/exams` →
+    `/core/api/v1/lms/class-exams` mà US-E18.15 chưa phủ phần `exam` feature).
 
 ## Dependencies & thứ tự
 
