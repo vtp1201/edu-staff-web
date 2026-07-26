@@ -149,6 +149,33 @@ export const ArchiveConfirmed: Story = {
   },
 };
 
+/**
+ * An already-archived subject is READ-ONLY: every editor field is disabled and
+ * the save bar is gone (design reference `design_src/edu/subject-detail.jsx`
+ * `isArchived`). Guards against editing a record that is out of service.
+ */
+export const ArchivedReadOnly: Story = {
+  args: { subject: { ...subject, status: "ARCHIVED" } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(c.getByLabelText("Tên môn học")).toBeDisabled();
+    await expect(c.getByLabelText(/Mã môn/)).toBeDisabled();
+    // The locked numeric fields carry a lock-hint button inside their <label>,
+    // so query them by role instead of by label text.
+    await expect(c.getByRole("spinbutton", { name: "Số tiết" })).toBeDisabled();
+    await expect(
+      c.getByRole("spinbutton", { name: "Yêu cầu số bài kiểm tra" }),
+    ).toBeDisabled();
+    await expect(c.getByLabelText("Chỉ tiêu đầu ra")).toBeDisabled();
+    await expect(c.getByLabelText("Giáo án gốc")).toBeDisabled();
+    await expect(c.getByLabelText("Kho bài tập chung")).toBeDisabled();
+    await expect(c.getByLabelText("Kho đề kiểm tra chung")).toBeDisabled();
+    // No save affordance at all, and no archive affordance either.
+    await expect(c.queryByRole("button", { name: "Lưu thay đổi" })).toBeNull();
+    await expect(c.queryByRole("button", { name: "Lưu trữ" })).toBeNull();
+  },
+};
+
 /** AC-2: edit + save shows the shared "Đã lưu" confirmation. */
 export const SaveSuccess: Story = {
   play: async ({ canvasElement }) => {

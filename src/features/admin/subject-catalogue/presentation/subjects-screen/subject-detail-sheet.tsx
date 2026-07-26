@@ -81,6 +81,7 @@ export function SubjectDetailSheet({
               <SubjectDetailFields
                 form={form}
                 classOfferings={classOfferings}
+                readOnly={false}
               />
             </div>
           )}

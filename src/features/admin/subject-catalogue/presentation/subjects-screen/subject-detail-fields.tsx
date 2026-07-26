@@ -23,6 +23,12 @@ export interface SubjectDetailFieldsProps {
    * forked component — `.claude/rules/component-organization.md`).
    */
   showClassOfferings?: boolean;
+  /**
+   * Archived subjects are out of service and must not be editable — every input
+   * renders `disabled` (design reference `design_src/edu/subject-detail.jsx`
+   * `isArchived`). Defaults to `false` so the quick-edit Sheet is unaffected.
+   */
+  readOnly?: boolean;
 }
 
 /**
@@ -36,6 +42,7 @@ export function SubjectDetailFields({
   form,
   classOfferings,
   showClassOfferings = true,
+  readOnly = false,
 }: SubjectDetailFieldsProps) {
   const t = useTranslations("subjectCatalogue.subjectDetail");
   const { values, setField, error } = form;
@@ -66,6 +73,7 @@ export function SubjectDetailFields({
             value={values.name}
             onChange={(e) => setField("name", e.target.value)}
             maxLength={128}
+            disabled={readOnly}
           />
           <p className="text-xs text-muted-foreground">{t("nameHint")}</p>
         </div>
@@ -83,6 +91,7 @@ export function SubjectDetailFields({
             maxLength={16}
             aria-invalid={codeInvalid}
             aria-describedby={codeInvalid ? codeErrId : undefined}
+            disabled={readOnly}
           />
           <p className="text-xs text-muted-foreground">{t("codeHint")}</p>
           {codeInvalid && (
@@ -124,6 +133,7 @@ export function SubjectDetailFields({
               inputMode="numeric"
               value={values.periodCount}
               onChange={(e) => setField("periodCount", e.target.value)}
+              disabled={readOnly}
             />
             <p className="text-xs text-muted-foreground">
               {t("fieldPeriodCountHint")}
@@ -140,6 +150,7 @@ export function SubjectDetailFields({
               inputMode="numeric"
               value={values.assessCount}
               onChange={(e) => setField("assessCount", e.target.value)}
+              disabled={readOnly}
             />
             <p className="text-xs text-muted-foreground">
               {t("fieldAssessmentCountHint")}
@@ -154,6 +165,7 @@ export function SubjectDetailFields({
             value={values.outcome}
             onChange={(e) => setField("outcome", e.target.value)}
             rows={3}
+            disabled={readOnly}
           />
         </div>
         <div className="grid gap-2">
@@ -162,6 +174,7 @@ export function SubjectDetailFields({
             id={syllabusId}
             value={values.syllabus}
             onChange={(e) => setField("syllabus", e.target.value)}
+            disabled={readOnly}
           />
         </div>
         <div className="grid gap-2">
@@ -170,6 +183,7 @@ export function SubjectDetailFields({
             id={exerciseId}
             value={values.exercise}
             onChange={(e) => setField("exercise", e.target.value)}
+            disabled={readOnly}
           />
         </div>
         <div className="grid gap-2">
@@ -178,6 +192,7 @@ export function SubjectDetailFields({
             id={examId}
             value={values.exam}
             onChange={(e) => setField("exam", e.target.value)}
+            disabled={readOnly}
           />
         </div>
       </section>

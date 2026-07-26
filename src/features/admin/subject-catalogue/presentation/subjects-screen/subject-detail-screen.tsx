@@ -68,6 +68,9 @@ export function SubjectDetailScreen({
     setArchiveTarget(null);
   };
 
+  /** Archived = out of service → the editor is read-only (mockup `isArchived`). */
+  const archived = status === "ARCHIVED";
+
   return (
     <TooltipProvider>
       <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6">
@@ -120,27 +123,31 @@ export function SubjectDetailScreen({
               form={form}
               classOfferings={classOfferings}
               showClassOfferings={false}
+              readOnly={archived}
             />
           </div>
 
           <UsageCard classOfferings={classOfferings} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-4">
-          <div
-            role="status"
-            aria-live="polite"
-            className="mr-auto text-sm text-edu-success-text"
-          >
-            {form.saved ? t("savedFeedback") : ""}
+        {/* Archived subjects are read-only — no save bar at all (mockup parity). */}
+        {!archived && (
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-4">
+            <div
+              role="status"
+              aria-live="polite"
+              className="mr-auto text-sm text-edu-success-text"
+            >
+              {form.saved ? t("savedFeedback") : ""}
+            </div>
+            <Button asChild variant="outline">
+              <Link href={backHref}>{tPage("backToListButton")}</Link>
+            </Button>
+            <Button onClick={form.handleSave} disabled={form.saving}>
+              {t("saveButton")}
+            </Button>
           </div>
-          <Button asChild variant="outline">
-            <Link href={backHref}>{tPage("backToListButton")}</Link>
-          </Button>
-          <Button onClick={form.handleSave} disabled={form.saving}>
-            {t("saveButton")}
-          </Button>
-        </div>
+        )}
       </div>
 
       <ArchiveSubjectDialog
