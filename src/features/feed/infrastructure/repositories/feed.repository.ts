@@ -40,6 +40,16 @@ import { FeedMapper } from "../mappers/feed.mapper";
  * status — NEVER on error.message (api-integration.md). `conflictKind`
  * disambiguates a class-scope 404 (scope-not-found) from a post 404
  * (post-not-found) by the CALL, not by message text.
+ *
+ * US-E18.20 ground-truth: the codes are read verbatim from
+ * `edu-api/services/social/docs/ERROR_CODES.md` (§Feed/Post errors US-097,
+ * §Post reaction errors US-099, §Post comment errors US-100, §Post pinning
+ * errors US-101) and are UPPER_SNAKE on the wire — `pkg/kit/response/error.go`'s
+ * `codeFromKey()` uppercases the lowercase i18n key at the HTTP boundary, same
+ * as `core` (unlike `iam`, which ships the raw lowercase key — US-E18.6).
+ * The previously-guessed generic codes (`FORBIDDEN`, `NOT_FOUND`,
+ * `CLASS_NOT_FOUND`, `POST_NOT_FOUND`, `VALIDATION_ERROR`) do not exist on this
+ * service at all; the status fallbacks are retained as a defensive net.
  */
 export function toFeedFailure(
   err: unknown,
@@ -51,36 +61,83 @@ export function toFeedFailure(
   if (code === "NETWORK_ERROR" || status === undefined || status === 0) {
     return { type: "network-error" };
   }
-  if (status === 403 || code === "FORBIDDEN") {
+  // 403 — every real feed authorization reject. `FEED_NOT_SCHOOL_ADMIN` /
+  // `FEED_NOT_HOMEROOM_TEACHER` are the CREATE gate (also reused by pin/unpin,
+  // ADR 0082); `FEED_NO_TENANT_MEMBERSHIP` is the READ gate (ADR 0079).
+  if (
+    code === "FEED_NOT_SCHOOL_ADMIN" ||
+    code === "FEED_NOT_HOMEROOM_TEACHER" ||
+    code === "FEED_NO_TENANT_MEMBERSHIP" ||
+    status === 403
+  ) {
     return { type: "forbidden" };
   }
-  if (status === 422 || code === "VALIDATION_ERROR") {
+  // 409 `FEED_CLASS_ARCHIVED` — a state conflict (BE deliberately deviates from
+  // 403 here), terminal and NOT retryable. The union has no `scope-archived`
+  // member and adding one would ripple into i18n + presentation (out of this
+  // story's scope), so it maps to the nearest terminal failure. Flagged to
+  // fe-lead as a copy-accuracy follow-up.
+  if (code === "FEED_CLASS_ARCHIVED") {
+    return { type: "forbidden" };
+  }
+  // 422 — shared `VALIDATION_FAILED` (field-level: textBody/linkUrl/comment
+  // text) plus the reaction-emoji domain guard.
+  if (
+    code === "VALIDATION_FAILED" ||
+    code === "FEED_INVALID_REACTION_EMOJI" ||
+    status === 422
+  ) {
     const fields =
       isApiError(err) && err.fields
         ? (err.fields as FeedValidationField[])
         : undefined;
     return fields ? { type: "validation", fields } : { type: "validation" };
   }
-  if (status === 404 || code === "NOT_FOUND") {
-    if (code === "CLASS_NOT_FOUND" || conflictKind === "scope") {
-      return { type: "scope-not-found" };
-    }
-    if (code === "POST_NOT_FOUND" || conflictKind === "post") {
-      return { type: "post-not-found" };
-    }
-    return { type: "fetch-failed" };
+  // 404 — existence-masked class read (`FEED_CLASS_NOT_FOUND` covers both
+  // "no such class" AND "class exists but caller may not read it", US-107) vs.
+  // a post 404 (absent or soft-deleted).
+  if (code === "FEED_CLASS_NOT_FOUND") {
+    return { type: "scope-not-found" };
   }
-  // 429/5xx transient, unknown → retryable.
+  if (code === "FEED_POST_NOT_FOUND") {
+    return { type: "post-not-found" };
+  }
+  if (status === 404) {
+    return conflictKind === "scope"
+      ? { type: "scope-not-found" }
+      : { type: "post-not-found" };
+  }
+  // 429 `FEED_RATE_LIMIT_EXCEEDED` is documented retryable; 5xx/unknown too.
   return { type: "fetch-failed" };
 }
 
 /**
- * Real `social` feed repository (US-E19.1). `social` has no published
- * openapi.yaml (mock-first, decision 0014) — DI selects MockFeedRepository
- * while NEXT_PUBLIC_USE_MOCK=true, so this class is unused until BE confirms
- * the contract. Fully wired regardless: cursor pagination via `{ raw: true }` +
- * parseEnvelope, camelCase params, ApiError.code → FeedFailure. `togglePinMock`
- * is INTENTIONALLY local (INT-190-07 has no endpoint) even here.
+ * Real `social` feed repository (US-E19.1 / re-ground-truthed US-E18.20).
+ *
+ * **PERMANENTLY dead regardless of `USE_MOCK`** — `feed.di.ts` always
+ * constructs {@link MockFeedRepository}. `social`'s openapi.yaml IS now
+ * published, so the mock-first premise (decision 0014) no longer applies; the
+ * hold is a domain-model gap instead (see `feed.di.ts`'s doc comment for the
+ * full rationale: `Post`/`Comment` carry only `authorUserId` with no reliable
+ * display-name join, a different reaction taxonomy, and a different attachment
+ * capability).
+ *
+ * Kept correct + unit-tested for the day that unblocks, per this epic's
+ * precedent (`staff-leave.repository.ts`, `teaching-plan.repository.ts`):
+ * cursor pagination via `{ raw: true }` + parseEnvelope, camelCase params,
+ * ApiError.code → FeedFailure on the REAL code taxonomy.
+ *
+ * Known remaining request-shape drift vs. the real contract, deliberately NOT
+ * changed here because each needs a domain/UX decision beyond US-E18.20's
+ * scope (flagged to fe-lead):
+ * - `createPost` sends `{ content }`; real `POST /feeds/{scope}` takes
+ *   `textBody` (+ optional `linkUrl`, + optional multipart `image`).
+ * - `setReaction` sends `{ reactionType }` over web's 4-value `ReactionType`;
+ *   real `PUT .../reaction` takes `{ emoji }` over `like|love|haha|wow|sad|angry`
+ *   and answers with a single `reactionCount`+`callerReaction`, not per-type
+ *   counts.
+ * - `FeedScopeSelection.scope` is lowercase (`school`/`class`) vs the wire's
+ *   `SCHOOL`/`CLASS` — path-only today, so harmless, but it is real drift.
  */
 export class FeedRepository implements IFeedRepository {
   constructor(private readonly http: AxiosInstance) {}
@@ -203,14 +260,29 @@ export class FeedRepository implements IFeedRepository {
   }
 
   /**
-   * Local-only pin flip (INT-190-07). NO HTTP call — there is no `social`
-   * endpoint yet (BE US-101 in_progress). Returns synchronously-resolved so the
-   * mutation chain is uniform; the client cache is the source of truth.
+   * Pin / unpin (US-101). US-E18.20 ground-truth: this IS a real endpoint —
+   * `PUT /feeds/posts/{postId}/pin` pins (no request body, at most one pinned
+   * post per feed so the write overwrites), `DELETE` unpins (204, idempotent
+   * no-op even when nothing was pinned). INT-190-07's "no endpoint at all"
+   * premise was stale, so the previously local-only passthrough is replaced by
+   * the real call. Authorization is the CREATE gate (ADR 0082), so 403 →
+   * `forbidden`, 404 → `post-not-found`, 409 archived → terminal.
+   *
+   * The method name is kept as `togglePinMock` because it is the
+   * {@link IFeedRepository} contract the presentation layer already binds to
+   * (renaming it is a domain-signature change outside US-E18.20's scope) — the
+   * mock implementation is unchanged and still serves the shipped UX.
    */
-  togglePinMock(
+  async togglePinMock(
     postId: string,
     pinned: boolean,
   ): Promise<FeedResult<{ postId: string; pinned: boolean }>> {
-    return Promise.resolve({ ok: true, value: { postId, pinned } });
+    try {
+      if (pinned) await this.http.put(FEED_EP.pin(postId));
+      else await this.http.delete(FEED_EP.pin(postId));
+      return { ok: true, value: { postId, pinned } };
+    } catch (err) {
+      return { ok: false, error: toFeedFailure(err, "post") };
+    }
   }
 }

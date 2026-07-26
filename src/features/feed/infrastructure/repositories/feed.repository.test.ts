@@ -4,10 +4,14 @@ import { ApiError } from "@/bootstrap/lib/api-envelope";
 import { FeedRepository, toFeedFailure } from "./feed.repository";
 
 // ── toFeedFailure — code-only branching (never message) ─────────────────────
+// US-E18.20: every `code` below is verbatim from
+// `edu-api/services/social/docs/ERROR_CODES.md` (§Feed/Post US-097, §reaction
+// US-099, §comment US-100, §pinning US-101). UPPER_SNAKE on the wire via
+// `pkg/kit/response/error.go`'s `codeFromKey()`.
 describe("toFeedFailure — code/status branching, never message", () => {
-  it("FORBIDDEN → forbidden even with a retryable-sounding message", () => {
+  it("FEED_NOT_SCHOOL_ADMIN → forbidden even with a retryable-sounding message", () => {
     const err = new ApiError({
-      code: "FORBIDDEN",
+      code: "FEED_NOT_SCHOOL_ADMIN",
       message: "please retry",
       retryable: true,
       status: 403,
@@ -15,38 +19,102 @@ describe("toFeedFailure — code/status branching, never message", () => {
     expect(toFeedFailure(err)).toEqual({ type: "forbidden" });
   });
 
-  it("422 VALIDATION_ERROR → validation, carrying field errors", () => {
+  it("FEED_NOT_HOMEROOM_TEACHER → forbidden (CLASS create/pin gate)", () => {
     const err = new ApiError({
-      code: "VALIDATION_ERROR",
+      code: "FEED_NOT_HOMEROOM_TEACHER",
+      message: "temporary hiccup, try again",
+      retryable: true,
+      status: 403,
+    });
+    expect(toFeedFailure(err)).toEqual({ type: "forbidden" });
+  });
+
+  it("FEED_NO_TENANT_MEMBERSHIP → forbidden (SCHOOL read gate)", () => {
+    const err = new ApiError({
+      code: "FEED_NO_TENANT_MEMBERSHIP",
+      message: "ok",
+      retryable: false,
+      status: 403,
+    });
+    expect(toFeedFailure(err)).toEqual({ type: "forbidden" });
+  });
+
+  it("FEED_CLASS_ARCHIVED (409) → forbidden — terminal, never retried", () => {
+    const err = new ApiError({
+      code: "FEED_CLASS_ARCHIVED",
+      message: "conflict",
+      retryable: false,
+      status: 409,
+    });
+    expect(toFeedFailure(err)).toEqual({ type: "forbidden" });
+  });
+
+  it("422 VALIDATION_FAILED → validation, carrying field errors", () => {
+    const err = new ApiError({
+      code: "VALIDATION_FAILED",
       message: "ok",
       retryable: false,
       status: 422,
-      fields: [{ field: "content", message: "required" }],
+      fields: [{ field: "textBody", message: "required" }],
     });
     expect(toFeedFailure(err)).toEqual({
       type: "validation",
-      fields: [{ field: "content", message: "required" }],
+      fields: [{ field: "textBody", message: "required" }],
     });
   });
 
-  it("class-scope 404 → scope-not-found (conflictKind=scope)", () => {
+  it("FEED_INVALID_REACTION_EMOJI (422) → validation", () => {
     const err = new ApiError({
-      code: "CLASS_NOT_FOUND",
+      code: "FEED_INVALID_REACTION_EMOJI",
+      message: "server exploded",
+      retryable: true,
+      status: 422,
+    });
+    expect(toFeedFailure(err)).toEqual({ type: "validation" });
+  });
+
+  it("FEED_CLASS_NOT_FOUND → scope-not-found regardless of conflictKind", () => {
+    const err = new ApiError({
+      code: "FEED_CLASS_NOT_FOUND",
       message: "gone",
       retryable: false,
       status: 404,
     });
+    // Existence-masked (US-107): also covers "class exists, caller may not read".
     expect(toFeedFailure(err, "scope")).toEqual({ type: "scope-not-found" });
+    expect(toFeedFailure(err, "post")).toEqual({ type: "scope-not-found" });
   });
 
-  it("post 404 → post-not-found (conflictKind=post)", () => {
+  it("FEED_POST_NOT_FOUND → post-not-found regardless of conflictKind", () => {
     const err = new ApiError({
-      code: "POST_NOT_FOUND",
+      code: "FEED_POST_NOT_FOUND",
       message: "gone",
       retryable: false,
       status: 404,
     });
     expect(toFeedFailure(err, "post")).toEqual({ type: "post-not-found" });
+    expect(toFeedFailure(err, "scope")).toEqual({ type: "post-not-found" });
+  });
+
+  it("bare 404 (no known code) falls back to the call's conflictKind", () => {
+    const err = new ApiError({
+      code: "UNKNOWN_ERROR",
+      message: "gone",
+      retryable: false,
+      status: 404,
+    });
+    expect(toFeedFailure(err, "scope")).toEqual({ type: "scope-not-found" });
+    expect(toFeedFailure(err, "post")).toEqual({ type: "post-not-found" });
+  });
+
+  it("FEED_RATE_LIMIT_EXCEEDED (429) → fetch-failed (documented retryable)", () => {
+    const err = new ApiError({
+      code: "FEED_RATE_LIMIT_EXCEEDED",
+      message: "forbidden",
+      retryable: true,
+      status: 429,
+    });
+    expect(toFeedFailure(err)).toEqual({ type: "fetch-failed" });
   });
 
   it("503 → fetch-failed even when the message says 'forbidden'", () => {
@@ -116,24 +184,24 @@ describe("FeedRepository — envelope + error mapping", () => {
     });
   });
 
-  it("getFeed on a class-scope 403 maps to forbidden", async () => {
+  it("getFeed on a SCHOOL-scope 403 maps to forbidden", async () => {
     const get = vi.fn().mockRejectedValue(
       new ApiError({
-        code: "FORBIDDEN",
+        code: "FEED_NO_TENANT_MEMBERSHIP",
         message: "no",
         retryable: false,
         status: 403,
       }),
     );
     const repo = new FeedRepository(fakeHttp({ get }));
-    const res = await repo.getFeed({ scope: "class", classId: "11A2" }, null);
+    const res = await repo.getFeed({ scope: "school" }, null);
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 
   it("getFeed on a class-scope 404 maps to scope-not-found", async () => {
     const get = vi.fn().mockRejectedValue(
       new ApiError({
-        code: "CLASS_NOT_FOUND",
+        code: "FEED_CLASS_NOT_FOUND",
         message: "gone",
         retryable: false,
         status: 404,
@@ -160,7 +228,7 @@ describe("FeedRepository — envelope + error mapping", () => {
   it("reaction 404 → post-not-found (AC-1903.5)", async () => {
     const put = vi.fn().mockRejectedValue(
       new ApiError({
-        code: "POST_NOT_FOUND",
+        code: "FEED_POST_NOT_FOUND",
         message: "gone",
         retryable: false,
         status: 404,
@@ -171,17 +239,38 @@ describe("FeedRepository — envelope + error mapping", () => {
     expect(res).toEqual({ ok: false, error: { type: "post-not-found" } });
   });
 
-  it("togglePinMock never issues an HTTP call (INT-190-07 / AC-1909.1)", async () => {
-    const get = vi.fn();
-    const post = vi.fn();
-    const put = vi.fn();
+  // ── pin/unpin — US-E18.20: this IS a real endpoint (US-101) ───────────────
+  it("togglePinMock(true) PUTs the real pin endpoint with no body", async () => {
+    const put = vi.fn().mockResolvedValue({});
     const del = vi.fn();
-    const repo = new FeedRepository(fakeHttp({ get, post, put, delete: del }));
+    const repo = new FeedRepository(fakeHttp({ put, delete: del }));
     const res = await repo.togglePinMock("p1", true);
     expect(res).toEqual({ ok: true, value: { postId: "p1", pinned: true } });
-    expect(get).not.toHaveBeenCalled();
-    expect(post).not.toHaveBeenCalled();
-    expect(put).not.toHaveBeenCalled();
+    expect(put).toHaveBeenCalledWith("/social/api/v1/feeds/posts/p1/pin");
     expect(del).not.toHaveBeenCalled();
+  });
+
+  it("togglePinMock(false) DELETEs the real pin endpoint (idempotent unpin)", async () => {
+    const put = vi.fn();
+    const del = vi.fn().mockResolvedValue({});
+    const repo = new FeedRepository(fakeHttp({ put, delete: del }));
+    const res = await repo.togglePinMock("p1", false);
+    expect(res).toEqual({ ok: true, value: { postId: "p1", pinned: false } });
+    expect(del).toHaveBeenCalledWith("/social/api/v1/feeds/posts/p1/pin");
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("pin 403 maps through the CREATE gate codes → forbidden", async () => {
+    const put = vi.fn().mockRejectedValue(
+      new ApiError({
+        code: "FEED_NOT_SCHOOL_ADMIN",
+        message: "retry later",
+        retryable: true,
+        status: 403,
+      }),
+    );
+    const repo = new FeedRepository(fakeHttp({ put }));
+    const res = await repo.togglePinMock("p1", true);
+    expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 });
