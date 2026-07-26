@@ -15,8 +15,6 @@ const COLUMN_COUNT = 5;
 export interface ClassesLoadingSkeletonProps {
   variant: "table" | "card";
   rowCount?: number;
-  /** sr-only `role="status"` announcement (NFR-005/NFR-001). */
-  loadingAnnouncement: string;
   columnLabels?: {
     name: string;
     gradeLevel: string;
@@ -28,13 +26,14 @@ export interface ClassesLoadingSkeletonProps {
 
 /**
  * Initial-fetch skeleton. Table variant mirrors
- * `principal-teachers-screen.tsx`'s `LoadingRows()` (`aria-busy` container +
- * sr-only status text); card variant is the mobile stacked equivalent.
+ * `principal-teachers-screen.tsx`'s `LoadingRows()` (`aria-busy` container);
+ * card variant is the mobile stacked equivalent. The sr-only `role="status"`
+ * announcement is owned by the SCREEN, not by this component — both breakpoint
+ * variants mount at once, so a live region here would announce twice.
  */
 export function ClassesLoadingSkeleton({
   variant,
   rowCount = 4,
-  loadingAnnouncement,
   columnLabels,
 }: ClassesLoadingSkeletonProps) {
   const rows = Array.from({ length: rowCount });
@@ -46,9 +45,6 @@ export function ClassesLoadingSkeleton({
         className="flex flex-col gap-3"
         data-testid="classes-skeleton-card"
       >
-        <span className="sr-only" role="status">
-          {loadingAnnouncement}
-        </span>
         {rows.map((_, i) => (
           <div
             aria-hidden="true"
@@ -71,9 +67,6 @@ export function ClassesLoadingSkeleton({
       className="overflow-hidden rounded-card border border-border bg-card shadow-card"
       data-testid="classes-skeleton-table"
     >
-      <span className="sr-only" role="status">
-        {loadingAnnouncement}
-      </span>
       <Table>
         <TableHeader>
           <TableRow>

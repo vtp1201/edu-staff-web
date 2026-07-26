@@ -23,8 +23,8 @@ export interface ClassesCardListProps {
 
 /**
  * Mobile (<768px) card list — same fields as `ClassesTable`, stacked
- * single-column so nothing truncates at 320px. Each card is a `role="group"`
- * with a composed label (no drill-down affordance — FR-012).
+ * single-column so nothing truncates at 320px. No drill-down affordance
+ * (FR-012); see the per-item comment for how row identity is announced.
  */
 export function ClassesCardList({
   classes,

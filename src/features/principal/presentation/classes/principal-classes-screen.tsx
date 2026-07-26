@@ -101,7 +101,7 @@ export function PrincipalClassesScreen({
     setLoadingMore(true);
     setLoadMoreError(null);
     const result = await onLoadMore(vm.academicYear, nextCursor);
-    if (result.ok && result.data) {
+    if (result.ok) {
       // Append, never replace (AC-1.19).
       const page = result.data;
       setClasses((prev) => [...prev, ...page.data]);
@@ -109,7 +109,7 @@ export function PrincipalClassesScreen({
       setHasMore(page.hasMore);
     } else {
       // Existing rows stay; the control offers an inline retry (AC-1.20).
-      setLoadMoreError(result.errorKey ?? "unknown");
+      setLoadMoreError(result.errorKey);
     }
     setLoadingMore(false);
   };
@@ -155,28 +155,29 @@ export function PrincipalClassesScreen({
     return (
       <section className="space-y-4 p-4 sm:p-6">
         {header}
+        {/* ONE live region for both breakpoint variants — a `role="status"` per
+            variant would announce the same text twice on mount. */}
+        <span className="sr-only" role="status">
+          {t("table.loading")}
+        </span>
         <div className="hidden md:block">
-          <ClassesLoadingSkeleton
-            columnLabels={columnLabels}
-            loadingAnnouncement={t("table.loading")}
-            variant="table"
-          />
+          <ClassesLoadingSkeleton columnLabels={columnLabels} variant="table" />
         </div>
         <div className="md:hidden">
-          <ClassesLoadingSkeleton
-            loadingAnnouncement={t("table.loading")}
-            variant="card"
-          />
+          <ClassesLoadingSkeleton variant="card" />
         </div>
       </section>
     );
   }
 
   const isEmpty = visibleClasses.length === 0;
-  // AC-1.4 vs AC-1.5: zero rows loaded at all = genuinely empty school (no
-  // "clear filters" affordance, it would change nothing); rows loaded but none
-  // visible = the active filter/search excluded them (offer "clear filters").
-  const emptyVariant = classes.length === 0 ? "zero-tenant" : "zero-filtered";
+  // AC-1.4 vs AC-1.5: only offer "clear filters" when the CURRENT state is
+  // genuinely filter-caused. Zero rows loaded at all, or zero visible while the
+  // filters are still at their defaults (e.g. a school whose classes are ALL
+  // archived under the default ACTIVE filter), would give a button whose click
+  // changes nothing — a dead end announced as an actionable fix.
+  const emptyVariant =
+    classes.length === 0 || !hasActiveFilter ? "zero-tenant" : "zero-filtered";
   // Exactly ONE "clear filters" control at a time: when the filtered-empty
   // state renders its own, the filter bar hides its duplicate (two buttons with
   // the same accessible name would be an a11y/UX smell).

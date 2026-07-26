@@ -151,6 +151,48 @@ export const Empty_ZeroTenant: Story = {
   },
 };
 
+/**
+ * AC-1.4 regression (review finding): a school whose classes are ALL archived
+ * under the default ACTIVE filter must NOT get the "clear filters" variant —
+ * clearing resets to the already-current defaults, so the button would be a
+ * dead end announced as an actionable fix.
+ */
+export const Empty_AllArchivedDefaultFilter: Story = {
+  args: {
+    vm: vm({
+      classes: [
+        cls({ id: "c-9a1", name: "9A1", gradeLevel: 9, status: "ARCHIVED" }),
+        cls({ id: "c-9a2", name: "9A2", gradeLevel: 9, status: "ARCHIVED" }),
+      ],
+    }),
+    onLoadMore: noLoadMore,
+  },
+  play: async ({ canvasElement }) => {
+    await desktop();
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText(copy.empty.tenantWide)).toBeVisible();
+    await expect(
+      canvas.queryByText(copy.empty.filtered),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: copy.filters.clearFilters }),
+    ).not.toBeInTheDocument();
+    // The archived rows are still reachable — via the status filter, not a
+    // no-op clear-filters button.
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: copy.filters.statusLabel }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole("option", {
+        name: copy.status.ARCHIVED,
+      }),
+    );
+    await expect(
+      within(await canvas.findByRole("table")).getByText("9A1"),
+    ).toBeVisible();
+  },
+};
+
 /** AC-1.5 — filtered to zero: message + working "clear filters". */
 export const Empty_ZeroFiltered: Story = {
   args: { vm: vm(), onLoadMore: noLoadMore },

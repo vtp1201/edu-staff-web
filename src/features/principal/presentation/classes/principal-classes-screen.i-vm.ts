@@ -12,12 +12,15 @@ export interface ClassListPage {
   hasMore: boolean;
 }
 
-export interface LoadMoreResult {
-  ok: boolean;
-  data?: ClassListPage;
-  /** Stable failure key — presentation translates it, the action never does. */
-  errorKey?: ClassManagementFailure["type"];
-}
+/**
+ * Discriminated on `ok`, so the screen can't read `data` off a failure (or an
+ * `errorKey` off a success) — no defensive `?? "unknown"` fallbacks needed.
+ * The failure carries a stable key; presentation translates it, the Server
+ * Action never does.
+ */
+export type LoadMoreResult =
+  | { ok: true; data: ClassListPage }
+  | { ok: false; errorKey: ClassManagementFailure["type"] };
 
 export interface PrincipalClassesVm {
   classes: Class[];

@@ -3056,7 +3056,6 @@
       "ALL": "All",
       "ARCHIVED": "Archived"
     },
-    "studentCountValue": "{count} students",
     "subtitle": "Read-only list of every class in the school.",
     "table": {
       "caption": "School-wide class list",
