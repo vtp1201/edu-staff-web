@@ -177,6 +177,11 @@ export function PrincipalClassesScreen({
   // "clear filters" affordance, it would change nothing); rows loaded but none
   // visible = the active filter/search excluded them (offer "clear filters").
   const emptyVariant = classes.length === 0 ? "zero-tenant" : "zero-filtered";
+  // Exactly ONE "clear filters" control at a time: when the filtered-empty
+  // state renders its own, the filter bar hides its duplicate (two buttons with
+  // the same accessible name would be an a11y/UX smell).
+  const showFilterBarClear =
+    hasActiveFilter && !(isEmpty && emptyVariant === "zero-filtered");
 
   return (
     <section className="space-y-4 p-4 sm:p-6">
@@ -185,7 +190,7 @@ export function PrincipalClassesScreen({
       <ClassFiltersBar
         gradeFilter={gradeFilter}
         gradeOptions={gradeOptions}
-        hasActiveFilter={hasActiveFilter}
+        hasActiveFilter={showFilterBarClear}
         labels={{
           statusLabel: t("filters.statusLabel"),
           statusOptions: {
