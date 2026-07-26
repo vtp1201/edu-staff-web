@@ -3010,6 +3010,67 @@
       }
     }
   },
+  "principalClasses": {
+    "academicYearBadge": "Năm học {year}",
+    "classCount": "{count} lớp",
+    "empty": {
+      "filtered": "Không có lớp nào khớp với bộ lọc hiện tại.",
+      "tenantWide": "Trường chưa có lớp nào trong năm học này."
+    },
+    "errors": {
+      "assignee-not-teacher": "Người được phân công không phải giáo viên.",
+      "class-archived": "Lớp đã được lưu trữ.",
+      "duplicate-class": "Lớp này đã tồn tại.",
+      "forbidden": "Bạn không có quyền xem danh sách lớp của trường.",
+      "grade-level-out-of-range": "Khối lớp nằm ngoài phạm vi của trường.",
+      "homeroom-teacher-not-found": "Không tìm thấy giáo viên chủ nhiệm.",
+      "invalid-academic-year": "Năm học không hợp lệ.",
+      "invalid-name": "Tên lớp không hợp lệ.",
+      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
+      "not-found": "Không tìm thấy dữ liệu lớp.",
+      "unknown": "Đã xảy ra lỗi không xác định."
+    },
+    "filters": {
+      "allGrades": "Tất cả khối",
+      "clearFilters": "Xóa bộ lọc",
+      "gradeLabel": "Khối",
+      "searchLabel": "Tìm theo tên lớp",
+      "searchPlaceholder": "Ví dụ: 10A1",
+      "sortAsc": "Đang sắp xếp tăng dần, chuyển sang giảm dần",
+      "sortByGrade": "Theo khối",
+      "sortByName": "Theo tên lớp",
+      "sortDesc": "Đang sắp xếp giảm dần, chuyển sang tăng dần",
+      "sortLabel": "Sắp xếp",
+      "sortNone": "Mặc định",
+      "statusLabel": "Trạng thái"
+    },
+    "gradeN": "Khối {n}",
+    "homeroomUnassigned": "Chưa phân công",
+    "loadMore": {
+      "label": "Tải thêm lớp",
+      "retry": "Tải không thành công, thử lại"
+    },
+    "retry": "Thử lại",
+    "status": {
+      "ACTIVE": "Đang học",
+      "ALL": "Tất cả",
+      "ARCHIVED": "Đã lưu trữ"
+    },
+    "studentCountValue": "{count} học sinh",
+    "subtitle": "Danh sách toàn bộ lớp của trường, chỉ để xem.",
+    "table": {
+      "caption": "Danh sách lớp toàn trường",
+      "cardSummary": "Lớp {name}, {status}",
+      "gradeLevel": "Khối",
+      "homeroom": "GVCN",
+      "loading": "Đang tải danh sách lớp...",
+      "name": "Tên lớp",
+      "status": "Trạng thái",
+      "studentCount": "Số học sinh"
+    },
+    "title": "Danh sách lớp",
+    "viewTeachers": "Xem giáo viên"
+  },
   "principalTeachers": {
     "addTeacher": "Thêm giáo viên",
     "assignClass": "Phân công lớp",
