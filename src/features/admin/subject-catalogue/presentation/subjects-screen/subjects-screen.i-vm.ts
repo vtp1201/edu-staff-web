@@ -33,6 +33,12 @@ export type GetSubjectResult =
 export interface SubjectsScreenProps {
   initialParents: ParentWithSubjectsVM[];
   gradeRange: GradeRange | null;
+  /**
+   * Tenant-scoped base path of the deep-linkable full-page editor
+   * (`/{locale}/t/{tenant}/admin/subjects`). When omitted, the row shows only
+   * the Sheet affordance — the route link is additive (US-E12.13).
+   */
+  subjectDetailHrefPrefix?: string;
   onCreateParent: (data: CreateParentInput) => Promise<ParentActionResult>;
   onCreateSubject: (data: CreateSubjectInput) => Promise<SubjectActionResult>;
   onGetSubject: (id: string) => Promise<GetSubjectResult>;

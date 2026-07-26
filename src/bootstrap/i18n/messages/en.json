@@ -4098,6 +4098,18 @@
       "saveButton": "Save changes",
       "savedFeedback": "Saved"
     },
+    "subjectDetailPage": {
+      "backToListButton": "Back to subject catalogue",
+      "breadcrumbCatalogue": "Subject catalogue",
+      "notFoundBody": "This subject does not exist or you do not have access to it.",
+      "notFoundTitle": "Subject not found",
+      "openFullPageLink": "Open detail page",
+      "usageClassCount": "{count} classes",
+      "usageEmptyBody": "This subject has not been added to any class yet.",
+      "usageEmptyTitle": "Not yet in use",
+      "usageSectionTitle": "Usage this academic year",
+      "usageStudentCount": "{count} students"
+    },
     "subjects": {
       "addDepartmentButton": "Add department",
       "addFirstDepartment": "Add first department",

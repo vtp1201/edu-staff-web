@@ -4098,6 +4098,18 @@
       "saveButton": "Lưu thay đổi",
       "savedFeedback": "Đã lưu"
     },
+    "subjectDetailPage": {
+      "backToListButton": "Về danh mục môn học",
+      "breadcrumbCatalogue": "Danh mục môn học",
+      "notFoundBody": "Môn học này không tồn tại hoặc bạn không có quyền truy cập.",
+      "notFoundTitle": "Không tìm thấy môn học",
+      "openFullPageLink": "Mở trang chi tiết",
+      "usageClassCount": "{count} lớp",
+      "usageEmptyBody": "Môn học chưa được thêm vào lớp nào.",
+      "usageEmptyTitle": "Chưa được sử dụng",
+      "usageSectionTitle": "Sử dụng trong năm học hiện tại",
+      "usageStudentCount": "{count} học sinh"
+    },
     "subjects": {
       "addDepartmentButton": "Thêm bộ môn",
       "addFirstDepartment": "Thêm bộ môn đầu tiên",

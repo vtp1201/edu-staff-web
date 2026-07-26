@@ -93,7 +93,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Academic Calendar config** | `(app)/admin/calendar` | `calendar.jsx` (US-042) | `features/admin/calendar` | ✅ (BE wired US-E18.1) |
 | **Subject Departments (SubjectParent)** | `(app)/admin/subject-departments` | `subject-parents.jsx` (US-048) | `features/admin/subjects` | ✅ |
 | **Subject Catalogue (grade-scoped)** | `(app)/admin/subjects` | `subjects.jsx` + `subjects-dialogs.jsx` | `features/admin/subjects` | ✅ (BE wired US-E18.3; `restore` web-only ẩn) |
-| **Subject Detail (master editor)** | `(app)/admin/subjects/[id]` | `subject-detail.jsx` (US-048, ADR 0036) | `features/admin/subjects` | 🎨 route chưa build — nội dung đã impl dạng sheet (`subject-detail-sheet.tsx` trong subjects-screen); deep-link route `[id]` còn thiếu (NEW-02) |
+| **Subject Detail (master editor)** | `(app)/admin/subjects/[id]` | `subject-detail.jsx` (US-048, ADR 0036) | `features/admin/subject-catalogue` | ✅ US-E12.13 — deep-link route built, shares editor body with the Sheet via `useSubjectDetailForm`/`SubjectDetailFields`; archived subjects read-only |
 | **Student Roster / Enrollment** | `(app)/admin/roster` | `roster.jsx` (US-043) | `features/admin/roster` | ✅ (BE hybrid US-E18.5 — roster/search-pool mock vĩnh viễn, ask #9) |
 | **Timetable Builder** | `(app)/admin/timetable` | `timetable.jsx` (US-045) | `features/admin/timetable` | ✅ US-E12.5 (BE hybrid US-E18.11 — conflicts mock, ask #16) |
 | **Class Management** | `(app)/admin/classes` | — (US-E12.10) | `features/admin/class-management` | ✅ US-E12.10 |

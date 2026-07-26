@@ -63,6 +63,14 @@ learned: `toast.info` when the 404 means the user's INTENT was already achieved
 `<Toaster />` inside the decorator (the app mounts it in `src/app/layout.tsx`), then
 `within(document.body).getByText(...)`.
 
+**`getByLabelText` also matches non-input descendants of the `<label>`:** when a
+field label contains a helper button (e.g. the lock-hint tooltip trigger in
+`subject-detail-fields.tsx`), `getByLabelText("Số tiết")` returns BOTH the button
+and the input → "found multiple elements". Query such fields by role instead
+(`getByRole("spinbutton"|"textbox", { name })`). Fast way to prove a read-only
+(`disabled`) story is genuinely red: temporarily flip the guard prop to a literal
+in the component, re-run only that stories file, then restore.
+
 **Radix exit-animation lingering node vs `.not.toBeInTheDocument()`:** a Radix
 AlertDialog/Dialog does NOT unmount immediately on close — with `motion-safe`
 `data-[state=closed]:animate-out` it stays mounted with `data-state="closed"`

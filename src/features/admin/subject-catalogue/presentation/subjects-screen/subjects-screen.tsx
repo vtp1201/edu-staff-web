@@ -1,32 +1,22 @@
 "use client";
 
-import { Archive, Plus } from "lucide-react";
+import { ExternalLink, Plus } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { StatusBadge } from "@/components/shared/status-badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils";
 import type { ClassSubject } from "../../domain/entities/class-subject.entity";
 import type { Subject } from "../../domain/entities/subject.entity";
 import { ConceptBadge } from "../shared/concept-badge";
 import { CreateParentDialog } from "../shared/create-parent-dialog";
 import { CreateSubjectDialog } from "../shared/create-subject-dialog";
+import {
+  ArchiveSubjectButton,
+  ArchiveSubjectDialog,
+} from "./archive-subject-dialog";
 import { SubjectDetailSheet } from "./subject-detail-sheet";
 import type {
   ParentWithSubjectsVM,
@@ -47,6 +37,7 @@ export function parentRowClass(active: boolean): string {
 export function SubjectsScreen({
   initialParents,
   gradeRange,
+  subjectDetailHrefPrefix,
   onCreateParent,
   onCreateSubject,
   onGetSubject,
@@ -54,6 +45,7 @@ export function SubjectsScreen({
   onArchiveSubject,
 }: SubjectsScreenProps) {
   const t = useTranslations("subjectCatalogue.subjects");
+  const tPage = useTranslations("subjectCatalogue.subjectDetailPage");
 
   const [parents, setParents] =
     useState<ParentWithSubjectsVM[]>(initialParents);
@@ -287,7 +279,6 @@ export function SubjectsScreen({
                       </thead>
                       <tbody>
                         {selected.subjects.map((s) => {
-                          const archiveBlocked = s.inUse;
                           return (
                             <tr
                               key={s.id}
@@ -329,41 +320,33 @@ export function SubjectsScreen({
                                   >
                                     {t("viewEditButton")}
                                   </Button>
-                                  {s.status === "ACTIVE" &&
-                                    (archiveBlocked ? (
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <button
-                                            type="button"
-                                            aria-disabled="true"
-                                            aria-label={t("archiveButton")}
-                                            onClick={(e) => e.preventDefault()}
-                                            className="inline-flex h-8 cursor-not-allowed items-center gap-1.5 rounded-[var(--edu-radius-btn)] px-2 text-sm font-medium text-muted-foreground opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                          >
-                                            <Archive
-                                              aria-hidden="true"
-                                              className="size-3.5"
-                                            />
-                                          </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          {t("archiveBlockedTooltip")}
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    ) : (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label={t("archiveButton")}
-                                        className="text-edu-error-text hover:text-edu-error-text"
-                                        onClick={() => setArchiveTarget(s)}
+                                  {subjectDetailHrefPrefix && (
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="sm"
+                                      // Icon-only: `sm` only guarantees the
+                                      // 44px height, so widen the hit area too
+                                      // (WCAG 2.5.5).
+                                      className="min-w-11"
+                                      aria-label={tPage("openFullPageLink")}
+                                    >
+                                      <Link
+                                        href={`${subjectDetailHrefPrefix}/${s.id}`}
                                       >
-                                        <Archive
+                                        <ExternalLink
                                           aria-hidden="true"
                                           className="size-3.5"
                                         />
-                                      </Button>
-                                    ))}
+                                      </Link>
+                                    </Button>
+                                  )}
+                                  {s.status === "ACTIVE" && (
+                                    <ArchiveSubjectButton
+                                      subject={s}
+                                      onRequest={setArchiveTarget}
+                                    />
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -431,32 +414,13 @@ export function SubjectsScreen({
         }}
       />
 
-      <AlertDialog
-        open={archiveTarget !== null}
+      <ArchiveSubjectDialog
+        target={archiveTarget}
         onOpenChange={(o) => {
           if (!o) setArchiveTarget(null);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("archiveConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {archiveTarget
-                ? t("archiveConfirmBody", { name: archiveTarget.name })
-                : ""}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("cancelButton")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-edu-error-text text-white hover:bg-edu-error-text/90"
-              onClick={() => archiveTarget && handleArchive(archiveTarget)}
-            >
-              {t("archiveConfirmButton")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={handleArchive}
+      />
     </TooltipProvider>
   );
 }
