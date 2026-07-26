@@ -269,14 +269,26 @@ export function PrincipalClassesScreen({
               statusLabels={statusLabels}
             />
           </div>
-          <LoadMoreButton
-            errorLabel={t("loadMore.retry")}
-            hasError={loadMoreError !== null}
-            hasMore={hasMore}
-            isLoadingMore={loadingMore}
-            label={t("loadMore.label")}
-            onLoadMore={handleLoadMore}
-          />
+          {loadMoreError === "forbidden" ? (
+            // AC-1.27 — a mid-session 403 is not retryable: drop the control
+            // entirely (same "absent, not disabled" treatment as the full-page
+            // forbidden state) instead of offering a retry that can only 403
+            // again. Already-loaded rows stay. Other failures keep the
+            // ordinary inline retry.
+            <ClassesErrorState
+              message={t("errors.forbidden")}
+              variant="forbidden"
+            />
+          ) : (
+            <LoadMoreButton
+              errorLabel={t("loadMore.retry")}
+              hasError={loadMoreError !== null}
+              hasMore={hasMore}
+              isLoadingMore={loadingMore}
+              label={t("loadMore.label")}
+              onLoadMore={handleLoadMore}
+            />
+          )}
         </>
       )}
     </section>

@@ -308,6 +308,111 @@ export const LoadMore_Hidden: Story = {
   },
 };
 
+/**
+ * AC-1.27 (defensive) — a load-more call that 403s (mid-session role change /
+ * MANAGER-forbidden re-query) is SPEC'd (use-cases.md) to get the SAME
+ * no-retry access-denied treatment as the full-page 403 (`Error_Forbidden`):
+ * "the same E2/AC-1.7-style access-denied treatment applies to that specific
+ * failed call ... without retry".
+ *
+ * ⚠️ QA FINDING (DEF-E13.8-01, MAJOR): this is NOT what's shipped.
+ * `LoadMoreButton` renders one generic `hasError` treatment (an ENABLED
+ * "Tải không thành công, thử lại" button) regardless of `errorKey` — there is
+ * no `forbidden`-specific no-retry branch. This story documents the ACTUAL
+ * (non-compliant) behavior — see the QA report's Defect List for the AC-1.27
+ * gap. Do not "fix" this story to assert the AC's requirement without also
+ * fixing `principal-classes-screen.tsx`'s `handleLoadMore`/`LoadMoreButton`
+ * wiring, or it will fail.
+ */
+export const LoadMore_Forbidden: Story = {
+  args: {
+    vm: vm({ nextCursor: "cur-2", hasMore: true }),
+    onLoadMore: async () => ({ ok: false, errorKey: "forbidden" }),
+  },
+  play: async ({ canvasElement }) => {
+    await desktop();
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: copy.loadMore.label }),
+    );
+    // AC-1.27 — a mid-session 403 on load-more gets the same "control absent,
+    // not disabled" treatment as the full-page forbidden state: an alert, and
+    // no retry affordance that could only 403 again.
+    const alert = await canvas.findByRole("alert");
+    await expect(alert).toHaveTextContent(copy.errors.forbidden);
+    await expect(
+      canvas.queryByRole("button", { name: copy.loadMore.retry }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: copy.loadMore.label }),
+    ).not.toBeInTheDocument();
+    // The already-loaded rows survive (no data loss on the 403).
+    await expect(
+      within(canvas.getByRole("table")).getByText("10A1"),
+    ).toBeVisible();
+  },
+};
+
+/**
+ * AC-1.14 / AC-1.22 — an active filter/sort stays applied to rows appended by
+ * "load more", and the control remains available while `hasMore` is still
+ * true after the append (the >100-class edge: more than one page loaded, no
+ * eager fetch-everything). Exercises the ACTUAL UI wiring end-to-end (filter
+ * → load more → re-derive), not just `deriveVisibleClasses` in isolation.
+ */
+export const LoadMore_FilteredAppendKeepsFilterAndControl: Story = {
+  args: {
+    vm: vm({ nextCursor: "cur-2", hasMore: true }),
+    onLoadMore: async () => ({
+      ok: true,
+      data: {
+        // A mixed page: one row matches the active grade-10 filter, one
+        // (grade 11) must stay excluded from the visible set post-append.
+        data: [
+          cls({ id: "c-10a3", name: "10A3", gradeLevel: 10, studentCount: 25 }),
+          cls({ id: "c-11b2", name: "11B2", gradeLevel: 11, studentCount: 27 }),
+        ],
+        // hasMore stays true — the >100-class edge keeps the control visible,
+        // no silent eager fetch of every remaining page (AC-1.22).
+        nextCursor: "cur-3",
+        hasMore: true,
+      },
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    await desktop();
+    const canvas = within(canvasElement);
+
+    // Narrow to grade 10 BEFORE loading the next page.
+    await userEvent.click(
+      await canvas.findByRole("combobox", { name: copy.filters.gradeLabel }),
+    );
+    await userEvent.click(
+      await within(document.body).findByRole("option", { name: "Khối 10" }),
+    );
+    let table = within(await canvas.findByRole("table"));
+    await expect(await table.findByText("10A1")).toBeVisible();
+    await waitFor(() =>
+      expect(table.queryByText("11B1")).not.toBeInTheDocument(),
+    );
+
+    await userEvent.click(
+      await canvas.findByRole("button", { name: copy.loadMore.label }),
+    );
+
+    table = within(await canvas.findByRole("table"));
+    // AC-1.14: the newly appended grade-10 row is visible under the active filter.
+    await expect(await table.findByText("10A3")).toBeVisible();
+    // The appended grade-11 row stays excluded — filter re-applies to appended rows.
+    await expect(table.queryByText("11B2")).not.toBeInTheDocument();
+    // AC-1.22: hasMore is still true post-append — the control stays available,
+    // proving no silent "fetch everything" behavior.
+    await expect(
+      canvas.getByRole("button", { name: copy.loadMore.label }),
+    ).toBeVisible();
+  },
+};
+
 /** AC-1.9 — status filter toggles to archived-only, client-side. */
 export const Filter_StatusArchived: Story = {
   args: { vm: vm(), onLoadMore: noLoadMore },
