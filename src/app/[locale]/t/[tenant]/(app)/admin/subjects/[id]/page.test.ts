@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Subject } from "@/features/admin/subject-catalogue/domain/entities/subject.entity";
 import type { SubjectDetailScreenProps } from "@/features/admin/subject-catalogue/presentation/subjects-screen/subject-detail-screen.i-vm";
+import { archiveSubjectAction, patchSubjectAction } from "../actions";
 
 /**
  * US-E12.13 — RSC composition of the deep-link route `/admin/subjects/[id]`.
@@ -85,6 +86,12 @@ describe("SubjectDetailPage — RSC composition", () => {
     expect(props?.parentName).toBe("Bộ môn Toán");
     expect(props?.backHref).toBe(BACK);
     expect(getSubject).toHaveBeenCalledWith("sub-math-10");
+    // AC-2/AC-4: the page must wire the REAL server actions (not a stub) so
+    // save/archive round-trip through the exact same use-case path the Sheet
+    // uses — a generic onSave/onArchive prop would satisfy the type but not
+    // the AC.
+    expect(props?.onSave).toBe(patchSubjectAction);
+    expect(props?.onArchive).toBe(archiveSubjectAction);
   });
 
   it("renders inline not-found (subject: null) WITHOUT redirecting", async () => {
