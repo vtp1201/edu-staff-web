@@ -13,7 +13,13 @@ import {
   patchSubjectAction,
 } from "./actions";
 
-export default async function SubjectsPage() {
+export default async function SubjectsPage({
+  params,
+}: {
+  params: Promise<{ locale: string; tenant: string }>;
+}) {
+  const { locale, tenant } = await params;
+
   const [catalogueRepo, schoolRepo] = await Promise.all([
     makeSubjectCatalogueRepository(),
     makeSchoolConfigRepository(),
@@ -49,6 +55,7 @@ export default async function SubjectsPage() {
     <SubjectsScreen
       initialParents={initialParents}
       gradeRange={gradeRange}
+      subjectDetailHrefPrefix={`/${locale}/t/${tenant}/admin/subjects`}
       onCreateParent={createParentAction}
       onCreateSubject={createSubjectAction}
       onGetSubject={getSubjectAction}
