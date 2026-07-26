@@ -266,3 +266,15 @@ Confirmed facts (verify before citing if stale):
   (`hasMore` → returns null, `hasError` swaps to retry copy, `aria-busy`) and
   `components/shared/status-badge/`. `Class.status` tone convention is `ACTIVE → success`,
   `ARCHIVED → muted` (admin `class-management-screen.tsx:253` + `class-status-tone.ts`).
+- **Sheet→full-page extraction shape (US-E12.13 subject-catalogue) = the accepted de-dup pattern**:
+  a `use-<x>-form.ts` hook (state/validation/save) + a `<x>-fields.tsx` presentational body, with each
+  consumer keeping its OWN footer chrome (SheetFooter vs. page save bar). Variance between consumers is
+  handled by a boolean prop on the shared body (`showClassOfferings`), NOT a forked component. The
+  behavior-preservation bar is "zero edits to the pre-existing `*.stories.tsx`" — verify by
+  `git diff main...HEAD -- <that stories file>` being EMPTY, not by trusting the claim.
+- **`useEffect([subject])` reset race kills "saved" feedback when the PARENT replaces the entity on save**
+  (`subjects-screen.tsx` `setDetailSubject(result.subject)` → new identity → hook resets `saved=false`).
+  A full-page RSC consumer is immune ONLY because the `subject` prop is server-rendered and never
+  replaced client-side — which also means it goes stale (no `revalidatePath` in
+  `admin/subjects/actions.ts`). When reviewing a "we avoided the bug" claim, check BOTH: who owns the
+  entity prop, and whether the action revalidates (revalidation would re-introduce the reset).

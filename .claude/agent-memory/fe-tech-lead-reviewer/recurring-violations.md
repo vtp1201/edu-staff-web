@@ -263,3 +263,17 @@ Watch for these (each has bitten a story here):
 **Why:** these slip past tsc/lint/tests (all green) but violate AC or design-system gates.
 **How to apply:** run the AC-rule ↔ failure-path cross-check and a raw-color grep on every UI story
 before reading for style.
+
+- **Story closed in code but the packet's own Harness Delta doc edits never land** — `docs/TEST_MATRIX.md`
+  row left at `planned` with an EMPTY proof column, `docs/product/screens.md` gap flag (e.g. NEW-02)
+  left un-flipped, packet `## Status` still `planned`, even though tsc/tests/build are all green.
+  `tdd.md` forbids `implemented` without proof, and the Harness Delta usually names the exact doc line.
+  Tell: `git diff main...HEAD -- docs/TEST_MATRIX.md docs/product/screens.md` shows the row ADDED as
+  `planned` and nothing else. Pre-close blocker, cheap to fix. (US-E12.13, echoing US-E18.18.)
+- **Design reference `disabled={isArchived}` / read-only-when-terminal silently dropped on a NEW screen**
+  — a mockup (`design_src/edu/<slug>.jsx`) gates every input AND the save bar behind a terminal-status
+  flag, but a behavior-preserving extraction from an older Sheet (which never had the flag) inherits the
+  always-editable body, so the new page lets an admin edit + save an ARCHIVED record. Neither the
+  use-case nor the mock repo guards it, and the `subject-archived` failure member is never produced.
+  "It matches the Sheet" is NOT a defense when the mockup specifies the NEW surface. Cross-check every
+  `disabled={...}`/conditional-render in the reference jsx against the implementation. (US-E12.13.)
