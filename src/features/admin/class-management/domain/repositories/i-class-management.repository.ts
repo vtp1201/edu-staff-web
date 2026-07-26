@@ -18,6 +18,14 @@ export interface IClassManagementRepository {
     academicYear?: string;
     gradeLevel?: number;
     cursor?: string;
+    /**
+     * Page size (real wire bound: 1–100). Optional and only forwarded when
+     * supplied, so existing callers (`(app)/admin/classes`'s `listClasses({})`)
+     * keep relying on the BE default. Added for US-E13.8, whose principal
+     * class list always passes an explicit `limit: 100` so its client-side
+     * status/grade/name filter + sort behaves as effectively-global.
+     */
+    limit?: number;
   }): Promise<Result<ClassListPage, ClassManagementFailure>>;
 
   createClass(

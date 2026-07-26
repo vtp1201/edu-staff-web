@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -106,4 +106,72 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(none yet — spec-only story; FE team adds evidence on implementation)
+**Implemented 2026-07-26** on `feat/us-e13.8-principal-classes` (7 commits:
+`b0dc90d`→`5641eba`). See `plan.md` + `component-contracts.md` in this packet for
+the full phased plan and architecture.
+
+**Repository-choice gap (resolved):** screen calls `IClassManagementRepository
+.listClasses()` (admin's canonical repo, extended with an additive `limit?`
+param) via a NEW principal-scoped DI facade, `makePrincipalClassesRepository()`
+(`src/bootstrap/di/principal-classes.di.ts`) — permanently forced onto
+`MockClassManagementRepository` (NOT gated by `NEXT_PUBLIC_USE_MOCK`) because
+`core`'s `ListClassesUseCase.Execute` (ground-truthed against Go source,
+`list_classes.go`) only grants `ADMIN`/`TEACHER`; `MANAGER` (principal) hits a
+hard 403 today. Cross-repo ask #39 logged in
+`docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md`. Admin's own real
+`class-management.di.ts` factory is untouched — only this screen's read path
+is force-mocked, as a launch-blocking-risk mitigation, not a dev convenience.
+
+**Pipeline:** `fe-planner` → `fe-component-architect` (state-engineer skipped,
+justified YAGNI — plain local `useState`/`useMemo`, no TanStack Query, matches
+sibling `class-management-screen.tsx` precedent) → `fe-nextjs-engineer` (TDD)
+→ `fe-tech-lead-reviewer` + `fe-accessibility-auditor` (parallel) → fix round
+(5 findings, all closed) → design-review gate (this section).
+
+Design review: pass
+- design-system: conform — tokens-only confirmed (grep for raw color/hex/
+  Tailwind palette scales across all new files: 0 hits); `StatusBadge`
+  (`ACTIVE→success`/`ARCHIVED→muted`) matches `class-management-screen.tsx`'s
+  existing convention exactly, no divergence; `LoadMoreButton` reused as-is
+  from `components/shared/load-more-button/` (no new component); no new
+  primitive/token needed.
+- a11y: WCAG 2.1 AA — contrast (`text-edu-error-text` per ADR 0049, not
+  `text-destructive`), keyboard-operable filters/sort/pagination, icon-only
+  sort-toggle has `aria-label`, focus rings intact (no `outline-none`),
+  ≥44×44px touch targets (primitive defaults), status conveyed via
+  `StatusBadge` label+tone not color alone, reduced-motion unaffected (no new
+  animation beyond `ui/skeleton`'s existing motion-safe pulse). 2 findings from
+  `fe-accessibility-auditor` (A11Y-001 empty-state no-op, A11Y-003 duplicate
+  loading announcement) + 1 doc-only (A11Y-002) all fixed in `4cb0c30`.
+- impeccable: no `design-spec.jsonc` entry exists for this screen (spec.md §8
+  GAP, non-blocking) — gate substitutes a faithful-extension check:
+  `PrincipalTeachersScreen`'s table/`STATUS_TONE`/`TableCaption`/`role="alert"`
+  conventions are mirrored exactly, no net-new visual language introduced.
+- states: loading (table+card variant, single hoisted `role="status"`)/empty
+  (2 variants: zero-tenant vs zero-filtered, correctly gated on
+  `hasActiveFilter` post-fix)/error (2 variants: network+retry vs
+  forbidden+no-retry)/success all present and Storybook-covered; responsive
+  320/375/768/1280 verified via viewport-addon stories with overflow
+  assertions, no horizontal scroll.
+
+**Proof:**
+- Unit: `derive-visible-classes.test.ts` (18+ cases, AC-1.8/1.9/1.11–1.17),
+  `mock-class-management.repository.test.ts`, `principal-classes.di.test.ts`
+  (env-matrix, mock-always regardless of `USE_MOCK`), `actions.test.ts`.
+- Integration: `class-management.repository.test.ts` (extended for `limit`
+  param threading).
+- E2E/Storybook: 22/22 interaction stories green (loading×2, empty×2,
+  error×2, success, load-more success/failure/hidden, filter/sort +
+  persistence, CTA gating, keyboard-only, 320/375/768/1280).
+- Platform: `bunx tsc --noEmit` clean; `bun run build` OK
+  (`ƒ /[locale]/t/[tenant]/principal/classes` present); `bun lint` — 1
+  pre-existing unrelated warning only (verified via `git stash`).
+- Full suite: `bun vitest run` → 424 files / 2875 tests passed.
+
+Reviewed by `fe-tech-lead-reviewer` — **Approved** (0 blocking findings, 4
+should-fix items, all closed same-branch). `fe-accessibility-auditor` — 2
+should-fix + 1 doc-only, all closed.
+
+**Known limitation (documented, not a defect):** production principals see
+mock class data until BE ships MANAGER RBAC on `GET /api/v1/classes` (ask
+#39) — same accepted pattern as `staff-leave.di.ts`/`teaching-plan.di.ts`.

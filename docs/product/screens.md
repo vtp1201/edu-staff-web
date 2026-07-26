@@ -81,7 +81,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | --- | --- | --- | --- | --- |
 | School overview dashboard | `(app)/principal` | `teacher.jsx` (PrincipalDashboardHome) | `features/principal` | ✅ (UI mock-first) |
 | Teachers (GVCN/GVBM assignment sheet) | `(app)/principal/teachers` | `teacher.jsx` (PrincipalTeachersScreen + AssignmentSheet) | `features/principal` | ✅ US-E13.5 |
-| Classes | `(app)/principal/classes` | `teacher.jsx` | `features/principal` | ⬜ |
+| Classes | `(app)/principal/classes` | `teacher.jsx` (reference only, no dedicated mockup) | `features/principal` | ✅ US-E13.8 |
 | Class Log review/approve | `(app)/principal/class-log` | `classops.jsx` | `features/class-log` | ✅ E13.3 (route `(app)/principal/class-log` live) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | ✅ US-E09.1 |
 | Grade Book (principal read) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | ✅ US-E13.6 — route thật `(app)/principal/grade-book` (drift so với design route) |

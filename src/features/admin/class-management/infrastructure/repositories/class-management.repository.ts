@@ -130,13 +130,20 @@ export class ClassManagementRepository implements IClassManagementRepository {
     academicYear?: string;
     gradeLevel?: number;
     cursor?: string;
+    limit?: number;
   }): Promise<Result<ClassListPage, ClassManagementFailure>> {
     try {
       // cursor-paginated list: { raw: true } + parseEnvelope (TR-026). No
       // `gradeLevel` query filter on the real wire (US-E18.4) — apply
-      // client-side after fetching the page.
+      // client-side after fetching the page. `limit` IS a real wire param
+      // (1–100) — forwarded only when the caller supplies it (US-E13.8), so
+      // omitting it keeps the BE default for existing callers.
       const envelope = (await this.http.get(CLASS_EP.classes, {
-        params: { academicYear: params.academicYear, cursor: params.cursor },
+        params: {
+          academicYear: params.academicYear,
+          cursor: params.cursor,
+          limit: params.limit,
+        },
         raw: true,
       })) as unknown as ApiEnvelope<ClassResponseDto[]>;
       const { data, pagination } = parseEnvelope(envelope);
