@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -236,6 +236,37 @@ New/changed tests (all written red-first):
    All wire access still happens inside `iam-directory` (decision `0017`).
 5. **No i18n keys added** — the "pure data-source swap" premise held; no new
    user-facing string appeared anywhere.
+
+### Post-review fix (fe-tech-lead-reviewer: APPROVED, 2 SHOULD FIX applied)
+
+Reviewer approved with two one-line SHOULD FIX items in
+`search-members.use-case.ts`, both applied (commit `b3c88fc`):
+
+1. The pagination drain loop wasn't forwarding `limit`, so it ran at BE's
+   default page size (20/page) instead of the BE cap (100) — a 500-member
+   tenant was 25 blocking round trips inside `(app)/admin/classes`' RSC
+   render instead of 5. Fixed: a named `PAGE_SIZE = 100` constant is now
+   passed as `limit` on every `listMembers` call in the loop.
+2. The `MAX_PAGES` doc comment's stated cap ("20,000 members") was only true
+   once `limit: 100` was actually being sent — now correct and references
+   `PAGE_SIZE` directly so the two constants can't drift apart again.
+
+Re-verified: existing param-shape assertions updated to expect `limit: 100`;
++1 new regression test asserting chunk sizes `[100,100,100]` across a 3-page
+drain (26 `iam-directory` tests total, up from 24). Full re-run: `bun vitest
+run` → 434 files / **2964** tests pass (+1, zero regression); `tsc --noEmit`
+clean; `bun run build` green; `bun lint` clean. Storybook interaction suite
+not re-run for this follow-up commit (zero UI/Storybook files touched by
+either the original implementation or this fix; last full run was
+1083/1083 green on the prior tree).
+
+**Non-blocking follow-up noted by the engineer** (reviewer's own "CONSIDER",
+not required for this US): `MAX_PAGES` exhaustion in `search-members.use-case.ts`
+still returns a silently-truncated partial list rather than an explicit
+failure signal — worth converting to a typed failure if a tenant ever
+approaches the 20,000-member cap. Recorded here as a candidate follow-up, not
+filed as a separate story (too small to warrant one on its own; revisit if/when
+it's bundled with other `iam-directory` hardening work).
 
 ## Implementation Plan
 
