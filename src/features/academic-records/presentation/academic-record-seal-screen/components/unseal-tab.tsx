@@ -94,6 +94,7 @@ export function UnsealTab({ vm }: UnsealTabProps) {
               hasMore={vm.hasNextPage}
               isLoadingMore={vm.isFetchingNextPage}
               onLoadMore={vm.onLoadMore}
+              hasError={vm.hasLoadMoreError}
               label={t("loadMore")}
               errorLabel={t("loadMoreRetry")}
             />

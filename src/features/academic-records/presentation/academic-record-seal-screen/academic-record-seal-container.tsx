@@ -302,6 +302,10 @@ export function AcademicRecordSealContainer({
           isRequestsLoading: isUnsealLoading,
           hasNextPage: pendingQuery.hasNextPage,
           isFetchingNextPage: pendingQuery.isFetchingNextPage,
+          // Rows already on screen + query in error = the LOAD-MORE fetch is
+          // what failed (a first-page failure escalates to `error` above and
+          // never reaches here). Same convention as feed/moderation screens.
+          hasLoadMoreError: pendingQuery.isError && pendingRequests.length > 0,
           onLoadMore: () => {
             pendingQuery.fetchNextPage();
           },

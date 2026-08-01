@@ -796,6 +796,107 @@ fe-lead) strict-TDD (red → green → refactor) on
    internal state and maps at each boundary; a test asserts the rollup's exact
    key set so no mock-only field can leak into the real contract's shape.
 
+### Phase 4 — Review + gates
+
+- **`fe-tech-lead-reviewer` (2026-08-01): APPROVED**, zero blocking findings.
+  Every check re-run independently on `feat/us-e18.24-unseal-workflow-wiring`
+  rather than trusting the report: `bunx tsc --noEmit` **clean**; `bun vitest run`
+  **436 files / 3008 tests, all passing** (matches the claim exactly);
+  `bun lint` **exit 0**; `NEXT_PUBLIC_USE_MOCK= bun run build` **✓ compiled**;
+  `bun run vitest:storybook run academic-record-seal` **25/25 pass**.
+
+  Re-ground-truthed against `../edu-api/services/core/docs/openapi.yaml` +
+  `ERROR_CODES.md:449-467` on `origin/main`:
+  - `SealStatusResponseDto` / `UnsealRequestListItemDto` /
+    `RequestUnsealRequestDto` / `RequestUnsealResponseDto` /
+    `ApproveUnsealResponseDto` (`unseal-response.dto.ts:15-65`) match the wire
+    field-for-field, including `required`-list fidelity — `lastSealedAt` and
+    `unsealedAt` are indeed NOT required, so deviation #7's `undefined → null`
+    normalisation is correct, not defensive padding.
+  - Rollup enum kept distinct from `TermStatus`, and the mapper
+    (`unseal.mapper.ts:39`) passes the SERVER's `status` through instead of
+    re-deriving it client-side — the right call: the truth table stays BE-owned.
+  - All 9 error codes branch on `error.code`, never message; the code `switch`
+    correctly precedes the `status === 404` fallback so
+    `UNSEAL_REQUEST_NOT_FOUND` can't be swallowed
+    (`academic-records-seal.repository.ts:56-95`).
+  - **`{ raw: true }` is CONFIG-level, sibling to `params`** — not nested inside
+    it (`academic-records-seal.repository.ts:235-243`), and the test asserts the
+    exact call shape (`academic-records-seal.repository.test.ts:286-292`). This
+    is the repo's documented recurring bug class; it is done right here.
+  - `initiateUnseal` sends exactly `{studentMemberId, reason}` (trimmed);
+    `confirmUnseal` is a bare single-arg POST with `requestId` as path param
+    only — both pinned by tests (`…repository.test.ts:439`, `:506`), matching
+    the `sealBatch` server-derives-actor precedent.
+  - Hybrid facade routes exactly 5 real / 4 mock and the spy test genuinely
+    asserts it in BOTH directions (`real.__calls` ordered list + `mock.__calls`
+    empty, and the inverse) — not a mere existence test
+    (`academic-records-seal-hybrid.repository.test.ts:60-104`).
+  - `bootstrap/di/academic-records.di.ts:66-76`: `server-only`, composition of
+    `makeBatchResolveMembersUseCase()` happens ONLY after the `if (USE_MOCK)`
+    early return, injected as a narrow function port; `ensureFreshSession()` is
+    still called before `createServerHttpClient()`. No `iam-directory` import
+    inside `academic-records`'s own domain/infrastructure except type-only
+    (`MemberSummary`/`IamDirectoryFailure`/`Result`), the sanctioned US-E18.23
+    shape.
+  - `SealBatchStatus` / `UnsealRequest` verified genuinely mock-internal:
+    remaining references are the mock repo, its fixtures, its tests, doc
+    comments, and the (already dead on `main`) legacy `seal-batch.mapper.ts`.
+    No real-branch or presentation usage — no fabricated field can leak.
+  - Layers/tokens/i18n/security: `server-only` present on infra + DI;
+    presentation imports no infrastructure; raw-color grep across the touched
+    presentation tree is **clean**; vi/en key sets **byte-identical** (0 vi-only,
+    0 en-only across the whole message files); every new/changed Server Action
+    still carries its own `requireRole(["admin"])`.
+  - All 6 (7) claimed deviations checked against the wire — each is justified,
+    none is a shortcut. Deviation #5 (`ACADEMIC_RECORD_ALREADY_SEALED → unknown`)
+    is the right conservative call and is pinned by a test.
+  - Security note (non-blocking, no action needed): now that `confirmUnseal` is
+    REAL, the ADR-0037 self-approve fallback is gated by a MOCK
+    `listTenantAdmins`. Verified **fail-closed** — `MOCK_TENANT_ADMINS` has 3
+    entries, so `tenantAdminCount === 1` is never true, the card renders no
+    bypass (`unseal-request-card.tsx:115`) and `ConfirmUnsealUseCase`'s
+    `coSignerId === null` branch rejects with `self-approve-not-allowed`.
+
+  **SHOULD FIX (non-blocking, fe-lead may bundle or defer):**
+  1. `unseal-tab.tsx:93-99` — `LoadMoreButton` receives `errorLabel` but never
+     `hasError`, so `unseal.loadMoreRetry` is a dead key and a failed
+     `fetchNextPage` shows no signal at all (the container correctly keeps the
+     loaded rows, `academic-record-seal-container.tsx:313-320`, but then nothing
+     tells the admin page 2 failed). Thread
+     `hasError={pendingQuery.isFetchNextPageError}` through `UnsealTabVM` and add
+     a `UnsealTab_LoadMoreError` story.
+  2. `messages/{vi,en}.json` `academicRecordSeal.sealSuccess.sealedByLabel` and
+     `.sealedAtLabel` are now dead (the `sealedBy` chip was removed and the
+     timestamp moved to `lastSealedAtLabel`) — they pass parity, so only a grep
+     catches them. Remove from both locales.
+  3. `docs/decisions/0055-…md` §Decision still states the unseal workflow
+     "stays a FORCE-MOCKED permanently-blocked stub" — which this US reverses for
+     4 of 5 methods. Per the in-place-amendment precedent US-E18.21 set on this
+     same ADR, add a dated "Superseded in part (2026-08-01, US-E18.24)" note (or
+     register a new decision). `git diff main..HEAD -- docs/decisions/` is
+     currently empty.
+  4. `docs/TEST_MATRIX.md:22` US-E18.24 row is still `planned` in all five proof
+     columns with proof `none`, and the packet `## Status` is still `planned`,
+     despite unit + integration + Storybook proof all existing. Pre-close item
+     for fe-lead per `tdd.md`.
+
+  **CONSIDER:** (a) the widened `UnsealRequestStatus` union means the `REJECTED`
+  badge branch (`unseal-request-card.tsx:81`), `unseal.statusRejected` and
+  `errors.unseal-request-invalid-status` are unreachable today — the action
+  hard-codes `status: "PENDING"`; contract-faithful, but note it is dead copy
+  until a status filter ships. (b) `academic-record-seal-screen.stories.tsx`
+  emits a next-intl `ENVIRONMENT_FALLBACK: timeZone` console error on every
+  `format.dateTime` render — pre-existing repo-wide Storybook decorator gap, but
+  it makes date output runner-TZ dependent. (c) `seal-batch.mapper.ts`'s six
+  mappers are all unreferenced (already dead on `main`, not introduced here) —
+  worth a cleanup pass next time this feature is touched.
+
+  Verdict: **APPROVED** — high-quality, genuinely ground-truthed wiring on a
+  high-risk lane; the boundary-narrow entity split is the right call and the
+  mock's "internal-rich, boundary-narrow" mapping is proven by an explicit
+  key-set assertion.
+
 ### Notes for reviewers
 
 - **term-vs-termId caveat carries forward** (design-call #9): `SealBatchKey.term`
@@ -810,3 +911,180 @@ fe-lead) strict-TDD (red → green → refactor) on
   container-level harness for reactive-error toast rendering anywhere in this
   repo; the error-key routing itself is proven end-to-end by `tsc` + the
   repository matrices.
+
+### Accessibility Audit (fe-accessibility-auditor, 2026-08-01)
+
+**Scope:** the 5 files with genuine UI touch —
+`academic-record-seal-screen.tsx` (selector hoist), `all-locked-gate.tsx`
+(rollup redesign), `seal-tab.tsx` (sealedBy chip removal + lastSealedAt
+indicator), `unseal-tab.tsx` (pagination + empty-class prompt + eventual-
+consistency hint), `unseal-request-card.tsx` (field drop). Verified against
+`src/app/tokens.css` resolved values (not eyeballed), the Storybook stories in
+`academic-record-seal-screen.stories.tsx`, and the shared
+`components/shared/load-more-button`.
+
+**Overall verdict: PASS, no blocking or must-fix findings.** 2 should-fix
+(minor, non-blocking) observations below, both pre-existing repo-wide patterns
+this US did not introduce or worsen — recorded for awareness, not gating.
+
+#### Regression check — US-E18.13 A11Y-001 (`role="alert"` scoping)
+
+**Still correct, no regression.** In `all-locked-gate.tsx`'s NOT-OK branch,
+`role="alert"` wraps only the icon + message `div` (lines 81-107); the action
+buttons (`Đến màn Duyệt & khoá` / seal button) live in a sibling `div` (lines
+108-121), outside the assertive live region. Confirmed via
+`UnsealTab_EventualConsistencyHint`-style story assertions elsewhere in the
+suite (`queryByRole("alert")` checks) and direct code read. No change needed.
+
+#### Contrast (computed against `tokens.css`, not eyeballed)
+
+| Element | Token pairing | Ratio | Verdict |
+| --- | --- | --- | --- |
+| Near-cap caption (`text-edu-warning-foreground` on `bg-edu-warning/10` over page bg `#F5F7FA`) | `#2a3547` on ≈`#f6f0e4` | ≈10.9:1 | PASS (≥4.5:1) |
+| Rollup counts / eventual-consistency hint / "select a class" prompt (`text-muted-foreground` on `bg-card`/warning-tint) | aliased to `--edu-text-secondary` `#5a6a85` | 5.48:1 (per ADR 0049, already established) | PASS |
+| Sealed-branch icon (`text-edu-success-text` on `bg-edu-success/15`) | `#007a6e` on ≈`#dcfaf5` | ≈4.75:1 | PASS (≥3:1 UI/icon) |
+| Not-OK icon (`text-edu-warning-foreground` on `bg-edu-warning/15`) | `#2a3547` on light warning tint | >4.5:1 (lighter tint than the 10% case above, same text color) | PASS |
+| Load-more button (`variant="outline"`, `text-foreground`-equivalent on `bg-background`) | unchanged shadcn primitive | pre-existing, PASS | — |
+
+No white-on-`--edu-warning` instances found; all warning text correctly uses
+`--edu-warning-foreground` (`#2a3547`), never white.
+
+#### Status conveyed by more than color alone — PASS
+
+`AllLockedGate`'s three branches (SEALED / PARTIAL / PENDING) each pair a
+distinct icon (`CheckCircle2` vs `AlertTriangle`) with distinct, differently-
+worded title text (`sealedTitle` / `partialTitle` / `pendingTitle`) — color is
+never the sole signal. `UnsealRequestCard`'s `StatusBadge` (PENDING/APPROVED/
+REJECTED) likewise pairs tone with both an icon (`Clock`/`Check`/`X`) and a
+distinct text label. `SealStatusBadge` (pre-existing, now rollup-driven)
+already pairs `Lock`/`LockOpen` icons with `sealed`/`unsealed` text +
+`aria-label`.
+
+#### Keyboard & focus — PASS
+
+- Tab order after the selector hoist: breadcrumb → header → `ClassTermYearSelector`
+  (3 `Select` triggers, each with a linked `<Label htmlFor>`) → `TabsList`
+  (`seal`/`unseal` triggers, Radix roving tabindex intact) → active
+  `TabsContent`. Hoisting to screen level did not duplicate or fragment the
+  selector's tab stops — it is now visited exactly once regardless of which
+  tab is active, which is strictly better than the prior per-tab duplication
+  would have been.
+- No focus trap introduced. Switching tabs does not move focus into the
+  selector or vice versa (Radix `Tabs` manages this natively; unmodified).
+- Load-more button (`components/shared/load-more-button`): reachable by Tab,
+  operable by Enter/Space (native `<button>`), `disabled` while
+  `isFetchingNextPage` (prevents double-submit), removed from the DOM (not
+  merely `disabled`) once `!hasNextPage` — confirmed by
+  `UnsealTab_LoadMoreExhausted` story — so it is never a dead/inert tab-stop.
+- "Select a class" empty state (`unsealVM({classId: null})`) is a static
+  `<p>`, not a dead-end: the shared `ClassTermYearSelector` above the tabs
+  remains focusable/operable at all times, so the keyboard path back to
+  "select a class" is always available — no trap, no unreachable escape.
+
+#### Touch target — PASS
+
+Load-more button uses the shared `Button` primitive's `variant="outline"`
+`size="default"` (`h-9 min-h-11 px-4 py-2`) — `min-h-11` = 44px, meets the
+≥44×44px mobile target (repo-wide primitive fix, not specific to this US, but
+confirmed still in effect for the newly-added instance). No new custom
+interactive element introduces a target below 44px.
+
+#### ARIA/semantics
+
+- `role="alert"` scoping — confirmed correct, see regression check above.
+- Eventual-consistency hint (`unseal-tab.tsx` line ~66-69): **judged NOT to
+  need `aria-live`.** It renders unconditionally whenever a class is selected
+  (it is not toggled in/out based on network state, mutation success, or list
+  content — it's a static informational caption always present alongside the
+  pending section), so there is no dynamic appearance/disappearance for a
+  live region to announce. A screen reader user encounters it once via normal
+  linear reading order, same as any other static caption. If a future change
+  makes it conditional (e.g., only shown right after a submit), revisit.
+- `fetchNextPage` loading state: `aria-busy={isLoadingMore}` is present on the
+  load-more `<Button>` itself (`load-more-button.tsx` line 42) and the button
+  becomes `disabled`, which most screen readers announce as a state change on
+  focus/interaction. There is **no `aria-live`/`role="status"` announcing the
+  newly-appended rows** to a user who is not focused on the button (WCAG
+  2.1 AA 4.1.3 Status Messages). This is a **pre-existing repo-wide gap**,
+  not introduced by this US — `audit-log-screen`'s own (separate,
+  non-shared) `LoadMoreButton` has the same gap (verified: no `aria-live`
+  anywhere in that screen either). Recorded as should-fix, not blocking this
+  US specifically since it would need a repo-wide fix to the shared
+  component + a design decision on wording, out of scope for a wiring US.
+
+#### Motion — PASS (no new animation)
+
+No new `transition`/`animate` classes were introduced by this US. The only
+`transition-all` present is the pre-existing shadcn `Button` primitive, which
+is already covered by the global `@media (prefers-reduced-motion: reduce)`
+gate in `src/app/globals.css` (line 285) — untouched by this US.
+
+#### Vietnamese microcopy — PASS
+
+`emptyClassPrompt` ("Chọn lớp và học kỳ để xem danh sách yêu cầu mở khoá.") and
+`eventualConsistencyHint` ("Danh sách có thể cập nhật trễ vài giây sau khi gửi
+yêu cầu.") are clear, instructive (tell the user what to do / what to expect),
+no jargon or unexplained abbreviations. `gate.rollup.nearResealCap`
+("Đã ký lại {count}/5 lần — sắp đạt giới hạn.") clearly states the count and
+the cap. All new strings confirmed present in BOTH `vi.json` (source) and
+`en.json` (mirror) with an identical key set (diffed programmatically — zero
+drift).
+
+#### Findings summary
+
+| ID | Severity | Summary |
+| --- | --- | --- |
+| A11Y-E18.24-01 | should-fix (non-blocking, pre-existing pattern) | Load-more (`components/shared/load-more-button`) has `aria-busy` + `disabled` but no `aria-live`/`role="status"` announcing newly-loaded rows to non-focused screen reader users (WCAG 4.1.3). Fix: wrap the appended-rows list (or a visually-hidden sibling) in `aria-live="polite"` and announce e.g. "Đã tải thêm {n} yêu cầu" on `fetchNextPage` success — apply to the shared component once, benefits both this screen and `audit-log-screen`. |
+| A11Y-E18.24-02 | nice-to-have | No `aria-label` distinct from visible text on the shared `LoadMoreButton` (unlike `audit-log-screen`'s own local variant, which has one). Not a violation (visible text = accessible name is sufficient per 2.5.3), but worth reconciling the two `LoadMoreButton` implementations for consistency the next time either is touched. |
+
+No must-fix or blocking findings. Design-review gate / QA may proceed.
+
+### Phase 4 follow-up — reviewer SHOULD-FIX items closed (fe-nextjs-engineer)
+
+Both code-owned SHOULD-FIX items from the `fe-tech-lead-reviewer` verdict are
+fixed on `feat/us-e18.24-unseal-workflow-wiring` (the two doc-owned findings —
+ADR 0055 supersession note + Harness/TEST_MATRIX status — are fe-lead's and were
+deliberately not touched here).
+
+1. **Load-more failure was silent.** `unseal-tab.tsx` passed `errorLabel` but
+   never `hasError`, so the `loadMoreRetry` key was unreachable and a page-2
+   `fetchNextPage` failure produced no visible signal. Fixed by threading a new
+   `UnsealTabVM.hasLoadMoreError`, set in the container as
+   `pendingQuery.isError && pendingRequests.length > 0` — the exact convention
+   already used by `feed-screen.tsx:509` and `moderation-screen.tsx:421/441`,
+   and the precise complement of the container's existing first-page-only error
+   escalation (rows present ⇒ it was the load-more that failed, so keep the rows
+   and only swap the control's label; rows absent ⇒ screen-level error panel).
+   TDD: new `UnsealTab_LoadMoreError` interaction story written FIRST and
+   observed red (1 failed / 25 passed), then green — it asserts the retry label
+   replaces the plain one, the already-loaded row survives, no `role="alert"`
+   panel appears, and clicking the control re-fires `onLoadMore`.
+2. **Dead i18n keys removed.** `academicRecordSeal.sealSuccess.sealedByLabel`
+   and `.sealedAtLabel` deleted from BOTH `vi.json` and `en.json` (orphaned when
+   the rollup redesign dropped the `sealedBy` display — there is no wire field
+   for it). Key sets re-diffed programmatically: zero vi/en drift.
+   `bunx tsc --noEmit` stays clean, confirming nothing still references them.
+
+**Proof after the fixes (no regression):**
+
+- `bun vitest run`: **436 files / 3008 tests**, all passing (unchanged — both
+  fixes are presentation/i18n only; the new proof is a Storybook story).
+- `bun run vitest:storybook run` (full suite): **151 files / 1092 tests**, all
+  passing (**+1** vs the 1091 at review time = the new `UnsealTab_LoadMoreError`).
+- `bunx tsc --noEmit`: clean. `bun lint`: **exit 0** (the residual 1 warning +
+  1 info remain the pre-existing pair in `messaging/message-context-menu.tsx`).
+- `NEXT_PUBLIC_USE_MOCK= bun run build`: ✓ Compiled successfully.
+
+**Note for whoever runs `bun lint` next:** a repo-wide `biome check` prints its
+diagnostics truncated, so a formatting error in a NEWLY edited file can surface
+under a trailing, unrelated pre-existing diagnostic (here `message-context-menu
+.tsx`) and read as "someone else's problem". Scope the check to your own paths
+(`bunx biome check src/features/<x>`) before concluding an error is pre-existing
+— in this session the "messaging" error was in fact a formatting nit in
+`academic-record-seal-container.tsx`.
+
+**A11Y-E18.24-01/02 not actioned here** (deliberate): both target the SHARED
+`components/shared/load-more-button`, whose blast radius is 7 caller screens.
+That is a shared-component change needing its own scope/ADR-level sign-off, not
+a drive-by inside a BE-wiring US — flagged back to fe-lead rather than silently
+widened.

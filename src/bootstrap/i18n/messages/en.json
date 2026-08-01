@@ -188,8 +188,6 @@
     "sealSuccess": {
       "lastSealedAtLabel": "Last sealed",
       "neverSealed": "Never sealed",
-      "sealedAtLabel": "Sealed at",
-      "sealedByLabel": "Sealed by",
       "sealedIndicator": "Sealed",
       "toast": "Sealed records for class {class} — {term}.",
       "wasSealedThenUnsealed": "Previously sealed, currently fully unsealed"

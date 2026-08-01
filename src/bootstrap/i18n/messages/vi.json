@@ -188,8 +188,6 @@
     "sealSuccess": {
       "lastSealedAtLabel": "Lần ký gần nhất",
       "neverSealed": "Chưa từng ký",
-      "sealedAtLabel": "Thời điểm ký",
-      "sealedByLabel": "Người ký",
       "sealedIndicator": "Đã ký",
       "toast": "Đã ký học bạ lớp {class} — {term}.",
       "wasSealedThenUnsealed": "Đã từng ký, hiện đã mở khoá toàn bộ"

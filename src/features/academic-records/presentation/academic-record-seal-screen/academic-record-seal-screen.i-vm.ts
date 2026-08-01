@@ -126,6 +126,13 @@ export interface UnsealTabVM {
   isRequestsLoading: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
+  /**
+   * True when the LAST `fetchNextPage` failed while rows are already on screen.
+   * Distinct from the screen-level `error` (a FIRST-page failure): a load-more
+   * failure must keep the loaded rows and only swap the control to its retry
+   * label, never blank the list.
+   */
+  hasLoadMoreError: boolean;
   onLoadMore: () => void;
 
   isInitiateFormOpen: boolean;

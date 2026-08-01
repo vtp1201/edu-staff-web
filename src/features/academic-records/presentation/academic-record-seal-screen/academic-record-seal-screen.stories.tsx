@@ -181,6 +181,7 @@ function unsealVM(over: Partial<UnsealTabVM> = {}): UnsealTabVM {
     isRequestsLoading: false,
     hasNextPage: false,
     isFetchingNextPage: false,
+    hasLoadMoreError: false,
     onLoadMore: fn(),
     isInitiateFormOpen: false,
     onOpenInitiateForm: fn(),
@@ -641,6 +642,37 @@ export const UnsealTab_LoadMore: Story = {
     const btn = canvas.getByRole("button", { name: M.unseal.loadMore });
     await expect(btn).toBeEnabled();
     await userEvent.click(btn);
+    await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * US-E18.24 — a page-2 (`fetchNextPage`) failure must stay VISIBLE and
+ * retryable: already-loaded rows are kept (never blanked by the screen-level
+ * error panel), and the control swaps to its retry label so the failure isn't
+ * silent. Same `isError && rows.length > 0` convention as feed/moderation.
+ */
+export const UnsealTab_LoadMoreError: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ hasNextPage: true, hasLoadMoreError: true }),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    // Retry copy replaces the plain load-more label…
+    const retry = canvas.getByRole("button", {
+      name: M.unseal.loadMoreRetry,
+    });
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.loadMore }),
+    ).not.toBeInTheDocument();
+    // …the already-loaded rows survive (no screen-level error panel)…
+    await expect(canvas.getByText("Nguyễn Hoàng Nam")).toBeInTheDocument();
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+    // …and the same control retries the fetch.
+    await userEvent.click(retry);
     await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
   },
 };
