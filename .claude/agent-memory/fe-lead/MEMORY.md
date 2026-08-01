@@ -1,5 +1,7 @@
 # FE Lead Memory Index
 
+- [E18.25 Notification-center wiring](project-e18-25-notification-center.md) — closes ask #34; entity reshape to BE i18n key+params; reviewer caught a page-limit-vs-cursor drain data-loss bug; unread-count(singular) vs unread-counts(plural) disambiguation
+
 - [Admin role enabler pattern](feedback-admin-role-enabler.md) — order of changes when adding a new role to nav-config + auth entity
 - [E07 Design System epic](project-e07-design-system.md) — US-E07.3/E07.4/E07.5/E07.6/E07.7 implemented; decision 0027 accessible text tokens; E07.7=A11y hardening DR-001→DR-007 (3 gaps fixed); next id E07.8
 - [E12 Admin Core epic](project-e12-admin-core.md) — US-E12.1–E12.4 + E12.5 + E12.8 + E12.9 + E12.10 implemented; US-E12.9 = Staffing UI (3-tab, /admin/staffing, 342 tests); remaining US-E12.6 planned
