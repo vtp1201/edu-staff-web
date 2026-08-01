@@ -1141,3 +1141,147 @@ below).
 - **A11Y-E18.24-02** (nice-to-have): reconcile the shared `LoadMoreButton`
   with `audit-log`'s own local variant (component-organization duplication,
   decision `0026`) — same future US as above.
+
+### QA gate (`fe-qa-playwright`, 2026-08-01)
+
+**Gate: tech-lead APPROVED** (verified above) → proceeded per this repo's
+CRITICAL GATE rule. Did **not** rubber-stamp the reported counts — re-ran both
+suites independently and read the actual `.stories.tsx` file line-by-line
+against the 7 checklist items the QA task specified, per this team's
+established precedent (US-E18.13/17/20, US-E19.2).
+
+**Independently re-run proof (own numbers, not copied):**
+
+- `bun vitest run`: **437 files / 3026 tests**, all passing (was 436/3008 at
+  review time — delta is this gate's own new container test, 1 file / 18
+  tests).
+- `bun run vitest:storybook run` (full suite): **151 files / 1093 tests**, all
+  passing (was 151/1092 at the engineer's follow-up — delta is this gate's own
+  new `UnsealTab_Pagination_Mobile375` story).
+- `bunx tsc --noEmit`: clean. `bunx biome check` (scoped to the touched
+  folder): clean, no fixes needed after auto-format.
+- No `e2e/` Playwright spec directory exists anywhere in this repo (confirmed
+  via `find`) — Storybook interaction (`@vitest/browser-playwright` browser
+  mode) IS this repo's E2E-equivalent layer for BE-wiring-on-an-existing-screen
+  stories, consistent with prior US-E18.13/17/20/E19.2 QA-gate precedent. No
+  new Playwright spec was warranted or written.
+
+**Checklist verification (7 items) — 5 already solid, 2 real gaps found and
+closed:**
+
+1. **4-state seal-status rollup truth table** — verified GENUINELY covered:
+   `Rollup_Sealed` / `Rollup_PendingNeverSealed` / `Rollup_PendingWasSealed` /
+   `Rollup_Partial` each assert the distinct title/copy per state, and the
+   `PendingNeverSealed`/`PendingWasSealed` stories explicitly assert the
+   *absence* of the other state's copy (not just presence of their own) — a
+   real story-level interaction proof, not a comment. No gap.
+2. **`UnsealTab`'s empty/pagination/exhausted/retry states** — verified: the
+   "select a class" prompt (`UnsealTab_SelectAClassPrompt`), happy-path
+   load-more (`UnsealTab_LoadMore`), exhausted cursor (leaves DOM,
+   `UnsealTab_LoadMoreExhausted`), and the just-added retry path
+   (`UnsealTab_LoadMoreError`) are all present and each assertion is
+   substantive (e.g. `UnsealTab_LoadMoreError` genuinely asserts the
+   already-loaded row survives via `canvas.getByText("Nguyễn Hoàng Nam")` AND
+   that no `role="alert"` panel appears AND that clicking the control re-fires
+   `onLoadMore`) — correct, not just present. No gap.
+3. **Name-resolution fallback** — `UnsealTab_UnresolvedNamesFallBackToRawId`
+   genuinely asserts both `studentMemberId` and `requestedBy` degrade to the
+   raw id with no error banner and the confirm action stays usable. No gap.
+4. **`initiateUnseal`/`confirmUnseal` end-to-end through the container** —
+   **REAL GAP, closed.** The Storybook stories only exercise the
+   *presentational* `AcademicRecordSealScreen` fed hand-built VMs; nothing
+   anywhere exercised `AcademicRecordSealContainer` itself, which is the ONLY
+   place `useMutation`'s `onSuccess` maps `res.errorKey` →
+   `toast.error(t(\`errors.${errorKey}\`))`, including the three new
+   `unseal-request-already-approved`/`-invalid-status`/`-invalid-cursor` codes
+   and the stale-race `invalidateQueries` special-casing on
+   `no-pending-request`/`unseal-request-already-approved`. Zero test file
+   existed for this container (`find`-confirmed: no `*container.test.tsx`
+   exists anywhere in the repo, so there was no local precedent either — this
+   gate introduces one, mirroring `src/components/layout/app-shell/app-shell.test.tsx`'s
+   node-env, no-jsdom recipe from US-E08.6: mock every hook (`next/navigation`,
+   `next-intl`, `sonner`, `@tanstack/react-query`) and the child screen import,
+   capture the 3 `useMutation` configs + the vm props passed to the mocked
+   screen, `renderToStaticMarkup`, then invoke captured `onSuccess`/`onConfirmSeal`/
+   `onSubmitInitiate`/`onConfirmRequest`/`onConfirmSelfApprove` as plain function
+   calls. New file:
+   `academic-record-seal-container.test.tsx` (18 tests) — proves: the 4
+   UI-trigger→mutate wirings; `sealMutation`/`initiateMutation`/`confirmMutation`
+   onSuccess failure→toast.error routing (incl. all 3 new codes reaching their
+   translated `errors.<key>` string); the `same-admin-as-initiator` early-return
+   (no toast, dialog-branch only) vs the generic showError branch; the
+   stale-race extra-invalidate special case firing for BOTH
+   `unseal-request-already-approved` and `no-pending-request` but not for a
+   generic failure; self-approve vs co-signed success toast-copy selection; and
+   — since `unseal-request-invalid-status`/`-invalid-cursor` are actually
+   listing-query errors, not mutation errors — that they correctly surface as
+   the screen-level `error` prop (first-page failure) while a load-more-only
+   failure (rows already loaded) instead flips `hasLoadMoreError` and leaves
+   `error` null (first-page-only escalation, matches the container's own
+   documented convention).
+5. **Eventual-consistency caption** — `UnsealTab_EventualConsistencyHint`
+   genuinely asserts the caption renders AND that no `role="alert"` appears
+   (i.e. it reads as a hint, not an error). No gap.
+6. **Mobile/responsive 320-375px** — `Rollup_Partial_Mobile375` (pre-existing,
+   from US-E18.13's own QA gate) covers the rollup summary at a real 375px
+   viewport. **REAL GAP found and closed**: the pagination/load-more control
+   area (new UI this US introduced — the toolbar's title/subtitle/badge/button
+   row and the `LoadMoreButton`) had zero mobile-viewport proof. Added
+   `UnsealTab_Pagination_Mobile375` (real `page.viewport(375, 812)` via
+   `@vitest/browser-playwright`, same technique as `Rollup_Partial_Mobile375`):
+   asserts the toolbar wraps (`scrollWidth <= clientWidth`) instead of
+   overflowing, the load-more button stays within the 375px viewport width
+   (`rect.right <= 375`) and meets the 44px-adjacent touch-target floor, the
+   pending `<section>` has no horizontal overflow, and the button is still
+   clickable/wired at this viewport.
+7. **`e2e/` Playwright spec check** — confirmed (see above): no `e2e/`
+   directory exists in this repo at all; Storybook interaction is judged
+   sufficient, consistent with this team's established precedent for
+   BE-wiring-only stories on an existing screen. No new spec written.
+
+**Findings, severity:**
+
+| ID | Severity | Summary |
+| --- | --- | --- |
+| QA-E18.24-01 | MAJOR (closed this gate) | Container-level mutation wiring (toast/i18n-key routing for all 9 failure codes, incl. the 3 new ones, and the stale-race invalidation special-case) had zero test coverage anywhere. Closed: `academic-record-seal-container.test.tsx` (18 tests). |
+| QA-E18.24-02 | MINOR (closed this gate) | Pagination/load-more control area had no real-viewport (375px) overflow proof, unlike the rollup summary. Closed: `UnsealTab_Pagination_Mobile375` story. |
+| (carried) A11Y-E18.24-01/02 | should-fix / nice-to-have | Unchanged from the accessibility audit — correctly scoped out as a shared-`LoadMoreButton` follow-up, not this US's blocker. |
+
+No BLOCKER or CRITICAL findings. Both MAJOR/MINOR items found by this gate
+were closed within the gate itself (test-only changes, no production code
+touched), so there is no unresolved MAJOR left open.
+
+**Acceptance-criteria coverage:** 100% — every AC-equivalent item in the
+Scope + Plan (rollup truth table, unseal pagination/empty/error states, name
+fallback, eventual-consistency hint, mutation error routing, mobile
+responsiveness) now has a genuine test, at either the Storybook-interaction or
+container-unit layer as appropriate to what each concern actually is (pure
+presentational state → story; container wiring → node-env unit test).
+
+### Release Readiness Decision: **PASS**
+
+Rationale: tech-lead APPROVED gate satisfied; both real coverage gaps found by
+this independent QA pass (container mutation-wiring, mobile pagination
+overflow) were closed within this same gate with passing tests, not deferred;
+zero regression on the full suite (`bun vitest run` 437/3026,
+`bun run vitest:storybook run` 151/1093, both green); `bunx tsc --noEmit` and
+scoped `biome check` clean. No BLOCKER/CRITICAL/open MAJOR remains. AC coverage
+100%.
+
+**Message to fe-lead:** Go. Tech-lead's APPROVED verdict holds up under
+independent re-verification — the wiring is genuinely ground-truthed, not
+just claimed. This gate found and closed two real gaps missed by both the
+engineer and the tech-lead review: (1) the container's mutation
+`onSuccess`→toast/i18n-key routing (including the 3 brand-new failure codes)
+had literally zero test coverage anywhere — new
+`academic-record-seal-container.test.tsx` (18 tests, node-env, mirrors the
+`app-shell.test.tsx`/US-E08.6 recipe); (2) the new pagination control area had
+no real-375px-viewport overflow proof — new `UnsealTab_Pagination_Mobile375`
+Storybook story. Both are test-only additions, committed on
+`feat/us-e18.24-unseal-workflow-wiring` (commit `b044bc6`), zero production
+code touched, zero regression (437 files/3026 unit tests, 151 files/1093
+Storybook tests, both fully green). Action items for fe-lead: (a) bundle the
+already-flagged doc-owned SHOULD-FIXes from the tech-lead review — ADR 0055
+supersession note + `docs/TEST_MATRIX.md` status flip to `implemented` — when
+closing this US; (b) no new action items from this QA gate beyond what's
+already tracked (A11Y-E18.24-01/02 backlog).
