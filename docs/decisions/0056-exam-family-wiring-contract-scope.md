@@ -215,3 +215,102 @@ dto/request.go,exam_paper_handler.go}`) found:
     Decision above) — if editing a DRAFT paper's metadata or discarding a
     mistaken DRAFT is a real product need, ask BE for `PATCH`/`DELETE`
     restricted to DRAFT + author-only.
+
+## Amendment 2 (2026-08-01, US-E18.28 — core US-152 unblocks asks #24/#25/#26)
+
+`core` US-152 shipped exactly what asks #24/#25/#26 asked for: `PATCH`/`DELETE
+/exam-papers/:id` (author-only, DRAFT-only for both — delete asserts the same
+`requireDraft()` guard as the entity's mutation paths, confirmed
+`internal/lms/exambank/core/application/usecase/{update_exam_paper,
+delete_exam_paper}.go`), `PUT`/`DELETE /exam-papers/:id/questions/:questionId`
+(edit/remove one question, author+DRAFT-only, renumbers `position` and
+recomputes `totalMarks` on removal, ground-truthed
+`update_exam_question.go`/`remove_exam_question.go`), and an `options:
+ExamQuestionOptionRequest[]` (2–4, `id` one of A–D) + `correctOptionId` +
+`difficulty` (EASY/MEDIUM/HARD) on both `AddQuestionRequest` and the new
+`UpdateExamQuestionRequest`, round-tripped back on `ExamQuestionResponse`
+(`questionId`/`options`/`correctOptionId`/`difficulty` now present — ground-
+truthed `dto/{request,response}.go`). `openapi.yaml` was also re-synced (ask
+#25) — re-checked and matches the Go source for this tag now, no further
+drift found.
+
+**Scope decision for US-E18.28 (Option A2 — extend the existing hybrid
+repository, do not touch the still-blocked `createExam` path):**
+
+- **Newly wireable REAL**: `updateExam` (paper metadata PATCH + question-level
+  diff-sync) and `deleteExam` (paper DELETE). Both DRAFT + author-only,
+  matching the existing `canEdit`/`canDelete` ownership gates already in
+  `exam-bank-screen.tsx`/`exam-card.tsx` (built during US-E18.15 for the mock
+  path, now re-purposed for real).
+- **`createExam` stays a permanently blocked stub, unchanged.** US-152 did not
+  add a bulk/inline-questions create endpoint — `POST /exam-papers` is still
+  metadata-only. Ask #26's own text was about the PAPER's update/delete, not a
+  new create shape; inventing a multi-call "create paper then loop add-
+  question" flow to fully unblock authoring-from-scratch is a materially
+  bigger, riskier scope (partial-failure-on-create UX, no natural rollback)
+  than what closes asks #24–26, so it is explicitly NOT built here. The
+  `/teacher/exam-bank/create` route keeps rendering `ExamBuilderUnavailable`
+  in real mode, unchanged.
+- **`updateExam`'s question-level sync is diff-based, not a bulk endpoint**
+  (none exists): the real repository (1) GETs the current server state to
+  learn existing `questionId`s, (2) `PATCH`es `{title, durationMinutes}` only
+  — `gradeLevel` is intentionally omitted (unmodeled client-side; the wire
+  treats an omitted field as "unchanged", so no data loss), (3) `DELETE`s
+  every existing `questionId` absent from the local list, (4) `PUT`s every
+  question whose id already exists locally (unconditionally, not diffed for
+  actual content change — simpler and provably correct, a few redundant
+  idempotent calls are an acceptable trade against a stale-content bug class),
+  (5) `POST`s every question with a client-local temp id (never matches a real
+  `questionId`) as a new append, (6) re-`GET`s once more for the authoritative
+  final state (positions renumber on delete, `totalMarks` recomputes
+  server-side). Order is delete → edit → add so position renumbering from
+  removals settles before edits/adds that target-by-id anyway.
+  - **Not atomic** — same as the underlying per-call BE contract itself (no
+    transaction wraps a single `updateExam` domain call across multiple HTTP
+    requests). A failure partway leaves the prior successful sub-calls
+    persisted; the next load reflects the true partial server state (no
+    silent data loss, no rollback attempted — same acceptance already used for
+    US-E18.26's RMW room-field pattern).
+  - **Reordering has no wire equivalent** (position is server-assigned by
+    insertion order, only renumbered on removal) — the builder's existing
+    up/down move controls (`question-list-item.tsx`) are disabled in real
+    mode (decorative-drop precedent, same class as ask #16's `room`/#10's
+    `bands`/#11's `count`); no new cross-repo ask, this was never asked for.
+  - **`marks` (required, `min=1`, on both `AddQuestionRequest`/
+    `UpdateExamQuestionRequest`) has no client-side model at all** — the
+    builder has never authored per-question weight. Defaulted to a constant
+    `1` per question when writing (same defaulting class as the existing
+    `DEFAULT_MAX_ATTEMPTS`), not exposed as a new UI field — keeps this US
+    proportionate; `totalMarks` (server-computed) is not surfaced in the UI
+    either. Not a BE gap (the field already exists and works), so no new ask.
+- **Mapper reshape (lossless now)**: `mapQuestion` maps the real `questionId`
+  as the entity `id` (previously a synthetic `q-${position}`), `options`/
+  `correctOptionId`/`difficulty` map faithfully instead of defaulting — a real
+  DRAFT paper loaded into the builder now pre-fills correctly for editing.
+  `answerKey` continues to carry the same value as `correctOptionId` on write
+  (pre-existing precedent from the lossy mapping, both fields required by the
+  wire's independent MCQ invariants).
+- **Error taxonomy**: extend `ExamBankFailure` with `question-not-found`
+  (`EXAM_QUESTION_NOT_FOUND`), `mcq-options-invalid`
+  (`EXAM_MCQ_OPTIONS_INVALID`), `correct-option-invalid`
+  (`EXAM_CORRECT_OPTION_INVALID`), `options-not-allowed`
+  (`EXAM_OPTIONS_NOT_ALLOWED`), `question-difficulty-invalid`
+  (`EXAM_QUESTION_DIFFICULTY_INVALID`) — ground-truthed
+  `core/domain/error/exam_paper.go`. `not-editable`
+  (`EXAM_STATUS_INVALID_FOR_EDIT`) is now genuinely reachable (non-DRAFT
+  edit/delete attempt) rather than theoretical.
+- **UI-behavior change (design-review + a11y gate applies, same rigor as
+  US-E18.15's original Amendment)**: `/teacher/exam-bank/[id]/edit` now
+  renders the REAL builder (not `ExamBuilderUnavailable`) for a DRAFT paper
+  the caller authors, in real mode — the single biggest visible change. Non-
+  DRAFT or non-author in real mode still renders a blocked/unavailable state.
+  `canDelete`'s gate drops its `authoringEnabled` dependency (delete is real
+  now, independent of the still-blocked create/full-authoring flag); `canEdit`
+  is re-scoped to "real mode + DRAFT + author" rather than the old blanket
+  `authoringEnabled` flag shared with create.
+
+### Cross-repo asks — closed
+
+Asks **#24** (MCQ options round-trip), **#25** (`openapi.yaml` doc drift for
+`ExamBank`), **#26** (no update/delete endpoint) are **RESOLVED** by `core`
+US-152, confirmed by US-E18.28. See `EPIC-OVERVIEW.md` §Cross-repo requests.

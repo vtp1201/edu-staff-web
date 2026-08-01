@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [E18.26 Timetable by-member wiring](project-e18-26-timetable-by-member.md) — closes asks #15/#17, partial #20/#22; lead ground-truths BE contract before planner; un-mocking exposed a latent avatar-contrast bug; symmetric-use-case composition miss caught by reviewer
 - [E18.25 Notification-center wiring](project-e18-25-notification-center.md) — closes ask #34; entity reshape to BE i18n key+params; reviewer caught a page-limit-vs-cursor drain data-loss bug; unread-count(singular) vs unread-counts(plural) disambiguation
 
 - [Admin role enabler pattern](feedback-admin-role-enabler.md) — order of changes when adding a new role to nav-config + auth entity
