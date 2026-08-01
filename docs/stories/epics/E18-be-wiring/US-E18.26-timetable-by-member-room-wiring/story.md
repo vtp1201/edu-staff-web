@@ -880,7 +880,199 @@ promote then (move, never copy) — not a decision to pre-empt now.
 
 ## Evidence
 
-(fe-nextjs-engineer / fe-lead fill in at completion: files changed, exact
-test counts, error-matrix table, tech-lead + a11y verdicts, design-review
-verdict, QA Go/No-Go, and the final documented choice for each "engineer's
-call" decision flagged above.)
+### Implementation (fe-nextjs-engineer, 2026-08-01)
+
+Branch `feat/us-e18.26-timetable-by-member-room-wiring`, commit `466f3d1`
+(single commit — all phases landed together because the admin-builder `room`
+change shares the same "BE US-153 shipped" contract event; each phase was
+nonetheless developed red→green in the packet's order).
+
+#### Proof (exact numbers, all run locally)
+
+| Gate | Before | After |
+| --- | --- | --- |
+| `bun vitest run` | **436 files / 3041 tests passed** | **437 files / 3079 tests passed** (+1 file, +38 tests, 0 failures) |
+| `bun run vitest:storybook run` | — | **151 files / 1095 tests passed** (incl. the new `ParentView_RealMode_NoNameFallback` interaction story; the `timetable-view.stories.tsx` file alone: 8/8) |
+| `bunx tsc --noEmit` | clean | **clean** (no output) |
+| `env -u NEXT_PUBLIC_USE_MOCK bun run build` | — | **green** (full route manifest emitted; the env var was UNSET, not empty-string-set) |
+| `bun lint` | 3 errors, all in `src/features/messaging/presentation/message-context-menu/message-context-menu.tsx` | **same 3 pre-existing messaging errors, zero in any file this US touched** (verified: that file is not in `git status`) |
+| lefthook pre-commit (biome + tsc + `vitest related`) | — | green (14 files / 110 tests) |
+
+#### Files changed, by Clean-Architecture layer
+
+**domain/** (pure TS, no directive)
+- `features/timetable/domain/entities/timetable-child.entity.ts` — `name`,
+  `classId`, `className` → optional; new required `ordinal: number`; per-field
+  doc comments explaining WHY each is optional (per the component contract).
+- `features/timetable/domain/repositories/i-weekly-timetable.repository.ts` —
+  added `getByMember(memberId, weekStart?)`; other four signatures untouched.
+- `features/timetable/domain/use-cases/get-child-timetable.use-case.ts` —
+  one-line switch to `getByMember(child.childId, weekStart)`.
+- `features/timetable/domain/failures/timetable-view.failure.ts` — **unchanged**
+  (no new union member; see engineer's-call #2 below).
+
+**infrastructure/** (`import 'server-only'`)
+- NEW `dtos/member-timetable-response.dto.ts`, `dtos/member-enrollment-response.dto.ts`,
+  `dtos/linked-student-item.dto.ts`.
+- `dtos/real-timetable-response.dto.ts` — additive `subjectName?`, `room?`.
+- `dtos/weekly-timetable-response.dto.ts` — doc-comment only (stale "force-mock
+  permanently" prose removed).
+- NEW `mappers/linked-student.mapper.ts` (`toTimetableChildren`).
+- `mappers/real-weekly-timetable.mapper.ts` — new `mapMemberWeeklyTimetable`;
+  `mapRealWeeklyTimetable` signature unchanged.
+- `mappers/timetable-child.mapper.ts` — `mapTimetableChild(dto, ordinal)`.
+- `repositories/real-weekly-timetable.repository.ts` — `getByMember`,
+  re-implemented `getMyTimetable`/`getByTeacher`/`getChildren`, shared
+  `fetchMemberTimetable`/`tryFetchEnrollment`/`termFor` helpers; `Hybrid…`
+  now delegates everything except `getByClass` to real.
+- `repositories/mocks/weekly-timetable.mock.repository.ts` — implements
+  `getByMember` (childId → fixture class, else `MY_CLASS_ID`); passes ordinals.
+- Admin builder: `dtos/timetable-slot-response.dto.ts` (+`room?`,
+  +`subjectName?` on both request/response), `mappers/timetable.mapper.ts`
+  (room in BOTH directions), `repositories/timetable.repository.ts` (RMW PUT
+  carries room for the edited cell AND preserves every untouched cell's room).
+
+**bootstrap/**
+- `endpoint/timetable-view.endpoint.ts` — `memberTimetable`,
+  `memberEnrollment`, `linkedStudents` (all `encodeURIComponent`d).
+- `di/timetable-view.di.ts` — **no structural change**; `ensureFreshSession()`
+  confirmed still wired in the `!USE_MOCK` branch (verified by reading, not
+  assumed). Doc comment refreshed.
+- `i18n/messages/{vi,en}.json` — `timetableView.childOrdinalLabel`,
+  `timetableView.classPending` (both files, same commit; `classLabel` REUSED,
+  not duplicated).
+
+**presentation/** (the only design-review-gated diff)
+- `presentation/timetable-view/child-picker.tsx` — exactly the two conditional
+  label expressions from the component contract; no prop/markup/ARIA change.
+- `presentation/timetable-view/timetable-view.stories.tsx` — fixtures gain
+  `ordinal`; NEW story `ParentView_RealMode_NoNameFallback` asserting the
+  accessible names `"Con thứ 1 Lớp 10A1"` / `"Con thứ 2 Chưa có lớp"` and that
+  the fallback card is still operable (`aria-pressed` flips, action fires).
+
+**Test files** (new/modified): NEW
+`mappers/linked-student.mapper.test.ts`; MODIFIED
+`use-cases/get-child-timetable.use-case.test.ts` (asserts `getByMember` called
+and `getByClass` NOT called), `mappers/real-weekly-timetable.mapper.test.ts`,
+`repositories/real-weekly-timetable.repository.test.ts` (rewritten around the
+2-call teacher path + by-member + composed student path + linked-students),
+admin `mappers/timetable.mapper.test.ts`, admin
+`repositories/timetable.repository.test.ts`, admin
+`repositories/timetable.repository.integration.test.ts` (mock room
+round-trip guard), plus `getByMember` stubs added to the three sibling
+use-case test doubles.
+
+#### Error-code mapping implemented
+
+| Wire code | HTTP | Where caught | Mapped to |
+| --- | --- | --- | --- |
+| `TIMETABLE_MEMBER_NOT_RESOLVABLE` | 404 | `getByMember` / `getMyTimetable` / `getByTeacher` | `not-found` |
+| `TIMETABLE_FORBIDDEN` | 403 | same | `not-found` (BE's identical-403 no-enumeration posture) |
+| `TIMETABLE_SLOT_NOT_FOUND` | 404 | same (pre-existing) | `not-found` |
+| `TIMETABLE_CHILD_AMBIGUOUS` | 422 | same | `network-error` (defensive — see call #2) |
+| any other timetable code (`TIMETABLE_INVALID_*`, transport) | 400/5xx | same | `network-error` |
+| `ROSTER_ACCESS_FORBIDDEN` | 403 | `tryFetchEnrollment` **only** | swallowed → `className: ""`, screen still renders |
+| `ROSTER_STUDENT_NOT_ENROLLED` | 404 | `tryFetchEnrollment` **only** | swallowed → `className: ""` |
+| any other enrollment failure | * | `tryFetchEnrollment` | swallowed → `className: ""` |
+| `PARENTLINK_FORBIDDEN` | 403 | `getChildren` | `no-child` (collapses to the empty state) |
+| any other linked-students failure | * | `getChildren` | `network-error` |
+
+Note the packet's error table said the enrollment 403 is `ROSTER_ACCESS_FORBIDDEN`
+— confirmed correct against `ERROR_CODES.md:99`. But `linked-students`'s 403 is
+`PARENTLINK_FORBIDDEN` (`ERROR_CODES.md:319`), **not** `ROSTER_*`; the packet
+did not name it. Both are covered.
+
+#### Every flagged "engineer's call", decided
+
+1. **`getByClass` — delete or keep?** → **KEPT**, contract-correct, still routed
+   to mock by the hybrid, with an updated doc comment saying plainly that it has
+   zero callers. Followed the packet's stated precedent (US-E18.11). Nothing
+   calls it with a stale mock classId any more — the parent flow moved to
+   `getByMember`, which was the actual risk the packet warned about.
+2. **`TIMETABLE_CHILD_AMBIGUOUS` → new type or reuse?** → **reused
+   `network-error`**, exactly as the planner recommended, with the one-line
+   rationale in `toTimetableViewFailure`'s doc comment: this client never calls
+   the endpoint with a parent's own memberId, and a new union member would
+   ripple into two exhaustive `Record<TimetableErrorKey, …>`s plus i18n for a
+   state that cannot render.
+3. **Standalone `member-enrollment.mapper.ts` or fold into the repository?** →
+   **folded into the repository** (`tryFetchEnrollment` returns the DTO; the
+   three fields are consumed inline). A passthrough mapper producing no entity
+   would be a file for its own sake. Consequently there is **no**
+   `member-enrollment.mapper.test.ts`; the behaviour is covered by four
+   repository tests (success, two degrade codes, generic degrade).
+4. **Admin `room` — same commit or split?** → **same commit** (see above).
+5. **Is `linked-students` paginated?** → **CONFIRMED NOT.** Read the actual
+   schema: `LinkedStudentsResponse` is `{ links: LinkedStudentItemResponse[] }`
+   (`services/core/docs/openapi.yaml`), the operation declares no `cursor`/
+   `limit` parameters, and the sibling `parent-consent.repository.ts:42-44`
+   precedent agrees. So **no `raw: true`, no `fetchAllPages`** — and a test
+   asserts the call is made with **no axios config object at all**, documenting
+   the confirmation. The pre-existing `raw`-flag guard on the (unchanged)
+   `GET /classes` `fetchAllPages` path was kept and strengthened.
+6. **`room` HTML-escaping** → **no work needed, confirmed safe.**
+   `grep -rn "dangerouslySetInnerHTML" src/features/timetable
+   src/features/admin/timetable src/components` returns **only the three new
+   doc comments** that mention the term. Every render site is plain JSX text
+   interpolation (`timetable-grid.tsx:228`, `timetable-screen.tsx:423`) and the
+   editor input is a controlled `value` (`slot-editor-dialog.tsx:83`). Noted
+   inline in both mappers.
+
+#### Corrections to the packet found while reading the real code
+
+- **Planner correction #1 confirmed**: `MockTimetableRepository` already
+  round-tripped `room`; only `TimetableSlotMapper` dropped it. No mock fix was
+  made — a regression-guard test was added instead so nobody "fixes" it later.
+- **The admin RMW dropped OTHER cells' rooms too.** The packet only asked for
+  the edited cell. The repository re-maps the whole slot list on every
+  single-cell edit, so without `room: s.room || undefined` in that `.map()`,
+  saving one cell would have wiped every other cell's newly-persisted room. A
+  test pins this.
+- **`toEntity` cannot read `subjectName` in the admin builder** — the plan said
+  it should, but the admin `TimetableSlot` entity has no `subjectName` field
+  (the builder resolves names from its own catalogue picker). The DTO declares
+  `subjectName?` for contract fidelity and the mapper documents that it is
+  deliberately not consumed. No entity change was made (out of scope).
+- **`mapRealWeeklyTimetable` now reads `subjectName`/`room`** (small, deliberate
+  extension beyond "keep untouched"): its DTO gained the fields, and leaving the
+  mapper hardcoding `room: undefined` would be a latent bug the day `getByClass`
+  gets a caller. Signature and all existing assertions unchanged.
+- **`getByTeacher` no longer 404s on an empty class list.** Previously an empty
+  `GET /classes` meant "no schedule"; now the by-member call is authoritative
+  (it 404s `TIMETABLE_MEMBER_NOT_RESOLVABLE` itself), and the class list is only
+  a name lookup. The two calls are issued **concurrently** (`Promise.all`), so
+  the test asserts the call SET, not the order.
+- **Enrollment `gradeLevel`** is fetched but has nowhere to render (no
+  timetable screen shows it). Documented inline as available-but-unused rather
+  than inventing a UI slot.
+
+#### Scope boundaries honoured
+
+`getConflicts` untouched (ask #16 still open). No discipline/conduct self-view.
+`resolve-current-term.ts`, both day-enum mappers, and the admin write RBAC all
+reused as-is. No `.i-vm.ts`, `actions.ts` or `page.tsx` file was touched —
+`git show --stat 466f3d1` shows the only presentation files in the diff are
+`child-picker.tsx` and its stories.
+
+#### Notes for fe-lead
+
+- **Cross-repo asks**: #15 and #17 can be marked RESOLVED; #20 stays PARTIAL
+  (class context now real, student display NAME still unavailable to any
+  PARENT-callable endpoint — this is what the ordinal fallback exists for);
+  #22's classId-discovery half is resolved by the enrollment endpoint, the
+  conduct self-view UI itself is still unbuilt.
+- **New ask candidate (product/design, not BE)**: the enrollment endpoint hands
+  us `gradeLevel` and `academicYearLabel` for free; the timetable header shows
+  neither. Worth a small follow-up US if product wants them.
+- **Cross-feature naming collision (informational, not a blocker)**: there are
+  now two different `linked-students` DTOs in the codebase — this feature's
+  ground-truthed `LinkedStudentItemDto` (`{linkId, parentMemberId,
+  studentMemberId, createdAt, classId?, className?}`) and `parent-links`'
+  speculative `LinkedStudentResponseDto` (`{fullName, avatarUrl, studentId}`,
+  un-ground-truthed INT-001 shape from US-E20.2). The features stay decoupled
+  per decision `0017`, but `parent-links` will need a contract re-check when it
+  is wired — its shape does not match the real BE.
+- **Follow-up recommendation (out of scope here, as instructed)**: the
+  conduct/discipline self-view is now unblocked on the data side by
+  `GET /members/{memberId}/enrollment`; it needs its own US (product/design gap,
+  not a BE gap).
