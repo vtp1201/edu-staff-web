@@ -2215,7 +2215,9 @@
     "error": {
       "title": "Could not load invitations",
       "description": "Something went wrong while connecting. Please try again.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "forbiddenTitle": "You do not have permission to view invitations",
+      "forbiddenDescription": "Your account is not allowed to view this school’s invitations. Contact a school administrator if you believe this is a mistake."
     },
     "sendDialog": {
       "title": "Send invitations",
@@ -2248,7 +2250,8 @@
       "revokeNotFoundRace": "Cannot revoke the invitation (it may already be processed)",
       "revokeNetworkError": "Could not revoke the invitation. Please try again.",
       "resendRateLimited": "This invitation has been resent too many times. Please try again in {seconds} seconds.",
-      "resendRateLimitedNoWait": "This invitation has been resent too many times. Please try again later."
+      "resendRateLimitedNoWait": "This invitation has been resent too many times. Please try again later.",
+      "forbidden": "You do not have permission to perform this action."
     },
     "revokeDialog": {
       "title": "Revoke this invitation?",

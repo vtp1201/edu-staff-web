@@ -2215,7 +2215,9 @@
     "error": {
       "title": "Không tải được danh sách lời mời",
       "description": "Đã xảy ra lỗi khi kết nối. Vui lòng thử lại.",
-      "retry": "Thử lại"
+      "retry": "Thử lại",
+      "forbiddenTitle": "Không có quyền xem danh sách lời mời",
+      "forbiddenDescription": "Tài khoản của bạn không được phép xem lời mời của trường này. Liên hệ quản trị viên nhà trường nếu bạn cho rằng đây là sai sót."
     },
     "sendDialog": {
       "title": "Gửi lời mời tham gia",
@@ -2248,7 +2250,8 @@
       "revokeNotFoundRace": "Không thể thu hồi lời mời (có thể đã được xử lý)",
       "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại.",
       "resendRateLimited": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau {seconds} giây.",
-      "resendRateLimitedNoWait": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau."
+      "resendRateLimitedNoWait": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau.",
+      "forbidden": "Bạn không có quyền thực hiện hành động này."
     },
     "revokeDialog": {
       "title": "Thu hồi lời mời?",

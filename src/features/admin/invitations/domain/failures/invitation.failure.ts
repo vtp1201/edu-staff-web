@@ -22,5 +22,13 @@ export type InvitationFailure =
   | { type: "rate-limited"; retryAfterSeconds?: number }
   /** 400 `invalid_request_parameters` — malformed cursor/limit/status (defensive). */
   | { type: "invalid-request" }
+  /**
+   * 403 `forbidden_action` — the caller's real role/tenant scope does not allow
+   * this list/mutation (AC-8, ADR 0063 defense-in-depth). Near-unreachable
+   * because the route + every Server Action is already `admin`-gated, but it
+   * MUST keep its own identity: retrying a 403 can never succeed, so
+   * presentation renders a distinct error state with NO retry control.
+   */
+  | { type: "forbidden" }
   | { type: "validation"; fields: { field: string; message: string }[] }
   | { type: "unknown" };

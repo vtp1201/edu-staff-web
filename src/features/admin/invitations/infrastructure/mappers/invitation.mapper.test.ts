@@ -66,8 +66,11 @@ describe("invitation.mapper", () => {
     expect(toInvitationFailure({ type: "network-error" })).toEqual({
       type: "network-error",
     });
+    // AC-8: a real 403 `forbidden_action` keeps its own identity — it must NOT
+    // collapse into `unknown` (which renders a retry button that can never
+    // succeed).
     expect(toInvitationFailure({ type: "forbidden" })).toEqual({
-      type: "unknown",
+      type: "forbidden",
     });
     expect(toInvitationFailure(new Error("boom"))).toEqual({ type: "unknown" });
   });

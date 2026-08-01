@@ -281,6 +281,33 @@ export const ErrorPersistsOnRetryFailure: Story = {
   },
 };
 
+/** 5c. Forbidden list (403 `forbidden_action`, AC-8) — its OWN copy and NO retry
+ *  control at all: a 403 can never change on retry, so offering the button would
+ *  promise something impossible. Near-unreachable (route + Server Action are both
+ *  `admin`-gated) but must degrade honestly. */
+export const ForbiddenListNoRetry: Story = {
+  args: {
+    ...baseProps,
+    initialLoadFailed: true,
+    onRefresh: async () => ({ ok: false, errorKey: "forbidden" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(
+        canvas.getByText("Không có quyền xem danh sách lời mời"),
+      ).toBeInTheDocument(),
+    );
+    // Distinct from the generic transport-error copy…
+    await expect(
+      canvas.queryByText("Không tải được danh sách lời mời"),
+    ).toBeNull();
+    // …and with no retry affordance anywhere in the error card.
+    await expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
+    await expect(canvas.queryByRole("table")).toBeNull();
+  },
+};
+
 /** 6. Send dialog — valid chip, invalid chip + inline error, paste-multiple. */
 export const SendDialogChipStates: Story = {
   args: baseProps,
@@ -623,6 +650,32 @@ export const ResendNetworkError: Story = {
   },
 };
 
+/** 10d2. Resend — 403 (real `forbidden_action`, or the Server Action's own
+ *  `requireRole` short-circuit): its own copy, row unchanged, NO refetch. */
+export const ResendForbidden: Story = {
+  args: {
+    ...baseProps,
+    onResend: async () => ({ ok: false, errorKey: "forbidden" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Gửi lại lời mời/i })[0],
+    );
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(
+        body.getByText("Bạn không có quyền thực hiện hành động này."),
+      ).toBeInTheDocument(),
+    );
+    // NOT the generic transport copy, and the row never flips to Pending.
+    await expect(
+      body.queryByText("Không thể gửi lại lời mời. Vui lòng thử lại."),
+    ).toBeNull();
+    await expect(canvas.getAllByText("Hết hạn").length).toBeGreaterThan(0);
+  },
+};
+
 /** 10e. Resend race — verifies the reconciliation refetch actually fires
  *  (AC-005.4), not just the toast. Counts `onRefresh` invocations before vs.
  *  after the race error settles. */
@@ -754,6 +807,37 @@ export const RevokeNetworkError: Story = {
     await expect(
       within(dialog).getByRole("button", { name: /thử lại/i }),
     ).toBeInTheDocument();
+  },
+};
+
+/** 11d2. Revoke — 403: dialog stays open with a `forbidden`-tone slot, which
+ *  force-disables confirm and mounts NO retry (unlike the transient path). */
+export const RevokeForbidden: Story = {
+  args: {
+    ...baseProps,
+    onRevoke: async () => ({ ok: false, errorKey: "forbidden" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Thu hồi lời mời/i })[0],
+    );
+    const body = within(document.body);
+    const dialog = await body.findByRole("alertdialog");
+    const confirm = within(dialog).getByRole("button", {
+      name: "Thu hồi lời mời",
+    });
+    await userEvent.click(confirm);
+    await waitFor(() =>
+      expect(
+        within(dialog).getByText("Bạn không có quyền thực hiện hành động này."),
+      ).toBeInTheDocument(),
+    );
+    // No retry control, and confirm can't be re-fired to bypass that.
+    await expect(
+      within(dialog).queryByRole("button", { name: /thử lại/i }),
+    ).toBeNull();
+    await expect(confirm).toBeDisabled();
   },
 };
 

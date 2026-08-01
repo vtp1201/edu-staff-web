@@ -109,6 +109,10 @@ export function toInvitationFailure(err: unknown): InvitationFailure {
       };
     case "invalid-request":
       return { type: "invalid-request" };
+    // 403 `forbidden_action` (AC-8). Keeps its own identity instead of falling
+    // through to `unknown`, whose UI offers a retry a 403 can never satisfy.
+    case "forbidden":
+      return { type: "forbidden" };
     case "network-error":
       return { type: "network-error" };
     default:

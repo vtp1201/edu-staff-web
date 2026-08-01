@@ -92,7 +92,15 @@ export function InvitationsScreen({
   const [revokeTarget, setRevokeTarget] = useState<InvitationRowVM | null>(
     null,
   );
-  const [revokeError, setRevokeError] = useState<string | null>(null);
+  /**
+   * Inline revoke error. Carries a TONE because 403 must not offer a retry: a
+   * `forbidden` slot force-disables confirm and mounts no retry control, while
+   * `transient` keeps the retry (AC-006.7).
+   */
+  const [revokeError, setRevokeError] = useState<{
+    tone: "forbidden" | "transient";
+    message: string;
+  } | null>(null);
 
   // Seed ONLY the tab RSC actually rendered ("all"), and only if that fetch
   // succeeded — every other tab runs a normal cold client fetch.
@@ -158,6 +166,12 @@ export function InvitationsScreen({
     mutationFn: (id: string) => onResend(id),
     onSuccess: (res, id) => {
       if (!res.ok) {
+        if (res.errorKey === "forbidden") {
+          // 403 (or the action's own `requireRole` short-circuit): distinct copy,
+          // no refetch — retrying cannot change an authorization verdict.
+          toast.error(t("toast.forbidden"));
+          return;
+        }
         if (res.errorKey === "rate-limited") {
           // 429: the request was rejected BEFORE any server-side change — a
           // distinct toast, no refetch, and deliberately no lockout timer (the
@@ -198,10 +212,16 @@ export function InvitationsScreen({
           toast.error(t("toast.revokeNotFoundRace"));
           setRevokeTarget(null);
           invalidate(); // AC-006.6
+        } else if (res.errorKey === "forbidden") {
+          // 403: dialog stays open with a NO-RETRY slot (confirm force-disabled).
+          const msg = t("toast.forbidden");
+          toast.error(msg);
+          setRevokeError({ tone: "forbidden", message: msg });
         } else {
           const msg = t("toast.revokeNetworkError");
           toast.error(msg);
-          setRevokeError(msg); // AC-006.7 — dialog stays open with retry
+          // AC-006.7 — dialog stays open with retry
+          setRevokeError({ tone: "transient", message: msg });
         }
         return;
       }
@@ -330,6 +350,15 @@ export function InvitationsScreen({
   const showPartialSearchHint = query.trim() !== "" && hasNextPage;
   // Page-1 failure replaces the table; a later page's failure keeps the rows.
   const showError = listQuery.isError && invitations.length === 0;
+  /**
+   * 403 (AC-8): the caller's real role/tenant scope rejected the read. Retrying
+   * cannot change a 403, so this state gets its OWN copy and NO retry control —
+   * near-unreachable in practice (route + Server Action are both `admin`-gated),
+   * but it must not degrade into "generic error + a button that always fails".
+   */
+  const isForbidden =
+    (listQuery.error as unknown as ThrownFailure | undefined)?.type ===
+    "forbidden";
   const showLoading = !showError && listQuery.isPending;
   const showEmptyNoInvitations =
     !showError && !showLoading && invitations.length === 0;
@@ -382,9 +411,14 @@ export function InvitationsScreen({
 
       {showError && (
         <ListError
-          title={t("error.title")}
-          description={t("error.description")}
+          title={isForbidden ? t("error.forbiddenTitle") : t("error.title")}
+          description={
+            isForbidden
+              ? t("error.forbiddenDescription")
+              : t("error.description")
+          }
           retryLabel={t("error.retry")}
+          showRetry={!isForbidden}
           shape="bordered-card"
           iconSize={12}
           retryIcon="none"
@@ -494,14 +528,19 @@ export function InvitationsScreen({
         errorSlot={
           revokeError
             ? {
-                tone: "transient",
-                message: revokeError,
-                onRetry: () => {
-                  if (revokeTarget) {
-                    setRevokeError(null);
-                    revokeMutation.mutate(revokeTarget.id);
-                  }
-                },
+                tone: revokeError.tone,
+                message: revokeError.message,
+                // Omitted for `forbidden` — the component mounts no retry for
+                // that tone, and passing a callback would be dead code.
+                onRetry:
+                  revokeError.tone === "transient"
+                    ? () => {
+                        if (revokeTarget) {
+                          setRevokeError(null);
+                          revokeMutation.mutate(revokeTarget.id);
+                        }
+                      }
+                    : undefined,
               }
             : undefined
         }

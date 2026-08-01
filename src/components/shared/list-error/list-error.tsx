@@ -60,6 +60,13 @@ interface ListErrorBaseProps {
   retryButtonSize?: "default" | "sm";
   /** Icon inside the retry button — `rotate` (SD/SA), `refresh` (PL/consent), `none` (invitations). */
   retryIcon?: "rotate" | "refresh" | "none";
+  /**
+   * `false` → the retry control is OMITTED from the DOM entirely (never merely
+   * disabled), for failures a retry can never fix — 403/forbidden-class states.
+   * Mirrors `FeedErrorState`'s established `showRetry` prop. Default `true`, so
+   * every existing caller keeps its retry button unchanged.
+   */
+  showRetry?: boolean;
 }
 
 export type ListErrorProps = ListErrorBaseProps & ListErrorContent;
@@ -106,6 +113,7 @@ export function ListError({
   retryButtonVariant = "outline",
   retryButtonSize = "default",
   retryIcon = "none",
+  showRetry = true,
 }: ListErrorProps) {
   const iconClass = ICON_SIZE_CLASS[iconSize];
   const RetryIcon = retryIcon === "none" ? null : RETRY_ICON[retryIcon];
@@ -157,17 +165,19 @@ export function ListError({
         </>
       )}
 
-      <Button
-        type="button"
-        variant={retryButtonVariant}
-        size={retryButtonSize}
-        onClick={onRetry}
-        // ≥44px touch target on every screen (accessibility.md).
-        className={preset.retry}
-      >
-        {RetryIcon && <RetryIcon className="size-4" aria-hidden="true" />}
-        {retryLabel}
-      </Button>
+      {showRetry && (
+        <Button
+          type="button"
+          variant={retryButtonVariant}
+          size={retryButtonSize}
+          onClick={onRetry}
+          // ≥44px touch target on every screen (accessibility.md).
+          className={preset.retry}
+        >
+          {RetryIcon && <RetryIcon className="size-4" aria-hidden="true" />}
+          {retryLabel}
+        </Button>
+      )}
     </div>
   );
 }

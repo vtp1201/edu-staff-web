@@ -239,7 +239,12 @@ describe("InvitationRepository.listInvitations (US-E18.29, real cursor page)", (
         .fn()
         .mockRejectedValue({ type: "forbidden" } satisfies IamMemberFailure),
     });
-    expect(!(await forbidden.repo.listInvitations()).ok).toBe(true);
+    const forbiddenResult = await forbidden.repo.listInvitations();
+    // AC-8: the exact mapped shape, not merely "not ok" — a 403 must reach
+    // presentation as `forbidden` so the no-retry error state renders.
+    expect(!forbiddenResult.ok && forbiddenResult.failure).toEqual({
+      type: "forbidden",
+    });
 
     const badParams = makeRepo({
       listInvitations: vi.fn().mockRejectedValue({

@@ -154,6 +154,36 @@ export const BoxedIconDarkMode: Story = {
 };
 
 /**
+ * Non-retryable failure (403 forbidden): the retry control is OMITTED from the
+ * DOM entirely, never rendered-then-disabled — a 403 can't change on retry, so a
+ * control would be a dead tab-stop promising something impossible (US-E18.29
+ * AC-8, same "omit, don't disable" rule as `LoadMoreButton`/`FeedErrorState`).
+ */
+export const NoRetryForbidden: Story = {
+  args: {
+    title: "Không có quyền xem danh sách này",
+    description:
+      "Tài khoản của bạn không được phép xem lời mời của trường này. Liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.",
+    retryLabel: "Tải lại",
+    shape: "bordered-card",
+    iconSize: 12,
+    showRetry: false,
+    onRetry: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    await expect(alert).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Không có quyền xem danh sách này"),
+    ).toBeInTheDocument();
+    // No button at all — not a disabled one.
+    await expect(canvas.queryByRole("button")).toBeNull();
+    await expect(canvas.queryByText("Tải lại")).toBeNull();
+  },
+};
+
+/**
  * The `shape` preset supplies the outer card + retry spacing, so no caller
  * repeats a class literal. `inline-card` = SD/SA; `bordered-card` = parent-links
  * / invitations / parent-consent (retry gets `mt-4`).
