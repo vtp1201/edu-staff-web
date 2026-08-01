@@ -87,13 +87,100 @@ describe("TimetableRepository — updateSlot (read-modify-write PUT)", () => {
     expect(body.termId).toBe(TERM_ID);
     expect(body.slots).toEqual([
       { day: "TUE", period: 2, subjectId: "s-keep", teacherMemberId: "t-keep" },
-      { day: "MON", period: 1, subjectId: "s-new", teacherMemberId: "t-new" },
+      {
+        day: "MON",
+        period: 1,
+        subjectId: "s-new",
+        teacherMemberId: "t-new",
+        room: "P.201",
+      },
     ]);
-    // returns the updated cell as a domain slot (room non-persistent → "")
+    // returns the updated cell as a domain slot
     expect(slot.slotKey).toBe("cls-1|0|1");
     expect(slot.subjectId).toBe("s-new");
     expect(slot.teacherId).toBe("t-new");
     expect(slot.room).toBe("");
+  });
+
+  it("persists room through the RMW PUT and reads it back (US-E18.26, ask #17)", async () => {
+    const putResponse: TimetableResponseDto = {
+      classId: "cls-1",
+      termId: TERM_ID,
+      slots: [
+        {
+          day: "TUE",
+          period: 2,
+          subjectId: "s-keep",
+          teacherMemberId: "t-keep",
+          room: "P.101",
+        },
+        {
+          day: "MON",
+          period: 1,
+          subjectId: "s-new",
+          teacherMemberId: "t-new",
+          room: "P.201",
+        },
+      ],
+    };
+    const http = makeHttp({
+      get: vi.fn(async () => ({
+        ...CURRENT,
+        slots: [
+          {
+            day: "TUE" as const,
+            period: 2,
+            subjectId: "s-keep",
+            teacherMemberId: "t-keep",
+            room: "P.101",
+          },
+        ],
+      })),
+      put: vi.fn(async () => putResponse),
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    const slot = await repo.updateSlot("cls-1", "2025-2026", 0, 1, {
+      subjectId: "s-new",
+      teacherId: "t-new",
+      room: "P.201",
+    });
+
+    const [, body] = http.put.mock.calls[0];
+    // The edited cell carries its new room…
+    expect(body.slots).toContainEqual({
+      day: "MON",
+      period: 1,
+      subjectId: "s-new",
+      teacherMemberId: "t-new",
+      room: "P.201",
+    });
+    // …and untouched slots do not lose theirs in the read-modify-write.
+    expect(body.slots).toContainEqual({
+      day: "TUE",
+      period: 2,
+      subjectId: "s-keep",
+      teacherMemberId: "t-keep",
+      room: "P.101",
+    });
+    expect(slot.room).toBe("P.201");
+  });
+
+  it("omits room from the PUT body when the editor left it blank", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => CURRENT),
+      put: vi.fn(async () => CURRENT),
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    await repo.updateSlot("cls-1", "2025-2026", 0, 1, {
+      subjectId: "s-new",
+      teacherId: "t-new",
+      room: "",
+    });
+
+    const [, body] = http.put.mock.calls[0];
+    for (const s of body.slots) expect(s.room).toBeUndefined();
   });
 
   it("maps a 409 TIMETABLE_TEACHER_CONFLICT to the teacher-conflict failure", async () => {

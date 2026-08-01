@@ -54,11 +54,16 @@ export function ChildPicker({
               {child.avatar}
             </span>
             <span className="whitespace-nowrap">
+              {/* Real mode has no student display name (ask #20 residual) —
+                  fall back to a STABLE ordinal label, never a blank line. */}
               <span className="block font-bold text-edu-text-primary text-sm">
-                {child.name}
+                {child.name ??
+                  t("childOrdinalLabel", { ordinal: child.ordinal })}
               </span>
               <span className="block text-[11px] text-edu-text-secondary">
-                {t("classLabel", { className: child.className })}
+                {child.className
+                  ? t("classLabel", { className: child.className })
+                  : t("classPending")}
               </span>
             </span>
           </button>

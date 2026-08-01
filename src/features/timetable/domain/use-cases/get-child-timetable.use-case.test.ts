@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { TimetableChild } from "../entities/timetable-child.entity";
 import type { WeeklyTimetable } from "../entities/weekly-timetable.entity";
 import type { TimetableViewFailure } from "../failures/timetable-view.failure";
@@ -9,6 +9,7 @@ const CHILDREN: TimetableChild[] = [
   {
     childId: "c1",
     name: "Nguyễn Minh Khoa",
+    ordinal: 1,
     classId: "11A2",
     className: "11A2",
     avatar: "NK",
@@ -17,6 +18,7 @@ const CHILDREN: TimetableChild[] = [
   {
     childId: "c2",
     name: "Nguyễn Thu Hà",
+    ordinal: 2,
     classId: "8B1",
     className: "8B1",
     avatar: "NH",
@@ -33,6 +35,7 @@ function repo(
 ): IWeeklyTimetableRepository {
   return {
     getByClass: async (classId) => ttFor(classId),
+    getByMember: async (memberId) => ttFor(memberId),
     getMyTimetable: async () => ttFor("11A2"),
     getByTeacher: async () => ttFor("11A2"),
     getChildren: async () => CHILDREN,
@@ -41,18 +44,39 @@ function repo(
 }
 
 describe("GetChildTimetableUseCase", () => {
-  it("resolves the first child's class and fetches its timetable", async () => {
-    const useCase = new GetChildTimetableUseCase(repo({}));
-    const result = await useCase.execute("c1");
+  it("fetches the selected child BY MEMBER ID, never by classId (US-E18.26)", async () => {
+    const getByMember = vi.fn(async (memberId: string) => ttFor(memberId));
+    const getByClass = vi.fn(async (classId: string) => ttFor(classId));
+    const useCase = new GetChildTimetableUseCase(
+      repo({ getByMember, getByClass }),
+    );
+
+    const result = await useCase.execute("c1", "2026-08-03");
+
+    expect(getByMember).toHaveBeenCalledWith("c1", "2026-08-03");
+    expect(getByClass).not.toHaveBeenCalled();
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.classId).toBe("11A2");
+    if (result.ok) expect(result.data.classId).toBe("c1");
   });
 
-  it("resolves the second child's class (8B1)", async () => {
+  it("resolves the second child by their own memberId", async () => {
     const useCase = new GetChildTimetableUseCase(repo({}));
     const result = await useCase.execute("c2");
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.classId).toBe("8B1");
+    if (result.ok) expect(result.data.classId).toBe("c2");
+  });
+
+  it("still resolves a child whose classId is unknown (no current enrollment)", async () => {
+    const useCase = new GetChildTimetableUseCase(
+      repo({
+        getChildren: async () => [
+          { childId: "c9", ordinal: 1, avatar: "1", color: "primary" },
+        ],
+      }),
+    );
+    const result = await useCase.execute("c9");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.classId).toBe("c9");
   });
 
   it("returns no-child when the childId is not in the roster", async () => {
@@ -61,10 +85,10 @@ describe("GetChildTimetableUseCase", () => {
     expect(result).toEqual({ ok: false, error: { type: "no-child" } });
   });
 
-  it("propagates a thrown not-found failure from getByClass", async () => {
+  it("propagates a thrown not-found failure from getByMember", async () => {
     const useCase = new GetChildTimetableUseCase(
       repo({
-        getByClass: async () => {
+        getByMember: async () => {
           throw { type: "not-found" } satisfies TimetableViewFailure;
         },
       }),
@@ -76,7 +100,7 @@ describe("GetChildTimetableUseCase", () => {
   it("maps a non-typed throw to a network-error failure", async () => {
     const useCase = new GetChildTimetableUseCase(
       repo({
-        getByClass: async () => {
+        getByMember: async () => {
           throw new Error("boom");
         },
       }),

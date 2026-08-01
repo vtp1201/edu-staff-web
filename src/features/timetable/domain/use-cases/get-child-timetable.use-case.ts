@@ -6,8 +6,10 @@ import {
 } from "./timetable-view.result";
 
 /**
- * Parent scope: resolves the selected child's class via the roster, then
- * fetches that class's timetable. `no-child` when the childId is unknown.
+ * Parent scope: validates the selected childId against the roster, then fetches
+ * that child's own week BY MEMBER ID (US-E18.26 — the BE resolves the child's
+ * class server-side, so no classId discovery is needed and a child with no
+ * current enrollment still resolves). `no-child` when the childId is unknown.
  */
 export class GetChildTimetableUseCase {
   constructor(private readonly repo: IWeeklyTimetableRepository) {}
@@ -22,7 +24,7 @@ export class GetChildTimetableUseCase {
       if (!child) return { ok: false, error: { type: "no-child" } };
       return {
         ok: true,
-        data: await this.repo.getByClass(child.classId, weekStart),
+        data: await this.repo.getByMember(child.childId, weekStart),
       };
     } catch (err) {
       return { ok: false, error: toTimetableFailure(err) };

@@ -13,8 +13,17 @@ import type { WeeklyTimetable } from "../entities/weekly-timetable.entity";
  * decision 6) that a real BE `core`/`iam` profile endpoint would back later.
  */
 export interface IWeeklyTimetableRepository {
-  /** Class-scoped fetch (used by the parent view + the real HTTP impl). */
+  /** Class-scoped fetch (contract-correct, currently no caller in this
+   *  feature — the parent view moved to {@link getByMember} in US-E18.26). */
   getByClass(classId: string, weekStart?: string): Promise<WeeklyTimetable>;
+  /**
+   * By-member fetch (US-E18.26) — backs the student self-view (the signed-in
+   * member's own id) and the parent's per-child view (the CHILD's memberId,
+   * never the parent's own; BE US-153's `TIMETABLE_CHILD_AMBIGUOUS` 422 is
+   * therefore defensive-only from this client). Distinct from
+   * {@link getByClass}, which is classId-keyed.
+   */
+  getByMember(memberId: string, weekStart?: string): Promise<WeeklyTimetable>;
   /** Student self-scope — resolves the signed-in student's class server-side. */
   getMyTimetable(weekStart?: string): Promise<WeeklyTimetable>;
   /**

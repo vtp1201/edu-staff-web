@@ -73,3 +73,29 @@ describe("MockTimetableRepository (integration)", () => {
     expect(data.conflicts).toHaveLength(3);
   });
 });
+
+/**
+ * Regression guard (US-E18.26, planner correction #1): the MOCK repository has
+ * ALWAYS round-tripped `room` — the field was dropped one layer up, in
+ * `TimetableSlotMapper`, not here. This test pins the working behaviour so a
+ * future reader does not "fix" a mock that was never broken.
+ */
+describe("MockTimetableRepository — room round-trip", () => {
+  beforeEach(() => {
+    MockTimetableRepository.reset();
+  });
+
+  it("persists room on updateSlot and returns it from a subsequent getTimetable", async () => {
+    const repo = new MockTimetableRepository();
+
+    const saved = await repo.updateSlot("cls-10a1", YEAR, 3, 2, {
+      subjectId: "sub-1",
+      teacherId: "tch-9",
+      room: "P.404",
+    });
+    expect(saved.room).toBe("P.404");
+
+    const data = await repo.getTimetable("cls-10a1", YEAR);
+    expect(data.slots["cls-10a1|3|2"]?.room).toBe("P.404");
+  });
+});

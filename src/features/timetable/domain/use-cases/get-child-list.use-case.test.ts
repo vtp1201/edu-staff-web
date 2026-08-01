@@ -7,6 +7,7 @@ import { GetChildListUseCase } from "./get-child-list.use-case";
 const CHILDREN: TimetableChild[] = [
   {
     childId: "c1",
+    ordinal: 1,
     name: "Nguyễn Minh Khoa",
     classId: "11A2",
     className: "11A2",
@@ -15,6 +16,7 @@ const CHILDREN: TimetableChild[] = [
   },
   {
     childId: "c2",
+    ordinal: 2,
     name: "Nguyễn Thu Hà",
     classId: "8B1",
     className: "8B1",
@@ -28,6 +30,7 @@ function repo(
 ): IWeeklyTimetableRepository {
   return {
     getByClass: async () => ({}) as WeeklyTimetable,
+    getByMember: async () => ({}) as WeeklyTimetable,
     getMyTimetable: async () => ({}) as WeeklyTimetable,
     getByTeacher: async () => ({}) as WeeklyTimetable,
     getChildren: async () => CHILDREN,

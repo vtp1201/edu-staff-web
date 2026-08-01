@@ -9,38 +9,73 @@ import {
 } from "@/bootstrap/lib/api-envelope";
 import type { TimetableChild } from "../../domain/entities/timetable-child.entity";
 import type { WeeklyTimetable } from "../../domain/entities/weekly-timetable.entity";
+import type { TimetableViewFailure } from "../../domain/failures/timetable-view.failure";
 import type { IWeeklyTimetableRepository } from "../../domain/repositories/i-weekly-timetable.repository";
+import type { LinkedStudentsResponseDto } from "../dtos/linked-student-item.dto";
+import type { MemberEnrollmentResponseDto } from "../dtos/member-enrollment-response.dto";
+import type { MemberTimetableResponseDto } from "../dtos/member-timetable-response.dto";
 import type {
   ClassSummaryDto,
   RealTimetableResponseDto,
 } from "../dtos/real-timetable-response.dto";
-import { mapRealWeeklyTimetable } from "../mappers/real-weekly-timetable.mapper";
+import { toTimetableChildren } from "../mappers/linked-student.mapper";
+import {
+  mapMemberWeeklyTimetable,
+  mapRealWeeklyTimetable,
+} from "../mappers/real-weekly-timetable.mapper";
 
 /** Resolves the mandatory `termId` from a date (default: today) — same
  *  contract as the admin builder's `TermIdResolver`; injected by DI. */
 export type TermIdResolver = (date?: Date) => Promise<string>;
 
-function toNotFoundOrNetworkError(err: unknown): {
-  type: "not-found" | "network-error";
-} {
+/**
+ * Map a normalised `ApiError` (by UPPER_SNAKE `error.code`, never by message)
+ * to this feature's three-member failure union.
+ *
+ * - `TIMETABLE_MEMBER_NOT_RESOLVABLE` (404, BE US-153) → `not-found`: the
+ *   authorized caller's target has neither teaching slots nor an enrollment,
+ *   which is exactly the view's "no published timetable" empty state.
+ * - `TIMETABLE_FORBIDDEN` (403) → `not-found`: BE deliberately returns the same
+ *   403 whether the target exists or not, so the client must not surface a
+ *   distinguishable state either.
+ * - `TIMETABLE_CHILD_AMBIGUOUS` (422, BE US-153) → `network-error`. Rationale
+ *   (US-E18.26 engineer's call, confirming the planner's): this client NEVER
+ *   calls the by-member endpoint with a parent's own memberId — the parent view
+ *   always resolves a specific child's `studentMemberId` from `linked-students`
+ *   first — so the code is defensively unreachable. Minting a dedicated
+ *   `ambiguous-child` failure type would ripple through
+ *   `TimetableErrorKey`'s exhaustive `Record<>`s in two screens plus i18n for a
+ *   state that cannot render; the generic error banner is the honest surface.
+ */
+function toTimetableViewFailure(err: unknown): TimetableViewFailure {
   const code = errorCodeOf(err);
-  if (code === "TIMETABLE_SLOT_NOT_FOUND" || code === "TIMETABLE_FORBIDDEN") {
+  if (
+    code === "TIMETABLE_SLOT_NOT_FOUND" ||
+    code === "TIMETABLE_FORBIDDEN" ||
+    code === "TIMETABLE_MEMBER_NOT_RESOLVABLE"
+  ) {
     return { type: "not-found" };
   }
   return { type: "network-error" };
 }
 
 /**
- * Real HTTP timetable-view repository (US-E18.11). Only `getByClass` and
- * `getByTeacher` are wireable — ground-truthed against the real `core`
- * contract, there is NO `/me`/`/teacher/me`/`/my-children` self-scope endpoint
- * (cross-repo ask #15): `GET /classes` returns 403 `TIMETABLE_FORBIDDEN`-style
- * `ErrClassForbidden` for any STUDENT/PARENT actor (only ADMIN/TEACHER may call
- * it), and `GET /members/{id}/linked-students` carries no classId at all.
- * `getMyTimetable`/`getChildren` therefore throw unconditionally — the DI
- * factory must route those two operations to the mock repository regardless
- * of `NEXT_PUBLIC_USE_MOCK` (same "force-mock half of one repository" pattern
- * as US-E18.8/US-E18.9's fully-blocked stubs, but partial here).
+ * Real HTTP timetable-view repository (US-E18.11, un-mocked by US-E18.26).
+ *
+ * Every operation except `getByClass` is now genuinely wireable:
+ * - `getByMember` → `GET /members/{memberId}/timetable?termId=` (BE US-153).
+ * - `getMyTimetable` → the same call for the signed-in member, COMPOSED with
+ *   `GET /members/{selfId}/enrollment` (BE US-148) purely for class display
+ *   metadata; the enrollment call degrades independently and never fails the
+ *   screen.
+ * - `getByTeacher` → the same by-member call plus ONE `GET /classes` used only
+ *   as a `classId → className` lookup (was a 1+N per-class fan-out).
+ * - `getChildren` → `GET /members/{selfId}/linked-students` (BE US-148's
+ *   class-enriched shape).
+ *
+ * `getByClass` is kept (contract-correct, still routed to mock by the hybrid)
+ * although nothing in this feature calls it any more — same "kept for the day a
+ * direct class-scoped use-case is added" posture as US-E18.11.
  */
 export class RealWeeklyTimetableRepository
   implements IWeeklyTimetableRepository
@@ -56,9 +91,7 @@ export class RealWeeklyTimetableRepository
     weekStart?: string,
   ): Promise<WeeklyTimetable> {
     try {
-      const termId = await this.resolveTermId(
-        weekStart ? new Date(weekStart) : undefined,
-      );
+      const termId = await this.termFor(weekStart);
       const dto = (await this.http.get(
         TIMETABLE_VIEW_EP.classTimetable(classId),
         {
@@ -67,91 +100,156 @@ export class RealWeeklyTimetableRepository
       )) as unknown as RealTimetableResponseDto;
       return mapRealWeeklyTimetable(dto, classId);
     } catch (err) {
-      throw toNotFoundOrNetworkError(err);
+      throw toTimetableViewFailure(err);
     }
   }
 
   /**
-   * Fan-out: `GET /classes` is TEACHER-role auto-filtered server-side to
-   * "classes I'm assigned to" (ground-truthed in
-   * `list_classes.go`'s `listForTeacher`, same endpoint/precedent as
-   * `teacher-class.repository.ts`'s `listMyClasses`). For each class, fetch
-   * the class timetable and keep only the slots this teacher (`currentUserId`
-   * — JWT `sub`, confirmed to equal `memberId`) actually teaches, tagging
-   * `className` from the class list. Merged into one composite week grid.
-   *
-   * The filter compares against the RAW wire `teacherMemberId` (not the
-   * mapped slot's `teacherName` display field) — deliberately, so this stays
-   * correct the day a real teacher-name join replaces the current id-as-name
-   * fallback in `mapRealWeeklyTimetable` (tech-lead review finding, US-E18.11).
+   * By-member primitive (US-E18.26). Used directly by the parent flow with the
+   * CHILD's memberId (never the parent's own — see the ambiguous-child note on
+   * {@link toTimetableViewFailure}) and internally by the two self-scope
+   * methods. No `classId → className` resolution here: callers that can
+   * resolve names compose their own lookup (see `getByTeacher`/`getMyTimetable`).
    */
-  async getByTeacher(weekStart?: string): Promise<WeeklyTimetable> {
+  async getByMember(
+    memberId: string,
+    weekStart?: string,
+  ): Promise<WeeklyTimetable> {
     try {
-      // No verified member id (missing/unreadable token) — surface honestly
-      // rather than silently returning an empty week grid (tech-lead review
-      // CONSIDER finding, US-E18.11).
-      if (!this.currentUserId) throw { type: "not-found" };
-
-      const classes = await this.fetchAllPages<ClassSummaryDto>(
-        TIMETABLE_VIEW_EP.myClasses,
-      );
-      if (classes.length === 0) throw { type: "not-found" };
-
-      const termId = await this.resolveTermId(
-        weekStart ? new Date(weekStart) : undefined,
-      );
-      const slots: WeeklyTimetable["slots"] = {};
-      for (const cls of classes) {
-        const dto = (await this.http.get(
-          TIMETABLE_VIEW_EP.classTimetable(cls.classId),
-          { params: { termId } },
-        )) as unknown as RealTimetableResponseDto;
-        const myRawSlots: RealTimetableResponseDto = {
-          ...dto,
-          slots: dto.slots.filter(
-            (s) => s.teacherMemberId === this.currentUserId,
-          ),
-        };
-        const mapped = mapRealWeeklyTimetable(myRawSlots, cls.name);
-        for (const [dayKey, periods] of Object.entries(mapped.slots)) {
-          for (const [periodKey, slot] of Object.entries(periods)) {
-            if (!slot) continue;
-            const dayIndex = Number(dayKey);
-            const periodNumber = Number(periodKey);
-            slots[dayIndex] ??= {};
-            slots[dayIndex][periodNumber] = { ...slot, className: cls.name };
-          }
-        }
-      }
-      return {
-        classId: this.currentUserId ?? "me",
-        className: this.currentUserId ?? "",
-        slots,
-      };
+      const dto = await this.fetchMemberTimetable(memberId, weekStart);
+      return mapMemberWeeklyTimetable(dto, () => undefined, {
+        classId: memberId,
+        className: "",
+      });
     } catch (err) {
-      if (err && typeof err === "object" && "type" in err) throw err;
-      throw toNotFoundOrNetworkError(err);
+      throw toTimetableViewFailure(err);
     }
   }
 
-  /** Force-blocked — no self-scope discovery endpoint exists (ask #15). */
-  async getMyTimetable(): Promise<WeeklyTimetable> {
-    throw new Error(
-      "RealWeeklyTimetableRepository.getMyTimetable is unreachable — no BE " +
-        "self-scope endpoint exists (ask #15); the DI factory must route " +
-        "student self-view to MockWeeklyTimetableRepository unconditionally.",
+  /**
+   * Student self-scope. Two INDEPENDENT calls: the by-member week (primary —
+   * its failure propagates) and the member's enrollment (secondary — supplies
+   * `className`/`classId` for the header only, and degrades to empty metadata
+   * on ANY failure, including `ROSTER_ACCESS_FORBIDDEN` /
+   * `ROSTER_STUDENT_NOT_ENROLLED`; a missing class caption must never blank out
+   * a week the student can legitimately see).
+   *
+   * `gradeLevel` is also returned by the enrollment call but has no slot in
+   * this feature's `WeeklyTimetable` entity or in any timetable screen today —
+   * deliberately unused rather than inventing a UI for it (follow-up
+   * recommendation, not built here).
+   */
+  async getMyTimetable(weekStart?: string): Promise<WeeklyTimetable> {
+    // No verified member id (missing/unreadable token) — surface honestly
+    // rather than silently returning an empty week grid (US-E18.11 posture).
+    if (!this.currentUserId)
+      throw { type: "not-found" } as TimetableViewFailure;
+    const selfId = this.currentUserId;
+
+    let dto: MemberTimetableResponseDto;
+    try {
+      dto = await this.fetchMemberTimetable(selfId, weekStart);
+    } catch (err) {
+      throw toTimetableViewFailure(err);
+    }
+
+    const enrollment = await this.tryFetchEnrollment(selfId);
+    return mapMemberWeeklyTimetable(
+      dto,
+      (classId) =>
+        classId === enrollment?.classId ? enrollment.className : undefined,
+      {
+        classId: enrollment?.classId ?? selfId,
+        className: enrollment?.className ?? "",
+      },
     );
   }
 
-  /** Force-blocked — no classId/display-name resolution for a parent's linked
-   *  students exists (ask #15). */
+  /**
+   * Teacher self-scope, simplified in US-E18.26: the BE now resolves the whole
+   * personal week server-side from the `teacher_schedule` clone (slots may span
+   * several classes, hence the per-slot `classId`), so the old 1-per-class
+   * timetable fan-out is gone. `GET /classes` (TEACHER-auto-filtered to
+   * "classes I'm assigned to") is KEPT purely as a `classId → className`
+   * display lookup. Net: 2 HTTP calls total regardless of class count (was 1+N).
+   */
+  async getByTeacher(weekStart?: string): Promise<WeeklyTimetable> {
+    if (!this.currentUserId)
+      throw { type: "not-found" } as TimetableViewFailure;
+    const teacherId = this.currentUserId;
+    try {
+      const [dto, classes] = await Promise.all([
+        this.fetchMemberTimetable(teacherId, weekStart),
+        this.fetchAllPages<ClassSummaryDto>(TIMETABLE_VIEW_EP.myClasses),
+      ]);
+      const classNames = new Map(classes.map((c) => [c.classId, c.name]));
+      return mapMemberWeeklyTimetable(
+        dto,
+        (classId) => classNames.get(classId),
+        { classId: teacherId, className: teacherId },
+      );
+    } catch (err) {
+      throw toTimetableViewFailure(err);
+    }
+  }
+
+  /**
+   * Parent's roster. `GET /members/{selfId}/linked-students` returns a FLAT
+   * `{ links: [...] }` object — NOT cursor-paginated (ground-truthed against
+   * `LinkedStudentsResponse` in `services/core/docs/openapi.yaml`, 2026-08-01),
+   * so no `raw: true` / `fetchAllPages` handling applies and no axios config is
+   * sent at all.
+   *
+   * `PARENTLINK_FORBIDDEN` → `no-child`: the BE returns the same 403 for "not
+   * this parent" as for a probe, so the honest client state is "no roster to
+   * show" (which the view collapses to its empty state), not a distinguishable
+   * permission error. An unidentifiable caller degrades the same way, without
+   * touching the network.
+   */
   async getChildren(): Promise<TimetableChild[]> {
-    throw new Error(
-      "RealWeeklyTimetableRepository.getChildren is unreachable — no BE " +
-        "endpoint resolves a linked student's classId/name (ask #15); the DI " +
-        "factory must route the parent view to MockWeeklyTimetableRepository " +
-        "unconditionally.",
-    );
+    if (!this.currentUserId) throw { type: "no-child" } as TimetableViewFailure;
+    try {
+      const dto = (await this.http.get(
+        TIMETABLE_VIEW_EP.linkedStudents(this.currentUserId),
+      )) as unknown as LinkedStudentsResponseDto;
+      return toTimetableChildren(dto?.links ?? []);
+    } catch (err) {
+      if (errorCodeOf(err) === "PARENTLINK_FORBIDDEN") {
+        throw { type: "no-child" } as TimetableViewFailure;
+      }
+      throw { type: "network-error" } as TimetableViewFailure;
+    }
+  }
+
+  private termFor(weekStart?: string): Promise<string> {
+    return this.resolveTermId(weekStart ? new Date(weekStart) : undefined);
+  }
+
+  private async fetchMemberTimetable(
+    memberId: string,
+    weekStart?: string,
+  ): Promise<MemberTimetableResponseDto> {
+    const termId = await this.termFor(weekStart);
+    return (await this.http.get(TIMETABLE_VIEW_EP.memberTimetable(memberId), {
+      params: { termId },
+    })) as unknown as MemberTimetableResponseDto;
+  }
+
+  /** Secondary, best-effort class-metadata read — never throws (see
+   *  {@link getMyTimetable}). `yearLabel` is omitted, so the BE resolves the
+   *  member's LATEST enrolled academic-year label (greatest lexicographic
+   *  label, not necessarily the tenant's calendar-active year — documented
+   *  BE caveat, US-148). */
+  private async tryFetchEnrollment(
+    memberId: string,
+  ): Promise<MemberEnrollmentResponseDto | null> {
+    try {
+      return (await this.http.get(
+        TIMETABLE_VIEW_EP.memberEnrollment(memberId),
+      )) as unknown as MemberEnrollmentResponseDto;
+    } catch {
+      return null;
+    }
   }
 
   /** Drain a cursor-paginated list endpoint into a single array. `raw: true`
@@ -176,22 +274,13 @@ export class RealWeeklyTimetableRepository
 }
 
 /**
- * Hybrid DI composite (US-E18.11) — the pattern already used by
- * `admin-roster.di.ts`/`class-management.di.ts`: real for the one genuinely
- * wireable operation (`getByTeacher`), explicit force-mock for the rest.
- *
- * **Implementation-time correction to the story packet's scope table**: this
- * feature's `getByClass` is called ONLY by `GetChildTimetableUseCase` (the
- * parent flow) — there is no separate direct class-scoped view use-case in
- * `features/timetable` (that already exists, wired real, in the ADMIN builder
- * feature — `features/admin/timetable` — this US). Since `getChildren` is
- * permanently mock (ask #15) and returns mock-fixture classIds (e.g. `"11A2"`),
- * a real `getByClass` fed one of those ids would always 404/403 against the
- * real BE — routing `getByClass` real here would BREAK the parent flow, not
- * wire it. `getByClass` therefore also routes to mock in this composite (the
- * `RealWeeklyTimetableRepository.getByClass` implementation is kept — it is
- * contract-correct and reusable the day a direct class-scoped use-case is
- * added to this feature — but nothing in production calls it yet).
+ * Hybrid DI composite. US-E18.11 force-mocked three of four operations
+ * (cross-repo ask #15); US-E18.26 un-mocked all of them — only `getByClass`
+ * still routes to mock, and only because NOTHING calls it: the parent flow now
+ * addresses the child's `memberId` directly. Keeping the composite (rather
+ * than dropping to the bare real repo) documents that one remaining
+ * asymmetry explicitly and keeps the seam for the day a direct class-scoped
+ * use-case is added to this feature.
  */
 export class HybridWeeklyTimetableRepository
   implements IWeeklyTimetableRepository
@@ -201,23 +290,25 @@ export class HybridWeeklyTimetableRepository
     private readonly mock: IWeeklyTimetableRepository,
   ) {}
 
-  /** Force-mock — `getChildren` (its only caller) is mock, so a real class-
-   *  scoped fetch would always fail on the mock roster's fixture ids. */
+  /** Force-mock — no caller in this feature; the real implementation is kept
+   *  contract-correct but unexercised (US-E18.26). */
   getByClass(classId: string, weekStart?: string): Promise<WeeklyTimetable> {
     return this.mock.getByClass(classId, weekStart);
+  }
+
+  getByMember(memberId: string, weekStart?: string): Promise<WeeklyTimetable> {
+    return this.real.getByMember(memberId, weekStart);
   }
 
   getByTeacher(weekStart?: string): Promise<WeeklyTimetable> {
     return this.real.getByTeacher(weekStart);
   }
 
-  /** Force-mock — no BE self-scope endpoint exists (ask #15). */
   getMyTimetable(weekStart?: string): Promise<WeeklyTimetable> {
-    return this.mock.getMyTimetable(weekStart);
+    return this.real.getMyTimetable(weekStart);
   }
 
-  /** Force-mock — no BE classId/name resolution for linked students (ask #15). */
   getChildren(): Promise<TimetableChild[]> {
-    return this.mock.getChildren();
+    return this.real.getChildren();
   }
 }

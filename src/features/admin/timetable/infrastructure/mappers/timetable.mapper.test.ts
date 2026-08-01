@@ -22,11 +22,22 @@ describe("TimetableSlotMapper.toEntity", () => {
     expect(slot.classId).toBe("cls-1");
   });
 
-  it("maps teacherMemberId → teacherId and marks room as non-persistent (empty)", () => {
+  it("maps teacherMemberId → teacherId", () => {
     const slot = TimetableSlotMapper.toEntity(SLOT_DTO, "cls-1");
     expect(slot.teacherId).toBe("tch-uuid");
     expect(slot.subjectId).toBe("sub-uuid");
-    expect(slot.room).toBe("");
+  });
+
+  it("reads the wire room (US-E18.26 — persisted since BE US-153)", () => {
+    const slot = TimetableSlotMapper.toEntity(
+      { ...SLOT_DTO, room: "P.201" },
+      "cls-1",
+    );
+    expect(slot.room).toBe("P.201");
+  });
+
+  it("falls an omitted wire room back to the entity's empty-string convention", () => {
+    expect(TimetableSlotMapper.toEntity(SLOT_DTO, "cls-1").room).toBe("");
   });
 });
 
@@ -41,15 +52,28 @@ describe("TimetableSlotMapper.toRequest", () => {
     room: "P.201",
   };
 
-  it("converts the domain slot to a wire request (day → enum, drops room)", () => {
+  it("converts the domain slot to a wire request (day → enum) and CARRIES room", () => {
     const req = TimetableSlotMapper.toRequest(entity);
     expect(req).toEqual({
       day: "MON",
       period: 1,
       subjectId: "sub-uuid",
       teacherMemberId: "tch-uuid",
+      room: "P.201",
     });
-    expect(req).not.toHaveProperty("room");
+  });
+
+  it("omits room entirely when the domain slot has none (empty string is not sent)", () => {
+    const req = TimetableSlotMapper.toRequest({ ...entity, room: "" });
+    expect(req.room).toBeUndefined();
+  });
+
+  it("round-trips room through toRequest → toEntity", () => {
+    const back = TimetableSlotMapper.toEntity(
+      TimetableSlotMapper.toRequest(entity),
+      "cls-1",
+    );
+    expect(back.room).toBe("P.201");
   });
 
   it("round-trips a slot through toRequest → toEntity (identity fields)", () => {

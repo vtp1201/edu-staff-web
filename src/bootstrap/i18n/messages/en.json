@@ -4433,8 +4433,10 @@
   "timetableView": {
     "academicYear": "Academic Year",
     "caption": "Read-only timetable for class {className}.",
+    "childOrdinalLabel": "Child {ordinal}",
     "childPickerLabel": "Select a child to view their timetable",
     "classLabel": "Class {className}",
+    "classPending": "No class yet",
     "days": {
       "fri": "Fri",
       "mon": "Mon",
