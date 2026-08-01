@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { TimetableData } from "../../domain/entities/timetable.entity";
 import type { TimetableSlot } from "../../domain/entities/timetable-slot.entity";
@@ -148,5 +148,55 @@ export const WithSlotEditorOpen: Story = {
     await expect(
       within(dialog).getByText(messages.timetable.slotEditor.teacher),
     ).toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.26 (QA gap): the repository/mapper layer proves `room` round-trips
+ * through the RMW PUT, but nothing exercised the actual UI wiring — the
+ * `SlotEditorDialog`'s room `<Input>` reading the existing slot's room and
+ * `handleSave` forwarding the EDITED room value to `updateSlotAction`. This
+ * story closes that gap: open the editor on an already-filled cell (room
+ * "P.201"), confirm the field is pre-populated, change it, save, and assert
+ * the action receives the new room untouched by any other field.
+ */
+export const RoomFieldEditAndSave: Story = {
+  args: {
+    vm: vmFor("cls-10a1", CONFLICT_SLOTS),
+    actions: {
+      updateSlotAction: fn(async () => ({ ok: true as const })),
+      clearSlotAction: async () => ({ ok: true as const }),
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    // Mon-1 (day 0, period 1) is "sub-math"/"tch-1"/"P.201" per CONFLICT_SLOTS.
+    const cell = canvas.getAllByText("Toán")[0];
+    await userEvent.click(cell);
+
+    const dialog = await within(document.body).findByRole("dialog");
+    const roomInput = within(dialog).getByLabelText(
+      messages.timetable.slotEditor.room,
+    ) as HTMLInputElement;
+    // The existing slot's room is read back into the field, not left blank.
+    await expect(roomInput).toHaveValue("P.201");
+
+    await userEvent.clear(roomInput);
+    await userEvent.type(roomInput, "P.305");
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: messages.timetable.slotEditor.save,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(args.actions.updateSlotAction).toHaveBeenCalledWith(
+        "cls-10a1",
+        YEAR,
+        0,
+        1,
+        { subjectId: "sub-math", teacherId: "tch-1", room: "P.305" },
+      ),
+    );
   },
 };

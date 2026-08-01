@@ -1479,3 +1479,138 @@ which is exactly the standard this gate wants. The one real defect found (parent
 real-mode blank class name) was small and is fixed in-review with tests. Approval is
 conditional only on `fe-lead` landing the `docs/TEST_MATRIX.md` row + `## Status` flip
 before the story closes, and logging the `parent-links` contract drift as a follow-up.
+
+## QA Verdict (fe-qa-playwright, 2026-08-01)
+
+### 1. Gate check
+
+Tech-Lead Review status: **APPROVED** (§9 above). Proceeding.
+
+### 2. Method
+
+Re-verified by reading and running the actual test files named in the fe-planner's
+"TDD test file plan" (not by trusting the Evidence/Tech-Lead prose), then ran both
+suites myself on `feat/us-e18.26-timetable-by-member-room-wiring`.
+
+### 3. File-by-file re-verification
+
+| File | Confirmed exists | Confirmed asserts the claim |
+| --- | --- | --- |
+| `get-child-timetable.use-case.test.ts` | yes | yes — `getByMember` called with `child.childId`, `getByClass` asserted NOT called; **2 dedicated tests for the tech-lead's in-review fix** ("composes the roster's enriched className onto the by-member week" / "keeps the repository's className when the roster has no class context") |
+| `linked-student.mapper.test.ts` (NEW) | yes | yes — linkId-ascending stable ordinal sort (asserted against a *reshuffled* input, not just one order), name always `undefined`, avatar-digit fallback, null/absent classId equivalence, color-cycle wraparound at 7 items |
+| `real-weekly-timetable.mapper.test.ts` | yes | yes — `mapMemberWeeklyTimetable` cases: subjectName present/id-fallback, room present/undefined, per-slot classNameOf resolution/unresolved |
+| `real-weekly-timetable.repository.test.ts` | yes | yes — this is the strongest file in the set: `getByMember` (path, percent-encoding, term resolution, full `TIMETABLE_MEMBER_NOT_RESOLVABLE`/`FORBIDDEN`/`CHILD_AMBIGUOUS`/generic `it.each` matrix), `getMyTimetable` (compose + both ROSTER_* degrade codes via `it.each` + generic degrade + primary-failure-still-propagates + no-selfId guard), `getByTeacher` **exact `toHaveBeenCalledTimes(2)` assertion** (item 4 of my brief — confirmed, not a snapshot), `raw:true` top-level-sibling regression guard, `getChildren` (unwraps `{links}`, ordinal via mapper, "sends no pagination params" test with `toHaveLength(1)` on the call args, `PARENTLINK_FORBIDDEN → no-child`), and a `HybridWeeklyTimetableRepository` routing test proving only `getByClass` still hits mock |
+| `timetable.mapper.test.ts` (admin) | yes | yes — room/subjectName round-trip both directions, empty-string→undefined on `toRequest`, Saturday-throws guard |
+| `timetable.repository.test.ts` (admin) | yes | yes — **the RMW-preserves-room case names both the edited cell's room (`P.201`) AND the untouched `TUE/2` sibling's room (`P.101`) via two separate `toContainEqual` assertions** (item 3 of my brief — confirmed, this is exactly the genuine catch the tech-lead flagged) |
+| `timetable.repository.integration.test.ts` (admin, mock) | yes | yes — the room-round-trip regression guard the plan asked for is here (not a separate `mocks/timetable.mock.repository.test.ts` file as the packet named it — the engineer folded it into the existing integration file; substance matches, no gap) |
+
+One filename deviation, immaterial: the packet's TDD plan named
+`repositories/mocks/timetable.mock.repository.test.ts`; the actual regression guard
+landed in the pre-existing `timetable.repository.integration.test.ts` instead (a
+`describe("MockTimetableRepository — room round-trip")` block). Confirmed by reading
+both — the assertion substance (`updateSlot` persists room, `getTimetable` reads it
+back) is exactly what was asked for.
+
+### 4. `timetable-view.stories.tsx` — `ParentView_RealMode_NoNameFallback` (item 2 of my brief)
+
+Read `timetable-view.stories.tsx:191-229` directly. Confirmed **not** render-only:
+- Two children in one story: child 1 (`stu-a`, no name, `className: "10A1"`) and
+  child 2 (`stu-b`, no name, no `className`) — both degraded states exercised in the
+  SAME story, not split across two.
+- `canvas.getByRole("button", { name: /Con thứ 1 Lớp 10A1/ })` and
+  `/Con thứ 2 Chưa có lớp/` — asserts the actual accessible name produced by the
+  fallback markup, not just that text is present somewhere.
+- `aria-pressed` state asserted before AND after a click (`toHaveAttribute`).
+- `userEvent.click(second)` → `waitFor(() => expect(args.fetchChildTimetable)
+  .toHaveBeenCalledWith("stu-b"))` — proves the fallback card is a fully operable
+  control, not just visually present.
+
+This genuinely covers both degraded states with real interaction/assertion code.
+
+### 5. Suites run myself (not trusted from prose)
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **437 files / 3081 tests passed** — matches the tech-lead's re-run count exactly |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | 1 warning + 1 info, both in `message-context-menu.tsx`, pre-existing/untouched by this diff |
+| `bun run vitest:storybook run --run src/features/timetable/presentation/timetable-view/timetable-view.stories.tsx` | **8/8 passed** |
+| `bun run vitest:storybook run --run src/features/timetable` | 2 files / 13 tests passed |
+| `bun run vitest:storybook run --run src/features/admin/timetable` | now 1 file / **5** tests passed (was 4; +1, see §6) |
+
+### 6. Gap found + closed: admin builder room field had ZERO UI-level interaction proof
+
+Per my brief's item 7 (cross-check the Un-mock plan's per-operation targets against
+real interaction/integration tests, not just unit-level mapper tests): the
+repository/mapper layer fully proves `room` round-trips through the RMW `PUT`
+(`timetable.repository.test.ts`), but **nothing exercised the actual UI wiring** —
+`SlotEditorDialog`'s room `<Input>` reading an existing slot's room back on open, and
+`TimetableScreen.handleSave` forwarding the edited value to `updateSlotAction`. The
+only existing story touching the dialog (`WithSlotEditorOpen`) opens it and checks two
+labels are visible — it never touches the room field or clicks Save. This is exactly
+the "room field actually surviving a save+reload round trip" proof the packet's own
+`## Proof required` section calls out for QA to verify — and it did not exist at the
+component level.
+
+**Severity: MAJOR** (not a BLOCKER/CRITICAL — the HTTP-boundary contract is
+independently proven solid by the repository tests; this is a missing *UI-wiring*
+regression guard, not a broken feature. No evidence the UI is actually wrong; the gap
+is proof, not defect).
+
+**Closed it myself** (test code only, per my role) — added
+`RoomFieldEditAndSave` to
+`src/features/admin/timetable/presentation/timetable-screen/timetable-screen.stories.tsx`:
+opens the editor on the "Toán"/`tch-1`/`P.201` cell, asserts the room `<Input>` is
+pre-populated with `"P.201"` (proves the read-side wiring too, not just write), clears
+it, types `"P.305"`, clicks Save, and asserts `updateSlotAction` was called with
+`("cls-10a1", "2025-2026", 0, 1, { subjectId: "sub-math", teacherId: "tch-1", room:
+"P.305" })` — pinning that only `room` changed and the other two fields passed through
+untouched. Ran in isolation: **5/5 passed** (was 4/4 before). `bunx tsc --noEmit`
+clean; `bun lint` unaffected.
+
+### 7. Acceptance-criteria / un-mock-plan coverage matrix
+
+| Operation (packet's own table) | Test type | File | Status |
+| --- | --- | --- | --- |
+| `getMyTimetable` (student self) | Integration (repo+HTTP) | `real-weekly-timetable.repository.test.ts` | COVERED |
+| `getByTeacher` (2-call simplification) | Integration, exact call-count | `real-weekly-timetable.repository.test.ts` | COVERED |
+| `getChildren` (parent roster) | Integration (repo+HTTP) | `real-weekly-timetable.repository.test.ts` | COVERED |
+| Per-child timetable (`getByMember`) | Integration + use-case unit | `real-weekly-timetable.repository.test.ts`, `get-child-timetable.use-case.test.ts` | COVERED |
+| Parent child-view className-composition fix | Use-case unit (2 tests) | `get-child-timetable.use-case.test.ts` | COVERED |
+| Child-picker fallback UX (both degraded states) | Storybook interaction | `timetable-view.stories.tsx` (`ParentView_RealMode_NoNameFallback`) | COVERED |
+| Admin builder `room` RMW persistence (repo/mapper) | Integration + unit | `timetable.repository.test.ts`, `timetable.mapper.test.ts`, `timetable.repository.integration.test.ts` | COVERED |
+| Admin builder `room` UI wiring (input read-back + save) | Storybook interaction | `timetable-screen.stories.tsx` (`RoomFieldEditAndSave`, **NEW — added by QA**) | COVERED (was UNCOVERED before this pass) |
+
+**Coverage: 8/8 (100%) after the QA-added story; 7/8 (87.5%) as delivered.**
+
+### 8. Outstanding process item (not mine to fix, carried from Tech-Lead Review §8)
+
+`docs/TEST_MATRIX.md` has no row for US-E18.26 and this packet's `## Status` (line 5)
+is still `planned` — confirmed still true as of this pass (`grep E18.26
+docs/TEST_MATRIX.md` returns nothing). Per `.claude/rules/tdd.md` this blocks marking
+the story `implemented`. This is `fe-lead`'s action item, not a test-coverage defect —
+noted here so it isn't dropped before harness proof is filed.
+
+### 9. Release Readiness Decision — **CONDITIONAL PASS**
+
+Rationale: no BLOCKER/CRITICAL. One MAJOR test-coverage gap (admin builder room-field
+UI wiring) was found and **closed by QA in this pass** (now 100% of the un-mock plan's
+operations have real interaction/integration proof, not just unit-level mapper tests).
+Remaining condition is administrative, not code-quality: `fe-lead` must land the
+`docs/TEST_MATRIX.md` row + flip `## Status` to `implemented` before this story is
+considered closed under `.claude/rules/tdd.md`.
+
+### 10. Message to fe-lead
+
+Go, conditional on the TEST_MATRIX row + Status flip (tech-lead's own pre-close
+condition — still outstanding as of this QA pass). All eight of the packet's
+TDD-planned test files exist and were independently re-read/re-run — every one asserts
+what the Evidence section claims, none are vacuous. Found one genuine gap myself: the
+admin builder's `room` field had full HTTP/mapper-level round-trip proof but zero
+UI-level interaction proof (`SlotEditorDialog`'s room input never exercised by a
+story) — closed it with a new `RoomFieldEditAndSave` Storybook interaction test
+(`timetable-screen.stories.tsx`), verified 5/5 passing, `tsc`/`lint` clean, no
+regression to `bun vitest run` (still 437/3081) or the timetable Storybook suites.
+`ParentView_RealMode_NoNameFallback` and the tech-lead's in-review className-fix both
+have genuine, non-vacuous test coverage — confirmed by reading and running the code,
+not by trusting prose.
