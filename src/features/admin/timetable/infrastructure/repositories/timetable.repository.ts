@@ -147,11 +147,15 @@ export class TimetableRepository implements ITimetableRepository {
       // Keep every slot except the (day, period) we are replacing…
       const slots: SlotRequestDto[] = current.slots
         .filter((s) => !(s.day === dayEnum && s.period === period))
+        // …preserving each untouched slot's persisted `room` (US-E18.26 —
+        // dropping it here would silently wipe every other cell's room on
+        // each single-cell edit).
         .map((s) => ({
           day: s.day,
           period: s.period,
           subjectId: s.subjectId,
           teacherMemberId: s.teacherMemberId,
+          room: s.room || undefined,
         }));
       // …then splice in the changed cell.
       slots.push({
@@ -159,6 +163,7 @@ export class TimetableRepository implements ITimetableRepository {
         period,
         subjectId: data.subjectId,
         teacherMemberId: data.teacherId,
+        room: data.room || undefined,
       });
 
       const body: SetTimetableRequestDto = { termId, slots };

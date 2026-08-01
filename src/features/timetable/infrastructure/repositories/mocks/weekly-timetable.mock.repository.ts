@@ -33,6 +33,17 @@ export class MockWeeklyTimetableRepository
     return this.getByClass(MY_CLASS_ID);
   }
 
+  /**
+   * By-member fetch (US-E18.26). The fixtures are class-keyed, so a child's
+   * `childId` is translated back to their fixture class; any other memberId is
+   * treated as the signed-in student's own (mirrors how `getMyTimetable`
+   * delegates to `getByClass(MY_CLASS_ID)`).
+   */
+  async getByMember(memberId: string): Promise<WeeklyTimetable> {
+    const child = TIMETABLE_CHILDREN.find((c) => c.childId === memberId);
+    return this.getByClass(child?.classId ?? MY_CLASS_ID);
+  }
+
   async getByTeacher(): Promise<WeeklyTimetable> {
     await mockDelay();
     const dto = teacherScheduleDtoFor(MY_TEACHER_ID);
@@ -42,6 +53,6 @@ export class MockWeeklyTimetableRepository
 
   async getChildren(): Promise<TimetableChild[]> {
     await mockDelay();
-    return TIMETABLE_CHILDREN.map(mapTimetableChild);
+    return TIMETABLE_CHILDREN.map((dto, i) => mapTimetableChild(dto, i + 1));
   }
 }

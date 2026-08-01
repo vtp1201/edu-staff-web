@@ -17,6 +17,7 @@ const TT_8B1: WeeklyTimetable = mapWeeklyTimetable(timetableDtoFor("8B1")!);
 const CHILDREN: TimetableChild[] = [
   {
     childId: "c1",
+    ordinal: 1,
     name: "Nguyễn Minh Khoa",
     classId: "11A2",
     className: "11A2",
@@ -25,6 +26,7 @@ const CHILDREN: TimetableChild[] = [
   },
   {
     childId: "c2",
+    ordinal: 2,
     name: "Nguyễn Thu Hà",
     classId: "8B1",
     className: "8B1",
@@ -176,5 +178,52 @@ export const StudentView_Mobile: Story = {
     const canvas = within(canvasElement);
     // Table still renders (its min-width forces horizontal scroll on mobile).
     expect(canvas.getByRole("table", { name: /11A2/ })).toBeInTheDocument();
+  },
+};
+
+/* ── US-E18.26: real-mode parent roster — no display name, no class ─────── */
+/**
+ * Real mode has no student display name (cross-repo ask #20 residual) and the
+ * class context is omitted whenever the child has no current enrollment. The
+ * picker must degrade to a STABLE ordinal label + a "chưa có lớp" caption —
+ * never a blank line, never an invented name.
+ */
+const DEGRADED_CHILDREN: TimetableChild[] = [
+  {
+    childId: "stu-a",
+    ordinal: 1,
+    className: "10A1",
+    avatar: "1",
+    color: "primary",
+  },
+  { childId: "stu-b", ordinal: 2, avatar: "2", color: "success" },
+];
+
+export const ParentView_RealMode_NoNameFallback: Story = {
+  args: {
+    viewerRole: "parent",
+    initialState: { status: "success", timetable: TT_11A2 },
+    childList: DEGRADED_CHILDREN,
+    initialChildId: "stu-a",
+    fetchChildTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({ ok: true, data: TT_8B1 }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    // Accessible name is derived from visible text only — ordinal + class line.
+    const first = canvas.getByRole("button", { name: /Con thứ 1 Lớp 10A1/ });
+    const second = canvas.getByRole("button", {
+      name: /Con thứ 2 Chưa có lớp/,
+    });
+    expect(first).toHaveAttribute("aria-pressed", "true");
+    expect(second).toHaveAttribute("aria-pressed", "false");
+
+    // The fallback is still a fully operable control.
+    await userEvent.click(second);
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(args.fetchChildTimetable).toHaveBeenCalledWith("stu-b"),
+    );
   },
 };

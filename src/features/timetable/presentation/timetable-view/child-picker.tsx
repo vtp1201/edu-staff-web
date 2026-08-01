@@ -47,18 +47,24 @@ export function ChildPicker({
             <span
               aria-hidden="true"
               className={cn(
-                "flex size-9 items-center justify-center rounded-full font-bold text-sm text-white",
+                "flex size-9 items-center justify-center rounded-full font-bold text-sm",
                 c.avatarBg,
+                c.avatarText,
               )}
             >
               {child.avatar}
             </span>
             <span className="whitespace-nowrap">
+              {/* Real mode has no student display name (ask #20 residual) —
+                  fall back to a STABLE ordinal label, never a blank line. */}
               <span className="block font-bold text-edu-text-primary text-sm">
-                {child.name}
+                {child.name ??
+                  t("childOrdinalLabel", { ordinal: child.ordinal })}
               </span>
               <span className="block text-[11px] text-edu-text-secondary">
-                {t("classLabel", { className: child.className })}
+                {child.className
+                  ? t("classLabel", { className: child.className })
+                  : t("classPending")}
               </span>
             </span>
           </button>

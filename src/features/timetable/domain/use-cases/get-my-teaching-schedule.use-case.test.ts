@@ -28,6 +28,7 @@ function repo(
 ): IWeeklyTimetableRepository {
   return {
     getByClass: async () => TT,
+    getByMember: async () => TT,
     getMyTimetable: async () => TT,
     getByTeacher: async () => TT,
     getChildren: async () => [] as TimetableChild[],

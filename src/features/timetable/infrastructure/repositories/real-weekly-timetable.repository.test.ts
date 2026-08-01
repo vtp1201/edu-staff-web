@@ -1,6 +1,6 @@
 /**
  * Integration tests — RealWeeklyTimetableRepository + HybridWeeklyTimetableRepository
- * (US-E18.11). `getByTeacher` fan-out mirrors `teacher-class.repository.ts`'s
+ * (US-E18.11, extended by US-E18.26). The `GET /classes` lookup still uses
  * `fetchAllPages` (`raw: true` MUST stay a top-level axios-config sibling of
  * `params` — epic-wide recurring bug, US-E18.19); mocked as the full
  * `ApiEnvelope<T>` shape so `parseEnvelope()` runs for real.
@@ -8,6 +8,9 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
+import type { LinkedStudentsResponseDto } from "../dtos/linked-student-item.dto";
+import type { MemberEnrollmentResponseDto } from "../dtos/member-enrollment-response.dto";
+import type { MemberTimetableResponseDto } from "../dtos/member-timetable-response.dto";
 import type { RealTimetableResponseDto } from "../dtos/real-timetable-response.dto";
 import {
   HybridWeeklyTimetableRepository,
@@ -29,11 +32,46 @@ function listEnvelope<T>(items: T[], nextCursor: string | null = null) {
   };
 }
 
+function apiError(code: string, status: number) {
+  return new ApiError({ code, message: code, retryable: false, status });
+}
+
 function makeHttp(overrides: Partial<Record<"get", unknown>> = {}) {
   return { get: vi.fn(), ...overrides } as unknown as AxiosInstance & {
     get: ReturnType<typeof vi.fn>;
   };
 }
+
+const MEMBER_DTO: MemberTimetableResponseDto = {
+  memberId: "me",
+  termId: TERM_ID,
+  slots: [
+    {
+      classId: "cls-a",
+      day: "MON",
+      period: 1,
+      subjectId: "sub-1",
+      subjectName: "Toán",
+      teacherMemberId: "me",
+      room: "P.201",
+    },
+    {
+      classId: "cls-b",
+      day: "TUE",
+      period: 3,
+      subjectId: "sub-2",
+      teacherMemberId: "me",
+    },
+  ],
+};
+
+const ENROLLMENT_DTO: MemberEnrollmentResponseDto = {
+  classId: "cls-a",
+  className: "11A2",
+  gradeLevel: 11,
+  academicYearLabel: "2025-2026",
+  enrolledAt: "2025-09-05T00:00:00Z",
+};
 
 describe("RealWeeklyTimetableRepository — getByClass (real GET)", () => {
   it("resolves the term then GETs the class-scoped timetable", async () => {
@@ -60,12 +98,7 @@ describe("RealWeeklyTimetableRepository — getByClass (real GET)", () => {
   it("maps TIMETABLE_FORBIDDEN to not-found (403 = 'no access', drives the empty state)", async () => {
     const http = makeHttp({
       get: vi.fn(async () => {
-        throw new ApiError({
-          code: "TIMETABLE_FORBIDDEN",
-          message: "forbidden",
-          retryable: false,
-          status: 403,
-        });
+        throw apiError("TIMETABLE_FORBIDDEN", 403);
       }),
     });
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
@@ -76,10 +109,141 @@ describe("RealWeeklyTimetableRepository — getByClass (real GET)", () => {
   });
 });
 
-describe("RealWeeklyTimetableRepository — getByTeacher (GET /classes fan-out + merge)", () => {
-  it("fetches assigned classes, merges only this teacher's slots, tags className", async () => {
-    const get = vi.fn();
-    get.mockImplementation((url: string) => {
+describe("RealWeeklyTimetableRepository — getByMember (US-E18.26)", () => {
+  it("GETs /members/{id}/timetable with the resolved termId and maps the week", async () => {
+    const http = makeHttp({ get: vi.fn(async () => MEMBER_DTO) });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    const vm = await repo.getByMember("child-1");
+
+    expect(http.get).toHaveBeenCalledWith(
+      "/core/api/v1/members/child-1/timetable",
+      { params: { termId: TERM_ID } },
+    );
+    expect(vm.classId).toBe("child-1");
+    expect(vm.slots[0]?.[1]?.subjectName).toBe("Toán");
+    expect(vm.slots[0]?.[1]?.room).toBe("P.201");
+    expect(vm.slots[1]?.[3]?.subjectName).toBe("sub-2"); // id fallback
+  });
+
+  it("percent-encodes the memberId in the path", async () => {
+    const http = makeHttp({ get: vi.fn(async () => MEMBER_DTO) });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await repo.getByMember("a/b");
+
+    expect(http.get).toHaveBeenCalledWith(
+      "/core/api/v1/members/a%2Fb/timetable",
+      { params: { termId: TERM_ID } },
+    );
+  });
+
+  it("resolves the term from weekStart when given", async () => {
+    const http = makeHttp({ get: vi.fn(async () => MEMBER_DTO) });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await repo.getByMember("child-1", "2026-03-02");
+
+    expect(resolveTermId).toHaveBeenLastCalledWith(new Date("2026-03-02"));
+  });
+
+  it.each([
+    ["TIMETABLE_MEMBER_NOT_RESOLVABLE", 404, "not-found"],
+    ["TIMETABLE_FORBIDDEN", 403, "not-found"],
+    ["TIMETABLE_CHILD_AMBIGUOUS", 422, "network-error"],
+    ["TIMETABLE_INVALID_TERM_ID", 400, "network-error"],
+  ])("maps %s → %s", async (code, status, type) => {
+    const http = makeHttp({
+      get: vi.fn(async () => {
+        throw apiError(code, status);
+      }),
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await expect(repo.getByMember("child-1")).rejects.toMatchObject({ type });
+  });
+});
+
+describe("RealWeeklyTimetableRepository — getMyTimetable (student self-view)", () => {
+  function studentHttp(enrollment: () => unknown) {
+    const get = vi.fn(async (url: string) => {
+      if (url === "/core/api/v1/members/me/timetable") return MEMBER_DTO;
+      if (url === "/core/api/v1/members/me/enrollment") return enrollment();
+      throw new Error(`unexpected url ${url}`);
+    });
+    return makeHttp({ get });
+  }
+
+  it("composes the by-member week with the enrollment call for class metadata", async () => {
+    const http = studentHttp(() => ENROLLMENT_DTO);
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    const vm = await repo.getMyTimetable();
+
+    expect(http.get).toHaveBeenCalledWith("/core/api/v1/members/me/enrollment");
+    expect(vm.classId).toBe("cls-a");
+    expect(vm.className).toBe("11A2");
+    // Per-slot className resolves only for the enrolled class.
+    expect(vm.slots[0]?.[1]?.className).toBe("11A2");
+    expect(vm.slots[1]?.[3]?.className).toBeUndefined();
+  });
+
+  it.each([
+    ["ROSTER_STUDENT_NOT_ENROLLED", 404],
+    ["ROSTER_ACCESS_FORBIDDEN", 403],
+  ])("degrades to empty class metadata when the enrollment call fails with %s (does not fail the screen)", async (code, status) => {
+    const http = studentHttp(() => {
+      throw apiError(code, status);
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    const vm = await repo.getMyTimetable();
+
+    expect(vm.className).toBe("");
+    expect(vm.classId).toBe("me");
+    expect(vm.slots[0]?.[1]?.subjectName).toBe("Toán");
+  });
+
+  it("degrades the same way for any other enrollment-call failure", async () => {
+    const http = studentHttp(() => {
+      throw new Error("boom");
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    const vm = await repo.getMyTimetable();
+    expect(vm.className).toBe("");
+  });
+
+  it("still propagates a failure of the PRIMARY timetable call", async () => {
+    const http = makeHttp({
+      get: vi.fn(async (url: string) => {
+        if (url === "/core/api/v1/members/me/timetable") {
+          throw apiError("TIMETABLE_MEMBER_NOT_RESOLVABLE", 404);
+        }
+        return ENROLLMENT_DTO;
+      }),
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await expect(repo.getMyTimetable()).rejects.toMatchObject({
+      type: "not-found",
+    });
+  });
+
+  it("fails with not-found when no member id could be decoded from the token", async () => {
+    const http = makeHttp({});
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, null);
+
+    await expect(repo.getMyTimetable()).rejects.toMatchObject({
+      type: "not-found",
+    });
+    expect(http.get).not.toHaveBeenCalled();
+  });
+});
+
+describe("RealWeeklyTimetableRepository — getByTeacher (by-member + classes lookup)", () => {
+  function teacherHttp() {
+    const get = vi.fn((url: string) => {
       if (url === "/core/api/v1/classes") {
         return Promise.resolve(
           listEnvelope([
@@ -88,130 +252,204 @@ describe("RealWeeklyTimetableRepository — getByTeacher (GET /classes fan-out +
           ]),
         );
       }
-      if (url === "/core/api/v1/classes/cls-a/timetable") {
-        return Promise.resolve({
-          classId: "cls-a",
-          termId: TERM_ID,
-          slots: [
-            { day: "MON", period: 1, subjectId: "s1", teacherMemberId: "me" },
-            {
-              day: "MON",
-              period: 2,
-              subjectId: "s2",
-              teacherMemberId: "other",
-            },
-          ],
-        } satisfies RealTimetableResponseDto);
-      }
-      if (url === "/core/api/v1/classes/cls-b/timetable") {
-        return Promise.resolve({
-          classId: "cls-b",
-          termId: TERM_ID,
-          slots: [
-            { day: "TUE", period: 3, subjectId: "s3", teacherMemberId: "me" },
-          ],
-        } satisfies RealTimetableResponseDto);
+      if (url === "/core/api/v1/members/me/timetable") {
+        return Promise.resolve(MEMBER_DTO);
       }
       throw new Error(`unexpected url ${url}`);
     });
-    const http = makeHttp({ get });
+    return makeHttp({ get });
+  }
+
+  it("makes exactly TWO calls regardless of class count (no 1+N fan-out)", async () => {
+    const http = teacherHttp();
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await repo.getByTeacher();
+
+    expect(http.get).toHaveBeenCalledTimes(2);
+    // Issued concurrently — assert the SET, not the order.
+    expect(http.get.mock.calls.map(([url]) => url).sort()).toEqual([
+      "/core/api/v1/classes",
+      "/core/api/v1/members/me/timetable",
+    ]);
+  });
+
+  it("tags every slot's className from the classId → className lookup", async () => {
+    const http = teacherHttp();
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
 
     const vm = await repo.getByTeacher();
 
-    // Own slot kept, tagged with the class name.
     expect(vm.slots[0]?.[1]?.className).toBe("11A2");
-    // Another teacher's slot in the same class is filtered out.
-    expect(vm.slots[0]?.[2]).toBeUndefined();
-    // Slot in the second assigned class also merged in.
     expect(vm.slots[1]?.[3]?.className).toBe("8B1");
   });
 
   it("passes raw:true as a top-level axios-config sibling of params (US-E18.19 regression guard)", async () => {
-    const get = vi.fn(
-      async (
-        _url: string,
-        _config?: { params?: Record<string, unknown>; raw?: boolean },
-      ) => listEnvelope([]),
-    );
-    const http = makeHttp({ get });
+    const http = teacherHttp();
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
 
-    await expect(repo.getByTeacher()).rejects.toMatchObject({
-      type: "not-found",
-    });
+    await repo.getByTeacher();
 
-    const [, config] = get.mock.calls[0];
-    expect(config?.raw).toBe(true);
-    expect(config?.params).not.toHaveProperty("raw");
+    const classesCall = http.get.mock.calls.find(
+      ([url]) => url === "/core/api/v1/classes",
+    );
+    const config = classesCall?.[1] as {
+      params?: Record<string, unknown>;
+      raw?: boolean;
+    };
+    expect(config.raw).toBe(true);
+    expect(config.params).not.toHaveProperty("raw");
   });
 
-  it("maps a transport failure to not-found when the fan-out list is empty", async () => {
-    const http = makeHttp({ get: vi.fn(async () => listEnvelope([])) });
+  it("maps TIMETABLE_MEMBER_NOT_RESOLVABLE to not-found (teacher has no schedule)", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => {
+        throw apiError("TIMETABLE_MEMBER_NOT_RESOLVABLE", 404);
+      }),
+    });
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
 
     await expect(repo.getByTeacher()).rejects.toMatchObject({
       type: "not-found",
     });
+  });
+
+  it("fails with not-found when no member id could be decoded from the token", async () => {
+    const http = makeHttp({});
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, null);
+
+    await expect(repo.getByTeacher()).rejects.toMatchObject({
+      type: "not-found",
+    });
+    expect(http.get).not.toHaveBeenCalled();
   });
 });
 
-describe("RealWeeklyTimetableRepository — force-blocked operations (ask #15)", () => {
-  it("getMyTimetable throws unconditionally without touching HTTP", async () => {
-    const http = makeHttp({});
+describe("RealWeeklyTimetableRepository — getChildren (linked-students)", () => {
+  const LINKS: LinkedStudentsResponseDto = {
+    links: [
+      {
+        linkId: "link-b",
+        parentMemberId: "me",
+        studentMemberId: "stu-b",
+        createdAt: "2026-01-02T00:00:00Z",
+      },
+      {
+        linkId: "link-a",
+        parentMemberId: "me",
+        studentMemberId: "stu-a",
+        createdAt: "2026-01-01T00:00:00Z",
+        classId: "cls-a",
+        className: "10A1",
+      },
+    ],
+  };
+
+  it("GETs the parent's own linked-students and unwraps `links`", async () => {
+    const http = makeHttp({ get: vi.fn(async () => LINKS) });
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
-    await expect(repo.getMyTimetable()).rejects.toThrow();
-    expect(http.get).not.toHaveBeenCalled();
+
+    const children = await repo.getChildren();
+
+    expect(http.get).toHaveBeenCalledWith(
+      "/core/api/v1/members/me/linked-students",
+    );
+    expect(children.map((c) => c.childId)).toEqual(["stu-a", "stu-b"]);
+    expect(children[0]?.className).toBe("10A1");
+    expect(children[1]?.className).toBeUndefined();
+    expect(children[0]?.ordinal).toBe(1);
   });
 
-  it("getChildren throws unconditionally without touching HTTP", async () => {
-    const http = makeHttp({});
+  it("sends no pagination params — `linked-students` is a flat `{links}` object, not cursor-paginated (openapi.yaml LinkedStudentsResponse)", async () => {
+    const get = vi.fn(async () => LINKS);
+    const http = makeHttp({ get });
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
-    await expect(repo.getChildren()).rejects.toThrow();
+
+    await repo.getChildren();
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get.mock.calls[0]).toHaveLength(1); // no axios config at all
+  });
+
+  it("tolerates a missing `links` array", async () => {
+    const http = makeHttp({ get: vi.fn(async () => ({})) });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await expect(repo.getChildren()).resolves.toEqual([]);
+  });
+
+  it("maps PARENTLINK_FORBIDDEN to no-child (BE's don't-reveal posture)", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => {
+        throw apiError("PARENTLINK_FORBIDDEN", 403);
+      }),
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await expect(repo.getChildren()).rejects.toMatchObject({
+      type: "no-child",
+    });
+  });
+
+  it("maps a transport failure to network-error", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => {
+        throw new Error("boom");
+      }),
+    });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+
+    await expect(repo.getChildren()).rejects.toMatchObject({
+      type: "network-error",
+    });
+  });
+
+  it("returns no-child without touching HTTP when the caller cannot be identified", async () => {
+    const http = makeHttp({});
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, null);
+
+    await expect(repo.getChildren()).rejects.toMatchObject({
+      type: "no-child",
+    });
     expect(http.get).not.toHaveBeenCalled();
   });
 });
 
 describe("HybridWeeklyTimetableRepository", () => {
-  it("routes getByTeacher to the real repo and everything else to mock", async () => {
+  it("routes every wireable operation to the real repo, keeping only getByClass on mock", async () => {
+    const week = { classId: "x", className: "", slots: {} };
     const real = {
       getByClass: vi.fn(),
-      getByTeacher: vi.fn(async () => ({
-        classId: "me",
-        className: "",
-        slots: {},
-      })),
-      getMyTimetable: vi.fn(),
-      getChildren: vi.fn(),
+      getByMember: vi.fn(async () => week),
+      getByTeacher: vi.fn(async () => week),
+      getMyTimetable: vi.fn(async () => week),
+      getChildren: vi.fn(async () => []),
     };
     const mock = {
-      getByClass: vi.fn(async () => ({
-        classId: "mock-cls",
-        className: "x",
-        slots: {},
-      })),
+      getByClass: vi.fn(async () => week),
+      getByMember: vi.fn(),
       getByTeacher: vi.fn(),
-      getMyTimetable: vi.fn(async () => ({
-        classId: "mock-me",
-        className: "",
-        slots: {},
-      })),
-      getChildren: vi.fn(async () => []),
+      getMyTimetable: vi.fn(),
+      getChildren: vi.fn(),
     };
     const hybrid = new HybridWeeklyTimetableRepository(real, mock);
 
     await hybrid.getByTeacher();
+    await hybrid.getMyTimetable();
+    await hybrid.getChildren();
+    await hybrid.getByMember("child-1", "2026-03-02");
+
     expect(real.getByTeacher).toHaveBeenCalled();
+    expect(real.getMyTimetable).toHaveBeenCalled();
+    expect(real.getChildren).toHaveBeenCalled();
+    expect(real.getByMember).toHaveBeenCalledWith("child-1", "2026-03-02");
     expect(mock.getByTeacher).not.toHaveBeenCalled();
+    expect(mock.getMyTimetable).not.toHaveBeenCalled();
+    expect(mock.getChildren).not.toHaveBeenCalled();
+    expect(mock.getByMember).not.toHaveBeenCalled();
 
     await hybrid.getByClass("11A2");
     expect(mock.getByClass).toHaveBeenCalledWith("11A2", undefined);
     expect(real.getByClass).not.toHaveBeenCalled();
-
-    await hybrid.getMyTimetable();
-    expect(mock.getMyTimetable).toHaveBeenCalled();
-
-    await hybrid.getChildren();
-    expect(mock.getChildren).toHaveBeenCalled();
   });
 });

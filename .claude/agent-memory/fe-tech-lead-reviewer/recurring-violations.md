@@ -294,3 +294,14 @@ before reading for style.
   unknown failure AND is never logged (the action swallows it). The guard's "surface loudly" intent is
   only half met — ask for a `console.error`/logger on the guard branch or a dedicated failure member.
   (US-E18.25 `markAllRead` + notifications `actions.ts:66`.)
+
+- **Two features casting the SAME URL to incompatible DTOs** (US-E18.26): `timetable`'s ground-truthed
+  `LinkedStudentItemDto` vs `parent-links`' speculative `LinkedStudentResponseDto` — both GET
+  `/core/api/v1/members/{id}/linked-students`, one expects `{links:[...]}`, the other a bare array with
+  `fullName`/`studentId` that the real BE never returns. The stale feature's doc comment still claims
+  "flipping USE_MOCK=false needs no rework". When a US ground-truths an endpoint, grep the URL across
+  ALL features and flag every other consumer's DTO as drift (follow-up, not a block on the scoped US).
+- **`docs/TEST_MATRIX.md` row missing for an E18 story** keeps recurring (US-E18.18, US-E12.13,
+  US-E18.26). Cheapest possible check: `grep -oE "^\| US-E18\.[0-9]+" docs/TEST_MATRIX.md | sort -u`
+  — every sibling has a row, so an absent one is unambiguous. Pair it with the packet's `## Status`
+  still reading `planned`. Always a pre-close item.

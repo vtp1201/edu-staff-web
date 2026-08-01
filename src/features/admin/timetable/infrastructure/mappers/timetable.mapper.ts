@@ -13,11 +13,14 @@ const slotKeyOf = (classId: string, day: number, period: number) =>
 /**
  * Wire ↔ domain mappers for the real `core` timetable contract.
  *
- * `room` is client-side-only: it has NO representation on the wire
- * (`SlotRequest`/`SlotResponse` carry no room field — cross-repo ask #17), so it
- * maps IN as `""` and is dropped on the way OUT. It survives within a single
- * editing session (the UI keeps it) but is not persisted in real mode — same
- * precedent as US-E18.7's non-persistent `count` field.
+ * `room` NOW PERSISTS (US-E18.26, BE US-153 resolved cross-repo ask #17): it is
+ * carried in both directions. On the way IN an omitted wire value becomes `""`
+ * (the entity's non-optional convention); on the way OUT an empty string is
+ * omitted rather than sent, per the BE contract's "omit or send empty" note.
+ * The BE trims + caps it at 32 chars and echoes it back UNSANITIZED — safe
+ * here because every render path is plain JSX text interpolation, which
+ * HTML-escapes by default (no `dangerouslySetInnerHTML` anywhere on the
+ * timetable surfaces — verified US-E18.26).
  *
  * The wire `teacherMemberId` is the domain's `teacherId`; `day` (enum) is joined
  * to the 0-indexed domain day; `slotKey` is synthesised (`classId|day|period`).
@@ -32,7 +35,7 @@ export const TimetableSlotMapper = {
       period: dto.period,
       subjectId: dto.subjectId,
       teacherId: dto.teacherMemberId,
-      room: "", // non-persistent — no wire field (ask #17)
+      room: dto.room ?? "", // persisted since BE US-153 (ask #17 resolved)
     };
   },
 
@@ -42,6 +45,8 @@ export const TimetableSlotMapper = {
       period: slot.period,
       subjectId: slot.subjectId,
       teacherMemberId: slot.teacherId,
+      // Omit rather than send "" for an unset room (BE contract, US-153).
+      room: slot.room || undefined,
     };
   },
 };

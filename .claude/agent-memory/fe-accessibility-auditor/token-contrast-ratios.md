@@ -120,6 +120,20 @@ NOTE: The "primary" tone at 3.65:1 FAILS for badge text at 11px. Use text-edu-pr
 - --edu-warning-text (#9a6a0f) on white/plain card bg (NOT --edu-warning-light): 4.73:1 — PASSES even for non-bold normal text. The token's own code comment ("bold ≥14px only") is calibrated against `--edu-warning-light` (4.37:1); on a plain white card the ratio is higher and clears the normal-text floor too. Don't auto-flag `--edu-warning-text` on white/card bg as the ADR-0046 misuse pattern — check the actual adjacent surface first.
 - white on --primary (which resolves to --edu-primary-dark #4570ea, NOT raw --edu-primary #5d87ff) at 13px font-bold: 4.41:1 — FAILS 4.5:1 (13px bold doesn't meet the ≥14px-bold large-text threshold). Recurs on any new small (<14px) bold UI chrome using the default Button/segmented-control checked-state color pair. Fix: `--edu-primary-accessible` (#4468e0, 4.88:1).
 
+## Additional ratios confirmed (US-E18.26 timetable child-picker audit, 2026-08-01)
+- Same white-on-status-color avatar-circle failure recurred in a THIRD
+  component (`child-picker.tsx`, after ChildSwitcher US-E13.7 and general
+  avatar circles noted above): `text-white` hardcoded across
+  `CHILD_COLOR_CLASSES[color].avatarBg` for success/warning/error/teal all
+  FAIL (1.72/1.85/2.37/2.49:1); only primary (3.29, marginal) and purple
+  (5.25) pass. Fixed by adding a uniform `avatarText: "text-edu-text-primary"`
+  field to the color-class map instead of white — passes ≥3:1 on all six
+  (min 3.64:1 on primary after using the darker text) and ≥4.5:1 on four.
+  **Pattern to actively grep for on every new avatar/icon-circle component**:
+  any `CHILD_COLOR_CLASSES`/`ROLE_COLOR`/similar per-color-map with a single
+  hardcoded `text-white` sibling — check every color in the map against
+  white, not just the one used in the story fixture.
+
 ## Additional ratios confirmed (US-E17.10 Skeleton primitive audit, 2026-07-05)
 - bg-accent (light, #ECF2FF = --edu-primary-light) on card #FFFFFF: ~1.12:1 — decorative/non-text, but visually near-invisible.
 - bg-accent (dark, #1C2541) on card dark #131A2E: ~1.14:1 — same near-invisible issue in dark mode.

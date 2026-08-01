@@ -18,10 +18,11 @@ import {
 } from "@/features/timetable/infrastructure/repositories/real-weekly-timetable.repository";
 
 /**
- * Hybrid DI composite (US-E18.11) — only `getByTeacher` is genuinely wireable
- * (cross-repo ask #15); `getByClass`/`getMyTimetable`/`getChildren` route to
- * mock (see `HybridWeeklyTimetableRepository`'s doc for why `getByClass` also
- * stays mock here, unlike the admin builder feature).
+ * Hybrid DI composite. US-E18.11 could only wire `getByTeacher` (cross-repo
+ * ask #15); US-E18.26 un-mocked the rest against BE US-153/US-148, so
+ * `getByMember`/`getMyTimetable`/`getChildren` are real too. Only `getByClass`
+ * still routes to mock — and only because nothing calls it (see
+ * `HybridWeeklyTimetableRepository`'s doc).
  */
 async function makeRepo(): Promise<IWeeklyTimetableRepository> {
   if (USE_MOCK) return new MockWeeklyTimetableRepository();

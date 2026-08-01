@@ -400,6 +400,16 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     `GET /members/{memberId}/enrollment`-style endpoint any STUDENT/PARENT-for-
     their-own-linked-student can call to resolve current classId, or (b) accept
     this stays mock-first indefinitely.
+
+    **✅ RESOLVED (core US-153 + US-148, confirmed US-E18.26, 2026-08-01).**
+    BE shipped BOTH asks: `GET /members/{memberId}/timetable?termId=`
+    (US-153 — the by-member view, resolves teaching slots else current
+    enrollment, PARENT-linked-child addressable) and
+    `GET /members/{memberId}/enrollment?yearLabel=` (US-148 — resolves
+    `classId`/`className`/`gradeLevel` for STUDENT self / linked PARENT /
+    staff). `getMyTimetable`/`getByTeacher`/`getChildren`+child view all now
+    wired real in `src/features/timetable/`. See
+    `US-E18.26-timetable-by-member-room-wiring/story.md`.
 16. **(US-E18.11, 2026-07-16)** No bulk/whole-school timetable-conflicts
     endpoint exists — `services/core/docs/openapi.yaml`'s `Timetable` tag has
     only `PUT`/`GET .../timetable` and `DELETE .../timetable/slots`; conflicts
@@ -422,6 +432,12 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     `count`). Ask: add `room` (optional string) to both schemas if per-slot
     room assignment is a real requirement.
 
+    **✅ RESOLVED (core US-153, confirmed US-E18.26, 2026-08-01).** BE added
+    optional `room` (maxLength 32) to both `SlotRequest`/`SlotResponse`.
+    Threaded through the admin builder's mapper + RMW `updateSlot` both
+    directions (incl. preserving `room` on untouched sibling slots across a
+    single-cell edit). See `US-E18.26-timetable-by-member-room-wiring/story.md`.
+
 18. **(US-E18.12, 2026-07-16)** No tenant/school-wide "grade entries pending
     approval" rollup exists — `GET .../grades` requires an already-known
     `(classId,subjectId,termId)` triple. The admin batch-oversight dashboard
@@ -438,6 +454,16 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     Parent child-switchers (grades AND timetable) stay mock-first until IAM
     ships a batch profile lookup (ask #6/#7) or this endpoint gets a
     denormalized display name + current class.
+
+    **🟡 PARTIALLY RESOLVED (core US-148, confirmed US-E18.26, 2026-08-01) —
+    class half done, name half still open.** `LinkedStudentItemResponse` is
+    now enriched with nullable `classId`/`className` (US-148) — timetable's
+    parent child-picker wired real, showing the child's actual class. The
+    student display NAME half of this ask is STILL open: no directory/IAM
+    endpoint any PARENT can call resolves a linked student's name (directory
+    RBAC 403s PARENT, confirmed US-E18.23). Timetable's child-picker degrades
+    gracefully to a stable ordinal label ("Con thứ N") rather than inventing
+    a name. See `US-E18.26-timetable-by-member-room-wiring/story.md`.
 21. **(US-E18.13, 2026-07-16) [confirms #6/#7/#9/#13/#15/#18/#20's premise a
     7th time, different resource]** No `GET` listing endpoint exists for
     unseal requests at all — `services/core/docs/openapi.yaml`'s
@@ -491,6 +517,18 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     self-scope class-discovery endpoint (as ask #15 already requested) —
     this finding raises its priority, since it now blocks self-service, not
     just cross-entity oversight.
+
+    **🟡 PARTIALLY RESOLVED (core US-148, confirmed US-E18.26, 2026-08-01) —
+    the classId-discovery HALF for timetable, not conduct.**
+    `GET /members/{memberId}/enrollment?yearLabel=` (the exact endpoint shape
+    this ask requested) now exists and is wired for timetable's student
+    self-view (US-E18.26). It has NOT been applied to `discipline`/conduct —
+    that self-view UI doesn't exist in the web app at all yet (a product/
+    design gap, not a BE gap, per US-E18.14's own note) and was explicitly
+    out of scope for US-E18.26 (timetable-only). Recommendation for a future
+    US: wire conduct's STUDENT self-view against this same enrollment
+    endpoint once a `uiux`/`ba` pass defines the screen. See
+    `US-E18.26-timetable-by-member-room-wiring/story.md`.
 
 23. **(US-E18.15, 2026-07-17) [confirms #6/#7/#9/#13/#15/#18/#20/#21/#22's
     premise a 10th time]** `ExamPaperResponse` (`core`'s `exambank` context)
@@ -866,6 +904,23 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     `?read=false` (or `?unread=true`) to `GET /notifications`, reusing the
     existing per-status materialized view `unread-count` already reads from.
     See `US-E18.25-notification-center-wiring/story.md` + ADR `0066`.
+43. **(US-E18.26, 2026-08-01) [drift risk, not a BE gap — flagged for a future
+    web-only cleanup US]** `src/features/parent-links/infrastructure/
+    repositories/parent-consent.repository.ts` (US-E20.2, a separate,
+    un-ground-truthed feature) calls the SAME `GET /members/{id}/
+    linked-students` URL this US (`timetable`) just ground-truthed, but casts
+    the response to its own speculative `LinkedStudentResponseDto[]`
+    (`{studentId, fullName, avatarUrl}`) — a shape the real BE has never
+    returned (the real `LinkedStudentItemResponse` is `{linkId,
+    parentMemberId, studentMemberId, createdAt, classId?, className?}`, per
+    US-148, ground-truthed by both `US-E18.26`'s `fe-planner` and
+    `fe-tech-lead-reviewer` independently). That feature's own doc comments
+    still claim flipping `USE_MOCK=false` needs no rework — untrue given the
+    actual wire shape. Not touched by US-E18.26 (out of scope, different
+    feature module per decision `0017`'s feature isolation). Ask (web-side,
+    not BE): a follow-up US should re-ground-truth `parent-links` against
+    the real `LinkedStudentItemResponse` shape and fix the drifted DTO/cast
+    before that feature is ever flipped to real mode.
 
 ### Wave 4c — Kong routing live-verify + SSE proxy re-architecture (closes asks #1/#33/#36); member-directory wiring (closes asks #6/#7)
 
@@ -874,6 +929,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.22 | Kong 5-service routing live-verify + SSE proxy re-architecture | — | high-risk | **Done** — ground-truthed `../edu-api/gateway/kong/kong.yml` + `docker-compose.yml` on `origin/main`: ask #1/#36 (Kong routes `social`/`notification`/`lms`, compose adds `social`+`lms`) is RESOLVED. Ran a real `make stack-up` (all 11 containers, incl. `edu-kong`/`edu-lms`/`edu-social`, healthy) and live-verified through Kong (`:8000`): register→signin (`clientId: "edu-web"`, IAM's seeded OAuth client) → `GET /noti/api/v1/stream` with Bearer token → `edu-notification`'s own access log shows `200`; same call with no `Authorization` header → Kong-level `401`. Separately confirmed `notification` has NO published host port under the network-segmentation topology — the OLD direct-bypass `NOTI_SERVICE_URL` design has no valid value to point at anymore, not just an auth mismatch. Re-architected `app/[locale]/api/stream/route.ts`'s real branch to route through Kong (`NEXT_PUBLIC_API_URL`, same convention as every other repository call) instead of direct-bypass; `NOTI_EP.stream` changed to the Kong-prefixed `/noti/api/v1/stream`; `NOTI_SERVICE_URL` env var retired (`.env.example` updated). Closes ask #33/#36 (this row) — see ADR `0065`. Explicitly OUT of scope: an epic-wide live-gateway regression re-run of every Wave 1-4b US (that is its own cross-cutting pass, not this US's remit); flipping any individual developer's `NEXT_PUBLIC_USE_MOCK` default in `.env.example`/`.env.local` (unchanged — each US's DI factory already switches on it, this US only removed the transport-layer blocker). Cross-repo observation (not a blocker): `notification`'s SSE response did not flush bytes to the client within several seconds of idle silence even after the `200` was logged server-side — likely Fiber-level buffering on the BE side, flagged for `edu-api` if tighter reconnect timing ever becomes a requirement. See `US-E18.22-use-mock-flip-sse-kong/story.md` + ADR `0065`. |
 | US-E18.23 | Member-directory wiring (IAM US-144 + core US-149) | trung bình | normal | **Done** — ground-truthed `../edu-api/services/iam/docs/openapi.yaml` (`MemberListItem`/`MemberBatchItem`, tag `Members`) + `ERROR_CODES.md` + `services/core/docs/openapi.yaml` (`StaffLeaveRequestResponse`) on `origin/main`. Mints the epic's first brand-new SHARED feature module, `src/features/iam-directory/` (domain + infrastructure, no `presentation` — it owns no screen): `SearchMembersUseCase` (follows `nextCursor` until `hasMore` is false — BE applies `role`/`search` AFTER a keyset read, so a short or even ZERO-length page is NOT the end, the headline correctness trap of this contract) and `BatchResolveMembersUseCase` (owns the 50-id chunking so no caller ever sees `too_many_member_ids`; unresolvable ids are silently omitted, per BE's explicit not-an-existence-oracle contract). IAM's wire `error.code` is RAW LOWERCASE (`member_list_forbidden`, `too_many_member_ids`) — the US-E18.6 caveat holds, unlike `core`/`social`'s UPPER_SNAKE. Consumers COMPOSE the two use-cases from their own DI (`bootstrap/di` is where cross-feature composition belongs, decision `0017`, same precedent as `bootstrap/lib/resolve-current-term.ts`) and translate `IamDirectoryFailure` into their own union at that boundary. Result: (1) **`class-management.listTeachers` is REAL** (`role=TEACHER`, UPPERCASE per `MemberListItem.roles`) and the permanent mock-delegation wrapper in `class-management.di.ts` is DELETED — every method now follows the plain `USE_MOCK ? Mock : Real` gate (decision `0014`); (2) **`staffing` assignment `memberName` resolves via ONE batch call per `listAssignments` page** (not N), raw-`memberId` fallback demoted to the unresolvable subset, a failed lookup degrading to the fallback rather than failing the list; (3) **`staff-leave` deliberately STAYS force-mock** — US-149 + US-144 closed 2 of its 3 blockers, but `department`/`leaveType` have zero wire source and are required non-optional on the entity + read unguarded by the shipped card, so wiring would mean inventing data (forbidden by the AC) or a component/design change disproportionate to a wiring US; doc-comment-only correction there plus new ask **#41**. Asks #6/#7 RESOLVED, #13 PARTIALLY resolved (#41 carries the remainder), **#9 stays OPEN** — only its member-listing half is addressed; `EnrollmentResponse` still has no student display fields and `MemberListItem`/`MemberBatchItem` carry no `dob`/`gender`, so `getClassRoster`/`getSearchPool` were deliberately untouched. Zero UI/ViewModel/i18n change (pure data-source swap on both wired consumers) → no design-review gate. See `US-E18.23-member-directory-wiring/story.md`. |
 | US-E18.24 | Unseal-workflow + seal-status wiring (core US-150) | cao | high-risk | **Done** — ground-truthed `core`'s US-150 additions on `origin/main` 2026-08-01: `GET .../unseal-requests?status=&cursor=&limit=` (cursor-paginated discovery for the two-ADMIN gate, resolves cross-repo ask #21) and `GET .../seal-status` (class-term rollup, distinct enum from the per-record status). Un-mocks `getPendingUnsealRequests`/`initiateUnseal`/`confirmUnseal`/`getSealStatus` in the existing `HybridAcademicRecordsSealRepository` (US-E18.13); display names for `studentMemberId`/`requestedBy` resolved via `BatchResolveMembersUseCase` (`iam-directory`, US-E18.23) composed from `bootstrap/di` (decision `0017`). `listTenantAdmins` stays force-mocked — investigated and does NOT fit: IAM's `MemberListItem.roles` enum has no `SUPER_ADMIN` (a platform role, not a tenant-membership row), so the directory can't back an accurate two-admin self-approve-fallback count (ADR 0037); not a missing-endpoint gap, no new cross-repo ask. UI: unseal tab moves to paginated fetch; seal-status display redesigned around the real coarser rollup shape (no per-subject detail on the wire) — design-review + a11y gate required. All gates green (tech-lead Approved, a11y PASS, design-review PASS, QA Go); 437 files/3026 tests, zero regression. ADR 0055 amended (partial supersession). Cross-repo ask #21 RESOLVED. See `US-E18.24-unseal-workflow-wiring/story.md`. |
+| US-E18.26 | Timetable by-member views + slot `room` field wiring (core US-153 + US-148) | cao | normal | **Done** — ground-truthed `core`'s US-153 (`GET /members/{memberId}/timetable?termId=`, `room` on `SlotRequest`/`SlotResponse`) + US-148 (`GET /members/{memberId}/enrollment`, enriched `linked-students`) on `origin/main` 2026-08-01. Closes asks **#15** and **#17** (RESOLVED); partially closes **#20** (classId/className yes, student display name still open) and **#22** (classId-discovery half resolved for timetable, conduct self-view UI itself still unbuilt — separate product gap). Un-mocks US-E18.11's 3 permanently-mock operations: student self-view (`getMyTimetable` composes the by-member call with a degrade-not-fail enrollment call for `className`), teacher personal schedule (`getByTeacher` SIMPLIFIED from the old N+1 `GET /classes` fan-out to a 2-call composition — 1 by-member GET + 1 classes-list GET repurposed as a `classId→className` lookup, call-count-asserted), parent child-view (`getChildren` via enriched `linked-students`, per-child fetch via a NEW `getByMember(memberId)` primitive since the endpoint is memberId- not classId-keyed). `room` threaded through the admin builder's existing real write path both directions, catching an RMW bug the plan didn't anticipate (untouched sibling slots' `room` must also survive a single-cell edit). `TimetableChild.name`/`classId`/`className` now optional (ask #20's residual gap) with a stable-`ordinal`-derived degraded-identity fallback in the child-picker — the one user-visible diff, routed through `fe-component-architect` + design-review gate (PASS). `fe-tech-lead-reviewer` Approved (1 correction to the packet's own error-code assumption, 1 genuine defect found+fixed in-review — parent child-view wasn't composing its already-fetched `className` back onto the returned week). `fe-accessibility-auditor` PASS post-fix (1 Blocking avatar-contrast finding, reachable once real mode exposes 3+ children — fixed same-session). `fe-qa-playwright` Go post-gap-closure (found+closed 1 MAJOR proof gap — the room field had repository-level round-trip proof but no UI-level save-interaction test). 437 files/3081 tests (baseline 436/3041, zero regression); Storybook 151/1096. New follow-up ask **#43** (unrelated `parent-links` feature has a speculative DTO for the same URL that doesn't match the real BE — flagged, not fixed here). See `US-E18.26-timetable-by-member-room-wiring/story.md`. |
 
 ## Dependencies & thứ tự
 
