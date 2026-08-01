@@ -304,6 +304,28 @@ Confirmed facts (verify before citing if stale):
   without `limit: 100` costs ~5× the sequential round trips inside an RSC render. When reviewing any
   read-everything pagination loop, check the page size actually requested, not just the loop logic,
   and check whether a defensive `MAX_PAGES` cap silently returns partial `ok` data.
+- **E18 UN-BLOCK story (mock → real, reversing a "permanently blocked" ADR) = new sub-pattern**
+  (US-E18.24 academic-records unseal, reversing ADR `0055` for 4 of 5 methods after BE shipped the
+  missing listing endpoint). The accepted shape: (a) the EXISTING hybrid facade gains real branches
+  (never a 2nd wrapper) and a spy test asserts the split in BOTH directions (`real.__calls` ordered
+  + `mock.__calls` empty, and the inverse); (b) old mock-rich entities (`SealBatchStatus`,
+  `UnsealRequest`) are DEMOTED to mock-internal with doc-comments, and NEW boundary-narrow entities
+  are minted 1:1 with each real response — the mock keeps its rich internal state and maps at each
+  method boundary ("internal-rich, boundary-narrow"), proven by an exact key-set assertion so no
+  mock-only field leaks; (c) the mapper passes the SERVER's rollup/derived enum through instead of
+  re-deriving it client-side. When reviewing: `git diff main..HEAD -- docs/decisions/` being EMPTY is
+  a real gap — the reversed ADR must get a dated in-place "Superseded in part (date, US-id)" note
+  (precedent: US-E18.21 amended 0055's §Follow-Up the same way).
+- **Un-blocking a mutation whose *gate* is still mock is a security question, not just wiring**:
+  once `confirmUnseal` went real, the ADR-0037 two-admin self-approve gate was being decided by the
+  MOCK `listTenantAdmins`. Check the fixture direction — `MOCK_TENANT_ADMINS` has 3 entries so
+  `tenantAdminCount === 1` is never true ⇒ fail-CLOSED (fine). A 1-entry fixture would have been
+  fail-OPEN on a real irreversible mutation. Always check which way a mock-backed gate fails.
+- **`LoadMoreButton` half-wiring**: callers routinely pass `label` + `errorLabel` but forget
+  `hasError`, so the retry copy key is dead AND a failed `fetchNextPage` shows no signal even when
+  the container correctly avoids blanking loaded rows. Grep `errorLabel=` without a sibling
+  `hasError=` on every cursor-paginated screen.
+
 - **`useEffect([subject])` reset race kills "saved" feedback when the PARENT replaces the entity on save**
   (`subjects-screen.tsx` `setDetailSubject(result.subject)` → new identity → hook resets `saved=false`).
   A full-page RSC consumer is immune ONLY because the `subject` prop is server-rendered and never

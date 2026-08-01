@@ -218,3 +218,37 @@ Tradeoffs:
   meaningfully reachable end-to-end until that selector is wired to the real
   `calendar` feature (US-E18.1) — noted as a code comment in
   `academic-records-seal.repository.ts` for whoever wires the selector next.
+
+## Supersession note (2026-08-01, US-E18.24)
+
+This ADR's §Decision second bullet ("the entire unseal workflow ... stays a
+FORCE-MOCKED permanently-blocked stub, regardless of `USE_MOCK`") is now
+**partially superseded**. `core` shipped BE US-150 on `origin/main`
+(ground-truthed 2026-08-01), adding exactly the listing endpoint this ADR's
+§Follow-Up cross-repo ask #21 requested (`GET
+.../academic-records/unseal-requests?status=&cursor=&limit=`), plus a
+companion `GET .../seal-status` class-term rollup. US-E18.24 wires 4 of the
+5 previously-blocked methods real: `getPendingUnsealRequests`,
+`initiateUnseal`, `confirmUnseal`, and `getSealStatus` (the last of these
+was never "blocked" by this ADR in the same sense — it was decorative-mock
+by design; it is now real, with a coarser shape than the mock's per-subject
+detail, see US-E18.24's story packet §Scope point 2 for the exact
+rollup-truth-table).
+
+**`listTenantAdmins` remains force-mocked** — this is NOT the ask #21 gap
+closing partially; it is a separate, independently-confirmed blocker (this
+ADR's §Context point 5, re-verified by US-E18.24): IAM's tenant-membership
+role vocabulary (`MemberListItem.roles`) has no `SUPER_ADMIN` value at all —
+`SUPER_ADMIN` is a platform-level role, not a tenant-membership row, so no
+tenant member-directory listing can ever enumerate it. The ADR-0037
+self-approve-fallback compliance gate this method backs stays honest-mock
+rather than risk an under-counted "how many admins does this tenant have"
+answer.
+
+Cross-repo ask #21 is now marked RESOLVED in `EPIC-OVERVIEW.md` (the listing
+gap it named is closed); this ADR's hybrid-facade pattern (§Decision bullet
+1, "Hybrid facade = two repo instances behind a delegating facade") is
+UNCHANGED as an architectural approach — US-E18.24 only moved 4 more methods
+from the facade's mock side to its real side, it did not replace the
+pattern. See `docs/stories/epics/E18-be-wiring/US-E18.24-unseal-workflow-wiring/story.md`
+for the full implementation.
