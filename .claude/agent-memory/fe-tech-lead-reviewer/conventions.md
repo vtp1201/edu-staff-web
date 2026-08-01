@@ -332,3 +332,20 @@ Confirmed facts (verify before citing if stale):
   replaced client-side — which also means it goes stale (no `revalidatePath` in
   `admin/subjects/actions.ts`). When reviewing a "we avoided the bug" claim, check BOTH: who owns the
   entity prop, and whether the action revalidates (revalidation would re-introduce the reset).
+- **E18 UN-MOCK by-member composition — the "identity drops out" trap** (US-E18.26 timetable): when a
+  BE endpoint is re-keyed from `classId` to `memberId`, the response typically loses the top-level
+  class identity (per-slot `classId` only). The repo then returns `className: ""` and every consumer
+  that renders `state.timetable.className` on SUCCESS goes blank in REAL mode only — mock stays green,
+  tsc/tests stay green, and the presentation's existing `?? ""` fallback is only wired for NON-success
+  states. Check each caller separately: the self-view usually composes a secondary enrollment call back
+  on, but the PARENT/child path is easy to miss even though the roster item already holds the name.
+  Fix belongs in the use-case (`{...week, className: child.className ?? week.className}`) — domain
+  composition, zero presentation diff, so the design-review gate scope is unaffected.
+- **RMW (read-modify-write) PUT + a NEW additive field = check the PRESERVE `.map()`, not just the
+  spliced cell** (US-E18.26 admin timetable `room`). A single-cell edit re-maps the WHOLE slot list;
+  if the new field is added only to the pushed slot, saving one cell silently wipes every other cell's
+  value. Required proof = one `toContainEqual` on the edited slot AND one on an untouched slot.
+- **`{links: [...]}` flat-object list responses exist in `core`** (`LinkedStudentsResponse`,
+  `LinkedParentsResponse`) — NOT every list endpoint is cursor-paginated. Verify the schema before
+  demanding `raw:true`/`fetchAllPages`; the accepted documentation shape for a confirmed-flat call is a
+  test asserting the GET is made with NO axios config object at all.
