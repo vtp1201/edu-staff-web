@@ -11,5 +11,16 @@ export type InvitationFailure =
   | { type: "network-error" }
   | { type: "invalid-state" }
   | { type: "invitation-invalid" }
+  /** 409 `invitation_not_resendable` — the row is ACCEPTED/REVOKED (US-E18.29). */
+  | { type: "invitation-not-resendable" }
+  /**
+   * 429 `rate_limit_exceeded` — the per-invitationId resend limiter (3/1h).
+   * `retryAfterSeconds` comes from the response's `Retry-After` header when the
+   * server sent one; presentation shows a distinct "try again later" toast and
+   * does NOT refetch (nothing changed server-side).
+   */
+  | { type: "rate-limited"; retryAfterSeconds?: number }
+  /** 400 `invalid_request_parameters` — malformed cursor/limit/status (defensive). */
+  | { type: "invalid-request" }
   | { type: "validation"; fields: { field: string; message: string }[] }
   | { type: "unknown" };

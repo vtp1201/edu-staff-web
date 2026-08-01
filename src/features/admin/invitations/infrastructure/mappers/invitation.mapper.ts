@@ -46,7 +46,14 @@ export function fromWireStatus(status: string): InvitationStatus {
   return STATUS_VALUES.includes(v) ? (v as InvitationStatus) : "pending";
 }
 
-/** auth-domain (mock) Invitation → admin-invitations screen Invitation. */
+/**
+ * auth-domain Invitation → admin-invitations screen Invitation.
+ *
+ * The shared entity's wire-named `createdAt` becomes this screen's own `sentAt`
+ * concept (the column is labelled "Ngày gửi"). `invitedBy` stays the RAW userId
+ * here — {@link applyInvitedByNames} substitutes display names once the batch
+ * lookup resolves, inside the repository.
+ */
 export function toInvitation(a: AuthInvitation): Invitation {
   return {
     id: a.invitationId,
@@ -54,9 +61,26 @@ export function toInvitation(a: AuthInvitation): Invitation {
     role: toInvitationRole(a.roles[0] ?? "teacher"),
     status: fromWireStatus(a.status),
     invitedBy: a.invitedBy,
-    sentAt: a.sentAt,
+    sentAt: a.createdAt,
     expiresAt: a.expiresAt,
   };
+}
+
+/**
+ * Substitute each row's raw `invitedBy` userId with its resolved display name
+ * (AC-3). An id the batch lookup omitted (unknown/other-tenant id, or a lookup
+ * that failed entirely) becomes an EMPTY STRING — never the raw UUID; the screen
+ * renders its own i18n fallback copy for an empty value, keeping translation at
+ * the presentation boundary.
+ */
+export function applyInvitedByNames(
+  rows: Invitation[],
+  resolved: Map<string, string>,
+): Invitation[] {
+  return rows.map((row) => ({
+    ...row,
+    invitedBy: resolved.get(row.invitedBy) ?? "",
+  }));
 }
 
 /**
@@ -64,14 +88,27 @@ export function toInvitation(a: AuthInvitation): Invitation {
  * union. `invitation-invalid` is preserved 1:1 (ground-truth #6);
  * `invitation-expired`/`member-exists` also collapse to `invitation-invalid`
  * (both mean "this invite/member can't be created/acted on as requested").
+ * The three US-E18.29 wire failures pass through 1:1 — each needs its own UI
+ * treatment (409 reconciles the list, 429 must NOT refetch, 400 is defensive).
  */
 export function toInvitationFailure(err: unknown): InvitationFailure {
-  const type = (err as Partial<IamMemberFailure> | null)?.type;
-  switch (type) {
+  const failure = err as Partial<IamMemberFailure> | null;
+  switch (failure?.type) {
     case "invitation-invalid":
     case "invitation-expired":
     case "member-exists":
       return { type: "invitation-invalid" };
+    case "invitation-not-resendable":
+      return { type: "invitation-not-resendable" };
+    case "rate-limited":
+      return {
+        type: "rate-limited",
+        retryAfterSeconds: (
+          failure as Extract<IamMemberFailure, { type: "rate-limited" }>
+        ).retryAfterSeconds,
+      };
+    case "invalid-request":
+      return { type: "invalid-request" };
     case "network-error":
       return { type: "network-error" };
     default:
