@@ -215,6 +215,15 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    raw `memberId`. Ask: thêm `fullName` vào `MemberResponse` (hoặc một batch
    `GET /iam/api/v1/users?ids=`) để service tiêu thụ join tên mà không cần
    endpoint internal-only.
+   **✅ RESOLVED (IAM US-144, confirmed US-E18.23, 2026-08-01).** IAM shipped
+   `GET /iam/api/v1/members?ids=a,b,c` (max 50 ids/call, scoped to the caller's
+   active tenant claim) returning `MemberBatchItem`
+   (`memberId`/`displayName`/`email`/`roles`) — exactly the batch lookup asked
+   for. `LEFT` members ARE resolved so historical rows keep their names;
+   unknown/malformed/other-tenant ids are silently omitted (not an existence
+   oracle). Consumed via the new `src/features/iam-directory/` module;
+   `staffing`'s assignment `memberName` no longer renders a raw `memberId`
+   except for the unresolvable subset.
 7. **(US-E18.4, 2026-07-16) [MAJOR — corrects #6's premise] IAM có KHÔNG MỘT
    endpoint listing member nào trên public API.** Đọc trực tiếp
    `edu-api/services/iam/docs/openapi.yaml` (tag `Members`) xác nhận
@@ -230,6 +239,18 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    `GET /api/v1/tenants/{id}/members` (list, cursor-paginated, optional
    `?role=`) trước khi bất kỳ màn admin nào (homeroom picker, "assign
    teacher"...) có thể wiring thật cho việc chọn người.
+   **✅ RESOLVED (IAM US-144, confirmed US-E18.23, 2026-08-01).** IAM shipped
+   `GET /api/v1/tenants/{id}/members?role=&search=&cursor=&limit=` on the
+   PUBLIC API (cursor-paginated, `MemberListItem` carries
+   `memberId`/`userId`/`displayName`/`email`/`roles`/`status`, `memberId ===
+   userId`; reader RBAC = SUPER_ADMIN or tenant ADMIN/MANAGER/TEACHER, others
+   get lowercase `member_list_forbidden`; `LEFT` members excluded). Caveat for
+   future consumers: `role`/`search` are applied AFTER a keyset read, so a page
+   may return fewer than `limit` items — even zero — while `hasMore` is true;
+   follow `nextCursor` until `hasMore` is false (owned by
+   `iam-directory`'s `SearchMembersUseCase`, do not re-implement).
+   `class-management.listTeachers` is now REAL (`role=TEACHER`) and its
+   permanent mock-delegation wrapper in `class-management.di.ts` is deleted.
 8. **(US-E18.4, 2026-07-16)** `ClassResponse` không có `studentCount` hay
    homeroom fields (`homeroomTeacherId`/`homeroomTeacherName`) — web phải
    fan-out `GET .../students` (đếm roster, phân trang tới hết) +
@@ -260,6 +281,15 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    ALSO adds a `gender` field to `UserProfileResponse` (net-new field, not
    just newly-exposed) — needed before any admin-facing roster/search screen
    can show real student data instead of raw ids.
+   **⚠️ STILL OPEN (re-checked US-E18.23, 2026-08-01) — only the
+   member-listing HALF of this ask is addressed.** IAM US-144 closed the
+   "can't list/lookup members at all" premise this ask inherited from #6/#7,
+   but the roster-specific gap is untouched: `EnrollmentResponse` STILL has no
+   student display fields, and `MemberListItem`/`MemberBatchItem` carry only
+   `displayName`/`email`/`roles` — **no `dob`, no `gender`** anywhere. So
+   `getClassRoster`/`getSearchPool` remain mock-first and were deliberately NOT
+   touched by US-E18.23. Option (a) (denormalize onto `EnrollmentResponse`) or
+   the `dob`/`gender` half of option (b) is still required.
 10. **(US-E18.7, 2026-07-16)** `GradeScaleResponse`/`SetGradeScaleRequest`
     have no banding concept for numeric scales (`HE_10`/`HE_4_GPA`) — only
     `LETTER_ABCD` carries `letterGrades`. Web's editor lets admins define
@@ -313,6 +343,21 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     raw ids. Until then `staff-leave`'s `StaffLeaveRepository` stays a
     permanent blocked stub (US-E18.8) — the epic's first DI factory forced to
     mock 100% of its operations, not just a subset.
+    **🟡 PARTIALLY RESOLVED (US-E18.23, 2026-08-01) — part (a) done, part (b)
+    done, a THIRD gap survives and still blocks wiring.** (a) core US-149 made
+    `staffMemberId` OPTIONAL on `GET /api/v1/conduct/staff-leave-requests`;
+    omitting it returns the tenant-wide oversight list sliced by `status`
+    (ADMIN/MANAGER/SUPER_ADMIN, else the reused `403 VIOLATION_FORBIDDEN`;
+    `status` defaults to `submitted` — the wire has no literal `pending`, and
+    sending `status=pending` is a `400 VIOLATION_INVALID_STATE`). (b) IAM
+    US-144's batch lookup resolves `staffName` from `staffMemberId`. BUT
+    `department` and `leaveType` still have **zero** source on
+    `StaffLeaveRequestResponse` (re-ground-truthed 2026-08-01), and both are
+    required non-optional on the web entity + read unguarded by the shipped
+    card — so `staff-leave` STAYS force-mock, with the residual gap carried to
+    **ask #41** below. Doc comments on `staff-leave.di.ts` +
+    `staff-leave.repository.ts` corrected accordingly (the "no tenant-wide
+    list exists" rationale was stale).
 14. **(US-E18.9, 2026-07-16)** `edu-api/services/core/internal/lms/teachingplan`
     has NO HTTP route to edit an existing teaching plan's weekly entries —
     `POST /api/v1/lms/teaching-plans` sets `weeklyEntries` exactly once at
@@ -760,11 +805,40 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     US-E18.9's dead `UpdateEntries()`. See
     `US-E18.20-feed-moderation-wiring/story.md`.
 
-### Wave 4c — Kong routing live-verify + SSE proxy re-architecture (closes asks #1/#33/#36)
+41. **(US-E18.23, 2026-08-01) [residual half of ask #13 — the FIRST ask in
+    this class that is a missing *concept*, not a missing label]**
+    `StaffLeaveRequestResponse` has no `department` and no `leaveType` field.
+    With IAM US-144 (batch name lookup) and core US-149 (tenant-wide list) both
+    landed, these two are the ONLY things still blocking the admin staff-leave
+    screen from being wired real — every other blocker in ask #13 is closed.
+    They are not substitutable: the web entity declares both required
+    non-optional and the shipped card does an unguarded
+    `LEAVE_TYPE_META[request.leaveType]` badge lookup plus a bare
+    `{request.department}` interpolation, so a missing value is a crash or a
+    blank, and unlike `memberName` there is no raw id that can honestly stand
+    in for a leave *category*. `openapi.yaml`'s own note says `leaveType` is
+    "intentionally NOT part of this response — a forward-looking product
+    decision (OQ-149-01)", so this is as much a product question as a schema
+    one. Ask: (a) resolve OQ-149-01 and, if leave categories are a real
+    product concept, add `leaveType` to `SubmitStaffLeaveRequest` +
+    `StaffLeaveRequestResponse` as an enum; (b) add `department` (or the
+    `departmentId`/`departmentName` pair, denormalized at write time — core
+    already owns the member↔department edge via `position-assignments`), OR
+    confirm the department column should be dropped from the web screen.
+    **Please state explicitly whether `leaveType` lands REQUIRED or
+    optional/nullable** — that single answer decides whether the follow-up
+    wiring US is a pure data-source swap (required → same shape as
+    `class-management`, no design work) or needs `fe-component-architect` + a
+    design-review pass for a placeholder/unknown-type state. Until then
+    `staff-leave.di.ts` stays force-mock (rationale corrected in-code under
+    US-E18.23; the old "no tenant-wide list exists" text was stale).
+
+### Wave 4c — Kong routing live-verify + SSE proxy re-architecture (closes asks #1/#33/#36); member-directory wiring (closes asks #6/#7)
 
 | Story | Title | Drift | Lane | Ghi chú |
 |-------|-------|-------|------|---------|
 | US-E18.22 | Kong 5-service routing live-verify + SSE proxy re-architecture | — | high-risk | **Done** — ground-truthed `../edu-api/gateway/kong/kong.yml` + `docker-compose.yml` on `origin/main`: ask #1/#36 (Kong routes `social`/`notification`/`lms`, compose adds `social`+`lms`) is RESOLVED. Ran a real `make stack-up` (all 11 containers, incl. `edu-kong`/`edu-lms`/`edu-social`, healthy) and live-verified through Kong (`:8000`): register→signin (`clientId: "edu-web"`, IAM's seeded OAuth client) → `GET /noti/api/v1/stream` with Bearer token → `edu-notification`'s own access log shows `200`; same call with no `Authorization` header → Kong-level `401`. Separately confirmed `notification` has NO published host port under the network-segmentation topology — the OLD direct-bypass `NOTI_SERVICE_URL` design has no valid value to point at anymore, not just an auth mismatch. Re-architected `app/[locale]/api/stream/route.ts`'s real branch to route through Kong (`NEXT_PUBLIC_API_URL`, same convention as every other repository call) instead of direct-bypass; `NOTI_EP.stream` changed to the Kong-prefixed `/noti/api/v1/stream`; `NOTI_SERVICE_URL` env var retired (`.env.example` updated). Closes ask #33/#36 (this row) — see ADR `0065`. Explicitly OUT of scope: an epic-wide live-gateway regression re-run of every Wave 1-4b US (that is its own cross-cutting pass, not this US's remit); flipping any individual developer's `NEXT_PUBLIC_USE_MOCK` default in `.env.example`/`.env.local` (unchanged — each US's DI factory already switches on it, this US only removed the transport-layer blocker). Cross-repo observation (not a blocker): `notification`'s SSE response did not flush bytes to the client within several seconds of idle silence even after the `200` was logged server-side — likely Fiber-level buffering on the BE side, flagged for `edu-api` if tighter reconnect timing ever becomes a requirement. See `US-E18.22-use-mock-flip-sse-kong/story.md` + ADR `0065`. |
+| US-E18.23 | Member-directory wiring (IAM US-144 + core US-149) | trung bình | normal | **Done** — ground-truthed `../edu-api/services/iam/docs/openapi.yaml` (`MemberListItem`/`MemberBatchItem`, tag `Members`) + `ERROR_CODES.md` + `services/core/docs/openapi.yaml` (`StaffLeaveRequestResponse`) on `origin/main`. Mints the epic's first brand-new SHARED feature module, `src/features/iam-directory/` (domain + infrastructure, no `presentation` — it owns no screen): `SearchMembersUseCase` (follows `nextCursor` until `hasMore` is false — BE applies `role`/`search` AFTER a keyset read, so a short or even ZERO-length page is NOT the end, the headline correctness trap of this contract) and `BatchResolveMembersUseCase` (owns the 50-id chunking so no caller ever sees `too_many_member_ids`; unresolvable ids are silently omitted, per BE's explicit not-an-existence-oracle contract). IAM's wire `error.code` is RAW LOWERCASE (`member_list_forbidden`, `too_many_member_ids`) — the US-E18.6 caveat holds, unlike `core`/`social`'s UPPER_SNAKE. Consumers COMPOSE the two use-cases from their own DI (`bootstrap/di` is where cross-feature composition belongs, decision `0017`, same precedent as `bootstrap/lib/resolve-current-term.ts`) and translate `IamDirectoryFailure` into their own union at that boundary. Result: (1) **`class-management.listTeachers` is REAL** (`role=TEACHER`, UPPERCASE per `MemberListItem.roles`) and the permanent mock-delegation wrapper in `class-management.di.ts` is DELETED — every method now follows the plain `USE_MOCK ? Mock : Real` gate (decision `0014`); (2) **`staffing` assignment `memberName` resolves via ONE batch call per `listAssignments` page** (not N), raw-`memberId` fallback demoted to the unresolvable subset, a failed lookup degrading to the fallback rather than failing the list; (3) **`staff-leave` deliberately STAYS force-mock** — US-149 + US-144 closed 2 of its 3 blockers, but `department`/`leaveType` have zero wire source and are required non-optional on the entity + read unguarded by the shipped card, so wiring would mean inventing data (forbidden by the AC) or a component/design change disproportionate to a wiring US; doc-comment-only correction there plus new ask **#41**. Asks #6/#7 RESOLVED, #13 PARTIALLY resolved (#41 carries the remainder), **#9 stays OPEN** — only its member-listing half is addressed; `EnrollmentResponse` still has no student display fields and `MemberListItem`/`MemberBatchItem` carry no `dob`/`gender`, so `getClassRoster`/`getSearchPool` were deliberately untouched. Zero UI/ViewModel/i18n change (pure data-source swap on both wired consumers) → no design-review gate. See `US-E18.23-member-directory-wiring/story.md`. |
 
 ## Dependencies & thứ tự
 

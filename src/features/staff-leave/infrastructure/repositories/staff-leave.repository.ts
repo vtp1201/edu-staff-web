@@ -52,28 +52,39 @@ export function toFailure(err: unknown): StaffLeaveFailure {
  * Real `core` staff-leave repository (US-E09.3 / US-E18.8).
  *
  * **PERMANENTLY mock-first regardless of `USE_MOCK`** — `staff-leave.di.ts`
- * always constructs the mock repo. Ground-truthed against the real contract
- * (`edu-api/services/core/docs/openapi.yaml`
- * `/api/v1/conduct/staff-leave-requests*` + Go source), this screen cannot be
- * wired at all, not just path-fixed:
+ * always constructs the mock repo.
  *
- * 1. **No tenant-wide oversight list.** `GET` requires a mandatory
- *    `staffMemberId` query param (table partitions on
- *    `(tenantId, staffMemberId)`) — there is no "every staff member's pending
- *    requests" endpoint. This admin screen shows exactly that.
- * 2. **Even a single-member list is unusable.** `StaffLeaveRequestResponse`
- *    has zero display fields (no `staffName`/`department`/`leaveType` — the
- *    leave-*type* concept doesn't exist on the wire at all) and IAM has no
- *    batch/by-id profile lookup to backfill a name from `staffMemberId`
- *    (cross-repo ask #6/#7).
- * 3. `approve`/`reject` are therefore also unreachable: the only source of a
- *    valid `(id, staffMemberId)` pair is a list response, and that list is
- *    mock-sourced — a mock id will never resolve against the real BE.
+ * RATIONALE REVISED in US-E18.23. Two of the three original blockers are GONE;
+ * only the third survives, and it alone is still decisive:
  *
- * Cross-repo ask #13 logged in `EPIC-OVERVIEW.md`. These three methods are
- * permanent blocked stubs (mirrors `ClassManagementRepository.listTeachers()`,
- * US-E18.4) — never invoked, kept only to satisfy the interface. `toFailure`
- * above is kept correct + unit-tested for the day this unblocks.
+ * 1. ~~No tenant-wide oversight list~~ — **RESOLVED by core US-149.**
+ *    `staffMemberId` is now OPTIONAL on
+ *    `GET /core/api/v1/conduct/staff-leave-requests`; omitting it returns the
+ *    tenant-wide list (ADMIN/MANAGER/SUPER_ADMIN, else
+ *    `403 VIOLATION_FORBIDDEN`), sliced by `status` (default `submitted` —
+ *    the wire has no literal `pending`).
+ * 2. ~~No way to backfill `staffName`~~ — **RESOLVED by IAM US-144.**
+ *    `staffMemberId` is now resolvable through `iam-directory`'s batch lookup,
+ *    exactly as `staffing` resolves its assignment `memberName` (US-E18.23).
+ * 3. **STILL BLOCKING — `department` and `leaveType` have no wire source.**
+ *    `StaffLeaveRequestResponse` carries `requestId`, `staffMemberId`,
+ *    `startDate`, `endDate`, `reason`, `state`, `selfApproved`,
+ *    `approverMemberId`, `createdAt`, `updatedAt` — and nothing else
+ *    (re-ground-truthed 2026-08-01: 0 candidate fields; the openapi
+ *    description states `leaveType` is intentionally out of scope pending
+ *    product decision OQ-149-01). Both fields are REQUIRED, non-optional on
+ *    `StaffLeaveRequestEntity`, and the shipped card does an unguarded lookup
+ *    on each (`LEAVE_TYPE_META[request.leaveType]` would be `undefined` and
+ *    crash; `department` is interpolated with no fallback). Unlike
+ *    `memberName`, no raw id can stand in — a leave *category* is a missing
+ *    concept, not a missing label, and inventing one is forbidden.
+ *
+ * Wiring the other two halves alone would produce a part-real/part-fabricated
+ * row, which is worse than either clean option — so the screen stays fully
+ * mock and the narrow gap is filed as cross-repo ask **#41** (ask #13 is
+ * partially resolved; see `EPIC-OVERVIEW.md`). These three methods remain
+ * permanent blocked stubs, never invoked, kept only to satisfy the interface.
+ * `toFailure` above is kept correct + unit-tested for the day this unblocks.
  */
 export class StaffLeaveRepository implements IStaffLeaveRepository {
   // Kept for constructor-signature parity with every other repo (test callers

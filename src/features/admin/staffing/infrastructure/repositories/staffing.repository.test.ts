@@ -252,6 +252,163 @@ describe("StaffingRepository — assignment name join + fallbacks", () => {
   });
 });
 
+/**
+ * US-E18.23 — `memberName` now resolves through `iam-directory`'s batch lookup
+ * (`GET /iam/api/v1/members?ids=`, IAM US-144). The raw-`memberId` fallback
+ * above still exists, but it is now the EXCEPTIONAL path (ids the lookup could
+ * not resolve, or a lookup that failed outright), not the default.
+ */
+describe("StaffingRepository — memberName batch resolution", () => {
+  function summary(memberId: string, displayName: string) {
+    return {
+      memberId,
+      displayName,
+      email: `${memberId}@example.com`,
+      roles: ["STAFF" as const],
+    };
+  }
+
+  it("resolves memberName from the batch lookup for every resolvable id", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        positionAssignments: envelope([
+          asgDto({ positionAssignmentId: "pa-1", memberId: "m-1" }),
+          asgDto({ positionAssignmentId: "pa-2", memberId: "m-2" }),
+        ]),
+      }),
+    });
+    const resolve = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [summary("m-1", "Nguyễn Văn A"), summary("m-2", "Trần Thị B")],
+    });
+
+    const res = await new StaffingRepository(http, resolve).listAssignments();
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.map((a) => a.memberName)).toEqual([
+      "Nguyễn Văn A",
+      "Trần Thị B",
+    ]);
+  });
+
+  it("makes exactly ONE batch call per listAssignments, not one per row", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        positionAssignments: envelope([
+          asgDto({ positionAssignmentId: "pa-1", memberId: "m-1" }),
+          asgDto({ positionAssignmentId: "pa-2", memberId: "m-2" }),
+          asgDto({ positionAssignmentId: "pa-3", memberId: "m-3" }),
+        ]),
+      }),
+    });
+    const resolve = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    await new StaffingRepository(http, resolve).listAssignments();
+
+    expect(resolve).toHaveBeenCalledExactlyOnceWith(["m-1", "m-2", "m-3"]);
+  });
+
+  it("falls back to the raw memberId ONLY for ids the lookup did not resolve", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        positionAssignments: envelope([
+          asgDto({ positionAssignmentId: "pa-1", memberId: "m-known" }),
+          asgDto({ positionAssignmentId: "pa-2", memberId: "m-gone" }),
+        ]),
+      }),
+    });
+    const resolve = vi
+      .fn()
+      .mockResolvedValue({ ok: true, value: [summary("m-known", "Biết Tên")] });
+
+    const res = await new StaffingRepository(http, resolve).listAssignments();
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.map((a) => a.memberName)).toEqual(["Biết Tên", "m-gone"]);
+  });
+
+  it("degrades to the raw-id fallback when the lookup itself fails — never a row error", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        positionAssignments: envelope([asgDto({ memberId: "m-1" })]),
+      }),
+    });
+    const resolve = vi
+      .fn()
+      .mockResolvedValue({ ok: false, failure: { type: "forbidden" } });
+
+    const res = await new StaffingRepository(http, resolve).listAssignments();
+
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value[0].memberName).toBe("m-1");
+  });
+
+  it("skips the lookup entirely when the page has no rows", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        positionAssignments: envelope([]),
+      }),
+    });
+    const resolve = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    await new StaffingRepository(http, resolve).listAssignments();
+
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it("resolves the single-id paths too (getAssignment)", async () => {
+    const http = makeHttp({
+      get: routedGet({
+        positionTitles: envelope([titleDto()]),
+        single: () => asgDto({ memberId: "m-1" }),
+      }),
+    });
+    const resolve = vi
+      .fn()
+      .mockResolvedValue({ ok: true, value: [summary("m-1", "Một Người")] });
+
+    const res = await new StaffingRepository(http, resolve).getAssignment(
+      "pa-1",
+    );
+
+    expect(resolve).toHaveBeenCalledExactlyOnceWith(["m-1"]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value.memberName).toBe("Một Người");
+  });
+
+  it("resolves the single-id paths too (createAssignment)", async () => {
+    const get = vi.fn(async (url: string) => {
+      if (url === `${EP.positionTitles}/pt-1`) return titleDto();
+      throw new Error(`unrouted ${url}`);
+    });
+    const post = vi.fn(async () => asgDto({ memberId: "m-1" }));
+    const resolve = vi
+      .fn()
+      .mockResolvedValue({ ok: true, value: [summary("m-1", "Một Người")] });
+
+    const res = await new StaffingRepository(
+      makeHttp({ get, post }),
+      resolve,
+    ).createAssignment({
+      memberId: "m-1",
+      positionTitleId: "pt-1",
+      scopeEntityId: "sp-math",
+      academicYearId: "ay-2025",
+    });
+
+    expect(resolve).toHaveBeenCalledExactlyOnceWith(["m-1"]);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value.memberName).toBe("Một Người");
+  });
+});
+
 describe("StaffingRepository — createAssignment derives scopeEntityType", () => {
   it("looks up the title's scopeType and sends it as scopeEntityType", async () => {
     const get = vi.fn(async (url: string) => {
