@@ -66,5 +66,22 @@ the shapes below recur every time a *write* path (not just a read) unblocks.
   checkout's `.cache/storybook`; it errored on all 148 files) — say so and derive
   that one number instead of inventing a measurement.
 
+- **Un-blocking a route resurrects EVERY field on it — sweep the whole form, not
+  just the field you changed.** Review MUST-FIX: making the builder reachable in
+  real mode exposed two controls (`subjectId` immutable server-side,
+  `maxAttempts` with no wire field) that were collected into the input, dropped
+  by the PATCH, and followed by `toast.success` — a false success on user input.
+  I had *flagged* them and not fixed them; flagging is not enough when the same
+  US created the reachability. Same `disabled` + one `aria-describedby`
+  explainer treatment as the reorder case; keep the field VISIBLE when it is
+  meaningful read-only context.
+- **Client pre-check before the FIRST call of a non-atomic sequence.** A
+  server-side generic `VALIDATION_FAILED` (core `pkg/kit/response/error.go`) maps
+  to `unknown` AND arrives after earlier calls already persisted. If the
+  component already computes per-item validation for another gate (publish),
+  reuse that exact map in the save path: select the offending item, show its
+  specific failure, never write. Apply in mock too — the server can never accept
+  it, so mock leniency trains a workflow that breaks in prod.
+
 Related: [[pattern-be-wiring-remap]], [[pattern-boundary-narrow-remap]],
 [[pattern-hybrid-partial-real-wiring]], [[gotcha-openapi-drifts-from-go-source]].
