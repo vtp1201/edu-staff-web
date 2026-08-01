@@ -677,6 +677,65 @@ export const UnsealTab_LoadMoreError: Story = {
   },
 };
 
+/**
+ * US-E18.24 — real 375px viewport check for the pagination control area (this
+ * QA gate's mobile check was previously scoped only to the rollup summary via
+ * `Rollup_Partial_Mobile375`; the toolbar's badge+button row and the
+ * load-more control are new UI this US introduced and had zero mobile-width
+ * proof). Same `@vitest/browser-playwright` technique: resize a real page,
+ * assert no horizontal overflow and that the load-more control stays reachable
+ * and full-width-safe.
+ */
+export const UnsealTab_Pagination_Mobile375: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ hasNextPage: true }),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const canvas = within(canvasElement);
+
+    // Toolbar (title/subtitle + pending badge + "Yêu cầu mở khoá" button) wraps
+    // via `flex-wrap` instead of overflowing horizontally at 375px. Query the
+    // subtitle, not the title — the title text collides with the tab label
+    // ("Yêu cầu mở học bạ" is shared by `unseal.toolbar.title` and `tabs.unseal`).
+    const toolbarSubtitle = canvas.getByText(M.unseal.toolbar.subtitle);
+    const toolbar = toolbarSubtitle.closest(
+      "div.rounded-xl",
+    ) as HTMLElement | null;
+    await expect(toolbar).not.toBeNull();
+    await expect((toolbar as HTMLElement).scrollWidth).toBeLessThanOrEqual(
+      (toolbar as HTMLElement).clientWidth + 1,
+    );
+
+    // The load-more control is visible, meets the touch-target floor, and
+    // stays within the viewport width (no horizontal scroll introduced).
+    const loadMoreBtn = canvas.getByRole("button", {
+      name: M.unseal.loadMore,
+    });
+    await expect(loadMoreBtn).toBeVisible();
+    const btnRect = loadMoreBtn.getBoundingClientRect();
+    await expect(btnRect.right).toBeLessThanOrEqual(375);
+    await expect(btnRect.height).toBeGreaterThanOrEqual(36);
+
+    // No horizontal overflow anywhere in the pending section as a whole.
+    const pendingHeading = canvas.getByText(
+      new RegExp(M.unseal.sections.pending),
+    );
+    const section = pendingHeading.closest("section") as HTMLElement | null;
+    await expect(section).not.toBeNull();
+    await expect((section as HTMLElement).scrollWidth).toBeLessThanOrEqual(
+      (section as HTMLElement).clientWidth + 1,
+    );
+
+    await userEvent.click(loadMoreBtn);
+    await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
+  },
+};
+
 /** US-E18.24 — exhausted cursor: the control leaves the DOM (no dead tab-stop). */
 export const UnsealTab_LoadMoreExhausted: Story = {
   args: { vm: baseVM({ activeTab: "unseal" }) },
