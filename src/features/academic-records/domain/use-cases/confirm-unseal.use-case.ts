@@ -1,8 +1,16 @@
-import type { UnsealRequest } from "../entities/seal-batch.entity";
+import type { UnsealApproveResult } from "../entities/seal-batch.entity";
 import type {
   IAcademicRecordsSealRepository,
   SealResult,
 } from "../repositories/i-academic-records-seal.repository";
+
+/**
+ * Bound for the two-admin-gate pre-check listing (US-E18.24, fe-lead
+ * resolution #1). ONE page, no cursor-follow: this local lookup is a UX nicety,
+ * not the source of truth — approve is server-authoritative and idempotent-safe
+ * whether or not the client saw the whole backlog.
+ */
+export const UNSEAL_PRECHECK_PAGE_LIMIT = 100;
 
 /**
  * Step 2 of the two-admin unseal flow (AC-8). When a co-signer is present the
@@ -13,8 +21,12 @@ import type {
  * ONLY permitted when the tenant genuinely has exactly one admin — the domain
  * re-verifies the admin count server-side (defense-in-depth against a client that
  * renders a self-approve affordance it shouldn't) and rejects with
- * `self-approve-not-allowed` otherwise. When allowed, the repo flags
- * `fallback: true`.
+ * `self-approve-not-allowed` otherwise.
+ *
+ * US-E18.24: `classId`/`termId` are required because the pending listing is now
+ * class+term-scoped on the wire. The result is the real
+ * `ApproveUnsealResponse`-shaped {@link UnsealApproveResult} (carries
+ * `selfApproved`, which replaces the old mock-only `fallback` flag).
  */
 export class ConfirmUnsealUseCase {
   constructor(private readonly repo: IAcademicRecordsSealRepository) {}
@@ -22,16 +34,22 @@ export class ConfirmUnsealUseCase {
   async execute(
     requestId: string,
     coSignerId: string | null,
-  ): Promise<SealResult<{ request: UnsealRequest; fallback: boolean }>> {
+    classId: string,
+    termId: string,
+  ): Promise<SealResult<UnsealApproveResult>> {
     if (coSignerId !== null) {
-      const pending = await this.repo.getPendingUnsealRequests();
+      const pending = await this.repo.getPendingUnsealRequests(
+        classId,
+        termId,
+        { status: "PENDING", limit: UNSEAL_PRECHECK_PAGE_LIMIT },
+      );
       if (!pending.ok) return pending;
 
-      const target = pending.data.find((r) => r.id === requestId);
+      const target = pending.data.items.find((r) => r.requestId === requestId);
       if (!target) {
         return { ok: false, error: { type: "no-pending-request" } };
       }
-      if (target.requestedById === coSignerId) {
+      if (target.requestedBy === coSignerId) {
         return { ok: false, error: { type: "same-admin-as-initiator" } };
       }
     } else {
@@ -44,6 +62,6 @@ export class ConfirmUnsealUseCase {
       }
     }
 
-    return this.repo.confirmUnseal(requestId, coSignerId);
+    return this.repo.confirmUnseal(requestId, coSignerId, classId, termId);
   }
 }

@@ -14,6 +14,50 @@ export interface SealBatchKey {
   year: string;
 }
 
+/**
+ * US-E18.24 — CLASS+TERM-LEVEL rollup enum from the real
+ * `GET .../academic-records/seal-status` (`SealStatusResponse.status`).
+ * DELIBERATELY DISTINCT from the per-record `TermStatus`
+ * (`PENDING|SEALED|UNSEALED`): this answers "is this class+term frozen — fully,
+ * partly, or not at all?", never the state of one student's record. Do not
+ * conflate the two (the wire contract says so verbatim).
+ */
+export type SealRollupStatus = "PENDING" | "SEALED" | "PARTIAL";
+
+/**
+ * US-E18.24 — 1:1 with the real `SealStatusResponse`, plus the `SealBatchKey`
+ * the caller already knows (the wire response is key-less).
+ *
+ * Truth table (ground-truthed `core` INTEGRATION.md / openapi.yaml):
+ *  - `totalStudents === 0` → `PENDING`;
+ *  - `sealedCount === 0` → `PENDING` — covers BOTH "never sealed" AND "sealed
+ *    then fully unsealed"; the only way to tell them apart is a non-null
+ *    `lastSealedAt` (+ `unsealedCount > 0`). There is no 4th enum value;
+ *  - `0 < sealedCount < totalStudents` → `PARTIAL`;
+ *  - `sealedCount === totalStudents` → `SEALED`.
+ *
+ * `lastSealedAt` is the MAX `sealedAt` across all enrolled rows INCLUDING
+ * currently-UNSEALED ones (an unseal does not clear seal history).
+ * `resealCount` is the MAXIMUM per-record reseal count in the class term (NOT a
+ * sum) — i.e. how close the closest record is to the 5-reseal cap.
+ */
+export interface SealStatusRollup extends SealBatchKey {
+  totalStudents: number;
+  sealedCount: number;
+  unsealedCount: number;
+  status: SealRollupStatus;
+  lastSealedAt: string | null;
+  resealCount: number;
+}
+
+/**
+ * MOCK-INTERNAL-ONLY bookkeeping since US-E18.24. The real
+ * `getSealStatus` returns {@link SealStatusRollup}; this richer decorative
+ * shape (`allLocked`, `unlockedSubjectNames`, `sealedBy`, …) has NO wire
+ * equivalent at that granularity and is never returned by any repository
+ * method on the real branch. The mock keeps it as internal state (its reactive
+ * `sealBatch` check needs `allLocked`) and maps to the narrow boundary entity.
+ */
 export interface SealBatchStatus extends SealBatchKey {
   subjectLabel: string; // for gate messaging
   allLocked: boolean;
@@ -55,6 +99,59 @@ export interface SealAuditEntry {
   occurredAt: string; // ISO
 }
 
+/** Wire status bucket for `GET .../unseal-requests?status=` (US-E18.24). */
+export type UnsealRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/**
+ * US-E18.24 — one row of the real `UnsealRequestListItem`, plus the two display
+ * names the FE resolves itself (`core` deliberately does not duplicate IAM
+ * names — resolved via `iam-directory`'s batch lookup, composed in
+ * `bootstrap/di/academic-records.di.ts`). An unresolvable id falls back to the
+ * raw id, never to an error.
+ */
+export interface UnsealRequestSummary {
+  requestId: string;
+  classId: string;
+  termId: string;
+  studentMemberId: string;
+  /** Resolved display name; falls back to `studentMemberId` when unresolved. */
+  studentName: string;
+  requestedBy: string;
+  /** Resolved display name; falls back to `requestedBy` when unresolved. */
+  requestedByName: string;
+  reason: string;
+  status: UnsealRequestStatus;
+  createdAt: string; // ISO
+}
+
+/** US-E18.24 — 1:1 with the real `RequestUnsealResponse` (201 create). */
+export interface UnsealInitiateResult {
+  requestId: string;
+  status: "PENDING";
+  createdAt: string; // ISO
+}
+
+/**
+ * US-E18.24 — 1:1 with the real `ApproveUnsealResponse` (200 approve).
+ * `unsealedAt` is OPTIONAL on the wire (not in the schema's `required` list) →
+ * modelled nullable here rather than pretending it is always present.
+ */
+export interface UnsealApproveResult {
+  classId: string;
+  termId: string;
+  studentMemberId: string;
+  status: "UNSEALED";
+  selfApproved: boolean;
+  unsealedAt: string | null;
+}
+
+/**
+ * MOCK-INTERNAL-ONLY bookkeeping since US-E18.24 (same demotion as
+ * {@link SealBatchStatus}). Its co-signer/self-approve fields have no wire
+ * equivalent; the real branch returns {@link UnsealRequestSummary} /
+ * {@link UnsealInitiateResult} / {@link UnsealApproveResult} instead. The mock
+ * keeps this richer state internally and maps at each method's boundary.
+ */
 export interface UnsealRequest {
   id: string;
   studentId: string;

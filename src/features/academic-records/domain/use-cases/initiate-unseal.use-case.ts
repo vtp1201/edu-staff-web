@@ -1,6 +1,6 @@
 import type {
   InitiateUnsealInput,
-  UnsealRequest,
+  UnsealInitiateResult,
 } from "../entities/seal-batch.entity";
 import type {
   IAcademicRecordsSealRepository,
@@ -23,7 +23,7 @@ export class InitiateUnsealUseCase {
 
   async execute(
     input: InitiateUnsealInput,
-  ): Promise<SealResult<UnsealRequest>> {
+  ): Promise<SealResult<UnsealInitiateResult>> {
     if (input.reason.trim().length < MIN_UNSEAL_REASON_LENGTH) {
       return { ok: false, error: { type: "reason-too-short" } };
     }

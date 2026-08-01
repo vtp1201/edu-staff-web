@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   InitiateUnsealInput,
-  UnsealRequest,
+  UnsealInitiateResult,
 } from "../entities/seal-batch.entity";
 import type { IAcademicRecordsSealRepository } from "../repositories/i-academic-records-seal.repository";
 import {
@@ -30,7 +30,10 @@ function makeRepo(
     sealBatch: async () => ({ ok: false, error: { type: "unknown" } }),
     getSealAuditTrail: async () => ({ ok: true, data: [] }),
     listSealedStudents: async () => ({ ok: true, data: [] }),
-    getPendingUnsealRequests: async () => ({ ok: true, data: [] }),
+    getPendingUnsealRequests: async () => ({
+      ok: true,
+      data: { items: [], nextCursor: null, hasMore: false },
+    }),
     initiateUnseal: async () => ({ ok: false, error: { type: "unknown" } }),
     confirmUnseal: async () => ({ ok: false, error: { type: "unknown" } }),
     listTenantAdmins: async () => ({ ok: true, data: [] }),
@@ -38,22 +41,11 @@ function makeRepo(
   };
 }
 
-const REQUEST: UnsealRequest = {
-  id: "ur-1",
-  studentId: "s-1",
-  studentName: "Học sinh A",
-  classId: "12C1",
-  term: "HK1",
-  year: "2025-2026",
-  reason: "x".repeat(25),
-  requestedById: "admin-1",
-  requestedByName: "Admin 1",
-  requestedAt: "2026-02-19T10:22:00.000Z",
+/** US-E18.24 — 1:1 with the real `RequestUnsealResponse` (narrow by design). */
+const RESULT: UnsealInitiateResult = {
+  requestId: "ur-1",
   status: "PENDING",
-  coSignerId: null,
-  coSignerName: null,
-  confirmedAt: null,
-  selfApproved: false,
+  createdAt: "2026-02-19T10:22:00.000Z",
 };
 
 describe("InitiateUnsealUseCase", () => {
@@ -66,17 +58,17 @@ describe("InitiateUnsealUseCase", () => {
     const repo = makeRepo({
       initiateUnseal: async (i) => {
         received = i;
-        return { ok: true, data: REQUEST };
+        return { ok: true, data: RESULT };
       },
     });
     const result = await new InitiateUnsealUseCase(repo).execute(input({}));
-    expect(result.ok).toBe(true);
+    expect(result).toEqual({ ok: true, data: RESULT });
     expect(received).not.toBeNull();
   });
 
   it("accepts exactly 20 chars (boundary)", async () => {
     const repo = makeRepo({
-      initiateUnseal: async () => ({ ok: true, data: REQUEST }),
+      initiateUnseal: async () => ({ ok: true, data: RESULT }),
     });
     const result = await new InitiateUnsealUseCase(repo).execute(
       input({ reason: "a".repeat(20) }),

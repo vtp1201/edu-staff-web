@@ -30,7 +30,10 @@ function makeRepo(
     sealBatch: async () => ({ ok: true, data: result() }),
     getSealAuditTrail: async () => ({ ok: true, data: [] }),
     listSealedStudents: async () => ({ ok: true, data: [] }),
-    getPendingUnsealRequests: async () => ({ ok: true, data: [] }),
+    getPendingUnsealRequests: async () => ({
+      ok: true,
+      data: { items: [], nextCursor: null, hasMore: false },
+    }),
     initiateUnseal: async () => ({ ok: false, error: { type: "unknown" } }),
     confirmUnseal: async () => ({ ok: false, error: { type: "unknown" } }),
     listTenantAdmins: async () => ({ ok: true, data: [] }),
