@@ -657,4 +657,156 @@ resolutions in this section.
 
 ## Evidence
 
-(fe-nextjs-engineer + fe-lead to fill in per-phase during implementation.)
+Implemented Phases 1–3 (Phase 4 = review/design-review/QA gates, owned by
+fe-lead) strict-TDD (red → green → refactor) on
+`feat/us-e18.24-unseal-workflow-wiring`, applying all five fe-lead resolutions.
+
+### Proof counts (zero regression)
+
+- Baseline on the branch tip before any code (re-measured this session, the
+  plan's "303 files / 1866 tests" figure was stale): **434 files / 2964 tests**.
+- After: **436 files / 3008 tests**, all passing (`bun vitest run`).
+- Delta = +2 test files, +44 tests:
+  - NEW `get-seal-status.use-case.test.ts` (2 — key passthrough returning the
+    rollup verbatim, failure bubbling).
+  - NEW `list-pending-unseal-requests.use-case.test.ts` (3 — `(classId, termId,
+    opts)` forwarded verbatim, `opts` omitted when the caller passes none, new
+    `unseal-request-invalid-cursor` bubbling).
+  - UPDATED `confirm-unseal.use-case.test.ts` (6 → 7; all cases re-signatured to
+    `(requestId, coSignerId, classId, termId)` + renamed fields; NEW case pins
+    the bounded pre-check call shape `{status:"PENDING", limit:100}`).
+  - UPDATED `initiate-unseal.use-case.test.ts` (6, re-fixtured to the narrow
+    `UnsealInitiateResult`; reason pre-check cases unchanged).
+  - UPDATED `academic-records-seal.repository.test.ts` (10 → 39): `getSealStatus`
+    5-case truth-table matrix + absent-`lastSealedAt` normalisation + 403;
+    `getPendingUnsealRequests` `{raw:true}`+`parseEnvelope` cursor/`hasMore`,
+    default-vs-explicit `status`/`cursor`/`limit`, absent-`meta.pagination`
+    fallback, ONE-deduped-batch name resolution, partial-resolution raw-id
+    fallback, resolver-failure-still-succeeds, zero-row no-resolver-call, and
+    the 2 new 400 codes; `initiateUnseal` exact-body + trim + 4-code matrix;
+    `confirmUnseal` bare-POST-path-only + absent-`unsealedAt` + 3-code matrix.
+  - UPDATED `academic-records-seal-hybrid.repository.test.ts` (2 → 3; 5-real /
+    4-mock spy-count split + a scoping-args passthrough case).
+  - UPDATED `academic-records-seal.mock.repository.test.ts` (13 → 21; rollup
+    truth-table parity with the real matrix incl. a new empty-roster fixture,
+    a boundary-key-set assertion proving no mock-internal field leaks, class+term
+    scoping, explicit status filter, inline names, cursor pagination).
+- `bunx tsc --noEmit`: clean. It caught every stale call site of the four
+  changed methods plus the dangling references to the deleted i18n keys in BOTH
+  dynamic-lookup namespaces (`academicRecord.error` and
+  `academicRecordSeal.errors`).
+- `bun lint`: clean for all touched files (the only remaining 1 warning + 1 info
+  are pre-existing in `messaging/message-context-menu.tsx`, untouched here).
+- `bun run vitest:storybook run` (full suite): **151 files / 1091 tests, all
+  passing** — including 9 new/reworked stories in
+  `academic-record-seal-screen.stories.tsx`.
+- `NEXT_PUBLIC_USE_MOCK= bun run build`: ✓ Compiled successfully (real-mode
+  guard, per team convention — not plain `bun build`).
+
+### Per-phase
+
+- **Phase 1 (domain)** — commit `4f0080b`. New boundary-narrow entities 1:1 with
+  each real response: `SealStatusRollup` (+ the `SealRollupStatus` union, kept
+  deliberately distinct from `TermStatus`), `UnsealRequestSummary`,
+  `UnsealInitiateResult`, `UnsealApproveResult` (+ `UnsealRequestStatus`).
+  `SealBatchStatus`/`UnsealRequest` are demoted to MOCK-INTERNAL-ONLY with
+  doc-comments saying so. 3 new failure types
+  (`unseal-request-already-approved`, `-invalid-status`, `-invalid-cursor`);
+  `UNSEAL_REQUEST_NOT_FOUND`/`UNSEAL_REASON_REQUIRED` reuse
+  `no-pending-request`/`reason-too-short` per resolution #3. Interface + all 4
+  use-cases re-signatured; `ConfirmUnsealUseCase` exports
+  `UNSEAL_PRECHECK_PAGE_LIMIT = 100` (resolution #1's bounded pre-check, named
+  rather than a magic number).
+- **Phase 2 (infrastructure)** — commit `94d4417`. Field names ground-truthed
+  directly against `../edu-api/services/core/docs/openapi.yaml`
+  (`SealStatusResponse` ~10535, `UnsealRequestListItem` ~8132,
+  `RequestUnsealRequest`/`Response` ~10486/10499, `ApproveUnsealResponse`
+  ~10513) and `ERROR_CODES.md:449-467` — two deviations from the plan's assumed
+  names found and honoured (see below). New `unseal-response.dto.ts` +
+  `unseal.mapper.ts`. Endpoints replaced with the three real class/term-scoped
+  paths (POST create and GET list share ONE path); the three genuinely
+  endpoint-less constants stay dead-and-documented, and the two stale
+  `unsealInitiate`/`unsealConfirm`/`seal` legacy paths were deleted rather than
+  left to rot. `toSealFailure` restructured so code checks run BEFORE the
+  generic status fallbacks (otherwise `UNSEAL_REQUEST_NOT_FOUND`'s 404 would
+  have been swallowed by the generic `not-found` branch — caught by the new
+  matrix test). Name resolution composes `makeBatchResolveMembersUseCase()` in
+  `academic-records.di.ts` only inside the `!USE_MOCK` branch, injected as an
+  optional `MemberNameResolver` (mirrors `staffing.repository.ts`);
+  `ensureFreshSession()` left in place. Hybrid facade → 5 real / 4 mock.
+- **Phase 3 (presentation + i18n)** — commit `841c921`. Selector hoisted to
+  `academic-record-seal-screen.tsx` (resolution #4). `AllLockedGate` rebuilt
+  around the rollup: branches on `status` (SEALED green / PARTIAL + PENDING
+  warning), count-based copy, per-subject list DELETED, plus an optional
+  near-cap caption at `resealCount >= 4`. `SealTab` drops the selector and the
+  `sealedBy` chip (no wire field) and is explicit about the truth table's one
+  ambiguity. `UnsealTab` gains the "pick a class" prompt, `useInfiniteQuery`
+  pagination through the shared `components/shared/load-more-button`, and the
+  eventual-consistency caption. `UnsealRequestCard`/`UnsealSelfApproveDialog`
+  re-fielded to `UnsealRequestSummary`. Container: `useInfiniteQuery` keyed by
+  `(classId, term)`, `enabled: classId !== null`, flattened pages, and a
+  first-page-only error escalation so a failed load-more never blanks loaded
+  rows. i18n added in vi + en together and verified key-set-identical.
+
+### Deviations from the plan (all deliberate, all ground-truth driven)
+
+1. **`SealConfirmDialog` DID need a one-line change** (the plan predicted zero).
+   Its prop was typed `SealBatchStatus`; since it only reads
+   `classId`/`term`/`year` it is now typed `SealBatchKey` — strictly wider, no
+   behaviour change.
+2. **`UnsealRequestCard` lost more than the two renamed fields the plan listed.**
+   `year`, `term`, `coSignerName` and `selfApproved` have no wire equivalent on
+   `UnsealRequestListItem`, so the term/year subtitle, the "confirmed by" line
+   and the "self-approved" badge variant are gone rather than fabricated (the
+   list is already scoped by the hoisted selector, so the subtitle was
+   redundant). A `REJECTED` badge tone was added since the wire status union
+   includes it. Dead keys `unseal.card.confirmedBy` and
+   `unseal.statusApprovedSelf` removed.
+3. **i18n restructure was larger than "remove `subjectsLabel`".** With the
+   per-subject list gone, `gate.allLocked.*` and `gate.notAllLocked.*` no longer
+   described anything real, so the whole block became `gate.rollup.*`
+   (`sealedTitle`/`partialTitle`/`pendingTitle`/`counts`/`warning`/
+   `linkToApproval`/`nearResealCap`).
+4. **The `sealedAt` indicator became `lastSealedAt`-driven** with two new
+   strings (`neverSealed`, `wasSealedThenUnsealed`) rather than being deleted —
+   without them the UI cannot distinguish the truth table's two `PENDING` cases.
+5. **`ACADEMIC_RECORD_ALREADY_SEALED` (409) maps to `unknown`.** No existing
+   failure type carries its meaning and the plan authorised no new type for it;
+   mapping it to `not-sealed` would state the opposite of what happened. Pinned
+   by an explicit test so the choice is visible rather than incidental.
+6. **A `10A3` empty-roster fixture was added** to `seal-fixtures.ts` so the
+   mock's rollup truth table has a real `totalStudents === 0` row to exercise
+   (it does not change `listAvailableClasses`, which intersects with
+   `MOCK_CLASS_OPTIONS`).
+7. **Contract detail the plan did not have:** `lastSealedAt` and `unsealedAt`
+   are NOT in their schemas' `required` lists, so both DTO fields are optional
+   and both mappers normalise `undefined → null` (tested).
+
+### 5 lead-resolved open questions — implemented exactly as specified
+
+1. **Bounded pre-check accepted** — `ConfirmUnsealUseCase` fetches exactly one
+   `{status:"PENDING", limit:100}` page, no cursor-follow; the call shape is
+   pinned by a test.
+2. **Tab badge class/term-scoped, not hidden** — `pendingUnsealCount` is the
+   flattened page count; with no class selected it is 0, so the existing
+   `> 0` render guard omits it, matching the "pick a class" body prompt.
+3. **`UNSEAL_REASON_REQUIRED` → `reason-too-short`** — single mapping, tested.
+4. **Selector hoisted** to screen level, one shared instance above the tabs.
+5. **Unseal-entity 3-way split endorsed and applied** — the mock keeps its rich
+   internal state and maps at each boundary; a test asserts the rollup's exact
+   key set so no mock-only field can leak into the real contract's shape.
+
+### Notes for reviewers
+
+- **term-vs-termId caveat carries forward** (design-call #9): `SealBatchKey.term`
+  is a `"HK1"`/`"HK2"` LABEL, not a UUID termId, and the selector feeding it is
+  still mock-sourced (`listAvailableClasses` has no BE endpoint). The real repo's
+  class doc-comment now states this once for ALL FIVE real methods, not just
+  `sealBatch`.
+- **Not verified end-to-end against a running `core`** — no local BE instance
+  was available; correctness rests on the ground-truthed schemas plus the
+  integration tests, same as the rest of the E18 epic.
+- **Toast-surface gap is unchanged and pre-existing** — there is still no
+  container-level harness for reactive-error toast rendering anywhere in this
+  repo; the error-key routing itself is proven end-to-end by `tsc` + the
+  repository matrices.
