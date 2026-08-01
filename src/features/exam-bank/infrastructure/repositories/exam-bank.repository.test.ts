@@ -346,6 +346,22 @@ describe("ExamBankRepository.updateExam (diff-sync composition)", () => {
     expect(h.patch).not.toHaveBeenCalled();
   });
 
+  // QA (US-E18.28): the skip-optimization must not accidentally skip an actual
+  // change — cover the OTHER asymmetric case (duration changes, title doesn't),
+  // complementing the existing title-only-changed test above.
+  it("PATCHes when only durationMinutes changed (title unchanged)", async () => {
+    const h = harness([serverQuestion("eq-1", 1)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0)], { durationMinutes: 90 }),
+    );
+    expect(h.patch).toHaveBeenCalledTimes(1);
+    expect(h.patch).toHaveBeenCalledWith(EXAM_BANK_EP.detail("ep-1"), {
+      title: "Đề Toán",
+      durationMinutes: 90,
+    });
+  });
+
   it("DELETEs a server question that is absent from the local list", async () => {
     const h = harness([serverQuestion("eq-1", 1), serverQuestion("eq-2", 2)]);
     await h.repo.updateExam("ep-1", updateInput([localQuestion("eq-1", 0)]));

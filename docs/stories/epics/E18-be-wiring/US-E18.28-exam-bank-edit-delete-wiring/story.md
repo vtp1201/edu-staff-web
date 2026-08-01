@@ -515,6 +515,125 @@ judged and well-documented. One MUST FIX only: close the Subject/Max-attempts
 silent-discard using the `reorderEnabled` pattern already present in this diff,
 then this is an approve.
 
+---
+
+## Tech-Lead Review — Round 2 (delta `bd9c354..HEAD`)
+
+**Verdict: APPROVED.** Both round-1 findings and the CONSIDER are closed
+correctly, and fe-lead's scoping correction is independently confirmed to be the
+right call. One non-blocking CONSIDER remains for a follow-up. Tech-lead gate is
+**CLOSED** for this US.
+
+### Scope re-reviewed
+
+Commits `799cfcf` (a11y `role="status"` drop), `a9dd588` (MUST FIX + SHOULD FIX),
+`e6c00b1` (fe-lead scoping correction). 14 files, presentation-layer only — the
+repository, mapper, DTOs, endpoints, failure union and error map are untouched
+since round 1, so the round-1 PASS on architecture / BE contract / security
+stands unchanged.
+
+### MUST FIX — CLOSED
+
+`metaEditable` (`exam-builder-screen.i-vm.ts:28`, `builder-header.tsx:24-32`)
+defaults to `true` and is wired `metaEditable={USE_MOCK}` from
+`[id]/edit/page.tsx:78`. In real mode the Subject `Select` (`:63`) and
+Max-attempts `Input` (`:103`) are `disabled`, with one translated explainer
+(`builder.metaLockedNote`, vi+en) rendered at `:112-118` and referenced by both
+controls via `aria-describedby` (`:69`, `:104`).
+
+Verified beyond the claim:
+- **Correctly real-mode-only, no mock leak.** Default `true` means the *other*
+  caller (`create/page.tsx:36`, untouched) keeps its pre-US behaviour exactly.
+- **The right two fields are locked.** Title and Duration — the only two the real
+  PATCH actually sends (`exam-bank.repository.ts:192-195`) — stay editable, and
+  the story asserts that explicitly rather than only asserting the locked pair.
+- **No dangling ARIA.** `aria-describedby` resolves to `undefined` whenever the
+  note is not rendered, so the id is never referenced while absent.
+- **Not a dead interactive element**: the reason is both visible and
+  programmatically associated. (Note for the a11y auditor, who owns this lens: a
+  `disabled` control is generally not focusable, so the description may not be
+  announced on focus — the adjacent visible text is what carries it. Shape is
+  sound; flagging only for completeness, not as a tech-lead finding.)
+
+### SHOULD FIX + CONSIDER — CLOSED
+
+`handleSaveDraft` (`exam-builder-screen.tsx:103-115`) now pre-checks against the
+same `validationErrors` map the publish gate already computes, selects the
+offending question, shows its **specific** translated failure, and returns
+without calling the save action at all. This closes both the generic
+`VALIDATION_FAILED`→`errors.unknown` fallback and the round-1 CONSIDER on
+`EXAM_CORRECT_OPTION_INVALID` — neither can now reach the wire. The gate runs
+before `startSave`, so there is no spinner flash, and all three reachable
+`QuestionFailureType` keys exist in vi+en.
+
+### fe-lead's scoping correction (`e6c00b1`) — independently verified CORRECT
+
+I checked the pre-US baseline rather than taking the reasoning on faith: at
+`main`, `handleSaveDraft` validated **only** `meta.title`, and per-question
+completeness was enforced solely through `isPublishable`. So applying the new
+gate in mock mode would indeed have been an unrequested validation-strengthening
+change to standing product behaviour, outside this US's scope, and would have
+broken the ordinary "click Add question, save, come back later" flow. The
+`requireCompleteQuestions` prop defaults to `false`, which restores the pre-US
+lenient path **exactly** — including for `create/page.tsx`, which passes neither
+new prop. Good catch; the correction is right on both scope and mechanism.
+
+**Scoping verified by grep, not by prose:** `requireCompleteQuestions` has
+exactly one non-test call site — `[id]/edit/page.tsx:82` `={!USE_MOCK}`. There
+are only two `<ExamBuilderScreen>` call sites in the repo (edit + create), and
+create is still hard-blocked in real mode (`create/page.tsx:26`
+`if (!USE_MOCK) return <ExamBuilderUnavailable />`). No real-mode caller was
+missed, and `true` appears nowhere else outside a story.
+
+### Story proof — exercised, not asserted in prose
+
+Five new interaction stories, covering **both polarities** of each prop:
+
+| Story | Locks |
+| --- | --- |
+| `Builder_MetaLockedInRealMode` | both fields disabled + explainer present; title/duration still enabled |
+| `Builder_MetaEditableInMockMode` | both enabled + explainer `.not.toBeInTheDocument()` |
+| `Builder_SaveDraftBlockedOnIncompleteQuestion` | `expect(saveDraftAction).not.toHaveBeenCalled()` + question flagged and selected |
+| `Builder_SaveDraftLenientInMockMode` | incomplete question still flagged, yet `saveDraftAction` called once |
+| `Builder_SaveDraftSucceedsWhenComplete` | the gate does not over-block valid content |
+
+`Builder_SaveDraftLenientInMockMode` is the real regression lock for the scoping
+correction, and it is a behavioural assertion on the mock action — exactly the
+non-vacuous shape required.
+
+### Proof commands — independently re-run at `6a0c0b8`
+
+| Command | Result | Packet claim |
+| --- | --- | --- |
+| `bunx tsc --noEmit` | clean (exit 0) | matches |
+| `bunx vitest run` | 438 files / 3118 tests passed | matches (unchanged — fixes are presentation-level) |
+| `bunx vitest run --config vitest.storybook.mts` | **151 files / 1108 tests passed** | matches exactly (+5 stories over round 1's 1103) |
+| `NEXT_PUBLIC_USE_MOCK= bun run build` | ✓ Compiled successfully in 34.7s; all 4 exam-bank routes emitted | matches |
+| `bun lint` | 1 warning + 1 info, both pre-existing in `features/messaging` | matches |
+
+No regression: `git diff --stat main..HEAD -- src/features/exam/` and
+`-- teacher/exam-bank/create/` are both **empty**; `createExam` is still
+`throw new Error("not-supported")` (`exam-bank.repository.ts:253-255`).
+`examBank` i18n is 109 keys with an empty symmetric difference, and
+`metaLockedNote` is referenced in code. Zero raw colors in the delta.
+
+### Remaining CONSIDER (non-blocking, follow-up)
+
+`Builder_SaveDraftSucceedsWhenComplete` runs with the gate **off** (it omits
+`requireCompleteQuestions`), so the matrix covers gate-on+incomplete→blocked and
+gate-off+complete→saves, but not **gate-on + complete → saves** — which is real
+mode's actual happy path. The code path is trivial (`findIndex` returns `-1` and
+falls through), so this is a completeness nit, not a risk. One-line fix if
+convenient: add `requireCompleteQuestions: true` to that story's args.
+
+### Final Decision — Round 2
+
+**APPROVED.** Both required changes are closed at the right layer, with the
+correct defaults preserving pre-US behaviour for the untouched caller, and with
+story coverage in both directions. fe-lead's scoping pushback was correct and
+improved the outcome. Tech-lead gate CLOSED for US-E18.28; the design-review and
+QA gates remain outstanding per the sections below.
+
 ## Accessibility Audit — `fe-accessibility-auditor`
 
 ### 1. Audit Summary
@@ -859,4 +978,134 @@ Design review: pass
 
 ## QA Gate — `fe-qa-playwright`
 
-_(pending)_
+**Gate check:** `fe-tech-lead-reviewer` = **APPROVED** (round 2, delta
+`bd9c354..HEAD`) — proceeded.
+
+### 1. Verification method
+
+Read the full diff (`git diff main..HEAD --stat`, 43 files) and the actual
+bodies of `exam-bank.repository.ts`, `exam-builder-screen.tsx`,
+`builder-header.tsx`, `exam-bank-screen.tsx`, `exam-card.tsx`,
+`[id]/edit/page.tsx`, `teacher/exam-bank/page.tsx`, `resolve-builder-access.ts`,
+`exam-builder-unavailable.tsx`, `exam-bank.mapper.ts` — not the Evidence
+section's prose. Ground-truthed ADR `0056` Amendment 2 against the repository
+code. Ran every proof command myself (not re-quoted): `bunx tsc --noEmit`,
+full `bunx vitest run`, full `bunx vitest run --config vitest.storybook.mts`,
+`NEXT_PUBLIC_USE_MOCK= bun run build`, `bun lint`. Wrote/extended tests where a
+gap was found; did not touch any production file.
+
+### 2. Findings by severity
+
+**No BLOCKER / CRITICAL.** The BE-wiring core (`updateExam` diff-sync,
+`deleteExam`, mapper reshape, error map, `resolveBuilderAccess`) matches the
+packet's claims exactly on independent re-read — this is a clean US.
+
+| ID | Severity | Finding | Disposition |
+| --- | --- | --- | --- |
+| QA-1 | MAJOR (closed, test gap not a defect) | `[id]/edit/page.tsx` and `teacher/exam-bank/page.tsx` — the RSC route wiring (`resolveBuilderAccess` call against real `USE_MOCK`/`decodeSubClaim`/loaded detail, the `notFound()` catch, and the `reorderEnabled`/`metaEditable`/`requireCompleteQuestions` prop threading; the token-`sub` teacher-id resolution that makes real-mode `isOwner` gating reachable at all) had **zero route-level test** before this gate — only the pure `resolveBuilderAccess` policy function and the `ExamBuilderUnavailable` component's 3 reasons were tested in isolation. Per the story's own §Engineer decisions #4, without the teacher-id resolution wired *and tested*, real-mode edit/delete would have been silently dead code. Closed by 2 new `page.test.ts` files (below) proving the actual wiring, not just the units it composes. | Closed (tests added) |
+| QA-2 | MAJOR (closed, test gap not a defect) | `exam-bank-screen.stories.tsx` had dropdown-menu-content assertions (owner-DRAFT/owner-published/other-teacher-draft) but **no story ever drove the delete confirm flow to completion** in real mode — click Delete → confirm dialog → confirm → `deleteAction` called → list refresh. Only the mock-mode delete flow predates this from US-E18.15's own coverage claims (which, on inspection, also never asserted this end-to-end — the gap is real, not a regression). Closed by `TeacherRealMode_DeleteConfirmFlow`. | Closed (test added) |
+| QA-3 | MINOR (closed, non-blocking per tech-lead round-2) | `Builder_SaveDraftSucceedsWhenComplete` ran with `requireCompleteQuestions` unset (defaults `false`), so real mode's actual happy path — gate ON + complete draft → saves — was never story-locked. Tech-lead round 2 flagged this as a non-blocking CONSIDER/follow-up. Closed (not deferred) by `Builder_SaveDraftSucceedsWhenComplete_GateOn`. | Closed (test added) |
+| QA-4 | MINOR (closed) | The PATCH-skip optimization (`updateExam`) had a test for "title changed, duration same → PATCH sent" and "neither changed → PATCH skipped", but not the mirror case "duration changed, title same → PATCH sent" — an asymmetric gap that could hide a `&&`/`||` mixup regression later. Closed by one new repository test. | Closed (test added) |
+| QA-5 | INFO (not actionable, confirmed correct) | A11Y-401 (tech-lead/a11y round-2 fix already applied pre-merge) and A11Y-402 (deferred, non-blocking per the accessibility gate) — re-verified both are handled exactly as the Accessibility Audit section states; no further action needed from QA. | No action |
+
+No new production-code defect found. Every item above was a **test-coverage
+gap**, not a behavioral bug — consistent with the epic's very high bar on this
+one (tech-lead independently ground-truthed the BE contract and found only the
+already-closed round-1 MUST FIX).
+
+### 3. Coverage verification against the assigned scope
+
+1. **`updateExam` combined diff-sync + order**: verified — `"runs the combined
+   case in order: GET → PATCH → DELETE → PUT → POST → GET"` (pre-existing)
+   exercises delete+edit+add together and asserts the exact ordered sequence.
+   PATCH-skip asymmetry gap closed (QA-4).
+2. **`deleteExam` UI wiring in real mode, not just the repository unit**:
+   was NOT proven end-to-end before this gate — closed (QA-2).
+3. **`metaEditable` both directions**: `Builder_MetaLockedInRealMode` asserts
+   `toBeDisabled()` (native `disabled`, not a visual dim) on both fields +
+   explainer present, title/duration stay `toBeEnabled()`;
+   `Builder_MetaEditableInMockMode` asserts the inverse + explainer absent. No
+   gap — already non-vacuous.
+4. **`requireCompleteQuestions` both directions**: `Builder_SaveDraftLenientInMockMode`
+   read (not just trusted by name) — it genuinely asserts the incomplete
+   question stays *flagged* (`Câu hỏi này còn thiếu thông tin`) while
+   `saveDraftAction` is still called once (save succeeds despite the flag,
+   proving completeness gates publish only, not save, in mock mode). The
+   gate-on+complete happy path was missing — closed (QA-3).
+5. **`canEdit`/`canDelete` real-mode gating**: `exam-bank-screen.stories.tsx`
+   already opens the dropdown and asserts exact menuitem contents for
+   owner-DRAFT (Edit+Publish+Delete present), owner-PUBLISHED (no menu trigger
+   at all), and another-teacher's-draft (no menu trigger). Confirmed by
+   reading the stories, not the Evidence prose — genuine coverage, no gap.
+6. **`[id]/edit` route gating, 3 reasons reachable via a realistic scenario**:
+   was previously only unit-tested on the pure policy function
+   (`resolve-builder-access.test.ts`) plus the `ExamBuilderUnavailable`
+   component's reason-rendering in isolation — the RSC wiring itself (which
+   `USE_MOCK`/token/detail values actually produce which reason, and that
+   `ExamBuilderScreen` is the alternate branch with the right props) was
+   untested. Closed (QA-1).
+7. **5 new error codes reach a translated toast**: read the chain —
+   `map-exam-bank-error.ts` → `ExamBankFailure["type"]` → `saveDraftAction`
+   returns `{ok:false, errorKey}` → `exam-builder-screen.tsx`
+   `toast.error(t(`errors.${result.errorKey}`))`. This is the same generic
+   `errorKey`-to-toast chain already exercised for `not-editable`/`forbidden`/
+   `not-found` in the repository+error-map tests and for other failure types
+   elsewhere in this feature — no per-code UI fork exists that could drop one
+   of the 5 silently. Confirmed all 5 keys resolve in both `vi.json`/`en.json`
+   (see §5). Did not add a dedicated interaction test per code — the chain is
+   generic and already proven; a 6th near-identical toast assertion would be
+   low marginal value.
+8. **Zero regression**: `git diff --stat main..HEAD -- src/features/exam/`
+   and `-- "src/app/[locale]/t/[tenant]/(app)/teacher/exam-bank/create"` are
+   both empty, independently re-run (not re-quoted from the packet).
+
+### 4. Test additions (files + before/after counts)
+
+| File | Change |
+| --- | --- |
+| `src/features/exam-bank/infrastructure/repositories/exam-bank.repository.test.ts` | +1 test (`PATCHes when only durationMinutes changed`) |
+| `src/features/exam-bank/presentation/exam-builder-screen/exam-builder-screen.stories.tsx` | +1 story (`Builder_SaveDraftSucceedsWhenComplete_GateOn`) |
+| `src/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen.stories.tsx` | +1 story (`TeacherRealMode_DeleteConfirmFlow`) |
+| `src/app/[locale]/t/[tenant]/(app)/teacher/exam-bank/[id]/edit/page.test.ts` | **new file**, 6 tests (real-mode owner/not-draft/not-author/no-token, mock-mode always-allowed, `notFound()` on load failure) |
+| `src/app/[locale]/t/[tenant]/(app)/teacher/exam-bank/page.test.ts` | **new file**, 4 tests (real-mode `sub`-claim resolution, fail-closed no-token, mock-mode seeded id, `authoringEnabled`/`editingEnabled` prop wiring) |
+
+Before (round-2 baseline, commit `6a0c0b8`): 438 files / 3118 unit tests · 151
+files / 1108 storybook tests.
+After (this gate, all independently re-run):
+
+- `bunx tsc --noEmit` — clean.
+- `bunx vitest run` — **440 files / 3129 tests passed** (+2 files / +11 tests:
+  1 repository test + 6 + 4 new page tests).
+- `bunx vitest run --config vitest.storybook.mts` — **151 files / 1110 tests
+  passed** (+2 tests, same file count — both new stories landed in existing
+  story files).
+- `NEXT_PUBLIC_USE_MOCK= bun run build` — ✓ Compiled successfully; all 4
+  exam-bank routes (incl. `/teacher/exam-bank/[id]/edit`) emitted in real mode.
+- `bun lint` — same 2 pre-existing `features/messaging` findings only (1
+  warning + 1 info), nothing new on touched paths.
+
+### 5. i18n verification
+
+`examBank` namespace: 109 keys, empty symmetric difference between
+`vi.json`/`en.json` (independently computed, not re-quoted). All 5 new error
+keys (`question-not-found`, `mcq-options-invalid`, `correct-option-invalid`,
+`options-not-allowed`, `question-difficulty-invalid`) plus
+`builder.metaLockedNote` and `builder.reorderUnavailable` and the
+`unavailable.notDraftBody`/`unavailable.notAuthorBody` reason keys are present
+in both files. No new hardcoded UI string found while reading the diff.
+
+### 6. Zero regression checks (re-run, not re-quoted)
+
+- `src/features/exam/**` diff: empty.
+- `teacher/exam-bank/create` diff: empty; `createExam` still
+  `throw new Error("not-supported")`.
+- Full-suite counts above match the packet's round-2 baseline plus exactly
+  this gate's additions — no unexplained drift.
+
+### 7. Final decision — **GO**
+
+No BLOCKER/CRITICAL. Four MAJOR/MINOR findings, all genuine test-coverage
+gaps (not production defects) and all **closed** during this gate (not merely
+tracked as follow-ups) — AC coverage is now 100% including the route-level
+wiring that was previously only proven at the unit level. fe-lead may proceed
+to merge.

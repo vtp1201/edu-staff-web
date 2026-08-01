@@ -289,6 +289,28 @@ export const Builder_SaveDraftSucceedsWhenComplete: Story = {
   },
 };
 
+/**
+ * QA (US-E18.28, closes tech-lead round-2's non-blocking CONSIDER): the matrix
+ * covered gate-on+incomplete→blocked (`Builder_SaveDraftBlockedOnIncompleteQuestion`)
+ * and gate-off+complete→saves (`Builder_SaveDraftSucceedsWhenComplete`), but not
+ * gate-ON + complete → saves — which is REAL mode's actual happy path. Proves
+ * the completeness check doesn't false-positive-block a valid draft when the
+ * gate is active.
+ */
+export const Builder_SaveDraftSucceedsWhenComplete_GateOn: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion]),
+    requireCompleteQuestions: true,
+    saveDraftAction: fn(async () => ({ ok: true }) as const),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/i }));
+    await expect(args.saveDraftAction).toHaveBeenCalledTimes(1);
+  },
+};
+
 /** AC-8: publish confirm dialog open after clicking Publish on a valid exam. */
 export const PublishConfirm: Story = {
   args: { ...baseProps, initial: detailWith([filledQuestion]) },

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ExamBankSummary } from "../../domain/entities/exam-bank-summary.entity";
 import {
@@ -149,6 +149,61 @@ export const TeacherRealMode_CreateDisabledEditDeleteWired: Story = {
       menu.getByRole("menuitem", { name: /Xoá|Xóa/i }),
     ).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
+  },
+};
+
+/**
+ * QA (US-E18.28): the click → confirm → mutation → list-refresh chain for the
+ * NOW-REAL delete action, specifically in real mode (`authoringEnabled: false`,
+ * `editingEnabled: true` — the exact real-mode props combination this US wires).
+ * Prior coverage only asserted the "Xoá" menu item is present/absent; this is
+ * the first test to actually drive `DestructiveConfirmDialog` through to a
+ * `deleteAction` call and the resulting card removal for the real-mode path.
+ */
+export const TeacherRealMode_DeleteConfirmFlow: Story = {
+  args: {
+    ...baseProps,
+    authoringEnabled: false,
+    editingEnabled: true,
+    exams: EXAMS.filter(
+      (e) => e.teacherId === "u-teacher-1" && e.status === "draft",
+    ),
+    deleteAction: fn(async () => ({ ok: true }) as const),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const beforeCount = canvas.getAllByRole("heading", { level: 3 }).length;
+    await expect(beforeCount).toBeGreaterThan(0);
+
+    const menuTrigger = canvas.getAllByRole("button", {
+      name: /Mở menu thao tác đề thi/i,
+    })[0];
+    await userEvent.click(menuTrigger);
+    const menu = within(document.body);
+    await userEvent.click(
+      await menu.findByRole("menuitem", { name: /Xoá|Xóa/i }),
+    );
+
+    // Confirm dialog opens (destructive confirm, not an immediate delete).
+    const dialog = within(document.body);
+    const confirmBtn = await dialog.findByRole("button", {
+      name: /^Xoá$|^Xóa$/i,
+    });
+    await expect(dialog.getByText(/không thể hoàn tác/i)).toBeInTheDocument();
+
+    await userEvent.click(confirmBtn);
+
+    // Dialog closes once the (fake) mutation resolves — wait for it rather
+    // than asserting mid-transition, when the background is still aria-hidden.
+    await waitFor(() =>
+      expect(dialog.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+
+    // Mutation actually called, and the card list reflects the removal.
+    await expect(args.deleteAction).toHaveBeenCalledTimes(1);
+    await expect(canvas.getAllByRole("heading", { level: 3 }).length).toBe(
+      beforeCount - 1,
+    );
   },
 };
 
