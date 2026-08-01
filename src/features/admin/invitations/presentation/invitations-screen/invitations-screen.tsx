@@ -16,7 +16,6 @@ import { ListSkeleton } from "@/components/shared/list-skeleton";
 import { LoadMoreButton } from "@/components/shared/load-more-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { InviteRoleOption } from "../../domain/entities/invitation.entity";
-import type { InvitationFailure } from "../../domain/failures/invitation.failure";
 import { buildRowVM, type RowVMLabels } from "./build-row-vm";
 import { filterInvitations } from "./filter-invitations";
 import { invitationKeys } from "./invitations.query-keys";
@@ -33,6 +32,7 @@ import type {
 import { InvitationsSearchInput } from "./invitations-search-input";
 import { InvitationsStatusTabs } from "./invitations-status-tabs";
 import { InvitationsTable } from "./invitations-table";
+import { shouldRetryList, type ThrownListFailure } from "./list-retry-policy";
 import { SendInvitationDialog } from "./send-invitation-dialog";
 import { useIsMobile } from "./use-is-mobile";
 
@@ -63,11 +63,6 @@ const invitationsSkeletonRow = () => (
 );
 
 type OkPage = Extract<ListActionResult, { ok: true }>;
-
-/** Thrown out of the queryFn so `getNextPageParam`/retry see a typed failure. */
-interface ThrownFailure {
-  type: InvitationFailure["type"];
-}
 
 /** DOM id linking the search field to its partial-results caveat (a11y). */
 const SEARCH_HINT_ID = "invitations-search-partial-hint";
@@ -121,7 +116,14 @@ export function InvitationsScreen({
         status: tab === "all" ? undefined : tab,
         cursor: pageParam,
       });
-      if (!res.ok) throw { type: res.errorKey } as ThrownFailure;
+      if (!res.ok) {
+        // `retryable` rides along so the retry predicate below never has to
+        // re-derive policy from the key.
+        throw {
+          type: res.errorKey,
+          retryable: res.retryable,
+        } satisfies ThrownListFailure;
+      }
       return res;
     },
     initialPageParam: undefined as string | undefined,
@@ -131,6 +133,9 @@ export function InvitationsScreen({
       last.data.hasMore ? (last.data.nextCursor ?? undefined) : undefined,
     initialData,
     refetchOnWindowFocus: false,
+    // Without this the query inherits the provider's global `retry: 1`, so a
+    // 403/400/409-class failure burns one request that can never succeed.
+    retry: shouldRetryList,
   });
 
   // A failed load-more flips `isError` even though earlier pages are cached;
@@ -357,7 +362,7 @@ export function InvitationsScreen({
    * but it must not degrade into "generic error + a button that always fails".
    */
   const isForbidden =
-    (listQuery.error as unknown as ThrownFailure | undefined)?.type ===
+    (listQuery.error as unknown as ThrownListFailure | undefined)?.type ===
     "forbidden";
   const showLoading = !showError && listQuery.isPending;
   const showEmptyNoInvitations =

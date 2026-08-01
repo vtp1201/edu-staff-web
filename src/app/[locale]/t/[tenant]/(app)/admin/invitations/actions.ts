@@ -7,6 +7,7 @@ import {
   makeSendInvitationBatchUseCase,
 } from "@/bootstrap/di/admin-invitations.di";
 import type { SendInvitationBatchInput } from "@/features/admin/invitations/domain/entities/invitation.entity";
+import { isRetryableInvitationFailure } from "@/features/admin/invitations/domain/failures/invitation.failure";
 import type {
   ListActionResult,
   ListInvitationsRequest,
@@ -27,7 +28,14 @@ export async function refreshInvitationsAction(
     status: params.status,
     cursor: params.cursor,
   });
-  if (!result.ok) return { ok: false as const, errorKey: result.failure.type };
+  if (!result.ok) {
+    return {
+      ok: false as const,
+      errorKey: result.failure.type,
+      // Stable boolean, not a policy the client re-derives from the key.
+      retryable: isRetryableInvitationFailure(result.failure),
+    };
+  }
   return { ok: true as const, data: result.value };
 }
 

@@ -48,7 +48,17 @@ export interface InvitationsPageVM {
 
 export type ListActionResult =
   | { ok: true; data: InvitationsPageVM }
-  | { ok: false; errorKey: InvitationFailure["type"] };
+  | {
+      ok: false;
+      errorKey: InvitationFailure["type"];
+      /**
+       * Whether re-issuing the SAME request could yield a different outcome —
+       * decided server-side by `isRetryableInvitationFailure`. Drives the
+       * query's `retry` predicate, so a 403/400/409-class failure never burns a
+       * pointless retry (state-architecture.md §3).
+       */
+      retryable: boolean;
+    };
 
 /** Server params of one list request (`status` omitted = the "all" tab). */
 export interface ListInvitationsRequest {

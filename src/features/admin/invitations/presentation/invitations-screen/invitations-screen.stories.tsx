@@ -221,17 +221,20 @@ export const EmptyNoMatch: Story = {
   },
 };
 
-/** 5. Error + retry — first refresh fails, retry succeeds. */
+/** 5. Error + retry — the transport failure exhausts the query's automatic
+ *  retries (1 attempt + `MAX_LIST_RETRIES`) so the banner appears, then the
+ *  manual "Thử lại" succeeds. */
 export const ErrorAndRetry: Story = {
   args: {
     ...baseProps,
     initialLoadFailed: true,
     onRefresh: (() => {
-      let failed = false;
+      let calls = 0;
       return async (): Promise<ListActionResult> => {
-        if (!failed) {
-          failed = true;
-          return { ok: false, errorKey: "network-error" };
+        calls += 1;
+        // 1 initial + 2 automatic retries all fail; the 4th call is the click.
+        if (calls <= 3) {
+          return { ok: false, errorKey: "network-error", retryable: true };
         }
         return page(INVITATIONS);
       };
@@ -257,7 +260,11 @@ export const ErrorPersistsOnRetryFailure: Story = {
   args: {
     ...baseProps,
     initialLoadFailed: true,
-    onRefresh: async () => ({ ok: false, errorKey: "network-error" }),
+    onRefresh: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -289,7 +296,11 @@ export const ForbiddenListNoRetry: Story = {
   args: {
     ...baseProps,
     initialLoadFailed: true,
-    onRefresh: async () => ({ ok: false, errorKey: "forbidden" }),
+    onRefresh: async () => ({
+      ok: false,
+      errorKey: "forbidden",
+      retryable: false,
+    }),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -305,6 +316,70 @@ export const ForbiddenListNoRetry: Story = {
     // …and with no retry affordance anywhere in the error card.
     await expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
     await expect(canvas.queryByRole("table")).toBeNull();
+  },
+};
+
+/** 5d. Retry policy wiring (state-architecture §3) — the query's OWN `retry`
+ *  predicate is in force, so a `retryable: true` transport failure is retried
+ *  automatically and the rows appear without user action. Proof that the
+ *  predicate overrides the surrounding client's default (which is `retry: false`
+ *  in this harness, and `retry: 1` in the real provider): under the previous
+ *  code this story would settle on the error state instead. */
+export const RetryableListFailureIsRetriedAutomatically: Story = {
+  args: {
+    ...baseProps,
+    initialLoadFailed: true,
+    onRefresh: (() => {
+      let calls = 0;
+      return async (): Promise<ListActionResult> => {
+        calls += 1;
+        (globalThis as { __listRetryCalls?: number }).__listRetryCalls = calls;
+        if (calls === 1) {
+          return { ok: false, errorKey: "network-error", retryable: true };
+        }
+        return page(INVITATIONS);
+      };
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(canvas.getByText("lan.pham@email.com")).toBeInTheDocument(),
+    );
+    await expect(
+      (globalThis as { __listRetryCalls?: number }).__listRetryCalls,
+    ).toBe(2);
+    await expect(
+      canvas.queryByText("Không tải được danh sách lời mời"),
+    ).toBeNull();
+  },
+};
+
+/** 5e. …and the mirror case: a NON-retryable failure is never re-issued. The
+ *  error state appears after exactly ONE request (no burnt retry). */
+export const NonRetryableListFailureIsNotRetried: Story = {
+  args: {
+    ...baseProps,
+    initialLoadFailed: true,
+    onRefresh: (() => {
+      let calls = 0;
+      return async (): Promise<ListActionResult> => {
+        calls += 1;
+        (globalThis as { __noRetryCalls?: number }).__noRetryCalls = calls;
+        return { ok: false, errorKey: "invalid-request", retryable: false };
+      };
+    })(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(
+        canvas.getByText("Không tải được danh sách lời mời"),
+      ).toBeInTheDocument(),
+    );
+    await expect(
+      (globalThis as { __noRetryCalls?: number }).__noRetryCalls,
+    ).toBe(1);
   },
 };
 
@@ -963,7 +1038,11 @@ export const LoadMoreError: Story = {
   args: {
     ...baseProps,
     initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
-    onRefresh: async () => ({ ok: false, errorKey: "network-error" }),
+    onRefresh: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

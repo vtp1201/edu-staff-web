@@ -32,3 +32,26 @@ export type InvitationFailure =
   | { type: "forbidden" }
   | { type: "validation"; fields: { field: string; message: string }[] }
   | { type: "unknown" };
+
+/**
+ * Is re-issuing the SAME request capable of a different outcome?
+ *
+ * Only transport/5xx (`network-error`, `unknown`) and the throttle
+ * (`rate-limited`, which BE itself marks `retryable: true`) qualify. Every
+ * verdict-class failure — 403 `forbidden`, 400 `invalid-request`, 409/410 row
+ * races, `validation` — is stable, so retrying only burns a request and delays
+ * the error the admin needs to see (state-architecture.md §3). Mirrors
+ * `parent-student-link.failure.ts`'s `isRetryableFailure`.
+ */
+export function isRetryableInvitationFailure(
+  failure: InvitationFailure,
+): boolean {
+  switch (failure.type) {
+    case "network-error":
+    case "unknown":
+    case "rate-limited":
+      return true;
+    default:
+      return false;
+  }
+}
