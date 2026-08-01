@@ -361,3 +361,408 @@ just unit/integration).
 ## Evidence
 
 (filled in by `fe-lead` after implementation + review + QA)
+
+## Implementation Plan
+
+Engineer-only (no architect/state-engineer needed — no new component, no new
+query key). Sequenced strict TDD red→green→refactor, innermost layer first.
+All file paths relative to repo root. Run `bun vitest related <file>` after
+each red→green pair; full `bun vitest run` + `bunx tsc --noEmit` + `bun build`
+before merge (per AC).
+
+### Phase 0 — pre-flight (no code)
+
+- Re-confirm claim check is still valid (`git fetch --prune`; no
+  `feat/*`/`fix/*` in flight for this module) before branching
+  `feat/us-e18.25-notification-center-wiring`.
+- Grep confirm no other in-repo consumer of `NotificationEntity.title`/`.body`
+  or `NotificationResponseDto.titleVi/titleEn/bodyVi/bodyEn` outside the files
+  listed below (`grep -rn "titleVi\|titleEn\|bodyVi\|bodyEn\|\.title\b\|\.body\b" src/features/notification`)
+  — the plan below assumes the blast radius is exactly these files; if grep
+  finds a surprise consumer, widen scope before coding.
+
+### Phase 1 — domain entity + DTO reshape (red→green)
+
+1. **`src/features/notification/domain/entities/notification.entity.ts`**
+   — reshape `NotificationEntity`: remove `title: string; body: string`, add
+   `titleKey: string; titleParams: Record<string, string>; bodyKey: string;
+   bodyParams: Record<string, string>`. Leave `NotificationType`,
+   `NotificationPage`, `UnreadCount`, `NotificationFilter` untouched. This is
+   a pure type change — no test file of its own, but it makes every mapper/
+   use-case/component reference to `.title`/`.body` a compile error, which is
+   the mechanism that finds every call site (Phase 0 grep is the belt, this
+   is the suspenders).
+2. **`src/features/notification/infrastructure/dtos/notification-response.dto.ts`**
+   — split into two DTOs (no shape trying to serve both, per story's Design
+   Notes call):
+   - `NotificationResponseDto` (REAL wire shape): `{ id: string; type: string;
+     titleKey: string; titleParams: Record<string, string>; bodyKey: string;
+     bodyParams: Record<string, string>; ts: string; read: boolean }`.
+   - `MockNotificationResponseDto`: keep the OLD shape (`titleVi/titleEn/
+     bodyVi/bodyEn`) verbatim — this is what `mocks/fixtures.ts` keeps
+     emitting unchanged (no fixture data edits needed structurally, only the
+     mock mapper below changes how it consumes them).
+   - `UnreadCountResponseDto` unchanged.
+3. **RED**: rewrite `src/features/notification/infrastructure/mappers/notification.mapper.test.ts`
+   for the new real-DTO→entity contract. Replace every existing test (they
+   assert `.title`/`.body` vi/en locale branching, which no longer exists).
+   New test names/cases:
+   - `describe("mapNotification (real)")`
+     - `"maps id, type, ts, read straight through"`
+     - `"maps titleKey/titleParams/bodyKey/bodyParams straight through (no locale branching)"`
+     - `"coerces unknown type to 'system'"` (keep — `toType` logic unchanged)
+   - `describe("mapMockNotification (mock)")` — new function, see Phase 1.4
+     - `"emits one of the 4 known producer key-pairs with plausible params for each fixture type"`
+     - `"body params include severity/occurredAt style plausible scalars, never the vi/en free-text fields"`
+   Drop the old `locale` parameter from `mapNotification`'s signature entirely
+   (no more vi/en branching at the mapper) — this is a deliberate breaking
+   change to the function signature, not additive.
+4. **GREEN**: `src/features/notification/infrastructure/mappers/notification.mapper.ts`
+   — `mapNotification(dto: NotificationResponseDto): NotificationEntity`
+   (drop `locale` param) becomes a straight passthrough (id/type/ts/read +
+   titleKey/titleParams/bodyKey/bodyParams, `toType()` unchanged). Add a
+   second exported function `mapMockNotification(dto: MockNotificationResponseDto):
+   NotificationEntity` that maps each mock fixture's `type` to one of the 4
+   known producer key-pairs (round-robin or type-keyed — e.g. `grade` →
+   `notification_grade_conduct_approved_title/_body`, `attendance` →
+   alternate between `notification_attendance_absence_*` and
+   `notification_attendance_leave_approved_*` by index/id parity,
+   `discipline` → `notification_discipline_violation_*`, `announcement`/
+   `system` → no real producer exists, so pick the closest thematically
+   (document this as a mock-only convenience, e.g. reuse
+   `notification_attendance_absence_*` is wrong — instead fall back to the
+   `unknown` key-pair for `announcement`/`system` mock rows, since no real
+   producer targets those types today anyway) with plausible
+   `titleParams`/`bodyParams` (`severity: "MINOR"|"MODERATE"|"SEVERE"`,
+   `occurredAt: dto.ts`) — never invent a UUID param.
+
+### Phase 2 — mock repository + fixtures consume the reshaped mapper (red→green)
+
+5. **`src/features/notification/infrastructure/repositories/mocks/fixtures.ts`**
+   — retype the array to `MockNotificationResponseDto[]` (rename import),
+   keep all 10 rows' `titleVi/titleEn/bodyVi/bodyEn/ts/type/id/read` values
+   unchanged (this file is data, not transport — no behavior change to
+   Storybook/demo per AC).
+6. **`src/features/notification/infrastructure/repositories/mocks/notification.mock.repository.ts`**
+   — swap `mapNotification(dto, "vi")` → `mapMockNotification(dto)` in both
+   call sites (module-level `_items` init + constructor reset). No test file
+   exists for this repo directly today (covered via use-case tests) — add
+   inline coverage if `fe-nextjs-engineer` finds a gap when `_items` reshape
+   surfaces in `notification.use-cases.test.ts`'s `makeNotification()` helper
+   (Phase 5 below).
+
+### Phase 3 — real repository: `getUnreadCount`, `markAllRead` loop, `unread` drain (red→green)
+
+7. **RED**: extend `src/features/notification/infrastructure/repositories/notification.repository.test.ts`.
+   Replace/add:
+   - Replace `describe("NotificationRepository.getUnreadCount (US-E18.18 real unread-counts)")`
+     entirely with `describe("NotificationRepository.getUnreadCount (US-E18.25 real singular)")`:
+     - `"calls the real singular unread-count endpoint and returns count directly (no sum)"`
+       — assert `get` called with `NOTIFICATION_EP.unreadCount` exactly (not
+       `unreadCounts(...)`), given `{ count: 7 }` response → `result.count === 7`.
+     - `"degrades to 0 when count is 0"`.
+     - `"throws a mapped failure on error"` (keep, same pattern).
+   - New `describe("NotificationRepository.markAllRead (US-E18.25 batch loop)")`:
+     - `"stops after one batch when hasMore is false immediately"` — mock
+       `patch` resolves `{ markedCount: 120, hasMore: false }` once; assert
+       `patch` called exactly once with `NOTIFICATION_EP.markAllRead`.
+     - `"loops while hasMore is true, stops on false (2-batch scenario)"` —
+       mock `patch` resolves `{ markedCount: 500, hasMore: true }` then
+       `{ markedCount: 30, hasMore: false }`; assert called exactly twice.
+     - `"trips the MAX_BATCHES guard on a pathological always-hasMore:true response"`
+       — mock `patch` always resolves `{ markedCount: 500, hasMore: true }`;
+       assert the call rejects/throws (not silently returns) and `patch` was
+       called exactly `MAX_BATCHES` times (assert the exact bound, e.g. 40,
+       so the guard value is locked by the test, not just "some finite
+       number").
+   - New `describe("NotificationRepository.listNotifications (US-E18.25 unread drain)")`:
+     - `"drains multiple pages to accumulate unread items when early pages are all-read"`
+       — mock `get` to return page 1 = 3 read items (`hasMore:true`,
+       `nextCursor:"c1"`), page 2 = 2 unread items (`hasMore:false`,
+       `nextCursor:null`); call `listNotifications({filter:"unread", limit: 8})`;
+       assert final `result.items` has exactly the 2 unread items, `result.hasMore === false`,
+       and `get` was called twice with `cursor` advancing `undefined → "c1"`
+       and NO `type` param on either call.
+     - `"stops draining once MAX_PAGES is hit even if hasMore stays true"` —
+       mock `get` to always return 0 unread items with `hasMore:true`
+       forever; assert `get` called exactly `MAX_PAGES` times (20) and the
+       method returns (does not hang) with `items: []`.
+     - `"reports the real hasMore from the last page fetched, not a locally computed one"`
+       — page 1 returns enough unread items to satisfy the requested limit
+       AND `hasMore:true`; assert `result.hasMore === true` is preserved
+       (not overridden to `false` just because enough items were collected).
+   - Keep existing `describe("NotificationRepository.listNotifications")` /
+     `"real interceptor pipeline"` / `"markRead"` suites as-is (non-unread
+     filter path + raw-flag regression + single markRead are unaffected by
+     this US) — only add the `type` field to `makeDto()`'s return shape to
+     match the new real `NotificationResponseDto` (drop `titleVi/titleEn/
+     bodyVi/bodyEn`, add `titleKey/titleParams/bodyKey/bodyParams`) so these
+     existing tests keep compiling; adjust `expect(result.items[0].title)`
+     assertions in the 2 tests that check title (`"returns mapped entities
+     from envelope"`, `"survives the real unwrap..."`) to check
+     `titleKey`/`titleParams` instead.
+8. **GREEN**: `src/features/notification/infrastructure/repositories/notification.repository.ts`
+   - `getUnreadCount()`: replace the `unreadCounts()` sum call with a direct
+     `GET NOTIFICATION_EP.unreadCount` call returning `{ count }` (cast to
+     `UnreadCountResponseDto`), no reduce/sum, no `RoomUnreadCountDto` import
+     needed here anymore (keep the import only if `unreadCounts` is used
+     elsewhere in this file — it is not, after this change, so drop it).
+   - `markAllRead()`: rewrite as a bounded loop:
+     ```ts
+     const MAX_BATCHES = 40;
+     async markAllRead(): Promise<void> {
+       try {
+         let hasMore = true;
+         let iterations = 0;
+         while (hasMore) {
+           if (iterations >= MAX_BATCHES) {
+             throw new Error("markAllRead exceeded MAX_BATCHES guard");
+           }
+           const res = (await this.http.patch(
+             NOTIFICATION_EP.markAllRead,
+           )) as unknown as { markedCount: number; hasMore: boolean };
+           hasMore = res.hasMore;
+           iterations += 1;
+         }
+       } catch (err) {
+         throw toFailure(err);
+       }
+     }
+     ```
+     (guard error is a genuine `throw`, not a `NotificationFailure` shape —
+     document in code comment that this is an invariant violation, not a
+     domain failure, so it should NOT be caught by `toFailure`/silently
+     mapped to `unknown`; wrap the `while` body's own try/catch separately
+     from the guard-trip throw if `fe-nextjs-engineer` finds the single
+     try/catch swallows the guard's intent — verify against the test in
+     step 7 asserting "rejects", either behavior satisfies the test as long
+     as it rejects).
+   - `listNotifications()`: keep the non-`unread` branch exactly as-is (type
+     filter, single call, existing behavior). Add an early branch for
+     `filter === "unread"`:
+     ```ts
+     const MAX_PAGES = 20;
+     if (filter === "unread") {
+       const collected: NotificationEntity[] = [];
+       let nextCursor: string | undefined = cursor;
+       let realHasMore = false;
+       for (let page = 0; page < MAX_PAGES; page += 1) {
+         const envelope = (await this.http.get(NOTIFICATION_EP.list, {
+           params: { limit: 100, cursor: nextCursor },
+           ...({ raw: true } as Record<string, unknown>),
+         })) as unknown as ApiEnvelope<NotificationResponseDto[]>;
+         const { data, pagination } = parseEnvelope(envelope);
+         const unread = (data ?? [])
+           .filter((dto) => !dto.read)
+           .map(mapNotification);
+         collected.push(...unread);
+         nextCursor = pagination?.nextCursor ?? undefined;
+         realHasMore = pagination?.hasMore ?? false;
+         if (collected.length >= limit || !realHasMore) break;
+       }
+       return {
+         items: collected.slice(0, limit),
+         nextCursor: nextCursor ?? null,
+         hasMore: realHasMore,
+       };
+     }
+     ```
+     Note: `collected.slice(0, limit)` truncation vs `hasMore` reporting —
+     since the test in step 7 asserts `hasMore` reflects the LAST page
+     fetched's real value, keep returning the raw `realHasMore` even when
+     truncating `items` to `limit` (documented, minor known imprecision:
+     "Load more" may occasionally re-fetch an already-seen unread item if
+     truncation cut mid-page — acceptable per the ADR's "less efficient,
+     not incorrect" framing; do not over-engineer a second cursor to avoid
+     this, out of scope for a wiring US).
+
+### Phase 4 — DI + delete hybrid facade (green, no new test — deletion)
+
+9. Delete `src/features/notification/infrastructure/repositories/hybrid-notification.repository.ts`
+   and `hybrid-notification.repository.test.ts`.
+10. **`src/bootstrap/di/notification.di.ts`** — `makeRepo()` reverts to:
+    ```ts
+    async function makeRepo(): Promise<INotificationRepository> {
+      if (USE_MOCK) return new MockNotificationRepository();
+      await ensureFreshSession();
+      return new NotificationRepository(await createServerHttpClient());
+    }
+    ```
+    Drop the `cookies()`/`NEXT_LOCALE` read and the `locale` constructor arg
+    entirely (mapper no longer takes a locale — Phase 1). Drop the
+    `HybridNotificationRepository` import. Remove now-unused `cookies` import
+    from `next/headers` if nothing else in this file uses it.
+11. **`src/features/notification/infrastructure/repositories/notification.repository.ts`**
+    constructor: drop the `locale: string = "vi"` second param (no longer
+    used by the mapper) — becomes `constructor(private readonly http:
+    AxiosInstance) {}`. Update all `new NotificationRepository(http, "vi")`
+    call sites in `notification.repository.test.ts` to drop the second arg
+    (mechanical, ~15 call sites per the read above).
+
+### Phase 5 — endpoint constants + doc comments (green)
+
+12. **`src/bootstrap/endpoint/notification.endpoint.ts`** — update doc
+    comments only (paths for `list`/`markRead`/`markAllRead`/`unreadCount`
+    are already correct per the story's ground-truth — verify byte-for-byte
+    against Product Contract table: `list` = `/noti/api/v1/notifications` ✓,
+    `unreadCount` = `/noti/api/v1/notifications/unread-count` ✓, `markRead` =
+    `/noti/api/v1/notifications/${id}/read` ✓, `markAllRead` =
+    `/noti/api/v1/notifications/read-batch` ✓ — all four already match, no
+    path edits needed, ONLY the "MOCK-ONLY: no real endpoint" comments on
+    `list`/`unreadCount`/`markRead`/`markAllRead` are now stale and must be
+    rewritten to reflect real US-146 backing; the module-level doc comment
+    at the top must also drop the "have NO real backing... stay
+    force-mocked" sentence). `unreadCounts` (plural) entry and its doc
+    comment stay untouched verbatim.
+
+### Phase 6 — use-case tests: fixture shape only (green, mechanical)
+
+13. **`src/features/notification/domain/use-cases/notification.use-cases.test.ts`**
+    — `makeNotification()` helper's `title`/`body` fields → `titleKey`/
+    `titleParams`/`bodyKey`/`bodyParams` (e.g. `titleKey:
+    "notification_grade_conduct_approved_title", titleParams: {}, bodyKey:
+    "notification_grade_conduct_approved_body", bodyParams: {}`). No
+    assertions in this file reference `.title`/`.body` directly (checked
+    above — only `.type`/`.hasMore`/`.nextCursor`/`.count` are asserted), so
+    this is a type-fix-only edit, no new test cases needed here.
+
+### Phase 7 — presentation reshape (red→green, Storybook + a11y touch)
+
+14. **`src/features/notification/presentation/notifications-center/notifications-center.tsx`**
+    — `NotificationRow`:
+    - Add a `titleKeys`/`bodyKeys` closed-union cast mirroring the existing
+      `typeLabelKey` pattern one line above. Since the key space isn't a
+      small fixed literal union like `type_${NotificationType}` (it's driven
+      by BE-emitted string keys), cast via a helper that falls back to
+      `"unknown"` for anything not in a known-keys `Set`:
+      ```ts
+      const KNOWN_TITLE_KEYS = new Set([
+        "notification_discipline_violation_title",
+        "notification_attendance_absence_title",
+        "notification_grade_conduct_approved_title",
+        "notification_attendance_leave_approved_title",
+      ]);
+      const KNOWN_BODY_KEYS = new Set([
+        "notification_discipline_violation_body",
+        "notification_attendance_absence_body",
+        "notification_grade_conduct_approved_body",
+        "notification_attendance_leave_approved_body",
+      ]);
+      const titleMsgKey = KNOWN_TITLE_KEYS.has(item.titleKey)
+        ? (`titles.${item.titleKey}` as const)
+        : ("titles.unknown" as const);
+      const bodyMsgKey = KNOWN_BODY_KEYS.has(item.bodyKey)
+        ? (`bodies.${item.bodyKey}` as const)
+        : ("bodies.unknown" as const);
+      ```
+      (`as const` template-literal cast pattern must satisfy the typed `t()`
+      — if the typed messages augmentation rejects the dynamic template
+      literal, fall back to the exact cast style already used for
+      `typeLabelKey` just above, i.e. cast to the full literal union of the
+      4+1 known `"titles.<key>"` strings — engineer's call on which compiles
+      cleanly, document the choice actually used).
+    - Replace `{item.title}` → `{t(titleMsgKey, item.titleParams)}`.
+    - Replace `{item.body}` → `{t(bodyMsgKey, item.bodyParams)}`.
+    - `rowAriaLabel` call (`t("rowAriaLabel", { title: item.title, read: ... })`)
+      → `title: t(titleMsgKey, item.titleParams)`.
+    - `item.titleParams`/`item.bodyParams` are `Record<string, string>` —
+      confirm this satisfies `next-intl`'s `t()` second-arg ICU values type
+      (string values only, matches `severity`/`occurredAt` scope — no number/
+      Date params needed per story scope).
+15. Storybook: `notifications-center.stories.tsx` — update any fixture data
+    passed as `NotificationEntity[]` (`title`/`body` → `titleKey`/
+    `titleParams`/`bodyKey`/`bodyParams`, reuse the 4 known key-pairs) and
+    add ONE story case using an unknown key-pair (e.g.
+    `titleKey: "notification_future_unseen_title"`) to prove the
+    `unknown` fallback renders instead of throwing/raw-key — this is the
+    `fe-qa-playwright` interaction-test seed the AC's "unknown-key fallback
+    render" line requires.
+
+### Phase 8 — i18n keys (green, same-commit per i18n.md)
+
+16. **`src/bootstrap/i18n/messages/vi.json`** and **`en.json`** — add under
+    `notifications`:
+    ```jsonc
+    "titles": {
+      "notification_discipline_violation_title": "Vi phạm kỷ luật ({severity})",
+      "notification_attendance_absence_title": "Vắng mặt chưa phép",
+      "notification_grade_conduct_approved_title": "Hạnh kiểm đã được duyệt",
+      "notification_attendance_leave_approved_title": "Đơn xin nghỉ đã được duyệt",
+      "unknown": "Thông báo mới"
+    },
+    "bodies": {
+      "notification_discipline_violation_body": "Một vi phạm kỷ luật mức {severity} đã được ghi nhận vào {occurredAt}.",
+      "notification_attendance_absence_body": "Một buổi vắng mặt chưa phép đã được ghi nhận vào {occurredAt}.",
+      "notification_grade_conduct_approved_body": "Kết quả hạnh kiểm đã được duyệt vào {occurredAt}.",
+      "notification_attendance_leave_approved_body": "Đơn xin nghỉ đã được duyệt vào {occurredAt}.",
+      "unknown": "Xem chi tiết trong ứng dụng."
+    }
+    ```
+    (exact vi/en copy is `fe-nextjs-engineer`'s call within the ICU/param
+    constraints — `severity`/`occurredAt` only, terse tone matching existing
+    `type_*` labels; en.json mirrors the same key structure with English
+    text). `occurredAt` renders as the raw ISO string unless a `dateTime`/
+    formatted-value ICU argument is used — acceptable for this US's scope
+    (no new date-formatting utility introduced; if `fe-nextjs-engineer`
+    already has a shared relative-time/date formatter handy, reuse it,
+    don't build one).
+17. Run `bunx tsc --noEmit` immediately after — this is the mechanism that
+    confirms every `t("titles.<key>")` call site type-checks against the new
+    `messages.d.ts` augmentation (per i18n.md's typed-key guarantee).
+
+### Phase 9 — docs sync (green, no test)
+
+18. **`docs/product/screens.md`** line 46 — change the Notifications Center
+    row's status cell from `✅ US-E10.2 (list mock-first — BE chưa có
+    list/read endpoint, US-E18.18; unread-count real)` to reflect list/read/
+    unread-count now real, e.g. `✅ US-E10.2 + US-E18.25 (list/read/mark-all/
+    unread-count real, BE US-146; unread tab client-side drain — see ADR
+    0066)`.
+
+### Phase 10 — full gate + Harness proof
+
+19. `bun vitest run` (zero regression across the whole suite, not just
+    notification), `bunx tsc --noEmit`, `bun run build`.
+20. `fe-tech-lead-reviewer` + `fe-accessibility-auditor` in parallel (per
+    pipeline) — reviewer checks: hybrid facade fully gone, `getUnreadCount`
+    calls singular endpoint, `markAllRead`/`unread`-drain guards are bounded
+    and tested, no raw UUID interpolated into rendered copy, i18n dynamic-key
+    fallback never throws; auditor checks: new real-data string lengths
+    don't break `line-clamp-1`/`line-clamp-2`, `rowAriaLabel`/`aria-live`
+    still read correctly with interpolated ICU params.
+21. Design-review gate: **N/A** per story's Design Notes (content-source
+    swap only, empty JSX-structure diff beyond the two `t()` call sites) —
+    `fe-lead` documents this explicitly rather than skipping silently.
+22. `fe-qa-playwright`: Storybook interaction tests for mark-read row,
+    mark-all-read (assert multi-batch drain via a mocked repo with 2+
+    batches), unread-tab drain-and-filter (page-1-all-read → page-2-has-
+    unread scenario), unknown-key fallback render (Phase 7's new story
+    case) — Go/No-Go.
+23. `scripts/bin/harness-cli story update --id US-E18.25 --status implemented
+    --unit 1 --integration 1 --e2e <0|1> --platform 1`; update
+    `docs/TEST_MATRIX.md` row; mark ask #34 RESOLVED + append ask #42 in
+    `EPIC-OVERVIEW.md` (per Harness Delta section above).
+24. Auto-merge to `main` per `.claude/rules/parallel-workflow.md` once gate
+    is green; delete the branch.
+
+### File-touch summary (for quick reviewer cross-check)
+
+| File | Change |
+| --- | --- |
+| `domain/entities/notification.entity.ts` | reshape `NotificationEntity` |
+| `infrastructure/dtos/notification-response.dto.ts` | split real vs mock DTO |
+| `infrastructure/mappers/notification.mapper.ts` | drop locale param; add `mapMockNotification` |
+| `infrastructure/mappers/notification.mapper.test.ts` | rewritten tests (Phase 1) |
+| `infrastructure/repositories/mocks/fixtures.ts` | retype only |
+| `infrastructure/repositories/mocks/notification.mock.repository.ts` | use `mapMockNotification` |
+| `infrastructure/repositories/notification.repository.ts` | `getUnreadCount` singular, `markAllRead` loop, `unread` drain, drop `locale` ctor param |
+| `infrastructure/repositories/notification.repository.test.ts` | new/replaced suites (Phase 3) |
+| `infrastructure/repositories/hybrid-notification.repository.ts` | DELETE |
+| `infrastructure/repositories/hybrid-notification.repository.test.ts` | DELETE |
+| `bootstrap/di/notification.di.ts` | plain `USE_MOCK ? Mock : Real` gate |
+| `bootstrap/endpoint/notification.endpoint.ts` | doc comments only, paths already correct |
+| `domain/use-cases/notification.use-cases.test.ts` | fixture shape fix only |
+| `presentation/notifications-center/notifications-center.tsx` | `NotificationRow` key+params rendering |
+| `presentation/notifications-center/notifications-center.stories.tsx` | fixture shape + unknown-key story |
+| `bootstrap/i18n/messages/vi.json` + `en.json` | new `notifications.titles.*`/`bodies.*` keys |
+| `docs/product/screens.md` | line 46 sync |
