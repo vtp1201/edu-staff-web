@@ -8,12 +8,12 @@
  *  - Server taxonomy, ground-truthed against `core`'s
  *    `internal/lms/exambank/core/domain/error/exam_paper.go` (UPPER_SNAKE wire
  *    codes via `codeFromKey`, decision 0008 holds for `core` — US-E18.15/ADR 0056).
- *    Only a subset is reachable in Option A (list/get/publish are wired; create/
- *    add-question are blocked) but the full taxonomy is mapped for honesty and
- *    for the day the write path unblocks.
+ *    Since core US-152 (US-E18.28/ADR 0056 Amendment 2) the write path is wired
+ *    for update/delete, so the question-level codes are genuinely reachable —
+ *    as is `not-editable` (editing/deleting a non-DRAFT paper).
  *
- * `not-supported` is the Option-A blocked-stub failure: create/update/delete have
- * no wire endpoint at all on the real contract, so the real repository throws it.
+ * `not-supported` is the remaining blocked-stub failure: `createExam` has no
+ * bulk-create wire endpoint, so the real repository still throws it.
  */
 export type ExamBankFailure =
   // client-side pre-submit guards
@@ -32,6 +32,11 @@ export type ExamBankFailure =
   | { type: "not-editable" } // EXAM_STATUS_INVALID_FOR_EDIT
   | { type: "question-body-required" } // EXAM_QUESTION_BODY_REQUIRED
   | { type: "question-marks-invalid" } // EXAM_QUESTION_MARKS_INVALID
+  | { type: "question-not-found" } // EXAM_QUESTION_NOT_FOUND
+  | { type: "mcq-options-invalid" } // EXAM_MCQ_OPTIONS_INVALID
+  | { type: "correct-option-invalid" } // EXAM_CORRECT_OPTION_INVALID
+  | { type: "options-not-allowed" } // EXAM_OPTIONS_NOT_ALLOWED
+  | { type: "question-difficulty-invalid" } // EXAM_QUESTION_DIFFICULTY_INVALID
   | { type: "answer-key-required" } // EXAM_ANSWER_KEY_REQUIRED_FOR_MCQ
   | { type: "answer-key-not-allowed" } // EXAM_ANSWER_KEY_NOT_ALLOWED
   | { type: "title-required" } // EXAM_PAPER_TITLE_REQUIRED

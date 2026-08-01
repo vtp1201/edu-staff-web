@@ -345,6 +345,42 @@ Confirmed facts (verify before citing if stale):
   spliced cell** (US-E18.26 admin timetable `room`). A single-cell edit re-maps the WHOLE slot list;
   if the new field is added only to the pushed slot, saving one cell silently wipes every other cell's
   value. Required proof = one `toContainEqual` on the edited slot AND one on an untouched slot.
+- **E18 "diff-sync un-mock" = ACCEPTED shape when BE offers only per-item routes** (US-E18.28 exam-bank
+  `updateExam`, after core US-152). No bulk/replace endpoint → the repo composes
+  `GET current → PATCH metadata (skipped when unchanged) → DELETE removed → PUT existing-id → POST
+  temp-id → final authoritative GET`. Deliberately NOT atomic, no rollback (compensating writes can fail
+  too) — accept it when the doc comment says so and the ADR sanctions it. Verify: (a) the server-id set is
+  snapshotted BEFORE the deletes so the PUT/POST partition is right; (b) an ordered
+  `expect(calls).toEqual(["GET detail","PATCH …",…])` test via a call-recording harness, not just
+  per-op tests; (c) `raw:true` top-level (not in `params`) on any paginated fan-out.
+  - Round-trip fidelity forces legitimate ENTITY additions: an unconditional PUT needs `questionType`
+    (else an ESSAY gets rewritten as MCQ) and `marks` (else the server's `totalMarks` resets). Optional
+    `questionType?`/`marks?` on the entity, set in the mapper and read in `mapXToWire` with a documented
+    default, "no new UI field" — that is a legitimate domain addition, NOT wire leakage. Don't flag it.
+- **Fixing an un-mock gap must not silently strengthen validation in MOCK mode** (US-E18.28 round 3,
+  fe-lead correction — worth applying proactively). When a review MUST/SHOULD FIX adds a client-side
+  pre-submit gate to protect a REAL non-atomic write, engineers apply it unconditionally, which changes
+  standing product behavior on the mock/existing path too. Canonical case: draft-save was lenient
+  (title only) with completeness enforced solely at Publish — the standard "draft = incremental,
+  publish = validated" split; an unconditional gate breaks "click Add question, save, come back later".
+  Correct shape = a dedicated VM prop whose **default restores the pre-US behavior exactly**
+  (`requireCompleteQuestions?: boolean = false`), wired `={!USE_MOCK}` from the route. Verify by
+  (a) grepping every call site of the component — untouched callers must rely on the default, and
+  (b) demanding BOTH-polarity stories (gate-on→blocked AND gate-off→still saves), since the lenient
+  story is the actual regression lock. Ask "what was true before this US?" before accepting any new
+  validation, and read defaults as the compatibility contract.
+- **Client-side gate mirroring a server gate belongs in `domain/use-cases/` as a pure policy**
+  (US-E18.28 `resolve-builder-access.ts`: `{useMock,status,authorId,callerId}` → `{allowed}` |
+  `{allowed:false, reason}`). Makes the RSC branch unit-testable instead of source-asserted, and the
+  `reason` union drives per-reason translated copy on the existing blocked-state component (added as an
+  optional prop, defaulting to the old reason — no fork). Requires the doc comment to state it is a
+  message-quality gate, never the security boundary. Good pattern; accept it.
+- **Caller-identity un-mock**: `MOCK_CURRENT_TEACHER_ID` → `(token ? decodeSubClaim(token) : null) ?? ""`
+  guarded by `if (USE_MOCK) return MOCK_...`. Canonical precedent
+  `admin/academic-records/page.tsx:23-24`. Fail-closed because `""` never equals a real `authorId`, and
+  passing the member id to the client is not a token leak (it's already public as `authorId` in list
+  data). Without this, newly-wired `isOwner`-gated affordances are dead code — so on any un-mock US that
+  gates on ownership, check the id source actually changed.
 - **`{links: [...]}` flat-object list responses exist in `core`** (`LinkedStudentsResponse`,
   `LinkedParentsResponse`) — NOT every list endpoint is cursor-paginated. Verify the schema before
   demanding `raw:true`/`fetchAllPages`; the accepted documentation shape for a confirmed-flat call is a

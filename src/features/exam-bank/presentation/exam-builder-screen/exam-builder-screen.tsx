@@ -23,6 +23,9 @@ const EXAM_BANK_LIST_PATH = "/teacher/exam-bank";
 export function ExamBuilderScreen({
   initial,
   subjects,
+  reorderEnabled = true,
+  metaEditable = true,
+  requireCompleteQuestions = false,
   saveDraftAction,
   createExamAction,
   publishExamAction,
@@ -85,6 +88,30 @@ export function ExamBuilderScreen({
         toast.error(t("errors.missing-title"));
         resolve(null);
         return;
+      }
+      // Real-mode-only pre-save gate (review SHOULD FIX + fe-lead scoping
+      // correction, US-E18.28). An incomplete question is rejected by the
+      // server with a generic `VALIDATION_FAILED` — and because the real
+      // `updateExam` sequence is deliberately non-atomic, that error would
+      // arrive AFTER earlier deletes/edits already persisted. Block the write
+      // instead and point at the offending question, reusing the same
+      // per-question error state the publish gate already surfaces.
+      //
+      // Draft-save stays LENIENT otherwise (default): reserving an empty
+      // question slot and saving progress is normal authoring, and publish is
+      // gated separately. Only completeness-for-SAVE is conditional here.
+      if (requireCompleteQuestions) {
+        const invalidIdx = builder.questions.findIndex((q) =>
+          validationErrors.has(q.id),
+        );
+        if (invalidIdx !== -1) {
+          const invalid = builder.questions[invalidIdx];
+          const failure = validationErrors.get(invalid.id);
+          builder.selectQuestion(invalidIdx);
+          if (failure) toast.error(t(`errors.${failure}`));
+          resolve(null);
+          return;
+        }
       }
       startSave(async () => {
         if (savedExamId) {
@@ -154,6 +181,7 @@ export function ExamBuilderScreen({
         <BuilderHeader
           meta={builder.meta}
           subjects={subjects}
+          metaEditable={metaEditable}
           titleInvalid={titleTouched && !builder.meta.title.trim()}
           onChange={builder.updateExamMeta}
         />
@@ -174,6 +202,7 @@ export function ExamBuilderScreen({
             questions={builder.questions}
             selectedIdx={builder.selectedIdx}
             errorIds={errorIds}
+            reorderEnabled={reorderEnabled}
             onSelect={builder.selectQuestion}
             onMoveUp={(idx) => builder.reorderQuestions(idx, idx - 1)}
             onMoveDown={(idx) => builder.reorderQuestions(idx, idx + 1)}

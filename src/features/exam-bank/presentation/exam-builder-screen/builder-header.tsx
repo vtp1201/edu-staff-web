@@ -17,6 +17,11 @@ type BuilderHeaderProps = {
   meta: ExamBuilderMeta;
   subjects: SubjectOption[];
   titleInvalid?: boolean;
+  /** False in real mode: `subjectId` is immutable server-side (clone-routing
+   *  key, omitted from `UpdateExamPaperRequest`) and `maxAttempts` has no wire
+   *  field at all, so both would be silently discarded on save. Disable them
+   *  rather than report a false success (review MUST FIX, US-E18.28). */
+  metaEditable?: boolean;
   onChange: (patch: Partial<ExamBuilderMeta>) => void;
 };
 
@@ -24,9 +29,13 @@ export function BuilderHeader({
   meta,
   subjects,
   titleInvalid = false,
+  metaEditable = true,
   onChange,
 }: BuilderHeaderProps) {
   const t = useTranslations("examBank");
+  // One explainer for both locked fields, referenced by each via
+  // aria-describedby so the reason is announced, not just visible.
+  const lockedNoteId = "exam-meta-locked-note";
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -51,9 +60,14 @@ export function BuilderHeader({
         <Label htmlFor="exam-subject">{t("builder.subjectLabel")}</Label>
         <Select
           value={meta.subjectId}
+          disabled={!metaEditable}
           onValueChange={(v) => onChange({ subjectId: v })}
         >
-          <SelectTrigger id="exam-subject" className="w-full">
+          <SelectTrigger
+            id="exam-subject"
+            className="w-full"
+            aria-describedby={metaEditable ? undefined : lockedNoteId}
+          >
             <SelectValue placeholder={t("builder.subjectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -86,12 +100,23 @@ export function BuilderHeader({
             type="number"
             min={1}
             value={meta.maxAttempts}
+            disabled={!metaEditable}
+            aria-describedby={metaEditable ? undefined : lockedNoteId}
             onChange={(e) =>
               onChange({ maxAttempts: Number(e.target.value) || 0 })
             }
           />
         </div>
       </div>
+
+      {!metaEditable && (
+        <p
+          id={lockedNoteId}
+          className="text-muted-foreground text-xs sm:col-span-2 lg:col-span-4"
+        >
+          {t("builder.metaLockedNote")}
+        </p>
+      )}
     </div>
   );
 }

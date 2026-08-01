@@ -12,6 +12,10 @@ type QuestionListItemProps = {
   isFirst: boolean;
   isLast: boolean;
   hasError: boolean;
+  /** False in real mode — question order is server-assigned, no reorder route
+   *  exists (US-E18.28/ADR 0056 Amendment 2), so the controls are omitted
+   *  rather than left as focusable dead ends. `QuestionList` explains why. */
+  reorderEnabled: boolean;
   onSelect: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -23,6 +27,7 @@ export function QuestionListItem({
   isFirst,
   isLast,
   hasError,
+  reorderEnabled,
   onSelect,
   onMoveUp,
   onMoveDown,
@@ -76,28 +81,30 @@ export function QuestionListItem({
         )}
       </button>
 
-      <div className="flex shrink-0 flex-col">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6 min-h-11 min-w-11"
-          disabled={isFirst}
-          onClick={onMoveUp}
-          aria-label={t("moveUpAriaLabel", { index: displayIndex })}
-        >
-          <ChevronUp className="size-4" aria-hidden="true" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6 min-h-11 min-w-11"
-          disabled={isLast}
-          onClick={onMoveDown}
-          aria-label={t("moveDownAriaLabel", { index: displayIndex })}
-        >
-          <ChevronDown className="size-4" aria-hidden="true" />
-        </Button>
-      </div>
+      {reorderEnabled && (
+        <div className="flex shrink-0 flex-col">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 min-h-11 min-w-11"
+            disabled={isFirst}
+            onClick={onMoveUp}
+            aria-label={t("moveUpAriaLabel", { index: displayIndex })}
+          >
+            <ChevronUp className="size-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 min-h-11 min-w-11"
+            disabled={isLast}
+            onClick={onMoveDown}
+            aria-label={t("moveDownAriaLabel", { index: displayIndex })}
+          >
+            <ChevronDown className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
+      )}
     </li>
   );
 }

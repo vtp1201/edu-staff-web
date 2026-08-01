@@ -1748,7 +1748,7 @@
     }
   },
   "examBank": {
-    "authoringDisabledNote": "Creating, editing, and deleting exams is not available in this environment. You can still view and publish existing exams.",
+    "authoringDisabledNote": "Creating a new exam is not available in this environment. You can still edit and delete your drafts, and publish existing exams.",
     "builder": {
       "addQuestion": "Add question",
       "back": "Back",
@@ -1762,6 +1762,7 @@
       "durationLabel": "Duration (minutes)",
       "editTitle": "Edit exam",
       "maxAttemptsLabel": "Max attempts",
+      "metaLockedNote": "The subject and number of attempts cannot be changed after an exam is created. You can still edit the title and duration.",
       "newQuestionPlaceholder": "New question",
       "noSelection": "Select a question to edit",
       "optionPlaceholder": "Option {option} text",
@@ -1769,6 +1770,7 @@
       "publish": "Publish",
       "questionHasError": "This question is missing information",
       "questionsHeading": "Questions ({count})",
+      "reorderUnavailable": "Question order follows the order questions were added and cannot be changed in this environment.",
       "saveDraft": "Save draft",
       "saving": "Saving...",
       "subjectLabel": "Subject",
@@ -1810,21 +1812,26 @@
       "answer-key-not-allowed": "This question type does not allow an answer key.",
       "answer-key-required": "MCQ questions require an answer key.",
       "cannot-delete-published": "Cannot delete a published exam.",
+      "correct-option-invalid": "The correct answer must be one of the options you entered.",
       "duration-invalid": "The exam duration must be greater than zero.",
       "forbidden": "You don't have permission for this action.",
       "insufficient-options": "Each question needs at least 2 options.",
       "invalid-cursor": "Could not load more exams.",
       "invalid-transition": "This exam status change is not allowed.",
+      "mcq-options-invalid": "An MCQ question needs 2 to 4 options, and each option needs text.",
       "missing-title": "Please enter an exam title.",
       "network-error": "Connection error. Please try again.",
       "no-questions": "An exam needs at least one question.",
       "not-editable": "This exam cannot be edited in its current status.",
       "not-found": "Exam not found.",
       "not-supported": "This action isn't available yet.",
+      "options-not-allowed": "This question type does not allow answer options.",
       "question-body-required": "A question is missing its content.",
+      "question-difficulty-invalid": "The question difficulty is not valid.",
       "question-empty-content": "Question content is empty.",
       "question-marks-invalid": "Question marks must be greater than zero.",
       "question-missing-answer": "Question is missing a correct answer.",
+      "question-not-found": "That question no longer exists. It may have been deleted.",
       "title-required": "Please enter an exam title.",
       "title-too-long": "The exam title must not exceed 200 characters.",
       "unknown": "An unknown error occurred."
@@ -1867,7 +1874,9 @@
     },
     "unavailable": {
       "title": "Not available",
-      "body": "Creating and editing exams is not supported in this environment. You can still view and publish existing exams.",
+      "body": "Creating a new exam is not available in this environment. You can still edit and delete your drafts, and publish existing exams.",
+      "notDraftBody": "Only draft exams can be edited. This exam is already published, so its content stays as is.",
+      "notAuthorBody": "You can only edit exams you created yourself.",
       "back": "Back to exam bank"
     }
   },

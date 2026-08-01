@@ -1748,7 +1748,7 @@
     }
   },
   "examBank": {
-    "authoringDisabledNote": "Việc tạo, chỉnh sửa và xoá đề thi chưa khả dụng trong môi trường này. Bạn vẫn có thể xem và xuất bản đề thi hiện có.",
+    "authoringDisabledNote": "Việc tạo đề thi mới chưa khả dụng trong môi trường này. Bạn vẫn có thể chỉnh sửa, xoá bản nháp và publish đề thi hiện có.",
     "builder": {
       "addQuestion": "Thêm câu",
       "back": "Quay lại",
@@ -1762,6 +1762,7 @@
       "durationLabel": "Thời lượng (phút)",
       "editTitle": "Chỉnh sửa đề thi",
       "maxAttemptsLabel": "Số lần làm",
+      "metaLockedNote": "Môn học và số lần làm không thể thay đổi sau khi đề thi được tạo. Bạn vẫn có thể sửa tiêu đề và thời lượng.",
       "newQuestionPlaceholder": "Câu hỏi mới",
       "noSelection": "Chọn câu hỏi để chỉnh sửa",
       "optionPlaceholder": "Nội dung phương án {option}",
@@ -1769,6 +1770,7 @@
       "publish": "Publish",
       "questionHasError": "Câu hỏi này còn thiếu thông tin",
       "questionsHeading": "Câu hỏi ({count})",
+      "reorderUnavailable": "Thứ tự câu hỏi được sắp theo lúc thêm và chưa thay đổi được trong môi trường này.",
       "saveDraft": "Lưu nháp",
       "saving": "Đang lưu...",
       "subjectLabel": "Môn học",
@@ -1810,21 +1812,26 @@
       "answer-key-not-allowed": "Loại câu hỏi này không cho phép đáp án.",
       "answer-key-required": "Câu hỏi trắc nghiệm cần có đáp án.",
       "cannot-delete-published": "Không thể xoá đề thi đã publish.",
+      "correct-option-invalid": "Đáp án đúng phải là một trong các phương án đã nhập.",
       "duration-invalid": "Thời lượng thi phải lớn hơn 0.",
       "forbidden": "Bạn không có quyền thực hiện thao tác này.",
       "insufficient-options": "Mỗi câu hỏi cần ít nhất 2 phương án.",
       "invalid-cursor": "Không thể tải thêm đề thi.",
       "invalid-transition": "Không thể chuyển trạng thái đề thi này.",
+      "mcq-options-invalid": "Câu hỏi trắc nghiệm cần từ 2 đến 4 phương án và mỗi phương án phải có nội dung.",
       "missing-title": "Vui lòng nhập tiêu đề đề thi.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "no-questions": "Đề thi cần ít nhất một câu hỏi.",
       "not-editable": "Không thể chỉnh sửa đề thi ở trạng thái hiện tại.",
       "not-found": "Không tìm thấy đề thi.",
       "not-supported": "Thao tác này hiện chưa được hỗ trợ.",
+      "options-not-allowed": "Loại câu hỏi này không cho phép nhập phương án trả lời.",
       "question-body-required": "Câu hỏi chưa có nội dung.",
+      "question-difficulty-invalid": "Độ khó của câu hỏi không hợp lệ.",
       "question-empty-content": "Câu hỏi chưa có nội dung.",
       "question-marks-invalid": "Điểm của câu hỏi phải lớn hơn 0.",
       "question-missing-answer": "Câu hỏi chưa chọn đáp án đúng.",
+      "question-not-found": "Không tìm thấy câu hỏi này. Có thể câu hỏi đã bị xoá.",
       "title-required": "Vui lòng nhập tiêu đề đề thi.",
       "title-too-long": "Tiêu đề đề thi không được vượt quá 200 ký tự.",
       "unknown": "Đã xảy ra lỗi không xác định."
@@ -1867,7 +1874,9 @@
     },
     "unavailable": {
       "title": "Không khả dụng",
-      "body": "Việc tạo và chỉnh sửa đề thi chưa được hỗ trợ trong môi trường này. Bạn vẫn có thể xem và publish đề thi hiện có.",
+      "body": "Việc tạo đề thi mới chưa khả dụng trong môi trường này. Bạn vẫn có thể chỉnh sửa, xoá bản nháp và publish đề thi hiện có.",
+      "notDraftBody": "Chỉ đề thi ở trạng thái nháp mới chỉnh sửa được. Đề thi này đã publish nên nội dung được giữ nguyên.",
+      "notAuthorBody": "Bạn chỉ có thể chỉnh sửa đề thi do chính mình tạo.",
       "back": "Quay lại kho đề thi"
     }
   },

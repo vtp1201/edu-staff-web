@@ -186,12 +186,12 @@ Watch for these (each has bitten a story here):
   untracked `*audit*.stories.tsx` / stories containing `console.log` must never be committed. Note: the
   tree can change under you mid-review if a parallel `/fe` session is active — re-check `git status` +
   re-run this story's storybook against clean HEAD before finalizing. (US-E23.1.)
-- **Full storybook-vitest suite has broad PRE-EXISTING failures** — many unrelated story files
-  (lesson-bank, discipline, timetable, announcements, messaging…) fail both in the full run and in
-  ISOLATION with a real Radix error (`A <Select.Item /> must have a value prop that is not an empty
-  string`) plus worker contention. Don't attribute these to the story under review — confirm by running
-  the story's OWN files in isolation (they pass) and spot-check one unrelated failing file in isolation
-  (still fails). Flag as repo-health to fe-lead, not a per-story blocker. (Observed US-E23.1, 2026-07-19.)
+- ~~**Full storybook-vitest suite has broad PRE-EXISTING failures**~~ — **STALE, fixed.** Observed
+  US-E23.1 (2026-07-19) with Radix `<Select.Item value="">` errors + worker contention across
+  lesson-bank/discipline/timetable/announcements/messaging. Re-verified 2026-08-01 (US-E18.28):
+  `bunx vitest run --config vitest.storybook.mts` is **fully green, 151 files / 1108 tests**. So a
+  storybook failure now IS attributable to the story under review — don't wave it off as repo health.
+  (Console noise like `<tfoot> cannot contain a nested <p>` still prints on pass; that's separate.)
 
 - **Contract-remap / force-mock / invented-default US landing without a registered ADR** — in the E18
   BE-wiring epic every comparable US registered a decision (`0058` attendance remap, `0059` invitation,
@@ -301,6 +301,26 @@ before reading for style.
   `fullName`/`studentId` that the real BE never returns. The stale feature's doc comment still claims
   "flipping USE_MOCK=false needs no rework". When a US ground-truths an endpoint, grep the URL across
   ALL features and flag every other consumer's DTO as drift (follow-up, not a block on the scoped US).
+- **E18 un-mock: a VISIBLE, EDITABLE field with no wire path = silent false success** (US-E18.28
+  exam-bank `builder-header.tsx` Subject select + Max attempts input). Engineers correctly handle the
+  omissions they were *told* about (reorder controls removed + `role="note"` explainer; gradeLevel/
+  marks never in the UI) and miss the fields that were *already* on screen — because the screen was
+  previously unreachable in real mode (`if(!USE_MOCK) return <XUnavailable/>`), so the US that makes it
+  reachable is what turns a dormant field into a live regression. Tell: `buildCreateInput()` collects a
+  field that the repo's PATCH body doesn't send (`subjectId` immutable server-side, `maxAttempts` has no
+  wire field), followed by an unconditional `toast.success`. Blocking when the story's own Design Notes
+  say "must not silently no-op" — and the fix is usually the flag pattern the engineer already built in
+  the same commit (`reorderEnabled` → `metaEditable`). Always diff "fields the UI collects" vs "fields
+  the wire body sends" on any un-mock US, and check which screens the US newly makes reachable.
+- **`core`'s DTO-tag validation returns `code:"VALIDATION_FAILED"`, NOT a domain code** (verified
+  `pkg/kit/response/error.go:33-37`: `*apperror.ValidationError` → 422 + `VALIDATION_FAILED` + `fields[]`;
+  only `*apperror.AppError` gets `codeFromKey(message)` = UPPER_SNAKE). So a client that skips a
+  pre-submit check hits the *tag* validator, not the domain error, and every feature `toFailure` that
+  maps only domain codes collapses it to `"unknown"` — a translated but content-free "unknown error".
+  When a story claims "the server's own validation surfaces a legible message", check whether the
+  failing field trips a `validate:"required,min=..."` tag (→ VALIDATION_FAILED → unknown) or a domain
+  guard (→ specific key). Worse when the repo does a NON-ATOMIC multi-call sequence: earlier writes
+  already persisted when the generic error fires. Consider mapping `VALIDATION_FAILED` explicitly.
 - **`docs/TEST_MATRIX.md` row missing for an E18 story** keeps recurring (US-E18.18, US-E12.13,
   US-E18.26). Cheapest possible check: `grep -oE "^\| US-E18\.[0-9]+" docs/TEST_MATRIX.md | sort -u`
   — every sibling has a row, so an absent one is unambiguous. Pair it with the packet's `## Status`

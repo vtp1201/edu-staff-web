@@ -7,6 +7,8 @@ import {
   type Pagination,
   unwrapResponse,
 } from "@/bootstrap/lib/api-envelope";
+import type { UpdateExamInput } from "../../domain/entities/exam-bank-input.entity";
+import type { ExamBankQuestion } from "../../domain/entities/exam-bank-question.entity";
 import type { ExamBankSummaryDto } from "../dtos/exam-bank-list-response.dto";
 import { ExamBankRepository } from "./exam-bank.repository";
 import { MockExamBankRepository } from "./mocks/exam-bank.mock.repository";
@@ -59,12 +61,19 @@ describe("MockExamBankRepository", () => {
 // with axios's generic method signatures; casting the whole instance is the
 // established test idiom (see subject-catalogue.repository.test.ts).
 function makeHttp(
-  over: { get?: unknown; post?: unknown; put?: unknown; delete?: unknown } = {},
+  over: {
+    get?: unknown;
+    post?: unknown;
+    put?: unknown;
+    patch?: unknown;
+    delete?: unknown;
+  } = {},
 ): AxiosInstance {
   return {
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
     ...over,
   } as unknown as AxiosInstance;
@@ -94,6 +103,7 @@ function paperDto(over: Partial<ExamBankSummaryDto> = {}): ExamBankSummaryDto {
     status: "DRAFT",
     questions: [
       {
+        questionId: "eq-1",
         position: 1,
         questionType: "MCQ",
         body: "1+1?",
@@ -197,32 +207,253 @@ describe("ExamBankRepository (real /lms/exam-papers)", () => {
     );
   });
 
-  it.each([
-    "createExam",
-    "updateExam",
-    "deleteExam",
-  ] as const)("%s is a permanently blocked stub (throws not-supported)", async (method) => {
+  it("createExam is still a permanently blocked stub (no bulk-create endpoint — ADR 0056 Amendment 2)", async () => {
     const repo = new ExamBankRepository(makeHttp());
-    const call =
-      method === "createExam"
-        ? repo.createExam({
-            title: "x",
-            subjectId: "s",
-            durationMinutes: 1,
-            maxAttempts: 1,
-            questions: [],
-          })
-        : method === "updateExam"
-          ? repo.updateExam("ep-1", {
-              id: "ep-1",
-              title: "x",
-              subjectId: "s",
-              durationMinutes: 1,
-              maxAttempts: 1,
-              questions: [],
-            })
-          : repo.deleteExam("ep-1");
-    await expect(call).rejects.toThrow("not-supported");
+    await expect(
+      repo.createExam({
+        title: "x",
+        subjectId: "s",
+        durationMinutes: 1,
+        maxAttempts: 1,
+        questions: [],
+      }),
+    ).rejects.toThrow("not-supported");
+  });
+});
+
+// ── US-E18.28: deleteExam + updateExam diff-sync (core US-152) ───────────────
+
+describe("ExamBankRepository.deleteExam (real DELETE /exam-papers/:id)", () => {
+  it("DELETEs the paper and resolves (204, no body)", async () => {
+    const del = vi.fn(async () => undefined);
+    const repo = new ExamBankRepository(makeHttp({ delete: del }));
+    await expect(repo.deleteExam("ep-1")).resolves.toBeUndefined();
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith(EXAM_BANK_EP.detail("ep-1"));
+  });
+
+  it.each([
+    ["EXAM_STATUS_INVALID_FOR_EDIT", 409, "not-editable"],
+    ["EXAM_PAPER_FORBIDDEN", 403, "forbidden"],
+    ["EXAM_PAPER_NOT_FOUND", 404, "not-found"],
+  ] as const)("maps %s → %s", async (code, status, key) => {
+    const del = vi.fn(async () => {
+      throw new ApiError({ code, message: "no", retryable: false, status });
+    });
+    const repo = new ExamBankRepository(makeHttp({ delete: del }));
+    await expect(repo.deleteExam("ep-1")).rejects.toThrow(key);
+  });
+});
+
+describe("ExamBankRepository.updateExam (diff-sync composition)", () => {
+  /** Server question (already persisted, has a real `questionId`). */
+  function serverQuestion(questionId: string, position: number) {
+    return {
+      questionId,
+      position,
+      questionType: "MCQ" as const,
+      body: `Q${position}`,
+      answerKey: "A",
+      marks: 1,
+      options: [
+        { id: "A", text: "a" },
+        { id: "B", text: "b" },
+      ],
+      correctOptionId: "A",
+      difficulty: "MEDIUM" as const,
+    };
+  }
+
+  /** Local (builder) question — `id` matches a server questionId, or is temp. */
+  function localQuestion(id: string, index: number): ExamBankQuestion {
+    return {
+      id,
+      index,
+      content: `Q${index + 1}`,
+      options: [
+        { id: "A", text: "a" },
+        { id: "B", text: "b" },
+      ],
+      correctOptionId: "A",
+      difficulty: "medium",
+      subjectId: "subj-1",
+    };
+  }
+
+  function updateInput(
+    questions: ExamBankQuestion[],
+    over: Partial<UpdateExamInput> = {},
+  ): UpdateExamInput {
+    return {
+      id: "ep-1",
+      title: "Đề Toán",
+      subjectId: "subj-1",
+      durationMinutes: 45,
+      maxAttempts: 1,
+      questions,
+      ...over,
+    };
+  }
+
+  /** Wires a real repo whose GET returns `server`, tracking every call. */
+  function harness(serverQuestions: ReturnType<typeof serverQuestion>[]) {
+    const calls: string[] = [];
+    const get = vi.fn(async (url: string) => {
+      if (url === EXAM_BANK_EP.detail("ep-1")) {
+        calls.push("GET detail");
+        return paperDto({ questions: serverQuestions });
+      }
+      return { subjectId: "subj-1", name: "Toán" };
+    });
+    const patch = vi.fn(async (url: string) => {
+      calls.push(`PATCH ${url}`);
+      return paperDto({ questions: serverQuestions });
+    });
+    const put = vi.fn(async (url: string) => {
+      calls.push(`PUT ${url}`);
+      return undefined;
+    });
+    const post = vi.fn(async (url: string) => {
+      calls.push(`POST ${url}`);
+      return undefined;
+    });
+    const del = vi.fn(async (url: string) => {
+      calls.push(`DELETE ${url}`);
+      return undefined;
+    });
+    const repo = new ExamBankRepository(
+      makeHttp({ get, patch, put, post, delete: del }),
+    );
+    return { repo, calls, get, patch, put, post, del };
+  }
+
+  it("PATCHes {title, durationMinutes} only — gradeLevel/subjectId are never sent", async () => {
+    const h = harness([serverQuestion("eq-1", 1)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0)], { title: "Tiêu đề mới" }),
+    );
+    expect(h.patch).toHaveBeenCalledTimes(1);
+    expect(h.patch).toHaveBeenCalledWith(EXAM_BANK_EP.detail("ep-1"), {
+      title: "Tiêu đề mới",
+      durationMinutes: 45,
+    });
+  });
+
+  it("skips the PATCH entirely when neither title nor duration changed", async () => {
+    const h = harness([serverQuestion("eq-1", 1)]);
+    await h.repo.updateExam("ep-1", updateInput([localQuestion("eq-1", 0)]));
+    expect(h.patch).not.toHaveBeenCalled();
+  });
+
+  // QA (US-E18.28): the skip-optimization must not accidentally skip an actual
+  // change — cover the OTHER asymmetric case (duration changes, title doesn't),
+  // complementing the existing title-only-changed test above.
+  it("PATCHes when only durationMinutes changed (title unchanged)", async () => {
+    const h = harness([serverQuestion("eq-1", 1)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0)], { durationMinutes: 90 }),
+    );
+    expect(h.patch).toHaveBeenCalledTimes(1);
+    expect(h.patch).toHaveBeenCalledWith(EXAM_BANK_EP.detail("ep-1"), {
+      title: "Đề Toán",
+      durationMinutes: 90,
+    });
+  });
+
+  it("DELETEs a server question that is absent from the local list", async () => {
+    const h = harness([serverQuestion("eq-1", 1), serverQuestion("eq-2", 2)]);
+    await h.repo.updateExam("ep-1", updateInput([localQuestion("eq-1", 0)]));
+    expect(h.del).toHaveBeenCalledTimes(1);
+    expect(h.del).toHaveBeenCalledWith(EXAM_BANK_EP.question("ep-1", "eq-2"));
+  });
+
+  it("PUTs every question whose id already exists on the server", async () => {
+    const h = harness([serverQuestion("eq-1", 1), serverQuestion("eq-2", 2)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0), localQuestion("eq-2", 1)]),
+    );
+    expect(h.put).toHaveBeenCalledTimes(2);
+    expect(h.put).toHaveBeenNthCalledWith(
+      1,
+      EXAM_BANK_EP.question("ep-1", "eq-1"),
+      expect.objectContaining({ questionType: "MCQ", marks: 1 }),
+    );
+    expect(h.del).not.toHaveBeenCalled();
+    expect(h.post).not.toHaveBeenCalled();
+  });
+
+  it("POSTs a client-temp-id question as an append", async () => {
+    const h = harness([serverQuestion("eq-1", 1)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0), localQuestion("q-1754000000", 1)]),
+    );
+    expect(h.post).toHaveBeenCalledTimes(1);
+    expect(h.post).toHaveBeenCalledWith(
+      EXAM_BANK_EP.questions("ep-1"),
+      expect.objectContaining({ body: "Q2" }),
+    );
+  });
+
+  it("runs the combined case in order: GET → PATCH → DELETE → PUT → POST → GET", async () => {
+    const h = harness([serverQuestion("eq-1", 1), serverQuestion("eq-2", 2)]);
+    await h.repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0), localQuestion("q-999", 1)], {
+        durationMinutes: 60,
+      }),
+    );
+    expect(h.calls).toEqual([
+      "GET detail",
+      `PATCH ${EXAM_BANK_EP.detail("ep-1")}`,
+      `DELETE ${EXAM_BANK_EP.question("ep-1", "eq-2")}`,
+      `PUT ${EXAM_BANK_EP.question("ep-1", "eq-1")}`,
+      `POST ${EXAM_BANK_EP.questions("ep-1")}`,
+      "GET detail",
+    ]);
+  });
+
+  it("returns the authoritative final state from the trailing GET", async () => {
+    const server = [serverQuestion("eq-1", 1)];
+    const get = vi.fn(async (url: string) => {
+      if (url === EXAM_BANK_EP.detail("ep-1")) {
+        return paperDto({ title: "Từ server", questions: server });
+      }
+      return { subjectId: "subj-1", name: "Toán" };
+    });
+    const repo = new ExamBankRepository(makeHttp({ get }));
+    const detail = await repo.updateExam(
+      "ep-1",
+      updateInput([localQuestion("eq-1", 0)], { title: "Từ server" }),
+    );
+    expect(detail.title).toBe("Từ server");
+    expect(detail.subjectName).toBe("Toán");
+    expect(detail.questions[0].id).toBe("eq-1");
+  });
+
+  it.each([
+    ["EXAM_QUESTION_NOT_FOUND", 404, "question-not-found"],
+    ["EXAM_MCQ_OPTIONS_INVALID", 422, "mcq-options-invalid"],
+    ["EXAM_CORRECT_OPTION_INVALID", 422, "correct-option-invalid"],
+    ["EXAM_OPTIONS_NOT_ALLOWED", 422, "options-not-allowed"],
+    ["EXAM_QUESTION_DIFFICULTY_INVALID", 422, "question-difficulty-invalid"],
+    ["EXAM_STATUS_INVALID_FOR_EDIT", 409, "not-editable"],
+  ] as const)("maps a mid-sequence %s to the %s failure key", async (code, status, key) => {
+    const get = vi.fn(async (url: string) =>
+      url === EXAM_BANK_EP.detail("ep-1")
+        ? paperDto({ questions: [serverQuestion("eq-1", 1)] })
+        : { subjectId: "subj-1", name: "Toán" },
+    );
+    const put = vi.fn(async () => {
+      throw new ApiError({ code, message: "no", retryable: false, status });
+    });
+    const repo = new ExamBankRepository(makeHttp({ get, put }));
+    await expect(
+      repo.updateExam("ep-1", updateInput([localQuestion("eq-1", 0)])),
+    ).rejects.toThrow(key);
   });
 });
 

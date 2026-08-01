@@ -368,6 +368,11 @@ Pattern: a row's Approve/Reject/Submit buttons are rendered conditionally on cal
 Fix: on the row root (`<article ref tabIndex={-1}>` or similar stable anchor), move focus there when a `wasBusy && !isBusy && !canSubmit && !canDecide` transition is detected; also wire any existing "reject trigger" ref for the cancel path specifically. Check every new row/card component against its closest existing sibling (staff-leave, discipline, etc.) for this exact pattern before assuming it's net-new work.
 Seen in: US-E09.5 sd-violation-row.tsx (dead `rejectTriggerRef`, never focus()'d) + sd-conduct-note-row.tsx (no ref/focus management at all).
 
+## ARIA — role="status" applied to static (never-updating) banner content
+Pattern: a config-derived, per-mount-static explanatory banner (e.g. "creating a new paper is unavailable here") is wrapped in `<p role="status">` even though its content never changes after mount for a given render — `role="status"` is an ARIA live-region role meant to announce a content *update*, not to be a landmark for static text. Behavior across AT/browser combos on initial-paint static content inside a live region is inconsistent (some announce it unprompted on load, some don't announce at all since there's no prior state to diff).
+Fix: drop `role="status"` for genuinely static content; reserve it for content that actually toggles/updates client-side after the region is already mounted.
+Seen in: US-E18.15 exam-bank-screen.tsx authoringDisabledNote (pre-existing), re-flagged in US-E18.28 audit since the copy change made the banner's role choice newly worth revisiting.
+
 ## Motion — Submit-button spinner (Loader2/animate-spin) left ungated while sibling animation in the same story IS gated
 Pattern: a dialog's submit-button loading spinner uses plain `<Loader2 className="animate-spin" />` with no `motion-safe:`/`motion-reduce:` prefix, while 8+ other spinners across the codebase (grade-approval, login-form, mark-complete-button, submit-sheet, school-setup, etc.) are correctly gated — and often the SAME story's own expand/slide-in animation elsewhere IS correctly gated, making the omission a local inconsistency rather than an unresolved design question.
 Fix: `motion-safe:animate-spin` (or `animate-spin motion-reduce:animate-none`, matching whichever convention the nearest sibling file uses).
