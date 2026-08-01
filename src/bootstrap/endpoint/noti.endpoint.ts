@@ -1,19 +1,21 @@
 /**
  * noti (notification) service — contract-first (decision `0009`); BE follows.
  * The notification service has grown a `cmd/server` HTTP+SSE surface
- * (US-E18.18): the real SSE path is `/api/v1/stream`. The proxy still calls this
- * upstream URL DIRECTLY (not through Kong) per ADR `0009`/`0030` — that
- * direct-bypass architecture is unchanged here; only the path string is fixed.
+ * (US-E18.18): the real SSE path is `/api/v1/stream`.
  *
- * NOTE (US-E18.18, correction #2): the direct-bypass call carries a `Bearer`
- * token, but the service now trusts ONLY Kong-injected `X-Edu-Claims` headers
- * (edu-api ADR `0047`), so a live real stream will 401 until the proxy routes
- * through Kong (chicken/egg with the Kong-routing gap). Live verification stays
- * deferred; the path fix is correct regardless.
+ * US-E18.22 (ADR `0065`): Kong now routes `notification` (`/noti` prefix,
+ * `gateway/kong/kong.yml`), and `edu-api` ADR `0047` retired per-service
+ * Bearer-JWT verification in favor of Kong-injected `X-Edu-Claims` — so the
+ * SSE proxy (`app/[locale]/api/stream/route.ts`) now routes through Kong
+ * (`NEXT_PUBLIC_API_URL`) like every other repository call, instead of the
+ * retired direct-bypass `NOTI_SERVICE_URL`. `stream` therefore carries the
+ * full Kong-prefixed path, matching `ANNOUNCEMENTS_EP`'s `/noti/api/v1/*`
+ * convention below. Live-verified through a real `make stack-up` Kong
+ * gateway (200 with Bearer token, 401 without) — see ADR `0065`.
  */
 export const NOTI_EP = {
   /** Upstream SSE event stream proxied by `app/[locale]/api/stream`. */
-  stream: "/api/v1/stream",
+  stream: "/noti/api/v1/stream",
   /**
    * Presence snapshot (INT-401, US-E10.6 — mock-first). Path prefix assumed per
    * the ANNOUNCEMENTS_EP `/noti/api/v1/*` precedent (OQ-2); confirm against

@@ -760,6 +760,12 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     US-E18.9's dead `UpdateEntries()`. See
     `US-E18.20-feed-moderation-wiring/story.md`.
 
+### Wave 4c — Kong routing live-verify + SSE proxy re-architecture (closes asks #1/#33/#36)
+
+| Story | Title | Drift | Lane | Ghi chú |
+|-------|-------|-------|------|---------|
+| US-E18.22 | Kong 5-service routing live-verify + SSE proxy re-architecture | — | high-risk | **Done** — ground-truthed `../edu-api/gateway/kong/kong.yml` + `docker-compose.yml` on `origin/main`: ask #1/#36 (Kong routes `social`/`notification`/`lms`, compose adds `social`+`lms`) is RESOLVED. Ran a real `make stack-up` (all 11 containers, incl. `edu-kong`/`edu-lms`/`edu-social`, healthy) and live-verified through Kong (`:8000`): register→signin (`clientId: "edu-web"`, IAM's seeded OAuth client) → `GET /noti/api/v1/stream` with Bearer token → `edu-notification`'s own access log shows `200`; same call with no `Authorization` header → Kong-level `401`. Separately confirmed `notification` has NO published host port under the network-segmentation topology — the OLD direct-bypass `NOTI_SERVICE_URL` design has no valid value to point at anymore, not just an auth mismatch. Re-architected `app/[locale]/api/stream/route.ts`'s real branch to route through Kong (`NEXT_PUBLIC_API_URL`, same convention as every other repository call) instead of direct-bypass; `NOTI_EP.stream` changed to the Kong-prefixed `/noti/api/v1/stream`; `NOTI_SERVICE_URL` env var retired (`.env.example` updated). Closes ask #33/#36 (this row) — see ADR `0065`. Explicitly OUT of scope: an epic-wide live-gateway regression re-run of every Wave 1-4b US (that is its own cross-cutting pass, not this US's remit); flipping any individual developer's `NEXT_PUBLIC_USE_MOCK` default in `.env.example`/`.env.local` (unchanged — each US's DI factory already switches on it, this US only removed the transport-layer blocker). Cross-repo observation (not a blocker): `notification`'s SSE response did not flush bytes to the client within several seconds of idle silence even after the `200` was logged server-side — likely Fiber-level buffering on the BE side, flagged for `edu-api` if tighter reconnect timing ever becomes a requirement. See `US-E18.22-use-mock-flip-sse-kong/story.md` + ADR `0065`. |
+
 ## Dependencies & thứ tự
 
 - Wave 0 trước tất cả (proof-of-pattern). Wave 1 các US độc lập module → chạy
