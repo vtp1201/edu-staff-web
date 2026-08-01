@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * US-E18.18 AC-1 — `NOTI_EP.stream === "/api/v1/stream"` and the real (non-mock)
- * branch of the SSE proxy fetches THAT path from `NOTI_SERVICE_URL`, forwarding
- * a Bearer token. Mirrors the `vi.stubEnv` + `vi.resetModules()` + dynamic
- * `import()` recipe from `principal/reports/layout.test.ts` since `USE_MOCK`
- * and `NOTI_URL` are both frozen at module-eval time from `process.env`.
+ * US-E18.22 (ADR `0065`) — the SSE proxy's real branch routes through Kong
+ * (`NEXT_PUBLIC_API_URL`, same convention as every other repository) instead
+ * of the retired direct-bypass `NOTI_SERVICE_URL` env var. `NOTI_EP.stream` is
+ * now the Kong-prefixed `/noti/api/v1/stream`. Mirrors the `vi.stubEnv` +
+ * `vi.resetModules()` + dynamic `import()` recipe from
+ * `principal/reports/layout.test.ts` since `USE_MOCK` and the Kong base URL
+ * are both frozen at module-eval time from `process.env`.
  *
  * `next/headers` + `auth-token.server` are mocked so the handler never touches
  * a real cookie jar; `global.fetch` is stubbed to inspect exactly what the
@@ -28,16 +30,16 @@ function makeJwt(payload: Record<string, unknown>): string {
   return `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.sig`;
 }
 
-describe("SSE proxy route GET (US-E18.18 real-branch upstream path)", () => {
+describe("SSE proxy route GET (US-E18.22 Kong-routed real branch)", () => {
   afterEach(() => {
     vi.resetModules();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
-  it("AC-1: real mode fetches NOTI_SERVICE_URL + /api/v1/stream with a Bearer token", async () => {
+  it("AC-1: real mode fetches Kong (NEXT_PUBLIC_API_URL) + /noti/api/v1/stream with a Bearer token", async () => {
     vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "false");
-    vi.stubEnv("NOTI_SERVICE_URL", "http://noti.internal");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://kong.internal:8000");
 
     const { getAccessToken } = await import(
       "@/bootstrap/lib/auth-token.server"
@@ -63,17 +65,44 @@ describe("SSE proxy route GET (US-E18.18 real-branch upstream path)", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    // AC-1: exact real path — a regression here (e.g. reverting to the old
-    // "/events/stream") would break this string match.
-    expect(url).toBe("http://noti.internal/api/v1/stream?tenant=school-a");
+    // AC-1: exact Kong-routed path — a regression here (e.g. reverting to
+    // direct-bypass or the bare `/api/v1/stream` path) would break this match.
+    expect(url).toBe(
+      "http://kong.internal:8000/noti/api/v1/stream?tenant=school-a",
+    );
     expect((init.headers as Record<string, string>).Authorization).toBe(
       `Bearer ${token}`,
     );
   });
 
-  it("AC-1: mock mode (NEXT_PUBLIC_USE_MOCK=true) never calls fetch — serves the mock upstream instead", async () => {
+  it("AC-2: real mode with no NEXT_PUBLIC_API_URL override defaults to Kong's local :8000", async () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "false");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "");
+
+    const { getAccessToken } = await import(
+      "@/bootstrap/lib/auth-token.server"
+    );
+    vi.mocked(getAccessToken).mockResolvedValue(makeJwt({ tenantId: "t1" }));
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(new ReadableStream(), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { NextRequest } = await import("next/server");
+    const { GET } = await import("./route");
+
+    const request = new NextRequest("http://localhost/vi/api/stream?tenant=t1");
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://localhost:8000/noti/api/v1/stream?tenant=t1");
+  });
+
+  it("AC-3: mock mode (NEXT_PUBLIC_USE_MOCK=true) never calls fetch — serves the mock upstream instead", async () => {
     vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "true");
-    vi.stubEnv("NOTI_SERVICE_URL", "http://noti.internal");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://kong.internal:8000");
 
     const { getAccessToken } = await import(
       "@/bootstrap/lib/auth-token.server"
@@ -96,16 +125,18 @@ describe("SSE proxy route GET (US-E18.18 real-branch upstream path)", () => {
     expect(response.headers.get("Content-Type")).toBe("text/event-stream");
   });
 
-  it("AC-1: no NOTI_SERVICE_URL configured falls back to the mock upstream (never fetch)", async () => {
+  it("AC-4: upstream 502 surfaces as Bad Gateway", async () => {
     vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "false");
-    vi.stubEnv("NOTI_SERVICE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://kong.internal:8000");
 
     const { getAccessToken } = await import(
       "@/bootstrap/lib/auth-token.server"
     );
     vi.mocked(getAccessToken).mockResolvedValue(makeJwt({ tenantId: "t1" }));
 
-    const fetchMock = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 502 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const { NextRequest } = await import("next/server");
@@ -114,7 +145,6 @@ describe("SSE proxy route GET (US-E18.18 real-branch upstream path)", () => {
     const request = new NextRequest("http://localhost/vi/api/stream?tenant=t1");
     const response = await GET(request);
 
-    expect(response.status).toBe(200);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(response.status).toBe(502);
   });
 });
