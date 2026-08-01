@@ -1076,3 +1076,355 @@ reused as-is. No `.i-vm.ts`, `actions.ts` or `page.tsx` file was touched —
   conduct/discipline self-view is now unblocked on the data side by
   `GET /members/{memberId}/enrollment`; it needs its own US (product/design gap,
   not a BE gap).
+
+## Accessibility Audit (fe-accessibility-auditor, 2026-08-01)
+
+### 1. Audit Summary
+
+Scope: the ONE user-visible change in this US — `child-picker.tsx`'s
+degraded-identity fallback (name → ordinal label, className → "chưa có lớp",
+avatar → ordinal digit) rendered when real-mode `linked-students` omits a
+student's display name (ask #20 residual). Checked: accessible-name
+composition, contrast (resolved against actual `src/app/tokens.css` hex
+values, not eyeballed), keyboard/focus, color-only-status, motion,
+Vietnamese microcopy, and the new Storybook interaction story
+(`ParentView_RealMode_NoNameFallback`).
+
+**Findings**: 1 Blocking (contrast), 0 Major, 0 Minor. **The Blocking finding
+was fixed in this same session** (small, mechanical token-class swap,
+`<30min`, per this team's established audit-fix pattern) — see A11Y-001.
+Everything else in the component-architect's contract (accessible name,
+keyboard operability, color-not-sole-signal, motion, microcopy, story
+coverage) verified **PASS**.
+
+**Overall verdict: PASS** (post-fix). Re-ran `bunx tsc --noEmit` (clean) and
+the full `timetable-view.stories.tsx` Storybook interaction suite (8/8
+passed, including the new fallback story) after the fix — no regression.
+
+### 2. WCAG 2.1 AA Coverage
+
+| Criterion | Description | PASS/FAIL | Finding ID |
+| --- | --- | --- | --- |
+| 1.4.3 Contrast (Minimum) | Fallback name/class text (`text-edu-text-primary`, `text-edu-text-secondary`) on card/tint bg | PASS | — |
+| 1.4.3 Contrast (Minimum) | Avatar digit fallback (`font-bold text-sm`, large-text floor ≥3:1 per this repo's rule) on solid `avatarBg` | **FAIL → FIXED** | A11Y-001 |
+| 1.4.1 Use of Color | "Chưa có lớp" state conveyed by text, not color alone | PASS | — |
+| 2.1.1 Keyboard | Picker `<button>` operable, no trap, existing Radix-free native semantics preserved | PASS | — |
+| 2.4.7 Focus Visible | `focus-visible:ring-3 ring-ring/50` unchanged by this diff | PASS | — |
+| 4.1.2 Name, Role, Value | Accessible name derived from visible text incl. fallback strings; `aria-pressed` state | PASS | — |
+| 2.5.5 Target Size (AAA, tracked as house floor) | `min-h-11 min-w-[240px]` ≥44px, unchanged | PASS | — |
+| 3.1.2 Language of Parts | Vietnamese fallback copy natural, unambiguous | PASS | — |
+| 2.3.3 / motion-safe house rule | No new animation introduced | PASS | — |
+
+### 3. Findings Catalogue
+
+```
+A11Y-001
+Severity: Blocking (WCAG 1.4.3 Contrast Minimum)
+Component: src/features/timetable/presentation/timetable-view/child-picker.tsx
+           (avatarBg/avatarText pairing sourced from subject-color-tokens.ts)
+Issue: The avatar span rendered white text (`text-white`, unconditional) on
+  every `CHILD_COLOR_CLASSES[color].avatarBg` solid background. Before this
+  US the avatar always showed 2-char name initials; this US adds the
+  ordinal-digit fallback ("1", "2", …) as the avatar's real-mode content for
+  EVERY child once a name is unavailable — since `linked-student.mapper.ts`
+  cycles `color` deterministically by roster position
+  (primary→success→warning→error→purple→teal), any parent with 3+ linked
+  children now deterministically hits `warning` (and 4+ hits `error`, 6+
+  cycles through all six), making this failure certain to render in real
+  mode, not a hypothetical edge case.
+Evidence: Resolved against actual `src/app/tokens.css` hex values (not
+  guessed) — white (#FFFFFF, L=1.0) vs each solid `avatarBg`:
+    --edu-success #13DEB9 → contrast 1.72:1 (FAIL, needs ≥3:1 large-text floor)
+    --edu-warning #FFAE1F → contrast 1.85:1 (FAIL) — this is exactly the
+      "white text on --edu-warning" pattern `.claude/rules/accessibility.md`
+      calls out by name, just reached via the avatar path, not a badge.
+    --edu-error   #FA896B → contrast 2.37:1 (FAIL)
+    --edu-teal    #00B8A9 → contrast 2.49:1 (FAIL)
+    --edu-primary #5D87FF → contrast 3.29:1 (marginal PASS)
+    --edu-purple  #7B5EA7 → contrast 5.25:1 (PASS)
+  4 of 6 palette colors failed even the 3:1 "large text" floor (project rule:
+  ≥14px bold = large text; avatar span is `font-bold text-sm` = 14px bold).
+Fix (APPLIED, same session): added `avatarText: string` to the
+  `ChildColorClasses` interface in `subject-color-tokens.ts`, set uniformly to
+  `"text-edu-text-primary"` (#2A3547) for all six colors — measured to pass
+  ≥3:1 against every solid `avatarBg` (min 3.64:1 on primary) and ≥4.5:1
+  against success/warning/error/teal. `child-picker.tsx`'s avatar span now
+  reads `cn("flex size-9 items-center justify-center rounded-full font-bold
+  text-sm", c.avatarBg, c.avatarText)` instead of a hardcoded `text-white`.
+  Verified: `bunx tsc --noEmit` clean, full `timetable-view.stories.tsx`
+  Storybook interaction suite 8/8 passed post-fix (no visual regression to
+  the existing named-child stories, whose avatar text simply darkened).
+Reference: WCAG 2.1 SC 1.4.3 (https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html);
+  `.claude/rules/accessibility.md` §Contrast ("Không đặt text trắng trên
+  --edu-warning (vàng)").
+```
+
+No further findings — everything else in the component-architect's contract
+verified clean (see §4/§5 below for detail).
+
+### 4. Keyboard Navigation Map
+
+- Tab order (unchanged by this US): fieldset legend (sr-only, not focusable)
+  → each child `<button type="button">` in DOM/reading order → (rest of
+  `timetable-view` screen: week navigator, grid).
+- Per button: `Tab`/`Shift+Tab` moves focus in/out; `Enter`/`Space` activates
+  `onClick` → `onSelect(child.childId)` (native `<button>` semantics, no
+  custom key handler needed or present — correct, no `role="radio"` fake
+  widget requiring arrow-key support was introduced).
+- Focus ring: `outline-none focus-visible:ring-3 focus-visible:ring-ring/50`
+  — `--ring` resolves to `--edu-primary-dark` (#4570EA) per
+  `src/app/globals.css:146` — visible on both the default `bg-edu-card`
+  (white) and the active-state tint (`bg-edu-primary/10` etc., still
+  high-contrast against the ring color). No `outline: none` without a
+  replacement (rule compliant).
+- `disabled` prop correctly sets native `disabled` (removes from tab order,
+  `disabled:pointer-events-none disabled:opacity-60` — not color-only, the
+  element becomes genuinely inert) — unaffected by this diff.
+- Verified by reading the actual DOM structure in `child-picker.tsx`
+  (fieldset → button → aria-hidden avatar span → two text spans), matching
+  the component-architect's §1 read exactly.
+
+### 5. Screen Reader Script
+
+**Before this US** (name always present, real mode never omitted it because
+it never existed as a field):
+> "Nguyễn An Lớp 10A1, button, pressed" (or "not pressed")
+
+**After this US, name present** (unchanged case):
+> "Nguyễn An Lớp 10A1, button, pressed"
+
+**After this US, name absent, className present** (new fallback #1):
+> "Con thứ 1 Lớp 10A1, button, not pressed"
+
+**After this US, name absent, className absent** (new fallback #2, the
+"double-degraded" case):
+> "Con thứ 2 Chưa có lớp, button, not pressed"
+
+Confirmed no comma is literally inserted by the browser's accname algorithm
+(the two sibling `<span>` text nodes are joined with a single space) — the
+component-architect's §5 correction is accurate; verified directly via the
+new Storybook interaction assertions
+(`canvas.getByRole("button", { name: /Con thứ 1 Lớp 10A1/ })` /
+`/Con thứ 2 Chưa có lớp/`), which exercise the exact regex a screen reader
+transcript would need to match. Multiple children with different ordinal +
+class combinations remain unambiguously distinguishable (ordinal always
+differs; class line differs whenever class state differs) — confirmed no two
+children in the `DEGRADED_CHILDREN` fixture (or any plausible roster) could
+produce identical accessible names, since `ordinal` is always unique per
+child.
+
+Avatar span (`aria-hidden="true"`) is correctly excluded from this
+announcement in all cases — the ordinal-digit fallback avatar content is
+never read twice.
+
+### 6. Quick Wins
+
+1. **[Blocking, fixed]** A11Y-001 — avatar white-on-solid-color contrast
+   (see above). Done.
+2. **[Optional polish, not required, not applied]** The component-architect's
+   §5 noted an optional `<span className="sr-only">{", "}</span>` separator
+   between the name and class lines for a clearer AT pause. Confirmed this
+   is genuinely optional per WCAG 4.1.2 (name is present, distinguishing,
+   programmatically determinable without it) — left unimplemented per the
+   architect's own "not mandating it, avoid scope creep" call; flagging here
+   only so it stays visible as a nice-to-have, not lost.
+
+### Other checks explicitly verified (no separate finding, all PASS)
+
+- **Motion**: `motion-safe:transition-colors` on the button (pre-existing,
+  color transition only, no new animation) — no `prefers-reduced-motion` gap
+  introduced by this diff.
+- **Vietnamese microcopy**: `"Con thứ {ordinal}"` and `"Chưa có lớp"` read
+  naturally to a Vietnamese parent — "Con thứ 1/2/3" is the standard ordinal
+  construction for enumerating one's children in this register, and "Chưa có
+  lớp" ("no class yet") is terse and unambiguous, consistent with sibling
+  copy tone elsewhere in the design system. No abbreviation, no ambiguity.
+- **i18n mechanism**: both new keys (`childOrdinalLabel`, `classPending`)
+  confirmed present in BOTH `messages/vi.json` and `messages/en.json` under
+  the existing `timetableView` namespace, using the same `{param}`
+  interpolation convention as the reused `classLabel` key — no hardcoded
+  strings introduced.
+- **Storybook interaction coverage**: `ParentView_RealMode_NoNameFallback`
+  genuinely exercises both degraded states (child 1: no name + real
+  className; child 2: no name + no className) in the SAME story, asserts
+  both accessible names via `getByRole`, asserts `aria-pressed` toggling, and
+  asserts the fallback card remains a fully operable control (`userEvent
+  .click` → `fetchChildTimetable` called with the correct `childId`) — not a
+  happy-path-only test. Confirmed by reading
+  `timetable-view.stories.tsx:191-229` and by re-running the file locally
+  (8/8 passed, post-fix).
+
+## Tech-Lead Review (fe-tech-lead-reviewer, 2026-08-01)
+
+### 1. Review Summary
+
+This US un-mocks the timetable feature's three consumer views against BE US-153's
+by-member endpoint and US-148's enrollment/`linked-students` enrichment, collapses
+the teacher schedule from a 1+N fan-out to a 2-call concurrent composition, and
+threads `room` through the admin builder's real RMW write path. Quality is high:
+every BE claim in the Evidence section was independently re-ground-truthed against
+`edu-api@e2da90b5` and **all eleven self-reported claims hold**. Layering, tokens,
+i18n parity and the failure taxonomy are clean. One real (real-mode-only) defect was
+found and fixed in-review, plus two pre-close doc items remain for `fe-lead`.
+
+### 2. Architecture Compliance — **PASS**
+
+- `import "server-only"` present on all three touched repositories
+  (`real-weekly-timetable.repository.ts:1`,
+  `mocks/weekly-timetable.mock.repository.ts:1`,
+  `admin/.../timetable.repository.ts:1`). The new mappers/DTOs correctly carry none —
+  matches the confirmed repo-wide convention (pure infra helpers are framework-free).
+- `grep` over `features/timetable/presentation` + `features/admin/timetable/presentation`
+  for `infrastructure/` / `bootstrap/di` → **zero hits**. No boundary violation
+  introduced by the new `getByMember`/`getMyTimetable`/`getByTeacher`/`getChildren`
+  compositions — they all live inside the repository, which is exactly right.
+- `bootstrap/di/timetable-view.di.ts`: **doc-comment-only diff**, confirmed by
+  `git diff main...HEAD`. `RealWeeklyTimetableRepository`'s constructor signature is
+  unchanged (`http`, `resolveTermId`, `currentUserId`), and `ensureFreshSession()` is
+  still wired in the `!USE_MOCK` branch. Claim #8 verified.
+- Naming conventions honoured (`linked-student-item.dto.ts`,
+  `member-enrollment-response.dto.ts`, `member-timetable-response.dto.ts`,
+  `linked-student.mapper.ts`). All three new endpoints are constants with
+  `encodeURIComponent` — no magic strings.
+- `child-picker.tsx` stays feature-local at
+  `features/timetable/presentation/timetable-view/` — correct under
+  `component-organization.md` tier 3 (composed, single screen). No promotion warranted;
+  no duplication introduced.
+
+### 3. Code Quality — **Excellent**
+
+- No `any`, no unexplained non-null `!`. The `?? "primary"` on the colour cycle
+  (`linked-student.mapper.ts:41`) is a `noUncheckedIndexedAccess` accommodation, not a
+  silent default.
+- `toTimetableViewFailure` branches on `error.code`, never on message. The
+  `TIMETABLE_CHILD_AMBIGUOUS → network-error` rationale comment **does exist**, at
+  `real-weekly-timetable.repository.ts:41-48`, and correctly explains both the
+  unreachability and the type-surface-ripple cost. Claim #3 verified. The residual
+  risk is acceptable: were it ever to fire, the user sees the generic error banner
+  rather than a misleading one — no wrong-state render.
+- `getByTeacher` issuing the two calls via `Promise.all` (a genuine improvement over
+  the plan's sequential sketch) and asserting the call SET rather than order in tests
+  is good judgement.
+- `mapRealWeeklyTimetable`'s signature is genuinely unchanged (`dto, className`) —
+  verified by diff; it only reads the two newly-declared optional DTO fields, so the
+  kept-but-uncalled `getByClass` path stays contract-correct. Claim #10 (second half)
+  verified.
+
+### 4. Data & Contract Review — **PASS** (one composition gap, fixed in-review)
+
+Re-ground-truthed against `edu-api@e2da90b5`:
+
+| Claim | Verdict | Evidence |
+| --- | --- | --- |
+| #1 `linked-students` not paginated | **CONFIRMED** | `openapi.yaml:9590` `LinkedStudentsResponse` = `{ links: LinkedStudentItemResponse[] }`, `required:[links]`; the path at `:3218` declares only `MemberId` — no `cursor`/`limit`. No `raw:true`/`fetchAllPages` is correct, and the "sends no pagination params" test documents it. |
+| #2 403 is `PARENTLINK_FORBIDDEN` | **CONFIRMED** | `ERROR_CODES.md:319`. The packet's error table was wrong to assume `ROSTER_ACCESS_FORBIDDEN` here (that code is real but belongs to the *enrollment* call — `ERROR_CODES.md:99`, also confirmed). `→ no-child` is the right mapping: the openapi authz note shows the same 403 for "not this parent" as for a probe, so a distinguishable permission error would leak. |
+| #4 RMW preserves `room` on untouched slots | **CONFIRMED** | `timetable.repository.ts:408` adds `room: s.room \|\| undefined` inside the *preserve* `.map()`, not just the spliced cell. Pinned by `timetable.repository.test.ts` "persists room through the RMW PUT" which asserts BOTH the edited cell and the untouched `TUE/2` cell keep their rooms. This was a genuine catch the plan did not anticipate — good work. |
+| #5 no `dangerouslySetInnerHTML` | **CONFIRMED** | Grepped `src/features/timetable src/features/admin/timetable src/components` myself: the only three hits are the new doc comments that mention the term. Every `room` render is plain JSX interpolation. |
+| Wire shapes | **CONFIRMED** | `MemberTimetableResponse` (`:7786`), `SlotResponse` with required `classId` + optional `subjectName`/`room` (`:7801`), `MemberEnrollmentResponse` (`:7696`), `LinkedStudentItemResponse` nullable-or-omitted `classId`/`className` (`:9558`). The DTOs mirror these exactly, camelCase throughout. |
+
+Failure mapping, degrade-not-fail independence, and the `raw:true` top-level guard on
+the surviving `GET /classes` `fetchAllPages` are all correctly implemented and tested
+(`real-weekly-timetable.repository.test.ts:287`).
+
+**Finding fixed in-review (was SHOULD FIX):** the by-member response has no top-level
+class identity, so `getByMember` returns `className: ""`. For the STUDENT view the
+repository composes the enrollment call's name back on — correct. For the **PARENT**
+view nothing did, so in real mode `timetable-view.tsx:59-62` (which uses
+`state.timetable.className` on success) got `""`, hiding the header class badge and
+rendering the grid's `sr-only` caption as *"Thời khoá biểu lớp , chế độ chỉ xem."* —
+even though `linked-students` had just fetched that very `className`, which is the
+headline win this US claims for ask #20. Fixed in `get-child-timetable.use-case.ts` by
+composing the roster item's `className` onto the returned week (`child.className ??
+week.className`, so the mock path is byte-identical and a child with no enrollment
+still degrades to `""`). This is symmetric with how the student self-view composes its
+enrollment inside the repository, and needs **no presentation diff** — the
+design-review gate scope is unchanged. Two tests added to
+`get-child-timetable.use-case.test.ts` pinning both directions. `classId` deliberately
+left as the repository returned it (nothing in this feature renders it, and the
+engineer's by-member-key assertions stay intact).
+
+### 5. Design System & i18n — **PASS**
+
+- i18n: `timetableView.childOrdinalLabel` + `timetableView.classPending` are present
+  in **both** `vi.json` and `en.json` at the same path (claim #9 verified by diff);
+  `classLabel` is **reused, not duplicated**. Both keys are typed and consumed only at
+  presentation. No hardcoded Vietnamese/English in `child-picker.tsx` or in any touched
+  repository/mapper (the Vietnamese in mapper doc *comments* and in mock fixtures is
+  correctly exempt). The repositories return stable failure keys, never copy.
+- Tokens: `child-picker.tsx` introduces no colour at all — the two changed expressions
+  reuse the existing `text-edu-text-primary` / `text-edu-text-secondary` spans. No raw
+  colour anywhere in the diff.
+
+### 6. Security Review — **PASS**
+
+- `room` is BE-echoed unsanitized and is rendered exclusively through JSX text
+  interpolation; the editor input is a controlled `value`. Verified by grep, not by
+  claim. The deliberate "confirmed safe" note exists in both mappers.
+- No secrets/PII client-side; `memberId`s stay server-side. Token handling untouched —
+  `ensureFreshSession()` still guards the real branch. Both parent Server Actions
+  (`getChildListAction`, `getChildTimetableAction`) call `requireRole(["parent"])`
+  **before** any DI call.
+- The `no-child` / `not-found` collapses correctly mirror the BE's deliberate
+  no-enumeration posture rather than leaking a distinguishable "forbidden" state.
+
+### 7. Test Coverage — **PASS**
+
+Every file in the packet's exact TDD plan is present and the tests are non-vacuous
+(`it.each` failure matrices, a stable-ordinal test that reshuffles the response, a
+"sends no axios config" test that documents the pagination confirmation, a two-call
+assertion that pins the removal of the 1+N fan-out, and a mock-room regression guard).
+Claim #10's deviation is fine: folding the enrollment passthrough into
+`tryFetchEnrollment` is the right call, and it *is* adequately covered — four repository
+tests (`:177` compose, `:191` the two ROSTER_* degrade codes via `it.each`, `:207`
+generic degrade, `:217` primary-failure-still-propagates).
+
+Gates I re-ran myself on this branch:
+
+| Gate | Result |
+| --- | --- |
+| `bun vitest run` (as delivered) | **437 files / 3079 tests passed** — exactly the claimed numbers. Claim #6 verified. |
+| `bun vitest run` (after my fix) | 437 files / **3081** tests passed |
+| `bunx tsc --noEmit` | clean, no output |
+| `bun lint` | exit 0 — the only findings are 1 warning + 1 info in `message-context-menu.tsx`, pre-existing and untouched (the Evidence table says "3 errors"; the substance — pre-existing, unrelated, not in this diff — holds) |
+| `env -u NEXT_PUBLIC_USE_MOCK bun run build` | **green**, full route manifest emitted |
+
+### 8. Required Changes
+
+- **[FIXED IN REVIEW]** `get-child-timetable.use-case.ts` — parent real-mode class
+  caption/badge was blank. See §4. Fix + 2 tests committed with this review.
+- **[MUST FIX — fe-lead, pre-close]** `docs/TEST_MATRIX.md` has **no row for
+  US-E18.26**. Every one of US-E18.0 … US-E18.25 has one; `tdd.md` requires the row at
+  `planned` *before* code and forbids `implemented` without proof in it. Also this
+  packet's own `## Status` is still `planned`. Cheap, but blocking under the epic's own
+  convention.
+- **[SHOULD FIX — follow-up US, not this one]** `src/features/parent-links` drift is
+  **real and confirmed**, per claim #11. `parent-consent.repository.ts:42-44` GETs the
+  *same* URL (`parent-links.endpoint.ts:23`, also missing `encodeURIComponent`) and
+  casts the payload to `LinkedStudentResponseDto[]` — a bare array of
+  `{studentId, fullName, avatarUrl, linkId}`. The real wire is
+  `{ links: [{linkId, parentMemberId, studentMemberId, createdAt, classId?, className?}] }`.
+  So `getLinkedStudents` would return `[]`/garbage the moment that feature flips real,
+  and its doc comment's claim that "flipping USE_MOCK=false needs no rework" is now
+  false. Worth logging as a follow-up so the next engineer doesn't trust that comment.
+- **[CONSIDER — a11y auditor owns]** `child-picker.tsx:50` renders `text-white`
+  initials on an avatar whose background cycles the child colour set, which **includes
+  `warning`** (`linked-student.mapper.ts:31`). White on `--edu-warning` (#FFAE1F) is
+  ~1.7:1 — the named hard rule in `accessibility.md`. Pre-existing (line untouched by
+  this diff), and mitigated because the span is `aria-hidden` with the ordinal repeated
+  as adjacent real text — but this US *increases* exposure: mock had 2 children so the
+  warning slot was never reached, whereas a real parent with 3 linked students now hits
+  it. Same class of finding as US-E13.7's `ChildSwitcher`.
+- **[CONSIDER]** Enrollment `gradeLevel`/`academicYearLabel` are fetched and discarded.
+  Correctly documented as deliberate rather than silently dropped — no action here, but
+  it is a live follow-up candidate as the Evidence section notes.
+
+### 9. Final Decision — **APPROVED**
+
+No security, data-loss or layering issue. All eleven self-reported claims were
+independently re-verified against `edu-api` source and every one held — notably the
+two the packet itself got wrong (`PARENTLINK_FORBIDDEN` vs `ROSTER_ACCESS_FORBIDDEN`,
+and the RMW dropping *other* cells' rooms) were caught and corrected by the engineer,
+which is exactly the standard this gate wants. The one real defect found (parent
+real-mode blank class name) was small and is fixed in-review with tests. Approval is
+conditional only on `fe-lead` landing the `docs/TEST_MATRIX.md` row + `## Status` flip
+before the story closes, and logging the `parent-links` contract drift as a follow-up.

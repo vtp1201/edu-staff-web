@@ -47,8 +47,9 @@ export function ChildPicker({
             <span
               aria-hidden="true"
               className={cn(
-                "flex size-9 items-center justify-center rounded-full font-bold text-sm text-white",
+                "flex size-9 items-center justify-center rounded-full font-bold text-sm",
                 c.avatarBg,
+                c.avatarText,
               )}
             >
               {child.avatar}

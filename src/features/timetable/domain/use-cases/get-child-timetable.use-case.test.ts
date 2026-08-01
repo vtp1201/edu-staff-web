@@ -66,6 +66,46 @@ describe("GetChildTimetableUseCase", () => {
     if (result.ok) expect(result.data.classId).toBe("c2");
   });
 
+  it("composes the roster's enriched className onto the by-member week (tech-lead review, US-E18.26)", async () => {
+    // The by-member response has no top-level class identity, so the real repo
+    // returns `className: ""`. The parent screen's caption/badge must still
+    // show the class the roster already resolved via `linked-students`.
+    const useCase = new GetChildTimetableUseCase(
+      repo({
+        getByMember: async () => ({
+          classId: "c1",
+          className: "",
+          slots: {},
+        }),
+      }),
+    );
+
+    const result = await useCase.execute("c1");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.className).toBe("11A2");
+  });
+
+  it("keeps the repository's className when the roster has no class context", async () => {
+    const useCase = new GetChildTimetableUseCase(
+      repo({
+        getChildren: async () => [
+          { childId: "c9", ordinal: 1, avatar: "1", color: "primary" },
+        ],
+        getByMember: async () => ({
+          classId: "c9",
+          className: "",
+          slots: {},
+        }),
+      }),
+    );
+
+    const result = await useCase.execute("c9");
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.className).toBe("");
+  });
+
   it("still resolves a child whose classId is unknown (no current enrollment)", async () => {
     const useCase = new GetChildTimetableUseCase(
       repo({

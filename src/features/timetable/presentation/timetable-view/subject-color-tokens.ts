@@ -110,11 +110,25 @@ export const SUBJECT_COLOR_CLASSES: Record<SubjectColorToken, SubjectClasses> =
     },
   };
 
-/** Child-picker accent color → literal classes (border + soft tint + avatar bg). */
+/**
+ * Child-picker accent color → literal classes (border + soft tint + avatar bg).
+ *
+ * `avatarText` (A11Y-001, US-E18.26 audit, 2026-08-01): the avatar span renders
+ * initials-or-ordinal-digit text (`font-bold text-sm` = "large text" under this
+ * project's own threshold, `.claude/rules/accessibility.md` — ≥14px bold ⇒ needs
+ * ≥3:1, not 4.5:1). A single hardcoded `text-white` on every solid `avatarBg`
+ * fails that floor for success/warning/error/teal (measured against
+ * `src/app/tokens.css` hex values: success 1.72:1, warning 1.85:1, error
+ * 2.37:1, teal 2.49:1 — all FAIL; only primary 3.29:1 and purple 5.25:1 pass).
+ * `--edu-text-primary` (#2A3547) passes ≥3:1 against all six solid backgrounds
+ * (min 3.64:1 on primary) and ≥4.5:1 against success/warning/error/teal — used
+ * uniformly instead of per-color branching.
+ */
 export interface ChildColorClasses {
   border: string;
   tint: string;
   avatarBg: string;
+  avatarText: string;
 }
 
 export const CHILD_COLOR_CLASSES: Record<
@@ -125,30 +139,36 @@ export const CHILD_COLOR_CLASSES: Record<
     border: "border-edu-primary",
     tint: "bg-edu-primary/10",
     avatarBg: "bg-edu-primary",
+    avatarText: "text-edu-text-primary",
   },
   success: {
     border: "border-edu-success",
     tint: "bg-edu-success/10",
     avatarBg: "bg-edu-success",
+    avatarText: "text-edu-text-primary",
   },
   warning: {
     border: "border-edu-warning",
     tint: "bg-edu-warning/10",
     avatarBg: "bg-edu-warning",
+    avatarText: "text-edu-text-primary",
   },
   error: {
     border: "border-edu-error",
     tint: "bg-edu-error/10",
     avatarBg: "bg-edu-error",
+    avatarText: "text-edu-text-primary",
   },
   purple: {
     border: "border-edu-purple",
     tint: "bg-edu-purple/10",
     avatarBg: "bg-edu-purple",
+    avatarText: "text-edu-text-primary",
   },
   teal: {
     border: "border-edu-teal",
     tint: "bg-edu-teal/10",
     avatarBg: "bg-edu-teal",
+    avatarText: "text-edu-text-primary",
   },
 };
