@@ -234,6 +234,8 @@ export const Builder_SaveDraftBlockedOnIncompleteQuestion: Story = {
   args: {
     ...baseProps,
     initial: detailWith([filledQuestion, { ...blankQuestion, index: 1 }]),
+    // Real mode only — see the mock counterpart story below.
+    requireCompleteQuestions: true,
     saveDraftAction: fn(async () => ({ ok: true }) as const),
   },
   play: async ({ args, canvasElement }) => {
@@ -246,6 +248,30 @@ export const Builder_SaveDraftBlockedOnIncompleteQuestion: Story = {
       canvas.getByText(/Câu hỏi này còn thiếu thông tin/i),
     ).toBeInTheDocument();
     await expect(canvas.getByLabelText(/Nội dung câu hỏi/i)).toHaveValue("");
+  },
+};
+
+/**
+ * fe-lead correction (US-E18.28): draft-save stays LENIENT in mock mode, exactly
+ * as it was before this US — only the title is required. Reserving an empty
+ * question slot and saving progress is normal authoring; the pre-check above
+ * exists only to protect the real, non-atomic write sequence.
+ */
+export const Builder_SaveDraftLenientInMockMode: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion, { ...blankQuestion, index: 1 }]),
+    saveDraftAction: fn(async () => ({ ok: true }) as const),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The incomplete question is still FLAGGED (publish remains gated)…
+    await expect(
+      canvas.getByText(/Câu hỏi này còn thiếu thông tin/i),
+    ).toBeInTheDocument();
+    // …but saving a draft goes through anyway.
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/i }));
+    await expect(args.saveDraftAction).toHaveBeenCalledTimes(1);
   },
 };
 

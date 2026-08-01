@@ -258,7 +258,8 @@ mode).
    `EXAM_CORRECT_OPTION_INVALID` path is the same gap). Applied in both modes
    deliberately: the server can never accept such a question, so allowing it in
    mock would train a workflow that breaks in production. A valid draft still
-   saves (asserted).
+   saves (asserted). **→ This mode-scoping was subsequently corrected on
+   fe-lead's review — see the round-3 note below.**
 
 Post-revision proof (all re-run): `bunx tsc --noEmit` clean · `bunx vitest run`
 **438 files / 3118 tests pass** (unchanged — both fixes are presentation-level,
@@ -269,6 +270,44 @@ the same 2 pre-existing `features/messaging` findings.
 
 New i18n key: `examBank.builder.metaLockedNote` (vi source + en mirror, same
 commit) — brings the `examBank` namespace to 109 keys, parity preserved.
+
+### Round-3 scoping correction — requested by `fe-lead` (NOT `fe-tech-lead-reviewer`)
+
+`fe-lead` reviewed commit `a9dd588`, approved the MUST FIX (`metaEditable`) as-is,
+and **declined to ratify the engineer's judgment call** of applying the round-2
+pre-save gate unconditionally. Rationale accepted in full: before this US,
+draft-save required only `meta.title` — per-question completeness gated *publish*
+only (`isPublishable`), which is the standard lenient-draft / strict-publish
+editor pattern. Reserving an empty question slot and saving progress is normal
+authoring, so an unconditional gate was an unrequested validation-strengthening
+regression to a workflow this US never scoped — and the problem being solved
+(generic `VALIDATION_FAILED` arriving after non-atomic writes already persisted)
+exists **only in real mode**; mock `updateExam`/`createExam` are pure local state
+with no partial-persistence or network-round-trip risk.
+
+Change applied: new dedicated prop **`requireCompleteQuestions`** on
+`ExamBuilderScreenVM` (default `false` = lenient), wired from
+`[id]/edit/page.tsx` as `requireCompleteQuestions={!USE_MOCK}`. A dedicated prop
+was chosen over reusing `!metaEditable` so neither prop carries two unrelated
+meanings; it is threaded from the route exactly like `reorderEnabled` /
+`metaEditable`, with no `USE_MOCK` check inside the component. Real mode keeps
+the round-2 behaviour verbatim (block → select → flag, no wire call); mock mode
+is byte-for-byte the pre-US lenient behaviour.
+
+Coverage (old lenient path proven explicitly, not deleted): TDD red first — the
+new `Builder_SaveDraftLenientInMockMode` story failed against the unconditional
+gate (1 failed / 18 passed on the builder scope), then green.
+`Builder_SaveDraftBlockedOnIncompleteQuestion` now sets
+`requireCompleteQuestions: true` explicitly. The lenient story also asserts the
+incomplete question is still *flagged* (publish stays gated) even though the
+draft saves.
+
+Round-3 proof (all re-run): `bunx tsc --noEmit` clean ·
+`bunx vitest run` **438 files / 3118 tests pass** ·
+`bunx vitest run --config vitest.storybook.mts` **151 files / 1108 tests pass**
+(was 1107; +1 story) · `NEXT_PUBLIC_USE_MOCK= bun run build`
+✓ Compiled successfully in 10.8s · `bun lint` unchanged (same 2 pre-existing
+`features/messaging` findings). No new i18n key needed.
 
 ### Engineer decisions worth reviewing
 

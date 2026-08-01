@@ -76,6 +76,10 @@ export default async function EditExamPage({
       // dropping the teacher's edit (US-E18.28).
       reorderEnabled={USE_MOCK}
       metaEditable={USE_MOCK}
+      // Real mode only: an incomplete question would fail server validation
+      // AFTER the non-atomic diff-sync had already persisted earlier calls.
+      // Mock draft-save stays lenient (pure local state, nothing to half-apply).
+      requireCompleteQuestions={!USE_MOCK}
       createExamAction={createExamAction}
       saveDraftAction={saveDraftAction}
       publishExamAction={publishExamAction}
