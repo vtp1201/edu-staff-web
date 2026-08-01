@@ -46,5 +46,21 @@ per branch — otherwise the UI silently lies about one of them.
 not the index — so finish all phases green, then `git add` per-phase file sets
 and commit in order. Phase-1-only commits mid-flight always fail the hook.
 
+**Repo-wide `bun lint` truncates diagnostics — it can misattribute YOUR error.**
+A formatting error in a file I had just edited surfaced under a trailing,
+unrelated pre-existing diagnostic in `messaging/message-context-menu.tsx`, so it
+read as "someone else's, pre-existing". Before concluding that, scope it:
+`bunx biome check src/features/<x>`. Stash-vs-dirty exit-code comparison is the
+fastest disambiguation.
+
+**Shared `LoadMoreButton` needs `hasError` explicitly.** Passing only
+`errorLabel` compiles fine but the retry copy is unreachable and a
+`fetchNextPage` failure is silent. Convention across feed/moderation/this
+screen: `hasError={query.isError && rows.length > 0}` — the exact complement of
+a first-page-only screen-level error escalation (rows present ⇒ the load-more
+failed ⇒ keep rows, swap label only). The shared component only swaps the
+LABEL; it has no `aria-live`, so announcing appended rows would be a shared-
+component change across 7 callers — flag it, don't drive-by widen it.
+
 Related: [[pattern-be-wiring-remap]], [[pattern-hybrid-partial-real-wiring]],
 [[gotcha-openapi-drifts-from-go-source]], [[pattern-shared-infra-feature-module]].
