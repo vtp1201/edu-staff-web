@@ -2210,7 +2210,8 @@
       "noInvitationsCta": "Send invite",
       "noMatchTitle": "No invites match your filters",
       "noMatchBody": "Try a different keyword or status tab.",
-      "clearFiltersCta": "Clear filters"
+      "clearFiltersCta": "Clear filters",
+      "moreMayBeAvailable": "Nothing found in the pages loaded so far — there may be more results on the next pages. Use “Load more” to keep looking."
     },
     "error": {
       "title": "Could not load invitations",

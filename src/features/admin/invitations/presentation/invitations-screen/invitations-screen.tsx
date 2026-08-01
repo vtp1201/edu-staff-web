@@ -66,6 +66,12 @@ type OkPage = Extract<ListActionResult, { ok: true }>;
 
 /** DOM id linking the search field to its partial-results caveat (a11y). */
 const SEARCH_HINT_ID = "invitations-search-partial-hint";
+/**
+ * DOM id of the sr-only copy that explains a "Tải thêm" button sitting directly
+ * after an EMPTY state (BE's short-page-with-more semantics) — without it a
+ * screen-reader user hears "no invitations" then an unexplained control.
+ */
+const LOAD_MORE_EMPTY_HINT_ID = "invitations-load-more-empty-hint";
 
 export function InvitationsScreen({
   initialPage,
@@ -371,6 +377,14 @@ export function InvitationsScreen({
     !showError && !showLoading && invitations.length > 0 && filteredCount === 0;
   const showTable =
     !showError && !showLoading && !showEmptyNoInvitations && !showEmptyNoMatch;
+  /**
+   * An empty state WITH pages left (BE applies `status` after a bounded keyset
+   * read, so page 1 can be empty while `hasMore` is true). The load-more control
+   * stays reachable there, so it needs linking language — otherwise the SR
+   * sequence is "nothing here" → unexplained "Tải thêm".
+   */
+  const showEmptyWithMorePages =
+    (showEmptyNoInvitations || showEmptyNoMatch) && hasNextPage;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-5 md:px-8 md:py-7">
@@ -399,8 +413,18 @@ export function InvitationsScreen({
         />
       </div>
 
+      {/* `role="status"` + `aria-live="polite"` because the admin's focus stays
+          IN the search field while this caveat appears/disappears between
+          keystrokes: `aria-describedby` alone is not reliably re-announced on
+          change without a refocus (WCAG 4.1.3). Both wirings together — the
+          describedby keeps the caveat attached to the field on later visits. */}
       {showPartialSearchHint && (
-        <p id={SEARCH_HINT_ID} className="mb-3 text-muted-foreground text-xs">
+        <p
+          id={SEARCH_HINT_ID}
+          role="status"
+          aria-live="polite"
+          className="mb-3 text-muted-foreground text-xs"
+        >
           {t("search.partialResultsHint")}
         </p>
       )}
@@ -497,9 +521,18 @@ export function InvitationsScreen({
           `hasMore` is true (status is applied after a bounded keyset read), so
           the control must stay reachable next to the empty state — otherwise
           the admin is stranded on "no invitations" with pages left to read. */}
+      {showEmptyWithMorePages && (
+        <p id={LOAD_MORE_EMPTY_HINT_ID} className="sr-only">
+          {t("empty.moreMayBeAvailable")}
+        </p>
+      )}
+
       {!showError && !showLoading && (
         <LoadMoreButton
           hasMore={hasNextPage}
+          describedById={
+            showEmptyWithMorePages ? LOAD_MORE_EMPTY_HINT_ID : undefined
+          }
           isLoadingMore={listQuery.isFetchingNextPage}
           onLoadMore={handleLoadMore}
           label={t("loadMore")}

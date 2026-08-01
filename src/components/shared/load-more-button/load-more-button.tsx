@@ -12,6 +12,14 @@ export interface LoadMoreButtonProps {
   errorLabel: string;
   /** True when the last "load more" failed — shows retry copy, keeps rows. */
   hasError?: boolean;
+  /**
+   * Id of caller-owned copy explaining WHY more can be loaded — forwarded as the
+   * button's `aria-describedby`. Needed when the surrounding context alone would
+   * mislead a screen-reader user, e.g. an empty list that still has pages left
+   * ("nothing here" immediately followed by an unexplained "Load more").
+   * Omitted → no attribute is rendered.
+   */
+  describedById?: string;
 }
 
 /**
@@ -29,6 +37,7 @@ export function LoadMoreButton({
   label,
   errorLabel,
   hasError = false,
+  describedById,
 }: LoadMoreButtonProps) {
   if (!hasMore) return null;
 
@@ -40,6 +49,7 @@ export function LoadMoreButton({
         onClick={onLoadMore}
         disabled={isLoadingMore}
         aria-busy={isLoadingMore}
+        aria-describedby={describedById}
       >
         {hasError ? errorLabel : label}
       </Button>

@@ -1106,6 +1106,53 @@ export const SearchPartialResultsHint: Story = {
       canvas.getByText(/chỉ tính trên các lời mời đã tải/i),
     );
     await expect(search).toHaveAttribute("aria-describedby", hint.id);
+    // A11Y-001 (WCAG 4.1.3): focus stays IN the field while the caveat appears,
+    // so `aria-describedby` alone would not be re-announced — the hint is also a
+    // polite live region.
+    await expect(hint).toHaveAttribute("role", "status");
+    await expect(hint).toHaveAttribute("aria-live", "polite");
+  },
+};
+
+/** 14e2. A11Y-002 — an EMPTY page that still has pages left keeps "Tải thêm"
+ *  reachable; an sr-only hint is linked to the button so the SR sequence is not
+ *  "nothing here" followed by an unexplained control. */
+export const EmptyWithMorePagesExplainsLoadMore: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: [], nextCursor: "cur-2", hasMore: true },
+    onRefresh: async () => page([], { nextCursor: "cur-2", hasMore: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Chưa có lời mời nào")).toBeInTheDocument();
+    const loadMore = canvas.getByRole("button", { name: "Tải thêm" });
+    const hint = canvas.getByText(/có thể còn kết quả ở các trang tiếp theo/i);
+    await expect(hint).toHaveClass("sr-only");
+    await expect(loadMore).toHaveAttribute("aria-describedby", hint.id);
+    await expect(loadMore).toHaveAccessibleDescription(
+      /có thể còn kết quả ở các trang tiếp theo/i,
+    );
+  },
+};
+
+/** 14e3. …and the mirror: with rows on screen the hint is absent and the button
+ *  carries no stale description. */
+export const LoadMoreHasNoEmptyHintWhenRowsExist: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
+    onRefresh: async () =>
+      page(INVITATIONS, { nextCursor: "cur-2", hasMore: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByText(/có thể còn kết quả ở các trang tiếp theo/i),
+    ).toBeNull();
+    await expect(
+      canvas.getByRole("button", { name: "Tải thêm" }),
+    ).not.toHaveAttribute("aria-describedby");
   },
 };
 
