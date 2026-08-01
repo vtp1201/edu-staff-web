@@ -7,7 +7,7 @@ import type {
   NotificationEntity,
   NotificationType,
 } from "../../domain/entities/notification.entity";
-import { mockKeyPairForType } from "../../domain/entities/notification-message-key";
+import { mockKeyPairForType } from "../../domain/notification-message-keys";
 
 const VALID_TYPES: ReadonlySet<NotificationType> = new Set([
   "grade",
@@ -45,8 +45,11 @@ interface Options {
  *   a `NotificationEntity`, calls `onNew` so the container can prepend the item
  *   without waiting for the refetch, and shows a Sonner toast.
  *
- * The two hooks share the same `EventSource` URL; the browser deduplicates
- * the underlying connection.
+ * NOTE: both hooks open their OWN `EventSource` to the same URL — browsers do
+ * NOT deduplicate SSE connections (a long-standing wrong comment here,
+ * pre-dating US-E18.25; also flagged at US-E18.18). That means two live
+ * streams while this screen is mounted. Consolidating them is a separate
+ * change, not made here.
  */
 export function useNotificationNewEvent({
   tenantId,

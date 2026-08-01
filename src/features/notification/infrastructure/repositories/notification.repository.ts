@@ -104,6 +104,12 @@ export class NotificationRepository implements INotificationRepository {
    * last-page value (never locally recomputed) so "Load more" keeps draining
    * from where the server left off. Documented as less efficient, not
    * incorrect — cross-repo ask #42 requests a server-side filter.
+   *
+   * Returns EVERY unread row found on the pages it fetched — deliberately NOT
+   * capped to `limit`. The cursor is page-aligned (it always points past the
+   * last page fetched), so capping would strand the surplus unread rows of
+   * that page forever: "Load more" resumes after them and nothing would ever
+   * show them again. Overshoot is bounded by one page (`DRAIN_PAGE_SIZE`).
    */
   private async drainUnread(
     cursor: string | undefined,
@@ -135,10 +141,9 @@ export class NotificationRepository implements INotificationRepository {
       }
 
       return {
-        // Truncation may cut mid-page: "Load more" can then re-surface an
-        // already-seen unread row. Accepted imprecision (ADR 0066) — a second
-        // synthetic cursor is out of scope for a wiring US.
-        items: collected.slice(0, limit),
+        // Uncapped on purpose — see the doc comment above. `limit` only
+        // decides when to STOP fetching more pages, never what to hand back.
+        items: collected,
         nextCursor: nextCursor ?? null,
         hasMore: realHasMore,
       };
@@ -185,9 +190,12 @@ export class NotificationRepository implements INotificationRepository {
         // Invariant violation (server never stops saying "more"), NOT a domain
         // failure — deliberately thrown raw rather than mapped via toFailure so
         // it surfaces loudly instead of hiding as a generic "unknown" error.
-        throw new Error(
-          `markAllRead exceeded MAX_BATCHES (${MAX_BATCHES}) — read-batch kept reporting hasMore:true`,
-        );
+        // The Server Action boundary still degrades it to errorKey "unknown"
+        // for the user, so log it server-side first: this is the only signal
+        // ops gets that BE is misbehaving rather than a plain request failure.
+        const message = `markAllRead exceeded MAX_BATCHES (${MAX_BATCHES}) — read-batch kept reporting hasMore:true`;
+        console.error(`[notification] ${message}`);
+        throw new Error(message);
       }
 
       let res: ReadBatchResponseDto | undefined;

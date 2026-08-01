@@ -3,7 +3,7 @@ import type {
   NotificationEntity,
   NotificationType,
 } from "../../domain/entities/notification.entity";
-import { mockKeyPairForType } from "../../domain/entities/notification-message-key";
+import { mockKeyPairForType } from "../../domain/notification-message-keys";
 import type {
   MockNotificationResponseDto,
   NotificationResponseDto,

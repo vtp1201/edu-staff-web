@@ -23,7 +23,7 @@ import type {
 import {
   isKnownBodyKey,
   isKnownTitleKey,
-} from "../../domain/entities/notification-message-key";
+} from "../../domain/notification-message-keys";
 import type {
   NotificationsCenterActions,
   NotificationsCenterVm,
@@ -110,6 +110,23 @@ function SkeletonRows() {
   );
 }
 
+/**
+ * ICU args the notification copy is allowed to interpolate (US-E18.25 /
+ * ADR 0066). Whitelisting — rather than spreading the whole wire param bag —
+ * makes "a raw UUID (`classId`/`studentMemberId`/`recordId`) can never reach
+ * rendered copy" a structural guarantee instead of a copy-review promise.
+ * Each arg is defaulted so a param-less wire row cannot raise an ICU
+ * formatting error.
+ */
+function renderableParams(
+  params: Record<string, string>,
+): Record<string, string> {
+  return {
+    severity: params.severity ?? "",
+    occurredAt: params.occurredAt ?? "",
+  };
+}
+
 interface NotificationRowProps {
   item: NotificationEntity;
   onMarkRead: (id: string) => void;
@@ -137,11 +154,8 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
   const bodyMsgKey = isKnownBodyKey(item.bodyKey)
     ? (`bodies.${item.bodyKey}` as const)
     : ("bodies.unknown" as const);
-  // `severity` is the only ICU arg the copy interpolates; defaulting it keeps
-  // a param-less wire row from producing an ICU formatting error. UUID params
-  // (classId/studentMemberId/recordId) are never rendered (ADR 0066).
-  const titleText = t(titleMsgKey, { severity: "", ...item.titleParams });
-  const bodyText = t(bodyMsgKey, { severity: "", ...item.bodyParams });
+  const titleText = t(titleMsgKey, renderableParams(item.titleParams));
+  const bodyText = t(bodyMsgKey, renderableParams(item.bodyParams));
 
   return (
     <button

@@ -319,6 +319,28 @@ describe("NotificationRepository.listNotifications (US-E18.25 unread drain)", ()
     expect(result.nextCursor).toBe("c1");
   });
 
+  it("returns EVERY unread row found on a page, never truncating to `limit`", async () => {
+    // The cursor is page-aligned: capping to `limit` here would strand the
+    // surplus unread rows of this page forever ("Load more" resumes past them).
+    const limit = 8;
+    const unreadOnThisPage = Array.from({ length: limit + 5 }, (_, i) =>
+      makeDto({ id: `u${i}`, read: false }),
+    );
+    const get = vi
+      .fn()
+      .mockResolvedValue(makeEnvelope(unreadOnThisPage, "c1", true));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    const result = await repo.listNotifications({ filter: "unread", limit });
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(result.items).toHaveLength(limit + 5);
+    expect(result.items.map((i) => i.id)).toEqual(
+      unreadOnThisPage.map((d) => d.id),
+    );
+    expect(result.nextCursor).toBe("c1");
+    expect(result.hasMore).toBe(true);
+  });
+
   it("maps HTTP errors during the drain to a failure", async () => {
     const err = new ApiError({
       code: "NOTIFICATION_INVALID_CURSOR",
@@ -433,10 +455,17 @@ describe("NotificationRepository.markAllRead (US-E18.25 batch loop)", () => {
     const patch = vi
       .fn()
       .mockResolvedValue({ markedCount: 500, hasMore: true });
+    // The Server Action boundary degrades this to a generic errorKey, so the
+    // server-side log is the only signal ops gets — assert it happens.
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
     const repo = new NotificationRepository(makeHttp({ patch }));
+
     await expect(repo.markAllRead()).rejects.toThrow(/MAX_BATCHES/);
     expect(MAX_BATCHES).toBe(40);
     expect(patch).toHaveBeenCalledTimes(MAX_BATCHES);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("MAX_BATCHES"));
+
+    logged.mockRestore();
   });
 
   it("maps HTTP errors to a failure", async () => {

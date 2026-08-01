@@ -63,9 +63,15 @@ Four scope decisions were forced by ground-truthing
   drain-and-filter**: page at `limit=100` (no `type` filter — unread spans
   all categories), filter `read === false` client-side, keep advancing the
   REAL `cursor` until enough unread items accumulate, `hasMore` goes false,
-  or a defensive `MAX_PAGES` cap (20) trips. This is a deliberate, documented
-  narrowing (worst case: many mostly-read pages fetched to find few unread
-  rows) — not a silent invention. A cross-repo ask (`#42`) is filed: BE
+  or a defensive `MAX_PAGES` cap (20) trips. The caller's page size only
+  decides when to STOP fetching further pages — every unread row found on the
+  pages already fetched is returned, never truncated to that size (the cursor
+  is page-aligned, so capping would strand a page's surplus unread rows
+  permanently: "Load more" resumes past them). Overshoot is therefore bounded
+  by one page (100 rows) and is intentional and harmless. This is a
+  deliberate, documented narrowing (worst case: many mostly-read pages fetched
+  to find few unread rows) — not a silent invention. A cross-repo ask (`#42`)
+  is filed: BE
   already backs an exact per-status count (`unread-count`'s materialized
   view) so a cheap `?read=false` addition is plausible, just not present
   today.
@@ -137,6 +143,11 @@ Tradeoffs / residual risks:
   would be (bounded by `MAX_PAGES`, not by the true unread count) — acceptable
   given the 90-day TTL bounds inbox size, but flagged as a real cross-repo
   ask (#42), not a permanent design choice we're happy with.
+- A drain call can return MORE rows than the nominal page size (up to one
+  extra fetched page's worth of unread rows). Intentional — the alternative,
+  capping to the page size, silently drops the surplus for good because the
+  cursor is page-aligned. Callers must treat the page size as a fetch-stop
+  hint, not a hard row budget.
 - `bodyParams`' UUIDs (`classId`/`studentMemberId`/`recordId`) are
   deliberately NOT rendered — a user reading "a discipline record was created
   (severity MINOR, 2026-07-20)" gets no student/class name. This is a real,

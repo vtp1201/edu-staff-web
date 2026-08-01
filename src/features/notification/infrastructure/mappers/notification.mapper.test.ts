@@ -10,7 +10,7 @@ import {
   isKnownTitleKey,
   UNKNOWN_BODY_KEY,
   UNKNOWN_TITLE_KEY,
-} from "../../domain/entities/notification-message-key";
+} from "../../domain/notification-message-keys";
 import type {
   MockNotificationResponseDto,
   NotificationResponseDto,

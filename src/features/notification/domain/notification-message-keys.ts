@@ -1,7 +1,12 @@
 /**
  * Known notification title/body i18n keys (US-E18.25, ADR 0066).
  *
- * Pure TypeScript, zero framework deps — lives in `domain/` because THREE
+ * Pure TypeScript, zero framework deps. Deliberately NOT under
+ * `domain/entities/` and NOT named `*.entity.ts` — it is a shared constant
+ * table + helpers, not a business object, so the entity naming convention
+ * does not apply.
+ *
+ * Lives in `domain/` because THREE
  * layers need the same table and none of them may import each other:
  * - `infrastructure/mappers` (mock mapper synthesises a plausible key-pair),
  * - `presentation` (known-key allow-list for the `t()` lookup + fallback),

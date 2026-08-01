@@ -22,7 +22,7 @@ export type NotificationType =
 export interface NotificationEntity {
   id: string;
   type: NotificationType;
-  /** Stable BE-owned i18n key for the title (see `notification-message-key.ts`). */
+  /** Stable BE-owned i18n key for the title (see `domain/notification-message-keys.ts`). */
   titleKey: string;
   /** ICU params for the title key — scalar values only, never a raw UUID. */
   titleParams: Record<string, string>;
