@@ -2809,6 +2809,13 @@
     "allLoaded": "Đã hiển thị tất cả",
     "ariaRead": "đã đọc",
     "ariaUnread": "chưa đọc",
+    "bodies": {
+      "notification_discipline_violation_body": "Một vi phạm kỷ luật mức {severity, select, MINOR {nhẹ} MODERATE {vừa} SEVERE {nặng} other {chưa xác định}} vừa được ghi nhận.",
+      "notification_attendance_absence_body": "Một buổi vắng mặt chưa phép vừa được ghi nhận.",
+      "notification_grade_conduct_approved_body": "Kết quả hạnh kiểm vừa được duyệt.",
+      "notification_attendance_leave_approved_body": "Đơn xin nghỉ vừa được duyệt.",
+      "unknown": "Mở thông báo để xem chi tiết."
+    },
     "emptyAllBody": "Thông báo sẽ xuất hiện ở đây khi có hoạt động mới.",
     "emptyAllTitle": "Chưa có thông báo",
     "emptyUnreadBody": "Bạn đã đọc hết tất cả thông báo.",
@@ -2837,6 +2844,13 @@
     "rowAriaLabel": "{title} — {read}",
     "subtitle": "Xem và quản lý tất cả thông báo của bạn.",
     "title": "Trung tâm thông báo",
+    "titles": {
+      "notification_discipline_violation_title": "Vi phạm kỷ luật mức {severity, select, MINOR {nhẹ} MODERATE {vừa} SEVERE {nặng} other {chưa xác định}}",
+      "notification_attendance_absence_title": "Vắng mặt chưa phép",
+      "notification_grade_conduct_approved_title": "Hạnh kiểm đã được duyệt",
+      "notification_attendance_leave_approved_title": "Đơn xin nghỉ đã được duyệt",
+      "unknown": "Thông báo mới"
+    },
     "toastClose": "Đóng",
     "type_announcement": "Thông báo trường",
     "type_attendance": "Điểm danh",

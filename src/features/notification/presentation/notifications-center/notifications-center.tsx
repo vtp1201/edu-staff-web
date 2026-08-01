@@ -20,6 +20,10 @@ import type {
   NotificationFilter,
   NotificationType,
 } from "../../domain/entities/notification.entity";
+import {
+  isKnownBodyKey,
+  isKnownTitleKey,
+} from "../../domain/entities/notification-message-key";
 import type {
   NotificationsCenterActions,
   NotificationsCenterVm,
@@ -122,12 +126,29 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
     | "type_announcement"
     | "type_system";
 
+  // US-E18.25 — title/body arrive as BE-owned i18n keys + scalar params
+  // (ADR 0066). Same dynamic-key-from-closed-union convention as
+  // `typeLabelKey` above, plus an allow-list so a key this build has no copy
+  // for (BE ships a 5th producer) degrades to the generic fallback instead of
+  // rendering a raw key or throwing.
+  const titleMsgKey = isKnownTitleKey(item.titleKey)
+    ? (`titles.${item.titleKey}` as const)
+    : ("titles.unknown" as const);
+  const bodyMsgKey = isKnownBodyKey(item.bodyKey)
+    ? (`bodies.${item.bodyKey}` as const)
+    : ("bodies.unknown" as const);
+  // `severity` is the only ICU arg the copy interpolates; defaulting it keeps
+  // a param-less wire row from producing an ICU formatting error. UUID params
+  // (classId/studentMemberId/recordId) are never rendered (ADR 0066).
+  const titleText = t(titleMsgKey, { severity: "", ...item.titleParams });
+  const bodyText = t(bodyMsgKey, { severity: "", ...item.bodyParams });
+
   return (
     <button
       type="button"
       onClick={() => onMarkRead(item.id)}
       aria-label={t("rowAriaLabel", {
-        title: item.title,
+        title: titleText,
         read: item.read ? t("ariaRead") : t("ariaUnread"),
       })}
       className={cn(
@@ -165,7 +186,7 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
                 : "font-bold text-foreground",
             )}
           >
-            {item.title}
+            {titleText}
           </p>
           <time
             className="shrink-0 text-muted-foreground text-xs"
@@ -176,7 +197,7 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
           </time>
         </div>
         <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">
-          {item.body}
+          {bodyText}
         </p>
         <span
           className={cn(

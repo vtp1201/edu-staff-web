@@ -7,6 +7,7 @@ import type {
   NotificationEntity,
   NotificationType,
 } from "../../domain/entities/notification.entity";
+import { mockKeyPairForType } from "../../domain/entities/notification-message-key";
 
 const VALID_TYPES: ReadonlySet<NotificationType> = new Set([
   "grade",
@@ -70,11 +71,22 @@ export function useNotificationNewEvent({
       const title = locale === "vi" ? payload.titleVi : payload.titleEn;
       const body = locale === "vi" ? payload.bodyVi : payload.bodyEn;
 
+      // US-E18.25 — `NotificationEntity` now carries i18n keys + params, not
+      // pre-rendered text (ADR 0066). `notification.new` is a MOCK-ONLY frame
+      // (no real BE producer, US-E18.18) whose payload still ships vi/en text,
+      // so the prepended row reuses the same synthetic key-pair table the mock
+      // repository's mapper uses. The toast keeps rendering the frame's own
+      // text — it is transient and never goes through the entity contract.
+      const type = safeType(payload.type);
+      const { titleKey, bodyKey } = mockKeyPairForType(type);
+
       const entity: NotificationEntity = {
         id: payload.notificationId,
-        type: safeType(payload.type),
-        title: title || payload.titleVi,
-        body: body || payload.bodyVi,
+        type,
+        titleKey,
+        titleParams: {},
+        bodyKey,
+        bodyParams: { occurredAt: payload.ts },
         ts: payload.ts,
         read: false,
       };
