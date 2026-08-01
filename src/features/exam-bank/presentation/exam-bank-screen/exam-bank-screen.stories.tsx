@@ -121,7 +121,9 @@ export const TeacherRealMode_CreateDisabledEditDeleteWired: Story = {
     // must name ONLY create as unavailable now (US-E18.28).
     const createCopyNodes = canvas.getAllByText(/tạo đề thi mới/i);
     await expect(createCopyNodes).toHaveLength(1);
-    await expect(createCopyNodes[0]).toHaveAttribute("role", "status");
+    // A11Y-401 fix: static-for-the-mount-lifetime copy is a plain paragraph,
+    // not `role="status"` (that role is for post-mount live updates).
+    await expect(createCopyNodes[0]).not.toHaveAttribute("role", "status");
     await expect(createCopyNodes[0]).toHaveTextContent(
       /Việc tạo đề thi mới chưa khả dụng/i,
     );

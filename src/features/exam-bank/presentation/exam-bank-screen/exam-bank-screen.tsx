@@ -197,10 +197,7 @@ export function ExamBankScreen({
       </header>
 
       {showAuthoringDisabledNote && (
-        <p
-          role="status"
-          className="rounded-[var(--edu-radius-card)] border border-border bg-muted px-4 py-3 text-muted-foreground text-sm"
-        >
+        <p className="rounded-[var(--edu-radius-card)] border border-border bg-muted px-4 py-3 text-muted-foreground text-sm">
           {t("authoringDisabledNote")}
         </p>
       )}
