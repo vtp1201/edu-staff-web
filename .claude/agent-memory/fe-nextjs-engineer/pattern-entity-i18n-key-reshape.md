@@ -44,6 +44,19 @@ to retire — domain/repo must never translate (`i18n.md`).
   the REAL cursor, filter locally, break on `collected.length >= limit ||
   !realHasMore`, and report the REAL last-page `hasMore` (never recomputed) so
   "Load more" keeps draining. Test the all-read-page-1 → page-2-has-unread case.
+  **Never `.slice(0, limit)` the result** (the planner's sketch did, and it
+  shipped a data-loss bug caught in review): the cursor is PAGE-aligned, so
+  capping strands that page's surplus matches forever — "Load more" resumes past
+  them. `limit` is a fetch-STOP hint, not a row budget; return everything found
+  (overshoot ≤ one page) and say so in the doc comment + ADR. Test:
+  `limit + 5` matches on one page → `items.length === limit + 5`.
+- A raw `throw` guard that a Server Action degrades to a generic `errorKey` is
+  invisible to ops → `console.error` before throwing (repo has no logger util;
+  bare `console.*` is the convention) and assert the log in the guard test with
+  `vi.spyOn(console,"error")` — doubles as output-noise suppression.
+- Whitelist ICU args at the `t()` call (`{severity: p.severity ?? "", occurredAt:
+  …}`) instead of spreading the wire param bag: makes "no UUID is ever rendered"
+  structural rather than dependent on copy discipline.
 - Retiring a `Hybrid*` facade = delete class + test, DI back to plain
   `USE_MOCK ? Mock : Real` (keep `ensureFreshSession()` in the real branch).
 
