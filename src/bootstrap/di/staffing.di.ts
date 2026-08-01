@@ -1,5 +1,6 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IStaffingRepository } from "@/features/admin/staffing/domain/repositories/i-staffing.repository";
@@ -12,6 +13,16 @@ import { CreatePositionTitleUseCase } from "@/features/admin/staffing/domain/use
 import { MockStaffingRepository } from "@/features/admin/staffing/infrastructure/repositories/mocks/staffing.mock.repository";
 import { StaffingRepository } from "@/features/admin/staffing/infrastructure/repositories/staffing.repository";
 
+/**
+ * Staffing repository factory (per-request).
+ *
+ * Assignment `memberName` is resolved by COMPOSING `iam-directory`'s
+ * `BatchResolveMembersUseCase` (IAM US-144, wired in US-E18.23) — one batch
+ * call per assignments page, chunked at 50 ids inside that module.
+ * `bootstrap/di`, not a feature's domain, is where composing across features
+ * belongs (decision 0017). The mock branch is unaffected:
+ * `MockStaffingRepository` already carries its own seeded names.
+ */
 async function makeRepo(): Promise<IStaffingRepository> {
   if (USE_MOCK) return new MockStaffingRepository();
   // Proactive refresh (decision 0018): rotate the access token BEFORE the
@@ -19,7 +30,10 @@ async function makeRepo(): Promise<IStaffingRepository> {
   // EPIC-OVERVIEW.md playbook step 6 — documented but historically only wired
   // in auth.di; each wiring US closes it for its own cluster (US-E18.2).
   await ensureFreshSession();
-  return new StaffingRepository(await createServerHttpClient());
+  const resolveMembers = await makeBatchResolveMembersUseCase();
+  return new StaffingRepository(await createServerHttpClient(), (memberIds) =>
+    resolveMembers.execute(memberIds),
+  );
 }
 
 export async function makeStaffingRepository(): Promise<IStaffingRepository> {

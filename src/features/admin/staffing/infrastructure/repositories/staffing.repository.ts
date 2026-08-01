@@ -7,6 +7,8 @@ import {
   parseEnvelope,
   statusOf,
 } from "@/bootstrap/lib/api-envelope";
+import type { MemberSummary } from "@/features/iam-directory/domain/entities/member-summary.entity";
+import type { IamDirectoryFailure } from "@/features/iam-directory/domain/failures/iam-directory.failure";
 import type {
   CreateDepartmentInput,
   Department,
@@ -134,10 +136,51 @@ export function toFailure(err: unknown): StaffingFailure {
   return { type: "unknown" };
 }
 
+/**
+ * `iam-directory` batch-lookup collaborator (US-E18.23), injected by
+ * `bootstrap/di/staffing.di.ts`. Chunking (≤50 ids/call) and the tenant scope
+ * live inside `iam-directory`, so this repository never spans two services
+ * (decision 0017 — composition belongs in `bootstrap/di`).
+ */
+export type MemberNameResolver = (
+  memberIds: string[],
+) => Promise<Result<MemberSummary[], IamDirectoryFailure>>;
+
 export class StaffingRepository implements IStaffingRepository {
-  constructor(private readonly http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /**
+     * Optional so the existing wire-level tests can construct the repository
+     * with just an http client. Absent = every row keeps the raw-`memberId`
+     * fallback, i.e. exactly the pre-US-E18.23 behaviour — a degraded display,
+     * never an error.
+     */
+    private readonly resolveMembers?: MemberNameResolver,
+  ) {}
 
   // --- Derivation helpers (fields BE does not return on the wire) ---
+
+  /**
+   * `memberId → displayName` for a whole page, in ONE batch call.
+   *
+   * Never throws and never fails the caller: a lookup error (403, transport)
+   * degrades to an empty map, which the raw-`memberId` fallback then covers.
+   * A missing display name is a cosmetic degradation; failing the assignments
+   * list over it would be a regression.
+   */
+  private async memberNameMap(
+    memberIds: string[],
+  ): Promise<Map<string, string>> {
+    const names = new Map<string, string>();
+    if (!this.resolveMembers || memberIds.length === 0) return names;
+
+    const result = await this.resolveMembers(memberIds);
+    if (!result.ok) return names;
+    for (const member of result.value) {
+      names.set(member.memberId, member.displayName);
+    }
+    return names;
+  }
 
   /**
    * Fully page through `GET /position-assignments?status=ACTIVE` (BE has no
@@ -396,17 +439,22 @@ export class StaffingRepository implements IStaffingRepository {
   // --- Position Assignments ---
 
   /**
-   * Join `positionTitleName` from a title lookup. `memberName` has NO BE source
-   * (IAM MemberResponse carries no name field, and there is no bulk/by-id user
-   * lookup outside `/users/me`) → fall back to the raw `memberId` so the UI never
-   * renders blank. Known cross-repo gap — see US-E18.2 §Cross-repo.
+   * Join `positionTitleName` from a title lookup and `memberName` from the
+   * `iam-directory` batch lookup (IAM US-144, wired in US-E18.23 — the old
+   * "`memberName` has NO BE source" note is obsolete).
+   *
+   * The raw-`memberId` fallback survives but is now the EXCEPTIONAL path: BE
+   * silently omits unknown/malformed/other-tenant ids from the batch response
+   * (it is deliberately not an existence oracle), and a failed lookup degrades
+   * to an empty map. Either way the UI shows an id rather than a blank cell.
    */
   private toAssignment(
     dto: PositionAssignmentResponseDto,
     titleNames: Map<string, string>,
+    memberNames: Map<string, string>,
   ): PositionAssignment {
     return StaffingMapper.toPositionAssignment(dto, {
-      memberName: dto.memberId,
+      memberName: memberNames.get(dto.memberId) ?? dto.memberId,
       positionTitleName:
         titleNames.get(dto.positionTitleId) ?? dto.positionTitleId,
     });
@@ -436,7 +484,13 @@ export class StaffingRepository implements IStaffingRepository {
         this.fetchTitleNameMap(),
       ]);
       const { data } = parseEnvelope(envelope);
-      return ok(data.map((dto) => this.toAssignment(dto, titleNames)));
+      // ONE batch lookup for the whole page — never one call per row.
+      const memberNames = await this.memberNameMap(
+        data.map((dto) => dto.memberId),
+      );
+      return ok(
+        data.map((dto) => this.toAssignment(dto, titleNames, memberNames)),
+      );
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -452,7 +506,10 @@ export class StaffingRepository implements IStaffingRepository {
         ) as unknown as Promise<PositionAssignmentResponseDto>,
         this.fetchTitleNameMap(),
       ]);
-      return ok(this.toAssignment(data, titleNames));
+      // Single-id path: one element through the same batch route (the
+      // use-case chunks a 1-id list into exactly one HTTP call).
+      const memberNames = await this.memberNameMap([data.memberId]);
+      return ok(this.toAssignment(data, titleNames, memberNames));
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -475,9 +532,10 @@ export class StaffingRepository implements IStaffingRepository {
         scopeEntityId: input.scopeEntityId,
         academicYearId: input.academicYearId,
       })) as unknown as PositionAssignmentResponseDto;
+      const memberNames = await this.memberNameMap([data.memberId]);
       return ok(
         StaffingMapper.toPositionAssignment(data, {
-          memberName: data.memberId,
+          memberName: memberNames.get(data.memberId) ?? data.memberId,
           positionTitleName: title.name,
         }),
       );
