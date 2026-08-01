@@ -47,9 +47,14 @@ export function mapInvitationListItem(
     invitationId: dto.invitationId,
     email: dto.email,
     roles: dto.roles.map((r) => r.toLowerCase()),
+    // An unrecognised (future) BE value falls back to `revoked`, NOT `pending`:
+    // `pending` is an ACTIONABLE status downstream (it enables copy-link/revoke
+    // affordances), so coercing an unknown value into it would invite an admin to
+    // act on a row whose real state we do not understand. `revoked` is terminal
+    // and action-free, so an unknown value stays inert.
     status: INVITATION_STATUSES.includes(dto.status)
       ? (dto.status as InvitationStatus)
-      : "pending",
+      : "revoked",
     invitedBy: dto.invitedBy,
     createdAt: dto.createdAt,
     expiresAt: dto.expiresAt,

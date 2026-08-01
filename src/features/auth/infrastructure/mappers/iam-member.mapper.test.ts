@@ -67,13 +67,16 @@ describe("mapInvitationListItem (IAM US-147, US-E18.29)", () => {
     ]);
   });
 
-  it("narrows the 4 projected statuses and falls back to pending for an unknown value", () => {
+  it("narrows the 4 projected statuses and falls back to revoked for an unknown value", () => {
     for (const s of ["pending", "accepted", "expired", "revoked"] as const) {
       expect(mapInvitationListItem({ ...dto, status: s }).status).toBe(s);
     }
-    // Defensive: a future BE enum value must not widen the union at runtime.
+    // Defensive: a future BE enum value must not widen the union at runtime —
+    // and must not land on `pending` either, which is an ACTIONABLE status
+    // (enables resend/copy-link/revoke affordances on the row). `revoked` is
+    // terminal and action-free, so an unrecognised value stays inert.
     expect(mapInvitationListItem({ ...dto, status: "SOMETHING" }).status).toBe(
-      "pending",
+      "revoked",
     );
   });
 });

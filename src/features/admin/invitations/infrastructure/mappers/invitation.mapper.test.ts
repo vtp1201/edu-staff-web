@@ -28,7 +28,11 @@ describe("invitation.mapper", () => {
   it("fromWireStatus lowercases UPPERCASE wire status", () => {
     expect(fromWireStatus("PENDING")).toBe("pending");
     expect(fromWireStatus("revoked")).toBe("revoked");
-    expect(fromWireStatus("weird")).toBe("pending");
+    // An unrecognised/future wire value must NOT become `pending`: that is an
+    // ACTIONABLE status (it enables copy-link + revoke on the row). Falls back
+    // to the terminal, action-free `revoked` instead.
+    expect(fromWireStatus("weird")).toBe("revoked");
+    expect(fromWireStatus("SUSPENDED")).toBe("revoked");
   });
 
   it("toInvitation maps the auth-domain shape to the screen shape (wire `createdAt` → screen `sentAt`)", () => {

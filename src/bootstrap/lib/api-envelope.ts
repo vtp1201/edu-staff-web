@@ -132,7 +132,10 @@ function parseRetryAfter(headers: unknown): number | undefined {
     Object.entries(bag).find(([k]) => k.toLowerCase() === "retry-after")?.[1];
   if (typeof raw !== "string" && typeof raw !== "number") return undefined;
   const seconds = Number(raw);
-  return Number.isFinite(seconds) ? seconds : undefined;
+  // `Number("")` and `Number("   ")` are 0 — finite, but NOT a wait instruction.
+  // Only a strictly positive delta is meaningful; anything else stays undefined
+  // so callers fall back to their wait-less copy.
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
 }
 
 /** Error-path normalisation: any axios/transport error → {@link ApiError}. */

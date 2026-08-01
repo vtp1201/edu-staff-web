@@ -40,10 +40,18 @@ const STATUS_VALUES: readonly string[] = [
   "revoked",
 ];
 
-/** Wire status (UPPERCASE on the real wire) → lowercase `InvitationStatus`. */
+/**
+ * Wire status (UPPERCASE on the real wire) → lowercase `InvitationStatus`.
+ *
+ * An unrecognised (future) value falls back to `revoked`, NOT `pending`:
+ * `pending` enables the copy-link + revoke row actions and `expired` enables
+ * resend, so either would invite an admin to act on a row whose real state we do
+ * not understand. `revoked` is terminal and action-free — same rule as
+ * `iam-member.mapper.ts`.
+ */
 export function fromWireStatus(status: string): InvitationStatus {
   const v = status.toLowerCase();
-  return STATUS_VALUES.includes(v) ? (v as InvitationStatus) : "pending";
+  return STATUS_VALUES.includes(v) ? (v as InvitationStatus) : "revoked";
 }
 
 /**

@@ -338,7 +338,10 @@ export function InvitationsScreen({
   const now = Date.now();
   // Status is filtered server-side (one query per tab); only the email search
   // runs client-side, over the pages loaded so far.
-  const { rows, filteredCount } = filterInvitations(invitations, query);
+  const { rows, rawCount, filteredCount } = filterInvitations(
+    invitations,
+    query,
+  );
   const rowVMs = rows.map((inv) =>
     buildRowVM(inv, now, rowVMLabels, isRowMutating(inv.id)),
   );
@@ -360,7 +363,7 @@ export function InvitationsScreen({
    */
   const showPartialSearchHint = query.trim() !== "" && hasNextPage;
   // Page-1 failure replaces the table; a later page's failure keeps the rows.
-  const showError = listQuery.isError && invitations.length === 0;
+  const showError = listQuery.isError && rawCount === 0;
   /**
    * 403 (AC-8): the caller's real role/tenant scope rejected the read. Retrying
    * cannot change a 403, so this state gets its OWN copy and NO retry control —
@@ -371,10 +374,12 @@ export function InvitationsScreen({
     (listQuery.error as unknown as ThrownListFailure | undefined)?.type ===
     "forbidden";
   const showLoading = !showError && listQuery.isPending;
-  const showEmptyNoInvitations =
-    !showError && !showLoading && invitations.length === 0;
+  // `rawCount` (rows loaded, pre-search) vs `filteredCount` (post-search) is the
+  // AC-001.3 / AC-002.4 discrimination — it comes from the pure filter helper so
+  // the two counts can never drift apart here.
+  const showEmptyNoInvitations = !showError && !showLoading && rawCount === 0;
   const showEmptyNoMatch =
-    !showError && !showLoading && invitations.length > 0 && filteredCount === 0;
+    !showError && !showLoading && rawCount > 0 && filteredCount === 0;
   const showTable =
     !showError && !showLoading && !showEmptyNoInvitations && !showEmptyNoMatch;
   /**

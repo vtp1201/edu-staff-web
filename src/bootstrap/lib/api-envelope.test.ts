@@ -153,6 +153,22 @@ describe("normalizeError", () => {
     expect(retryAfterSecondsOf(new Error("boom"))).toBeUndefined();
   });
 
+  it("ignores an empty or non-positive Retry-After (Number('') === 0 is finite)", () => {
+    // An empty header must not become "wait 0 seconds" — that reads as a real
+    // instruction downstream ("thử lại sau 0 giây") when nothing was sent.
+    for (const raw of ["", "   ", "0", "-30"]) {
+      const err = normalizeError({
+        response: {
+          status: 429,
+          headers: { "retry-after": raw },
+          data: envelope({ success: false }),
+        },
+      });
+      expect(err.retryAfterSeconds).toBeUndefined();
+      expect(retryAfterSecondsOf(err)).toBeUndefined();
+    }
+  });
+
   it("reads the header case-insensitively (axios lowercases, servers may not)", () => {
     const err = normalizeError({
       response: {
