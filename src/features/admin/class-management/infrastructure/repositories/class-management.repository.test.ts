@@ -11,6 +11,7 @@ import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { CLASS_EP } from "@/bootstrap/endpoint/class.endpoint";
 import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
 import type { ClassResponseDto } from "../dtos/class-response.dto";
 import type { EnrollmentResponseDto } from "../dtos/enrollment-response.dto";
 import type { HomeroomAssignmentResponseDto } from "../dtos/homeroom-assignment-response.dto";
@@ -523,11 +524,116 @@ describe("ClassManagementRepository — getHomeroomTeacher", () => {
   });
 });
 
-describe("ClassManagementRepository — listTeachers (mock-first, permanently)", () => {
-  it("always fails (real repo never serves this — DI factory delegates to mock)", async () => {
-    const repo = new ClassManagementRepository(makeHttp());
-    const res = await repo.listTeachers();
-    expect(res.ok).toBe(false);
+/**
+ * US-E18.23 — `listTeachers` is no longer mock-first. It delegates to the
+ * `iam-directory` search collaborator injected by `class-management.di.ts`
+ * (which pins `role: "TEACHER"` and the tenant id from the token claim), and
+ * translates `IamDirectoryFailure` into this feature's own union.
+ */
+describe("ClassManagementRepository — listTeachers (real, via iam-directory)", () => {
+  function directoryMember(
+    over: Partial<DirectoryMember> = {},
+  ): DirectoryMember {
+    return {
+      memberId: "u-1",
+      userId: "u-1",
+      displayName: "Nguyễn Thị Giáo",
+      email: "giao@example.com",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+      ...over,
+    };
+  }
+
+  it("forwards `search` to the directory collaborator and maps to TeacherMember", async () => {
+    const search = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [
+        directoryMember(),
+        directoryMember({
+          memberId: "u-2",
+          userId: "u-2",
+          displayName: "Trần Văn Dạy",
+          email: "day@example.com",
+          roles: ["TEACHER", "MANAGER"],
+        }),
+      ],
+    });
+    const repo = new ClassManagementRepository(makeHttp(), search);
+
+    const res = await repo.listTeachers({ search: "ngu" });
+
+    expect(search).toHaveBeenCalledExactlyOnceWith({ search: "ngu" });
+    expect(res).toEqual({
+      ok: true,
+      value: [
+        {
+          userId: "u-1",
+          displayName: "Nguyễn Thị Giáo",
+          email: "giao@example.com",
+        },
+        {
+          userId: "u-2",
+          displayName: "Trần Văn Dạy",
+          email: "day@example.com",
+        },
+      ],
+    });
+  });
+
+  it("makes NO direct HTTP call of its own (the collaborator owns the wire)", async () => {
+    const get = vi.fn();
+    const search = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    await new ClassManagementRepository(makeHttp({ get }), search).listTeachers(
+      {},
+    );
+
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("maps a directory RBAC denial to { type: 'forbidden' }", async () => {
+    const search = vi
+      .fn()
+      .mockResolvedValue({ ok: false, failure: { type: "forbidden" } });
+    const repo = new ClassManagementRepository(makeHttp(), search);
+
+    expect(await repo.listTeachers({})).toEqual({
+      ok: false,
+      failure: { type: "forbidden" },
+    });
+  });
+
+  it("maps a directory network error to { type: 'network-error' }", async () => {
+    const search = vi
+      .fn()
+      .mockResolvedValue({ ok: false, failure: { type: "network-error" } });
+    const repo = new ClassManagementRepository(makeHttp(), search);
+
+    expect(await repo.listTeachers({})).toEqual({
+      ok: false,
+      failure: { type: "network-error" },
+    });
+  });
+
+  it("maps any other directory failure to { type: 'unknown' }", async () => {
+    const search = vi
+      .fn()
+      .mockResolvedValue({ ok: false, failure: { type: "too-many-ids" } });
+    const repo = new ClassManagementRepository(makeHttp(), search);
+
+    expect(await repo.listTeachers({})).toEqual({
+      ok: false,
+      failure: { type: "unknown" },
+    });
+  });
+
+  it("fails with `unknown` when no collaborator was injected (misconfigured DI)", async () => {
+    const res = await new ClassManagementRepository(makeHttp()).listTeachers(
+      {},
+    );
+
+    expect(res).toEqual({ ok: false, failure: { type: "unknown" } });
   });
 });
 

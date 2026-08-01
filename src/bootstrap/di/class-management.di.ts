@@ -1,51 +1,48 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { makeSearchMembersUseCase } from "@/bootstrap/di/iam-directory.di";
+import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { decodeTenantId } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
-import type { TeacherMember } from "@/features/admin/class-management/domain/entities/teacher-member.entity";
-import type { ClassManagementFailure } from "@/features/admin/class-management/domain/failures/class-management.failure";
 import type {
   ClassListPage,
   IClassManagementRepository,
 } from "@/features/admin/class-management/domain/repositories/i-class-management.repository";
-import type { Result } from "@/features/admin/class-management/domain/use-cases/result";
 import { ClassManagementRepository } from "@/features/admin/class-management/infrastructure/repositories/class-management.repository";
 import { MockClassManagementRepository } from "@/features/admin/class-management/infrastructure/repositories/mock-class-management.repository";
 
 /**
  * Class management repository factory (per-request).
  *
- * `listTeachers` is PERMANENTLY mock-first regardless of `USE_MOCK` (US-E18.4
- * confirmed, not just "not finalised" as previously noted): IAM's public API
- * (`edu-api/services/iam/docs/openapi.yaml`, `Members` tag) has no `GET`
- * listing endpoint and no `GET` single-member lookup at all — only
- * `POST`/`PATCH`/`DELETE` on `/api/v1/tenants/{id}/members`. The only
- * member-lookup endpoint is internal service-to-service only (bypasses
- * Kong). We delegate this one method to the mock repo even when the real
- * repo serves everything else, so the homeroom picker has data until BE
- * ships a listing endpoint (cross-repo ask #7, EPIC-OVERVIEW.md).
+ * FULLY REAL since US-E18.23. The previous hybrid — `listTeachers` delegating
+ * to `MockClassManagementRepository` even in real mode — is GONE, and so is
+ * its rationale ("IAM's `Members` tag has no `GET` listing endpoint and no
+ * single-member lookup at all, only POST/PATCH/DELETE"), which IAM US-144
+ * made FALSE: `GET /iam/api/v1/tenants/{id}/members?role=&search=` now exists
+ * (cross-repo asks #6/#7 resolved, EPIC-OVERVIEW.md). Every method now follows
+ * the same plain `USE_MOCK ? Mock : Real` gate (decision 0014).
+ *
+ * The teacher picker is served by COMPOSING `iam-directory`'s
+ * `SearchMembersUseCase`: `bootstrap/di` — not a feature's domain — is exactly
+ * where composing across features is allowed (decision 0017, same precedent as
+ * `bootstrap/lib/resolve-current-term.ts`). The `role: "TEACHER"` filter
+ * (UPPERCASE, ground-truthed against `MemberListItem.roles` in
+ * `services/iam/docs/openapi.yaml`) and the server-derived tenant id are
+ * pinned here so the repository never has to own them.
  */
 export async function makeClassManagementRepository(): Promise<IClassManagementRepository> {
   if (USE_MOCK) return new MockClassManagementRepository();
 
   await ensureFreshSession();
-  const real = new ClassManagementRepository(await createServerHttpClient());
-  const mockTeachers = new MockClassManagementRepository();
+  const tenantId = decodeTenantId((await getAccessToken()) ?? "") ?? "";
+  const searchMembers = await makeSearchMembersUseCase();
 
-  return new (class implements IClassManagementRepository {
-    listClasses = real.listClasses.bind(real);
-    createClass = real.createClass.bind(real);
-    renameClass = real.renameClass.bind(real);
-    archiveClass = real.archiveClass.bind(real);
-    assignHomeroomTeacher = real.assignHomeroomTeacher.bind(real);
-    getHomeroomTeacher = real.getHomeroomTeacher.bind(real);
-    // mock-first fallback (see doc above)
-    listTeachers(params: {
-      search?: string;
-    }): Promise<Result<TeacherMember[], ClassManagementFailure>> {
-      return mockTeachers.listTeachers(params);
-    }
-  })();
+  return new ClassManagementRepository(
+    await createServerHttpClient(),
+    ({ search }) =>
+      searchMembers.execute({ tenantId, role: "TEACHER", search }),
+  );
 }
 
 export type { ClassListPage };

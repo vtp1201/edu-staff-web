@@ -7,6 +7,8 @@ import {
   parseEnvelope,
   statusOf,
 } from "@/bootstrap/lib/api-envelope";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
+import type { IamDirectoryFailure } from "@/features/iam-directory/domain/failures/iam-directory.failure";
 import type {
   Class,
   CreateClassInput,
@@ -76,8 +78,49 @@ function toFailure(err: unknown): ClassManagementFailure {
   return { type: "unknown" };
 }
 
+/**
+ * `iam-directory` collaborator for the teacher picker (US-E18.23), injected by
+ * `bootstrap/di/class-management.di.ts`.
+ *
+ * The DI factory pins the two arguments this repository must not own — the
+ * `role: "TEACHER"` filter and the tenant id decoded from the access-token
+ * claim — so the wire call stays inside `iam-directory` (decision 0017: one
+ * repository never spans two services). Composing across features is allowed
+ * in `bootstrap/di`, not here.
+ */
+export type TeacherDirectorySearch = (params: {
+  search?: string;
+}) => Promise<Result<DirectoryMember[], IamDirectoryFailure>>;
+
+/**
+ * Translate `iam-directory`'s failure union into this feature's own. Done at
+ * the boundary so `IamDirectoryFailure` never leaks to presentation.
+ * `too-many-ids` is unreachable on the list path (it belongs to the batch
+ * lookup) → `unknown`.
+ */
+function fromDirectoryFailure(
+  failure: IamDirectoryFailure,
+): ClassManagementFailure {
+  switch (failure.type) {
+    case "forbidden":
+      return { type: "forbidden" };
+    case "network-error":
+      return { type: "network-error" };
+    default:
+      return { type: "unknown" };
+  }
+}
+
 export class ClassManagementRepository implements IClassManagementRepository {
-  constructor(private readonly http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /**
+     * Optional so the ~30 existing wire-level tests can construct the
+     * repository with just an http client. Absent = misconfigured DI, which
+     * fails closed (`unknown`) rather than silently returning an empty picker.
+     */
+    private readonly searchDirectory?: TeacherDirectorySearch,
+  ) {}
 
   /** Paginate a class's roster to completion and count enrollments. */
   private async countRoster(classId: string): Promise<number> {
@@ -258,19 +301,37 @@ export class ClassManagementRepository implements IClassManagementRepository {
     }
   }
 
-  // MOCK-FIRST, permanently, until BE ships a listing endpoint (US-E18.4):
-  // IAM's public API (`edu-api/services/iam/docs/openapi.yaml`, `Members`
-  // tag) exposes only `POST` (add), `PATCH` (change roles), `DELETE`
-  // (remove) on `/api/v1/tenants/{id}/members` — NO `GET` list and NO `GET`
-  // single-member lookup. The only member-lookup endpoint
-  // (`GET /internal/v1/tenants/{tenantId}/members/{userId}`) is explicitly
-  // internal service-to-service only (bypasses Kong). There is currently no
-  // way for the web app to list members (with or without a role filter) from
-  // IAM. Cross-repo ask #7 logged in EPIC-OVERVIEW.md. The DI factory always
-  // serves this method from the mock repository, regardless of `USE_MOCK`.
-  async listTeachers(): Promise<
-    Result<TeacherMember[], ClassManagementFailure>
-  > {
-    return fail({ type: "unknown" });
+  /**
+   * REAL since US-E18.23 (was permanently mock-first under US-E18.4).
+   *
+   * The old rationale — "IAM exposes no `GET` member list at all, only
+   * POST/PATCH/DELETE on `/tenants/{id}/members`" — is NO LONGER TRUE: IAM
+   * US-144 shipped `GET /iam/api/v1/tenants/{id}/members?role=&search=`
+   * (cross-repo asks #6/#7, resolved). The picker now reads the real
+   * directory; `USE_MOCK` alone decides mock vs real, exactly like every other
+   * method on this repository (decision 0014).
+   *
+   * `search` is forwarded to BE (case-insensitive prefix match on displayName
+   * or email); the `role: "TEACHER"` filter and the tenant id are pinned by
+   * the DI factory. The collaborator reads EVERY page — BE applies the filters
+   * after a keyset read, so a short page does not mean the end of the list.
+   */
+  async listTeachers(params: {
+    search?: string;
+  }): Promise<Result<TeacherMember[], ClassManagementFailure>> {
+    if (!this.searchDirectory) return fail({ type: "unknown" });
+
+    const result = await this.searchDirectory({ search: params.search });
+    if (!result.ok) return fail(fromDirectoryFailure(result.failure));
+
+    return ok(
+      result.value.map((member) => ({
+        // `memberId === userId` on the directory wire; the homeroom picker and
+        // `assignHomeroomTeacher` both key on `userId`.
+        userId: member.userId,
+        displayName: member.displayName,
+        email: member.email,
+      })),
+    );
   }
 }
