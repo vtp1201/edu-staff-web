@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -360,7 +360,104 @@ just unit/integration).
 
 ## Evidence
 
-(filled in by `fe-lead` after implementation + review + QA)
+- **Scope delivered** exactly per the Product Contract + ADR `0066`:
+  `HybridNotificationRepository` deleted; `notification.di.ts` reverted to
+  the plain `USE_MOCK ? Mock : Real` gate (`ensureFreshSession()` preserved
+  in the real branch). `getUnreadCount()` calls the real SINGULAR
+  `unread-count` endpoint directly (no sum) — `MessagingRepository`'s
+  own per-room PLURAL `unread-counts` usage (US-E18.18) untouched, confirmed
+  by an empty diff under `src/features/messaging/` and `src/bootstrap/realtime/`.
+  `markAllRead()` loops `PATCH read-batch` while `hasMore` is true, with a
+  bounded `MAX_BATCHES` guard that `console.error`s then throws (never
+  silently caught into a generic failure). `listNotifications({filter:
+  "unread"})` performs the bounded client-side drain (`DRAIN_PAGE_SIZE=100`,
+  `MAX_PAGES=20`), returning EVERY unread row found on the last page fetched
+  uncapped (not truncated to the caller's page-size `limit`) — this was the
+  one MUST-FIX defect caught by review (see below), fixed same-branch.
+  `NotificationEntity` reshaped to `titleKey`/`titleParams`/`bodyKey`/
+  `bodyParams` (BE's ADR-0074 i18n-key+params contract); both the real
+  mapper (`mapNotification`, locale-free passthrough) and a new
+  `mapMockNotification` for the mock DTO emit this same shape.
+  `notifications-center.tsx`'s `NotificationRow` translates via
+  `useTranslations("notifications")` against a known-keys allow-list with
+  `titles.unknown`/`bodies.unknown` fallback (renamed out of `domain/entities/`
+  into a dedicated non-entity module per review); ICU params whitelisted to
+  `{severity, occurredAt}` only — no raw UUID (`classId`/`studentMemberId`/
+  `recordId`) can structurally reach `t()`. New `notifications.titles.*`/
+  `notifications.bodies.*` keys added to both `vi.json` and `en.json`
+  (4 known producer key-pairs + `unknown` fallback pair, key-set parity
+  confirmed). `docs/product/screens.md` line 46 synced.
+- **Tests**: full suite `bun vitest run` → **436 files / 3041 tests pass**
+  (baseline before this US: 437 files/3026 tests; one file fewer from the
+  deleted `hybrid-notification.repository.test.ts`, net +16 tests across the
+  remaining files). Storybook interaction suite 151 files/1094 tests pass
+  (incl. new `UnknownKeyFallback` story case). `bunx tsc --noEmit` clean.
+  `env -u NEXT_PUBLIC_USE_MOCK bun run build` clean. `bun lint` clean (2
+  pre-existing unrelated findings in `messaging/message-context-menu`, not
+  touched by this US).
+- **fe-tech-lead-reviewer**: initial verdict **Revision Required** — one
+  MUST-FIX (the unread-drain silently dropped unread rows beyond the
+  caller's page-size `limit` on a single 100-row page — a real data-loss
+  path on the shipped "Unread" tab, not the "may re-surface" imprecision the
+  original code comment/ADR claimed) and one SHOULD-FIX (the `MAX_BATCHES`
+  guard trip was swallowed to a generic `errorKey:"unknown"` at the Server
+  Action boundary with no server-side log). Both fixed same-branch: the
+  drain now returns every unread row found on the page uncapped (bounded
+  overshoot = one page, page-aligned cursor rules out duplicates on the next
+  call), with a new test (`limit+5` unread rows in one page → all returned,
+  none dropped); the guard now `console.error`s before throwing. Three
+  CONSIDER items also applied: ICU params whitelisted to
+  `{severity,occurredAt}` (structural UUID guarantee, not just copy
+  discipline); the shared key-table module renamed out of `domain/entities/`
+  (naming-convention fix); a pre-existing factually-wrong SSE-dedupe comment
+  in `use-notification-new-event.ts` corrected. Re-verified: **Approved**.
+  Everything else (hybrid deletion, singular endpoint, bounded loops, entity
+  reshape, mock-mapper wiring, layering, security, untouched
+  realtime/messaging modules) confirmed correct on the reviewer's own
+  independent runs, not from self-report.
+- **fe-accessibility-auditor**: **PASS**, no blocking/critical/major
+  findings. Confirmed the design-review-gate-N/A claim via `git diff` (JSX
+  structure identical beyond the two `t()` call sites + `aria-label` source
+  swap); new real copy fits the existing `line-clamp-1`/`line-clamp-2`
+  treatment at 320px; `rowAriaLabel` composes the translated title correctly;
+  unknown-key fallback renders meaningful non-empty text in both locales
+  (never a raw key, confirmed via the Storybook story's negative assertion).
+  One informational, pre-existing, out-of-scope note logged (A11Y-001:
+  `relativeTime(item.ts, "vi")` hardcodes the "vi" locale — unchanged by
+  this US's diff, flagged for a future story).
+- **fe-qa-playwright**: **Go**. Independently re-verified the drain fix by
+  reading the actual diff/commit (not the changelog prose) and confirming
+  the exact test locking the original failure mode impossible
+  (`limit+5` unread rows → all `limit+5` returned). Confirmed i18n key-set
+  parity between `vi.json`/`en.json` and the code's known-keys allow-list;
+  confirmed `src/bootstrap/realtime/*` and `src/features/messaging/` are
+  genuinely untouched (not just claimed); confirmed mock fixtures falling
+  back to the `unknown` string render sane, non-blank Storybook rows (an
+  intentional ADR-0066 content change, not a regression). No new test gaps
+  found — zero production defects, zero new test code needed this round.
+- **Commits** (in order): `dd2cf5f` docs (packet + ADR 0066) · `1879d0d`
+  docs (fe-planner implementation plan) · `b81dff1` feat (entity/DTO
+  reshape) · `1b3af8d` feat (real endpoints wiring) · `5b6de31` feat
+  (presentation i18n translation) · `0bf9a94` chore (engineer agent-memory)
+  · `2a80430` fix (unread-drain data-loss fix) · `7140f9d` chore (engineer
+  agent-memory) · `d8fcc06` chore (reviewer agent-memory) · `5e40e66` chore
+  (QA agent-memory).
+- **Cross-repo/product findings** appended to `EPIC-OVERVIEW.md`: ask **#34
+  marked RESOLVED** (generic notification-bell concept now real, BE US-146
+  closes the gap ask #34 originally raised at US-E18.18); new ask **#42**
+  (`GET /notifications` has no `?read=false`/`?unread=true` server-side
+  filter despite the underlying materialized view already backing an exact
+  per-status count — the web's "Unread" tab must drain-and-filter
+  client-side; cheap potential BE addition, not a blocker).
+- **Deferred**: none — this US had no Kong-routing or auth-trust-model
+  blocker (unlike US-E18.18's SSE proxy); all four endpoints are plain
+  repository HTTP calls through the already-Kong-routed `/noti/api/v1/*`
+  prefix (confirmed live-routable per US-E18.22/ADR `0065`), so nothing is
+  deferred on the transport side. No live-gateway smoke test was run in
+  this US specifically (no `make stack-up` session), consistent with every
+  other epic US that relies on the repository/mapper/DI test layer + prior
+  US-E18.22 live-verification of the shared Kong prefix rather than
+  re-verifying transport per-US.
 
 ## Implementation Plan
 
