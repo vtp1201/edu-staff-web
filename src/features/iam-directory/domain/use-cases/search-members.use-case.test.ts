@@ -84,13 +84,32 @@ describe("SearchMembersUseCase", () => {
       role: "TEACHER",
       search: "ngu",
       cursor: undefined,
+      limit: 100,
     });
     expect(repo.listMembers).toHaveBeenNthCalledWith(2, {
       tenantId: "t-1",
       role: "TEACHER",
       search: "ngu",
       cursor: "cur-1",
+      limit: 100,
     });
+  });
+
+  it("requests BE's maximum page size on EVERY page, not the default 20", async () => {
+    // This loop always drains the whole directory inside RSC render, so the
+    // page size directly multiplies the number of blocking round trips.
+    const repo = makeRepo([
+      ok(page([member()], true, "cur-1")),
+      ok(page([member({ memberId: "m-2", userId: "m-2" })], true, "cur-2")),
+      ok(page([member({ memberId: "m-3", userId: "m-3" })], false)),
+    ]);
+
+    await new SearchMembersUseCase(repo).execute({ tenantId: "t-1" });
+
+    const limits = vi
+      .mocked(repo.listMembers)
+      .mock.calls.map(([params]) => params.limit);
+    expect(limits).toEqual([100, 100, 100]);
   });
 
   it("stops when hasMore is true but the BE returns no nextCursor (defensive)", async () => {

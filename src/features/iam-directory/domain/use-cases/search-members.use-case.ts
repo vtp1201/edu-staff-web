@@ -13,7 +13,18 @@ export interface SearchMembersParams {
 }
 
 /**
- * Defensive cap on the pagination loop. At the BE's max page size (100) this is
+ * BE's maximum page size for the directory list (`limit` is 1–100, default 20).
+ *
+ * Always request the cap: this use-case ALWAYS drains the whole directory, and
+ * the read happens inside RSC render (`admin/classes` calls `listTeachers({})`
+ * with no search), so every extra page is a blocking round trip. At BE's
+ * default of 20 a 500-member tenant costs 25 sequential requests; at 100 it
+ * costs 5.
+ */
+const PAGE_SIZE = 100;
+
+/**
+ * Defensive cap on the pagination loop. At {@link PAGE_SIZE} (100) this is
  * 20 000 members — far beyond any single tenant — so hitting it means the BE
  * is misbehaving (`hasMore` stuck true), not that a tenant is genuinely large.
  */
@@ -43,6 +54,7 @@ export class SearchMembersUseCase {
         role: params.role,
         search: params.search,
         cursor,
+        limit: PAGE_SIZE,
       });
       if (!result.ok) return result;
 

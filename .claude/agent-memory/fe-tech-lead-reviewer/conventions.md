@@ -282,6 +282,28 @@ Confirmed facts (verify before citing if stale):
   handled by a boolean prop on the shared body (`showClassOfferings`), NOT a forked component. The
   behavior-preservation bar is "zero edits to the pre-existing `*.stories.tsx`" — verify by
   `git diff main...HEAD -- <that stories file>` being EMPTY, not by trusting the claim.
+- **Screenless SHARED infra feature module + narrow function ports = ACCEPTED** (US-E18.23
+  `src/features/iam-directory/`, the epic's first). A capability consumed by ≥2 features but owning
+  NO screen lives as `features/<x>/{domain,infrastructure}` with NO `presentation/`, plus its own
+  `bootstrap/di/<x>.di.ts` with **no `USE_MOCK` branch** — legitimate iff every CONSUMER factory
+  gates on `USE_MOCK` before reaching it (verify that, else half-mock/half-real is possible).
+  Consumers inject it as an OPTIONAL narrow function port typed in the consumer repo
+  (`TeacherDirectorySearch`, `MemberNameResolver`) rather than the use-case class, so ~45 legacy
+  `new XRepository(http)` tests still compile; require (a) DI passes the port UNCONDITIONALLY on the
+  real branch, (b) the absent-port path is documented fail-closed / pre-existing-fallback, (c) a test
+  pins the absent case. Cross-feature **type-only** domain imports (`DirectoryMember`,
+  `IamDirectoryFailure`) into a consumer repo are fine (precedent: `iam-member.repository.ts` →
+  `features/tenant`'s `TenantMembership`); the consumer must translate the foreign failure union into
+  its own at that boundary so it never reaches presentation.
+- **IAM wire conventions are SPLIT and must not be unified**: `error.code` is raw lowercase
+  snake_case (`member_list_forbidden`, `too_many_member_ids`) while `roles`/enums are UPPERCASE
+  (`TEACHER`). `core`/`social` codes stay UPPER_SNAKE. Re-verify against
+  `../edu-api/services/iam/docs/ERROR_CODES.md` + `openapi.yaml` on every IAM-consuming story.
+- **"Follow `nextCursor` until `hasMore:false`" needs an explicit `limit`**: IAM's directory list
+  defaults to `limit=20` and applies `role`/`search` AFTER the keyset read, so a full-directory read
+  without `limit: 100` costs ~5× the sequential round trips inside an RSC render. When reviewing any
+  read-everything pagination loop, check the page size actually requested, not just the loop logic,
+  and check whether a defensive `MAX_PAGES` cap silently returns partial `ok` data.
 - **`useEffect([subject])` reset race kills "saved" feedback when the PARENT replaces the entity on save**
   (`subjects-screen.tsx` `setDetailSubject(result.subject)` → new identity → hook resets `saved=false`).
   A full-page RSC consumer is immune ONLY because the `subject` prop is server-rendered and never
