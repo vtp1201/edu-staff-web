@@ -80,8 +80,20 @@ the shapes below recur every time a *write* path (not just a read) unblocks.
   to `unknown` AND arrives after earlier calls already persisted. If the
   component already computes per-item validation for another gate (publish),
   reuse that exact map in the save path: select the offending item, show its
-  specific failure, never write. Apply in mock too — the server can never accept
-  it, so mock leniency trains a workflow that breaks in prod.
+  specific failure, never write.
+  - **BUT scope it to real mode, and NEVER strengthen a save/draft validation
+    that was previously lenient.** I applied this gate unconditionally arguing
+    "mock leniency trains a prod-breaking workflow"; fe-lead declined it:
+    lenient-draft / strict-publish is the expected editor pattern (Docs, Notion,
+    WordPress), reserving an empty slot and saving progress is normal authoring,
+    and the problem is real-mode-only (mock repos are pure local state — no
+    partial persistence, no confusing round trip). Rule: an un-scoped
+    validation-STRENGTHENING change is an unrequested product regression even
+    when it makes the client agree with the server. Add a dedicated prop
+    (`requireCompleteQuestions`, default = old lenient behaviour) wired from the
+    route as `!USE_MOCK` — do not overload an existing flag with a second
+    meaning, and never read `USE_MOCK` inside the component. Prove the OLD path
+    with its own story; don't just delete coverage of it.
 
 Related: [[pattern-be-wiring-remap]], [[pattern-boundary-narrow-remap]],
 [[pattern-hybrid-partial-real-wiring]], [[gotcha-openapi-drifts-from-go-source]].
