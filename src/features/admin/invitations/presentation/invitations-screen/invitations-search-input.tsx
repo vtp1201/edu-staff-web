@@ -9,6 +9,12 @@ export interface InvitationsSearchInputProps {
   value: string;
   placeholder: string;
   ariaLabel: string;
+  /**
+   * Id of the caveat text rendered by the container ("results cover the pages
+   * loaded so far") — wired as `aria-describedby` so the limitation is announced
+   * with the field, not just visible next to it. Omitted when no caveat applies.
+   */
+  describedById?: string;
   onChange: (value: string) => void;
 }
 
@@ -23,6 +29,7 @@ export function InvitationsSearchInput({
   value,
   placeholder,
   ariaLabel,
+  describedById,
   onChange,
 }: InvitationsSearchInputProps) {
   const [draft, setDraft] = useState(value);
@@ -52,6 +59,7 @@ export function InvitationsSearchInput({
         onChange={(e) => setDraft(e.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        aria-describedby={describedById}
         className="pl-9"
       />
     </div>

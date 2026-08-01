@@ -9,13 +9,24 @@ import {
 import type { SendInvitationBatchInput } from "@/features/admin/invitations/domain/entities/invitation.entity";
 import type {
   ListActionResult,
+  ListInvitationsRequest,
   MutationActionResult,
   SendBatchActionResult,
 } from "@/features/admin/invitations/presentation/invitations-screen/invitations-screen.i-vm";
 
-export async function refreshInvitationsAction(): Promise<ListActionResult> {
+/**
+ * One cursor page of the invitation list. `status`/`cursor` are real server
+ * params (IAM US-147); `tenantId` stays server-derived in the DI factory
+ * (NFR-006) and is never accepted from the client.
+ */
+export async function refreshInvitationsAction(
+  params: ListInvitationsRequest = {},
+): Promise<ListActionResult> {
   const useCase = await makeListInvitationsUseCase();
-  const result = await useCase.execute();
+  const result = await useCase.execute({
+    status: params.status,
+    cursor: params.cursor,
+  });
   if (!result.ok) return { ok: false as const, errorKey: result.failure.type };
   return { ok: true as const, data: result.value };
 }
@@ -43,7 +54,18 @@ export async function resendInvitationAction(
 ): Promise<MutationActionResult> {
   const useCase = await makeResendInvitationUseCase();
   const result = await useCase.execute(invitationId);
-  if (!result.ok) return { ok: false as const, errorKey: result.failure.type };
+  if (!result.ok) {
+    return {
+      ok: false as const,
+      errorKey: result.failure.type,
+      // Stable NUMBER for the 429 toast — never translated copy (i18n stays at
+      // the presentation boundary).
+      retryAfterSeconds:
+        result.failure.type === "rate-limited"
+          ? result.failure.retryAfterSeconds
+          : undefined,
+    };
+  }
   return { ok: true as const };
 }
 

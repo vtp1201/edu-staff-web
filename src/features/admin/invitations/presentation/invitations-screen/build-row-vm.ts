@@ -59,6 +59,12 @@ export interface RowVMLabels {
   roleLabelOf: (role: Invitation["role"]) => string;
   statusLabelOf: (status: InvitationStatus) => string;
   sentAtLabelOf: (iso: string) => string;
+  /**
+   * Shown when `invitedBy` is blank — i.e. the inviter's userId could not be
+   * resolved to a display name (AC-3). The repository never leaks a raw UUID,
+   * it blanks the field, so the human-readable placeholder belongs here.
+   */
+  invitedByFallback: string;
   countdown: CountdownLabels;
 }
 
@@ -77,7 +83,7 @@ export function buildRowVM(
     roleLabel: labels.roleLabelOf(inv.role),
     status: inv.status,
     statusLabel: labels.statusLabelOf(inv.status),
-    invitedBy: inv.invitedBy,
+    invitedBy: inv.invitedBy || labels.invitedByFallback,
     sentAtLabel: labels.sentAtLabelOf(inv.sentAt),
     countdown: buildCountdown(inv.status, inv.expiresAt, now, labels.countdown),
     actions: {

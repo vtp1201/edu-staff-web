@@ -80,10 +80,16 @@ const INVITATIONS: Invitation[] = [
   },
 ];
 
-const okList = async (): Promise<ListActionResult> => ({
+/** One cursor page helper — the real action shape after US-E18.29. */
+const page = (
+  data: Invitation[],
+  over: { nextCursor?: string | null; hasMore?: boolean } = {},
+): Extract<ListActionResult, { ok: true }> => ({
   ok: true,
-  data: INVITATIONS,
+  data: { data, nextCursor: null, hasMore: false, ...over },
 });
+
+const okList = async (): Promise<ListActionResult> => page(INVITATIONS);
 const okSendAll = async (
   input: Parameters<InvitationsScreenProps["onSendBatch"]>[0],
 ): Promise<SendBatchActionResult> => ({
@@ -99,7 +105,7 @@ const okSendAll = async (
 const okMutation = async (): Promise<MutationActionResult> => ({ ok: true });
 
 const baseProps: InvitationsScreenProps = {
-  initialInvitations: INVITATIONS,
+  initialPage: { data: INVITATIONS, nextCursor: null, hasMore: false },
   initialLoadFailed: false,
   tenantId: "tenant-acme",
   onRefresh: okList,
@@ -172,8 +178,8 @@ export const Success: Story = {
 export const EmptyNoInvitations: Story = {
   args: {
     ...baseProps,
-    initialInvitations: [],
-    onRefresh: async () => ({ ok: true, data: [] }),
+    initialPage: { data: [], nextCursor: null, hasMore: false },
+    onRefresh: async () => page([]),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -227,7 +233,7 @@ export const ErrorAndRetry: Story = {
           failed = true;
           return { ok: false, errorKey: "network-error" };
         }
-        return { ok: true, data: INVITATIONS };
+        return page(INVITATIONS);
       };
     })(),
   },
@@ -629,7 +635,7 @@ export const ResendRaceTriggersRefetch: Story = {
         calls += 1;
         (globalThis as { __resendRefetchCalls?: number }).__resendRefetchCalls =
           calls;
-        return { ok: true, data: INVITATIONS };
+        return page(INVITATIONS);
       };
     })(),
     onResend: async () => ({ ok: false, errorKey: "invalid-state" }),
@@ -763,7 +769,7 @@ export const RevokeNotFoundRaceTriggersRefetch: Story = {
         calls += 1;
         (globalThis as { __revokeRefetchCalls?: number }).__revokeRefetchCalls =
           calls;
-        return { ok: true, data: INVITATIONS };
+        return page(INVITATIONS);
       };
     })(),
     onRevoke: async () => ({ ok: false, errorKey: "invitation-invalid" }),
@@ -794,6 +800,318 @@ export const RevokeNotFoundRaceTriggersRefetch: Story = {
     );
     // dialog closes on this path (contrast with RevokeNetworkError above)
     await waitFor(() => expect(body.queryByRole("alertdialog")).toBeNull());
+  },
+};
+
+// ── US-E18.29: real pagination + the two new resend failure paths ─────────
+
+const PAGE_2: Invitation[] = [
+  {
+    id: "inv-7",
+    email: "page.two@email.com",
+    role: "teacher",
+    status: "pending",
+    invitedBy: "Trần Minh Quân",
+    sentAt: iso(-3),
+    expiresAt: iso(11),
+  },
+];
+
+/** 14a. Load more available — button visible, appends page 2, then unmounts. */
+export const LoadMoreVisible: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
+    onRefresh: async ({ cursor }) =>
+      cursor === "cur-2"
+        ? page(PAGE_2)
+        : page(INVITATIONS, {
+            nextCursor: "cur-2",
+            hasMore: true,
+          }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const loadMore = canvas.getByRole("button", { name: "Tải thêm" });
+    await expect(loadMore).toBeInTheDocument();
+    await userEvent.click(loadMore);
+    // page 2's row is appended below page 1's rows (nothing is replaced)
+    await waitFor(() =>
+      expect(canvas.getByText("page.two@email.com")).toBeInTheDocument(),
+    );
+    await expect(canvas.getByText("lan.pham@email.com")).toBeInTheDocument();
+    // exhausted → the control leaves the DOM (never a dead tab-stop)
+    await waitFor(() =>
+      expect(canvas.queryByRole("button", { name: "Tải thêm" })).toBeNull(),
+    );
+  },
+};
+
+/** 14b. Load more in flight — aria-busy + disabled while page 2 loads. */
+export const LoadMoreLoading: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
+    onRefresh: () => new Promise<ListActionResult>(() => {}),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const loadMore = canvas.getByRole("button", { name: "Tải thêm" });
+    await userEvent.click(loadMore);
+    await waitFor(() => expect(loadMore).toHaveAttribute("aria-busy", "true"));
+    await expect(loadMore).toBeDisabled();
+  },
+};
+
+/** 14c. Load more exhausted — hasMore:false → no control at all. */
+export const LoadMoreExhausted: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("table")).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Tải thêm" })).toBeNull();
+  },
+};
+
+/** 14d. Load more FAILED — retry copy replaces the label, rows stay rendered
+ *  (a page-2 failure must never blank the table). */
+export const LoadMoreError: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
+    onRefresh: async () => ({ ok: false, errorKey: "network-error" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Tải thêm" }));
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", {
+          name: "Không thể tải thêm. Nhấn để thử lại.",
+        }),
+      ).toBeInTheDocument(),
+    );
+    // already-loaded rows survive + the screen-level error state does NOT show
+    await expect(canvas.getByText("lan.pham@email.com")).toBeInTheDocument();
+    await expect(
+      canvas.queryByText("Không tải được danh sách lời mời"),
+    ).toBeNull();
+  },
+};
+
+/** 14d2. BE short-page semantics — page 1 is EMPTY but `hasMore` is true, so
+ *  the empty state shows AND "Tải thêm" stays reachable; following the cursor
+ *  reveals the real rows (never treat a short page as "done"). */
+export const EmptyShortPageStillHasMore: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: [], nextCursor: "cur-2", hasMore: true },
+    onRefresh: async ({ cursor }) =>
+      cursor === "cur-2"
+        ? page(INVITATIONS)
+        : page([], { nextCursor: "cur-2", hasMore: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Chưa có lời mời nào")).toBeInTheDocument();
+    const loadMore = canvas.getByRole("button", { name: "Tải thêm" });
+    await userEvent.click(loadMore);
+    await waitFor(() =>
+      expect(canvas.getByText("lan.pham@email.com")).toBeInTheDocument(),
+    );
+    await expect(canvas.queryByText("Chưa có lời mời nào")).toBeNull();
+  },
+};
+
+/** 14e. Search while more pages remain — explicit partial-results caveat,
+ *  wired to the search field via aria-describedby. */
+export const SearchPartialResultsHint: Story = {
+  args: {
+    ...baseProps,
+    initialPage: { data: INVITATIONS, nextCursor: "cur-2", hasMore: true },
+    onRefresh: async () =>
+      page(INVITATIONS, { nextCursor: "cur-2", hasMore: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const search = canvas.getByRole("searchbox", { name: /Tìm theo email/i });
+    await expect(
+      canvas.queryByText(/chỉ tính trên các lời mời đã tải/i),
+    ).toBeNull();
+    await userEvent.type(search, "lan");
+    const hint = await waitFor(() =>
+      canvas.getByText(/chỉ tính trên các lời mời đã tải/i),
+    );
+    await expect(search).toHaveAttribute("aria-describedby", hint.id);
+  },
+};
+
+/** 14f. Expired tab after the BE TTL sweep — an EMPTY page must render the
+ *  empty state, never the error state (AC-4 regression guard). */
+export const ExpiredTabEmptyAfterTtlSweep: Story = {
+  args: {
+    ...baseProps,
+    onRefresh: async ({ status }) =>
+      status === "expired" ? page([]) : page(INVITATIONS),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("tab", { name: "Hết hạn" }));
+    await waitFor(() =>
+      expect(canvas.getByText("Chưa có lời mời nào")).toBeInTheDocument(),
+    );
+    await expect(
+      canvas.queryByText("Không tải được danh sách lời mời"),
+    ).toBeNull();
+    await expect(canvas.queryByRole("table")).toBeNull();
+  },
+};
+
+/** 14g. Status tabs carry NO count badge any more (US-E18.29) — each tab's
+ *  accessible name is its label alone. */
+export const StatusTabsWithoutCounts: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const name of [
+      "Tất cả",
+      "Chờ chấp nhận",
+      "Đã chấp nhận",
+      "Hết hạn",
+      "Đã thu hồi",
+    ]) {
+      await expect(canvas.getByRole("tab", { name })).toBeInTheDocument();
+    }
+    // No tab's accessible name ends in a number (the old badge).
+    for (const tab of canvas.getAllByRole("tab")) {
+      await expect(tab.textContent ?? "").not.toMatch(/\d/);
+    }
+  },
+};
+
+/** 15a. Resend rate-limited (429 with Retry-After) — distinct toast with the
+ *  wait time, NO refetch (nothing changed server-side), no lockout timer. */
+export const ResendRateLimited: Story = {
+  args: {
+    ...baseProps,
+    onRefresh: (() => {
+      let calls = 0;
+      return async (): Promise<ListActionResult> => {
+        calls += 1;
+        (
+          globalThis as { __rateLimitRefetchCalls?: number }
+        ).__rateLimitRefetchCalls = calls;
+        return page(INVITATIONS);
+      };
+    })(),
+    onResend: async () => ({
+      ok: false,
+      errorKey: "rate-limited",
+      retryAfterSeconds: 900,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const g = globalThis as { __rateLimitRefetchCalls?: number };
+    g.__rateLimitRefetchCalls = 0;
+    const canvas = within(canvasElement);
+    const resend = canvas.getAllByRole("button", {
+      name: /Gửi lại lời mời/i,
+    })[0];
+    await userEvent.click(resend);
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(body.getByText(/thử lại sau 900 giây/i)).toBeInTheDocument(),
+    );
+    // NOT the generic network copy, and no reconciliation refetch fired.
+    await expect(
+      body.queryByText("Không thể gửi lại lời mời. Vui lòng thử lại."),
+    ).toBeNull();
+    await expect(g.__rateLimitRefetchCalls ?? 0).toBe(0);
+    // the row is untouched (still expired) and the button is usable again
+    await expect(canvas.getAllByText("Hết hạn").length).toBeGreaterThan(0);
+    await waitFor(() => expect(resend).toBeEnabled());
+  },
+};
+
+/** 15b. Resend rate-limited with NO Retry-After header → wait-less copy. */
+export const ResendRateLimitedWithoutRetryAfter: Story = {
+  args: {
+    ...baseProps,
+    onResend: async () => ({ ok: false, errorKey: "rate-limited" }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Gửi lại lời mời/i })[0],
+    );
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(
+        body.getByText(
+          "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau.",
+        ),
+      ).toBeInTheDocument(),
+    );
+  },
+};
+
+/** 15c. Resend not-resendable (409) — the row's real status diverged, so the
+ *  race toast shows AND the list reconciles (refetch fires). */
+export const ResendNotResendable: Story = {
+  args: {
+    ...baseProps,
+    onRefresh: (() => {
+      let calls = 0;
+      return async (): Promise<ListActionResult> => {
+        calls += 1;
+        (
+          globalThis as { __notResendableRefetchCalls?: number }
+        ).__notResendableRefetchCalls = calls;
+        return page(INVITATIONS);
+      };
+    })(),
+    onResend: async () => ({
+      ok: false,
+      errorKey: "invitation-not-resendable",
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const g = globalThis as { __notResendableRefetchCalls?: number };
+    await waitFor(() =>
+      expect(g.__notResendableRefetchCalls).toBeGreaterThanOrEqual(1),
+    );
+    const before = g.__notResendableRefetchCalls ?? 0;
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Gửi lại lời mời/i })[0],
+    );
+    const body = within(document.body);
+    await waitFor(() =>
+      expect(
+        body.getByText("Không thể gửi lại — lời mời đã thay đổi trạng thái"),
+      ).toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(g.__notResendableRefetchCalls ?? 0).toBeGreaterThan(before),
+    );
+  },
+};
+
+/** 15d. Unresolved inviter — the repository blanks an id the batch lookup could
+ *  not resolve; the table shows the i18n fallback, never a raw UUID (AC-3). */
+export const UnresolvedInvitedByFallback: Story = {
+  args: {
+    ...baseProps,
+    initialPage: {
+      data: [{ ...INVITATIONS[0], invitedBy: "" }],
+      nextCursor: null,
+      hasMore: false,
+    },
+    onRefresh: async () => page([{ ...INVITATIONS[0], invitedBy: "" }]),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Không xác định")).toBeInTheDocument();
   },
 };
 
@@ -855,6 +1173,7 @@ const ROW_VM_LABELS: RowVMLabels = {
       revoked: "Đã thu hồi",
     })[status],
   sentAtLabelOf: (i) => i.slice(0, 10),
+  invitedByFallback: "Không xác định",
   countdown: COUNTDOWN_LABELS,
 };
 

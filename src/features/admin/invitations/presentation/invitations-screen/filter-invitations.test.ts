@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Invitation } from "../../domain/entities/invitation.entity";
-import { filterInvitations, statusCounts } from "./filter-invitations";
+import { filterInvitations } from "./filter-invitations";
 
 const inv = (
   id: string,
@@ -24,44 +24,39 @@ const rows: Invitation[] = [
   inv("5", "quoc.huy@email.com", "revoked"),
 ];
 
-describe("filterInvitations (UC-002)", () => {
-  it("returns all rows for the 'all' tab with no query", () => {
-    const r = filterInvitations(rows, "all", "");
+/**
+ * US-E18.29: the status branch is GONE — `status` is a real server param now
+ * (one `useInfiniteQuery` per tab), so the only client-side filter left is the
+ * email substring, applied over the pages currently loaded.
+ */
+describe("filterInvitations (UC-002, search-only after US-E18.29)", () => {
+  it("returns every loaded row when the query is empty", () => {
+    const r = filterInvitations(rows, "");
     expect(r.filteredCount).toBe(5);
     expect(r.rawCount).toBe(5);
   });
 
-  it("filters by status tab (AC-002.1)", () => {
-    const r = filterInvitations(rows, "pending", "");
-    expect(r.rows.every((x) => x.status === "pending")).toBe(true);
-    expect(r.filteredCount).toBe(2);
-  });
-
-  it("filters by email substring (AC-002.2)", () => {
-    const r = filterInvitations(rows, "all", "student.edu.vn");
+  it("filters by email substring, case-insensitively (AC-002.2)", () => {
+    const r = filterInvitations(rows, "STUDENT.edu.vn");
     expect(r.filteredCount).toBe(1);
     expect(r.rows[0].id).toBe("2");
   });
 
-  it("AND-combines status tab + search (AC-002.3)", () => {
-    const r = filterInvitations(rows, "pending", "lan");
-    expect(r.filteredCount).toBe(1);
-    expect(r.rows[0].id).toBe("1");
+  it("ignores surrounding whitespace in the query", () => {
+    expect(filterInvitations(rows, "   ").filteredCount).toBe(5);
+    expect(filterInvitations(rows, "  lan  ").filteredCount).toBe(1);
   });
 
   it("distinguishes zero-filtered-from-non-empty (AC-002.4) via rawCount vs filteredCount", () => {
-    const r = filterInvitations(rows, "revoked", "no-such-email");
+    const r = filterInvitations(rows, "no-such-email");
     expect(r.rawCount).toBe(5);
     expect(r.filteredCount).toBe(0);
   });
 
-  it("statusCounts computes per-tab counts from the raw list", () => {
-    expect(statusCounts(rows)).toEqual({
-      all: 5,
-      pending: 2,
-      accepted: 1,
-      expired: 1,
-      revoked: 1,
-    });
+  it("does NOT filter by status any more (the server does)", () => {
+    // A tab's page only ever contains rows of that status; the helper must not
+    // second-guess the server's projection (e.g. a PENDING row read as expired).
+    const r = filterInvitations([inv("9", "x@y.com", "revoked")], "");
+    expect(r.rows).toHaveLength(1);
   });
 });

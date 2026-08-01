@@ -2159,6 +2159,8 @@
     "pageSubtitle": "Gửi và quản lý lời mời tham gia trường theo email.",
     "refresh": "Làm mới",
     "sendInvite": "Gửi lời mời",
+    "loadMore": "Tải thêm",
+    "loadMoreError": "Không thể tải thêm. Nhấn để thử lại.",
     "tabs": {
       "all": "Tất cả",
       "pending": "Chờ chấp nhận",
@@ -2168,7 +2170,8 @@
     },
     "search": {
       "placeholder": "Tìm theo email…",
-      "ariaLabel": "Tìm theo email"
+      "ariaLabel": "Tìm theo email",
+      "partialResultsHint": "Kết quả tìm kiếm chỉ tính trên các lời mời đã tải. Nhấn “Tải thêm” để tìm trong phần còn lại."
     },
     "table": {
       "columns": {
@@ -2180,7 +2183,8 @@
         "status": "Trạng thái",
         "actions": "Hành động"
       },
-      "loadingAriaLabel": "Đang tải danh sách lời mời"
+      "loadingAriaLabel": "Đang tải danh sách lời mời",
+      "invitedByFallback": "Không xác định"
     },
     "roleLabels": {
       "teacher": "Giáo viên",
@@ -2242,7 +2246,9 @@
       "resendNetworkError": "Không thể gửi lại lời mời. Vui lòng thử lại.",
       "revokedOf": "Đã thu hồi lời mời của {email}",
       "revokeNotFoundRace": "Không thể thu hồi lời mời (có thể đã được xử lý)",
-      "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại."
+      "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại.",
+      "resendRateLimited": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau {seconds} giây.",
+      "resendRateLimitedNoWait": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau."
     },
     "revokeDialog": {
       "title": "Thu hồi lời mời?",

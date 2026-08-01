@@ -2159,6 +2159,8 @@
     "pageSubtitle": "Send and manage email invitations to join the school.",
     "refresh": "Refresh",
     "sendInvite": "Send invite",
+    "loadMore": "Load more",
+    "loadMoreError": "Could not load more. Click to retry.",
     "tabs": {
       "all": "All",
       "pending": "Pending",
@@ -2168,7 +2170,8 @@
     },
     "search": {
       "placeholder": "Search by email…",
-      "ariaLabel": "Search by email"
+      "ariaLabel": "Search by email",
+      "partialResultsHint": "Search only covers the invitations loaded so far. Choose “Load more” to search the rest."
     },
     "table": {
       "columns": {
@@ -2180,7 +2183,8 @@
         "status": "Status",
         "actions": "Actions"
       },
-      "loadingAriaLabel": "Loading invitation list"
+      "loadingAriaLabel": "Loading invitation list",
+      "invitedByFallback": "Unknown"
     },
     "roleLabels": {
       "teacher": "Teacher",
@@ -2242,7 +2246,9 @@
       "resendNetworkError": "Could not resend the invitation. Please try again.",
       "revokedOf": "Invite for {email} revoked",
       "revokeNotFoundRace": "Cannot revoke the invitation (it may already be processed)",
-      "revokeNetworkError": "Could not revoke the invitation. Please try again."
+      "revokeNetworkError": "Could not revoke the invitation. Please try again.",
+      "resendRateLimited": "This invitation has been resent too many times. Please try again in {seconds} seconds.",
+      "resendRateLimitedNoWait": "This invitation has been resent too many times. Please try again later."
     },
     "revokeDialog": {
       "title": "Revoke this invitation?",
