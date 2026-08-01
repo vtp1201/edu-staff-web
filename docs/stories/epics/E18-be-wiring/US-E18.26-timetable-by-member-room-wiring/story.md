@@ -270,6 +270,367 @@ Reuse `errorCodeOf`/`parseEnvelope` from `bootstrap/lib/api-envelope.ts`
 8. **Zero regression for what stays mock** — `getConflicts`,
    `getByClass`(admin builder path, unaffected) must not change behavior.
 
+## Phased Implementation Plan (fe-planner, 2026-08-01)
+
+Grounded in the current code (read directly, not just the US-E18.11 packet
+prose): `i-weekly-timetable.repository.ts`, `real-weekly-timetable
+.repository.ts`, `weekly-timetable.mock.repository.ts`,
+`timetable-child.entity.ts`, `timetable-view.di.ts`,
+`timetable-view.endpoint.ts`, `timetable.mapper.ts` (admin builder),
+`timetable.repository.ts` (admin builder), `child-picker.tsx`, plus
+`timetable.mock.repository.ts` (admin builder), `timetable-slot-response.dto.ts`
+(admin builder), `timetable-grid.tsx`, `timetable-view.i-vm.ts`.
+
+### Corrections to the story's own assumptions (verified against code, not
+re-derived from prose)
+
+1. **Admin-builder mock does NOT drop `room` today.** `MockTimetableRepository
+   .updateSlot` already stores `data.room` in the in-memory slot and
+   `getTimetable` returns it unchanged (`timetable.mock.repository.ts:46-66`).
+   The actual drop happens ONE layer up, in
+   `TimetableSlotMapper.toEntity`/`toRequest` (`timetable.mapper.ts:26-46`),
+   which maps room IN as `""` and never puts it on `toRequest`'s output. So
+   **no mock-repo fix is needed** — only `SlotResponseDto`/`SlotRequestDto`
+   (add `room?: string`, `subjectName?: string`) and the two
+   `TimetableSlotMapper` functions need to carry `room` through both
+   directions. Correct the story's implementation note 6 accordingly in the
+   Evidence section at completion.
+2. **Teacher-schedule simplification is correct and buildable as described.**
+   Current `RealWeeklyTimetableRepository.getByTeacher` (lines 88-135) does
+   exactly the N+1 fan-out the story describes: 1 `GET /classes` (paginated,
+   `fetchAllPages`) + 1 `GET .../timetable?termId=` **per class**, merging
+   slots where `teacherMemberId === currentUserId`. This US replaces the
+   per-class loop with a single `GET /members/{teacherId}/timetable?termId=`
+   call (per-slot `classId` already spans classes server-side) — the `GET
+   /classes` call is KEPT, but repurposed as a `classId → className` lookup
+   map only (no longer a fan-out source). Net: 2 HTTP calls total regardless
+   of class count (was 1+N).
+3. **`getChildren`'s wire item has no `color` field.** BE's enriched
+   `LinkedStudentItemResponse` (`linkId, parentMemberId, studentMemberId,
+   createdAt, classId?, className?`) carries no `color` — the real mapper
+   must assign it deterministically (cycle `CHILD_COLORS` by stable index),
+   same pattern the mock currently gets for free from its fixture.
+4. **`GetChildTimetableUseCase` currently calls `repo.getByClass(child
+   .classId, ...)`** (classId-keyed) — this US's by-member endpoint is keyed
+   by `memberId`, not `classId`. A NEW repository method is required (see
+   Phase 1) rather than reusing `getByClass`; `getByClass` itself is kept
+   untouched (still contract-correct, still zero callers in this feature,
+   same "kept for the day a direct class-scoped use-case is added" precedent
+   as US-E18.11).
+5. **Adding a new `TimetableViewFailure` member would NOT be zero-diff.**
+   `TimetableErrorKey = TimetableViewFailure["type"] | "forbidden"`
+   (`timetable-view.i-vm.ts:9`) is consumed by an exhaustive `Record<
+   TimetableErrorKey, ...>` in BOTH `timetable-view.tsx` and
+   `teacher-schedule.tsx` — adding a member forces a (mechanical, one-line)
+   edit to both, contradicting the packet's "zero ViewModel/presentation
+   diff" framing for everything except the child-picker. **Planner's call on
+   the flagged "engineer's call" for `TIMETABLE_CHILD_AMBIGUOUS`**: map it to
+   the EXISTING `network-error` type, not a new `ambiguous-child` type. It is
+   defensively unreachable by design (this client never calls the by-member
+   endpoint with the parent's own memberId) — not worth a permanent type-
+   surface/presentation touch for a code that should never fire. Document
+   this one-line rationale in the failure-mapping function's doc comment.
+
+### Domain design (Phase 1)
+
+**Entities**
+
+- `timetable-child.entity.ts` — `name` becomes optional (`name?: string`,
+  unavailable in real mode — ask #20 residual); add `ordinal: number`
+  (1-based, assigned from a STABLE sort by `linkId` ascending — never raw
+  array position, which the wire doesn't guarantee stable). `classId`/
+  `className` become optional (`classId?: string; className?: string` —
+  omitted together per BE's indistinguishable-by-design note). `avatar`
+  stays a required `string` (mapper always computes something — initials
+  when `name` present, else the ordinal digit as a string, e.g. `"1"` — this
+  keeps the presentation's existing `{child.avatar}` render untouched in
+  type, only the mapper's fallback logic changes).
+- `WeeklyTimetable` — **no change**. Confirmed by reading every consumer
+  (`timetable-view.tsx:61-62`, `timetable-grid.tsx:58`,
+  `teacher-schedule.tsx`): only the top-level `className` is ever rendered
+  (as the header/caption), never `gradeLevel` anywhere in this feature today.
+  The enrollment call's `className` is composed into this same field inside
+  the repository (student self-view); `gradeLevel` is fetched but currently
+  has nowhere to go — note it as an unused-but-available field in the
+  repository's inline doc, do not invent a UI slot for it (out of scope,
+  flag as a follow-up recommendation if product wants it later).
+- `TimetableSlot` — no shape change; `subjectName`/`room` already optional-
+  safe fields, now populated from the wire instead of an id-fallback/`""`.
+
+**Repository interface** (`i-weekly-timetable.repository.ts`) — add ONE new
+method, keep the other four signatures unchanged:
+
+```ts
+/** By-member fetch (US-E18.26) — backs the student self-view (self id) and
+ *  the parent's per-child view (the child's memberId, never the parent's
+ *  own — BE US-153's ambiguous-child 422 is defensive-only from this
+ *  client). Distinct from `getByClass` (classId-keyed, kept for the admin/
+ *  direct-class-view precedent, still not called in this feature). */
+getByMember(memberId: string, weekStart?: string): Promise<WeeklyTimetable>;
+```
+
+`GetChildTimetableUseCase.execute` changes its one line from
+`this.repo.getByClass(child.classId, weekStart)` to
+`this.repo.getByMember(child.childId, weekStart)`. `getMyTimetable()` and
+`getByTeacher()` keep their existing zero-arg-plus-weekStart signatures;
+internally the real repo now composes `getByMember(this.currentUserId, …)`
+(+ the enrollment call for `getMyTimetable`, + the classId→className lookup
+for `getByTeacher`).
+
+**Failures** (`timetable-view.failure.ts`) — no new member added (see
+correction #5). `toTimetableFailure`/the repository's own catch blocks map:
+`TIMETABLE_MEMBER_NOT_RESOLVABLE` → reuse `not-found`;
+`TIMETABLE_CHILD_AMBIGUOUS` → reuse `network-error` (documented rationale);
+`TIMETABLE_FORBIDDEN` → reuse existing `not-found` mapping (unchanged).
+`ROSTER_ACCESS_FORBIDDEN`/`ROSTER_STUDENT_NOT_ENROLLED` on the SECONDARY
+enrollment call never reach `toTimetableFailure` at all — the repository
+catches them locally and degrades to `className: ""` (falsy → presentation's
+existing `displayClassName ?? ""` / conditional badge render already handles
+an empty string gracefully, confirmed by reading `timetable-view.tsx:61-62`
+and `timetable-grid.tsx:58`).
+
+### Infrastructure (Phase 2)
+
+**New DTOs** — `src/features/timetable/infrastructure/dtos/`:
+- `member-timetable-response.dto.ts` — `MemberSlotResponseDto { classId, day,
+  period, subjectId, subjectName?, teacherMemberId, room? }` +
+  `MemberTimetableResponseDto { memberId, termId, slots:
+  MemberSlotResponseDto[] }`. Separate file from the existing
+  `real-timetable-response.dto.ts` (per-slot `classId` vs top-level — do not
+  overload, per the packet's own instruction).
+- `member-enrollment-response.dto.ts` — `MemberEnrollmentResponseDto {
+  classId, className, gradeLevel, academicYearLabel, enrolledAt }`.
+- `linked-student-item.dto.ts` — `LinkedStudentItemDto { linkId,
+  parentMemberId, studentMemberId, createdAt, classId?: string | null,
+  className?: string | null }`. **Do not** reuse `parent-links` feature's
+  `LinkedStudentResponseDto` (`fullName`/`avatarUrl`/`studentId` shape) — that
+  is a DIFFERENT, contract-first/speculative INT-001 shape for a DIFFERENT
+  feature (US-E20.2, un-ground-truthed against the real BE, `core` not built
+  there per that feature's own doc comments) and is not the same wire schema
+  as this US's ground-truthed US-148 enrichment. Flag this cross-feature
+  naming/shape collision risk to `fe-lead` as a note (not a blocker — the two
+  features stay decoupled per decision `0017`, but a future reader could
+  confuse the two `linked-students` DTOs).
+- Additive optional fields on the EXISTING `RealSlotResponseDto` (class-
+  scoped, `real-timetable-response.dto.ts`): add `subjectName?: string`,
+  `room?: string` for contract completeness on the kept-but-inactive
+  `getByClass` path (every slot response now carries them per the ground-
+  truthed contract) — no behavior change since nothing calls it.
+- Admin builder (`timetable-slot-response.dto.ts`): add `room?: string` +
+  `subjectName?: string` to `SlotResponseDto`/`SlotRequestDto`.
+
+**Mappers**:
+- `real-weekly-timetable.mapper.ts` — KEEP `mapRealWeeklyTimetable(dto,
+  className)` untouched (still backs the kept `getByClass`). ADD
+  `mapMemberWeeklyTimetable(dto: MemberTimetableResponseDto, classNameOf:
+  (classId: string) => string | undefined): WeeklyTimetable` — per-slot
+  `subjectName: slot.subjectName ?? slot.subjectId` (keep the id-fallback for
+  defense, ask #6/#7 precedent), `room: slot.room`, `className:
+  classNameOf(slot.classId)`. Top-level `classId`/`className` of the
+  returned `WeeklyTimetable` supplied by the caller (student: enrollment's
+  `classId`/`className`; teacher: `currentUserId`/`currentUserId` — same
+  pre-existing quirk as today, out of scope to "fix" here since nothing
+  renders it for the teacher screen).
+- NEW `member-enrollment.mapper.ts` — trivial DTO→ `{classId, className,
+  gradeLevel}` passthrough (or fold directly into the repository if a
+  standalone mapper is one function too many — engineer's call, both are
+  fine, no test-count difference).
+- NEW `linked-student.mapper.ts` — `toTimetableChildren(dtos:
+  LinkedStudentItemDto[]): TimetableChild[]`: sort by `linkId` ascending →
+  map with index → `{ childId: studentMemberId, name: undefined, ordinal:
+  index+1, classId: classId ?? undefined, className: className ?? undefined,
+  avatar: String(index+1), color: CHILD_COLORS[index %
+  CHILD_COLORS.length] }`.
+- `timetable.mapper.ts` (admin builder) — `TimetableSlotMapper.toEntity`
+  reads `dto.room` (not hardcoded `""`) and `dto.subjectName` (fallback
+  `dto.subjectId`, dropping the "no wire display name" comment for
+  subjectName only — teacherName still has no wire name, ask #6/#7 stands);
+  `toRequest` includes `room: slot.room || undefined` (omit empty string per
+  the BE contract's "omit or send empty" note — sending `undefined` is
+  cleaner than `""`).
+
+**Repository** (`real-weekly-timetable.repository.ts`):
+- `getByMember(memberId, weekStart?)` — new primitive: `GET
+  /members/{memberId}/timetable?termId=` → `mapMemberWeeklyTimetable(dto,
+  () => undefined)` for the plain case (no classId→className resolution
+  needed by this primitive alone — callers that need it pass their own
+  lookup via composition, see below). Catches `TIMETABLE_MEMBER_NOT_RESOLVABLE`
+  → `not-found`, `TIMETABLE_FORBIDDEN` → `not-found` (existing pattern),
+  `TIMETABLE_CHILD_AMBIGUOUS` → `network-error` (defensive, documented).
+- `getMyTimetable(weekStart?)` — no longer throws. Composes: `getByMember
+  (this.currentUserId, weekStart)` + `GET /members/{selfId}/enrollment` (no
+  `yearLabel`). The enrollment call is wrapped in its OWN try/catch —
+  `ROSTER_ACCESS_FORBIDDEN`/`ROSTER_STUDENT_NOT_ENROLLED` degrade to
+  `className: ""` (do not fail the whole screen); any other enrollment error
+  also degrades the same way (only the timetable call's failure propagates
+  to the use-case). Re-tag every slot's `className` via
+  `mapMemberWeeklyTimetable`'s `classNameOf` with the resolved single
+  className (or use a one-classId map `{[enrollment.classId]: enrollment
+  .className}` — simplest is to re-derive with `classNameOf: (id) => id ===
+  enrollment?.classId ? enrollment.className : undefined`). Return
+  `WeeklyTimetable` with top-level `classId`/`className` from the enrollment
+  call (fallback to `this.currentUserId`/`""` if enrollment degraded).
+- `getByTeacher(weekStart?)` — simplified per correction #2: one `GET
+  /members/{teacherId}/timetable?termId=` call + the KEPT `GET /classes`
+  fan-out repurposed as a lookup map (`Map<classId, className>` from the
+  paginated `fetchAllPages<ClassSummaryDto>`). No more per-class timetable
+  GET. `mapMemberWeeklyTimetable(dto, (id) => map.get(id))`. Same `!
+  currentUserId → not-found` upfront guard as today.
+- `getChildren()` — `GET /members/{selfId}/linked-students` (confirm NOT
+  paginated by reading the actual `openapi.yaml` schema for
+  `LinkedStudentsResponse` before assuming `fetchAllPages` — the sibling
+  `parent-links` feature's real repo calls it as a flat array with no
+  pagination handling, `parent-consent.repository.ts:42-44` — strong
+  signal it's flat, but re-verify against this US's own ground-truthed
+  contract doc before committing to that in code). Map via
+  `toTimetableChildren`.
+- `GetChildTimetableUseCase` — one-line change: `getByMember(child.childId,
+  weekStart)` instead of `getByClass(child.classId, weekStart)`.
+
+**Endpoints** (`timetable-view.endpoint.ts`) — add:
+```ts
+memberTimetable: (memberId: string) =>
+  `/core/api/v1/members/${encodeURIComponent(memberId)}/timetable`,
+memberEnrollment: (memberId: string) =>
+  `/core/api/v1/members/${encodeURIComponent(memberId)}/enrollment`,
+linkedStudents: (memberId: string) =>
+  `/core/api/v1/members/${encodeURIComponent(memberId)}/linked-students`,
+```
+Keep `classTimetable`/`myClasses` (still used — `getByClass` kept,
+`myClasses` repurposed not removed).
+
+**Mock repository** (`weekly-timetable.mock.repository.ts`) — add `ordinal`
+to `mapTimetableChild` call site (`TIMETABLE_CHILDREN.map((dto, i) =>
+mapTimetableChild(dto, i + 1))`); mock `name`/`classId`/`className` stay
+always-present (mock fixture data, unaffected by the real-mode optionality).
+`getMyTimetable`/`getByTeacher`/`getByClass` mock bodies unchanged (contract
+shape they simulate — `WeeklyTimetable` — didn't change). No `getByMember`
+needed on the mock class itself UNLESS `HybridWeeklyTimetableRepository`
+needs to route it when USE_MOCK — since `USE_MOCK` picks
+`MockWeeklyTimetableRepository` wholesale (not the hybrid) per
+`timetable-view.di.ts:27`, the mock class must still implement the full
+interface including the new `getByMember` (delegate to `getByClass` using
+`memberId` as a fixture classId lookup — mirrors how `getMyTimetable`
+already delegates to `getByClass(MY_CLASS_ID)`).
+
+**DI** (`timetable-view.di.ts`) — no `USE_MOCK` branch structure change;
+`RealWeeklyTimetableRepository`'s constructor signature is unchanged
+(`http`, `resolveTermId`, `currentUserId`) — the new composition lives
+inside the repository's methods, not the DI factory. Confirm
+`ensureFreshSession()` stays exactly where it is (already present,
+unaffected).
+
+### Admin builder room field (Phase 2b, independent of Phase 1/2 above —
+touches a different feature module, can land in the same commit or split,
+engineer's call)
+
+- `timetable-slot-response.dto.ts`: add `room?`/`subjectName?` to
+  `SlotRequestDto`/`SlotResponseDto`.
+- `timetable.mapper.ts`: `TimetableSlotMapper.toEntity` reads `dto.room`
+  (default `""` only if wire omits it — same optional-to-empty-string
+  domain convention the entity already uses) and `dto.subjectName ??
+  dto.subjectId`; `toRequest` includes `room: slot.room || undefined`.
+  Remove the stale "non-persistent" doc comment (correction #1 — the mock
+  never actually dropped it; only this mapper did).
+- `timetable.repository.ts`: no structural change — it already forwards
+  whatever `TimetableSlotMapper` produces through the RMW GET/PUT; once the
+  mapper carries `room`, the real repo persists it for free.
+- `MockTimetableRepository`: no change needed (correction #1) — add a
+  regression test instead (see Proof plan) proving it round-trips today,
+  so nobody "fixes" a already-working mock later.
+
+### Presentation (Phase 3 — the ONLY design-review-gated diff)
+
+- `child-picker.tsx`: render `child.name ?? t("childOrdinalLabel", {ordinal:
+  child.ordinal})` for the name line; render `child.className ? t
+  ("classLabel", {className: child.className}) : t("classPending")` for the
+  class line; avatar span keeps rendering `{child.avatar}` unchanged (mapper
+  already resolves it to initials-or-digit, no component logic change
+  needed there beyond the two conditional labels above).
+- i18n (`timetableView` namespace, additive): `childOrdinalLabel` (vi:
+  `"Con thứ {ordinal}"`, en: `"Child {ordinal}"`), `classPending` (vi:
+  `"Chưa có lớp"`, en: `"No class yet"`).
+- `TimetableChild.name`/`classId`/`className` optionality is a TYPE change
+  the mock's fixture-backed path is unaffected by (mock always supplies all
+  three) — no mock-mode UI change, confirmed same "zero regression for the
+  mock path" posture as every other US in this epic.
+- This is the ONE part of this US routed through `fe-component-architect`
+  (see recommendation below) + the design-review gate + a targeted a11y
+  pass (contrast/label semantics for the two new fallback strings, confirm
+  the `<button>`'s accessible name — already derived from its visible text
+  content, no extra `aria-label` needed — still reads sensibly with the
+  ordinal fallback, e.g. "Con thứ 1, Chưa có lớp").
+
+### TDD test file plan (exact files)
+
+**Unit — domain/mappers**
+- `src/features/timetable/domain/use-cases/get-child-timetable.use-case.test.ts`
+  — MODIFY: assert `getByMember(child.childId, ...)` is called, not
+  `getByClass`.
+- `src/features/timetable/infrastructure/mappers/real-weekly-timetable.mapper.test.ts`
+  — MODIFY (existing file, per US-E18.11): add cases for
+  `mapMemberWeeklyTimetable` (subjectName present/omitted-falls-back-to-id,
+  room present/omitted, classNameOf resolution/unresolved).
+- `src/features/timetable/infrastructure/mappers/linked-student.mapper.test.ts`
+  — NEW: stable ordinal assignment (sort by `linkId`, not array order),
+  `name` always undefined, `classId`/`className` omitted-together degrade,
+  color cycling deterministic across re-runs.
+- `src/features/timetable/infrastructure/mappers/member-enrollment.mapper.test.ts`
+  — NEW (if a standalone mapper function is used; fold into repository test
+  otherwise).
+- `src/features/admin/timetable/infrastructure/mappers/timetable.mapper.test.ts`
+  — MODIFY (existing, per US-E18.11): add `room`/`subjectName` round-trip
+  cases (present, omitted, empty-string-becomes-undefined-on-toRequest).
+- New failure-mapping unit case (wherever `getByMember`'s catch block lives,
+  likely inline in the repository test): `TIMETABLE_MEMBER_NOT_RESOLVABLE`
+  → `not-found`, `TIMETABLE_CHILD_AMBIGUOUS` → `network-error` (with the
+  one-line rationale comment nearby), `ROSTER_ACCESS_FORBIDDEN`/
+  `ROSTER_STUDENT_NOT_ENROLLED` → degrade-not-fail (assert `className: ""`,
+  NOT a thrown/propagated failure).
+
+**Integration — repository ↔ HTTP**
+- `src/features/timetable/infrastructure/repositories/real-weekly-timetable.repository.test.ts`
+  — MODIFY (existing, per US-E18.11): replace the `getByTeacher` fan-out
+  assertions with the simplified 2-call assertion (1 by-member + 1 classes-
+  list, NOT 1+N); add `getByMember` cases (student self, parent-child
+  variants); add `getMyTimetable` composed-call cases (enrollment success,
+  enrollment degrade-not-fail, timetable failure still propagates); add
+  `getChildren` real-HTTP case + a **raw-flag top-level regression guard**
+  ONLY if `linked-students` turns out paginated (confirm first, per the
+  note above) — if flat, add a "no `raw`/pagination params sent" assertion
+  instead, documenting the confirmation.
+- `src/features/admin/timetable/infrastructure/repositories/timetable.repository.test.ts`
+  — MODIFY (existing, per US-E18.11): add a room-persists-through-RMW-PUT
+  case (send room on `updateSlot`, assert the PUT body carries it, assert
+  the returned/subsequently-read slot carries it back).
+- `src/features/admin/timetable/infrastructure/repositories/mocks/timetable.mock.repository.test.ts`
+  (or wherever its existing tests live) — ADD one regression-guard case
+  proving room already round-trips (correction #1 — protects against a
+  future "fix" reintroducing the drop).
+
+### Component architect / state engineer need (my call, overriding/confirming
+the framing given)
+
+- **`fe-component-architect`: YES, narrow scope.** Confirmed — the
+  child-picker fallback (name→ordinal, avatar→digit, className→"chưa có
+  lớp") is the one genuinely new user-visible contract in this US and
+  deserves a proper VM/prop contract + a11y sign-off before the engineer
+  free-styles copy/markup, per `.claude/rules/component-organization.md`'s
+  spirit (no ad-hoc fallback invented at implementation time). Scope: ONLY
+  `child-picker.tsx` + the two new i18n keys + `TimetableChild`'s new
+  optional fields — do not let scope creep into `TimetableGrid` (its `room`
+  rendering is already correct, confirmed above, no architect input needed
+  there).
+- **`fe-state-engineer`: NO, confirmed not needed.** This US changes zero
+  TanStack Query key shapes, adds no new client-side cache/invalidation
+  (every new call is a plain server-side `await` inside a Server Component's
+  data-loading path via existing use-cases, same RSC-fetch-once pattern as
+  every other operation in this feature — there is no mutation, no
+  optimistic update, no new query key). The only "state" nuance (composing
+  2 server-side HTTP calls with independent failure handling in
+  `getMyTimetable`) is a repository-internal composition concern, not a
+  client cache-shape concern — squarely `fe-nextjs-engineer` territory.
+
 ## Proof required (per `.claude/rules/tdd.md`, before `implemented`)
 
 - Unit: new DTO↔entity mappers (by-member timetable, enrollment, enriched
