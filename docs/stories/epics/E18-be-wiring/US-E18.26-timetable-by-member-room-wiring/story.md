@@ -673,6 +673,211 @@ the framing given)
   unbuilt (product/design gap, not a BE gap — out of scope here, flag as a
   recommendation for a future US).
 
+## Component Contract: Child-Picker Fallback (fe-component-architect, 2026-08-01)
+
+Scope confirmed narrow per fe-lead/fe-planner's brief: `child-picker.tsx` +
+`timetable-child.entity.ts` + two new i18n keys only. `TimetableGrid`,
+`timetable-view.tsx`, `.i-vm.ts` are NOT touched by this contract (their
+`room`/`className` rendering was already correct per the planner's read).
+
+### 1. Read of current code (baseline, before this contract)
+
+- `child-picker.tsx` is a `'use client'`-implicit (no directive shown but
+  it's under `presentation/`) **presentational, fully-controlled** component:
+  `childList` / `selectedChildId` / `onSelect` / `disabled` are all props, no
+  internal state. It renders a `<fieldset>` of real `<button type="button">`
+  cards (not `role="radio"` fake buttons) — keyboard-focusable natively,
+  `aria-pressed={active}` communicates toggle state, visible
+  `focus-visible:ring-3`, `min-h-11 min-w-[240px]` touch target (≥44px).
+  Correctly homed as feature-local under
+  `src/features/timetable/presentation/timetable-view/` per
+  `.claude/rules/component-organization.md`'s decision tree (composed,
+  currently single-screen use, explicitly documented in its own docstring as
+  distinct from the grades feature's tab-based `ChildSwitcher` — **no
+  relocation needed, confirmed**).
+- Today's accessible-name derivation for each `<button>`: the avatar `<span
+  aria-hidden="true">` is excluded from the accessible-name computation; the
+  two remaining `<span>` text nodes (`child.name`, then `t("classLabel",
+  {className})`) ARE included, concatenated by the browser's accname
+  algorithm (whitespace-separated, no implicit punctuation) — so a screen
+  reader today announces roughly `"<name> Lớp <className>, button, pressed"`
+  (order = DOM order, `aria-pressed` read by AT as state, not text). No
+  explicit `aria-label` exists or is needed — the visible text already IS the
+  correct accessible name; this pattern is confirmed to still work with the
+  new fallback text (see §4).
+- `t("classLabel", { className })` already exists (`vi:"Lớp {className}"`,
+  `en:"Class {className}"`, `timetableView` namespace) — the planner's
+  "render className badge via `classLabel`" reuses this existing key
+  unchanged; only `childOrdinalLabel` and `classPending` are net-new.
+- `t("childPickerLabel")` (fieldset `<legend class="sr-only">`) is unaffected
+  by this contract.
+
+### 2. Entity contract — `timetable-child.entity.ts` (confirmed, one small
+addition to the planner's direction: doc-comment the "why" inline so a future
+reader doesn't "fix" the optionality back)
+
+```ts
+/**
+ * A child in the parent's roster, used by the parent timetable child-picker.
+ * Feature-local (no cross-feature import of grades' ChildSummary, per plan
+ * decision 6 — the two features resolve "my children" independently until BE
+ * `core`/`iam` expose a shared endpoint).
+ */
+export interface TimetableChild {
+  childId: string;
+  /**
+   * Display name — UNAVAILABLE in real mode (ask #20 residual gap: no
+   * directory/IAM endpoint any PARENT can call resolves a student's name;
+   * ground-truthed against US-E18.23, not a client-side bug). Mock fixtures
+   * always supply this (no mock-mode UI change). Presentation MUST fall back
+   * to an ordinal label when absent — never render `undefined`/blank.
+   */
+  name?: string;
+  /**
+   * 1-based position in the parent's roster, assigned by a STABLE sort (wire
+   * `linkId` ascending) — NEVER raw array/response order, which the wire
+   * does not guarantee stable across refetches. Always present (mock and
+   * real). Drives the "Con thứ N" / "Child N" fallback label AND (via the
+   * mapper, not this component) the avatar-digit fallback.
+   */
+  ordinal: number;
+  /** Stable class identifier used to fetch the timetable. Omitted together
+   * with `className` — BE cannot distinguish "no current enrollment" from a
+   * transient enrichment-read failure, so both are treated as equivalent
+   * "no class yet" states. */
+  classId?: string;
+  className?: string;
+  /** Required — mapper ALWAYS computes a value: 2-char initials of `name`
+   * when present, else the ordinal digit as a string (e.g. `"1"`). Keeps
+   * this component's avatar render (`{child.avatar}`) unchanged in shape. */
+  avatar: string;
+  /** Semantic color-identity key → presentation maps to a design token. */
+  color: TimetableChildColor;
+}
+
+export type TimetableChildColor =
+  | "primary"
+  | "success"
+  | "warning"
+  | "error"
+  | "purple"
+  | "teal";
+```
+
+Diff from today: `name: string` → `name?: string`; `classId: string` →
+`classId?: string`; `className: string` → `className?: string`; add
+`ordinal: number` (required, no `?`). `avatar`/`color`/`childId` unchanged.
+
+### 3. `child-picker.tsx` — exact render diff (name/class lines only; avatar
+span, `<fieldset>`/`<legend>`, `aria-pressed`/`disabled`/focus-ring markup all
+UNCHANGED)
+
+```tsx
+<span className="whitespace-nowrap">
+  <span className="block font-bold text-edu-text-primary text-sm">
+    {child.name ?? t("childOrdinalLabel", { ordinal: child.ordinal })}
+  </span>
+  <span className="block text-[11px] text-edu-text-secondary">
+    {child.className
+      ? t("classLabel", { className: child.className })
+      : t("classPending")}
+  </span>
+</span>
+```
+
+No new props on `ChildPickerProps` — the interface is unchanged (`childList:
+TimetableChild[]; selectedChildId: string; onSelect: (childId: string) =>
+void; disabled?: boolean`); the fallback logic reads only fields already on
+`TimetableChild`, so the ViewModel boundary at `timetable-view.i-vm.ts` needs
+**zero change** (confirms the packet's "zero ViewModel diff" framing).
+
+### 4. i18n — `timetableView` namespace, additive (confirmed good Vietnamese,
+no changes to the planner's proposed copy)
+
+Add to BOTH `src/bootstrap/i18n/messages/vi.json` and `.../en.json`, same
+path, alongside the existing `childPickerLabel`/`classLabel` keys:
+
+| Key | vi | en |
+| --- | --- | --- |
+| `childOrdinalLabel` | `"Con thứ {ordinal}"` | `"Child {ordinal}"` |
+| `classPending` | `"Chưa có lớp"` | `"No class yet"` |
+
+Rationale: `"Con thứ {ordinal}"` is the natural Vietnamese ordinal
+construction (matches "con thứ nhất/thứ hai" register, reads correctly for
+any `ordinal` value without needing separate 1st/2nd/3rd word forms — Vietnamese
+ordinals don't inflect irregularly past "thứ nhất", but a numeral after "thứ"
+is completely natural and commonly used, e.g. "thứ 3", so `{ordinal}` as a
+plain number is fine, no special-casing needed for ordinal=1). `"Chưa có
+lớp"` matches the terse, lowercase-after-first-word tone of existing sibling
+copy (`"Chưa xếp lịch"`-style patterns elsewhere in the design system) and is
+shorter/more natural than a literal "không có lớp học" — keep as proposed.
+Both keys use the same `{param}` interpolation convention already
+established by `classLabel`/`classConflictCount` in this same namespace — no
+new i18n mechanism introduced.
+
+### 5. Accessibility verification (explicit answer to the audit question)
+
+- **No explicit `aria-label` needed on the `<button>`.** The accessible name
+  is still correctly derived from visible text content with the fallback
+  strings in place: `"Con thứ 1"` + (space, from accname algorithm's
+  inter-element join) + `"Chưa có lớp"` → announced as **"Con thứ 1 Chưa có
+  lớp"** (no comma is actually inserted by the accname algorithm — the
+  story's own example `"Con thứ 1, Chưa có lớp"` was illustrative shorthand
+  for readability in prose, not a literal DOM string; correcting that here
+  for the engineer). This run-on is still comprehensible as a name — "child
+  N, no class yet" — and is not materially different in structure from
+  today's real-name case (`"Nguyễn An Lớp 10A1"` already has no comma
+  either), so no new separator is required to meet WCAG 2.1 AA (name is
+  present, distinguishing, and programmatically determinable — SC 4.1.2).
+  **Optional polish** (not a blocking a11y requirement): if
+  `fe-nextjs-engineer`/`fe-accessibility-auditor` want a clearer pause, add a
+  visually-hidden `<span className="sr-only">{", "}</span>` between the two
+  spans — purely cosmetic for AT users, does not change visible layout. Not
+  mandating it here to avoid scope creep into a markup change beyond the two
+  conditional label expressions.
+- **Avatar span stays `aria-hidden="true"`** — unchanged, correct: it's
+  decorative/redundant once the name (real or fallback) is already the
+  accessible name; the ordinal-digit avatar fallback (`"1"`) does not need
+  its own label since it duplicates information already in the visible name
+  line.
+- **Contrast**: fallback strings render in the SAME two spans/classes as
+  today's real values (`text-edu-text-primary text-sm font-bold` for the name
+  line, `text-edu-text-secondary text-[11px]` for the class line) — no new
+  color/token introduced, so no new contrast check needed beyond what's
+  already verified for this component's existing text.
+- **Keyboard/focus**: unaffected — the fallback is a text-content change
+  inside an already keyboard-operable `<button>`; no new interactive element
+  added.
+- **Motion**: unaffected — no new animation.
+
+### 6. Component placement re-confirmation
+
+Per `.claude/rules/component-organization.md`'s decision tree: `child-picker
+.tsx` is a composed component (button + avatar span + two text spans) used by
+exactly ONE screen (`timetable-view`'s parent role branch) today — correctly
+placed at `src/features/timetable/presentation/timetable-view/child-picker.tsx`
+(tier 3: "composed, single-screen (tmp)"). This US does not change its
+usage count, so **no promotion to `components/shared/` is warranted** by this
+US. If a second screen ever needs an identical roster-picker pattern,
+promote then (move, never copy) — not a decision to pre-empt now.
+
+### Summary of decisions vs the planner's initial direction
+
+- **Confirmed as proposed, no changes**: `name?`/`classId?`/`className?`
+  optionality; `ordinal: number` (required, `linkId`-ascending stable sort,
+  owned by the mapper not this component); `avatar` stays required string,
+  mapper-computed; reuse of the existing `classLabel` key; the two new key
+  names/values (`childOrdinalLabel`, `classPending`); no relocation of
+  `child-picker.tsx`; no `ChildPickerProps` change; no `aria-label` needed.
+- **One correction**: the packet's a11y example string used a comma
+  (`"Con thứ 1, Chưa có lớp"`) that the accname algorithm does not actually
+  produce — documented in §5 as illustrative-only, with an optional (not
+  required) `sr-only` separator noted for polish.
+- **One addition**: inline doc-comments on the entity fields explaining WHY
+  each is optional (ask #20 residual, BE's indistinguishable-omission design)
+  so a future reader doesn't "fix" the optionality back without re-reading
+  this packet.
+
 ## Evidence
 
 (fe-nextjs-engineer / fe-lead fill in at completion: files changed, exact

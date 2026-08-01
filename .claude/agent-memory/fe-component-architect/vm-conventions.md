@@ -70,6 +70,23 @@ state machine, not fetched/server data) just needs a plain `type <X>Props` in
 its own file. Don't force a `.i-vm.ts` file where there's no server↔client
 data contract to name.
 
+**Optional-field fallback contract (US-E18.26 pattern):** when a BE field that
+drives BOTH a text line and a derived value (e.g. `name` → text line + avatar
+initials) becomes unavailable in real mode, add a `ordinal: number` (stable,
+sorted by a wire id like `linkId` ascending — never raw array order) to the
+entity; presentation renders `field ?? t("xOrdinalLabel", {ordinal})`; the
+mapper (not the component) computes the derived fallback (e.g. avatar digit).
+Keep the field itself required-but-mapper-computed (`avatar: string`, never
+optional) so the component's existing render call-site is untouched in shape.
+
+**Accname multi-span buttons have no implicit punctuation.** When a `<button>`'s
+accessible name is derived from 2+ sibling text `<span>`s (no `aria-label`),
+the browser accname algorithm joins them with a space only — no comma/period
+is inserted even if a prose spec writes `"X, Y"` as the expected screen-reader
+output. Correct that expectation to `"X Y"` when writing the a11y contract;
+offer an optional `sr-only` separator span as polish, not a requirement, since
+a run-on name string still satisfies WCAG SC 4.1.2 (name is present/distinct).
+
 **Fixed-position z-index scale observed in this codebase (no formal token
 yet):** `Header` sticky `z-30` < feature dropdown/context-menu overlay `z-40`
 < Radix `Sheet`/`Dialog`/`AlertDialog`/`Popover`/`Tooltip` (all `z-50`, so
