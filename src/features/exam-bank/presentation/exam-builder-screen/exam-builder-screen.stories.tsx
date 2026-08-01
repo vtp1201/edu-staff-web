@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ExamBankDetail } from "../../domain/entities/exam-bank-detail.entity";
 import { MOCK_SUBJECTS } from "../../infrastructure/repositories/mocks/fixtures";
@@ -183,6 +183,83 @@ export const Builder_ReorderUnavailableInRealMode: Story = {
     await expect(canvas.getByLabelText(/Nội dung câu hỏi/i)).toHaveValue(
       "Sông dài nhất Việt Nam là?",
     );
+  },
+};
+
+/**
+ * REVIEW MUST-FIX (US-E18.28): in real mode `subjectId` is immutable server-side
+ * and `maxAttempts` has no wire field, so both fields are disabled with one
+ * translated explainer — editing them must never report a false success. Title
+ * and duration stay editable (they ARE sent in the PATCH).
+ */
+export const Builder_MetaLockedInRealMode: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion]),
+    metaEditable: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByLabelText(/Môn học/i)).toBeDisabled();
+    await expect(canvas.getByLabelText(/Số lần làm/i)).toBeDisabled();
+    await expect(
+      canvas.getByText(/Môn học và số lần làm không thể thay đổi/i),
+    ).toBeInTheDocument();
+    // The fields that DO round-trip stay editable.
+    await expect(canvas.getByLabelText(/Tiêu đề đề thi/i)).toBeEnabled();
+    await expect(canvas.getByLabelText(/Thời lượng \(phút\)/i)).toBeEnabled();
+  },
+};
+
+/** Mock mode is unaffected — every meta field stays editable, no explainer. */
+export const Builder_MetaEditableInMockMode: Story = {
+  args: { ...baseProps, initial: detailWith([filledQuestion]) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByLabelText(/Môn học/i)).toBeEnabled();
+    await expect(canvas.getByLabelText(/Số lần làm/i)).toBeEnabled();
+    await expect(
+      canvas.queryByText(/Môn học và số lần làm không thể thay đổi/i),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * REVIEW SHOULD-FIX (US-E18.28): an incomplete question must never reach the
+ * wire. The real server rejects it with a generic `VALIDATION_FAILED` AFTER the
+ * non-atomic sequence has already persisted earlier calls, so the save is
+ * blocked up front and the offending question is selected + flagged instead.
+ */
+export const Builder_SaveDraftBlockedOnIncompleteQuestion: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion, { ...blankQuestion, index: 1 }]),
+    saveDraftAction: fn(async () => ({ ok: true }) as const),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/i }));
+    // No write attempted at all.
+    await expect(args.saveDraftAction).not.toHaveBeenCalled();
+    // The incomplete question is flagged, and selected so it can be fixed.
+    await expect(
+      canvas.getByText(/Câu hỏi này còn thiếu thông tin/i),
+    ).toBeInTheDocument();
+    await expect(canvas.getByLabelText(/Nội dung câu hỏi/i)).toHaveValue("");
+  },
+};
+
+/** A complete draft still saves — the pre-check must not block valid content. */
+export const Builder_SaveDraftSucceedsWhenComplete: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion]),
+    saveDraftAction: fn(async () => ({ ok: true }) as const),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Lưu nháp/i }));
+    await expect(args.saveDraftAction).toHaveBeenCalledTimes(1);
   },
 };
 

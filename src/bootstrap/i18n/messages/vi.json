@@ -1762,6 +1762,7 @@
       "durationLabel": "Thời lượng (phút)",
       "editTitle": "Chỉnh sửa đề thi",
       "maxAttemptsLabel": "Số lần làm",
+      "metaLockedNote": "Môn học và số lần làm không thể thay đổi sau khi đề thi được tạo. Bạn vẫn có thể sửa tiêu đề và thời lượng.",
       "newQuestionPlaceholder": "Câu hỏi mới",
       "noSelection": "Chọn câu hỏi để chỉnh sửa",
       "optionPlaceholder": "Nội dung phương án {option}",

@@ -232,6 +232,44 @@ are present in mock mode and absent + explained in real mode; three
 - `NEXT_PUBLIC_USE_MOCK= bun run build` — `✓ Compiled successfully`, all
   exam-bank routes (incl. `/teacher/exam-bank/[id]/edit`) compiled in real mode.
 
+### Post-review revision (round 2 — closes the tech-lead MUST FIX + SHOULD FIX)
+
+Both items were closed TDD-first (2 new stories red → green; the 2 mock-mode
+counterpart stories passed from the start, proving the change is scoped to real
+mode).
+
+1. **[MUST FIX closed] Subject + Max attempts no longer accept discarded edits.**
+   New `metaEditable` prop (`exam-builder-screen.i-vm.ts` → `ExamBuilderScreen`
+   → `BuilderHeader`), threaded as `metaEditable={USE_MOCK}` from
+   `[id]/edit/page.tsx` — mirroring the `reorderEnabled` pattern. In real mode
+   both controls render `disabled` (kept visible: Subject is meaningful
+   read-only context) with one translated explainer
+   (`examBank.builder.metaLockedNote`, vi+en) that each field references via
+   `aria-describedby`, so the reason is announced and not merely visible. Title
+   and Duration stay editable — they DO round-trip in the PATCH.
+2. **[SHOULD FIX + CONSIDER closed] No incomplete question ever reaches the
+   wire.** `handleSaveDraft` now runs a pre-save gate before the FIRST write,
+   reusing the `validationErrors` map the publish gate already computes: it
+   selects the offending question, shows its specific translated failure
+   (`question-empty-content` / `insufficient-options` /
+   `question-missing-answer`) and returns without calling the action. This
+   removes the generic `errors.unknown` path AND the partially-applied-save
+   window for this case, and closes the CONSIDER note (the
+   `EXAM_CORRECT_OPTION_INVALID` path is the same gap). Applied in both modes
+   deliberately: the server can never accept such a question, so allowing it in
+   mock would train a workflow that breaks in production. A valid draft still
+   saves (asserted).
+
+Post-revision proof (all re-run): `bunx tsc --noEmit` clean · `bunx vitest run`
+**438 files / 3118 tests pass** (unchanged — both fixes are presentation-level,
+covered by stories) · `bunx vitest run --config vitest.storybook.mts`
+**151 files / 1107 tests pass** (was 1103; +4 stories) ·
+`NEXT_PUBLIC_USE_MOCK= bun run build` ✓ Compiled successfully · `bun lint` only
+the same 2 pre-existing `features/messaging` findings.
+
+New i18n key: `examBank.builder.metaLockedNote` (vi source + en mirror, same
+commit) — brings the `examBank` namespace to 109 keys, parity preserved.
+
 ### Engineer decisions worth reviewing
 
 1. **Reorder controls are OMITTED, not disabled** (Design Notes left this to

@@ -70,8 +70,12 @@ export default async function EditExamPage({
     <ExamBuilderScreen
       initial={detail}
       subjects={deriveSubjects(exams)}
-      // No reorder route exists on the real contract (US-E18.28).
+      // No reorder route exists on the real contract, and neither `subjectId`
+      // (immutable server-side) nor `maxAttempts` (no wire field) round-trips —
+      // so those affordances are gated off in real mode rather than silently
+      // dropping the teacher's edit (US-E18.28).
       reorderEnabled={USE_MOCK}
+      metaEditable={USE_MOCK}
       createExamAction={createExamAction}
       saveDraftAction={saveDraftAction}
       publishExamAction={publishExamAction}

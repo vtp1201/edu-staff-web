@@ -24,6 +24,7 @@ export function ExamBuilderScreen({
   initial,
   subjects,
   reorderEnabled = true,
+  metaEditable = true,
   saveDraftAction,
   createExamAction,
   publishExamAction,
@@ -84,6 +85,23 @@ export function ExamBuilderScreen({
       if (!builder.meta.title.trim()) {
         setTitleTouched(true);
         toast.error(t("errors.missing-title"));
+        resolve(null);
+        return;
+      }
+      // Pre-save gate (review SHOULD FIX, US-E18.28). An incomplete question is
+      // rejected by the server with a generic `VALIDATION_FAILED` — and because
+      // the real `updateExam` sequence is deliberately non-atomic, that error
+      // would arrive AFTER earlier deletes/edits already persisted. Block the
+      // write instead and point at the offending question, reusing the same
+      // per-question error state the publish gate already surfaces.
+      const invalidIdx = builder.questions.findIndex((q) =>
+        validationErrors.has(q.id),
+      );
+      if (invalidIdx !== -1) {
+        const invalid = builder.questions[invalidIdx];
+        const failure = validationErrors.get(invalid.id);
+        builder.selectQuestion(invalidIdx);
+        if (failure) toast.error(t(`errors.${failure}`));
         resolve(null);
         return;
       }
@@ -155,6 +173,7 @@ export function ExamBuilderScreen({
         <BuilderHeader
           meta={builder.meta}
           subjects={subjects}
+          metaEditable={metaEditable}
           titleInvalid={titleTouched && !builder.meta.title.trim()}
           onChange={builder.updateExamMeta}
         />

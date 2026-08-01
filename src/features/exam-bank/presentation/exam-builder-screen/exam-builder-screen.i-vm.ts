@@ -21,6 +21,11 @@ export interface ExamBuilderScreenVM {
    *  mode: position is server-assigned by insertion order and no reorder route
    *  exists (US-E18.28/ADR 0056 Amendment 2). Defaults to true (mock). */
   reorderEnabled?: boolean;
+  /** Whether the Subject / Max-attempts fields can be edited. False in real
+   *  mode: neither round-trips (`subjectId` immutable server-side, `maxAttempts`
+   *  has no wire field), so leaving them editable would report a false success
+   *  (review MUST FIX, US-E18.28). Defaults to true (mock). */
+  metaEditable?: boolean;
   saveDraftAction(input: UpdateExamInput): Promise<BuilderActionResult>;
   createExamAction(input: CreateExamInput): Promise<CreateActionResult>;
   publishExamAction(id: string): Promise<BuilderActionResult>;
