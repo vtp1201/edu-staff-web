@@ -10,12 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { SealBatchStatus } from "../../../domain/entities/seal-batch.entity";
+import type { SealBatchKey } from "../../../domain/entities/seal-batch.entity";
 
 export interface SealConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  batch: SealBatchStatus;
+  /** Only the class/term/year identity is read — any keyed shape satisfies it. */
+  batch: SealBatchKey;
   isPending: boolean;
   onConfirm: () => void;
 }

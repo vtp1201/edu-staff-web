@@ -50,7 +50,10 @@
       "title": "Unable to load academic record",
       "too-many-reseals": "The reseal limit (max 5) for this record has been reached.",
       "unknown": "Something went wrong. Please try again later.",
-      "unlocked-grades-exist": "Some grades are still unlocked — please lock all grades before sealing the record."
+      "unlocked-grades-exist": "Some grades are still unlocked — please lock all grades before sealing the record.",
+      "unseal-request-already-approved": "This request has already been approved.",
+      "unseal-request-invalid-cursor": "Could not load the next page. Please reload the list.",
+      "unseal-request-invalid-status": "Invalid status filter."
     },
     "pageSubtitle": "Signed academic-record history by school year and term. Each record is a snapshot of grades at the time of signing.",
     "pageTitle": "Student Academic Record",
@@ -155,18 +158,20 @@
       "self-approve-not-allowed": "Self-approval is not allowed: this tenant has more than one admin, so a different admin must confirm.",
       "too-many-reseals": "The reseal limit (max 5) for this record has been reached.",
       "unknown": "Something went wrong. Please try again later.",
-      "unlocked-grades-exist": "Some grades are still unlocked — please lock all grades before sealing the record."
+      "unlocked-grades-exist": "Some grades are still unlocked — please lock all grades before sealing the record.",
+      "unseal-request-already-approved": "This request has already been approved.",
+      "unseal-request-invalid-cursor": "Could not load the next page. Please reload the list.",
+      "unseal-request-invalid-status": "Invalid status filter."
     },
     "gate": {
-      "allLocked": {
-        "subtitle": "{total} students · {pending} not sealed · {sealed} sealed",
-        "title": "All grades locked. Ready to seal records."
-      },
-      "notAllLocked": {
-        "linkToApproval": "Go to Approval & Lock",
-        "subjectsLabel": "Unlocked subjects",
-        "title": "{count} students still have unlocked grades.",
-        "warning": "You should lock all grades in the Approval & Lock screen before sealing. If any grades remain unlocked, the seal action will be rejected."
+      "rollup": {
+        "counts": "{total} students · {sealed} sealed · {unsealed} unsealed",
+        "linkToApproval": "Go to Approve & Lock",
+        "nearResealCap": "Resealed {count}/5 times — close to the limit.",
+        "partialTitle": "Only {sealed}/{total} students sealed.",
+        "pendingTitle": "This class record has not been sealed yet.",
+        "sealedTitle": "The whole class record is sealed.",
+        "warning": "Lock every grade on the Approve & Lock screen before sealing. If unlocked grades remain, the seal will be rejected."
       }
     },
     "resealButton": "Reseal records",
@@ -181,10 +186,13 @@
       "title": "Confirm record seal"
     },
     "sealSuccess": {
+      "lastSealedAtLabel": "Last sealed",
+      "neverSealed": "Never sealed",
       "sealedAtLabel": "Sealed at",
       "sealedByLabel": "Sealed by",
       "sealedIndicator": "Sealed",
-      "toast": "Sealed records for class {class} — {term}."
+      "toast": "Sealed records for class {class} — {term}.",
+      "wasSealedThenUnsealed": "Previously sealed, currently fully unsealed"
     },
     "selector": {
       "class": "Class",
@@ -206,7 +214,6 @@
       "card": {
         "awaitingOther": "Awaiting confirmation from another administrator",
         "canConfirm": "Created by another admin. You can confirm to unseal.",
-        "confirmedBy": "Confirmed by {name}",
         "lockedAria": "Record is locked",
         "reasonLabel": "Reason",
         "requestedBy": "Requested by {name}"
@@ -215,6 +222,8 @@
       "empty": {
         "pending": "No pending requests"
       },
+      "emptyClassPrompt": "Pick a class and term to see unseal requests.",
+      "eventualConsistencyHint": "The list may take a few seconds to reflect a newly filed request.",
       "initiateButton": "New unseal request",
       "initiateForm": {
         "cancel": "Cancel",
@@ -232,6 +241,8 @@
         "subtitle": "Request will await second-ADMIN confirmation.",
         "title": "New unseal request"
       },
+      "loadMore": "Load more requests",
+      "loadMoreRetry": "Retry",
       "reasonMinLengthError": "The reason must be at least {min} characters.",
       "sameAdminDialog": {
         "body": "You created this request. A different administrator must confirm it to unseal the record.",
@@ -250,8 +261,8 @@
         "title": "Warning: Self-approval"
       },
       "statusApproved": "Approved",
-      "statusApprovedSelf": "Approved (self)",
       "statusPending": "Awaiting confirmation",
+      "statusRejected": "Rejected",
       "success": {
         "confirmToast": "Unseal request approved.",
         "initiateToast": "Unseal request created — awaiting second admin confirmation.",

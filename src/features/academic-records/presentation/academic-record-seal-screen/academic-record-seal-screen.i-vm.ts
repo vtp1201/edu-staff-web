@@ -2,11 +2,13 @@ import type {
   SealAuditEntry,
   SealBatchKey,
   SealBatchResult,
-  SealBatchStatus,
   SealedStudentOption,
+  SealStatusRollup,
   TenantAdminSummary,
   Term,
-  UnsealRequest,
+  UnsealApproveResult,
+  UnsealInitiateResult,
+  UnsealRequestSummary,
 } from "../../domain/entities/seal-batch.entity";
 import type { AcademicRecordsFailure } from "../../domain/failures/academic-records.failure";
 
@@ -36,7 +38,7 @@ export interface AcademicRecordSealActions {
   }) => Promise<SealActionResult<ClassOption[]>>;
   getSealStatus: (
     key: SealBatchKey,
-  ) => Promise<SealActionResult<SealBatchStatus>>;
+  ) => Promise<SealActionResult<SealStatusRollup>>;
   seal: (key: SealBatchKey) => Promise<SealActionResult<SealBatchResult>>;
   getAuditTrail: (
     key?: Partial<SealBatchKey>,
@@ -44,14 +46,27 @@ export interface AcademicRecordSealActions {
   listSealedStudents: (
     filter?: Partial<SealBatchKey>,
   ) => Promise<SealActionResult<SealedStudentOption[]>>;
-  getPendingUnsealRequests: () => Promise<SealActionResult<UnsealRequest[]>>;
+  /** Class+term-scoped + cursor-paginated (US-E18.24 — no tenant-wide listing). */
+  getPendingUnsealRequests: (
+    classId: string,
+    termId: string,
+    params?: { cursor?: string | null; limit?: number },
+  ) => Promise<
+    SealActionResult<{
+      items: UnsealRequestSummary[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>
+  >;
   initiateUnseal: (
     input: InitiateUnsealInput,
-  ) => Promise<SealActionResult<UnsealRequest>>;
+  ) => Promise<SealActionResult<UnsealInitiateResult>>;
   confirmUnseal: (
     requestId: string,
     coSignerId: string | null,
-  ) => Promise<SealActionResult<{ request: UnsealRequest; fallback: boolean }>>;
+    classId: string,
+    termId: string,
+  ) => Promise<SealActionResult<UnsealApproveResult>>;
   listTenantAdmins: () => Promise<SealActionResult<TenantAdminSummary[]>>;
 }
 
@@ -76,13 +91,13 @@ export interface SealTabVM {
   onClassChange: (classId: string) => void;
 
   /**
-   * Decorative "X/Y locked" hint only (from the mocked `getSealStatus`) — NOT
-   * authoritative. There is no seal-status GET endpoint on the real backend
-   * (ADR 0055); the real seal action's reactive result (`unlocked-grades-exist`
-   * / `too-many-reseals`) is the source of truth. Never gate the Seal button on
-   * this — the NOT-OK branch still offers Seal (the server decides).
+   * US-E18.24 — the REAL class+term seal rollup (`GET .../seal-status`), no
+   * longer a decorative mock. It is still only a PROACTIVE hint: the reactive
+   * 422 on submit (`unlocked-grades-exist` / `too-many-reseals`) remains the
+   * source of truth. Never gate the Seal button on it — every branch still
+   * offers Seal (the server decides).
    */
-  batch: SealBatchStatus | null;
+  batch: SealStatusRollup | null;
   isBatchLoading: boolean;
   batchError: AcademicRecordsFailure["type"] | null;
 
@@ -101,8 +116,17 @@ export interface UnsealTabVM {
   currentAdminName: string;
   tenantAdminCount: number; // drives the self-approve-fallback affordance (ADR 0037)
 
-  pendingRequests: UnsealRequest[];
+  /**
+   * `null` until a class is selected — the listing is class+term-scoped on the
+   * wire, so the tab renders a "pick a class" prompt instead of a list.
+   */
+  classId: string | null;
+  /** Flattened across every fetched cursor page. */
+  pendingRequests: UnsealRequestSummary[];
   isRequestsLoading: boolean;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
 
   isInitiateFormOpen: boolean;
   onOpenInitiateForm: () => void;

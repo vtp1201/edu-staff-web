@@ -24,8 +24,20 @@ export const academicRecordSealKeys = {
   sealedStudents: () =>
     ["academic-records", "seal", "sealed-students", "all"] as const,
 
-  pendingUnsealRequests: () =>
-    ["academic-records", "seal", "unseal-requests", "pending"] as const,
+  /**
+   * US-E18.24 — scoped by class+term (the real listing endpoint is class-term
+   * scoped). Same root/prefix, so `invalidateQueries({queryKey: …all})` still
+   * invalidates every scope broadly.
+   */
+  pendingUnsealRequests: (classId: string, termId: string) =>
+    [
+      "academic-records",
+      "seal",
+      "unseal-requests",
+      "pending",
+      classId,
+      termId,
+    ] as const,
 
   tenantAdmins: () => ["academic-records", "seal", "tenant-admins"] as const,
 } as const;

@@ -3,24 +3,32 @@
 import { AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import type { SealBatchStatus } from "../../../domain/entities/seal-batch.entity";
+import type { SealStatusRollup } from "../../../domain/entities/seal-batch.entity";
 
 export interface AllLockedGateProps {
-  batch: SealBatchStatus;
+  batch: SealStatusRollup;
   onSeal: () => void; // OK branch — opens SealConfirmDialog
   onGoToApproval: () => void; // NOT-OK branch — link to E14.4 grade-approval
 }
 
+/** Reseal count at which the near-cap caption appears (server cap is 5). */
+const RESEAL_CAP_WARNING_AT = 4;
+
 /**
- * AC-2 (OK, green) vs AC-3 (NOT-OK, warning banner role="alert").
+ * Class+term seal-rollup banner (AC-2 green / AC-3 warning).
  *
- * US-E18.13 (ADR 0055): the "all grades locked" check is REACTIVE (server-side)
- * — this banner's `allLocked`/`status` come from the mocked, decorative
- * `getSealStatus` and NEVER gate the Seal button. Both branches render a Seal
- * button; the NOT-OK branch additionally warns + links to Approval & Lock. The
- * server rejects with `unlocked-grades-exist` / `too-many-reseals` if the
- * attempt isn't allowed (surfaced via toast by the container). Reseal (batch
- * already SEALED) is idempotent, so the button is never disabled.
+ * US-E18.24: driven by the REAL `GET .../seal-status` rollup
+ * (`status: PENDING|SEALED|PARTIAL` + counts), replacing the old decorative
+ * `allLocked` / `unlockedSubjectNames` mock hint. The per-subject "which
+ * subjects are unlocked" list is GONE — that data does not exist on the wire at
+ * this granularity, so rendering it would be fabricated.
+ *
+ * The rollup is a PROACTIVE status readout, never a permission: the "all grades
+ * locked" check stays REACTIVE (server-side). Every branch renders a Seal
+ * button; the non-SEALED branch additionally warns + links to Approval & Lock.
+ * The server rejects with `unlocked-grades-exist` / `too-many-reseals` when the
+ * attempt isn't allowed (surfaced via toast by the container). Reseal is
+ * idempotent, so the button is never disabled.
  */
 export function AllLockedGate({
   batch,
@@ -28,12 +36,19 @@ export function AllLockedGate({
   onGoToApproval,
 }: AllLockedGateProps) {
   const t = useTranslations("academicRecordSeal");
-  const alreadySealed = batch.status === "SEALED";
-  const sealButtonLabel = alreadySealed ? t("resealButton") : t("sealButton");
+  const isSealed = batch.status === "SEALED";
+  const sealButtonLabel = isSealed ? t("resealButton") : t("sealButton");
+  const counts = t("gate.rollup.counts", {
+    total: batch.totalStudents,
+    sealed: batch.sealedCount,
+    unsealed: batch.unsealedCount,
+  });
+  const nearCap =
+    batch.resealCount >= RESEAL_CAP_WARNING_AT
+      ? t("gate.rollup.nearResealCap", { count: batch.resealCount })
+      : null;
 
-  if (batch.allLocked) {
-    const sealedCount = alreadySealed ? batch.totalStudents : 0;
-    const pendingCount = alreadySealed ? 0 : batch.totalStudents;
+  if (isSealed) {
     return (
       <div className="flex flex-col gap-4 rounded-xl border border-edu-success/30 bg-edu-success/10 p-5 sm:flex-row sm:items-center">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-edu-success/15">
@@ -41,15 +56,14 @@ export function AllLockedGate({
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-extrabold text-base text-foreground">
-            {t("gate.allLocked.title")}
+            {t("gate.rollup.sealedTitle")}
           </p>
-          <p className="mt-0.5 text-muted-foreground text-sm">
-            {t("gate.allLocked.subtitle", {
-              total: batch.totalStudents,
-              pending: pendingCount,
-              sealed: sealedCount,
-            })}
-          </p>
+          <p className="mt-0.5 text-muted-foreground text-sm">{counts}</p>
+          {nearCap && (
+            <p className="mt-1 text-edu-warning-foreground text-sm">
+              {nearCap}
+            </p>
+          )}
         </div>
         <Button type="button" onClick={onSeal} className="shrink-0">
           {sealButtonLabel}
@@ -73,17 +87,20 @@ export function AllLockedGate({
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-extrabold text-base text-foreground">
-            {t("gate.notAllLocked.title", { count: batch.unlockedStudents })}
+            {batch.status === "PARTIAL"
+              ? t("gate.rollup.partialTitle", {
+                  sealed: batch.sealedCount,
+                  total: batch.totalStudents,
+                })
+              : t("gate.rollup.pendingTitle")}
           </p>
-          <p className="mt-0.5 text-muted-foreground text-sm">
-            {t("gate.notAllLocked.warning")}
+          <p className="mt-0.5 text-muted-foreground text-sm">{counts}</p>
+          <p className="mt-2 text-muted-foreground text-sm">
+            {t("gate.rollup.warning")}
           </p>
-          {batch.unlockedSubjectNames.length > 0 && (
-            <p className="mt-2 text-foreground text-sm">
-              <span className="font-bold text-muted-foreground text-xs uppercase tracking-wide">
-                {t("gate.notAllLocked.subjectsLabel")}:{" "}
-              </span>
-              {batch.unlockedSubjectNames.join(", ")}
+          {nearCap && (
+            <p className="mt-1 text-edu-warning-foreground text-sm">
+              {nearCap}
             </p>
           )}
         </div>
@@ -95,7 +112,7 @@ export function AllLockedGate({
           onClick={onGoToApproval}
           className="shrink-0"
         >
-          {t("gate.notAllLocked.linkToApproval")}
+          {t("gate.rollup.linkToApproval")}
           <ArrowRight aria-hidden className="size-4" />
         </Button>
         <Button type="button" onClick={onSeal} className="shrink-0">

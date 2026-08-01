@@ -11,11 +11,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { UnsealRequest } from "../../../domain/entities/seal-batch.entity";
+import type { UnsealRequestSummary } from "../../../domain/entities/seal-batch.entity";
 
 export interface UnsealSelfApproveDialogProps {
   open: boolean;
-  request: UnsealRequest | null;
+  request: UnsealRequestSummary | null;
   currentAdminId: string;
   currentAdminName: string;
   isPending: boolean;
@@ -55,7 +55,8 @@ export function UnsealSelfApproveDialog({
               {t("auditLabel")}
             </p>
             <p className="mt-1.5">
-              self_approve · unseal_request: <strong>{request.id}</strong>
+              self_approve · unseal_request:{" "}
+              <strong>{request.requestId}</strong>
               <br />
               student: <strong>{request.studentName}</strong> · class:{" "}
               <strong>{request.classId}</strong>
@@ -73,7 +74,7 @@ export function UnsealSelfApproveDialog({
             onClick={(e) => {
               if (!request) return;
               e.preventDefault();
-              onConfirm(request.id);
+              onConfirm(request.requestId);
             }}
           >
             {t("confirm")}

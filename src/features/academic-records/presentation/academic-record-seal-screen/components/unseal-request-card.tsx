@@ -1,13 +1,13 @@
 "use client";
 
-import { AlertTriangle, Check, Clock, Lock } from "lucide-react";
+import { AlertTriangle, Check, Clock, Lock, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import type { UnsealRequest } from "../../../domain/entities/seal-batch.entity";
+import type { UnsealRequestSummary } from "../../../domain/entities/seal-batch.entity";
 
 export interface UnsealRequestCardProps {
-  request: UnsealRequest;
+  request: UnsealRequestSummary;
   currentAdminId: string;
   /** ADR-0037 — self-approve fallback is ONLY offered in a single-admin tenant. */
   tenantAdminCount: number;
@@ -16,7 +16,16 @@ export interface UnsealRequestCardProps {
   isConfirming: boolean;
 }
 
-/** AC-8 — one pending unseal request row. */
+/**
+ * AC-8 — one unseal-request row.
+ *
+ * US-E18.24: the prop is the wire-shaped `UnsealRequestSummary`. Display names
+ * are resolved server-side (IAM batch lookup) and degrade to the raw member id
+ * transparently — no separate client loading state. Fields with no wire
+ * equivalent are gone: the term/year subtitle (the list is already scoped by
+ * the screen-level selector), the "self-approved" badge variant and the
+ * co-signer line (`selfApproved`/`coSignerName` are mock-only bookkeeping).
+ */
 export function UnsealRequestCard({
   request,
   currentAdminId,
@@ -26,12 +35,10 @@ export function UnsealRequestCard({
   isConfirming,
 }: UnsealRequestCardProps) {
   const t = useTranslations("academicRecordSeal.unseal");
-  const term = useTranslations("academicRecordSeal.selector");
   const format = useFormatter();
 
   const isPending = request.status === "PENDING";
-  const isOwnRequest = request.requestedById === currentAdminId;
-  const termLabel = term(request.term === "HK1" ? "term1" : "term2");
+  const isOwnRequest = request.requestedBy === currentAdminId;
 
   return (
     <div
@@ -54,7 +61,7 @@ export function UnsealRequestCard({
                 {request.studentName}
               </p>
               <span className="text-muted-foreground text-sm">
-                {request.classId} · {termLabel} · {request.year}
+                {request.classId}
               </span>
             </div>
             <p className="mt-2 rounded-lg border border-edu-warning/30 bg-edu-warning/10 p-3 text-muted-foreground text-sm">
@@ -71,28 +78,26 @@ export function UnsealRequestCard({
                 <Clock aria-hidden className="size-3" />
                 {t("statusPending")}
               </StatusBadge>
+            ) : request.status === "REJECTED" ? (
+              <StatusBadge tone="error">
+                <X aria-hidden className="size-3" />
+                {t("statusRejected")}
+              </StatusBadge>
             ) : (
               <StatusBadge tone="success">
                 <Check aria-hidden className="size-3" />
-                {request.selfApproved
-                  ? t("statusApprovedSelf")
-                  : t("statusApproved")}
+                {t("statusApproved")}
               </StatusBadge>
             )}
             <p className="text-muted-foreground text-xs">
               {t("card.requestedBy", { name: request.requestedByName })}
             </p>
             <p className="text-muted-foreground text-xs tabular-nums">
-              {format.dateTime(new Date(request.requestedAt), {
+              {format.dateTime(new Date(request.createdAt), {
                 dateStyle: "short",
                 timeStyle: "short",
               })}
             </p>
-            {request.status === "APPROVED" && request.coSignerName && (
-              <p className="text-edu-success-text text-xs">
-                {t("card.confirmedBy", { name: request.coSignerName })}
-              </p>
-            )}
           </div>
         </div>
 
@@ -112,7 +117,7 @@ export function UnsealRequestCard({
                     type="button"
                     variant="outline"
                     className="border-edu-error/50 text-edu-error-text"
-                    onClick={() => onRequestSelfApprove(request.id)}
+                    onClick={() => onRequestSelfApprove(request.requestId)}
                   >
                     <AlertTriangle aria-hidden className="size-4" />
                     {t("selfApproveButton")}
@@ -126,7 +131,7 @@ export function UnsealRequestCard({
                 </p>
                 <Button
                   type="button"
-                  onClick={() => onConfirm(request.id)}
+                  onClick={() => onConfirm(request.requestId)}
                   disabled={isConfirming}
                 >
                   <Check aria-hidden className="size-4" />

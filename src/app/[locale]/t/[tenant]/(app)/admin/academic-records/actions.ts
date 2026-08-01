@@ -19,11 +19,13 @@ import type {
   SealAuditEntry,
   SealBatchKey,
   SealBatchResult,
-  SealBatchStatus,
   SealedStudentOption,
+  SealStatusRollup,
   TenantAdminSummary,
   Term,
-  UnsealRequest,
+  UnsealApproveResult,
+  UnsealInitiateResult,
+  UnsealRequestSummary,
 } from "@/features/academic-records/domain/entities/seal-batch.entity";
 import type { AcademicRecordsFailure } from "@/features/academic-records/domain/failures/academic-records.failure";
 import type {
@@ -69,7 +71,7 @@ export async function listAvailableClassesAction(filter: {
 
 export async function getSealStatusAction(
   key: SealBatchKey,
-): Promise<SealActionResult<SealBatchStatus>> {
+): Promise<SealActionResult<SealStatusRollup>> {
   const guard = await requireRole(["admin"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
@@ -133,14 +135,27 @@ export async function listSealedStudentsAction(
   }
 }
 
-export async function getPendingUnsealRequestsAction(): Promise<
-  SealActionResult<UnsealRequest[]>
+/** US-E18.24 — class+term-scoped + cursor-paginated (thin passthrough). */
+export async function getPendingUnsealRequestsAction(
+  classId: string,
+  termId: string,
+  params?: { cursor?: string | null; limit?: number },
+): Promise<
+  SealActionResult<{
+    items: UnsealRequestSummary[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }>
 > {
   const guard = await requireRole(["admin"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeListPendingUnsealRequestsUseCase();
-    const result = await useCase.execute();
+    const result = await useCase.execute(classId, termId, {
+      status: "PENDING",
+      cursor: params?.cursor ?? null,
+      limit: params?.limit,
+    });
     return result.ok
       ? { ok: true, data: result.data }
       : { ok: false, errorKey: result.error.type };
@@ -151,7 +166,7 @@ export async function getPendingUnsealRequestsAction(): Promise<
 
 export async function initiateUnsealAction(
   input: InitiateUnsealInput,
-): Promise<SealActionResult<UnsealRequest>> {
+): Promise<SealActionResult<UnsealInitiateResult>> {
   const guard = await requireRole(["admin"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   const adminId = await currentAdminId();
@@ -170,12 +185,19 @@ export async function initiateUnsealAction(
 export async function confirmUnsealAction(
   requestId: string,
   coSignerId: string | null,
-): Promise<SealActionResult<{ request: UnsealRequest; fallback: boolean }>> {
+  classId: string,
+  termId: string,
+): Promise<SealActionResult<UnsealApproveResult>> {
   const guard = await requireRole(["admin"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
   try {
     const useCase = await makeConfirmUnsealUseCase();
-    const result = await useCase.execute(requestId, coSignerId);
+    const result = await useCase.execute(
+      requestId,
+      coSignerId,
+      classId,
+      termId,
+    );
     return result.ok
       ? { ok: true, data: result.data }
       : { ok: false, errorKey: result.error.type };

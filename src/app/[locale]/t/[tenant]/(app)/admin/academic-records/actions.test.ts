@@ -112,7 +112,7 @@ describe("seal/unseal read Server Actions — RBAC guard", () => {
 
   it("getPendingUnsealRequestsAction rejects a non-admin", async () => {
     mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
-    const res = await getPendingUnsealRequestsAction();
+    const res = await getPendingUnsealRequestsAction("12C1", "HK1");
     expect(res).toEqual({ ok: false, errorKey: "forbidden" });
     expect(getPendingUnsealRequestsExecute).not.toHaveBeenCalled();
   });
@@ -146,7 +146,7 @@ describe("seal/unseal read Server Actions — RBAC guard", () => {
 
   it("confirmUnsealAction rejects a non-admin before running the use-case", async () => {
     mockRequireRole.mockResolvedValue({ ok: false, reason: "forbidden-role" });
-    const res = await confirmUnsealAction("ur-1", "admin-2");
+    const res = await confirmUnsealAction("ur-1", "admin-2", "12C1", "HK1");
     expect(res).toEqual({ ok: false, errorKey: "forbidden" });
     expect(confirmUnsealExecute).not.toHaveBeenCalled();
   });
