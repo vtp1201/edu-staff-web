@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -177,8 +177,89 @@ real mode.
 
 ## Evidence
 
-_(fe-nextjs-engineer fills in: files changed, test counts, `tsc`/`build`
-proof.)_
+### Files changed (by layer)
+
+| Layer | Files |
+| --- | --- |
+| `domain/` (pure TS) | `entities/exam-bank-question.entity.ts` (+`questionType?`, +`marks?`), `failures/exam-bank.failure.ts` (+5 types), `use-cases/validate-questions.ts` (stale comment corrected), **new** `use-cases/resolve-builder-access.ts` (+ test) |
+| `infrastructure/` (`server-only`) | `repositories/exam-bank.repository.ts` (real `updateExam` diff-sync + `deleteExam`; `createExam` untouched), `repositories/map-exam-bank-error.ts` (+5 codes), `mappers/exam-bank.mapper.ts` (lossless `mapQuestion`, new `mapQuestionToWire`), `dtos/exam-bank-question-response.dto.ts`, **new** `dtos/exam-bank-question-write.dto.ts` |
+| `bootstrap/` | `endpoint/exam-bank.endpoint.ts` (+`question(id, questionId)`, doc de-staled), `di/exam-bank.di.ts` (doc only — no factory shape change), `i18n/messages/{vi,en}.json` |
+| `presentation/` (`use client`) | `exam-bank-screen/{exam-bank-screen.tsx,.i-vm.ts,.stories.tsx}`, `exam-builder-screen/{exam-builder-screen.tsx,.i-vm.ts,.stories.tsx,exam-builder-unavailable.tsx,.stories.tsx,question-list.tsx,question-list-item.tsx}` |
+| `app/` (RSC) | `teacher/exam-bank/page.tsx`, `teacher/exam-bank/[id]/edit/page.tsx`, `admin/exam-bank/page.tsx`. `create/page.tsx` + `create/actions.ts` **unchanged** |
+
+`src/features/exam/**` (student exam-taking): **zero changes** —
+`git diff --stat main...HEAD -- src/features/exam/` is empty.
+
+### Tests (TDD red → green)
+
+Red first: the 3 test files (`exam-bank.repository.test.ts`,
+`exam-bank.mapper.test.ts`, `map-exam-bank-error.test.ts`) were written before
+any production change and ran **30 failed / 59 passed** on the exam-bank scope;
+green after implementation.
+
+Before/after counts measured against the pre-change base commit `3f53ff2` in a
+throwaway worktree sharing this checkout's `node_modules`:
+
+| Scope | Before (measured at `3f53ff2`) | After |
+| --- | --- | --- |
+| `src/features/exam-bank` unit | 8 files / 61 tests | **10 files / 98 tests** |
+| Full unit suite (`bunx vitest run`) | 437 files / 3081 tests | **438 files / 3118 tests, all pass** |
+| Storybook interaction (`vitest.storybook.mts`) | not measurable in the worktree (the runner needs this checkout's Storybook cache — it errored on all 148 files there); +7 stories added, so 1096 by derivation | **151 files / 1103 tests, all pass (measured)** |
+
+New coverage: `deleteExam` (204 + `not-editable`/`forbidden`/`not-found`);
+`updateExam` diff-sync (PATCH body shape, PATCH skipped when unchanged, delete
+of a removed question, PUT of existing ones, POST of a temp-id one, the exact
+combined call ORDER `GET → PATCH → DELETE → PUT → POST → GET`, authoritative
+final GET, and 6 mid-sequence error codes); reshaped `mapQuestion`
+(`questionId` as id, options/correctOptionId/difficulty/marks/questionType) and
+`mapQuestionToWire` (filled-options-only, marks preserved vs defaulted to 1,
+option-less MCQ fallback, non-MCQ carries no options/answerKey); the 5 new
+error codes; `resolveBuilderAccess` (6 cases); real-shaped questions in
+`validateQuestion`. Stories open the card dropdown and assert item CONTENTS for
+owner-DRAFT (Edit+Publish+Delete present), owner-published (no menu at all) and
+another teacher's draft (no menu); builder stories assert the reorder controls
+are present in mock mode and absent + explained in real mode; three
+`ExamBuilderUnavailable` reason stories.
+
+### Proof commands
+
+- `bunx tsc --noEmit` — clean (no output).
+- `bunx vitest run` — **438 files / 3118 tests passed**.
+- `bunx vitest run --config vitest.storybook.mts` — **151 files / 1103 tests passed**.
+- `bun lint` — no errors on the touched paths; the only remaining findings are
+  1 pre-existing warning + 1 info in `features/messaging/…/message-context-menu.tsx`
+  (verified pre-existing by stashing this branch's changes).
+- `NEXT_PUBLIC_USE_MOCK= bun run build` — `✓ Compiled successfully`, all
+  exam-bank routes (incl. `/teacher/exam-bank/[id]/edit`) compiled in real mode.
+
+### Engineer decisions worth reviewing
+
+1. **Reorder controls are OMITTED, not disabled** (Design Notes left this to
+   engineer's call). A focusable control that can never act is a dead end for
+   keyboard/SR users, and per-button disabled reasons would repeat 2N times;
+   instead `QuestionList` renders one translated note
+   (`examBank.builder.reorderUnavailable`, `role="note"`, only when >1 question)
+   and the move buttons are not rendered. Matches the "genuinely gone, not
+   silently broken" idiom already used for the `exam-card` menu items.
+2. **`ExamBankQuestion` gained `questionType?` and `marks?`** (packet
+   §Dependencies anticipated `marks`). Without `questionType`, the unconditional
+   PUT would rewrite an ESSAY question as MCQ; without `marks`, every edit would
+   silently reset the server's per-question weight and thus `totalMarks`. Both
+   are round-trip-only — **no new UI field**, matching ADR 0056 Amendment 2.
+   `marks` still defaults to `1` when absent (new builder questions).
+3. **`canEdit` keeps the mock's "edit a published paper" behaviour**:
+   `isOwner && editingEnabled && (authoringEnabled || status === "draft")`.
+   Real mode (`authoringEnabled === false`) is therefore DRAFT-only as specced,
+   while the mock path is unchanged rather than silently tightened.
+4. **The teacher list now resolves the caller id from the token `sub`** in real
+   mode (`decodeSubClaim`, precedent `admin/academic-records/page.tsx`). Without
+   this the page still passed the hardcoded `MOCK_CURRENT_TEACHER_ID`, so no
+   real paper would ever satisfy `isOwner` and the newly wired edit/delete would
+   have been unreachable — the gating change would have been dead code.
+5. **The edit-route gate is a pure domain policy** (`resolveBuilderAccess`) so
+   the RSC branch is unit-testable rather than only source-asserted. It is a
+   message-quality gate only — `core` remains the security boundary
+   (`loadOwnedDraftPaper` + `requireDraft()`).
 
 ## Tech-Lead Review — `fe-tech-lead-reviewer`
 

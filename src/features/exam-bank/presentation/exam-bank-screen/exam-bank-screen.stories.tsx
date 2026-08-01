@@ -110,16 +110,24 @@ export const TeacherRealMode_CreateDisabledEditDeleteWired: Story = {
     await expect(
       canvas.queryByRole("button", { name: /Tạo đề thi mới/i }),
     ).not.toBeInTheDocument();
-    // QA (US-E18.15): the Create button must be genuinely absent from the DOM
-    // (and thus the tab order) — not merely hidden via CSS on a still-focusable
-    // element. `queryByRole` above already proves absence from the a11y tree;
-    // this asserts no residual `<button>`/`<a>` node carries the create copy at
-    // all (guards against a `display:none`/`hidden` ghost element regression).
-    await expect(canvas.queryByText(/Tạo đề thi mới/i)).not.toBeInTheDocument();
-    // The note must name ONLY create as unavailable now (US-E18.28).
+    // QA (US-E18.15): the Create affordance must be genuinely absent from the
+    // DOM (and thus the tab order) — not merely hidden via CSS on a
+    // still-focusable element. `queryByRole` above proves absence from the a11y
+    // tree; this guards against a `display:none`/`hidden` ghost link.
     await expect(
-      canvas.getByText(/Việc tạo đề thi mới chưa khả dụng/i),
-    ).toBeInTheDocument();
+      canvas.queryByRole("link", { name: /Tạo đề thi mới/i }),
+    ).not.toBeInTheDocument();
+    // The only node carrying the create wording is the explanatory note, which
+    // must name ONLY create as unavailable now (US-E18.28).
+    const createCopyNodes = canvas.getAllByText(/tạo đề thi mới/i);
+    await expect(createCopyNodes).toHaveLength(1);
+    await expect(createCopyNodes[0]).toHaveAttribute("role", "status");
+    await expect(createCopyNodes[0]).toHaveTextContent(
+      /Việc tạo đề thi mới chưa khả dụng/i,
+    );
+    await expect(createCopyNodes[0]).toHaveTextContent(
+      /vẫn có thể chỉnh sửa, xoá bản nháp/i,
+    );
 
     // Owner DRAFT card: open the menu and assert Edit + Publish + Delete are
     // all genuinely present (they were omitted before this US).
