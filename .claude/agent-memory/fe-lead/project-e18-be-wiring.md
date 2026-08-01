@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Waves 0-4 + US-E18.20/E18.22/E18.23 all done; epic's actionable scope COMPLETE (US-E18.16 descoped zero-code, remaining items are cross-repo asks only)
+description: E18 BE-wiring epic (mock→real edu-api) — Waves 0-4 + US-E18.20/E18.22/E18.23/E18.24 all done; ADR 0055 (unseal workflow) partially unblocked by core US-150, closing cross-repo ask #21
 metadata:
   type: project
 ---
@@ -854,3 +854,57 @@ landed on `main` cleanly, so the final merge-to-main was a normal fast
 `--no-ff` with zero conflicts (the earlier `git commit-tree` trick from
 US-E03.1 wasn't needed here — only required when the primary checkout is
 mid-branch, not just carrying an unrelated dirty file).
+
+**US-E18.24 (unseal-workflow + seal-status, 2026-08-01, high-risk lane) — core
+US-150 finally closed ask #21 (the epic's longest-standing "no listing
+endpoint" gap, first flagged US-E18.13); `listTenantAdmins` stays mock for an
+INDEPENDENT reason discovered while checking whether `iam-directory`
+(US-E18.23) could now back it.** Ground-truthed `MemberListItem.roles` enum —
+`[ADMIN, MANAGER, TEACHER, STAFF, STUDENT, PARENT]`, no `SUPER_ADMIN` — because
+`SUPER_ADMIN` is a PLATFORM role (tenant-provisioning), not a tenant-membership
+row at all; no directory listing could ever enumerate it, so wiring `listTenantAdmins`
+even partially risked under-counting a Nghị định 13/2023 compliance gate (ADR
+0037's self-approve fallback) — worse than honest-mock. **Lesson generalizing
+the asks #6/7/9/13/15/18/20/21/22/23/40's "IAM has no X" pattern**: sometimes
+the blocker isn't "the field/endpoint doesn't exist yet" but "the platform's
+OWN role model structurally excludes this actor from the resource being
+listed" — check the enum/domain model itself, not just endpoint existence,
+before concluding a newly-shipped BE feature unblocks everything an ADR named.
+**Design-call generalization (extends US-E18.13's "getSealStatus reshape"
+precedent to 3 more methods)**: when a mock-first entity is genuinely richer
+than every real response it's about to represent (here `UnsealRequest` had
+`coSignerId`/`confirmedAt`/`selfApproved`, none on the wire), split into
+narrow, 1:1, wire-shaped entities per real method rather than widening the
+existing type with optional fields — a lighter "tack on optional fields"
+approach leaks mock-only bookkeeping into the real contract's type surface,
+which ADR 0055 already rejected once (§Alternatives Considered #2). Keep the
+mock's OWN richer internal state, map to the narrow entity only at the
+repository boundary (same "internal-rich, boundary-narrow" split as the
+seal-status rollup). Cursor pagination pattern reused cleanly from
+`iam-directory.repository.ts` (`{raw:true}`+`parseEnvelope`) and
+`audit-log-screen.tsx` (`useInfiniteQuery` UI shape) — both established
+precedents held with zero adaptation friction. Reviewer's should-fix loop
+worked exactly as designed: 2 code items (dead i18n keys, a load-more error
+prop never wired → silent page-2 failure) routed back to the SAME engineer
+agent via `SendMessage` resume (not a fresh Task) — cheaper, full context
+retained; 2 doc/Harness items (ADR supersession note, TEST_MATRIX/Status)
+closed directly by fe-lead per established convention. QA (independent
+re-verification discipline held again) found + closed 2 more real gaps
+post-review: the container's mutation `onSuccess` i18n/toast routing for all
+9 failure codes had ZERO test coverage anywhere (only unit-tested in
+isolation at the use-case/repo layer) despite being the literal integration
+point a user experiences; and the new pagination control lacked the
+established real-375px-viewport proof pattern (`AllLockedGate_NotOK_Mobile375`,
+US-E18.13) that this same screen already has for its OTHER interactive
+surface. 2 non-blocking a11y findings on the SHARED `LoadMoreButton` (used by
+7 screens) correctly declined by the engineer as out-of-scope-for-a-BE-wiring-US
+and logged as a backlog cross-cutting follow-up by fe-lead, rather than
+drive-by widening the branch. 437 files/3026 tests (baseline 434/2964,
++3/+62), tsc/build/lint clean, tech-lead APPROVED first pass (0 must-fix, 4
+should-fix — 2 code/2 doc, split as above), a11y PASS (0 must-fix), design-review
+PASS (scoped self-review), QA GO. ADR 0055 amended in-place (dated
+"Supersession note" section, same pattern as its own prior "Correction"
+amendment from US-E18.13) rather than a new ADR number — this ADR has now
+been amended twice by two different later US's, worth remembering as the
+established in-place-amendment convention for any ADR a later US partially
+unblocks.
