@@ -8,9 +8,15 @@ import type {
   SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
+  SealRollupStatus,
+  SealStatusRollup,
   TenantAdminSummary,
   Term,
+  UnsealApproveResult,
+  UnsealInitiateResult,
   UnsealRequest,
+  UnsealRequestStatus,
+  UnsealRequestSummary,
 } from "../../../domain/entities/seal-batch.entity";
 import type {
   IAcademicRecordsSealRepository,
@@ -27,6 +33,9 @@ import {
 
 const keyOf = (k: { classId: string; term: Term; year: string }): string =>
   `${k.classId}|${k.term}|${k.year}`;
+
+/** Matches the real listing endpoint's documented default page size. */
+const DEFAULT_UNSEAL_PAGE_LIMIT = 20;
 
 export interface MockAcademicRecordsSealOptions {
   /** Number of tenant admins to surface — pass `1` to exercise the ADR-0037
@@ -73,11 +82,49 @@ export class MockAcademicRecordsSealRepository
     return { ok: true, data };
   }
 
-  async getSealStatus(key: SealBatchKey): Promise<SealResult<SealBatchStatus>> {
+  /**
+   * US-E18.24 — maps the mock's INTERNAL, decorative `SealBatchStatus` onto the
+   * boundary-narrow {@link SealStatusRollup} the real BE actually returns
+   * ("internal-rich, boundary-narrow"). The rollup `status` is DERIVED via the
+   * contract's truth table — never copied from the per-record `TermStatus`
+   * (which has an `UNSEALED` member the rollup enum does not).
+   *
+   * Documented simplification: the mock tracks a single `sealedAt` timestamp
+   * per batch, so `lastSealedAt` is that value; the real BE reports the max
+   * `sealedAt` across rows INCLUDING unsealed ones. Both keep a non-null
+   * timestamp after an unseal, which is the property the UI depends on to tell
+   * "never sealed" apart from "sealed then fully unsealed".
+   */
+  async getSealStatus(
+    key: SealBatchKey,
+  ): Promise<SealResult<SealStatusRollup>> {
     await mockDelay(200);
     const match = this.batches.find((b) => keyOf(b) === keyOf(key));
     if (!match) return { ok: false, error: { type: "not-found" } };
-    return { ok: true, data: structuredClone(match) };
+
+    const sealedCount = match.status === "SEALED" ? match.totalStudents : 0;
+    const unsealedCount = match.totalStudents - sealedCount;
+    const status: SealRollupStatus =
+      match.totalStudents === 0 || sealedCount === 0
+        ? "PENDING"
+        : sealedCount === match.totalStudents
+          ? "SEALED"
+          : "PARTIAL";
+
+    return {
+      ok: true,
+      data: {
+        classId: match.classId,
+        term: match.term,
+        year: match.year,
+        totalStudents: match.totalStudents,
+        sealedCount,
+        unsealedCount,
+        status,
+        lastSealedAt: match.sealedAt,
+        resealCount: match.resealCount ?? 0,
+      },
+    };
   }
 
   /**
@@ -154,17 +201,71 @@ export class MockAcademicRecordsSealRepository
     return { ok: true, data };
   }
 
-  async getPendingUnsealRequests(): Promise<SealResult<UnsealRequest[]>> {
+  /**
+   * US-E18.24 — class+term-scoped, status-filtered, cursor-paginated, matching
+   * the real listing contract. `term` doubles as the termId path segment (the
+   * selector is mock-sourced; see the real repo's term/termId caveat). The
+   * cursor is a plain array index encoded as a string — opaque to callers,
+   * exactly like the real opaque cursor.
+   *
+   * No name resolver is needed here: the mock's internal `UnsealRequest`
+   * fixtures already carry inline display names (the real branch resolves them
+   * via the injected IAM batch lookup instead).
+   */
+  async getPendingUnsealRequests(
+    classId: string,
+    termId: string,
+    opts?: {
+      status?: UnsealRequestStatus;
+      cursor?: string | null;
+      limit?: number;
+    },
+  ): Promise<
+    SealResult<{
+      items: UnsealRequestSummary[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>
+  > {
     await mockDelay(200);
-    const data = this.requests
-      .filter((r) => r.status === "PENDING")
-      .map((r) => structuredClone(r));
-    return { ok: true, data };
+    const status = opts?.status ?? "PENDING";
+    const limit = opts?.limit ?? DEFAULT_UNSEAL_PAGE_LIMIT;
+    const offset = Number.parseInt(opts?.cursor ?? "0", 10) || 0;
+
+    const matching = this.requests.filter(
+      (r) => r.classId === classId && r.term === termId && r.status === status,
+    );
+    const page = matching.slice(offset, offset + limit);
+    const nextOffset = offset + page.length;
+    const hasMore = nextOffset < matching.length;
+
+    return {
+      ok: true,
+      data: {
+        items: page.map(
+          (r): UnsealRequestSummary => ({
+            requestId: r.id,
+            classId: r.classId,
+            termId: r.term,
+            studentMemberId: r.studentId,
+            studentName: r.studentName,
+            requestedBy: r.requestedById,
+            requestedByName: r.requestedByName,
+            reason: r.reason,
+            status: r.status,
+            createdAt: r.requestedAt,
+          }),
+        ),
+        nextCursor: hasMore ? String(nextOffset) : null,
+        hasMore,
+      },
+    };
   }
 
+  /** Internal state stays rich; the RETURN is the narrow wire shape. */
   async initiateUnseal(
     input: InitiateUnsealInput,
-  ): Promise<SealResult<UnsealRequest>> {
+  ): Promise<SealResult<UnsealInitiateResult>> {
     await mockDelay(300);
     const batch = this.batches.find(
       (b) =>
@@ -197,13 +298,27 @@ export class MockAcademicRecordsSealRepository
       selfApproved: false,
     };
     this.requests.unshift(request);
-    return { ok: true, data: structuredClone(request) };
+    return {
+      ok: true,
+      data: {
+        requestId: request.id,
+        status: "PENDING",
+        createdAt: request.requestedAt,
+      },
+    };
   }
 
+  /**
+   * `classId`/`termId` are accepted to satisfy the interface but are NOT needed
+   * for the mock's own lookup — it scans its internal `requests` by id, exactly
+   * as the real approve endpoint addresses the request by path param alone.
+   */
   async confirmUnseal(
     requestId: string,
     coSignerId: string | null,
-  ): Promise<SealResult<{ request: UnsealRequest; fallback: boolean }>> {
+    _classId: string,
+    _termId: string,
+  ): Promise<SealResult<UnsealApproveResult>> {
     await mockDelay(300);
     const request = this.requests.find(
       (r) => r.id === requestId && r.status === "PENDING",
@@ -244,7 +359,14 @@ export class MockAcademicRecordsSealRepository
 
     return {
       ok: true,
-      data: { request: structuredClone(request), fallback },
+      data: {
+        classId: request.classId,
+        termId: request.term,
+        studentMemberId: request.studentId,
+        status: "UNSEALED",
+        selfApproved: fallback,
+        unsealedAt: now,
+      },
     };
   }
 
