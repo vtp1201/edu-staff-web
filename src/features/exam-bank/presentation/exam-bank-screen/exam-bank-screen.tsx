@@ -54,6 +54,7 @@ function toCardVM(
   currentTeacherId: string,
   editPathPrefix: string,
   authoringEnabled: boolean,
+  editingEnabled: boolean,
 ): ExamCardVM {
   const isOwner =
     viewerRole === "teacher" && exam.teacherId === currentTeacherId;
@@ -64,10 +65,16 @@ function toCardVM(
     totalQuestions: exam.totalQuestions,
     status: exam.status,
     createdAtDisplay: exam.createdAt,
-    // Edit/delete need paper authoring (blocked in real mode). Publish IS wired
-    // real, so it stays available to the owner regardless (US-E18.15/ADR 0056).
-    canEdit: isOwner && authoringEnabled,
-    canDelete: isOwner && exam.status === "draft" && authoringEnabled,
+    // Edit/delete are wired real since core US-152 (US-E18.28) and no longer
+    // depend on the create-only `authoringEnabled` flag. Both are DRAFT-only on
+    // the real contract (server `requireDraft()`); the mock store has always
+    // allowed editing a published paper, so `authoringEnabled` (mock-only)
+    // keeps that behaviour intact. Publish IS wired real for the owner either way.
+    canEdit:
+      isOwner &&
+      editingEnabled &&
+      (authoringEnabled || exam.status === "draft"),
+    canDelete: isOwner && editingEnabled && exam.status === "draft",
     canPublish: isOwner && exam.status === "draft",
     editPath: `${editPathPrefix}/${exam.id}/edit`,
   };
@@ -82,6 +89,7 @@ export function ExamBankScreen({
   createPath,
   editPathPrefix,
   authoringEnabled,
+  editingEnabled,
   publishAction,
   deleteAction,
   isLoading = false,
@@ -97,8 +105,9 @@ export function ExamBankScreen({
   const [isDeleting, startDelete] = useTransition();
 
   const canCreate = viewerRole === "teacher" && authoringEnabled;
-  // Teacher, but authoring is unavailable in this environment → explain (not a
-  // silently-missing button). Publishing existing papers still works.
+  // Teacher, but creating a new paper is unavailable in this environment →
+  // explain (not a silently-missing button). Editing, deleting and publishing
+  // existing papers still work (US-E18.28).
   const showAuthoringDisabledNote =
     viewerRole === "teacher" && !authoringEnabled;
 
@@ -115,9 +124,17 @@ export function ExamBankScreen({
           currentTeacherId,
           editPathPrefix,
           authoringEnabled,
+          editingEnabled,
         ),
       ),
-    [displayed, viewerRole, currentTeacherId, editPathPrefix, authoringEnabled],
+    [
+      displayed,
+      viewerRole,
+      currentTeacherId,
+      editPathPrefix,
+      authoringEnabled,
+      editingEnabled,
+    ],
   );
   const activeFilter = hasActiveFilter(filters);
 

@@ -58,6 +58,48 @@ describe("validateQuestion (mock builder MCQ model)", () => {
   });
 });
 
+describe("validateQuestion (real-mode data WITH options — core US-152)", () => {
+  /** Shape a real question now has after the lossless mapper (US-E18.28). */
+  function realQuestion(
+    overrides: Partial<ExamBankQuestion> = {},
+  ): ExamBankQuestion {
+    return mockQuestion({
+      id: "eq-uuid-1",
+      questionType: "MCQ",
+      marks: 2,
+      options: [
+        { id: "A", text: "3" },
+        { id: "B", text: "4" },
+      ],
+      correctOptionId: "B",
+      ...overrides,
+    });
+  }
+
+  it("passes a real MCQ that carries genuine options (same rule as the mock builder)", () => {
+    expect(validateQuestion(realQuestion())).toBeNull();
+  });
+
+  it("flags a real MCQ whose options were emptied down to one", () => {
+    expect(
+      validateQuestion(
+        realQuestion({
+          options: [
+            { id: "A", text: "3" },
+            { id: "B", text: "  " },
+          ],
+        }),
+      ),
+    ).toBe("insufficient-options");
+  });
+
+  it("flags a real MCQ whose correct answer was cleared", () => {
+    expect(validateQuestion(realQuestion({ correctOptionId: "" }))).toBe(
+      "question-missing-answer",
+    );
+  });
+});
+
 describe("validateQuestion (real-mode data — no options array)", () => {
   it("passes when options is empty (server-validated at write time)", () => {
     // Real questions carry body + answerKey but no options model (US-E18.15).

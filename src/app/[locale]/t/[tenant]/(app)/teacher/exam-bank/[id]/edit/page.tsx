@@ -3,10 +3,13 @@ import {
   makeGetExamDetailUseCase,
   makeListExamBankUseCase,
 } from "@/bootstrap/di/exam-bank.di";
+import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
+import { decodeSubClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ExamBankDetail } from "@/features/exam-bank/domain/entities/exam-bank-detail.entity";
 import type { CreateExamInput } from "@/features/exam-bank/domain/entities/exam-bank-input.entity";
 import type { ExamBankSummary } from "@/features/exam-bank/domain/entities/exam-bank-summary.entity";
+import { resolveBuilderAccess } from "@/features/exam-bank/domain/use-cases/resolve-builder-access";
 import type { SubjectOption } from "@/features/exam-bank/presentation/exam-bank-screen/exam-bank-screen.i-vm";
 import { ExamBuilderScreen } from "@/features/exam-bank/presentation/exam-builder-screen/exam-builder-screen";
 import { ExamBuilderUnavailable } from "@/features/exam-bank/presentation/exam-builder-screen/exam-builder-unavailable";
@@ -26,14 +29,18 @@ async function createExamAction(
   return { ok: true, id: "" };
 }
 
+/**
+ * Editing an owned DRAFT is wired real since core US-152 (US-E18.28/ADR 0056
+ * Amendment 2), so the route no longer blocks wholesale in real mode — it loads
+ * the paper first and blocks only when the server would refuse the write
+ * anyway (non-DRAFT, or not the author). The server remains the security
+ * boundary; this is the message-quality gate.
+ */
 export default async function EditExamPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // Editing has no real wire endpoint (US-E18.15/ADR 0056) — block in real mode.
-  if (!USE_MOCK) return <ExamBuilderUnavailable />;
-
   const { id } = await params;
 
   let detail: ExamBankDetail;
@@ -42,6 +49,15 @@ export default async function EditExamPage({
   } catch {
     notFound();
   }
+
+  const token = USE_MOCK ? undefined : await getAccessToken();
+  const access = resolveBuilderAccess({
+    useMock: USE_MOCK,
+    status: detail.status,
+    authorId: detail.teacherId,
+    callerId: token ? decodeSubClaim(token) : null,
+  });
+  if (!access.allowed) return <ExamBuilderUnavailable reason={access.reason} />;
 
   let exams: ExamBankSummary[] = [];
   try {
@@ -54,6 +70,8 @@ export default async function EditExamPage({
     <ExamBuilderScreen
       initial={detail}
       subjects={deriveSubjects(exams)}
+      // No reorder route exists on the real contract (US-E18.28).
+      reorderEnabled={USE_MOCK}
       createExamAction={createExamAction}
       saveDraftAction={saveDraftAction}
       publishExamAction={publishExamAction}

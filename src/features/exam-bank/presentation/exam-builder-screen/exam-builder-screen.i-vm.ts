@@ -17,6 +17,10 @@ export type CreateActionResult =
 export interface ExamBuilderScreenVM {
   initial?: ExamBankDetail;
   subjects: SubjectOption[];
+  /** Whether the question move-up/move-down controls do anything. False in real
+   *  mode: position is server-assigned by insertion order and no reorder route
+   *  exists (US-E18.28/ADR 0056 Amendment 2). Defaults to true (mock). */
+  reorderEnabled?: boolean;
   saveDraftAction(input: UpdateExamInput): Promise<BuilderActionResult>;
   createExamAction(input: CreateExamInput): Promise<CreateActionResult>;
   publishExamAction(id: string): Promise<BuilderActionResult>;

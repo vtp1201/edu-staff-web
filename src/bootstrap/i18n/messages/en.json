@@ -1748,7 +1748,7 @@
     }
   },
   "examBank": {
-    "authoringDisabledNote": "Creating, editing, and deleting exams is not available in this environment. You can still view and publish existing exams.",
+    "authoringDisabledNote": "Creating a new exam is not available in this environment. You can still edit and delete your drafts, and publish existing exams.",
     "builder": {
       "addQuestion": "Add question",
       "back": "Back",
@@ -1769,6 +1769,7 @@
       "publish": "Publish",
       "questionHasError": "This question is missing information",
       "questionsHeading": "Questions ({count})",
+      "reorderUnavailable": "Question order follows the order questions were added and cannot be changed in this environment.",
       "saveDraft": "Save draft",
       "saving": "Saving...",
       "subjectLabel": "Subject",
@@ -1872,7 +1873,9 @@
     },
     "unavailable": {
       "title": "Not available",
-      "body": "Creating and editing exams is not supported in this environment. You can still view and publish existing exams.",
+      "body": "Creating a new exam is not available in this environment. You can still edit and delete your drafts, and publish existing exams.",
+      "notDraftBody": "Only draft exams can be edited. This exam is already published, so its content stays as is.",
+      "notAuthorBody": "You can only edit exams you created yourself.",
       "back": "Back to exam bank"
     }
   },

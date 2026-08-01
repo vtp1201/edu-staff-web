@@ -15,8 +15,9 @@ import { MockExamBankRepository } from "@/features/exam-bank/infrastructure/repo
 
 async function makeRepo(): Promise<IExamBankRepository> {
   if (USE_MOCK) return new MockExamBankRepository();
-  // Hybrid factory (US-E18.15/ADR 0056): list/getDetail/publish wire real;
-  // create/update/delete are permanently blocked stubs inside the real repo.
+  // Hybrid factory (US-E18.15/ADR 0056, extended US-E18.28 after core US-152):
+  // list/getDetail/publish/update/delete all wire real; only `createExam`
+  // remains a blocked stub inside the real repo (no bulk-create endpoint).
   // Proactive refresh (decision 0018, playbook step 6) before the protected
   // core call — first time wired into this factory.
   await ensureFreshSession();

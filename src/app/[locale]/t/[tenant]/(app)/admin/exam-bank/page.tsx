@@ -38,6 +38,7 @@ export default async function AdminExamBankPage() {
       editPathPrefix="/admin/exam-bank"
       // Admin exam-bank is read-only (AC-9) — no authoring affordances at all.
       authoringEnabled={false}
+      editingEnabled={false}
       publishAction={forbiddenAction}
       deleteAction={forbiddenAction}
     />

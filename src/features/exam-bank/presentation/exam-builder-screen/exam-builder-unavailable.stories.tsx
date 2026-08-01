@@ -67,3 +67,42 @@ export const Default: Story = {
     await userEvent.click(backBtn);
   },
 };
+
+/**
+ * US-E18.28: the default (create) copy must no longer claim editing/deleting
+ * are unavailable — only creating a new paper is.
+ */
+export const CreateBlocked_MentionsOnlyCreate: Story = {
+  args: { reason: "create" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(/Việc tạo đề thi mới chưa khả dụng/i),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByText(/vẫn có thể chỉnh sửa, xoá bản nháp/i),
+    ).toBeInTheDocument();
+  },
+};
+
+/** US-E18.28: a published paper is immutable server-side — say so specifically. */
+export const NotDraft: Story = {
+  args: { reason: "not-draft" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(/Chỉ đề thi ở trạng thái nháp mới chỉnh sửa được/i),
+    ).toBeInTheDocument();
+  },
+};
+
+/** US-E18.28: someone else's paper — the server would 403; explain, don't 404. */
+export const NotAuthor: Story = {
+  args: { reason: "not-author" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(/chỉ có thể chỉnh sửa đề thi do chính mình tạo/i),
+    ).toBeInTheDocument();
+  },
+};

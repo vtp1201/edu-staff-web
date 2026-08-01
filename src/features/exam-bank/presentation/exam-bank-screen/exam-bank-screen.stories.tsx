@@ -34,6 +34,7 @@ const baseProps: ExamBankScreenVM = {
   createPath: "/teacher/exam-bank/create",
   editPathPrefix: "/teacher/exam-bank",
   authoringEnabled: true,
+  editingEnabled: true,
   publishAction,
   deleteAction,
 };
@@ -97,13 +98,13 @@ export const ExamList_EmptyState: Story = {
 };
 
 /**
- * US-E18.15/ADR 0056: real mode — paper authoring (create/edit/delete) has no
- * wire endpoint, so the Create button is hidden and a translated note explains
- * why. Publish stays available (it IS wired real) — the owner's draft still
- * shows its action menu.
+ * US-E18.28 (supersedes the US-E18.15 real-mode story): real mode still has no
+ * create-with-questions endpoint, so the Create button stays hidden with a
+ * translated note — but editing, deleting and publishing an OWNED DRAFT are
+ * wired real now, so the owner's draft menu offers all three.
  */
-export const TeacherRealMode_AuthoringDisabled: Story = {
-  args: { ...baseProps, authoringEnabled: false },
+export const TeacherRealMode_CreateDisabledEditDeleteWired: Story = {
+  args: { ...baseProps, authoringEnabled: false, editingEnabled: true },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
@@ -115,31 +116,73 @@ export const TeacherRealMode_AuthoringDisabled: Story = {
     // this asserts no residual `<button>`/`<a>` node carries the create copy at
     // all (guards against a `display:none`/`hidden` ghost element regression).
     await expect(canvas.queryByText(/Tạo đề thi mới/i)).not.toBeInTheDocument();
+    // The note must name ONLY create as unavailable now (US-E18.28).
     await expect(
-      canvas.getByText(/chưa khả dụng trong môi trường này/i),
+      canvas.getByText(/Việc tạo đề thi mới chưa khả dụng/i),
     ).toBeInTheDocument();
-    // Publish still available → owner drafts keep their action menu.
+
+    // Owner DRAFT card: open the menu and assert Edit + Publish + Delete are
+    // all genuinely present (they were omitted before this US).
     const menuTriggers = canvas.getAllByRole("button", {
       name: /Mở menu thao tác đề thi/i,
     });
     await expect(menuTriggers.length).toBeGreaterThan(0);
-
-    // QA (US-E18.15): open the first owner-draft card's menu and assert it
-    // genuinely OMITS Edit/Delete (not renders them disabled) while Publish
-    // remains present and clickable — the prior story only checked the
-    // trigger existed, never opened the menu to inspect its contents.
     await userEvent.click(menuTriggers[0]);
     const menu = within(document.body);
     await expect(
-      await menu.findByRole("menuitem", { name: /Publish|Xuất bản/i }),
+      await menu.findByRole("menuitem", { name: /Chỉnh sửa/i }),
     ).toBeInTheDocument();
     await expect(
-      menu.queryByRole("menuitem", { name: /Chỉnh sửa/i }),
-    ).not.toBeInTheDocument();
+      menu.getByRole("menuitem", { name: /Publish|Xuất bản/i }),
+    ).toBeInTheDocument();
     await expect(
-      menu.queryByRole("menuitem", { name: /Xoá|Xóa/i }),
-    ).not.toBeInTheDocument();
+      menu.getByRole("menuitem", { name: /Xoá|Xóa/i }),
+    ).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
+  },
+};
+
+/**
+ * US-E18.28: in real mode a PUBLISHED paper is immutable server-side
+ * (`requireDraft()`), so even its own author gets no edit/delete/publish
+ * affordance — the card renders no action menu at all rather than a menu whose
+ * every item would fail.
+ */
+export const TeacherRealMode_PublishedOwnPaperHasNoActions: Story = {
+  args: {
+    ...baseProps,
+    authoringEnabled: false,
+    editingEnabled: true,
+    // "Đề thi giữa kỳ - Hình học" — owned by u-teacher-1, already published.
+    exams: EXAMS.filter(
+      (e) => e.teacherId === "u-teacher-1" && e.status === "published",
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByText(/Đã publish/i).length).toBeGreaterThan(0);
+    await expect(
+      canvas.queryByRole("button", { name: /Mở menu thao tác đề thi/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.28: another teacher's DRAFT is never actionable, even in real mode
+ * where edit/delete are wired (the server would 403 — the UI must not offer it).
+ */
+export const TeacherRealMode_OtherTeacherDraftHasNoActions: Story = {
+  args: {
+    ...baseProps,
+    authoringEnabled: false,
+    editingEnabled: true,
+    exams: EXAMS.filter((e) => e.teacherId === "u-teacher-2"),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: /Mở menu thao tác đề thi/i }),
+    ).not.toBeInTheDocument();
   },
 };
 
@@ -156,6 +199,7 @@ export const AdminView_ThreeValueStatus: Story = {
     viewerRole: "admin",
     createPath: "",
     authoringEnabled: false,
+    editingEnabled: false,
     exams: [
       ...EXAMS,
       {
@@ -193,6 +237,7 @@ export const AdminReadOnly_NotApplicable: Story = {
     viewerRole: "admin",
     createPath: "",
     authoringEnabled: false,
+    editingEnabled: false,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

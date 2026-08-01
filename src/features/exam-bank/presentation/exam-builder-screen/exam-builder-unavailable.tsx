@@ -4,16 +4,32 @@ import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/shared/empty-state";
+import type { ExamBuilderBlockReason } from "../../domain/use-cases/resolve-builder-access";
 
 const EXAM_BANK_LIST_PATH = "/teacher/exam-bank";
 
 /**
- * Blocked-builder state (real mode, US-E18.15/ADR 0056). The real core contract
- * has no create-with-questions / metadata-update / delete endpoint, so the
- * builder routes render this explanatory state instead of a form that would fail
- * on submit. Reuses the canonical shared EmptyState (component-organization.md).
+ * Body copy per block reason (`resolve-builder-access.ts`):
+ *  - `create` — real mode has no create-with-questions endpoint (unchanged).
+ *  - `not-draft` — the paper is published/confidential, immutable server-side.
+ *  - `not-author` — someone else's paper (the server would 403 too).
  */
-export function ExamBuilderUnavailable() {
+const REASON_BODY_KEY = {
+  create: "unavailable.body",
+  "not-draft": "unavailable.notDraftBody",
+  "not-author": "unavailable.notAuthorBody",
+} as const;
+
+/**
+ * Blocked-builder state. Since core US-152 (US-E18.28) editing an owned DRAFT
+ * IS wired, so this now explains a specific reason instead of a blanket "not
+ * available". Reuses the canonical shared EmptyState (component-organization.md).
+ */
+export function ExamBuilderUnavailable({
+  reason = "create",
+}: {
+  reason?: ExamBuilderBlockReason;
+} = {}) {
   const t = useTranslations("examBank");
   const router = useRouter();
 
@@ -28,7 +44,7 @@ export function ExamBuilderUnavailable() {
       <EmptyState
         icon={Lock}
         title={t("unavailable.title")}
-        body={t("unavailable.body")}
+        body={t(REASON_BODY_KEY[reason])}
         cta={{
           label: t("unavailable.back"),
           variant: "secondary",

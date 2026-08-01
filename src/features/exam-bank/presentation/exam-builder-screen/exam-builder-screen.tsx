@@ -23,6 +23,7 @@ const EXAM_BANK_LIST_PATH = "/teacher/exam-bank";
 export function ExamBuilderScreen({
   initial,
   subjects,
+  reorderEnabled = true,
   saveDraftAction,
   createExamAction,
   publishExamAction,
@@ -174,6 +175,7 @@ export function ExamBuilderScreen({
             questions={builder.questions}
             selectedIdx={builder.selectedIdx}
             errorIds={errorIds}
+            reorderEnabled={reorderEnabled}
             onSelect={builder.selectQuestion}
             onMoveUp={(idx) => builder.reorderQuestions(idx, idx - 1)}
             onMoveDown={(idx) => builder.reorderQuestions(idx, idx + 1)}

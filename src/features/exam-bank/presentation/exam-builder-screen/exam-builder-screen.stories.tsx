@@ -131,6 +131,61 @@ export const Builder_Validation: Story = {
   },
 };
 
+const secondQuestion: ExamBankDetail["questions"][number] = {
+  ...filledQuestion,
+  id: "eq-uuid-2",
+  index: 1,
+  content: "Sông dài nhất Việt Nam là?",
+};
+
+/** Mock mode: the reorder controls exist and no note is shown. */
+export const Builder_ReorderEnabled: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion, secondQuestion]),
+    reorderEnabled: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: /Di chuyển câu hỏi 2 lên trên/i }),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByText(/Thứ tự câu hỏi được sắp theo lúc thêm/i),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.28: real mode has no reorder route (position is server-assigned by
+ * insertion order). The move controls are OMITTED — not left focusable-but-dead
+ * — and one translated note explains the whole list.
+ */
+export const Builder_ReorderUnavailableInRealMode: Story = {
+  args: {
+    ...baseProps,
+    initial: detailWith([filledQuestion, secondQuestion]),
+    reorderEnabled: false,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: /Di chuyển câu hỏi . lên trên/i }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: /Di chuyển câu hỏi . xuống dưới/i }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByText(/Thứ tự câu hỏi được sắp theo lúc thêm/i),
+    ).toBeInTheDocument();
+    // Selecting a question still works — only reordering is gone.
+    await userEvent.click(canvas.getByText(/Sông dài nhất Việt Nam là\?/i));
+    await expect(canvas.getByLabelText(/Nội dung câu hỏi/i)).toHaveValue(
+      "Sông dài nhất Việt Nam là?",
+    );
+  },
+};
+
 /** AC-8: publish confirm dialog open after clicking Publish on a valid exam. */
 export const PublishConfirm: Story = {
   args: { ...baseProps, initial: detailWith([filledQuestion]) },
