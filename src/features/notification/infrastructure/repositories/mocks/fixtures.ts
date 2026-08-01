@@ -1,7 +1,7 @@
 import "server-only";
-import type { NotificationResponseDto } from "../../dtos/notification-response.dto";
+import type { MockNotificationResponseDto } from "../../dtos/notification-response.dto";
 
-export const MOCK_NOTIFICATIONS: NotificationResponseDto[] = [
+export const MOCK_NOTIFICATIONS: MockNotificationResponseDto[] = [
   {
     id: "n-1",
     type: "grade",

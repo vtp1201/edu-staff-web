@@ -19,8 +19,10 @@ function makeNotification(
   return {
     id: "n-1",
     type: "grade",
-    title: "Kết quả học tập",
-    body: "Điểm Toán kỳ 1 đã được cập nhật",
+    titleKey: "notification_grade_conduct_approved_title",
+    titleParams: {},
+    bodyKey: "notification_grade_conduct_approved_body",
+    bodyParams: {},
     ts: "2025-11-01T08:00:00.000Z",
     read: false,
     ...overrides,
