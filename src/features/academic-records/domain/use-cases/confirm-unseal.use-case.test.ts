@@ -1,28 +1,38 @@
 import { describe, expect, it } from "vitest";
-import type { UnsealRequest } from "../entities/seal-batch.entity";
+import type {
+  UnsealApproveResult,
+  UnsealRequestSummary,
+} from "../entities/seal-batch.entity";
 import type { IAcademicRecordsSealRepository } from "../repositories/i-academic-records-seal.repository";
 import { ConfirmUnsealUseCase } from "./confirm-unseal.use-case";
 
-function request(over: Partial<UnsealRequest>): UnsealRequest {
+const CLASS_ID = "12C1";
+const TERM_ID = "HK1";
+
+function request(over: Partial<UnsealRequestSummary>): UnsealRequestSummary {
   return {
-    id: "ur-1",
-    studentId: "s-1",
+    requestId: "ur-1",
+    classId: CLASS_ID,
+    termId: TERM_ID,
+    studentMemberId: "s-1",
     studentName: "Học sinh A",
-    classId: "12C1",
-    term: "HK1",
-    year: "2025-2026",
-    reason: "x".repeat(25),
-    requestedById: "admin-1",
+    requestedBy: "admin-1",
     requestedByName: "Admin 1",
-    requestedAt: "2026-02-19T10:22:00.000Z",
+    reason: "x".repeat(25),
     status: "PENDING",
-    coSignerId: null,
-    coSignerName: null,
-    confirmedAt: null,
-    selfApproved: false,
+    createdAt: "2026-02-19T10:22:00.000Z",
     ...over,
   };
 }
+
+const APPROVED: UnsealApproveResult = {
+  classId: CLASS_ID,
+  termId: TERM_ID,
+  studentMemberId: "s-1",
+  status: "UNSEALED",
+  selfApproved: false,
+  unsealedAt: "2026-02-20T09:00:00.000Z",
+};
 
 function makeRepo(
   overrides: Partial<IAcademicRecordsSealRepository>,
@@ -35,50 +45,68 @@ function makeRepo(
     listSealedStudents: async () => ({ ok: true, data: [] }),
     getPendingUnsealRequests: async () => ({
       ok: true,
-      data: [request({})],
+      data: { items: [request({})], nextCursor: null, hasMore: false },
     }),
     initiateUnseal: async () => ({ ok: false, error: { type: "unknown" } }),
-    confirmUnseal: async () => ({
-      ok: true,
-      data: {
-        request: request({ status: "APPROVED", coSignerId: "admin-2" }),
-        fallback: false,
-      },
-    }),
+    confirmUnseal: async () => ({ ok: true, data: APPROVED }),
     listTenantAdmins: async () => ({ ok: true, data: [] }),
     ...overrides,
   };
 }
 
 describe("ConfirmUnsealUseCase", () => {
-  it("confirms when a different admin co-signs", async () => {
-    let confirmedWith: string | null | undefined;
+  it("confirms when a different admin co-signs (threading classId/termId)", async () => {
+    const confirmArgs: unknown[] = [];
     const repo = makeRepo({
-      confirmUnseal: async (_id, coSignerId) => {
-        confirmedWith = coSignerId;
-        return {
-          ok: true,
-          data: {
-            request: request({ status: "APPROVED", coSignerId: "admin-2" }),
-            fallback: false,
-          },
-        };
+      confirmUnseal: async (id, coSignerId, classId, termId) => {
+        confirmArgs.push(id, coSignerId, classId, termId);
+        return { ok: true, data: APPROVED };
       },
     });
     const result = await new ConfirmUnsealUseCase(repo).execute(
       "ur-1",
       "admin-2",
+      CLASS_ID,
+      TERM_ID,
     );
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.fallback).toBe(false);
-    expect(confirmedWith).toBe("admin-2");
+    expect(result).toEqual({ ok: true, data: APPROVED });
+    expect(confirmArgs).toEqual(["ur-1", "admin-2", CLASS_ID, TERM_ID]);
+  });
+
+  /** design-call #4 — bounded single-page pre-check, no cursor-follow. */
+  it("pre-checks with a bounded PENDING page scoped to the class/term", async () => {
+    const listArgs: unknown[] = [];
+    const repo = makeRepo({
+      getPendingUnsealRequests: async (classId, termId, opts) => {
+        listArgs.push(classId, termId, opts);
+        return {
+          ok: true,
+          data: { items: [request({})], nextCursor: "c2", hasMore: true },
+        };
+      },
+    });
+    await new ConfirmUnsealUseCase(repo).execute(
+      "ur-1",
+      "admin-2",
+      CLASS_ID,
+      TERM_ID,
+    );
+    expect(listArgs).toEqual([
+      CLASS_ID,
+      TERM_ID,
+      { status: "PENDING", limit: 100 },
+    ]);
   });
 
   it("blocks same-admin-as-initiator (AC-8)", async () => {
     const repo = makeRepo({
       getPendingUnsealRequests: async () => ({
         ok: true,
-        data: [request({ requestedById: "admin-1" })],
+        data: {
+          items: [request({ requestedBy: "admin-1" })],
+          nextCursor: null,
+          hasMore: false,
+        },
       }),
       confirmUnseal: async () => {
         throw new Error("must not confirm when same admin");
@@ -87,6 +115,8 @@ describe("ConfirmUnsealUseCase", () => {
     const result = await new ConfirmUnsealUseCase(repo).execute(
       "ur-1",
       "admin-1",
+      CLASS_ID,
+      TERM_ID,
     );
     expect(result).toEqual({
       ok: false,
@@ -96,7 +126,10 @@ describe("ConfirmUnsealUseCase", () => {
 
   it("returns no-pending-request for an unknown request id", async () => {
     const repo = makeRepo({
-      getPendingUnsealRequests: async () => ({ ok: true, data: [] }),
+      getPendingUnsealRequests: async () => ({
+        ok: true,
+        data: { items: [], nextCursor: null, hasMore: false },
+      }),
       confirmUnseal: async () => {
         throw new Error("must not confirm unknown request");
       },
@@ -104,6 +137,8 @@ describe("ConfirmUnsealUseCase", () => {
     const result = await new ConfirmUnsealUseCase(repo).execute(
       "ur-unknown",
       "admin-2",
+      CLASS_ID,
+      TERM_ID,
     );
     expect(result).toEqual({
       ok: false,
@@ -120,18 +155,17 @@ describe("ConfirmUnsealUseCase", () => {
       }),
       confirmUnseal: async (_id, coSignerId) => {
         confirmedWith = coSignerId;
-        return {
-          ok: true,
-          data: {
-            request: request({ status: "APPROVED", selfApproved: true }),
-            fallback: true,
-          },
-        };
+        return { ok: true, data: { ...APPROVED, selfApproved: true } };
       },
     });
-    const result = await new ConfirmUnsealUseCase(repo).execute("ur-1", null);
+    const result = await new ConfirmUnsealUseCase(repo).execute(
+      "ur-1",
+      null,
+      CLASS_ID,
+      TERM_ID,
+    );
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.fallback).toBe(true);
+    if (result.ok) expect(result.data.selfApproved).toBe(true);
     expect(confirmedWith).toBeNull();
   });
 
@@ -150,27 +184,34 @@ describe("ConfirmUnsealUseCase", () => {
         );
       },
     });
-    const result = await new ConfirmUnsealUseCase(repo).execute("ur-1", null);
+    const result = await new ConfirmUnsealUseCase(repo).execute(
+      "ur-1",
+      null,
+      CLASS_ID,
+      TERM_ID,
+    );
     expect(result).toEqual({
       ok: false,
       error: { type: "self-approve-not-allowed" },
     });
   });
 
-  it("bubbles no-pending-request from the repo (already-confirmed race)", async () => {
+  it("bubbles unseal-request-already-approved from the repo (already-confirmed race)", async () => {
     const repo = makeRepo({
       confirmUnseal: async () => ({
         ok: false,
-        error: { type: "no-pending-request" },
+        error: { type: "unseal-request-already-approved" },
       }),
     });
     const result = await new ConfirmUnsealUseCase(repo).execute(
       "ur-1",
       "admin-2",
+      CLASS_ID,
+      TERM_ID,
     );
     expect(result).toEqual({
       ok: false,
-      error: { type: "no-pending-request" },
+      error: { type: "unseal-request-already-approved" },
     });
   });
 });

@@ -5,7 +5,6 @@ import { SealStatusBadge } from "../../academic-record-screen/seal-status-badge"
 import type { SealTabVM } from "../academic-record-seal-screen.i-vm";
 import { AllLockedGate } from "./all-locked-gate";
 import { AuditTrailTable } from "./audit-trail-table";
-import { ClassTermYearSelector } from "./class-term-year-selector";
 import { SealConfirmDialog } from "./seal-confirm-dialog";
 
 export interface SealTabProps {
@@ -13,7 +12,17 @@ export interface SealTabProps {
   onGoToApproval: () => void;
 }
 
-/** Seal workflow tab — selector + allLocked gate + sealed indicator + audit. */
+/**
+ * Seal workflow tab — rollup gate + seal-history indicator + audit trail.
+ *
+ * US-E18.24: the class/term/year selector is HOISTED to the screen (both tabs
+ * share one selection now). The sealed indicator reads the REAL rollup: it is
+ * honest about the truth-table ambiguity — a non-null `lastSealedAt` with a
+ * non-SEALED status means "was sealed, now fully unsealed", which is the ONLY
+ * way to tell that apart from "never sealed" (there is no 4th enum value). The
+ * signer's name is NOT shown: `sealedBy` has no wire equivalent (the audit
+ * trail, still mock, is the only actor-name source).
+ */
 export function SealTab({ vm, onGoToApproval }: SealTabProps) {
   const t = useTranslations("academicRecordSeal");
   const format = useFormatter();
@@ -21,17 +30,6 @@ export function SealTab({ vm, onGoToApproval }: SealTabProps) {
 
   return (
     <div className="space-y-4">
-      <ClassTermYearSelector
-        year={vm.year}
-        term={vm.term}
-        classId={vm.classId}
-        classOptions={vm.classOptions}
-        isClassOptionsLoading={vm.isClassOptionsLoading}
-        onYearChange={vm.onYearChange}
-        onTermChange={vm.onTermChange}
-        onClassChange={vm.onClassChange}
-      />
-
       {!batch ? (
         <p className="rounded-xl border border-border border-dashed bg-card p-12 text-center text-muted-foreground text-sm">
           {t("emptyBatch")}
@@ -44,22 +42,26 @@ export function SealTab({ vm, onGoToApproval }: SealTabProps) {
             onGoToApproval={onGoToApproval}
           />
 
-          {batch.status === "SEALED" && batch.sealedAt && (
+          {batch.lastSealedAt === null ? (
             <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card">
-              <SealStatusBadge sealed />
-              {batch.sealedBy && (
-                <span className="text-foreground text-sm">
-                  <span className="text-muted-foreground">
-                    {t("sealSuccess.sealedByLabel")}:{" "}
-                  </span>
-                  <strong>{batch.sealedBy}</strong>
+              <SealStatusBadge sealed={false} />
+              <span className="text-muted-foreground text-sm">
+                {t("sealSuccess.neverSealed")}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-card">
+              <SealStatusBadge sealed={batch.status === "SEALED"} />
+              {batch.status !== "SEALED" && (
+                <span className="text-muted-foreground text-sm">
+                  {t("sealSuccess.wasSealedThenUnsealed")}
                 </span>
               )}
               <span className="text-foreground text-sm tabular-nums">
                 <span className="text-muted-foreground">
-                  {t("sealSuccess.sealedAtLabel")}:{" "}
+                  {t("sealSuccess.lastSealedAtLabel")}:{" "}
                 </span>
-                {format.dateTime(new Date(batch.sealedAt), {
+                {format.dateTime(new Date(batch.lastSealedAt), {
                   dateStyle: "short",
                   timeStyle: "short",
                 })}

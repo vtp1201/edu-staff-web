@@ -1,5 +1,6 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IAcademicRecordsRepository } from "@/features/academic-records/domain/repositories/i-academic-records.repository";
@@ -45,14 +46,31 @@ async function makeRepository(): Promise<IAcademicRecordsRepository> {
   return new MockAcademicRecordsRepository();
 }
 
-// US-E18.13 (ADR 0055) hybrid: `sealBatch` runs REAL; every other seal/unseal
-// method (no BE listing/discovery endpoint — ask #21) delegates to the mock.
+/**
+ * US-E18.13 + US-E18.24 hybrid: FIVE methods run REAL (`sealBatch`,
+ * `getSealStatus`, `getPendingUnsealRequests`, `initiateUnseal`,
+ * `confirmUnseal` — BE US-150 shipped the listing endpoint ADR `0055` said was
+ * missing). The remaining four (`listAvailableClasses`, `getSealAuditTrail`,
+ * `listSealedStudents`, `listTenantAdmins`) delegate to the mock: no BE
+ * endpoint exists for the first three, and IAM cannot answer the fourth
+ * accurately (`MemberListItem.roles` has no `SUPER_ADMIN`, so an ADMIN-only
+ * listing would under-count real approvers on a legal compliance gate).
+ *
+ * Unseal-request display names are resolved by COMPOSING `iam-directory`'s
+ * `BatchResolveMembersUseCase` (IAM US-144, wired in US-E18.23) — ONE batch
+ * call per listing page, chunked at 50 ids inside that module. `bootstrap/di`,
+ * not a feature's domain, is where composing across features belongs (decision
+ * 0017, same precedent as `staffing.di.ts`). The mock branch never reaches it:
+ * its fixtures already carry inline names.
+ */
 async function makeSealRepository(): Promise<IAcademicRecordsSealRepository> {
   const mock = new MockAcademicRecordsSealRepository();
   if (USE_MOCK) return mock;
   await ensureFreshSession(); // decision 0018, playbook step 6
+  const resolveMembers = await makeBatchResolveMembersUseCase();
   const real = new AcademicRecordsSealRepository(
     await createServerHttpClient(),
+    (memberIds) => resolveMembers.execute(memberIds),
   );
   return new HybridAcademicRecordsSealRepository(real, mock);
 }

@@ -4,9 +4,9 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   SealAuditEntry,
-  SealBatchStatus,
   SealedStudentOption,
-  UnsealRequest,
+  SealStatusRollup,
+  UnsealRequestSummary,
 } from "../../domain/entities/seal-batch.entity";
 import { AcademicRecordSealScreen } from "./academic-record-seal-screen";
 import type {
@@ -23,40 +23,59 @@ const CLASS_OPTIONS: ClassOption[] = [
   { classId: "12C1", className: "Lớp 12C1" },
 ];
 
-const LOCKED_BATCH: SealBatchStatus = {
+/**
+ * US-E18.24 rollup truth-table fixtures — the four states the real
+ * `GET .../seal-status` can report (there is no 4th enum value; "never sealed"
+ * vs "sealed then fully unsealed" are BOTH `PENDING`, told apart only by
+ * `lastSealedAt`).
+ */
+const PENDING_NEVER_SEALED: SealStatusRollup = {
   classId: "11B2",
   term: "HK1",
   year: "2025-2026",
-  subjectLabel: "Toán",
-  allLocked: true,
   totalStudents: 6,
-  unlockedStudents: 0,
-  unlockedSubjectNames: [],
+  sealedCount: 0,
+  unsealedCount: 0,
   status: "PENDING",
-  sealedAt: null,
-  sealedBy: null,
+  lastSealedAt: null,
+  resealCount: 0,
 };
 
-const NOT_LOCKED_BATCH: SealBatchStatus = {
+const PARTIAL_BATCH: SealStatusRollup = {
+  ...PENDING_NEVER_SEALED,
   classId: "10A1",
-  term: "HK1",
-  year: "2025-2026",
-  subjectLabel: "Toán",
-  allLocked: false,
   totalStudents: 8,
-  unlockedStudents: 3,
-  unlockedSubjectNames: ["Toán", "Ngữ văn", "Tiếng Anh"],
-  status: "PENDING",
-  sealedAt: null,
-  sealedBy: null,
+  sealedCount: 3,
+  unsealedCount: 2,
+  status: "PARTIAL",
+  lastSealedAt: "2026-01-15T14:32:00.000Z",
+  resealCount: 1,
 };
 
-const SEALED_BATCH: SealBatchStatus = {
-  ...LOCKED_BATCH,
+const PENDING_WAS_SEALED: SealStatusRollup = {
+  ...PENDING_NEVER_SEALED,
+  classId: "10A2",
+  totalStudents: 8,
+  sealedCount: 0,
+  unsealedCount: 8,
+  status: "PENDING",
+  lastSealedAt: "2026-01-15T14:32:00.000Z",
+  resealCount: 1,
+};
+
+const SEALED_BATCH: SealStatusRollup = {
+  ...PENDING_NEVER_SEALED,
   classId: "12C1",
+  sealedCount: 6,
+  unsealedCount: 0,
   status: "SEALED",
-  sealedAt: "2026-01-15T14:32:00.000Z",
-  sealedBy: "Trần Minh Quân",
+  lastSealedAt: "2026-01-15T14:32:00.000Z",
+  resealCount: 1,
+};
+
+const NEAR_RESEAL_CAP_BATCH: SealStatusRollup = {
+  ...SEALED_BATCH,
+  resealCount: 4,
 };
 
 const AUDIT: SealAuditEntry[] = [
@@ -91,33 +110,41 @@ const SEALED_STUDENTS: SealedStudentOption[] = [
   },
 ];
 
-const PENDING_FROM_OTHER: UnsealRequest = {
-  id: "ur-2",
-  studentId: "s-11B2-9",
-  studentName: "Nguyễn Hoàng Nam",
+const PENDING_FROM_OTHER: UnsealRequestSummary = {
+  requestId: "ur-2",
   classId: "11B2",
-  term: "HK1",
-  year: "2025-2026",
+  termId: "HK1",
+  studentMemberId: "s-11B2-9",
+  studentName: "Nguyễn Hoàng Nam",
+  requestedBy: "admin-2",
+  requestedByName: "Lê Thị Mai",
   reason:
     "Học sinh chuyển trường vào giữa kỳ. Cần cập nhật học bạ với điểm từ trường cũ.",
-  requestedById: "admin-2",
-  requestedByName: "Lê Thị Mai",
-  requestedAt: "2026-02-22T08:45:00.000Z",
   status: "PENDING",
-  coSignerId: null,
-  coSignerName: null,
-  confirmedAt: null,
-  selfApproved: false,
+  createdAt: "2026-02-22T08:45:00.000Z",
 };
 
-const PENDING_OWN: UnsealRequest = {
+const PENDING_OWN: UnsealRequestSummary = {
   ...PENDING_FROM_OTHER,
-  id: "ur-1",
-  studentId: "s-12C1-3",
-  studentName: "Phạm Hữu Phúc",
+  requestId: "ur-1",
   classId: "12C1",
-  requestedById: "admin-1",
+  studentMemberId: "s-12C1-3",
+  studentName: "Phạm Hữu Phúc",
+  requestedBy: "admin-1",
   requestedByName: "Trần Minh Quân",
+};
+
+/**
+ * US-E18.24 — the IAM batch lookup could not resolve either id, so both display
+ * names degrade to the raw member id (never an error, never a blank).
+ */
+const PENDING_UNRESOLVED_NAMES: UnsealRequestSummary = {
+  ...PENDING_FROM_OTHER,
+  requestId: "ur-4",
+  studentMemberId: "m-9f3c",
+  studentName: "m-9f3c",
+  requestedBy: "m-77aa",
+  requestedByName: "m-77aa",
 };
 
 function sealVM(over: Partial<SealTabVM> = {}): SealTabVM {
@@ -130,7 +157,7 @@ function sealVM(over: Partial<SealTabVM> = {}): SealTabVM {
     onYearChange: fn(),
     onTermChange: fn(),
     onClassChange: fn(),
-    batch: LOCKED_BATCH,
+    batch: PENDING_NEVER_SEALED,
     isBatchLoading: false,
     batchError: null,
     isConfirmDialogOpen: false,
@@ -149,8 +176,13 @@ function unsealVM(over: Partial<UnsealTabVM> = {}): UnsealTabVM {
     currentAdminId: "admin-1",
     currentAdminName: "Trần Minh Quân",
     tenantAdminCount: 3,
+    classId: "11B2",
     pendingRequests: [PENDING_FROM_OTHER],
     isRequestsLoading: false,
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    hasLoadMoreError: false,
+    onLoadMore: fn(),
     isInitiateFormOpen: false,
     onOpenInitiateForm: fn(),
     onCloseInitiateForm: fn(),
@@ -215,31 +247,96 @@ export const Loading: Story = {
   },
 };
 
-/** AC-2 */
-export const AllLockedGate_OK: Story = {
-  args: { vm: baseVM() },
+/**
+ * AC-2 + US-E18.24 rollup matrix (1/4) — `status: "SEALED"`, the green branch.
+ * The label flips to "reseal" (idempotent) and the button stays enabled.
+ */
+export const Rollup_Sealed: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: SEALED_BATCH }) }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText(M.gate.allLocked.title)).toBeInTheDocument();
-    const sealBtn = canvas.getByRole("button", { name: M.sealButton });
-    await expect(sealBtn).toBeEnabled();
+    await expect(
+      canvas.getByText(M.gate.rollup.sealedTitle),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: M.resealButton }),
+    ).toBeEnabled();
+    // Count line is real data now, not a decorative "X/Y locked" mock hint.
+    await expect(canvas.getByText(/6 học sinh/)).toBeInTheDocument();
   },
 };
 
 /**
- * AC-3 + US-E18.13 (ADR 0055) — the NOT-OK "X/Y locked" hint is decorative and
- * REACTIVE: it warns + links to Approval & Lock AND still offers a Seal button
- * (the server, not the client, decides). Clicking Seal opens the confirm flow.
+ * US-E18.24 rollup matrix (2/4) — `status: "PENDING"` with a NULL
+ * `lastSealedAt` = genuinely never sealed.
  */
-export const AllLockedGate_NotOK: Story = {
-  args: { vm: baseVM({ seal: sealVM({ batch: NOT_LOCKED_BATCH }) }) },
-  play: async ({ canvasElement, args }) => {
+export const Rollup_PendingNeverSealed: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: PENDING_NEVER_SEALED }) }) },
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(M.gate.notAllLocked.warning),
+      canvas.getByText(M.gate.rollup.pendingTitle),
     ).toBeInTheDocument();
     await expect(
-      canvas.getByRole("button", { name: M.gate.notAllLocked.linkToApproval }),
+      canvas.getByText(M.sealSuccess.neverSealed),
+    ).toBeInTheDocument();
+    // The "was sealed" copy must NOT appear — that would be a lie here.
+    await expect(
+      canvas.queryByText(M.sealSuccess.wasSealedThenUnsealed),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.24 rollup matrix (3/4) — `status: "PENDING"` with a NON-NULL
+ * `lastSealedAt` = sealed once, then fully unsealed. The truth table has no 4th
+ * enum value, so the timestamp is the ONLY signal; the copy must say so.
+ */
+export const Rollup_PendingWasSealed: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: PENDING_WAS_SEALED }) }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(M.sealSuccess.wasSealedThenUnsealed),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByText(new RegExp(M.sealSuccess.lastSealedAtLabel)),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByText(M.sealSuccess.neverSealed),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** US-E18.24 — near the 5-reseal cap: a non-blocking caption warns the admin. */
+export const Rollup_NearResealCap: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: NEAR_RESEAL_CAP_BATCH }) }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/4\/5/)).toBeInTheDocument();
+    // Still only a hint — resealing remains offered (the server decides).
+    await expect(
+      canvas.getByRole("button", { name: M.resealButton }),
+    ).toBeEnabled();
+  },
+};
+
+/**
+ * AC-3 + US-E18.24 rollup matrix (4/4) — `status: "PARTIAL"`. The banner warns
+ * + links to Approval & Lock AND still offers Seal (the 422 reactive gate, not
+ * this hint, is the submit-time authority). It must NOT claim any per-subject
+ * detail — that data has no wire equivalent and is gone from the UI.
+ */
+export const Rollup_Partial: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: PARTIAL_BATCH }) }) },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(M.gate.rollup.warning)).toBeInTheDocument();
+    // Count-based copy replaces the removed per-subject "unlocked subjects" list.
+    await expect(canvas.getByText(/3\/8/)).toBeInTheDocument();
+    await expect(canvas.queryByText(/Môn chưa khoá/)).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: M.gate.rollup.linkToApproval }),
     ).toBeInTheDocument();
     // Seal button is now PRESENT + enabled in the NOT-OK branch (reactive gate).
     const sealBtn = canvas.getByRole("button", { name: M.sealButton });
@@ -260,15 +357,15 @@ export const AllLockedGate_NotOK: Story = {
  * the button-group wrapper actually stacks them — no horizontal overflow —
  * rather than trusting the Tailwind classes by inspection alone.
  */
-export const AllLockedGate_NotOK_Mobile375: Story = {
-  args: { vm: baseVM({ seal: sealVM({ batch: NOT_LOCKED_BATCH }) }) },
+export const Rollup_Partial_Mobile375: Story = {
+  args: { vm: baseVM({ seal: sealVM({ batch: PARTIAL_BATCH }) }) },
   play: async ({ canvasElement }) => {
     const { page } = await import("vitest/browser");
     await page.viewport(375, 812);
     const canvas = within(canvasElement);
 
     const approvalBtn = canvas.getByRole("button", {
-      name: M.gate.notAllLocked.linkToApproval,
+      name: M.gate.rollup.linkToApproval,
     });
     const sealBtn = canvas.getByRole("button", { name: M.sealButton });
     await expect(approvalBtn).toBeVisible();
@@ -298,7 +395,7 @@ export const AllLockedGate_NotOK_Mobile375: Story = {
  * US-E18.13 (ADR 0055) — reseal on an already-SEALED batch is idempotent: the
  * Seal button stays ENABLED and its label switches to "Ký lại học bạ".
  */
-export const AllLockedGate_Reseal: Story = {
+export const Rollup_Reseal: Story = {
   args: {
     vm: baseVM({ seal: sealVM({ batch: SEALED_BATCH, classId: "12C1" }) }),
   },
@@ -336,13 +433,11 @@ export const SealSuccess: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // US-E18.24 — the signer's NAME is gone (no `sealedBy` on the wire); the
+    // indicator now reports the last-seal TIMESTAMP from the real rollup.
     await expect(
-      canvas.getByText(new RegExp(M.sealSuccess.sealedByLabel)),
+      canvas.getByText(new RegExp(M.sealSuccess.lastSealedAtLabel)),
     ).toBeInTheDocument();
-    // Sealed-by name appears both in the header chip and the seal indicator.
-    await expect(canvas.getAllByText("Trần Minh Quân").length).toBeGreaterThan(
-      0,
-    );
   },
 };
 
@@ -474,7 +569,7 @@ export const AuditTrail_Empty: Story = {
   },
 };
 
-/** Unseal tab — no pending requests. */
+/** Unseal tab — a class IS selected but it has no pending requests. */
 export const UnsealTab_EmptyPending: Story = {
   args: {
     vm: baseVM({
@@ -486,6 +581,194 @@ export const UnsealTab_EmptyPending: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(M.unseal.empty.pending)).toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.24 — the listing is class+term-scoped on the wire, so with NO class
+ * selected the tab prompts instead of showing a misleading "no requests" empty
+ * state (and the tab badge is omitted).
+ */
+export const UnsealTab_SelectAClassPrompt: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      pendingUnsealCount: 0,
+      unseal: unsealVM({ classId: null, pendingRequests: [] }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(M.unseal.emptyClassPrompt),
+    ).toBeInTheDocument();
+    // NOT the plain empty state — that would imply "this class has none".
+    await expect(
+      canvas.queryByText(M.unseal.empty.pending),
+    ).not.toBeInTheDocument();
+    // No load-more affordance when there is nothing scoped to load.
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.loadMore }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.24 — the BE listing is served from a reconciler-maintained clone
+ * table, so a just-filed request can lag. Surfaced as a light, non-blocking
+ * caption (never an error state — no error code exists for "not yet visible").
+ */
+export const UnsealTab_EventualConsistencyHint: Story = {
+  args: { vm: baseVM({ activeTab: "unseal" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(M.unseal.eventualConsistencyHint),
+    ).toBeInTheDocument();
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+  },
+};
+
+/** US-E18.24 — cursor pagination: the load-more button fetches the next page. */
+export const UnsealTab_LoadMore: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ hasNextPage: true }),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const btn = canvas.getByRole("button", { name: M.unseal.loadMore });
+    await expect(btn).toBeEnabled();
+    await userEvent.click(btn);
+    await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * US-E18.24 — a page-2 (`fetchNextPage`) failure must stay VISIBLE and
+ * retryable: already-loaded rows are kept (never blanked by the screen-level
+ * error panel), and the control swaps to its retry label so the failure isn't
+ * silent. Same `isError && rows.length > 0` convention as feed/moderation.
+ */
+export const UnsealTab_LoadMoreError: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ hasNextPage: true, hasLoadMoreError: true }),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    // Retry copy replaces the plain load-more label…
+    const retry = canvas.getByRole("button", {
+      name: M.unseal.loadMoreRetry,
+    });
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.loadMore }),
+    ).not.toBeInTheDocument();
+    // …the already-loaded rows survive (no screen-level error panel)…
+    await expect(canvas.getByText("Nguyễn Hoàng Nam")).toBeInTheDocument();
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+    // …and the same control retries the fetch.
+    await userEvent.click(retry);
+    await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
+  },
+};
+
+/**
+ * US-E18.24 — real 375px viewport check for the pagination control area (this
+ * QA gate's mobile check was previously scoped only to the rollup summary via
+ * `Rollup_Partial_Mobile375`; the toolbar's badge+button row and the
+ * load-more control are new UI this US introduced and had zero mobile-width
+ * proof). Same `@vitest/browser-playwright` technique: resize a real page,
+ * assert no horizontal overflow and that the load-more control stays reachable
+ * and full-width-safe.
+ */
+export const UnsealTab_Pagination_Mobile375: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ hasNextPage: true }),
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const canvas = within(canvasElement);
+
+    // Toolbar (title/subtitle + pending badge + "Yêu cầu mở khoá" button) wraps
+    // via `flex-wrap` instead of overflowing horizontally at 375px. Query the
+    // subtitle, not the title — the title text collides with the tab label
+    // ("Yêu cầu mở học bạ" is shared by `unseal.toolbar.title` and `tabs.unseal`).
+    const toolbarSubtitle = canvas.getByText(M.unseal.toolbar.subtitle);
+    const toolbar = toolbarSubtitle.closest(
+      "div.rounded-xl",
+    ) as HTMLElement | null;
+    await expect(toolbar).not.toBeNull();
+    await expect((toolbar as HTMLElement).scrollWidth).toBeLessThanOrEqual(
+      (toolbar as HTMLElement).clientWidth + 1,
+    );
+
+    // The load-more control is visible, meets the touch-target floor, and
+    // stays within the viewport width (no horizontal scroll introduced).
+    const loadMoreBtn = canvas.getByRole("button", {
+      name: M.unseal.loadMore,
+    });
+    await expect(loadMoreBtn).toBeVisible();
+    const btnRect = loadMoreBtn.getBoundingClientRect();
+    await expect(btnRect.right).toBeLessThanOrEqual(375);
+    await expect(btnRect.height).toBeGreaterThanOrEqual(36);
+
+    // No horizontal overflow anywhere in the pending section as a whole.
+    const pendingHeading = canvas.getByText(
+      new RegExp(M.unseal.sections.pending),
+    );
+    const section = pendingHeading.closest("section") as HTMLElement | null;
+    await expect(section).not.toBeNull();
+    await expect((section as HTMLElement).scrollWidth).toBeLessThanOrEqual(
+      (section as HTMLElement).clientWidth + 1,
+    );
+
+    await userEvent.click(loadMoreBtn);
+    await expect(args.vm.unseal.onLoadMore).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** US-E18.24 — exhausted cursor: the control leaves the DOM (no dead tab-stop). */
+export const UnsealTab_LoadMoreExhausted: Story = {
+  args: { vm: baseVM({ activeTab: "unseal" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: M.unseal.loadMore }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.24 — `core` ships raw member UUIDs; when the IAM batch lookup cannot
+ * resolve one, the row degrades to the raw id rather than erroring or blanking.
+ */
+export const UnsealTab_UnresolvedNamesFallBackToRawId: Story = {
+  args: {
+    vm: baseVM({
+      activeTab: "unseal",
+      unseal: unsealVM({ pendingRequests: [PENDING_UNRESOLVED_NAMES] }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("m-9f3c")).toBeInTheDocument();
+    await expect(
+      canvas.getByText(M.unseal.card.requestedBy.replace("{name}", "m-77aa")),
+    ).toBeInTheDocument();
+    // Degraded display, never an error banner.
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: M.unseal.confirmButton }),
+    ).toBeEnabled();
   },
 };
 

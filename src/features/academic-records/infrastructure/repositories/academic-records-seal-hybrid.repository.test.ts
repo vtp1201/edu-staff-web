@@ -1,8 +1,9 @@
 /**
- * Unit test — HybridAcademicRecordsSealRepository (US-E18.13, ADR 0055).
- * The facade routes `sealBatch` to the REAL repo and every other method to the
- * MOCK repo, keeping the real HTTP adapter a single-purpose seal client and the
- * mock the source of truth for every permanently-dormant method.
+ * Unit test — HybridAcademicRecordsSealRepository (US-E18.13 + US-E18.24).
+ * The facade routes the FIVE genuinely-real operations (`sealBatch`,
+ * `getSealStatus`, `getPendingUnsealRequests`, `initiateUnseal`,
+ * `confirmUnseal`) to the REAL repo and the FOUR no-BE-endpoint operations to
+ * the MOCK repo, which stays the source of truth for their state.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -45,7 +46,11 @@ function spyRepo(label: "real" | "mock"): IAcademicRecordsSealRepository & {
     } as SealBatchResult),
     getSealAuditTrail: rec("getSealAuditTrail", []),
     listSealedStudents: rec("listSealedStudents", []),
-    getPendingUnsealRequests: rec("getPendingUnsealRequests", []),
+    getPendingUnsealRequests: rec("getPendingUnsealRequests", {
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+    }),
     initiateUnseal: rec("initiateUnseal", null as never),
     confirmUnseal: rec("confirmUnseal", null as never),
     listTenantAdmins: rec("listTenantAdmins", []),
@@ -53,27 +58,14 @@ function spyRepo(label: "real" | "mock"): IAcademicRecordsSealRepository & {
 }
 
 describe("HybridAcademicRecordsSealRepository", () => {
-  it("routes sealBatch to the REAL repo only", async () => {
+  it("routes the FIVE real operations to the REAL repo only (US-E18.24)", async () => {
     const real = spyRepo("real");
     const mock = spyRepo("mock");
     const hybrid = new HybridAcademicRecordsSealRepository(real, mock);
 
     await hybrid.sealBatch(KEY, "admin-1");
-
-    expect(real.__calls).toEqual(["real.sealBatch"]);
-    expect(mock.__calls).toEqual([]);
-  });
-
-  it("routes every other method to the MOCK repo only", async () => {
-    const real = spyRepo("real");
-    const mock = spyRepo("mock");
-    const hybrid = new HybridAcademicRecordsSealRepository(real, mock);
-
-    await hybrid.listAvailableClasses({ term: "HK1", year: "2025-2026" });
     await hybrid.getSealStatus(KEY);
-    await hybrid.getSealAuditTrail();
-    await hybrid.listSealedStudents();
-    await hybrid.getPendingUnsealRequests();
+    await hybrid.getPendingUnsealRequests("12C1", "HK1");
     await hybrid.initiateUnseal({
       studentId: "s1",
       classId: "12C1",
@@ -82,19 +74,50 @@ describe("HybridAcademicRecordsSealRepository", () => {
       reason: "x".repeat(25),
       initiatorId: "admin-1",
     });
-    await hybrid.confirmUnseal("ur-1", "admin-2");
+    await hybrid.confirmUnseal("ur-1", "admin-2", "12C1", "HK1");
+
+    expect(real.__calls).toEqual([
+      "real.sealBatch",
+      "real.getSealStatus",
+      "real.getPendingUnsealRequests",
+      "real.initiateUnseal",
+      "real.confirmUnseal",
+    ]);
+    expect(mock.__calls).toEqual([]);
+  });
+
+  it("routes the FOUR no-BE-endpoint operations to the MOCK repo only", async () => {
+    const real = spyRepo("real");
+    const mock = spyRepo("mock");
+    const hybrid = new HybridAcademicRecordsSealRepository(real, mock);
+
+    await hybrid.listAvailableClasses({ term: "HK1", year: "2025-2026" });
+    await hybrid.getSealAuditTrail();
+    await hybrid.listSealedStudents();
     await hybrid.listTenantAdmins();
 
     expect(real.__calls).toEqual([]);
     expect(mock.__calls).toEqual([
       "mock.listAvailableClasses",
-      "mock.getSealStatus",
       "mock.getSealAuditTrail",
       "mock.listSealedStudents",
-      "mock.getPendingUnsealRequests",
-      "mock.initiateUnseal",
-      "mock.confirmUnseal",
       "mock.listTenantAdmins",
     ]);
+  });
+
+  it("forwards the class/term scoping args verbatim on the real path", async () => {
+    const received: unknown[] = [];
+    const real = spyRepo("real");
+    real.getPendingUnsealRequests = async (classId, termId, opts) => {
+      received.push(classId, termId, opts);
+      return ok({ items: [], nextCursor: null, hasMore: false });
+    };
+    const hybrid = new HybridAcademicRecordsSealRepository(
+      real,
+      spyRepo("mock"),
+    );
+
+    await hybrid.getPendingUnsealRequests("12C1", "HK1", { limit: 5 });
+    expect(received).toEqual(["12C1", "HK1", { limit: 5 }]);
   });
 });

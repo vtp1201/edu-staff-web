@@ -8,6 +8,7 @@ import type {
   SealTabId,
 } from "./academic-record-seal-screen.i-vm";
 import { AcademicRecordSealSkeleton } from "./academic-record-seal-skeleton";
+import { ClassTermYearSelector } from "./components/class-term-year-selector";
 import { SealTab } from "./components/seal-tab";
 import { UnsealTab } from "./components/unseal-tab";
 
@@ -92,6 +93,19 @@ export function AcademicRecordSealScreen({
   return (
     <div className="space-y-6">
       {header}
+      {/* US-E18.24 — hoisted out of SealTab: BOTH tabs are now scoped by the
+          same class/term (the unseal listing is class-term-scoped on the wire),
+          so one shared selector avoids two silently diverging selections. */}
+      <ClassTermYearSelector
+        year={vm.seal.year}
+        term={vm.seal.term}
+        classId={vm.seal.classId}
+        classOptions={vm.seal.classOptions}
+        isClassOptionsLoading={vm.seal.isClassOptionsLoading}
+        onYearChange={vm.seal.onYearChange}
+        onTermChange={vm.seal.onTermChange}
+        onClassChange={vm.seal.onClassChange}
+      />
       <Tabs
         value={vm.activeTab}
         onValueChange={(v) => vm.onTabChange(v as SealTabId)}

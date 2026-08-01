@@ -4,11 +4,14 @@ import type {
   SealAuditEntry,
   SealBatchKey,
   SealBatchResult,
-  SealBatchStatus,
   SealedStudentOption,
+  SealStatusRollup,
   TenantAdminSummary,
   Term,
-  UnsealRequest,
+  UnsealApproveResult,
+  UnsealInitiateResult,
+  UnsealRequestStatus,
+  UnsealRequestSummary,
 } from "../entities/seal-batch.entity";
 import type { AcademicRecordsFailure } from "../failures/academic-records.failure";
 
@@ -27,7 +30,13 @@ export interface IAcademicRecordsSealRepository {
     term: Term;
     year: string;
   }): Promise<SealResult<ClassOption[]>>;
-  getSealStatus(key: SealBatchKey): Promise<SealResult<SealBatchStatus>>;
+  /**
+   * US-E18.24 — REAL class+term seal rollup
+   * (`GET .../academic-records/seal-status`). Returns the narrow
+   * {@link SealStatusRollup}; the mock maps its richer internal
+   * `SealBatchStatus` onto this same boundary shape.
+   */
+  getSealStatus(key: SealBatchKey): Promise<SealResult<SealStatusRollup>>;
   /**
    * Batch-seal a (class, term) — US-E18.13 wired REAL against
    * `POST .../academic-records/seal`. `actorId` is used by the mock repo for
@@ -44,13 +53,43 @@ export interface IAcademicRecordsSealRepository {
   listSealedStudents(
     filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealedStudentOption[]>>;
-  getPendingUnsealRequests(): Promise<SealResult<UnsealRequest[]>>;
+  /**
+   * US-E18.24 — REAL cursor-paginated listing
+   * (`GET /classes/{classId}/terms/{termId}/academic-records/unseal-requests`).
+   * Class+term-scoped: there is NO tenant-wide unseal listing on the wire.
+   * `status` defaults to `"PENDING"` (server-side default, case-insensitive).
+   */
+  getPendingUnsealRequests(
+    classId: string,
+    termId: string,
+    opts?: {
+      status?: UnsealRequestStatus;
+      cursor?: string | null;
+      limit?: number;
+    },
+  ): Promise<
+    SealResult<{
+      items: UnsealRequestSummary[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>
+  >;
+  /** US-E18.24 — REAL `POST .../unseal-requests` (body `{studentMemberId, reason}`). */
   initiateUnseal(
     input: InitiateUnsealInput,
-  ): Promise<SealResult<UnsealRequest>>;
+  ): Promise<SealResult<UnsealInitiateResult>>;
+  /**
+   * US-E18.24 — REAL bare `POST /academic-records/unseal-requests/{id}/approve`.
+   * `coSignerId` stays a domain-signature parameter (the mock needs it for its
+   * audit actor) but is NOT on the wire — the server derives the approver from
+   * the Bearer token, same precedent as `sealBatch`. `classId`/`termId` scope
+   * the use-case's two-admin pre-check listing, not the approve call itself.
+   */
   confirmUnseal(
     requestId: string,
     coSignerId: string | null,
-  ): Promise<SealResult<{ request: UnsealRequest; fallback: boolean }>>;
+    classId: string,
+    termId: string,
+  ): Promise<SealResult<UnsealApproveResult>>;
   listTenantAdmins(): Promise<SealResult<TenantAdminSummary[]>>;
 }

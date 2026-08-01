@@ -5,11 +5,14 @@ import type {
   SealAuditEntry,
   SealBatchKey,
   SealBatchResult,
-  SealBatchStatus,
   SealedStudentOption,
+  SealStatusRollup,
   TenantAdminSummary,
   Term,
-  UnsealRequest,
+  UnsealApproveResult,
+  UnsealInitiateResult,
+  UnsealRequestStatus,
+  UnsealRequestSummary,
 } from "../../domain/entities/seal-batch.entity";
 import type {
   IAcademicRecordsSealRepository,
@@ -17,10 +20,13 @@ import type {
 } from "../../domain/repositories/i-academic-records-seal.repository";
 
 /**
- * US-E18.13 (ADR 0055) hybrid facade — wires the ONE genuinely-real operation
- * (`sealBatch`, `POST .../academic-records/seal`) to the real HTTP adapter while
- * every permanently-dormant method (no BE listing/discovery endpoint exists —
- * cross-repo ask #21) delegates to the in-memory mock. Chosen over a per-method
+ * US-E18.13 + US-E18.24 hybrid facade — wires the FIVE genuinely-real
+ * operations (`sealBatch`, plus `getSealStatus`/`getPendingUnsealRequests`/
+ * `initiateUnseal`/`confirmUnseal` once BE US-150 shipped the listing endpoint
+ * ADR `0055` said was missing) to the real HTTP adapter, while the FOUR
+ * permanently-dormant methods (no BE endpoint at all, or — for
+ * `listTenantAdmins` — no accurate IAM answer, see the real repo's doc comment)
+ * delegate to the in-memory mock. Chosen over a per-method
  * `if (USE_MOCK)` branch inside one class so the real adapter stays a pure,
  * single-purpose HTTP client and the mock stays the single source of truth for
  * every mocked method's state (mirrors how `grades.di.ts` composes a real repo
@@ -34,7 +40,7 @@ export class HybridAcademicRecordsSealRepository
     private readonly mock: IAcademicRecordsSealRepository,
   ) {}
 
-  // ── REAL ─────────────────────────────────────────────────────────────────
+  // ── REAL (5) ─────────────────────────────────────────────────────────────
   sealBatch(
     key: SealBatchKey,
     actorId: string,
@@ -42,16 +48,49 @@ export class HybridAcademicRecordsSealRepository
     return this.real.sealBatch(key, actorId);
   }
 
-  // ── MOCK (permanently dormant real BE — ADR 0055) ──────────────────────────
+  getSealStatus(key: SealBatchKey): Promise<SealResult<SealStatusRollup>> {
+    return this.real.getSealStatus(key);
+  }
+
+  getPendingUnsealRequests(
+    classId: string,
+    termId: string,
+    opts?: {
+      status?: UnsealRequestStatus;
+      cursor?: string | null;
+      limit?: number;
+    },
+  ): Promise<
+    SealResult<{
+      items: UnsealRequestSummary[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }>
+  > {
+    return this.real.getPendingUnsealRequests(classId, termId, opts);
+  }
+
+  initiateUnseal(
+    input: InitiateUnsealInput,
+  ): Promise<SealResult<UnsealInitiateResult>> {
+    return this.real.initiateUnseal(input);
+  }
+
+  confirmUnseal(
+    requestId: string,
+    coSignerId: string | null,
+    classId: string,
+    termId: string,
+  ): Promise<SealResult<UnsealApproveResult>> {
+    return this.real.confirmUnseal(requestId, coSignerId, classId, termId);
+  }
+
+  // ── MOCK (4 — permanently dormant real BE, ADR 0055) ─────────────────────
   listAvailableClasses(filter: {
     term: Term;
     year: string;
   }): Promise<SealResult<ClassOption[]>> {
     return this.mock.listAvailableClasses(filter);
-  }
-
-  getSealStatus(key: SealBatchKey): Promise<SealResult<SealBatchStatus>> {
-    return this.mock.getSealStatus(key);
   }
 
   getSealAuditTrail(
@@ -64,23 +103,6 @@ export class HybridAcademicRecordsSealRepository
     filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealedStudentOption[]>> {
     return this.mock.listSealedStudents(filter);
-  }
-
-  getPendingUnsealRequests(): Promise<SealResult<UnsealRequest[]>> {
-    return this.mock.getPendingUnsealRequests();
-  }
-
-  initiateUnseal(
-    input: InitiateUnsealInput,
-  ): Promise<SealResult<UnsealRequest>> {
-    return this.mock.initiateUnseal(input);
-  }
-
-  confirmUnseal(
-    requestId: string,
-    coSignerId: string | null,
-  ): Promise<SealResult<{ request: UnsealRequest; fallback: boolean }>> {
-    return this.mock.confirmUnseal(requestId, coSignerId);
   }
 
   listTenantAdmins(): Promise<SealResult<TenantAdminSummary[]>> {

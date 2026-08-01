@@ -60,6 +60,21 @@ export const MOCK_SEAL_BATCHES: SealBatchStatus[] = [
     sealedBy: null,
   },
   {
+    // US-E18.24 — empty-roster row: exercises the rollup truth table's
+    // `totalStudents === 0 → PENDING` branch (no divide-by-zero, no PARTIAL).
+    classId: "10A3",
+    term: "HK1",
+    year: "2025-2026",
+    subjectLabel: "Toán",
+    allLocked: true,
+    totalStudents: 0,
+    unlockedStudents: 0,
+    unlockedSubjectNames: [],
+    status: "PENDING",
+    sealedAt: null,
+    sealedBy: null,
+  },
+  {
     classId: "10A2",
     term: "HK1",
     year: "2025-2026",

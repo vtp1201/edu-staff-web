@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Plus } from "lucide-react";
+import { Clock, Info, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { LoadMoreButton } from "@/components/shared/load-more-button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,8 +16,14 @@ export interface UnsealTabProps {
   vm: UnsealTabVM;
 }
 
-/** Unseal workflow tab — toolbar + pending/resolved lists + initiate form +
- * the two confirm dialogs (same-admin blocking / self-approve fallback). */
+/**
+ * Unseal workflow tab — toolbar + cursor-paginated pending list + initiate form
+ * + the two confirm dialogs (same-admin blocking / self-approve fallback).
+ *
+ * US-E18.24: the listing is class+term-scoped on the wire, so with no class
+ * selected the tab renders a prompt instead of a (misleading) empty list. The
+ * pending list pages through cursors via the shared `LoadMoreButton`.
+ */
 export function UnsealTab({ vm }: UnsealTabProps) {
   const t = useTranslations("academicRecordSeal.unseal");
 
@@ -24,7 +31,7 @@ export function UnsealTab({ vm }: UnsealTabProps) {
     vm.selfApproveTargetRequestId === null
       ? null
       : (vm.pendingRequests.find(
-          (r) => r.id === vm.selfApproveTargetRequestId,
+          (r) => r.requestId === vm.selfApproveTargetRequestId,
         ) ?? null);
 
   return (
@@ -54,24 +61,44 @@ export function UnsealTab({ vm }: UnsealTabProps) {
         <h2 className="font-bold text-muted-foreground text-xs uppercase tracking-wider">
           {t("sections.pending")} ({vm.pendingRequests.length})
         </h2>
-        {vm.isRequestsLoading ? (
+        {/* Non-blocking note: the BE listing is served from a reconciler-kept
+            clone table, so a just-filed request can lag by a few seconds. */}
+        <p className="flex items-start gap-1.5 text-muted-foreground text-xs">
+          <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+          {t("eventualConsistencyHint")}
+        </p>
+        {vm.classId === null ? (
+          <p className="rounded-xl border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm">
+            {t("emptyClassPrompt")}
+          </p>
+        ) : vm.isRequestsLoading ? (
           <Skeleton className="h-28 w-full rounded-xl" />
         ) : vm.pendingRequests.length === 0 ? (
           <p className="rounded-xl border border-border border-dashed bg-card p-8 text-center text-muted-foreground text-sm">
             {t("empty.pending")}
           </p>
         ) : (
-          vm.pendingRequests.map((r) => (
-            <UnsealRequestCard
-              key={r.id}
-              request={r}
-              currentAdminId={vm.currentAdminId}
-              tenantAdminCount={vm.tenantAdminCount}
-              onConfirm={vm.onConfirmRequest}
-              onRequestSelfApprove={vm.onRequestSelfApprove}
-              isConfirming={vm.isConfirming}
+          <>
+            {vm.pendingRequests.map((r) => (
+              <UnsealRequestCard
+                key={r.requestId}
+                request={r}
+                currentAdminId={vm.currentAdminId}
+                tenantAdminCount={vm.tenantAdminCount}
+                onConfirm={vm.onConfirmRequest}
+                onRequestSelfApprove={vm.onRequestSelfApprove}
+                isConfirming={vm.isConfirming}
+              />
+            ))}
+            <LoadMoreButton
+              hasMore={vm.hasNextPage}
+              isLoadingMore={vm.isFetchingNextPage}
+              onLoadMore={vm.onLoadMore}
+              hasError={vm.hasLoadMoreError}
+              label={t("loadMore")}
+              errorLabel={t("loadMoreRetry")}
             />
-          ))
+          </>
         )}
       </section>
 

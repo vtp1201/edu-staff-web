@@ -1,9 +1,14 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type {
   SealBatchKey,
@@ -111,15 +116,27 @@ export function AcademicRecordSealContainer({
     },
   });
 
-  const pendingQuery = useQuery({
-    queryKey: academicRecordSealKeys.pendingUnsealRequests(),
+  // US-E18.24 — cursor-paginated + class/term-scoped (mirrors audit-log's
+  // `useInfiniteQuery` pattern). Disabled until a class is chosen: there is no
+  // tenant-wide unseal listing on the wire.
+  const pendingQuery = useInfiniteQuery({
+    queryKey: academicRecordSealKeys.pendingUnsealRequests(classId ?? "", term),
+    enabled: classId !== null,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    queryFn: async () => {
-      const res = await actions.getPendingUnsealRequests();
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      if (!classId) {
+        return { items: [], nextCursor: null as string | null, hasMore: false };
+      }
+      const res = await actions.getPendingUnsealRequests(classId, term, {
+        cursor: pageParam,
+      });
       if (!res.ok) throw res.errorKey;
       return res.data;
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
   });
 
   const adminsQuery = useQuery({
@@ -169,8 +186,11 @@ export function AcademicRecordSealContainer({
       }
       toast.success(t("unseal.success.initiateToast"));
       setInitiateFormOpen(false);
+      // Broad prefix invalidation: the created request may belong to a class
+      // other than the selected one, and the BE listing is served from a
+      // reconciler-maintained clone table (eventually consistent).
       queryClient.invalidateQueries({
-        queryKey: academicRecordSealKeys.pendingUnsealRequests(),
+        queryKey: academicRecordSealKeys.all,
       });
     },
   });
@@ -182,16 +202,19 @@ export function AcademicRecordSealContainer({
     }: {
       requestId: string;
       coSignerId: string | null;
-    }) => actions.confirmUnseal(requestId, coSignerId),
+    }) => actions.confirmUnseal(requestId, coSignerId, classId ?? "", term),
     onSuccess: (res, { requestId, coSignerId }) => {
       if (!res.ok) {
         if (res.errorKey === "same-admin-as-initiator") {
           setSameAdminErrorRequestId(requestId);
           return;
         }
-        if (res.errorKey === "no-pending-request") {
+        if (
+          res.errorKey === "no-pending-request" ||
+          res.errorKey === "unseal-request-already-approved"
+        ) {
           queryClient.invalidateQueries({
-            queryKey: academicRecordSealKeys.pendingUnsealRequests(),
+            queryKey: academicRecordSealKeys.all,
           });
         }
         showError(res.errorKey);
@@ -204,9 +227,6 @@ export function AcademicRecordSealContainer({
       );
       setSelfApproveTargetRequestId(null);
       queryClient.invalidateQueries({
-        queryKey: academicRecordSealKeys.pendingUnsealRequests(),
-      });
-      queryClient.invalidateQueries({
         queryKey: academicRecordSealKeys.auditTrail(),
       });
       queryClient.invalidateQueries({
@@ -215,14 +235,26 @@ export function AcademicRecordSealContainer({
     },
   });
 
-  const pendingRequests = pendingQuery.data ?? [];
+  const pendingRequests = useMemo(
+    () => pendingQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [pendingQuery.data],
+  );
   const isSealLoading = classesQuery.isPending;
-  const isUnsealLoading = pendingQuery.isPending;
+  // With `enabled: false` (no class selected) TanStack keeps the query pending
+  // forever — that must NOT read as "loading" or the tab would never render
+  // its "pick a class" prompt.
+  const isUnsealLoading = classId !== null && pendingQuery.isPending;
 
   // Surface the active tab's primary-fetch failure as the full-screen error
   // state (AC-1). The stable errorKey is thrown from each queryFn above.
+  // A failed load-more must not blank an already-rendered list, so only a
+  // first-page failure (nothing loaded yet) escalates to the screen-level error.
   const activeError = (
-    activeTab === "seal" ? classesQuery.error : pendingQuery.error
+    activeTab === "seal"
+      ? classesQuery.error
+      : pendingRequests.length === 0
+        ? pendingQuery.error
+        : null
   ) as AcademicRecordsFailure["type"] | null;
 
   return (
@@ -265,8 +297,18 @@ export function AcademicRecordSealContainer({
           currentAdminId,
           currentAdminName,
           tenantAdminCount: admins.length,
+          classId,
           pendingRequests,
-          isRequestsLoading: pendingQuery.isPending,
+          isRequestsLoading: isUnsealLoading,
+          hasNextPage: pendingQuery.hasNextPage,
+          isFetchingNextPage: pendingQuery.isFetchingNextPage,
+          // Rows already on screen + query in error = the LOAD-MORE fetch is
+          // what failed (a first-page failure escalates to `error` above and
+          // never reaches here). Same convention as feed/moderation screens.
+          hasLoadMoreError: pendingQuery.isError && pendingRequests.length > 0,
+          onLoadMore: () => {
+            pendingQuery.fetchNextPage();
+          },
           isInitiateFormOpen,
           onOpenInitiateForm: () => setInitiateFormOpen(true),
           onCloseInitiateForm: () => setInitiateFormOpen(false),
