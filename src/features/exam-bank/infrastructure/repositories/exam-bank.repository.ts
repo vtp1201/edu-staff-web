@@ -23,6 +23,7 @@ import type {
 import {
   mapExamBankDetail,
   mapExamBankSummary,
+  mapQuestionToWire,
 } from "../mappers/exam-bank.mapper";
 import { mapExamBankApiError } from "./map-exam-bank-error";
 
@@ -40,18 +41,19 @@ const WIRE_STATUS: Record<ExamBankStatus, WireExamStatus> = {
 };
 
 /**
- * Real `/lms/exam-papers` repository (Option A — US-E18.15/ADR 0056).
+ * Real `/courseware/exam-papers` repository (US-E18.15/ADR 0056, write path
+ * extended by US-E18.28 after core US-152).
  *
- * Wired REAL: `listExamBank` / `getExamDetail` / `publishExam`. The write path
- * (`createExam`/`updateExam`/`deleteExam`) has NO wire equivalent — the real
- * contract exposes no metadata-update, no question-replace/edit/delete, and no
- * DELETE endpoint — so those are permanently blocked stubs (throw "not-supported").
- * The teacher builder + delete affordance are hidden/blocked in real mode.
+ * Wired REAL: `listExamBank` / `getExamDetail` / `publishExam` / `updateExam`
+ * (paper metadata + a question-level diff-sync) / `deleteExam`. `createExam`
+ * remains a blocked stub — `POST /exam-papers` is still metadata-only, with no
+ * way to carry the builder's questions, so the create route stays blocked in
+ * real mode.
  *
  * `subjectName` (absent on the wire) is resolved via a `subject-catalogue`
- * fan-out; `teacherName`/`maxAttempts`/`difficulty`/question `options` have no
- * wire source (see mapper). Errors map by `code` via `mapExamBankApiError`, then
- * throw the failure key (throwing-repo idiom → domain `mapRepoError`).
+ * fan-out; `teacherName`/`maxAttempts` still have no wire source (see mapper).
+ * Errors map by `code` via `mapExamBankApiError`, then throw the failure key
+ * (throwing-repo idiom → domain `mapRepoError`).
  */
 export class ExamBankRepository implements IExamBankRepository {
   constructor(private readonly http: AxiosInstance) {}
@@ -154,24 +156,101 @@ export class ExamBankRepository implements IExamBankRepository {
     }
   }
 
-  // --- permanently blocked stubs (no wire endpoint — US-E18.15/ADR 0056) ---
-  // `create` accepts metadata only + append-one-question (DRAFT-only, no options
-  // field); there is no metadata-update, no question-replace/edit/delete, and no
-  // DELETE. The builder + delete affordance are hidden/blocked in real mode, so
-  // these throw defensively rather than issue a request that can't round-trip.
+  /**
+   * Diff-sync the paper against the server (US-E18.28/ADR 0056 Amendment 2).
+   * No bulk/replace endpoint exists, so this composes the per-op routes:
+   *
+   *   GET current → PATCH metadata (skipped when unchanged) → DELETE removed
+   *   questions → PUT existing ones → POST new ones → GET authoritative state.
+   *
+   * Deletes run first so the server's position renumbering settles before the
+   * edits/adds (which address questions by id anyway). Local questions whose
+   * `id` matches a server `questionId` are edits; the rest carry a client-local
+   * temp id from the builder and are appends.
+   *
+   * NOT atomic — the underlying contract has no transaction spanning these
+   * calls. A mid-sequence failure leaves the earlier calls persisted and
+   * surfaces normally; the next load shows the true partial state. No rollback
+   * is attempted (would need compensating writes that can fail in turn).
+   */
+  async updateExam(
+    id: string,
+    input: UpdateExamInput,
+  ): Promise<ExamBankDetail> {
+    try {
+      const current = (await this.http.get(
+        EXAM_BANK_EP.detail(id),
+      )) as unknown as ExamBankDetailResponseDto;
+
+      // Metadata: only `title`/`durationMinutes` are modelled client-side.
+      // `gradeLevel` is omitted (unmodelled — the wire leaves omitted fields
+      // unchanged) and `subjectId` is immutable server-side. Skip a no-op write.
+      if (
+        current.title !== input.title ||
+        current.durationMinutes !== input.durationMinutes
+      ) {
+        await this.http.patch(EXAM_BANK_EP.detail(id), {
+          title: input.title,
+          durationMinutes: input.durationMinutes,
+        });
+      }
+
+      const serverIds = new Set(current.questions.map((q) => q.questionId));
+      const localIds = new Set(input.questions.map((q) => q.id));
+
+      for (const q of current.questions) {
+        if (!localIds.has(q.questionId)) {
+          await this.http.delete(EXAM_BANK_EP.question(id, q.questionId));
+        }
+      }
+      for (const q of input.questions) {
+        if (serverIds.has(q.id)) {
+          // Unconditional replace — an idempotent no-op PUT is safer than a
+          // content-diff that could go stale (ADR 0056 Amendment 2).
+          await this.http.put(
+            EXAM_BANK_EP.question(id, q.id),
+            mapQuestionToWire(q),
+          );
+        }
+      }
+      for (const q of input.questions) {
+        if (!serverIds.has(q.id)) {
+          await this.http.post(
+            EXAM_BANK_EP.questions(id),
+            mapQuestionToWire(q),
+          );
+        }
+      }
+
+      // Positions renumber and `totalMarks` recomputes server-side → re-read.
+      const final = (await this.http.get(
+        EXAM_BANK_EP.detail(id),
+      )) as unknown as ExamBankDetailResponseDto;
+      return mapExamBankDetail(
+        final,
+        await this.fetchSubjectName(final.subjectId),
+      );
+    } catch (err) {
+      throw new Error(mapExamBankApiError(err));
+    }
+  }
+
+  /** Hard-delete a DRAFT paper the caller authors → 204, no body. */
+  async deleteExam(id: string): Promise<void> {
+    try {
+      await this.http.delete(EXAM_BANK_EP.detail(id));
+    } catch (err) {
+      throw new Error(mapExamBankApiError(err));
+    }
+  }
+
+  // --- still a blocked stub (no wire endpoint — ADR 0056 Amendment 2) ---
+  // `POST /exam-papers` remains metadata-only: there is no bulk/inline-questions
+  // create, so authoring a paper from scratch cannot round-trip in one call. The
+  // create route renders `ExamBuilderUnavailable` in real mode; this throws
+  // defensively rather than issue a request that would drop every question.
 
   async createExam(_input: CreateExamInput): Promise<ExamBankDetail> {
-    throw new Error("not-supported");
-  }
-
-  async updateExam(
-    _id: string,
-    _input: UpdateExamInput,
-  ): Promise<ExamBankDetail> {
-    throw new Error("not-supported");
-  }
-
-  async deleteExam(_id: string): Promise<void> {
     throw new Error("not-supported");
   }
 }

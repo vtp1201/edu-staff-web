@@ -21,6 +21,12 @@ describe("mapExamBankApiError", () => {
     ["EXAM_PAPER_TITLE_TOO_LONG", 422, "title-too-long"],
     ["EXAM_PAPER_DURATION_INVALID", 422, "duration-invalid"],
     ["EXAM_PAPER_INVALID_CURSOR", 400, "invalid-cursor"],
+    // US-152 / US-E18.28 — question edit/remove + MCQ structured options.
+    ["EXAM_QUESTION_NOT_FOUND", 404, "question-not-found"],
+    ["EXAM_MCQ_OPTIONS_INVALID", 422, "mcq-options-invalid"],
+    ["EXAM_CORRECT_OPTION_INVALID", 422, "correct-option-invalid"],
+    ["EXAM_OPTIONS_NOT_ALLOWED", 422, "options-not-allowed"],
+    ["EXAM_QUESTION_DIFFICULTY_INVALID", 422, "question-difficulty-invalid"],
   ] as const)("maps %s → %s", (code, status, expected) => {
     expect(mapExamBankApiError(apiError(code, status))).toBe(expected);
   });

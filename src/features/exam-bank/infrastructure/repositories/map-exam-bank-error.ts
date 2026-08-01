@@ -10,9 +10,8 @@ import type { ExamBankFailure } from "../../domain/failures/exam-bank.failure";
  *
  * The real repository throws the returned key as an `Error.message`; the domain
  * `mapRepoError` then rebuilds the typed `ExamBankFailure` (throwing-repo idiom).
- * Only a subset (not-found/forbidden/invalid-transition/invalid-cursor/network)
- * is reachable in Option A, but the full taxonomy is mapped for honesty and the
- * day the write path unblocks.
+ * Since core US-152 (US-E18.28) the update/delete path is wired, so the
+ * question-level and DRAFT-guard codes are reachable, not theoretical.
  */
 export function mapExamBankApiError(
   err: unknown,
@@ -37,6 +36,19 @@ export function mapExamBankApiError(
       return "question-body-required";
     case "EXAM_QUESTION_MARKS_INVALID":
       return "question-marks-invalid";
+    // core US-152 (US-E18.28): question edit/remove + structured MCQ options.
+    // `EXAM_QUESTION_NOT_FOUND` is a 404 — it MUST stay ahead of the status
+    // fallback below, or it would collapse into the paper-level `not-found`.
+    case "EXAM_QUESTION_NOT_FOUND":
+      return "question-not-found";
+    case "EXAM_MCQ_OPTIONS_INVALID":
+      return "mcq-options-invalid";
+    case "EXAM_CORRECT_OPTION_INVALID":
+      return "correct-option-invalid";
+    case "EXAM_OPTIONS_NOT_ALLOWED":
+      return "options-not-allowed";
+    case "EXAM_QUESTION_DIFFICULTY_INVALID":
+      return "question-difficulty-invalid";
     case "EXAM_ANSWER_KEY_REQUIRED_FOR_MCQ":
       return "answer-key-required";
     case "EXAM_ANSWER_KEY_NOT_ALLOWED":

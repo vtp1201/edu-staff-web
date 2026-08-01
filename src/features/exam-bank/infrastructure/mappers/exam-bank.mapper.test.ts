@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import type { ExamBankQuestion } from "../../domain/entities/exam-bank-question.entity";
 import type { ExamBankSummaryDto } from "../dtos/exam-bank-list-response.dto";
 import type { ExamBankQuestionDto } from "../dtos/exam-bank-question-response.dto";
 import {
   mapExamBankDetail,
   mapExamBankSummary,
   mapExamStatus,
+  mapQuestionToWire,
 } from "./exam-bank.mapper";
 
 function makePaperDto(
@@ -30,6 +32,7 @@ function makeQuestionDto(
   overrides: Partial<ExamBankQuestionDto> = {},
 ): ExamBankQuestionDto {
   return {
+    questionId: "eq-uuid-1",
     position: 1,
     questionType: "MCQ",
     body: "1 + 1 = ?",
@@ -71,21 +74,76 @@ describe("mapExamBankSummary", () => {
 });
 
 describe("mapExamBankDetail", () => {
-  it("maps questions with an empty options array and answerKey → correctOptionId", () => {
+  it("maps the real questionId as the entity id (US-152 diff-sync key)", () => {
     const dto = makePaperDto({
       subjectId: "subj-9",
-      questions: [makeQuestionDto({ position: 3, body: "Q?", answerKey: "C" })],
+      questions: [
+        makeQuestionDto({
+          questionId: "eq-uuid-42",
+          position: 3,
+          body: "Q?",
+          answerKey: "C",
+        }),
+      ],
     });
     const detail = mapExamBankDetail(dto, "Vật lý");
     expect(detail.questions).toHaveLength(1);
     const q = detail.questions[0];
-    expect(q.id).toBe("q-3");
+    // NOT the old synthetic `q-${position}` — the server id is what the
+    // diff-sync in `updateExam` matches on.
+    expect(q.id).toBe("eq-uuid-42");
     expect(q.index).toBe(2);
     expect(q.content).toBe("Q?");
-    expect(q.options).toEqual([]);
     expect(q.correctOptionId).toBe("C");
-    expect(q.difficulty).toBe("medium");
     expect(q.subjectId).toBe("subj-9");
+  });
+
+  it("maps options / correctOptionId / difficulty / marks / questionType faithfully", () => {
+    const dto = makePaperDto({
+      questions: [
+        makeQuestionDto({
+          options: [
+            { id: "A", text: "3" },
+            { id: "B", text: "4" },
+          ],
+          correctOptionId: "B",
+          difficulty: "HARD",
+          marks: 5,
+          answerKey: null,
+        }),
+      ],
+    });
+    const q = mapExamBankDetail(dto, "Toán").questions[0];
+    expect(q.options).toEqual([
+      { id: "A", text: "3" },
+      { id: "B", text: "4" },
+    ]);
+    expect(q.correctOptionId).toBe("B");
+    expect(q.difficulty).toBe("hard");
+    expect(q.marks).toBe(5);
+    expect(q.questionType).toBe("MCQ");
+  });
+
+  it("defaults difficulty to medium when the wire omits it, and options to []", () => {
+    const q = mapExamBankDetail(
+      makePaperDto({ questions: [makeQuestionDto({ difficulty: undefined })] }),
+      "Toán",
+    ).questions[0];
+    expect(q.difficulty).toBe("medium");
+    expect(q.options).toEqual([]);
+  });
+
+  it("keeps a non-MCQ question's type and leaves its answer empty", () => {
+    const q = mapExamBankDetail(
+      makePaperDto({
+        questions: [
+          makeQuestionDto({ questionType: "ESSAY", answerKey: null }),
+        ],
+      }),
+      "Ngữ văn",
+    ).questions[0];
+    expect(q.questionType).toBe("ESSAY");
+    expect(q.correctOptionId).toBe("");
   });
 
   it("maps a null answerKey (non-MCQ / stripped) to an empty correctOptionId", () => {
@@ -95,5 +153,76 @@ describe("mapExamBankDetail", () => {
     expect(mapExamBankDetail(dto, "Ngữ văn").questions[0].correctOptionId).toBe(
       "",
     );
+  });
+});
+
+describe("mapQuestionToWire (entity → AddQuestionRequest/UpdateExamQuestionRequest)", () => {
+  function question(over: Partial<ExamBankQuestion> = {}): ExamBankQuestion {
+    return {
+      id: "q-1",
+      index: 0,
+      content: "1 + 1 = ?",
+      options: [
+        { id: "A", text: "1" },
+        { id: "B", text: "2" },
+        { id: "C", text: "" },
+        { id: "D", text: "" },
+      ],
+      correctOptionId: "B",
+      difficulty: "easy",
+      subjectId: "subj-1",
+      ...over,
+    };
+  }
+
+  it("sends the filled options only, UPPER difficulty, and mirrors answerKey", () => {
+    expect(mapQuestionToWire(question())).toEqual({
+      questionType: "MCQ",
+      body: "1 + 1 = ?",
+      marks: 1,
+      options: [
+        { id: "A", text: "1" },
+        { id: "B", text: "2" },
+      ],
+      correctOptionId: "B",
+      answerKey: "B",
+      difficulty: "EASY",
+    });
+  });
+
+  it("preserves the server's marks when the entity carries one (no silent reset)", () => {
+    expect(mapQuestionToWire(question({ marks: 4 })).marks).toBe(4);
+  });
+
+  it("defaults marks to 1 when below the wire minimum or absent", () => {
+    expect(mapQuestionToWire(question({ marks: 0 })).marks).toBe(1);
+    expect(mapQuestionToWire(question({ marks: undefined })).marks).toBe(1);
+  });
+
+  it("omits options/correctOptionId when fewer than two are filled (option-less MCQ)", () => {
+    const body = mapQuestionToWire(
+      question({
+        options: [
+          { id: "A", text: "only" },
+          { id: "B", text: "" },
+          { id: "C", text: "" },
+          { id: "D", text: "" },
+        ],
+      }),
+    );
+    expect(body.options).toBeUndefined();
+    expect(body.correctOptionId).toBeUndefined();
+    // An option-less MCQ still needs a free-text answer key server-side.
+    expect(body.answerKey).toBe("B");
+  });
+
+  it("sends no options/correctOptionId/answerKey for a non-MCQ question", () => {
+    const body = mapQuestionToWire(
+      question({ questionType: "ESSAY", correctOptionId: "" }),
+    );
+    expect(body.questionType).toBe("ESSAY");
+    expect(body.options).toBeUndefined();
+    expect(body.correctOptionId).toBeUndefined();
+    expect(body.answerKey).toBeUndefined();
   });
 });
