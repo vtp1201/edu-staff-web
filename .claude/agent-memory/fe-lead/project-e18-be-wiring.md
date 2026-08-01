@@ -1,6 +1,6 @@
 ---
 name: project-e18-be-wiring
-description: E18 BE-wiring epic (mock→real edu-api) — Waves 0-3 done + Wave 4 US-E18.17/E18.18 done; epic's actionable scope now COMPLETE (US-E18.16 descoped zero-code, remaining items are cross-repo asks only)
+description: E18 BE-wiring epic (mock→real edu-api) — Waves 0-4 + US-E18.20/E18.22/E18.23 all done; epic's actionable scope COMPLETE (US-E18.16 descoped zero-code, remaining items are cross-repo asks only)
 metadata:
   type: project
 ---
