@@ -325,3 +325,13 @@ before reading for style.
   US-E18.26). Cheapest possible check: `grep -oE "^\| US-E18\.[0-9]+" docs/TEST_MATRIX.md | sort -u`
   — every sibling has a row, so an absent one is unambiguous. Pair it with the packet's `## Status`
   still reading `planned`. Always a pre-close item.
+- **Wire failure mapped at the auth layer but with no home in the consuming feature's union** —
+  e.g. `IamMemberFailure` has `{type:"forbidden"}` (from `forbidden_action`) but the feature's
+  `toInvitationFailure` has no `case "forbidden"`, so a real 403 collapses to `unknown` and renders
+  the generic "could not load" + a retry button that can NEVER succeed. Two smells at once: an
+  explicit RBAC acceptance criterion unmet, and a retry affordance on a permission error. Also check
+  the test: `expect(!result.ok).toBe(true)` (without asserting the exact failure type) is the weak
+  assertion that lets this through. (US-E18.29.)
+- **Silent unknown-enum default to a MEANINGFUL status** — `INVITATION_STATUSES.includes(x) ? x :
+  "pending"` in two mappers means a future BE value renders as an actionable row. Prefer a neutral
+  status or an explicit widening. (US-E18.29.)

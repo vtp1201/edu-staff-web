@@ -155,6 +155,26 @@ describe("ListError", () => {
     expect(html).toContain("Thử lại");
   });
 
+  it("omits the retry control ENTIRELY when showRetry is false (403-class failures)", () => {
+    // A non-retryable failure (403 forbidden) must not render a dead control —
+    // omitted, not disabled, mirroring FeedErrorState's `showRetry` precedent.
+    const html = renderToStaticMarkup(
+      <ListError
+        title="Không có quyền"
+        description="Tài khoản của bạn không được phép xem danh sách này."
+        retryLabel="Thử lại"
+        shape="bordered-card"
+        iconSize={12}
+        showRetry={false}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Không có quyền");
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("Thử lại");
+  });
+
   it("renders a retry icon only when asked to", () => {
     const none = renderToStaticMarkup(
       <ListError

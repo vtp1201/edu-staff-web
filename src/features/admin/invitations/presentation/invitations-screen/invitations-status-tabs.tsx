@@ -1,9 +1,5 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/shared/utils";
-import type {
-  InvitationsStatusCounts,
-  InvitationsStatusFilter,
-} from "./invitations-screen.i-vm";
+import type { InvitationsStatusFilter } from "./invitations-screen.i-vm";
 
 const ORDER: InvitationsStatusFilter[] = [
   "all",
@@ -15,20 +11,23 @@ const ORDER: InvitationsStatusFilter[] = [
 
 export interface InvitationsStatusTabsProps {
   value: InvitationsStatusFilter;
-  counts: InvitationsStatusCounts;
   labels: Record<InvitationsStatusFilter, string>;
   onChange: (value: InvitationsStatusFilter) => void;
 }
 
 /**
  * Visual status tablist (shadcn Tabs → Radix `role="tablist"`/`tab`, arrow-key
- * nav inherited). Non-panel-switching usage: the container filters the list
- * client-side, so no `TabsContent`. The count badge is part of each tab's
- * accessible name (not a decorative-only number).
+ * nav inherited). Non-panel-switching usage: selecting a tab swaps the list
+ * query's key (server-side `status` filter), so there is no `TabsContent`.
+ *
+ * NO COUNT BADGES (removed in US-E18.29, deliberate): with real cursor
+ * pagination each tab is its OWN lazily-fetched query, so a number for a tab the
+ * admin has never opened would be either fabricated (prefetching all 5 tabs) or
+ * stale — worse than no number on an admin surface. Each tab's accessible name
+ * is therefore its label text alone.
  */
 export function InvitationsStatusTabs({
   value,
-  counts,
   labels,
   onChange,
 }: InvitationsStatusTabsProps) {
@@ -39,22 +38,8 @@ export function InvitationsStatusTabs({
     >
       <TabsList className="h-11 flex-wrap sm:h-9">
         {ORDER.map((key) => (
-          <TabsTrigger
-            key={key}
-            value={key}
-            className="gap-1.5 max-[820px]:py-2.5"
-          >
+          <TabsTrigger key={key} value={key} className="max-[820px]:py-2.5">
             {labels[key]}
-            <span
-              className={cn(
-                "inline-flex min-w-4 items-center justify-center rounded-full px-1.5 py-px font-extrabold text-[10px]",
-                value === key
-                  ? "bg-primary/15 text-edu-text-primary"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {counts[key]}
-            </span>
           </TabsTrigger>
         ))}
       </TabsList>

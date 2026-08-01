@@ -44,4 +44,37 @@ describe("ResendInvitationUseCase", () => {
     );
     expect(!result.ok && result.failure.type).toBe("invitation-invalid");
   });
+
+  it("propagates invitation-not-resendable (409 — row is ACCEPTED/REVOKED)", async () => {
+    const resend = vi
+      .fn()
+      .mockResolvedValue(fail({ type: "invitation-not-resendable" }));
+    const result = await new ResendInvitationUseCase(repoWith(resend)).execute(
+      "inv-3",
+    );
+    expect(!result.ok && result.failure.type).toBe("invitation-not-resendable");
+  });
+
+  it("propagates rate-limited (429) WITH its retryAfterSeconds intact", async () => {
+    const resend = vi
+      .fn()
+      .mockResolvedValue(
+        fail({ type: "rate-limited", retryAfterSeconds: 900 }),
+      );
+    const result = await new ResendInvitationUseCase(repoWith(resend)).execute(
+      "inv-4",
+    );
+    expect(!result.ok && result.failure).toEqual({
+      type: "rate-limited",
+      retryAfterSeconds: 900,
+    });
+  });
+
+  it("propagates rate-limited with no seconds when the server sent no Retry-After", async () => {
+    const resend = vi.fn().mockResolvedValue(fail({ type: "rate-limited" }));
+    const result = await new ResendInvitationUseCase(repoWith(resend)).execute(
+      "inv-4",
+    );
+    expect(!result.ok && result.failure).toEqual({ type: "rate-limited" });
+  });
 });

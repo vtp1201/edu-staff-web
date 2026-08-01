@@ -22,7 +22,9 @@ new feature-local skeleton/error card.
   members) so "one or the other" is compiler-enforced. `titleClassName`/
   `descriptionClassName` REPLACE the defaults rather than merging, so parity never
   depends on tailwind-merge resolving a `text-*` conflict. `min-h-11` on the retry
-  button is unconditional (44px touch target).
+  button is unconditional (44px touch target). `showRetry?: boolean` (default true,
+  added US-E18.29) OMITS the retry entirely for a failure a retry cannot fix (403) —
+  never renders-then-disables it, matching `FeedErrorState`'s precedent.
 
 **Why:** four features had shipped near-identical copies; every design tweak meant
 editing 4 files and they had already drifted (padding, icon size, button variant).

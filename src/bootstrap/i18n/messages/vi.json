@@ -2159,6 +2159,8 @@
     "pageSubtitle": "Gửi và quản lý lời mời tham gia trường theo email.",
     "refresh": "Làm mới",
     "sendInvite": "Gửi lời mời",
+    "loadMore": "Tải thêm",
+    "loadMoreError": "Không thể tải thêm. Nhấn để thử lại.",
     "tabs": {
       "all": "Tất cả",
       "pending": "Chờ chấp nhận",
@@ -2168,7 +2170,8 @@
     },
     "search": {
       "placeholder": "Tìm theo email…",
-      "ariaLabel": "Tìm theo email"
+      "ariaLabel": "Tìm theo email",
+      "partialResultsHint": "Kết quả tìm kiếm chỉ tính trên các lời mời đã tải. Nhấn “Tải thêm” để tìm trong phần còn lại."
     },
     "table": {
       "columns": {
@@ -2180,7 +2183,8 @@
         "status": "Trạng thái",
         "actions": "Hành động"
       },
-      "loadingAriaLabel": "Đang tải danh sách lời mời"
+      "loadingAriaLabel": "Đang tải danh sách lời mời",
+      "invitedByFallback": "Không xác định"
     },
     "roleLabels": {
       "teacher": "Giáo viên",
@@ -2206,12 +2210,15 @@
       "noInvitationsCta": "Gửi lời mời",
       "noMatchTitle": "Không có lời mời nào khớp bộ lọc",
       "noMatchBody": "Thử từ khóa khác hoặc chuyển tab trạng thái.",
-      "clearFiltersCta": "Xoá bộ lọc"
+      "clearFiltersCta": "Xoá bộ lọc",
+      "moreMayBeAvailable": "Chưa tìm thấy trong các trang đã tải — có thể còn kết quả ở các trang tiếp theo. Nhấn “Tải thêm” để tải tiếp."
     },
     "error": {
       "title": "Không tải được danh sách lời mời",
       "description": "Đã xảy ra lỗi khi kết nối. Vui lòng thử lại.",
-      "retry": "Thử lại"
+      "retry": "Thử lại",
+      "forbiddenTitle": "Không có quyền xem danh sách lời mời",
+      "forbiddenDescription": "Tài khoản của bạn không được phép xem lời mời của trường này. Liên hệ quản trị viên nhà trường nếu bạn cho rằng đây là sai sót."
     },
     "sendDialog": {
       "title": "Gửi lời mời tham gia",
@@ -2242,7 +2249,10 @@
       "resendNetworkError": "Không thể gửi lại lời mời. Vui lòng thử lại.",
       "revokedOf": "Đã thu hồi lời mời của {email}",
       "revokeNotFoundRace": "Không thể thu hồi lời mời (có thể đã được xử lý)",
-      "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại."
+      "revokeNetworkError": "Không thể thu hồi lời mời. Vui lòng thử lại.",
+      "resendRateLimited": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau {seconds} giây.",
+      "resendRateLimitedNoWait": "Đã gửi lại quá nhiều lần cho lời mời này. Vui lòng thử lại sau.",
+      "forbidden": "Bạn không có quyền thực hiện hành động này."
     },
     "revokeDialog": {
       "title": "Thu hồi lời mời?",

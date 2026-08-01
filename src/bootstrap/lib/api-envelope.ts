@@ -43,6 +43,13 @@ export class ApiError extends Error {
   readonly status?: number;
   readonly requestId?: string;
   readonly fields?: Array<{ field: string; message: string }>;
+  /**
+   * Seconds from the response's `Retry-After` header, when the server sent one
+   * in the numeric (delta-seconds) form. First consumed by IAM's per-invitation
+   * resend limiter (429 `rate_limit_exceeded`, US-E18.29 / IAM US-147) to tell
+   * the admin how long to wait. Purely additive — every other caller ignores it.
+   */
+  readonly retryAfterSeconds?: number;
 
   constructor(init: {
     code: string;
@@ -51,6 +58,7 @@ export class ApiError extends Error {
     status?: number;
     requestId?: string;
     fields?: Array<{ field: string; message: string }>;
+    retryAfterSeconds?: number;
   }) {
     super(init.message);
     this.name = "ApiError";
@@ -59,6 +67,7 @@ export class ApiError extends Error {
     this.status = init.status;
     this.requestId = init.requestId;
     this.fields = init.fields;
+    this.retryAfterSeconds = init.retryAfterSeconds;
   }
 }
 
@@ -109,11 +118,34 @@ export function unwrapResponse(response: {
   return body.data;
 }
 
+/**
+ * Read `Retry-After` (delta-seconds form only) off a response's headers.
+ * The RFC also allows an HTTP-date; BE's contract is seconds, so a non-numeric
+ * value is deliberately ignored rather than guessed at.
+ */
+function parseRetryAfter(headers: unknown): number | undefined {
+  if (typeof headers !== "object" || headers === null) return undefined;
+  const bag = headers as Record<string, unknown>;
+  const raw =
+    bag["retry-after"] ??
+    bag["Retry-After"] ??
+    Object.entries(bag).find(([k]) => k.toLowerCase() === "retry-after")?.[1];
+  if (typeof raw !== "string" && typeof raw !== "number") return undefined;
+  const seconds = Number(raw);
+  // `Number("")` and `Number("   ")` are 0 — finite, but NOT a wait instruction.
+  // Only a strictly positive delta is meaningful; anything else stays undefined
+  // so callers fall back to their wait-less copy.
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+}
+
 /** Error-path normalisation: any axios/transport error → {@link ApiError}. */
 export function normalizeError(error: unknown): ApiError {
   if (isApiError(error)) return error;
-  const response = (error as { response?: { status?: number; data?: unknown } })
-    .response;
+  const response = (
+    error as {
+      response?: { status?: number; data?: unknown; headers?: unknown };
+    }
+  ).response;
 
   if (!response) {
     const message =
@@ -136,6 +168,7 @@ export function normalizeError(error: unknown): ApiError {
     status: response.status,
     requestId: env?.meta?.requestId,
     fields: e?.fields,
+    retryAfterSeconds: parseRetryAfter(response.headers),
   });
 }
 
@@ -146,6 +179,17 @@ export function errorCodeOf(err: unknown): string | undefined {
   const code = (data as { error?: { code?: unknown } } | undefined)?.error
     ?.code;
   return typeof code === "string" ? code : undefined;
+}
+
+/**
+ * `Retry-After` seconds — only ever present on an {@link ApiError} normalised
+ * from a response that carried the header (429). `undefined` otherwise.
+ */
+export function retryAfterSecondsOf(err: unknown): number | undefined {
+  if (isApiError(err)) return err.retryAfterSeconds;
+  return parseRetryAfter(
+    (err as { response?: { headers?: unknown } }).response?.headers,
+  );
 }
 
 /** HTTP status — from an {@link ApiError} or a raw axios error. `undefined` = no response. */

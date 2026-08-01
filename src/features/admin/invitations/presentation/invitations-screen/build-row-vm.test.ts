@@ -82,6 +82,14 @@ describe("buildRowVM", () => {
     expect(vm.isRowMutating).toBe(true);
     expect(vm.roleLabel).toBe("Giáo viên");
     expect(vm.statusLabel).toBe("Chờ chấp nhận");
+    expect(vm.invitedBy).toBe("Admin");
+  });
+
+  it("renders the i18n fallback when invitedBy could not be resolved (AC-3)", () => {
+    // The repository blanks an unresolvable inviter id rather than leaking the
+    // raw UUID; translating that blank is presentation's job.
+    const vm = buildRowVM({ ...inv, invitedBy: "" }, NOW, rowLabels, false);
+    expect(vm.invitedBy).toBe("Không xác định");
   });
 });
 
@@ -89,5 +97,6 @@ const rowLabels = {
   roleLabelOf: () => "Giáo viên",
   statusLabelOf: () => "Chờ chấp nhận",
   sentAtLabelOf: (i: string) => i.slice(0, 10),
+  invitedByFallback: "Không xác định",
   countdown: labels,
 };

@@ -6,6 +6,7 @@ import type { Member } from "../../../domain/entities/member.entity";
 import type { IamMemberFailure } from "../../../domain/failures/iam-member.failure";
 import type {
   IIamMemberRepository,
+  InvitationsPage,
   InviteMemberRequest,
   ListInvitationsParams,
 } from "../../../domain/repositories/i-iam-member.repository";
@@ -55,18 +56,20 @@ export class MockIamMemberRepository implements IIamMemberRepository {
    * flat 14-day expiry here; the caller's `expiryDays` never reaches the wire.
    */
   async inviteMember(
-    tenantId: string,
+    _tenantId: string,
     req: InviteMemberRequest,
   ): Promise<void> {
     _invitations = [
       {
         invitationId: genId(),
-        tenantId,
         email: req.email,
         roles: req.roles.map((r) => r.toLowerCase()),
         status: "pending",
+        // Mock mode resolves `invitedBy` through an identity map (see
+        // `admin-invitations.di.ts`), so the seed holds a display name directly
+        // instead of the raw userId the real wire carries.
         invitedBy: "Trần Minh Quân",
-        sentAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 14 * DAY_MS).toISOString(),
       },
       ..._invitations,
@@ -110,21 +113,25 @@ export class MockIamMemberRepository implements IIamMemberRepository {
     };
   }
 
+  /**
+   * `status` IS a real server param (IAM US-147) so the mock applies it here.
+   * Search has no wire param — it stays client-side, so no `q` is honoured.
+   * Returns ONE unpaginated page (`hasMore: false`): the seed is small and
+   * faking cursors would only add mock-only complexity — same choice
+   * `MockIamDirectoryRepository`-era mocks made for the member list.
+   */
   async listInvitations(
     _tenantId: string,
     params?: ListInvitationsParams,
-  ): Promise<Invitation[]> {
-    // Filtering is done client-side by the screen (ground-truth #1: no server
-    // filter param exists); params are honoured defensively if ever passed.
-    let list = _invitations;
-    if (params?.status) {
-      list = list.filter((i) => i.status === params.status);
-    }
-    if (params?.q) {
-      const q = params.q.trim().toLowerCase();
-      list = list.filter((i) => i.email.toLowerCase().includes(q));
-    }
-    return list.map((i) => ({ ...i, roles: [...i.roles] }));
+  ): Promise<InvitationsPage> {
+    const list = params?.status
+      ? _invitations.filter((i) => i.status === params.status)
+      : _invitations;
+    return {
+      data: list.map((i) => ({ ...i, roles: [...i.roles] })),
+      nextCursor: null,
+      hasMore: false,
+    };
   }
 
   async resendInvitation(
@@ -132,17 +139,22 @@ export class MockIamMemberRepository implements IIamMemberRepository {
     invitationId: string,
   ): Promise<Invitation> {
     const found = _invitations.find((i) => i.invitationId === invitationId);
-    // Race guard: row must still be expired to resend. Anything else (gone,
-    // already pending, revoked, accepted) → `invitation-invalid` so the adapter
-    // surfaces the "changed state" race per AC-005.4.
-    if (found?.status !== "expired") {
+    // Mirrors the real contract (INTEGRATION.md ¹¹): an absent/TTL-swept row is
+    // indistinguishable from "never existed" → 410 `invitation_invalid`; an
+    // ACCEPTED/REVOKED row still exists but is not resendable → 409. Any PENDING
+    // row (including one already past `expiresAt`, i.e. projected `expired`) is
+    // resendable — `roles`/`invitedBy`/`createdAt` are preserved.
+    if (!found) {
       const failure: IamMemberFailure = { type: "invitation-invalid" };
+      throw failure;
+    }
+    if (found.status === "accepted" || found.status === "revoked") {
+      const failure: IamMemberFailure = { type: "invitation-not-resendable" };
       throw failure;
     }
     const refreshed: Invitation = {
       ...found,
       status: "pending",
-      sentAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 14 * DAY_MS).toISOString(),
     };
     _invitations = _invitations.map((i) =>

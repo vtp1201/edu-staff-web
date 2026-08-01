@@ -385,3 +385,20 @@ Confirmed facts (verify before citing if stale):
   `LinkedParentsResponse`) — NOT every list endpoint is cursor-paginated. Verify the schema before
   demanding `raw:true`/`fetchAllPages`; the accepted documentation shape for a confirmed-flat call is a
   test asserting the GET is made with NO axios config object at all.
+- **`{raw:true}` DONE RIGHT in the `iam-*` features** (confirmed US-E18.29): `iam-directory.repository.ts`
+  and now `iam-member.repository.ts` pass `{ params: {...}, raw: true }` with `raw` as a TOP-LEVEL
+  config sibling — the correct form — and each carries an explicit regression test asserting
+  `get.mock.calls[0][1].raw === true` ("US-E18.19 regression class"). So the older repo-wide
+  `{params:{raw:true}}` nesting is legacy, NOT the standard to copy. Require the top-level form +
+  that assertion in any NEW cursor-paginated repo.
+- **`useInfiniteQuery` retry gating precedent** = `audit-log-screen.tsx:101,111`: the action result
+  carries a `retryable: boolean`, the queryFn throws `{type, retryable}`, and `retry` is a predicate
+  gated on it. A screen that omits this silently inherits the global `retry: 1`
+  (`react-query-provider.tsx`), so NON-retryable failures (403/400/409) get a pointless retry.
+- **`LoadMoreButton` canonical home** = `components/shared/load-more-button/` (props pre-translated by
+  the caller). `features/audit-log/.../load-more-button.tsx` is a known stale local fork — new callers
+  must use the shared one; don't flag the shared usage, do flag a third copy.
+- **Cross-partition mutation → broad subtree invalidate** (US-E18.29): when a mutation moves a row
+  ACROSS the dimension that partitions the query key (resend: `expired` → `pending` with `status` in
+  the key), the correct target is `keys.lists(tenantId)`, not a `setQueryData` row patch. Watch for a
+  "surgical patch" creeping back in against a state-architecture doc that overrode it.

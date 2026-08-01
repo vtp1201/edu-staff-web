@@ -24,11 +24,47 @@ export type SendBatchActionResult =
 
 export type MutationActionResult =
   | { ok: true }
-  | { ok: false; errorKey: InvitationFailure["type"] };
+  | {
+      ok: false;
+      errorKey: InvitationFailure["type"];
+      /**
+       * Only ever set for `rate-limited` (429 `Retry-After`, seconds). A stable
+       * NUMBER, not translated copy — presentation interpolates it, or falls
+       * back to a wait-less string when the server sent no header.
+       */
+      retryAfterSeconds?: number;
+    };
+
+/**
+ * One cursor page, unwrapped for presentation (mirrors the repo's
+ * `InvitationsPage` 1:1 — re-declared here so this file keeps zero imports from
+ * `domain/repositories`, same convention as `SendBatchOutcomeVM` above).
+ */
+export interface InvitationsPageVM {
+  data: Invitation[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
 
 export type ListActionResult =
-  | { ok: true; data: Invitation[] }
-  | { ok: false; errorKey: InvitationFailure["type"] };
+  | { ok: true; data: InvitationsPageVM }
+  | {
+      ok: false;
+      errorKey: InvitationFailure["type"];
+      /**
+       * Whether re-issuing the SAME request could yield a different outcome —
+       * decided server-side by `isRetryableInvitationFailure`. Drives the
+       * query's `retry` predicate, so a 403/400/409-class failure never burns a
+       * pointless retry (state-architecture.md §3).
+       */
+      retryable: boolean;
+    };
+
+/** Server params of one list request (`status` omitted = the "all" tab). */
+export interface ListInvitationsRequest {
+  status?: InvitationStatus;
+  cursor?: string;
+}
 
 export type CountdownVariant = "normal" | "urgent" | "expired" | "na";
 
@@ -71,18 +107,19 @@ export type InvitationsStatusFilter =
   | "expired"
   | "revoked";
 
-export type InvitationsStatusCounts = Record<InvitationsStatusFilter, number>;
-
 export interface InvitationsScreenProps {
-  /** RSC-seeded first page (initialData for the list query). */
-  initialInvitations: Invitation[];
+  /**
+   * RSC-seeded FIRST page of the default ("all") tab — `initialData` for that
+   * tab's infinite query only. Any other tab runs a normal cold client fetch.
+   */
+  initialPage: InvitationsPageVM;
   /** True when the initial RSC fetch itself failed — seeds the query error. */
   initialLoadFailed: boolean;
   /** Route-segment tenant id — query-key/display segment only (not the
    * NFR-006 server-derived request value). */
   tenantId: string;
 
-  onRefresh: () => Promise<ListActionResult>;
+  onRefresh: (params: ListInvitationsRequest) => Promise<ListActionResult>;
   onSendBatch: (
     input: SendInvitationBatchInput,
   ) => Promise<SendBatchActionResult>;

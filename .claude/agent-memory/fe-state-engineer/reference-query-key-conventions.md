@@ -625,3 +625,51 @@ consumer of the same repository should share the cache entry, not duplicate
 it under a different feature's namespace. Confirm first (grep the owning
 feature's `presentation/`) that no query-key convention already exists there
 to collide with or that should be reused as-is instead of minted fresh.
+
+## Client-filter-only list graduates to per-tab real `useInfiniteQuery` when the filter becomes a real server param (US-E18.29, admin invitations list+resend BE wiring)
+
+`admin/invitations` was mock-only in US-E21.1 with `status` as a pure
+client-side `.filter()` over one fully-resident `useQuery` array (see that
+story's own `state-architecture.md` §4 — correctly NOT in the key at the
+time, since no `GET` route existed at all). Once BE ships a real
+`GET .../invitations?status=&cursor=` (US-E18.29), the exact same field
+flips to a real request param and MUST move into the key:
+`list(tenantId, status)`, one independent `useInfiniteQuery` per tab, lazily
+fetched on first tab visit (not prefetched). This is the clearest before/
+after case in the repo of "the same UI filter can be either kind depending on
+what BE ships" — don't assume a prior design doc's classification still
+holds once the wire contract changes; re-derive from the CURRENT ground-truth
+contract, not the sibling story's old doc.
+
+**New consequence surfaced by this case: per-tab lazy `useInfiniteQuery`
+topology makes an accurate cross-tab COUNT badge structurally impossible**
+without eagerly prefetching every tab (defeats the point of lazy per-tab
+pagination) — recommended dropping the count badges entirely rather than
+relabeling as "of loaded" (a per-tab qualifier is only computable for the
+currently-active tab, leaving the other tabs' badges either missing or
+stale/wrong — inconsistent and misleading for an admin-facing count).
+
+**New invalidation rule: when a mutation moves an item ACROSS the exact
+dimension used to partition the cache (status here: `expired`→`pending`),
+invalidate the WHOLE partitioned subtree (`lists(tenantId)`, busting every
+cached tab variant), never attempt a single-page `setQueryData` surgical
+patch.** A surgical patch only works when a mutation updates a row in place
+*within* its current partition (e.g. revoke, which doesn't move the row's tab
+membership). Locating + removing from the old partition's pages + inserting
+into the new partition's pages (no principled cursor-insert position) is
+strictly harder and more failure-prone than one broad invalidate for a
+low-frequency admin action. Generalizes "stat-counts-embedded-in-list →
+broad invalidation" (moderation/US-E19.2) to a NEW trigger condition
+(cross-partition move, not embedded derived stats) — explicitly contrasts
+with `staff-discipline`'s (US-E09.5) "keep invalidation graphs disjoint"
+rule, which only applies when sub-resources never cross into each other.
+
+**429 rate-limit UX: confirmed toast-only, explicitly recommended AGAINST
+building a client-side lockout/countdown timer** even though the failure
+union carries `retryAfterSeconds` — when the rate limit is scoped narrowly
+enough (here: 3/hour per single record id) that hitting it via normal UI
+usage borders on unreachable, the local state/timer/cleanup/i18n-plural cost
+of a lockout mechanism isn't justified; a static toast computed once at
+error time is sufficient.
+
+See full write-up: `docs/stories/epics/E18-be-wiring/US-E18.29-invitations-wiring/state-architecture.md`.

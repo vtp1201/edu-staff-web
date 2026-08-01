@@ -6,6 +6,7 @@ import {
   isApiError,
   normalizeError,
   parseEnvelope,
+  retryAfterSecondsOf,
   statusOf,
   unwrapResponse,
 } from "./api-envelope";
@@ -109,6 +110,74 @@ describe("normalizeError", () => {
     const err = normalizeError({ message: "Network Error" });
     expect(err.code).toBe("NETWORK_ERROR");
     expect(err.status).toBeUndefined();
+  });
+
+  // `Retry-After` (seconds) — first consumed by IAM's per-invitation resend
+  // limiter (US-E18.29 / IAM US-147). Additive: every other caller ignores it.
+  it("parses a numeric Retry-After header (seconds) into retryAfterSeconds (429)", () => {
+    const err = normalizeError({
+      response: {
+        status: 429,
+        headers: { "retry-after": "120" },
+        data: envelope({
+          success: false,
+          error: {
+            code: "rate_limit_exceeded",
+            message: "slow down",
+            retryable: true,
+          },
+        }),
+      },
+    });
+    expect(err.status).toBe(429);
+    expect(err.retryAfterSeconds).toBe(120);
+    expect(retryAfterSecondsOf(err)).toBe(120);
+  });
+
+  it("leaves retryAfterSeconds undefined when the header is absent or non-numeric", () => {
+    const noHeader = normalizeError({
+      response: { status: 429, data: envelope({ success: false }) },
+    });
+    expect(noHeader.retryAfterSeconds).toBeUndefined();
+
+    // HTTP-date form (RFC 7231) is NOT parsed — BE's contract is seconds only.
+    const httpDate = normalizeError({
+      response: {
+        status: 429,
+        headers: { "retry-after": "Wed, 21 Oct 2026 07:28:00 GMT" },
+        data: envelope({ success: false }),
+      },
+    });
+    expect(httpDate.retryAfterSeconds).toBeUndefined();
+    expect(retryAfterSecondsOf(httpDate)).toBeUndefined();
+    expect(retryAfterSecondsOf(new Error("boom"))).toBeUndefined();
+  });
+
+  it("ignores an empty or non-positive Retry-After (Number('') === 0 is finite)", () => {
+    // An empty header must not become "wait 0 seconds" — that reads as a real
+    // instruction downstream ("thử lại sau 0 giây") when nothing was sent.
+    for (const raw of ["", "   ", "0", "-30"]) {
+      const err = normalizeError({
+        response: {
+          status: 429,
+          headers: { "retry-after": raw },
+          data: envelope({ success: false }),
+        },
+      });
+      expect(err.retryAfterSeconds).toBeUndefined();
+      expect(retryAfterSecondsOf(err)).toBeUndefined();
+    }
+  });
+
+  it("reads the header case-insensitively (axios lowercases, servers may not)", () => {
+    const err = normalizeError({
+      response: {
+        status: 429,
+        headers: { "Retry-After": "45" },
+        data: envelope({ success: false }),
+      },
+    });
+    expect(err.retryAfterSeconds).toBe(45);
   });
 });
 
