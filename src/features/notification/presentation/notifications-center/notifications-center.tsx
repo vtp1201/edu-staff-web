@@ -20,6 +20,10 @@ import type {
   NotificationFilter,
   NotificationType,
 } from "../../domain/entities/notification.entity";
+import {
+  isKnownBodyKey,
+  isKnownTitleKey,
+} from "../../domain/notification-message-keys";
 import type {
   NotificationsCenterActions,
   NotificationsCenterVm,
@@ -106,6 +110,23 @@ function SkeletonRows() {
   );
 }
 
+/**
+ * ICU args the notification copy is allowed to interpolate (US-E18.25 /
+ * ADR 0066). Whitelisting — rather than spreading the whole wire param bag —
+ * makes "a raw UUID (`classId`/`studentMemberId`/`recordId`) can never reach
+ * rendered copy" a structural guarantee instead of a copy-review promise.
+ * Each arg is defaulted so a param-less wire row cannot raise an ICU
+ * formatting error.
+ */
+function renderableParams(
+  params: Record<string, string>,
+): Record<string, string> {
+  return {
+    severity: params.severity ?? "",
+    occurredAt: params.occurredAt ?? "",
+  };
+}
+
 interface NotificationRowProps {
   item: NotificationEntity;
   onMarkRead: (id: string) => void;
@@ -122,12 +143,26 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
     | "type_announcement"
     | "type_system";
 
+  // US-E18.25 — title/body arrive as BE-owned i18n keys + scalar params
+  // (ADR 0066). Same dynamic-key-from-closed-union convention as
+  // `typeLabelKey` above, plus an allow-list so a key this build has no copy
+  // for (BE ships a 5th producer) degrades to the generic fallback instead of
+  // rendering a raw key or throwing.
+  const titleMsgKey = isKnownTitleKey(item.titleKey)
+    ? (`titles.${item.titleKey}` as const)
+    : ("titles.unknown" as const);
+  const bodyMsgKey = isKnownBodyKey(item.bodyKey)
+    ? (`bodies.${item.bodyKey}` as const)
+    : ("bodies.unknown" as const);
+  const titleText = t(titleMsgKey, renderableParams(item.titleParams));
+  const bodyText = t(bodyMsgKey, renderableParams(item.bodyParams));
+
   return (
     <button
       type="button"
       onClick={() => onMarkRead(item.id)}
       aria-label={t("rowAriaLabel", {
-        title: item.title,
+        title: titleText,
         read: item.read ? t("ariaRead") : t("ariaUnread"),
       })}
       className={cn(
@@ -165,7 +200,7 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
                 : "font-bold text-foreground",
             )}
           >
-            {item.title}
+            {titleText}
           </p>
           <time
             className="shrink-0 text-muted-foreground text-xs"
@@ -176,7 +211,7 @@ function NotificationRow({ item, onMarkRead }: NotificationRowProps) {
           </time>
         </div>
         <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">
-          {item.body}
+          {bodyText}
         </p>
         <span
           className={cn(

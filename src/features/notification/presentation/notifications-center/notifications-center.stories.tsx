@@ -2,14 +2,16 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
-import { mapNotification } from "../../infrastructure/mappers/notification.mapper";
+import { mapMockNotification } from "../../infrastructure/mappers/notification.mapper";
 import { MOCK_NOTIFICATIONS } from "../../infrastructure/repositories/mocks/fixtures";
 import type { NotificationsCenterScreenProps } from "./notifications-center";
 import { NotificationsCenterScreen } from "./notifications-center";
 
 // ─── Base fixtures ────────────────────────────────────────────────────────────
 
-const ALL_ITEMS = MOCK_NOTIFICATIONS.map((dto) => mapNotification(dto, "vi"));
+const ALL_ITEMS = MOCK_NOTIFICATIONS.map((dto, i) =>
+  mapMockNotification(dto, i),
+);
 const UNREAD_ITEMS = ALL_ITEMS.filter((n) => !n.read);
 
 const noop = () => {};
@@ -128,8 +130,10 @@ export const MarkSingleRead: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     // The single unread row is present
+    // n-1 is a `grade` fixture → the real producer key-pair
+    // `notification_grade_conduct_approved_*` (US-E18.25 reshape).
     const unreadRow = canvas.getByRole("button", {
-      name: /Kết quả học tập mới.*chưa đọc/i,
+      name: /Hạnh kiểm đã được duyệt.*chưa đọc/i,
     });
     await expect(unreadRow).toBeInTheDocument();
     await userEvent.click(unreadRow);
@@ -213,9 +217,11 @@ export const SSEPrepend: Story = {
     items: [
       {
         id: "n-new",
-        type: "announcement",
-        title: "Thông báo mới từ trường",
-        body: "Trường sẽ nghỉ ngày 20/11 nhân dịp Ngày Nhà giáo Việt Nam.",
+        type: "discipline",
+        titleKey: "notification_discipline_violation_title",
+        titleParams: { severity: "MINOR" },
+        bodyKey: "notification_discipline_violation_body",
+        bodyParams: { severity: "MINOR" },
         ts: new Date().toISOString(),
         read: false,
       },
@@ -227,7 +233,7 @@ export const SSEPrepend: Story = {
     const canvas = within(canvasElement);
     // New item is at the top
     const rows = canvas.getAllByRole("button", { name: /—/ });
-    await expect(rows[0]).toHaveAccessibleName(/Thông báo mới từ trường/i);
+    await expect(rows[0]).toHaveAccessibleName(/Vi phạm kỷ luật mức nhẹ/i);
   },
 };
 
@@ -309,5 +315,43 @@ export const ErrorState: Story = {
     // Empty-state copy must NOT render on fetch failure (AC-01.11/AC-02.9/AC-05.1).
     await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
     await expect(canvas.queryByText("Tất cả đã đọc")).toBeNull();
+  },
+};
+
+// ─── US-E18.25: unknown key fallback ─────────────────────────────────────────
+
+/**
+ * BE ships a producer key this build has no copy for. The row must render the
+ * generic `titles.unknown`/`bodies.unknown` fallback — never a raw key, never
+ * a thrown error (ADR 0066).
+ */
+export const UnknownKeyFallback: Story = {
+  args: {
+    ...baseProps,
+    items: [
+      {
+        id: "n-future",
+        type: "system",
+        titleKey: "notification_future_unseen_title",
+        titleParams: {},
+        bodyKey: "notification_future_unseen_body",
+        bodyParams: { somethingNew: "x" },
+        ts: new Date().toISOString(),
+        read: false,
+      },
+    ],
+    unreadCount: 1,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = canvas.getByRole("button", {
+      name: /Thông báo mới.*chưa đọc/i,
+    });
+    await expect(row).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Mở thông báo để xem chi tiết."),
+    ).toBeInTheDocument();
+    // The raw BE key must never leak into the rendered output.
+    await expect(canvas.queryByText(/notification_future_unseen/)).toBeNull();
   },
 };

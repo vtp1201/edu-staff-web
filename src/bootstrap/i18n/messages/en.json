@@ -2809,6 +2809,13 @@
     "allLoaded": "All notifications shown",
     "ariaRead": "read",
     "ariaUnread": "unread",
+    "bodies": {
+      "notification_discipline_violation_body": "A {severity, select, MINOR {minor} MODERATE {moderate} SEVERE {severe} other {unspecified}} discipline violation has been recorded.",
+      "notification_attendance_absence_body": "An unexcused absence has been recorded.",
+      "notification_grade_conduct_approved_body": "A conduct result has been approved.",
+      "notification_attendance_leave_approved_body": "A leave request has been approved.",
+      "unknown": "Open the notification for details."
+    },
     "emptyAllBody": "Notifications will appear here when there is new activity.",
     "emptyAllTitle": "No notifications yet",
     "emptyUnreadBody": "You have read all your notifications.",
@@ -2837,6 +2844,13 @@
     "rowAriaLabel": "{title} — {read}",
     "subtitle": "View and manage all your notifications.",
     "title": "Notification Center",
+    "titles": {
+      "notification_discipline_violation_title": "Discipline violation ({severity, select, MINOR {minor} MODERATE {moderate} SEVERE {severe} other {unspecified}})",
+      "notification_attendance_absence_title": "Unexcused absence",
+      "notification_grade_conduct_approved_title": "Conduct result approved",
+      "notification_attendance_leave_approved_title": "Leave request approved",
+      "unknown": "New notification"
+    },
     "toastClose": "Close",
     "type_announcement": "Announcement",
     "type_attendance": "Attendance",

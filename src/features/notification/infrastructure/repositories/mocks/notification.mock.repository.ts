@@ -9,7 +9,7 @@ import type {
 import type { NotificationFailure } from "../../../domain/failures/notification.failure";
 import type { INotificationRepository } from "../../../domain/repositories/i-notification.repository";
 import { PAGE_SIZE } from "../../../domain/repositories/i-notification.repository";
-import { mapNotification } from "../../mappers/notification.mapper";
+import { mapMockNotification } from "../../mappers/notification.mapper";
 import { MOCK_NOTIFICATIONS } from "./fixtures";
 
 function fail(type: NotificationFailure["type"]): never {
@@ -18,14 +18,14 @@ function fail(type: NotificationFailure["type"]): never {
 }
 
 // Module-level mutable state for deterministic in-process mutation.
-let _items: NotificationEntity[] = MOCK_NOTIFICATIONS.map((dto) =>
-  mapNotification(dto, "vi"),
+let _items: NotificationEntity[] = MOCK_NOTIFICATIONS.map((dto, i) =>
+  mapMockNotification(dto, i),
 );
 
 export class MockNotificationRepository implements INotificationRepository {
   constructor() {
     // Reset to fixture state on each instantiation so tests stay deterministic.
-    _items = MOCK_NOTIFICATIONS.map((dto) => mapNotification(dto, "vi"));
+    _items = MOCK_NOTIFICATIONS.map((dto, i) => mapMockNotification(dto, i));
   }
 
   async listNotifications(params: {

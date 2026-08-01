@@ -7,6 +7,7 @@ import type {
   NotificationEntity,
   NotificationType,
 } from "../../domain/entities/notification.entity";
+import { mockKeyPairForType } from "../../domain/notification-message-keys";
 
 const VALID_TYPES: ReadonlySet<NotificationType> = new Set([
   "grade",
@@ -44,8 +45,11 @@ interface Options {
  *   a `NotificationEntity`, calls `onNew` so the container can prepend the item
  *   without waiting for the refetch, and shows a Sonner toast.
  *
- * The two hooks share the same `EventSource` URL; the browser deduplicates
- * the underlying connection.
+ * NOTE: both hooks open their OWN `EventSource` to the same URL — browsers do
+ * NOT deduplicate SSE connections (a long-standing wrong comment here,
+ * pre-dating US-E18.25; also flagged at US-E18.18). That means two live
+ * streams while this screen is mounted. Consolidating them is a separate
+ * change, not made here.
  */
 export function useNotificationNewEvent({
   tenantId,
@@ -70,11 +74,22 @@ export function useNotificationNewEvent({
       const title = locale === "vi" ? payload.titleVi : payload.titleEn;
       const body = locale === "vi" ? payload.bodyVi : payload.bodyEn;
 
+      // US-E18.25 — `NotificationEntity` now carries i18n keys + params, not
+      // pre-rendered text (ADR 0066). `notification.new` is a MOCK-ONLY frame
+      // (no real BE producer, US-E18.18) whose payload still ships vi/en text,
+      // so the prepended row reuses the same synthetic key-pair table the mock
+      // repository's mapper uses. The toast keeps rendering the frame's own
+      // text — it is transient and never goes through the entity contract.
+      const type = safeType(payload.type);
+      const { titleKey, bodyKey } = mockKeyPairForType(type);
+
       const entity: NotificationEntity = {
         id: payload.notificationId,
-        type: safeType(payload.type),
-        title: title || payload.titleVi,
-        body: body || payload.bodyVi,
+        type,
+        titleKey,
+        titleParams: {},
+        bodyKey,
+        bodyParams: { occurredAt: payload.ts },
         ts: payload.ts,
         read: false,
       };

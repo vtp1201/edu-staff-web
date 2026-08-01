@@ -43,7 +43,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Email-verify banner (unverified reminder, all pages) | shell-level (`components/layout/app-shell`) | `components/shared/` (proposed) | ✅ US-E22.1 (`features/auth/presentation/email-verify`) |
 | Tenant switch (header user-menu "Đổi trường" + dialog, ≥2 tenants) | shell-level (header, all app routes) | `components/layout/app-shell` | ✅ US-E23.1 |
 | Profile (info / security / sessions / linked accounts) | `(app)/(shared)/profile` | `features/user/presentation` | ✅ US-E08.5 + email-verify inline row (US-E22.1, DR-016) + parent consent section (US-E20.2, DR-014) — extensions implemented |
-| Notifications Center | `(app)/(shared)/notifications` | `features/notification` | ✅ US-E10.2 (list mock-first — BE chưa có list/read endpoint, US-E18.18; unread-count real) |
+| Notifications Center | `(app)/(shared)/notifications` | `features/notification` | ✅ US-E10.2 + US-E18.25 (list/mark-read/mark-all/unread-count đều real, BE US-146; tab "Chưa đọc" drain client-side vì wire không có filter unread — ADR 0066) |
 | Messaging (inbox + 1:1 + group) | `(app)/(shared)/messages` | `features/messaging` | ✅ US-E10.1/E10.4/E10.5 (BE hybrid US-E18.17/ADR 0060 — group lifecycle/pin/contacts mock) |
 
 ## Social (Epic E19)
