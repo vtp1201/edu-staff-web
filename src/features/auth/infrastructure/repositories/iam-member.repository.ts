@@ -1,7 +1,12 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
 import { IAM_MEMBER_EP } from "@/bootstrap/endpoint/iam-member.endpoint";
-import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
+import {
+  type ApiEnvelope,
+  errorCodeOf,
+  parseEnvelope,
+  retryAfterSecondsOf,
+} from "@/bootstrap/lib/api-envelope";
 import type { TenantMembership } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import type { AuthTokens } from "../../domain/entities/auth-user.entity";
 import type { Invitation } from "../../domain/entities/invitation.entity";
@@ -9,15 +14,19 @@ import type { Member } from "../../domain/entities/member.entity";
 import type { IamMemberFailure } from "../../domain/failures/iam-member.failure";
 import type {
   IIamMemberRepository,
+  InvitationsPage,
   InviteMemberRequest,
+  ListInvitationsParams,
 } from "../../domain/repositories/i-iam-member.repository";
 import type {
+  InvitationListItemResponseDto,
   MemberResponseDto,
   MembershipSummaryDto,
 } from "../dtos/iam-member-response.dto";
 import type { TokenResponseDto } from "../dtos/token-response.dto";
 import { mapTokens } from "../mappers/auth.mapper";
 import {
+  mapInvitationListItem,
   mapMemberResponse,
   mapMembershipSummary,
 } from "../mappers/iam-member.mapper";
@@ -55,6 +64,17 @@ function mapIamFailure(err: unknown): IamMemberFailure {
       return { type: "invitation-email-mismatch" };
     case "member_last_admin":
       return { type: "last-admin" };
+    // Invitation list/resend (IAM US-147, US-E18.29).
+    case "invitation_not_resendable":
+      return { type: "invitation-not-resendable" };
+    case "rate_limit_exceeded":
+      // Per-invitationId resend limiter — `Retry-After` (seconds) when sent.
+      return {
+        type: "rate-limited",
+        retryAfterSeconds: retryAfterSecondsOf(err),
+      };
+    case "invalid_request_parameters":
+      return { type: "invalid-request" };
     case "NETWORK_ERROR":
       return { type: "network-error" };
     default:
@@ -147,24 +167,53 @@ export class IamMemberRepository implements IIamMemberRepository {
     }
   }
 
-  /**
-   * MOCK-ONLY guard (US-E21.1). No real IAM `GET` list route exists (see
-   * integration.md §6) — the DI factory always routes list/resend to
-   * `MockIamMemberRepository`, so this is never reached in real mode. It exists
-   * only so the real class still satisfies `IIamMemberRepository` and the app
-   * compiles with `NEXT_PUBLIC_USE_MOCK` unset. Same "real class = permanent
-   * blocked stub" precedent as `staff-leave` (US-E18.8).
-   */
-  listInvitations(): Promise<Invitation[]> {
-    throw new Error(
-      "listInvitations has no real IAM route (mock-only, US-E21.1); see integration.md §6",
-    );
+  async listInvitations(
+    tenantId: string,
+    params?: ListInvitationsParams,
+  ): Promise<InvitationsPage> {
+    try {
+      // Cursor-paginated list → `{ raw: true }` + `parseEnvelope` so
+      // `meta.pagination` is readable. `raw` MUST be a top-level config sibling
+      // of `params` (US-E18.19 regression class): nested inside `params` it is
+      // silently ignored and the payload arrives already unwrapped.
+      const envelope = (await this.http.get(
+        IAM_MEMBER_EP.invitations(tenantId),
+        {
+          params: {
+            status: params?.status,
+            cursor: params?.cursor,
+            limit: params?.limit,
+          },
+          raw: true,
+        },
+      )) as unknown as ApiEnvelope<InvitationListItemResponseDto[]>;
+
+      const { data, pagination } = parseEnvelope(envelope);
+      return {
+        // A SHORT (even empty) page with `hasMore: true` is normal here — BE
+        // applies `status` after a bounded keyset read. Never treat it as done.
+        data: (data ?? []).map(mapInvitationListItem),
+        nextCursor: pagination?.nextCursor ?? null,
+        hasMore: pagination?.hasMore ?? false,
+      };
+    } catch (err) {
+      throw mapIamFailure(err);
+    }
   }
 
-  /** MOCK-ONLY guard (US-E21.1) — see {@link listInvitations}. */
-  resendInvitation(): Promise<Invitation> {
-    throw new Error(
-      "resendInvitation has no real IAM route (mock-only, US-E21.1); see integration.md §6",
-    );
+  async resendInvitation(
+    tenantId: string,
+    invitationId: string,
+  ): Promise<Invitation> {
+    try {
+      // No request body: the resending admin comes from the JWT, and BE
+      // preserves roles/invitedBy/createdAt from the original invitation.
+      const dto = (await this.http.post(
+        IAM_MEMBER_EP.invitationResend(tenantId, invitationId),
+      )) as unknown as InvitationListItemResponseDto;
+      return mapInvitationListItem(dto);
+    } catch (err) {
+      throw mapIamFailure(err);
+    }
   }
 }

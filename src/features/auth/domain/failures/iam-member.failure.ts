@@ -15,5 +15,8 @@ export type IamMemberFailure =
   | { type: "invitation-expired" } // wire: invitation_expired (410)
   | { type: "invitation-email-mismatch" } // wire: invitation_email_mismatch (403, F8)
   | { type: "last-admin" } // wire: member_last_admin
+  | { type: "invitation-not-resendable" } // wire: invitation_not_resendable (409 — ACCEPTED/REVOKED row, US-E18.29)
+  | { type: "rate-limited"; retryAfterSeconds?: number } // wire: rate_limit_exceeded (429 + Retry-After, per-invitationId resend limiter)
+  | { type: "invalid-request" } // wire: invalid_request_parameters (400 — malformed cursor/limit/status)
   | { type: "network-error" }
   | { type: "unknown" };

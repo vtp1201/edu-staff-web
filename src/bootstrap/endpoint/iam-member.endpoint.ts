@@ -11,13 +11,21 @@
 const tenantMembers = (tenantId: string) =>
   `/iam/api/v1/tenants/${tenantId}/members`;
 
+/** `POST` invite + `GET` cursor-paginated invitation list (IAM US-147). */
+const tenantInvitations = (tenantId: string) =>
+  `/iam/api/v1/tenants/${tenantId}/invitations`;
+
+const tenantInvitation = (tenantId: string, invId: string) =>
+  `${tenantInvitations(tenantId)}/${invId}`;
+
 export const IAM_MEMBER_EP = {
   myTenants: "/iam/api/v1/members/me/tenants",
   switchTenant: "/iam/api/v1/members/switch-tenant",
-  invitations: (tenantId: string) =>
-    `/iam/api/v1/tenants/${tenantId}/invitations`,
-  invitation: (tenantId: string, invId: string) =>
-    `/iam/api/v1/tenants/${tenantId}/invitations/${invId}`,
+  invitations: tenantInvitations,
+  invitation: tenantInvitation,
+  /** `POST` — rotate the token + expiry of one invitation (IAM US-147). */
+  invitationResend: (tenantId: string, invId: string) =>
+    `${tenantInvitation(tenantId, invId)}/resend`,
   acceptInvitation: "/iam/api/v1/invitations/accept",
   /** `POST` — add a member to the tenant. */
   members: tenantMembers,
