@@ -277,3 +277,20 @@ before reading for style.
   use-case nor the mock repo guards it, and the `subject-archived` failure member is never produced.
   "It matches the Sheet" is NOT a defense when the mockup specifies the NEW surface. Cross-check every
   `disabled={...}`/conditional-render in the reference jsx against the implementation. (US-E12.13.)
+
+- **Client-side "drain-and-filter" that `slice(0, limit)`s while advancing a PAGE-granular cursor
+  silently DROPS rows** — when BE has no `?read=false`/status filter and the repo pages at `limit=100`,
+  filters client-side, then returns `items: collected.slice(0, limit)` with `nextCursor` = the last
+  page's real cursor, every matching row beyond `limit` inside that page becomes unreachable ("Load
+  more" resumes past them). Feature page sizes are small (`PAGE_SIZE = 8`) vs a 100-row drain page, so
+  it triggers for any user with ≥9 matches in the first page. ADRs describe this as "less efficient,
+  not incorrect" / "may re-surface an already-seen row" — reality is the opposite (loss, not duplicates).
+  Minimal fix: return `collected` UNCAPPED (the loop already breaks at `>= limit`, so overshoot ≤ drain
+  page size and the cursor stays page-aligned → no duplicates). Tests miss it because the "reports the
+  real hasMore" case uses exactly `limit` matches. (US-E18.25 `notification.repository.ts` `drainUnread`.)
+- **A deliberately-raw `throw new Error(...)` invariant guard collapses to `errorKey:"unknown"` at the
+  Server Action boundary** — actions map failures via `const f = err as Failure; return f?.type ?? "unknown"`,
+  so a guard thrown as a plain `Error` (MAX_BATCHES/MAX_PAGES style) is indistinguishable from any other
+  unknown failure AND is never logged (the action swallows it). The guard's "surface loudly" intent is
+  only half met — ask for a `console.error`/logger on the guard branch or a dedicated failure member.
+  (US-E18.25 `markAllRead` + notifications `actions.ts:66`.)
