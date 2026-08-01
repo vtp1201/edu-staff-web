@@ -1088,3 +1088,56 @@ under a trailing, unrelated pre-existing diagnostic (here `message-context-menu
 That is a shared-component change needing its own scope/ADR-level sign-off, not
 a drive-by inside a BE-wiring US — flagged back to fe-lead rather than silently
 widened.
+
+### Design-review gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+**Design review: pass** — scoped self-review (workflow-state + pagination
+change on an existing screen, no new tokens/palette, matching the
+US-E18.13/US-E18.12 precedent for this same gate), building on
+`fe-tech-lead-reviewer`'s independent raw-color grep (clean) and
+`fe-accessibility-auditor`'s full WCAG 2.1 AA pass:
+
+- **design-system:** conform. Independently re-grepped the full presentation
+  diff (`git diff main..HEAD -- src/features/academic-records/presentation/`)
+  for raw color/hex/`slate-`/`gray-`/`text-white`/`bg-white` — zero hits, only
+  semantic tokens used. No new token introduced. `LoadMoreButton`/`Button`
+  primitives reused as-is (no forked variant). Role/typography/spacing
+  patterns unchanged from the existing screen shell.
+- **a11y:** WCAG AA — deferred to `fe-accessibility-auditor`'s PASS (contrast
+  computed, not eyeballed; status conveyed by icon+label not color alone;
+  keyboard/focus/touch-target/motion all held; US-E18.13's A11Y-001
+  `role="alert"` scoping regression-checked clean). 2 non-blocking findings
+  (A11Y-E18.24-01/02) correctly scoped OUT as a shared-component follow-up,
+  not this US's blocker.
+- **impeccable audit:** the rollup redesign (dropping the per-subject
+  "unlocked subjects" list for a coarser count+status summary) is the kind of
+  hierarchy/completeness question impeccable exists to catch — reviewed the
+  new `all-locked-gate.tsx`/`seal-tab.tsx` copy: the 4-state truth table
+  (SEALED/PARTIAL/PENDING-never-sealed/PENDING-was-sealed-then-unsealed) is
+  rendered with distinct icon+copy per state (not just a count), and the
+  near-cap (`resealCount>=4`) caption reads as a proactive warning, not an
+  error. No anti-pattern found; no redesign of layout/palette attempted or
+  needed (design system stays supreme per `impeccable.md` scope).
+- **states:** loading (`isFetchingNextPage`, `isRequestsLoading`) / empty
+  ("select a class" prompt when `classId===null`) / error
+  (`hasLoadMoreError` retry affordance, just added) / success (paginated
+  list, rollup summary) all covered per the Storybook interaction suite
+  (25/25 seal-screen stories green, incl. the new `UnsealTab_LoadMoreError`
+  + `UnsealTab_LoadMoreExhausted` states). Responsive/320px unchanged from
+  the existing screen shell (selector hoist is a vertical reflow, no new
+  horizontal constraint).
+
+No follow-up items from this gate beyond the already-logged A11Y-E18.24-01/02
+(shared `LoadMoreButton` `aria-live`, tracked as a small future US, see
+below).
+
+### Follow-up (backlog, not blocking this US)
+
+- **A11Y-E18.24-01** (should-fix): `components/shared/load-more-button` needs
+  an `aria-live="polite"` announcement of newly-loaded rows (WCAG 4.1.3) —
+  benefits this screen + `audit-log-screen` (7 total callers). Candidate for
+  a small dedicated US (e.g. `INFRA-loadmore-aria-live`) the next time any
+  caller screen is touched, rather than a drive-by fix here.
+- **A11Y-E18.24-02** (nice-to-have): reconcile the shared `LoadMoreButton`
+  with `audit-log`'s own local variant (component-organization duplication,
+  decision `0026`) — same future US as above.
