@@ -801,7 +801,61 @@ blocking).
 
 ## Design Review Gate
 
-_(pending — required, UI-behavior change per Design Notes above)_
+Reviewed by `fe-lead` against `docs/DESIGN_REVIEW.md` + `.claude/rules/impeccable.md`
+scope (design system / handoff baseline is supreme; impeccable-class critique
+may only touch a11y/spacing/state gaps, not tokens/layout). Required because
+this US's biggest change is genuine UI behavior: `/teacher/exam-bank/[id]/edit`
+now renders the real builder (not a blocked state) for an owned DRAFT in real
+mode, delete becomes a real destructive action, and the Subject/Max-attempts
+fields go from always-editable to conditionally-disabled.
+
+**1. Design system conformance — PASS.** `git diff main..HEAD -- 'src/features/exam-bank/presentation/**' 'src/app/**'`
+swept for raw color literals (`bg-[#`, `text-gray-`, `text-white`, hex) —
+none found. No new token introduced (`--edu-*`/`tokens.css` untouched).
+Reused patterns, none forked: `DestructiveConfirmDialog` (unmodified,
+US-E18.15's audit still holds), `EmptyState` (via `ExamBuilderUnavailable`,
+now parameterized by `reason` — a prop addition to an existing shared
+component, not a duplicate), shadcn `Select`/`Input` `disabled` state (the
+existing primitive's own disabled styling, not a bespoke lock look), `Badge`/
+`StatusBadge` untouched. No role-color reinvention (decision `0013` N/A — no
+role-scoped UI touched). Matches `docs/product/screens.md`'s existing
+exam-bank entries (no new screen).
+
+**2. Accessibility — PASS** (see the Accessibility Audit above: 0 Blocking/
+Critical, 1 Major fixed pre-merge, 1 Minor deferred as a documented
+follow-up). Self-checked in addition, narrowly, on the two new disabled
+fields (`builder-header.tsx`): native `disabled` on `Select`/`Input` (correct
+choice here, distinct from the reorder-controls' "omit entirely" idiom,
+because Subject/Max-attempts still carry meaningful read-only information the
+teacher should see — an intentional, reasoned difference in treatment between
+two "field has no real-mode wire path" cases, not an inconsistency); shared
+explainer wired via `aria-describedby` on both fields, only rendered when
+`!metaEditable`; no color-only signal (native disabled affordance + text
+explainer, not a color-only cue).
+
+**3. impeccable-class critique — no anti-pattern found.** No generic-AI-look
+regression (no new gradient/shadow/rounded-corner invention — every new
+element reuses existing primitive styling verbatim). No polish suggestion
+needed beyond what a11y already flagged (A11Y-402, deferred).
+
+**4. States & responsive — PASS.** Loading/empty/error/success unchanged for
+the list screen; the builder's new "meta locked" sub-state and the 3
+`ExamBuilderUnavailable` reason states are all covered by stories (see
+Evidence). Grid layout for `BuilderHeader` (`grid-cols-1 sm:grid-cols-2
+lg:grid-cols-4`) is unchanged by this diff — no new 320px risk introduced;
+the added explainer `<p>` spans full width at both breakpoints
+(`sm:col-span-2 lg:col-span-4`), verified by reading the class list, not
+assumed.
+
+**Verdict: PASS.**
+
+```text
+Design review: pass
+- design-system: conform (token/typography/component OK, no raw color, no new token)
+- a11y: WCAG AA OK (0 blocking; A11Y-401 fixed pre-merge, A11Y-402 deferred non-blocking); keyboard OK; reduced-motion N/A (no new animation)
+- impeccable audit: 0 finding beyond what a11y already flagged
+- states: loading/empty/error/success OK; new meta-locked + 3 unavailable-reason states covered by stories; responsive 320px OK (no layout change)
+```
 
 ## QA Gate — `fe-qa-playwright`
 
