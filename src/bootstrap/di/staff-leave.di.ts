@@ -9,21 +9,27 @@ import { MockStaffLeaveRepository } from "@/features/staff-leave/infrastructure/
 /**
  * Staff-leave repository factory (per-request).
  *
- * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.8, cross-repo
- * ask #13, `EPIC-OVERVIEW.md`) — the first fully-blocked factory in this
- * epic (previous "permanently mock" cases — `admin-roster.di.ts`,
- * `class-management.di.ts` — were hybrid/partial, some ops real). Ground-truthed
- * against `edu-api/services/core/docs/openapi.yaml`
- * `/api/v1/conduct/staff-leave-requests*`: the real `GET` requires a mandatory
- * `staffMemberId` query param (no tenant-wide oversight list exists — this
- * admin screen shows every staff member's requests at once), AND
- * `StaffLeaveRequestResponse` carries zero display fields (no
- * `staffName`/`department`/`leaveType`) with no IAM lookup to backfill one
- * (cross-repo ask #6/#7). `approve`/`reject` are therefore also unreachable —
- * their only source of a valid id is the (mock) list. Forcing mock here
- * guards against the day the app-wide `USE_MOCK` flag flips to `false` and
- * would otherwise silently break this screen (`StaffLeaveRepository`'s real
- * class exists only as permanent blocked stubs — see its doc comment).
+ * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.8; rationale
+ * REVISED in US-E18.23 — cross-repo ask #13 is now PARTIALLY resolved and the
+ * residual gap is ask **#41**, `EPIC-OVERVIEW.md`).
+ *
+ * The original two-part premise no longer holds:
+ *   - "no tenant-wide oversight list exists" — FALSE since core US-149;
+ *     `staffMemberId` is optional now and omitting it yields the tenant-wide,
+ *     `status`-sliced list (ADMIN/MANAGER/SUPER_ADMIN).
+ *   - "no IAM lookup to backfill a name" — FALSE since IAM US-144;
+ *     `iam-directory`'s batch lookup resolves `staffMemberId` → `staffName`,
+ *     as `staffing.di.ts` already does for assignment display names.
+ *
+ * What still blocks wiring is narrower and unchanged: `department` and
+ * `leaveType` have NO source anywhere on `StaffLeaveRequestResponse`
+ * (re-ground-truthed 2026-08-01), yet both are required non-optional on the
+ * entity and read unguarded by the shipped card. A leave *category* cannot be
+ * substituted by a raw id the way `memberName` can, and inventing one is
+ * forbidden — so this screen keeps its shipped mock UX rather than shipping a
+ * half-real row. Forcing mock here guards against the day the app-wide
+ * `USE_MOCK` flag flips to `false` (`StaffLeaveRepository`'s real class exists
+ * only as permanent blocked stubs — see its doc comment).
  */
 async function makeRepo(): Promise<IStaffLeaveRepository> {
   return new MockStaffLeaveRepository();

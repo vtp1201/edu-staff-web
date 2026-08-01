@@ -128,6 +128,12 @@ documented decision (wire or stay mock) based on whether its residual
 
 ## Validation
 
+_Actual results in §Evidence below. Summary: 24 new `iam-directory` tests
+(unit + integration), +6 `class-management`, +7 `staffing`; full suite 434
+files / 2963 tests green; `tsc --noEmit` clean; `bun run build` green. E2E is
+N/A — pure data-source swap with unchanged ViewModel shape, and `staff-leave`
+stays mock (doc-only), so no UI state changed._
+
 | Layer | Expected proof |
 | --- | --- |
 | Unit | `iam-directory` use-cases (pagination-until-hasMore-false, RBAC-403 mapping, batch chunking/limit); `class-management` `listTeachers` real-repo test; `staffing` mapper/repository name-resolution test; `staff-leave` decision (wired: repo test; stays mock: unchanged, doc-only). |
@@ -149,7 +155,87 @@ documented decision (wire or stay mock) based on whether its residual
 
 ## Evidence
 
-(added after validation exists)
+_fe-nextjs-engineer, 2026-08-01. Branch `feat/us-e18.23-member-directory-wiring`._
+
+### Ground truth re-confirmed before coding
+
+- **`role` enum casing = UPPERCASE `"TEACHER"`** (planner's OPEN QUESTION,
+  resolved): `services/iam/docs/openapi.yaml`, `MemberListItem.roles` →
+  `enum: [ADMIN, MANAGER, TEACHER, STAFF, STUDENT, PARENT]`; the list endpoint's
+  `role` query param uses the same enum. Note the two IAM conventions differ and
+  must NOT be unified: **roles are UPPERCASE, error codes are raw lowercase.**
+- **IAM error codes raw lowercase**: `services/iam/docs/ERROR_CODES.md` lines
+  118–119 — `member_list_forbidden` (403), `too_many_member_ids` (400).
+  Precedent followed: `features/auth/infrastructure/repositories/iam-member.repository.ts`.
+- **Short/zero-length pages are normal**: the list endpoint's own description
+  says `role`/`search` are applied "in the application after a keyset read, so a
+  page MAY return fewer than `limit` items — even zero — while
+  `meta.pagination.hasMore` is true".
+- **`staff-leave` blocker re-verified**: `StaffLeaveRequestResponse` properties
+  are exactly `requestId`, `staffMemberId`, `startDate`, `endDate`, `reason`,
+  `state`, `approverMemberId`, `selfApproved`, `createdAt`, `updatedAt` — 0
+  candidate `department`/`leaveType` fields. `openapi.yaml` explicitly states
+  "`leaveType` … is intentionally NOT part of this response — it is a
+  forward-looking product decision (OQ-149-01), not a gap".
+
+### Files
+
+| Layer | Files |
+| --- | --- |
+| endpoint | `src/bootstrap/endpoint/iam-member.endpoint.ts` (+`directoryMembers`, +`batchMembers`; one shared `tenantMembers` builder — the directory GET and the add-member POST are the SAME route, so the literal is not duplicated) |
+| domain (new) | `iam-directory/domain/entities/{directory-member,member-summary}.entity.ts`, `domain/failures/iam-directory.failure.ts`, `domain/repositories/i-iam-directory.repository.ts`, `domain/use-cases/{search-members,batch-resolve-members}.use-case.ts`, `domain/use-cases/result.ts` |
+| infrastructure (new, `server-only`) | `iam-directory/infrastructure/dtos/{member-list-item,member-batch-item}.dto.ts`, `infrastructure/mappers/iam-directory.mapper.ts`, `infrastructure/repositories/iam-directory.repository.ts` |
+| bootstrap/di (`server-only`) | `iam-directory.di.ts` (new), `class-management.di.ts` (mock-delegation wrapper removed), `staffing.di.ts` (batch resolver composed), `staff-leave.di.ts` (doc only), `index.ts` |
+| infrastructure (modified) | `class-management.repository.ts` (`listTeachers` real + `TeacherDirectorySearch` port), `staffing.repository.ts` (`memberNameMap` + `toAssignment` signature), `staff-leave.repository.ts` (doc only) |
+| docs | `EPIC-OVERVIEW.md` (US-E18.23 row + asks #6/#7/#9/#13 + new ask #41), `TEST_MATRIX.md` (new row + US-E18.8 rationale) |
+
+### Proof (all run on this branch, nothing bypassed)
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` (full suite) | **434 files / 2963 tests pass**, zero regression |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun run build` | ✓ Compiled successfully in 10.1s |
+| `bun lint` | clean after `bun lint:fix` |
+
+New/changed tests (all written red-first):
+
+| File | Count | Covers |
+| --- | --- | --- |
+| `search-members.use-case.test.ts` | 5 (new) | page1 `hasMore:true`+1 item → page2 `hasMore:true`+**0 items** → page3 `hasMore:false`+1 item, all 3 visited and aggregated; cursor/role/search forwarding; defensive stop on `hasMore:true` with null cursor; failure propagation; empty list |
+| `batch-resolve-members.use-case.test.ts` | 5 (new) | 120 ids → chunk sizes `[50,50,20]`; unresolved ids silently omitted; de-dup; zero HTTP calls for an empty list; failure propagation |
+| `iam-directory.mapper.test.ts` | 3 (new) | `memberId === userId`; mapper does NOT filter on `status` (BE owns the LEFT rule) |
+| `iam-directory.repository.test.ts` | 11 (new) | `{raw:true}`+`parseEnvelope`; top-level raw-flag regression guard piping the REAL `unwrapResponse`; missing pagination = last page; `member_list_forbidden`→forbidden; bare 403→forbidden; `too_many_member_ids`→too-many-ids; `NETWORK_ERROR`/retryable→network-error; unmapped→unknown; comma-joined `ids` param |
+| `class-management.repository.test.ts` | +6 (37 total) | search forwarded to the collaborator; `DirectoryMember[]`→`TeacherMember[]`; zero direct HTTP from the repo; forbidden/network-error/other failure translation; unconfigured DI fails closed |
+| `staffing.repository.test.ts` | +7 (57 total) | name resolved for every resolvable id; **exactly ONE batch call per `listAssignments`**; raw-id fallback only for the unresolved subset; lookup failure degrades instead of failing the list; no call on an empty page; single-id `getAssignment`/`createAssignment` paths |
+
+### Deviations / judgement calls (flagged to `fe-lead`)
+
+1. **`batchMembers` is a constant, not a builder.** The plan said
+   `batchMembers(ids)`; the ids are a comma-separated `ids` QUERY param, not a
+   path segment, so a builder taking `ids` would be misleading. The repository
+   builds `{ params: { ids: ids.join(",") } }`. Likewise `directoryMembers` is an
+   alias of the existing `members` route (same URL, different verb) rather than a
+   duplicated literal.
+2. **Collaborators are injected as narrow function ports, optional.**
+   `ClassManagementRepository`'s `TeacherDirectorySearch` and
+   `StaffingRepository`'s `MemberNameResolver` are optional constructor params:
+   ~45 existing wire-level tests construct these repositories with just an http
+   client, and an optional port keeps that surface intact. Absent collaborator =
+   fail-closed `unknown` for `listTeachers`, and the pre-existing raw-id fallback
+   for staffing (never a new failure mode). Both are wired unconditionally in the
+   real DI branch, so the absent case is a misconfiguration, not a runtime path.
+3. **`iam-directory.di.ts` has no `USE_MOCK` branch** (as the assignment
+   allowed): the module owns no screen, and each consumer factory already gates
+   on `USE_MOCK` before ever reaching it. A second gate here would permit a
+   half-mock/half-real repository, which is what decision `0014` avoids.
+4. **Cross-feature domain TYPE imports** (`DirectoryMember`,
+   `IamDirectoryFailure`) appear in the two consumer repositories to type their
+   ports. Types only, domain layer, zero runtime coupling — same shape as
+   `iam-member.repository.ts` importing `features/tenant`'s `TenantMembership`.
+   All wire access still happens inside `iam-directory` (decision `0017`).
+5. **No i18n keys added** — the "pure data-source swap" premise held; no new
+   user-facing string appeared anywhere.
 
 ## Implementation Plan
 
