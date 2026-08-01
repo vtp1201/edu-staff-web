@@ -64,6 +64,51 @@ cheapest place to encode the contract.
 Proof: 440 files/3166 tests, Storybook 151/1122 (+12 stories), tsc + lint clean,
 `bun run build` green in mock AND real mode.
 
+## Review-fix pass (same story)
+
+**A failure that has no union member becomes a lying UI, not a crash.** 403
+`forbidden_action` fell to `default → unknown` → generic banner *with* a retry
+that can never succeed. Same shape as `expired`-status coercion: when a wire
+value has no home, the default branch silently picks an actionable one. Fix
+pattern: give the failure its own member, then give the UI a **no-retry** state
+— extend the canonical `ListError` with `showRetry?: boolean` (default true,
+omit-not-disable, mirroring `FeedErrorState`) rather than forking. Adding
+`forbidden` also widens the MUTATION result union → the revoke dialog's inline
+error needed a **tone** (`{tone,message}` state, `forbidden` = confirm
+force-disabled + no retry) instead of a bare string.
+
+**Adding a retry predicate BREAKS the existing error story.** `ErrorAndRetry`
+assumed "fail once → click retry"; with `retry: shouldRetryList` the single
+failure is auto-retried and the banner never appears. Make the fixture fail
+`1 + MAX_RETRIES` times. Bonus: because the Storybook decorator's client sets
+`retry: false`, a story asserting the query IS auto-retried (call count === 2)
+is real proof the per-query predicate overrides its host — otherwise a retry
+story proves nothing.
+
+**Unknown-status fallback: pick the ACTION-FREE terminal value.** `pending`
+enables copy-link+revoke, `expired` enables resend; only `accepted`/`revoked`
+enable nothing. Chose `revoked` (an anomaly rendered as an anomaly) over
+`accepted` (falsely asserts membership → admin stops chasing). A real `unknown`
+member would ripple through `Record<Status,…>` ×2 + i18n + the `status?:` request
+param — flag it, don't sneak it in.
+
+**`requireRole` is cheap and belongs on ALL actions in the file**, not just the
+one the story touched: a Server Action is an independently-invocable POST, so an
+`/admin` RSC layout guard covers nothing here. `requireRole(["admin"])` is safe
+in mock mode (`decodeRoleClaim` returns `"admin"` for any token) — the moderation
+comment saying otherwise is about `["principal"]`.
+
+**`Number("") === 0` is finite** — a header/param guard needs `> 0`, not just
+`Number.isFinite`, or a missing `Retry-After` becomes "retry in 0 seconds".
+
+**`aria-describedby` is not a live region.** When focus stays in a field while
+the described text appears/disappears (search caveat), add `role="status"` +
+`aria-live="polite"` to the SAME node and KEEP the describedby. And an empty
+state that still renders a live "Load more" (short-page-with-hasMore) needs
+linking `sr-only` copy — the canonical `LoadMoreButton` took one additive
+`describedById?: string` (assert the attribute is ABSENT when omitted, so the 5
+other callers are provably untouched).
+
 Related: [[pattern-boundary-narrow-remap]], [[pattern-be-wiring-remap]],
 [[pattern-rsc-seeded-infinite-query]], [[pattern-invitations-e21-1]],
 [[gotcha-initialdata-observer-scoped]], [[pattern-shared-infra-feature-module]].
