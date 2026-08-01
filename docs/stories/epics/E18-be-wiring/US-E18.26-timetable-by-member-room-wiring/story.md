@@ -878,6 +878,57 @@ promote then (move, never copy) — not a decision to pre-empt now.
   so a future reader doesn't "fix" the optionality back without re-reading
   this packet.
 
+## Design-Review Gate (fe-lead, 2026-08-01)
+
+Scope per `docs/DESIGN_REVIEW.md`: the ONLY presentation diff in this US is
+`src/features/timetable/presentation/timetable-view/child-picker.tsx` (+ its
+`subject-color-tokens.ts` sibling, touched only by the a11y auditor's
+contrast fix). Everything else in this US is domain/infrastructure/bootstrap
+— explicitly out of gate scope per `docs/DESIGN_REVIEW.md` §"Khi nào áp
+dụng" ("bỏ qua thay đổi thuần domain/infrastructure/bootstrap"). Confirmed
+via `git diff --name-only fbe83bb..HEAD -- src/features/*/presentation
+src/app` → only `child-picker.tsx` + `subject-color-tokens.ts`.
+
+1. **Design system conformance** — PASS. Every class is a semantic
+   `edu-*`/shadcn token (`text-edu-text-primary`, `text-edu-text-secondary`,
+   `border-edu-border`, `bg-edu-card`) or an existing `CHILD_COLOR_CLASSES`
+   entry (now including the a11y-fixed `avatarText`); no raw color. No new
+   component invented — reuses the existing card-picker pattern (plan
+   decision 5, `fieldset`/`legend sr-only`/real `<button>` cards) unchanged;
+   only the two text lines gained a conditional fallback. Typography
+   unchanged from the existing pattern (name = bold 14px `text-sm`, caption
+   = 11px `text-[11px]` — matches this screen's pre-existing caption scale,
+   not a new size). Role-color-only-via-accent convention (decision `0013`)
+   untouched — still cycles the same six `CHILD_COLOR_CLASSES` keys.
+2. **Accessibility** — PASS (post-fix, per `fe-accessibility-auditor`'s
+   audit above: A11Y-001 avatar contrast fixed; accessible name confirmed
+   unambiguous via unique `ordinal`; keyboard/focus/`aria-pressed` semantics
+   unchanged; "no class yet" conveyed by text, not color).
+3. **impeccable critique** — applied directly (no separate CLI invocation
+   needed for a 2-line conditional-text change already vetted by both
+   `fe-component-architect` and `fe-accessibility-auditor`): no anti-pattern
+   found — hierarchy (bold name / muted caption) matches the existing
+   pattern, no generic-AI-look drift, no layout/palette change (impeccable's
+   forbidden territory per `.claude/rules/impeccable.md` — N/A, nothing to
+   flag here).
+4. **States & responsive** — PASS. The fallback IS the "degraded identity"
+   state (was previously unreachable in mock-only mode; now the empty/
+   partial state is friendly text, never blank) — exercised by the new
+   `ParentView_RealMode_NoNameFallback` Storybook interaction story
+   (confirmed by the a11y auditor). Card picker already wraps
+   (`flex flex-wrap`) at narrow widths — no new responsive risk introduced
+   by a text-length change (Vietnamese fallback strings are short).
+
+**Design review: PASS.**
+- design-system: conform (token/typography/component OK, no new
+  component/token)
+- a11y: WCAG AA OK post-fix (A11Y-001 contrast, fixed same-session);
+  keyboard OK; reduced-motion OK (no new animation)
+- impeccable audit: 0 findings (narrow, already-vetted 2-line conditional
+  text change)
+- states: fallback/empty state OK (exercised by
+  `ParentView_RealMode_NoNameFallback`); responsive OK (no layout change)
+
 ## Evidence
 
 ### Implementation (fe-nextjs-engineer, 2026-08-01)
