@@ -186,12 +186,12 @@ Watch for these (each has bitten a story here):
   untracked `*audit*.stories.tsx` / stories containing `console.log` must never be committed. Note: the
   tree can change under you mid-review if a parallel `/fe` session is active — re-check `git status` +
   re-run this story's storybook against clean HEAD before finalizing. (US-E23.1.)
-- **Full storybook-vitest suite has broad PRE-EXISTING failures** — many unrelated story files
-  (lesson-bank, discipline, timetable, announcements, messaging…) fail both in the full run and in
-  ISOLATION with a real Radix error (`A <Select.Item /> must have a value prop that is not an empty
-  string`) plus worker contention. Don't attribute these to the story under review — confirm by running
-  the story's OWN files in isolation (they pass) and spot-check one unrelated failing file in isolation
-  (still fails). Flag as repo-health to fe-lead, not a per-story blocker. (Observed US-E23.1, 2026-07-19.)
+- ~~**Full storybook-vitest suite has broad PRE-EXISTING failures**~~ — **STALE, fixed.** Observed
+  US-E23.1 (2026-07-19) with Radix `<Select.Item value="">` errors + worker contention across
+  lesson-bank/discipline/timetable/announcements/messaging. Re-verified 2026-08-01 (US-E18.28):
+  `bunx vitest run --config vitest.storybook.mts` is **fully green, 151 files / 1108 tests**. So a
+  storybook failure now IS attributable to the story under review — don't wave it off as repo health.
+  (Console noise like `<tfoot> cannot contain a nested <p>` still prints on pass; that's separate.)
 
 - **Contract-remap / force-mock / invented-default US landing without a registered ADR** — in the E18
   BE-wiring epic every comparable US registered a decision (`0058` attendance remap, `0059` invitation,

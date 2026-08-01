@@ -357,6 +357,18 @@ Confirmed facts (verify before citing if stale):
     (else an ESSAY gets rewritten as MCQ) and `marks` (else the server's `totalMarks` resets). Optional
     `questionType?`/`marks?` on the entity, set in the mapper and read in `mapXToWire` with a documented
     default, "no new UI field" — that is a legitimate domain addition, NOT wire leakage. Don't flag it.
+- **Fixing an un-mock gap must not silently strengthen validation in MOCK mode** (US-E18.28 round 3,
+  fe-lead correction — worth applying proactively). When a review MUST/SHOULD FIX adds a client-side
+  pre-submit gate to protect a REAL non-atomic write, engineers apply it unconditionally, which changes
+  standing product behavior on the mock/existing path too. Canonical case: draft-save was lenient
+  (title only) with completeness enforced solely at Publish — the standard "draft = incremental,
+  publish = validated" split; an unconditional gate breaks "click Add question, save, come back later".
+  Correct shape = a dedicated VM prop whose **default restores the pre-US behavior exactly**
+  (`requireCompleteQuestions?: boolean = false`), wired `={!USE_MOCK}` from the route. Verify by
+  (a) grepping every call site of the component — untouched callers must rely on the default, and
+  (b) demanding BOTH-polarity stories (gate-on→blocked AND gate-off→still saves), since the lenient
+  story is the actual regression lock. Ask "what was true before this US?" before accepting any new
+  validation, and read defaults as the compatibility contract.
 - **Client-side gate mirroring a server gate belongs in `domain/use-cases/` as a pure policy**
   (US-E18.28 `resolve-builder-access.ts`: `{useMock,status,authorId,callerId}` → `{allowed}` |
   `{allowed:false, reason}`). Makes the RSC branch unit-testable instead of source-asserted, and the
