@@ -1,9 +1,13 @@
-# FE → BE (2026-08-01): xác nhận batch US-144..153 + danh sách asks còn treo
+# FE → BE (2026-08-01, cập nhật 2026-08-02): xác nhận batch US-144..153 + danh sách asks còn treo
 
 > FE đã verify trực tiếp trên `edu-api origin/main` (147 commit từ 26/7).
 > Phần 1 = cái BE đã giải, FE xác nhận, KHÔNG cần làm lại. Phần 2 = cái còn
 > treo, xếp theo ưu tiên, kèm file/endpoint cụ thể. Số ask (#N) theo registry
 > `docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md` (repo edu-staff-web).
+>
+> **Cập nhật 2026-08-02:** FE đã TIÊU THỤ XONG toàn bộ batch qua 7 US wiring
+> (US-E18.22→29, đều merged `main`, suite 3191 tests xanh) — xem Phần 3 mới:
+> 2 asks mới phát sinh khi wire (#41, #42) + 1 observation SSE cho BE.
 
 ## Phần 1 — Xác nhận các asks ĐÃ được giải (verify trên contract + openapi)
 
@@ -124,3 +128,32 @@ buffer/timeout sớm với long-lived connection).
     real: `GET /parent-student-links/{linkId}/audit-trail` →
     `LinkAuditEntry[]` (contract đề xuất đã ghi ở
     `US-E20.3-link-audit-trail/integration.md` §INT-108, camelCase khớp sẵn).
+
+## Phần 3 — Cập nhật 2026-08-02: kết quả tiêu thụ batch + asks mới
+
+FE đã wire xong toàn bộ batch US-144..153 qua 7 US (US-E18.22 SSE-qua-Kong,
+US-E18.23 member directory, US-E18.24 unseal + seal-status, US-E18.25
+notification center, US-E18.26 timetable by-member + room, US-E18.28
+exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
+`main`, không phát hiện contract drift nào so với docs — batch chất lượng tốt.
+
+### Asks MỚI phát sinh khi wire (thêm vào P2)
+
+19. **#41 — `StaffLeaveRequestResponse` thiếu `department` + `leaveType`**
+    (phát hiện khi wire US-E18.23). US-149 (tenant-wide list) + US-144 (tên
+    qua batch lookup) đã đóng 2/3 blocker của màn admin staff-leave; đây là
+    mảnh cuối. Ask kèm câu hỏi: 2 field này sẽ land **required hay nullable**?
+    (FE cần biết để model entity + empty state.)
+20. **#42 — notification inbox thiếu filter `?read=false`** (phát hiện khi
+    wire US-E18.25). BE đã có per-status count chính xác (`unread-count`)
+    nhưng list không filter được theo trạng thái đọc → tab "Chưa đọc" phía FE
+    phải drain client-side (bounded, hoạt động đúng nhưng tốn round-trip).
+    Nice-to-have, không phải defect.
+
+### Observation cho BE (không chặn)
+
+- **SSE flush latency** (US-E18.22, live-proof qua Kong): stream
+  `/noti/api/v1/stream` log `200` server-side nhưng không flush byte nào tới
+  client trong vài giây im lặng đầu — nghi Fiber-level buffering phía
+  `notification`. Client `EventSource` của web chịu được, nhưng đáng xem nếu
+  cần reconnect timing chặt hơn.
