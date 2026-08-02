@@ -36,5 +36,23 @@ admin contract.
   then `await element.props.children.type(props)` through the Suspense wrapper
   and assert the client screen's `vm` props.
 
+**Review-fix pass (same story):**
+- `readOnly?: boolean` + optional `onX?.()` handlers is a *reviewable defect*: a
+  future non-readOnly caller that forgets a handler compiles and ships a dead
+  button. Tighten to a union discriminated on the flag
+  (`{readOnly:true} | {readOnly?:false; onX:…; onY:…}`). Then you must read
+  `props.readOnly` **at each guard** — destructuring it into a local (esp. with
+  a `= false` default) severs the narrowing link and `props.onX` goes optional
+  again. Prove both polarities with a throwaway probe file under `src/` +
+  `bunx tsc --noEmit` (missing handler AND handler-passed-with-readOnly both
+  error), then delete it. Test helpers that pass every prop at one JSX site must
+  split into two call sites.
+- 44px hit area around a smaller visual pill (pagination): the `<button>` gets
+  `group inline-flex min-h-11 min-w-11` + the focus ring, the inner `<span>`
+  keeps the design-spec 30px pill; move `hover:` → `group-hover:` on the span or
+  hover dies. Icon inside an already-`aria-hidden` span doesn't need its own.
+- `text-edu-text-muted` is 2.95:1 — fails AA for any meaningful text
+  (e.g. "showing X–Y of Z"). `text-muted-foreground` aliases the 5.48:1 token.
+
 See [[pattern-shared-list-states]] (ListError `showRetry` omit-not-disable for
 403) and [[pattern-rsc-routing-gate-e23-2]] (RSC-props testing technique).
