@@ -19,6 +19,51 @@ import { useRef } from "react";
  * mounts already-open (`open={true}` on first render, e.g. a conditionally
  * rendered sheet) still captures its invoker.
  */
+/**
+ * PRIMITIVE-level variant of {@link useDialogReturnFocus}, for a Radix
+ * `Content` that has no access to the `open` flag.
+ *
+ * Why the `open`-based hook cannot be used there: a `Content` is normally
+ * rendered UNCONDITIONALLY inside its `Root` (only Radix's `Presence` decides
+ * whether it mounts), so the component function first renders while the dialog
+ * is still CLOSED — snapshotting `document.activeElement` then captures
+ * `<body>`, and "restoring" focus to `<body>` on close is worse than doing
+ * nothing: it also suppresses Radix's own `triggerRef` restore. Measured, not
+ * theorised (US-E18.32: a `<SheetTrigger>`-based sheet lost its focus restore).
+ *
+ * Instead, snapshot on Radix's `onOpenAutoFocus`, which FocusScope dispatches
+ * BEFORE it moves focus into the content — so `document.activeElement` is still
+ * the true invoker. Neither handler prevents Radix's default unless we really
+ * have an invoker to return to, so trigger-based dialogs keep their built-in
+ * behaviour.
+ */
+export function useAutoFocusReturn(): {
+  onOpenAutoFocus: (event: Event) => void;
+  onCloseAutoFocus: (event: Event) => void;
+} {
+  const invokerRef = useRef<HTMLElement | null>(null);
+
+  return {
+    onOpenAutoFocus: () => {
+      const active = document.activeElement;
+      invokerRef.current =
+        active instanceof HTMLElement && active !== document.body
+          ? active
+          : null;
+      // Deliberately NO preventDefault — Radix still focuses the content.
+    },
+    onCloseAutoFocus: (event: Event) => {
+      const invoker = invokerRef.current;
+      invokerRef.current = null;
+      // A detached invoker (its row was removed while the dialog was open) is
+      // unfocusable — fall through to Radix's own restore instead.
+      if (!invoker?.isConnected) return;
+      event.preventDefault();
+      invoker.focus();
+    },
+  };
+}
+
 export function useDialogReturnFocus(open: boolean): (event: Event) => void {
   const invokerRef = useRef<HTMLElement | null>(null);
   const prevOpenRef = useRef(false);
