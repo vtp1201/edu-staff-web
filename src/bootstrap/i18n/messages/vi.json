@@ -2900,6 +2900,7 @@
     "columnDate": "Ngày",
     "columnStatus": "Trạng thái",
     "summaryLabel": "Tổng hợp",
+    "summaryChip": "{label} {count}",
     "loadingAriaLabel": "Đang tải lịch sử điểm danh",
     "noChildrenTitle": "Chưa có con nào được liên kết",
     "noChildrenBody": "Liên hệ nhà trường để liên kết tài khoản của bạn với học sinh.",

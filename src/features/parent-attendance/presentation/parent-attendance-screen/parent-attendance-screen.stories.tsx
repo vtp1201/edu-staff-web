@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
+import enMessages from "@/bootstrap/i18n/messages/en.json";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ChildSwitcherChild } from "@/components/shared/child-switcher";
 import type { ChildAttendanceRecord } from "../../domain/entities/child-attendance-record.entity";
@@ -90,6 +91,34 @@ export const Populated: Story = {
     const panel = canvas.getByRole("tabpanel");
     expect(panel).toHaveAttribute("id", "tabpanel-c1");
     expect(panel).toHaveAttribute("aria-labelledby", "tab-c1");
+  },
+};
+
+/**
+ * Same VM under the `en` locale (fix round, tech-lead SHOULD-FIX 3 + 4): the
+ * date column is formatted by `useFormatter().dateTime`, so it flips to the
+ * en ordering (MM/DD/YYYY) instead of the previously hard-coded DD/MM/YYYY, and
+ * the summary chip's label/count word order comes from the `summaryChip`
+ * message ("Present: 1") rather than JSX concatenation.
+ */
+export const PopulatedEnglishLocale: Story = {
+  args: { ...Populated.args },
+  decorators: [
+    (Story) => (
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <Story />
+      </NextIntlClientProvider>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // vi renders 03/08/2026 for the same record — locale decides the ordering.
+    expect(canvas.getByText("08/03/2026")).toBeVisible();
+    expect(canvas.queryByText("03/08/2026")).toBeNull();
+
+    const summary = canvas.getByRole("list", { name: "Summary" });
+    expect(within(summary).getByText("Present: 1")).toBeVisible();
+    expect(canvas.getByText("Child attendance")).toBeVisible();
   },
 };
 

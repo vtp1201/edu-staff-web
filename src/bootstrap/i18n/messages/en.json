@@ -2900,6 +2900,7 @@
     "columnDate": "Date",
     "columnStatus": "Status",
     "summaryLabel": "Summary",
+    "summaryChip": "{label}: {count}",
     "loadingAriaLabel": "Loading attendance history",
     "noChildrenTitle": "No linked children yet",
     "noChildrenBody": "Contact the school to link your account to a student.",

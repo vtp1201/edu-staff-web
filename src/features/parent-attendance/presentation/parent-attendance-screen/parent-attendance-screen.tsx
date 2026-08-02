@@ -9,7 +9,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { ChildSwitcher } from "@/components/shared/child-switcher";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ListError } from "@/components/shared/list-error";
@@ -32,8 +32,8 @@ import {
   ATTENDANCE_STATUS_ORDER,
   ATTENDANCE_STATUS_TONE,
   countByStatus,
-  formatIsoDate,
   isRetryableFailure,
+  parseIsoDate,
 } from "./build-parent-attendance-vm";
 import type { ParentAttendanceScreenVM } from "./parent-attendance-screen.i-vm";
 
@@ -44,6 +44,18 @@ const STATUS_ICON: Record<AttendanceStatus, LucideIcon> = {
   excusedAbsent: FileCheck2,
   absent: XCircle,
 };
+
+/**
+ * Locale-ordered numeric day (`vi` → 03/08/2026, `en` → 08/03/2026). `UTC`
+ * pairs with `parseIsoDate`'s noon-UTC instant so the calendar day is stable
+ * across timezones and identical on server and client.
+ */
+const DATE_FORMAT = {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "UTC",
+} as const;
 
 export interface ParentAttendanceScreenProps {
   vm: ParentAttendanceScreenVM;
@@ -63,6 +75,7 @@ export function ParentAttendanceScreen({
 }: ParentAttendanceScreenProps) {
   const t = useTranslations("parentAttendance");
   const tStatus = useTranslations("attendance.status");
+  const format = useFormatter();
 
   const hasChildren = vm.childList.length > 0;
   const activeChildId = vm.activeChildId ?? vm.childList[0]?.childId ?? null;
@@ -186,7 +199,12 @@ export function ParentAttendanceScreen({
                   <li key={status}>
                     <StatusBadge tone={ATTENDANCE_STATUS_TONE[status]}>
                       <Icon className="size-3.5" aria-hidden="true" />
-                      {tStatus(status)} {counts[status]}
+                      {/* label + count composed in the message, not in JSX —
+                          word order is a translator's decision. */}
+                      {t("summaryChip", {
+                        label: tStatus(status),
+                        count: counts[status],
+                      })}
                     </StatusBadge>
                   </li>
                 );
@@ -207,10 +225,13 @@ export function ParentAttendanceScreen({
                 <TableBody>
                   {vm.records.map((record) => {
                     const Icon = STATUS_ICON[record.status];
+                    const day = parseIsoDate(record.date);
                     return (
                       <TableRow key={record.date}>
                         <TableCell className="font-medium">
-                          {formatIsoDate(record.date)}
+                          {day
+                            ? format.dateTime(day, DATE_FORMAT)
+                            : record.date}
                         </TableCell>
                         <TableCell>
                           <StatusBadge
