@@ -40,8 +40,9 @@ export type ResolveChildNames = (
  *    returned. It is not an existence oracle and must never be handed an id
  *    the link list did not produce.
  *
- * The name lookup is best-effort: a failure degrades every row to its raw
- * memberId rather than failing the screen (staffing/invitations precedent).
+ * The name lookup is best-effort: a failure degrades every row to an absent
+ * `name` (the mapper/presentation ordinal fallback, "Con thứ N" — never a raw
+ * memberId) rather than failing the screen (staffing/invitations precedent).
  * The roster read itself is NOT best-effort — without it there is no roster.
  */
 export class ParentChildListRepository implements IChildListRepository {
@@ -51,8 +52,9 @@ export class ParentChildListRepository implements IChildListRepository {
     private readonly parentMemberId: string | null,
     /**
      * Optional so wire-level tests can construct the repository with just an
-     * http client. Absent = every row keeps the raw-id fallback — a degraded
-     * display, never an error (same convention as `staffing.repository.ts`).
+     * http client. Absent = every row's name is left unset, so the ordinal
+     * fallback renders — a degraded display, never an error (same convention
+     * as `staffing.repository.ts`).
      */
     private readonly resolveNames?: ResolveChildNames,
   ) {}
@@ -88,8 +90,9 @@ export class ParentChildListRepository implements IChildListRepository {
 
   /**
    * Names for EXACTLY the ids the link list returned, in one batch call.
-   * Never throws: a lookup error degrades to an empty map, which the mapper's
-   * raw-id fallback then covers.
+   * Never throws: a lookup error degrades to an empty map, which the
+   * mapper/presentation ordinal fallback then covers (name left unset, never
+   * a raw id).
    */
   private async childNameMap(
     links: LinkedStudentsResponseDto["links"],
