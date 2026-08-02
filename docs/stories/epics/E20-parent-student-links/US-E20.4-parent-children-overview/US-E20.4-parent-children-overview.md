@@ -81,13 +81,13 @@ which already has the name.
 
 ## Validation
 
-| Layer | Expected proof |
-| --- | --- |
-| Unit | ViewModel-mapping test (select child summary fields, no-child empty mapping) |
-| Integration | none new (repository already covered by US-E20.2) |
-| E2E | Storybook interaction: cards render, empty state, card → academic-record navigation |
-| Platform | `bun build` clean |
-| Release | design-review gate + a11y audit green |
+| Layer | Expected proof | Actual |
+| --- | --- | --- |
+| Unit | ViewModel-mapping test (select child summary fields, no-child empty mapping) | ✅ 14 tests — `build-children-overview-vm.test.ts` (8) + `child-identity-header.test.tsx` (6) |
+| Integration | none new (repository already covered by US-E20.2) | ✅ n/a — no new repo/HTTP boundary |
+| E2E | Storybook interaction: cards render, empty state, card → academic-record navigation | ✅ 11 stories (7 screen + 4 shared component), incl. loading/empty/error+retry/keyboard/href |
+| Platform | `bun build` clean | ✅ clean with `NEXT_PUBLIC_USE_MOCK=` unset; route emitted |
+| Release | design-review gate + a11y audit green | ⏳ pending `fe-lead` review/QA gate |
 
 ## Harness Delta
 
@@ -95,7 +95,70 @@ Registered via `harness-cli story add --id US-E20.4`.
 
 ## Evidence
 
-(fill after implementation)
+Implemented on `feat/us-e20.4-parent-children-overview` (commits `43a6419`
+shared-component promotion, `365377e` screen + route).
+
+### Files
+
+| Layer | File |
+| --- | --- |
+| Presentation (pure) | `src/features/parent/presentation/children-overview-screen/build-children-overview-vm.ts` (+ `.test.ts`), `children-overview-screen.i-vm.ts`, `children-overview.query-keys.ts` |
+| Presentation (client) | `children-overview-screen.tsx` (`'use client'`), `child-overview-card.tsx` (`'use client'`), `children-overview-screen.stories.tsx` |
+| Shared component | `src/components/shared/child-identity-header/{child-identity-header.tsx,index.ts,child-identity-header.test.tsx,child-identity-header.stories.tsx}` |
+| App (server action) | `src/app/[locale]/t/[tenant]/(app)/parent/children/actions.ts` (`'use server'`) |
+| App (RSC) | `src/app/[locale]/t/[tenant]/(app)/parent/children/page.tsx` |
+| Refactored call sites | `src/features/parent/presentation/parent-dashboard.tsx`, `src/features/user/presentation/profile/consent-section/child-consent-card.tsx` |
+| i18n | `messages/{vi,en}.json` → new `parentChildrenOverview.*` (4 keys, vi+en); empty/error copy REUSED from `parentLinks.consentSection.*` |
+
+No new domain / infrastructure / DI code: the screen reuses US-E20.2's
+`GetLinkedStudentsWithConsentsUseCase` via the existing
+`makeGetLinkedStudentsWithConsentsUseCase()` factory and drops the consent
+dictionary in the screen mapper (AC-004).
+
+### Decisions taken during implementation
+
+- **Class chip descoped** (planner's open question, accepted): `LinkedStudentSummary`
+  has no `className`; the card shows avatar + real name + "Xem học bạ" CTA. All 5
+  ACs pass without it. Surfacing class would need a BE ask, not a client-side guess.
+- **`ChildIdentityHeader` promoted, not copied a 3rd time** (decision `0026`,
+  "promote, đừng copy"): the avatar+initials+name pattern was inlined in
+  `parent-dashboard.tsx` and `child-consent-card.tsx`; it now lives once in
+  `components/shared/child-identity-header/` and BOTH pre-existing call sites were
+  refactored onto it. `tone` / `size` / `initials` props preserve each site's
+  existing visuals exactly (dashboard: lg + purple + single initial + class
+  subtitle; consent card: md + primary + double initials + tinted container +
+  trailing `StatusBadge`).
+- Whole card is a single next-intl `<Link>` (one tab stop, native Enter
+  activation, `focus-visible:ring-ring`) with a per-child `aria-label`
+  ("Xem học bạ của {name}") so the repeated CTA is never the accessible name
+  (WCAG 2.4.4 / 2.4.9).
+- Card-grid skeleton is screen-local (not the shared `ListSkeleton`, which is a
+  flat row list inside ONE bordered card) — same documented ruling as
+  `ConsentSkeleton`.
+
+### Proof (all run on the branch, real results)
+
+| Check | Result |
+| --- | --- |
+| `bun vitest run` | **453 files / 3259 tests passed** (baseline 451/3245 → +2 files, +14 tests; zero regressions, refactored consent-card + dashboard suites green) |
+| `bunx vitest run --config vitest.storybook.mts` | **156 files / 1170 interaction tests passed** (+2 files, +11 stories) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint:fix` / Biome | clean (only pre-existing repo-wide warning/info) |
+| `bun run build` (`NEXT_PUBLIC_USE_MOCK=` unset) | clean — route `ƒ /[locale]/t/[tenant]/parent/children` present |
+
+New unit tests (14): mapper identity-field projection, key-set assertion that
+no `consent`/`linkId` leaks onto the card VM, zero-children → genuine empty,
+`forbidden` → own errorKey (never a fake empty), other failures →
+`network-error`, `academicRecordHref` incl. URL-unsafe id encoding;
+`childInitials` both modes + whitespace/empty-name guards, `identityToneClass`.
+
+New interaction stories (11): screen — loading, success ×3 children (real names
+asserted, `/Con thứ/` absent, zero consent affordance), success single child,
+card href = `/vi/t/{tenant}/parent/children/{studentId}/academic-record`,
+keyboard Tab card-to-card (one tab stop per card), empty state, forbidden error
++ retry → success (asserts forbidden is NOT rendered as "no children");
+`ChildIdentityHeader` — default, consent-card shape, dashboard shape, long-name
+truncation.
 
 ## Implementation Plan
 
