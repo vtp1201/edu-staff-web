@@ -421,8 +421,14 @@ export function ModerationScreen({
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      {/* Sourced from the stats query ONLY — never from `reports.length`. */}
-      <StatRow stats={latestStats} isLoading={statsQuery.isLoading} />
+      {/* Sourced from the stats query ONLY — never from `reports.length`.
+          A terminally-failed stats read shows the unavailable marker, NOT a
+          skeleton that would never resolve (review MUST-FIX, US-E18.32). */}
+      <StatRow
+        stats={latestStats}
+        isLoading={statsQuery.isLoading}
+        hasError={statsQuery.isError}
+      />
 
       {/* The audit tab only exists where the trail can actually be served. */}
       {auditLogEnabled && (

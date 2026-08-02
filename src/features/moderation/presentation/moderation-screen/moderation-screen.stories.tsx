@@ -248,6 +248,74 @@ export const WholeScreenError: Story = {
     );
     // no partial stat numbers when BOTH reads failed.
     await expect(canvas.queryByText("3")).toBeNull();
+    // A terminally-failed stats read shows the UNAVAILABLE marker on BOTH
+    // counter cards — never an endless skeleton (which reads as "still
+    // loading"). The skeleton renders no text at all, so the presence of the
+    // markers is itself proof it is gone.
+    await waitFor(async () =>
+      expect((await canvas.findAllByText(m.unavailable)).length).toBe(2),
+    );
+  },
+};
+
+/**
+ * Stats fail while the QUEUE succeeds: the counters degrade on their own to the
+ * unavailable marker (they are an independent query) and the queue still
+ * renders. `forbidden` is non-retryable, so this is the terminal state — the
+ * exact case the old `isLoading || !stats` skeleton showed forever.
+ */
+export const StatsForbiddenShowsUnavailable: Story = {
+  args: {
+    ...baseProps,
+    initialStats: null,
+    getReportStatsAction: async () => ({
+      ok: false,
+      errorKey: "forbidden",
+      retryable: false,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(async () =>
+      expect((await canvas.findAllByText(m.unavailable)).length).toBe(2),
+    );
+    // Never a fabricated zero.
+    await expect(canvas.queryByText("0")).toBeNull();
+    // The queue is unaffected — a failed counter read is not a screen failure.
+    await expect(
+      canvas.getByRole("button", {
+        name: m.table.openDetail.replace("{id}", "r-1"),
+      }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * A11Y-001 (WCAG 2.4.3): the detail Sheet is opened programmatically from a row
+ * button — there is no `<SheetTrigger>`, so Radix's own focus restore has
+ * nothing to return to. On close, focus must land back on the row button the
+ * moderator came from, not on `<body>` (which strands a keyboard user at the
+ * top of a paginated list). Fixed in the `SheetContent` PRIMITIVE.
+ */
+export const DetailSheetRestoresFocusOnClose: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const open = await canvas.findByRole("button", {
+      name: m.table.openDetail.replace("{id}", "r-1"),
+    });
+    open.focus();
+    await expect(open).toHaveFocus();
+    await userEvent.click(open);
+
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
+    // Focus returned to the invoking row button (NOT <body>).
+    await waitFor(() => expect(open).toHaveFocus());
+    await expect(document.activeElement).not.toBe(document.body);
   },
 };
 
