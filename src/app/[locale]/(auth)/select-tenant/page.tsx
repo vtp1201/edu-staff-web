@@ -1,4 +1,3 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
 import { makeListMyMembershipsUseCase } from "@/bootstrap/di/tenant.di";
 import {
@@ -8,6 +7,7 @@ import {
 } from "@/features/tenant/domain/entities/tenant-membership.entity";
 import { enrichMemberships } from "@/features/tenant/infrastructure/enrich-memberships";
 import { switchTenantAction } from "./actions";
+import { AutoSwitchTenant } from "./auto-switch-tenant";
 import { SelectTenant } from "./select-tenant";
 
 /** Soft-fetch the caller's display name for the greeting. A failure here is NOT
@@ -49,18 +49,20 @@ export default async function SelectTenantPage() {
 
   if (branch === "single") {
     // FR-006 zero-noise skip: mint the tenant-scoped token + redirect directly.
-    // A bare redirect() would hit the guard's "no-active-tenant" verdict (the
-    // caller holds a non-tenant-scoped token post-login), so we call the same
-    // FR-004 action used by the card grid. It throws NEXT_REDIRECT on success
-    // (propagate unchanged, Risk A); a `{ ok:false }` return (e.g. the sole
-    // membership raced to non-ACTIVE) falls through to this screen's error state.
+    // Cookie writes are only legal inside a real Server Action invocation —
+    // calling `switchTenantAction` during this RSC render throws "Cookies can
+    // only be modified in a Server Action or Route Handler". So the sole
+    // membership auto-switches CLIENT-side on mount (skeleton → redirect;
+    // `{ ok:false }` falls through to this screen's error state).
     const sole = memberships.find(isSwitchable);
     if (sole) {
-      try {
-        await switchTenantAction(sole.tenantId, sole.roles[0] ?? "");
-      } catch (err) {
-        if (isRedirectError(err)) throw err;
-      }
+      return (
+        <AutoSwitchTenant
+          tenantId={sole.tenantId}
+          role={sole.roles[0] ?? ""}
+          onSwitchTenant={switchTenantAction}
+        />
+      );
     }
     return (
       <SelectTenant

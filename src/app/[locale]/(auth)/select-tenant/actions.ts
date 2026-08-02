@@ -7,6 +7,7 @@ import { redirect } from "@/bootstrap/i18n/routing";
 import { setAuthCookies } from "@/bootstrap/lib/auth-token.server";
 import { tenantUrl } from "@/bootstrap/tenant";
 import type { SwitchTenantResult } from "@/components/shared/tenant-card/tenant-card.i-vm";
+import { appRoleOf } from "@/features/auth/domain/entities/role-meta";
 import type { TenantFailure } from "@/features/tenant/domain/failures/tenant.failure";
 import { resolveTenantDisplay } from "@/features/tenant/infrastructure/mocks/tenant-display.mock";
 
@@ -45,7 +46,11 @@ export async function switchTenantAction(
 
     const locale = await getLocale();
     const { tenantName } = resolveTenantDisplay(tenantId);
-    const base = tenantUrl(tenantId, role ? `/${role}` : "/");
+    // Membership roles are BE wire enums ("STUDENT"); routes are appRoles
+    // ("/student"). Normalise here — the single choke point for both the card
+    // grid and the sole-membership auto-switch.
+    const appRole = appRoleOf(role) ?? (role ? role.toLowerCase() : "");
+    const base = tenantUrl(tenantId, appRole ? `/${appRole}` : "/");
     const href = `${base}?switched=1&school=${encodeURIComponent(tenantName)}`;
     // Land in the chosen tenant's workspace; throws NEXT_REDIRECT (control flow).
     redirect({ href, locale });

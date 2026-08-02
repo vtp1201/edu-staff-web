@@ -5,6 +5,7 @@
  */
 
 import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
+import { appRoleOf } from "@/features/auth/domain/entities/role-meta";
 
 const VALID_ROLES: readonly UserRole[] = [
   "teacher",
@@ -13,6 +14,14 @@ const VALID_ROLES: readonly UserRole[] = [
   "parent",
   "admin",
 ];
+
+/** Accept both spellings on the wire: live IAM mints BE enums ("STUDENT",
+ *  ADR 0036) while older/mock tokens carry appRoles ("student"). */
+function toAppRole(value: unknown): UserRole | null {
+  if (typeof value !== "string") return null;
+  if ((VALID_ROLES as string[]).includes(value)) return value as UserRole;
+  return appRoleOf(value);
+}
 
 function base64UrlDecode(segment: string): string {
   const padded = segment.replace(/-/g, "+").replace(/_/g, "/");
@@ -54,16 +63,11 @@ export function decodeRoleClaim(token: string): UserRole | null {
   const claims = decodeJwtClaims(token);
   if (claims === null) return null;
 
-  const role = claims.role;
-  if (typeof role === "string" && (VALID_ROLES as string[]).includes(role)) {
-    return role as UserRole;
-  }
+  const fromRole = toAppRole(claims.role);
+  if (fromRole !== null) return fromRole;
 
   const memberRoles = claims.memberRoles;
-  if (Array.isArray(memberRoles) && typeof memberRoles[0] === "string") {
-    const first = memberRoles[0];
-    if ((VALID_ROLES as string[]).includes(first)) return first as UserRole;
-  }
+  if (Array.isArray(memberRoles)) return toAppRole(memberRoles[0]);
 
   return null;
 }

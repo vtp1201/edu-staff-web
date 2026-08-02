@@ -18,13 +18,14 @@ export function mapTokens(dto: TokenResponseDto): AuthTokens {
 
 export function mapProfile(dto: UserProfileResponseDto): AuthUser {
   return {
-    id: dto.id,
+    // Live IAM sends `userId`/`fullName`; mocks send `id`/`name`.
+    id: dto.id ?? dto.userId ?? "",
     email: dto.email,
-    name: dto.name,
-    avatar: dto.avatar,
+    name: dto.name ?? dto.fullName ?? dto.email,
+    avatar: dto.avatar ?? null,
     // Default false when absent — never assume verified for a legacy session.
     emailVerified: dto.isEmailVerified ?? false,
-    roles: dto.roles.map(
+    roles: (dto.roles ?? []).map(
       (r): UserTenantRole => ({
         // BE enum → appRole for routing; fall back defensively to "teacher" on
         // an unknown enum so a new BE role never hard-crashes login (ADR 0036).
