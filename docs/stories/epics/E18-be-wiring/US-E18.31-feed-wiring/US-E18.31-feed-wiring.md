@@ -17,11 +17,34 @@ normal
 
 ## Product Contract
 
-BE US-165 denormalizes `authorName`/`authorRole` directly onto `Post` and
-`Comment` responses (`social` service) — `avatarUrl` is reserved on the wire
-but ALWAYS null today (do not build UI that assumes it's populated; use the
-existing initials-avatar fallback pattern). This un-mocks US-E19.1's feed
-screen (currently entirely mock, per the epic).
+**CORRECTED before implementation (fe-lead ground-truth, 2026-08-02) — this
+is NOT a full un-mock.** BE US-165 denormalizes `authorName`/`authorRole`
+directly onto `Post`/`Comment` (`social`, `avatarUrl` reserved-but-always-null)
+— this closes EXACTLY ONE of the THREE gaps `bootstrap/di/feed.di.ts`'s
+existing, detailed doc comment (US-E18.20) documents as blocking a full
+un-mock:
+
+1. **No author identity** — RESOLVED by US-165. This is what this story wires.
+2. **Different reaction taxonomy** — STILL BLOCKED, unaffected by US-165. Real
+   `emoji ∈ {like,love,haha,wow,sad,angry}` with a single `reactionCount` +
+   `callerReaction`; web's `ReactionType ∈ {like,love,celebrate,clap}` with
+   per-type counts. No lossless mapping exists — this is a product/design
+   decision, out of this story's scope.
+3. **Different attachment capability** — STILL BLOCKED, unaffected by US-165.
+   Real `Post.media` is ONE optional image via `multipart/form-data` at create
+   time; web models multiple placeholder `FeedAttachment[]`, no upload
+   pipeline. Also out of this story's scope.
+
+**Revised scope**: wire the READ path (list-feed, list-comments) for real,
+now that author identity resolves — this is the majority of the screen's
+value (browsing a real, correctly-attributed feed). Reaction/comment/
+create-post MUTATIONS stay routed to mock (or are force-degraded per-call if
+partially reachable) until gaps #2/#3 get a product decision, mirroring this
+epic's established "hybrid/partial repository with a documented blocked
+remainder counts as Done" precedent (see EPIC-OVERVIEW.md's US-E18.16 finding
+for the exact same shape of decision). Do NOT attempt to lossy-map the
+reaction/attachment shapes without a product-owner sign-off — that is a
+design call, not an engineering judgment call.
 
 ## Relevant Product Docs
 
