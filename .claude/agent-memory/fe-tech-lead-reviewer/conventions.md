@@ -451,6 +451,32 @@ Confirmed facts (verify before citing if stale):
   Pre-existing debt — do not block a scoped story on it — but re-raise it on any story that widens
   roster exposure to another role. `IRosterRepository` also takes no `authCtx`, so ADR 0063's
   repository-boundary seam is entirely absent from this feature.
+- **Promotion to `components/shared/` WITHOUT moving the feature's domain types = the CORRECT shape**
+  (US-E20.5 `ChildSwitcher`, overriding an architect instruction to relocate grades'
+  `ChildSummary`/`ChildColor` into the shared `.i-vm.ts`). That relocation would have forced
+  `features/grades/domain/{repositories,use-cases}` to import `@/components/shared/...` — a hard
+  layer breach. Correct instead: the shared component declares its OWN self-contained contract
+  (`ChildSwitcherChild`/`ChildColor`/`ChildSwitcherVM`) and each consumer passes a structurally
+  compatible object; TS structural assignability makes drift in the risky direction (consumer type
+  loses/renames a field, or widens the color union) a compile error. Verify by reading BOTH type
+  defs field-by-field, not by trusting the claim. Accept this deviation; no ADR needed (it is an
+  application of the existing layer table).
+  - Gold-standard promotion proof: `git show main:<old path> | diff - <new path>` must show ONLY the
+    import line + the `useTranslations(<feature>)`→`Common` namespace change. That single diff
+    discharges the whole US-E20.4 parity checklist (card wrapper, tablist ARIA, 44px targets,
+    color-mix active state, 26px avatar + ADR-0049 COLOR_VAR/COLOR_TEXT maps, roving tabindex) far
+    better than re-reading classes. Pair it with a grep that the OLD i18n key is DELETED, not left dead.
+- **Force-mock DI with no `USE_MOCK` branch CONFLICTS with an AC that demands an honest real-mode
+  degrade** (US-E20.5). The `staff-leave`/`teaching-plan`/`principal-classes` precedent (mock served
+  silently in prod) is only acceptable when the story doesn't say otherwise. When the packet's AC says
+  "when unmocked the repository returns a typed `forbidden`/`not-implemented` that degrades to an
+  honest 'not available yet' state", an unconditional `return new MockRepo()` FAILS it — and worse,
+  `next.config.ts`'s prod guard (`NODE_ENV=production && USE_MOCK=true`) does NOT catch it, because
+  `USE_MOCK` is never read. Tell-tale: the failure union's `forbidden` member + its `errors.forbidden`
+  i18n key + the `ErrorForbidden` story are all unreachable dead code. Cheap fix (a `!USE_MOCK` branch
+  rejecting `{type:"forbidden"}` with no HTTP call) makes all three live at once. Extra weight when the
+  fabricated data is child-specific (attendance/grades) that a parent would act on.
+
 - **`core` timetable by-member read is CALLER-ROLE-GATED, and `MANAGER` (principal) is NOT allowed**
   (ground-truthed 2026-08-02, US-E15.3). `services/core/internal/timetable/core/application/usecase/
   get_member_timetable.go` `authorize()` permits ONLY: SUPER_ADMIN/ADMIN (`isAdmin`), the target

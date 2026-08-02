@@ -20,6 +20,7 @@ export * from "./lms.di";
 export * from "./messaging.di";
 export * from "./moderation.di";
 export * from "./notification.di";
+export * from "./parent-attendance.di";
 export * from "./parent-student-link.di";
 export * from "./principal-teachers.di";
 export * from "./staff-discipline.di";

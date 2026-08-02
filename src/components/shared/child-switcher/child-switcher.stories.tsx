@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
-import { MOCK_VIEWER_CHILDREN } from "../../infrastructure/repositories/mocks/grade-book-fixtures";
+import { MOCK_VIEWER_CHILDREN } from "@/features/grades/infrastructure/repositories/mocks/grade-book-fixtures";
 import { ChildSwitcher } from "./child-switcher";
 
 const meta: Meta<typeof ChildSwitcher> = {
-  title: "Grades/ChildSwitcher",
+  title: "Shared/ChildSwitcher",
   component: ChildSwitcher,
   decorators: [
     (Story) => (
@@ -20,10 +20,12 @@ export default meta;
 type Story = StoryObj<typeof ChildSwitcher>;
 
 /**
- * Single child — by contract the GradeBookScreen hides the switcher when
- * `childrenList.length < 2`. This story renders the switcher in isolation with
- * a single tab to document the degenerate case; the hide logic itself is
- * covered by the GradeBookScreen stories.
+ * Single child — the two consumers differ here BY DESIGN, which is why the
+ * rule lives in the consumer, not in this shared component: `GradeBookScreen`
+ * hides the switcher when `childrenList.length < 2`, while
+ * `ParentAttendanceScreen` (US-E20.5) renders it for ≥1 child so the active
+ * child is always named on screen. This story pins the single-tab rendering
+ * both rely on; each consumer's own stories cover its show/hide rule.
  */
 export const ParentView_SingleChild: Story = {
   args: {

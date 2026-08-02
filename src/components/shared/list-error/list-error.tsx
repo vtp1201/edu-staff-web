@@ -27,6 +27,12 @@ type ListErrorContent =
   | { message?: never; title: string; description?: string };
 
 interface ListErrorBaseProps {
+  /**
+   * Optional DOM id on the alert container, so a form control whose value
+   * caused the failure can point at this text via `aria-describedby`
+   * (US-E20.5's date-range inputs). Omitted by every other caller.
+   */
+  id?: string;
   onRetry: () => void;
   /** Already-translated retry button label. */
   retryLabel: string;
@@ -99,6 +105,7 @@ const DEFAULT_TITLE_CLASS = "mt-3.5 font-extrabold text-base text-foreground";
 const DEFAULT_DESCRIPTION_CLASS = "mt-1 max-w-sm text-muted-foreground text-sm";
 
 export function ListError({
+  id,
   onRetry,
   retryLabel,
   message,
@@ -121,6 +128,7 @@ export function ListError({
 
   return (
     <div
+      id={id}
       role="alert"
       className={cn(
         "flex flex-col items-center bg-card text-center",

@@ -1,5 +1,6 @@
 {
   "Common": {
+    "childSwitcherLabel": "Select child",
     "close": "Close",
     "pagination": {
       "nav": "Pagination",
@@ -2051,7 +2052,6 @@
     "title": "Grade Batch Approval"
   },
   "gradeBook": {
-    "childSwitcherLabel": "Select child",
     "bandHeaderCK": "Final",
     "bandHeaderGK": "Midterm",
     "bandHeaderTX": "Regular",
@@ -2888,6 +2888,31 @@
     "forbiddenError": {
       "title": "You do not have permission to view this list",
       "body": "Your account is not allowed to view this list of children. Please contact the school if you believe this is a mistake."
+    }
+  },
+  "parentAttendance": {
+    "title": "Child attendance",
+    "subtitle": "Attendance history over a date range",
+    "rangeLegend": "Date range",
+    "startDateLabel": "From",
+    "endDateLabel": "To",
+    "tableCaption": "Your child's attendance history for the selected date range",
+    "columnDate": "Date",
+    "columnStatus": "Status",
+    "summaryLabel": "Summary",
+    "summaryChip": "{label}: {count}",
+    "loadingAriaLabel": "Loading attendance history",
+    "noChildrenTitle": "No linked children yet",
+    "noChildrenBody": "Contact the school to link your account to a student.",
+    "emptyTitle": "No attendance data",
+    "emptyBody": "There are no attendance sessions in this date range. Try a different range.",
+    "retry": "Try again",
+    "errors": {
+      "forbidden": "Attendance viewing for parents is not enabled yet. Please contact the school.",
+      "invalid-date-range": "The end date must be on or after the start date.",
+      "date-range-too-large": "The date range cannot exceed 366 days.",
+      "network-error": "Could not load the attendance history. Please try again.",
+      "unknown": "Something went wrong. Please try again."
     }
   },
   "parentLinks": {

@@ -1,5 +1,6 @@
 {
   "Common": {
+    "childSwitcherLabel": "Chọn con",
     "close": "Đóng",
     "confirmDialog": {
       "cancel": "Huỷ",
@@ -2051,7 +2052,6 @@
     "title": "Phê duyệt lô điểm"
   },
   "gradeBook": {
-    "childSwitcherLabel": "Chọn con",
     "bandHeaderCK": "Cuối kỳ",
     "bandHeaderGK": "Giữa kỳ",
     "bandHeaderTX": "Thường xuyên",
@@ -2888,6 +2888,31 @@
     "forbiddenError": {
       "title": "Bạn không có quyền xem danh sách này",
       "body": "Tài khoản của bạn không được phép xem danh sách con. Vui lòng liên hệ nhà trường nếu bạn cho rằng đây là nhầm lẫn."
+    }
+  },
+  "parentAttendance": {
+    "title": "Điểm danh của con",
+    "subtitle": "Lịch sử điểm danh theo khoảng thời gian",
+    "rangeLegend": "Khoảng thời gian",
+    "startDateLabel": "Từ ngày",
+    "endDateLabel": "Đến ngày",
+    "tableCaption": "Lịch sử điểm danh của con trong khoảng thời gian đã chọn",
+    "columnDate": "Ngày",
+    "columnStatus": "Trạng thái",
+    "summaryLabel": "Tổng hợp",
+    "summaryChip": "{label} {count}",
+    "loadingAriaLabel": "Đang tải lịch sử điểm danh",
+    "noChildrenTitle": "Chưa có con nào được liên kết",
+    "noChildrenBody": "Liên hệ nhà trường để liên kết tài khoản của bạn với học sinh.",
+    "emptyTitle": "Không có dữ liệu điểm danh",
+    "emptyBody": "Chưa có buổi điểm danh nào trong khoảng thời gian này. Hãy chọn khoảng khác.",
+    "retry": "Thử lại",
+    "errors": {
+      "forbidden": "Tính năng xem điểm danh cho phụ huynh chưa được mở. Vui lòng liên hệ nhà trường.",
+      "invalid-date-range": "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
+      "date-range-too-large": "Khoảng thời gian không được vượt quá 366 ngày.",
+      "network-error": "Không tải được lịch sử điểm danh. Vui lòng thử lại.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
     }
   },
   "parentLinks": {
