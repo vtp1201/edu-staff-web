@@ -99,8 +99,8 @@ gap may ALSO be closing here, beyond just "COMMENT reportable."
 | --- | --- | --- |
 | Unit | mapper tests (new filters, targetType COMMENT, stats shape) | ✅ `moderation.mapper.test.ts` 14 tests — full targetType/reasonCategory matrices, `status × resolutionOutcome` flattening incl. ESCALATE, the "never invents reporter/author/preview/duplicates" guard, request-mapper round-trip, `all → omit the param`. Plus `format-report-row.test.ts` (escalated tone + null pass-through), `filter-search-params.test.ts` (legacy `?status=all` fallback), `moderation-use-cases.test.ts` (ref forwarded whole). |
 | Integration | repository tests (filter params sent correctly, stats never client-derived, detail requires filedAt+status) | ✅ `moderation.repository.test.ts` 39 tests — exact `params` object per filter combination (incl. trimmed search, omitted `contentType`/`cursor`), `raw:true` as a config-level sibling, **call-count proof that `listReports` issues exactly ONE GET and never touches `/reports/stats`**, `getReportStats` sends no params at all, detail sends `filedAt`+`status` (PENDING and RESOLVED legs), dismiss/remove `resolve` bodies with the CAS `filedAt`, COMMENT-via-resolve, direct-comment-without-parentId = zero HTTP, `createReport` COMMENT + OTHER/reasonFreeText, and the audit-log **zero-HTTP honest degrade**. `moderation.mock.repository.test.ts` 13 tests (stats independent of the active filter; mismatched `filedAt` = not-found). `moderation.di.test.ts` 5-case env matrix (`true`/`false`/unset + no-http-in-mock + refresh-before-http). `page.test.ts` 5 tests (`auditLogEnabled === USE_MOCK` both ways; stats from their own read; null-not-zeros on stats failure). |
-| E2E | Storybook: filter interaction, stats display, detail-from-list-row navigation carrying filedAt/status, COMMENT target render | ✅ `moderation-screen.stories.tsx` 27 interaction tests (was 22): added `StatsIndependentOfFilteredList`, `EmptyFilteredStillOffersLoadMore`, `RealWireShapeQueue`, `RealWireShapeCommentDetail`, `AuditTabHiddenWithoutBacking`; retuned `CombinedFilterViaUI` to the 2-tab reality. |
-| Platform | `bun build` clean both modes | ✅ `bun run build` green with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) **and** with `NEXT_PUBLIC_USE_MOCK=true`. `bunx tsc --noEmit` clean. `bun lint` exit 0 (2 pre-existing findings in untouched `messaging` files). Full suite **465 files / 3397 tests pass** (baseline 465/3360 → +37, zero regressions). Storybook interaction suite **157 files / 1193 tests pass**. |
+| E2E | Storybook: filter interaction, stats display, detail-from-list-row navigation carrying filedAt/status, COMMENT target render | ✅ `moderation-screen.stories.tsx` 27 interaction tests (was 22): added `StatsIndependentOfFilteredList`, `EmptyFilteredStillOffersLoadMore`, `RealWireShapeQueue`, `RealWireShapeCommentDetail`, `AuditTabHiddenWithoutBacking`; retuned `CombinedFilterViaUI` to the 2-tab reality. **Review round:** +2 → **29** stories (`StatsForbiddenShowsUnavailable`, `DetailSheetRestoresFocusOnClose`; `WholeScreenError` retuned to assert the `UnavailableValue` marker on both counter cards). Primitive-level: `sheet.stories.tsx` 4 → **6** (`ControlledSheetRestoresFocusOnClose`, `TriggerSheetStillRestoresFocus`). |
+| Platform | `bun build` clean both modes | ✅ **Review round (2026-08-02):** `bun run build` green with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) **and** with `NEXT_PUBLIC_USE_MOCK=true`. `bunx tsc --noEmit` clean. `bun lint` exit 0 (same 2 pre-existing findings in untouched `messaging` files). Full suite **467 files / 3412 tests pass** (+1 file, +9 tests vs. 466/3403; zero regressions). Storybook interaction suite **157 files / 1197 tests pass**. |
 | Release | design-review gate + a11y | Pending `fe-tech-lead-reviewer` / `fe-accessibility-auditor` / design-review gate. Notes for the audit: `UnavailableValue` pairs the visual em-dash with sr-only text; the escalated badge is icon+text (never colour-only) on the `purple` tone; the search input is capped at 200 chars to match the server's 400. |
 
 ## Harness Delta
@@ -140,3 +140,80 @@ Registered via `harness-cli story add --id US-E18.32`.
 - App: `principal/moderation/{page.tsx,actions.ts}` (+`getReportStatsAction`, `auditLogEnabled`, parallel stats seed), new `page.test.ts`.
 - Presentation: `moderation-screen.{tsx,i-vm.ts,stories.tsx}`, `components/{format-report-row.ts,report-status-badge.tsx,stat-row.tsx,queue-filter-bar.tsx,filter-search-params.ts,report-table.tsx,report-card.tsx,report-queue-results.tsx,report-detail-sheet.tsx}`, new `components/unavailable-value.tsx`.
 - i18n: `messages/{vi,en}.json` — added `moderation.unavailable`, `moderation.statusLabels.escalated`, `moderation.detail.contentUnavailable`; replaced `stats.resolvedThisWeek`+`stats.removed` with `stats.resolved`; removed `filter.status.all`; retuned `filter.searchPlaceholder` (search now matches the reporter's free text only) and `empty.filteredBody`.
+
+### Review-round fixes (tech-lead Revision Required + a11y audit, 2026-08-02)
+
+**MUST-FIX — a failed stats read no longer renders an endless skeleton.**
+`StatRow`'s old guard was `isLoading || !stats → <StatCardSkeleton/> ×2`. Once the
+stats query settles in error (`forbidden` is non-retryable and reachable in
+production — MANAGER is missing from the social RBAC allow-list — and a transient
+error eventually exhausts its retry budget) `isLoading` is false while `data`
+stays `undefined` forever, so the skeleton rendered permanently and read as
+"still loading" when the truth was "this failed" — the exact lie
+`UnavailableValue` / `initialStats: null` (never zeros) exist to prevent.
+`statsQuery.isError` is now threaded to `StatRow` as `hasError`, and a pure
+`statRowMode({hasStats,isLoading,hasError})` decides: real (even stale) numbers →
+`ready`; error → `unavailable`; only a genuine in-flight first read → `loading`.
+The two cards then render `<UnavailableValue/>` (em-dash + sr-only
+"Không có dữ liệu") in the value slot. `StatCardDefaultProps.value` widened
+`string → React.ReactNode` for that (backwards-compatible; every existing caller
+passes a string). Proof: `stat-row.test.ts` (4 cases, written red-first) +
+`StatsForbiddenShowsUnavailable` + the retuned `WholeScreenError` story.
+
+**A11Y-001 — Sheet focus restore, fixed in the `SheetContent` PRIMITIVE.**
+Every detail/drawer sheet here is opened programmatically (no `<SheetTrigger>`),
+so Radix's `triggerRef` is null and focus fell to `<body>` on close.
+Measured while fixing it: the `useDialogReturnFocus(open)` idiom cannot be reused
+verbatim in a primitive, because a `Content` renders unconditionally inside its
+`Root` (only `Presence` decides mounting) — snapshotting at first render captures
+`<body>`, and "restoring" to `<body>` also *suppresses* Radix's own trigger
+restore, i.e. it regresses trigger-based sheets. New sibling hook
+`useAutoFocusReturn()` (`src/shared/use-dialog-return-focus.ts`) therefore
+snapshots the invoker on Radix's `onOpenAutoFocus` (dispatched BEFORE focus moves
+into the content) and restores it on `onCloseAutoFocus`, preventing Radix's
+default only when a still-connected invoker exists. Proof: two new primitive
+stories (controlled + trigger regression guard) and
+`DetailSheetRestoresFocusOnClose` on the real screen. Verified red→green: with the
+two handlers removed, both controlled stories fail with focus on `<body>`; the
+trigger story passes either way (Radix's default), so no consumer is regressed.
+
+> ⚠️ Flagged to `fe-lead`, NOT fixed here (out of this story's scope):
+> `components/ui/dialog/dialog.tsx`'s `DialogContent` has the identical latent
+> bug (`useDialogReturnFocus(true)` at first render captures `<body>`). Reproduced
+> with a throwaway story: a **trigger-based** `Dialog` closed with Escape leaves
+> focus on `<body>` instead of the trigger. Fix is a one-line swap to
+> `useAutoFocusReturn()`, but it touches every Dialog consumer and deserves its
+> own review.
+
+**A11Y-002 — StatCard icon contrast, fixed in the PRIMITIVE's `TONE` map.**
+The icon was drawn in the raw hue on its own `/15` tint: `--edu-warning` #FFAE1F
+on #FFF3DD = **1.69:1**, `--edu-success` #13DEB9 on #DCFAF4 = **1.56:1** (WCAG
+1.4.11 needs 3:1). Now `warning.icon = text-edu-warning-foreground` (#2A3547 =
+**11.25:1**) and `success.icon = text-edu-success-text` (#007A6E = **4.75:1**) —
+existing tokens, no new token, no ADR needed. Locked by 3 assertions on the newly
+exported `STAT_TONE`. Remaining self-hue-on-own-tint tones were measured and left
+alone (outside the finding's scope): `error` 2.09:1, `info` 2.43:1, `teal`
+2.16:1, `primary` 2.82:1 — reported to `fe-lead` as a follow-up.
+
+**[CONSIDER] items, all applied.** (a) The orphaned point-read JSDoc above
+`getReportStats` moved onto `getReportDetail` where it belongs. (b) The mock now
+really honours the whole tuple on the point READ — new private `findByRef()`
+matches `(reportId, filedAt)` **and** the status *partition* (`pending` →
+PENDING, else RESOLVED), so a wrong-partition read is `not-found` like the real
+404. Deliberately NOT applied to the resolve WRITES: `POST /reports/{id}/resolve`
+sends `filedAt` as the CAS key and no `status`, so a stale ref must stay a 409
+`already-resolved`, not a 404 — both behaviours are now pinned by tests. (c)
+Dead keys `moderation.detail.close` / `moderation.detail.reason` deleted from
+`vi.json` + `en.json` (grep-confirmed no reader: the sheet's X uses
+`Common.close`, and the reason chip uses `moderation.reportDialog.reasons.*`);
+vi/en key sets verified identical afterwards.
+
+### Files touched in the review round
+
+- `src/components/shared/stat-card/stat-card.tsx` (+`.test.tsx`) — `TONE` → exported `STAT_TONE`, two icon tokens, `value: React.ReactNode`.
+- `src/components/ui/sheet/sheet.tsx` (+`.stories.tsx`) — `onOpenAutoFocus`/`onCloseAutoFocus` via `useAutoFocusReturn`.
+- `src/shared/use-dialog-return-focus.ts` — new `useAutoFocusReturn()` (the `open`-based hook is unchanged).
+- `src/features/moderation/presentation/moderation-screen/components/stat-row.tsx` (+ new `stat-row.test.ts`), `moderation-screen.tsx` (threads `hasError`), `moderation-screen.stories.tsx`.
+- `src/features/moderation/infrastructure/repositories/mocks/moderation.mock.repository.ts` (+`.test.ts`).
+- `src/bootstrap/i18n/messages/{vi,en}.json` — two dead keys removed.
+
