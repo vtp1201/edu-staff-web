@@ -62,19 +62,23 @@ export default async function AppLayout({
   const memberships = enrichMemberships(rawMemberships, tokenTenantId);
 
   return (
-    <AppShell
-      tenantId={tenant}
-      // biome-ignore lint/style/noNonNullAssertion: verdict "allowed" guarantees a non-null role
-      role={role!}
-      userName={userName}
-      emailVerified={emailVerified}
-      email={email}
-      onRequestEmailVerification={requestEmailVerificationAction}
-      memberships={memberships}
-      currentTenantId={tokenTenantId ?? undefined}
-      onSwitchTenant={switchTenantAction}
-    >
-      <ReactQueryProvider>{children}</ReactQueryProvider>
-    </AppShell>
+    // Provider must sit ABOVE AppShell: the shell itself consumes the query
+    // client (useRealtimeEvents → useQueryClient for SSE invalidation).
+    <ReactQueryProvider>
+      <AppShell
+        tenantId={tenant}
+        // biome-ignore lint/style/noNonNullAssertion: verdict "allowed" guarantees a non-null role
+        role={role!}
+        userName={userName}
+        emailVerified={emailVerified}
+        email={email}
+        onRequestEmailVerification={requestEmailVerificationAction}
+        memberships={memberships}
+        currentTenantId={tokenTenantId ?? undefined}
+        onSwitchTenant={switchTenantAction}
+      >
+        {children}
+      </AppShell>
+    </ReactQueryProvider>
   );
 }

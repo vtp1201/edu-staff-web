@@ -1,6 +1,10 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
 import { AUTH_EP } from "@/bootstrap/endpoint/auth.endpoint";
+import {
+  OAUTH_CLIENT_ID,
+  TENANT_EP,
+} from "@/bootstrap/endpoint/tenant.endpoint";
 import type {
   AuthResult,
   IAuthRepository,
@@ -16,12 +20,43 @@ import { mapAuthError } from "../mappers/auth-failure.mapper";
 export class AuthRepository implements IAuthRepository {
   constructor(private readonly http: AxiosInstance) {}
 
+  /** Live IAM's `/users/me` carries no roles — they live on
+   *  `/members/me/tenants`. Merge them into the profile so the mapper builds
+   *  a routable session. Skipped when the profile already embeds roles. */
+  private async withRoles(
+    profile: UserProfileResponseDto,
+    accessToken?: string,
+  ): Promise<UserProfileResponseDto> {
+    if (profile.roles?.length) return profile;
+    const memberships = (await this.http.get(TENANT_EP.myTenants, {
+      headers: accessToken
+        ? { Authorization: `Bearer ${accessToken}` }
+        : undefined,
+    })) as unknown as Array<{
+      tenantId: string;
+      roles: string[];
+      status: string;
+    }>;
+    return {
+      ...profile,
+      roles: memberships.flatMap((m) =>
+        m.roles.map((role) => ({
+          role,
+          tenantId: m.tenantId,
+          // ponytail: membership summary carries no tenant name; fetch it if a screen needs it
+          tenantName: m.tenantId,
+        })),
+      ),
+    };
+  }
+
   async signin(email: string, password: string): Promise<AuthResult> {
     try {
       // Interceptor unwraps the envelope → repo receives the payload directly.
       const tokens = (await this.http.post(AUTH_EP.signin, {
         email,
         password,
+        clientId: OAUTH_CLIENT_ID,
       })) as unknown as TokenResponseDto;
 
       // TokenResponse has no profile → fetch identity with the fresh token.
@@ -29,7 +64,12 @@ export class AuthRepository implements IAuthRepository {
         headers: { Authorization: `Bearer ${tokens.accessToken}` },
       })) as unknown as UserProfileResponseDto;
 
-      return { data: mapSession(tokens, profile) };
+      return {
+        data: mapSession(
+          tokens,
+          await this.withRoles(profile, tokens.accessToken),
+        ),
+      };
     } catch (err: unknown) {
       return { error: mapAuthError(err) };
     }
@@ -43,14 +83,20 @@ export class AuthRepository implements IAuthRepository {
       // Exchange the provider token for an IAM session (envelope unwrapped).
       const tokens = (await this.http.post(AUTH_EP.social, {
         provider,
-        token,
+        idToken: token,
+        clientId: OAUTH_CLIENT_ID,
       })) as unknown as TokenResponseDto;
 
       const profile = (await this.http.get(AUTH_EP.me, {
         headers: { Authorization: `Bearer ${tokens.accessToken}` },
       })) as unknown as UserProfileResponseDto;
 
-      return { data: mapSession(tokens, profile) };
+      return {
+        data: mapSession(
+          tokens,
+          await this.withRoles(profile, tokens.accessToken),
+        ),
+      };
     } catch (err: unknown) {
       return { error: mapAuthError(err) };
     }
@@ -105,7 +151,7 @@ export class AuthRepository implements IAuthRepository {
       const profile = (await this.http.get(
         AUTH_EP.me,
       )) as unknown as UserProfileResponseDto;
-      return { data: mapProfile(profile) };
+      return { data: mapProfile(await this.withRoles(profile)) };
     } catch (err: unknown) {
       return { error: mapAuthError(err) };
     }

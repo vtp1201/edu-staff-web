@@ -37,12 +37,11 @@ vi.mock("@/features/tenant/infrastructure/enrich-memberships", () => ({
 vi.mock("./select-tenant", () => ({
   SelectTenant: (props: unknown) => props,
 }));
-
-function isRedirectError(): Error & { digest: string } {
-  const e = new Error("NEXT_REDIRECT") as Error & { digest: string };
-  e.digest = "NEXT_REDIRECT;replace;/vi/t/tenant-1/teacher;307;";
-  return e;
-}
+// The single-branch auto-switch is a client-side effect (cookie writes are only
+// legal in a real Server Action invocation) — stub it to an inspectable element.
+vi.mock("./auto-switch-tenant", () => ({
+  AutoSwitchTenant: (props: unknown) => props,
+}));
 
 function m(overrides: Partial<TenantMembership> = {}): TenantMembership {
   return {
@@ -86,33 +85,19 @@ describe("SelectTenantPage (routing gate)", () => {
     expect(switchTenantActionMock).not.toHaveBeenCalled();
   });
 
-  it("AC-002.1/002.2: exactly 1 ACTIVE → switchTenantAction + redirect, component never reached", async () => {
+  it("AC-002.1/002.2: exactly 1 ACTIVE → AutoSwitchTenant skip element, card grid never built", async () => {
     listExecuteMock.mockResolvedValue([
       m({ tenantId: "sole", roles: ["principal"] }),
     ]);
-    switchTenantActionMock.mockImplementation(() => {
-      throw isRedirectError();
-    });
-
-    await expect(runPage()).rejects.toMatchObject({
-      digest: expect.stringContaining("NEXT_REDIRECT"),
-    });
-    expect(switchTenantActionMock).toHaveBeenCalledWith("sole", "principal");
-    // component never rendered → enrichMemberships never called on the skip path
-    expect(enrichMembershipsMock).not.toHaveBeenCalled();
-  });
-
-  it("single-membership race: switchTenantAction returns { ok:false } → error state (no third copy)", async () => {
-    listExecuteMock.mockResolvedValue([m({ tenantId: "sole" })]);
-    switchTenantActionMock.mockResolvedValue({
-      ok: false,
-      errorKey: "forbidden",
-    });
 
     const el = await runPage();
 
-    expect(switchTenantActionMock).toHaveBeenCalledWith("sole", "teacher");
-    expect(screenStateOf(el)).toEqual({ kind: "error" });
+    // RSC never invokes the action itself (cookie writes are illegal during
+    // render) — it delegates to the client auto-switch element.
+    expect(el.props).toMatchObject({ tenantId: "sole", role: "principal" });
+    expect(switchTenantActionMock).not.toHaveBeenCalled();
+    // card grid never built on the skip path
+    expect(enrichMembershipsMock).not.toHaveBeenCalled();
   });
 
   it("single branch counts only ACTIVE: 1 ACTIVE among non-ACTIVE still skips", async () => {
@@ -120,12 +105,11 @@ describe("SelectTenantPage (routing gate)", () => {
       m({ tenantId: "active", status: "ACTIVE" }),
       m({ tenantId: "left", status: "LEFT" }),
     ]);
-    switchTenantActionMock.mockImplementation(() => {
-      throw isRedirectError();
-    });
 
-    await expect(runPage()).rejects.toBeDefined();
-    expect(switchTenantActionMock).toHaveBeenCalledWith("active", "teacher");
+    const el = await runPage();
+
+    expect(el.props).toMatchObject({ tenantId: "active", role: "teacher" });
+    expect(enrichMembershipsMock).not.toHaveBeenCalled();
   });
 
   it("AC-003.3: 0 ACTIVE (all non-ACTIVE) → empty screenState", async () => {

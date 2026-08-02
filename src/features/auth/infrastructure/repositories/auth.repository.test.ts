@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { AUTH_EP } from "@/bootstrap/endpoint/auth.endpoint";
+import { OAUTH_CLIENT_ID } from "@/bootstrap/endpoint/tenant.endpoint";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
 import { AuthRepository } from "./auth.repository";
 
@@ -43,6 +44,7 @@ describe("AuthRepository.signin", () => {
     expect(http.post).toHaveBeenCalledWith(AUTH_EP.signin, {
       email: "a@school.vn",
       password: "pw",
+      clientId: OAUTH_CLIENT_ID,
     });
     expect(http.get).toHaveBeenCalledWith(AUTH_EP.me, {
       headers: { Authorization: "Bearer acc-1" },
@@ -93,7 +95,8 @@ describe("AuthRepository.socialSignin", () => {
 
     expect(http.post).toHaveBeenCalledWith(AUTH_EP.social, {
       provider: "google",
-      token: "id-token-1",
+      idToken: "id-token-1",
+      clientId: OAUTH_CLIENT_ID,
     });
     expect(http.get).toHaveBeenCalledWith(AUTH_EP.me, {
       headers: { Authorization: "Bearer acc-1" },

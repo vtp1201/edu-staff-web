@@ -16,7 +16,7 @@ import { cn } from "@/shared/utils";
 import { logoutAction } from "../login/actions";
 import type { SelectTenantScreenState } from "./select-tenant.i-vm";
 
-type Props = {
+export type Props = {
   screenState: SelectTenantScreenState;
   /** `switchTenantAction` (Path A): redirects on success (throws NEXT_REDIRECT),
    *  returns a discriminated `{ ok:false, errorKey }` on failure. */

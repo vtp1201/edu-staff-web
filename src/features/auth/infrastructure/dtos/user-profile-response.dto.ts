@@ -1,10 +1,15 @@
-/** IAM `UserProfileResponse` — `GET /users/me`. camelCase wire shape. */
+/** IAM `UserProfileResponse` — `GET /users/me`. camelCase wire shape.
+ *  The live IAM returns `userId`/`fullName` and NO roles (roles come from
+ *  `GET /members/me/tenants`); older mocks/fixtures use `id`/`name`/`roles`.
+ *  Both shapes are accepted — the mapper normalises. */
 export interface UserProfileResponseDto {
-  id: string;
+  id?: string;
+  userId?: string;
   email: string;
-  name: string;
-  avatar: string | null;
-  roles: Array<{
+  name?: string;
+  fullName?: string;
+  avatar?: string | null;
+  roles?: Array<{
     role: string;
     tenantId: string;
     tenantName: string;
