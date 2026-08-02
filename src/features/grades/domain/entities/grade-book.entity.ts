@@ -43,9 +43,18 @@ export type ChildColor = "primary" | "success" | "warning" | "error" | "purple";
 
 export interface ChildSummary {
   childId: string;
-  name: string;
+  /**
+   * ABSENT when no display name could be resolved (IAM batch lookup omitted the
+   * id, or the lookup failed) — presentation then renders the "Con thứ N"
+   * ordinal label. Never a raw memberId: a uuid here would become the tab's
+   * accessible name (US-E18.33 review).
+   */
+  name?: string;
+  /** `""` when the child has no current enrollment (US-148 D5). */
   className: string;
-  /** 2-char initials for avatar fallback */
+  /** 1-based STABLE roster position — drives the ordinal fallback label. */
+  ordinal: number;
+  /** 2-char initials, or the ordinal digit when no name resolved */
   avatar: string;
   /** design-token role string → maps to --edu-<color> CSS var in presentation */
   color: ChildColor;

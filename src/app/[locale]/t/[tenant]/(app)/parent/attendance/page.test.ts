@@ -131,6 +131,7 @@ describe("ParentAttendancePage", () => {
         childId: "st-1",
         name: "Đỗ Gia Bảo",
         className: "10A1",
+        ordinal: 1,
         avatar: "ĐB",
         color: "primary",
       },

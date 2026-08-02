@@ -111,9 +111,11 @@ export const ParentView_MultiChild_Switch: Story = {
  * map IAM's tiered batch lookup returns for a PARENT caller (ADR-0120) — so it
  * fails the day the join or the initials derivation regresses.
  *
- * It also pins the two degradations the real path can hit: an id the lookup
- * omitted falls back to the raw memberId (never a blank tab), and a child with
- * no current enrollment renders an empty class line rather than invented copy.
+ * It also pins the two degradations the real path can hit, which since the
+ * US-E18.33 review match the sibling `ChildPicker` exactly: an id the lookup
+ * omitted renders the "Con thứ N" ordinal label (NEVER the raw memberId — that
+ * uuid would become the tab's accessible name), and a child with no current
+ * enrollment renders "Chưa có lớp" rather than a blank second line.
  */
 const REAL_CHILDREN = toParentChildren(
   [
@@ -148,10 +150,18 @@ export const ParentView_RealMode_ResolvedNames: Story = {
     const resolved = canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ });
     expect(resolved).toHaveAttribute("aria-selected", "true");
     expect(resolved).toHaveTextContent("10A1");
+    expect(resolved).not.toHaveTextContent("Chưa có lớp");
 
-    // Unresolved name → raw id, never a blank tab.
-    const degraded = canvas.getByRole("tab", { name: /st-2/ });
+    // Unresolved name → the stable ordinal label. `st-2` is roster position 2
+    // by linkId-ascending order, so "Con thứ 2" — and the raw memberId must
+    // appear NOWHERE in the tab (a uuid is not a human name, and this string is
+    // the tab's accessible name).
+    const degraded = canvas.getByRole("tab", { name: /Con thứ 2/ });
     expect(degraded).toBeVisible();
+    expect(degraded).not.toHaveTextContent("st-2");
+    expect(canvas.queryByRole("tab", { name: /st-2/ })).toBeNull();
+    // No current enrollment → real copy, not a blank line.
+    expect(degraded).toHaveTextContent("Chưa có lớp");
 
     await userEvent.click(degraded);
     expect(args.onSwitch).toHaveBeenCalledWith("st-2");

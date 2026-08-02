@@ -73,6 +73,7 @@ describe("ParentChildListRepository.getChildList", () => {
         childId: "st-1",
         name: "Nguyễn Minh Khoa",
         className: "11A2",
+        ordinal: 1,
         avatar: "NK",
         color: "primary",
       },
@@ -80,6 +81,7 @@ describe("ParentChildListRepository.getChildList", () => {
         childId: "st-2",
         name: "Nguyễn Thu Hà",
         className: "",
+        ordinal: 2,
         avatar: "NH",
         color: "success",
       },
@@ -112,7 +114,7 @@ describe("ParentChildListRepository.getChildList", () => {
     expect(resolveNames).not.toHaveBeenCalled();
   });
 
-  it("degrades to the raw-id name when the name lookup fails — the roster still renders", async () => {
+  it("degrades to a NAMELESS row when the name lookup fails — the roster still renders", async () => {
     const get = vi.fn().mockResolvedValue(LINKS);
     const resolveNames = vi.fn(async () => {
       throw new Error("iam down");
@@ -124,16 +126,21 @@ describe("ParentChildListRepository.getChildList", () => {
     );
 
     const children = await repo.getChildList();
-    expect(children.map((c) => c.name)).toEqual(["st-1", "st-2"]);
+    // No fabricated name — NOT the raw memberId (that uuid would land in the
+    // switcher tab's accessible name). Presentation renders "Con thứ N".
+    expect(children.map((c) => c.name)).toEqual([undefined, undefined]);
+    expect(children.map((c) => c.ordinal)).toEqual([1, 2]);
+    expect(children.every((c) => !("name" in c))).toBe(true);
   });
 
-  it("works with NO resolver injected (wire-level construction) — raw-id fallback, no crash", async () => {
+  it("works with NO resolver injected (wire-level construction) — nameless rows, no crash", async () => {
     const get = vi.fn().mockResolvedValue(LINKS);
     const repo = new ParentChildListRepository(makeHttp({ get }), "p-1");
-    expect((await repo.getChildList()).map((c) => c.name)).toEqual([
-      "st-1",
-      "st-2",
-    ]);
+    const children = await repo.getChildList();
+    expect(children.map((c) => c.childId)).toEqual(["st-1", "st-2"]);
+    expect(children.every((c) => !("name" in c))).toBe(true);
+    // The ordinal digit is the avatar when no name resolved (never uuid initials).
+    expect(children.map((c) => c.avatar)).toEqual(["1", "2"]);
   });
 
   it("rejects with not-found (empty roster state) on PARENTLINK_FORBIDDEN", async () => {

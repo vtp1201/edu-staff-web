@@ -43,6 +43,7 @@ describe("toParentChildren", () => {
         childId: "st-1",
         name: "Nguyễn Minh Khoa",
         className: "11A2",
+        ordinal: 1,
         avatar: "NK",
         color: "primary",
       },
@@ -50,6 +51,7 @@ describe("toParentChildren", () => {
         childId: "st-2",
         name: "Nguyễn Thu Hà",
         className: "8B1",
+        ordinal: 2,
         avatar: "NH",
         color: "success",
       },
@@ -80,12 +82,36 @@ describe("toParentChildren", () => {
     ]);
   });
 
-  it("degrades an unresolved name to the raw memberId, with the ordinal digit as the avatar", () => {
+  it("leaves an unresolved name ABSENT — never the raw memberId — with the ordinal digit as the avatar", () => {
     // The batch lookup silently omits unknown/other-tenant ids; a missing name
     // is a cosmetic degradation, never an error (staffing/invitations
-    // precedent). Fake initials must NOT be invented from a uuid.
+    // precedent). Neither fake initials NOR the raw uuid may stand in for a
+    // human name: a uuid in the name slot becomes the tab's accessible name and
+    // a screen reader would read out the random string. `name` stays absent so
+    // `ChildSwitcher` renders its "Con thứ N" ordinal label instead — exactly
+    // how the sibling `toTimetableChildren`/`ChildPicker` pair degrades.
     const [child] = toParentChildren([LINKS[1]], new Map());
-    expect(child).toMatchObject({ name: "st-1", avatar: "1" });
+    expect(child).toMatchObject({ ordinal: 1, avatar: "1" });
+    // `toEqual`/`toMatchObject` ignore undefined-valued keys, so assert the key
+    // is genuinely absent — `name: undefined` would still be a wire-level lie.
+    expect(Object.keys(child).sort()).toEqual([
+      "avatar",
+      "childId",
+      "className",
+      "color",
+      "ordinal",
+    ]);
+    expect(child.name).toBeUndefined();
+  });
+
+  it("numbers `ordinal` 1-based off the STABLE linkId order, not the response order", () => {
+    // The ordinal is user-visible ("Con thứ 2") whenever a name is unresolved,
+    // so it must not jump between refetches.
+    const children = toParentChildren(LINKS, new Map());
+    expect(children.map((c) => [c.childId, c.ordinal])).toEqual([
+      ["st-1", 1],
+      ["st-2", 2],
+    ]);
   });
 
   it("treats an absent and a null className identically (US-148 D5)", () => {
