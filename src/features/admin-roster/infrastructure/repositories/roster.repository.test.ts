@@ -1,6 +1,7 @@
 /**
- * Integration tests — RosterRepository error-code mapping, homeroom-name
- * fan-out, and two-step transfer (US-E06.7 + US-E18.5 real-wire remap).
+ * Integration tests — RosterRepository error-code mapping, the enriched
+ * homeroom fields, and two-step transfer (US-E06.7 + US-E18.5 real-wire remap +
+ * US-E18.30 un-fan-out).
  * The http interceptor unwraps the envelope; repositories receive the payload
  * directly and a normalised ApiError on failure. Mock at that boundary.
  */
@@ -35,45 +36,35 @@ function makeListEnvelope<T>(items: T[]) {
   };
 }
 
-/** Wire `HomeroomAssignmentResponse` — carries only teacherMemberId (raw uuid). */
-function homeroom(classId: string, teacherMemberId: string) {
+const CLASSES_URL = "/core/api/v1/classes";
+
+/** Wire `ClassResponse` row (enriched since BE US-173). */
+function classDto(over: Record<string, unknown> = {}) {
   return {
-    classId,
-    teacherMemberId,
-    assignedAt: "2025-08-01T00:00:00Z",
-    assignedBy: "admin-uuid",
+    classId: "cls-10a1",
+    name: "10A1",
+    gradeLevel: 10,
+    academicYearLabel: "2025–2026",
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
+    ...over,
   };
 }
 
-const CLASSES_URL = "/core/api/v1/classes";
-const homeroomUrl = (classId: string) =>
-  `/core/api/v1/classes/${classId}/homeroom-teacher`;
-
-describe("RosterRepository — getClasses (US-E18.5 real wire)", () => {
-  it("maps the wire envelope (classId/academicYearLabel) + fans out one homeroom GET per class", async () => {
-    const get = vi.fn(async (url: string) => {
-      if (url === CLASSES_URL) {
-        return makeListEnvelope([
-          {
-            classId: "cls-10a1",
-            name: "10A1",
-            gradeLevel: 10,
-            academicYearLabel: "2025–2026",
-          },
-          {
-            classId: "cls-10b3",
-            name: "10B3",
-            gradeLevel: 10,
-            academicYearLabel: "2025–2026",
-          },
-        ]);
-      }
-      if (url === homeroomUrl("cls-10a1")) {
-        return homeroom("cls-10a1", "teacher-uuid-1");
-      }
-      // cls-10b3 → no homeroom assignment
-      throw apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404);
-    }) as unknown as AxiosInstance["get"];
+describe("RosterRepository — getClasses (US-E18.5 real wire, US-E18.30 enriched)", () => {
+  it("maps the wire envelope in ONE call — the per-row homeroom fan-out is gone", async () => {
+    // Before US-E18.30 this fired `GET /classes/{id}/homeroom-teacher` per row
+    // (and displayed the RAW member uuid as the teacher's name). BE US-173 put
+    // homeroomTeacherId/Name on the list row: exactly one HTTP call now.
+    const get = vi.fn(async () =>
+      makeListEnvelope([
+        classDto({
+          homeroomTeacherId: "teacher-uuid-1",
+          homeroomTeacherName: "Nguyễn Thị Hương",
+        }),
+        classDto({ classId: "cls-10b3", name: "10B3" }),
+      ]),
+    ) as unknown as AxiosInstance["get"];
     const repo = new RosterRepository(makeHttp({ get }));
     const res = await repo.getClasses({});
     expect(res.ok).toBe(true);
@@ -83,14 +74,28 @@ describe("RosterRepository — getClasses (US-E18.5 real wire)", () => {
         id: "cls-10a1",
         name: "10A1",
         gradeLevel: 10,
-        homeroomTeacher: "teacher-uuid-1",
+        // real display NAME, no longer a raw uuid
+        homeroomTeacher: "Nguyễn Thị Hương",
         year: "2025–2026",
       });
-      // 404 CLASS_ASSIGNMENT_NOT_FOUND → no homeroom → null (not a failure)
+      // homeroomTeacherId null → genuinely no homeroom assigned
       expect(res.data[1].homeroomTeacher).toBeNull();
     }
-    // 1 list GET + 1 homeroom GET per class
-    expect(get).toHaveBeenCalledTimes(3);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the class assigned (raw id fallback) when only the NAME lookup degraded", async () => {
+    const get = vi.fn(async () =>
+      makeListEnvelope([
+        classDto({
+          homeroomTeacherId: "teacher-uuid-1",
+          homeroomTeacherName: null,
+        }),
+      ]),
+    ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(makeHttp({ get })).getClasses({});
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data[0].homeroomTeacher).toBe("teacher-uuid-1");
   });
 
   it("passes academicYear to the list API (TR-031)", async () => {
@@ -278,32 +283,21 @@ describe("RosterRepository — real interceptor pipeline (raw-flag placement)", 
   }
 
   it("getClasses survives the real unwrap (raw top-level, academicYear kept in params)", async () => {
-    const get = interceptedGet((url) => {
-      if (url === CLASSES_URL) {
-        return makeListEnvelope([
-          {
-            classId: "cls-10a1",
-            name: "10A1",
-            gradeLevel: 10,
-            academicYearLabel: "2025–2026",
-          },
-        ]);
-      }
-      // homeroom-teacher: NOT a raw call → success envelope, unwrapped to dto
-      return {
-        success: true,
-        data: homeroom("cls-10a1", "teacher-uuid-1"),
-        error: null,
-        meta: { requestId: "req-test" },
-      };
-    });
+    const get = interceptedGet(() =>
+      makeListEnvelope([
+        classDto({
+          homeroomTeacherId: "teacher-uuid-1",
+          homeroomTeacherName: "Nguyễn Thị Hương",
+        }),
+      ]),
+    );
     const res = await new RosterRepository(makeHttp({ get })).getClasses({
       academicYear: "2025-2026",
     });
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.data[0].id).toBe("cls-10a1");
-      expect(res.data[0].homeroomTeacher).toBe("teacher-uuid-1");
+      expect(res.data[0].homeroomTeacher).toBe("Nguyễn Thị Hương");
     }
   });
 });
