@@ -18,17 +18,14 @@ function spyRepo(): IFeedRepository & Record<string, ReturnType<typeof vi.fn>> {
     setReaction: vi.fn().mockResolvedValue(ok({})),
     removeReaction: vi.fn().mockResolvedValue(ok({})),
     addComment: vi.fn().mockResolvedValue(ok({})),
-    togglePinMock: vi
-      .fn()
-      .mockResolvedValue(ok({ postId: "p1", pinned: true })),
+    togglePin: vi.fn().mockResolvedValue(ok({ postId: "p1", pinned: true })),
   } as unknown as IFeedRepository & Record<string, ReturnType<typeof vi.fn>>;
 }
 
 describe("HybridFeedRepository (US-E18.31 partial-real wiring)", () => {
   it("routes the READ slice to the REAL repo, arguments intact", async () => {
     const real = spyRepo();
-    const mock = spyRepo();
-    const hybrid = new HybridFeedRepository(real, mock);
+    const hybrid = new HybridFeedRepository(real);
 
     await hybrid.getFeed({ scope: "class", classId: "c-1" }, "cur");
     await hybrid.listComments("p1", null);
@@ -38,14 +35,32 @@ describe("HybridFeedRepository (US-E18.31 partial-real wiring)", () => {
       "cur",
     );
     expect(real.listComments).toHaveBeenCalledWith("p1", null);
-    expect(mock.getFeed).not.toHaveBeenCalled();
-    expect(mock.listComments).not.toHaveBeenCalled();
   });
 
-  it("routes every MUTATION to the MOCK repo — never the real one (gaps #2/#3)", async () => {
+  it("degrades EVERY mutation to a typed forbidden failure — never a fake success", async () => {
     const real = spyRepo();
-    const mock = spyRepo();
-    const hybrid = new HybridFeedRepository(real, mock);
+    const hybrid = new HybridFeedRepository(real);
+
+    const results = [
+      await hybrid.createPost({
+        scope: { scope: "school" },
+        content: "hi",
+        hasAttachment: false,
+      }),
+      await hybrid.setReaction("p1", "like"),
+      await hybrid.removeReaction("p1"),
+      await hybrid.addComment("p1", "hay quá"),
+      await hybrid.togglePin("p1", true),
+    ];
+
+    for (const result of results) {
+      expect(result).toEqual({ ok: false, error: { type: "forbidden" } });
+    }
+  });
+
+  it("issues NO write request against the real service while degraded", async () => {
+    const real = spyRepo();
+    const hybrid = new HybridFeedRepository(real);
 
     await hybrid.createPost({
       scope: { scope: "school" },
@@ -54,35 +69,20 @@ describe("HybridFeedRepository (US-E18.31 partial-real wiring)", () => {
     });
     await hybrid.setReaction("p1", "like");
     await hybrid.removeReaction("p1");
-    await hybrid.addComment("p1", "hay quá");
-    await hybrid.togglePinMock("p1", true);
+    await hybrid.addComment("p1", "ok");
+    await hybrid.togglePin("p1", false);
 
     for (const name of [
       "createPost",
       "setReaction",
       "removeReaction",
       "addComment",
-      "togglePinMock",
+      "togglePin",
     ] as const) {
-      expect(mock[name], `${name} must hit the mock`).toHaveBeenCalled();
       expect(
         real[name],
-        `${name} must NOT hit the real repo`,
+        `${name} must NOT reach the real service`,
       ).not.toHaveBeenCalled();
     }
-  });
-
-  it("passes mutation arguments through unchanged", async () => {
-    const real = spyRepo();
-    const mock = spyRepo();
-    const hybrid = new HybridFeedRepository(real, mock);
-
-    await hybrid.setReaction("p2", "celebrate");
-    await hybrid.addComment("p2", "ok");
-    await hybrid.togglePinMock("p2", false);
-
-    expect(mock.setReaction).toHaveBeenCalledWith("p2", "celebrate");
-    expect(mock.addComment).toHaveBeenCalledWith("p2", "ok");
-    expect(mock.togglePinMock).toHaveBeenCalledWith("p2", false);
   });
 });

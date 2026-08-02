@@ -61,7 +61,7 @@ async function allUseCases(value: string | undefined) {
     di.makeReactToPostUseCase(),
     di.makeListCommentsUseCase(),
     di.makeAddCommentUseCase(),
-    di.makeTogglePinMockUseCase(),
+    di.makeTogglePinUseCase(),
   ]);
 }
 

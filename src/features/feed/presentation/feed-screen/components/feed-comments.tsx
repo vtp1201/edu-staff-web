@@ -28,6 +28,12 @@ export interface FeedCommentsProps {
     postId: string;
     content: string;
   }) => Promise<AddCommentResult>;
+  /**
+   * Whether writing a comment / reporting one is supported in this environment
+   * (US-E18.31 — false in real mode, where every feed mutation degrades to
+   * `forbidden`). Reading the thread stays fully available.
+   */
+  writesEnabled: boolean;
   /** Bubbles to the container's single shared ReportContentDialog. */
   onReportComment: (comment: FeedCommentEntity) => void;
   /** 404 on list/add → post gone: container collapses thread + refetches list. */
@@ -49,6 +55,7 @@ interface ThrownFeedFailure {
 export function FeedComments({
   postId,
   meId,
+  writesEnabled,
   listCommentsAction,
   addCommentAction,
   onReportComment,
@@ -135,7 +142,7 @@ export function FeedComments({
         <FeedCommentItem
           key={c.commentId}
           comment={c}
-          canReport={c.authorId !== meId}
+          canReport={writesEnabled && c.authorId !== meId}
           onReport={() => onReportComment(c)}
           now={now}
         />
@@ -149,35 +156,41 @@ export function FeedComments({
           </p>
         )}
 
-      {/* Composer row */}
-      <div className="flex items-center gap-2 rounded-full border border-border bg-muted py-1 pr-1 pl-3.5">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          aria-label={t("comments.writeLabel")}
-          placeholder={t("comments.writePlaceholder")}
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none"
-        />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!draft.trim() || addMutation.isPending}
-          aria-label={t("comments.send")}
-          aria-busy={addMutation.isPending}
-          className={cn(
-            "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-primary-foreground transition-colors",
-            draft.trim() ? "bg-primary" : "bg-border",
-          )}
-        >
-          <Send aria-hidden="true" className="size-3.5" />
-        </button>
-      </div>
+      {/* Composer row — withheld (with an explanation) when writes are off */}
+      {!writesEnabled ? (
+        <p className="text-edu-text-secondary text-sm">
+          {t("comments.disabled")}
+        </p>
+      ) : (
+        <div className="flex items-center gap-2 rounded-full border border-border bg-muted py-1 pr-1 pl-3.5">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            aria-label={t("comments.writeLabel")}
+            placeholder={t("comments.writePlaceholder")}
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!draft.trim() || addMutation.isPending}
+            aria-label={t("comments.send")}
+            aria-busy={addMutation.isPending}
+            className={cn(
+              "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-primary-foreground transition-colors",
+              draft.trim() ? "bg-primary" : "bg-border",
+            )}
+          >
+            <Send aria-hidden="true" className="size-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

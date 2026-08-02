@@ -411,21 +411,21 @@ describe("FeedRepository — envelope + error mapping", () => {
   });
 
   // ── pin/unpin — US-E18.20: this IS a real endpoint (US-101) ───────────────
-  it("togglePinMock(true) PUTs the real pin endpoint with no body", async () => {
+  it("togglePin(true) PUTs the real pin endpoint with no body", async () => {
     const put = vi.fn().mockResolvedValue({});
     const del = vi.fn();
     const repo = new FeedRepository(fakeHttp({ put, delete: del }));
-    const res = await repo.togglePinMock("p1", true);
+    const res = await repo.togglePin("p1", true);
     expect(res).toEqual({ ok: true, value: { postId: "p1", pinned: true } });
     expect(put).toHaveBeenCalledWith("/social/api/v1/feeds/posts/p1/pin");
     expect(del).not.toHaveBeenCalled();
   });
 
-  it("togglePinMock(false) DELETEs the real pin endpoint (idempotent unpin)", async () => {
+  it("togglePin(false) DELETEs the real pin endpoint (idempotent unpin)", async () => {
     const put = vi.fn();
     const del = vi.fn().mockResolvedValue({});
     const repo = new FeedRepository(fakeHttp({ put, delete: del }));
-    const res = await repo.togglePinMock("p1", false);
+    const res = await repo.togglePin("p1", false);
     expect(res).toEqual({ ok: true, value: { postId: "p1", pinned: false } });
     expect(del).toHaveBeenCalledWith("/social/api/v1/feeds/posts/p1/pin");
     expect(put).not.toHaveBeenCalled();
@@ -441,7 +441,7 @@ describe("FeedRepository — envelope + error mapping", () => {
       }),
     );
     const repo = new FeedRepository(fakeHttp({ put }));
-    const res = await repo.togglePinMock("p1", true);
+    const res = await repo.togglePin("p1", true);
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 });

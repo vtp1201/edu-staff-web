@@ -8,7 +8,7 @@ import { CreatePostUseCase } from "@/features/feed/domain/use-cases/create-post.
 import { ListCommentsUseCase } from "@/features/feed/domain/use-cases/list-comments.use-case";
 import { ListFeedUseCase } from "@/features/feed/domain/use-cases/list-feed.use-case";
 import { ReactToPostUseCase } from "@/features/feed/domain/use-cases/react-to-post.use-case";
-import { TogglePinMockUseCase } from "@/features/feed/domain/use-cases/toggle-pin-mock.use-case";
+import { TogglePinUseCase } from "@/features/feed/domain/use-cases/toggle-pin.use-case";
 import { FeedRepository } from "@/features/feed/infrastructure/repositories/feed.repository";
 import { HybridFeedRepository } from "@/features/feed/infrastructure/repositories/hybrid-feed.repository";
 import { MockFeedRepository } from "@/features/feed/infrastructure/repositories/mocks/feed.mock.repository";
@@ -19,8 +19,13 @@ import { MockFeedRepository } from "@/features/feed/infrastructure/repositories/
  * `USE_MOCK ? Mock : Hybrid`. This factory was PERMANENTLY force-mocked by
  * US-E18.20 over THREE blocking gaps in `social`'s real contract; BE **US-165**
  * closed exactly one of them, so US-E18.31 wires the READ path for real and
- * keeps the write path on the mock. `HybridFeedRepository` makes that split
- * unconditional: reads real, mutations mock, regardless of the flag.
+ * HONESTLY DEGRADES the write path. `HybridFeedRepository` owns that split:
+ * reads real, mutations → `{ type: "forbidden" }` with no HTTP and no mock
+ * fallback. The non-mock branch IS the production configuration (`USE_MOCK` is
+ * false when the env var is unset and `next.config.ts` refuses a deploy build
+ * with it on), so a mock write behind a real read would be a fake publish, not
+ * a dormant edge case. The screen gates the affordances off up-front via
+ * `writesEnabled = USE_MOCK` (exam-bank's `authoringEnabled` precedent).
  *
  * 1. **No author identity — RESOLVED (BE US-165).** `Post`/`Comment` now carry
  *    `authorName` + `authorRole`, denormalized onto the row at write time from
@@ -36,36 +41,35 @@ import { MockFeedRepository } from "@/features/feed/infrastructure/repositories/
  *    vocabulary (`ADMIN|MANAGER|TEACHER|STAFF|STUDENT|PARENT`), which does NOT
  *    match the feed's 4-value badge vocabulary — there is no `PRINCIPAL`
  *    member role, and ADMIN/MANAGER/STAFF have no badge. Unmappable roles map
- *    to `null` = no badge (never a guessed one). Flagged to fe-lead: giving
- *    the tenant ADMIN — the author of every SCHOOL post — a proper badge needs
- *    a design decision on the label + tone.
+ *    resolved through the canonical `ROLE_ENUM_TO_APP` map
+ *    (`appRoleOf`, the SAME one `decodeRoleClaim` uses for the viewer):
+ *    ADMIN/MANAGER → principal, STAFF → teacher, anything unrecognised → no
+ *    badge (never a guessed one). See `features/feed/domain/policies/
+ *    feed-role.ts`.
  * 2. **Different reaction taxonomy — STILL BLOCKING.** Real `emoji` ∈
  *    `{like,love,haha,wow,sad,angry}` with a single `reactionCount` +
  *    `callerReaction`; web's `ReactionType` ∈ `{like,love,celebrate,clap}` with
  *    per-type counts. No lossless mapping — remapping is a product/design call,
  *    so real posts read back with ZEROED reaction state and the reaction
- *    mutations stay on the mock.
+ *    mutations degrade.
  * 3. **Different attachment capability — STILL BLOCKING.** Real `Post.media` is
  *    ONE optional image uploaded as `multipart/form-data` at create time,
  *    returned as a presigned URL; web models multiple caption-only placeholder
  *    `FeedAttachment[]` with no upload and no `<img>` render path. A real
- *    image is therefore not surfaced, and `createPost` stays on the mock.
+ *    image is therefore not surfaced, and `createPost` degrades.
  *
  * Pin/unpin is real (`PUT`/`DELETE /feeds/posts/{postId}/pin`, US-101) and
- * `FeedRepository` issues the real call; real reads finally give it valid post
- * ids, but the presentation fires it and ignores the result, so it stays mocked
- * pending a small UX decision. See `HybridFeedRepository` for the per-method
- * rationale and the accepted consequence of mock writes over a real read.
+ * `FeedRepository.togglePin` issues the real call; real reads finally give it
+ * valid post ids, but the presentation fires it and ignores the result, so it
+ * degrades with the rest of the write side pending a small UX decision. See
+ * `HybridFeedRepository` for the per-method rationale.
  */
 async function makeRepo(): Promise<IFeedRepository> {
   if (USE_MOCK) return new MockFeedRepository();
   // decision 0018 — proactive refresh BEFORE the shared http client is created.
   await ensureFreshSession();
   const http = await createServerHttpClient();
-  return new HybridFeedRepository(
-    new FeedRepository(http),
-    new MockFeedRepository(),
-  );
+  return new HybridFeedRepository(new FeedRepository(http));
 }
 
 export async function makeListFeedUseCase() {
@@ -88,6 +92,6 @@ export async function makeAddCommentUseCase() {
   return new AddCommentUseCase(await makeRepo());
 }
 
-export async function makeTogglePinMockUseCase() {
-  return new TogglePinMockUseCase(await makeRepo());
+export async function makeTogglePinUseCase() {
+  return new TogglePinUseCase(await makeRepo());
 }

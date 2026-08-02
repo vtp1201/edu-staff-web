@@ -91,6 +91,13 @@ function dropPost(
   };
 }
 
+/** Every menu item withheld — pin/report/remove all mutate (US-E18.31). */
+const NO_MENU = {
+  canPin: false,
+  canReport: false,
+  canRemove: false,
+} as const;
+
 type ReportTarget = {
   kind: "post" | "comment";
   contentId: string;
@@ -175,7 +182,12 @@ export function FeedScreen(vm: FeedScreenVM) {
   );
 
   const firstPageError = query.isError && posts.length === 0;
-  const canPostHere = canPost(vm.role, selection.scope);
+  // US-E18.31 — writes are unavailable in real mode (`writesEnabled` false):
+  // the composer, reactions, the comment box, pin and the report/remove menu
+  // are gated OFF with an explanation rather than offered as dead controls
+  // that would look like they succeeded (`HybridFeedRepository` degrades every
+  // mutation to `forbidden`).
+  const canPostHere = canPost(vm.role, selection.scope) && vm.writesEnabled;
 
   // ── Reaction mutation (optimistic, silent rollback, 404 removes) ─────────
   const [pendingReactionPost, setPendingReactionPost] = useState<string | null>(
@@ -319,7 +331,7 @@ export function FeedScreen(vm: FeedScreenVM) {
       );
       // Non-authoritative — keeps the "every write goes through an action"
       // convention; result is NOT awaited (INT-190-07, no HTTP).
-      void vm.togglePinMockAction({ postId, pinned: nextPinned });
+      void vm.togglePinAction({ postId, pinned: nextPinned });
     },
     [queryClient, selection, vm],
   );
@@ -404,6 +416,15 @@ export function FeedScreen(vm: FeedScreenVM) {
           onSelectScope={handleScopeChange}
         />
 
+        {!vm.writesEnabled && !firstPageError && (
+          <p
+            role="status"
+            className="rounded-[var(--edu-radius-card)] border border-border bg-muted px-4 py-3 text-[12.5px] text-edu-text-secondary"
+          >
+            {t("writesDisabled.notice")}
+          </p>
+        )}
+
         {canPostHere && !firstPageError && (
           <FeedComposer
             ref={composerRef}
@@ -461,16 +482,22 @@ export function FeedScreen(vm: FeedScreenVM) {
               <FeedPostCard
                 key={post.postId}
                 post={post}
-                menuVisibility={menuVisibility({
-                  viewerRole: vm.role,
-                  viewerId: vm.meId,
-                  authorId: post.authorId,
-                  scope: post.scope,
-                  classId: post.classId,
-                  teacherClassIds: vm.teacherClassIds,
-                })}
+                menuVisibility={
+                  vm.writesEnabled
+                    ? menuVisibility({
+                        viewerRole: vm.role,
+                        viewerId: vm.meId,
+                        authorId: post.authorId,
+                        scope: post.scope,
+                        classId: post.classId,
+                        teacherClassIds: vm.teacherClassIds,
+                      })
+                    : NO_MENU
+                }
                 reactionLabels={reactionLabels}
-                reactionDisabled={pendingReactionPost === post.postId}
+                reactionDisabled={
+                  !vm.writesEnabled || pendingReactionPost === post.postId
+                }
                 onReact={(type) => handleReact(post.postId, type)}
                 onTogglePin={() => handleTogglePin(post.postId, !post.pinned)}
                 onReport={() =>
@@ -486,6 +513,7 @@ export function FeedScreen(vm: FeedScreenVM) {
                 }
                 commentsProps={{
                   meId: vm.meId,
+                  writesEnabled: vm.writesEnabled,
                   listCommentsAction: vm.listCommentsAction,
                   addCommentAction: vm.addCommentAction,
                   onReportComment: (comment) =>

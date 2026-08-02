@@ -77,6 +77,7 @@ function baseVM(over: Partial<FeedScreenVM> = {}): FeedScreenVM {
       { classId: "12C3", className: "12C3" },
     ],
     teacherClassIds: [],
+    writesEnabled: true,
     initialSchoolPage: page(SCHOOL_POSTS),
     initialErrorKey: null,
     fetchFeedPageAction: resolved(page(SCHOOL_POSTS)),
@@ -106,7 +107,7 @@ function baseVM(over: Partial<FeedScreenVM> = {}): FeedScreenVM {
       content: "hi",
       createdAt: "2026-07-11T11:00:00.000Z",
     }),
-    togglePinMockAction: fn(async (i) => ({ ok: true as const, data: i })),
+    togglePinAction: fn(async (i) => ({ ok: true as const, data: i })),
     reportContentAction: fn(async () => ({ ok: true as const })),
     removeContentAction: fn(async () => ({ ok: true as const })),
     ...over,
@@ -667,7 +668,7 @@ export const PinTogglesNoNetwork: Story = {
       await body.findByRole("menuitem", { name: "Ghim bài viết" }),
     );
     await waitFor(() =>
-      expect(args.togglePinMockAction).toHaveBeenCalledWith({
+      expect(args.togglePinAction).toHaveBeenCalledWith({
         postId: "p-plain",
         pinned: true,
       }),
@@ -699,7 +700,7 @@ export const PinUnpinResortsOut: Story = {
       await body.findByRole("menuitem", { name: "Bỏ ghim bài viết" }),
     );
     await waitFor(() =>
-      expect(args.togglePinMockAction).toHaveBeenCalledWith({
+      expect(args.togglePinAction).toHaveBeenCalledWith({
         postId: "p-pinned",
         pinned: false,
       }),
@@ -1583,8 +1584,8 @@ export const RealAuthorIdentity: Story = {
 
 /**
  * US-E18.31 — the nullable half of the same wire contract: a post written
- * before BE migration 035 (no backfill), or an author whose IAM member role
- * (ADMIN/MANAGER/STAFF) has no feed badge. The row degrades honestly: the i18n
+ * before BE migration 035 (no backfill), or an author whose IAM member role is
+ * outside the canonical `ROLE_ENUM_TO_APP` map. The row degrades honestly: the i18n
  * unknown-author label, a "?" initials avatar, and NO role badge — never a
  * blank name and never a guessed role.
  */
@@ -1611,5 +1612,55 @@ export const UnknownAuthorIdentity: Story = {
     for (const label of ["Giáo viên", "Hiệu trưởng", "Học sinh", "Phụ huynh"]) {
       await expect(within(article).queryByText(label)).not.toBeInTheDocument();
     }
+  },
+};
+
+/**
+ * US-E18.31 (review fix) — REAL mode (`writesEnabled: false`, i.e.
+ * `NEXT_PUBLIC_USE_MOCK` off, which is what production runs). Reads work;
+ * every mutation degrades to `forbidden` in `HybridFeedRepository`, so the
+ * screen must OFFER NO write affordance and say why — a dead control that
+ * fake-succeeds and vanishes on the next refetch is worse than no control
+ * (and, via still-mocked moderation, a fake "report sent" is safeguarding-
+ * relevant). Proves: explanatory notice, no composer, no "…" menu (pin/report/
+ * remove), disabled reaction chips, no comment box.
+ */
+export const WritesDisabledInRealMode: Story = {
+  args: baseVM({ role: "principal", writesEnabled: false }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Explanatory microcopy, announced as a status (not colour-only).
+    const notice = await canvas.findByRole("status");
+    await expect(notice).toHaveTextContent(/Hiện chưa thể đăng bài/);
+
+    // No composer for a role that normally CAN post.
+    await expect(
+      canvas.queryByLabelText("Nội dung bài viết"),
+    ).not.toBeInTheDocument();
+
+    const article = (await canvas.findAllByRole("article"))[0];
+    // No "…" menu at all — pin/report/remove all mutate (principal would
+    // normally see all three).
+    await expect(
+      within(article).queryByRole("button", { name: /Tuỳ chọn cho bài viết/ }),
+    ).not.toBeInTheDocument();
+    // Reaction chips + picker present but disabled (state is still readable).
+    await expect(
+      within(article).getByRole("button", { name: "Thả cảm xúc khác" }),
+    ).toBeDisabled();
+
+    // Comment thread still READS; the composer is replaced by an explanation.
+    await userEvent.click(
+      within(article).getByRole("button", { name: /Xem bình luận/ }),
+    );
+    await waitFor(async () => {
+      await expect(
+        within(article).getByText("Chưa thể bình luận trong lúc này."),
+      ).toBeInTheDocument();
+    });
+    await expect(
+      within(article).queryByLabelText("Viết bình luận"),
+    ).not.toBeInTheDocument();
   },
 };

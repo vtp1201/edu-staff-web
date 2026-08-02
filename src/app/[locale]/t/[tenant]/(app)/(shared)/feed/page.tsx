@@ -1,6 +1,9 @@
 import { requireRole } from "@/bootstrap/auth-guard/require-role.server";
 import { makeListFeedUseCase } from "@/bootstrap/di/feed.di";
+import { USE_MOCK } from "@/bootstrap/lib/mock";
+import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
 import type { FeedRole } from "@/features/feed/domain/entities/feed-post.entity";
+import { feedRoleOfAppRole } from "@/features/feed/domain/policies/feed-role";
 import { FeedScreen } from "@/features/feed/presentation/feed-screen";
 import type {
   FeedClassOption,
@@ -14,22 +17,22 @@ import {
   reactToPostAction,
   removeContentAction,
   reportContentAction,
-  togglePinMockAction,
+  togglePinAction,
 } from "./actions";
 
-/** BE/guard role → feed role. `admin` moderates like a principal (full menu). */
-function toFeedRole(role: string): FeedRole {
-  switch (role) {
-    case "principal":
-    case "admin":
-      return "principal";
-    case "student":
-      return "student";
-    case "parent":
-      return "parent";
-    default:
-      return "teacher";
-  }
+/**
+ * Guard appRole → feed role, through the SAME narrowing the author badge uses
+ * (`feedRoleOfAppRole`) so the viewer's role and a post author's role can never
+ * be resolved by two divergent maps (US-E18.31 fix, SHOULD-FIX 5).
+ *
+ * Two viewer-only widenings live here, deliberately NOT in the shared map:
+ * `admin` has no feed BADGE but moderates like a principal (and is what
+ * `decodeRoleClaim` returns under NEXT_PUBLIC_USE_MOCK), and an unresolved
+ * viewer falls back to the least-privileged `student`.
+ */
+function viewerFeedRole(appRole: UserRole | null): FeedRole {
+  if (appRole === "admin") return "principal";
+  return feedRoleOfAppRole(appRole) ?? "student";
 }
 
 /** Class list a viewer can scope to (mock identity until IAM class-membership). */
@@ -59,7 +62,7 @@ const CLASSES_BY_ROLE: Record<FeedRole, FeedClassOption[]> = {
  */
 export default async function FeedPage() {
   const guard = await requireRole();
-  const role = toFeedRole(guard.ok ? guard.role : "student");
+  const role = viewerFeedRole(guard.ok ? guard.role : null);
   const myClasses = CLASSES_BY_ROLE[role];
 
   const useCase = await makeListFeedUseCase();
@@ -72,6 +75,10 @@ export default async function FeedPage() {
     meAvatarInitials: "B",
     myClasses,
     teacherClassIds: role === "teacher" ? myClasses.map((c) => c.classId) : [],
+    // US-E18.31 — reads are real; every write degrades to `forbidden` in real
+    // mode (HybridFeedRepository), so the screen gates the affordances off with
+    // an explanation. Same mechanism as exam-bank's `authoringEnabled`.
+    writesEnabled: USE_MOCK,
     initialSchoolPage: result.ok ? result.value : null,
     initialErrorKey: result.ok ? null : result.error.type,
     fetchFeedPageAction,
@@ -79,7 +86,7 @@ export default async function FeedPage() {
     reactToPostAction,
     listCommentsAction,
     addCommentAction,
-    togglePinMockAction,
+    togglePinAction,
     reportContentAction,
     removeContentAction,
   };

@@ -1923,7 +1923,8 @@
       "writePlaceholder": "Viết bình luận…",
       "send": "Gửi bình luận",
       "empty": "Chưa có bình luận",
-      "postGone": "Bài viết không còn tồn tại"
+      "postGone": "Bài viết không còn tồn tại",
+      "disabled": "Chưa thể bình luận trong lúc này."
     },
     "menu": {
       "postOptions": "Tuỳ chọn cho bài viết của {author}",
@@ -1946,6 +1947,9 @@
       "title": "Chưa có bài viết nào",
       "body": "Bảng tin này còn trống. Bài viết mới sẽ xuất hiện tại đây.",
       "cta": "Đăng bài viết đầu tiên"
+    },
+    "writesDisabled": {
+      "notice": "Hiện chưa thể đăng bài, thả cảm xúc, bình luận, ghim hay báo cáo trên bảng tin. Bạn vẫn xem được toàn bộ nội dung."
     },
     "errors": {
       "fetch-failed": "Không tải được bảng tin. Vui lòng thử lại.",

@@ -1923,7 +1923,8 @@
       "writePlaceholder": "Write a comment…",
       "send": "Send comment",
       "empty": "No comments yet",
-      "postGone": "This post no longer exists"
+      "postGone": "This post no longer exists",
+      "disabled": "Commenting is unavailable right now."
     },
     "menu": {
       "postOptions": "Options for {author}'s post",
@@ -1946,6 +1947,9 @@
       "title": "No posts yet",
       "body": "This feed is empty. New posts will appear here.",
       "cta": "Write the first post"
+    },
+    "writesDisabled": {
+      "notice": "Posting, reacting, commenting, pinning and reporting are unavailable right now. You can still read the whole feed."
     },
     "errors": {
       "fetch-failed": "Could not load the feed. Please try again.",

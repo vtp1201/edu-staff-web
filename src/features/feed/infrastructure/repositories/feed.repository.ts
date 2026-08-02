@@ -137,10 +137,10 @@ export function toFeedFailure(
  * - `createPost` sends `{ content }`; real `POST /feeds/{scope}` takes
  *   `textBody` (+ optional `linkUrl`, + an optional multipart `image` the web
  *   composer cannot produce) (gap #3).
- * - `togglePinMock` IS a real endpoint and, now that reads yield real post ids,
- *   is technically reachable — but the presentation treats pinning as a
- *   fire-and-forget local flip, so routing it real would swallow authorization
- *   failures silently. Promoting it needs a small UX decision (flagged).
+ * - `togglePin` IS a real endpoint (implemented below) and, now that reads
+ *   yield real post ids, is technically reachable — but the presentation treats
+ *   pinning as a fire-and-forget local flip, so routing it real would swallow
+ *   authorization failures silently. Promoting it needs a small UX decision.
  * - `addComment` has NO blocking gap: its request/response are wired to the
  *   real `{ text }` / `Comment` shape and unit-tested, so promoting it is a
  *   one-line change in {@link HybridFeedRepository} (flagged to fe-lead).
@@ -281,12 +281,12 @@ export class FeedRepository implements IFeedRepository {
    * the real call. Authorization is the CREATE gate (ADR 0082), so 403 →
    * `forbidden`, 404 → `post-not-found`, 409 archived → terminal.
    *
-   * The method name is kept as `togglePinMock` because it is the
-   * {@link IFeedRepository} contract the presentation layer already binds to
-   * (renaming it is a domain-signature change outside US-E18.20's scope) — the
-   * mock implementation is unchanged and still serves the shipped UX.
+   * Renamed from `togglePinMock` in US-E18.31: the endpoint is real, and the
+   * old name told a future reader pinning had no backend. It is still not
+   * ROUTED here in real mode — see {@link HybridFeedRepository} — but that is a
+   * wiring posture, not a missing contract.
    */
-  async togglePinMock(
+  async togglePin(
     postId: string,
     pinned: boolean,
   ): Promise<FeedResult<{ postId: string; pinned: boolean }>> {

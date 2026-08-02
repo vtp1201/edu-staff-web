@@ -71,19 +71,39 @@ describe("FeedMapper.toPostEntity — real `Post` wire shape", () => {
     expect(e.authorRole).toBeNull();
   });
 
-  it("maps IAM member roles the feed can display, and NULLs the ones it cannot", () => {
+  it("treats a blank authorName as absent (A11Y-002: name + initials agree)", () => {
+    const post = FeedMapper.toPostEntity({ ...base, authorName: "   " });
+    expect(post.authorName).toBeNull();
+    expect(post.authorAvatarInitials).toBe("?");
+
+    const comment = FeedMapper.toCommentEntity({
+      id: "c-1",
+      postId: "p-1",
+      authorUserId: "u-1",
+      authorName: "",
+      authorRole: "TEACHER",
+      text: "hay quá",
+      createdAt: "2026-07-01T02:00:00Z",
+    });
+    expect(comment.authorName).toBeNull();
+    expect(comment.authorAvatarInitials).toBe("?");
+  });
+
+  it("maps IAM member roles through the canonical ROLE_ENUM_TO_APP map", () => {
     const roleOf = (raw: string | null) =>
       FeedMapper.toPostEntity({ ...base, authorRole: raw }).authorRole;
     expect(roleOf("TEACHER")).toBe("teacher");
     expect(roleOf("STUDENT")).toBe("student");
     expect(roleOf("PARENT")).toBe("parent");
-    // ADMIN/MANAGER/STAFF have no feed badge — the feed's display vocabulary
-    // (teacher/principal/student/parent) is NOT IAM's member-role vocabulary.
-    // Null = "no badge", never a wrong badge (US-E18.31 finding, flagged).
-    expect(roleOf("ADMIN")).toBeNull();
-    expect(roleOf("MANAGER")).toBeNull();
-    expect(roleOf("STAFF")).toBeNull();
+    // The tenant ADMIN authors every SCHOOL post and MANAGER is the other
+    // principal-shaped member role — both must badge as "principal", exactly
+    // like `decodeRoleClaim` resolves the VIEWER's own role (US-E18.31 fix).
+    expect(roleOf("ADMIN")).toBe("principal");
+    expect(roleOf("MANAGER")).toBe("principal");
+    expect(roleOf("STAFF")).toBe("teacher");
+    // Genuinely unknown → no badge (never a guessed one).
     expect(roleOf("something-else")).toBeNull();
+    expect(roleOf("")).toBeNull();
   });
 
   it("NEVER reads avatarUrl (US-165 reserves it but it is always null)", () => {

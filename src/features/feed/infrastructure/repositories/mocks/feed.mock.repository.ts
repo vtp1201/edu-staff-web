@@ -26,8 +26,9 @@ const PAGE = 3;
  * Full in-memory feed mock (US-E19.1 mock-first). Selected by feed.di while
  * NEXT_PUBLIC_USE_MOCK=true so the screen is demonstrable without a `social`
  * backend. Module-level mutable state persists across a session (same idiom as
- * MockMessagingRepository). `togglePinMock` never touches the network in EITHER
- * repo — it is INT-190-07's permanent local-only path.
+ * MockMessagingRepository). `togglePin` flips the seed post in memory here;
+ * the REAL endpoint exists (`FeedRepository.togglePin`, BE US-101) but is not
+ * routed today — see {@link HybridFeedRepository}.
  */
 export class MockFeedRepository implements IFeedRepository {
   private posts: FeedPostEntity[] = seedPosts();
@@ -147,7 +148,7 @@ export class MockFeedRepository implements IFeedRepository {
     return { ok: true, value: { ...comment } };
   }
 
-  togglePinMock(
+  togglePin(
     postId: string,
     pinned: boolean,
   ): Promise<FeedResult<{ postId: string; pinned: boolean }>> {

@@ -55,6 +55,17 @@ export interface FeedScreenVM {
   /** Class ids the viewer teaches — teacher moderator boundary. */
   teacherClassIds: string[];
 
+  /**
+   * Whether feed WRITES (post, react, comment, pin, report, remove) are
+   * supported in this environment — `USE_MOCK` (US-E18.31, mirroring
+   * exam-bank's `authoringEnabled`). False in real mode: reads are wired to
+   * `social` but every mutation is blocked on the reaction/attachment contract
+   * gaps and `HybridFeedRepository` degrades it to `forbidden`, so the screen
+   * hides/disables the affordances and explains why instead of offering dead
+   * controls that would appear to succeed.
+   */
+  writesEnabled: boolean;
+
   /** RSC-seeded page 1 for the default (school) scope, or null on failure. */
   initialSchoolPage: FeedPage | null;
   /** Present when the RSC seed fetch failed (client shows the error state). */
@@ -81,7 +92,7 @@ export interface FeedScreenVM {
     postId: string;
     content: string;
   }) => Promise<AddCommentResult>;
-  togglePinMockAction: (input: {
+  togglePinAction: (input: {
     postId: string;
     pinned: boolean;
   }) => Promise<TogglePinResult>;

@@ -1,49 +1,19 @@
 import type { FeedCommentEntity } from "../../domain/entities/feed-comment.entity";
 import type {
   FeedPostEntity,
-  FeedRole,
   FeedScope,
 } from "../../domain/entities/feed-post.entity";
 import {
   emptyReactionCounts,
   type ReactionState,
 } from "../../domain/entities/reaction.entity";
+import { feedRoleOfMemberRole } from "../../domain/policies/feed-role";
 import type { FeedCommentResponseDto } from "../dtos/feed-comment-response.dto";
 import type {
   FeedPageResponseDto,
   FeedPostResponseDto,
 } from "../dtos/feed-post-response.dto";
 import type { ReactionResponseDto } from "../dtos/reaction-response.dto";
-
-/**
- * IAM member role (UPPERCASE on the wire: ADMIN/MANAGER/TEACHER/STAFF/STUDENT/
- * PARENT) → the feed's 4-value display vocabulary, or `null`.
- *
- * US-E18.31 finding (flagged to fe-lead): the two vocabularies do NOT line up.
- * `social` copies `memberRoles[0]` verbatim into `authorRole`, and IAM has no
- * `PRINCIPAL` member role at all, while the feed has no ADMIN/MANAGER/STAFF
- * badge. Anything unmapped returns `null` = "render no badge" — deliberately
- * NOT a guessed badge (the pre-US-E18.31 mapper defaulted unknown roles to
- * `teacher`, which would have labelled every SCHOOL post's tenant-ADMIN author
- * "Giáo viên"). Extending the badge set is a design decision, not a mapper one.
- *
- * Lowercase inputs are still accepted so mock/legacy payloads keep mapping.
- */
-function toFeedRole(raw: string | null | undefined): FeedRole | null {
-  switch ((raw ?? "").toUpperCase()) {
-    case "TEACHER":
-      return "teacher";
-    case "STUDENT":
-      return "student";
-    case "PARENT":
-      return "parent";
-    // Not an IAM member role today; kept so a future BE value maps cleanly.
-    case "PRINCIPAL":
-      return "principal";
-    default:
-      return null;
-  }
-}
 
 /** Wire scope is UPPERCASE `SCHOOL|CLASS|CLUB`; the screen has no club surface. */
 function toScope(raw: string): FeedScope {
@@ -96,8 +66,11 @@ export const FeedMapper = {
     return {
       postId: dto.id,
       authorId: dto.authorUserId,
-      authorName: dto.authorName ?? null,
-      authorRole: toFeedRole(dto.authorRole),
+      // A11Y-002 — a blank wire value ("" on a pre-migration row) is absence,
+      // not a name: keep it aligned with the "?" initials fallback so the
+      // presentation's `?? t("unknownAuthor")` covers both.
+      authorName: dto.authorName?.trim() || null,
+      authorRole: feedRoleOfMemberRole(dto.authorRole),
       authorAvatarInitials: initialsOf(dto.authorName),
       scope,
       classId: scope === "class" ? (dto.classId ?? undefined) : undefined,
@@ -133,8 +106,11 @@ export const FeedMapper = {
       commentId: dto.id,
       postId: dto.postId,
       authorId: dto.authorUserId,
-      authorName: dto.authorName ?? null,
-      authorRole: toFeedRole(dto.authorRole),
+      // A11Y-002 — a blank wire value ("" on a pre-migration row) is absence,
+      // not a name: keep it aligned with the "?" initials fallback so the
+      // presentation's `?? t("unknownAuthor")` covers both.
+      authorName: dto.authorName?.trim() || null,
+      authorRole: feedRoleOfMemberRole(dto.authorRole),
       authorAvatarInitials: initialsOf(dto.authorName),
       content: dto.text,
       createdAt: dto.createdAt,
