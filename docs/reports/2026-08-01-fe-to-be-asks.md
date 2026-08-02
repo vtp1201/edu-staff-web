@@ -170,15 +170,15 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
     khi gọi danh sách giáo viên cho principal. Cần BE xác nhận: endpoint này
     sẽ được implement (path/shape gì) hay FE nên đổi sang một nguồn dữ liệu
     khác đã có (vd tenant member directory lọc theo role TEACHER)?
-23. **#45 — `GET /members/{memberId}/attendance` thiếu quyền PARENT** (phát
-    hiện khi wire US-E20.5, parent xem lịch sử điểm danh con).
-    `services/core/docs/openapi.yaml` (~line 2759) ghi rõ chỉ STUDENT (chính
-    chủ) hoặc ADMIN/SUPER_ADMIN được gọi — PARENT không có trong danh sách.
-    FE đã build màn `/parent/attendance` hoàn toàn mock-first (decision
-    `0014`); real mode degrade trung thực về trạng thái "chưa xem được" (throw
-    `forbidden`, không gọi HTTP) thay vì hiển thị dữ liệu giả. Cần BE thêm
-    PARENT vào `authorize()` (kèm xác nhận PARENT chỉ xem được con đã liên kết
-    hợp lệ, không phải bất kỳ `memberId` nào) để un-mock.
+23. **#45 — RESOLVED (US-E18.34, 2026-08-03) — doc drift, không phải gap
+    thật.** Ground-truth lại trực tiếp `get_student_attendance.go`'s
+    `authorize()`: PARENT đã được phép đọc điểm danh của con đã liên kết
+    (`LinkReader.IsLinked`) từ US-047 — CHỈ prose ở
+    `services/core/docs/openapi.yaml` (~line 2766, "STUDENT-self or ADMIN")
+    là stale, code luôn đúng. FE đã wire `/parent/attendance` real (US-E18.34):
+    `GET /members/{memberId}/attendance` cho PARENT đã liên kết hợp lệ, 403
+    `ATTENDANCE_FORBIDDEN` cho parent chưa/không liên kết. Đề nghị BE cập nhật
+    lại prose openapi cho khớp code (không cần đổi code).
 
 ### Observation cho BE (không chặn)
 
