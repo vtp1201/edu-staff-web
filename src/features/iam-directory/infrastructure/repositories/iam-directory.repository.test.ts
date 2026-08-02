@@ -221,6 +221,27 @@ describe("IamDirectoryRepository.batchLookup", () => {
     });
   });
 
+  it("narrowed tier (PARENT/STUDENT caller) — a memberId+displayName-only payload round-trips without inventing email/roles keys (ADR-0120)", async () => {
+    // Real narrowed-tier JSON: the email/roles/dob/gender keys are genuinely
+    // ABSENT (US-E18.33 ground-truth against services/iam/docs/openapi.yaml).
+    const get = vi
+      .fn()
+      .mockResolvedValue([
+        { memberId: "st-1", displayName: "Nguyễn Minh Khoa" },
+      ]);
+    const repo = new IamDirectoryRepository(makeHttp({ get }));
+
+    const result = await repo.batchLookup(["st-1"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [{ memberId: "st-1", displayName: "Nguyễn Minh Khoa" }],
+    });
+    const row = result.ok ? result.value[0] : undefined;
+    expect(row && "email" in row).toBe(false);
+    expect(row && "roles" in row).toBe(false);
+  });
+
   it("maps too_many_member_ids → too-many-ids (defensive: the use-case chunks at 50)", async () => {
     const get = vi.fn().mockRejectedValue(apiError("too_many_member_ids", 400));
     const repo = new IamDirectoryRepository(makeHttp({ get }));

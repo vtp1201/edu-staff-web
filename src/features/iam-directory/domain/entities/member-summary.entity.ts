@@ -10,6 +10,13 @@ import type { DirectoryRole } from "./directory-member.entity";
 export interface MemberSummary {
   memberId: string;
   displayName: string;
-  email: string;
-  roles: DirectoryRole[];
+  /**
+   * Staff-tier only (ADR-0120, widened in US-E18.33). ABSENT — not empty — when
+   * the caller is a STAFF/STUDENT/PARENT tenant member. Consumers that need a
+   * guaranteed value must be reachable only from a staff-tier surface, or
+   * degrade gracefully; `email`/`roles` presence is the tier signal.
+   */
+  email?: string;
+  /** Staff-tier only — see {@link MemberSummary.email}. */
+  roles?: DirectoryRole[];
 }
