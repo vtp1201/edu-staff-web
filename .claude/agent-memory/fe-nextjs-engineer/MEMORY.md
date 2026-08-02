@@ -74,3 +74,5 @@
 - [Boundary-narrow BE remap](pattern-boundary-narrow-remap.md) — E18.24: un-mocking a feature whose mock invented richer data; internal-rich/boundary-narrow + key-set assertion (toMatchObject hides leaks); toFailure switch(code) MUST precede status fallbacks (404 code swallowed otherwise) (+more in file)
 
 - [Role widening a shared view](pattern-role-widening-shared-view.md) — E15.3: 3rd viewerRole = named derivations (not one boolean) + parallel props/state + sibling picker; by-member week's top-level className is the MEMBER's name (force "" in the header); cross-feature Result bridge must table-test the un-mappable failure members (+more in file)
+
+- [Wire-enrichment un-fan-out](pattern-wire-enrichment-unfanout.md) — E18.30: enrichment is per-ENDPOINT (POST/PATCH unenriched → need a GET read-back); prove fan-out removal with call-COUNT asserts; id-authoritative vs null display name; audit siblings by endpoint URL not repo name (+more in file)
