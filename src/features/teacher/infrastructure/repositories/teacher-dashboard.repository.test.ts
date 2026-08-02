@@ -1,11 +1,13 @@
 /**
  * Integration tests — TeacherDashboardRepository (US-E13.4 / raw-flag sweep
- * US-E18.19). `getTotalStudents` / `getTotalClasses` drain cursor-paginated
- * `core` list endpoints via `fetchAllPages`, which passes `{ raw: true }` at the
- * TOP level of the axios config so the interceptor leaves the envelope intact
- * and the repo calls `parseEnvelope()` itself. The mocked-envelope suite asserts
- * counting/paging; the "real interceptor pipeline" suite locks the raw flag at
- * config top-level (a nested `params.raw` silently breaks every call).
+ * US-E18.19 / un-fan-out US-E18.30). `getTotalStudents` / `getTotalClasses`
+ * drain the cursor-paginated `core` class list via `fetchAllPages`, which passes
+ * `{ raw: true }` at the TOP level of the axios config so the interceptor leaves
+ * the envelope intact and the repo calls `parseEnvelope()` itself. Since BE
+ * US-173 the list rows carry `studentCount`, so `getTotalStudents` sums the wire
+ * field — the old per-class roster drain is gone and is guarded here by a
+ * call-count assertion. The "real interceptor pipeline" suite locks the raw flag
+ * at config top-level (a nested `params.raw` silently breaks every call).
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
@@ -44,22 +46,10 @@ function classDto(over: Record<string, unknown> = {}) {
     gradeLevel: 10,
     academicYearLabel: "2025–2026",
     status: "active",
+    studentCount: 0,
     homeroomTeacherId: null,
     createdAt: "2025-01-01",
     updatedAt: "2025-01-01",
-    ...over,
-  };
-}
-
-function enrollmentDto(over: Record<string, unknown> = {}) {
-  return {
-    enrollmentId: "enr-1",
-    classId: "cls-10a1",
-    studentMemberId: "HS25001",
-    displayName: "Nguyễn Văn A",
-    academicYearLabel: "2025–2026",
-    enrolledAt: "2025-01-01",
-    status: "active",
     ...over,
   };
 }
@@ -80,24 +70,62 @@ describe("TeacherDashboardRepository — counts", () => {
     if (res.ok) expect(res.data).toBe(2);
   });
 
-  it("getTotalStudents sums each class roster length", async () => {
+  it("getTotalStudents sums the wire studentCount across classes", async () => {
     const get = vi
       .fn()
-      .mockImplementation((url: string) =>
-        url === "/core/api/v1/classes"
-          ? Promise.resolve(
-              listEnvelope([
-                classDto({ classId: "cls-a" }),
-                classDto({ classId: "cls-b" }),
-              ]),
-            )
-          : Promise.resolve(listEnvelope([enrollmentDto(), enrollmentDto()])),
+      .mockResolvedValue(
+        listEnvelope([
+          classDto({ classId: "cls-a", studentCount: 32 }),
+          classDto({ classId: "cls-b", studentCount: 10 }),
+        ]),
       );
     const repo = new TeacherDashboardRepository(makeHttp({ get }));
     const res = await repo.getTotalStudents();
     expect(res.ok).toBe(true);
-    // 2 classes × 2 students each = 4
-    if (res.ok) expect(res.data).toBe(4);
+    if (res.ok) expect(res.data).toBe(42);
+  });
+
+  it("getTotalStudents makes exactly ONE call — the roster fan-out is gone (US-E18.30)", async () => {
+    // Regression guard: before BE US-173 enriched the TEACHER branch of
+    // `GET /classes`, this method drained `GET /classes/{id}/students` once per
+    // class (1+N). A second call here means the fan-out came back.
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        listEnvelope([
+          classDto({ classId: "cls-a", studentCount: 1 }),
+          classDto({ classId: "cls-b", studentCount: 2 }),
+          classDto({ classId: "cls-c", studentCount: 3 }),
+        ]),
+      );
+    const repo = new TeacherDashboardRepository(makeHttp({ get }));
+    const res = await repo.getTotalStudents();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data).toBe(6);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith("/core/api/v1/classes", {
+      params: { limit: 100 },
+      raw: true,
+    });
+  });
+
+  it("getTotalStudents keeps summing across cursor pages of the class list", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce(
+        listEnvelope(
+          [classDto({ classId: "cls-a", studentCount: 5 })],
+          "cur-2",
+        ),
+      )
+      .mockResolvedValueOnce(
+        listEnvelope([classDto({ classId: "cls-b", studentCount: 7 })]),
+      );
+    const repo = new TeacherDashboardRepository(makeHttp({ get }));
+    const res = await repo.getTotalStudents();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data).toBe(12);
+    expect(get).toHaveBeenCalledTimes(2);
   });
 
   it("getTotalClasses maps 401 → unauthorized failure", async () => {
@@ -138,10 +166,8 @@ describe("TeacherDashboardRepository — real interceptor pipeline (raw-flag pla
   });
 
   it("getTotalStudents survives the real unwrap (raw top-level)", async () => {
-    const get = interceptedGet((url) =>
-      url === "/core/api/v1/classes"
-        ? listEnvelope([classDto()])
-        : listEnvelope([enrollmentDto(), enrollmentDto()]),
+    const get = interceptedGet(() =>
+      listEnvelope([classDto({ studentCount: 2 })]),
     );
     const repo = new TeacherDashboardRepository(makeHttp({ get }));
     const res = await repo.getTotalStudents();
