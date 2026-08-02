@@ -328,7 +328,9 @@
       "unknown": "Có lỗi xảy ra, vui lòng thử lại"
     },
     "pagination": {
-      "nav": "Phân trang"
+      "nav": "Phân trang",
+      "next": "Trang sau",
+      "prev": "Trang trước"
     },
     "status": {
       "active": "Đang học",

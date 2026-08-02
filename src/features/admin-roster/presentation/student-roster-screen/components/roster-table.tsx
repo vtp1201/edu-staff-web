@@ -19,32 +19,34 @@ function initial(name: string): string {
   return (parts.at(-1) ?? name).charAt(0).toUpperCase();
 }
 
-interface RosterTableProps {
+/**
+ * Discriminated on `readOnly` so the mutation handlers are *required* exactly
+ * when the mutation affordances render. A non-readOnly caller that forgets a
+ * handler is a compile error, not a silently dead remove button.
+ *
+ * `readOnly` (US-E13.10, principal caller): every mutation affordance is
+ * OMITTED from the DOM — bulk-select checkboxes, the bulk destructive action
+ * bar, the per-row "remove from class" button, and the (already
+ * placeholder-disabled) Export CSV control. Omitted, never merely disabled: a
+ * control a keyboard/screen-reader user can reach but that this role may never
+ * perform is a defect (accessibility.md). Search + pagination stay.
+ */
+type RosterTableProps = {
   roster: RosterStudent[];
   disabled?: boolean;
-  /**
-   * Read-only variant (US-E13.10, principal caller): every mutation affordance
-   * is OMITTED from the DOM — bulk-select checkboxes, the bulk destructive
-   * action bar, the per-row "remove from class" button, and the (already
-   * placeholder-disabled) Export CSV control. Omitted, never merely disabled:
-   * a control a keyboard/screen-reader user can reach but that this role may
-   * never perform is a defect (accessibility.md). Search + pagination stay.
-   * Defaults to `false` so the admin caller is untouched.
-   */
-  readOnly?: boolean;
-  /** Only ever invoked when `readOnly` is false. */
-  onRequestUnenrollOne?: (studentId: string) => void;
-  /** Only ever invoked when `readOnly` is false. */
-  onRequestUnenrollMany?: (studentIds: string[]) => void;
-}
+} & (
+  | { readOnly: true }
+  | {
+      readOnly?: false;
+      onRequestUnenrollOne: (studentId: string) => void;
+      onRequestUnenrollMany: (studentIds: string[]) => void;
+    }
+);
 
-export function RosterTable({
-  roster,
-  disabled = false,
-  readOnly = false,
-  onRequestUnenrollOne,
-  onRequestUnenrollMany,
-}: RosterTableProps) {
+export function RosterTable(props: RosterTableProps) {
+  // `props.readOnly` (not a destructured copy) is read at each guard so TS
+  // narrows the union and the handlers are known-present in the mutating branch.
+  const { roster, disabled = false } = props;
   const t = useTranslations("adminRoster");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -136,7 +138,7 @@ export function RosterTable({
             </button>
           )}
         </label>
-        {!readOnly && (
+        {!props.readOnly && (
           <Button variant="secondary" size="sm" disabled>
             {t("table.exportCsv")}
           </Button>
@@ -144,7 +146,7 @@ export function RosterTable({
       </div>
 
       {/* Bulk action bar */}
-      {!readOnly && selected.size > 0 && (
+      {!props.readOnly && selected.size > 0 && (
         <div className="flex items-center gap-3 border-primary/30 border-b bg-primary/[0.06] px-5 py-2.5">
           <div className="flex-1 font-bold text-primary text-xs">
             {t("table.selected", { count: selected.size })}
@@ -160,7 +162,7 @@ export function RosterTable({
             variant="destructive"
             size="sm"
             disabled={disabled}
-            onClick={() => onRequestUnenrollMany?.(Array.from(selected))}
+            onClick={() => props.onRequestUnenrollMany(Array.from(selected))}
           >
             <X className="size-3" aria-hidden="true" />
             {t("table.removeFromClass")}
@@ -173,7 +175,7 @@ export function RosterTable({
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-edu-bg">
-              {!readOnly && (
+              {!props.readOnly && (
                 <th scope="col" className="w-[38px] py-2.5 pr-2 pl-5">
                   <Checkbox
                     ref={headerCheckboxRef}
@@ -190,7 +192,10 @@ export function RosterTable({
                   />
                 </th>
               )}
-              <th scope="col" className={cn(th, readOnly ? "w-9 pl-5" : "w-9")}>
+              <th
+                scope="col"
+                className={cn(th, props.readOnly ? "w-9 pl-5" : "w-9")}
+              >
                 #
               </th>
               <th scope="col" className={th}>
@@ -208,7 +213,7 @@ export function RosterTable({
               <th scope="col" className={th}>
                 {t("table.status")}
               </th>
-              {!readOnly && (
+              {!props.readOnly && (
                 <th
                   scope="col"
                   aria-label={t("table.actions")}
@@ -221,7 +226,7 @@ export function RosterTable({
             {pageRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={readOnly ? 6 : 8}
+                  colSpan={props.readOnly ? 6 : 8}
                   className="px-5 py-8 text-center text-edu-text-secondary text-sm"
                 >
                   {t("table.noMatch")}
@@ -240,7 +245,7 @@ export function RosterTable({
                       isSelected ? "bg-primary/[0.04]" : "hover:bg-edu-bg",
                     )}
                   >
-                    {!readOnly && (
+                    {!props.readOnly && (
                       <td className="py-3 pr-2 pl-5 align-middle">
                         <Checkbox
                           aria-label={t("table.selectStudent", {
@@ -254,7 +259,7 @@ export function RosterTable({
                     <td
                       className={cn(
                         "px-4 py-3 align-middle text-edu-text-secondary text-xs tabular-nums",
-                        readOnly && "pl-5",
+                        props.readOnly && "pl-5",
                       )}
                     >
                       {absoluteIndex}
@@ -298,13 +303,13 @@ export function RosterTable({
                         </StatusBadge>
                       )}
                     </td>
-                    {!readOnly && (
+                    {!props.readOnly && (
                       <td className="px-4 py-3 text-right align-middle">
                         <button
                           type="button"
                           aria-label={`${t("table.removeFromClass")} — ${s.name}`}
                           disabled={disabled}
-                          onClick={() => onRequestUnenrollOne?.(s.id)}
+                          onClick={() => props.onRequestUnenrollOne(s.id)}
                           className={cn(
                             "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[7px] border border-edu-border text-edu-text-muted",
                             "motion-safe:transition-colors hover:border-edu-error hover:bg-edu-error-light hover:text-edu-error",

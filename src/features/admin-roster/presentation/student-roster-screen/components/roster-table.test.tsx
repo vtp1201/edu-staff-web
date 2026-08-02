@@ -35,15 +35,24 @@ const roster: RosterStudent[] = [
   },
 ];
 
+/**
+ * The two polarities are separate JSX call sites on purpose: `RosterTableProps`
+ * is a union discriminated on `readOnly`, so the mutating caller MUST pass both
+ * handlers and the read-only caller must not — a forgotten handler is a
+ * compile error, and this helper is the proof of both shapes.
+ */
 function render(props: { roster: RosterStudent[]; readOnly?: boolean }) {
   return renderToStaticMarkup(
     <NextIntlClientProvider locale="vi" messages={messages}>
-      <RosterTable
-        roster={props.roster}
-        readOnly={props.readOnly}
-        onRequestUnenrollOne={() => {}}
-        onRequestUnenrollMany={() => {}}
-      />
+      {props.readOnly ? (
+        <RosterTable roster={props.roster} readOnly />
+      ) : (
+        <RosterTable
+          roster={props.roster}
+          onRequestUnenrollOne={() => {}}
+          onRequestUnenrollMany={() => {}}
+        />
+      )}
     </NextIntlClientProvider>,
   );
 }

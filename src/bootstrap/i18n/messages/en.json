@@ -328,7 +328,9 @@
       "unknown": "Something went wrong, please try again"
     },
     "pagination": {
-      "nav": "Pagination"
+      "nav": "Pagination",
+      "next": "Next page",
+      "prev": "Previous page"
     },
     "status": {
       "active": "Active",
