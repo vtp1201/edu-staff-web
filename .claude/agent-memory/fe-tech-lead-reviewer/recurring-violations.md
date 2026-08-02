@@ -365,3 +365,25 @@ before reading for style.
   into empty/success. Sanctioned remedy = the `principal-classes.di.ts` force-mock precedent (DI
   force-mock + doc comment citing the Go file + env-matrix DI test + cross-repo ask), never a silent
   real-mode ship.
+
+- **"Promote to `components/shared/`" refactor that BAKES ONE call site's utility class into the
+  shared component** — the classic tell is a size/weight class hard-coded outside the size map, e.g.
+  `<AvatarFallback className={cn("text-xs", toneClass)}>` in `child-identity-header.tsx`. Call site A
+  (consent card) had `text-xs` explicitly, call site B (parent-dashboard) had NONE and therefore
+  inherited the shadcn `AvatarFallback` default `text-sm` → after promotion B's initials silently
+  shrink 14px→12px. Nothing catches it: tsc/lint green, i18n untouched, and the "guards the refactored
+  call site" Storybook story only asserts `getByText("A")`, never the class/size. **Method that works:
+  for each promoted call site, diff its ORIGINAL className list against `cn(defaults, sizeMap, props)`
+  and resolve tailwind-merge by hand — including classes the original OMITTED (the primitive's own
+  defaults are part of the original rendering).** Fix = move the size-varying class into the existing
+  size map (`md:"text-xs"`, `lg:"text-sm"`), never a constant. (US-E20.4.)
+  - Corollary: a promotion whose target call site has NO existing `.stories.tsx`/test (parent-dashboard)
+    has zero regression lock — read that diff by hand, don't lean on the suite.
+- **Discriminated `errorKey` union that presentation never branches on** — a VM returns
+  `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
+  `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.
+  The "forbidden is not collapsed into empty" AC is met, but the discriminant is dead in presentation
+  and a 403 gets a retry that can never succeed — even when the domain already exports
+  `isRetryableFailure()` saying only `network-error` retries. Check that the union member is actually
+  READ, not just produced. (US-E20.4, replicating the US-E20.2 consent-section precedent → cross-cutting,
+  route to fe-lead.)
