@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { toParentChildren } from "@/features/grades/infrastructure/mappers/parent-child.mapper";
 import { MOCK_VIEWER_CHILDREN } from "@/features/grades/infrastructure/repositories/mocks/grade-book-fixtures";
 import { ChildSwitcher } from "./child-switcher";
 
@@ -99,5 +100,60 @@ export const ParentView_MultiChild_Switch: Story = {
       canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ }),
     );
     expect(args.onSwitch).toHaveBeenCalledWith("c1");
+  },
+};
+
+/* ── US-E18.33: real-mode roster (un-mocked, ADR 0054 → real) ───────────── */
+/**
+ * Every other story above feeds the switcher hand-seeded mock fixtures. This
+ * one feeds it the output of the ACTUAL real-mode mapper, from an actual
+ * `core` `linked-students` wire shape joined with the `memberId → displayName`
+ * map IAM's tiered batch lookup returns for a PARENT caller (ADR-0120) — so it
+ * fails the day the join or the initials derivation regresses.
+ *
+ * It also pins the two degradations the real path can hit: an id the lookup
+ * omitted falls back to the raw memberId (never a blank tab), and a child with
+ * no current enrollment renders an empty class line rather than invented copy.
+ */
+const REAL_CHILDREN = toParentChildren(
+  [
+    {
+      linkId: "link-b",
+      parentMemberId: "p-1",
+      studentMemberId: "st-2",
+      createdAt: "2026-01-02T00:00:00Z",
+      classId: null,
+      className: null,
+    },
+    {
+      linkId: "link-a",
+      parentMemberId: "p-1",
+      studentMemberId: "st-1",
+      createdAt: "2026-01-01T00:00:00Z",
+      classId: "cls-1",
+      className: "10A1",
+    },
+  ],
+  new Map([["st-1", "Nguyễn Minh Khoa"]]),
+);
+
+export const ParentView_RealMode_ResolvedNames: Story = {
+  args: {
+    childList: REAL_CHILDREN,
+    activeChildId: "st-1",
+    onSwitch: fn(),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const resolved = canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ });
+    expect(resolved).toHaveAttribute("aria-selected", "true");
+    expect(resolved).toHaveTextContent("10A1");
+
+    // Unresolved name → raw id, never a blank tab.
+    const degraded = canvas.getByRole("tab", { name: /st-2/ });
+    expect(degraded).toBeVisible();
+
+    await userEvent.click(degraded);
+    expect(args.onSwitch).toHaveBeenCalledWith("st-2");
   },
 };

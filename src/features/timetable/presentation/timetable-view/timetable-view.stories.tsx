@@ -6,6 +6,7 @@ import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { PrincipalTeacher } from "@/features/principal/domain/teachers/entities/principal-teacher.entity";
 import type { TimetableChild } from "@/features/timetable/domain/entities/timetable-child.entity";
 import type { WeeklyTimetable } from "@/features/timetable/domain/entities/weekly-timetable.entity";
+import { toTimetableChildren } from "../../infrastructure/mappers/linked-student.mapper";
 import { mapWeeklyTimetable } from "../../infrastructure/mappers/weekly-timetable.mapper";
 import {
   teacherScheduleDtoFor,
@@ -186,12 +187,68 @@ export const StudentView_Mobile: Story = {
   },
 };
 
-/* ── US-E18.26: real-mode parent roster — no display name, no class ─────── */
+/* ── US-E18.33: real-mode parent roster, names resolved ─────────────────── */
 /**
- * Real mode has no student display name (cross-repo ask #20 residual) and the
- * class context is omitted whenever the child has no current enrollment. The
- * picker must degrade to a STABLE ordinal label + a "chưa có lớp" caption —
- * never a blank line, never an invented name.
+ * The real-mode HAPPY path since US-E18.33. `childList` here is produced by the
+ * ACTUAL real-mode mapper from an actual `linked-students` wire shape plus the
+ * `memberId → displayName` map IAM's tiered batch lookup returns (ADR-0120) —
+ * not a hand-written fixture — so this story fails the day the mapper stops
+ * joining names or stops deriving initials.
+ */
+const REAL_CHILDREN: TimetableChild[] = toTimetableChildren(
+  [
+    {
+      linkId: "link-b",
+      parentMemberId: "p-1",
+      studentMemberId: "stu-b",
+      createdAt: "2026-01-02T00:00:00Z",
+    },
+    {
+      linkId: "link-a",
+      parentMemberId: "p-1",
+      studentMemberId: "stu-a",
+      createdAt: "2026-01-01T00:00:00Z",
+      classId: "cls-a",
+      className: "10A1",
+    },
+  ],
+  new Map([
+    ["stu-a", "Nguyễn Minh Khoa"],
+    ["stu-b", "Nguyễn Thu Hà"],
+  ]),
+);
+
+export const ParentView_RealMode_ResolvedNames: Story = {
+  args: {
+    viewerRole: "parent",
+    initialState: { status: "success", timetable: TT_11A2 },
+    childList: REAL_CHILDREN,
+    initialChildId: "stu-a",
+    fetchChildTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({ ok: true, data: TT_8B1 }),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Real names, NOT the "Con thứ N" fallback.
+    expect(
+      canvas.getByRole("button", { name: /Nguyễn Minh Khoa Lớp 10A1/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      canvas.getByRole("button", { name: /Nguyễn Thu Hà Chưa có lớp/ }),
+    ).toBeVisible();
+    expect(canvas.queryByRole("button", { name: /Con thứ/ })).toBeNull();
+  },
+};
+
+/* ── US-E18.26: DEFENSIVE fallback — name unresolved, no class ──────────── */
+/**
+ * The ordinal fallback is no longer the normal real-mode path (US-E18.33 wired
+ * real names) but it MUST stay reachable: IAM's batch lookup silently omits an
+ * unknown/other-tenant id, and the whole lookup can fail. Both degrade to a
+ * STABLE ordinal label + a "chưa có lớp" caption — never a blank line, never an
+ * invented name. Deleting this path would make a name gap render as an empty
+ * button.
  */
 const DEGRADED_CHILDREN: TimetableChild[] = [
   {

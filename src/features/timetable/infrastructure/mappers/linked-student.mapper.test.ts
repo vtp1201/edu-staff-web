@@ -36,10 +36,46 @@ describe("toTimetableChildren", () => {
     expect(second).toEqual(first);
   });
 
-  it("never invents a display name (ask #20 residual) and falls the avatar back to the ordinal digit", () => {
+  it("never invents a display name and falls the avatar back to the ordinal digit when none resolved", () => {
     const [child] = toTimetableChildren([link("l1", "s1")]);
     expect(child?.name).toBeUndefined();
     expect(child?.avatar).toBe("1");
+  });
+
+  it("joins a resolved display name and switches the avatar to its initials (US-E18.33)", () => {
+    const [child] = toTimetableChildren(
+      [link("l1", "s1")],
+      new Map([["s1", "Nguyễn Minh Khoa"]]),
+    );
+    expect(child?.name).toBe("Nguyễn Minh Khoa");
+    expect(child?.avatar).toBe("NK");
+  });
+
+  it("leaves `name` ABSENT for a child the lookup omitted — the ordinal fallback stays reachable", () => {
+    // The batch lookup silently drops unknown/other-tenant ids. Setting
+    // `name: undefined` vs omitting it is equivalent to the picker's `??`,
+    // but the row must never gain a fabricated or blank name.
+    const children = toTimetableChildren(
+      [link("l1", "s1"), link("l2", "s2")],
+      new Map([["s1", "Nguyễn Minh Khoa"]]),
+    );
+    expect(children[0]?.name).toBe("Nguyễn Minh Khoa");
+    expect(children[1]?.name).toBeUndefined();
+    expect(children[1]?.avatar).toBe("2");
+  });
+
+  it("resolves names by memberId, not by roster position", () => {
+    const children = toTimetableChildren(
+      [link("l2", "s2"), link("l1", "s1")],
+      new Map([
+        ["s1", "An"],
+        ["s2", "Bình"],
+      ]),
+    );
+    expect(children.map((c) => [c.childId, c.name])).toEqual([
+      ["s1", "An"],
+      ["s2", "Bình"],
+    ]);
   });
 
   it("maps an enriched class context through", () => {
