@@ -64,6 +64,35 @@ to a lower-privilege caller.
    entirely mock-first. Read the openapi schema AND the sibling's `*.di.ts`
    `USE_MOCK` branch before believing "X already has real data".
 
-8. **Story that proves a mapper, not a fixture.** Build the story's `childList`
+8. **Two sibling components fed by two mappers MUST degrade identically.**
+   (Review fix.) When a second consumer joins an existing pattern, diff its
+   degraded path against the sibling's, not just its happy path. Two silent
+   divergences shipped here: one mapper did `name: resolved ?? rawMemberId`
+   (a UUID in the name slot becomes the tab's ACCESSIBLE NAME — screen reader
+   reads out the random string), and one component rendered `{className}`
+   unconditionally (blank line where the sibling said "Chưa có lớp").
+   Correct split: mapper leaves the field ABSENT (conditional spread, never
+   `x: undefined`), presentation owns the fallback COPY (`name ?? t(ordinal)`)
+   — infrastructure never translates. Widening the shared VM field to optional
+   usually means also adding the `ordinal` the fallback label needs; make it
+   REQUIRED and let tsc enumerate every literal producer (6 here).
+
+9. **Shared-atom i18n keys: HOIST to `Common`, don't duplicate.** A
+   `components/shared/` component cannot read a feature namespace. If the copy
+   already exists under a feature namespace for the sibling, move it to
+   `Common` and let the feature component use two `useTranslations()` hooks —
+   duplicating the string in both namespaces just creates drift.
+
+10. **"Kept for X" on dead code is a claim — grep it.** An endpoint constant
+    was justified as "kept only for the mock repository's unchanged shape";
+    the mock never referenced it. One grep of the qualified name
+    (`GRADES_EP.childList`) settled it.
+
+11. **Prove a rendering fix isn't a tautology.** Story + component changed in
+    the same commit always passes. Temporarily revert ONLY the component, re-run
+    the story, confirm it fails, restore. Cheap, and it is the difference
+    between a proof and a decoration.
+
+12. **Story that proves a mapper, not a fixture.** Build the story's `childList`
    by CALLING the real mapper with a real wire shape + name map. A hand-written
    fixture story passes forever even if the join regresses.
