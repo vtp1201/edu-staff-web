@@ -12,15 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { STUDENT_STATUS_TONE } from "../../student-status-tone";
 import type { TeacherStudentRosterRowVM } from "../teacher-students-roster-screen.i-vm";
-
-const STATUS_TONE: Record<
-  TeacherStudentRosterRowVM["status"],
-  "success" | "muted"
-> = {
-  active: "success",
-  transferred: "muted",
-};
 
 /** Vietnamese-aware initials: first letters of the last two words. */
 function initialsOf(name: string): string {
@@ -74,7 +67,7 @@ export function TeacherStudentsRosterTable({
               {row.className}
             </TableCell>
             <TableCell>
-              <StatusBadge tone={STATUS_TONE[row.status]}>
+              <StatusBadge tone={STUDENT_STATUS_TONE[row.status]}>
                 {t(`status.${row.status}`)}
               </StatusBadge>
             </TableCell>

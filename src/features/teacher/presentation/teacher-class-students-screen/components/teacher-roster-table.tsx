@@ -10,15 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { STUDENT_STATUS_TONE } from "../../student-status-tone";
 import type { TeacherRosterStudentVM } from "../teacher-class-students-screen.i-vm";
-
-const STATUS_TONE: Record<
-  TeacherRosterStudentVM["status"],
-  "success" | "muted"
-> = {
-  active: "success",
-  transferred: "muted",
-};
 
 export function TeacherRosterTable({
   students,
@@ -46,7 +39,7 @@ export function TeacherRosterTable({
               {s.studentCode}
             </TableCell>
             <TableCell>
-              <StatusBadge tone={STATUS_TONE[s.status]}>
+              <StatusBadge tone={STUDENT_STATUS_TONE[s.status]}>
                 {t(`status.${s.status}`)}
               </StatusBadge>
             </TableCell>
