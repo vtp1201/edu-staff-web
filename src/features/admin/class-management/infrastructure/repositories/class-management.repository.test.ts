@@ -1,11 +1,14 @@
 /**
- * Integration tests — ClassManagementRepository (TR-026, US-E06.3 / US-E18.4).
- * Real wire: `classId`/`academicYearLabel`; `studentCount`/homeroom fields are
- * NOT on `ClassResponse` — derived via `GET .../students` (roster count) and
- * `GET .../homeroom-teacher` fan-outs. The http interceptor unwraps the
- * envelope; repositories receive the payload directly (or the full envelope
- * for `{ raw: true }` calls) and a normalised ApiError on failure. Mock at
- * that boundary; branch on error.code.
+ * Integration tests — ClassManagementRepository (TR-026, US-E06.3 / US-E18.4,
+ * rewired US-E18.30). Real wire: `classId`/`academicYearLabel`, and since BE
+ * US-173 `studentCount`/`homeroomTeacherId`/`homeroomTeacherName` come
+ * directly on `ClassResponse` for the LIST and GET endpoints — the old 2×N
+ * `GET .../students` + `GET .../homeroom-teacher` fan-out is gone. The
+ * create/update endpoints return those three fields unenriched (`0`/`null`)
+ * by BE construction. The http interceptor unwraps the envelope; repositories
+ * receive the payload directly (or the full envelope for `{ raw: true }`
+ * calls) and a normalised ApiError on failure. Mock at that boundary; branch
+ * on error.code.
  */
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
@@ -13,7 +16,6 @@ import { CLASS_EP } from "@/bootstrap/endpoint/class.endpoint";
 import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
 import type { ClassResponseDto } from "../dtos/class-response.dto";
-import type { EnrollmentResponseDto } from "../dtos/enrollment-response.dto";
 import type { HomeroomAssignmentResponseDto } from "../dtos/homeroom-assignment-response.dto";
 import { ClassManagementRepository } from "./class-management.repository";
 
@@ -42,6 +44,9 @@ function classDto(over: Partial<ClassResponseDto> = {}): ClassResponseDto {
     status: "ACTIVE",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
+    studentCount: 0,
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
     ...over,
   };
 }
@@ -54,19 +59,6 @@ function homeroomDto(
     teacherMemberId: "member-uuid-1",
     assignedAt: "2026-01-01T00:00:00Z",
     assignedBy: "admin-uuid",
-    ...over,
-  };
-}
-
-function enrollmentDto(
-  over: Partial<EnrollmentResponseDto> = {},
-): EnrollmentResponseDto {
-  return {
-    enrollmentId: "enr-1",
-    classId: "cls-10a1",
-    studentMemberId: "student-1",
-    academicYearLabel: "2025-2026",
-    enrolledAt: "2026-01-01T00:00:00Z",
     ...over,
   };
 }
@@ -90,17 +82,14 @@ function envelope<T>(
   };
 }
 
-/** GET dispatcher: routes by URL suffix so a single mock covers list + fan-out calls. */
+/** GET dispatcher: routes by URL suffix so a single mock covers list + detail calls. */
 function routedGet(routes: {
   classes?: () => unknown;
-  students?: (classId: string) => unknown;
   homeroom?: (classId: string) => unknown;
   classDetail?: (classId: string) => unknown;
 }) {
   return vi.fn(async (url: string) => {
     if (url === CLASS_EP.classes) return routes.classes?.();
-    const studentsMatch = url.match(/classes\/([^/]+)\/students$/);
-    if (studentsMatch) return routes.students?.(studentsMatch[1]);
     const homeroomMatch = url.match(/classes\/([^/]+)\/homeroom-teacher$/);
     if (homeroomMatch) {
       const result = routes.homeroom?.(homeroomMatch[1]);
@@ -113,13 +102,17 @@ function routedGet(routes: {
   }) as unknown as AxiosInstance["get"];
 }
 
-describe("ClassManagementRepository — listClasses (enrichment fan-out)", () => {
-  it("derives studentCount + homeroom per row from the roster + homeroom fan-outs", async () => {
+describe("ClassManagementRepository — listClasses (wire-enriched, no fan-out)", () => {
+  it("reads studentCount + homeroom per row straight off the enriched list response", async () => {
     const get = routedGet({
-      classes: () => envelope([classDto()]),
-      students: () =>
-        envelope([enrollmentDto(), enrollmentDto({ enrollmentId: "enr-2" })]),
-      homeroom: () => homeroomDto(),
+      classes: () =>
+        envelope([
+          classDto({
+            studentCount: 2,
+            homeroomTeacherId: "member-uuid-1",
+            homeroomTeacherName: "Nguyễn Thị Lan",
+          }),
+        ]),
     });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({});
@@ -131,16 +124,35 @@ describe("ClassManagementRepository — listClasses (enrichment fan-out)", () =>
       expect(cls.academicYear).toBe("2025-2026");
       expect(cls.studentCount).toBe(2);
       expect(cls.homeroomTeacherId).toBe("member-uuid-1");
-      expect(cls.homeroomTeacherName).toBe("member-uuid-1"); // no IAM name source
+      expect(cls.homeroomTeacherName).toBe("Nguyễn Thị Lan");
     }
   });
 
-  it("treats 404 CLASS_ASSIGNMENT_NOT_FOUND as no homeroom (null), not a failure", async () => {
+  /**
+   * The whole point of US-E18.30: the old implementation issued
+   * `GET .../students` + `GET .../homeroom-teacher` for EVERY row (2×N). This
+   * asserts the CALL COUNT, not just the result, so re-introducing any
+   * per-row fan-out fails here instead of silently costing 2×N round-trips.
+   */
+  it("issues EXACTLY ONE HTTP call for a multi-row page (no 2×N fan-out)", async () => {
     const get = routedGet({
-      classes: () => envelope([classDto()]),
-      students: () => envelope([]),
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
+      classes: () =>
+        envelope([
+          classDto({ classId: "a", studentCount: 30 }),
+          classDto({ classId: "b", studentCount: 28 }),
+          classDto({ classId: "c", studentCount: 26 }),
+        ]),
     });
+    const repo = new ClassManagementRepository(makeHttp({ get }));
+    const res = await repo.listClasses({});
+
+    expect(res.ok).toBe(true);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(CLASS_EP.classes, expect.anything());
+  });
+
+  it("reports no homeroom teacher when the wire id is null", async () => {
+    const get = routedGet({ classes: () => envelope([classDto()]) });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({});
     expect(res.ok).toBe(true);
@@ -151,24 +163,23 @@ describe("ClassManagementRepository — listClasses (enrichment fan-out)", () =>
     }
   });
 
-  it("paginates the roster to completion before counting", async () => {
-    const studentsCalls = vi.fn();
+  it("keeps a class ASSIGNED when only the resolved name degraded to null", async () => {
     const get = routedGet({
-      classes: () => envelope([classDto()]),
-      students: () => {
-        studentsCalls();
-        const call = studentsCalls.mock.calls.length;
-        return call === 1
-          ? envelope([enrollmentDto()], true, "cur-roster-2")
-          : envelope([enrollmentDto({ enrollmentId: "enr-2" })]);
-      },
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
+      classes: () =>
+        envelope([
+          classDto({
+            homeroomTeacherId: "member-uuid-1",
+            homeroomTeacherName: null,
+          }),
+        ]),
     });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({});
     expect(res.ok).toBe(true);
-    if (res.ok) expect(res.value.data[0].studentCount).toBe(2);
-    expect(studentsCalls).toHaveBeenCalledTimes(2);
+    if (res.ok) {
+      expect(res.value.data[0].homeroomTeacherId).toBe("member-uuid-1");
+      expect(res.value.data[0].homeroomTeacherName).toBe("member-uuid-1");
+    }
   });
 
   it("applies gradeLevel client-side (no server-side filter on the wire)", async () => {
@@ -178,8 +189,6 @@ describe("ClassManagementRepository — listClasses (enrichment fan-out)", () =>
           classDto({ classId: "a", gradeLevel: 10 }),
           classDto({ classId: "b", gradeLevel: 11 }),
         ]),
-      students: () => envelope([]),
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
     });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({ gradeLevel: 11 });
@@ -193,8 +202,6 @@ describe("ClassManagementRepository — listClasses (enrichment fan-out)", () =>
   it("reads pagination for the class list itself", async () => {
     const get = routedGet({
       classes: () => envelope([classDto()], true, "cur-classes-2"),
-      students: () => envelope([]),
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
     });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({});
@@ -270,7 +277,10 @@ describe("ClassManagementRepository — createClass", () => {
     });
   });
 
-  it("defaults studentCount 0 and no homeroom for a brand-new class (no extra round-trips)", async () => {
+  it("maps the unenriched create response (0 / null) with no extra round-trips", async () => {
+    // BE returns `studentCount: 0` + null homeroom by construction on POST
+    // (openapi `ClassResponse`: "the create/update endpoints return `0`/`null`
+    // unenriched") — which is also the truth for a brand-new class.
     const post = vi.fn().mockResolvedValue(classDto({ classId: "cls-new" }));
     const get = vi.fn();
     const repo = new ClassManagementRepository(makeHttp({ post, get }));
@@ -284,6 +294,7 @@ describe("ClassManagementRepository — createClass", () => {
       expect(res.value.studentCount).toBe(0);
       expect(res.value.homeroomTeacherId).toBeNull();
     }
+    expect(post).toHaveBeenCalledTimes(1);
     expect(get).not.toHaveBeenCalled();
   });
 
@@ -373,11 +384,19 @@ describe("ClassManagementRepository — createClass", () => {
 });
 
 describe("ClassManagementRepository — renameClass", () => {
-  it("sends both name+gradeLevel when both provided, then re-enriches", async () => {
+  it("sends both name+gradeLevel when both provided, then re-reads the enriched class ONCE", async () => {
+    // PATCH's own response is unenriched (`0`/null) per the BE contract, so
+    // the row would lose its student count — one enriched `GET /classes/{id}`
+    // restores it. ONE call, replacing the old 2-call roster+homeroom fan-out.
     const patch = vi.fn().mockResolvedValue(classDto({ name: "10A1-x" }));
     const get = routedGet({
-      students: () => envelope([enrollmentDto()]),
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
+      classDetail: () =>
+        classDto({
+          name: "10A1-x",
+          studentCount: 1,
+          homeroomTeacherId: "member-uuid-1",
+          homeroomTeacherName: "Nguyễn Thị Lan",
+        }),
     });
     const repo = new ClassManagementRepository(makeHttp({ patch, get }));
     const res = await repo.renameClass("cls-10a1", {
@@ -388,16 +407,20 @@ describe("ClassManagementRepository — renameClass", () => {
       name: "10A1-x",
       gradeLevel: 10,
     });
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(CLASS_EP.class("cls-10a1"));
     expect(res.ok).toBe(true);
-    if (res.ok) expect(res.value.studentCount).toBe(1);
+    if (res.ok) {
+      expect(res.value.name).toBe("10A1-x");
+      expect(res.value.studentCount).toBe(1);
+      expect(res.value.homeroomTeacherName).toBe("Nguyễn Thị Lan");
+    }
   });
 
   it("backfills a missing field via GET before PATCH (real API requires both)", async () => {
     const patch = vi.fn().mockResolvedValue(classDto({ gradeLevel: 11 }));
     const get = routedGet({
       classDetail: () => classDto({ name: "10A1", gradeLevel: 10 }),
-      students: () => envelope([]),
-      homeroom: () => apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404),
     });
     const repo = new ClassManagementRepository(makeHttp({ patch, get }));
     await repo.renameClass("cls-10a1", { gradeLevel: 11 });
@@ -405,6 +428,8 @@ describe("ClassManagementRepository — renameClass", () => {
       name: "10A1",
       gradeLevel: 11,
     });
+    // backfill read + post-PATCH enriched re-read — and nothing else.
+    expect(get).toHaveBeenCalledTimes(2);
   });
 
   it("maps CLASS_ARCHIVED (409) → class-archived failure", async () => {
@@ -657,8 +682,7 @@ describe("ClassManagementRepository — real interceptor pipeline (raw-flag plac
     const get = interceptedGet((url) => {
       if (url === CLASS_EP.classes)
         return envelope([classDto()], true, "cur-2");
-      if (url.endsWith("/students")) return envelope([]);
-      throw apiError("CLASS_ASSIGNMENT_NOT_FOUND", 404);
+      throw apiError(`unexpected GET ${url}`, 500);
     });
     const repo = new ClassManagementRepository(makeHttp({ get }));
     const res = await repo.listClasses({ academicYear: "2025-2026" });
