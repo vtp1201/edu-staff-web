@@ -207,6 +207,51 @@ export const ShapePresetSuppliesOuterClasses: Story = {
   },
 };
 
+/**
+ * The optional `id` prop puts a DOM id on the alert container so a form control
+ * whose value CAUSED the failure can point at this text via `aria-describedby`
+ * (US-E20.5's date-range inputs are the only caller today). Omitting `id`
+ * renders no attribute at all — proved by `MessageVariant`'s alert above.
+ */
+export const WithIdForAriaDescribedby: Story = {
+  args: {
+    id: "range-error",
+    message: "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
+    retryLabel: "Thử lại",
+    shape: "inline-card",
+    iconSize: 10,
+    showRetry: false,
+    onRetry: fn(),
+  },
+  decorators: [
+    (StoryFn) => (
+      <div>
+        <label htmlFor="range-end">Đến ngày</label>
+        <input
+          id="range-end"
+          type="date"
+          defaultValue="2026-08-01"
+          aria-invalid="true"
+          aria-describedby="range-error"
+        />
+        <StoryFn />
+      </div>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    await expect(alert).toHaveAttribute("id", "range-error");
+    // The link actually resolves: the input's accessible description is this
+    // alert's text, so a screen reader hears WHY the field is invalid.
+    const input = canvas.getByLabelText("Đến ngày");
+    await expect(input).toHaveAttribute("aria-describedby", "range-error");
+    await expect(input).toHaveAccessibleDescription(
+      /Ngày kết thúc phải sau hoặc bằng ngày bắt đầu/,
+    );
+  },
+};
+
 /** The `bordered-card` preset moves the retry down by `mt-4`. */
 export const BorderedShapeSpacesTheRetry: Story = {
   args: {
