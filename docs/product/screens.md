@@ -123,7 +123,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | ✅ US-E09.2 (BE force-mock — US-E18.14) |
 | **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
-| Resources | `(app)/student/resources` | `features/lms` | ⬜ |
+| Resources | `(app)/student/resources` | `features/lms` | ⬜ (chưa có design/mockup; nav item đã gỡ khỏi sidebar 2026-08-02 để hết 404 — thêm lại khi có DR) |
 
 ## Parent (core, E09 conduct, E13/E14 grades)
 
@@ -131,7 +131,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | --- | --- | --- | --- |
 | Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | ✅ US-E13.6/E13.7 (child-list mock — grades.di) |
-| Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | 🎨 design-ready (US-E14.5; `academic-record-view.jsx` 1506) |
+| Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | ✅ US-E14.5 (`academic-record-view.jsx` 1506; route `parent/children/[studentId]/academic-record` live, commit 2313d26) |
 | **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | **Discipline & Leave (parent view for child)** | `(app)/parent/discipline` | `features/discipline` | ✅ US-E09.4 (BE force-mock — US-E18.14) |
 

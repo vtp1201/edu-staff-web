@@ -83,7 +83,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/student/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/student/conduct", labelKey: "conduct", icon: Scale },
     { href: "/student/schedule", labelKey: "schedule", icon: CalendarDays },
-    { href: "/student/resources", labelKey: "resources", icon: FileText },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
