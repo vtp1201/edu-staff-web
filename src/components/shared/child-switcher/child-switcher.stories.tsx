@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
-import { MOCK_VIEWER_CHILDREN } from "../../infrastructure/repositories/mocks/grade-book-fixtures";
+import { MOCK_VIEWER_CHILDREN } from "@/features/grades/infrastructure/repositories/mocks/grade-book-fixtures";
 import { ChildSwitcher } from "./child-switcher";
 
 const meta: Meta<typeof ChildSwitcher> = {
-  title: "Grades/ChildSwitcher",
+  title: "Shared/ChildSwitcher",
   component: ChildSwitcher,
   decorators: [
     (Story) => (

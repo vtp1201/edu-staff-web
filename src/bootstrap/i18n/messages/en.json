@@ -1,5 +1,6 @@
 {
   "Common": {
+    "childSwitcherLabel": "Select child",
     "close": "Close",
     "pagination": {
       "nav": "Pagination",
@@ -2051,7 +2052,6 @@
     "title": "Grade Batch Approval"
   },
   "gradeBook": {
-    "childSwitcherLabel": "Select child",
     "bandHeaderCK": "Final",
     "bandHeaderGK": "Midterm",
     "bandHeaderTX": "Regular",

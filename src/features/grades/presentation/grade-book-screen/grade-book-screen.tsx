@@ -3,6 +3,7 @@
 import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { ChildSwitcher } from "@/components/shared/child-switcher";
 import {
   DestructiveConfirmDialog,
   type DestructiveConfirmErrorSlot,
@@ -18,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
-import { ChildSwitcher } from "../child-switcher/child-switcher";
+
 import { RankDistributionChart } from "./components/rank-distribution-chart";
 import type { GradeBookScreenVM } from "./grade-book-screen.i-vm";
 import { GradeBookSkeleton } from "./grade-book-skeleton";

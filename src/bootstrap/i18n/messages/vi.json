@@ -1,5 +1,6 @@
 {
   "Common": {
+    "childSwitcherLabel": "Chọn con",
     "close": "Đóng",
     "confirmDialog": {
       "cancel": "Huỷ",
@@ -2051,7 +2052,6 @@
     "title": "Phê duyệt lô điểm"
   },
   "gradeBook": {
-    "childSwitcherLabel": "Chọn con",
     "bandHeaderCK": "Cuối kỳ",
     "bandHeaderGK": "Giữa kỳ",
     "bandHeaderTX": "Thường xuyên",

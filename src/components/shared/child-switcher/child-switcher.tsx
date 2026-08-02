@@ -3,8 +3,7 @@
 import { useTranslations } from "next-intl";
 import { type KeyboardEvent, useRef } from "react";
 import { cn } from "@/shared/utils";
-import type { ChildColor } from "../../domain/entities/grade-book.entity";
-import type { ChildSwitcherVM } from "./child-switcher.i-vm";
+import type { ChildColor, ChildSwitcherVM } from "./child-switcher.i-vm";
 
 interface ChildSwitcherProps extends ChildSwitcherVM {
   onSwitch: (childId: string) => void;
@@ -35,7 +34,9 @@ export function ChildSwitcher({
   onSwitch,
   isLoading = false,
 }: ChildSwitcherProps) {
-  const t = useTranslations("gradeBook");
+  // Shared UI atom → shared namespace: a `components/shared/` component cannot
+  // own a feature namespace (`gradeBook`), so the label lives in `Common`.
+  const t = useTranslations("Common");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>, idx: number) {
