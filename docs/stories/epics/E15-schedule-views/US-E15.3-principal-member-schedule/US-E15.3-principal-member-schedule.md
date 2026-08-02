@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -29,16 +29,39 @@ pick a teacher (from the existing principal teacher roster,
 `get-principal-teachers.use-case.ts`, already implemented in US-E13.5) and view
 that teacher's weekly timetable.
 
-Ground-truthed reuse — **no BE gap, no mock-first needed**:
-`RealWeeklyTimetableRepository.getByMember(memberId)` (US-E18.26) is already
-wired to the real `GET /members/{memberId}/timetable` endpoint and is
-role-agnostic (member-scoped, not caller-role-scoped) — the parent view already
-calls it successfully with a CHILD's memberId; this story calls it with a
-TEACHER's memberId instead. This is the exact repository primitive the
-domain-layer doc comment on `IWeeklyTimetableRepository` anticipates
-("the by-member fetch... backs the student self-view... and the parent's
-per-child view") — extending it to a THIRD caller (principal viewing a
-teacher) is additive, not a new BE integration.
+**CORRECTED ground truth (post-review, was wrong at intake — see `## Evidence`):**
+the original framing below ("no BE gap, no mock-first needed") was **false**.
+`RealWeeklyTimetableRepository.getByMember(memberId)` (US-E18.26) IS already
+wired to the real `GET /members/{memberId}/timetable` endpoint, and the parent
+view does call it successfully with a CHILD's memberId — but the endpoint is
+**NOT role-agnostic at the authorization layer**. Ground-truthed directly
+against `edu-api/services/core/internal/timetable/core/application/usecase/get_member_timetable.go:113-125`
+(`authorize()`): only SUPER_ADMIN/ADMIN, the target member itself, or a
+verified linked PARENT may call it — there is no `MANAGER` branch anywhere in
+this use-case (`shared.go:14-24` enumerates only `ADMIN/TEACHER/STUDENT/PARENT`).
+A principal (web appRole backed by BE role `MANAGER`) genuinely 403s. Because
+`real-weekly-timetable.repository.ts` deliberately maps `TIMETABLE_FORBIDDEN` →
+`not-found` (existence-opacity, correct for the parent path) and
+`timetable-view.derive.ts` collapses `not-found` → `{status:"empty"}`, this
+would have shipped as a silent, permanent "no schedule published" empty state
+for every teacher in real mode — cosmetically fine, functionally dead, and
+invisible to every automated gate. **Fixed** by force-mocking this one
+principal-scoped call (`makeGetMemberTimetableForPrincipalUseCase` in
+`src/bootstrap/di/timetable-view.di.ts`), mirroring the established
+`principal-classes.di.ts` (US-E13.8) precedent for the identical class of BE
+gap — see `## Evidence` for the full fix. A second, pre-existing, UNRELATED gap
+was also discovered during the fix round (not introduced by this story, not
+fixed here): `get-principal-teachers.use-case.ts`'s own endpoint
+(`CLASS_EP.principalTeachers` = `/core/api/v1/teachers`) has **no matching path
+at all** in `edu-api/services/core/docs/openapi.yaml` — genuinely does not
+exist on the BE — and `principal-teachers.di.ts` is a plain `USE_MOCK ? Mock :
+Real` gate (not force-mocked), so the picker's teacher-list source itself will
+fail in real mode too. This predates this story (affects the already-merged
+US-E13.5 principal-teachers screen identically) and is out of this story's
+scope to fix; this screen degrades honestly when that call fails (a real error
+state + working `router.refresh()` retry, fixed in this story's SHOULD-FIX
+round) rather than silently. Filed as a new cross-repo ask — see `## Harness
+Delta`.
 
 ## Relevant Product Docs
 

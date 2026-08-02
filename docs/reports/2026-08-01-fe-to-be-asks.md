@@ -150,6 +150,27 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
     phải drain client-side (bounded, hoạt động đúng nhưng tốn round-trip).
     Nice-to-have, không phải defect.
 
+### Cập nhật 2026-08-02 (tiếp) — 2 asks mới phát sinh khi đóng dead sidebar links (US-E13.10, US-E15.3)
+
+21. **#43 — `GET /members/{memberId}/timetable`'s `authorize()` thiếu nhánh
+    `MANAGER`** (phát hiện khi wire US-E15.3, principal xem TKB giáo viên).
+    `services/core/internal/timetable/core/application/usecase/get_member_timetable.go:113-125`
+    chỉ cho SUPER_ADMIN/ADMIN, chính chủ member, hoặc PARENT đã liên kết —
+    không có `MANAGER` (principal). FE đã force-mock riêng path này
+    (`makeGetMemberTimetableForPrincipalUseCase`, decision `0014`) để không
+    chặn story, nhưng cần BE thêm `MANAGER` vào `authorize()` để un-mock
+    (sibling của ask #39 — cùng lớp gap "MANAGER thiếu quyền đọc", khác
+    endpoint).
+22. **#44 — `GET /core/api/v1/teachers` không tồn tại trên BE** (phát hiện
+    khi wire US-E15.3, nhưng gap có từ US-E13.5 — ảnh hưởng cả màn
+    `/principal/teachers` đã ship trước đó). `CLASS_EP.principalTeachers`
+    phía FE trỏ tới path này nhưng không khớp bất kỳ path nào trong
+    `services/core/docs/openapi.yaml`. `principal-teachers.di.ts` hiện là
+    `USE_MOCK ? Mock : Real` thường (chưa force-mock) → real mode sẽ luôn lỗi
+    khi gọi danh sách giáo viên cho principal. Cần BE xác nhận: endpoint này
+    sẽ được implement (path/shape gì) hay FE nên đổi sang một nguồn dữ liệu
+    khác đã có (vd tenant member directory lọc theo role TEACHER)?
+
 ### Observation cho BE (không chặn)
 
 - **SSE flush latency** (US-E18.22, live-proof qua Kong): stream
