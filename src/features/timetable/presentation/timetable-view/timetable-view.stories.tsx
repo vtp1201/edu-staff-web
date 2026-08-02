@@ -234,8 +234,8 @@ export const ParentView_RealMode_NoNameFallback: Story = {
 
 /* ── US-E15.3: principal viewing a teacher's week ───────────────────────── */
 
-// biome-ignore lint/style/noNonNullAssertion: known seed teacherId from the fixture.
 const TT_TEACHER: WeeklyTimetable = mapWeeklyTimetable(
+  // biome-ignore lint/style/noNonNullAssertion: known seed teacherId from the fixture.
   teacherScheduleDtoFor("t1")!,
 );
 

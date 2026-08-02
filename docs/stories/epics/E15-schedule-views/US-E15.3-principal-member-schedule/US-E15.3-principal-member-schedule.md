@@ -84,13 +84,13 @@ teacher) is additive, not a new BE integration.
 
 ## Validation
 
-| Layer | Expected proof |
-| --- | --- |
-| Unit | `get-member-timetable.use-case.test.ts` |
-| Integration | none new (repository already covered by US-E18.26) |
-| E2E | Storybook interaction: picker switch → refetch, empty state, not-published state |
-| Platform | `bun build` clean |
-| Release | design-review gate + a11y audit green |
+| Layer | Expected proof | Actual (2026-08-02) |
+| --- | --- | --- |
+| Unit | `get-member-timetable.use-case.test.ts` | ✅ 4 tests (TDD red→green) + `principal/schedule/actions.test.ts` 10 tests + `principal/schedule/page.test.ts` 4 tests |
+| Integration | none new (repository already covered by US-E18.26) | ✅ none added — `getByMember` unchanged |
+| E2E | Storybook interaction: picker switch → refetch, empty state, not-published state | ✅ 5 new stories on `timetable-view.stories.tsx` (switch, single-teacher, zero-teachers, not-published, error-retry) |
+| Platform | `bun build` clean | ✅ real mode (`NEXT_PUBLIC_USE_MOCK` unset) — `/[locale]/t/[tenant]/principal/schedule` builds |
+| Release | design-review gate + a11y audit green | pending fe-lead gate |
 
 ## Implementation Plan
 
@@ -579,4 +579,43 @@ Registered via `harness-cli story add --id US-E15.3`.
 
 ## Evidence
 
-(fill after implementation)
+Implemented 2026-08-02 on `feat/us-e15.3-principal-member-schedule`
+(status stays `planned` until fe-lead's review/QA gate).
+
+### Files
+
+| Layer | File | Directive |
+| --- | --- | --- |
+| domain | `features/timetable/domain/use-cases/get-member-timetable.use-case.ts` (+ `.test.ts`) | pure TS |
+| bootstrap/di | `bootstrap/di/timetable-view.di.ts` — `makeGetMemberTimetableUseCase()` (reuses `makeRepo()`) | `server-only` |
+| app/actions | `app/[locale]/t/[tenant]/(app)/principal/schedule/actions.ts` (+ `.test.ts`) | `use server` |
+| app/page | `app/[locale]/t/[tenant]/(app)/principal/schedule/page.tsx` (+ `.test.ts`) | RSC |
+| presentation | `features/timetable/presentation/timetable-view/teacher-picker.tsx` (new), `timetable-view.tsx`, `timetable-view.i-vm.ts`, `timetable-view.stories.tsx` | `use client` |
+| i18n | `messages/{vi,en}.json` — `timetableView.{teacherPickerLabel,homeroomPending,statusOnLeave,subtitlePrincipal}` | vi source + en mirror |
+
+No repository, DTO, mapper, endpoint or token changes. `parent/schedule/*` untouched.
+
+### Proof commands (all run locally, 2026-08-02)
+
+- `bun vitest run` → **450 files / 3233 tests passed** (baseline after US-E13.10:
+  447 / 3215 → +3 files, +18 tests; zero regressions).
+- `bunx vitest run --config vitest.storybook.mts` → **154 files / 1157 tests
+  passed** — includes the 8 pre-existing student/parent timetable stories,
+  unmodified, plus the 5 new principal stories.
+- `bunx tsc --noEmit` → clean.
+- `bunx biome check` on the touched paths → clean (0 warnings).
+- `env -u NEXT_PUBLIC_USE_MOCK bun run build` → compiled successfully;
+  `ƒ /[locale]/t/[tenant]/principal/schedule` present in the route table (real
+  mode — both `getByMember` and `getPrincipalTeachers` are already real).
+
+### Notes on the delivered design
+
+- `ON_LEAVE` teachers are selectable with a `StatusBadge tone="warning"`
+  (architecture §5) — the badge is text, so status is never colour-only.
+- `displayClassName` is forced to `""` for `viewerRole="principal"`: the
+  success branch previously read `state.timetable.className`, which for a
+  by-member week holds the TEACHER's own name/id, not a class. Student/parent
+  branches are byte-identical.
+- Roster-failure bridge: `conflict-exists`/`unknown` (principal union) have no
+  timetable counterpart → mapped to `network-error` (retryable banner), never
+  collapsed into the "nothing published" empty state. Locked by a table test.
