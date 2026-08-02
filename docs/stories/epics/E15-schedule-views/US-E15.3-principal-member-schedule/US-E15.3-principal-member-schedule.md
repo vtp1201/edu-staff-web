@@ -86,10 +86,10 @@ teacher) is additive, not a new BE integration.
 
 | Layer | Expected proof | Actual (2026-08-02) |
 | --- | --- | --- |
-| Unit | `get-member-timetable.use-case.test.ts` | ✅ 4 tests (TDD red→green) + `principal/schedule/actions.test.ts` 10 tests + `principal/schedule/page.test.ts` 4 tests |
-| Integration | none new (repository already covered by US-E18.26) | ✅ none added — `getByMember` unchanged |
-| E2E | Storybook interaction: picker switch → refetch, empty state, not-published state | ✅ 5 new stories on `timetable-view.stories.tsx` (switch, single-teacher, zero-teachers, not-published, error-retry) |
-| Platform | `bun build` clean | ✅ real mode (`NEXT_PUBLIC_USE_MOCK` unset) — `/[locale]/t/[tenant]/principal/schedule` builds |
+| Unit | `get-member-timetable.use-case.test.ts` | ✅ 4 tests (TDD red→green) + `principal/schedule/actions.test.ts` 10 tests + `principal/schedule/page.test.ts` 4 tests + **fix round**: `bootstrap/di/timetable-view-principal.di.test.ts` 6 tests (force-mock env matrix) + `timetable-view.derive.test.ts` `resolveRetryTarget` 4 tests + 2 mock-repository tests |
+| Integration | none new (repository already covered by US-E18.26) | ✅ none added — `getByMember` real path unchanged; the principal route no longer reaches it (force-mock, see Evidence) |
+| E2E | Storybook interaction: picker switch → refetch, empty state, not-published state | ✅ 5 stories + **fix round** 2 more (`PrincipalView_RosterErrorRetry`, `PrincipalView_PendingKeepsFocus`) = 7 principal stories on `timetable-view.stories.tsx` |
+| Platform | `bun build` clean | ✅ real mode (`env -u NEXT_PUBLIC_USE_MOCK`) AND explicit `NEXT_PUBLIC_USE_MOCK=true` — both compile; `/[locale]/t/[tenant]/principal/schedule` in the route table |
 | Release | design-review gate + a11y audit green | pending fe-lead gate |
 
 ## Implementation Plan
@@ -587,10 +587,11 @@ Implemented 2026-08-02 on `feat/us-e15.3-principal-member-schedule`
 | Layer | File | Directive |
 | --- | --- | --- |
 | domain | `features/timetable/domain/use-cases/get-member-timetable.use-case.ts` (+ `.test.ts`) | pure TS |
-| bootstrap/di | `bootstrap/di/timetable-view.di.ts` — `makeGetMemberTimetableUseCase()` (reuses `makeRepo()`) | `server-only` |
+| bootstrap/di | `bootstrap/di/timetable-view.di.ts` — `makeGetMemberTimetableForPrincipalUseCase()` (**force-mocked**, does NOT reuse `makeRepo()`) + `bootstrap/di/timetable-view-principal.di.test.ts` | `server-only` |
 | app/actions | `app/[locale]/t/[tenant]/(app)/principal/schedule/actions.ts` (+ `.test.ts`) | `use server` |
 | app/page | `app/[locale]/t/[tenant]/(app)/principal/schedule/page.tsx` (+ `.test.ts`) | RSC |
-| presentation | `features/timetable/presentation/timetable-view/teacher-picker.tsx` (new), `timetable-view.tsx`, `timetable-view.i-vm.ts`, `timetable-view.stories.tsx` | `use client` |
+| presentation | `features/timetable/presentation/timetable-view/teacher-picker.tsx` (new), `child-picker.tsx`, `timetable-view.tsx`, `timetable-view.i-vm.ts`, `timetable-view.derive.ts` (+ `.test.ts`), `timetable-view.stories.tsx`, `teacher-schedule/teacher-schedule.tsx` | `use client` |
+| infrastructure (mock) | `features/timetable/infrastructure/repositories/mocks/fixtures.ts`, `weekly-timetable.mock.repository.ts` (+ `.test.ts`) — teacher-keyed weeks | `server-only` |
 | i18n | `messages/{vi,en}.json` — `timetableView.{teacherPickerLabel,homeroomPending,statusOnLeave,subtitlePrincipal}` | vi source + en mirror |
 
 No repository, DTO, mapper, endpoint or token changes. `parent/schedule/*` untouched.
@@ -617,5 +618,94 @@ No repository, DTO, mapper, endpoint or token changes. `parent/schedule/*` untou
   by-member week holds the TEACHER's own name/id, not a class. Student/parent
   branches are byte-identical.
 - Roster-failure bridge: `conflict-exists`/`unknown` (principal union) have no
-  timetable counterpart → mapped to `network-error` (retryable banner), never
-  collapsed into the "nothing published" empty state. Locked by a table test.
+  timetable counterpart → mapped to the `unknown` error key (generic retryable
+  banner), never collapsed into the "nothing published" empty state and never
+  re-labelled `network-error`. Locked by a table test.
+
+### Fix round (2026-08-02, post tech-lead review + a11y audit)
+
+**MUST-FIX 1 — the principal by-member read is force-mocked, NOT real.** The
+packet's original ground-truth claim ("`getByMember` is already real, so the
+principal path is real too") was WRONG. `core`'s
+`internal/timetable/core/application/usecase/get_member_timetable.go:119-139`
+(`authorize()`) grants only `isAdmin(...)` (SUPER_ADMIN/ADMIN), the target member
+itself, and a `PARENT` with a verified link; `.../usecase/shared.go:14-24` has no
+`MANAGER` constant at all. A principal (`appRole` backed by BE `MANAGER`) gets a
+hard `403 TIMETABLE_FORBIDDEN`. Worse, it fails *invisibly*:
+`RealWeeklyTimetableRepository` maps `TIMETABLE_FORBIDDEN → not-found`
+(existence-opacity, deliberate for the parent path) and `toDataState()` collapses
+`not-found → empty`, so real mode rendered a silent, permanent "Chưa có thời
+khoá biểu" for EVERY teacher.
+
+Remedy follows the established precedent for this exact class of gap
+(`bootstrap/di/principal-classes.di.ts`, US-E13.8, cross-repo ask #39): a new
+**principal-scoped, unconditionally mock-backed** factory
+`makeGetMemberTimetableForPrincipalUseCase()` in `timetable-view.di.ts`, with a
+doc comment citing the Go lines and an explicit "do NOT gate this on
+`USE_MOCK`". `principal/schedule/actions.ts` now uses it. The student-self /
+teacher-self / parent-child factories are untouched — those roles ARE authorized
+by the same `authorize()`, so their real paths still work.
+`bootstrap/di/timetable-view-principal.di.test.ts` locks it in: mock-backed with
+`NEXT_PUBLIC_USE_MOCK` unset / `"false"` / `"true"`, `createServerHttpClient`
+never called, and a regression guard that `makeGetChildTimetableUseCase()` still
+resolves `HybridWeeklyTimetableRepository` under `USE_MOCK=false`. Red proven by
+temporarily restoring `await makeRepo()` (4/6 tests fail).
+
+**Mock data.** `MockWeeklyTimetableRepository.getByMember()` used to fall back to
+`MY_CLASS_ID` for any unrecognised id, so once the principal was routed to mock
+every teacher would have shown the SAME week. Added teacher-keyed fixtures for
+the principal roster's own ids (`t-001` Nguyễn Thị Lan / Toán, dense; `t-002`
+Trần Văn Minh / Ngữ văn, mid; `t-003` Lê Thị Hoa / Vật lý, sparse, no Saturday)
+and a teacher-first resolution order in `getByMember()`. Test asserts three
+distinct top-level names, three distinct first-period subjects and three
+non-identical grids; the parent `childId → class` branch is regression-tested.
+
+**A11Y-001 (Major).** `teacher-picker.tsx` + `child-picker.tsx` disabled EVERY
+card while a fetch was pending, including the one the user had just activated —
+a disabled element cannot hold focus, so keyboard/SR focus was yanked to
+`<body>`. Now `disabled={disabled && !active}`. Proven by the
+`PrincipalView_PendingKeepsFocus` interaction story (deferred fetch → the other
+card is disabled, the activated card stays enabled and `toHaveFocus()`); red
+proven by reverting to `disabled={disabled}` (story fails).
+
+**SHOULD-FIX — retry gating.** On a roster failure the page seeds
+`{status:"error"}` with an empty list, so `selectedTeacherId === ""` and the
+retry called `fetchMemberTimetable("")` — a call that can never recover the
+roster failure and is meaningless for `forbidden`. Extracted a pure
+`resolveRetryTarget()` into `timetable-view.derive.ts` (unit-tested, 4 cases)
+used by BOTH the parent and principal paths: no valid id, or no fetch action
+wired → `router.refresh()`. Storybook `PrincipalView_RosterErrorRetry` asserts
+`getRouter().refresh` is called and `fetchMemberTimetable` is not.
+
+**SHOULD-FIX — unknown error key.** `TimetableErrorKey` gains an `unknown`
+member (the `errors.unknown` i18n target already existed) so the principal
+roster's `conflict-exists`/`unknown` failures stop rendering "check your
+connection" copy. `tsc` caught the sibling `teacher-schedule.tsx` `ERROR_KEYS`
+record — updated in the same change.
+
+**Deliberately NOT fixed (fe-lead's call):** the `weekStart` dead parameter —
+the week-nav does not refetch. Pre-existing parity with `parent/schedule`;
+documented known limitation, deferred to its own story.
+
+### Fix-round proof commands (2026-08-02)
+
+- `bun vitest run` → **451 files / 3245 tests passed** (from 450 / 3233 → +1
+  file, +12 tests, zero regressions).
+- `bunx vitest run --config vitest.storybook.mts` → **154 files / 1159 tests
+  passed** (from 1157 → +2 principal stories).
+- `bunx tsc --noEmit` → clean.
+- `bun lint:fix` → clean (0 errors; 1 pre-existing warning + 1 info repo-wide).
+- `env -u NEXT_PUBLIC_USE_MOCK bun run build` → ✓ compiled successfully.
+- `NEXT_PUBLIC_USE_MOCK=true bun run build` → ✓ compiled successfully.
+
+### Known limitation (real mode, whole screen)
+
+The teacher roster itself (`getPrincipalTeacherListAction` →
+`makeGetPrincipalTeachersUseCase`) is still `USE_MOCK`-gated and its real
+counterpart calls `CLASS_EP.principalTeachers`, which the repository's own doc
+comment records as having **no BE endpoint**. So in real mode the screen shows
+the roster error banner (retry → `router.refresh()`), and the force-mocked
+timetable factory is never reached. The screen is effectively mock/demo-mode
+only until BOTH (a) the principal-teachers endpoint ships and (b) `core` grants
+`MANAGER` on `GET /members/{id}/timetable` (same class of gap as ask #39 — a NEW
+instance worth its own cross-repo ask; flagged to fe-lead, not filed here).
