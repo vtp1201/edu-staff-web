@@ -20,12 +20,13 @@ type SearchParams = Promise<{
  * dead `/parent/attendance` sidebar link. No manual role check:
  * `parent/layout.tsx` already enforces `role === "parent"`.
  *
- * Child + range are URL state. The attendance data source is mock-only and
- * gated behind `NEXT_PUBLIC_USE_MOCK`: in a real environment the DI factory
- * returns `UnavailableChildAttendanceRepository`, so `vm.error` is `forbidden`
- * and NO fabricated records reach the parent (see
- * `bootstrap/di/parent-attendance.di.ts` — PARENT is not authorized on
- * `GET /members/{memberId}/attendance`). Proved by `page.test.ts`.
+ * Child + range are URL state. Both reads are REAL as of US-E18.34 (a PARENT
+ * may read a LINKED child's attendance — see `bootstrap/di/
+ * parent-attendance.di.ts`); the mock stays gated behind `NEXT_PUBLIC_USE_MOCK`
+ * so no fabricated present/late/absent row can ever reach a parent in a real
+ * environment. A child the parent is not linked to surfaces as
+ * `vm.error === "forbidden"` from the BE's own 403, not a client-side guess.
+ * Proved by `page.test.ts`.
  */
 export default async function ParentAttendancePage({
   searchParams,

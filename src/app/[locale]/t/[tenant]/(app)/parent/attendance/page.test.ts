@@ -16,8 +16,15 @@
  * the real `core` linked-students read. The real branch therefore needs the
  * server-only session/http seams stubbed — `cookies()` is unavailable outside a
  * request scope — and the assertion sharpens: neither the records NOR the
- * roster may be fabricated. The specific `error: "forbidden"` attendance signal
- * is proved (with a working roster) by `bootstrap/di/parent-attendance.di.test.ts`.
+ * roster may be fabricated.
+ *
+ * US-E18.34 update: the ATTENDANCE read is real too (a PARENT may read a linked
+ * child — `get_student_attendance.go`'s `authorize()`, US-047), so the real
+ * branch no longer degrades to `forbidden` on principle. What the two
+ * `records: []` cases below now prove is narrower but still the point: with no
+ * linked children there is nothing to read, and nothing is invented to fill the
+ * gap. The unlinked-child `forbidden` mapping is proved against a real 403 in
+ * `bootstrap/di/parent-attendance.di.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParentAttendanceScreenVM } from "@/features/parent-attendance/presentation/parent-attendance-screen/parent-attendance-screen.i-vm";
@@ -106,22 +113,33 @@ describe("ParentAttendancePage", () => {
     }));
     vi.doMock("@/bootstrap/lib/http.server", () => ({
       createServerHttpClient: vi.fn(async () => ({
-        get: vi.fn(async (url: string) =>
-          url.includes("linked-students")
-            ? {
-                links: [
-                  {
-                    linkId: "link-a",
-                    parentMemberId: "parent-1",
-                    studentMemberId: "st-1",
-                    createdAt: "2026-01-01T00:00:00Z",
-                    classId: "cls-1",
-                    className: "10A1",
-                  },
-                ],
-              }
-            : [{ memberId: "st-1", displayName: "Đỗ Gia Bảo" }],
-        ),
+        get: vi.fn(async (url: string) => {
+          if (url.includes("linked-students")) {
+            return {
+              links: [
+                {
+                  linkId: "link-a",
+                  parentMemberId: "parent-1",
+                  studentMemberId: "st-1",
+                  createdAt: "2026-01-01T00:00:00Z",
+                  classId: "cls-1",
+                  className: "10A1",
+                },
+              ],
+            };
+          }
+          if (url.includes("/attendance")) {
+            // Wire vocabulary: camelCase fields, UPPER_SNAKE status.
+            return {
+              memberId: "st-1",
+              records: [
+                { date: "2026-08-04", classId: "cls-1", status: "LATE" },
+                { date: "2026-08-03", classId: "cls-1", status: "PRESENT" },
+              ],
+            };
+          }
+          return [{ memberId: "st-1", displayName: "Đỗ Gia Bảo" }];
+        }),
       })),
     }));
 
@@ -137,9 +155,12 @@ describe("ParentAttendancePage", () => {
       },
     ]);
     expect(vm.activeChildId).toBe("st-1");
-    // Attendance itself is still unavailable to a PARENT — roster real,
-    // records honestly empty.
-    expect(vm.records).toEqual([]);
-    expect(vm.error).toBe("forbidden");
+    // US-E18.34: attendance is REAL now — the roster read and the attendance
+    // read both come off the wire, mapped into domain casing and sorted.
+    expect(vm.error).toBeNull();
+    expect(vm.records).toEqual([
+      { date: "2026-08-03", status: "present" },
+      { date: "2026-08-04", status: "late" },
+    ]);
   });
 });

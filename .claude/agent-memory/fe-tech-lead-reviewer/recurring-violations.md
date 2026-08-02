@@ -454,6 +454,20 @@ before reading for style.
   staff-leave, teacher×2, parent-links, profile). Pre-existing, so CONSIDER-level per story, but
   worth routing to `fe-lead` as a cross-cutting `shared/` extraction.
 
+- **"Anticipatory, contract-correct DTO" written while an endpoint was believed unreachable is
+  UNVERIFIED — and the mock fixtures usually hide the error at BOTH ends** (US-E18.34, caught by the
+  engineer, worth making a standing check). US-E20.5 declared its `status` field with the DOMAIN enum
+  casing (`present|excusedAbsent`) while the wire is UPPER_SNAKE, and the mock fixture generator
+  emitted DOMAIN casing too — so DTO → mapper → entity round-tripped green through a type that was
+  wrong at both ends; tsc, the mapper test and every story passed. Any un-mock US inheriting a DTO
+  that "was already contract-correct" must re-ground-truth EVERY enum/field against the Go source and
+  re-cast the mock fixtures to the WIRE vocabulary (so the mock keeps exercising the real mapper).
+  Corollary: a mock that speaks domain casing is a mock that no longer tests the mapper.
+- **`mapStatusFromWire`-style `Record<Wire,Domain>` lookups have no unknown-value fallback** —
+  a 5th BE enum value yields `undefined` typed as the domain enum, which then hits
+  `TONE[undefined]`, `t(undefined)` and `counts[undefined] += 1` (NaN). Latent while the BE enum is
+  closed + validated; note it as CONSIDER whenever an un-mock newly routes REAL wire data through
+  one of these tables.
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.

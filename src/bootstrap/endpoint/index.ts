@@ -14,6 +14,7 @@ export * from "./lms.endpoint";
 export * from "./messaging.endpoint";
 export * from "./noti.endpoint";
 export * from "./notification.endpoint";
+export * from "./parent-attendance.endpoint";
 export * from "./parent-student-link.endpoint";
 export * from "./staff-discipline.endpoint";
 export * from "./staffing.endpoint";
