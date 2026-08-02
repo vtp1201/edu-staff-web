@@ -34,12 +34,27 @@ describe("childInitials", () => {
 });
 
 describe("identityToneClass", () => {
-  it("maps tones to token-only avatar-fallback classes", () => {
+  /**
+   * Both tones use the AA-safe *text* tokens, not the brand fill tokens: the
+   * initials are small bold text on a tint, so WCAG 1.4.3 wants ≥4.5:1 —
+   * `text-primary` (#4570EA, 4.41:1) and `text-edu-purple` (#7B5EA7, 4.32:1)
+   * both fail it. `--edu-primary-accessible` (#4468E0, 4.88:1) and
+   * `--edu-purple-text` (#5B3D8A, 6.9:1) clear it on the same tints.
+   */
+  it("maps tones to token-only, AA-contrast avatar-fallback classes", () => {
     expect(identityToneClass("primary")).toBe(
-      "bg-primary/10 font-bold text-primary",
+      "bg-edu-primary-accessible/10 font-bold text-edu-primary-accessible",
     );
     expect(identityToneClass("purple")).toBe(
-      "bg-edu-purple/15 font-semibold text-edu-purple",
+      "bg-edu-purple/15 font-semibold text-edu-purple-text",
     );
+  });
+
+  it("never emits the sub-4.5:1 fill tokens", () => {
+    for (const tone of ["primary", "purple"] as const) {
+      const cls = identityToneClass(tone);
+      expect(cls).not.toMatch(/\btext-primary\b/);
+      expect(cls).not.toMatch(/\btext-edu-purple(?!-text)\b/);
+    }
   });
 });

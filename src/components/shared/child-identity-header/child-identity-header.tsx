@@ -22,11 +22,20 @@ import { cn } from "@/shared/utils";
 export type ChildIdentityTone = "primary" | "purple";
 export type ChildIdentityInitials = "single" | "double";
 
-/** Avatar-fallback classes per tone — tokens only, no raw color. */
+/**
+ * Avatar-fallback classes per tone — tokens only, no raw color.
+ *
+ * The initials are small bold text, so WCAG 1.4.3 requires ≥4.5:1 (12px bold
+ * does NOT qualify for the 3:1 large-text exemption): the brand *fill* tokens
+ * `text-primary` (#4570EA, 4.41:1) and `text-edu-purple` (#7B5EA7, 4.32:1)
+ * both fail. Use the AA *text* tokens instead —
+ * `--edu-primary-accessible` (#4468E0, 4.88:1) and
+ * `--edu-purple-text` (#5B3D8A, 6.9:1) — on the same tints.
+ */
 export function identityToneClass(tone: ChildIdentityTone): string {
   return tone === "purple"
-    ? "bg-edu-purple/15 font-semibold text-edu-purple"
-    : "bg-primary/10 font-bold text-primary";
+    ? "bg-edu-purple/15 font-semibold text-edu-purple-text"
+    : "bg-edu-primary-accessible/10 font-bold text-edu-primary-accessible";
 }
 
 /**
@@ -50,6 +59,19 @@ export function childInitials(
 const AVATAR_SIZE: Record<"md" | "lg", string> = {
   md: "size-[38px]",
   lg: "size-12",
+};
+
+/**
+ * Initials font-size per size. `lg` MUST stay `text-sm` — that is shadcn's
+ * `AvatarFallback` default (`avatar.tsx`), which the pre-existing
+ * `parent-dashboard.tsx` avatar relied on by passing no font-size class at all.
+ * A constant `text-xs` here would silently shrink that screen's initials
+ * (promote, don't regress — decision 0026). Locked by the `DashboardShape` /
+ * `OverviewCardShape` story assertions.
+ */
+const FALLBACK_TEXT: Record<"md" | "lg", string> = {
+  md: "text-xs",
+  lg: "text-sm",
 };
 
 const NAME_SIZE: Record<"md" | "lg", string> = {
@@ -88,7 +110,9 @@ export function ChildIdentityHeader({
     <div className={cn("flex items-center gap-3", className)}>
       <Avatar className={AVATAR_SIZE[size]}>
         {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
-        <AvatarFallback className={cn("text-xs", identityToneClass(tone))}>
+        <AvatarFallback
+          className={cn(FALLBACK_TEXT[size], identityToneClass(tone))}
+        >
           {childInitials(fullName, initials)}
         </AvatarFallback>
       </Avatar>

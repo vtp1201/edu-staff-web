@@ -13,18 +13,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Default (md / primary / double initials) — the US-E20.4 overview-card use. */
+/**
+ * Bare defaults (md / primary / double initials) — the prop defaults, not a
+ * real call site. Every real caller is covered by a `*Shape` story below.
+ * `md` initials render at `text-xs`.
+ */
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument();
-    await expect(canvas.getByText("MK")).toBeInTheDocument();
+    await expect(canvas.getByText("MK")).toHaveClass("text-xs");
   },
 };
 
 /**
- * Consent-card shape (US-E20.2): tinted container + a trailing StatusBadge.
- * Guards the refactored `child-consent-card.tsx` call site.
+ * Consent-card shape (US-E20.2): md avatar, primary tone, double initials,
+ * tinted container + a trailing StatusBadge. Guards the refactored
+ * `features/user/presentation/profile/consent-section/child-consent-card.tsx`
+ * call site — `md` keeps the original `text-xs` initials.
  */
 export const ConsentCardShape: Story = {
   args: {
@@ -33,14 +39,18 @@ export const ConsentCardShape: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("MK")).toBeInTheDocument();
+    await expect(canvas.getByText("MK")).toHaveClass("text-xs");
     await expect(canvas.getByText("Đã liên kết")).toBeInTheDocument();
   },
 };
 
 /**
  * Parent-dashboard shape: lg avatar, purple tone, single initial, class
- * subtitle. Guards the refactored `parent-dashboard.tsx` call site.
+ * subtitle. Guards the refactored `features/parent/presentation/
+ * parent-dashboard.tsx` call site — whose ORIGINAL avatar passed no font-size
+ * class, so shadcn's `AvatarFallback` default (`text-sm`, 14px) applied. The
+ * assertion below locks that parity: a constant `text-xs` in the shared
+ * component would shrink this screen's initials.
  */
 export const DashboardShape: Story = {
   args: {
@@ -52,8 +62,33 @@ export const DashboardShape: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("A")).toBeInTheDocument();
+    const fallback = canvas.getByText("A");
+    await expect(fallback).toHaveClass("text-sm");
+    await expect(fallback).not.toHaveClass("text-xs");
     await expect(canvas.getByText("10A1")).toBeInTheDocument();
+  },
+};
+
+/**
+ * Overview-card shape (US-E20.4): lg avatar, purple tone, single initial, no
+ * subtitle — what `features/parent/presentation/children-overview-screen/
+ * child-overview-card.tsx` actually passes (the third use that triggered the
+ * promotion). Same `text-sm` initials as the dashboard.
+ */
+export const OverviewCardShape: Story = {
+  args: {
+    fullName: "Nguyễn Minh Khoa",
+    tone: "purple",
+    size: "lg",
+    initials: "single",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const fallback = canvas.getByText("K");
+    await expect(fallback).toHaveClass("text-sm");
+    await expect(fallback).toHaveClass("text-edu-purple-text");
+    // No consent state / subtitle on the overview card (US-E20.4 AC-004).
+    await expect(canvas.getByText("Nguyễn Minh Khoa")).toBeInTheDocument();
   },
 };
 
