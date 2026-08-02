@@ -3541,6 +3541,11 @@
       "pendingMessageOverflowLabel": "99+",
       "reconnectButton": "Reconnect",
       "reconnectingTitle": "Reconnecting..."
+    },
+    "error": {
+      "title": "Failed to load data",
+      "description": "Something went wrong while loading this page. Please try again.",
+      "retry": "Retry"
     }
   },
   "staffDiscipline": {
