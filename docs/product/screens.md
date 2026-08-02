@@ -50,7 +50,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Social Feed (school-wide + per-class post/comment/reaction) | `(app)/(shared)/feed` (all roles) | `features/feed` (proposed) | ✅ US-E19.1 (mock-first — social openapi nay đã có, chờ wiring US) |
+| Social Feed (school-wide + per-class post/comment/reaction) | `(app)/(shared)/feed` (all roles) | `features/feed` | ✅ US-E19.1 + US-E18.31 (permanent hybrid, ADR 0067 — reads real incl. author identity via US-165; post/react/comment/pin stay honest-degrade-to-forbidden in real mode, gated off in the UI, pending a product decision on the reaction-taxonomy + attachment-capability mismatches vs BE) |
 | Content Moderation (principal/admin) | `(app)/principal/moderation` | `features/moderation` (proposed) | ✅ US-E19.2 (mock-first — chờ wiring US cùng feed) |
 
 ## Teacher (Epics E02 class-ops, E09 discipline, E11 LMS, E13 workspace, E14 grades)
