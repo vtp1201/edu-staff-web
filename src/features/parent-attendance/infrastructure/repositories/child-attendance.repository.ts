@@ -26,8 +26,12 @@ function throwFailure(err: unknown): never {
   const status = statusOf(err) ?? 0;
   let failure: ParentAttendanceFailure;
   if (code === "ATTENDANCE_FORBIDDEN") {
-    // The parent is not linked to this child (`LinkReader.IsLinked` said no, or
-    // fail-closed on a link-store error) — US-047's authorization branch.
+    // The parent is not linked to this child (`LinkReader.IsLinked` said no)
+    // — US-047's authorization branch. A link-store error is NOT fail-closed
+    // into this code: `get_student_attendance.go` returns the raw store error
+    // in that case, which surfaces as a 5xx here and is mapped to
+    // `network-error` below (retryable) — the honest read for an outage, not
+    // a permission denial.
     failure = { type: "forbidden" };
   } else if (code === "ATTENDANCE_INVALID_DATE_RANGE") {
     failure = { type: "invalid-date-range" };
@@ -53,9 +57,10 @@ function throwFailure(err: unknown): never {
  * This replaces US-E20.5's `UnavailableChildAttendanceRepository`, which was
  * built on the openapi summary's claim that the endpoint is "STUDENT-self or
  * ADMIN". That prose is stale: `get_student_attendance.go`'s `authorize()` has
- * allowed a PARENT to read a LINKED child since US-047 (`LinkReader.IsLinked`,
- * fail-closed on a link-store error). Nothing about the endpoint changed —
- * only our reading of it.
+ * allowed a PARENT to read a LINKED child since US-047 (`LinkReader.IsLinked`;
+ * a link-store error propagates raw, NOT fail-closed into "forbidden" — see
+ * `throwFailure` above). Nothing about the endpoint changed — only our
+ * reading of it.
  *
  * Range validation stays in `GetChildAttendanceUseCase` and runs BEFORE this
  * repository is reached, so an obviously invalid range costs no round-trip; the
