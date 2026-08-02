@@ -67,10 +67,10 @@ server-side. This closes two things at once:
 | Layer | Expected proof | Actual (2026-08-02) |
 | --- | --- | --- |
 | Unit | DI env-matrix test (mock/real gate); mapper test for the 2 new fields | ✅ `principal-classes.di.test.ts` rewritten (6 tests: mock at `true`, REAL at `false`/unset, `ensureFreshSession` called, no http client in mock mode, seed rows still enriched); `class-management.mapper.test.ts` covers id+name, id-set/name-null, id-null |
-| Integration | repository test asserting the enriched fields round-trip | ✅ `class-management.repository.test.ts` + `teacher-class.repository.test.ts` — including CALL-COUNT assertions (see Evidence) |
+| Integration | repository test asserting the enriched fields round-trip | ✅ `class-management.repository.test.ts` + `teacher-class.repository.test.ts` + (review-fix round) `teacher-dashboard.repository.test.ts` + `roster.repository.test.ts` — all with CALL-COUNT assertions (see Evidence) |
 | E2E | Storybook: no regression to existing Principal Classes stories | ✅ `bunx vitest run --config vitest.storybook.mts` — 157 files / 1185 tests passed; zero presentation files touched |
 | Platform | `bun build` clean in both mock and real mode | ✅ `NEXT_PUBLIC_USE_MOCK=true bun run build` green; `bun run build` with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`, i.e. the REAL branch) green |
-| Release | design-review gate N/A if zero visual change (confirm); a11y N/A if zero visual change | ✅ CONFIRMED zero visual change — no file under any `presentation/` was modified; the screen already rendered `studentCount`/`homeroomTeacherName` from its VM |
+| Release | design-review gate N/A if zero visual change (confirm); a11y N/A if zero visual change | ✅ zero LAYOUT/markup change — no file under any `presentation/` was modified. One deliberate DATA change from the review-fix round: the admin-roster class picker now renders the homeroom teacher's real name instead of the raw member uuid it displayed before (bug fix, same slot/typography) |
 
 ## Harness Delta
 
@@ -125,14 +125,62 @@ runs the same `enrichClassRows`. So `studentCount` is now read off the wire and
 the N roster drains are gone. `getClassStudents` still fetches the roster (it
 needs the students themselves, not a count) and is untouched.
 
+### Review-fix round (tech-lead "Revision Required", 2026-08-02)
+
+The first round un-fanned-out only the two repositories the AC named. The review
+found two MORE callers of the same enriched `GET /core/api/v1/classes` schema
+still fanning out, plus artifacts the change had orphaned.
+
+| Path | Before | After | Guarding test |
+| --- | --- | --- | --- |
+| `TeacherDashboardRepository.getTotalStudents` | 1 + **N** (each class's roster drained to `.length` it), with a doc comment asserting the OPPOSITE of the post-US-173 contract | **1** — `classes.reduce((sum, c) => sum + c.studentCount, 0)` | `"getTotalStudents makes exactly ONE call — the roster fan-out is gone"` → `toHaveBeenCalledTimes(1)` + a cursor-paging test asserting the sum still spans pages (`toHaveBeenCalledTimes(2)` for 2 pages, list-drain only) |
+| `RosterRepository.getClasses` | 1 + **N** (`GET .../homeroom-teacher` per row) — and it displayed the RAW `teacherMemberId` uuid as the homeroom teacher's NAME | **1** — `homeroomTeacherId`/`homeroomTeacherName` read off the row | `"maps the wire envelope in ONE call — the per-row homeroom fan-out is gone"` → `toHaveBeenCalledTimes(1)` |
+
+`toClassSummary(dto)` lost its injected 2nd param and now applies the SAME
+id-authoritative fallback as `ClassManagementMapper.toClass`:
+`homeroomTeacherId === null ? null : (homeroomTeacherName ?? homeroomTeacherId)`.
+Three polarities are pinned in `roster.mapper.test.ts` (both set → real name;
+id set + name null → raw id, class stays ASSIGNED; both null → `null`), and the
+id-set/name-null polarity is re-proven end-to-end in `roster.repository.test.ts`.
+Side effect: the admin-roster class picker stops rendering a raw uuid as the
+GVCN's name — a live display bug fixed for free by the wire enrichment.
+
+**Orphans deleted** (both verified dead by repo-wide grep first):
+`features/admin/class-management/infrastructure/dtos/enrollment-response.dto.ts`
+(`EnrollmentResponseDto`, referenced by nothing outside itself) and
+`CLASS_EP.classStudents` (zero references — `admin-roster` and `attendance` own
+separate endpoint constants for their own class-students calls).
+
+**Hardening also applied:** `.map(ClassManagementMapper.toClass)` →
+`.map((dto) => ClassManagementMapper.toClass(dto))` in
+`class-management.repository.ts` and `principal-teachers.repository.ts`, so a
+future optional 2nd param cannot silently bind to `Array.map`'s index argument
+(exactly the shape the param just removed this round had).
+
+**Deliberately NOT changed:** `renameClass`'s exposure where a successful PATCH
+followed by a throwing read-back GET reports overall failure. It is pre-existing
+(the PATCH+read-back pair predates this story), the write does persist, and the
+screen re-fetches on the next render; hardening it means inventing a
+partial-success channel through the Result union, which is out of this story's
+scope. Left documented rather than half-fixed.
+
 ### Commands
 
+Round 1:
+
+- `bunx tsc --noEmit` clean · `bun lint:fix` clean · `bun vitest run` →
+  462 files / **3321** passed (baseline 462 / 3317, net +4) ·
+  `vitest.storybook.mts` → 157 / 1185 · both builds green.
+
+Round 2 (review fixes, 2026-08-02) — re-run in full:
+
 - `bunx tsc --noEmit` → clean.
-- `bun lint:fix` → clean (1 pre-existing unrelated warning in
+- `bun lint:fix` → clean (same 1 pre-existing unrelated warning in
   `message-context-menu.tsx`).
-- `bun vitest run` → **462 files / 3321 tests passed** (baseline before this
-  story: 462 / 3317 — net +4, zero regressions).
-- `bunx vitest run --config vitest.storybook.mts` → 157 files / 1185 passed.
-- `NEXT_PUBLIC_USE_MOCK=true bun run build` → green.
+- `bun vitest run` → **462 files / 3325 tests passed** (from 462 / 3321 — net
+  +4, zero regressions, zero files lost despite deleting a DTO that had no test).
+- `bunx vitest run --config vitest.storybook.mts` → 157 files / 1185 passed
+  (unchanged — no presentation file touched).
+- `NEXT_PUBLIC_USE_MOCK=true bun run build` → `✓ Compiled successfully`.
 - `bun run build` (env from `.env.local`, `NEXT_PUBLIC_USE_MOCK=false` → REAL
   branch) → `✓ Compiled successfully`.
