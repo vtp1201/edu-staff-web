@@ -3,6 +3,9 @@ import type { LinkedStudentsWithConsents } from "@/features/parent-links/domain/
 import {
   academicRecordHref,
   buildChildrenOverviewVM,
+  ChildrenOverviewQueryError,
+  isRetryableErrorKey,
+  resolveErrorKey,
 } from "./build-children-overview-vm";
 
 const CONSENT = {
@@ -96,6 +99,29 @@ describe("buildChildrenOverviewVM", () => {
       success: false,
       errorKey: "network-error",
     });
+  });
+});
+
+describe("resolveErrorKey / isRetryableErrorKey", () => {
+  it("recovers the stable key the query threw", () => {
+    expect(resolveErrorKey(new ChildrenOverviewQueryError("forbidden"))).toBe(
+      "forbidden",
+    );
+    expect(
+      resolveErrorKey(new ChildrenOverviewQueryError("network-error")),
+    ).toBe("network-error");
+  });
+
+  it("falls back to network-error for any other thrown value", () => {
+    expect(resolveErrorKey(new Error("boom"))).toBe("network-error");
+    expect(resolveErrorKey(undefined)).toBe("network-error");
+    // Branch on the carried key, never on a message string.
+    expect(resolveErrorKey(new Error("forbidden"))).toBe("network-error");
+  });
+
+  it("marks forbidden as NOT retryable (a 403 cannot be fixed by retrying)", () => {
+    expect(isRetryableErrorKey("forbidden")).toBe(false);
+    expect(isRetryableErrorKey("network-error")).toBe(true);
   });
 });
 

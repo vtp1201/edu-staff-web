@@ -6,7 +6,12 @@ import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ListError } from "@/components/shared/list-error";
 import { Skeleton } from "@/components/ui/skeleton";
-import { academicRecordHref } from "./build-children-overview-vm";
+import {
+  academicRecordHref,
+  ChildrenOverviewQueryError,
+  isRetryableErrorKey,
+  resolveErrorKey,
+} from "./build-children-overview-vm";
 import { ChildOverviewCard } from "./child-overview-card";
 import { CHILDREN_OVERVIEW_QUERY_KEY } from "./children-overview.query-keys";
 import type { ChildrenOverviewFetchResult } from "./children-overview-screen.i-vm";
@@ -36,7 +41,8 @@ export function ChildrenOverviewScreen({
     queryKey: CHILDREN_OVERVIEW_QUERY_KEY,
     queryFn: async () => {
       const result = await onFetch();
-      if (!result.success) throw new Error(result.errorKey);
+      if (!result.success)
+        throw new ChildrenOverviewQueryError(result.errorKey);
       return result.children;
     },
     retry: false,
@@ -46,6 +52,12 @@ export function ChildrenOverviewScreen({
   // while `refetch()` runs, so the retry must show loading, not the error card.
   const showLoading = query.isPending || (query.isError && query.isFetching);
   const showError = query.isError && !query.isFetching;
+
+  // A 403 can never be fixed by pressing "Thử lại", so it gets its own copy and
+  // NO retry control (omitted from the DOM, not disabled) — same rule as the
+  // domain's `isRetryableFailure()`.
+  const errorKey = resolveErrorKey(query.error);
+  const canRetry = isRetryableErrorKey(errorKey);
 
   return (
     <div className="space-y-6">
@@ -61,8 +73,11 @@ export function ChildrenOverviewScreen({
 
       {showError && (
         <ListError
-          title={tShared("error.title")}
-          description={tShared("error.body")}
+          title={canRetry ? tShared("error.title") : t("forbiddenError.title")}
+          description={
+            canRetry ? tShared("error.body") : t("forbiddenError.body")
+          }
+          showRetry={canRetry}
           retryLabel={tShared("error.retry")}
           shape="bordered-card"
           iconVariant="boxed"

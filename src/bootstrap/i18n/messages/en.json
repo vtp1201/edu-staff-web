@@ -2884,7 +2884,11 @@
     "pageTitle": "My children",
     "cardCta": "View academic record",
     "cardAriaLabel": "View {name}'s academic record",
-    "loadingAriaLabel": "Loading your children…"
+    "loadingAriaLabel": "Loading your children…",
+    "forbiddenError": {
+      "title": "You do not have permission to view this list",
+      "body": "Your account is not allowed to view this list of children. Please contact the school if you believe this is a mistake."
+    }
   },
   "parentLinks": {
     "pageTitle": "Parent–Student Links",

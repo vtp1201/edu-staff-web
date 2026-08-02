@@ -3,6 +3,7 @@ import type { LinkedStudentsWithConsents } from "@/features/parent-links/domain/
 import type { Result } from "@/features/parent-links/domain/use-cases/result";
 import type {
   ChildOverviewCardVM,
+  ChildrenOverviewErrorKey,
   ChildrenOverviewFetchResult,
 } from "./children-overview-screen.i-vm";
 
@@ -31,6 +32,34 @@ export function buildChildrenOverviewVM(
     avatarUrl: s.avatarUrl,
   }));
   return { success: true, children };
+}
+
+/**
+ * Carries the stable failure key across TanStack Query's throw boundary, so the
+ * screen can branch on the KEY (never on an error message string, i18n.md /
+ * api-integration.md).
+ */
+export class ChildrenOverviewQueryError extends Error {
+  constructor(readonly errorKey: ChildrenOverviewErrorKey) {
+    super(errorKey);
+    this.name = "ChildrenOverviewQueryError";
+  }
+}
+
+/** Any unexpected throw degrades to the generic, retryable key. */
+export function resolveErrorKey(error: unknown): ChildrenOverviewErrorKey {
+  return error instanceof ChildrenOverviewQueryError
+    ? error.errorKey
+    : "network-error";
+}
+
+/**
+ * Only a transport failure can be fixed by retrying — a `forbidden` scoping
+ * rejection cannot, so the screen omits the retry affordance for it. Mirrors
+ * the domain's `isRetryableFailure()` convention (US-E20.2).
+ */
+export function isRetryableErrorKey(key: ChildrenOverviewErrorKey): boolean {
+  return key === "network-error";
 }
 
 /**

@@ -12,7 +12,13 @@ export interface ChildOverviewCardVM {
   avatarUrl?: string;
 }
 
+/**
+ * Stable failure keys this screen renders. `forbidden` stays distinct because a
+ * 403 is neither an empty list nor retryable.
+ */
+export type ChildrenOverviewErrorKey = "forbidden" | "network-error";
+
 /** Screen fetch result — stable `errorKey`, never a translated string (i18n.md). */
 export type ChildrenOverviewFetchResult =
   | { success: true; children: ChildOverviewCardVM[] }
-  | { success: false; errorKey: "forbidden" | "network-error" };
+  | { success: false; errorKey: ChildrenOverviewErrorKey };

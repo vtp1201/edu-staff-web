@@ -36,6 +36,9 @@ const okFetch =
 const forbiddenFetch = (): Promise<ChildrenOverviewFetchResult> =>
   Promise.resolve({ success: false, errorKey: "forbidden" });
 
+const networkErrorFetch = (): Promise<ChildrenOverviewFetchResult> =>
+  Promise.resolve({ success: false, errorKey: "network-error" });
+
 function withProviders(Story: () => React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -160,7 +163,7 @@ export const EmptyNoChildren: Story = {
   },
 };
 
-// ── Error + retry (a forbidden scoping rejection is NEVER a fake empty) ─────
+// ── Error + retry (only a transport failure is retryable) ───────────────────
 
 // Stateful fetch: the component's own mount consumes call #1 (fails), every
 // call after succeeds — proves the retry button genuinely re-dispatches.
@@ -168,7 +171,7 @@ let errorWithRetryCalls = 0;
 const errorThenSuccessFetch = (): Promise<ChildrenOverviewFetchResult> => {
   errorWithRetryCalls += 1;
   return errorWithRetryCalls === 1
-    ? forbiddenFetch()
+    ? networkErrorFetch()
     : okFetch([CHILD_1, CHILD_2])();
 };
 
@@ -178,7 +181,7 @@ export const ErrorWithRetry: Story = {
     const canvas = within(canvasElement);
     const retryBtn = await canvas.findByRole("button", { name: /thử lại/i });
     await expect(canvas.getByRole("alert")).toBeInTheDocument();
-    // A forbidden failure must not render as "no children linked".
+    // A transport failure must not render as "no children linked".
     await expect(
       canvas.queryByText(/chưa có con nào được liên kết/i),
     ).not.toBeInTheDocument();
@@ -186,5 +189,28 @@ export const ErrorWithRetry: Story = {
     await userEvent.click(retryBtn);
     await waitFor(() => expect(canvas.getAllByRole("link")).toHaveLength(2));
     await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * A 403 scoping rejection: distinct, actionable copy and NO retry control at
+ * all (omitted from the DOM, never merely disabled) — retrying can never fix
+ * it. Still an alert, and still never a fake "no children linked" empty state.
+ */
+export const ForbiddenNoRetry: Story = {
+  args: { onFetch: forbiddenFetch },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alert = await canvas.findByRole("alert");
+    await expect(
+      within(alert).getByText(/không có quyền xem danh sách này/i),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: /thử lại/i }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByText(/chưa có con nào được liên kết/i),
+    ).not.toBeInTheDocument();
+    await expect(canvas.queryAllByRole("link")).toHaveLength(0);
   },
 };
