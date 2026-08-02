@@ -2776,7 +2776,6 @@
       "contextSection": "Bối cảnh",
       "reportSection": "Thông tin báo cáo",
       "reporter": "Người báo cáo",
-      "reason": "Lý do",
       "note": "Ghi chú của người báo cáo",
       "resolveSection": "Thông tin xử lý",
       "resolvedBy": "Người xử lý",
@@ -2784,7 +2783,6 @@
       "resolveNote": "Ghi chú xử lý",
       "dismiss": "Bỏ qua",
       "remove": "Gỡ nội dung",
-      "close": "Đóng",
       "contentUnavailable": "Máy chủ không trả về nội dung bị báo cáo. Hãy mở nội dung theo mã tham chiếu ở trên để xem chi tiết."
     },
     "duplicates": {

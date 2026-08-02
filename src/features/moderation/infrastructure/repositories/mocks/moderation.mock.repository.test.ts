@@ -179,4 +179,28 @@ describe("MockModerationRepository", () => {
     });
     expect(res).toEqual({ ok: false, error: { type: "not-found" } });
   });
+
+  it("detail from the WRONG status partition is not-found (whole tuple, not just filedAt)", async () => {
+    // The real point-read sends `status` as a PARTITION selector (PENDING vs
+    // RESOLVED), so a still-pending row read from the RESOLVED side resolves
+    // to nothing. The mock must match that, or it would hide a UI bug that
+    // drops `status` from the ref.
+    const repo = new MockModerationRepository();
+    const ref = await firstPendingRef(repo);
+    const res = await repo.getReportDetail({ ...ref, status: "dismissed" });
+    expect(res).toEqual({ ok: false, error: { type: "not-found" } });
+  });
+
+  it("the resolve WRITE is keyed by (reportId, filedAt) only — a stale status still 409s", async () => {
+    // `POST /reports/{id}/resolve` sends `filedAt` as the CAS key and NO
+    // status, so the server answers 409 (already resolved), not 404. Adding a
+    // partition predicate here would misreport that conflict as not-found.
+    const repo = new MockModerationRepository();
+    const ref = await firstPendingRef(repo);
+    expect((await repo.dismissReport(ref)).ok).toBe(true);
+    expect(await repo.dismissReport(ref)).toEqual({
+      ok: false,
+      error: { type: "already-resolved" },
+    });
+  });
 });

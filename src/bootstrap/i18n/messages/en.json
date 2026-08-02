@@ -2776,7 +2776,6 @@
       "contextSection": "Context",
       "reportSection": "Report info",
       "reporter": "Reporter",
-      "reason": "Reason",
       "note": "Reporter's note",
       "resolveSection": "Resolution info",
       "resolvedBy": "Resolved by",
@@ -2784,7 +2783,6 @@
       "resolveNote": "Resolution note",
       "dismiss": "Dismiss",
       "remove": "Remove content",
-      "close": "Close",
       "contentUnavailable": "The server does not return the reported content. Open it via the reference id above to review it."
     },
     "duplicates": {

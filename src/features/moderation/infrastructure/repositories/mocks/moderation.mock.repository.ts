@@ -5,6 +5,7 @@ import type { ModerationStatsEntity } from "../../../domain/entities/moderation-
 import type {
   ReportEntity,
   ReportRef,
+  ReportStatus,
 } from "../../../domain/entities/report.entity";
 import type { ReportDetailEntity } from "../../../domain/entities/report-detail.entity";
 import type { ReportQueueFilter } from "../../../domain/entities/report-queue-filter.entity";
@@ -265,6 +266,27 @@ export class MockModerationRepository implements IModerationRepository {
     .filter((r) => r.status !== "pending")
     .map((r, i) => this.toAuditEntry(r, i));
 
+  /**
+   * Point-READ lookup by the WHOLE addressing tuple. `status` is a partition
+   * selector on the wire (`pending` → PENDING, everything else → RESOLVED), so
+   * a row read from the wrong partition resolves to nothing — the real
+   * `404 REPORT_NOT_FOUND`.
+   *
+   * Deliberately NOT used by the resolve WRITES: `POST /reports/{id}/resolve`
+   * sends `filedAt` as the CAS key and no `status`, so a stale ref must yield
+   * `409 already-resolved`, not a 404.
+   */
+  private findByRef(ref: ReportRef): MockReportEntity | undefined {
+    const partitionOf = (s: ReportStatus) =>
+      s === "pending" ? "PENDING" : "RESOLVED";
+    return this.reports.find(
+      (x) =>
+        x.id === ref.reportId &&
+        x.createdAt === ref.filedAt &&
+        partitionOf(x.status) === partitionOf(ref.status),
+    );
+  }
+
   private toAuditEntry(r: MockReportEntity, seq: number): AuditEntryEntity {
     return {
       entryId: `audit-${r.id}-${seq}`,
@@ -305,12 +327,6 @@ export class MockModerationRepository implements IModerationRepository {
   }
 
   /**
-   * Mirrors the real point-read's PARTITION semantics: the row is addressed by
-   * the whole `(reportId, filedAt, status)` tuple, so a stale/forged `filedAt`
-   * resolves to nothing — exactly the real `404 REPORT_NOT_FOUND`. This is what
-   * keeps a mock-mode session honest about threading the ref through the UI.
-   */
-  /**
    * Independent of any list filter — the mock counts the WHOLE seed set, never
    * the current page, mirroring `GET /reports/stats`'s tenant-wide contract.
    */
@@ -319,13 +335,18 @@ export class MockModerationRepository implements IModerationRepository {
     return { ok: true, value: buildStats(this.reports) };
   }
 
+  /**
+   * Mirrors the real point-read's PARTITION semantics: the row is addressed by
+   * the whole `(reportId, filedAt, status)` tuple, so a stale/forged `filedAt`
+   * or a `status` from the wrong partition resolves to nothing — exactly the
+   * real `404 REPORT_NOT_FOUND`. This is what keeps a mock-mode session honest
+   * about threading the whole ref through the UI.
+   */
   async getReportDetail(
     ref: ReportRef,
   ): Promise<ModerationResult<ReportDetailEntity>> {
     await mockDelay();
-    const r = this.reports.find(
-      (x) => x.id === ref.reportId && x.createdAt === ref.filedAt,
-    );
+    const r = this.findByRef(ref);
     if (!r) return { ok: false, error: { type: "not-found" } };
 
     const duplicateReports = this.reports
@@ -371,6 +392,12 @@ export class MockModerationRepository implements IModerationRepository {
     };
   }
 
+  /**
+   * CAS write: matched on `(reportId, filedAt)` ONLY — the real
+   * `POST /reports/{id}/resolve` sends `filedAt` as the compare-and-set key and
+   * no `status`, so a ref pointing at an already-resolved row must produce
+   * `409 already-resolved`, never a 404 (see {@link findByRef}).
+   */
   async dismissReport(ref: ReportRef): Promise<ModerationActionResult> {
     await mockDelay();
     const r = this.reports.find(
@@ -405,6 +432,7 @@ export class MockModerationRepository implements IModerationRepository {
       return { ok: true };
     }
     const ref = input.ref;
+    // Same CAS semantics as dismissReport: `(reportId, filedAt)` only.
     const r = this.reports.find(
       (x) => x.id === ref.reportId && x.createdAt === ref.filedAt,
     );
