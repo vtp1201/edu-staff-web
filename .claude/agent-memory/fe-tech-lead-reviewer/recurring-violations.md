@@ -349,3 +349,19 @@ before reading for style.
   `failedClassCount>0 && rows.length===0` branch with its own key. (US-E13.9.)
 - **Header result count shows the UNFILTERED total while only the sr-only live region reflects the
   filter** — sighted/SR parity gap on any client-filtered list. CONSIDER→SHOULD. (US-E13.9.)
+
+- **"The endpoint is member-scoped, therefore role-agnostic" — resource scoping ≠ authorization
+  scoping** (US-E15.3, blocking). A packet declares a reuse "ground-truthed, no BE gap, no mock-first
+  needed" because an existing caller (parent→child) already succeeds against
+  `GET /members/{memberId}/timetable`, and infers a NEW caller (principal→teacher) will too. The path
+  parameter says nothing about the `authorize()` allow-list, which was ADMIN / self / linked-PARENT
+  only. Compounding failure mode: when the BE deliberately makes 403 existence-opaque, the web repo
+  maps 403 → `not-found` → the EMPTY state, so the unauthorized caller sees a plausible "nothing
+  published yet" on every row instead of an error — silent, and invisible to tsc/tests/build/storybook
+  because mock mode answers happily. Checklist for any story that adds a NEW ROLE as a caller of an
+  EXISTING endpoint: (1) read the BE `authorize()`/RBAC branch, not just the route+response shape;
+  (2) confirm the new role's BE role string is even present in that package's constants
+  (`MANAGER` usually is not); (3) trace 403 → `toFailure` → data-state and check it isn't collapsed
+  into empty/success. Sanctioned remedy = the `principal-classes.di.ts` force-mock precedent (DI
+  force-mock + doc comment citing the Go file + env-matrix DI test + cross-repo ask), never a silent
+  real-mode ship.

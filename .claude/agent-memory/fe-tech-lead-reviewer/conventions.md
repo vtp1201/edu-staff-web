@@ -451,3 +451,18 @@ Confirmed facts (verify before citing if stale):
   Pre-existing debt — do not block a scoped story on it — but re-raise it on any story that widens
   roster exposure to another role. `IRosterRepository` also takes no `authCtx`, so ADR 0063's
   repository-boundary seam is entirely absent from this feature.
+- **`core` timetable by-member read is CALLER-ROLE-GATED, and `MANAGER` (principal) is NOT allowed**
+  (ground-truthed 2026-08-02, US-E15.3). `services/core/internal/timetable/core/application/usecase/
+  get_member_timetable.go` `authorize()` permits ONLY: SUPER_ADMIN/ADMIN (`isAdmin`), the target
+  member itself (`ActorMemberID == memberID`), or a verified linked PARENT. `shared.go:14-24` defines
+  only `ADMIN/TEACHER/STUDENT/PARENT` — there is no `MANAGER` constant in the timetable package at
+  all, and TEACHER is explicitly denied breadth ("another member's personal week is not part of
+  teaching a class"). So `GET /core/api/v1/members/{id}/timetable` hard-403s for a principal.
+  Same class of gap as `list_classes.go` (ask #39, `principal-classes.di.ts`) — a *second* instance,
+  so treat "MANAGER missing from a core RBAC check" as a standing suspicion, not a one-off.
+  BE also returns the SAME 403 regardless of target existence *by design* (no existence signal), and
+  the web repo therefore maps `TIMETABLE_FORBIDDEN` → `not-found`
+  (`real-weekly-timetable.repository.ts:38,54`) → `toDataState` collapses it to `{status:"empty"}`.
+  Net effect for any NEW non-admin/non-self/non-parent caller: a SILENT "no timetable published"
+  empty state on every row, in real mode only. Always trace 403→failure→data-state for a new caller
+  of this endpoint.
