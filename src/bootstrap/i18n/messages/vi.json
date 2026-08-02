@@ -3112,6 +3112,21 @@
     "title": "Danh sách lớp",
     "viewTeachers": "Xem giáo viên"
   },
+  "principalStudents": {
+    "title": "Danh sách học sinh",
+    "subtitle": "Xem danh sách học sinh theo từng lớp của trường. Chỉ xem, không chỉnh sửa ghi danh.",
+    "empty": {
+      "title": "Lớp chưa có học sinh",
+      "body": "Lớp này chưa có học sinh nào được ghi danh. Quản trị viên phụ trách sẽ cập nhật danh sách."
+    },
+    "emptyClasses": {
+      "title": "Trường chưa có lớp nào",
+      "body": "Chưa có lớp học nào trong năm học hiện tại, nên chưa có danh sách học sinh để xem."
+    },
+    "error": {
+      "title": "Không tải được danh sách học sinh"
+    }
+  },
   "principalTeachers": {
     "addTeacher": "Thêm giáo viên",
     "assignClass": "Phân công lớp",
