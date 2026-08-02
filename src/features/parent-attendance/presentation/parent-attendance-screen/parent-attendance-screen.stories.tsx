@@ -266,6 +266,36 @@ export const ErrorNetworkRetry: Story = {
   },
 };
 
+/**
+ * Over the BE's 366-day cap. Same treatment as the inverted range (a11y audit
+ * Minor, fix round): the two inputs that CAUSED the failure are `aria-invalid`
+ * and `aria-describedby` the alert, so the reason is announced, not just tinted.
+ */
+export const ErrorRangeTooLarge: Story = {
+  args: {
+    ...Populated.args,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: { startDate: "2024-01-01", endDate: "2026-08-31" },
+      records: [],
+      error: "date-range-too-large",
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const label of ["Từ ngày", "Đến ngày"]) {
+      const input = canvas.getByLabelText(label);
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAttribute("aria-describedby", "pa-range-error");
+      expect(input).toHaveAccessibleDescription(/không được vượt quá 366 ngày/);
+    }
+    expect(canvas.getByRole("alert")).toHaveAttribute("id", "pa-range-error");
+    // Terminal failure — no retry affordance.
+    expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
+  },
+};
+
 /** An inverted range: the inputs are marked invalid and point at the message. */
 export const ErrorInvalidRange: Story = {
   args: {

@@ -93,6 +93,17 @@ export function ParentAttendanceScreen({
 
   const counts = countByStatus(vm.records);
 
+  // Both failures are caused by the two date inputs' values, so BOTH get the
+  // same invalid + described-by treatment (a11y audit Minor: only
+  // `invalid-date-range` did before, leaving "range too large" colour-free but
+  // also announcement-free).
+  const isRangeError =
+    vm.error === "invalid-date-range" || vm.error === "date-range-too-large";
+  const rangeFieldProps = {
+    "aria-invalid": isRangeError || undefined,
+    "aria-describedby": isRangeError ? "pa-range-error" : undefined,
+  } as const;
+
   return (
     <div className="flex flex-col gap-5 p-5">
       <header className="flex flex-col gap-1">
@@ -124,10 +135,7 @@ export function ParentAttendanceScreen({
               id="pa-start"
               type="date"
               value={vm.range.startDate}
-              aria-invalid={vm.error === "invalid-date-range" || undefined}
-              aria-describedby={
-                vm.error === "invalid-date-range" ? "pa-range-error" : undefined
-              }
+              {...rangeFieldProps}
               onChange={(e) => onRangeChange?.({ startDate: e.target.value })}
             />
           </div>
@@ -139,10 +147,7 @@ export function ParentAttendanceScreen({
               id="pa-end"
               type="date"
               value={vm.range.endDate}
-              aria-invalid={vm.error === "invalid-date-range" || undefined}
-              aria-describedby={
-                vm.error === "invalid-date-range" ? "pa-range-error" : undefined
-              }
+              {...rangeFieldProps}
               onChange={(e) => onRangeChange?.({ endDate: e.target.value })}
             />
           </div>
@@ -170,9 +175,7 @@ export function ParentAttendanceScreen({
           />
         ) : vm.error ? (
           <ListError
-            id={
-              vm.error === "invalid-date-range" ? "pa-range-error" : undefined
-            }
+            id={isRangeError ? "pa-range-error" : undefined}
             message={t(`errors.${vm.error}`)}
             retryLabel={t("retry")}
             shape="inline-card"

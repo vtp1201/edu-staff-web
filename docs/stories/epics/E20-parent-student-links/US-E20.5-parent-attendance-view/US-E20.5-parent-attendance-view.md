@@ -102,7 +102,7 @@ parent's own token — it will 403 by design, not by accident.
 | --- | --- | --- |
 | Unit | `get-child-attendance.use-case.test.ts`, date-range validation | ✅ 6 use-case cases (inverted range short-circuits the repo, 366-day boundary ±1, typed/untyped rejection) + `date-range.test.ts` (12) + `build-parent-attendance-vm.test.ts` (12 — `parseIsoDate` replaces `formatIsoDate`, incl. the vi/en ordering guard) + `resolve-range.test.ts` (8) |
 | Integration | mock repository test only (no real HTTP boundary yet) | ✅ `mock-child-attendance.repository.test.ts` (6, goes through the real DTO→mapper path) + `child-attendance.mapper.test.ts` (3, key-set assertion that `classId` is dropped) + **fix round**: `unavailable-child-attendance.repository.test.ts` (2) + `bootstrap/di/parent-attendance.di.test.ts` (6 — the 3-state env matrix, incl. "no `createServerHttpClient` in any state") + `parent/attendance/page.test.ts` (3 — real page→DI→repo chain per env) |
-| E2E | Storybook interaction: child switch → refetch, empty state, status badges render with icon+label | ✅ 11 interaction stories (`parent-attendance-screen.stories.tsx`): Populated / **PopulatedEnglishLocale** / SwitchChild / ChangeDateRange / DefaultCurrentMonthRange / Loading / NoLinkedChildren / EmptyRange / ErrorForbidden / ErrorNetworkRetry / ErrorInvalidRange, + `Shared/ListError → WithIdForAriaDescribedby`. Mutation-checked: removing the badge icon or forcing `showRetry` red-lines 3 of them; force-mocking the DI factory red-lines 2 of `page.test.ts` |
+| E2E | Storybook interaction: child switch → refetch, empty state, status badges render with icon+label | ✅ 12 interaction stories (`parent-attendance-screen.stories.tsx`): Populated / **PopulatedEnglishLocale** / SwitchChild / ChangeDateRange / DefaultCurrentMonthRange / Loading / NoLinkedChildren / EmptyRange / ErrorForbidden / ErrorNetworkRetry / ErrorInvalidRange / **ErrorRangeTooLarge**, + `Shared/ListError → WithIdForAriaDescribedby`. Mutation-checked: removing the badge icon or forcing `showRetry` red-lines 3 of them; force-mocking the DI factory red-lines 2 of `page.test.ts` |
 | Platform | `bun build` clean | ✅ clean with `NEXT_PUBLIC_USE_MOCK=true` AND with the flag unset (real mode) — the route is `ƒ /[locale]/t/[tenant]/parent/attendance`; real mode now degrades to the `forbidden` state instead of serving mock rows (`page.test.ts`) |
 | Release | design-review gate + a11y audit green | pending fe-lead (no `design-spec.jsonc` entry exists for this screen — token/pattern reuse is the substitute) |
 
@@ -266,6 +266,17 @@ roster-shaped seed data; this is child-specific data a parent could act on).
    in JSX — it calls `t("summaryChip", { label, count })` against a new key in
    both message files. The same `en` story asserts `"Present: 1"`.
 
+### a11y Minors
+
+- **Done** — `date-range-too-large` now gets the same `aria-invalid` +
+  `aria-describedby="pa-range-error"` treatment as `invalid-date-range` on BOTH
+  date inputs (one shared `rangeFieldProps`, and the `ListError` id follows the
+  same predicate). New `ErrorRangeTooLarge` story asserts both inputs' accessible
+  description resolves to the 366-day message.
+- **Not done (deferred)** — the tabpanel `tabIndex={0}` gap: pre-existing and
+  shared with `grade-book-screen.tsx`, so fixing it belongs in one consistent
+  change across both files, not half of it here.
+
 ### Fix-round proof commands (as observed)
 
 | Command | Result |
@@ -273,7 +284,7 @@ roster-shaped seed data; this is child-specific data a parent could act on).
 | `bunx tsc --noEmit` | clean |
 | `bun lint:fix` / `bun lint` | clean — same 1 pre-existing warning + 1 info in `message-context-menu.tsx` (untouched) |
 | `bun vitest run` | **462 files / 3317 tests, 0 failures** (fresh pre-fix baseline re-measured on the branch: 459 / 3304 → +3 files / +13 tests, zero regressions) |
-| `bunx vitest run --config vitest.storybook.mts` | **157 files / 1184 tests, 0 failures** (pre-fix 157 / 1182 → +2 stories) |
+| `bunx vitest run --config vitest.storybook.mts` | **157 files / 1185 tests, 0 failures** (pre-fix 157 / 1182 → +3 stories) |
 | `NEXT_PUBLIC_USE_MOCK=true bun run build` | clean |
 | `env -u NEXT_PUBLIC_USE_MOCK bun run build` | clean; route still `ƒ` (dynamic, nothing prerendered) — the honest-degrade behaviour in that config is proved by `page.test.ts`, which runs the real chain with the flag unset |
 
