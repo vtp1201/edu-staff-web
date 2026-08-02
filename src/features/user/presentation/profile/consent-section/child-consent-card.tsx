@@ -5,8 +5,8 @@ import { Award, CalendarX, type LucideIcon, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ChildIdentityHeader } from "@/components/shared/child-identity-header";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { ConsentCategory } from "@/features/parent-links/domain/repositories/i-parent-consent.repository";
 import { ConsentToggleRow } from "./consent-toggle-row";
 import { PARENT_CONSENT_QUERY_KEY } from "./parent-consent.query-keys";
@@ -23,15 +23,6 @@ const CATEGORY_ICON: Record<ConsentCategory, LucideIcon> = {
 };
 
 const CATEGORY_ORDER: ConsentCategory[] = ["discipline", "absence", "grades"];
-
-function initialsOf(fullName: string): string {
-  return fullName
-    .split(" ")
-    .map((p) => p[0])
-    .slice(-2)
-    .join("")
-    .toUpperCase();
-}
 
 export interface ChildConsentCardProps {
   child: ParentConsentChildVM;
@@ -50,20 +41,14 @@ export function ChildConsentCard({ child, onToggle }: ChildConsentCardProps) {
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center gap-3 rounded-lg bg-edu-bg px-3 py-2.5">
-        <Avatar className="size-[38px]">
-          {child.avatarUrl && (
-            <AvatarImage src={child.avatarUrl} alt={child.fullName} />
-          )}
-          <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-            {initialsOf(child.fullName)}
-          </AvatarFallback>
-        </Avatar>
-        <span className="min-w-0 flex-1 truncate text-sm font-bold text-foreground">
-          {child.fullName}
-        </span>
-        <StatusBadge tone="success">{t("childCard.linkedBadge")}</StatusBadge>
-      </div>
+      <ChildIdentityHeader
+        fullName={child.fullName}
+        avatarUrl={child.avatarUrl}
+        className="rounded-lg bg-edu-bg px-3 py-2.5"
+        trailing={
+          <StatusBadge tone="success">{t("childCard.linkedBadge")}</StatusBadge>
+        }
+      />
 
       <div className="mt-3 space-y-3">
         {CATEGORY_ORDER.map((category) => (
