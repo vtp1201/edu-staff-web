@@ -1,5 +1,8 @@
 # FE Lead Memory Index
 
+- [Dead sidebar links batch (E13.9/E13.10/E15.3/E20.4/E20.5)](project-dead-sidebar-links-batch.md) — 5 dead nav-config links closed in one session; 4/5 needed zero new BE work via reuse; 2 real BE 403 gaps found only by ground-truthing Go `authorize()`; component-promotion done twice with very different outcomes; asks #43/#44/#45 filed
+- [Promotion needs a parity checklist](feedback-promotion-needs-parity-checklist.md) — always brief fe-component-architect with an explicit before/after checklist when promoting a component, not just "make it work"
+- [Reuse claims need BE authorize() ground-truth](feedback-reuse-claims-need-be-authorize-groundtruth.md) — "role-agnostic/member-scoped" is not the same claim as "authorized for this new caller role" — grep the Go authorize() function before accepting reuse as risk-free
 - [E18.26 Timetable by-member wiring](project-e18-26-timetable-by-member.md) — closes asks #15/#17, partial #20/#22; lead ground-truths BE contract before planner; un-mocking exposed a latent avatar-contrast bug; symmetric-use-case composition miss caught by reviewer
 - [E18.25 Notification-center wiring](project-e18-25-notification-center.md) — closes ask #34; entity reshape to BE i18n key+params; reviewer caught a page-limit-vs-cursor drain data-loss bug; unread-count(singular) vs unread-counts(plural) disambiguation
 
