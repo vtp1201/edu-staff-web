@@ -55,14 +55,6 @@ export const GRADES_EP = {
   requestRevision: (id: string) =>
     `/core/api/v1/grade-batches/${id}/request-revision`,
   bulkLock: () => `/core/api/v1/grade-batches/bulk-lock`,
-  // US-E13.7 — parent child-switcher. `childList` below was a mock-only
-  // placeholder path (ADR 0054 said no endpoint could serve the switcher
-  // because none carried a display NAME). US-E18.33 un-mocked it: the roster
-  // itself comes from `core`'s real linked-students read and the names from
-  // IAM's tiered batch lookup (ADR-0120), so `linkedStudents` is the real
-  // source and `childList` is now dead — kept only for the mock repository's
-  // unchanged shape.
-  childList: "/core/api/v1/parent/children",
   /**
    * `GET` the parent's own linked students (BE US-148). Enriched with
    * `classId`/`className`; carries NO display name (resolved separately, see

@@ -9,8 +9,14 @@ import {
 import { GradeBookContainer } from "@/features/grades/presentation/grade-book-screen/grade-book-container";
 import type { GradeBookScreenVM } from "@/features/grades/presentation/grade-book-screen/grade-book-screen.i-vm";
 
-// Mock child id — child-switcher stays permanently mock (ADR 0054, no
-// display-name source on `GET /members/{id}/linked-students`).
+// Fallback child id used when the URL carries no `?childId=`. It is a MOCK
+// fixture id, pre-dating this page's grade read going real — the grade read
+// here (`makeGetChildGradesUseCase`) has always been a separate data path from
+// the child-switcher roster, so nothing resolves it today.
+//
+// TODO(follow-up, out of scope for US-E18.33): default to the FIRST linked
+// child from `makeGetChildListUseCase()` (the roster is real since US-E18.33)
+// instead of this hardcoded id.
 const MOCK_CHILD_ID = "child-1";
 
 type SearchParams = Promise<{ term?: string; childId?: string }>;

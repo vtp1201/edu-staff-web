@@ -7,7 +7,10 @@ import { ok, type Result } from "./result";
 export const BATCH_LOOKUP_MAX_IDS = 50;
 
 /**
- * Resolve display names/emails for an ARBITRARY-length list of member ids.
+ * Resolve display names for an ARBITRARY-length list of member ids. `email` is
+ * STAFF-TIER ONLY since the response was widened (ADR-0120): a lower-privilege
+ * caller (e.g. a PARENT) gets rows with the key absent, so no caller may assume
+ * it is present.
  *
  * Chunking (≤50 ids/call) is owned here, so callers never see
  * `too_many_member_ids` — that was the explicit choice offered by the AC
