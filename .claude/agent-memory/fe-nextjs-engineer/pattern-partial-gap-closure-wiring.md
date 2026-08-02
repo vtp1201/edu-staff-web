@@ -50,11 +50,39 @@ branch, so the DI stays `USE_MOCK ? Mock : Hybrid` while the hybrid itself is
 unconditional. Prove it with a spy-per-method fake asserting BOTH
 `toHaveBeenCalled` on one side and `not.toHaveBeenCalled` on the other.
 
-**Open risk worth flagging every time:** mock WRITES behind real READS produce a
-fake-publish (the write succeeds in memory, then vanishes on refetch). Tolerable
-only while the app ships `USE_MOCK=true` (pure mock repo, hybrid dormant).
-Before the flag flips it needs a product decision or an honest degrade —
-see [[pattern-force-mock-vs-honest-degrade]].
+**Mock WRITES behind real READS are NEVER acceptable — do not ship them and
+then flag the risk.** (Cost me a Revision Required on E18.31.) The write
+succeeds in memory and vanishes on the next refetch (a fresh `makeRepo()` = a
+fresh store) = a fake publish. **Ground-truth the flag before calling it
+dormant:** `bootstrap/lib/mock.ts` `USE_MOCK` is `false` when the env var is
+UNSET, `next.config.ts` THROWS on a deploy build with `NEXT_PUBLIC_USE_MOCK=true`,
+and `.env.local` here is already `false` — so the *hybrid* branch, not the mock
+branch, is what production runs. Correct posture (both halves):
+- repo: the hybrid holds only `real`; each mutation returns
+  `{ok:false,error:{type:"forbidden"}}` with no HTTP ([[pattern-force-mock-vs-honest-degrade]]);
+- UI: a `writesEnabled = USE_MOCK` boolean threaded RSC → VM (exam-bank's
+  `authoringEnabled` precedent) hiding/disabling composer, reaction chips,
+  comment box, and the WHOLE "…" menu (pin/report/remove all mutate), plus a
+  `role="status"` notice. Prove it with a route `page.test.ts`
+  (`writesEnabled === USE_MOCK` via `vi.doMock("@/bootstrap/lib/mock")` +
+  `resetModules`) and one interaction story, mutation-checked by flipping the flag.
+Extra bite when the screen feeds a still-force-mocked sibling feature (moderation):
+real content ids + a mock `removeContent`/`report` = a fake "reported" on a
+safeguarding path. Gate those CTAs too, even though the sibling is another story.
+
+**Don't encode a role vocabulary locally.** Before writing an enum→display map,
+grep for the canonical one (`ROLE_ENUM_TO_APP`/`appRoleOf` in
+`features/auth/domain/entities/role-meta.ts`, used by `decodeRoleClaim`). ADMIN
+and MANAGER *are* `principal`, STAFF *is* `teacher` — "the feed has no ADMIN
+badge" was my invention. Cross-feature `features/auth/domain/…` imports are an
+established precedent; a feature-domain `policies/<x>-role.ts` that narrows the
+canonical appRole to the local union is the right home, and the route's viewer
+switch must use it too or the two drift.
+
+**Lefthook runs `tsc` on the STAGED tree, not the working tree** — a "logical
+chunk" commit that stages a mapper but not the rename that the rest of the tree
+already depends on fails typecheck even though the working tree is clean. Coupled
+refactors = one commit.
 
 **Lefthook gotcha:** `vitest related` runs against the STAGED tree only, so a
 "logical chunk" commit that splits an inherently coupled change set (entity +

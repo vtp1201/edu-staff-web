@@ -1,6 +1,6 @@
 # Memory Index
 
-- [Partial gap-closure wiring](pattern-partial-gap-closure-wiring.md) — E18.31: BE closing 1 of N gaps ≠ "just a repo swap"; dead mock-era DTOs were INVENTED (envelope was FeedPage object not Post[]); cross-service enum vocabularies don't match (unmapped role → null badge, never guessed); additive denormalized fields are NULLABLE; lefthook vitest-related sees only the STAGED tree (+more in file)
+- [Partial gap-closure wiring](pattern-partial-gap-closure-wiring.md) — E18.31 (+review fix): BE closing 1 of N gaps ≠ "repo swap"; mock WRITES behind real READS = fake publish, NEVER ship (USE_MOCK is false when unset — the hybrid IS production); use the canonical ROLE_ENUM_TO_APP, don't invent a role table; lefthook tsc/vitest see only the STAGED tree (+more in file)
 
 - [Force-mock vs honest degrade](pattern-force-mock-vs-honest-degrade.md) — E20.5 fix round: force-mock only for harmless seed data; actionable per-subject data must be USE_MOCK-gated + Unavailable*Repository rejecting forbidden (no HTTP); env-matrix DI test + RSC page.test.ts; locale dates via useFormatter (+more in file)
 
