@@ -83,3 +83,5 @@
 - [Role widening a shared view](pattern-role-widening-shared-view.md) — E15.3: 3rd viewerRole = named derivations (not one boolean) + parallel props/state + sibling picker; by-member week's top-level className is the MEMBER's name (force "" in the header); cross-feature Result bridge must table-test the un-mappable failure members (+more in file)
 
 - [Wire-enrichment un-fan-out](pattern-wire-enrichment-unfanout.md) — E18.30: enrichment is per-ENDPOINT (POST/PATCH unenriched → need a GET read-back); prove fan-out removal with call-COUNT asserts; id-authoritative vs null display name; audit siblings by endpoint URL not repo name (+more in file)
+
+- [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined`; assert Object.keys); authority+decoration two-source roster; un-mock env-matrix must stub `lib/jwt` too, and it breaks unrelated RSC page tests via cookies() (+more in file)

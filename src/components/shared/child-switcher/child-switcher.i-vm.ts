@@ -17,9 +17,24 @@ export type ChildColor = "primary" | "success" | "warning" | "error" | "purple";
 
 export interface ChildSwitcherChild {
   childId: string;
-  name: string;
+  /**
+   * OPTIONAL by design (US-E18.33 review). A real-mode roster row whose display
+   * name the IAM batch lookup could not resolve arrives NAMELESS; the component
+   * then renders the `Common.childOrdinalLabel` fallback ("Con thứ N"). The
+   * alternative — letting a mapper substitute the raw memberId — would put a
+   * uuid in the tab's accessible name. Mirrors `TimetableChild.name`, so the
+   * two sibling child-pickers degrade identically.
+   */
+  name?: string;
+  /** `""` when the child has no current enrollment → renders `Common.classPending`. */
   className: string;
-  /** 2-char initials for avatar fallback */
+  /**
+   * 1-based STABLE roster position (linkId-ascending), NOT the array index:
+   * it is user-visible copy via the ordinal fallback, so it must not jump
+   * between refetches. Also the avatar-digit source when no name resolved.
+   */
+  ordinal: number;
+  /** 2-char initials, or the ordinal digit when no name resolved */
   avatar: string;
   /** design-token role string → maps to --edu-<color> CSS var in presentation */
   color: ChildColor;

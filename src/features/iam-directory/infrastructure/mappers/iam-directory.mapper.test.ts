@@ -45,7 +45,7 @@ describe("IamDirectoryMapper.toDirectoryMember", () => {
 });
 
 describe("IamDirectoryMapper.toMemberSummary", () => {
-  it("maps the display-only batch row (no status/userId on the wire)", () => {
+  it("staff tier — maps the full row (no status/userId on the wire)", () => {
     expect(
       IamDirectoryMapper.toMemberSummary({
         memberId: "u-9",
@@ -59,5 +59,28 @@ describe("IamDirectoryMapper.toMemberSummary", () => {
       email: "c@example.com",
       roles: ["PARENT"],
     });
+  });
+
+  it("narrowed tier (PARENT/STUDENT/STAFF caller) — email/roles keys are ABSENT, not undefined-valued (ADR-0120)", () => {
+    // Field ABSENCE is the tier signal: a narrowed-tier row must not gain
+    // `email: undefined` / `roles: undefined` keys on the way in, or
+    // `"email" in summary` would wrongly report a staff-tier response.
+    const summary = IamDirectoryMapper.toMemberSummary({
+      memberId: "u-10",
+      displayName: "Trần Bảo An",
+    });
+
+    expect(summary).toEqual({ memberId: "u-10", displayName: "Trần Bảo An" });
+    expect(Object.keys(summary).sort()).toEqual(["displayName", "memberId"]);
+    expect("email" in summary).toBe(false);
+    expect("roles" in summary).toBe(false);
+  });
+
+  it("narrowed tier — a consumer reading only displayName is unaffected", () => {
+    const summary = IamDirectoryMapper.toMemberSummary({
+      memberId: "u-11",
+      displayName: "Võ Thị Bình",
+    });
+    expect(summary.displayName).toBe("Võ Thị Bình");
   });
 });

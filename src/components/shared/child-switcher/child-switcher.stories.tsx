@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { toParentChildren } from "@/features/grades/infrastructure/mappers/parent-child.mapper";
 import { MOCK_VIEWER_CHILDREN } from "@/features/grades/infrastructure/repositories/mocks/grade-book-fixtures";
 import { ChildSwitcher } from "./child-switcher";
 
@@ -99,5 +100,70 @@ export const ParentView_MultiChild_Switch: Story = {
       canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ }),
     );
     expect(args.onSwitch).toHaveBeenCalledWith("c1");
+  },
+};
+
+/* ── US-E18.33: real-mode roster (un-mocked, ADR 0054 → real) ───────────── */
+/**
+ * Every other story above feeds the switcher hand-seeded mock fixtures. This
+ * one feeds it the output of the ACTUAL real-mode mapper, from an actual
+ * `core` `linked-students` wire shape joined with the `memberId → displayName`
+ * map IAM's tiered batch lookup returns for a PARENT caller (ADR-0120) — so it
+ * fails the day the join or the initials derivation regresses.
+ *
+ * It also pins the two degradations the real path can hit, which since the
+ * US-E18.33 review match the sibling `ChildPicker` exactly: an id the lookup
+ * omitted renders the "Con thứ N" ordinal label (NEVER the raw memberId — that
+ * uuid would become the tab's accessible name), and a child with no current
+ * enrollment renders "Chưa có lớp" rather than a blank second line.
+ */
+const REAL_CHILDREN = toParentChildren(
+  [
+    {
+      linkId: "link-b",
+      parentMemberId: "p-1",
+      studentMemberId: "st-2",
+      createdAt: "2026-01-02T00:00:00Z",
+      classId: null,
+      className: null,
+    },
+    {
+      linkId: "link-a",
+      parentMemberId: "p-1",
+      studentMemberId: "st-1",
+      createdAt: "2026-01-01T00:00:00Z",
+      classId: "cls-1",
+      className: "10A1",
+    },
+  ],
+  new Map([["st-1", "Nguyễn Minh Khoa"]]),
+);
+
+export const ParentView_RealMode_ResolvedNames: Story = {
+  args: {
+    childList: REAL_CHILDREN,
+    activeChildId: "st-1",
+    onSwitch: fn(),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const resolved = canvas.getByRole("tab", { name: /Nguyễn Minh Khoa/ });
+    expect(resolved).toHaveAttribute("aria-selected", "true");
+    expect(resolved).toHaveTextContent("10A1");
+    expect(resolved).not.toHaveTextContent("Chưa có lớp");
+
+    // Unresolved name → the stable ordinal label. `st-2` is roster position 2
+    // by linkId-ascending order, so "Con thứ 2" — and the raw memberId must
+    // appear NOWHERE in the tab (a uuid is not a human name, and this string is
+    // the tab's accessible name).
+    const degraded = canvas.getByRole("tab", { name: /Con thứ 2/ });
+    expect(degraded).toBeVisible();
+    expect(degraded).not.toHaveTextContent("st-2");
+    expect(canvas.queryByRole("tab", { name: /st-2/ })).toBeNull();
+    // No current enrollment → real copy, not a blank line.
+    expect(degraded).toHaveTextContent("Chưa có lớp");
+
+    await userEvent.click(degraded);
+    expect(args.onSwitch).toHaveBeenCalledWith("st-2");
   },
 };

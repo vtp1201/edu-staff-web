@@ -55,6 +55,11 @@ export const GRADES_EP = {
   requestRevision: (id: string) =>
     `/core/api/v1/grade-batches/${id}/request-revision`,
   bulkLock: () => `/core/api/v1/grade-batches/bulk-lock`,
-  // US-E13.7 — parent child-switcher (permanently mock, ADR 0054):
-  childList: "/core/api/v1/parent/children",
+  /**
+   * `GET` the parent's own linked students (BE US-148). Enriched with
+   * `classId`/`className`; carries NO display name (resolved separately, see
+   * `ParentChildListRepository`). PARENT may only pass its OWN memberId.
+   */
+  linkedStudents: (memberId: string) =>
+    `/core/api/v1/members/${encodeURIComponent(memberId)}/linked-students`,
 } as const;

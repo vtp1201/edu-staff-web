@@ -24,12 +24,19 @@ export const IamDirectoryMapper = {
     };
   },
 
+  /**
+   * TIERED (ADR-0120, US-E18.33). `email`/`roles` are spread CONDITIONALLY, not
+   * copied unconditionally: a narrowed-tier row (STAFF/STUDENT/PARENT caller)
+   * omits those keys on the wire, and materialising them as
+   * `email: undefined` would destroy the presence-based tier signal
+   * (`"email" in summary`) the contract is built on.
+   */
   toMemberSummary(dto: MemberBatchItemDto): MemberSummary {
     return {
       memberId: dto.memberId,
       displayName: dto.displayName,
-      email: dto.email,
-      roles: dto.roles,
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.roles !== undefined ? { roles: dto.roles } : {}),
     };
   },
 };

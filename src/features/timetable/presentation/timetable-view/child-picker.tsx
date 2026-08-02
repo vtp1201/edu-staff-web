@@ -22,6 +22,11 @@ export function ChildPicker({
   disabled,
 }: ChildPickerProps) {
   const t = useTranslations("timetableView");
+  // `childOrdinalLabel` + `classPending` were hoisted to `Common` (US-E18.33
+  // review): the shared `ChildSwitcher` needs the same two degraded-state
+  // labels, and a `components/shared/` component cannot read a feature
+  // namespace. One key, one home — no duplicated copy to drift.
+  const tCommon = useTranslations("Common");
   return (
     <fieldset className="flex flex-wrap gap-3 border-0 p-0">
       <legend className="sr-only">{t("childPickerLabel")}</legend>
@@ -64,12 +69,12 @@ export function ChildPicker({
                   fall back to a STABLE ordinal label, never a blank line. */}
               <span className="block font-bold text-edu-text-primary text-sm">
                 {child.name ??
-                  t("childOrdinalLabel", { ordinal: child.ordinal })}
+                  tCommon("childOrdinalLabel", { ordinal: child.ordinal })}
               </span>
               <span className="block text-[11px] text-edu-text-secondary">
                 {child.className
                   ? t("classLabel", { className: child.className })
-                  : t("classPending")}
+                  : tCommon("classPending")}
               </span>
             </span>
           </button>

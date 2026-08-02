@@ -1,6 +1,8 @@
 {
   "Common": {
+    "childOrdinalLabel": "Con thứ {ordinal}",
     "childSwitcherLabel": "Chọn con",
+    "classPending": "Chưa có lớp",
     "close": "Đóng",
     "confirmDialog": {
       "cancel": "Huỷ",
@@ -4551,10 +4553,8 @@
   "timetableView": {
     "academicYear": "Năm học",
     "caption": "Thời khoá biểu lớp {className}, chế độ chỉ xem.",
-    "childOrdinalLabel": "Con thứ {ordinal}",
     "childPickerLabel": "Chọn con để xem thời khoá biểu",
     "classLabel": "Lớp {className}",
-    "classPending": "Chưa có lớp",
     "days": {
       "fri": "Thứ 6",
       "mon": "Thứ 2",

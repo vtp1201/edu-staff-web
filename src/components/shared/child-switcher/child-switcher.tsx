@@ -120,11 +120,17 @@ export function ChildSwitcher({
                 {child.avatar}
               </span>
               <span className="flex flex-col">
+                {/* Real mode can hand us a child whose display name IAM could
+                    not resolve — fall back to a STABLE ordinal label, never a
+                    raw memberId (that uuid would become this tab's accessible
+                    name) and never a blank tab. Same degradation as the sibling
+                    `ChildPicker` (US-E18.33 review). */}
                 <span className="font-[800] text-[12.5px] text-foreground leading-tight">
-                  {child.name}
+                  {child.name ??
+                    t("childOrdinalLabel", { ordinal: child.ordinal })}
                 </span>
                 <span className="text-[10.5px] text-edu-text-secondary leading-tight">
-                  {child.className}
+                  {child.className || t("classPending")}
                 </span>
               </span>
             </button>

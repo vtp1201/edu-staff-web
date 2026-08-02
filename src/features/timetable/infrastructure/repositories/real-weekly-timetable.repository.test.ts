@@ -413,6 +413,75 @@ describe("RealWeeklyTimetableRepository — getChildren (linked-students)", () =
     });
     expect(http.get).not.toHaveBeenCalled();
   });
+
+  // ── US-E18.33: display names via IAM's tiered batch lookup (ADR-0120) ──
+
+  it("resolves display names for EXACTLY the linked ids and renders them instead of the ordinal fallback", async () => {
+    const http = makeHttp({ get: vi.fn(async () => LINKS) });
+    const resolveNames = vi.fn(
+      async () =>
+        new Map([
+          ["stu-a", "Nguyễn Minh Khoa"],
+          ["stu-b", "Nguyễn Thu Hà"],
+        ]),
+    );
+    const repo = new RealWeeklyTimetableRepository(
+      http,
+      resolveTermId,
+      "me",
+      resolveNames,
+    );
+
+    const children = await repo.getChildren();
+
+    // Scoped: only the ids the parent's OWN link list produced, in stable order.
+    expect(resolveNames).toHaveBeenCalledTimes(1);
+    expect(resolveNames).toHaveBeenCalledWith(["stu-a", "stu-b"]);
+    expect(children.map((c) => c.name)).toEqual([
+      "Nguyễn Minh Khoa",
+      "Nguyễn Thu Hà",
+    ]);
+    expect(children.map((c) => c.avatar)).toEqual(["NK", "NH"]);
+  });
+
+  it("keeps the ordinal fallback reachable when the name lookup fails — the roster still renders", async () => {
+    const http = makeHttp({ get: vi.fn(async () => LINKS) });
+    const repo = new RealWeeklyTimetableRepository(
+      http,
+      resolveTermId,
+      "me",
+      async () => {
+        throw new Error("iam down");
+      },
+    );
+
+    const children = await repo.getChildren();
+    expect(children.map((c) => c.name)).toEqual([undefined, undefined]);
+    expect(children.map((c) => c.avatar)).toEqual(["1", "2"]);
+  });
+
+  it("skips the name lookup entirely for an empty roster", async () => {
+    const resolveNames = vi.fn(async () => new Map<string, string>());
+    const http = makeHttp({ get: vi.fn(async () => ({ links: [] })) });
+    const repo = new RealWeeklyTimetableRepository(
+      http,
+      resolveTermId,
+      "me",
+      resolveNames,
+    );
+
+    expect(await repo.getChildren()).toEqual([]);
+    expect(resolveNames).not.toHaveBeenCalled();
+  });
+
+  it("stays constructible without a resolver (wire-level tests) — ordinal fallback, no crash", async () => {
+    const http = makeHttp({ get: vi.fn(async () => LINKS) });
+    const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
+    expect((await repo.getChildren()).map((c) => c.name)).toEqual([
+      undefined,
+      undefined,
+    ]);
+  });
 });
 
 describe("HybridWeeklyTimetableRepository", () => {

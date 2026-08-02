@@ -84,6 +84,21 @@ export class RealWeeklyTimetableRepository
     private readonly http: AxiosInstance,
     private readonly resolveTermId: TermIdResolver,
     private readonly currentUserId: string | null,
+    /**
+     * `memberId → displayName` resolver for the parent's children
+     * (US-E18.33), injected by `bootstrap/di/timetable-view.di.ts` from
+     * `iam-directory`'s `BatchResolveMembersUseCase` — the app's single
+     * batch-lookup client. Cross-feature composition belongs in
+     * `bootstrap/di`, never inside a feature's own layers (decision 0017).
+     *
+     * OPTIONAL so the ~30 existing wire-level tests can keep constructing this
+     * repository with three arguments. Absent = every child keeps the ordinal
+     * fallback, i.e. exactly the pre-US-E18.33 behaviour — a degraded display,
+     * never an error.
+     */
+    private readonly resolveChildNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
   ) {}
 
   async getByClass(
@@ -205,19 +220,43 @@ export class RealWeeklyTimetableRepository
    * show" (which the view collapses to its empty state), not a distinguishable
    * permission error. An unidentifiable caller degrades the same way, without
    * touching the network.
+   *
+   * US-E18.33: display NAMES are then resolved in ONE secondary batch call
+   * (IAM's tiered `GET /members?ids=`, ADR-0120) scoped to EXACTLY the ids this
+   * roster returned. That call is best-effort — it never fails the roster; the
+   * picker's ordinal label covers whatever it cannot resolve.
    */
   async getChildren(): Promise<TimetableChild[]> {
     if (!this.currentUserId) throw { type: "no-child" } as TimetableViewFailure;
+    let links: LinkedStudentsResponseDto["links"];
     try {
       const dto = (await this.http.get(
         TIMETABLE_VIEW_EP.linkedStudents(this.currentUserId),
       )) as unknown as LinkedStudentsResponseDto;
-      return toTimetableChildren(dto?.links ?? []);
+      links = dto?.links ?? [];
     } catch (err) {
       if (errorCodeOf(err) === "PARENTLINK_FORBIDDEN") {
         throw { type: "no-child" } as TimetableViewFailure;
       }
       throw { type: "network-error" } as TimetableViewFailure;
+    }
+    return toTimetableChildren(links, await this.tryResolveChildNames(links));
+  }
+
+  /** Secondary, best-effort display-name read — never throws (see
+   *  {@link getChildren}). Sends ONLY the ids the parent's own link list
+   *  produced; this lookup is decoration, never an existence oracle. */
+  private async tryResolveChildNames(
+    links: LinkedStudentsResponseDto["links"],
+  ): Promise<Map<string, string>> {
+    const ids = [...links]
+      .sort((a, b) => a.linkId.localeCompare(b.linkId))
+      .map((l) => l.studentMemberId);
+    if (!this.resolveChildNames || ids.length === 0) return new Map();
+    try {
+      return await this.resolveChildNames(ids);
+    } catch {
+      return new Map();
     }
   }
 
