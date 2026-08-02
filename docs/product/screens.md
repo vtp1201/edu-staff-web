@@ -132,7 +132,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
-| Children overview | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
+| Children overview (dashboard home) | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
+| My Children (index, card-per-child) | `(app)/parent/children` | `features/parent` (+ new shared `components/shared/child-identity-header/`) | ✅ US-E20.4 (was a dead sidebar link — only the `[studentId]/academic-record` deep link existed, no index; reuses `parent-links`' real `LinkedStudentSummary`) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | ✅ US-E13.6/E13.7 (child-list mock — grades.di) |
 | Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | ✅ US-E14.5 (`academic-record-view.jsx` 1506; route `parent/children/[studentId]/academic-record` live, commit 2313d26) |
 | **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
