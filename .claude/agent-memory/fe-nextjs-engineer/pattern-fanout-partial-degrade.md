@@ -22,6 +22,23 @@ composed use-case's `.execute()` always resolves a Result (never rejects), use
 `Promise.all` + filter — `Promise.allSettled` is ceremony for an unreachable
 rejection path.
 
+**The aggregate has THREE states, not two.** `failedClassCount > 0 && rows.length
+=== 0` (every sub-fetch failed) is NOT the empty state — rendering "you have no
+X assigned" there is factually wrong copy and hides the retry. Branch on it
+FIRST, render a retryable `ListError` with its own i18n keys, and suppress the
+partial-degrade notice (the error card already says it). Same shape applies to
+the visible-vs-announced count: if the sr-only live region announces the
+FILTERED count, the visible header must too (`{count} / {total}`), or sighted
+and screen-reader users read different numbers off the same table.
+
+Canonical pager now exists: `components/shared/list-pagination` (promoted from
+the two teacher roster screens). Pre-translated `navLabel`/`prevLabel`/
+`nextLabel` + a `formatShowing({from,to,total})` callback — a function, not a
+string, so the from/to arithmetic (the real duplication) lives in the component
+while the ICU message stays at the caller. `t("showing", range)` does NOT
+typecheck against next-intl's `Record<string, …>` values param; destructure and
+rebuild the object literal.
+
 Two adjacent gotchas confirmed here:
 - A row name rendered as a bare text node next to an avatar/icon span inside the
   same `<a>` is NOT findable by `getByText(name)` (the matcher works on elements;
