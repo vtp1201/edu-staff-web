@@ -395,6 +395,29 @@ before reading for style.
   today, but `map` passes `(el, index, array)`, so the day anyone re-adds an optional 2nd param
   the row index is silently bound to it. Ask for `.map((d) => Mapper.toX(d))`. CONSIDER-level.
   (US-E18.30 `class-management.repository.ts`, `principal-teachers.repository.ts`.)
+- **"No mapping exists, this needs a design decision" for a BE role enum — CHECK `role-meta.ts` FIRST**
+  (US-E18.31). `src/features/auth/domain/entities/role-meta.ts` `ROLE_ENUM_TO_APP` is the CANONICAL
+  IAM-enum→appRole map and already decides `ADMIN→principal`, `MANAGER→principal`, `STAFF→teacher`,
+  TEACHER/STUDENT/PARENT; `decodeRoleClaim` (`bootstrap/lib/jwt.ts:20-23`) uses it via `appRoleOf()`.
+  Engineers wiring a newly-denormalized `authorRole`/`ownerRole` field write a fresh local `switch`
+  that returns `null` for ADMIN/MANAGER/STAFF and escalate it as a product question. Effect is a
+  silently badge-less row for the MOST common author (BE gates SCHOOL-scope posts to ADMIN only), so
+  the "shows a role badge in real mode" AC is unmet. Note `appRoleOf` can return `"admin"`, which is
+  usually not in the feature's display union → narrow it. Also a decision-0026 duplication (feed had
+  THREE role maps: role-meta, `feed/page.tsx:21-33` for the viewer, the new mapper one).
+- **"Harmless today because the app ships `NEXT_PUBLIC_USE_MOCK=true`" is ALWAYS FALSE** (US-E18.31).
+  `USE_MOCK = env === "true"` (`bootstrap/lib/mock.ts:9`) → **unset = real**; `next.config.ts:21-24`
+  THROWS on a deploy build with mock=true, so production is *required* to run the non-mock branch; and
+  the repo's `.env.local` is `NEXT_PUBLIC_USE_MOCK=false` (E18 stories build/verify in real mode). Any
+  risk an engineer defers on that premise is live in prod. Concretely for a hybrid real-reads/mock-writes
+  repo: `toast.success` on a mock-backed publish = a school announcement the author believes went out.
+- **Hybrid (real reads + mock writes) leaks into force-mocked SIBLING features on the same screen**
+  (US-E18.31 feed × moderation). Once reads are real, the screen's report/remove actions hand REAL
+  content ids to a still-force-mocked feature: `MockModerationRepository.removeContent` returns
+  `{ok:true}` when `reportId` is absent (feed's ADR-0052 direct-removal path) → fake takedown; a
+  report of real content is silently discarded (safeguarding). Always grep the screen's OTHER
+  Server Actions for factories that are still force-mocked before accepting a read-only un-mock.
+
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.
