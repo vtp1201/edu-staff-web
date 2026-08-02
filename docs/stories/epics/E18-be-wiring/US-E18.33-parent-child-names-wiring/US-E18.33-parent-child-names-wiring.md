@@ -103,9 +103,9 @@ promotions (US-E15.3's `TimetableRole`, US-E20.4's `ChildIdentityHeader`).
 
 | Layer | Expected proof | Actual |
 | --- | --- | --- |
-| Unit | mapper/repository tests for the tiered batch lookup (both grades + timetable consumers) | ✅ `iam-directory.mapper.test.ts` (both tiers, key-absence), `parent-child.mapper.test.ts` (7 new), `linked-student.mapper.test.ts` (+4) |
+| Unit | mapper/repository tests for the tiered batch lookup (both grades + timetable consumers) | ✅ `iam-directory.mapper.test.ts` (both tiers, key-absence), `parent-child.mapper.test.ts` (8 — incl. name-key ABSENCE + stable `ordinal`), `linked-student.mapper.test.ts` (+4) |
 | Integration | repository tests confirming only linked-child ids are requested | ✅ `parent-child-list.repository.test.ts` (9), `real-weekly-timetable.repository.test.ts` (+4), `iam-directory.repository.test.ts` (+1), DI env-matrix `grades-child-list.di.test.ts` (5) + `timetable-view-child-names.di.test.ts` (3), RSC `parent/attendance/page.test.ts` (4) |
-| E2E | Storybook: real-name story alongside the existing ordinal-fallback story for both consumers | ✅ `TimetableView/ParentView_RealMode_ResolvedNames` + `Shared/ChildSwitcher/ParentView_RealMode_ResolvedNames` (both drive the REAL mapper, not fixtures); the ordinal/degraded stories are KEPT and re-documented as defensive |
+| E2E | Storybook: real-name story alongside the existing ordinal-fallback story for both consumers | ✅ `TimetableView/ParentView_RealMode_ResolvedNames` + `Shared/ChildSwitcher/ParentView_RealMode_ResolvedNames` (both drive the REAL mapper, not fixtures); the ordinal/degraded stories are KEPT and re-documented as defensive. Post-review the ChildSwitcher story asserts the DEGRADED tab is named `Con thứ 2`, contains no `st-2` uuid, and reads `Chưa có lớp` |
 | Platform | `bun build` clean both modes | ✅ real (`.env.local`, `USE_MOCK=false`) and `NEXT_PUBLIC_USE_MOCK=true` both compile |
 | Release | design-review gate N/A if zero visual change beyond real text; a11y spot-check the ordinal-fallback path still works | ✅ zero component/markup change; `ParentView_RealMode_NoNameFallback` still asserts the fallback card is operable by keyboard/click |
 
@@ -154,9 +154,53 @@ Registered via `harness-cli story add --id US-E18.33`.
   their 3-arg construction; `toTimetableChildren` takes an optional name map.
 - Both consumers compose the SAME `BatchResolveMembersUseCase` via
   `bootstrap/di` (decision 0017). No second batch-lookup client was created.
-- Both name lookups are best-effort (empty map on failure, never throws);
-  grades degrades a row to its raw memberId, timetable leaves `name` absent so
-  the `"Con thứ N"` ordinal label — explicitly KEPT — covers it.
+- Both name lookups are best-effort (empty map on failure, never throws) and —
+  since the review fix below — degrade IDENTICALLY: `name` stays absent and the
+  presentation renders the `"Con thứ N"` ordinal label.
+
+### Review fixes (2026-08-02, post tech-lead `Revision Required` + a11y `PASS`)
+
+1. **Dead endpoint constant removed.** `GRADES_EP.childList`
+   (`/core/api/v1/parent/children`) is gone. Its retained-for-the-mock-repo
+   justification was false: `grep -rn "GRADES_EP.childList" src/` returned zero
+   hits — no mock repository ever referenced it (re-confirmed before deleting).
+2. **Stale comment corrected.**
+   `app/[locale]/t/[tenant]/(app)/parent/grades/page.tsx` claimed the
+   child-switcher "stays permanently mock (ADR 0054, no display-name source)".
+   Both clauses are now false. Replaced with an accurate note + an explicit
+   `TODO` for the out-of-scope hardcode. The `MOCK_CHILD_ID` hardcode itself is
+   PRE-EXISTING (this page's grade read was already `USE_MOCK ? Mock : Real`
+   via a different data path than the child-switcher) — not a regression from
+   this story, so it is left for follow-up #1 below.
+3. **The two sibling child-pickers now degrade CONSISTENTLY.** They were
+   diverging in exactly the two places a real-mode parent will hit:
+   - `parent-child.mapper.ts` did `name: resolved ?? link.studentMemberId`,
+     rendering a raw UUID as if it were the child's name — and because the tab
+     label IS the accessible name, a screen reader would announce the random
+     string. It now omits `name` (conditional spread, no `name: undefined`),
+     exactly like `linked-student.mapper.ts`.
+   - `child-switcher.tsx` rendered `{child.className}` unconditionally → a
+     BLANK second line for a child with no enrollment. Now
+     `child.className || t("classPending")` → "Chưa có lớp", like
+     `child-picker.tsx`.
+   - `ChildSwitcherChild.name` widened to optional and `ordinal: number` added
+     (1-based, from the same stable `linkId`-ascending sort as timetable's), so
+     the component can render `child.name ?? t("childOrdinalLabel", {ordinal})`.
+     `ChildSummary` mirrors it. tsc flagged all 6 literal producers; each got a
+     real ordinal. The mapper stays translation-free (i18n.md) — the fallback
+     COPY lives in presentation.
+   - i18n: `childOrdinalLabel` + `classPending` HOISTED from `timetableView` to
+     `Common` (vi + en) rather than duplicated. `ChildSwitcher` already borrows
+     `Common.childSwitcherLabel` for the same reason (a `components/shared/`
+     component cannot own a feature namespace); `child-picker.tsx` now reads
+     those two keys from `Common` and its other two from `timetableView`.
+4. **[CONSIDER] doc wording** — `batch-resolve-members.use-case.ts` no longer
+   says it resolves "names/emails"; `email` is staff-tier only (ADR-0120).
+
+The degraded-rendering story is a genuine proof, not a tautology: reverting
+`child-switcher.tsx` to `{child.name ?? child.childId}` + `{child.className}`
+makes `ParentView_RealMode_ResolvedNames` FAIL (verified), and restoring the fix
+makes it pass.
 
 ### Zero regression to the existing staff-tier caller
 
@@ -176,15 +220,27 @@ tests across `iam-directory` + the three consumers).
 | `bun run build` (`.env.local`, `NEXT_PUBLIC_USE_MOCK=false`) | compiled successfully |
 | `NEXT_PUBLIC_USE_MOCK=true bun run build` | compiled successfully |
 
+Re-run after the review fixes (2026-08-02):
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` / `bun lint:fix` | clean (same 1 pre-existing warning + 1 info in `message-context-menu.tsx`, untouched) |
+| `bun vitest run` | **471 files / 3448 tests passed** (+1 test vs. the pre-review 3447; 4 tests rewritten in `parent-child-list.repository.test.ts` / `parent-child.mapper.test.ts` / `parent/attendance/page.test.ts` to assert name-ABSENCE instead of the raw-id fallback; zero regressions) |
+| `bunx vitest run --config vitest.storybook.mts` | **157 files / 1199 tests passed** |
+| `bun run build` (`.env.local`, `NEXT_PUBLIC_USE_MOCK=false`) | ✓ Compiled successfully |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | ✓ Compiled successfully |
+
 ### Known gaps / follow-ups (NOT done here — out of scope)
 
 1. `app/[locale]/t/[tenant]/(app)/parent/grades/page.tsx` still hardcodes
    `MOCK_CHILD_ID = "child-1"` as the default `childId` and renders no
-   child-switcher. Now that the roster is real, that default 404s/403s in real
-   mode. Small follow-up: default to the first linked child.
-2. `ChildSummary.className` is a REQUIRED string, so a child with no current
-   enrollment renders an empty caption line (the shared `ChildSwitcher` has no
-   "chưa có lớp" fallback, unlike timetable's picker). Kept as-is to honour
-   "zero new UI"; worth a follow-up if the empty line is unacceptable.
+   child-switcher. PRE-EXISTING (that page's grade read went real in US-E18.12,
+   on a different data path than the switcher), so not a regression here — but
+   now that the roster is real the follow-up is obvious: default to the first
+   linked child from `makeGetChildListUseCase()`. A `TODO` marks the spot.
+2. ~~`ChildSwitcher` has no "chưa có lớp" fallback~~ — **CLOSED by the review
+   fix**: it now renders `Common.classPending`, and an unresolved name renders
+   `Common.childOrdinalLabel`, matching timetable's picker exactly.
 3. `parent-links` (US-E20.2/E20.4) is still entirely mock-first — its
    `fullName` is seed data, not real. Un-mocking it is a separate story.
