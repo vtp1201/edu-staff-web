@@ -14,7 +14,12 @@ import { SubjectLegend } from "./subject-legend";
 import { TeacherPicker } from "./teacher-picker";
 import { TimetableGrid } from "./timetable-grid";
 import { TimetableSkeleton } from "./timetable-skeleton";
-import { hasAnySlot, subjectsUsed, toDataState } from "./timetable-view.derive";
+import {
+  hasAnySlot,
+  resolveRetryTarget,
+  subjectsUsed,
+  toDataState,
+} from "./timetable-view.derive";
 import type {
   TimetableDataState,
   TimetableErrorKey,
@@ -31,6 +36,7 @@ const ERROR_KEYS: Record<
   forbidden: "errors.forbidden",
   "not-found": "errors.unknown",
   "no-child": "errors.unknown",
+  unknown: "errors.unknown",
 };
 
 export function TimetableView({
@@ -120,10 +126,15 @@ export function TimetableView({
   );
 
   const onRetry = useCallback(() => {
-    if (viewerRole === "parent" && fetchChildTimetable)
-      runChildFetch(selectedChildId);
-    else if (viewerRole === "principal" && fetchMemberTimetable)
-      runTeacherFetch(selectedTeacherId);
+    const target = resolveRetryTarget({
+      viewerRole,
+      selectedChildId,
+      selectedTeacherId,
+      canFetchChild: Boolean(fetchChildTimetable),
+      canFetchMember: Boolean(fetchMemberTimetable),
+    });
+    if (target === "child") runChildFetch(selectedChildId);
+    else if (target === "teacher") runTeacherFetch(selectedTeacherId);
     else router.refresh();
   }, [
     viewerRole,

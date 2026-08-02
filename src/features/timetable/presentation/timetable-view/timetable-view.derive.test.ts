@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { WeeklyTimetable } from "@/features/timetable/domain/entities/weekly-timetable.entity";
-import { hasAnySlot, subjectsUsed, toDataState } from "./timetable-view.derive";
+import {
+  hasAnySlot,
+  resolveRetryTarget,
+  subjectsUsed,
+  toDataState,
+} from "./timetable-view.derive";
 
 const TT: WeeklyTimetable = {
   classId: "11A2",
@@ -79,5 +84,61 @@ describe("hasAnySlot", () => {
     expect(
       hasAnySlot({ classId: "x", className: "x", slots: { 0: { 1: null } } }),
     ).toBe(false);
+  });
+});
+
+/*
+ * US-E15.3 fix round. When the ROSTER call fails (parent's children / principal's
+ * teachers), the page seeds `{status:"error"}` with an EMPTY list, so there is no
+ * selected member id at all. Retrying the member-scoped fetch with `""` can never
+ * recover the roster failure that actually happened — the retry has to re-run the
+ * RSC (`router.refresh()`). Applies to both role paths.
+ */
+describe("resolveRetryTarget", () => {
+  const base = {
+    canFetchChild: true,
+    canFetchMember: true,
+    selectedChildId: "c1",
+    selectedTeacherId: "t-001",
+  };
+
+  it("re-fetches the selected child for a parent", () => {
+    expect(resolveRetryTarget({ ...base, viewerRole: "parent" })).toBe("child");
+  });
+
+  it("re-fetches the selected teacher for a principal", () => {
+    expect(resolveRetryTarget({ ...base, viewerRole: "principal" })).toBe(
+      "teacher",
+    );
+  });
+
+  it("refreshes the route when the roster failed (no id to retry with)", () => {
+    expect(
+      resolveRetryTarget({
+        ...base,
+        viewerRole: "parent",
+        selectedChildId: "",
+      }),
+    ).toBe("refresh");
+    expect(
+      resolveRetryTarget({
+        ...base,
+        viewerRole: "principal",
+        selectedTeacherId: "",
+      }),
+    ).toBe("refresh");
+  });
+
+  it("refreshes when the role has no fetch action wired (student, or omitted prop)", () => {
+    expect(resolveRetryTarget({ ...base, viewerRole: "student" })).toBe(
+      "refresh",
+    );
+    expect(
+      resolveRetryTarget({
+        ...base,
+        viewerRole: "principal",
+        canFetchMember: false,
+      }),
+    ).toBe("refresh");
   });
 });

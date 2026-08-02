@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
@@ -403,5 +404,73 @@ export const PrincipalView_ErrorRetry: Story = {
       expect(args.fetchMemberTimetable).toHaveBeenCalledWith("t1"),
     );
     await waitFor(() => expect(canvas.getByRole("table")).toBeInTheDocument());
+  },
+};
+
+/**
+ * Fix round — retry gating. When the ROSTER call fails the page seeds the error
+ * state with an EMPTY teacher list, so there is no id to re-fetch with:
+ * `fetchMemberTimetable("")` could never recover it. Retry must re-run the RSC.
+ */
+export const PrincipalView_RosterErrorRetry: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "error", errorKey: "forbidden" },
+    teacherList: [],
+    fetchMemberTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({
+        ok: true,
+        data: TT_TEACHER,
+      }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    expect(
+      within(alert).getByText("Bạn không có quyền xem thời khoá biểu này."),
+    ).toBeVisible();
+
+    await userEvent.click(
+      within(alert).getByRole("button", { name: "Thử lại" }),
+    );
+
+    await waitFor(() => expect(getRouter().refresh).toHaveBeenCalled());
+    expect(args.fetchMemberTimetable).not.toHaveBeenCalled();
+  },
+};
+
+/**
+ * A11Y-001 — a `disabled` element cannot hold focus. While the switch is
+ * pending, the card the user just activated stays ENABLED (keeps focus); only
+ * the other cards go inert.
+ */
+export const PrincipalView_PendingKeepsFocus: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "success", timetable: TT_TEACHER },
+    teacherList: TEACHERS,
+    initialTeacherId: "t1",
+    fetchMemberTimetable: fn(
+      () =>
+        new Promise<TimetableActionResult>((resolve) => {
+          setTimeout(() => resolve({ ok: true, data: TT_8B1 }), 400);
+        }),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const first = canvas.getByRole("button", { name: /Nguyễn Thị Hương/ });
+    const second = canvas.getByRole("button", { name: /Trần Văn Minh/ });
+
+    second.focus();
+    await userEvent.keyboard("{Enter}");
+
+    // Mid-fetch: the just-activated card is still enabled AND still focused.
+    await waitFor(() => expect(first).toBeDisabled());
+    expect(second).toBeEnabled();
+    expect(second).toHaveFocus();
+
+    await waitFor(() => expect(first).toBeEnabled(), { timeout: 3000 });
   },
 };
