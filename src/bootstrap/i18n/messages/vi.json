@@ -4236,6 +4236,42 @@
     },
     "students": "học sinh"
   },
+  "teacherStudentsRoster": {
+    "classFilterAll": "Tất cả lớp",
+    "classFilterLabel": "Lớp",
+    "columns": {
+      "class": "Lớp",
+      "name": "Học sinh",
+      "status": "Trạng thái"
+    },
+    "empty": "Bạn chưa được phân công lớp nào.",
+    "emptyBody": "Khi bạn được phân công lớp, học sinh của lớp sẽ hiển thị ở đây.",
+    "errorRetryAction": "Thử lại",
+    "errors": {
+      "network-error": "Lỗi kết nối, vui lòng kiểm tra mạng.",
+      "not-found": "Không tìm thấy danh sách học sinh.",
+      "unauthorized": "Bạn không có quyền xem thông tin này.",
+      "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
+    },
+    "filteredCount": "Tìm thấy {count} học sinh",
+    "loadingLabel": "Đang tải danh sách học sinh",
+    "nextPage": "Trang sau",
+    "noSearchResults": "Không tìm thấy học sinh phù hợp.",
+    "pageTitle": "Học sinh của tôi",
+    "paginationNav": "Phân trang danh sách học sinh",
+    "partialFailureNotice": "Không tải được danh sách học sinh của {count} lớp. Danh sách bên dưới có thể chưa đầy đủ.",
+    "prevPage": "Trang trước",
+    "resultCount": "{count} học sinh",
+    "rowLinkLabel": "Xem học bạ của {name}",
+    "searchLabel": "Tìm học sinh",
+    "searchPlaceholder": "Tìm theo tên học sinh...",
+    "showing": "Hiển thị {from}–{to} trên {total}",
+    "status": {
+      "active": "Đang học",
+      "transferred": "Đã chuyển"
+    },
+    "studentListSection": "Danh sách học sinh"
+  },
   "teacherDashboard": {
     "notifications": {
       "title": "Thông báo"
