@@ -257,6 +257,15 @@ Confirmed facts (verify before citing if stale):
   lucide icon components as values but those are isomorphic, so it's safe to import from a server
   module. Still a layer-direction smell (bootstrap→components); the clean fix is to move shared
   routing constants (`DEFAULT_ROUTE`, `Role`) to `bootstrap/tenant` or a domain location.
+- **STALE-FIXED: BE now grants MANAGER read on `GET /api/v1/classes`** (ground-truthed 2026-08-02,
+  US-E13.10). `edu-api/services/core/internal/class/core/application/usecase/list_classes.go:17-21,42`
+  declares `const roleManager = "MANAGER"` and branches
+  `if isAdmin(...) || hasRole(in.ActorRoles, roleManager)` (BE US-164), with an explicit comment that
+  MANAGER is deliberately NOT folded into the shared `isAdmin` helper because that helper also gates
+  14 class WRITE use cases. So principal = read-yes / write-no at the BE. Consequence: the next entry's
+  claim that MANAGER hard-403s on `GET /classes` is OBSOLETE — `principal-classes.di.ts`'s
+  unconditional force-mock and cross-repo ask #39 are now closable follow-ups. Re-verify this Go file
+  before citing either way.
 - **Force-mock DI now also happens OUTSIDE E18** (US-E13.8 `bootstrap/di/principal-classes.di.ts`):
   a principal-scoped facade over admin's `IClassManagementRepository` that returns
   `new MockClassManagementRepository()` unconditionally, because `core`'s `ListClassesUseCase.Execute`
@@ -418,3 +427,27 @@ Confirmed facts (verify before citing if stale):
   ACROSS the dimension that partitions the query key (resend: `expired` → `pending` with `status` in
   the key), the correct target is `keys.lists(tenantId)`, not a `setQueryData` row patch. Watch for a
   "surgical patch" creeping back in against a state-architecture doc that overrode it.
+- **`readOnly?: boolean` in-place variant = the CORRECT decision-0026 answer for a second, capability-
+  reduced caller of an existing table/list** (US-E13.10 `roster-table.tsx`, principal reusing admin's
+  `RosterTable`). The shape I accepted: every mutation affordance wrapped in `{!readOnly && …}` so it is
+  OMITTED from the DOM (never merely `disabled`), `colSpan` bookkeeping adjusted in BOTH branches
+  (8 → 6), `readOnly = false` default so the existing caller is byte-identical, and a test asserting
+  BOTH polarities (readOnly omits / default keeps all four affordances). A fork would have been the
+  violation. Residual weakness to flag but not block: the engineer also made the two callbacks
+  OPTIONAL (`onRequestUnenrollOne?`) + `?.()`, so a future non-readOnly caller that forgets them
+  compiles and silently no-ops. The stronger shape is a discriminated union
+  (`{readOnly:true} | {readOnly?:false; onRequestUnenrollOne:…; onRequestUnenrollMany:…}`).
+- **A 2nd screen in the SAME feature reusing screen-local components has no repo precedent** — there is
+  NO `src/features/*/presentation/components/` anywhere. So a new sibling screen imports across screen
+  folders (`../student-roster-screen/components/roster-table`). That is REUSE, not duplication, so
+  decision 0026's cardinal rule is satisfied; but the canonical home becomes misleading (a component
+  serving 2 screens living inside one of them). `components/shared/` is explicitly the CROSS-FEATURE
+  home, so it is not the right target either. Treat as SHOULD FIX (promote to a feature-level
+  `presentation/components/`), never blocking.
+- **`admin/roster/actions.ts` has FOUR completely unguarded mutation Server Actions** (`enrollAction`,
+  `unenrollAction`, `unenrollManyAction`, `transferAction` — each `makeRosterRepository()` → repo call,
+  zero `requireRole`, no `authCtx`). Only the `/admin` layout RSC guard stands, which does NOT cover
+  Server Actions (they are independently invocable POST endpoints keyed by build-time action id).
+  Pre-existing debt — do not block a scoped story on it — but re-raise it on any story that widens
+  roster exposure to another role. `IRosterRepository` also takes no `authCtx`, so ADR 0063's
+  repository-boundary seam is entirely absent from this feature.
