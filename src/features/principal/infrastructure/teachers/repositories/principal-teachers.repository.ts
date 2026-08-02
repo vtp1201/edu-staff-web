@@ -74,7 +74,7 @@ export class PrincipalTeachersRepository
       // for free from the shared mapper — no fan-out needed (US-E18.30).
       // `CLASS_EP.principalTeachers` (listTeachers above) still has no BE
       // endpoint — that gap is unrelated and stays open.
-      return ok(data.map(ClassManagementMapper.toClass));
+      return ok(data.map((dto) => ClassManagementMapper.toClass(dto)));
     } catch (err) {
       return fail(toFailure(err));
     }

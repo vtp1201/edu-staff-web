@@ -148,7 +148,7 @@ export class ClassManagementRepository implements IClassManagementRepository {
       // enriched server-side on this endpoint (BE US-173), replacing the old
       // 2×N per-row roster+homeroom fan-out (US-E18.30).
       return ok({
-        data: filtered.map(ClassManagementMapper.toClass),
+        data: filtered.map((dto) => ClassManagementMapper.toClass(dto)),
         nextCursor: pagination?.nextCursor ?? null,
         hasMore: pagination?.hasMore ?? false,
       });
