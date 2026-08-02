@@ -33,7 +33,12 @@ export function ChildPicker({
             key={child.childId}
             type="button"
             aria-pressed={active}
-            disabled={disabled}
+            // A11Y-001: only the OTHER cards go inert while the fetch runs.
+            // A `disabled` element cannot hold focus, so disabling the card the
+            // user just activated with the keyboard would yank focus to
+            // `<body>` mid-interaction. The active card stays enabled (and
+            // `onSelectChild` no-ops on the already-selected id).
+            disabled={disabled && !active}
             onClick={() => onSelect(child.childId)}
             className={cn(
               "flex min-h-11 min-w-[240px] items-center gap-2.5 rounded-lg border-2 px-4 py-3 text-left",
