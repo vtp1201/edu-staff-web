@@ -71,7 +71,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Question Bank + Builder | `(app)/teacher/question-bank`,`/question-bank/create`,`/question-bank/:id/edit` | `features/question-bank` (proposed) | ✅ US-E11.9 (DR-021; mock-first — wiring = US-E18.16 reopen, core `/lms/questions` đã có) |
 | Teaching Plan / PPCT | `(app)/teacher/teaching-plan` | `features/teaching-plan` | ✅ US-E11.4 (BE force-mock — US-E18.9 contract block) |
 | Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | ✅ US-E15.2 (`timetable-view.jsx` edustaff_5) |
-| Classes / Students | `(app)/teacher/classes`,`/students` | `features/teacher` | ✅ US-E13.1 |
+| Classes / Class roster | `(app)/teacher/classes`,`/classes/:classId/students` | `features/teacher` | ✅ US-E13.1 |
+| Students (cross-class roster index) | `(app)/teacher/students` | `features/teacher` | ✅ US-E13.9 (was a dead sidebar link — only `/students/:studentId/academic-record` existed, no index; aggregates every class via `list-my-students.use-case.ts`) |
 
 ## Principal / Admin (E03, E09, E10, E11, E12 Admin Core, E14 Academic Records)
 
