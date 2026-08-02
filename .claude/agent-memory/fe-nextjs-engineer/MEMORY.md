@@ -1,5 +1,7 @@
 # Memory Index
 
+- [Promote-on-3rd-use shared component](pattern-promote-shared-identity-header.md) — E20.4: extract the inline pattern NOW (variance as tone/size/initials props + one story per pre-existing call-site shape), don't defer; screen over an already-real use-case = zero new domain/infra/DI but its OWN thin route action; next-intl Link in Storybook renders the `/vi` prefix (tenantUrl is locale-relative); baseline 453/3259 vitest, 156/1170 SB
+
 - [Read-only second caller](pattern-readonly-variant-second-caller.md) — E13.10: `readOnly` prop on the leaf table + NEW thin screen (not a boolean on the mutation screen); renderToStaticMarkup omission proof (`colSpan="8"` camelCase); AppShell already owns `<main>`; verify role gating in the Go use case (`list_classes.go` grants MANAGER); RSC page unit-tested via awaited element props
 
 - [Fan-out partial degrade](pattern-fanout-partial-degrade.md) — E13.9: aggregate `{rows, failedClassCount}` + role=status notice (silent degrade = defect); Promise.all not allSettled when execute() never rejects; getByText misses a bare text node sharing an `<a>` with an icon span; don't copy older siblings' hand-rolled list states; all-sub-fetches-failed ≠ empty (own retryable branch); shared `list-pagination` w/ formatShowing callback
