@@ -42,18 +42,22 @@ function weekdayIndex(isoDate: string): number {
 /**
  * A 10-school-day cycle containing every status at least once, so any range of
  * ≥10 school days (i.e. any calendar month) exercises all four badges.
+ *
+ * UPPER_SNAKE because this builds a WIRE dto (US-E18.34): the mock deliberately
+ * goes through the same DTO → mapper path as the real repository, so it must
+ * speak the wire vocabulary or it would silently stop exercising the mapper.
  */
 const STATUS_CYCLE = [
-  "present",
-  "present",
-  "late",
-  "present",
-  "present",
-  "excusedAbsent",
-  "present",
-  "present",
-  "absent",
-  "present",
+  "PRESENT",
+  "PRESENT",
+  "LATE",
+  "PRESENT",
+  "PRESENT",
+  "EXCUSED_ABSENT",
+  "PRESENT",
+  "PRESENT",
+  "ABSENT",
+  "PRESENT",
 ] as const;
 
 /** Stable per-child offset so two children never show identical histories. */
