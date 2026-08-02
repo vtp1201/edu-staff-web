@@ -35,6 +35,29 @@ list (row click carrying `status`+`filedAt` in the navigation, e.g. via a
 Sheet/Dialog or a route with those as required query params, never a
 standalone path param alone).
 
+**IMPORTANT — `src/bootstrap/di/moderation.di.ts` already has a detailed,
+numbered enumeration of 5 blocking gaps from a prior investigation
+(US-E18.20) — read it FIRST before implementing.** It matches this US almost
+exactly: gap #1 (no filters/stats) and gap #2 (no detail endpoint) and gap #3
+(no COMMENT target) are what US-172 claims to close. Gap #4 (audit trail is a
+DIFFERENT concept — real `GET /rooms/{roomId}/moderation-audit`, US-086, is a
+room role/mute/capability-change audit, NOT this feature's dismiss/remove
+content-moderation trail) is **NOT addressed by US-172** — re-confirm this
+gap is genuinely still open before assuming the audit-log tab can be wired;
+if it's still open, that tab stays mocked (partial/hybrid wiring, matching
+this epic's established precedent, same shape as US-E18.31's feed decision).
+Gap #5 (`dismissReport(reportId)` has no CAS key parameter, but real
+`ResolveReportRequest` requires the echoed-back `filedAt`) — ground-truth
+whether `resolve`/`dismiss` ALSO now need the same `filedAt`+`status`
+partition-locating convention as the new detail endpoint (this packet's own
+`## Design Notes` flags this as "likely the same convention" but it needs
+re-confirming against the CURRENT openapi, not assumed).
+
+Also ground-truth: is `removeContent` for a COMMENT target now real (US-172
+mentions `ResolveReport`'s DELETE outcome on a COMMENT target invoking the
+same audit event) — if so, the previous "comment moderate-delete fails fast"
+gap may ALSO be closing here, beyond just "COMMENT reportable."
+
 ## Relevant Product Docs
 
 - `docs/product/screens.md` — Moderation row (US-E19.2)
