@@ -93,6 +93,8 @@ export const WithStudents: Story = {
     await expect(
       c.getByRole("heading", { name: copy.pageTitle }),
     ).toBeInTheDocument();
+    // Unfiltered: the header shows the plain total.
+    await expect(c.getByText("12 học sinh")).toBeInTheDocument();
     // 12 rows → page 1 shows 10.
     await expect(c.getByText("Nguyễn Văn Học Sinh 1")).toBeInTheDocument();
     await expect(
@@ -115,6 +117,28 @@ export const PartialFailure: Story = {
   },
 };
 
+/**
+ * EVERY class roster failed while the class list itself resolved. `rows` is
+ * empty, but "you have no classes assigned" would be factually wrong — the
+ * screen must say the rosters failed and offer a retry.
+ */
+export const AllClassRostersFailed: Story = {
+  args: { vm: { ...base, rows: [], failedClassCount: 3 } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const alert = c.getByRole("alert");
+    await expect(alert).toHaveTextContent(copy.emptyAllFailed);
+    await expect(alert).toHaveTextContent("3");
+    // The misleading "no classes assigned" copy must NOT appear.
+    await expect(c.queryByText(copy.empty)).not.toBeInTheDocument();
+    await expect(
+      c.getByRole("button", { name: copy.errorRetryAction }),
+    ).toBeVisible();
+    // The partial-degrade notice is redundant here — the error card says it.
+    await expect(c.queryByRole("status")).not.toBeInTheDocument();
+  },
+};
+
 export const SearchFilter: Story = {
   args: { vm: base },
   play: async ({ canvasElement }) => {
@@ -128,6 +152,10 @@ export const SearchFilter: Story = {
     ).not.toBeInTheDocument();
     // Filtered count is announced to screen readers.
     await expect(c.getByText("Tìm thấy 1 học sinh")).toBeInTheDocument();
+    // …and the VISIBLE header count matches what the table shows (filtered /
+    // total), instead of the misleading unfiltered total.
+    await expect(c.getByText("1 / 12 học sinh")).toBeInTheDocument();
+    await expect(c.queryByText("12 học sinh")).not.toBeInTheDocument();
   },
 };
 

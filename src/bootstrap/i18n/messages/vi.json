@@ -4245,6 +4245,8 @@
       "status": "Trạng thái"
     },
     "empty": "Bạn chưa được phân công lớp nào.",
+    "emptyAllFailed": "Không tải được danh sách học sinh.",
+    "emptyAllFailedBody": "Danh sách học sinh của cả {count} lớp đều không tải được. Vui lòng thử lại.",
     "emptyBody": "Khi bạn được phân công lớp, học sinh của lớp sẽ hiển thị ở đây.",
     "errorRetryAction": "Thử lại",
     "errors": {
@@ -4262,6 +4264,7 @@
     "partialFailureNotice": "Không tải được danh sách học sinh của {count} lớp. Danh sách bên dưới có thể chưa đầy đủ.",
     "prevPage": "Trang trước",
     "resultCount": "{count} học sinh",
+    "resultCountFiltered": "{count} / {total} học sinh",
     "rowLinkLabel": "Xem học bạ của {name}",
     "searchLabel": "Tìm học sinh",
     "searchPlaceholder": "Tìm theo tên học sinh...",

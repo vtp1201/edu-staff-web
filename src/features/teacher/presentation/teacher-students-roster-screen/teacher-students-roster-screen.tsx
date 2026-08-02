@@ -1,17 +1,11 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  Search,
-  Users,
-  UsersRound,
-} from "lucide-react";
+import { Info, Search, Users, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ListError } from "@/components/shared/list-error";
+import { ListPagination } from "@/components/shared/list-pagination";
 import { ListSkeleton } from "@/components/shared/list-skeleton";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/shared/utils";
 import { TeacherStudentsRosterTable } from "./components/teacher-students-roster-table";
 import type { TeacherStudentsRosterScreenVM } from "./teacher-students-roster-screen.i-vm";
 
@@ -64,6 +57,13 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
     safePage * PAGE_SIZE,
   );
   const isFiltering = query.trim().length > 0 || classFilter !== ALL_CLASSES;
+  /**
+   * Every class's roster call failed (the class list itself resolved, so this is
+   * NOT the `status === "error"` path). `rows` is empty for a reason that has
+   * nothing to do with "no classes assigned" — say so instead of the misleading
+   * empty copy.
+   */
+  const allClassesFailed = vm.failedClassCount > 0 && vm.rows.length === 0;
 
   return (
     <div className="space-y-4">
@@ -74,7 +74,15 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
           </h1>
           <p className="mt-0.5 inline-flex items-center gap-1.5 text-edu-text-secondary text-xs">
             <Users aria-hidden="true" className="size-3.5" />
-            {t("resultCount", { count: vm.rows.length })}
+            {/* While filtering, the visible count must match the table the user
+                is looking at (and the sr-only live region) — not the unfiltered
+                total. `resultCountFiltered` keeps the total visible as "N / M". */}
+            {isFiltering
+              ? t("resultCountFiltered", {
+                  count: filtered.length,
+                  total: vm.rows.length,
+                })
+              : t("resultCount", { count: vm.rows.length })}
           </p>
         </div>
 
@@ -141,15 +149,17 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
 
       {/* Partial degrade: some classes resolved, some did not — announce it
           instead of silently showing an incomplete list. */}
-      {vm.status === "ready" && vm.failedClassCount > 0 && (
-        <p
-          className="flex items-start gap-2 rounded-[var(--edu-radius-card)] border border-edu-warning/40 bg-edu-warning-light px-4 py-3 text-edu-warning-foreground text-sm"
-          role="status"
-        >
-          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-          {t("partialFailureNotice", { count: vm.failedClassCount })}
-        </p>
-      )}
+      {vm.status === "ready" &&
+        vm.failedClassCount > 0 &&
+        !allClassesFailed && (
+          <p
+            className="flex items-start gap-2 rounded-[var(--edu-radius-card)] border border-edu-warning/40 bg-edu-warning-light px-4 py-3 text-edu-warning-foreground text-sm"
+            role="status"
+          >
+            <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            {t("partialFailureNotice", { count: vm.failedClassCount })}
+          </p>
+        )}
 
       <div aria-atomic="true" aria-live="polite" className="sr-only">
         {isFiltering ? t("filteredCount", { count: filtered.length }) : null}
@@ -182,7 +192,21 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
           aria-label={t("studentListSection")}
           className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card"
         >
-          {vm.rows.length === 0 ? (
+          {allClassesFailed ? (
+            // Not "no classes assigned" — every class's roster call failed, so
+            // this is a retryable error, not an empty state.
+            <ListError
+              description={t("emptyAllFailedBody", {
+                count: vm.failedClassCount,
+              })}
+              iconSize={10}
+              onRetry={() => window.location.reload()}
+              retryIcon="rotate"
+              retryLabel={t("errorRetryAction")}
+              shape="inline-card"
+              title={t("emptyAllFailed")}
+            />
+          ) : vm.rows.length === 0 ? (
             <EmptyState
               body={t("emptyBody")}
               icon={UsersRound}
@@ -195,11 +219,17 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
           ) : (
             <>
               <TeacherStudentsRosterTable rows={pageRows} />
-              <Pagination
+              <ListPagination
+                formatShowing={({ from, to, total }) =>
+                  t("showing", { from, to, total })
+                }
+                navLabel={t("paginationNav")}
+                nextLabel={t("nextPage")}
                 onPageChange={setPage}
                 page={safePage}
                 pageRowCount={pageRows.length}
                 pageSize={PAGE_SIZE}
+                prevLabel={t("prevPage")}
                 total={filtered.length}
                 totalPages={totalPages}
               />
@@ -208,73 +238,5 @@ export function TeacherStudentsRosterScreen({ vm, loading = false }: Props) {
         </section>
       )}
     </div>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  total,
-  pageSize,
-  pageRowCount,
-  onPageChange,
-}: {
-  page: number;
-  totalPages: number;
-  total: number;
-  pageSize: number;
-  pageRowCount: number;
-  onPageChange: (p: number) => void;
-}) {
-  const t = useTranslations("teacherStudentsRoster");
-  if (totalPages <= 1) return null;
-
-  const from = (page - 1) * pageSize + 1;
-  const to = (page - 1) * pageSize + pageRowCount;
-
-  const btn = (disabled: boolean) =>
-    cn(
-      "inline-flex size-11 items-center justify-center rounded-[7px] border border-edu-border",
-      "text-edu-text-secondary outline-none motion-safe:transition-colors",
-      "hover:bg-edu-bg focus-visible:ring-2 focus-visible:ring-ring",
-      disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
-    );
-
-  return (
-    <nav
-      aria-label={t("paginationNav")}
-      className="flex flex-wrap items-center gap-2.5 border-edu-border border-t px-5 py-3"
-    >
-      <div className="flex-1 text-edu-text-muted text-xs tabular-nums">
-        {t("showing", { from, to, total })}
-      </div>
-      <div className="flex items-center gap-1.5">
-        <button
-          aria-label={t("prevPage")}
-          className={btn(page === 1)}
-          disabled={page === 1}
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          type="button"
-        >
-          <ChevronLeft aria-hidden="true" className="size-4" />
-        </button>
-        <span
-          aria-atomic="true"
-          aria-live="polite"
-          className="px-2 font-bold text-edu-text-secondary text-xs tabular-nums"
-        >
-          {page} / {totalPages}
-        </span>
-        <button
-          aria-label={t("nextPage")}
-          className={btn(page === totalPages)}
-          disabled={page === totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-          type="button"
-        >
-          <ChevronRight aria-hidden="true" className="size-4" />
-        </button>
-      </div>
-    </nav>
   );
 }
