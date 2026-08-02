@@ -23,10 +23,48 @@ PII, not every user record has it populated) to the staff-tier batch lookup
 response. This closes US-E18.5's stated reason for permanent-mock ("no
 display fields on the wire").
 
+**CORRECTED ground truth (fe-lead, 2026-08-03) — bigger than "add 2 fields",
+this closes a PERMANENT force-mock.** `roster.repository.ts`'s
+`getClassRoster`/`getSearchPool` are BOTH permanently mock-first (US-E18.5,
+cross-repo ask #7/#9) with the exact stated reason: `GET /classes/{id}/students`
+(`EnrollmentResponse`) carries ONLY `enrollmentId`/`classId`/
+`studentMemberId`/`academicYearLabel`/`enrolledAt` — no name/dob/gender/status
+— and "IAM has no batch/by-id profile lookup on the public API." **That IAM
+gap is exactly what US-E18.33 already closed** (this epic's own prior story,
+same batch): `src/features/iam-directory`'s `BatchResolveMembersUseCase`
+(`GET /members?ids=`) now has an ADMIN caller = staff-tier, which per
+`services/iam/docs/openapi.yaml` (~1417-1427) means dob/gender ARE included
+(staff-tier only, optional per-user, ADR-0122) alongside displayName/email/
+roles that were already available to admin.
+
+**So `getClassRoster` can likely go REAL now** by composing `core`'s
+enrollment list (authority for WHICH students are enrolled) with
+`iam-directory`'s batch lookup (decoration: name/dob/gender) — the EXACT same
+composition pattern US-E18.33 used for grades/timetable child names. REUSE
+`BatchResolveMembersUseCase`, do not build a new client.
+
+**`status` field has NO wire source at all** — `EnrollmentResponse` has no
+status/active/transferred concept; ground-truth whether "every row returned
+BY this endpoint is definitionally active" (a transferred/unenrolled student
+would simply not appear in the list anymore) is the correct interpretation —
+if so, `status` can be a constant `"active"` for every real-mode row, not an
+invented field. Confirm this reading is sound before assuming it, and note
+it explicitly if so (this is a real semantic decision, not a gap to force-mock
+over).
+
+**`getSearchPool` is a SEPARATE, still-genuinely-open gap** — "no core
+endpoint exists for the unassigned-student search pool" is unrelated to the
+dob/gender addition and is NOT closed by US-169. Keep `getSearchPool`
+mock-first; do not conflate the two.
+
 ## Relevant Product Docs
 
 - ADR-0122 (PII handling for dob/gender) — read before wiring; confirm no
   additional consent/redaction UI requirement beyond what's already built.
+- `docs/stories/epics/E18-be-wiring/US-E18.33-parent-child-names-wiring/` —
+  the sibling story that widened `iam-directory`'s DTO/entity for
+  `email`/`roles` optional; THIS story extends the SAME widening for
+  `dob`/`gender` optional (staff-tier only).
 
 ## Acceptance Criteria
 
