@@ -432,6 +432,28 @@ before reading for style.
   *residual* sub-gap the story could NOT close gets no new numbered ask at all (it lives only in a
   DI doc-comment). Pair this with the standing `docs/TEST_MATRIX.md`-row-still-`planned` check —
   both are cheap pre-close items on every E18 story. (US-E18.32 ask #40(b).)
+- **An endpoint constant left behind with a FALSE justifying comment after an un-mock**
+  (US-E18.33 `GRADES_EP.childList`): the un-mock comment says "kept only for the mock
+  repository's unchanged shape", but `grep -rn "GRADES_EP.childList" src/` returns ZERO hits —
+  the mock repo never referenced it. Whenever a story documents why it is KEEPING something,
+  grep the identifier; the justification is often invented. Same class as the stale doc-comments
+  that assert the opposite of a new contract.
+- **"ADR NNNN says this is permanently mocked" is often FOLKLORE** — US-E18.33's packet, DI
+  comments, endpoint comments and repo interface all cited "ADR 0054 permanent mock" for the
+  parent child-switcher; `grep -i child docs/decisions/0054-*.md` returns NOTHING. Always grep
+  the cited ADR for the claim before accepting either "this is pinned by an ADR" or "this story
+  reverses an ADR". Affects whether a new ADR is genuinely required at close.
+- **Two sibling pickers for the same concept degrading differently** (US-E18.33): timetable's
+  child-picker renders `t("classPending")` = "Chưa có lớp" + a "Con thứ N" ordinal, while the
+  shared `ChildSwitcher` renders `className: ""` as a BLANK line and a raw uuid as the child's
+  name — because its `ChildSummary.name`/`className` are REQUIRED strings so infrastructure has
+  no "absent" option. Un-mock stories make these degradations newly reachable. Check the sibling
+  surface's fallback copy and require parity (fix belongs in presentation — infra must not
+  translate).
+- **`initialsOf(name)` is duplicated ~10× repo-wide** (grades, timetable, feed, discipline,
+  staff-leave, teacher×2, parent-links, profile). Pre-existing, so CONSIDER-level per story, but
+  worth routing to `fe-lead` as a cross-cutting `shared/` extraction.
+
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.
