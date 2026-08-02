@@ -30,11 +30,26 @@ blanks data on write paths.
    it in the MAPPER (`id === null ? null : name ?? id`) so presentation's
    `name ?? "chưa phân công"` can't lie. Never branch presence on the display
    field.
-4. **Audit sibling consumers by ENDPOINT URL, not by repository name.** A
-   different feature/DTO/repository (`TeacherClassRepository` +
-   `TeacherClassResponseDto`) hit the SAME `/core/api/v1/classes` — so its
-   separate N-roster fan-out died too. Compare `*_EP` constants, then confirm the
-   Go branch for that role also runs the enrichment.
+4. **Audit sibling consumers by ENDPOINT URL, not by repository name — grep the
+   URL STRING, and do it EXHAUSTIVELY before the review does.** Round 1 fixed
+   only the two repos the AC named; the tech-lead found two more hitting the same
+   `/core/api/v1/classes` (`TeacherDashboardRepository` summing student counts via
+   an N-roster drain, `RosterRepository` fanning out `.../homeroom-teacher` per
+   row). Different feature, different DTO, same schema. Concretely:
+   `grep -rn "core/api/v1/classes" src/` + grep every `*_EP` constant whose value
+   contains that path (several features declare their OWN constant for the same
+   URL, so grepping one constant name misses them).
+   → Two extra payoffs when you sweep completely: a **stale doc comment asserting
+   the OLD contract** in each missed caller (actively misleading after the wire
+   changes), and sometimes a **live display bug** — the roster picker was
+   rendering the raw `teacherMemberId` uuid as the GVCN's name, fixed for free by
+   the enriched `homeroomTeacherName`.
+   → Removing the last fan-out ORPHANS artifacts: grep the fan-out's DTO and
+   endpoint constant afterwards and delete them if dead
+   (`EnrollmentResponseDto`, `CLASS_EP.classStudents`).
+   → Kill point-free `.map(Mapper.toX)` in the callers you touch: it passes
+   `(el, index, array)`, so re-adding an optional 2nd param later silently binds
+   the array index — exactly the param shape un-fan-out just deleted.
 5. **Un-mocking kills a doc claim in more than one file.** The force-mock
    rationale was cross-referenced from `timetable-view.di.ts` +
    `timetable-view-principal.di.test.ts` ("same remedy as principal-classes").
