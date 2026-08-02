@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -86,13 +86,13 @@ new one, per decision `0026`).
 
 ## Validation
 
-| Layer | Expected proof |
-| --- | --- |
-| Unit | `list-my-students.use-case.test.ts` — aggregation, de-dupe, partial-failure degrade |
-| Integration | none new (repositories already covered by US-E13.1) |
-| E2E | Storybook interaction: list render, empty state, search filter, row → academic-record link |
-| Platform | `bun build` clean |
-| Release | design-review gate + a11y audit green |
+| Layer | Expected proof | Actual (2026-08-02) |
+| --- | --- | --- |
+| Unit | `list-my-students.use-case.test.ts` — aggregation, de-dupe, partial-failure degrade | DONE — 6 cases green (zero classes → no roster calls; class-list failure propagated; flatten order; de-dupe keeps first class; per-class degrade; all-classes-fail → `{rows: [], failedClassCount: N}`). Plus `list-pagination.test.tsx` (7 cases) for the promoted shared pager: single-page → renders nothing, range arithmetic incl. short last page, disabled prev/next, `size-11` touch target, AA text token. |
+| Integration | none new (repositories already covered by US-E13.1) | DONE — none added; no new DTO/repo method (the new use-case composes two already-covered use-cases). |
+| E2E | Storybook interaction: list render, empty state, search filter, row → academic-record link | DONE — `teacher-students-roster-screen.stories.tsx`: Loading, Empty (zero classes), ErrorState, WithStudents, PartialFailure, AllClassRostersFailed (review fix — all rosters failed shows the retryable error card, NOT "no classes assigned"), SearchFilter (asserts visible header count is filtered), ClassFilter, RowLinksToAcademicRecord. Plus `list-pagination.stories.tsx` (FirstPage / LastPage / SinglePageRendersNothing) and the existing `teacher-class-students-screen.stories.tsx`, which now exercises the same shared pager. |
+| Platform | `bun build` clean | DONE — `bunx tsc --noEmit` clean; `bun lint:fix` clean (1 pre-existing unrelated warning in `message-context-menu.tsx`); `bun run build` succeeds with `NEXT_PUBLIC_USE_MOCK` unset, route `/[locale]/t/[tenant]/teacher/students` present. |
+| Release | design-review gate + a11y audit green | DONE — `fe-tech-lead-reviewer` + `fe-accessibility-auditor` findings all applied (see Evidence): decision-0026 pager promotion + shared status-tone map, factually-correct all-failed copy, filtered header count, A11Y-001 contrast + 44px touch target. |
 
 ## Harness Delta
 
@@ -100,7 +100,64 @@ Registered via `harness-cli story add --id US-E13.9`.
 
 ## Evidence
 
-(fill after implementation)
+Branch `feat/us-e13.9-teacher-students-roster`. Implementation ran red→green→
+refactor (`.claude/rules/tdd.md`): the aggregating use-case tests were written
+before `list-my-students.use-case.ts`, and `list-pagination.test.tsx` was
+written (and observed failing on a missing module) before the shared pager.
+
+### Delivered
+
+- Domain: `teacher-student-roster-row.entity.ts`, `list-my-students.use-case.ts`
+  (fan-out over the teacher's classes; per-class roster failures degrade and are
+  counted in `failedClassCount`, never silent — only the class-list call itself
+  is whole-screen fatal).
+- DI: `makeListMyStudentsUseCase()` in `bootstrap/di/teacher-class.di.ts`
+  (reuses the existing repo factory — no new wiring).
+- Route: `app/[locale]/t/[tenant]/(app)/teacher/students/page.tsx` (RSC) — the
+  previously dead sidebar link now resolves.
+- Presentation: `teacher-students-roster-screen/` (+ `components/
+  teacher-students-roster-table.tsx`), shared `ListSkeleton`/`ListError`/
+  `EmptyState`.
+- i18n: `teacherStudentsRoster` namespace in `messages/{vi,en}.json`.
+
+### Review + a11y fix pass (post-implementation)
+
+- MUST-FIX (decision 0026): the local `Pagination` copied between the two
+  teacher roster screens was promoted — moved, not copied — to
+  `components/shared/list-pagination/` (folder + `index.ts` + `.stories.tsx` +
+  `.test.tsx`), taking pre-translated label props and a `formatShowing(range)`
+  callback so the from/to arithmetic lives in one place. BOTH
+  `teacher-students-roster-screen.tsx` and `teacher-class-students-screen.tsx`
+  now import it; both local copies are deleted.
+- MUST-FIX (correctness): when every class roster fails, the screen no longer
+  claims "you have no classes assigned" — a new
+  `allClassesFailed = failedClassCount > 0 && rows.length === 0` branch renders
+  a retryable `ListError` with the new `emptyAllFailed` / `emptyAllFailedBody`
+  keys (vi + en), and suppresses the now-redundant partial-degrade notice.
+  Covered by the `AllClassRostersFailed` story.
+- SHOULD-FIX (decision 0026): the duplicated `STATUS_TONE` map is now
+  `features/teacher/presentation/student-status-tone.ts`
+  (`STUDENT_STATUS_TONE`, keyed off `TeacherRosterStudent["status"]`), imported
+  by both roster tables. The two table components stay separate (different
+  columns / row link) — only the tone map is shared.
+- SHOULD-FIX (UX): while a search/class filter is active the visible header
+  count now shows the filtered count via `resultCountFiltered` ("N / M"), so it
+  matches the table and the sr-only live region.
+- A11Y-001 (WCAG 1.4.3): the pager's "showing X–Y of Z" line moved from
+  `text-edu-text-muted` (2.75:1) to `text-edu-text-secondary` (5.48:1) inside
+  the shared component. The pager's buttons are `size-11` (44×44, WCAG 2.5.5)
+  for both screens — this also fixes the sibling class-students screen, which
+  was on `size-9` (36px).
+
+### Proof commands (run 2026-08-02, all green)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun lint:fix` | 2302 files checked, clean; only a pre-existing unrelated warning in `messaging/.../message-context-menu.tsx` |
+| `bun vitest run` | 445 files / **3204 tests passed** (was 3197 before this pass — +7 from `list-pagination.test.tsx`) |
+| `bunx vitest run --config vitest.storybook.mts` | 153 files / **1144 interaction tests passed** (+4: 3 `ListPagination` stories + `AllClassRostersFailed`) |
+| `bun run build` | success with `NEXT_PUBLIC_USE_MOCK` unset; `/[locale]/t/[tenant]/teacher/students` listed as a dynamic route |
 
 ## Implementation Plan
 
