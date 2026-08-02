@@ -379,6 +379,27 @@ fully interactive) — always grep for how an entity's status enum is ALREADY
 rendered elsewhere in the codebase before treating "should this state be
 disabled?" as an open design question; usually it's already answered.
 
+**ChildSwitcher (US-E20.5, 2026-08-02):** promoted `features/grades/presentation/
+child-switcher/` → `components/shared/child-switcher/` on 2nd consumer
+(`parent-attendance`), the clean "already generic" case (contrast to
+`TeacherPicker`/`ChildPicker` above, which stayed split because their shapes
+genuinely diverged). `ChildSwitcherVM`/`ChildSummary`/`ChildColor` had ZERO
+grades-specific fields already — straightforward move, no contract redesign.
+Bonus finding: `ChildSummary`/`ChildColor` were mis-homed inside
+`features/grades/domain/entities/grade-book.entity.ts` (a display-only
+contract living in a feature's domain layer, not a grades business concept) —
+promotion was the right moment to relocate them INTO the shared component's
+own `.i-vm.ts` too, not just move the `.tsx`. Rule for the next promotion:
+when promoting a component, check whether its prop types are similarly
+mis-homed in the ORIGINAL feature's `domain/entities` — if so, move the types
+into the new shared home's own `.i-vm.ts`, don't leave `components/shared/`
+reaching back into a specific feature's domain (same boundary violation as a
+presentation layer importing another feature's domain, just inverted).
+Also: the component's hardcoded `useTranslations("gradeBook")` i18n namespace
+does NOT survive promotion unchanged — a shared component can't own a
+feature namespace; relocate the key to a shared namespace (e.g.
+`Common.childSwitcherLabel`) and update every caller, still same string value.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.
