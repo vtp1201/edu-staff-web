@@ -2880,6 +2880,12 @@
     "type_system": "System",
     "unreadCountAriaLabel": "{count} unread notifications"
   },
+  "parentChildrenOverview": {
+    "pageTitle": "My children",
+    "cardCta": "View academic record",
+    "cardAriaLabel": "View {name}'s academic record",
+    "loadingAriaLabel": "Loading your children…"
+  },
   "parentLinks": {
     "pageTitle": "Parent–Student Links",
     "pageSubtitle": "Manage account links and parents’ notification-consent status.",

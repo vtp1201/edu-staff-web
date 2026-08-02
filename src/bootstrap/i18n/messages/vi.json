@@ -2880,6 +2880,12 @@
     "type_system": "Hệ thống",
     "unreadCountAriaLabel": "{count} thông báo chưa đọc"
   },
+  "parentChildrenOverview": {
+    "pageTitle": "Con của tôi",
+    "cardCta": "Xem học bạ",
+    "cardAriaLabel": "Xem học bạ của {name}",
+    "loadingAriaLabel": "Đang tải danh sách con…"
+  },
   "parentLinks": {
     "pageTitle": "Liên kết Phụ huynh – Học sinh",
     "pageSubtitle": "Quản lý liên kết tài khoản và trạng thái đồng ý nhận thông báo của phụ huynh.",
