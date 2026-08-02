@@ -83,11 +83,14 @@ export async function makeGetChildTimetableUseCase() {
  *   path) and `toDataState()` collapses `not-found → empty`, so a real call
  *   would render a silent, permanent "no schedule published" empty state for
  *   EVERY teacher — cosmetically fine, functionally dead.
- * - Same class of gap as cross-repo ask #39 (`MANAGER` missing from `core`'s
- *   class-list RBAC, US-E13.8) — same remedy as
- *   `bootstrap/di/principal-classes.di.ts`. Flip this factory to the
- *   `USE_MOCK ? Mock : Real` shape only once `core` grants MANAGER on this
- *   endpoint.
+ * - Same CLASS of gap as cross-repo ask #39 (`MANAGER` missing from `core`'s
+ *   class-list RBAC, US-E13.8) — but note that ask is now RESOLVED for the
+ *   class list only: BE US-164 added a `roleManager` branch to
+ *   `ListClassesUseCase`, so `bootstrap/di/principal-classes.di.ts` went real
+ *   in US-E18.30. `get_member_timetable.go`'s `authorize()` got NO such
+ *   branch (re-checked US-E18.30), so THIS factory stays force-mocked. Flip it
+ *   to the `USE_MOCK ? Mock : Real` shape only once `core` grants MANAGER on
+ *   this endpoint too.
  *
  * The sibling factories above are deliberately untouched: student self-view,
  * teacher self-view and the parent child-view are ALL authorized by that same
