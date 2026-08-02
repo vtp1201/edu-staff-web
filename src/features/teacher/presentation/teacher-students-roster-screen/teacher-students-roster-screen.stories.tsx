@@ -191,3 +191,42 @@ export const RowLinksToAcademicRecord: Story = {
     await expect(link).toHaveFocus();
   },
 };
+
+/**
+ * Keyboard/focus basics beyond the row link (AC-6): the class-filter select,
+ * the search input, and the pager's next-page button are all reachable AND
+ * operable without a mouse (`Enter`/native focus), not just clickable.
+ */
+export const KeyboardOperability: Story = {
+  args: { vm: base },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+
+    // Class-filter select trigger: focusable, opens via Enter, closes via Escape.
+    const classTrigger = c.getByLabelText(copy.classFilterLabel);
+    classTrigger.focus();
+    await expect(classTrigger).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await within(document.body).findByRole("listbox");
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(
+        within(document.body).queryByRole("listbox"),
+      ).not.toBeInTheDocument(),
+    );
+
+    // Search input: focusable directly (typing already proven in SearchFilter).
+    const search = c.getByLabelText(copy.searchLabel);
+    search.focus();
+    await expect(search).toHaveFocus();
+
+    // Pager's next-page button: focusable and operable via Enter (not just click).
+    const nextBtn = c.getByRole("button", { name: copy.nextPage });
+    nextBtn.focus();
+    await expect(nextBtn).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(c.getByText("Nguyễn Văn Học Sinh 11")).toBeInTheDocument(),
+    );
+  },
+};

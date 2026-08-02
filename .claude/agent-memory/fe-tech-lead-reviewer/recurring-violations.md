@@ -335,3 +335,17 @@ before reading for style.
 - **Silent unknown-enum default to a MEANINGFUL status** — `INVITATION_STATUSES.includes(x) ? x :
   "pending"` in two mappers means a future BE value renders as an actionable row. Prefer a neutral
   status or an explicit widening. (US-E18.29.)
+- **Local `function Pagination(...)` copied into a sibling screen** — decision 0026 (d) again, same
+  class as the US-E15.2 ExportPdfButton copy. Tell: grep `function Pagination(` /
+  `rounded-\[7px\]` — the new screen's copy is byte-identical except the `useTranslations` namespace
+  and a size tweak. Also copied alongside it: the 2-entry `STATUS_TONE = {active:"success",
+  transferred:"muted"}` map. Both need one canonical home (shared component with pre-translated
+  label props / a feature-local tone module). Revision Required trigger. (US-E13.9, copy of
+  `teacher-class-students-screen.tsx`.)
+- **Partial-degrade aggregate whose all-classes-failed state falls into the "no data assigned"
+  empty copy** — a fan-out use-case that returns `{rows:[], failedClassCount:N}` is rendered by
+  `rows.length===0 → EmptyState(t("empty"))` where `empty` reads "you have no classes assigned".
+  Factually false, and the use-case's OWN unit test proves the state reachable. Require a
+  `failedClassCount>0 && rows.length===0` branch with its own key. (US-E13.9.)
+- **Header result count shows the UNFILTERED total while only the sr-only live region reflects the
+  filter** — sighted/SR parity gap on any client-filtered list. CONSIDER→SHOULD. (US-E13.9.)

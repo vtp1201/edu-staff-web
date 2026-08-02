@@ -398,6 +398,22 @@ Confirmed facts (verify before citing if stale):
 - **`LoadMoreButton` canonical home** = `components/shared/load-more-button/` (props pre-translated by
   the caller). `features/audit-log/.../load-more-button.tsx` is a known stale local fork — new callers
   must use the shared one; don't flag the shared usage, do flag a third copy.
+- **`EmptyState` body-contrast note is now STALE-FIXED**: `components/shared/empty-state/` renders
+  icon AND `body` in `text-edu-text-secondary` (5.1–5.48:1), with a doc comment explaining the
+  deliberate deviation from design-spec's `--edu-text-muted`. Passing `body` is safe — stop flagging it.
+- **Teacher-feature nav hrefs are APP-RELATIVE strings built in the RSC page** (`classes/${id}/students`,
+  `students/${id}/academic-record`, `classesHref: "../.."`), resolved by `next/link` against the current
+  pathname. Established across `teacher-classes-screen`/`teacher-class-students-screen`; no tenant/locale
+  prefix helper is used. Don't flag a relative href as a missing-prefix bug in this feature.
+- **Warning "degrade/notice" banner canonical class combo** (tokens-only, AA-safe):
+  `rounded-[var(--edu-radius-card)] border border-edu-warning/40 bg-edu-warning-light` +
+  `text-edu-warning-foreground` — precedent `exam-result.tsx:273`, `school-setup-screen.tsx:604`.
+  `--edu-warning-light: #fef5e5` and `--edu-warning-foreground: #2a3547` both exist in `tokens.css`.
+- **Fan-out partial-degrade domain shape (US-E13.9)**: an aggregating use-case composing two existing
+  use-cases returns `{rows, failedClassCount}` — load-bearing call failure = whole-screen error, per-item
+  failures degrade + are COUNTED so presentation can announce them. `Promise.all` (not `allSettled`) is
+  correct here because `GetClassStudentsUseCase.execute` never rejects (real repo try/catches into the
+  `ClassResult` union; mock returns a typed failure) — verify that claim at the repo, not the use-case.
 - **Cross-partition mutation → broad subtree invalidate** (US-E18.29): when a mutation moves a row
   ACROSS the dimension that partitions the query key (resend: `expired` → `pending` with `status` in
   the key), the correct target is `keys.lists(tenantId)`, not a `setQueryData` row patch. Watch for a
