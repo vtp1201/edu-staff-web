@@ -1,5 +1,7 @@
 # Memory Index
 
+- [Force-mock vs honest degrade](pattern-force-mock-vs-honest-degrade.md) — E20.5 fix round: force-mock only for harmless seed data; actionable per-subject data must be USE_MOCK-gated + Unavailable*Repository rejecting forbidden (no HTTP); env-matrix DI test + RSC page.test.ts; locale dates via useFormatter (+more in file)
+
 - [Promote with own .i-vm](pattern-promote-with-own-ivm.md) — E20.5: never "move" a type a feature's domain still needs (domain→components/shared = illegal); shared owns its OWN VM types, consumers assign structurally; moved stories ARE the parity proof (+more in file)
 
 - [Promote-on-3rd-use shared component](pattern-promote-shared-identity-header.md) — E20.4 +review-fix: promotion regressions hide in the PRIMITIVE's defaults; brand fill tokens fail 4.5:1 for small bold; typed QueryError ⇒ showRetry=false (+more in file)
