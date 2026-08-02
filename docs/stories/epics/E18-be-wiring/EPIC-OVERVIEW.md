@@ -838,9 +838,24 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
     the epic's own definition of "done" for a wiring US (Wave-1/2 precedent:
     hybrid/partial repositories with a documented blocked remainder count as
     `Done`, not `planned`).
-39. **(US-E13.8, 2026-07-26) [re-confirms finding under US-E18.11 — MANAGER
-    (principal) cannot call `GET /api/v1/classes` at all, ground-truthed a
-    2nd time]** `core`'s `ListClassesUseCase.Execute`
+39. **RESOLVED (US-E18.30, 2026-08-02).** BE US-164 added a `roleManager =
+    "MANAGER"` branch to `ListClassesUseCase.Execute()`
+    (`list_classes.go:61`: `if isAdmin(...) || hasRole(in.ActorRoles,
+    roleManager)`), granting principal tenant-wide read parity with
+    ADMIN/SUPER_ADMIN on `GET /api/v1/classes` — exactly the ask below.
+    BE US-173 additionally enriches `ClassResponse` with `studentCount` +
+    `homeroomTeacherId`/`homeroomTeacherName` directly on the wire (list +
+    get), letting `bootstrap/di/principal-classes.di.ts` flip to
+    `USE_MOCK ? Mock : Real` (no more permanent force-mock) AND letting FE
+    delete 5 separate client-side enrichment fan-outs across
+    `class-management`/`teacher-class`/`teacher-dashboard`/`admin-roster`
+    repositories (all proven removed via call-count regression tests). See
+    `US-E18.30-principal-classes-real/US-E18.30-principal-classes-real.md`.
+
+    **Original finding (for the record), (US-E13.8, 2026-07-26) [re-confirms
+    finding under US-E18.11 — MANAGER (principal) cannot call
+    `GET /api/v1/classes` at all, ground-truthed a 2nd time]** `core`'s
+    `ListClassesUseCase.Execute`
     (`internal/class/core/application/usecase/list_classes.go`) branches
     `isAdmin(...) → ListByYear` / `isTeacher(...) → listForTeacher` /
     else → `domainerror.ErrClassForbidden()`. `MANAGER` matches neither
