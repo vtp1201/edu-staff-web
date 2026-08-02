@@ -9,6 +9,9 @@ const STATUS_TONE: Record<ReportStatus, StatusTone> = {
   pending: "warning",
   dismissed: "muted",
   removed: "error",
+  // Escalated is a severity outcome, not a no-op — visually distinct from both
+  // "dismissed" (muted) and "removed" (error).
+  escalated: "purple",
 };
 
 export function reportStatusTone(status: ReportStatus): StatusTone {
@@ -26,20 +29,28 @@ export function formatReportTimestamp(iso: string): string {
   return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-/** Precomputed row-view fields shared by ReportTable and ReportCard (no
- *  per-component re-derivation of tone/date — one source, §5). */
+/**
+ * Precomputed row-view fields shared by ReportTable and ReportCard (no
+ * per-component re-derivation of tone/date — one source, §5).
+ *
+ * The identity/preview fields stay NULLABLE all the way to the component: the
+ * real `ReportInboxItem` carries none of them (US-E18.32), and substituting a
+ * placeholder here would make "unknown" indistinguishable from data.
+ */
 export interface ReportRowView {
   id: string;
   reason: ReportEntity["reason"];
   kind: ReportEntity["kind"];
-  authorName: string;
-  reporterName: string;
-  contentPreview: string;
+  /** The reported target's id — the ONLY content identifier the wire returns. */
+  contentId: string;
+  authorName: string | null;
+  reporterName: string | null;
+  contentPreview: string | null;
   status: ReportStatus;
   statusTone: StatusTone;
   createdAtLabel: string;
-  /** Extra reports on the same content (0 = none). */
-  duplicateCount: number;
+  /** Extra reports on the same content; `null` = the server has no such notion. */
+  duplicateCount: number | null;
 }
 
 export function formatReportRow(report: ReportEntity): ReportRowView {
@@ -47,6 +58,7 @@ export function formatReportRow(report: ReportEntity): ReportRowView {
     id: report.id,
     reason: report.reason,
     kind: report.kind,
+    contentId: report.contentId,
     authorName: report.authorName,
     reporterName: report.reporterName,
     contentPreview: report.contentPreview,

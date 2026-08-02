@@ -18,6 +18,7 @@ import { DuplicateReportList } from "./duplicate-report-list";
 import { formatReportTimestamp } from "./format-report-row";
 import { ReportErrorBanner } from "./report-error-banner";
 import { ReportStatusBadge } from "./report-status-badge";
+import { UnavailableValue } from "./unavailable-value";
 
 export type DetailSheetStatus =
   | "loading"
@@ -70,6 +71,7 @@ export function ReportDetailSheet({
   const t = useTranslations("moderation");
   const tDetail = useTranslations("moderation.detail");
   const tReason = useTranslations("moderation.reportDialog.reasons");
+  const tKind = useTranslations("moderation.kinds");
   const tErrors = useTranslations("moderation.errors");
 
   // No-stale-render rule (AC-1925.4): content sections render ONLY on success.
@@ -123,16 +125,36 @@ export function ReportDetailSheet({
                 <StatusBadge tone="muted">{tReason(detail.reason)}</StatusBadge>
               </div>
 
+              {/* The wire's report detail is the report row — it resolves no
+                  content body/author (US-E18.32). Show what we DO have (the
+                  target reference) and say plainly that the content itself is
+                  not available, instead of an empty or invented block. */}
               <Section title={tDetail("contentSection")}>
-                <p className="font-medium text-foreground text-sm">
-                  {detail.authorName}
-                </p>
-                <p className="whitespace-pre-wrap text-edu-text-secondary text-sm">
-                  {detail.fullContent}
-                </p>
+                {detail.authorName && (
+                  <p className="font-medium text-foreground text-sm">
+                    {detail.authorName}
+                  </p>
+                )}
+                {detail.fullContent ? (
+                  <p className="whitespace-pre-wrap text-edu-text-secondary text-sm">
+                    {detail.fullContent}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-edu-text-secondary text-sm">
+                      {tKind(detail.kind)} ·{" "}
+                      <span className="break-all font-mono text-xs">
+                        {detail.contentId}
+                      </span>
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {tDetail("contentUnavailable")}
+                    </p>
+                  </>
+                )}
               </Section>
 
-              {detail.context.length > 0 && (
+              {detail.context !== null && detail.context.length > 0 && (
                 <Section title={tDetail("contextSection")}>
                   <ul className="flex flex-col gap-1.5">
                     {detail.context.map((c) => (
@@ -161,7 +183,13 @@ export function ReportDetailSheet({
                   <span className="text-muted-foreground">
                     {tDetail("reporter")}:{" "}
                   </span>
-                  <span className="text-foreground">{detail.reporterName}</span>
+                  {detail.reporterName ? (
+                    <span className="text-foreground">
+                      {detail.reporterName}
+                    </span>
+                  ) : (
+                    <UnavailableValue />
+                  )}
                 </p>
                 {detail.note && (
                   <p className="text-sm">
@@ -173,7 +201,11 @@ export function ReportDetailSheet({
                 )}
               </Section>
 
-              <DuplicateReportList duplicates={detail.duplicateReports} />
+              {/* `null` = the server has no duplicate-report notion; a "0
+                  duplicates" line would assert something we never learned. */}
+              {detail.duplicateReports !== null && (
+                <DuplicateReportList duplicates={detail.duplicateReports} />
+              )}
 
               {detail.status !== "pending" && (
                 <Section title={tDetail("resolveSection")}>

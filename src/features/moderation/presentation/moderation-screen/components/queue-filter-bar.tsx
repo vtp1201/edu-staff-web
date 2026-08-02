@@ -25,7 +25,12 @@ export interface QueueFilterBarProps {
   onRefresh: () => void;
 }
 
-const STATUS_TABS: ReportStatusTab[] = ["pending", "resolved", "all"];
+/**
+ * Two tabs only: the wire reads exactly ONE status partition per request and
+ * `all` is deliberately unsupported by the service (US-E18.32) — a client-side
+ * merge of two cursors would break page-size determinism.
+ */
+const STATUS_TABS: ReportStatusTab[] = ["pending", "resolved"];
 const CONTENT_TYPES: ReportContentTypeFilter[] = [
   "all",
   "post",
@@ -87,6 +92,8 @@ export function QueueFilterBar({
             id="moderation-search"
             type="search"
             className="pl-8"
+            // The service rejects a longer value with a 400 — stop it at input.
+            maxLength={200}
             placeholder={t("searchPlaceholder")}
             value={filter.search}
             onChange={(e) => onFilterChange({ search: e.target.value })}

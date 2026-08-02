@@ -7,7 +7,9 @@ import {
 
 export type ModerationTab = "queue" | "audit";
 
-const STATUS_SET = new Set<ReportStatusTab>(["pending", "resolved", "all"]);
+// `all` is NOT a valid status: the service reads one partition per request
+// (US-E18.32). A legacy `?status=all` URL falls back to the default tab.
+const STATUS_SET = new Set<ReportStatusTab>(["pending", "resolved"]);
 const TYPE_SET = new Set<ReportContentTypeFilter>([
   "all",
   "post",

@@ -2726,8 +2726,7 @@
     "subtitle": "Review and act on reported content",
     "stats": {
       "pending": "Pending",
-      "resolvedThisWeek": "Resolved this week",
-      "removed": "Content removed"
+      "resolved": "Resolved"
     },
     "tabs": {
       "queue": "Report queue",
@@ -2737,8 +2736,7 @@
       "statusLabel": "Status",
       "status": {
         "pending": "Pending",
-        "resolved": "Resolved",
-        "all": "All"
+        "resolved": "Resolved"
       },
       "typeLabel": "Content type",
       "type": {
@@ -2748,7 +2746,7 @@
         "message": "Messages"
       },
       "searchLabel": "Search reports",
-      "searchPlaceholder": "Search by author, reporter, content…",
+      "searchPlaceholder": "Search the reporter's description…",
       "refresh": "Refresh list"
     },
     "table": {
@@ -2764,7 +2762,8 @@
     "statusLabels": {
       "pending": "Pending",
       "dismissed": "Dismissed",
-      "removed": "Removed"
+      "removed": "Removed",
+      "escalated": "Escalated"
     },
     "kinds": {
       "post": "Post",
@@ -2785,7 +2784,8 @@
       "resolveNote": "Resolution note",
       "dismiss": "Dismiss",
       "remove": "Remove content",
-      "close": "Close"
+      "close": "Close",
+      "contentUnavailable": "The server does not return the reported content. Open it via the reference id above to review it."
     },
     "duplicates": {
       "heading": "{count} duplicate reports",
@@ -2812,7 +2812,7 @@
       "positiveTitle": "No reports pending review",
       "positiveBody": "Everything looks good right now.",
       "filteredTitle": "No reports found",
-      "filteredBody": "Try adjusting the filters or search term."
+      "filteredBody": "Try adjusting the filters or search term, or load more results."
     },
     "loadMore": "Load more",
     "loadMoreError": "Could not load more. Click to retry.",
@@ -2829,7 +2829,8 @@
       "already-resolved": "This report was just resolved by someone else.",
       "forbidden": "You do not have permission to perform this action.",
       "network-error": "A connection error occurred. Please try again."
-    }
+    },
+    "unavailable": "No data"
   },
   "notifications": {
     "allLoaded": "All notifications shown",

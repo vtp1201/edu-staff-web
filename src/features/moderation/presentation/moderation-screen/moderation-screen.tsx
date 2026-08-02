@@ -16,6 +16,7 @@ import {
 } from "@/components/shared/destructive-confirm-dialog";
 import { LoadMoreButton } from "@/components/shared/load-more-button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { ReportRef } from "../../domain/entities/report.entity";
 import type { ReportQueueFilter } from "../../domain/entities/report-queue-filter.entity";
 import type { ModerationFailure } from "../../domain/failures/moderation.failure";
 import {
@@ -50,9 +51,17 @@ export const moderationKeys = {
   lists: () => [...moderationKeys.all(), "list"] as const,
   list: (filter: ReportQueueFilter) =>
     [...moderationKeys.lists(), filter] as const,
+  stats: () => [...moderationKeys.all(), "stats"] as const,
   details: () => [...moderationKeys.all(), "detail"] as const,
-  detail: (reportId: string) =>
-    [...moderationKeys.details(), reportId] as const,
+  // Keyed by the WHOLE addressing tuple: the same reportId in a different
+  // status partition is a different point-read (US-E18.32).
+  detail: (ref: ReportRef | null) =>
+    [
+      ...moderationKeys.details(),
+      ref?.reportId ?? "none",
+      ref?.filedAt ?? "none",
+      ref?.status ?? "none",
+    ] as const,
   audits: () => [...moderationKeys.all(), "audit"] as const,
   audit: () => moderationKeys.audits(),
 } as const;
@@ -73,7 +82,12 @@ function failureType(err: unknown): ModerationFailure["type"] {
  * Moderation screen container (US-E19.2). The ONLY component touching TanStack
  * Query / URL search params / the Server Action refs. Queue filter + active tab
  * live in the URL; a debounced draft mirrors the filter inputs. RSC seeds queue
- * page 1 (+ embedded stats). Detail sheet + audit tab are client-only queries.
+ * page 1 and the stat row — which are TWO independent queries against two
+ * endpoints: the counters are tenant-wide and must never move with a filter
+ * (US-E18.32). The detail sheet is a client-only, interaction-triggered query
+ * keyed by the clicked row's full `ReportRef`; it is a Sheet rather than a
+ * route because the detail point-read needs `filedAt`/`status`, so a
+ * bookmarkable `/reports/{id}` URL could not work.
  *
  * `removeContent` is NEVER optimistic — the mutation below has NO `onMutate` /
  * `setQueryData`; content is only marked removed once the invalidated query
@@ -85,8 +99,10 @@ export function ModerationScreen({
   initialStats,
   initialErrorKey,
   auditScopeId,
+  auditLogEnabled,
   viewerRole,
   listReportsAction,
+  getReportStatsAction,
   getReportDetailAction,
   dismissReportAction,
   removeContentAction,
@@ -107,7 +123,10 @@ export function ModerationScreen({
     () => parseFilterFromParams(appliedParams),
     [appliedParams],
   );
-  const tab = parseTabFromParams(appliedParams);
+  // A deep-linked `?tab=audit` must not open a tab that cannot be served.
+  const requestedTab = parseTabFromParams(appliedParams);
+  const tab: ModerationTab =
+    requestedTab === "audit" && !auditLogEnabled ? "queue" : requestedTab;
 
   const [draft, setDraft] = useState<ReportQueueFilter>(initialFilter);
   // URL → draft (incl. back/forward nav).
@@ -131,22 +150,10 @@ export function ModerationScreen({
     if (initialErrorKey) return undefined;
     if (!filtersEqual(appliedFilter, initialFilter)) return undefined;
     return {
-      pages: [
-        {
-          ok: true as const,
-          data: initialQueuePage,
-          stats: initialStats,
-        },
-      ],
+      pages: [{ ok: true as const, data: initialQueuePage }],
       pageParams: [null as string | null],
     };
-  }, [
-    appliedFilter,
-    initialFilter,
-    initialErrorKey,
-    initialQueuePage,
-    initialStats,
-  ]);
+  }, [appliedFilter, initialFilter, initialErrorKey, initialQueuePage]);
 
   const queueQuery = useInfiniteQuery({
     queryKey: moderationKeys.list(appliedFilter),
@@ -170,7 +177,26 @@ export function ModerationScreen({
     () => queueQuery.data?.pages.flatMap((p) => p.data.reports) ?? [],
     [queueQuery.data],
   );
-  const latestStats = queueQuery.data?.pages.at(-1)?.stats ?? null;
+  /**
+   * Stats are their OWN query against their OWN endpoint — they are tenant-wide
+   * and must NOT change when a filter narrows the list, nor be derived from
+   * `reports.length` (a paginated, filtered slice). Seeded by the RSC read.
+   */
+  const statsQuery = useQuery({
+    queryKey: moderationKeys.stats(),
+    queryFn: async () => {
+      const res = await getReportStatsAction();
+      if (!res.ok) {
+        throw { type: res.errorKey, retryable: res.retryable } as ThrownFailure;
+      }
+      return res.data;
+    },
+    initialData: initialStats ?? undefined,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: (count, err) => isRetryable(err) && count < 2,
+  });
+  const latestStats = statsQuery.data ?? null;
 
   const firstPageError = queueQuery.isError && reports.length === 0;
   const queueErrorKey = firstPageError ? failureType(queueQuery.error) : null;
@@ -182,25 +208,30 @@ export function ModerationScreen({
       ? "loading"
       : reports.length === 0
         ? appliedFilter.status === "pending" &&
+          appliedFilter.contentType === "all" &&
+          !appliedFilter.search.trim() &&
+          !queueQuery.hasNextPage &&
           (latestStats?.pendingCount ?? 0) === 0
           ? "empty-positive"
           : "empty-filtered"
         : "success";
 
   // ── Detail sheet query (client-only, always fresh) ───────────────────────
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
-  const detailOpen = selectedReportId !== null;
+  // The whole addressing tuple, captured from the clicked row — a bare id
+  // cannot address the row, which is also why this is a Sheet and not a route.
+  const [selectedRef, setSelectedRef] = useState<ReportRef | null>(null);
+  const detailOpen = selectedRef !== null;
 
   const detailQuery = useQuery({
-    queryKey: moderationKeys.detail(selectedReportId ?? "none"),
+    queryKey: moderationKeys.detail(selectedRef),
     queryFn: async () => {
-      const res = await getReportDetailAction(selectedReportId as string);
+      const res = await getReportDetailAction(selectedRef as ReportRef);
       if (!res.ok) {
         throw { type: res.errorKey, retryable: res.retryable } as ThrownFailure;
       }
       return res.data;
     },
-    enabled: detailOpen && !!selectedReportId,
+    enabled: detailOpen,
     staleTime: 0,
     retry: (count, err) => isRetryable(err) && count < 2,
   });
@@ -228,7 +259,7 @@ export function ModerationScreen({
     initialPageParam: null as string | null,
     getNextPageParam: (last) =>
       last.data.hasMore ? last.data.nextCursor : undefined,
-    enabled: tab === "audit",
+    enabled: tab === "audit" && auditLogEnabled,
     staleTime: 15_000,
     refetchOnWindowFocus: false,
     retry: (count, err) => isRetryable(err) && count < 2,
@@ -249,16 +280,18 @@ export function ModerationScreen({
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const dismissMutation = useMutation({
-    mutationFn: async (reportId: string) => {
-      const res = await dismissReportAction(reportId);
+    mutationFn: async (ref: ReportRef) => {
+      const res = await dismissReportAction(ref);
       if (!res.ok) {
         throw { type: res.errorKey, retryable: res.retryable } as ThrownFailure;
       }
     },
-    onSuccess: (_data, reportId) => {
+    onSuccess: (_data, ref) => {
       queryClient.invalidateQueries({ queryKey: moderationKeys.lists() });
+      // A resolve moves the row between partitions → the counters change too.
+      queryClient.invalidateQueries({ queryKey: moderationKeys.stats() });
       queryClient.invalidateQueries({
-        queryKey: moderationKeys.detail(reportId),
+        queryKey: moderationKeys.detail(ref),
       });
       // Dismiss also records a server-side audit entry (NFR-101) — invalidate
       // audits() for cache-freshness parity with removeContent's invalidation
@@ -266,13 +299,13 @@ export function ModerationScreen({
       // leaving an already-open/cached audit tab stale after a dismiss).
       queryClient.invalidateQueries({ queryKey: moderationKeys.audits() });
       toast.success(t("toasts.dismissed"));
-      setSelectedReportId(null);
+      setSelectedRef(null);
     },
-    onError: (err, reportId) => {
+    onError: (err, ref) => {
       // 409 → refetch the detail so the sheet shows current state (no overwrite).
       if (failureType(err) === "already-resolved") {
         queryClient.invalidateQueries({
-          queryKey: moderationKeys.detail(reportId),
+          queryKey: moderationKeys.detail(ref),
         });
       }
       // forbidden/transient: inline error only (no cache disturbance).
@@ -293,13 +326,14 @@ export function ModerationScreen({
     },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: moderationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: moderationKeys.stats() });
       queryClient.invalidateQueries({
-        queryKey: moderationKeys.detail(vars.reportId),
+        queryKey: moderationKeys.detail(vars.ref),
       });
       queryClient.invalidateQueries({ queryKey: moderationKeys.audits() });
       toast.success(t("toasts.removed"));
       setConfirmOpen(false);
-      setSelectedReportId(null);
+      setSelectedRef(null);
     },
     onError: (err, vars) => {
       // 409 only: dialog closes, queue + detail refetch (a real server-side
@@ -307,8 +341,9 @@ export function ModerationScreen({
       // error". forbidden/transient deliberately invalidate NOTHING.
       if (failureType(err) === "already-resolved") {
         queryClient.invalidateQueries({ queryKey: moderationKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: moderationKeys.stats() });
         queryClient.invalidateQueries({
-          queryKey: moderationKeys.detail(vars.reportId),
+          queryKey: moderationKeys.detail(vars.ref),
         });
         setConfirmOpen(false);
         toast.error(t("errors.already-resolved"));
@@ -351,31 +386,31 @@ export function ModerationScreen({
   );
 
   const handleOpenDetail = useCallback(
-    (reportId: string) => {
+    (ref: ReportRef) => {
       dismissMutation.reset();
-      setSelectedReportId(reportId);
+      setSelectedRef(ref);
     },
     [dismissMutation],
   );
 
   const handleDetailOpenChange = useCallback((open: boolean) => {
     if (!open) {
-      setSelectedReportId(null);
+      setSelectedRef(null);
       setConfirmOpen(false);
     }
   }, []);
 
   const handleDismiss = useCallback(() => {
-    if (selectedReportId) dismissMutation.mutate(selectedReportId);
-  }, [selectedReportId, dismissMutation]);
+    if (selectedRef) dismissMutation.mutate(selectedRef);
+  }, [selectedRef, dismissMutation]);
 
   const handleOpenRemoveConfirm = useCallback(() => {
     const d = detailQuery.data;
-    if (!d || d.kind === "message") return;
-    setRemoveVars({ kind: d.kind, contentId: d.contentId, reportId: d.id });
+    if (!d || d.kind === "message" || !selectedRef) return;
+    setRemoveVars({ kind: d.kind, contentId: d.contentId, ref: selectedRef });
     removeMutation.reset();
     setConfirmOpen(true);
-  }, [detailQuery.data, removeMutation]);
+  }, [detailQuery.data, selectedRef, removeMutation]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 p-6 md:p-8">
@@ -386,17 +421,18 @@ export function ModerationScreen({
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      <StatRow
-        stats={latestStats}
-        isLoading={queueQuery.isLoading || firstPageError}
-      />
+      {/* Sourced from the stats query ONLY — never from `reports.length`. */}
+      <StatRow stats={latestStats} isLoading={statsQuery.isLoading} />
 
-      <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="queue">{t("tabs.queue")}</TabsTrigger>
-          <TabsTrigger value="audit">{t("tabs.audit")}</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* The audit tab only exists where the trail can actually be served. */}
+      {auditLogEnabled && (
+        <Tabs value={tab} onValueChange={handleTabChange}>
+          <TabsList>
+            <TabsTrigger value="queue">{t("tabs.queue")}</TabsTrigger>
+            <TabsTrigger value="audit">{t("tabs.audit")}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
       {tab === "queue" ? (
         <div className="flex flex-col gap-4">
@@ -413,7 +449,11 @@ export function ModerationScreen({
             onRetry={() => queueQuery.refetch()}
             onOpen={handleOpenDetail}
           />
-          {queueStatus === "success" && (
+          {/* A filtered page can be EMPTY while more matches remain (bounded
+              in-app scan) — gating "load more" on `success` would strand the
+              moderator on a false "no results" state. */}
+          {(queueStatus === "success" ||
+            (queueStatus === "empty-filtered" && queueQuery.hasNextPage)) && (
             <LoadMoreButton
               hasMore={queueQuery.hasNextPage ?? false}
               isLoadingMore={queueQuery.isFetchingNextPage}

@@ -1,12 +1,20 @@
 "use client";
 
-import { CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { StatCard } from "@/components/shared/stat-card/stat-card";
 import { StatCardSkeleton } from "@/components/shared/stat-card-skeleton";
 import type { ModerationStatsEntity } from "../../../domain/entities/moderation-stats.entity";
 
-/** 3 StatCards (FR-103): pending / resolved-this-week / removed. */
+/**
+ * Queue counters (FR-103). TWO cards, because the stats endpoint returns
+ * exactly two tenant-wide totals (US-E18.32): the former "resolved this week"
+ * (a 7-day window) and "removed" (the DELETE-outcome subset) have no backing
+ * and are not approximated from the visible page.
+ *
+ * `stats` is fed by its OWN query — never by counting the rendered list, which
+ * is filtered and paginated.
+ */
 export function StatRow({
   stats,
   isLoading,
@@ -18,8 +26,7 @@ export function StatRow({
 
   if (isLoading || !stats) {
     return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCardSkeleton />
+      <div className="grid gap-4 sm:grid-cols-2">
         <StatCardSkeleton />
         <StatCardSkeleton />
       </div>
@@ -27,7 +34,7 @@ export function StatRow({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2">
       <StatCard
         label={t("pending")}
         value={String(stats.pendingCount)}
@@ -35,16 +42,10 @@ export function StatRow({
         tone="warning"
       />
       <StatCard
-        label={t("resolvedThisWeek")}
-        value={String(stats.resolvedThisWeekCount)}
+        label={t("resolved")}
+        value={String(stats.resolvedCount)}
         icon={CheckCircle2}
         tone="success"
-      />
-      <StatCard
-        label={t("removed")}
-        value={String(stats.removedCount)}
-        icon={Trash2}
-        tone="error"
       />
     </div>
   );

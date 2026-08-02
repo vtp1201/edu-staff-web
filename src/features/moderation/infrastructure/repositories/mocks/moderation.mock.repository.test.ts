@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  type ReportRef,
+  reportRefOf,
+} from "../../../domain/entities/report.entity";
 import { DEFAULT_REPORT_QUEUE_FILTER } from "../../../domain/entities/report-queue-filter.entity";
 import {
   MOCK_FORBIDDEN_REPORT_ID,
@@ -7,25 +11,47 @@ import {
 
 const PENDING = DEFAULT_REPORT_QUEUE_FILTER;
 
-async function firstPendingId(repo: MockModerationRepository): Promise<string> {
+async function firstPendingRef(
+  repo: MockModerationRepository,
+): Promise<ReportRef> {
   const res = await repo.listReports(PENDING, null);
   if (!res.ok) throw new Error("expected ok");
   const target = res.value.reports.find(
     (r) => r.id !== MOCK_FORBIDDEN_REPORT_ID,
   );
   if (!target) throw new Error("no pending report");
-  return target.id;
+  return reportRefOf(target);
 }
 
 describe("MockModerationRepository", () => {
-  it("lists pending reports with embedded stats", async () => {
+  it("lists pending reports (page carries NO stats)", async () => {
     const repo = new MockModerationRepository();
     const res = await repo.listReports(PENDING, null);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.value.reports.every((r) => r.status === "pending")).toBe(true);
-    expect(res.value.stats.pendingCount).toBeGreaterThan(0);
-    expect(res.value.stats.removedCount).toBeGreaterThan(0);
+    expect(res.value).not.toHaveProperty("stats");
+  });
+
+  it("serves stats from their own call, counting the WHOLE set (not a page)", async () => {
+    const repo = new MockModerationRepository();
+    const stats = await repo.getReportStats();
+    if (!stats.ok) throw new Error("ok");
+
+    const pendingPage = await repo.listReports(PENDING, null);
+    if (!pendingPage.ok) throw new Error("ok");
+
+    expect(stats.value.pendingCount).toBe(pendingPage.value.reports.length);
+    // The resolved rows are NOT on the pending page, yet are still counted.
+    expect(stats.value.resolvedCount).toBeGreaterThan(0);
+  });
+
+  it("stats ignore an active content-type filter", async () => {
+    const repo = new MockModerationRepository();
+    const before = await repo.getReportStats();
+    await repo.listReports({ ...PENDING, contentType: "comment" }, null);
+    const after = await repo.getReportStats();
+    expect(after).toEqual(before);
   });
 
   it("filters by content type (AND)", async () => {
@@ -45,22 +71,23 @@ describe("MockModerationRepository", () => {
     const dup = list.value.reports.find((r) => r.duplicateCount === 2);
     expect(dup).toBeDefined();
     if (!dup) return;
-    const detail = await repo.getReportDetail(dup.id);
+    const detail = await repo.getReportDetail(reportRefOf(dup));
     if (!detail.ok) throw new Error("ok");
     expect(detail.value.duplicateReports).toHaveLength(2);
   });
 
   it("dismiss transitions status → dismissed AND appends an audit entry", async () => {
     const repo = new MockModerationRepository();
-    const id = await firstPendingId(repo);
+    const ref = await firstPendingRef(repo);
     const before = await repo.getModerationAuditLog("scope", null);
     if (!before.ok) throw new Error("ok");
     const beforeCount = before.value.entries.length;
 
-    const res = await repo.dismissReport(id);
+    const res = await repo.dismissReport(ref);
     expect(res.ok).toBe(true);
 
-    const detail = await repo.getReportDetail(id);
+    // The row moved partition: re-read it with the RESOLVED-side ref.
+    const detail = await repo.getReportDetail({ ...ref, status: "dismissed" });
     if (!detail.ok) throw new Error("ok");
     expect(detail.value.status).toBe("dismissed");
 
@@ -72,17 +99,16 @@ describe("MockModerationRepository", () => {
 
   it("remove transitions status → removed AND appends an audit entry", async () => {
     const repo = new MockModerationRepository();
-    const id = await firstPendingId(repo);
+    const ref = await firstPendingRef(repo);
     const list = await repo.listReports(PENDING, null);
     if (!list.ok) throw new Error("ok");
-    const target = list.value.reports.find((r) => r.id === id);
+    const target = list.value.reports.find((r) => r.id === ref.reportId);
     if (!target) throw new Error("target");
 
     const res = await repo.removeContent({
       kind: target.kind === "message" ? "post" : target.kind,
       contentId: target.contentId,
-      reportId: id,
-      resolveNote: "vi phạm nội quy",
+      ref,
     });
     expect(res.ok).toBe(true);
 
@@ -93,15 +119,22 @@ describe("MockModerationRepository", () => {
 
   it("removing the forbidden fixture always returns forbidden (deterministic 403)", async () => {
     const repo = new MockModerationRepository();
+    const list = await repo.listReports(PENDING, null);
+    if (!list.ok) throw new Error("ok");
+    const forbidden = list.value.reports.find(
+      (r) => r.id === MOCK_FORBIDDEN_REPORT_ID,
+    );
+    if (!forbidden) throw new Error("fixture");
+
     const res = await repo.removeContent({
       kind: "post",
-      contentId: "post-403",
-      reportId: MOCK_FORBIDDEN_REPORT_ID,
+      contentId: forbidden.contentId,
+      ref: reportRefOf(forbidden),
     });
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 
-  it("ADR 0052: removing content WITHOUT a reportId (feed direct-removal) succeeds", async () => {
+  it("ADR 0052: removing a post WITHOUT a report ref (feed direct-removal) succeeds", async () => {
     const repo = new MockModerationRepository();
     const res = await repo.removeContent({
       kind: "post",
@@ -110,17 +143,40 @@ describe("MockModerationRepository", () => {
     expect(res).toEqual({ ok: true });
   });
 
+  it("direct comment removal without a parentId is rejected (matches the real route)", async () => {
+    const repo = new MockModerationRepository();
+    const res = await repo.removeContent({
+      kind: "comment",
+      contentId: "feed-comment-1",
+    });
+    expect(res).toEqual({ ok: false, error: { type: "validation" } });
+  });
+
   it("dismissing an already-resolved report returns already-resolved", async () => {
     const repo = new MockModerationRepository();
-    const id = await firstPendingId(repo);
-    await repo.dismissReport(id);
-    const second = await repo.dismissReport(id);
+    const ref = await firstPendingRef(repo);
+    await repo.dismissReport(ref);
+    const second = await repo.dismissReport(ref);
     expect(second).toEqual({ ok: false, error: { type: "already-resolved" } });
   });
 
   it("detail for an unknown id returns not-found", async () => {
     const repo = new MockModerationRepository();
-    const res = await repo.getReportDetail("nope");
+    const res = await repo.getReportDetail({
+      reportId: "nope",
+      filedAt: "2026-07-10T08:00:00Z",
+      status: "pending",
+    });
+    expect(res).toEqual({ ok: false, error: { type: "not-found" } });
+  });
+
+  it("detail with a MISMATCHED filedAt is not-found (the tuple addresses the row)", async () => {
+    const repo = new MockModerationRepository();
+    const ref = await firstPendingRef(repo);
+    const res = await repo.getReportDetail({
+      ...ref,
+      filedAt: "1999-01-01T00:00:00Z",
+    });
     expect(res).toEqual({ ok: false, error: { type: "not-found" } });
   });
 });

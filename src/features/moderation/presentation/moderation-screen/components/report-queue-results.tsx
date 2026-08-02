@@ -4,7 +4,10 @@ import { CheckCircle2, SearchX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/shared/empty-state/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ReportEntity } from "../../../domain/entities/report.entity";
+import type {
+  ReportEntity,
+  ReportRef,
+} from "../../../domain/entities/report.entity";
 import type { ModerationFailure } from "../../../domain/failures/moderation.failure";
 import { ReportCardList } from "./report-card";
 import { ReportErrorBanner } from "./report-error-banner";
@@ -24,7 +27,7 @@ export interface ReportQueueResultsProps {
   errorKey: ModerationFailure["type"] | null;
   errorRetryable: boolean;
   onRetry: () => void;
-  onOpen: (reportId: string) => void;
+  onOpen: (ref: ReportRef) => void;
 }
 
 export function ReportQueueResults({

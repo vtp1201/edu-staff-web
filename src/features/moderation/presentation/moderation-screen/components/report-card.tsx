@@ -2,13 +2,19 @@
 
 import { useTranslations } from "next-intl";
 import { StatusBadge } from "@/components/shared/status-badge/status-badge";
-import type { ReportEntity } from "../../../domain/entities/report.entity";
+import {
+  type ReportEntity,
+  type ReportRef,
+  reportRefOf,
+} from "../../../domain/entities/report.entity";
 import { formatReportRow } from "./format-report-row";
 import { ReportStatusBadge } from "./report-status-badge";
+import { UnavailableValue } from "./unavailable-value";
 
 export interface ReportCardListProps {
   reports: ReportEntity[];
-  onOpen: (reportId: string) => void;
+  /** Whole addressing tuple — see {@link ReportTableProps.onOpen}. */
+  onOpen: (ref: ReportRef) => void;
 }
 
 /**
@@ -30,27 +36,33 @@ export function ReportCardList({ reports, onOpen }: ReportCardListProps) {
             <button
               type="button"
               aria-label={t("openDetail", { id: row.id })}
-              onClick={() => onOpen(row.id)}
+              onClick={() => onOpen(reportRefOf(report))}
               className="flex w-full flex-col gap-2 rounded-[var(--edu-radius-card)] border border-border bg-card p-4 text-left shadow-card"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-muted-foreground text-xs">
-                  {tKind(row.kind)} · {row.authorName}
+                  {tKind(row.kind)}
+                  {row.authorName ? ` · ${row.authorName}` : ""}
                 </span>
                 <ReportStatusBadge status={row.status} />
               </div>
+              {/* No preview on the wire — fall back to the target id. */}
               <p className="line-clamp-2 font-medium text-foreground text-sm">
-                {row.contentPreview}
+                {row.contentPreview ?? row.contentId}
               </p>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <StatusBadge tone="muted">{tReason(row.reason)}</StatusBadge>
-                <span className="text-muted-foreground">
-                  {row.reporterName}
-                </span>
+                {row.reporterName ? (
+                  <span className="text-muted-foreground">
+                    {row.reporterName}
+                  </span>
+                ) : (
+                  <UnavailableValue />
+                )}
                 <span className="text-muted-foreground">
                   · {row.createdAtLabel}
                 </span>
-                {row.duplicateCount > 0 && (
+                {row.duplicateCount !== null && row.duplicateCount > 0 && (
                   <span className="text-muted-foreground">
                     · {t("duplicateSuffix", { count: row.duplicateCount })}
                   </span>

@@ -1,6 +1,9 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
+import type { ReportRef } from "../../domain/entities/report.entity";
+import type { ReportInboxItemDto } from "../dtos/report-response.dto";
+import { ModerationMapper } from "../mappers/moderation.mapper";
 import { ModerationRepository, toFailure } from "./moderation.repository";
 
 /**
@@ -200,56 +203,310 @@ describe("toFailure — remaining branches", () => {
   });
 });
 
-// ── removeContent ↔ real contract (US-E18.20 AC-3) ──────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// US-E18.32 — real HTTP contract (BE US-172 / US-166)
+// ─────────────────────────────────────────────────────────────────────────────
 function fakeHttp(overrides: Partial<AxiosInstance>): AxiosInstance {
   return overrides as unknown as AxiosInstance;
 }
 
-describe("ModerationRepository.removeContent — real moderate-delete contract", () => {
-  it("post target issues a BARE POST with no request body", async () => {
-    const post = vi.fn().mockResolvedValue(undefined);
-    const del = vi.fn();
-    const repo = new ModerationRepository(fakeHttp({ post, delete: del }));
+const ROW: ReportInboxItemDto = {
+  reportId: "rep-1",
+  targetType: "POST",
+  targetId: "post-9",
+  reasonCategory: "SPAM",
+  reasonFreeText: null,
+  filedAt: "2026-07-10T08:00:00Z",
+  status: "PENDING",
+};
 
-    const res = await repo.removeContent({
-      kind: "post",
-      contentId: "p1",
-      reportId: "r1",
-      resolveNote: "spam",
-    });
+function listEnvelope(rows: ReportInboxItemDto[], pagination?: unknown) {
+  return {
+    success: true,
+    data: rows,
+    error: null,
+    meta: { requestId: "req-1", timestamp: "t", pagination },
+  };
+}
 
-    expect(res).toEqual({ ok: true });
-    // No body, and definitely not a DELETE — the endpoint is
-    // `POST /feeds/posts/{postId}/moderate-delete` (204, no body).
-    expect(post).toHaveBeenCalledWith(
-      "/social/api/v1/feeds/posts/p1/moderate-delete",
+const PENDING_REF: ReportRef = {
+  reportId: "rep-1",
+  filedAt: "2026-07-10T08:00:00Z",
+  status: "pending",
+};
+
+describe("ModerationRepository.listReports — server-side filters", () => {
+  it("sends status/contentType/search/limit as REAL query params", async () => {
+    const get = vi.fn().mockResolvedValue(listEnvelope([ROW]));
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    const res = await repo.listReports(
+      { status: "resolved", contentType: "comment", search: "  quấy rối  " },
+      "cur-2",
     );
-    expect(post).toHaveBeenCalledTimes(1);
-    expect(del).not.toHaveBeenCalled();
+
+    expect(res.ok).toBe(true);
+    expect(get).toHaveBeenCalledTimes(1);
+    const [url, config] = get.mock.calls[0];
+    expect(url).toBe("/social/api/v1/reports");
+    expect(config.params).toEqual({
+      status: "RESOLVED",
+      limit: 20,
+      contentType: "COMMENT",
+      // trimmed — whitespace-only is treated as absent by the service
+      search: "quấy rối",
+      cursor: "cur-2",
+    });
+    // `raw: true` must be a CONFIG-LEVEL sibling of `params`, never nested
+    // inside it (a nested flag silently disables envelope passthrough).
+    expect(config.raw).toBe(true);
   });
 
-  it("post target maps a 403 to forbidden", async () => {
-    const post = vi.fn().mockRejectedValue(
+  it("omits contentType/search/cursor when not narrowing (byte-for-byte pre-US-172 call)", async () => {
+    const get = vi.fn().mockResolvedValue(listEnvelope([]));
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    await repo.listReports(
+      { status: "pending", contentType: "all", search: "   " },
+      null,
+    );
+
+    expect(get.mock.calls[0][1].params).toEqual({
+      status: "PENDING",
+      limit: 20,
+    });
+  });
+
+  it("maps rows and reads pagination from meta", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        listEnvelope([ROW], { nextCursor: "cur-9", hasMore: true }),
+      );
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    const res = await repo.listReports(
+      { status: "pending", contentType: "all", search: "" },
+      null,
+    );
+
+    expect(res).toEqual({
+      ok: true,
+      value: {
+        reports: [ModerationMapper.toReportEntity(ROW)],
+        nextCursor: "cur-9",
+        hasMore: true,
+      },
+    });
+  });
+
+  it("preserves an EMPTY page that still has more (bounded-scan filter semantics)", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        listEnvelope([], { nextCursor: "cur-3", hasMore: true }),
+      );
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    const res = await repo.listReports(
+      { status: "pending", contentType: "post", search: "x" },
+      null,
+    );
+
+    // "no matches on THIS page" must not collapse into "no more matches".
+    expect(res).toEqual({
+      ok: true,
+      value: { reports: [], nextCursor: "cur-3", hasMore: true },
+    });
+  });
+
+  it("NEVER touches the stats endpoint (stats are not derived from a list page)", async () => {
+    const get = vi.fn().mockResolvedValue(listEnvelope([ROW]));
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    await repo.listReports(
+      { status: "pending", contentType: "all", search: "" },
+      null,
+    );
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get.mock.calls[0][0]).toBe("/social/api/v1/reports");
+  });
+
+  it("maps a 403 to forbidden", async () => {
+    const get = vi.fn().mockRejectedValue(
       new ApiError({
-        code: "UNAUTHORIZED_MODERATION_ACTION",
-        message: "retry",
-        retryable: true,
+        code: "REPORT_NOT_ADMIN",
+        message: "x",
+        retryable: false,
         status: 403,
       }),
     );
-    const repo = new ModerationRepository(fakeHttp({ post }));
-    const res = await repo.removeContent({ kind: "post", contentId: "p1" });
+    const repo = new ModerationRepository(fakeHttp({ get }));
+    const res = await repo.listReports(
+      { status: "pending", contentType: "all", search: "" },
+      null,
+    );
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
+});
 
-  it("comment target fails fast WITHOUT any HTTP call (no such endpoint)", async () => {
-    const post = vi.fn();
-    const del = vi.fn();
-    const get = vi.fn();
-    const put = vi.fn();
-    const repo = new ModerationRepository(
-      fakeHttp({ post, delete: del, get, put }),
+describe("ModerationRepository.getReportStats — its own endpoint", () => {
+  it("GETs /reports/stats and maps the flat counters", async () => {
+    const get = vi.fn().mockResolvedValue({ pending: 5, resolved: 12 });
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    const res = await repo.getReportStats();
+
+    expect(get).toHaveBeenCalledWith("/social/api/v1/reports/stats");
+    expect(res).toEqual({
+      ok: true,
+      value: { pendingCount: 5, resolvedCount: 12 },
+    });
+  });
+
+  it("sends NO filter params — the counters are tenant-wide by contract", async () => {
+    const get = vi.fn().mockResolvedValue({ pending: 0, resolved: 0 });
+    const repo = new ModerationRepository(fakeHttp({ get }));
+    await repo.getReportStats();
+    expect(get.mock.calls[0]).toHaveLength(1);
+  });
+});
+
+describe("ModerationRepository.getReportDetail — partition-locating params", () => {
+  it("sends the REQUIRED filedAt + the status partition", async () => {
+    const get = vi.fn().mockResolvedValue(ROW);
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    const res = await repo.getReportDetail(PENDING_REF);
+
+    expect(get).toHaveBeenCalledWith("/social/api/v1/reports/rep-1", {
+      params: { filedAt: "2026-07-10T08:00:00Z", status: "PENDING" },
+    });
+    expect(res).toEqual({
+      ok: true,
+      value: ModerationMapper.toReportDetailEntity(ROW),
+    });
+  });
+
+  it("sends status=RESOLVED for a resolved row (a resolved id is NOT in the PENDING partition)", async () => {
+    const get = vi.fn().mockResolvedValue({
+      ...ROW,
+      status: "RESOLVED",
+      resolutionOutcome: "DELETE",
+    });
+    const repo = new ModerationRepository(fakeHttp({ get }));
+
+    await repo.getReportDetail({
+      reportId: "rep-1",
+      filedAt: "2026-07-10T08:00:00Z",
+      status: "removed",
+    });
+
+    expect(get.mock.calls[0][1].params.status).toBe("RESOLVED");
+  });
+
+  it("maps an unresolvable tuple (404, incl. cross-tenant) to not-found", async () => {
+    const get = vi.fn().mockRejectedValue(
+      new ApiError({
+        code: "REPORT_NOT_FOUND",
+        message: "x",
+        retryable: false,
+        status: 404,
+      }),
     );
+    const repo = new ModerationRepository(fakeHttp({ get }));
+    expect(await repo.getReportDetail(PENDING_REF)).toEqual({
+      ok: false,
+      error: { type: "not-found" },
+    });
+  });
+});
+
+describe("ModerationRepository.dismissReport — CAS resolve", () => {
+  it("POSTs action=DISMISS with the echoed filedAt", async () => {
+    const post = vi.fn().mockResolvedValue(undefined);
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.dismissReport(PENDING_REF);
+
+    expect(post).toHaveBeenCalledWith("/social/api/v1/reports/rep-1/resolve", {
+      action: "DISMISS",
+      filedAt: "2026-07-10T08:00:00Z",
+    });
+    expect(res).toEqual({ ok: true });
+  });
+
+  it("maps the CAS loser's 409 to already-resolved", async () => {
+    const post = vi.fn().mockRejectedValue(
+      new ApiError({
+        code: "REPORT_ALREADY_RESOLVED",
+        message: "x",
+        retryable: false,
+        status: 409,
+      }),
+    );
+    const repo = new ModerationRepository(fakeHttp({ post }));
+    expect(await repo.dismissReport(PENDING_REF)).toEqual({
+      ok: false,
+      error: { type: "already-resolved" },
+    });
+  });
+});
+
+describe("ModerationRepository.removeContent — two real paths", () => {
+  it("report-driven POST target resolves with action=DELETE (one atomic call)", async () => {
+    const post = vi.fn().mockResolvedValue(undefined);
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.removeContent({
+      kind: "post",
+      contentId: "post-9",
+      ref: PENDING_REF,
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenCalledWith("/social/api/v1/reports/rep-1/resolve", {
+      action: "DELETE",
+      filedAt: "2026-07-10T08:00:00Z",
+    });
+  });
+
+  it("report-driven COMMENT target uses the SAME resolve call (no parentId needed)", async () => {
+    const post = vi.fn().mockResolvedValue(undefined);
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.removeContent({
+      kind: "comment",
+      contentId: "cmt-3",
+      ref: PENDING_REF,
+    });
+
+    expect(res).toEqual({ ok: true });
+    // A report row carries only the commentId, never its parent postId — the
+    // direct comment route would be unaddressable from the queue.
+    expect(post).toHaveBeenCalledWith("/social/api/v1/reports/rep-1/resolve", {
+      action: "DELETE",
+      filedAt: "2026-07-10T08:00:00Z",
+    });
+  });
+
+  it("direct POST removal (no report in scope) uses the bare moderate-delete route", async () => {
+    const post = vi.fn().mockResolvedValue(undefined);
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.removeContent({ kind: "post", contentId: "p1" });
+
+    expect(res).toEqual({ ok: true });
+    expect(post).toHaveBeenCalledWith(
+      "/social/api/v1/feeds/posts/p1/moderate-delete",
+    );
+  });
+
+  it("direct COMMENT removal uses the parent-scoped route (US-166)", async () => {
+    const post = vi.fn().mockResolvedValue(undefined);
+    const repo = new ModerationRepository(fakeHttp({ post }));
 
     const res = await repo.removeContent({
       kind: "comment",
@@ -257,10 +514,111 @@ describe("ModerationRepository.removeContent — real moderate-delete contract",
       parentId: "p1",
     });
 
-    expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
+    expect(res).toEqual({ ok: true });
+    expect(post).toHaveBeenCalledWith(
+      "/social/api/v1/feeds/posts/p1/comments/c1/moderate-delete",
+    );
+  });
+
+  it("direct COMMENT removal WITHOUT a parentId fails fast, zero HTTP", async () => {
+    const post = vi.fn();
+    const get = vi.fn();
+    const repo = new ModerationRepository(fakeHttp({ post, get }));
+
+    const res = await repo.removeContent({ kind: "comment", contentId: "c1" });
+
+    expect(res).toEqual({ ok: false, error: { type: "validation" } });
     expect(post).not.toHaveBeenCalled();
-    expect(del).not.toHaveBeenCalled();
     expect(get).not.toHaveBeenCalled();
-    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("maps the already-deleted 409 to already-resolved", async () => {
+    const post = vi.fn().mockRejectedValue(
+      new ApiError({
+        code: "MODERATION_TARGET_ALREADY_DELETED",
+        message: "x",
+        retryable: false,
+        status: 409,
+      }),
+    );
+    const repo = new ModerationRepository(fakeHttp({ post }));
+    expect(await repo.removeContent({ kind: "post", contentId: "p1" })).toEqual(
+      { ok: false, error: { type: "already-resolved" } },
+    );
+  });
+});
+
+describe("ModerationRepository.createReport — SubmitReportRequest", () => {
+  it("maps kind/reason to the wire enums and omits reasonFreeText", async () => {
+    const post = vi.fn().mockResolvedValue({ reportId: "new-1" });
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.createReport({
+      kind: "post",
+      contentId: "post-9",
+      reason: "bullying",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(post).toHaveBeenCalledWith("/social/api/v1/reports", {
+      targetType: "POST",
+      targetId: "post-9",
+      reasonCategory: "HARASSMENT",
+    });
+  });
+
+  it("reports a COMMENT target (US-166 — no longer an unsupported kind)", async () => {
+    const post = vi.fn().mockResolvedValue({ reportId: "new-2" });
+    const repo = new ModerationRepository(fakeHttp({ post }));
+
+    const res = await repo.createReport({
+      kind: "comment",
+      contentId: "cmt-3",
+      reason: "other",
+      note: "  Nội dung sai sự thật  ",
+    });
+
+    expect(res).toEqual({ ok: true });
+    expect(post).toHaveBeenCalledWith("/social/api/v1/reports", {
+      targetType: "COMMENT",
+      targetId: "cmt-3",
+      reasonCategory: "OTHER",
+      reasonFreeText: "Nội dung sai sự thật",
+    });
+  });
+
+  it("maps the hourly rate limit (429) to the retryable network bucket", async () => {
+    const post = vi.fn().mockRejectedValue(
+      new ApiError({
+        code: "REPORT_RATE_LIMITED",
+        message: "x",
+        retryable: true,
+        status: 429,
+      }),
+    );
+    const repo = new ModerationRepository(fakeHttp({ post }));
+    expect(
+      await repo.createReport({
+        kind: "post",
+        contentId: "p",
+        reason: "spam",
+      }),
+    ).toEqual({ ok: false, error: { type: "network-error" } });
+  });
+});
+
+describe("ModerationRepository.getModerationAuditLog — honest degrade", () => {
+  it("returns a typed failure with ZERO HTTP (no content-moderation audit exists)", async () => {
+    const get = vi.fn();
+    const post = vi.fn();
+    const repo = new ModerationRepository(fakeHttp({ get, post }));
+
+    const res = await repo.getModerationAuditLog("tenant-1", null);
+
+    // Never silently serve the ROOM capability audit (US-086) as if it were the
+    // dismiss/remove trail, and never fabricate entries.
+    expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
+    expect(get).not.toHaveBeenCalled();
+    expect(post).not.toHaveBeenCalled();
   });
 });

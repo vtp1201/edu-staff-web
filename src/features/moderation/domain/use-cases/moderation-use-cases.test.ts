@@ -16,6 +16,7 @@ function makeRepo(
   return {
     createReport: vi.fn(),
     listReports: vi.fn(),
+    getReportStats: vi.fn(),
     getReportDetail: vi.fn(),
     dismissReport: vi.fn(),
     removeContent: vi.fn(),
@@ -94,11 +95,17 @@ describe("passthrough use-cases", () => {
     expect(listReports).toHaveBeenCalledWith(filter, "cursor-1");
   });
 
-  it("DismissReportUseCase forwards reportId", async () => {
+  it("DismissReportUseCase forwards the whole ReportRef (CAS key included)", async () => {
     const dismissReport = vi.fn().mockResolvedValue(OK);
     const uc = new DismissReportUseCase(makeRepo({ dismissReport }));
-    await uc.execute("r-9");
-    expect(dismissReport).toHaveBeenCalledWith("r-9");
+    const ref = {
+      reportId: "r-9",
+      filedAt: "2026-07-10T08:00:00Z",
+      status: "pending" as const,
+    };
+    await uc.execute(ref);
+    // A bare id cannot address the row — the echoed `filedAt` must survive.
+    expect(dismissReport).toHaveBeenCalledWith(ref);
   });
 
   it("RemoveContentUseCase forwards the full input", async () => {
@@ -107,8 +114,11 @@ describe("passthrough use-cases", () => {
     const input = {
       kind: "post" as const,
       contentId: "c-4",
-      reportId: "r-4",
-      resolveNote: "vi phạm nội quy",
+      ref: {
+        reportId: "r-4",
+        filedAt: "2026-07-10T08:00:00Z",
+        status: "pending" as const,
+      },
     };
     await uc.execute(input);
     expect(removeContent).toHaveBeenCalledWith(input);
