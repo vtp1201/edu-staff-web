@@ -19,7 +19,7 @@ const createPostExecute = vi.fn();
 const reactToPostExecute = vi.fn();
 const listCommentsExecute = vi.fn();
 const addCommentExecute = vi.fn();
-const togglePinMockExecute = vi.fn();
+const togglePinExecute = vi.fn();
 
 vi.mock("@/bootstrap/di/feed.di", () => ({
   makeListFeedUseCase: vi.fn(async () => ({ execute: listFeedExecute })),
@@ -31,8 +31,8 @@ vi.mock("@/bootstrap/di/feed.di", () => ({
     execute: listCommentsExecute,
   })),
   makeAddCommentUseCase: vi.fn(async () => ({ execute: addCommentExecute })),
-  makeTogglePinMockUseCase: vi.fn(async () => ({
-    execute: togglePinMockExecute,
+  makeTogglePinUseCase: vi.fn(async () => ({
+    execute: togglePinExecute,
   })),
 }));
 

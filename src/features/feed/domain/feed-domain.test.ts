@@ -7,6 +7,7 @@ import type {
 import { emptyReactionCounts } from "./entities/reaction.entity";
 import { type FeedFailure, isRetryableFailure } from "./failures/feed.failure";
 import { canPost } from "./policies/can-post";
+import { feedRoleOfAppRole, feedRoleOfMemberRole } from "./policies/feed-role";
 import { isMenuEmpty, menuVisibility } from "./policies/menu-visibility";
 import { sortPosts } from "./policies/sort-posts";
 import type {
@@ -16,7 +17,7 @@ import type {
 import { AddCommentUseCase } from "./use-cases/add-comment.use-case";
 import { CreatePostUseCase } from "./use-cases/create-post.use-case";
 import { ReactToPostUseCase } from "./use-cases/react-to-post.use-case";
-import { TogglePinMockUseCase } from "./use-cases/toggle-pin-mock.use-case";
+import { TogglePinUseCase } from "./use-cases/toggle-pin.use-case";
 
 // ── Fake repo ────────────────────────────────────────────────────────────────
 function makeRepo(overrides: Partial<IFeedRepository> = {}): IFeedRepository {
@@ -48,7 +49,7 @@ function makeRepo(overrides: Partial<IFeedRepository> = {}): IFeedRepository {
         createdAt: "2026-07-11T10:00:00.000Z",
       }),
     ),
-    togglePinMock: vi.fn((postId, pinned) => ok({ postId, pinned })),
+    togglePin: vi.fn((postId, pinned) => ok({ postId, pinned })),
     ...overrides,
   };
 }
@@ -317,12 +318,47 @@ describe("AddCommentUseCase", () => {
   });
 });
 
-// ── toggle-pin-mock use-case (AC-1909.1) ────────────────────────────────────
-describe("TogglePinMockUseCase", () => {
-  it("calls togglePinMock, never any HTTP-shaped method", async () => {
+// ── feed-role policy (US-E18.31 fix: one canonical IAM map) ─────────────────
+describe("feedRoleOfMemberRole", () => {
+  it("maps every IAM member role via the canonical ROLE_ENUM_TO_APP map", () => {
+    expect(feedRoleOfMemberRole("TEACHER")).toBe("teacher");
+    expect(feedRoleOfMemberRole("STAFF")).toBe("teacher");
+    expect(feedRoleOfMemberRole("ADMIN")).toBe("principal");
+    expect(feedRoleOfMemberRole("MANAGER")).toBe("principal");
+    expect(feedRoleOfMemberRole("STUDENT")).toBe("student");
+    expect(feedRoleOfMemberRole("PARENT")).toBe("parent");
+  });
+
+  it("tolerates lowercase mock payloads", () => {
+    expect(feedRoleOfMemberRole("parent")).toBe("parent");
+    expect(feedRoleOfMemberRole("admin")).toBe("principal");
+  });
+
+  it("returns null for unknown/absent values (no guessed badge)", () => {
+    expect(feedRoleOfMemberRole("PRINCIPAL")).toBeNull();
+    expect(feedRoleOfMemberRole("")).toBeNull();
+    expect(feedRoleOfMemberRole(null)).toBeNull();
+    expect(feedRoleOfMemberRole(undefined)).toBeNull();
+  });
+});
+
+describe("feedRoleOfAppRole", () => {
+  it("passes the four badge roles through and nulls admin/none", () => {
+    expect(feedRoleOfAppRole("teacher")).toBe("teacher");
+    expect(feedRoleOfAppRole("principal")).toBe("principal");
+    expect(feedRoleOfAppRole("student")).toBe("student");
+    expect(feedRoleOfAppRole("parent")).toBe("parent");
+    expect(feedRoleOfAppRole("admin")).toBeNull();
+    expect(feedRoleOfAppRole(null)).toBeNull();
+  });
+});
+
+// ── toggle-pin use-case (AC-1909.1) ────────────────────────────────────────────────────────────────────────────
+describe("TogglePinUseCase", () => {
+  it("calls togglePin, never any HTTP-shaped method", async () => {
     const repo = makeRepo();
-    await new TogglePinMockUseCase(repo).execute("p1", true);
-    expect(repo.togglePinMock).toHaveBeenCalledWith("p1", true);
+    await new TogglePinUseCase(repo).execute("p1", true);
+    expect(repo.togglePin).toHaveBeenCalledWith("p1", true);
     expect(repo.getFeed).not.toHaveBeenCalled();
     expect(repo.createPost).not.toHaveBeenCalled();
     expect(repo.setReaction).not.toHaveBeenCalled();

@@ -21,16 +21,24 @@ export interface FeedAttachment {
 }
 
 /**
- * A feed post (INT-190-01/02 payload row). Wire fields camelCase. `authorRole`
- * may be any BE role; presentation maps it to a tone. `pinned` is authoritative
- * from the server on fetch but flipped locally by the mock pin toggle
- * (FR-011). `classId` present only when `scope === "class"`.
+ * A feed post. Wire fields camelCase. `pinned` is authoritative from the server
+ * on fetch but flipped locally by the mock pin toggle (FR-011). `classId`
+ * present only when `scope === "class"`.
+ *
+ * US-E18.31: `authorName`/`authorRole` are NULLABLE because the real wire's
+ * denormalized identity (BE US-165) is nullable — a post written before
+ * migration 035 has no stored name/role and there is no backfill, and an author
+ * whose IAM member role is outside the feed's display vocabulary
+ * (ADMIN/MANAGER/STAFF) has no badge. Presentation renders an i18n
+ * unknown-author label and omits the badge; nothing is ever invented in the
+ * mapper. `authorAvatarInitials` is always a string ("?" when unknown) — the
+ * avatar is initials-only by design, `avatarUrl` is never read.
  */
 export interface FeedPostEntity {
   postId: string;
   authorId: string;
-  authorName: string;
-  authorRole: FeedRole;
+  authorName: string | null;
+  authorRole: FeedRole | null;
   authorAvatarInitials: string;
   scope: FeedScope;
   classId?: string;

@@ -6,7 +6,7 @@ import {
   makeListCommentsUseCase,
   makeListFeedUseCase,
   makeReactToPostUseCase,
-  makeTogglePinMockUseCase,
+  makeTogglePinUseCase,
 } from "@/bootstrap/di/feed.di";
 import {
   makeRemoveContentUseCase,
@@ -84,11 +84,11 @@ export async function addCommentAction(input: {
   return toResult(await uc.execute(input.postId, input.content));
 }
 
-export async function togglePinMockAction(input: {
+export async function togglePinAction(input: {
   postId: string;
   pinned: boolean;
 }) {
-  const uc = await makeTogglePinMockUseCase();
+  const uc = await makeTogglePinUseCase();
   return toResult(await uc.execute(input.postId, input.pinned));
 }
 

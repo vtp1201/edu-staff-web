@@ -1,12 +1,16 @@
 import type { FeedRole } from "./feed-post.entity";
 
-/** A comment on a feed post (INT-190-05 payload row). Wire fields camelCase. */
+/**
+ * A comment on a feed post. Wire fields camelCase. `authorName`/`authorRole`
+ * are nullable for the same reason as {@link FeedPostEntity} — the real wire's
+ * denormalized identity (BE US-165) is nullable.
+ */
 export interface FeedCommentEntity {
   commentId: string;
   postId: string;
   authorId: string;
-  authorName: string;
-  authorRole: FeedRole;
+  authorName: string | null;
+  authorRole: FeedRole | null;
   authorAvatarInitials: string;
   content: string;
   createdAt: string;

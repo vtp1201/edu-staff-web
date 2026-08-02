@@ -33,6 +33,8 @@ export function FeedCommentItem({
   const t = useTranslations("feed");
   const locale = useLocale();
   const tone = feedRoleTone(comment.authorRole);
+  // Nullable denormalized identity (US-E18.31) — see FeedPostCard.
+  const authorName = comment.authorName ?? t("unknownAuthor");
 
   return (
     <div className="flex items-start gap-2.5">
@@ -44,7 +46,7 @@ export function FeedCommentItem({
       <div className="min-w-0 flex-1 rounded-[10px] bg-muted px-3 py-2">
         <div className="flex flex-wrap items-baseline gap-2">
           <span className="font-bold text-[12.5px] text-foreground">
-            {comment.authorName}
+            {authorName}
           </span>
           <time
             dateTime={comment.createdAt}
@@ -59,7 +61,7 @@ export function FeedCommentItem({
         </p>
       </div>
       <FeedMenu
-        ariaLabel={t("menu.commentOptions", { author: comment.authorName })}
+        ariaLabel={t("menu.commentOptions", { author: authorName })}
         canReport={canReport}
         onReport={onReport}
         reportLabel={t("menu.report")}
