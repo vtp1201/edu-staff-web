@@ -100,10 +100,10 @@ parent's own token — it will 403 by design, not by accident.
 
 | Layer | Expected proof | Actual (2026-08-02) |
 | --- | --- | --- |
-| Unit | `get-child-attendance.use-case.test.ts`, date-range validation | ✅ 6 use-case cases (inverted range short-circuits the repo, 366-day boundary ±1, typed/untyped rejection) + `date-range.test.ts` (12) + `build-parent-attendance-vm.test.ts` (9) + `resolve-range.test.ts` (8) |
-| Integration | mock repository test only (no real HTTP boundary yet) | ✅ `mock-child-attendance.repository.test.ts` (6, goes through the real DTO→mapper path) + `child-attendance.mapper.test.ts` (3, key-set assertion that `classId` is dropped) |
-| E2E | Storybook interaction: child switch → refetch, empty state, status badges render with icon+label | ✅ 10 interaction stories (`parent-attendance-screen.stories.tsx`): Populated / SwitchChild / ChangeDateRange / DefaultCurrentMonthRange / Loading / NoLinkedChildren / EmptyRange / ErrorForbidden / ErrorNetworkRetry / ErrorInvalidRange. Mutation-checked: removing the badge icon or forcing `showRetry` red-lines 3 of them |
-| Platform | `bun build` clean | ✅ clean with `NEXT_PUBLIC_USE_MOCK=true` AND with the flag unset (real mode) — the route is `ƒ /[locale]/t/[tenant]/parent/attendance` |
+| Unit | `get-child-attendance.use-case.test.ts`, date-range validation | ✅ 6 use-case cases (inverted range short-circuits the repo, 366-day boundary ±1, typed/untyped rejection) + `date-range.test.ts` (12) + `build-parent-attendance-vm.test.ts` (12 — `parseIsoDate` replaces `formatIsoDate`, incl. the vi/en ordering guard) + `resolve-range.test.ts` (8) |
+| Integration | mock repository test only (no real HTTP boundary yet) | ✅ `mock-child-attendance.repository.test.ts` (6, goes through the real DTO→mapper path) + `child-attendance.mapper.test.ts` (3, key-set assertion that `classId` is dropped) + **fix round**: `unavailable-child-attendance.repository.test.ts` (2) + `bootstrap/di/parent-attendance.di.test.ts` (6 — the 3-state env matrix, incl. "no `createServerHttpClient` in any state") + `parent/attendance/page.test.ts` (3 — real page→DI→repo chain per env) |
+| E2E | Storybook interaction: child switch → refetch, empty state, status badges render with icon+label | ✅ 11 interaction stories (`parent-attendance-screen.stories.tsx`): Populated / **PopulatedEnglishLocale** / SwitchChild / ChangeDateRange / DefaultCurrentMonthRange / Loading / NoLinkedChildren / EmptyRange / ErrorForbidden / ErrorNetworkRetry / ErrorInvalidRange, + `Shared/ListError → WithIdForAriaDescribedby`. Mutation-checked: removing the badge icon or forcing `showRetry` red-lines 3 of them; force-mocking the DI factory red-lines 2 of `page.test.ts` |
+| Platform | `bun build` clean | ✅ clean with `NEXT_PUBLIC_USE_MOCK=true` AND with the flag unset (real mode) — the route is `ƒ /[locale]/t/[tenant]/parent/attendance`; real mode now degrades to the `forbidden` state instead of serving mock rows (`page.test.ts`) |
 | Release | design-review gate + a11y audit green | pending fe-lead (no `design-spec.jsonc` entry exists for this screen — token/pattern reuse is the substitute) |
 
 ## Harness Delta
@@ -173,10 +173,10 @@ rule), but it is the reviewer's call.
 
 ### Other notable decisions
 
-- **Mock-only, unconditional** (`bootstrap/di/parent-attendance.di.ts`): no
-  `USE_MOCK` branch and no never-constructed "real" repository class
-  (US-E18.20 lesson). The DTO + mapper ARE contract-correct against
-  `MemberAttendanceResponse`, so un-mocking is a small diff.
+- ~~**Mock-only, unconditional**~~ — **REVERSED in the fix round**, see
+  "Fix round" below. The factory is now `USE_MOCK`-gated; real mode returns
+  `UnavailableChildAttendanceRepository`. The DTO + mapper ARE contract-correct
+  against `MemberAttendanceResponse`, so un-mocking is still a small diff.
 - **Mock data is generated, not hard-coded to one month.** The default range is
   the CURRENT month, so a fixture pinned to a fixed month would render empty
   from next month on. `buildMockAttendanceDto` is deterministic (10-school-day
@@ -200,6 +200,87 @@ rule), but it is the reviewer's call.
   `en.json` in the same commit.
 - `gradeBook.childSwitcherLabel` → `Common.childSwitcherLabel` (moved, same
   copy; the `gradeBook` key is deleted, no dead key left).
+- Fix round: `parentAttendance.summaryChip` added to `vi.json` (`"{label} {count}"`)
+  and `en.json` (`"{label}: {count}"`) — the differing punctuation is the point:
+  chip composition is now a translator's decision, not JSX word order.
+
+## Fix round (2026-08-02) — tech-lead MUST-FIX + 4 SHOULD-FIX
+
+_Applied by fe-nextjs-engineer on the same branch. CONSIDER-level items and the
+2 a11y Minors were deferred per fe-lead._
+
+### MUST-FIX — real mode no longer fabricates a real child's attendance
+
+`bootstrap/di/parent-attendance.di.ts` returned the mock repository
+unconditionally, so with `NEXT_PUBLIC_USE_MOCK` unset in a real environment a
+parent would have seen invented present/late/excused/absent rows for their real
+child — contradicting this story's own AC and materially worse than the
+`staff-leave`/`principal-classes` force-mock precedent (those serve harmless
+roster-shaped seed data; this is child-specific data a parent could act on).
+
+- NEW `features/parent-attendance/infrastructure/repositories/unavailable-child-attendance.repository.ts`
+  (`import "server-only"`): rejects `{ type: "forbidden" }` immediately, **no
+  HTTP attempted**. `forbidden` (not `not-implemented`) is the accurate type —
+  PARENT's absence from `getMemberAttendance`'s ACL is a permanent
+  authorization gap, not an unshipped endpoint.
+- The DI factory is now `USE_MOCK ? Mock : Unavailable`, with the reversal and
+  its rationale documented in the factory's doc comment.
+- The screen already omitted the retry control for `forbidden`
+  (`isRetryableFailure`) — re-confirmed; the previously-unreachable
+  `parentAttendance.errors.forbidden` key and the `ErrorForbidden` story are now
+  the real production path.
+- Proof (TDD, red first — the 3 new forbidden-state assertions failed against
+  the old factory):
+  - `bootstrap/di/parent-attendance.di.test.ts` — env matrix `"true"` /
+    `"false"` / unset: mock repo + rows only for `"true"`; the other two get
+    `UnavailableChildAttendanceRepository` and `{ ok: false, error: { type:
+    "forbidden" } }`; and `createServerHttpClient` is asserted **never
+    constructed in all three states** (it is `vi.doMock`-ed and the factory AND
+    the `execute()` call path are both exercised).
+  - `app/[locale]/t/[tenant]/(app)/parent/attendance/page.test.ts` — the real
+    page → DI → repository → use-case chain per env: `"true"` ⇒ `error: null`
+    with rows; unset/`"false"` ⇒ `error: "forbidden"` and `records: []`, while
+    the switcher/range control still render. Mutation-checked: forcing the
+    factory back to unconditional-mock red-lines 2 of these 3.
+
+### SHOULD-FIX
+
+1. `mocks/mock-child-attendance.repository.ts` now carries `import "server-only"`
+   (matching 26/28 mock repositories); its doc comment now says
+   development-only-when-`USE_MOCK`, not "the ONLY implementation".
+2. `components/shared/list-error/list-error.stories.tsx` gained
+   `WithIdForAriaDescribedby`, exercising the `id?: string` prop this story
+   added — it asserts the id lands on the alert AND that a sibling date input's
+   `aria-describedby` resolves to that text (`toHaveAccessibleDescription`), so
+   the shared component's own story file covers its full prop surface.
+3. `formatIsoDate` (hard-coded DD/MM/YYYY, wrong for `en`) is replaced by the
+   pure `parseIsoDate` (`YYYY-MM-DD` → noon-UTC `Date`, `null` for a non-day or
+   a rolled-over date like `2026-02-30`); the screen formats with next-intl
+   `useFormatter().dateTime(day, { day/month: "2-digit", year: "numeric",
+   timeZone: "UTC" })` — the same API `audit-log`/`lms` use. `vi` renders
+   `03/08/2026`, `en` renders `08/03/2026`; noon-UTC + explicit `timeZone`
+   keeps the calendar day stable across timezones and identical server/client.
+   Proved by the new `PopulatedEnglishLocale` story (asserts `08/03/2026` is
+   present and `03/08/2026` is absent under an `en` provider).
+4. The summary chip no longer concatenates `{tStatus(status)} {counts[status]}`
+   in JSX — it calls `t("summaryChip", { label, count })` against a new key in
+   both message files. The same `en` story asserts `"Present: 1"`.
+
+### Fix-round proof commands (as observed)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint:fix` / `bun lint` | clean — same 1 pre-existing warning + 1 info in `message-context-menu.tsx` (untouched) |
+| `bun vitest run` | **462 files / 3317 tests, 0 failures** (fresh pre-fix baseline re-measured on the branch: 459 / 3304 → +3 files / +13 tests, zero regressions) |
+| `bunx vitest run --config vitest.storybook.mts` | **157 files / 1184 tests, 0 failures** (pre-fix 157 / 1182 → +2 stories) |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | clean |
+| `env -u NEXT_PUBLIC_USE_MOCK bun run build` | clean; route still `ƒ` (dynamic, nothing prerendered) — the honest-degrade behaviour in that config is proved by `page.test.ts`, which runs the real chain with the flag unset |
+
+> Known, deliberately out of scope (CONSIDER, deferred by fe-lead): in real mode
+> the child LIST still comes from the force-mocked `makeGetChildListUseCase`
+> (ADR 0054, pre-existing and shared with `parent/grades`), so the switcher
+> shows seed children next to the honest "attendance not available" alert.
 
 ## Implementation Plan
 
