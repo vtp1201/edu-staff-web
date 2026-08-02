@@ -83,11 +83,11 @@ which already has the name.
 
 | Layer | Expected proof | Actual |
 | --- | --- | --- |
-| Unit | ViewModel-mapping test (select child summary fields, no-child empty mapping) | ✅ 14 tests — `build-children-overview-vm.test.ts` (8) + `child-identity-header.test.tsx` (6) |
+| Unit | ViewModel-mapping test (select child summary fields, no-child empty mapping) | ✅ 18 tests — `build-children-overview-vm.test.ts` (11: +3 for the errorKey carrier / retryability) + `child-identity-header.test.tsx` (7: +1 negative contrast-token guard) |
 | Integration | none new (repository already covered by US-E20.2) | ✅ n/a — no new repo/HTTP boundary |
-| E2E | Storybook interaction: cards render, empty state, card → academic-record navigation | ✅ 11 stories (7 screen + 4 shared component), incl. loading/empty/error+retry/keyboard/href |
+| E2E | Storybook interaction: cards render, empty state, card → academic-record navigation | ✅ 13 stories (8 screen + 5 shared component), incl. loading/empty/network-error+retry/forbidden-without-retry/keyboard/href/avatar font-size parity |
 | Platform | `bun build` clean | ✅ clean with `NEXT_PUBLIC_USE_MOCK=` unset; route emitted |
-| Release | design-review gate + a11y audit green | ⏳ pending `fe-lead` review/QA gate |
+| Release | design-review gate + a11y audit green | ✅ review + a11y findings fixed (see Evidence → Review-fix pass); ⏳ re-verification by `fe-lead` |
 
 ## Harness Delta
 
@@ -108,7 +108,7 @@ shared-component promotion, `365377e` screen + route).
 | App (server action) | `src/app/[locale]/t/[tenant]/(app)/parent/children/actions.ts` (`'use server'`) |
 | App (RSC) | `src/app/[locale]/t/[tenant]/(app)/parent/children/page.tsx` |
 | Refactored call sites | `src/features/parent/presentation/parent-dashboard.tsx`, `src/features/user/presentation/profile/consent-section/child-consent-card.tsx` |
-| i18n | `messages/{vi,en}.json` → new `parentChildrenOverview.*` (4 keys, vi+en); empty/error copy REUSED from `parentLinks.consentSection.*` |
+| i18n | `messages/{vi,en}.json` → new `parentChildrenOverview.*` (6 keys, vi+en — 4 initially + `forbiddenError.{title,body}` in the review-fix pass); empty/generic-error copy REUSED from `parentLinks.consentSection.*` |
 
 No new domain / infrastructure / DI code: the screen reuses US-E20.2's
 `GetLinkedStudentsWithConsentsUseCase` via the existing
@@ -159,6 +159,73 @@ keyboard Tab card-to-card (one tab stop per card), empty state, forbidden error
 + retry → success (asserts forbidden is NOT rendered as "no children");
 `ChildIdentityHeader` — default, consent-card shape, dashboard shape, long-name
 truncation.
+
+### Review-fix pass (commits `15ffd24`, `04608ad`)
+
+Addresses `fe-tech-lead-reviewer` (Revision Required) + `fe-accessibility-auditor`
+(FAIL). Out-of-scope items explicitly NOT touched: the consent-section's own
+retry-gating (cross-cutting, `fe-lead` follow-up), the tone↔font-weight coupling
+and the `truncate` note (both CONSIDER-only).
+
+1. **MUST-FIX — avatar font-size parity regression** (`child-identity-header.tsx`).
+   The promoted component hard-coded `text-xs` on `AvatarFallback` for every
+   size, but `parent-dashboard.tsx`'s original avatar passed NO font-size class,
+   so shadcn's `AvatarFallback` default (`text-sm`, `avatar.tsx:49`) applied —
+   the promotion silently shrank those initials 14px → 12px. Replaced with a
+   size-keyed map `FALLBACK_TEXT = { md: "text-xs", lg: "text-sm" }` used as
+   `cn(FALLBACK_TEXT[size], identityToneClass(tone))`.
+   **Now locked by tests, not a comment:** `DashboardShape` asserts the fallback
+   `toHaveClass("text-sm")` **and** `not.toHaveClass("text-xs")`; the new
+   `OverviewCardShape` asserts `text-sm`; `Default` + `ConsentCardShape` assert
+   `text-xs`. Verified genuinely red: temporarily setting `lg: "text-xs"` fails
+   2 of the 5 stories, restoring `text-sm` makes them pass.
+2. **MUST-FIX — WCAG 1.4.3 contrast, both tones** (`identityToneClass()`). The
+   initials are 12–14px **bold** text (no large-text 3:1 exemption), so both
+   branches used a fill token below 4.5:1. Fixed with the existing AA *text*
+   tokens (no new token, no ADR needed):
+   - primary: `bg-primary/10 text-primary` (#4570EA ≈ 4.41:1 — FAIL) →
+     `bg-edu-primary-accessible/10 text-edu-primary-accessible`
+     (`--edu-primary-accessible` #4468E0 = **4.88:1** on white — PASS).
+   - purple: `text-edu-purple` (#7B5EA7 ≈ 4.32:1 — FAIL) → `text-edu-purple-text`
+     (`--edu-purple-text` #5B3D8A = **6.9:1** on white / ≈6.3:1 on the
+     `bg-edu-purple/15` tint — PASS). Tint unchanged, so no visual re-layout.
+   `child-identity-header.test.tsx` asserts the new class strings **plus** a
+   negative guard that neither sub-4.5:1 fill token can come back.
+3. **SHOULD-FIX — forbidden got a meaningless retry**
+   (`children-overview-screen.tsx`). The mapper already distinguished
+   `forbidden`, but the screen rendered one generic `ListError` **with** a retry
+   for every key; a 403 can never be fixed by retrying (the domain's own
+   `isRetryableFailure()` treats only `network-error` as retryable). The query
+   now throws a typed `ChildrenOverviewQueryError` carrying the stable key
+   (branch on the KEY, never on `error.message`), and the screen derives
+   `resolveErrorKey()` → `isRetryableErrorKey()` to pass `showRetry={canRetry}`
+   to `ListError` (the prop OMITS the button from the DOM — never merely
+   disables it) together with dedicated copy
+   `parentChildrenOverview.forbiddenError.{title,body}` (vi + en). New
+   `ForbiddenNoRetry` story asserts: alert present, forbidden copy shown, **no**
+   "Thử lại" button, still not a fake empty, zero links. The existing
+   `ErrorWithRetry` story now uses a `network-error` fixture (it previously
+   used `forbidden`, which is exactly the confusion this fix removes).
+4. **SHOULD-FIX — misleading story comment** (`child-identity-header.stories.tsx`).
+   `Default` was documented as "the US-E20.4 overview-card use", but
+   `child-overview-card.tsx` actually passes `size="lg" tone="purple"
+   initials="single"`. `Default` is now documented as the bare prop defaults
+   (no real caller), each `*Shape` story names its exact call-site file, and the
+   real overview-card combination gained its own `OverviewCardShape` story.
+
+Files touched in this pass: `src/components/shared/child-identity-header/
+{child-identity-header.tsx,child-identity-header.test.tsx,child-identity-header.stories.tsx}`,
+`src/features/parent/presentation/children-overview-screen/
+{build-children-overview-vm.ts,build-children-overview-vm.test.ts,children-overview-screen.i-vm.ts,children-overview-screen.tsx,children-overview-screen.stories.tsx}`,
+`src/bootstrap/i18n/messages/{vi,en}.json` (+2 keys each).
+
+| Check (re-run after the fixes) | Result |
+| --- | --- |
+| `bun vitest run` | **453 files / 3263 tests passed** (from 453/3259 → +4 tests, zero regressions; `parent-dashboard` + `child-consent-card` suites green with the corrected avatar sizing) |
+| `bunx vitest run --config vitest.storybook.mts` | **156 files / 1172 interaction tests passed** (from 156/1170 → +2 stories, zero regressions) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` / `bun lint:fix` | clean on all touched paths (only the pre-existing `message-context-menu.tsx` warning/info remains repo-wide) |
+| `bun run build` (`NEXT_PUBLIC_USE_MOCK=` unset) | ✓ Compiled successfully |
 
 ## Implementation Plan
 
