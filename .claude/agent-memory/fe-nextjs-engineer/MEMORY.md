@@ -84,4 +84,6 @@
 
 - [Wire-enrichment un-fan-out](pattern-wire-enrichment-unfanout.md) — E18.30: enrichment is per-ENDPOINT (POST/PATCH unenriched → need a GET read-back); prove fan-out removal with call-COUNT asserts; id-authoritative vs null display name; audit siblings by endpoint URL not repo name (+more in file)
 
+- [Un-mock an anticipatory DTO](pattern-unmock-anticipatory-dto.md) — E18.34: a DTO only the MOCK ever produced is UNVERIFIED (field names right, enum CASING wrong — invisible because the fixture matched the bad type); reuse the sibling feature's wire↔domain table; delete an honest-degrade whose premise was false + re-read its i18n copy; resetModules breaks `instanceof`-based isApiError → build ApiError inside the stub (+more in file)
+
 - [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined`; assert Object.keys); authority+decoration two-source roster; un-mock env-matrix must stub `lib/jwt` too, and it breaks unrelated RSC page tests via cookies() (+more in file)
