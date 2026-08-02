@@ -58,6 +58,10 @@ export function FeedPostCard({
   const bodyId = useId();
 
   const tone = feedRoleTone(post.authorRole);
+  // US-E18.31 — the real wire's denormalized identity is nullable (a post
+  // written before BE migration 035, or an author whose IAM member role has no
+  // feed badge). Never render an empty name; never guess a role badge.
+  const authorName = post.authorName ?? t("unknownAuthor");
   const long = post.content.length > LONG_TEXT;
   const scopeLabel =
     post.scope === "school"
@@ -81,11 +85,13 @@ export function FeedPostCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-[13.5px] text-foreground">
-              {post.authorName}
+              {authorName}
             </span>
-            <StatusBadge tone={tone}>
-              {t(`roles.${post.authorRole}`)}
-            </StatusBadge>
+            {post.authorRole && (
+              <StatusBadge tone={tone}>
+                {t(`roles.${post.authorRole}`)}
+              </StatusBadge>
+            )}
             {post.pinned && (
               <FeedPinBadge
                 label={t("pin.badge")}
@@ -112,7 +118,7 @@ export function FeedPostCard({
           </div>
         </div>
         <FeedMenu
-          ariaLabel={t("menu.postOptions", { author: post.authorName })}
+          ariaLabel={t("menu.postOptions", { author: authorName })}
           canReport={menuVisibility.canReport}
           onReport={onReport}
           reportLabel={t("menu.report")}
@@ -174,7 +180,7 @@ export function FeedPostCard({
           type="button"
           aria-expanded={showComments}
           onClick={() => setShowComments((s) => !s)}
-          aria-label={t("post.toggleComments", { author: post.authorName })}
+          aria-label={t("post.toggleComments", { author: authorName })}
           className={cn(
             "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 font-semibold text-[12.5px]",
             showComments

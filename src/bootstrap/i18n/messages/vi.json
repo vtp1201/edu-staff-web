@@ -1971,7 +1971,8 @@
       "principal": "Hiệu trưởng",
       "student": "Học sinh",
       "parent": "Phụ huynh"
-    }
+    },
+    "unknownAuthor": "Người dùng không xác định"
   },
   "gradeApproval": {
     "actionApprove": "Phê duyệt & Công bố",

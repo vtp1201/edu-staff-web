@@ -1971,7 +1971,8 @@
       "principal": "Principal",
       "student": "Student",
       "parent": "Parent"
-    }
+    },
+    "unknownAuthor": "Unknown user"
   },
   "gradeApproval": {
     "actionApprove": "Approve & Publish",

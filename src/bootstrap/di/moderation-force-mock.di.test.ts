@@ -1,15 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * US-E18.20 AC-1 — `feed.di.ts` and `moderation.di.ts` are PERMANENTLY
- * mock-first: they must resolve the Mock* repository even with
+ * US-E18.20 AC-1 (narrowed to moderation by US-E18.31) — `moderation.di.ts` is
+ * PERMANENTLY mock-first: it must resolve `MockModerationRepository` even with
  * `NEXT_PUBLIC_USE_MOCK=false`, because the hold is a domain-model/shape gap in
- * `social`'s real contract, not the app-wide mock toggle (see each factory's
- * doc comment). This is the regression guard for the day that flag flips.
+ * `social`'s real contract, not the app-wide mock toggle (see the factory's doc
+ * comment). This is the regression guard for the day that flag flips.
  *
- * Every use-case in both features is exercised, since each calls `makeRepo()`
- * independently — a partial force-mock would silently leak the real repository
- * (and its `createServerHttpClient()` cookie read) into one code path.
+ * `feed.di.ts` left this file with US-E18.31: BE US-165 closed its identity gap,
+ * so the feed factory is now `USE_MOCK ? Mock : Hybrid` — its env matrix lives
+ * in `feed.di.test.ts`.
+ *
+ * Every use-case is exercised, since each calls `makeRepo()` independently — a
+ * partial force-mock would silently leak the real repository (and its
+ * `createServerHttpClient()` cookie read) into one code path.
  *
  * The repository is identified by `constructor.name` rather than `instanceof`:
  * `vi.resetModules()` between cases yields a fresh class identity per module
@@ -26,28 +30,10 @@ function repoNameOf(useCase: unknown): string {
   return values[0].constructor.name;
 }
 
-describe("feed.di / moderation.di — force-mocked regardless of USE_MOCK", () => {
+describe("moderation.di — force-mocked regardless of USE_MOCK", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.unstubAllEnvs();
-  });
-
-  it("feed factories resolve MockFeedRepository with USE_MOCK=false", async () => {
-    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "false");
-    const di = await import("./feed.di");
-
-    const useCases = await Promise.all([
-      di.makeListFeedUseCase(),
-      di.makeCreatePostUseCase(),
-      di.makeReactToPostUseCase(),
-      di.makeListCommentsUseCase(),
-      di.makeAddCommentUseCase(),
-      di.makeTogglePinMockUseCase(),
-    ]);
-
-    for (const useCase of useCases) {
-      expect(repoNameOf(useCase)).toBe("MockFeedRepository");
-    }
   });
 
   it("moderation factories resolve MockModerationRepository with USE_MOCK=false", async () => {
@@ -71,14 +57,10 @@ describe("feed.di / moderation.di — force-mocked regardless of USE_MOCK", () =
     expect(repo.constructor.name).toBe("MockModerationRepository");
   });
 
-  it("both factories still resolve the mock when USE_MOCK is unset entirely", async () => {
+  it("still resolves the mock when USE_MOCK is unset entirely", async () => {
     vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "");
-    const feedDi = await import("./feed.di");
     const modDi = await import("./moderation.di");
 
-    expect(repoNameOf(await feedDi.makeListFeedUseCase())).toBe(
-      "MockFeedRepository",
-    );
     expect(repoNameOf(await modDi.makeListReportsUseCase())).toBe(
       "MockModerationRepository",
     );

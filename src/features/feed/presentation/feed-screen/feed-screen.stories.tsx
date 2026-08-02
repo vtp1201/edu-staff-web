@@ -1544,3 +1544,72 @@ export const CommentsEmpty: Story = {
     );
   },
 };
+
+/**
+ * US-E18.31 — a REAL, correctly-attributed feed row: `authorName`/`authorRole`
+ * now arrive denormalized on the wire (BE US-165), so the name renders as-is,
+ * the role drives the existing badge + avatar tone, and the avatar is the
+ * initials fallback (`avatarUrl` is reserved-but-always-null and never read —
+ * a null avatar is NOT an error or loading state).
+ */
+export const RealAuthorIdentity: Story = {
+  args: baseVM({
+    initialSchoolPage: page([
+      post({
+        postId: "p-real",
+        authorId: "u-real",
+        authorName: "Nguyễn Thị Hương",
+        authorRole: "teacher",
+        authorAvatarInitials: "NH",
+        content: "Bài viết đọc từ dịch vụ social thật.",
+      }),
+    ]),
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const article = (await canvas.findAllByRole("article"))[0];
+    await expect(
+      within(article).getByText("Nguyễn Thị Hương"),
+    ).toBeInTheDocument();
+    // Existing role-badge convention, unchanged.
+    await expect(within(article).getByText("Giáo viên")).toBeInTheDocument();
+    // Initials fallback, never a broken avatar image.
+    await expect(within(article).getByText("NH")).toBeInTheDocument();
+    await expect(
+      within(article).queryByRole("img", { name: /Nguyễn Thị Hương/ }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.31 — the nullable half of the same wire contract: a post written
+ * before BE migration 035 (no backfill), or an author whose IAM member role
+ * (ADMIN/MANAGER/STAFF) has no feed badge. The row degrades honestly: the i18n
+ * unknown-author label, a "?" initials avatar, and NO role badge — never a
+ * blank name and never a guessed role.
+ */
+export const UnknownAuthorIdentity: Story = {
+  args: baseVM({
+    initialSchoolPage: page([
+      post({
+        postId: "p-unknown",
+        authorId: "u-legacy",
+        authorName: null,
+        authorRole: null,
+        authorAvatarInitials: "?",
+        content: "Bài viết cũ không có thông tin tác giả.",
+      }),
+    ]),
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const article = (await canvas.findAllByRole("article"))[0];
+    await expect(
+      within(article).getByText("Người dùng không xác định"),
+    ).toBeInTheDocument();
+    await expect(within(article).getByText("?")).toBeInTheDocument();
+    for (const label of ["Giáo viên", "Hiệu trưởng", "Học sinh", "Phụ huynh"]) {
+      await expect(within(article).queryByText(label)).not.toBeInTheDocument();
+    }
+  },
+};

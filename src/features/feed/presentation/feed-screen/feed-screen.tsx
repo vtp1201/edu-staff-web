@@ -477,7 +477,7 @@ export function FeedScreen(vm: FeedScreenVM) {
                   setReportTarget({
                     kind: "post",
                     contentId: post.postId,
-                    authorName: post.authorName,
+                    authorName: post.authorName ?? t("unknownAuthor"),
                     preview: post.content,
                   })
                 }
@@ -493,7 +493,7 @@ export function FeedScreen(vm: FeedScreenVM) {
                       kind: "comment",
                       contentId: comment.commentId,
                       parentId: post.postId,
-                      authorName: comment.authorName,
+                      authorName: comment.authorName ?? t("unknownAuthor"),
                       preview: comment.content,
                     }),
                   onPostGone: handlePostGone,

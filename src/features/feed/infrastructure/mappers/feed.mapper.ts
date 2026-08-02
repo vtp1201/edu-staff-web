@@ -1,6 +1,5 @@
 import type { FeedCommentEntity } from "../../domain/entities/feed-comment.entity";
 import type {
-  FeedAttachment,
   FeedPostEntity,
   FeedRole,
   FeedScope,
@@ -10,36 +9,65 @@ import {
   type ReactionState,
 } from "../../domain/entities/reaction.entity";
 import type { FeedCommentResponseDto } from "../dtos/feed-comment-response.dto";
-import type { FeedPostResponseDto } from "../dtos/feed-post-response.dto";
+import type {
+  FeedPageResponseDto,
+  FeedPostResponseDto,
+} from "../dtos/feed-post-response.dto";
 import type { ReactionResponseDto } from "../dtos/reaction-response.dto";
 
-/** BE role string → feed role (defaults to teacher for unknown/other). */
-function toFeedRole(raw: string): FeedRole {
-  switch (raw.toLowerCase()) {
-    case "principal":
-      return "principal";
-    case "student":
-      return "student";
-    case "parent":
-      return "parent";
-    default:
+/**
+ * IAM member role (UPPERCASE on the wire: ADMIN/MANAGER/TEACHER/STAFF/STUDENT/
+ * PARENT) → the feed's 4-value display vocabulary, or `null`.
+ *
+ * US-E18.31 finding (flagged to fe-lead): the two vocabularies do NOT line up.
+ * `social` copies `memberRoles[0]` verbatim into `authorRole`, and IAM has no
+ * `PRINCIPAL` member role at all, while the feed has no ADMIN/MANAGER/STAFF
+ * badge. Anything unmapped returns `null` = "render no badge" — deliberately
+ * NOT a guessed badge (the pre-US-E18.31 mapper defaulted unknown roles to
+ * `teacher`, which would have labelled every SCHOOL post's tenant-ADMIN author
+ * "Giáo viên"). Extending the badge set is a design decision, not a mapper one.
+ *
+ * Lowercase inputs are still accepted so mock/legacy payloads keep mapping.
+ */
+function toFeedRole(raw: string | null | undefined): FeedRole | null {
+  switch ((raw ?? "").toUpperCase()) {
+    case "TEACHER":
       return "teacher";
+    case "STUDENT":
+      return "student";
+    case "PARENT":
+      return "parent";
+    // Not an IAM member role today; kept so a future BE value maps cleanly.
+    case "PRINCIPAL":
+      return "principal";
+    default:
+      return null;
   }
 }
 
+/** Wire scope is UPPERCASE `SCHOOL|CLASS|CLUB`; the screen has no club surface. */
 function toScope(raw: string): FeedScope {
-  return raw === "class" ? "class" : "school";
+  return raw.toUpperCase() === "CLASS" ? "class" : "school";
 }
 
-/** Two-initial avatar from a display name when the wire omits one. */
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
+/** Two-initial avatar from a display name; "?" when the wire has no name. */
+function initialsOf(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
-  const last = parts[parts.length - 1]?.[0] ?? "";
   const first = parts[0]?.[0] ?? "";
+  const last = parts[parts.length - 1]?.[0] ?? "";
   return (parts.length === 1 ? first : `${first}${last}`).toUpperCase() || "?";
 }
 
+/**
+ * Reaction state — mock/dead path only.
+ *
+ * The REAL read gives a single `reactionCount` + `callerReaction` over
+ * `like|love|haha|wow|sad|angry`, which has no lossless mapping onto web's
+ * per-type `like|love|celebrate|clap` model (blocking gap #2). Real posts
+ * therefore map to ZEROED counts rather than a fabricated per-type breakdown;
+ * this helper still serves the (unrouted) reaction endpoints.
+ */
 function toReactionState(dto: ReactionResponseDto | undefined): ReactionState {
   const counts = emptyReactionCounts();
   if (dto?.counts) {
@@ -50,14 +78,14 @@ function toReactionState(dto: ReactionResponseDto | undefined): ReactionState {
   return { counts, myReaction: dto?.myReaction ?? null };
 }
 
-function toAttachments(dto: FeedPostResponseDto): FeedAttachment[] {
-  if (dto.attachments && dto.attachments.length > 0) {
-    return dto.attachments.map((a) => ({ label: a.label, alt: a.alt }));
-  }
-  if (dto.attachmentUrl) {
-    return [{ label: dto.attachmentUrl, alt: dto.content.slice(0, 60) }];
-  }
-  return [];
+/**
+ * `textBody` + optional `linkUrl` → the entity's single `content` string. The
+ * link is appended on its own line rather than dropped: the post body is plain
+ * text in `FeedPostCard`, and silently discarding wire content would lose the
+ * whole point of a link post.
+ */
+function toContent(dto: FeedPostResponseDto): string {
+  return dto.linkUrl ? `${dto.textBody}\n${dto.linkUrl}` : dto.textBody;
 }
 
 export const FeedMapper = {
@@ -66,33 +94,49 @@ export const FeedMapper = {
   toPostEntity(dto: FeedPostResponseDto): FeedPostEntity {
     const scope = toScope(dto.scope);
     return {
-      postId: dto.postId,
-      authorId: dto.authorId,
-      authorName: dto.authorName,
+      postId: dto.id,
+      authorId: dto.authorUserId,
+      authorName: dto.authorName ?? null,
       authorRole: toFeedRole(dto.authorRole),
-      authorAvatarInitials:
-        dto.authorAvatarInitials ?? initialsOf(dto.authorName),
+      authorAvatarInitials: initialsOf(dto.authorName),
       scope,
-      classId: scope === "class" ? dto.classId : undefined,
-      content: dto.content,
-      attachments: toAttachments(dto),
+      classId: scope === "class" ? (dto.classId ?? undefined) : undefined,
+      content: toContent(dto),
+      // Gap #3 — `media` is one presigned image; `FeedAttachment` is a
+      // caption-only placeholder with no url and no <img> render path, so a
+      // real image is NOT surfaced (documented in feed.di.ts, flagged).
+      attachments: [],
       createdAt: dto.createdAt,
-      pinned: dto.pinned ?? false,
-      reactions: toReactionState(dto.reactions),
+      pinned: dto.isPinned ?? false,
+      // Gap #2 — never remap the emoji taxonomy (see toReactionState).
+      reactions: { counts: emptyReactionCounts(), myReaction: null },
       commentCount: dto.commentCount ?? 0,
     };
   },
 
+  /**
+   * `FeedPage` (`{ posts, pinnedPost }`, ADR 0083) → the entity list. The
+   * pinned post is fetched independently of the chronological page, so it is
+   * prepended when the page does not already contain it and deduped when it
+   * does. `sortPosts` still owns final ordering.
+   */
+  toPosts(page: FeedPageResponseDto | null | undefined): FeedPostEntity[] {
+    const posts = (page?.posts ?? []).map(FeedMapper.toPostEntity);
+    const pinned = page?.pinnedPost;
+    if (!pinned) return posts;
+    if (posts.some((p) => p.postId === pinned.id)) return posts;
+    return [FeedMapper.toPostEntity(pinned), ...posts];
+  },
+
   toCommentEntity(dto: FeedCommentResponseDto): FeedCommentEntity {
     return {
-      commentId: dto.commentId,
+      commentId: dto.id,
       postId: dto.postId,
-      authorId: dto.authorId,
-      authorName: dto.authorName,
+      authorId: dto.authorUserId,
+      authorName: dto.authorName ?? null,
       authorRole: toFeedRole(dto.authorRole),
-      authorAvatarInitials:
-        dto.authorAvatarInitials ?? initialsOf(dto.authorName),
-      content: dto.content,
+      authorAvatarInitials: initialsOf(dto.authorName),
+      content: dto.text,
       createdAt: dto.createdAt,
     };
   },

@@ -25,13 +25,17 @@ import type {
   FeedFailure,
   FeedValidationField,
 } from "../../domain/failures/feed.failure";
-import type {
-  CreatePostInput,
-  FeedResult,
-  IFeedRepository,
+import {
+  type CreatePostInput,
+  FEED_LIST_PAGE_SIZE,
+  type FeedResult,
+  type IFeedRepository,
 } from "../../domain/repositories/i-feed.repository";
 import type { FeedCommentResponseDto } from "../dtos/feed-comment-response.dto";
-import type { FeedPostResponseDto } from "../dtos/feed-post-response.dto";
+import type {
+  FeedPageResponseDto,
+  FeedPostResponseDto,
+} from "../dtos/feed-post-response.dto";
 import type { ReactionResponseDto } from "../dtos/reaction-response.dto";
 import { FeedMapper } from "../mappers/feed.mapper";
 
@@ -112,32 +116,37 @@ export function toFeedFailure(
 }
 
 /**
- * Real `social` feed repository (US-E19.1 / re-ground-truthed US-E18.20).
+ * Real `social` feed repository (US-E19.1 → US-E18.20 → **LIVE for reads since
+ * US-E18.31**).
  *
- * **PERMANENTLY dead regardless of `USE_MOCK`** — `feed.di.ts` always
- * constructs {@link MockFeedRepository}. `social`'s openapi.yaml IS now
- * published, so the mock-first premise (decision 0014) no longer applies; the
- * hold is a domain-model gap instead (see `feed.di.ts`'s doc comment for the
- * full rationale: `Post`/`Comment` carry only `authorUserId` with no reliable
- * display-name join, a different reaction taxonomy, and a different attachment
- * capability).
+ * `feed.di.ts` now routes {@link getFeed} and {@link listComments} here through
+ * {@link HybridFeedRepository} whenever `NEXT_PUBLIC_USE_MOCK !== "true"`: BE
+ * US-165 denormalized `authorName`/`authorRole` onto `Post`/`Comment`, which
+ * removed the identity gap that had made a real feed read unshippable. Reads
+ * follow the standard list contract — cursor pagination via `{ raw: true }` +
+ * `parseEnvelope`, camelCase params, `ApiError.code` → `FeedFailure`.
  *
- * Kept correct + unit-tested for the day that unblocks, per this epic's
- * precedent (`staff-leave.repository.ts`, `teaching-plan.repository.ts`):
- * cursor pagination via `{ raw: true }` + parseEnvelope, camelCase params,
- * ApiError.code → FeedFailure on the REAL code taxonomy.
- *
- * Known remaining request-shape drift vs. the real contract, deliberately NOT
- * changed here because each needs a domain/UX decision beyond US-E18.20's
- * scope (flagged to fe-lead):
+ * The MUTATIONS below are still NOT routed (the hybrid sends them to the mock)
+ * and remain dead-but-correct-where-cheap, because two contract gaps are
+ * unresolved product decisions — see `feed.di.ts` for the full statement:
+ * - `setReaction`/`removeReaction` — real `PUT .../reaction` takes `{ emoji }`
+ *   over `like|love|haha|wow|sad|angry` and answers with a single
+ *   `reactionCount` + `callerReaction`, not web's per-type counts (gap #2).
+ *   The request body below is deliberately left on web's shape; changing it
+ *   would imply a taxonomy mapping nobody has decided.
  * - `createPost` sends `{ content }`; real `POST /feeds/{scope}` takes
- *   `textBody` (+ optional `linkUrl`, + optional multipart `image`).
- * - `setReaction` sends `{ reactionType }` over web's 4-value `ReactionType`;
- *   real `PUT .../reaction` takes `{ emoji }` over `like|love|haha|wow|sad|angry`
- *   and answers with a single `reactionCount`+`callerReaction`, not per-type
- *   counts.
- * - `FeedScopeSelection.scope` is lowercase (`school`/`class`) vs the wire's
- *   `SCHOOL`/`CLASS` — path-only today, so harmless, but it is real drift.
+ *   `textBody` (+ optional `linkUrl`, + an optional multipart `image` the web
+ *   composer cannot produce) (gap #3).
+ * - `togglePinMock` IS a real endpoint and, now that reads yield real post ids,
+ *   is technically reachable — but the presentation treats pinning as a
+ *   fire-and-forget local flip, so routing it real would swallow authorization
+ *   failures silently. Promoting it needs a small UX decision (flagged).
+ * - `addComment` has NO blocking gap: its request/response are wired to the
+ *   real `{ text }` / `Comment` shape and unit-tested, so promoting it is a
+ *   one-line change in {@link HybridFeedRepository} (flagged to fe-lead).
+ *
+ * `FeedScopeSelection.scope` stays lowercase (`school`/`class`) vs the wire's
+ * `SCHOOL`/`CLASS`; it only ever selects a path constant, so it is harmless.
  */
 export class FeedRepository implements IFeedRepository {
   constructor(private readonly http: AxiosInstance) {}
@@ -147,21 +156,23 @@ export class FeedRepository implements IFeedRepository {
     cursor: string | null,
   ): Promise<FeedResult<FeedPage>> {
     try {
-      const params: Record<string, unknown> = {};
+      const params: Record<string, unknown> = { limit: FEED_LIST_PAGE_SIZE };
       if (cursor) params.cursor = cursor;
       const url =
         selection.scope === "school"
           ? FEED_EP.schoolFeed
           : FEED_EP.classFeed(selection.classId);
+      // `data` is a FeedPage OBJECT (`{ posts, pinnedPost }`, US-101/ADR 0083),
+      // NOT a bare Post[] — `raw: true` is a config-level sibling of `params`.
       const envelope = (await this.http.get(url, {
         params,
         ...({ raw: true } as Record<string, unknown>),
-      })) as unknown as ApiEnvelope<FeedPostResponseDto[]>;
+      })) as unknown as ApiEnvelope<FeedPageResponseDto>;
       const { data, pagination } = parseEnvelope(envelope);
       return {
         ok: true,
         value: {
-          posts: (data ?? []).map(FeedMapper.toPostEntity),
+          posts: FeedMapper.toPosts(data),
           nextCursor: pagination?.nextCursor ?? null,
           hasMore: pagination?.hasMore ?? false,
         },
@@ -225,8 +236,9 @@ export class FeedRepository implements IFeedRepository {
     cursor: string | null,
   ): Promise<FeedResult<FeedCommentPage>> {
     try {
-      const params: Record<string, unknown> = {};
+      const params: Record<string, unknown> = { limit: FEED_LIST_PAGE_SIZE };
       if (cursor) params.cursor = cursor;
+      // `data` here IS a bare Comment[] (oldest-first, ADR 0081).
       const envelope = (await this.http.get(FEED_EP.comments(postId), {
         params,
         ...({ raw: true } as Record<string, unknown>),
@@ -250,8 +262,9 @@ export class FeedRepository implements IFeedRepository {
     content: string,
   ): Promise<FeedResult<FeedCommentEntity>> {
     try {
+      // Real body is `{ text }` (CreateCommentRequest, ≤500 chars).
       const dto = (await this.http.post(FEED_EP.comments(postId), {
-        content,
+        text: content,
       })) as unknown as FeedCommentResponseDto;
       return { ok: true, value: FeedMapper.toCommentEntity(dto) };
     } catch (err) {
