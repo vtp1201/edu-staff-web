@@ -3,6 +3,7 @@ import type {
   LegendSubjectVm,
   TimetableActionResult,
   TimetableDataState,
+  TimetableRole,
 } from "./timetable-view.i-vm";
 
 /**
@@ -16,6 +17,41 @@ export function toDataState(result: TimetableActionResult): TimetableDataState {
     return { status: "empty" };
   }
   return { status: "error", errorKey: result.errorKey };
+}
+
+/** What the error banner's "Thử lại" button should actually do. */
+export type RetryTarget = "child" | "teacher" | "refresh";
+
+/**
+ * Decide the retry action for the shared error banner.
+ *
+ * The member-scoped re-fetch is only meaningful when there IS a selected member.
+ * When the ROSTER call itself failed, the page seeds `{status:"error"}` with an
+ * empty list, so the selected id is `""` — re-fetching with it could never
+ * recover the failure that occurred (and is meaningless for `forbidden`). In
+ * that case the only honest retry is re-running the RSC (`router.refresh()`).
+ * Deliberately generic: the parent and principal paths share the trap.
+ */
+export function resolveRetryTarget(input: {
+  viewerRole: TimetableRole;
+  selectedChildId: string;
+  selectedTeacherId: string;
+  canFetchChild: boolean;
+  canFetchMember: boolean;
+}): RetryTarget {
+  if (
+    input.viewerRole === "parent" &&
+    input.canFetchChild &&
+    input.selectedChildId
+  )
+    return "child";
+  if (
+    input.viewerRole === "principal" &&
+    input.canFetchMember &&
+    input.selectedTeacherId
+  )
+    return "teacher";
+  return "refresh";
 }
 
 /** Subjects actually present in the grid (dedup by id, first-seen order) — legend. */

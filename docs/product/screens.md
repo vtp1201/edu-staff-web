@@ -84,6 +84,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Teachers (GVCN/GVBM assignment sheet) | `(app)/principal/teachers` | `teacher.jsx` (PrincipalTeachersScreen + AssignmentSheet) | `features/principal` | ✅ US-E13.5 |
 | Classes | `(app)/principal/classes` | `teacher.jsx` (reference only, no dedicated mockup) | `features/principal` | ✅ US-E13.8 |
 | Students (read-only roster, per-class + class-switch) | `(app)/principal/students` | reuse of `admin-roster`'s roster screen (no dedicated mockup) | `features/admin-roster` | ✅ US-E13.10 (was a dead sidebar link — full 404; `RosterTable` gained a discriminated-union `readOnly` variant, no mutation affordances) |
+| Schedule (teacher-picker + weekly TKB, read-only) | `(app)/principal/schedule` | reuse of `timetable-view.jsx` (no dedicated mockup) | `features/timetable` | ✅ US-E15.3 (was a dead sidebar link — full 404; `TimetableView` widened to a 3rd `principal` role; `getByMember` force-mocked for this role only — real BE `authorize()` has no `MANAGER` branch, cross-repo ask #43) |
 | Class Log review/approve | `(app)/principal/class-log` | `classops.jsx` | `features/class-log` | ✅ E13.3 (route `(app)/principal/class-log` live) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | ✅ US-E09.1 |
 | Grade Book (principal read) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | ✅ US-E13.6 — route thật `(app)/principal/grade-book` (drift so với design route) |

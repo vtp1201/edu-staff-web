@@ -11,12 +11,19 @@ import { ExportPdfButton } from "./export-pdf-button";
 import { ReadOnlyBadge } from "./read-only-badge";
 import { ReadOnlyField } from "./read-only-field";
 import { SubjectLegend } from "./subject-legend";
+import { TeacherPicker } from "./teacher-picker";
 import { TimetableGrid } from "./timetable-grid";
 import { TimetableSkeleton } from "./timetable-skeleton";
-import { hasAnySlot, subjectsUsed, toDataState } from "./timetable-view.derive";
+import {
+  hasAnySlot,
+  resolveRetryTarget,
+  subjectsUsed,
+  toDataState,
+} from "./timetable-view.derive";
 import type {
   TimetableDataState,
   TimetableErrorKey,
+  TimetableRole,
   TimetableViewProps,
 } from "./timetable-view.i-vm";
 import { WeekNav } from "./week-nav";
@@ -29,6 +36,7 @@ const ERROR_KEYS: Record<
   forbidden: "errors.forbidden",
   "not-found": "errors.unknown",
   "no-child": "errors.unknown",
+  unknown: "errors.unknown",
 };
 
 export function TimetableView({
@@ -37,31 +45,47 @@ export function TimetableView({
   childList = [],
   initialChildId,
   fetchChildTimetable,
+  teacherList = [],
+  initialTeacherId,
+  fetchMemberTimetable,
 }: TimetableViewProps) {
   const t = useTranslations("timetableView");
   const router = useRouter();
-  const isParent = viewerRole === "parent";
 
   const [state, setState] = useState<TimetableDataState>(initialState);
   const [selectedChildId, setSelectedChildId] = useState(
     initialChildId ?? childList[0]?.childId ?? "",
   );
+  const [selectedTeacherId, setSelectedTeacherId] = useState(
+    initialTeacherId ?? teacherList[0]?.teacherId ?? "",
+  );
   const [weekOffset, setWeekOffset] = useState(0);
   const [isPending, startTransition] = useTransition();
 
-  const showPicker = isParent && childList.length >= 2;
+  // Named derivations (US-E15.3) — the old single `isParent` flag conflated
+  // week-nav visibility, picker choice, grid variant and header copy.
+  const showWeekNav = viewerRole === "parent" || viewerRole === "principal";
+  const showChildPicker = viewerRole === "parent" && childList.length >= 2;
+  const showTeacherPicker =
+    viewerRole === "principal" && teacherList.length >= 2;
+  const cellVariant = viewerRole === "principal" ? "teacher" : "class";
 
   const weekDates = useMemo(
-    () => (isParent ? buildWeekDates(weekOffset) : undefined),
-    [isParent, weekOffset],
+    () => (showWeekNav ? buildWeekDates(weekOffset) : undefined),
+    [showWeekNav, weekOffset],
   );
 
+  // A teacher's week spans several classes, so the header carries NO class
+  // suffix for the principal — `cellVariant="teacher"` names the class per slot.
   const displayClassName =
-    state.status === "success"
-      ? state.timetable.className
-      : (childList.find((c) => c.childId === selectedChildId)?.className ?? "");
+    viewerRole === "principal"
+      ? ""
+      : state.status === "success"
+        ? state.timetable.className
+        : (childList.find((c) => c.childId === selectedChildId)?.className ??
+          "");
 
-  const runFetch = useCallback(
+  const runChildFetch = useCallback(
     (childId: string) => {
       if (!fetchChildTimetable) return;
       startTransition(async () => {
@@ -72,19 +96,56 @@ export function TimetableView({
     [fetchChildTimetable],
   );
 
+  const runTeacherFetch = useCallback(
+    (teacherId: string) => {
+      if (!fetchMemberTimetable) return;
+      startTransition(async () => {
+        const result = await fetchMemberTimetable(teacherId);
+        setState(toDataState(result));
+      });
+    },
+    [fetchMemberTimetable],
+  );
+
   const onSelectChild = useCallback(
     (childId: string) => {
       if (childId === selectedChildId) return;
       setSelectedChildId(childId);
-      runFetch(childId);
+      runChildFetch(childId);
     },
-    [selectedChildId, runFetch],
+    [selectedChildId, runChildFetch],
+  );
+
+  const onSelectTeacher = useCallback(
+    (teacherId: string) => {
+      if (teacherId === selectedTeacherId) return;
+      setSelectedTeacherId(teacherId);
+      runTeacherFetch(teacherId);
+    },
+    [selectedTeacherId, runTeacherFetch],
   );
 
   const onRetry = useCallback(() => {
-    if (isParent && fetchChildTimetable) runFetch(selectedChildId);
+    const target = resolveRetryTarget({
+      viewerRole,
+      selectedChildId,
+      selectedTeacherId,
+      canFetchChild: Boolean(fetchChildTimetable),
+      canFetchMember: Boolean(fetchMemberTimetable),
+    });
+    if (target === "child") runChildFetch(selectedChildId);
+    else if (target === "teacher") runTeacherFetch(selectedTeacherId);
     else router.refresh();
-  }, [isParent, fetchChildTimetable, runFetch, selectedChildId, router]);
+  }, [
+    viewerRole,
+    fetchChildTimetable,
+    fetchMemberTimetable,
+    runChildFetch,
+    runTeacherFetch,
+    selectedChildId,
+    selectedTeacherId,
+    router,
+  ]);
 
   const view: TimetableDataState = isPending ? { status: "loading" } : state;
 
@@ -92,13 +153,13 @@ export function TimetableView({
     <main className="flex-1 overflow-y-auto bg-edu-bg px-4 py-6 sm:px-8">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-4">
         <Header
-          isParent={isParent}
+          viewerRole={viewerRole}
           weekOffset={weekOffset}
           weekDates={weekDates}
           displayClassName={displayClassName}
         />
 
-        {isParent ? (
+        {showWeekNav ? (
           <WeekNav
             weekOffset={weekOffset}
             weekDates={weekDates ?? []}
@@ -108,11 +169,20 @@ export function TimetableView({
           <ReadOnlySelectors />
         )}
 
-        {showPicker && (
+        {showChildPicker && (
           <ChildPicker
             childList={childList}
             selectedChildId={selectedChildId}
             onSelect={onSelectChild}
+            disabled={isPending}
+          />
+        )}
+
+        {showTeacherPicker && (
+          <TeacherPicker
+            teacherList={teacherList}
+            selectedTeacherId={selectedTeacherId}
+            onSelect={onSelectTeacher}
             disabled={isPending}
           />
         )}
@@ -152,7 +222,7 @@ export function TimetableView({
             <>
               <TimetableGrid
                 timetable={view.timetable}
-                cellVariant="class"
+                cellVariant={cellVariant}
                 weekDates={weekDates}
               />
               <SubjectLegend subjects={subjectsUsed(view.timetable)} />
@@ -175,12 +245,12 @@ export function TimetableView({
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
 function Header({
-  isParent,
+  viewerRole,
   weekOffset,
   weekDates,
   displayClassName,
 }: {
-  isParent: boolean;
+  viewerRole: TimetableRole;
   weekOffset: number;
   weekDates?: readonly Date[];
   displayClassName: string;
@@ -190,6 +260,16 @@ function Header({
     weekDates && weekDates.length === 6
       ? formatRange(weekDates[0], weekDates[5])
       : "";
+  const title =
+    viewerRole === "parent" && weekOffset === 0
+      ? t("titleThisWeek")
+      : t("title");
+  const subtitle =
+    viewerRole === "parent"
+      ? t("subtitleParent", { range })
+      : viewerRole === "principal"
+        ? t("subtitlePrincipal", { range })
+        : t("subtitleStudent");
 
   return (
     <div className="flex flex-wrap items-end gap-4">
@@ -198,16 +278,14 @@ function Header({
           {t("eyebrow")}
         </p>
         <h1 className="mt-1 font-extrabold text-2xl text-edu-text-primary">
-          {isParent && weekOffset === 0 ? t("titleThisWeek") : t("title")}
+          {title}
           {displayClassName && (
             <span className="ml-2 font-semibold text-base text-edu-text-secondary">
               · {t("classLabel", { className: displayClassName })}
             </span>
           )}
         </h1>
-        <p className="mt-1 text-edu-text-secondary text-sm">
-          {isParent ? t("subtitleParent", { range }) : t("subtitleStudent")}
-        </p>
+        <p className="mt-1 text-edu-text-secondary text-sm">{subtitle}</p>
       </div>
       <ExportPdfButton />
     </div>

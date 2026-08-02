@@ -357,6 +357,28 @@ stylistic-convention guess but matches an existing sibling screen exactly —
 when two screens render the SAME entity/enum, check the sibling's actual
 badge-tone mapping before defaulting to a written convention doc.
 
+**TeacherPicker vs ChildPicker — sibling, not generic member-picker (US-E15.3,
+2026-08-02):** widening `TimetableView` (shared by parent + new principal
+caller) for a 3rd `viewerRole` is presentation-contract work even though no
+new BE integration exists. Confirmed sibling-component split over forcing a
+generic `member-picker`: the two picker data shapes diverge on 3 independent
+axes at once (id field name, name-fallback-vs-always-populated, color-ring-
+vs-neutral-avatar) — that's 3 reasons stacked, not 1, a much stronger signal
+than the usual "just a type swap" premature-generalization case. Rule of
+thumb reinforced: when a sibling composed component would need per-caller
+config objects for avatar/fallback/badge rendering just to stay generic, stay
+split; promote to one generic component only on a 3rd caller with the SAME
+shape (not just the same "picker" role). Also: when widening a shared
+component's role union (`TimetableRole`), don't keep a single ambiguous
+boolean gate (`isParent`) — split it into named booleans each scoped to ONE
+concern (`showWeekNav`, `showChildPicker`, `showTeacherPicker`, `cellVariant`)
+so the 3rd role doesn't force re-deriving hidden conflated meaning out of a
+2-value boolean. Also found: `principal-teachers-screen.tsx` already has an
+established `ON_LEAVE → StatusBadge tone="warning"` convention (not disabled,
+fully interactive) — always grep for how an entity's status enum is ALREADY
+rendered elsewhere in the codebase before treating "should this state be
+disabled?" as an open design question; usually it's already answered.
+
 ## Promotion trigger rule (component-organization.md)
 - Same pattern used by 2 screens = promote to `components/shared/`.
 - Promote = MOVE (not copy). Update all import paths.

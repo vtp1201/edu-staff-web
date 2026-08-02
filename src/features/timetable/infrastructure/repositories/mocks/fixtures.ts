@@ -206,11 +206,101 @@ const TEACHER_RAW: Record<
       1: ts("math", "10C3", "P.410"),
     },
   },
+
+  /*
+   * Principal-roster teachers (US-E15.3 fix round). The principal screen is
+   * force-mocked (`bootstrap/di/timetable-view.di.ts` — `core` grants no
+   * MANAGER on `GET /members/{id}/timetable`), and its picker is driven by
+   * `MockPrincipalTeachersRepository`'s roster, so each of its ids MUST resolve
+   * to a visibly different week — otherwise switching teachers is a no-op and
+   * the picker looks broken in mock/demo mode. Keyed by that roster's ids and
+   * matched to each teacher's `primarySubjectName`:
+   *   t-001 Nguyễn Thị Lan  — Toán  (dense week, homeroom 10A1)
+   *   t-002 Trần Văn Minh   — Ngữ văn (mid-density, no homeroom)
+   *   t-003 Lê Thị Hoa      — Vật lý (sparse week, ON_LEAVE, no Saturday)
+   */
+  "t-001": {
+    0: {
+      1: ts("math", "10A1", "P.101"),
+      2: ts("math", "10A2", "P.102"),
+      5: ts("math", "11B1", "P.203"),
+    },
+    1: {
+      1: ts("math", "10A1", "P.101"),
+      3: ts("math", "12C2", "P.304"),
+      4: ts("math", "10A2", "P.102"),
+      7: ts("civic", "10A1", "P.101"),
+    },
+    2: {
+      2: ts("math", "11B1", "P.203"),
+      3: ts("math", "10A1", "P.101"),
+    },
+    3: {
+      1: ts("math", "10A2", "P.102"),
+      2: ts("math", "12C2", "P.304"),
+      5: ts("math", "10A1", "P.101"),
+      8: ts("civic", "10A1", "P.101"),
+    },
+    4: {
+      1: ts("math", "11B1", "P.203"),
+      4: ts("math", "10A1", "P.101"),
+    },
+    5: {
+      1: ts("math", "10A2", "P.102"),
+      2: ts("math", "12C2", "P.304"),
+    },
+  },
+  "t-002": {
+    0: {
+      1: ts("lit", "11B1", "P.203"),
+      2: ts("lit", "11B1", "P.203"),
+    },
+    1: {
+      3: ts("lit", "10A1", "P.101"),
+      4: ts("hist", "11B1", "P.203"),
+    },
+    2: {
+      1: ts("lit", "12C2", "P.304"),
+      5: ts("lit", "11B1", "P.203"),
+    },
+    3: {
+      2: ts("lit", "10A2", "P.102"),
+      7: ts("hist", "12C2", "P.304"),
+    },
+    4: {
+      1: ts("lit", "11B1", "P.203"),
+      3: ts("lit", "10A1", "P.101"),
+    },
+    5: {
+      2: ts("lit", "12C2", "P.304"),
+    },
+  },
+  "t-003": {
+    0: {
+      1: ts("phys", "12C2", "P.LAB1"),
+    },
+    1: {
+      4: ts("phys", "12C2", "P.LAB1"),
+      5: ts("phys", "11B1", "P.LAB1"),
+    },
+    2: {},
+    3: {
+      2: ts("phys", "12C2", "P.LAB1"),
+    },
+    4: {
+      1: ts("phys", "11B1", "P.LAB1"),
+      2: ts("geo", "12C2", "P.304"),
+    },
+    5: {},
+  },
 };
 
 /** teacherId → display name (top-level className for the reused entity). */
 const TEACHER_NAME: Record<string, string> = {
   t1: "Cô Nguyễn Thị Hương",
+  "t-001": "Nguyễn Thị Lan",
+  "t-002": "Trần Văn Minh",
+  "t-003": "Lê Thị Hoa",
 };
 
 /** Full 10-period × 6-day teacher grid with explicit nulls for free periods. */
