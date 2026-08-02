@@ -2,10 +2,14 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import type { PrincipalTeacher } from "@/features/principal/domain/teachers/entities/principal-teacher.entity";
 import type { TimetableChild } from "@/features/timetable/domain/entities/timetable-child.entity";
 import type { WeeklyTimetable } from "@/features/timetable/domain/entities/weekly-timetable.entity";
 import { mapWeeklyTimetable } from "../../infrastructure/mappers/weekly-timetable.mapper";
-import { timetableDtoFor } from "../../infrastructure/repositories/mocks/fixtures";
+import {
+  teacherScheduleDtoFor,
+  timetableDtoFor,
+} from "../../infrastructure/repositories/mocks/fixtures";
 import { TimetableView } from "./timetable-view";
 import type { TimetableActionResult } from "./timetable-view.i-vm";
 
@@ -225,5 +229,179 @@ export const ParentView_RealMode_NoNameFallback: Story = {
     await waitFor(() =>
       expect(args.fetchChildTimetable).toHaveBeenCalledWith("stu-b"),
     );
+  },
+};
+
+/* ── US-E15.3: principal viewing a teacher's week ───────────────────────── */
+
+// biome-ignore lint/style/noNonNullAssertion: known seed teacherId from the fixture.
+const TT_TEACHER: WeeklyTimetable = mapWeeklyTimetable(
+  teacherScheduleDtoFor("t1")!,
+);
+
+function teacher(patch: Partial<PrincipalTeacher>): PrincipalTeacher {
+  return {
+    teacherId: "t1",
+    displayName: "Cô Nguyễn Thị Hương",
+    email: "huong@eduportal.vn",
+    primarySubjectName: "Toán",
+    homeroomClassId: "11A2",
+    homeroomClassName: "11A2",
+    subjectAssignments: [],
+    status: "ACTIVE",
+    ...patch,
+  };
+}
+
+const TEACHERS: PrincipalTeacher[] = [
+  teacher({}),
+  teacher({
+    teacherId: "t2",
+    displayName: "Thầy Trần Văn Minh",
+    homeroomClassId: null,
+    homeroomClassName: null,
+    status: "ON_LEAVE",
+  }),
+];
+
+/** AC1/AC2: picker defaults to the first teacher; switching refetches. */
+export const PrincipalView_SwitchTeacher: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "success", timetable: TT_TEACHER },
+    teacherList: TEACHERS,
+    initialTeacherId: "t1",
+    fetchMemberTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({
+        ok: true,
+        data: TT_8B1,
+      }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+
+    // cellVariant="teacher" → each slot names the CLASS being taught, and the
+    // header carries no class suffix (a teacher's week spans many classes).
+    expect(
+      canvas.getByRole("table", { name: /Lịch dạy cá nhân/ }),
+    ).toBeInTheDocument();
+    expect(canvas.getAllByText("11A2").length).toBeGreaterThan(0);
+
+    // Week navigation is live for the principal (AC5).
+    expect(canvas.getByRole("button", { name: "Tuần trước" })).toBeVisible();
+
+    const first = canvas.getByRole("button", { name: /Nguyễn Thị Hương/ });
+    const second = canvas.getByRole("button", { name: /Trần Văn Minh/ });
+    expect(first).toHaveAttribute("aria-pressed", "true");
+    expect(second).toHaveAttribute("aria-pressed", "false");
+    // ON_LEAVE is labelled (text, not colour alone) and stays SELECTABLE.
+    expect(within(second).getByText("Đang nghỉ phép")).toBeVisible();
+    expect(second).toBeEnabled();
+    expect(within(second).getByText("Chưa chủ nhiệm lớp nào")).toBeVisible();
+
+    await userEvent.click(second);
+
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(args.fetchMemberTimetable).toHaveBeenCalledWith("t2"),
+    );
+    await waitFor(() => expect(canvas.getByRole("table")).toBeInTheDocument());
+  },
+};
+
+/** AC3: single teacher → no picker (same UX rule as the parent's single child). */
+export const PrincipalView_SingleTeacher: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "success", timetable: TT_TEACHER },
+    teacherList: [TEACHERS[0]],
+    initialTeacherId: "t1",
+    fetchMemberTimetable: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(
+      canvas.queryByRole("button", { name: /Nguyễn Thị Hương/ }),
+    ).toBeNull();
+    expect(canvas.getByRole("button", { name: "Tuần sau" })).toBeVisible();
+  },
+};
+
+/** AC3: zero teachers → the shared empty state, no picker, no grid. */
+export const PrincipalView_NoTeachers: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "empty" },
+    teacherList: [],
+    fetchMemberTimetable: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(
+      canvas.getByText("Chưa có thời khoá biểu cho lớp này."),
+    ).toBeVisible();
+    expect(canvas.queryByRole("table")).toBeNull();
+  },
+};
+
+/** AC4: selected teacher has no published schedule → same empty state. */
+export const PrincipalView_NotPublished: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "success", timetable: TT_TEACHER },
+    teacherList: TEACHERS,
+    initialTeacherId: "t1",
+    fetchMemberTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({
+        ok: false,
+        errorKey: "not-found",
+      }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Trần Văn Minh/ }),
+    );
+
+    await waitFor(() =>
+      expect(args.fetchMemberTimetable).toHaveBeenCalledWith("t2"),
+    );
+    // `not-found` is not an error for the viewer — it is "nothing published".
+    await waitFor(() =>
+      expect(
+        canvas.getByText("Chưa có thời khoá biểu cho lớp này."),
+      ).toBeVisible(),
+    );
+    expect(canvas.queryByRole("alert")).toBeNull();
+  },
+};
+
+/** Error banner retry re-runs the MEMBER fetch (not router.refresh). */
+export const PrincipalView_ErrorRetry: Story = {
+  args: {
+    viewerRole: "principal",
+    initialState: { status: "error", errorKey: "network-error" },
+    teacherList: TEACHERS,
+    initialTeacherId: "t1",
+    fetchMemberTimetable: fn(
+      async (): Promise<TimetableActionResult> => ({
+        ok: true,
+        data: TT_TEACHER,
+      }),
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const alert = canvas.getByRole("alert");
+    await userEvent.click(
+      within(alert).getByRole("button", { name: "Thử lại" }),
+    );
+
+    await waitFor(() =>
+      expect(args.fetchMemberTimetable).toHaveBeenCalledWith("t1"),
+    );
+    await waitFor(() => expect(canvas.getByRole("table")).toBeInTheDocument());
   },
 };

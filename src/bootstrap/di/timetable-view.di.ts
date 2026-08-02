@@ -9,6 +9,7 @@ import { resolveCurrentTermId } from "@/bootstrap/lib/resolve-current-term";
 import type { IWeeklyTimetableRepository } from "@/features/timetable/domain/repositories/i-weekly-timetable.repository";
 import { GetChildListUseCase } from "@/features/timetable/domain/use-cases/get-child-list.use-case";
 import { GetChildTimetableUseCase } from "@/features/timetable/domain/use-cases/get-child-timetable.use-case";
+import { GetMemberTimetableUseCase } from "@/features/timetable/domain/use-cases/get-member-timetable.use-case";
 import { GetMyTeachingScheduleUseCase } from "@/features/timetable/domain/use-cases/get-my-teaching-schedule.use-case";
 import { GetMyTimetableUseCase } from "@/features/timetable/domain/use-cases/get-my-timetable.use-case";
 import { MockWeeklyTimetableRepository } from "@/features/timetable/infrastructure/repositories/mocks/weekly-timetable.mock.repository";
@@ -56,4 +57,9 @@ export async function makeGetChildListUseCase() {
 
 export async function makeGetChildTimetableUseCase() {
   return new GetChildTimetableUseCase(await makeRepo());
+}
+
+/** Member-scoped read (US-E15.3 — principal viewing a teacher's week). */
+export async function makeGetMemberTimetableUseCase() {
+  return new GetMemberTimetableUseCase(await makeRepo());
 }
