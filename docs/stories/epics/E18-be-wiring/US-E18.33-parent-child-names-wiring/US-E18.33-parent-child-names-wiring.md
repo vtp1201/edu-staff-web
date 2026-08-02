@@ -40,9 +40,34 @@ already-real endpoint; do not touch it, just confirm it's still the preferred
 source (real names > this new tiered lookup, if both exist, prefer the
 existing simpler path).
 
+**REUSE — do not build a new batch-lookup client (fe-lead ground-truth,
+2026-08-02):** `src/features/iam-directory/` ALREADY has exactly this tool —
+`BatchResolveMembersUseCase` (chunks ≤50 ids/call, drops unresolvable ids,
+used today by US-E18.29's invitations `invitedBy` resolution). Ground-truthed
+`edu-api/services/iam/docs/openapi.yaml` `GET /api/v1/members` (~line 535):
+comma-separated `ids` param, max 50, `MemberBatchItem` schema — **tiered by
+caller role (ADR-0120)**: staff tier (ADMIN/MANAGER/TEACHER/SUPER_ADMIN) gets
+`memberId+displayName+email+roles`; every OTHER caller (STAFF/STUDENT/PARENT)
+gets `memberId+displayName` ONLY — `email`/`roles`/`dob`/`gender` keys are
+ABSENT from the JSON (not empty), which is the tier signal.
+
+**Important — the EXISTING `MemberBatchItemDto` (`iam-directory/infrastructure/dtos/member-batch-item.dto.ts`) currently
+declares `email`/`roles` as REQUIRED** (written when this endpoint was
+staff-tier-only via US-144/US-E18.23). If a PARENT/STUDENT caller now hits the
+SAME use-case, the real JSON will legitimately omit those keys — the current
+DTO/mapper would silently produce `undefined` cast to a required type. This
+DTO/`MemberSummary` entity/mapper must be WIDENED (email/roles → optional)
+to be safe for BOTH tiers, without breaking the EXISTING staff-tier callers
+(invitations `invitedBy`, any staffing/roster usage) — this is a "widen a
+shared contract for a new caller" job, same shape as this session's other
+promotions (US-E15.3's `TimetableRole`, US-E20.4's `ChildIdentityHeader`).
+
 ## Relevant Product Docs
 
 - Ask #20 (residual, timetable), ADR 0054 (grades child-list mock).
+- `src/features/iam-directory/` — REUSE `BatchResolveMembersUseCase` for
+  BOTH grades and timetable's child-name resolution; do not build a second
+  batch-lookup client.
 
 ## Acceptance Criteria
 
