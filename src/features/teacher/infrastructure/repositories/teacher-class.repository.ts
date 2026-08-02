@@ -27,18 +27,14 @@ export class TeacherClassRepository implements ITeacherClassRepository {
         TEACHER_EP.classes,
       );
 
-      const counts = await Promise.all(
-        classes.map((cls) =>
-          this.fetchAllPages<ClassRosterResponseDto>(
-            TEACHER_EP.classStudents(cls.classId),
-          ).then((roster) => roster.length),
-        ),
-      );
-
+      // `studentCount` now arrives on the class list itself (BE US-173 — the
+      // TEACHER branch of `ListClassesUseCase` runs the same `enrichClassRows`
+      // as the admin branch), so the old "drain every class's roster just to
+      // count it" 1+N fan-out is gone (US-E18.30).
       return {
         ok: true,
-        data: classes.map((cls, i) =>
-          toTeacherClass(cls, counts[i], this.currentUserId),
+        data: classes.map((cls) =>
+          toTeacherClass(cls, cls.studentCount, this.currentUserId),
         ),
       };
     } catch (err) {

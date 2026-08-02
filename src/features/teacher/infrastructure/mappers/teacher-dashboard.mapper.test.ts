@@ -26,6 +26,7 @@ describe("teacher-dashboard.mapper", () => {
     gradeLevel: 10,
     academicYearLabel: "2025-2026",
     status: "ACTIVE",
+    studentCount: 35,
     homeroomTeacherId: "teacher-1",
     createdAt: "",
     updatedAt: "",
