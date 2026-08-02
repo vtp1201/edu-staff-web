@@ -3541,6 +3541,11 @@
       "pendingMessageOverflowLabel": "99+",
       "reconnectButton": "Kết nối lại",
       "reconnectingTitle": "Đang kết nối lại..."
+    },
+    "error": {
+      "title": "Không tải được dữ liệu",
+      "description": "Đã có lỗi khi tải trang này. Vui lòng thử lại.",
+      "retry": "Thử lại"
     }
   },
   "staffDiscipline": {
