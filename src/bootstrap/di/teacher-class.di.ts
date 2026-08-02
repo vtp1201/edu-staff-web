@@ -6,6 +6,7 @@ import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ITeacherClassRepository } from "@/features/teacher/domain/repositories/i-teacher-class.repository";
 import { GetClassStudentsUseCase } from "@/features/teacher/domain/use-cases/get-class-students.use-case";
 import { ListMyClassesUseCase } from "@/features/teacher/domain/use-cases/list-my-classes.use-case";
+import { ListMyStudentsUseCase } from "@/features/teacher/domain/use-cases/list-my-students.use-case";
 import { MockTeacherClassRepository } from "@/features/teacher/infrastructure/repositories/mock-teacher-class.repository";
 import { TeacherClassRepository } from "@/features/teacher/infrastructure/repositories/teacher-class.repository";
 
@@ -25,4 +26,14 @@ export async function makeListMyTeacherClassesUseCase() {
 
 export async function makeGetTeacherClassStudentsUseCase() {
   return new GetClassStudentsUseCase(await makeRepo());
+}
+
+/** Cross-class student roster (US-E13.9) — composes the two use-cases above
+ *  over ONE repository instance (no new repository wiring). */
+export async function makeListMyStudentsUseCase() {
+  const repo = await makeRepo();
+  return new ListMyStudentsUseCase(
+    new ListMyClassesUseCase(repo),
+    new GetClassStudentsUseCase(repo),
+  );
 }

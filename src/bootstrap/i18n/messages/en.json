@@ -4236,6 +4236,45 @@
     },
     "students": "students"
   },
+  "teacherStudentsRoster": {
+    "classFilterAll": "All classes",
+    "classFilterLabel": "Class",
+    "columns": {
+      "class": "Class",
+      "name": "Student",
+      "status": "Status"
+    },
+    "empty": "You have not been assigned to any class yet.",
+    "emptyAllFailed": "Could not load the student list.",
+    "emptyAllFailedBody": "None of your {count} class rosters could be loaded. Please try again.",
+    "emptyBody": "Once you are assigned a class, its students will appear here.",
+    "errorRetryAction": "Try again",
+    "errors": {
+      "network-error": "Connection error, please check your network.",
+      "not-found": "Student list not found.",
+      "unauthorized": "You do not have permission to view this information.",
+      "unknown": "Something went wrong, please try again."
+    },
+    "filteredCount": "Found {count} students",
+    "loadingLabel": "Loading student list",
+    "nextPage": "Next page",
+    "noSearchResults": "No matching students found.",
+    "pageTitle": "My students",
+    "paginationNav": "Student list pagination",
+    "partialFailureNotice": "{count} class rosters could not be loaded. This list may be incomplete.",
+    "prevPage": "Previous page",
+    "resultCount": "{count} students",
+    "resultCountFiltered": "{count} / {total} students",
+    "rowLinkLabel": "View {name}'s academic record",
+    "searchLabel": "Search students",
+    "searchPlaceholder": "Search by student name...",
+    "showing": "Showing {from}–{to} of {total}",
+    "status": {
+      "active": "Enrolled",
+      "transferred": "Transferred"
+    },
+    "studentListSection": "Student list"
+  },
   "teacherDashboard": {
     "notifications": {
       "title": "Notifications"
