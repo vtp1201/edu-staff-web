@@ -66,13 +66,14 @@ export function PrincipalRosterScreen({
     </div>
   );
 
+  // `<section>`, not `<main>`: AppShell already owns the `<main>` landmark
+  // (`#app-shell-main`) and its `p-4 sm:p-6` gutter — nesting a second one
+  // would duplicate the landmark and the padding.
   const shell = (children: React.ReactNode) => (
-    <main className="flex-1 overflow-y-auto bg-edu-bg px-8 py-6">
-      <div className="mx-auto flex max-w-[1280px] flex-col gap-[18px]">
-        {header}
-        {children}
-      </div>
-    </main>
+    <section className="mx-auto flex max-w-[1280px] flex-col gap-[18px]">
+      {header}
+      {children}
+    </section>
   );
 
   if (vm.fetchError) {
