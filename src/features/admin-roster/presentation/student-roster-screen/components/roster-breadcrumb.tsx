@@ -32,7 +32,10 @@ export function RosterBreadcrumb({
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5",
+            // min-h-11 (44px): on the principal read-only screen this trigger is
+            // the ONLY way to switch class — it must meet the touch target
+            // minimum (accessibility.md).
+            "inline-flex min-h-11 items-center gap-1.5 rounded-md px-1.5 py-0.5",
             "font-bold text-edu-text-primary",
             "motion-safe:transition-colors hover:bg-edu-bg",
             "outline-none focus-visible:ring-2 focus-visible:ring-ring",

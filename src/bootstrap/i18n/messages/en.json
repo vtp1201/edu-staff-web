@@ -328,7 +328,9 @@
       "unknown": "Something went wrong, please try again"
     },
     "pagination": {
-      "nav": "Pagination"
+      "nav": "Pagination",
+      "next": "Next page",
+      "prev": "Previous page"
     },
     "status": {
       "active": "Active",
@@ -3111,6 +3113,21 @@
     },
     "title": "Classes",
     "viewTeachers": "View teachers"
+  },
+  "principalStudents": {
+    "title": "Student roster",
+    "subtitle": "Browse the school's students class by class. View only — no enrolment changes.",
+    "empty": {
+      "title": "No students in this class",
+      "body": "No student has been enrolled in this class yet. The responsible administrator will update the roster."
+    },
+    "emptyClasses": {
+      "title": "No classes yet",
+      "body": "There is no class in the current academic year, so there is no student roster to show."
+    },
+    "error": {
+      "title": "Could not load the student roster"
+    }
   },
   "principalTeachers": {
     "addTeacher": "Add Teacher",
