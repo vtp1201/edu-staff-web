@@ -12,11 +12,12 @@ import type {
   ListReportsActionResult,
   ModerationScreenProps,
   RemoveContentActionResult,
+  ReportQueuePage,
 } from "./moderation-screen.i-vm";
 
 const m = messages.moderation;
 
-const STATS = { pendingCount: 3, resolvedThisWeekCount: 5, removedCount: 2 };
+const STATS = { pendingCount: 3, resolvedCount: 5 };
 
 function report(
   over: Partial<ReportEntity> & Pick<ReportEntity, "id">,
@@ -47,9 +48,12 @@ const REPORTS: ReportEntity[] = [
   report({ id: "r-3", kind: "message", reason: "inappropriate-language" }),
 ];
 
+/** Mock-shaped detail: the enriched fields exist ONLY in mock mode. */
+const DETAIL_FULL_CONTENT = "Nội dung đầy đủ của bài viết bị báo cáo.";
+
 const DETAIL: ReportDetailEntity = {
   ...report({ id: "r-1", duplicateCount: 2 }),
-  fullContent: "Nội dung đầy đủ của bài viết bị báo cáo.",
+  fullContent: DETAIL_FULL_CONTENT,
   context: [],
   duplicateReports: [
     {
@@ -67,11 +71,10 @@ const DETAIL: ReportDetailEntity = {
 
 const okList = (
   reports: ReportEntity[],
-  stats = STATS,
+  page: Partial<ReportQueuePage> = {},
 ): ListReportsActionResult => ({
   ok: true,
-  data: { reports, nextCursor: null, hasMore: false },
-  stats,
+  data: { reports, nextCursor: null, hasMore: false, ...page },
 });
 
 const okDetail = (detail: ReportDetailEntity): GetReportDetailActionResult => ({
@@ -113,8 +116,11 @@ const baseProps: ModerationScreenProps = {
   initialStats: STATS,
   initialErrorKey: null,
   auditScopeId: "tenant-1",
+  // Mock-mode default; the real BE has no content-moderation audit trail.
+  auditLogEnabled: true,
   viewerRole: "principal",
   listReportsAction: async () => okList(REPORTS),
+  getReportStatsAction: async () => ({ ok: true, data: STATS }),
   getReportDetailAction: async () => okDetail(DETAIL),
   dismissReportAction: async () => ({ ok: true }),
   removeContentAction: async () => ({ ok: true }),
@@ -185,17 +191,12 @@ export const EmptyPositive: Story = {
   args: {
     ...baseProps,
     initialQueuePage: { reports: [], nextCursor: null, hasMore: false },
-    initialStats: {
-      pendingCount: 0,
-      resolvedThisWeekCount: 5,
-      removedCount: 2,
-    },
-    listReportsAction: async () =>
-      okList([], {
-        pendingCount: 0,
-        resolvedThisWeekCount: 5,
-        removedCount: 2,
-      }),
+    initialStats: { pendingCount: 0, resolvedCount: 5 },
+    getReportStatsAction: async () => ({
+      ok: true,
+      data: { pendingCount: 0, resolvedCount: 5 },
+    }),
+    listReportsAction: async () => okList([]),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -211,7 +212,7 @@ export const EmptyFiltered: Story = {
     initialFilter: { status: "pending", contentType: "all", search: "zzzz" },
     initialQueuePage: { reports: [], nextCursor: null, hasMore: false },
     initialStats: STATS, // pendingCount 3 > 0 → filtered, not positive
-    listReportsAction: async () => okList([], STATS),
+    listReportsAction: async () => okList([]),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -228,7 +229,13 @@ export const WholeScreenError: Story = {
     ...baseProps,
     initialQueuePage: { reports: [], nextCursor: null, hasMore: false },
     initialErrorKey: "network-error",
+    initialStats: null,
     listReportsAction: async () => ({
+      ok: false,
+      errorKey: "network-error",
+      retryable: true,
+    }),
+    getReportStatsAction: async () => ({
       ok: false,
       errorKey: "network-error",
       retryable: true,
@@ -239,8 +246,131 @@ export const WholeScreenError: Story = {
     await waitFor(() =>
       expect(canvas.getByText(m.errorTitle)).toBeInTheDocument(),
     );
-    // no partial stat numbers on a failed base fetch.
+    // no partial stat numbers when BOTH reads failed.
     await expect(canvas.queryByText("3")).toBeNull();
+    // A terminally-failed stats read shows the UNAVAILABLE marker on BOTH
+    // counter cards — never an endless skeleton (which reads as "still
+    // loading"). The skeleton renders no text at all, so the presence of the
+    // markers is itself proof it is gone.
+    await waitFor(async () =>
+      expect((await canvas.findAllByText(m.unavailable)).length).toBe(2),
+    );
+  },
+};
+
+/**
+ * Stats fail while the QUEUE succeeds: the counters degrade on their own to the
+ * unavailable marker (they are an independent query) and the queue still
+ * renders. `forbidden` is non-retryable, so this is the terminal state — the
+ * exact case the old `isLoading || !stats` skeleton showed forever.
+ */
+export const StatsForbiddenShowsUnavailable: Story = {
+  args: {
+    ...baseProps,
+    initialStats: null,
+    getReportStatsAction: async () => ({
+      ok: false,
+      errorKey: "forbidden",
+      retryable: false,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(async () =>
+      expect((await canvas.findAllByText(m.unavailable)).length).toBe(2),
+    );
+    // Never a fabricated zero.
+    await expect(canvas.queryByText("0")).toBeNull();
+    // The queue is unaffected — a failed counter read is not a screen failure.
+    await expect(
+      canvas.getByRole("button", {
+        name: m.table.openDetail.replace("{id}", "r-1"),
+      }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * A11Y-001 (WCAG 2.4.3): the detail Sheet is opened programmatically from a row
+ * button — there is no `<SheetTrigger>`, so Radix's own focus restore has
+ * nothing to return to. On close, focus must land back on the row button the
+ * moderator came from, not on `<body>` (which strands a keyboard user at the
+ * top of a paginated list). Fixed in the `SheetContent` PRIMITIVE.
+ */
+export const DetailSheetRestoresFocusOnClose: Story = {
+  args: baseProps,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const open = await canvas.findByRole("button", {
+      name: m.table.openDetail.replace("{id}", "r-1"),
+    });
+    open.focus();
+    await expect(open).toHaveFocus();
+    await userEvent.click(open);
+
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
+    // Focus returned to the invoking row button (NOT <body>).
+    await waitFor(() => expect(open).toHaveFocus());
+    await expect(document.activeElement).not.toBe(document.body);
+  },
+};
+
+/**
+ * The stat row is fed by its OWN query, so a filtered/empty list page can never
+ * change it — the counters stay tenant-wide (US-E18.32, AC "stats never derived
+ * from a filtered list page").
+ */
+export const StatsIndependentOfFilteredList: Story = {
+  args: {
+    ...baseProps,
+    initialFilter: { status: "pending", contentType: "post", search: "zzzz" },
+    initialQueuePage: { reports: [], nextCursor: null, hasMore: false },
+    listReportsAction: async () => okList([]),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(canvas.getByText(m.empty.filteredTitle)).toBeInTheDocument(),
+    );
+    // Zero rows on screen, but the counters still report the tenant totals.
+    // ("Chờ xử lý" is also a status-tab label, hence the card-scoped lookup.)
+    // StatCard renders `<div>{label}</div><div>{value}</div>` in one wrapper.
+    const cardOf = (label: string) =>
+      canvas
+        .getAllByText(label)
+        .filter((el) => el.closest('[role="tablist"]') === null)
+        .map((el) => el.parentElement)
+        .find((el): el is HTMLElement => el !== null);
+    await expect(cardOf(m.stats.pending)).toHaveTextContent("3");
+    await expect(cardOf(m.stats.resolved)).toHaveTextContent("5");
+  },
+};
+
+/**
+ * Bounded-scan semantics: a filtered page can come back EMPTY while
+ * `hasMore=true`. "Load more" must stay available — gating it on a non-empty
+ * page would strand the moderator on a false "no results" state.
+ */
+export const EmptyFilteredStillOffersLoadMore: Story = {
+  args: {
+    ...baseProps,
+    initialFilter: { status: "pending", contentType: "comment", search: "abc" },
+    initialQueuePage: { reports: [], nextCursor: "cur-2", hasMore: true },
+    listReportsAction: async () =>
+      okList([], { nextCursor: "cur-2", hasMore: true }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() =>
+      expect(canvas.getByText(m.empty.filteredTitle)).toBeInTheDocument(),
+    );
+    await expect(
+      canvas.getByRole("button", { name: m.loadMore }),
+    ).toBeInTheDocument();
   },
 };
 
@@ -306,7 +436,7 @@ export const DetailNotFound: Story = {
       ).toBeInTheDocument(),
     );
     // No stale content section.
-    await expect(within(sheet).queryByText(DETAIL.fullContent)).toBeNull();
+    await expect(within(sheet).queryByText(DETAIL_FULL_CONTENT)).toBeNull();
   },
 };
 
@@ -732,9 +862,13 @@ export const CombinedFilterViaUI: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    const allTab = canvas.getByRole("tab", { name: m.filter.status.all });
-    await userEvent.click(allTab);
-    await expect(allTab).toHaveAttribute("aria-selected", "true");
+    // Two status tabs only — the service reads ONE partition per request and
+    // has no `all` (US-E18.32).
+    const resolvedTab = canvas.getByRole("tab", {
+      name: m.filter.status.resolved,
+    });
+    await userEvent.click(resolvedTab);
+    await expect(resolvedTab).toHaveAttribute("aria-selected", "true");
     // Selecting a status tab does not clear a concurrently-applied search.
     const search = canvas.getByLabelText(m.filter.searchLabel);
     await userEvent.type(search, "Nguyễn");
@@ -746,13 +880,150 @@ export const CombinedFilterViaUI: Story = {
     await userEvent.click(
       await body.findByRole("option", { name: m.filter.type.post }),
     );
-    // All three criteria (status="all", type="post", search="Nguyễn") are
+    // All three criteria (status="resolved", type="post", search="Nguyễn") are
     // simultaneously reflected in the visible UI — the combined AND state
     // `handleFilterChange` merges via `{ ...d, ...patch }` (never resets the
     // other two fields), matching the debounced serialization proven at the
     // unit level in `filter-search-params.test.ts`.
-    await expect(allTab).toHaveAttribute("aria-selected", "true");
+    await expect(resolvedTab).toHaveAttribute("aria-selected", "true");
     await expect(search).toHaveValue("Nguyễn");
     await expect(typeSelect).toHaveTextContent(m.filter.type.post);
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// US-E18.32 — the REAL wire shape (what a production read actually renders)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A row exactly as the real `ReportInboxItem` maps: no reporter identity (never
+ * returned, NFR-098-01), no content preview, no author, no duplicate count.
+ */
+function wireShapedReport(
+  over: Partial<ReportEntity> & Pick<ReportEntity, "id">,
+): ReportEntity {
+  return {
+    ...report(over),
+    contentPreview: null,
+    authorId: null,
+    authorName: null,
+    reporterId: null,
+    reporterName: null,
+    duplicateCount: null,
+    ...over,
+  };
+}
+
+const WIRE_REPORTS: ReportEntity[] = [
+  wireShapedReport({ id: "r-1", kind: "post", contentId: "post-9" }),
+  // COMMENT is a first-class target since BE US-166 — it renders through the
+  // SAME row/kind path as POST, not a forked branch.
+  wireShapedReport({
+    id: "r-2",
+    kind: "comment",
+    contentId: "cmt-3",
+    reason: "bullying",
+  }),
+  wireShapedReport({
+    id: "r-3",
+    kind: "message",
+    contentId: "msg-7",
+    reason: "other",
+    note: "Quấy rối liên tục qua tin nhắn",
+  }),
+];
+
+const WIRE_DETAIL: ReportDetailEntity = {
+  ...wireShapedReport({ id: "r-2", kind: "comment", contentId: "cmt-3" }),
+  fullContent: null,
+  context: null,
+  duplicateReports: null,
+};
+
+/**
+ * Real-mode queue: every identity/preview field is absent. The row falls back
+ * to the target id (the only identifier the wire returns) and the reporter cell
+ * renders the explicit "no data" marker — never an invented name.
+ */
+export const RealWireShapeQueue: Story = {
+  args: {
+    ...baseProps,
+    auditLogEnabled: false,
+    initialQueuePage: {
+      reports: WIRE_REPORTS,
+      nextCursor: null,
+      hasMore: false,
+    },
+    listReportsAction: async () => okList(WIRE_REPORTS),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The target id stands in for the missing preview.
+    await expect(canvas.getAllByText("post-9").length).toBeGreaterThan(0);
+    // COMMENT target renders via the shared kind label, same as POST.
+    await expect(canvas.getAllByText(/Bình luận/).length).toBeGreaterThan(0);
+    // Reporter is unavailable, announced as such rather than left blank.
+    await expect(canvas.getAllByText(m.unavailable).length).toBeGreaterThan(0);
+  },
+};
+
+/**
+ * Real-mode detail of a COMMENT report: the sheet says plainly that the server
+ * does not return the content, shows the target reference, and omits the
+ * duplicate-report section entirely (`null` ≠ "zero duplicates").
+ */
+export const RealWireShapeCommentDetail: Story = {
+  args: {
+    ...baseProps,
+    auditLogEnabled: false,
+    initialQueuePage: {
+      reports: WIRE_REPORTS,
+      nextCursor: null,
+      hasMore: false,
+    },
+    listReportsAction: async () => okList(WIRE_REPORTS),
+    getReportDetailAction: async () => okDetail(WIRE_DETAIL),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", {
+        name: m.table.openDetail.replace("{id}", "r-2"),
+      }),
+    );
+    const body = within(document.body);
+    const sheet = await body.findByRole("dialog");
+    await expect(
+      await within(sheet).findByText(m.detail.contentUnavailable),
+    ).toBeInTheDocument();
+    await expect(within(sheet).getByText("cmt-3")).toBeInTheDocument();
+    // Neither the duplicate heading NOR the "no duplicates" line: we simply
+    // never learned whether duplicates exist.
+    await expect(within(sheet).queryByText(m.duplicates.none)).toBeNull();
+    // A comment IS removable from the queue (resolve action=DELETE).
+    await expect(within(sheet).getByText(m.detail.remove)).toBeInTheDocument();
+  },
+};
+
+/**
+ * Real mode: the audit tab is HIDDEN (no BE endpoint backs this feature's
+ * dismiss/remove trail), and a deep-linked `?tab=audit` falls back to the queue
+ * instead of rendering a permanently-failing view.
+ */
+export const AuditTabHiddenWithoutBacking: Story = {
+  args: { ...baseProps, auditLogEnabled: false },
+  parameters: {
+    layout: "fullscreen",
+    nextjs: { appDirectory: true, navigation: { query: { tab: "audit" } } },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByRole("tab", { name: m.tabs.audit })).toBeNull();
+    // Fell back to the queue rather than an empty/broken audit surface.
+    await expect(
+      await canvas.findByRole("button", {
+        name: m.table.openDetail.replace("{id}", "r-1"),
+      }),
+    ).toBeInTheDocument();
   },
 };

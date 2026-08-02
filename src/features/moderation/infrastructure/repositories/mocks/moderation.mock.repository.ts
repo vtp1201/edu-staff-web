@@ -2,7 +2,11 @@ import "server-only";
 import { mockDelay } from "@/bootstrap/lib/mock";
 import type { AuditEntryEntity } from "../../../domain/entities/audit-entry.entity";
 import type { ModerationStatsEntity } from "../../../domain/entities/moderation-stats.entity";
-import type { ReportEntity } from "../../../domain/entities/report.entity";
+import type {
+  ReportEntity,
+  ReportRef,
+  ReportStatus,
+} from "../../../domain/entities/report.entity";
 import type { ReportDetailEntity } from "../../../domain/entities/report-detail.entity";
 import type { ReportQueueFilter } from "../../../domain/entities/report-queue-filter.entity";
 import {
@@ -17,6 +21,22 @@ import {
 } from "../../../domain/repositories/i-moderation.repository";
 
 const PRINCIPAL_NAME = "Lê Thị Bích Ngọc (BGH)";
+
+/**
+ * The mock seed is RICHER than the wire: it fills the identity/preview fields
+ * the real `ReportInboxItem` leaves `null` (no reporter identity by design,
+ * NFR-098-01; no denormalized content or duplicate count at all). Narrowing
+ * them here keeps the seed non-null without spraying `??` through the mock, and
+ * documents at the type level exactly which fields exist ONLY in mock mode.
+ */
+type MockReportEntity = ReportEntity & {
+  contentPreview: string;
+  authorId: string;
+  authorName: string;
+  reporterId: string;
+  reporterName: string;
+  duplicateCount: number;
+};
 
 /**
  * Deterministic forced-403 fixture (anti-demo rule, plan.md Phase 3). Removing
@@ -40,10 +60,10 @@ function iso(daysAgo: number, hour = 9): string {
  * Seed reports — mock *data* (names/snippets are not i18n copy). Spans all 3
  * kinds, all 3 statuses, and duplicate counts (incl. the triple-reported post).
  */
-function seedReports(): ReportEntity[] {
+function seedReports(): MockReportEntity[] {
   const base = (
-    partial: Partial<ReportEntity> & Pick<ReportEntity, "id" | "kind">,
-  ): ReportEntity => ({
+    partial: Partial<MockReportEntity> & Pick<ReportEntity, "id" | "kind">,
+  ): MockReportEntity => ({
     contentId: `content-${partial.id}`,
     contentPreview: "Nội dung bị báo cáo.",
     authorId: "author-x",
@@ -207,15 +227,18 @@ function seedReports(): ReportEntity[] {
   ];
 }
 
-function buildStats(reports: ReportEntity[]): ModerationStatsEntity {
+function buildStats(reports: MockReportEntity[]): ModerationStatsEntity {
   return {
     pendingCount: reports.filter((r) => r.status === "pending").length,
-    resolvedThisWeekCount: reports.filter((r) => r.status !== "pending").length,
-    removedCount: reports.filter((r) => r.status === "removed").length,
+    resolvedCount: reports.filter((r) => r.status !== "pending").length,
   };
 }
 
-function matchesFilter(r: ReportEntity, filter: ReportQueueFilter): boolean {
+function matchesFilter(
+  r: MockReportEntity,
+  filter: ReportQueueFilter,
+): boolean {
+  // Mirrors the wire's single-partition read: `pending` or `resolved`, no `all`.
   if (filter.status === "pending" && r.status !== "pending") return false;
   if (filter.status === "resolved" && r.status === "pending") return false;
   if (filter.contentType !== "all" && r.kind !== filter.contentType) {
@@ -238,12 +261,33 @@ function matchesFilter(r: ReportEntity, filter: ReportQueueFilter): boolean {
  */
 export class MockModerationRepository implements IModerationRepository {
   // Fresh state per `new` (deterministic across test runs / DI per-request).
-  private reports: ReportEntity[] = seedReports();
+  private reports: MockReportEntity[] = seedReports();
   private audit: AuditEntryEntity[] = this.reports
     .filter((r) => r.status !== "pending")
     .map((r, i) => this.toAuditEntry(r, i));
 
-  private toAuditEntry(r: ReportEntity, seq: number): AuditEntryEntity {
+  /**
+   * Point-READ lookup by the WHOLE addressing tuple. `status` is a partition
+   * selector on the wire (`pending` → PENDING, everything else → RESOLVED), so
+   * a row read from the wrong partition resolves to nothing — the real
+   * `404 REPORT_NOT_FOUND`.
+   *
+   * Deliberately NOT used by the resolve WRITES: `POST /reports/{id}/resolve`
+   * sends `filedAt` as the CAS key and no `status`, so a stale ref must yield
+   * `409 already-resolved`, not a 404.
+   */
+  private findByRef(ref: ReportRef): MockReportEntity | undefined {
+    const partitionOf = (s: ReportStatus) =>
+      s === "pending" ? "PENDING" : "RESOLVED";
+    return this.reports.find(
+      (x) =>
+        x.id === ref.reportId &&
+        x.createdAt === ref.filedAt &&
+        partitionOf(x.status) === partitionOf(ref.status),
+    );
+  }
+
+  private toAuditEntry(r: MockReportEntity, seq: number): AuditEntryEntity {
     return {
       entryId: `audit-${r.id}-${seq}`,
       actorId: "principal-1",
@@ -276,18 +320,33 @@ export class MockModerationRepository implements IModerationRepository {
       ok: true,
       value: {
         reports: slice.map((r) => ({ ...r })),
-        stats: buildStats(this.reports),
         nextCursor: hasMore ? String(nextIndex) : null,
         hasMore,
       },
     };
   }
 
+  /**
+   * Independent of any list filter — the mock counts the WHOLE seed set, never
+   * the current page, mirroring `GET /reports/stats`'s tenant-wide contract.
+   */
+  async getReportStats(): Promise<ModerationResult<ModerationStatsEntity>> {
+    await mockDelay();
+    return { ok: true, value: buildStats(this.reports) };
+  }
+
+  /**
+   * Mirrors the real point-read's PARTITION semantics: the row is addressed by
+   * the whole `(reportId, filedAt, status)` tuple, so a stale/forged `filedAt`
+   * or a `status` from the wrong partition resolves to nothing — exactly the
+   * real `404 REPORT_NOT_FOUND`. This is what keeps a mock-mode session honest
+   * about threading the whole ref through the UI.
+   */
   async getReportDetail(
-    reportId: string,
+    ref: ReportRef,
   ): Promise<ModerationResult<ReportDetailEntity>> {
     await mockDelay();
-    const r = this.reports.find((x) => x.id === reportId);
+    const r = this.findByRef(ref);
     if (!r) return { ok: false, error: { type: "not-found" } };
 
     const duplicateReports = this.reports
@@ -333,9 +392,17 @@ export class MockModerationRepository implements IModerationRepository {
     };
   }
 
-  async dismissReport(reportId: string): Promise<ModerationActionResult> {
+  /**
+   * CAS write: matched on `(reportId, filedAt)` ONLY — the real
+   * `POST /reports/{id}/resolve` sends `filedAt` as the compare-and-set key and
+   * no `status`, so a ref pointing at an already-resolved row must produce
+   * `409 already-resolved`, never a 404 (see {@link findByRef}).
+   */
+  async dismissReport(ref: ReportRef): Promise<ModerationActionResult> {
     await mockDelay();
-    const r = this.reports.find((x) => x.id === reportId);
+    const r = this.reports.find(
+      (x) => x.id === ref.reportId && x.createdAt === ref.filedAt,
+    );
     if (!r) return { ok: false, error: { type: "not-found" } };
     if (r.status !== "pending") {
       return { ok: false, error: { type: "already-resolved" } };
@@ -352,15 +419,23 @@ export class MockModerationRepository implements IModerationRepository {
   ): Promise<ModerationActionResult> {
     await mockDelay();
     // Deterministic forced-403 fixture (AC-1928.6) — code-only, no message.
-    if (input.reportId === MOCK_FORBIDDEN_REPORT_ID) {
+    if (input.ref?.reportId === MOCK_FORBIDDEN_REPORT_ID) {
       return { ok: false, error: { type: "forbidden" } };
     }
-    // ADR 0052: feed's direct-removal path has no report in scope — there is no
-    // queue row to look up or resolve, so succeed without the report branch.
-    if (!input.reportId) {
+    // ADR 0052: the feed's direct-removal path has no report in scope — there
+    // is no queue row to look up or resolve, so succeed without that branch.
+    // A comment still needs its parent postId, matching the real route.
+    if (!input.ref) {
+      if (input.kind === "comment" && !input.parentId) {
+        return { ok: false, error: { type: "validation" } };
+      }
       return { ok: true };
     }
-    const r = this.reports.find((x) => x.id === input.reportId);
+    const ref = input.ref;
+    // Same CAS semantics as dismissReport: `(reportId, filedAt)` only.
+    const r = this.reports.find(
+      (x) => x.id === ref.reportId && x.createdAt === ref.filedAt,
+    );
     if (!r) return { ok: false, error: { type: "not-found" } };
     if (r.status !== "pending") {
       return { ok: false, error: { type: "already-resolved" } };
@@ -368,7 +443,6 @@ export class MockModerationRepository implements IModerationRepository {
     r.status = "removed";
     r.resolvedBy = PRINCIPAL_NAME;
     r.resolvedAt = new Date().toISOString();
-    r.resolveNote = input.resolveNote ?? null;
     this.audit.unshift(this.toAuditEntry(r, this.audit.length));
     return { ok: true };
   }

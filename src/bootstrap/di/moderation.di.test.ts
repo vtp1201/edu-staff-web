@@ -1,17 +1,17 @@
 /**
- * Unit tests — `feed.di.ts` env matrix (US-E18.31).
+ * Unit tests — `moderation.di.ts` env matrix (US-E18.32).
  *
- * The feed factory stopped being unconditionally force-mocked (US-E18.20) once
- * BE US-165 denormalized `authorName`/`authorRole` onto `Post`/`Comment`:
+ * The moderation factory stopped being unconditionally force-mocked (US-E18.20)
+ * once BE US-172/US-166 added the queue filters, the stats endpoint, the report
+ * detail point-read and the COMMENT target:
  *
- * - `NEXT_PUBLIC_USE_MOCK="true"` → the pure {@link MockFeedRepository} (the
- *   full demo experience, unchanged).
- * - flag `"false"` or unset → {@link HybridFeedRepository}: REAL reads,
- *   force-mocked mutations (reaction taxonomy + attachment capability are still
- *   unresolved — see the factory's doc comment).
+ * - `NEXT_PUBLIC_USE_MOCK="true"` → the pure `MockModerationRepository`.
+ * - flag `"false"` or unset → the real `ModerationRepository` (the audit-log
+ *   read degrades inside it; there is no mock fallback and no hybrid).
  *
- * Every use-case is exercised because each calls `makeRepo()` independently — a
- * partial swap would leak one path back to the mock (or the real repo).
+ * Every factory is exercised because each calls `makeRepo()` independently — a
+ * partial swap would leak one path back to the mock (or the real repo, and its
+ * `createServerHttpClient()` cookie read).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -65,33 +65,41 @@ function repoOf(useCase: object): { constructor: { name: string } } {
 async function importDiWithEnv(value: string | undefined) {
   if (value === undefined) delete process.env.NEXT_PUBLIC_USE_MOCK;
   else process.env.NEXT_PUBLIC_USE_MOCK = value;
-  return import("./feed.di");
+  return import("./moderation.di");
 }
 
 async function allUseCases(value: string | undefined) {
   const di = await importDiWithEnv(value);
   return Promise.all([
-    di.makeListFeedUseCase(),
-    di.makeCreatePostUseCase(),
-    di.makeReactToPostUseCase(),
-    di.makeListCommentsUseCase(),
-    di.makeAddCommentUseCase(),
-    di.makeTogglePinUseCase(),
+    di.makeSubmitReportUseCase(),
+    di.makeListReportsUseCase(),
+    di.makeDismissReportUseCase(),
+    di.makeRemoveContentUseCase(),
+    di.makeGetModerationAuditLogUseCase(),
   ]);
 }
 
-describe("feed.di — USE_MOCK ? Mock : Hybrid", () => {
-  it('every factory resolves MockFeedRepository when NEXT_PUBLIC_USE_MOCK="true"', async () => {
+describe("moderation.di — USE_MOCK ? Mock : Real", () => {
+  it('every factory resolves MockModerationRepository when NEXT_PUBLIC_USE_MOCK="true"', async () => {
     for (const useCase of await allUseCases("true")) {
-      expect(repoOf(useCase).constructor.name).toBe("MockFeedRepository");
+      expect(repoOf(useCase).constructor.name).toBe("MockModerationRepository");
     }
+    const di = await importDiWithEnv("true");
+    expect((await di.makeModerationRepository()).constructor.name).toBe(
+      "MockModerationRepository",
+    );
   });
 
   for (const value of [undefined, "false"] as const) {
-    it(`every factory resolves HybridFeedRepository when NEXT_PUBLIC_USE_MOCK=${String(value)}`, async () => {
+    it(`every factory resolves ModerationRepository when NEXT_PUBLIC_USE_MOCK=${String(value)}`, async () => {
       for (const useCase of await allUseCases(value)) {
-        expect(repoOf(useCase).constructor.name).toBe("HybridFeedRepository");
+        expect(repoOf(useCase).constructor.name).toBe("ModerationRepository");
       }
+      // The bare-repository escape hatch (detail sheet + stats) too.
+      const di = await importDiWithEnv(value);
+      expect((await di.makeModerationRepository()).constructor.name).toBe(
+        "ModerationRepository",
+      );
     });
   }
 
@@ -102,7 +110,7 @@ describe("feed.di — USE_MOCK ? Mock : Hybrid", () => {
 
   it("refreshes the session BEFORE creating the http client in real mode", async () => {
     const di = await importDiWithEnv("false");
-    await di.makeListFeedUseCase();
+    await di.makeListReportsUseCase();
     expect(calls).toEqual(["refresh", "http"]);
   });
 });

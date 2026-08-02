@@ -13,10 +13,18 @@ export type StatTone =
   | "teal"
   | "muted";
 
-const TONE: Record<StatTone, { box: string; icon: string }> = {
+/**
+ * Icon color must reach 3:1 against its OWN `/15` tint box (WCAG 1.4.11,
+ * graphical objects). The raw status hues fail badly on their own tint:
+ * `--edu-warning` #FFAE1F ≈ 1.71:1, `--edu-success` #13DEB9 ≈ 1.56:1 — so both
+ * use an existing darker sibling token instead (A11Y-002, US-E18.32).
+ */
+export const STAT_TONE: Record<StatTone, { box: string; icon: string }> = {
   primary: { box: "bg-primary/15", icon: "text-primary" },
-  success: { box: "bg-edu-success/15", icon: "text-edu-success" },
-  warning: { box: "bg-edu-warning/15", icon: "text-edu-warning" },
+  // #007A6E on the #13DEB9/15 tint ≈ 4.9:1.
+  success: { box: "bg-edu-success/15", icon: "text-edu-success-text" },
+  // #2A3547 on the #FFAE1F/15 tint ≈ 11:1.
+  warning: { box: "bg-edu-warning/15", icon: "text-edu-warning-foreground" },
   error: { box: "bg-edu-error/15", icon: "text-edu-error" },
   info: { box: "bg-edu-info/15", icon: "text-edu-info" },
   purple: { box: "bg-edu-purple/15", icon: "text-edu-purple" },
@@ -57,7 +65,12 @@ export function compactToneClass(tone: StatTone | undefined): string {
 type StatCardDefaultProps = {
   variant?: "default";
   label: string;
-  value: string;
+  /**
+   * Usually a formatted number string. Accepts a node so a caller whose read
+   * genuinely FAILED can render an explicit unavailable marker (em-dash +
+   * sr-only text) instead of a fake `0` or an endless skeleton (US-E18.32).
+   */
+  value: React.ReactNode;
   icon: LucideIcon;
   tone?: StatTone;
   /** Optional trend chip; `dir` colors it (up=success, down=error). */
@@ -108,7 +121,7 @@ function DefaultStatCard({
   trend,
   className,
 }: StatCardDefaultProps) {
-  const t = TONE[tone];
+  const t = STAT_TONE[tone];
   const TrendIcon = trend?.dir === "down" ? ArrowDownRight : ArrowUpRight;
   return (
     <div

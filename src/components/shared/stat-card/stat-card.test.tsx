@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compactToneClass, trendColorClass } from "./stat-card";
+import { compactToneClass, STAT_TONE, trendColorClass } from "./stat-card";
 
 /**
  * StatCard variant logic is unit-tested at the pure-helper level (node env),
@@ -19,6 +19,25 @@ describe("StatCard trend chip color — WCAG 1.4.3 AA (decision 0027)", () => {
 
   it("down direction uses text-edu-error-text (5.1:1 on white, passes AA)", () => {
     expect(trendColorClass("down")).toBe("text-edu-error-text");
+  });
+});
+
+describe("StatCard default-variant icon tone — WCAG 1.4.11 (A11Y-002)", () => {
+  // The icon sits on its OWN tone tint (`bg-<hue>/15` over the white card), so
+  // colouring it with the raw hue is self-on-self: #FFAE1F on #FFF3DD = 1.69:1,
+  // #13DEB9 on #DCFAF4 = 1.56:1 — both below the 3:1 floor for graphical
+  // objects. Existing darker sibling tokens fix it without a new token.
+  it("warning icon uses text-edu-warning-foreground (#2A3547 = 11.25:1 on the tint)", () => {
+    expect(STAT_TONE.warning.icon).toBe("text-edu-warning-foreground");
+  });
+
+  it("success icon uses text-edu-success-text (#007A6E = 4.75:1 on the tint)", () => {
+    expect(STAT_TONE.success.icon).toBe("text-edu-success-text");
+  });
+
+  it("never colours warning/success icons with their own raw hue", () => {
+    expect(STAT_TONE.warning.icon).not.toBe("text-edu-warning");
+    expect(STAT_TONE.success.icon).not.toBe("text-edu-success");
   });
 });
 

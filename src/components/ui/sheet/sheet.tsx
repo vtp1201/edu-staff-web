@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Dialog as SheetPrimitive } from "radix-ui";
 import type * as React from "react";
 
+import { useAutoFocusReturn } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
@@ -59,11 +60,23 @@ function SheetContent({
 }) {
   const t = useTranslations("Common");
   const resolvedCloseLabel = closeLabel ?? t("close");
+  // Restore focus to the invoking control on close (A11Y-001, US-E18.32).
+  // A Sheet driven purely by `open`/`onOpenChange` (no <SheetTrigger>, the
+  // pattern every detail/drawer sheet here uses) leaves Radix's triggerRef
+  // null, so its default onCloseAutoFocus drops focus to <body> and a keyboard
+  // user loses their place in the list (WCAG 2.4.3). The invoker is snapshotted
+  // on OPEN (see useAutoFocusReturn — capturing at first render would capture
+  // <body>, because Content renders before the sheet is open). Placed before
+  // {...props} so a consumer's own handlers still override; both handlers
+  // no-op into Radix's defaults when there is no invoker to return to.
+  const { onOpenAutoFocus, onCloseAutoFocus } = useAutoFocusReturn();
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content
         data-slot="sheet-content"
+        onOpenAutoFocus={onOpenAutoFocus}
+        onCloseAutoFocus={onCloseAutoFocus}
         className={cn(
           "fixed z-50 flex flex-col gap-4 bg-background shadow-lg motion-safe:transition motion-safe:ease-in-out motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:duration-300 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:duration-500",
           side === "right" &&

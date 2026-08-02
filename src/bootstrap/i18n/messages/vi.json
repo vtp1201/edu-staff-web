@@ -2726,8 +2726,7 @@
     "subtitle": "Xem xét và xử lý nội dung bị báo cáo",
     "stats": {
       "pending": "Chờ xử lý",
-      "resolvedThisWeek": "Đã xử lý tuần này",
-      "removed": "Đã gỡ nội dung"
+      "resolved": "Đã xử lý"
     },
     "tabs": {
       "queue": "Hàng chờ báo cáo",
@@ -2737,8 +2736,7 @@
       "statusLabel": "Trạng thái",
       "status": {
         "pending": "Chờ xử lý",
-        "resolved": "Đã xử lý",
-        "all": "Tất cả"
+        "resolved": "Đã xử lý"
       },
       "typeLabel": "Loại nội dung",
       "type": {
@@ -2748,7 +2746,7 @@
         "message": "Tin nhắn"
       },
       "searchLabel": "Tìm kiếm báo cáo",
-      "searchPlaceholder": "Tìm theo tác giả, người báo cáo, nội dung…",
+      "searchPlaceholder": "Tìm theo mô tả của người báo cáo…",
       "refresh": "Làm mới danh sách"
     },
     "table": {
@@ -2764,7 +2762,8 @@
     "statusLabels": {
       "pending": "Chờ xử lý",
       "dismissed": "Đã bỏ qua",
-      "removed": "Đã gỡ"
+      "removed": "Đã gỡ",
+      "escalated": "Đã chuyển cấp trên"
     },
     "kinds": {
       "post": "Bài viết",
@@ -2777,7 +2776,6 @@
       "contextSection": "Bối cảnh",
       "reportSection": "Thông tin báo cáo",
       "reporter": "Người báo cáo",
-      "reason": "Lý do",
       "note": "Ghi chú của người báo cáo",
       "resolveSection": "Thông tin xử lý",
       "resolvedBy": "Người xử lý",
@@ -2785,7 +2783,7 @@
       "resolveNote": "Ghi chú xử lý",
       "dismiss": "Bỏ qua",
       "remove": "Gỡ nội dung",
-      "close": "Đóng"
+      "contentUnavailable": "Máy chủ không trả về nội dung bị báo cáo. Hãy mở nội dung theo mã tham chiếu ở trên để xem chi tiết."
     },
     "duplicates": {
       "heading": "{count} báo cáo trùng lặp",
@@ -2812,7 +2810,7 @@
       "positiveTitle": "Không có báo cáo nào chờ xử lý",
       "positiveBody": "Tất cả nội dung hiện đang ổn.",
       "filteredTitle": "Không tìm thấy báo cáo nào",
-      "filteredBody": "Thử điều chỉnh bộ lọc hoặc từ khoá tìm kiếm."
+      "filteredBody": "Thử điều chỉnh bộ lọc hoặc từ khoá tìm kiếm, hoặc tải thêm kết quả."
     },
     "loadMore": "Tải thêm",
     "loadMoreError": "Không thể tải thêm. Nhấn để thử lại.",
@@ -2829,7 +2827,8 @@
       "already-resolved": "Báo cáo này vừa được người khác xử lý.",
       "forbidden": "Bạn không có quyền thực hiện hành động này.",
       "network-error": "Đã xảy ra lỗi kết nối. Vui lòng thử lại."
-    }
+    },
+    "unavailable": "Không có dữ liệu"
   },
   "notifications": {
     "allLoaded": "Đã hiển thị tất cả",

@@ -44,7 +44,7 @@ describe("toQueryString", () => {
 
   it("round-trips a non-default filter + audit tab", () => {
     const filter = {
-      status: "all" as const,
+      status: "resolved" as const,
       contentType: "post" as const,
       search: "spam",
     };
@@ -52,6 +52,15 @@ describe("toQueryString", () => {
     const params = new URLSearchParams(qs);
     expect(parseFilterFromParams(params)).toEqual(filter);
     expect(parseTabFromParams(params)).toBe("audit");
+  });
+});
+
+describe("parseFilterFromParams — unsupported status", () => {
+  it('falls back to the default tab for a legacy "?status=all" URL', () => {
+    // The service has no `all` partition (US-E18.32); silently paging PENDING
+    // is the only sane fallback, and it matches the wire's own default.
+    const params = new URLSearchParams("status=all");
+    expect(parseFilterFromParams(params).status).toBe("pending");
   });
 });
 

@@ -1,31 +1,47 @@
-import type { ModerationStatsResponseDto } from "./moderation-stats-response.dto";
-
-/** Queue row wire shape (INT-191-02) — camelCase per api-integration.md. */
-export interface ReportResponseDto {
+/**
+ * `ReportInboxItem` — the wire row, ground-truthed against
+ * `edu-api/services/social/docs/openapi.yaml` (US-E18.32).
+ *
+ * Used by BOTH `GET /reports` (array) and `GET /reports/{reportId}` (single):
+ * the service returns the same schema from both, "so the list and detail
+ * responses can never drift".
+ *
+ * NOTE what is deliberately NOT here: no `reporterUserId` (NFR-098-01, a
+ * permanent privacy posture enforced at DTO shape), no denormalized content
+ * preview, no content author, no duplicate-report count. The previous web DTO
+ * declared all four; they were invented before the contract was published.
+ */
+export interface ReportInboxItemDto {
   reportId: string;
-  kind: "post" | "comment" | "message";
-  contentId: string;
-  contentPreview: string;
-  authorId: string;
-  authorName: string;
-  reporterId: string;
-  reporterName: string;
-  reason: string;
-  note?: string | null;
-  status: "pending" | "dismissed" | "removed";
-  createdAt: string;
-  duplicateCount: number;
-  resolvedBy?: string | null;
+  targetType: "MESSAGE" | "POST" | "COMMENT";
+  targetId: string;
+  reasonCategory:
+    | "HARASSMENT"
+    | "INAPPROPRIATE_CONTENT"
+    | "SPAM"
+    | "MISINFORMATION"
+    | "OTHER";
+  reasonFreeText?: string | null;
+  /** Part of the primary key — echo back on every point-read / CAS write. */
+  filedAt: string;
+  status: "PENDING" | "RESOLVED";
+  /** Present only on a RESOLVED row. */
   resolvedAt?: string | null;
-  resolveNote?: string | null;
+  resolvedByUserId?: string | null;
+  resolutionOutcome?: "DISMISS" | "DELETE" | "ESCALATE" | null;
 }
 
-/**
- * `GET /reports` payload (envelope `data`): the report rows plus the embedded
- * stat row (FR-103). Pagination lives in `meta.pagination` (read via
- * `{ raw: true }` + parseEnvelope).
- */
-export interface ReportListResponseDto {
-  reports: ReportResponseDto[];
-  stats: ModerationStatsResponseDto;
+/** `POST /reports` body (US-098 + US-166's COMMENT target). */
+export interface SubmitReportRequestDto {
+  targetType: ReportInboxItemDto["targetType"];
+  targetId: string;
+  reasonCategory: ReportInboxItemDto["reasonCategory"];
+  /** Required (non-empty, ≤500) iff reasonCategory = OTHER; omitted otherwise. */
+  reasonFreeText?: string;
+}
+
+/** `POST /reports/{reportId}/resolve` body — `filedAt` is the CAS key. */
+export interface ResolveReportRequestDto {
+  action: "DISMISS" | "DELETE" | "ESCALATE";
+  filedAt: string;
 }

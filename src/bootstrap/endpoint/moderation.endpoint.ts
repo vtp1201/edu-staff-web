@@ -1,33 +1,39 @@
 /**
- * `social` service moderation endpoints (US-E19.2). Prefixed `/social/api/v1`
- * to match the existing MESSAGING_EP convention (same service, same prefix
- * rule). No magic strings in repositories.
+ * `social` service moderation endpoints. Prefixed `/social/api/v1` to match the
+ * existing MESSAGING_EP convention (same service, same prefix rule). No magic
+ * strings in repositories.
  *
- * US-E18.20 ground-truth vs `edu-api/services/social/docs/openapi.yaml`:
- * - `reports` (`GET`/`POST /api/v1/reports`) and `resolveReport`
- *   (`POST /api/v1/reports/{reportId}/resolve`) paths are CORRECT.
- * - `moderateDeletePost` is CORRECT but is a bare `POST` with **no request
- *   body** (openapi `/api/v1/feeds/posts/{postId}/moderate-delete`, 204) — the
- *   repository previously issued `DELETE` + a body. Fixed.
- * - `reportById` has **no real endpoint** — there is no
- *   `GET /api/v1/reports/{reportId}` in the published contract at all. Kept
- *   only so `ModerationRepository.getReportDetail` still compiles; the detail
- *   sheet is served by the mock (see `moderation.di.ts` force-mock rationale).
- * - `moderationAuditLog` points at `/rooms/{roomId}/moderation-audit` (US-086),
- *   which is a ROOM capability/role-change audit — a DIFFERENT concept from
- *   this feature's dismiss/remove content-moderation trail. No real endpoint
- *   backs `AuditEntryEntity`.
- * - A comment-target moderate-delete endpoint does NOT exist (only the post
- *   variant above), so the former `moderateDeleteComment` constant was removed
- *   and the real repository now refuses `kind: "comment"` without any HTTP call.
+ * Ground-truthed against `edu-api/services/social/docs/openapi.yaml`
+ * (US-E18.20 → re-verified US-E18.32 after BE US-172/US-166):
+ * - `reports` — `POST` (file a report, targets MESSAGE|POST|**COMMENT**) and
+ *   `GET` (ADMIN inbox; `status`/`cursor`/`limit`/`contentType`/`search`).
+ * - `reportStats` — NEW (US-172). Tenant-wide `{pending, resolved}` counters,
+ *   explicitly unaffected by the list's filters.
+ * - `reportById` — NEW (US-166). Requires `filedAt` (REQUIRED) + `status`
+ *   query params: `reportId` is a clustering column, not a partition key, so
+ *   this URL is **not standalone-shareable** — never build a bare deep link.
+ * - `resolveReport` — CAS write; body needs the echoed `filedAt`. `DELETE` is
+ *   wired for MESSAGE, POST *and* COMMENT targets, which makes it the ONLY
+ *   removal path usable from the queue for a comment (see the repository).
+ * - `moderateDeletePost` / `moderateDeleteComment` — the DIRECT (not
+ *   report-driven) removal routes; bare `POST`, no body, 204. The comment route
+ *   needs the parent `postId` as routing context, and its delete is
+ *   IRREVERSIBLE (no soft-delete column, hence no 409 already-deleted).
+ *
+ * No `moderationAuditLog` constant: `GET /rooms/{roomId}/moderation-audit`
+ * (US-086) is a ROOM role/mute/capability audit — a DIFFERENT concept from this
+ * feature's dismiss/remove content-moderation trail. Nothing backs
+ * `AuditEntryEntity`, so the real repository degrades that read with zero HTTP
+ * rather than pointing it at an unrelated endpoint.
  */
 export const MODERATION_EP = {
   reports: "/social/api/v1/reports",
+  reportStats: "/social/api/v1/reports/stats",
   reportById: (reportId: string) => `/social/api/v1/reports/${reportId}`,
   resolveReport: (reportId: string) =>
     `/social/api/v1/reports/${reportId}/resolve`,
   moderateDeletePost: (postId: string) =>
     `/social/api/v1/feeds/posts/${postId}/moderate-delete`,
-  moderationAuditLog: (scopeId: string) =>
-    `/social/api/v1/rooms/${scopeId}/moderation-audit`,
+  moderateDeleteComment: (postId: string, commentId: string) =>
+    `/social/api/v1/feeds/posts/${postId}/comments/${commentId}/moderate-delete`,
 } as const;

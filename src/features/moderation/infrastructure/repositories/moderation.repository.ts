@@ -8,38 +8,45 @@ import {
   parseEnvelope,
   statusOf,
 } from "@/bootstrap/lib/api-envelope";
+import type { ModerationStatsEntity } from "../../domain/entities/moderation-stats.entity";
+import type { ReportRef } from "../../domain/entities/report.entity";
 import type { ReportDetailEntity } from "../../domain/entities/report-detail.entity";
 import type { ReportQueueFilter } from "../../domain/entities/report-queue-filter.entity";
 import type {
   ModerationFailure,
   ModerationValidationField,
 } from "../../domain/failures/moderation.failure";
-import type {
-  AuditLogPageResult,
-  CreateReportInput,
-  IModerationRepository,
-  ModerationActionResult,
-  ModerationResult,
-  RemoveContentRepoInput,
-  ReportQueuePageResult,
+import {
+  type AuditLogPageResult,
+  type CreateReportInput,
+  type IModerationRepository,
+  MODERATION_PAGE_SIZE,
+  type ModerationActionResult,
+  type ModerationResult,
+  type RemoveContentRepoInput,
+  type ReportQueuePageResult,
 } from "../../domain/repositories/i-moderation.repository";
-import type { AuditEntryResponseDto } from "../dtos/audit-entry-response.dto";
-import type { ReportDetailResponseDto } from "../dtos/report-detail-response.dto";
-import type { ReportListResponseDto } from "../dtos/report-response.dto";
-import { ModerationMapper } from "../mappers/moderation.mapper";
+import type { ModerationStatsResponseDto } from "../dtos/moderation-stats-response.dto";
+import type {
+  ReportInboxItemDto,
+  ResolveReportRequestDto,
+  SubmitReportRequestDto,
+} from "../dtos/report-response.dto";
+import {
+  ModerationMapper,
+  toWireContentType,
+  toWireReasonCategory,
+  toWireStatus,
+  toWireTargetType,
+} from "../mappers/moderation.mapper";
 
 /**
  * Which failure a bare status-409 (no recognizable conflict code) maps to.
  *
- * US-E18.20: the real contract has NO duplicate-report concept — reports are
- * rate-limited (`REPORT_RATE_LIMITED`, 429), never deduped, and
- * `POST /api/v1/reports` cannot return 409. `already-reported` is therefore
- * retained ONLY as create's defensive bare-409 fallback — this real class is
- * unreachable via DI today (force-mocked), and `MockModerationRepository`
- * (the actually-served path) never produces it either, so the failure has NO
- * live producer on either path right now. The TYPE stays in the union purely
- * as the i18n slot / presentation branch for the day a real dedup rule (or
- * BE's own future 409) exists — not because anything currently renders it.
+ * The real contract has NO duplicate-report concept — reports are rate-limited
+ * (`REPORT_RATE_LIMITED`, 429), never deduped, and `POST /reports` cannot
+ * return 409. `already-reported` is therefore retained ONLY as create's
+ * defensive bare-409 fallback; it has no live producer.
  */
 type ConflictAs = "already-reported" | "already-resolved";
 
@@ -47,15 +54,11 @@ type ConflictAs = "already-reported" | "already-resolved";
  * THE central high-risk mapping (AC-1928.6 / AC-1928.9 / NFR-101). Branches
  * STRICTLY on error.code (UPPER_SNAKE) / HTTP status — NEVER on error.message.
  * The `conflictAs` parameter disambiguates a bare 409 by *operation*, not by
- * reading any message text. Proven code-only by the misleading-message test.
+ * reading any message text. Proven code-only by the misleading-message tests.
  *
- * US-E18.20 ground-truth: codes read verbatim from
- * `edu-api/services/social/docs/ERROR_CODES.md` §"Moderation errors (US-098,
- * ADR 0078)". They are UPPER_SNAKE on the wire via `pkg/kit/response/error.go`'s
- * `codeFromKey()` (same as `core`; unlike `iam`, US-E18.6). The
- * previously-guessed generic codes (`FORBIDDEN`, `NOT_PRINCIPAL`, `NOT_FOUND`,
- * `VALIDATION_ERROR`, `ALREADY_REPORTED`, `ALREADY_RESOLVED`) do not exist on
- * this service; the status fallbacks are kept as a defensive net.
+ * Codes read verbatim from `edu-api/services/social/docs/ERROR_CODES.md`
+ * §"Moderation errors (US-098, ADR 0078)". They are UPPER_SNAKE on the wire via
+ * `pkg/kit/response/error.go`'s `codeFromKey()`.
  */
 export function toFailure(
   err: unknown,
@@ -70,7 +73,8 @@ export function toFailure(
   }
   // Authorization rejection — DISTINCT, never retryable (the 403 crux).
   // `REPORT_NOT_TENANT_MEMBER` = submit gate; `REPORT_NOT_ADMIN` = queue-list /
-  // resolve gate; `UNAUTHORIZED_MODERATION_ACTION` = moderate-delete gate.
+  // stats / detail / resolve gate; `UNAUTHORIZED_MODERATION_ACTION` =
+  // moderate-delete gate.
   if (
     code === "REPORT_NOT_TENANT_MEMBER" ||
     code === "REPORT_NOT_ADMIN" ||
@@ -88,9 +92,15 @@ export function toFailure(
         : undefined;
     return fields ? { type: "validation", fields } : { type: "validation" };
   }
-  // 404 — report row absent (`REPORT_NOT_FOUND`), reported target absent on
-  // submit (`REPORT_TARGET_NOT_FOUND`), or moderate-delete target absent /
-  // cross-tenant (`MODERATION_TARGET_NOT_FOUND`).
+  // 400 — a rejected query parameter (unknown `status`/`contentType`, a
+  // `search` over 200 chars, a malformed `reportId`/cursor). A caller bug, not
+  // a transient one: retrying the identical call cannot succeed.
+  if (code === "INVALID_REQUEST_PARAMETERS" || code === "INVALID_CURSOR") {
+    return { type: "validation" };
+  }
+  // 404 — report tuple unresolvable (`REPORT_NOT_FOUND`, incl. cross-tenant),
+  // reported target absent on submit (`REPORT_TARGET_NOT_FOUND`), or
+  // moderate-delete target absent (`MODERATION_TARGET_NOT_FOUND`).
   if (
     code === "REPORT_NOT_FOUND" ||
     code === "REPORT_TARGET_NOT_FOUND" ||
@@ -100,8 +110,6 @@ export function toFailure(
     return { type: "not-found" };
   }
   // Explicit 409 conflict codes first (code-first), then the bare-409 fallback.
-  // `MODERATION_TARGET_ALREADY_DELETED` is the moderate-delete idempotency
-  // guard — same "someone already handled this" copy as a resolved report.
   if (
     code === "REPORT_ALREADY_RESOLVED" ||
     code === "MODERATION_TARGET_ALREADY_DELETED"
@@ -116,76 +124,82 @@ export function toFailure(
   return { type: "network-error" };
 }
 
+/** A ref's status partition on the wire (only `pending` reads PENDING). */
+function wireStatusOfRef(ref: ReportRef): "PENDING" | "RESOLVED" {
+  return ref.status === "pending" ? "PENDING" : "RESOLVED";
+}
+
 /**
- * Real `social` moderation repository (US-E19.2 / re-ground-truthed US-E18.20).
+ * Real `social` moderation repository — LIVE since US-E18.32 (BE US-172/US-166
+ * closed the filter/stats/detail/COMMENT-target gaps). `moderation.di.ts` now
+ * wires `USE_MOCK ? Mock : this`.
  *
- * **PERMANENTLY dead regardless of `USE_MOCK`** — `moderation.di.ts` always
- * constructs the mock. `social`'s openapi.yaml IS now published, so the
- * mock-first premise (decision 0014) no longer applies; the hold is a
- * list/detail/audit shape gap instead (full rationale in `moderation.di.ts`).
- *
- * Kept correct + unit-tested for the day that unblocks, per this epic's
- * precedent (`staff-leave.repository.ts`, `teaching-plan.repository.ts`).
- * Remaining known drift vs. the real contract, deliberately NOT changed here
- * because each needs a domain-signature or product decision beyond US-E18.20's
- * scope (flagged to fe-lead):
- * - `createReport` sends `{ kind, contentId, reason, note }`; real
- *   `SubmitReportRequest` is `{ targetType: MESSAGE|POST, targetId,
- *   reasonCategory, reasonFreeText? }` — and has NO `COMMENT` target type, so
- *   the shipped comment-report flow has no real endpoint at all.
- * - `listReports` sends `status`/`contentType`/`search`; the real `GET /reports`
- *   accepts cursor+limit only and is hardcoded to the tenant's PENDING rows,
- *   with no `stats` in the response.
- * - `getReportDetail` calls a path that does not exist (no
- *   `GET /reports/{reportId}` in the contract).
- * - `dismissReport` sends `{ action: "dismiss" }`; the real
- *   `ResolveReportRequest` requires `{ action: DISMISS|DELETE|ESCALATE,
- *   filedAt }` — the `filedAt` CAS key is not in the repository signature.
- * - `getModerationAuditLog` hits the ROOM capability-change audit (US-086), a
- *   different concept from this feature's content-moderation trail.
+ * One method still has no backing endpoint: `getModerationAuditLog`. It
+ * degrades honestly (typed failure, ZERO HTTP) rather than reading the
+ * unrelated room capability audit or falling back to in-memory mock entries —
+ * a fabricated compliance trail is worse than an absent one. The screen hides
+ * that tab outside mock mode so the degrade is never user-visible.
  */
 export class ModerationRepository implements IModerationRepository {
   constructor(private readonly http: AxiosInstance) {}
 
+  /**
+   * `POST /reports`. Targets MESSAGE, POST **and COMMENT** (US-166).
+   * `reasonFreeText` is sent only when non-empty — the service requires it iff
+   * `reasonCategory=OTHER` and rejects an empty string with a 422.
+   */
   async createReport(
     input: CreateReportInput,
   ): Promise<ModerationActionResult> {
+    const note = input.note?.trim();
+    const body: SubmitReportRequestDto = {
+      targetType: toWireTargetType(input.kind),
+      targetId: input.contentId,
+      reasonCategory: toWireReasonCategory(input.reason),
+      ...(note ? { reasonFreeText: note } : {}),
+    };
     try {
-      await this.http.post(MODERATION_EP.reports, {
-        kind: input.kind,
-        contentId: input.contentId,
-        reason: input.reason,
-        ...(input.note ? { note: input.note } : {}),
-      });
+      await this.http.post(MODERATION_EP.reports, body);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: toFailure(err, "already-reported") };
     }
   }
 
+  /**
+   * `GET /reports` — ONE partition read per page, narrowed SERVER-side.
+   *
+   * `contentType`/`search` are applied in-app by the service over a bounded
+   * scan, so a short (even empty) page with `hasMore=true` is normal and is
+   * passed through verbatim: the caller keeps paging. Nothing is re-filtered
+   * client-side, and no count is derived here (see `getReportStats`).
+   */
   async listReports(
     filter: ReportQueueFilter,
     cursor: string | null,
   ): Promise<ModerationResult<ReportQueuePageResult>> {
     try {
+      const contentType = toWireContentType(filter.contentType);
+      const search = filter.search.trim();
       const params: Record<string, unknown> = {
-        status: filter.status,
-        contentType: filter.contentType,
+        status: toWireStatus(filter.status),
+        limit: MODERATION_PAGE_SIZE,
       };
-      if (filter.search.trim()) params.search = filter.search.trim();
+      if (contentType) params.contentType = contentType;
+      if (search) params.search = search;
       if (cursor) params.cursor = cursor;
 
       const envelope = (await this.http.get(MODERATION_EP.reports, {
         params,
+        // config-level sibling of `params` — nesting it silently breaks unwrap.
         ...({ raw: true } as Record<string, unknown>),
-      })) as unknown as ApiEnvelope<ReportListResponseDto>;
+      })) as unknown as ApiEnvelope<ReportInboxItemDto[]>;
 
       const { data, pagination } = parseEnvelope(envelope);
       return {
         ok: true,
         value: {
-          reports: (data.reports ?? []).map(ModerationMapper.toReportEntity),
-          stats: ModerationMapper.toStatsEntity(data.stats),
+          reports: (data ?? []).map(ModerationMapper.toReportEntity),
           nextCursor: pagination?.nextCursor ?? null,
           hasMore: pagination?.hasMore ?? false,
         },
@@ -195,24 +209,72 @@ export class ModerationRepository implements IModerationRepository {
     }
   }
 
-  async getReportDetail(
-    reportId: string,
-  ): Promise<ModerationResult<ReportDetailEntity>> {
+  /**
+   * `GET /reports/stats` — tenant-wide `{pending, resolved}` counters. Sends NO
+   * parameters: the counts are unfiltered BY CONTRACT and must never be
+   * narrowed to, or derived from, the currently displayed list page.
+   */
+  async getReportStats(): Promise<ModerationResult<ModerationStatsEntity>> {
     try {
       const dto = (await this.http.get(
-        MODERATION_EP.reportById(reportId),
-      )) as unknown as ReportDetailResponseDto;
+        MODERATION_EP.reportStats,
+      )) as unknown as ModerationStatsResponseDto;
+      return { ok: true, value: ModerationMapper.toStatsEntity(dto) };
+    } catch (err) {
+      return { ok: false, error: toFailure(err) };
+    }
+  }
+
+  /**
+   * `GET /reports/{reportId}?filedAt=&status=`. Both query params are the
+   * PARTITION-LOCATING key echoed from the list row — `reportId` is a
+   * clustering column and cannot address a row alone, which is exactly why the
+   * caller must hold a {@link ReportRef} and no bookmarkable detail URL exists.
+   */
+  async getReportDetail(
+    ref: ReportRef,
+  ): Promise<ModerationResult<ReportDetailEntity>> {
+    try {
+      const dto = (await this.http.get(MODERATION_EP.reportById(ref.reportId), {
+        params: { filedAt: ref.filedAt, status: wireStatusOfRef(ref) },
+      })) as unknown as ReportInboxItemDto;
       return { ok: true, value: ModerationMapper.toReportDetailEntity(dto) };
     } catch (err) {
       return { ok: false, error: toFailure(err) };
     }
   }
 
-  async dismissReport(reportId: string): Promise<ModerationActionResult> {
+  /** `POST /reports/{reportId}/resolve` with `action: DISMISS` + the CAS key. */
+  async dismissReport(ref: ReportRef): Promise<ModerationActionResult> {
+    return this.resolve(ref, "DISMISS");
+  }
+
+  /**
+   * Two real removal paths (see {@link RemoveContentRepoInput}):
+   *
+   * - **report-driven** (`ref` present) → `resolve` with `action: DELETE`. One
+   *   atomic call that deletes the target AND closes the report, and the only
+   *   path that can remove a COMMENT from the queue (a report row carries the
+   *   commentId but not its parent postId, which the direct route needs).
+   * - **direct** (`ref` absent — the feed's own affordance, ADR 0052) → the
+   *   bare `moderate-delete` route, 204, no body. A comment REQUIRES
+   *   `parentId`; without it the URL is unaddressable, so this fails fast with
+   *   ZERO HTTP rather than guessing a path.
+   */
+  async removeContent(
+    input: RemoveContentRepoInput,
+  ): Promise<ModerationActionResult> {
+    if (input.ref) return this.resolve(input.ref, "DELETE");
+
+    if (input.kind === "comment" && !input.parentId) {
+      return { ok: false, error: { type: "validation" } };
+    }
+    const url =
+      input.kind === "comment" && input.parentId
+        ? MODERATION_EP.moderateDeleteComment(input.parentId, input.contentId)
+        : MODERATION_EP.moderateDeletePost(input.contentId);
     try {
-      await this.http.post(MODERATION_EP.resolveReport(reportId), {
-        action: "dismiss",
-      });
+      await this.http.post(url);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: toFailure(err) };
@@ -220,59 +282,27 @@ export class ModerationRepository implements IModerationRepository {
   }
 
   /**
-   * Moderator content removal. US-E18.20 ground-truth:
-   *
-   * - `kind: "post"` → `POST /api/v1/feeds/posts/{postId}/moderate-delete`,
-   *   a **bare POST with NO request body** (204 on success). Neither `reportId`
-   *   nor `resolveNote` is accepted — the endpoint is not report-driven (the
-   *   report-driven route is `POST /reports/{id}/resolve` with
-   *   `action=DELETE`, which is a different call). The previous `DELETE` +
-   *   `{ reportId, resolveNote }` body was invented.
-   * - `kind: "comment"` → **no real endpoint exists** (only the post variant
-   *   above). Fails fast WITHOUT any HTTP call, mirroring
-   *   `MessagingRepository.createConversation`'s unsupported multi-party-group
-   *   branch. `forbidden` is chosen as the terminal, non-retryable failure
-   *   whose copy ("Bạn không có quyền thực hiện hành động này") does not
-   *   mislead the moderator into retrying, unlike `network-error` (retryable)
-   *   or `not-found` (implies the report was deleted). The MOCK repository's
-   *   comment support is untouched — it serves the shipped UX.
+   * NO backing endpoint (the one gap US-172 did not close).
+   * `GET /rooms/{roomId}/moderation-audit` (US-086) is a ROOM
+   * role/mute/capability audit — a different concept from this feature's
+   * dismiss/remove content-moderation trail — and there is no tenant-wide
+   * equivalent. Degrades to a terminal, non-retryable failure with ZERO HTTP.
    */
-  async removeContent(
-    input: RemoveContentRepoInput,
-  ): Promise<ModerationActionResult> {
-    if (input.kind === "comment") {
-      return { ok: false, error: { type: "forbidden" } };
-    }
-    try {
-      await this.http.post(MODERATION_EP.moderateDeletePost(input.contentId));
-      return { ok: true };
-    } catch (err) {
-      return { ok: false, error: toFailure(err) };
-    }
+  async getModerationAuditLog(
+    _scopeId: string,
+    _cursor: string | null,
+  ): Promise<ModerationResult<AuditLogPageResult>> {
+    return { ok: false, error: { type: "forbidden" } };
   }
 
-  async getModerationAuditLog(
-    scopeId: string,
-    cursor: string | null,
-  ): Promise<ModerationResult<AuditLogPageResult>> {
+  private async resolve(
+    ref: ReportRef,
+    action: ResolveReportRequestDto["action"],
+  ): Promise<ModerationActionResult> {
+    const body: ResolveReportRequestDto = { action, filedAt: ref.filedAt };
     try {
-      const params: Record<string, unknown> = {};
-      if (cursor) params.cursor = cursor;
-
-      const envelope = (await this.http.get(
-        MODERATION_EP.moderationAuditLog(scopeId),
-        { params, ...({ raw: true } as Record<string, unknown>) },
-      )) as unknown as ApiEnvelope<AuditEntryResponseDto[]>;
-
-      const { data, pagination } = parseEnvelope(envelope);
-      return {
-        ok: true,
-        value: {
-          entries: (data ?? []).map(ModerationMapper.toAuditEntryEntity),
-          nextCursor: pagination?.nextCursor ?? null,
-          hasMore: pagination?.hasMore ?? false,
-        },
-      };
+      await this.http.post(MODERATION_EP.resolveReport(ref.reportId), body);
+      return { ok: true };
     } catch (err) {
       return { ok: false, error: toFailure(err) };
     }

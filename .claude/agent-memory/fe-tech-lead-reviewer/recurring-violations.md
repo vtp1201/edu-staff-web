@@ -418,6 +418,20 @@ before reading for style.
   report of real content is silently discarded (safeguarding). Always grep the screen's OTHER
   Server Actions for factories that are still force-mocked before accepting a read-only un-mock.
 
+- **A "no data yet" surface whose ERROR state is an INDEFINITE SKELETON** (US-E18.32
+  `stat-row.tsx`: `if (isLoading || !stats) return <Skeletons/>`). Once a header/stat query
+  errors terminally (403 `forbidden`, or after the retry budget), `isLoading` is false and the
+  data stays `null` forever → a permanently pulsing placeholder that reads as "still loading".
+  Especially damning on a story whose whole thesis is "never let unknown look like data". The
+  giveaway is a two-branch component fed by a nullable prop plus a *story that asserts the
+  absence of numbers* (locking the behaviour in instead of catching it). Ask for a third branch
+  (render the cards with the em-dash/unavailable marker, or a compact inline error) and keep the
+  skeleton for genuine loading only.
+- **E18 un-block story that resolves a numbered cross-repo ask leaves the ask ledger stale** —
+  `docs/reports/<date>-fe-to-be-asks.md` keeps the now-CLOSED ask in "Phần 2 — còn treo", and the
+  *residual* sub-gap the story could NOT close gets no new numbered ask at all (it lives only in a
+  DI doc-comment). Pair this with the standing `docs/TEST_MATRIX.md`-row-still-`planned` check —
+  both are cheap pre-close items on every E18 story. (US-E18.32 ask #40(b).)
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.

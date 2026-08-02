@@ -1,87 +1,185 @@
 import { describe, expect, it } from "vitest";
-import type { ReportDetailResponseDto } from "../dtos/report-detail-response.dto";
-import type { ReportResponseDto } from "../dtos/report-response.dto";
-import { ModerationMapper } from "./moderation.mapper";
+import type { ReportStatus } from "../../domain/entities/report.entity";
+import type { ModerationStatsResponseDto } from "../dtos/moderation-stats-response.dto";
+import type { ReportInboxItemDto } from "../dtos/report-response.dto";
+import {
+  ModerationMapper,
+  toWireContentType,
+  toWireReasonCategory,
+  toWireStatus,
+  toWireTargetType,
+} from "./moderation.mapper";
 
-const baseRow: ReportResponseDto = {
-  reportId: "r-1",
-  kind: "post",
-  contentId: "c-1",
-  contentPreview: "preview",
-  authorId: "a-1",
-  authorName: "Author",
-  reporterId: "rp-1",
-  reporterName: "Reporter",
-  reason: "spam",
-  status: "pending",
-  createdAt: "2026-07-10T09:00:00Z",
-  duplicateCount: 0,
+const PENDING: ReportInboxItemDto = {
+  reportId: "rep-1",
+  targetType: "POST",
+  targetId: "post-9",
+  reasonCategory: "SPAM",
+  reasonFreeText: null,
+  filedAt: "2026-07-10T08:00:00Z",
+  status: "PENDING",
 };
 
 describe("ModerationMapper.toReportEntity", () => {
-  it("maps reportId → id and coalesces optional fields to null", () => {
-    const entity = ModerationMapper.toReportEntity(baseRow);
-    expect(entity.id).toBe("r-1");
-    expect(entity.note).toBeNull();
-    expect(entity.resolvedBy).toBeNull();
-    expect(entity.resolvedAt).toBeNull();
-    expect(entity.resolveNote).toBeNull();
-    expect(entity.reason).toBe("spam");
+  it("maps the wire row onto the entity (ids, kind, reason, filedAt)", () => {
+    expect(ModerationMapper.toReportEntity(PENDING)).toEqual({
+      id: "rep-1",
+      kind: "post",
+      contentId: "post-9",
+      contentPreview: null,
+      authorId: null,
+      authorName: null,
+      reporterId: null,
+      reporterName: null,
+      reason: "spam",
+      note: null,
+      status: "pending",
+      createdAt: "2026-07-10T08:00:00Z",
+      duplicateCount: null,
+      resolvedBy: null,
+      resolvedAt: null,
+      resolveNote: null,
+    });
   });
 
-  it("preserves present resolved fields", () => {
+  it("NEVER invents a reporter/author/preview — the wire has none (NFR-098-01)", () => {
+    const entity = ModerationMapper.toReportEntity(PENDING);
+    // A future "helpful" mapping of these would fabricate identity data.
+    expect(entity.reporterId).toBeNull();
+    expect(entity.reporterName).toBeNull();
+    expect(entity.authorId).toBeNull();
+    expect(entity.authorName).toBeNull();
+    expect(entity.contentPreview).toBeNull();
+    expect(entity.duplicateCount).toBeNull();
+  });
+
+  it("maps every targetType including COMMENT (US-166/US-172)", () => {
+    const kinds = (["MESSAGE", "POST", "COMMENT"] as const).map(
+      (targetType) =>
+        ModerationMapper.toReportEntity({ ...PENDING, targetType }).kind,
+    );
+    expect(kinds).toEqual(["message", "post", "comment"]);
+  });
+
+  it("maps every reasonCategory to the web vocabulary", () => {
+    const pairs: Array<[ReportInboxItemDto["reasonCategory"], string]> = [
+      ["HARASSMENT", "bullying"],
+      ["INAPPROPRIATE_CONTENT", "inappropriate-language"],
+      ["SPAM", "spam"],
+      ["MISINFORMATION", "misinformation"],
+      ["OTHER", "other"],
+    ];
+    for (const [reasonCategory, expected] of pairs) {
+      expect(
+        ModerationMapper.toReportEntity({ ...PENDING, reasonCategory }).reason,
+      ).toBe(expected);
+    }
+  });
+
+  it("carries reasonFreeText into `note`", () => {
+    expect(
+      ModerationMapper.toReportEntity({
+        ...PENDING,
+        reasonCategory: "OTHER",
+        reasonFreeText: "Bịa đặt về kỳ thi",
+      }).note,
+    ).toBe("Bịa đặt về kỳ thi");
+  });
+
+  it("flattens status × resolutionOutcome (ESCALATE is NOT dismissed)", () => {
+    const cases: Array<
+      [ReportInboxItemDto["resolutionOutcome"], ReportStatus]
+    > = [
+      ["DISMISS", "dismissed"],
+      ["DELETE", "removed"],
+      ["ESCALATE", "escalated"],
+    ];
+    for (const [resolutionOutcome, expected] of cases) {
+      expect(
+        ModerationMapper.toReportEntity({
+          ...PENDING,
+          status: "RESOLVED",
+          resolutionOutcome,
+        }).status,
+      ).toBe(expected);
+    }
+  });
+
+  it("maps a RESOLVED row's resolution metadata (userId, no display name)", () => {
     const entity = ModerationMapper.toReportEntity({
-      ...baseRow,
-      status: "dismissed",
-      note: "abuse",
-      resolvedBy: "Principal",
-      resolvedAt: "2026-07-11T10:00:00Z",
-      resolveNote: "not a violation",
+      ...PENDING,
+      status: "RESOLVED",
+      resolutionOutcome: "DELETE",
+      resolvedAt: "2026-07-11T09:30:00Z",
+      resolvedByUserId: "usr-77",
     });
-    expect(entity.status).toBe("dismissed");
-    expect(entity.note).toBe("abuse");
-    expect(entity.resolvedBy).toBe("Principal");
+    expect(entity.resolvedAt).toBe("2026-07-11T09:30:00Z");
+    // The wire gives an id, never a display name.
+    expect(entity.resolvedBy).toBe("usr-77");
+    // No resolve note exists on the wire at all.
+    expect(entity.resolveNote).toBeNull();
+  });
+
+  it("falls back to `dismissed` when a RESOLVED row omits its outcome", () => {
+    expect(
+      ModerationMapper.toReportEntity({ ...PENDING, status: "RESOLVED" })
+        .status,
+    ).toBe("dismissed");
   });
 });
 
 describe("ModerationMapper.toReportDetailEntity", () => {
-  it("defaults context/duplicateReports to [] when absent", () => {
-    const dto: ReportDetailResponseDto = { ...baseRow, fullContent: "full" };
-    const detail = ModerationMapper.toReportDetailEntity(dto);
-    expect(detail.fullContent).toBe("full");
-    expect(detail.context).toEqual([]);
-    expect(detail.duplicateReports).toEqual([]);
-  });
-
-  it("maps context items and duplicate refs", () => {
-    const dto: ReportDetailResponseDto = {
-      ...baseRow,
-      fullContent: "full",
-      context: [{ authorName: "A", text: "orig post", highlighted: false }],
-      duplicateReports: [
-        { reportId: "r-2", reporterName: "R2", createdAt: "2026-07-10" },
-      ],
-    };
-    const detail = ModerationMapper.toReportDetailEntity(dto);
-    expect(detail.context).toHaveLength(1);
-    expect(detail.context[0].text).toBe("orig post");
-    expect(detail.duplicateReports[0].reportId).toBe("r-2");
+  it("nulls the three unbacked sections (same DTO as the list row)", () => {
+    const detail = ModerationMapper.toReportDetailEntity(PENDING);
+    expect(detail.id).toBe("rep-1");
+    expect(detail.fullContent).toBeNull();
+    expect(detail.context).toBeNull();
+    expect(detail.duplicateReports).toBeNull();
   });
 });
 
-describe("ModerationMapper.toAuditEntryEntity", () => {
-  it("maps a wire entry and coalesces reason to null", () => {
-    const entity = ModerationMapper.toAuditEntryEntity({
-      entryId: "e-1",
-      actorId: "u-1",
-      actorName: "Principal",
-      action: "removed",
-      contentRef: { kind: "post", contentId: "c-9" },
-      timestamp: "2026-07-11T10:00:00Z",
+describe("ModerationMapper.toStatsEntity", () => {
+  it("maps the flat wire counters", () => {
+    const dto: ModerationStatsResponseDto = { pending: 7, resolved: 42 };
+    expect(ModerationMapper.toStatsEntity(dto)).toEqual({
+      pendingCount: 7,
+      resolvedCount: 42,
     });
-    expect(entity.entryId).toBe("e-1");
-    expect(entity.action).toBe("removed");
-    expect(entity.contentRef.contentId).toBe("c-9");
-    expect(entity.reason).toBeNull();
+  });
+});
+
+describe("wire request mappers", () => {
+  it("maps kind → targetType", () => {
+    expect(toWireTargetType("post")).toBe("POST");
+    expect(toWireTargetType("comment")).toBe("COMMENT");
+    expect(toWireTargetType("message")).toBe("MESSAGE");
+  });
+
+  it("maps reason → reasonCategory (round-trips with the read mapper)", () => {
+    for (const reason of [
+      "spam",
+      "inappropriate-language",
+      "bullying",
+      "misinformation",
+      "other",
+    ] as const) {
+      const wire = toWireReasonCategory(reason);
+      expect(
+        ModerationMapper.toReportEntity({ ...PENDING, reasonCategory: wire })
+          .reason,
+      ).toBe(reason);
+    }
+  });
+
+  it("maps the status tab to the single readable partition", () => {
+    expect(toWireStatus("pending")).toBe("PENDING");
+    expect(toWireStatus("resolved")).toBe("RESOLVED");
+  });
+
+  it("maps the content-type filter, with `all` meaning 'omit the param'", () => {
+    expect(toWireContentType("all")).toBeUndefined();
+    expect(toWireContentType("post")).toBe("POST");
+    expect(toWireContentType("comment")).toBe("COMMENT");
+    expect(toWireContentType("message")).toBe("MESSAGE");
   });
 });

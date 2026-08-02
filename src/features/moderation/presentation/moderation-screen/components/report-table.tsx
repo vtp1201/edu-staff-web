@@ -12,13 +12,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ReportEntity } from "../../../domain/entities/report.entity";
+import {
+  type ReportEntity,
+  type ReportRef,
+  reportRefOf,
+} from "../../../domain/entities/report.entity";
 import { formatReportRow } from "./format-report-row";
 import { ReportStatusBadge } from "./report-status-badge";
+import { UnavailableValue } from "./unavailable-value";
 
 export interface ReportTableProps {
   reports: ReportEntity[];
-  onOpen: (reportId: string) => void;
+  /**
+   * Receives the whole addressing tuple, not an id: the detail point-read needs
+   * the row's echoed `filedAt` + status partition (US-E18.32). Threading the
+   * ref from the row is what makes a bookmarkable detail URL impossible.
+   */
+  onOpen: (ref: ReportRef) => void;
 }
 
 /** Desktop table (hidden md:block — the ≤760px switch shows ReportCard). */
@@ -46,19 +56,26 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
             return (
               <TableRow key={row.id}>
                 <TableCell className="max-w-xs">
+                  {/* The wire returns no content preview (US-E18.32) — fall
+                      back to the only identifier it DOES return, the target
+                      id, rather than an empty or invented line. */}
                   <span className="line-clamp-2 font-medium text-foreground text-sm">
-                    {row.contentPreview}
+                    {row.contentPreview ?? row.contentId}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {tKind(row.kind)} · {row.authorName}
-                    {row.duplicateCount > 0 &&
+                    {tKind(row.kind)}
+                    {row.authorName ? ` · ${row.authorName}` : ""}
+                    {row.duplicateCount !== null &&
+                      row.duplicateCount > 0 &&
                       ` · ${t("duplicateSuffix", { count: row.duplicateCount })}`}
                   </span>
                 </TableCell>
                 <TableCell>
                   <StatusBadge tone="muted">{tReason(row.reason)}</StatusBadge>
                 </TableCell>
-                <TableCell className="text-sm">{row.reporterName}</TableCell>
+                <TableCell className="text-sm">
+                  {row.reporterName ?? <UnavailableValue />}
+                </TableCell>
                 <TableCell>
                   <ReportStatusBadge status={row.status} />
                 </TableCell>
@@ -71,7 +88,7 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t("openDetail", { id: row.id })}
-                    onClick={() => onOpen(row.id)}
+                    onClick={() => onOpen(reportRefOf(report))}
                   >
                     <ChevronRight aria-hidden="true" className="size-4" />
                   </Button>

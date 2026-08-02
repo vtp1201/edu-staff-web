@@ -1,5 +1,10 @@
 # Memory Index
 
+- [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus); `useDialogReturnFocus(true)` captures `<body>` at first render and BREAKS trigger-based restore; dialog.tsx still has the bug
+- [Terminal error ≠ skeleton](gotcha-terminal-error-vs-skeleton.md) — `isLoading || !data → Skeleton` renders forever after a terminal error; thread isError + pure mode() helper + unavailable marker in the value slot
+
+- [Composite-key point-read + unbacked read](pattern-composite-key-pointread-and-unbacked-read.md) — E18.32: a clustering-column id needs the whole ReportRef tuple (Sheet, never a bookmarkable route); an unbacked READ degrades like a write (zero HTTP + hide the tab, no mock fallback); stats = own query proven by call count; `vi.doMock` re-registered inside a test over a beforeEach mock = 40% flake (+more in file)
+
 - [Partial gap-closure wiring](pattern-partial-gap-closure-wiring.md) — E18.31 (+review fix): BE closing 1 of N gaps ≠ "repo swap"; mock WRITES behind real READS = fake publish, NEVER ship (USE_MOCK is false when unset — the hybrid IS production); use the canonical ROLE_ENUM_TO_APP, don't invent a role table; lefthook tsc/vitest see only the STAGED tree (+more in file)
 
 - [Force-mock vs honest degrade](pattern-force-mock-vs-honest-degrade.md) — E20.5 fix round: force-mock only for harmless seed data; actionable per-subject data must be USE_MOCK-gated + Unavailable*Repository rejecting forbidden (no HTTP); env-matrix DI test + RSC page.test.ts; locale dates via useFormatter (+more in file)

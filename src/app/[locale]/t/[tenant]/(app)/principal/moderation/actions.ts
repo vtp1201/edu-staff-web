@@ -7,12 +7,14 @@ import {
   makeModerationRepository,
   makeRemoveContentUseCase,
 } from "@/bootstrap/di/moderation.di";
+import type { ReportRef } from "@/features/moderation/domain/entities/report.entity";
 import type { ReportQueueFilter } from "@/features/moderation/domain/entities/report-queue-filter.entity";
 import { isRetryableFailure } from "@/features/moderation/domain/failures/moderation.failure";
 import type {
   DismissReportActionResult,
   GetModerationAuditLogActionResult,
   GetReportDetailActionResult,
+  GetReportStatsActionResult,
   ListReportsActionResult,
   RemoveContentActionResult,
   RemoveContentInput,
@@ -42,7 +44,6 @@ export async function listReportsAction(
         nextCursor: res.value.nextCursor,
         hasMore: res.value.hasMore,
       },
-      stats: res.value.stats,
     };
   }
   return {
@@ -52,11 +53,32 @@ export async function listReportsAction(
   };
 }
 
+/**
+ * Queue counters — a SEPARATE call against `GET /reports/stats`, deliberately
+ * not folded into `listReportsAction`: the counts are tenant-wide and must not
+ * be narrowed by (or derived from) whatever filter the list is showing.
+ */
+export async function getReportStatsAction(): Promise<GetReportStatsActionResult> {
+  const repo = await makeModerationRepository();
+  const res = await repo.getReportStats();
+  if (res.ok) return { ok: true, data: res.value };
+  return {
+    ok: false,
+    errorKey: res.error.type,
+    retryable: isRetryableFailure(res.error),
+  };
+}
+
+/**
+ * Takes the whole `ReportRef` (reportId + echoed `filedAt` + status partition):
+ * `reportId` is a clustering column, so a bare id cannot address the row. The
+ * tuple always originates from a list row the client already rendered.
+ */
 export async function getReportDetailAction(
-  reportId: string,
+  ref: ReportRef,
 ): Promise<GetReportDetailActionResult> {
   const repo = await makeModerationRepository();
-  const res = await repo.getReportDetail(reportId);
+  const res = await repo.getReportDetail(ref);
   if (res.ok) return { ok: true, data: res.value };
   return {
     ok: false,
@@ -66,10 +88,10 @@ export async function getReportDetailAction(
 }
 
 export async function dismissReportAction(
-  reportId: string,
+  ref: ReportRef,
 ): Promise<DismissReportActionResult> {
   const useCase = await makeDismissReportUseCase();
-  const res = await useCase.execute(reportId);
+  const res = await useCase.execute(ref);
   if (res.ok) return { ok: true };
   return {
     ok: false,
