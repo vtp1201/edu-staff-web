@@ -20,7 +20,7 @@ const {
   teachersExecute,
   timetableExecute,
   makeGetPrincipalTeachersUseCase,
-  makeGetMemberTimetableUseCase,
+  makeGetMemberTimetableForPrincipalUseCase,
 } = vi.hoisted(() => {
   const teachersExecute = vi.fn();
   const timetableExecute = vi.fn();
@@ -31,7 +31,7 @@ const {
     makeGetPrincipalTeachersUseCase: vi.fn(async () => ({
       execute: teachersExecute,
     })),
-    makeGetMemberTimetableUseCase: vi.fn(async () => ({
+    makeGetMemberTimetableForPrincipalUseCase: vi.fn(async () => ({
       execute: timetableExecute,
     })),
   };
@@ -40,7 +40,7 @@ const {
 vi.mock("@/bootstrap/auth-guard", () => ({ requireRole }));
 vi.mock("@/bootstrap/di", () => ({ makeGetPrincipalTeachersUseCase }));
 vi.mock("@/bootstrap/di/timetable-view.di", () => ({
-  makeGetMemberTimetableUseCase,
+  makeGetMemberTimetableForPrincipalUseCase,
 }));
 
 import {
@@ -70,10 +70,11 @@ describe("getPrincipalTeacherListAction", () => {
     ["network-error", "network-error"],
     ["forbidden", "forbidden"],
     ["not-found", "not-found"],
-    // No timetable counterpart exists for these two — they are surfaced as a
-    // retryable error banner rather than being collapsed into "empty".
-    ["conflict-exists", "network-error"],
-    ["unknown", "network-error"],
+    // No timetable counterpart exists for these two — they surface as the
+    // GENERIC error banner (never collapsed into "empty", and never dressed up
+    // as a transport failure: "check your connection" would be a lie).
+    ["conflict-exists", "unknown"],
+    ["unknown", "unknown"],
   ])("maps the %s principal failure to errorKey %s", async (from, to) => {
     teachersExecute.mockResolvedValue(fail({ type: from }));
     expect(await getPrincipalTeacherListAction()).toEqual({
@@ -124,6 +125,6 @@ describe("getMemberTimetableAction", () => {
       ok: false,
       errorKey: "forbidden",
     });
-    expect(makeGetMemberTimetableUseCase).not.toHaveBeenCalled();
+    expect(makeGetMemberTimetableForPrincipalUseCase).not.toHaveBeenCalled();
   });
 });

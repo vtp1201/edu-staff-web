@@ -26,6 +26,7 @@ const ERROR_KEYS: Record<
   forbidden: "errors.forbidden",
   "not-found": "errors.unknown",
   "no-child": "errors.unknown",
+  unknown: "errors.unknown",
 };
 
 /**

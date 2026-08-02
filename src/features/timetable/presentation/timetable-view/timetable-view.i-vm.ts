@@ -6,8 +6,18 @@ import type { TimetableViewFailure } from "@/features/timetable/domain/failures/
 
 export type TimetableRole = "student" | "parent" | "principal";
 
-/** Stable error keys a Server Action may return (failure union + guard). */
-export type TimetableErrorKey = TimetableViewFailure["type"] | "forbidden";
+/**
+ * Stable error keys a Server Action may return (failure union + guard).
+ * - `forbidden` — the action's own RBAC guard denied the caller.
+ * - `unknown`   — a source-feature failure with no timetable counterpart
+ *   (US-E15.3: the principal roster's `conflict-exists`/`unknown`). It exists so
+ *   those never have to masquerade as `network-error`, whose copy promises the
+ *   user a connectivity problem that isn't there.
+ */
+export type TimetableErrorKey =
+  | TimetableViewFailure["type"]
+  | "forbidden"
+  | "unknown";
 
 /** Result shape returned by every timetable Server Action (never translated). */
 export type TimetableActionResult =

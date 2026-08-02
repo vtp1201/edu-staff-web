@@ -2,7 +2,7 @@
 
 import { requireRole } from "@/bootstrap/auth-guard";
 import { makeGetPrincipalTeachersUseCase } from "@/bootstrap/di";
-import { makeGetMemberTimetableUseCase } from "@/bootstrap/di/timetable-view.di";
+import { makeGetMemberTimetableForPrincipalUseCase } from "@/bootstrap/di/timetable-view.di";
 import type { PrincipalTeachersFailure } from "@/features/principal/domain/teachers/failures/principal-teachers.failure";
 import type {
   TeacherListActionResult,
@@ -14,8 +14,10 @@ import type {
  * Explicit bridge between two Result conventions (packet §Phase 2): the
  * `principal` feature's failure union is WIDER than the timetable view's error
  * keys, so every member is mapped by hand. `conflict-exists`/`unknown` have no
- * timetable counterpart — they surface as the retryable error banner rather
- * than being silently collapsed into the "no timetable published" empty state.
+ * timetable counterpart — they land on the GENERIC `unknown` key (error banner
+ * + retry), never collapsed into the "no timetable published" empty state and
+ * never re-labelled `network-error`, whose copy ("check your connection") would
+ * misdescribe a non-transport failure.
  */
 function toTimetableErrorKey(
   failure: PrincipalTeachersFailure,
@@ -25,8 +27,10 @@ function toTimetableErrorKey(
       return "forbidden";
     case "not-found":
       return "not-found";
-    default:
+    case "network-error":
       return "network-error";
+    default:
+      return "unknown";
   }
 }
 
@@ -41,7 +45,12 @@ export async function getPrincipalTeacherListAction(): Promise<TeacherListAction
   return { ok: true, data: result.value };
 }
 
-/** Weekly timetable of the selected teacher. RBAC-guarded before any DI call. */
+/**
+ * Weekly timetable of the selected teacher. RBAC-guarded before any DI call.
+ * Uses the PRINCIPAL-scoped (force-mocked) factory — see its doc comment: the
+ * `core` by-member endpoint has no MANAGER branch, so the shared real factory
+ * would 403 → `not-found` → a silent permanent empty state.
+ */
 export async function getMemberTimetableAction(
   memberId: string,
   weekStart?: string,
@@ -49,10 +58,9 @@ export async function getMemberTimetableAction(
   const guard = await requireRole(["principal"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
 
-  const result = await (await makeGetMemberTimetableUseCase()).execute(
-    memberId,
-    weekStart,
-  );
+  const result = await (
+    await makeGetMemberTimetableForPrincipalUseCase()
+  ).execute(memberId, weekStart);
   if (!result.ok) return { ok: false, errorKey: result.error.type };
   return { ok: true, data: result.data };
 }

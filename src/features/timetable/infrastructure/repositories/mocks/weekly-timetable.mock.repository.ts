@@ -34,12 +34,24 @@ export class MockWeeklyTimetableRepository
   }
 
   /**
-   * By-member fetch (US-E18.26). The fixtures are class-keyed, so a child's
-   * `childId` is translated back to their fixture class; any other memberId is
-   * treated as the signed-in student's own (mirrors how `getMyTimetable`
-   * delegates to `getByClass(MY_CLASS_ID)`).
+   * By-member fetch (US-E18.26; teacher branch added US-E15.3 fix round).
+   *
+   * Resolution order:
+   * 1. a TEACHER-keyed week (`t-001`…): the principal screen is force-mocked
+   *    (`core` grants no MANAGER on the by-member endpoint), so every teacher on
+   *    its picker must resolve to their OWN week — a shared fallback week would
+   *    make switching teachers look broken;
+   * 2. a parent's `childId` → that child's fixture class (fixtures are
+   *    class-keyed);
+   * 3. anything else → the signed-in student's own class (mirrors how
+   *    `getMyTimetable` delegates to `getByClass(MY_CLASS_ID)`).
    */
   async getByMember(memberId: string): Promise<WeeklyTimetable> {
+    const teacherDto = teacherScheduleDtoFor(memberId);
+    if (teacherDto) {
+      await mockDelay();
+      return mapWeeklyTimetable(teacherDto);
+    }
     const child = TIMETABLE_CHILDREN.find((c) => c.childId === memberId);
     return this.getByClass(child?.classId ?? MY_CLASS_ID);
   }

@@ -61,6 +61,40 @@ describe("MockWeeklyTimetableRepository", () => {
     expect(teacherScheduleDtoFor("ghost-teacher")).toBeNull();
   });
 
+  /*
+   * US-E15.3 fix round: the principal screen is force-mocked (core's
+   * `GetMemberTimetableUseCase.authorize()` has no MANAGER branch), so the
+   * teacher picker is only meaningful if each roster teacher resolves to a
+   * VISIBLY different week. The roster ids come from
+   * `MockPrincipalTeachersRepository` (`t-001` / `t-002` / `t-003`).
+   */
+  it("getByMember resolves each principal-roster teacher to their OWN week", async () => {
+    const repo = new MockWeeklyTimetableRepository();
+    const [lan, minh, hoa] = await Promise.all([
+      repo.getByMember("t-001"),
+      repo.getByMember("t-002"),
+      repo.getByMember("t-003"),
+    ]);
+
+    expect(lan.className).toBe("Nguyễn Thị Lan");
+    expect(minh.className).toBe("Trần Văn Minh");
+    expect(hoa.className).toBe("Lê Thị Hoa");
+
+    // Distinct subject identity per teacher (the picker must visibly change).
+    expect(lan.slots[0][1]?.subjectId).toBe("math");
+    expect(minh.slots[0][1]?.subjectId).toBe("lit");
+    expect(hoa.slots[0][1]?.subjectId).toBe("phys");
+
+    // …and genuinely different grids, not just a different header.
+    expect(JSON.stringify(lan.slots)).not.toBe(JSON.stringify(minh.slots));
+    expect(JSON.stringify(minh.slots)).not.toBe(JSON.stringify(hoa.slots));
+  });
+
+  it("getByMember still maps a parent's childId back to that child's class", async () => {
+    const repo = new MockWeeklyTimetableRepository();
+    expect((await repo.getByMember("c2")).classId).toBe("8B1");
+  });
+
   it("getChildren returns the fixed 2-child roster", async () => {
     const repo = new MockWeeklyTimetableRepository();
     const children = await repo.getChildren();
