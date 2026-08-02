@@ -135,6 +135,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Children overview (dashboard home) | `(app)/parent` | `features/parent` | ✅ (UI mock-first) |
 | My Children (index, card-per-child) | `(app)/parent/children` | `features/parent` (+ new shared `components/shared/child-identity-header/`) | ✅ US-E20.4 (was a dead sidebar link — only the `[studentId]/academic-record` deep link existed, no index; reuses `parent-links`' real `LinkedStudentSummary`) |
 | Grades (Grade Book — per child) | `(app)/parent/grades` | `features/grades` | ✅ US-E13.6/E13.7 (child-list mock — grades.di) |
+| Attendance (per-child history, date-range) | `(app)/parent/attendance` | `features/parent-attendance` (new; + promoted shared `components/shared/child-switcher/`) | ✅ US-E20.5 (was a dead sidebar link — full 404; mock-first, BE `GET /members/{id}/attendance` doesn't authorize PARENT — new cross-repo ask; reuses ADR-0058's 4-state status vocabulary) |
 | Academic Record (Hoc ba — per child) | `(app)/parent/children/:id/academic-record` | `features/academic-records` | ✅ US-E14.5 (`academic-record-view.jsx` 1506; route `parent/children/[studentId]/academic-record` live, commit 2313d26) |
 | **Schedule (Timetable read-only, per child)** | `(app)/parent/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | **Discipline & Leave (parent view for child)** | `(app)/parent/discipline` | `features/discipline` | ✅ US-E09.4 (BE force-mock — US-E18.14) |
