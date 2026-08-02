@@ -1,6 +1,6 @@
 # Memory Index
 
-- [Promote-on-3rd-use shared component](pattern-promote-shared-identity-header.md) — E20.4: extract the inline pattern NOW (variance as tone/size/initials props + one story per pre-existing call-site shape), don't defer; screen over an already-real use-case = zero new domain/infra/DI but its OWN thin route action; next-intl Link in Storybook renders the `/vi` prefix (tenantUrl is locale-relative); baseline 453/3259 vitest, 156/1170 SB
+- [Promote-on-3rd-use shared component](pattern-promote-shared-identity-header.md) — E20.4 +review-fix: promotion regressions hide in the PRIMITIVE's defaults; brand fill tokens fail 4.5:1 for small bold; typed QueryError ⇒ showRetry=false; extract the inline pattern NOW (variance as tone/size/initials props + one story per pre-existing call-site shape), don't defer; screen over an already-real use-case = zero new domain/infra/DI but its OWN thin route action; next-intl Link in Storybook renders the `/vi` prefix (tenantUrl is locale-relative); baseline 453/3259 vitest, 156/1170 SB
 
 - [Read-only second caller](pattern-readonly-variant-second-caller.md) — E13.10: `readOnly` prop on the leaf table + NEW thin screen (not a boolean on the mutation screen); renderToStaticMarkup omission proof (`colSpan="8"` camelCase); AppShell already owns `<main>`; verify role gating in the Go use case (`list_classes.go` grants MANAGER); RSC page unit-tested via awaited element props
 

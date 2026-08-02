@@ -34,5 +34,33 @@ route's action: its VM is shaped for that screen).
 prefixed href in play fns. (Several features use plain `next/link` with
 `tenantUrl` — that skips the prefix and relies on middleware; prefer next-intl's.)
 
-Baselines after this story: **453 files / 3259 vitest**, **156 files / 1170
-Storybook interaction** (both fully green, no flakes this run).
+**Promotion regressions hide in the PRIMITIVE's defaults.** The old inline copy
+passed NO font-size class, so shadcn `AvatarFallback`'s own `text-sm` applied;
+the shared component hard-coded `text-xs` "for all sizes" and silently shrank
+that screen. **Why:** when you promote, the baseline isn't "what the JSX says",
+it's "what the primitive resolves to". **How to apply:** for every style the
+promoted component now sets unconditionally, diff it against
+`components/ui/<name>` defaults; make it a `Record<size, class>` map and lock it
+with a per-call-site story assertion (`toHaveClass` + `not.toHaveClass`) —
+verify it's genuinely red by flipping the map value once. A doc comment is not
+a test.
+
+**Brand fill token ≠ AA text token.** `text-primary` (#4570EA, 4.41:1) and
+`text-edu-purple` (#7B5EA7, 4.32:1) both FAIL 1.4.3 for small bold text (bold
+12–14px gets no 3:1 large-text exemption). Existing AA pairs, no ADR needed:
+`text-edu-primary-accessible` (#4468E0, 4.88:1), `text-edu-purple-text`
+(#5B3D8A, 6.9:1) — tints unchanged. Add a NEGATIVE test (`not.toMatch`) so the
+failing token can't come back; mind the regex `\b` trap —
+`/\btext-edu-purple\b/` also matches `text-edu-purple-text`, use `(?!-text)`.
+
+**Non-retryable failure ⇒ typed error across the Query boundary.** `throw new
+Error(errorKey)` forces the screen to branch on `error.message`. Export a tiny
+`class XxxQueryError extends Error { constructor(readonly errorKey) }` +
+`resolveErrorKey(unknown)` + `isRetryableErrorKey()` from the PURE vm module —
+node-testable, and the screen passes `showRetry={canRetry}` to `ListError` with
+its own forbidden copy. Watch for an existing error story built on the
+`forbidden` fixture: it must switch to the retryable key, or the retry story
+breaks.
+
+Baselines after the review-fix pass: **453 files / 3263 vitest**, **156 files /
+1172 Storybook interaction** (both fully green).
