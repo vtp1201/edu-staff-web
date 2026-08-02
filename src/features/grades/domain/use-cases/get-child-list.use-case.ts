@@ -1,9 +1,14 @@
 import type { ChildSummary } from "../entities/grade-book.entity";
 import type { GradesFailure } from "../failures/grades.failure";
-import type { IGradeBookRepository } from "../repositories/i-grade-book.repository";
+import type { IChildListRepository } from "../repositories/i-grade-book.repository";
 
 export class GetChildListUseCase {
-  constructor(private readonly repo: IGradeBookRepository) {}
+  /**
+   * Narrowed to the roster slice (US-E18.33): the real child-list source is a
+   * `core` + IAM composition that has no business answering the three grade
+   * reads. The full mock repository still satisfies it structurally.
+   */
+  constructor(private readonly repo: IChildListRepository) {}
 
   async execute(): Promise<
     { ok: true; data: ChildSummary[] } | { ok: false; error: GradesFailure }

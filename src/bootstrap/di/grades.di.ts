@@ -30,8 +30,13 @@ import { GradesRepository } from "@/features/grades/infrastructure/repositories/
 import { MockGradeApprovalRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-approval.mock.repository";
 import { MockGradeBookRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-book.mock.repository";
 import { MockGradesRepository } from "@/features/grades/infrastructure/repositories/mocks/grades.mock.repository";
+import {
+  ParentChildListRepository,
+  type ResolveChildNames,
+} from "@/features/grades/infrastructure/repositories/parent-child-list.repository";
 import { makeAdminSettingsRepository } from "./admin-settings.di";
 import { makeAssessmentSchemeRepository } from "./assessment-scheme.di";
+import { makeBatchResolveMembersUseCase } from "./iam-directory.di";
 
 /** Default scale max — SCALE_10. Surfaced so use-cases can validate ranges. */
 export const DEFAULT_MAX_SCORE = 10;
@@ -191,15 +196,60 @@ export async function makeGetChildGradesUseCase() {
   return new GetChildGradesUseCase(await makeSelfViewGradeBookRepo());
 }
 
-/** US-E13.7 — parent child-switcher: permanently mock (ADR 0054). */
+/**
+ * US-E13.7 parent child-switcher roster — REAL since US-E18.33.
+ *
+ * ADR 0054 pinned this to the mock UNCONDITIONALLY for one reason only: the
+ * roster endpoint carries no display NAME and no directory endpoint a PARENT
+ * could call resolved one. IAM ADR-0120 removed exactly that blocker
+ * (`GET /members?ids=` is now callable by any tenant member, returning
+ * `memberId + displayName` for a narrowed-tier caller), so the factory drops
+ * to the standard `USE_MOCK ? Mock : Real` shape.
+ *
+ * The real branch composes TWO services, and only `bootstrap/di` may
+ * (decision 0017):
+ * - `core` `GET /members/{selfId}/linked-students` → WHICH children. `selfId`
+ *   is the token's own `sub` claim; the client never supplies a parent id.
+ * - `iam-directory`'s `BatchResolveMembersUseCase` → their names. This is the
+ *   app's single batch-lookup client (chunks ≤50 ids); do NOT add a second.
+ *   A failed lookup returns an EMPTY map, never throws — the repository owns
+ *   the per-row raw-id fallback so the roster still renders.
+ */
 export async function makeGetChildListUseCase() {
-  return new GetChildListUseCase(new MockGradeBookRepository());
+  if (USE_MOCK) {
+    return new GetChildListUseCase(new MockGradeBookRepository());
+  }
+  // Proactive refresh (decision 0018, playbook step 6).
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  const parentMemberId = await resolveCurrentMemberId();
+  const batchResolve = await makeBatchResolveMembersUseCase();
+  const resolveNames: ResolveChildNames = async (ids) => {
+    const result = await batchResolve.execute(ids);
+    const names = new Map<string, string>();
+    if (result.ok) {
+      for (const m of result.value) names.set(m.memberId, m.displayName);
+    }
+    return names;
+  };
+  return new GetChildListUseCase(
+    new ParentChildListRepository(http, parentMemberId, resolveNames),
+  );
+}
+
+/**
+ * The signed-in caller's own memberId, from the access-token `sub` claim.
+ * Role-agnostic — used for the student self-view AND (US-E18.33) for the
+ * parent's own linked-children read. Never a client-supplied id.
+ */
+async function resolveCurrentMemberId(): Promise<string | null> {
+  const token = await getAccessToken();
+  return token ? decodeSubClaim(token) : null;
 }
 
 /** Resolves the signed-in student's own memberId from the access-token `sub` claim. */
 export async function resolveCurrentStudentMemberId(): Promise<string | null> {
-  const token = await getAccessToken();
-  return token ? decodeSubClaim(token) : null;
+  return resolveCurrentMemberId();
 }
 
 // ─── US-E14.4 — grade approval pipeline (admin, PERMANENTLY MOCK, ADR 0054) ──

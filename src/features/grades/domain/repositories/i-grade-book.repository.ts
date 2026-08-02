@@ -29,6 +29,26 @@ export interface IGradeBookRepository {
     childId: string,
     academicYearLabel: string,
   ): Promise<GradeBook[]>;
-  /** parent — list of children linked to the signed-in viewer (permanently mock, ADR 0054) */
+  /**
+   * parent — list of children linked to the signed-in viewer.
+   *
+   * ADR 0054 force-mocked this ("no display-name source"); US-E18.33 un-mocked
+   * it against `core`'s linked-students read + IAM's tiered batch lookup
+   * (ADR-0120). The real implementation lives in its own
+   * `ParentChildListRepository`, which implements {@link IChildListRepository}
+   * only — see that type's note.
+   */
   getChildList(): Promise<ChildSummary[]>;
 }
+
+/**
+ * The child-roster slice of {@link IGradeBookRepository}.
+ *
+ * `getChildList` is served by a DIFFERENT service composition than the three
+ * grade reads (`core` linked-students + IAM batch lookup, vs `core`
+ * `GET /members/{id}/grades`), so US-E18.33's real implementation implements
+ * this narrow slice rather than being forced to stub three grade methods it
+ * would never answer. `GetChildListUseCase` depends on the slice, so both the
+ * full mock repository and the focused real one satisfy it.
+ */
+export type IChildListRepository = Pick<IGradeBookRepository, "getChildList">;
