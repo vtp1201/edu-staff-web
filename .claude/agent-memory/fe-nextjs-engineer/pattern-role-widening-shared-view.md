@@ -29,6 +29,29 @@ that conflation a bug factory.
   counterpart (`conflict-exists`/`unknown`) must land on a retryable error, NOT be collapsed
   into the "nothing published" empty state.
 
+**Fix round — the 3rd role usually needs its own BE authorization ground-truth.** "The
+repository method is already real for role A and B" does NOT mean it is real for role C.
+Read the Go `authorize()` for the endpoint, not just the endpoint's existence. Here
+`get_member_timetable.go`'s authorize granted ADMIN / the target itself / a linked PARENT —
+no MANAGER — so the principal 403s. **Worst case is a silent one:** a repo that maps
+`FORBIDDEN → not-found` (existence-opacity for another role's path) plus a derive that
+collapses `not-found → empty` turns a 403 into a permanent, plausible-looking empty state.
+Remedy = a role-scoped force-mock factory in the SAME di file (see
+[[pattern-forced-mock-di-and-responsive-table-card]]), never a `USE_MOCK` branch, with a
+regression test that the authorized sibling factories still resolve the real/Hybrid repo.
+- A force-mock is only useful if the mock **varies by the id the picker passes** — a
+  `?? MY_DEFAULT_ID` fallback makes every roster row render the identical screen. Key the
+  fixtures off the OTHER mock repo's roster ids.
+- Adding a member to a shared `ErrorKey` union is caught by `tsc` in every sibling
+  screen's `Record<ErrorKey, …>` — that's the feature, follow it.
+- "Retry" on a screen whose ROSTER failed has no id to retry with (`""`): gate it to
+  `router.refresh()` via a pure `resolveRetryTarget()` shared by all roles.
+- A `disabled` element cannot hold focus → `disabled={disabled && !active}` on card
+  pickers, or the keyboard user's focus jumps to `<body>` mid-transition. Provable in a
+  Storybook play fn with a deferred fetch + `toHaveFocus()`.
+- `commitlint` has no `a11y` type and **lefthook fails the commit SILENTLY** — always
+  `git log --oneline -1` after committing.
+
 Mechanics worth remembering:
 - Server-Action unit test mocking DI factories: `vi.mock` factories referencing top-level
   consts throw "Cannot access X before initialization" → wrap the whole fixture bundle in
