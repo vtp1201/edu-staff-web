@@ -17,13 +17,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ORIGINAL = process.env.NEXT_PUBLIC_USE_MOCK;
 
+/**
+ * Ordered record of the server-side side effects the factory performs. The
+ * mocks are registered ONCE, here — re-registering `vi.doMock` for the same
+ * module inside an individual test made the suite flaky (the factory sometimes
+ * resolved to the `beforeEach` version, dropping the "refresh" entry), so every
+ * case reads this shared recorder instead.
+ */
+const calls: string[] = [];
+
 beforeEach(() => {
   vi.resetModules();
+  calls.length = 0;
   vi.doMock("@/bootstrap/lib/http.server", () => ({
-    createServerHttpClient: vi.fn().mockResolvedValue({}),
+    createServerHttpClient: vi.fn(async () => {
+      calls.push("http");
+      return {};
+    }),
   }));
   vi.doMock("@/bootstrap/di/auth.di", () => ({
-    ensureFreshSession: vi.fn().mockResolvedValue(undefined),
+    ensureFreshSession: vi.fn(async () => {
+      calls.push("refresh");
+    }),
   }));
 });
 
@@ -88,28 +103,12 @@ describe("moderation.di — USE_MOCK ? Mock : Real", () => {
     });
   }
 
-  it("never creates a server http client in mock mode", async () => {
-    const createServerHttpClient = vi.fn().mockResolvedValue({});
-    vi.doMock("@/bootstrap/lib/http.server", () => ({
-      createServerHttpClient,
-    }));
+  it("never creates a server http client (nor refreshes) in mock mode", async () => {
     await allUseCases("true");
-    expect(createServerHttpClient).not.toHaveBeenCalled();
+    expect(calls).toEqual([]);
   });
 
   it("refreshes the session BEFORE creating the http client in real mode", async () => {
-    const calls: string[] = [];
-    vi.doMock("@/bootstrap/lib/http.server", () => ({
-      createServerHttpClient: vi.fn(async () => {
-        calls.push("http");
-        return {};
-      }),
-    }));
-    vi.doMock("@/bootstrap/di/auth.di", () => ({
-      ensureFreshSession: vi.fn(async () => {
-        calls.push("refresh");
-      }),
-    }));
     const di = await importDiWithEnv("false");
     await di.makeListReportsUseCase();
     expect(calls).toEqual(["refresh", "http"]);
