@@ -43,7 +43,11 @@ function classDto(over: Record<string, unknown> = {}) {
     gradeLevel: 10,
     academicYearLabel: "2025–2026",
     status: "active",
+    // Wire-enriched since BE US-173 — the TEACHER branch of
+    // `ListClassesUseCase` runs the same `enrichClassRows` as the admin branch.
+    studentCount: 2,
     homeroomTeacherId: null,
+    homeroomTeacherName: null,
     createdAt: "2025-01-01",
     updatedAt: "2025-01-01",
     ...over,
@@ -66,19 +70,20 @@ function enrollmentDto(over: Record<string, unknown> = {}) {
 describe("TeacherClassRepository (US-E13.1)", () => {
   // ── listMyClasses maps DTOs + derives isHomeroom from currentUserId ───────
   it("listMyClasses maps DTOs to TeacherClass[] with correct isHomeroom", async () => {
-    const get = vi.fn();
-    get.mockImplementation((url: string) => {
-      if (url === "/core/api/v1/classes") {
-        return Promise.resolve(
-          listEnvelope([
-            classDto({ classId: "cls-a", homeroomTeacherId: "USR-me" }),
-            classDto({ classId: "cls-b", homeroomTeacherId: "USR-other" }),
-          ]),
-        );
-      }
-      // roster lookups for the student-count per class
-      return Promise.resolve(listEnvelope([enrollmentDto(), enrollmentDto()]));
-    });
+    const get = vi.fn().mockResolvedValue(
+      listEnvelope([
+        classDto({
+          classId: "cls-a",
+          homeroomTeacherId: "USR-me",
+          studentCount: 2,
+        }),
+        classDto({
+          classId: "cls-b",
+          homeroomTeacherId: "USR-other",
+          studentCount: 5,
+        }),
+      ]),
+    );
     const repo = new TeacherClassRepository(makeHttp(get), "USR-me");
     const res = await repo.listMyClasses();
 
@@ -89,7 +94,35 @@ describe("TeacherClassRepository (US-E13.1)", () => {
       expect(res.data[0].isHomeroom).toBe(true);
       expect(res.data[0].studentCount).toBe(2);
       expect(res.data[1].isHomeroom).toBe(false);
+      expect(res.data[1].studentCount).toBe(5);
     }
+  });
+
+  /**
+   * US-E18.30: `studentCount` arrives on the class list itself (BE US-173), so
+   * the old "drain every class's roster to count it" 1+N fan-out is gone. Assert
+   * the CALL COUNT — a result-only assertion would still pass with the fan-out
+   * present.
+   */
+  it("listMyClasses issues EXACTLY ONE HTTP call for a 3-class page (no 1+N roster fan-out)", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        listEnvelope([
+          classDto({ classId: "cls-a" }),
+          classDto({ classId: "cls-b" }),
+          classDto({ classId: "cls-c" }),
+        ]),
+      );
+    const repo = new TeacherClassRepository(makeHttp(get), null);
+    const res = await repo.listMyClasses();
+
+    expect(res.ok).toBe(true);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith("/core/api/v1/classes", {
+      params: { limit: 100 },
+      raw: true,
+    });
   });
 
   // ── listMyClasses drains 2-page cursor pagination ────────────────────────
@@ -215,10 +248,8 @@ describe("TeacherClassRepository — real interceptor pipeline (raw-flag placeme
   }
 
   it("listMyClasses survives the real unwrap (raw top-level, limit kept in params)", async () => {
-    const get = interceptedGet((url) =>
-      url === "/core/api/v1/classes"
-        ? listEnvelope([classDto({ classId: "cls-a" })])
-        : listEnvelope([enrollmentDto()]),
+    const get = interceptedGet(() =>
+      listEnvelope([classDto({ classId: "cls-a", studentCount: 1 })]),
     );
     const res = await new TeacherClassRepository(
       makeHttp(get),

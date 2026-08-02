@@ -22,12 +22,8 @@ import type {
 } from "../../domain/repositories/i-class-management.repository";
 import { fail, ok, type Result } from "../../domain/use-cases/result";
 import type { ClassResponseDto } from "../dtos/class-response.dto";
-import type { EnrollmentResponseDto } from "../dtos/enrollment-response.dto";
 import type { HomeroomAssignmentResponseDto } from "../dtos/homeroom-assignment-response.dto";
-import {
-  type ClassEnrichment,
-  ClassManagementMapper,
-} from "../mappers/class-management.mapper";
+import { ClassManagementMapper } from "../mappers/class-management.mapper";
 
 /**
  * Map a normalised ApiError to the class-management failure union.
@@ -122,53 +118,6 @@ export class ClassManagementRepository implements IClassManagementRepository {
     private readonly searchDirectory?: TeacherDirectorySearch,
   ) {}
 
-  /** Paginate a class's roster to completion and count enrollments. */
-  private async countRoster(classId: string): Promise<number> {
-    let count = 0;
-    let cursor: string | undefined;
-    for (;;) {
-      const envelope = (await this.http.get(CLASS_EP.classStudents(classId), {
-        params: { cursor, limit: 100 },
-        raw: true,
-      })) as unknown as ApiEnvelope<EnrollmentResponseDto[]>;
-      const { data, pagination } = parseEnvelope(envelope);
-      count += data.length;
-      if (!pagination?.hasMore || !pagination.nextCursor) break;
-      cursor = pagination.nextCursor;
-    }
-    return count;
-  }
-
-  /** `404 CLASS_ASSIGNMENT_NOT_FOUND` means "no homeroom" — not an error. */
-  private async fetchHomeroom(
-    classId: string,
-  ): Promise<{ id: string | null; name: string | null }> {
-    try {
-      const dto = (await this.http.get(
-        CLASS_EP.classHomeroomTeacher(classId),
-      )) as unknown as HomeroomAssignmentResponseDto;
-      const teacher = ClassManagementMapper.toTeacherMemberFromHomeroom(dto);
-      return { id: teacher.userId, name: teacher.displayName };
-    } catch (err) {
-      if (errorCodeOf(err) === "CLASS_ASSIGNMENT_NOT_FOUND") {
-        return { id: null, name: null };
-      }
-      throw err;
-    }
-  }
-
-  private async enrich(classId: string): Promise<ClassEnrichment> {
-    const [studentCount, homeroom] = await Promise.all([
-      this.countRoster(classId),
-      this.fetchHomeroom(classId),
-    ]);
-    return {
-      studentCount,
-      homeroomTeacherId: homeroom.id,
-      homeroomTeacherName: homeroom.name,
-    };
-  }
-
   async listClasses(params: {
     academicYear?: string;
     gradeLevel?: number;
@@ -195,15 +144,11 @@ export class ClassManagementRepository implements IClassManagementRepository {
           ? data
           : data.filter((dto) => dto.gradeLevel === params.gradeLevel);
 
-      const classes = await Promise.all(
-        filtered.map(async (dto) => {
-          const enrichment = await this.enrich(dto.classId);
-          return ClassManagementMapper.toClass(dto, enrichment);
-        }),
-      );
-
+      // ONE call for the whole page: `studentCount` + homeroom id/name are
+      // enriched server-side on this endpoint (BE US-173), replacing the old
+      // 2×N per-row roster+homeroom fan-out (US-E18.30).
       return ok({
-        data: classes,
+        data: filtered.map((dto) => ClassManagementMapper.toClass(dto)),
         nextCursor: pagination?.nextCursor ?? null,
         hasMore: pagination?.hasMore ?? false,
       });
@@ -220,15 +165,10 @@ export class ClassManagementRepository implements IClassManagementRepository {
         CLASS_EP.classes,
         ClassManagementMapper.toCreateClassBody(input),
       )) as unknown as ClassResponseDto;
-      // A brand-new class has no students/homeroom yet — cheap accurate
-      // defaults, no extra round-trips.
-      return ok(
-        ClassManagementMapper.toClass(data, {
-          studentCount: 0,
-          homeroomTeacherId: null,
-          homeroomTeacherName: null,
-        }),
-      );
+      // `POST` returns the three enrichment fields UNENRICHED (`0`/`null`) by
+      // BE construction — which is also the truth for a brand-new class, so
+      // the response maps as-is with no extra round-trip.
+      return ok(ClassManagementMapper.toClass(data));
     } catch (err) {
       return fail(toFailure(err));
     }
@@ -249,12 +189,18 @@ export class ClassManagementRepository implements IClassManagementRepository {
         name = name ?? current.name;
         gradeLevel = gradeLevel ?? current.gradeLevel;
       }
-      const data = (await this.http.patch(
+      await this.http.patch(
         CLASS_EP.class(classId),
         ClassManagementMapper.toUpdateClassBody({ name, gradeLevel }),
+      );
+      // `PATCH`'s own response is UNENRICHED (`studentCount: 0`, null
+      // homeroom) by BE construction, so mapping it directly would blank the
+      // row the caller re-renders. One enriched `GET /classes/{id}` read-back
+      // restores both — replacing the old 2-call roster+homeroom fan-out.
+      const fresh = (await this.http.get(
+        CLASS_EP.class(classId),
       )) as unknown as ClassResponseDto;
-      const enrichment = await this.enrich(classId);
-      return ok(ClassManagementMapper.toClass(data, enrichment));
+      return ok(ClassManagementMapper.toClass(fresh));
     } catch (err) {
       return fail(toFailure(err));
     }

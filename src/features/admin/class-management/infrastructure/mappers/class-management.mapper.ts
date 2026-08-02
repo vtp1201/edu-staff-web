@@ -11,29 +11,34 @@ import type {
 } from "../dtos/class-response.dto";
 import type { HomeroomAssignmentResponseDto } from "../dtos/homeroom-assignment-response.dto";
 
-/**
- * Real-mode enrichment for fields the wire `ClassResponse` does not carry
- * (US-E18.4 — no `studentCount`/`homeroomTeacherId`/`homeroomTeacherName` on
- * `ClassResponse`). Callers derive these via separate fan-out calls and inject
- * them here — the mapper never invents them.
- */
-export interface ClassEnrichment {
-  studentCount: number;
-  homeroomTeacherId: string | null;
-  homeroomTeacherName: string | null;
-}
-
 export const ClassManagementMapper = {
-  toClass(dto: ClassResponseDto, enrichment: ClassEnrichment): Class {
+  /**
+   * `studentCount` + homeroom fields are read STRAIGHT off the DTO since BE
+   * US-173 enriched `ClassResponse` (US-E18.30 dropped the old injected
+   * `ClassEnrichment` object and the 2×N fan-out that produced it). Callers
+   * must only pass a DTO from an ENRICHED endpoint (`GET /classes`,
+   * `GET /classes/{id}`) when those values matter — `POST`/`PATCH` return
+   * `0`/`null` unenriched.
+   *
+   * `homeroomTeacherId` is authoritative for "has a homeroom teacher"; a null
+   * `homeroomTeacherName` alongside a non-null id means the cross-service name
+   * lookup degraded, so the display falls back to the raw member id (same
+   * precedent as `toTeacherMemberFromHomeroom`) rather than letting
+   * presentation's `?? "chưa phân công"` render a lie.
+   */
+  toClass(dto: ClassResponseDto): Class {
     return {
       id: dto.classId,
       name: dto.name,
       gradeLevel: dto.gradeLevel,
       status: dto.status,
       academicYear: dto.academicYearLabel,
-      studentCount: enrichment.studentCount,
-      homeroomTeacherId: enrichment.homeroomTeacherId,
-      homeroomTeacherName: enrichment.homeroomTeacherName,
+      studentCount: dto.studentCount,
+      homeroomTeacherId: dto.homeroomTeacherId,
+      homeroomTeacherName:
+        dto.homeroomTeacherId === null
+          ? null
+          : (dto.homeroomTeacherName ?? dto.homeroomTeacherId),
     };
   },
 

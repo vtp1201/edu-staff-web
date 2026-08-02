@@ -10,7 +10,6 @@ import type {
   ITeacherDashboardRepository,
   Result,
 } from "../../domain/repositories/i-teacher-dashboard.repository";
-import type { ClassRosterResponseDto } from "../dtos/class-roster-response.dto";
 import type { TeacherClassesResponseDto } from "../dtos/teacher-class-response.dto";
 import { toTeacherDashboardFailure } from "../mappers/teacher-dashboard-failure.mapper";
 
@@ -18,27 +17,23 @@ export class TeacherDashboardRepository implements ITeacherDashboardRepository {
   constructor(private readonly http: AxiosInstance) {}
 
   /**
-   * Sum enrollment counts across the teacher's classes. The core ClassResponse
-   * carries no student-count field (TR/US-E13.4), so we fetch each class roster
-   * and count. Both the class list and each roster are cursor-paginated so the
-   * count stays accurate beyond a single 100-item page. Per-class counts run in
-   * parallel.
+   * Sum enrollment counts across the teacher's classes. `studentCount` arrives
+   * on the class list itself since BE US-173 (the TEACHER branch of
+   * `ListClassesUseCase` runs the same `enrichClassRows` as the admin branch),
+   * so we just add up the wire field — the old "drain every class's roster just
+   * to count it" 1+N fan-out is gone (US-E18.30), same as
+   * `teacher-class.repository.ts`'s `listMyClasses`. The class list is still
+   * cursor-paginated, so the sum stays accurate beyond a single 100-item page.
    */
   async getTotalStudents(): Promise<Result<number>> {
     try {
       const classes = await this.fetchAllPages<TeacherClassesResponseDto>(
         TEACHER_EP.classes,
       );
-
-      const counts = await Promise.all(
-        classes.map((cls) =>
-          this.fetchAllPages<ClassRosterResponseDto>(
-            TEACHER_EP.classStudents(cls.classId),
-          ).then((roster) => roster.length),
-        ),
-      );
-
-      return { ok: true, data: counts.reduce((sum, n) => sum + n, 0) };
+      return {
+        ok: true,
+        data: classes.reduce((sum, cls) => sum + cls.studentCount, 0),
+      };
     } catch (err) {
       return { ok: false, error: toTeacherDashboardFailure(err) };
     }

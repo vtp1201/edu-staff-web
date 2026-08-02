@@ -1,9 +1,10 @@
 /**
- * Unit tests — ClassManagementMapper (US-E18.4). Real wire shape uses
- * `classId`/`academicYearLabel`; `studentCount`/homeroom fields are NOT on
- * the wire and must come from the injected enrichment object, never from the
- * DTO directly. Request builders rename `academicYear`→`academicYearLabel`
- * and produce the homeroom-assignment display fallback (raw member id).
+ * Unit tests — ClassManagementMapper (US-E18.4, rewired US-E18.30). Real wire
+ * shape uses `classId`/`academicYearLabel`; since BE US-173 the wire ALSO
+ * carries `studentCount`/`homeroomTeacherId`/`homeroomTeacherName` directly,
+ * so the mapper reads them off the DTO (no injected enrichment object).
+ * Request builders rename `academicYear`→`academicYearLabel` and produce the
+ * homeroom-assignment display fallback (raw member id).
  */
 import { describe, expect, it } from "vitest";
 import type { ClassResponseDto } from "../dtos/class-response.dto";
@@ -20,17 +21,22 @@ function classDto(over: Partial<ClassResponseDto> = {}): ClassResponseDto {
     status: "ACTIVE",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
+    studentCount: 0,
+    homeroomTeacherId: null,
+    homeroomTeacherName: null,
     ...over,
   };
 }
 
 describe("ClassManagementMapper.toClass", () => {
-  it("maps classId/academicYearLabel renames and injects the enrichment", () => {
-    const result = ClassManagementMapper.toClass(classDto(), {
-      studentCount: 32,
-      homeroomTeacherId: "u-teacher-1",
-      homeroomTeacherName: "u-teacher-1",
-    });
+  it("maps classId/academicYearLabel renames and reads the enriched fields off the DTO", () => {
+    const result = ClassManagementMapper.toClass(
+      classDto({
+        studentCount: 32,
+        homeroomTeacherId: "u-teacher-1",
+        homeroomTeacherName: "Nguyễn Thị Lan",
+      }),
+    );
     expect(result).toEqual({
       id: "cls-10a1",
       name: "10A1",
@@ -39,29 +45,38 @@ describe("ClassManagementMapper.toClass", () => {
       academicYear: "2025-2026",
       studentCount: 32,
       homeroomTeacherId: "u-teacher-1",
-      homeroomTeacherName: "u-teacher-1",
+      homeroomTeacherName: "Nguyễn Thị Lan",
     });
   });
 
-  it("does not read studentCount/homeroom off the DTO even if present", () => {
-    const dtoWithExtra = {
-      ...classDto(),
-      studentCount: 999,
-      homeroomTeacherId: "should-be-ignored",
-    } as ClassResponseDto;
-    const result = ClassManagementMapper.toClass(dtoWithExtra, {
-      studentCount: 0,
-      homeroomTeacherId: null,
-      homeroomTeacherName: null,
-    });
-    expect(result.studentCount).toBe(0);
+  it("keeps the class ASSIGNED when the name lookup degraded (id set, name null)", () => {
+    // BE contract (core openapi `ClassResponse`, ADR 0124): a null
+    // `homeroomTeacherName` with a non-null `homeroomTeacherId` means the
+    // cross-service name resolution failed — NOT "no homeroom teacher". The
+    // id stays authoritative and the display falls back to the raw member id
+    // (same precedent as `toTeacherMemberFromHomeroom`), so presentation's
+    // `homeroomTeacherName ?? "chưa phân công"` never lies.
+    const result = ClassManagementMapper.toClass(
+      classDto({
+        homeroomTeacherId: "u-teacher-1",
+        homeroomTeacherName: null,
+      }),
+    );
+    expect(result.homeroomTeacherId).toBe("u-teacher-1");
+    expect(result.homeroomTeacherName).toBe("u-teacher-1");
+  });
+
+  it("reports no homeroom teacher only when the id itself is null", () => {
+    const result = ClassManagementMapper.toClass(
+      classDto({ homeroomTeacherId: null, homeroomTeacherName: null }),
+    );
     expect(result.homeroomTeacherId).toBeNull();
+    expect(result.homeroomTeacherName).toBeNull();
   });
 
   it("passes through ARCHIVED status", () => {
     const result = ClassManagementMapper.toClass(
       classDto({ status: "ARCHIVED" }),
-      { studentCount: 0, homeroomTeacherId: null, homeroomTeacherName: null },
     );
     expect(result.status).toBe("ARCHIVED");
   });

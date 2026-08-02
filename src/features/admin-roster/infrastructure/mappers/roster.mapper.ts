@@ -14,20 +14,26 @@ function toStatus(raw: string): RosterStudent["status"] {
 }
 
 /**
- * Wire `ClassResponse` carries no homeroom field (US-E18.5) — the display name
- * is fetched separately (`GET .../homeroom-teacher`) and injected here; the
- * mapper never reads a `homeroomTeacher` field off the DTO. `null` = no
- * homeroom assigned.
+ * Homeroom fields are read STRAIGHT off the DTO since BE US-173 enriched
+ * `ClassResponse` (US-E18.30 dropped the per-row `GET .../homeroom-teacher`
+ * fan-out — and with it the raw-uuid display it produced). Callers must only
+ * pass a DTO from an ENRICHED endpoint (`GET /classes`, `GET /classes/{id}`).
+ *
+ * `homeroomTeacherId` is authoritative for "has a homeroom teacher"; a null
+ * `homeroomTeacherName` alongside a non-null id means the cross-service name
+ * lookup degraded, so the display falls back to the raw member id (same rule as
+ * `ClassManagementMapper.toClass`) rather than rendering "chưa phân công" for a
+ * class that DOES have a GVCN. `null` = genuinely no homeroom assigned.
  */
-export function toClassSummary(
-  dto: ClassDto,
-  homeroomTeacherName: string | null,
-): ClassSummary {
+export function toClassSummary(dto: ClassDto): ClassSummary {
   return {
     id: dto.classId,
     name: dto.name,
     gradeLevel: dto.gradeLevel,
-    homeroomTeacher: homeroomTeacherName,
+    homeroomTeacher:
+      dto.homeroomTeacherId === null
+        ? null
+        : (dto.homeroomTeacherName ?? dto.homeroomTeacherId),
     year: dto.academicYearLabel,
   };
 }

@@ -4,8 +4,11 @@
  * `core`'s `GetMemberTimetableUseCase.authorize()` grants SUPER_ADMIN/ADMIN, the
  * target member itself, and a verified linked PARENT — `MANAGER` (the principal
  * `appRole`) is in NO branch, so the principal's by-member read is a hard 403.
- * The principal factory is therefore force-mocked, exactly like
- * `makePrincipalClassesRepository()` (US-E13.8). These tests lock that in — mock
+ * The principal factory is therefore force-mocked. (It used to share that
+ * posture with `makePrincipalClassesRepository()`; that one went REAL in
+ * US-E18.30 once BE US-164 added `MANAGER` to `ListClassesUseCase` — no
+ * equivalent branch was added to `get_member_timetable.go`'s `authorize()`,
+ * re-verified US-E18.30.) These tests lock that in — mock
  * with `NEXT_PUBLIC_USE_MOCK` unset, `"false"` and `"true"` alike — so a future
  * "fix" that reintroduces a `USE_MOCK` branch fails here instead of silently
  * rendering a permanent empty state for every teacher in production.

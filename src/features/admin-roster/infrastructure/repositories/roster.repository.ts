@@ -5,15 +5,7 @@ import {
   ROSTER_EP,
   unenrollPath,
 } from "@/bootstrap/endpoint/admin-roster.endpoint";
-import { CLASS_EP } from "@/bootstrap/endpoint/class.endpoint";
-import {
-  type ApiEnvelope,
-  errorCodeOf,
-  parseEnvelope,
-} from "@/bootstrap/lib/api-envelope";
-// Reuse class-management's `HomeroomAssignmentResponse` DTO — the homeroom
-// resource (`GET /classes/{id}/homeroom-teacher`) is identical to US-E18.4.
-import type { HomeroomAssignmentResponseDto } from "@/features/admin/class-management/infrastructure/dtos/homeroom-assignment-response.dto";
+import { type ApiEnvelope, parseEnvelope } from "@/bootstrap/lib/api-envelope";
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
 import type { SearchStudent } from "../../domain/entities/search-student.entity";
@@ -29,35 +21,16 @@ import { toRosterFailure } from "../mappers/roster-failure.mapper";
 export class RosterRepository implements IRosterRepository {
   constructor(private readonly http: AxiosInstance) {}
 
-  /**
-   * Wire `ClassResponse` has no homeroom field (US-E18.5) — fan out one
-   * `GET .../homeroom-teacher` per class. `404 CLASS_ASSIGNMENT_NOT_FOUND`
-   * means "no homeroom", not an error → `null`. The wire carries only
-   * `teacherMemberId` (raw uuid) with no display name — IAM has no public
-   * member-lookup endpoint (cross-repo ask #6/#7), so we fall back to the raw
-   * id, the same tolerable single-field degradation as US-E18.4.
-   */
-  private async fetchHomeroomName(classId: string): Promise<string | null> {
-    try {
-      const dto = (await this.http.get(
-        CLASS_EP.classHomeroomTeacher(classId),
-      )) as unknown as HomeroomAssignmentResponseDto;
-      return dto.teacherMemberId;
-    } catch (err) {
-      if (errorCodeOf(err) === "CLASS_ASSIGNMENT_NOT_FOUND") {
-        return null;
-      }
-      throw err;
-    }
-  }
-
   async getClasses(params: {
     academicYear?: string;
   }): Promise<Result<ClassSummary[]>> {
     try {
       // cursor-paginated list: { raw: true } + parseEnvelope (TR-031). No
       // gradeLevel client-side filter here (unlike class-management) — the
-      // roster class picker shows every class on the page.
+      // roster class picker shows every class on the page. One HTTP call total:
+      // the homeroom teacher's id AND display name ride on each row since BE
+      // US-173 (US-E18.30 removed the per-row `.../homeroom-teacher` fan-out,
+      // which also fixed the picker rendering a raw member uuid as the GVCN).
       const envelope = (await this.http.get(ROSTER_EP.classes, {
         params: {
           ...(params.academicYear ? { academicYear: params.academicYear } : {}),
@@ -65,13 +38,7 @@ export class RosterRepository implements IRosterRepository {
         raw: true,
       })) as unknown as ApiEnvelope<ClassesResponseDto>;
       const { data } = parseEnvelope(envelope);
-      const classes = await Promise.all(
-        data.map(async (dto) => {
-          const homeroomTeacherName = await this.fetchHomeroomName(dto.classId);
-          return toClassSummary(dto, homeroomTeacherName);
-        }),
-      );
-      return { ok: true, data: classes };
+      return { ok: true, data: data.map((dto) => toClassSummary(dto)) };
     } catch (err) {
       return { ok: false, error: toRosterFailure(err) };
     }

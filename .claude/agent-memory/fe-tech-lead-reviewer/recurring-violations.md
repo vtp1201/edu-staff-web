@@ -379,6 +379,22 @@ before reading for style.
   size map (`md:"text-xs"`, `lg:"text-sm"`), never a constant. (US-E20.4.)
   - Corollary: a promotion whose target call site has NO existing `.stories.tsx`/test (parent-dashboard)
     has zero regression lock — read that diff by hand, don't lean on the suite.
+- **"Audit EVERY consumer" ACs get a PARTIAL audit — grep the ENDPOINT STRING, not the feature**
+  (US-E18.30). When a BE field lands that makes a client fan-out obsolete, the engineer fixes the
+  repos the packet NAMED (+ a self-found bonus) and misses the ones that hit the same URL from an
+  unrelated feature. Two live real-mode misses on `/core/api/v1/classes`:
+  `teacher-dashboard.repository.ts` `getTotalStudents` (same DTO the engineer *edited*, whose
+  mapper-test fixture he even updated) and `admin-roster` `roster.repository.ts` `getClasses`.
+  Tell: the surviving fan-outs' doc comments now assert the OPPOSITE of the new contract
+  ("the wire carries no student-count field"), which tsc/tests can never catch. Method:
+  `grep -rn "<literal endpoint path>" src/` + grep the endpoint-constant name across ALL
+  `*_EP` objects (`TEACHER_EP.classes` and `CLASS_EP.classes` and `ROSTER_EP.classes` are the
+  SAME string). Also sweep for newly-dead artifacts the removal orphaned
+  (`enrollment-response.dto.ts`, `CLASS_EP.classStudents`).
+- **Point-free `list.map(Mapper.toX)` immediately after removing `toX`'s 2nd parameter** — safe
+  today, but `map` passes `(el, index, array)`, so the day anyone re-adds an optional 2nd param
+  the row index is silently bound to it. Ask for `.map((d) => Mapper.toX(d))`. CONSIDER-level.
+  (US-E18.30 `class-management.repository.ts`, `principal-teachers.repository.ts`.)
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.
