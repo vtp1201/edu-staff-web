@@ -28,9 +28,10 @@ export const ATTENDANCE_STATUS_ORDER: readonly AttendanceStatus[] = [
 ];
 
 /**
- * Failures a retry can actually fix. `forbidden` (the current BE gap) and the
- * two range failures are terminal — the retry control is OMITTED, never merely
- * disabled (`ListError.showRetry`, INFRA-shared-list-states).
+ * Failures a retry can actually fix. `forbidden` (the parent is not linked to
+ * this child — a 403 no retry will change) and the two range failures are
+ * terminal: the retry control is OMITTED, never merely disabled
+ * (`ListError.showRetry`, INFRA-shared-list-states).
  */
 export function isRetryableFailure(
   errorKey: ParentAttendanceFailure["type"],

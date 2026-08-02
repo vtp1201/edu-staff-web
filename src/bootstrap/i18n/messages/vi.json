@@ -2914,7 +2914,7 @@
     "emptyBody": "Chưa có buổi điểm danh nào trong khoảng thời gian này. Hãy chọn khoảng khác.",
     "retry": "Thử lại",
     "errors": {
-      "forbidden": "Tính năng xem điểm danh cho phụ huynh chưa được mở. Vui lòng liên hệ nhà trường.",
+      "forbidden": "Bạn không có quyền xem điểm danh của học sinh này. Vui lòng liên hệ nhà trường để kiểm tra liên kết phụ huynh – học sinh.",
       "invalid-date-range": "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
       "date-range-too-large": "Khoảng thời gian không được vượt quá 366 ngày.",
       "network-error": "Không tải được lịch sử điểm danh. Vui lòng thử lại.",

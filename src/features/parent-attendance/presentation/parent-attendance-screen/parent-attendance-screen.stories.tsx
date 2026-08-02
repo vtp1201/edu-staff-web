@@ -228,8 +228,10 @@ export const EmptyRange: Story = {
 };
 
 /**
- * BE gap degrade (PARENT is not authorized on the real endpoint): honest copy
- * and NO retry control — a retry can never fix a 403.
+ * `403 ATTENDANCE_FORBIDDEN` — the parent is not linked to the requested child
+ * (US-E18.34 replaced US-E20.5's placeholder degrade with the BE's real answer;
+ * the UI state is unchanged). Honest copy and NO retry control — a retry can
+ * never fix a 403.
  */
 export const ErrorForbidden: Story = {
   args: {

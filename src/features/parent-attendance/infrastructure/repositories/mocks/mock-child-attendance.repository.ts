@@ -10,12 +10,12 @@ import { buildMockAttendanceDto } from "./child-attendance-fixtures";
 /**
  * Development-only implementation of `IChildAttendanceRepository` (US-E20.5),
  * reached ONLY when `NEXT_PUBLIC_USE_MOCK === "true"`. A real environment gets
- * `UnavailableChildAttendanceRepository` instead, because fabricated attendance
- * for a parent's real child is data a parent could act on
- * (see `bootstrap/di/parent-attendance.di.ts`).
+ * `ChildAttendanceRepository` (US-E18.34) — this must never become a real-mode
+ * fallback, because fabricated attendance for a parent's real child is data a
+ * parent could act on (see `bootstrap/di/parent-attendance.di.ts`).
  *
- * It deliberately goes through the real DTO → mapper path so the un-mock diff
- * is limited to swapping the data source.
+ * It goes through the real DTO → mapper path (wire-cased fixtures included), so
+ * the mock and the real repository are proven by the same mapper.
  */
 export class MockChildAttendanceRepository
   implements IChildAttendanceRepository

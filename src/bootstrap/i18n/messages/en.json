@@ -2914,7 +2914,7 @@
     "emptyBody": "There are no attendance sessions in this date range. Try a different range.",
     "retry": "Try again",
     "errors": {
-      "forbidden": "Attendance viewing for parents is not enabled yet. Please contact the school.",
+      "forbidden": "You do not have permission to view this student's attendance. Please contact the school to check the parent–student link.",
       "invalid-date-range": "The end date must be on or after the start date.",
       "date-range-too-large": "The date range cannot exceed 366 days.",
       "network-error": "Could not load the attendance history. Please try again.",
