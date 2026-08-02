@@ -46,5 +46,6 @@ ordering is the proof. Same story proves a `{label} {count}` chip key — give v
 and en *different punctuation* so the test would fail if JSX concatenation crept
 back.
 
-Baselines after this fix round: **462 files / 3317 vitest**, **157 files / 1184
-Storybook**.
+Baselines after this fix round: **462 files / 3317 vitest**, **157 files / 1185
+Storybook**. The pre-push `test-storybook` job failed once and passed on an
+immediate re-run with zero changes — re-run before investigating.
