@@ -83,4 +83,48 @@ describe("IamDirectoryMapper.toMemberSummary", () => {
     });
     expect(summary.displayName).toBe("Võ Thị Bình");
   });
+
+  it("staff tier — carries dob/gender when the member HAS them (IAM US-169, ADR-0122)", () => {
+    const summary = IamDirectoryMapper.toMemberSummary({
+      memberId: "u-12",
+      displayName: "Nguyễn Minh Anh",
+      email: "anh@example.com",
+      roles: ["STUDENT"],
+      dob: "2010-03-15T00:00:00Z",
+      gender: "FEMALE",
+    });
+
+    expect(summary.dob).toBe("2010-03-15T00:00:00Z");
+    expect(summary.gender).toBe("FEMALE");
+  });
+
+  it("staff tier + PII UNSET — dob/gender keys are ABSENT, not undefined-valued (ADR-0122: optional PER USER)", () => {
+    // `dob`/`gender` are omitted for a staff-tier caller too when the member
+    // never set them. Absence here means "chưa cập nhật" (a legitimate state),
+    // NOT "narrowed tier" — `email`/`roles` remain the tier signal.
+    const summary = IamDirectoryMapper.toMemberSummary({
+      memberId: "u-13",
+      displayName: "Trần Văn Bình",
+      email: "binh@example.com",
+      roles: ["STUDENT"],
+    });
+
+    expect(Object.keys(summary).sort()).toEqual([
+      "displayName",
+      "email",
+      "memberId",
+      "roles",
+    ]);
+    expect("dob" in summary).toBe(false);
+    expect("gender" in summary).toBe(false);
+  });
+
+  it("narrowed tier — dob/gender are absent alongside email/roles (PII never reaches a non-staff caller)", () => {
+    const summary = IamDirectoryMapper.toMemberSummary({
+      memberId: "u-14",
+      displayName: "Lê Thị Cẩm",
+    });
+
+    expect(Object.keys(summary).sort()).toEqual(["displayName", "memberId"]);
+  });
 });
