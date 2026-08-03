@@ -1,5 +1,6 @@
 import {
   Calendar,
+  CircleHelp,
   type LucideIcon,
   TriangleAlert,
   User,
@@ -34,6 +35,16 @@ export const STATUS_REASON_BORDER: Record<StaffLeaveStatus, string> = {
   approved: "border border-edu-success/33 bg-edu-success/14",
   rejected: "border border-edu-error/33 bg-edu-error/14",
 };
+
+/**
+ * Rendered when `leaveType` is `null` — a request submitted BEFORE core US-170
+ * added the field (a legacy-data gap, not an ongoing state). Neutral icon +
+ * muted tone so it never reads as one of the four real categories.
+ */
+export const LEAVE_TYPE_UNRECORDED_META: {
+  icon: LucideIcon;
+  iconClass: string;
+} = { icon: CircleHelp, iconClass: "text-muted-foreground" };
 
 /** Leave type → icon + text color token (design-spec). */
 export const LEAVE_TYPE_META: Record<

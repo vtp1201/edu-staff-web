@@ -113,9 +113,9 @@ export function StaffLeaveScreen({
     }
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = (id: string, staffId: string) => {
     startTransition(async () => {
-      const outcome = await onApprove(id);
+      const outcome = await onApprove(id, staffId);
       applyOutcome(outcome, () => {
         setRequests((rs) =>
           rs.map((r) => (r.id === id ? { ...r, status: "approved" } : r)),
@@ -125,10 +125,10 @@ export function StaffLeaveScreen({
     });
   };
 
-  const handleConfirmReject = (id: string) => {
+  const handleConfirmReject = (id: string, staffId: string) => {
     const reason = rejectReason.trim();
     startTransition(async () => {
-      const outcome = await onReject(id, reason);
+      const outcome = await onReject(id, staffId, reason);
       applyOutcome(outcome, () => {
         setRequests((rs) =>
           rs.map((r) =>
@@ -216,13 +216,15 @@ export function StaffLeaveScreen({
                   isRejecting={rejectingId === req.id}
                   rejectReason={rejectingId === req.id ? rejectReason : ""}
                   isBusy={isPending}
-                  onApprove={() => handleApprove(req.id)}
+                  onApprove={() => handleApprove(req.id, req.staffId)}
                   onStartReject={() => {
                     setRejectingId(req.id);
                     setRejectReason("");
                   }}
                   onChangeRejectReason={setRejectReason}
-                  onConfirmReject={() => handleConfirmReject(req.id)}
+                  onConfirmReject={() =>
+                    handleConfirmReject(req.id, req.staffId)
+                  }
                   onCancelReject={() => {
                     setRejectingId(null);
                     setRejectReason("");

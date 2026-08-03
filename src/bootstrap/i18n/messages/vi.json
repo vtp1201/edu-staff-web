@@ -3726,6 +3726,8 @@
     "card": {
       "approvedBy": "Phê duyệt bởi",
       "days": "{count} ngày",
+      "leaveTypeUnrecorded": "Chưa ghi nhận loại nghỉ",
+      "noDepartment": "Chưa có phòng ban",
       "reason": "Lý do",
       "rejectedBy": "Từ chối bởi",
       "rejectionReason": "Lý do từ chối:",

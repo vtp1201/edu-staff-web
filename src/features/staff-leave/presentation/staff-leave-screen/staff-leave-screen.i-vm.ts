@@ -12,6 +12,15 @@ export interface StaffLeaveScreenVM {
   initialRequests: StaffLeaveRequestEntity[];
   /** When true the screen renders the error banner instead of the list. */
   loadFailed?: boolean;
-  onApprove: (id: string) => Promise<StaffLeaveActionOutcome>;
-  onReject: (id: string, reason: string) => Promise<StaffLeaveActionOutcome>;
+  /**
+   * `staffId` is required alongside `id`: the real approve/reject routes take
+   * a MANDATORY `staffMemberId` query param (it completes the storage key) —
+   * see `IStaffLeaveRepository` (US-E18.36).
+   */
+  onApprove: (id: string, staffId: string) => Promise<StaffLeaveActionOutcome>;
+  onReject: (
+    id: string,
+    staffId: string,
+    reason: string,
+  ) => Promise<StaffLeaveActionOutcome>;
 }

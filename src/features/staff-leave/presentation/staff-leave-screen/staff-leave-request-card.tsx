@@ -10,6 +10,7 @@ import type { StaffLeaveRequestEntity } from "@/features/staff-leave/domain/enti
 import { cn } from "@/shared/utils";
 import {
   LEAVE_TYPE_META,
+  LEAVE_TYPE_UNRECORDED_META,
   ROLE_TONE,
   STATUS_ACCENT,
   STATUS_REASON_BORDER,
@@ -80,8 +81,18 @@ export function StaffLeaveRequestCard({
   const { status } = request;
   const statusTone = STATUS_TONE[status];
   const StatusIcon = STATUS_ICON[status];
-  const leaveMeta = LEAVE_TYPE_META[request.leaveType];
+  // The two US-170 nullables have DIFFERENT causes and therefore DIFFERENT
+  // copy: `leaveType === null` is a legacy row submitted before the field
+  // existed ("chưa ghi nhận"), while `department === null` means this staff
+  // member currently holds no department assignment ("chưa có phòng ban") —
+  // a valid, ongoing state. Never collapse them into one placeholder.
+  const leaveMeta = request.leaveType
+    ? LEAVE_TYPE_META[request.leaveType]
+    : LEAVE_TYPE_UNRECORDED_META;
   const LeaveIcon = leaveMeta.icon;
+  const leaveLabel = request.leaveType
+    ? t(`leaveType.${request.leaveType}`)
+    : tCard("leaveTypeUnrecorded");
 
   const isLong = request.reason.length > REASON_TRUNCATE;
   const reasonText =
@@ -127,18 +138,33 @@ export function StaffLeaveRequestCard({
             <h3 className="text-[15px] font-extrabold text-foreground">
               {request.staffName}
             </h3>
-            <StatusBadge tone={ROLE_TONE[request.staffRole]}>
-              {t(`staffRole.${request.staffRole}`)}
-            </StatusBadge>
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-edu-text-secondary">
+            {/* Omitted rather than guessed when IAM could not resolve a role. */}
+            {request.staffRole && (
+              <StatusBadge tone={ROLE_TONE[request.staffRole]}>
+                {t(`staffRole.${request.staffRole}`)}
+              </StatusBadge>
+            )}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-xs font-semibold",
+                request.leaveType
+                  ? "text-edu-text-secondary"
+                  : "text-muted-foreground italic",
+              )}
+            >
               <LeaveIcon
                 className={cn("size-3.5", leaveMeta.iconClass)}
                 aria-hidden="true"
               />
-              {t(`leaveType.${request.leaveType}`)}
+              {leaveLabel}
             </span>
-            <span className="text-xs text-muted-foreground">
-              · {request.department}
+            <span
+              className={cn(
+                "text-xs text-muted-foreground",
+                !request.department && "italic",
+              )}
+            >
+              · {request.department ?? tCard("noDepartment")}
             </span>
           </div>
 

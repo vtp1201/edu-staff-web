@@ -226,6 +226,42 @@ export const RejectFlow: Story = {
   },
 };
 
+/**
+ * US-E18.36 — the two core-US-170 nullables render DIFFERENT placeholders,
+ * because their null reasons differ: `leaveType === null` is a legacy row
+ * submitted before the field existed, `department === null` is an ongoing
+ * "no active department assignment" state. An unresolvable IAM role omits the
+ * role badge rather than guessing one.
+ */
+export const NullableFields: Story = {
+  args: {
+    ...baseArgs,
+    initialRequests: [
+      {
+        ...REQUESTS[0],
+        id: "sl-009",
+        staffName: "Vũ Thị Lan",
+        initials: "LV",
+        staffRole: null,
+        department: null,
+        leaveType: null,
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const unrecorded = canvas.getByText("Chưa ghi nhận loại nghỉ");
+    const noDept = canvas.getByText("· Chưa có phòng ban");
+    await expect(unrecorded).toBeInTheDocument();
+    await expect(noDept).toBeInTheDocument();
+    // The two placeholders must NOT be the same copy.
+    await expect(unrecorded.textContent).not.toBe(noDept.textContent);
+    // No role badge is invented for an unresolved directory role.
+    await expect(canvas.queryByText("Giáo viên")).not.toBeInTheDocument();
+    await expect(canvas.queryByText("Nhân viên")).not.toBeInTheDocument();
+  },
+};
+
 /** AC-7 — error banner with a retry button when the load failed. */
 export const ErrorState: Story = {
   args: { ...baseArgs, initialRequests: [], loadFailed: true },

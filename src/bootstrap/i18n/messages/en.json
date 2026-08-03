@@ -3726,6 +3726,8 @@
     "card": {
       "approvedBy": "Approved by",
       "days": "{count} days",
+      "leaveTypeUnrecorded": "Leave type not recorded",
+      "noDepartment": "No department",
       "reason": "Reason",
       "rejectedBy": "Rejected by",
       "rejectionReason": "Rejection reason:",
