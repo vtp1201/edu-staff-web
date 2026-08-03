@@ -37,44 +37,24 @@ buffer/timeout sớm với long-lived connection).
 
 ### P1 — đang chặn nguyên màn hình force-mock
 
-1. **#39 — Thêm `MANAGER` vào RBAC `list_classes`** *(nhỏ nhất, làm trước)*
-   - File: `services/core/internal/class/core/application/usecase/list_classes.go`
-     — branch `isAdmin → ListByYear` / `isTeacher → listForTeacher` / else →
-     `ErrClassForbidden`. `MANAGER` rơi vào else → 403.
-   - Ask: `MANAGER` được `ListByYear` (tenant-wide), khớp intent MANAGER đã có
-     trên grades / per-class reports / teaching-plans.
-   - Chặn: màn **Principal Classes** (US-E13.8) — principal thật ăn 403.
+1. **#39 — RESOLVED (BE US-164, FE US-E18.30, 2026-08-03).** `MANAGER` đã có
+   nhánh `ListByYear` trong `list_classes.go`; màn Principal Classes đã wire
+   real (kèm tiêu thụ enrichment US-173, xem #8).
 
-2. **#40(a) — Feed author identity trên `Post`/`Comment`**
-   - Hiện trạng: `Post`/`Comment` chỉ có `authorUserId`
-     (`services/social/docs/openapi.yaml:165` tự ghi "no author display-name
-     join"). US-144 directory KHÔNG dùng được cho feed: role-gate
-     ADMIN/MANAGER/TEACHER → STUDENT/PARENT đọc feed bị 403; profile endpoint
-     (US-127) visibility-gate theo shared-room → 404 không đoán được với
-     SCHOOL-scope post.
-   - Ask (chọn 1): (a) denormalize `authorName`/`authorRole`/`avatarUrl` lên
-     `Post`/`Comment` lúc write; hoặc (b) relax profile-visibility cho
-     feed-context read (ai đọc được post thì đọc được basic profile của author).
-   - Chặn: **toàn bộ màn feed** (mọi row một author khác nhau, không có
-     fallback nào chấp nhận được).
+2. **#40(a) — RESOLVED (BE US-165, FE US-E18.31, 2026-08-03).** BE chọn
+   option (a): denormalize `authorName`/`authorRole` lên `Post`/`Comment` lúc
+   write (`avatarUrl` reserved, luôn `null`). FE wire feed reads real; writes
+   còn honest-degrade (gap khác của feed, không thuộc ask này) — ADR 0067.
 
-3. **#40(b) — Moderation queue: filter/stats/detail + COMMENT target**
-   - Hiện trạng: `GET /reports` chỉ là inbox PENDING trần (không
-     `status`/`contentType`/`search` filter, không stats); không có
-     `GET /reports/{reportId}` detail; `SubmitReportRequest.targetType` chỉ
-     `MESSAGE`/`POST` (không `COMMENT`, cũng không có comment moderate-delete).
-   - Ask: thêm filter params + stats (endpoint hoặc field) +
-     `GET /reports/{reportId}` + `COMMENT` targetType kèm route
-     moderate-delete tương ứng.
-   - Chặn: màn moderation queue (tab resolved/all, search, stat row, detail
-     sheet, report comment).
+3. **#40(b) — RESOLVED (BE US-172, FE US-E18.32, 2026-08-03).** Đã ship:
+   filter `status`/`contentType`/`search` trên `GET /reports`,
+   `GET /reports/stats`, `GET /reports/{reportId}` detail, targetType
+   +`COMMENT`. FE wire 4/5 gap (ADR 0068); doc-drift #40(iii) ở P3 vẫn treo.
 
-4. **#20 (phần còn lại) — tên học sinh cho PARENT child-switcher**
-   - US-148 đã thêm `classId`/`className` vào `linked-students` nhưng vẫn
-     KHÔNG có `studentName`; PARENT không gọi được batch lookup US-144 (403).
-   - Ask (chọn 1): denormalize `studentName` lên `LinkedStudentsResponse`;
-     hoặc cho PARENT batch-lookup đúng các id đã linked của mình.
-   - Chặn: parent child-switcher ở grades + timetable (hiện mock).
+4. **#20 — RESOLVED (BE US-167, FE US-E18.33, 2026-08-03).** BE chọn hướng
+   tiered batch lookup: PARENT/STUDENT gọi được `GET /members?ids=` nhận
+   `memberId`+`displayName` (field khác ABSENT = tier signal, ADR-0120).
+   Child-switcher ở grades/timetable/children-overview đã hiển thị tên thật.
 
 5. **#9 — PARTIALLY RESOLVED (US-E18.35, 2026-08-03).** Option (b) đã ship:
      BE US-169 thêm `dob`+`gender` vào `MemberBatchItem` (staff-tier, ADR-0122
@@ -89,9 +69,9 @@ buffer/timeout sớm với long-lived connection).
 
 ### P2 — field/endpoint bổ sung (mở khóa từng phần UI)
 
-6. **#8** — `ClassResponse` thêm `studentCount` + `homeroomTeacherId`/
-   `homeroomTeacherName` — hiện web phải fan-out 2×N round-trip mỗi trang
-   danh sách lớp.
+6. **#8 — RESOLVED (BE US-173, FE US-E18.30, 2026-08-03).** `ClassResponse`
+   đã có `studentCount` + `homeroomTeacherId`/`homeroomTeacherName` (list +
+   get); FE đã bỏ 5 chỗ fan-out 2×N.
 7. **#21 (phần còn lại)** — `sealed-students` listing + seal/unseal
    `audit-trail` (US-150 mới ship list + seal-status).
 8. **#18** — rollup tenant-wide "grade entries pending approval" — admin
