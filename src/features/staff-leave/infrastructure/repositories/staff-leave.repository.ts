@@ -36,8 +36,20 @@ import {
  * this repository never calls) + `pkg/kit/response/error.go`'s `codeFromKey`
  * uppercasing — confirms decision `0008` UPPER_SNAKE holds for `core` (same as
  * US-E18.1/.2/.6/.7). Branch on error.code, never on message.
+ *
+ * `callSite` is REQUIRED because core reuses two codes across endpoints with
+ * unrelated meanings (`ERROR_CODES.md` US-075 + US-149 tables):
+ * `LEAVE_REQUEST_INVALID_INPUT` is "rejection reason empty" (422) on reject but
+ * "the `cursor` is not a token this branch issued" (400) on the list — mapping
+ * it unconditionally to `reason-too-short` would put rejection-reason copy on a
+ * paging failure (US-E18.36 review).
  */
-export function toFailure(err: unknown): StaffLeaveFailure {
+export type StaffLeaveCallSite = "list" | "approve" | "reject";
+
+export function toFailure(
+  err: unknown,
+  callSite: StaffLeaveCallSite,
+): StaffLeaveFailure {
   const code = errorCodeOf(err);
   const status = statusOf(err);
 
@@ -60,7 +72,15 @@ export function toFailure(err: unknown): StaffLeaveFailure {
     return { type: "missing-reject-reason" };
   }
   if (code === "LEAVE_REQUEST_INVALID_INPUT") {
-    return { type: "reason-too-short" };
+    // Only the reject path has a rejection reason to be too short.
+    return callSite === "reject"
+      ? { type: "reason-too-short" }
+      : { type: "invalid-request" };
+  }
+  if (code === "VIOLATION_INVALID_STATE") {
+    // 400 — a bad `status` query param (list) or core's domain backstop on an
+    // unrecognised stored state. Never retryable, so never `network-error`.
+    return { type: "invalid-request" };
   }
   return { type: "network-error" };
 }
@@ -129,7 +149,16 @@ export class StaffLeaveRepository implements IStaffLeaveRepository {
     return out;
   }
 
-  /** Fully page one `state` slice of the tenant-wide list (newest first). */
+  /**
+   * Fully page one `state` slice of the tenant-wide list (newest first).
+   *
+   * ⚠️ KNOWN SCALING CONCERN (US-E18.36 review, accepted for this story): this
+   * drains EVERY page of the slice with no `limit` and no page cap, so an admin
+   * page load walks the tenant's entire APPROVED + REJECTED history. It is the
+   * only shape the screen supports today (no server-side paging UI — it slices
+   * client-side), and it matches ~10 sibling full-drain reads repo-wide, so it
+   * is not a new sin. Revisit together with server-side paging on this screen.
+   */
   private async fetchState(
     state: StaffLeaveStateDto,
   ): Promise<StaffLeaveResponseDto[]> {
@@ -165,7 +194,9 @@ export class StaffLeaveRepository implements IStaffLeaveRepository {
       const dtos = slices
         .flat()
         // Each slice is newest-first on its own; the merge needs one order.
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        // Compared as instants, not strings — a lexicographic compare would
+        // order an offset form (`+07:00`) wrong against a `Z` one.
+        .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 
       const ids = dtos.flatMap((dto) =>
         dto.approverMemberId
@@ -179,7 +210,7 @@ export class StaffLeaveRepository implements IStaffLeaveRepository {
         value: dtos.map((dto) => StaffLeaveMapper.toEntity(dto, members)),
       };
     } catch (err) {
-      return { ok: false, error: toFailure(err) };
+      return { ok: false, error: toFailure(err, "list") };
     }
   }
 
@@ -192,7 +223,7 @@ export class StaffLeaveRepository implements IStaffLeaveRepository {
       });
       return { ok: true };
     } catch (err) {
-      return { ok: false, error: toFailure(err) };
+      return { ok: false, error: toFailure(err, "approve") };
     }
   }
 
@@ -210,7 +241,7 @@ export class StaffLeaveRepository implements IStaffLeaveRepository {
       );
       return { ok: true };
     } catch (err) {
-      return { ok: false, error: toFailure(err) };
+      return { ok: false, error: toFailure(err, "reject") };
     }
   }
 }

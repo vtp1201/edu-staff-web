@@ -67,55 +67,96 @@ const resolverOf = (rows: MemberSummary[]) =>
 
 describe("toFailure — ground-truthed core error matrix (US-E18.8)", () => {
   it("maps NETWORK_ERROR → network-error", () => {
-    expect(toFailure(apiError("NETWORK_ERROR", 0)).type).toBe("network-error");
-  });
-
-  it("maps LEAVE_REQUEST_NOT_FOUND (404) → not-found", () => {
-    expect(toFailure(apiError("LEAVE_REQUEST_NOT_FOUND", 404)).type).toBe(
-      "not-found",
+    expect(toFailure(apiError("NETWORK_ERROR", 0), "list").type).toBe(
+      "network-error",
     );
   });
 
+  it("maps LEAVE_REQUEST_NOT_FOUND (404) → not-found", () => {
+    expect(
+      toFailure(apiError("LEAVE_REQUEST_NOT_FOUND", 404), "approve").type,
+    ).toBe("not-found");
+  });
+
   it("maps VIOLATION_FORBIDDEN (403, real code for list/approve/reject) → forbidden", () => {
-    expect(toFailure(apiError("VIOLATION_FORBIDDEN", 403)).type).toBe(
+    expect(toFailure(apiError("VIOLATION_FORBIDDEN", 403), "list").type).toBe(
       "forbidden",
     );
   });
 
   it("also maps LEAVE_REQUEST_FORBIDDEN (403, submit-only path this repo never calls) → forbidden", () => {
-    expect(toFailure(apiError("LEAVE_REQUEST_FORBIDDEN", 403)).type).toBe(
-      "forbidden",
-    );
+    expect(
+      toFailure(apiError("LEAVE_REQUEST_FORBIDDEN", 403), "approve").type,
+    ).toBe("forbidden");
   });
 
   it("maps VIOLATION_SAME_ACTOR (409, ADR 0073 distinct-actor rule) → same-actor", () => {
-    expect(toFailure(apiError("VIOLATION_SAME_ACTOR", 409)).type).toBe(
-      "same-actor",
-    );
+    expect(
+      toFailure(apiError("VIOLATION_SAME_ACTOR", 409), "approve").type,
+    ).toBe("same-actor");
   });
 
   it("maps VIOLATION_INVALID_TRANSITION (409) → already-processed", () => {
-    expect(toFailure(apiError("VIOLATION_INVALID_TRANSITION", 409)).type).toBe(
-      "already-processed",
-    );
+    expect(
+      toFailure(apiError("VIOLATION_INVALID_TRANSITION", 409), "approve").type,
+    ).toBe("already-processed");
   });
 
   it("maps VIOLATION_REJECTION_REASON_REQUIRED (422) → missing-reject-reason", () => {
     expect(
-      toFailure(apiError("VIOLATION_REJECTION_REASON_REQUIRED", 422)).type,
+      toFailure(apiError("VIOLATION_REJECTION_REASON_REQUIRED", 422), "reject")
+        .type,
     ).toBe("missing-reject-reason");
   });
 
-  it("maps LEAVE_REQUEST_INVALID_INPUT (422) → reason-too-short", () => {
-    expect(toFailure(apiError("LEAVE_REQUEST_INVALID_INPUT", 422)).type).toBe(
-      "reason-too-short",
-    );
-  });
-
   it("falls back to network-error for an unrecognised code", () => {
-    expect(toFailure(apiError("SOMETHING_UNKNOWN", 500)).type).toBe(
+    expect(toFailure(apiError("SOMETHING_UNKNOWN", 500), "list").type).toBe(
       "network-error",
     );
+  });
+});
+
+/**
+ * `LEAVE_REQUEST_INVALID_INPUT` is emitted by TWO different endpoints with two
+ * unrelated meanings (core `ERROR_CODES.md`, US-075 + US-149 tables):
+ *   • reject (422) — `reason` empty / `leaveType` unrecognised on the domain path
+ *   • list   (400) — the `cursor` query param is not a token this branch issued
+ * A single unconditional mapping would show "Lý do từ chối phải có ít nhất 10
+ * ký tự" on a paging failure. Hence the call-site discriminator.
+ */
+describe("toFailure — call-site scoping of the ambiguous 400/422 codes", () => {
+  it("maps LEAVE_REQUEST_INVALID_INPUT (422) → reason-too-short ONLY on reject", () => {
+    expect(
+      toFailure(apiError("LEAVE_REQUEST_INVALID_INPUT", 422), "reject").type,
+    ).toBe("reason-too-short");
+  });
+
+  it("maps the SAME code on the list path (400 bad cursor) → invalid-request, never reason-too-short", () => {
+    const failure = toFailure(
+      apiError("LEAVE_REQUEST_INVALID_INPUT", 400),
+      "list",
+    );
+    expect(failure.type).toBe("invalid-request");
+    expect(failure.type).not.toBe("reason-too-short");
+  });
+
+  it("maps the same code on approve (no rejection reason exists there) → invalid-request", () => {
+    expect(
+      toFailure(apiError("LEAVE_REQUEST_INVALID_INPUT", 422), "approve").type,
+    ).toBe("invalid-request");
+  });
+
+  it.each([
+    "list",
+    "approve",
+    "reject",
+  ] as const)("maps VIOLATION_INVALID_STATE (400) → invalid-request on %s (NOT the retryable network-error bucket)", (callSite) => {
+    const failure = toFailure(
+      apiError("VIOLATION_INVALID_STATE", 400),
+      callSite,
+    );
+    expect(failure.type).toBe("invalid-request");
+    expect(failure.type).not.toBe("network-error");
   });
 });
 
@@ -273,6 +314,18 @@ describe("StaffLeaveRepository.listRequests — tenant-wide fan-out (US-149)", (
     expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
   });
 
+  it("maps a bad-cursor 400 to invalid-request, not to the reject-only reason copy", async () => {
+    const get = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_INVALID_INPUT", 400));
+    const repo = new StaffLeaveRepository(makeHttp(get));
+
+    expect(await repo.listRequests()).toEqual({
+      ok: false,
+      error: { type: "invalid-request" },
+    });
+  });
+
   it("skips the IAM lookup entirely when the list is empty", async () => {
     const get = vi.fn().mockResolvedValue(envelope([]));
     const resolve = resolverOf([]);
@@ -322,6 +375,30 @@ describe("StaffLeaveRepository — approve / reject (by-id routes)", () => {
     expect(await repo.approve("req-1", "mem-1")).toEqual({
       ok: false,
       error: { type: "same-actor" },
+    });
+  });
+
+  it("maps an empty-reason 422 on reject to reason-too-short (the reject-scoped meaning)", async () => {
+    const post = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_INVALID_INPUT", 422));
+    const repo = new StaffLeaveRepository(makeHttp(vi.fn(), post));
+
+    expect(await repo.reject("req-1", "mem-1", "x")).toEqual({
+      ok: false,
+      error: { type: "reason-too-short" },
+    });
+  });
+
+  it("maps the domain-backstop VIOLATION_INVALID_STATE on approve to a non-retryable invalid-request", async () => {
+    const post = vi
+      .fn()
+      .mockRejectedValue(apiError("VIOLATION_INVALID_STATE", 400));
+    const repo = new StaffLeaveRepository(makeHttp(vi.fn(), post));
+
+    expect(await repo.approve("req-1", "mem-1")).toEqual({
+      ok: false,
+      error: { type: "invalid-request" },
     });
   });
 
