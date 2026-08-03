@@ -312,12 +312,18 @@ describe("NotificationRepository.listNotifications (US-E18.37 server-side unread
   });
 
   it("does not filter rows client-side — the server page IS the result", async () => {
+    // Deliberately includes a `read: true` row: if a client-side
+    // `!dto.read` filter were ever re-added to the unread path, this row
+    // would be silently dropped and this assertion would fail. The server
+    // is trusted to have already applied `read=false` — the client must
+    // pass every row in the page through verbatim.
     const get = vi
       .fn()
       .mockResolvedValue(
         makeEnvelope(
           [
             makeDto({ id: "u1", read: false }),
+            makeDto({ id: "r1", read: true }),
             makeDto({ id: "u2", read: false }),
           ],
           null,
@@ -326,7 +332,7 @@ describe("NotificationRepository.listNotifications (US-E18.37 server-side unread
       );
     const repo = new NotificationRepository(makeHttp({ get }));
     const result = await repo.listNotifications({ filter: "unread" });
-    expect(result.items.map((i) => i.id)).toEqual(["u1", "u2"]);
+    expect(result.items.map((i) => i.id)).toEqual(["u1", "r1", "u2"]);
   });
 
   it("maps HTTP errors on the unread path to a failure", async () => {
