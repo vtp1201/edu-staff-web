@@ -179,6 +179,17 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
     `GET /members/{memberId}/attendance` cho PARENT đã liên kết hợp lệ, 403
     `ATTENDANCE_FORBIDDEN` cho parent chưa/không liên kết. Đề nghị BE cập nhật
     lại prose openapi cho khớp code (không cần đổi code).
+24. **#46 — `ListStudentsInClassUseCase.authorize()` thiếu nhánh MANAGER**
+    (phát hiện khi wire US-E18.35, admin roster → `getClassRoster` real).
+    `services/core/internal/class/core/application/usecase/list_students_in_class.go`
+    chỉ cho `isAdmin` (SUPER_ADMIN/ADMIN) hoặc TEACHER được assign vào lớp —
+    không có MANAGER. Principal (web appRole từ MANAGER) hiện 403 trên MỌI
+    lớp khi vào `/principal/students`, dù `list_classes.go` (danh sách lớp)
+    ĐÃ có nhánh MANAGER từ US-164. Cùng lớp gap với ask #39/#43 (MANAGER
+    thiếu quyền đọc trên một use case cụ thể, dù đã có ở use case liền kề).
+    FE xử lý honest degrade (403 → `forbidden`, không retry, ẩn hết control
+    mutation) — không chặn, nhưng cần BE thêm MANAGER vào `authorize()` để
+    principal thực sự xem được roster.
 
 ### Observation cho BE (không chặn)
 
