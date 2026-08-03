@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { RosterStudent } from "@/features/admin-roster/domain/entities/roster-student.entity";
 import { cn } from "@/shared/utils";
 import { GenderBadge } from "./gender-badge";
-import { MissingValue } from "./missing-value";
 import { RosterPagination } from "./roster-pagination";
 
 const PAGE_SIZE = 10;
@@ -55,6 +55,9 @@ export function RosterTable(props: RosterTableProps) {
   // narrows the union and the handlers are known-present in the mutating branch.
   const { roster, disabled = false } = props;
   const t = useTranslations("adminRoster");
+  // One translated placeholder for every absent cell (code / dob / gender):
+  // the SAME sentence must be announced wherever a field was not recorded.
+  const notProvided = t("table.notProvided");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
@@ -302,16 +305,16 @@ export function RosterTable(props: RosterTableProps) {
                       {/* Student CODE, not the member id: no core/IAM contract
                           carries one, so the real roster shows a placeholder
                           rather than a uuid under a "Mã học sinh" header. */}
-                      {s.code ?? <MissingValue />}
+                      {s.code ?? <AbsentValue label={notProvided} />}
                     </td>
                     <td className="px-4 py-3 align-middle text-edu-text-secondary text-xs tabular-nums">
-                      {s.dob ?? <MissingValue />}
+                      {s.dob ?? <AbsentValue label={notProvided} />}
                     </td>
                     <td className="px-4 py-3 text-center align-middle">
                       {s.gender ? (
                         <GenderBadge gender={s.gender} />
                       ) : (
-                        <MissingValue />
+                        <AbsentValue label={notProvided} />
                       )}
                     </td>
                     <td className="px-4 py-3 align-middle">

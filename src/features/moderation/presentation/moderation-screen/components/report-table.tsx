@@ -2,6 +2,7 @@
 
 import { ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatusBadge } from "@/components/shared/status-badge/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,6 @@ import {
 } from "../../../domain/entities/report.entity";
 import { formatReportRow } from "./format-report-row";
 import { ReportStatusBadge } from "./report-status-badge";
-import { UnavailableValue } from "./unavailable-value";
 
 export interface ReportTableProps {
   reports: ReportEntity[];
@@ -36,6 +36,7 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
   const t = useTranslations("moderation.table");
   const tReason = useTranslations("moderation.reportDialog.reasons");
   const tKind = useTranslations("moderation.kinds");
+  const tRoot = useTranslations("moderation");
 
   return (
     <div className="hidden overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card md:block">
@@ -74,7 +75,9 @@ export function ReportTable({ reports, onOpen }: ReportTableProps) {
                   <StatusBadge tone="muted">{tReason(row.reason)}</StatusBadge>
                 </TableCell>
                 <TableCell className="text-sm">
-                  {row.reporterName ?? <UnavailableValue />}
+                  {row.reporterName ?? (
+                    <AbsentValue label={tRoot("unavailable")} />
+                  )}
                 </TableCell>
                 <TableCell>
                   <ReportStatusBadge status={row.status} />

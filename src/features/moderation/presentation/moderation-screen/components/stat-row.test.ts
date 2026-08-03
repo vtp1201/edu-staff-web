@@ -5,7 +5,7 @@ import { statRowMode } from "./stat-row";
  * A terminally-failed stats read must NOT keep rendering the loading skeleton
  * (review MUST-FIX, US-E18.32): once the query settles in error, `isLoading` is
  * false and `data` stays undefined forever, so "still loading" would be a lie.
- * Same principle as `UnavailableValue` / `initialStats: null` — missing data is
+ * Same principle as `AbsentValue` / `initialStats: null` — missing data is
  * never disguised as something else.
  */
 describe("statRowMode", () => {

@@ -2,10 +2,10 @@
 
 import { CheckCircle2, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatCard } from "@/components/shared/stat-card/stat-card";
 import { StatCardSkeleton } from "@/components/shared/stat-card-skeleton";
 import type { ModerationStatsEntity } from "../../../domain/entities/moderation-stats.entity";
-import { UnavailableValue } from "./unavailable-value";
 
 export type StatRowMode = "loading" | "unavailable" | "ready";
 
@@ -17,7 +17,7 @@ export type StatRowMode = "loading" | "unavailable" | "ready";
  * and a transient error eventually exhausts its retry budget — `isLoading` goes
  * false while `data` stays `undefined` forever. Keeping the skeleton there
  * would read as "still loading" when the truth is "this failed", the same lie
- * `UnavailableValue` / `initialStats: null` (never zeros) exist to prevent.
+ * `AbsentValue` / `initialStats: null` (never zeros) exist to prevent.
  */
 export function statRowMode({
   hasStats,
@@ -54,6 +54,7 @@ export function StatRow({
   hasError: boolean;
 }) {
   const t = useTranslations("moderation.stats");
+  const tRoot = useTranslations("moderation");
   const mode = statRowMode({ hasStats: stats !== null, isLoading, hasError });
 
   if (mode === "loading") {
@@ -69,13 +70,25 @@ export function StatRow({
     <div className="grid gap-4 sm:grid-cols-2">
       <StatCard
         label={t("pending")}
-        value={stats ? String(stats.pendingCount) : <UnavailableValue />}
+        value={
+          stats ? (
+            String(stats.pendingCount)
+          ) : (
+            <AbsentValue label={tRoot("unavailable")} />
+          )
+        }
         icon={Clock}
         tone="warning"
       />
       <StatCard
         label={t("resolved")}
-        value={stats ? String(stats.resolvedCount) : <UnavailableValue />}
+        value={
+          stats ? (
+            String(stats.resolvedCount)
+          ) : (
+            <AbsentValue label={tRoot("unavailable")} />
+          )
+        }
         icon={CheckCircle2}
         tone="success"
       />

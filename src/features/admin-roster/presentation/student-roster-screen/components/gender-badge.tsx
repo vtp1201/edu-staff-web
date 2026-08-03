@@ -18,7 +18,7 @@ const TONE: Record<GenderBadgeProps["gender"], string> = {
 
 /** Circular 22×22 gender indicator. Token classes per decision 0028.
  *  Conveys gender by text initial + aria-label, not color alone (a11y).
- *  A student with NO recorded gender renders `MissingValue` instead — this
+ *  A student with NO recorded gender renders `AbsentValue` instead — this
  *  component is never asked to represent absence. */
 export function GenderBadge({ gender }: GenderBadgeProps) {
   const t = useTranslations("adminRoster");
