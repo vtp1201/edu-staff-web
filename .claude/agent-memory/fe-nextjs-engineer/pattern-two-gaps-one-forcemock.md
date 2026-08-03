@@ -61,7 +61,25 @@ part as "real" would be a lie.
    UTC+7. Regex the `yyyy-mm-dd` prefix; an unparseable value returns `undefined`
    so presentation shows its placeholder instead of `NaN/NaN/NaN`.
 
-8. **The Storybook suite flakes across files.** A `principal-classes-screen`
+8. **Un-mocking makes an `ok ? data : []` fallback newly REACHABLE.** Every
+   `result.ok ? result.data : []` written while a method was force-mocked is a
+   latent false-empty: the empty state renders while the mutation affordances
+   stay live, and the VM has no error field to say otherwise. When you flip a
+   method to real, grep the RSC pages for that idiom and thread a
+   `fetchError: <Failure>["type"] | null` (mirror the sibling screen that already
+   does it). Suppress the whole data region — table AND action panel — not just
+   the table: acting on data you could not read is the actual hazard.
+
+9. **A cross-repo RBAC grant is scoped to ONE use case; never generalise it.**
+   Core's MANAGER read grant lives in `list_classes.go` and says so in its own
+   comment; `list_students_in_class.go` `authorize()` is `isAdmin || assigned
+   TEACHER` only. Since web's `principal` appRole maps from BOTH ADMIN and
+   MANAGER, "the class list works for this role" does NOT imply the roster does.
+   Read the specific use-case's `authorize()` before writing any comment
+   asserting a role is allowed — and lock the resulting 403 degrade with a page
+   test, otherwise it only holds incidentally.
+
+10. **The Storybook suite flakes across files.** A `principal-classes-screen`
    Select story failed in the full run and passed both in isolation and on a
    clean full re-run. Re-run before believing you regressed an unrelated story
    (portal/pointer-events bleed, see `pattern-feed-and-storybook-portal-bleed`).
