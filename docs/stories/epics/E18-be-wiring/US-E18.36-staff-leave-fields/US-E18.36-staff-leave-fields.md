@@ -92,9 +92,10 @@ two semantically different null-reasons).
 | Layer | Expected proof | Actual |
 | --- | --- | --- |
 | Unit | mapper test (both fields present + null cases) | `staff-leave.mapper.test.ts` — 16 tests; each null asserted INDEPENDENTLY (the other field stays populated), absent-key ≡ explicit null, unknown enum → null |
-| Integration | repository test against the real DTO shape | `staff-leave.repository.test.ts` — 22 tests: 3-state fan-out by call COUNT + `staffMemberId` absent from every list call, cursor paging, newest-first merge, ONE batch IAM call for staff+approver, IAM failure degrades to raw ids, approve/reject param+body shape, error matrix |
+| Integration | repository test against the real DTO shape | `staff-leave.repository.test.ts` — 31 tests: 3-state fan-out by call COUNT + `staffMemberId` absent from every list call, cursor paging, newest-first merge, ONE batch IAM call for staff+approver, IAM failure degrades to raw ids, approve/reject param+body shape, error matrix **+ call-site-scoped mapping of the two ambiguous codes (review round)** |
+| Action | `requireRole` gate on both mutations | `admin/staff-leave/actions.test.ts` — 7 tests: each action short-circuits on a rejected guard with ZERO DI-factory and ZERO use-case calls, unauthenticated handled identically, `["admin"]` asked for on both, plus outcome/errorKey threading |
 | DI | env matrix for the un-mock | `staff-leave.di.test.ts` — 6 tests: `true`→Mock, `false`/unset→Real, `ensureFreshSession` before the client, no http client in mock mode, mock seed carries exactly one both-nulls row |
-| E2E | Storybook: populated + null-placeholder stories | `NullableFields` story asserts BOTH placeholder strings are present AND `not.toBe` each other, and that no role badge is invented |
+| E2E | Storybook: populated + null-placeholder stories | `NullableFields` story asserts BOTH placeholder strings are present, that each resolves to its OWN message text (separator stripped, so the comparison is on real copy — review round), that they differ, that neither leaks into the other's slot, and that no role badge is invented |
 | Platform | `bun build` clean both modes | green with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) and with `NEXT_PUBLIC_USE_MOCK=true` |
 | Release | a11y spot-check placeholder contrast | placeholders use `text-muted-foreground` (5.48:1, ADR 0049-safe); null state is conveyed by TEXT, not colour; role badge omitted rather than mislabelled |
 
@@ -153,7 +154,67 @@ now `USE_MOCK ? Mock : Real` and BOTH the read and the write side are real.
 | `department` | staff member holds no ACTIVE department-scoped assignment — a valid, ONGOING state | `staffLeave.card.noDepartment` = "Chưa có phòng ban" | "No department" |
 
 Enforced by the `NullableFields` Storybook story, which asserts both strings
-are present and `expect(a).not.toBe(b)`.
+are present, each equals its OWN resolved message text (the `· ` separator is
+stripped first, so the inequality cannot be satisfied by the prefix alone) and
+neither placeholder leaks into the other's slot.
+
+### Review round 1 — fixes applied (fe-tech-lead-reviewer, Revision Required)
+
+**MUST-FIX (security, ADR 0063).** `approveStaffLeaveAction` /
+`rejectStaffLeaveAction` had NO `requireRole` guard. Dormant while the feature
+was mocked; live the moment this story made the writes real — a Server Action
+is an independently-invocable POST endpoint and the `(app)/admin/layout.tsx`
+RSC guard does not cover it. Both now open with the sibling pattern from
+`admin/invitations/actions.ts`:
+
+```ts
+const guard = await requireRole(["admin"]);
+if (!guard.ok) return { ok: false, errorKey: "forbidden" };
+```
+
+`forbidden` was already a `StaffLeaveFailure` member with vi+en copy — no new
+i18n key. New `actions.test.ts` proves the short-circuit per action by
+asserting ZERO calls to BOTH the DI factory and the use-case `execute`.
+(Core independently re-authorizes with `403 VIOLATION_FORBIDDEN`, so this is
+defense-in-depth, not a closed privilege-escalation hole.)
+
+**SHOULD-FIX 1 — `LEAVE_REQUEST_INVALID_INPUT` is endpoint-ambiguous.** Core
+emits it as "rejection reason empty" (422, reject) AND as "the `cursor` is not
+a token this branch issued" (400, list — `ERROR_CODES.md` US-149 table). The
+unconditional `→ reason-too-short` mapping would have printed "Lý do từ chối
+phải có ít nhất 10 ký tự" on a paging failure. `toFailure` now takes a REQUIRED
+`callSite: "list" | "approve" | "reject"` discriminator (passed by each of the
+three catch blocks); only `reject` maps to `reason-too-short`.
+
+**SHOULD-FIX 2 — `VIOLATION_INVALID_STATE` (400) fell through to
+`network-error`,** whose copy offers a retry that can never succeed (bad
+`status` param on the list branch, or core's domain backstop on an
+unrecognised stored state). It now has an explicit branch. Both it and the
+non-reject `LEAVE_REQUEST_INVALID_INPUT` map to a NEW non-retryable
+`StaffLeaveFailure` member `invalid-request` (`staffLeave.errors.invalid-request`
+added to vi+en: "Yêu cầu không hợp lệ. Vui lòng tải lại trang." / "Invalid
+request. Please reload the page."). No existing member fit: `already-processed`
+is the 409 transition case and the retry-offering `network-error` is exactly
+what had to be avoided.
+
+**[CONSIDER] items.** (a) The unbounded full-history drain in `fetchState` is
+now documented in-code as a known scaling concern (no `limit`/page cap; the
+screen has no server-side paging UI; matches ~10 sibling reads) — flagged, not
+fixed, per the review. (b) The merge sort switched from
+`b.createdAt.localeCompare(a.createdAt)` to `Date.parse(b) - Date.parse(a)`, so
+an offset timestamp (`+07:00`) can no longer sort wrong against a `Z` one.
+(c) The `NullableFields` assertion was strengthened as described above.
+
+#### Review-round proof commands
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **477 files / 3549 tests passed** (from 476/3534 — +1 file, +15 tests, zero regressions) |
+| `bunx vitest run --config vitest.storybook.mts` | 158 files / 1206 tests passed |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun lint:fix` | clean (1 file reformatted; 1 pre-existing unrelated warning) |
+| `bun run build` with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) | success |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | success (exit 0) |
 
 ### Ask #41 → RESOLVED
 

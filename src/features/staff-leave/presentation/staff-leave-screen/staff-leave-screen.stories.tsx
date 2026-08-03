@@ -254,8 +254,17 @@ export const NullableFields: Story = {
     const noDept = canvas.getByText("· Chưa có phòng ban");
     await expect(unrecorded).toBeInTheDocument();
     await expect(noDept).toBeInTheDocument();
-    // The two placeholders must NOT be the same copy.
-    await expect(unrecorded.textContent).not.toBe(noDept.textContent);
+    // The two placeholders must NOT be the same copy — compared on the
+    // RESOLVED message text, with the `· ` separator stripped, so the
+    // assertion cannot be satisfied by the prefix alone.
+    const deptCopy = (noDept.textContent ?? "").replace(/^·\s*/, "").trim();
+    const leaveTypeCopy = (unrecorded.textContent ?? "").trim();
+    await expect(deptCopy).toBe("Chưa có phòng ban");
+    await expect(leaveTypeCopy).toBe("Chưa ghi nhận loại nghỉ");
+    await expect(leaveTypeCopy).not.toBe(deptCopy);
+    // Neither placeholder may leak into the other's slot.
+    await expect(noDept.textContent).not.toContain(leaveTypeCopy);
+    await expect(unrecorded.textContent).not.toContain(deptCopy);
     // No role badge is invented for an unresolved directory role.
     await expect(canvas.queryByText("Giáo viên")).not.toBeInTheDocument();
     await expect(canvas.queryByText("Nhân viên")).not.toBeInTheDocument();
