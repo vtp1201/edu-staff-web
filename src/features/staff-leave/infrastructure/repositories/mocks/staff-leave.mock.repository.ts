@@ -180,6 +180,31 @@ function seed(): StaffLeaveRequestEntity[] {
         "Trùng lịch hội nghị giáo viên toàn trường (03/05). Vui lòng dời sang tuần sau.",
     },
     {
+      // Exercises BOTH US-170 nulls at once, for DIFFERENT reasons: this staff
+      // member holds no active department-scoped assignment (ongoing state),
+      // and the request predates the `leaveType` migration (legacy gap). The
+      // card must render two DIFFERENT placeholders here.
+      id: "sl-009",
+      staffId: "u-009",
+      staffName: "Vũ Thị Lan",
+      initials: "LV",
+      avatarTone: "var(--edu-info)",
+      staffRole: "staff",
+      department: null,
+      leaveType: null,
+      startDate: "08/05/2026",
+      endDate: "08/05/2026",
+      days: 1,
+      reason: "Việc gia đình đột xuất — đã bàn giao công việc trong ngày.",
+      status: "pending",
+      submittedAt: "23/04/2026 15:20",
+      approvedBy: null,
+      approvedAt: null,
+      rejectedBy: null,
+      rejectedAt: null,
+      rejectionReason: null,
+    },
+    {
       id: "sl-008",
       staffId: "u-008",
       staffName: "Nguyễn Văn Lộc",
@@ -218,7 +243,7 @@ export class MockStaffLeaveRepository implements IStaffLeaveRepository {
     return { ok: true, value: value.map((r) => ({ ...r })) };
   }
 
-  async approve(id: string): Promise<StaffLeaveActionResult> {
+  async approve(id: string, _staffId: string): Promise<StaffLeaveActionResult> {
     await mockDelay();
     const req = this.requests.find((r) => r.id === id);
     if (!req) return { ok: false, error: { type: "not-found" } };
@@ -231,7 +256,11 @@ export class MockStaffLeaveRepository implements IStaffLeaveRepository {
     return { ok: true };
   }
 
-  async reject(id: string, reason: string): Promise<StaffLeaveActionResult> {
+  async reject(
+    id: string,
+    _staffId: string,
+    reason: string,
+  ): Promise<StaffLeaveActionResult> {
     await mockDelay();
     const req = this.requests.find((r) => r.id === id);
     if (!req) return { ok: false, error: { type: "not-found" } };

@@ -1,38 +1,55 @@
 import "server-only";
 
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
+import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IStaffLeaveRepository } from "@/features/staff-leave/domain/repositories/i-staff-leave.repository";
 import { ApproveStaffLeaveUseCase } from "@/features/staff-leave/domain/use-cases/approve-staff-leave.use-case";
 import { GetStaffLeaveRequestsUseCase } from "@/features/staff-leave/domain/use-cases/get-staff-leave-requests.use-case";
 import { RejectStaffLeaveUseCase } from "@/features/staff-leave/domain/use-cases/reject-staff-leave.use-case";
 import { MockStaffLeaveRepository } from "@/features/staff-leave/infrastructure/repositories/mocks/staff-leave.mock.repository";
+import { StaffLeaveRepository } from "@/features/staff-leave/infrastructure/repositories/staff-leave.repository";
 
 /**
  * Staff-leave repository factory (per-request).
  *
- * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.8; rationale
- * REVISED in US-E18.23 — cross-repo ask #13 is now PARTIALLY resolved and the
- * residual gap is ask **#41**, `EPIC-OVERVIEW.md`).
+ * **UN-MOCKED in US-E18.36** — this is now the plain `USE_MOCK ? Mock : Real`
+ * gate every other DI factory uses (decision 0014). It used to force the mock
+ * regardless of `USE_MOCK` (US-E18.8), and all three blockers behind that are
+ * now closed:
  *
- * The original two-part premise no longer holds:
- *   - "no tenant-wide oversight list exists" — FALSE since core US-149;
- *     `staffMemberId` is optional now and omitting it yields the tenant-wide,
- *     `status`-sliced list (ADMIN/MANAGER/SUPER_ADMIN).
- *   - "no IAM lookup to backfill a name" — FALSE since IAM US-144;
- *     `iam-directory`'s batch lookup resolves `staffMemberId` → `staffName`,
- *     as `staffing.di.ts` already does for assignment display names.
+ * 1. ~~No tenant-wide oversight list~~ — core US-149 made `staffMemberId`
+ *    OPTIONAL on `GET /conduct/staff-leave-requests`; omitting it yields the
+ *    tenant-wide, `status`-sliced list (ADMIN/MANAGER/SUPER_ADMIN).
+ * 2. ~~No IAM lookup to backfill a name~~ — IAM US-144; resolved by COMPOSING
+ *    `iam-directory`'s `BatchResolveMembersUseCase` (one batch call per list,
+ *    chunked at 50 ids inside that module), exactly as `staffing.di.ts` does
+ *    for assignment display names. `bootstrap/di`, not a feature's domain, is
+ *    where composing across features belongs (decision 0017).
+ * 3. ~~`department` / `leaveType` have no wire source~~ — core US-170 put both
+ *    on `StaffLeaveRequestResponse`. Both are NULLABLE for DIFFERENT reasons
+ *    (legacy-row gap vs ongoing no-department state); the entity/DTO were
+ *    widened and presentation renders a distinct placeholder for each, so no
+ *    value is ever invented.
  *
- * What still blocks wiring is narrower and unchanged: `department` and
- * `leaveType` have NO source anywhere on `StaffLeaveRequestResponse`
- * (re-ground-truthed 2026-08-01), yet both are required non-optional on the
- * entity and read unguarded by the shipped card. A leave *category* cannot be
- * substituted by a raw id the way `memberName` can, and inventing one is
- * forbidden — so this screen keeps its shipped mock UX rather than shipping a
- * half-real row. Forcing mock here guards against the day the app-wide
- * `USE_MOCK` flag flips to `false` (`StaffLeaveRepository`'s real class exists
- * only as permanent blocked stubs — see its doc comment).
+ * The mock branch is unaffected: `MockStaffLeaveRepository` keeps its own
+ * seeded rows (including one that exercises both nulls).
  */
 async function makeRepo(): Promise<IStaffLeaveRepository> {
-  return new MockStaffLeaveRepository();
+  if (USE_MOCK) return new MockStaffLeaveRepository();
+  // Proactive refresh (decision 0018): rotate the access token BEFORE the
+  // protected core call if it's about to expire, avoiding a wasted 401.
+  await ensureFreshSession();
+  const resolveMembers = await makeBatchResolveMembersUseCase();
+  return new StaffLeaveRepository(await createServerHttpClient(), (memberIds) =>
+    resolveMembers.execute(memberIds),
+  );
+}
+
+/** Exposed for the DI env-matrix test; screens use the use-case factories. */
+export async function makeStaffLeaveRepository(): Promise<IStaffLeaveRepository> {
+  return makeRepo();
 }
 
 export async function makeGetStaffLeaveRequestsUseCase() {

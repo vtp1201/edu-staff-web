@@ -1,6 +1,15 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
-import { errorCodeOf, statusOf } from "@/bootstrap/lib/api-envelope";
+import { STAFF_LEAVE_EP } from "@/bootstrap/endpoint/staff-leave.endpoint";
+import {
+  type ApiEnvelope,
+  errorCodeOf,
+  parseEnvelope,
+  statusOf,
+} from "@/bootstrap/lib/api-envelope";
+import type { MemberSummary } from "@/features/iam-directory/domain/entities/member-summary.entity";
+import type { IamDirectoryFailure } from "@/features/iam-directory/domain/failures/iam-directory.failure";
+import type { Result } from "@/features/iam-directory/domain/use-cases/result";
 import type { StaffLeaveRequestEntity } from "../../domain/entities/staff-leave-request.entity";
 import type { StaffLeaveFailure } from "../../domain/failures/staff-leave.failure";
 import type {
@@ -8,6 +17,14 @@ import type {
   StaffLeaveActionResult,
   StaffLeaveResult,
 } from "../../domain/repositories/i-staff-leave.repository";
+import type {
+  StaffLeaveResponseDto,
+  StaffLeaveStateDto,
+} from "../dtos/staff-leave-response.dto";
+import {
+  StaffLeaveMapper,
+  WIRE_BY_STATUS,
+} from "../mappers/staff-leave.mapper";
 
 /**
  * Map a normalised ApiError to the staff-leave failure union (US-E09.3,
@@ -48,62 +65,152 @@ export function toFailure(err: unknown): StaffLeaveFailure {
   return { type: "network-error" };
 }
 
+/** Injected by `staff-leave.di.ts` — `iam-directory`'s batch member lookup. */
+export type MemberDirectoryResolver = (
+  memberIds: string[],
+) => Promise<Result<MemberSummary[], IamDirectoryFailure>>;
+
 /**
- * Real `core` staff-leave repository (US-E09.3 / US-E18.8).
+ * The screen has no server-side status paging: it loads every request once and
+ * slices client-side. The tenant-wide list branch is `status`-sliced and
+ * DEFAULTS to `SUBMITTED`, so "no filter" must fan out over all three states —
+ * omitting `status` would silently return only the pending ones and leave the
+ * "Đã duyệt" / "Từ chối" tabs permanently empty.
+ */
+const ALL_STATES: readonly StaffLeaveStateDto[] = [
+  "SUBMITTED",
+  "APPROVED",
+  "REJECTED",
+];
+
+/**
+ * Real `core` staff-leave repository (US-E09.3, UN-MOCKED in US-E18.36).
  *
- * **PERMANENTLY mock-first regardless of `USE_MOCK`** — `staff-leave.di.ts`
- * always constructs the mock repo.
+ * Wired at last: the three historical blockers are all closed.
+ * 1. Tenant-wide oversight list — core US-149 made `staffMemberId` OPTIONAL on
+ *    `GET /conduct/staff-leave-requests`; omitting it returns the tenant-wide
+ *    list (ADMIN/MANAGER/SUPER_ADMIN, else `403 VIOLATION_FORBIDDEN`).
+ * 2. `staffName` — IAM US-144's batch lookup, composed in `staff-leave.di.ts`
+ *    exactly as `staffing` resolves assignment display names (US-E18.23).
+ * 3. `department` + `leaveType` — core US-170 put both on the wire. BOTH are
+ *    nullable, for DIFFERENT reasons, and neither null is repaired here: the
+ *    mapper keeps them `null` and presentation renders a distinct placeholder
+ *    for each (legacy-row gap vs ongoing no-department state).
  *
- * RATIONALE REVISED in US-E18.23. Two of the three original blockers are GONE;
- * only the third survives, and it alone is still decisive:
- *
- * 1. ~~No tenant-wide oversight list~~ — **RESOLVED by core US-149.**
- *    `staffMemberId` is now OPTIONAL on
- *    `GET /core/api/v1/conduct/staff-leave-requests`; omitting it returns the
- *    tenant-wide list (ADMIN/MANAGER/SUPER_ADMIN, else
- *    `403 VIOLATION_FORBIDDEN`), sliced by `status` (default `submitted` —
- *    the wire has no literal `pending`).
- * 2. ~~No way to backfill `staffName`~~ — **RESOLVED by IAM US-144.**
- *    `staffMemberId` is now resolvable through `iam-directory`'s batch lookup,
- *    exactly as `staffing` resolves its assignment `memberName` (US-E18.23).
- * 3. **STILL BLOCKING — `department` and `leaveType` have no wire source.**
- *    `StaffLeaveRequestResponse` carries `requestId`, `staffMemberId`,
- *    `startDate`, `endDate`, `reason`, `state`, `selfApproved`,
- *    `approverMemberId`, `createdAt`, `updatedAt` — and nothing else
- *    (re-ground-truthed 2026-08-01: 0 candidate fields; the openapi
- *    description states `leaveType` is intentionally out of scope pending
- *    product decision OQ-149-01). Both fields are REQUIRED, non-optional on
- *    `StaffLeaveRequestEntity`, and the shipped card does an unguarded lookup
- *    on each (`LEAVE_TYPE_META[request.leaveType]` would be `undefined` and
- *    crash; `department` is interpolated with no fallback). Unlike
- *    `memberName`, no raw id can stand in — a leave *category* is a missing
- *    concept, not a missing label, and inventing one is forbidden.
- *
- * Wiring the other two halves alone would produce a part-real/part-fabricated
- * row, which is worse than either clean option — so the screen stays fully
- * mock and the narrow gap is filed as cross-repo ask **#41** (ask #13 is
- * partially resolved; see `EPIC-OVERVIEW.md`). These three methods remain
- * permanent blocked stubs, never invoked, kept only to satisfy the interface.
- * `toFailure` above is kept correct + unit-tested for the day this unblocks.
+ * Fields the wire still does not carry are DERIVED, never invented:
+ * `days` (inclusive span of the returned date range), `initials` / `avatarTone`
+ * (from the resolved name / a stable id hash — decorative), `staffRole` (the
+ * IAM directory role, `null` when unresolvable → the badge is omitted).
  */
 export class StaffLeaveRepository implements IStaffLeaveRepository {
-  // Kept for constructor-signature parity with every other repo (test callers
-  // do `new StaffLeaveRepository(http)`) even though every method below is a
-  // permanent blocked stub — see class doc above.
-  // biome-ignore lint/complexity/noUselessConstructor: signature parity, see comment above.
-  constructor(_http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /**
+     * Optional so wire-level tests can construct the repository with just an
+     * http client. Absent = every row keeps the raw-`memberId` fallback (a
+     * degraded display, never an error) — same contract as `staffing`.
+     */
+    private readonly resolveMembers?: MemberDirectoryResolver,
+  ) {}
 
-  async listRequests(_filter?: {
+  /**
+   * `memberId → MemberSummary` for a whole list, in ONE batch call.
+   * Never throws and never fails the caller: a lookup error degrades to an
+   * empty map, which the raw-id fallback covers.
+   */
+  private async memberMap(
+    memberIds: string[],
+  ): Promise<Map<string, MemberSummary>> {
+    const out = new Map<string, MemberSummary>();
+    if (!this.resolveMembers || memberIds.length === 0) return out;
+    const result = await this.resolveMembers(memberIds);
+    if (!result.ok) return out;
+    for (const member of result.value) out.set(member.memberId, member);
+    return out;
+  }
+
+  /** Fully page one `state` slice of the tenant-wide list (newest first). */
+  private async fetchState(
+    state: StaffLeaveStateDto,
+  ): Promise<StaffLeaveResponseDto[]> {
+    const out: StaffLeaveResponseDto[] = [];
+    let cursor: string | undefined;
+    do {
+      const env = (await this.http.get(STAFF_LEAVE_EP.list, {
+        // `staffMemberId` deliberately OMITTED — that selects the tenant-wide
+        // oversight branch (core US-149).
+        params: { status: state, ...(cursor ? { cursor } : {}) },
+        raw: true,
+      })) as unknown as ApiEnvelope<StaffLeaveResponseDto[]>;
+      const { data, pagination } = parseEnvelope(env);
+      out.push(...data);
+      cursor =
+        pagination?.hasMore && pagination.nextCursor
+          ? pagination.nextCursor
+          : undefined;
+    } while (cursor);
+    return out;
+  }
+
+  async listRequests(filter?: {
     status?: StaffLeaveRequestEntity["status"];
   }): Promise<StaffLeaveResult<StaffLeaveRequestEntity[]>> {
-    return { ok: false, error: { type: "network-error" } };
+    try {
+      const states = filter?.status
+        ? [WIRE_BY_STATUS[filter.status]]
+        : ALL_STATES;
+      const slices = await Promise.all(
+        states.map((state) => this.fetchState(state)),
+      );
+      const dtos = slices
+        .flat()
+        // Each slice is newest-first on its own; the merge needs one order.
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+      const ids = dtos.flatMap((dto) =>
+        dto.approverMemberId
+          ? [dto.staffMemberId, dto.approverMemberId]
+          : [dto.staffMemberId],
+      );
+      const members = await this.memberMap(ids);
+
+      return {
+        ok: true,
+        value: dtos.map((dto) => StaffLeaveMapper.toEntity(dto, members)),
+      };
+    } catch (err) {
+      return { ok: false, error: toFailure(err) };
+    }
   }
 
-  async approve(_id: string): Promise<StaffLeaveActionResult> {
-    return { ok: false, error: { type: "network-error" } };
+  async approve(id: string, staffId: string): Promise<StaffLeaveActionResult> {
+    try {
+      // `staffMemberId` is MANDATORY on the by-id routes — it completes the
+      // storage key `(tenantId, staffMemberId, requestId)`.
+      await this.http.post(STAFF_LEAVE_EP.approve(id), undefined, {
+        params: { staffMemberId: staffId },
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: toFailure(err) };
+    }
   }
 
-  async reject(_id: string, _reason: string): Promise<StaffLeaveActionResult> {
-    return { ok: false, error: { type: "network-error" } };
+  async reject(
+    id: string,
+    staffId: string,
+    reason: string,
+  ): Promise<StaffLeaveActionResult> {
+    try {
+      await this.http.post(
+        STAFF_LEAVE_EP.reject(id),
+        // Body key is `rejectionReason`, not `reason`.
+        { rejectionReason: reason },
+        { params: { staffMemberId: staffId } },
+      );
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: toFailure(err) };
+    }
   }
 }

@@ -2,15 +2,14 @@
  * Staff-leave endpoint constants (US-E09.3, `core` service).
  * No magic strings in repositories.
  *
- * Real contract ground-truthed for US-E18.8 against
+ * Real contract ground-truthed for US-E18.8, re-verified US-E18.36 against
  * `edu-api/services/core/docs/openapi.yaml` (`/api/v1/conduct/staff-leave-requests*`)
  * + Go source (`internal/conduct/adapter/http/staff_leave_request_handler.go`).
- * Kept accurate for documentation even though the real repository no longer
- * calls these (see `staff-leave.repository.ts` — the whole feature stays
- * mock-first permanently, cross-repo ask #13, `EPIC-OVERVIEW.md`).
+ * LIVE since US-E18.36 — `staff-leave.repository.ts` calls all three.
  *
- * - `list`: `GET` requires a **mandatory** `staffMemberId` query param — no
- *   tenant-wide oversight list exists.
+ * - `list`: `GET`. `staffMemberId` is **optional** since core US-149 — OMIT it
+ *   to get the tenant-wide oversight list (ADMIN/MANAGER/SUPER_ADMIN), which
+ *   is `status`-sliced and defaults to `SUBMITTED`.
  * - `approve`/`reject`: `POST` (not `PUT`), both require a mandatory
  *   `staffMemberId` **query** param alongside the path `id`; `reject`'s body
  *   key is `rejectionReason` (not `reason`).
