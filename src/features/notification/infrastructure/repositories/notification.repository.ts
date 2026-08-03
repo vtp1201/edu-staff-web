@@ -8,7 +8,6 @@ import {
   statusOf,
 } from "@/bootstrap/lib/api-envelope";
 import type {
-  NotificationEntity,
   NotificationFilter,
   NotificationPage,
   UnreadCount,
@@ -30,16 +29,6 @@ import { mapNotification } from "../mappers/notification.mapper";
  * misbehaving (always returning `hasMore:true`), not that the bound is low.
  */
 export const MAX_BATCHES = 40;
-
-/**
- * Defensive bound on the client-side "unread" drain (US-E18.25, ADR 0066).
- * `GET /notifications` has NO `unread`/`read` query param, so the shipped
- * "Unread" tab narrows client-side: 20 pages × 100 rows = 2 000 rows scanned.
- */
-export const MAX_PAGES = 20;
-
-/** Page size used while draining for unread rows (BE max is 100). */
-const DRAIN_PAGE_SIZE = 100;
 
 /**
  * Map a normalised ApiError to the notification failure union.
@@ -70,11 +59,17 @@ export class NotificationRepository implements INotificationRepository {
     limit?: number;
   }): Promise<NotificationPage> {
     const { filter, cursor, limit = PAGE_SIZE } = params;
-    if (filter === "unread") return this.drainUnread(cursor, limit);
 
     try {
       const queryParams: Record<string, unknown> = { limit };
-      if (filter !== "all") queryParams.type = filter;
+      // US-E18.37 — the two filter dimensions are MUTUALLY EXCLUSIVE on the
+      // wire: `read` cannot be combined with `type` (400
+      // NOTIFICATION_FILTER_CONFLICT), and only `read=false` is supported
+      // (`read=true` → 400 NOTIFICATION_READ_FILTER_UNSUPPORTED). The UI filter
+      // is a single union ("all" | "unread" | one type) so this if/else-if maps
+      // 1:1 and can never emit both. "all" sends neither = unfiltered.
+      if (filter === "unread") queryParams.read = "false";
+      else if (filter !== "all") queryParams.type = filter;
       if (cursor) queryParams.cursor = cursor;
 
       const envelope = (await this.http.get(NOTIFICATION_EP.list, {
@@ -88,64 +83,6 @@ export class NotificationRepository implements INotificationRepository {
         items: (data ?? []).map(mapNotification),
         nextCursor: pagination?.nextCursor ?? null,
         hasMore: pagination?.hasMore ?? false,
-      };
-    } catch (err) {
-      throw toFailure(err);
-    }
-  }
-
-  /**
-   * US-E18.25 / ADR 0066 — bounded client-side drain for the "Unread" tab.
-   *
-   * The real wire has no `unread`/`read` filter, so we page (at the BE max of
-   * 100) following the REAL cursor, keep only `read === false` rows, and stop
-   * as soon as the caller's page size is satisfied, the server says there is
-   * nothing more, or `MAX_PAGES` trips. `hasMore` reported back is the REAL
-   * last-page value (never locally recomputed) so "Load more" keeps draining
-   * from where the server left off. Documented as less efficient, not
-   * incorrect — cross-repo ask #42 requests a server-side filter.
-   *
-   * Returns EVERY unread row found on the pages it fetched — deliberately NOT
-   * capped to `limit`. The cursor is page-aligned (it always points past the
-   * last page fetched), so capping would strand the surplus unread rows of
-   * that page forever: "Load more" resumes after them and nothing would ever
-   * show them again. Overshoot is bounded by one page (`DRAIN_PAGE_SIZE`).
-   */
-  private async drainUnread(
-    cursor: string | undefined,
-    limit: number,
-  ): Promise<NotificationPage> {
-    try {
-      const collected: NotificationEntity[] = [];
-      let nextCursor: string | undefined = cursor;
-      let realHasMore = false;
-
-      for (let page = 0; page < MAX_PAGES; page += 1) {
-        const queryParams: Record<string, unknown> = {
-          limit: DRAIN_PAGE_SIZE,
-        };
-        if (nextCursor) queryParams.cursor = nextCursor;
-
-        const envelope = (await this.http.get(NOTIFICATION_EP.list, {
-          params: queryParams,
-          ...({ raw: true } as Record<string, unknown>),
-        })) as unknown as ApiEnvelope<NotificationResponseDto[]>;
-
-        const { data, pagination } = parseEnvelope(envelope);
-        for (const dto of data ?? []) {
-          if (!dto.read) collected.push(mapNotification(dto));
-        }
-        nextCursor = pagination?.nextCursor ?? undefined;
-        realHasMore = pagination?.hasMore ?? false;
-        if (collected.length >= limit || !realHasMore) break;
-      }
-
-      return {
-        // Uncapped on purpose — see the doc comment above. `limit` only
-        // decides when to STOP fetching more pages, never what to hand back.
-        items: collected,
-        nextCursor: nextCursor ?? null,
-        hasMore: realHasMore,
       };
     } catch (err) {
       throw toFailure(err);

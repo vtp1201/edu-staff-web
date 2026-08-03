@@ -20,6 +20,14 @@ the authoritative gate and is fully green — `.test.tsx` React rendering is NOT
 possible there (no jsdom, no @testing-library/react), so component-behavior proof
 goes through Storybook interaction stories, not Vitest .test.tsx.
 
+**Known flaky under full-suite parallelism (2026-08-03, US-E18.37):**
+`src/components/shared/tenant-card/tenant-switch-dialog.stories.tsx > Open Card
+List` fails intermittently (~2 in 7 full `vitest.storybook.mts` runs, an
+intl `applyTimeZone`/`dateTime` render throw) but passes 3/3 when the story file
+is run alone. If your change is server-only infrastructure (not in any story's
+import graph), causation is impossible — re-run and/or run that file in
+isolation instead of hunting a phantom regression.
+
 **Dual role="dialog" scoping:** GroupInfoPanel is a Radix Sheet (role="dialog")
 and a modal opened from inside it (Radix Dialog) is ALSO role="dialog". A bare
 `getByRole("dialog")` is ambiguous and "modal closed" assertions match the still-

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -88,4 +88,56 @@ ADR 0066 amendment needed (fe-lead registers).
 
 ## Evidence
 
-(fill after implementation)
+Implemented 2026-08-03 on `feat/us-e18.37-notification-unread-filter`.
+
+### Contract re-verification (done before coding)
+
+`edu-api/services/notification/docs/openapi.yaml` `GET /notifications` → `read`
+param confirmed exactly as briefed: enum `["true","false"]`, only `"false"`
+supported (sources `notifications_unread_by_user` MV, ADR 0115), `read=true` →
+400 `NOTIFICATION_READ_FILTER_UNSUPPORTED`, `read` + `type` → 400
+`NOTIFICATION_FILTER_CONFLICT`, omitted = unfiltered. No drift from the brief.
+
+`NotificationFilter` is a single union (`"all" | "unread" | grade | attendance |
+discipline | announcement`) → the UI tabs are mutually exclusive, so `read` and
+`type` can never be requested simultaneously. The repo now maps that union with
+an `if (unread) read="false" else if (!all) type=filter` chain — structurally
+incapable of emitting both.
+
+### Changes
+
+| Layer | File | Change |
+| --- | --- | --- |
+| domain | `domain/repositories/i-notification.repository.ts` | doc comment: filter is mutually exclusive (all / unread / type) |
+| infrastructure | `infrastructure/repositories/notification.repository.ts` | `filter==="unread"` → direct `read=false` server call; `drainUnread()`, `MAX_PAGES`, `DRAIN_PAGE_SIZE` deleted (grep-confirmed zero other callers; `MAX_BATCHES` for `read-batch` is unrelated and kept) |
+| test | `infrastructure/repositories/notification.repository.test.ts` | old drain suite replaced by the US-E18.37 server-side-unread suite |
+
+No change needed in `GetNotificationsUseCase` (it was a pure pass-through — no
+drain special-casing), in the mock repository (already filters `!item.read`
+in-memory), or in any presentation/story file.
+
+### Proof (all run on this branch)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (1 pre-existing warning + 1 info, unrelated file) |
+| `bun vitest run` | 477 files / **3551** passed (baseline before change: 477 / 3549 → +2 net tests, 0 regressions) |
+| `bunx vitest run --config vitest.storybook.mts` | 158 files / 1206 passed. Flaky: `components/shared/tenant-card/tenant-switch-dialog.stories.tsx > Open Card List` failed on 2 of 7 full runs (intl `applyTimeZone` render throw) and passes 3/3 in isolation — unrelated (this story touches only a `server-only` repository that is in no story's import graph) |
+| `bun run build` (real branch, `.env.local` `NEXT_PUBLIC_USE_MOCK=false`) | ✓ compiled successfully |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | ✓ compiled successfully |
+
+### Red→green
+
+Red: 3 new assertions failed against the old drain (`params.read` undefined,
+`get` called 20× instead of 1×, `limit` forced to the drain's 100 instead of the
+caller's 8). Green after replacing the branch. Unchanged all/type-filtered tests
+passed untouched throughout.
+
+New unread suite asserts: `read="false"` is the ONLY filter param (`type` and
+`unread` absent, never `read="true"`); exactly ONE HTTP call per page (the
+former all-read + `hasMore:true` fixture that used to loop to `MAX_PAGES`);
+server `nextCursor`/`hasMore` surfaced verbatim; caller `cursor`/`limit`
+forwarded; cursor omitted on page 1; no client-side row filtering; error →
+failure mapping preserved. An added guard on the all/type paths asserts `read`
+is never sent there.

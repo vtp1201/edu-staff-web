@@ -149,11 +149,15 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
     model đúng 2 lý do khác nhau (2 câu placeholder khác nhau, không dùng
     chung 1 "N/A"), và wire TOÀN BỘ màn staff-leave real (cả đọc lẫn
     approve/reject) — đóng US-E18.8's permanent force-mock.
-20. **#42 — notification inbox thiếu filter `?read=false`** (phát hiện khi
-    wire US-E18.25). BE đã có per-status count chính xác (`unread-count`)
-    nhưng list không filter được theo trạng thái đọc → tab "Chưa đọc" phía FE
-    phải drain client-side (bounded, hoạt động đúng nhưng tốn round-trip).
-    Nice-to-have, không phải defect.
+20. **#42 — RESOLVED (US-E18.37, 2026-08-03).** BE US-171 đã thêm
+    `?read=false` vào `GET /notifications` (nguồn từ
+    `notifications_unread_by_user` materialized view). FE đã bỏ hoàn toàn
+    client-side drain (`drainUnread`/`MAX_PAGES`/`DRAIN_PAGE_SIZE`, tất cả đã
+    xoá, grep xác nhận zero reference còn lại) — tab "Chưa đọc" giờ gửi thẳng
+    1 request/trang, dùng cursor/hasMore thật của server. `read=true` bị BE
+    từ chối (400) và `read`+`type` xung đột (400) — client không bao giờ gửi
+    2 tổ hợp này (đảm bảo ở tầng type, không phải quy ước UI). ADR 0066 đã
+    amend.
 
 ### Cập nhật 2026-08-02 (tiếp) — 2 asks mới phát sinh khi đóng dead sidebar links (US-E13.10, US-E15.3)
 

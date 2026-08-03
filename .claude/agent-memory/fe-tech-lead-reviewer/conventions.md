@@ -477,6 +477,28 @@ Confirmed facts (verify before citing if stale):
   rejecting `{type:"forbidden"}` with no HTTP call) makes all three live at once. Extra weight when the
   fabricated data is child-specific (attendance/grades) that a parent would act on.
 
+- **E18 "workaround-retirement" un-block (BE ships the filter the client was faking) = a distinct,
+  LOW-risk sub-pattern** (US-E18.37 notification `?read=false`, retiring US-E18.25's `drainUnread`).
+  Shape: one `if` branch in the repo replaces a whole private loop method; the loop + its constants
+  are deleted; zero presentation/i18n/token diff. What to actually verify (the self-report is not the
+  proof): (a) the filter arg is a FLAT union on ONE param (`NotificationFilter = "all"|"unread"|<type>`),
+  which makes "can never send `read`+`type` together" a TYPE-SYSTEM guarantee, not a runtime guard —
+  read the type def, don't accept "the UI never does this"; (b) grep the deleted identifiers repo-wide
+  and expect hits ONLY in comments/docs/other features' same-named locals (`ROSTER_MAX_PAGES`,
+  iam-directory's own `MAX_PAGES`); (c) the test-count delta must be explainable line-by-line from the
+  rewritten `describe` (5→7 = +2), else coverage was dropped with the code; (d) mock/real parity often
+  IMPROVES here (the mock already returned ≤ `limit` while the drain overshot by up to one page).
+  - **The vacuity trap specific to this pattern:** the test named "does not filter rows client-side"
+    typically uses an all-`read:false` fixture, so re-adding `if (!dto.read)` would still pass it.
+    Demand ONE server-page fixture containing a `read:true` row asserted to SURVIVE — that is the only
+    non-vacuous lock on the story's central claim.
+- **`notification` (noti) `GET /notifications` `read` param, ground-truthed 2026-08-03** against
+  `list_handler.go:45-52` + `list_notifications.go:49-56`, NOT just openapi: the handler switches on the
+  literal STRINGS `"false"`/`"true"`; `read`+`type` → 400 `notification_filter_conflict`; `read=true` →
+  400 `notification_read_filter_unsupported` (only the `notifications_unread_by_user` MV exists).
+  Omitted = unfiltered. So send `read: "false"` as a string. Both 400s are structurally unreachable from
+  the web client while the filter stays a flat union — a `toFailure` that collapses them to `unknown`
+  is fine, no mapping needed.
 - **`core` timetable by-member read is CALLER-ROLE-GATED, and `MANAGER` (principal) is NOT allowed**
   (ground-truthed 2026-08-02, US-E15.3). `services/core/internal/timetable/core/application/usecase/
   get_member_timetable.go` `authorize()` permits ONLY: SUPER_ADMIN/ADMIN (`isAdmin`), the target

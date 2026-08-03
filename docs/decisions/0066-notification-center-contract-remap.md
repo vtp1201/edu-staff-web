@@ -4,7 +4,24 @@ Date: 2026-08-01
 
 ## Status
 
-Accepted
+Accepted (partially superseded 2026-08-03, US-E18.37 — see note below)
+
+> **Amendment (2026-08-03, US-E18.37):** BE US-171 added a server-side
+> `?read=false` filter to `GET /notifications` — exactly the cross-repo
+> ask #42 this ADR filed. The "bounded client-side drain-and-filter"
+> described below (the `drainUnread()` method, `MAX_PAGES`/`DRAIN_PAGE_SIZE`)
+> is **RETIRED** — `listNotifications({filter:"unread"})` now sends
+> `read=false` directly and returns the server's own filtered pagination
+> verbatim (one HTTP call per page, not up to `MAX_PAGES`). Every other
+> decision recorded in this ADR (the singular `unread-count` restoration,
+> `markAllRead()`'s repeat-until-`hasMore` loop, the `NotificationEntity`
+> i18n-key reshape) is UNCHANGED and still accurate — only the "Unread"
+> filter mechanism section below is stale. Read `?read=false`/`?type=`
+> are mutually exclusive on the wire (BE 400s on either misuse) — this
+> client never combines them, since its own `NotificationFilter` type is a
+> single mutually-exclusive union. See
+> `US-E18.37-notification-unread-filter/US-E18.37-notification-unread-filter.md`
+> for the full evidence.
 
 ## Context
 
@@ -59,8 +76,9 @@ Four scope decisions were forced by ground-truthing
   invalidation (`unread.updated` still only invalidates
   `["messaging","conversations"]`/`["messaging","messages",roomId]`, never
   `["notifications","unread-count"]`).
-- **`listNotifications({filter:"unread"})` becomes a bounded client-side
-  drain-and-filter**: page at `limit=100` (no `type` filter — unread spans
+- **[SUPERSEDED 2026-08-03, US-E18.37 — see amendment above; kept for
+  historical record]** `listNotifications({filter:"unread"})` becomes a
+  bounded client-side drain-and-filter: page at `limit=100` (no `type` filter — unread spans
   all categories), filter `read === false` client-side, keep advancing the
   REAL `cursor` until enough unread items accumulate, `hasMore` goes false,
   or a defensive `MAX_PAGES` cap (20) trips. The caller's page size only
@@ -139,10 +157,13 @@ Positive:
 
 Tradeoffs / residual risks:
 
-- The client-side "unread" drain is less efficient than a server-side filter
+- **[RESOLVED 2026-08-03, US-E18.37]** The client-side "unread" drain
+  described above is retired — BE US-171 shipped the server-side `?read=false`
+  filter this ask requested; the tradeoff below is historical.
+  ~~The client-side "unread" drain is less efficient than a server-side filter
   would be (bounded by `MAX_PAGES`, not by the true unread count) — acceptable
   given the 90-day TTL bounds inbox size, but flagged as a real cross-repo
-  ask (#42), not a permanent design choice we're happy with.
+  ask (#42), not a permanent design choice we're happy with.~~
 - A drain call can return MORE rows than the nominal page size (up to one
   extra fetched page's worth of unread rows). Intentional — the alternative,
   capping to the page size, silently drops the surplus for good because the
@@ -160,9 +181,10 @@ Tradeoffs / residual risks:
 
 ## Follow-Up
 
-- Cross-repo ask #42 (`EPIC-OVERVIEW.md`): request a cheap `?read=false`/
-  `?unread=true` server-side filter on `GET /notifications`, given the
-  underlying materialized view already backs an exact per-status count.
+- **Cross-repo ask #42 — RESOLVED (US-E18.37, 2026-08-03).** BE US-171 added
+  `?read=false` to `GET /notifications`, sourced from the
+  `notifications_unread_by_user` materialized view (ADR 0115 on the BE side).
+  The client-side drain this ADR originally documented is retired.
 - Product/design follow-up idea (not filed as a blocker): should notification
   body copy eventually resolve `studentMemberId`/`classId` to display names
   via `iam-directory`? Needs its own product decision on batching/failure
