@@ -6,4 +6,5 @@
 - [IAM batch member lookup + linked-students](be-iam-batch-member-lookup.md) — tiered `?ids=` contract, the ONE allowed client, and the parent roster row (no name)
 - [social /reports moderation contract](be-social-moderation-reports.md) — ADMIN-only gate, composite point-read key, no audit trail, no reporter identity
 - [core class-roster read](be-core-class-roster-read.md) — MANAGER is NOT authorized on `/classes/{id}/students`; hard-delete enrollment; no status/code on the wire
+- [core staff-leave contract](be-core-staff-leave.md) — tenant-wide list defaults to SUBMITTED (3-state fan-out), approve/reject composite key, US-170 nullables
 - [core member-attendance read](be-member-attendance-read.md) — PARENT allowed since US-047 (openapi prose stale), guard ordering, UPPER_SNAKE enum, ATTENDANCE_FORBIDDEN
