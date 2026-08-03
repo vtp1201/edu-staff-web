@@ -109,6 +109,7 @@ const baseVm: StudentRosterScreenVm = {
   activeCount: roster32.filter((s) => s.status === "active").length,
   transferredCount: roster32.filter((s) => s.status === "transferred").length,
   searchPool,
+  fetchError: null,
 };
 
 const emptyVm: StudentRosterScreenVm = {
@@ -118,6 +119,7 @@ const emptyVm: StudentRosterScreenVm = {
   activeCount: 0,
   transferredCount: 0,
   searchPool,
+  fetchError: null,
 };
 
 const ok = async () => ({ ok: true as const });
@@ -240,6 +242,78 @@ export const RealModeWithMissingFields: Story = {
     await expect(
       canvas.getAllByRole("checkbox", { name: /Chọn học sinh/ }),
     ).toHaveLength(realRoster.length);
+  },
+};
+
+/**
+ * US-E18.35 review — a FAILED roster read, the state this story made reachable
+ * (`getClassRoster` is a real HTTP call now). It must NOT look like the empty
+ * class above: the error is announced, and every mutation affordance is gone,
+ * because acting on a roster we could not read is the real hazard.
+ */
+export const RosterReadFailed: Story = {
+  args: {
+    vm: {
+      ...baseVm,
+      roster: [],
+      activeCount: 0,
+      transferredCount: 0,
+      fetchError: "network-error",
+    },
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const alert = await canvas.findByRole("alert");
+    await expect(alert).toHaveTextContent(
+      messages.adminRoster.errors["network-error"],
+    );
+    // NOT the empty-class copy — the two must never be confusable.
+    await expect(
+      canvas.queryByText(messages.adminRoster.empty.title),
+    ).not.toBeInTheDocument();
+    // Transient failure → retry is offered.
+    await expect(
+      canvas.getByRole("button", { name: messages.Common.confirmDialog.retry }),
+    ).toBeInTheDocument();
+    // No table, no bulk-select, no enroll panel.
+    await expect(canvas.queryAllByRole("checkbox")).toHaveLength(0);
+    await expect(
+      canvas.queryByPlaceholderText(
+        messages.adminRoster.addPanel.searchPlaceholder,
+      ),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** A 403 an admin cannot retry away — the retry control is absent, not disabled. */
+export const RosterReadForbidden: Story = {
+  args: {
+    vm: {
+      ...baseVm,
+      roster: [],
+      activeCount: 0,
+      transferredCount: 0,
+      fetchError: "forbidden",
+    },
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(
+      await canvas.findByText(messages.adminRoster.errors.forbidden),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).not.toBeInTheDocument();
+    // The class picker survives so the operator is not dead-ended.
+    await expect(
+      canvas.getByText(messages.adminRoster.breadcrumb.classes),
+    ).toBeVisible();
   },
 };
 

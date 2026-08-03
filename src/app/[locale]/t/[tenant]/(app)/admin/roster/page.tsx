@@ -27,7 +27,16 @@ async function RosterContent({ classId }: { classId?: string }) {
     repo.getSearchPool(currentClass.id),
   ]);
 
+  // A FAILED roster read is not an empty class (US-E18.35 review). Since
+  // `getClassRoster` became a real HTTP call, `{ ok: false }` is reachable in
+  // production — rendering `[]` would show "no students" on a screen whose
+  // enroll/transfer controls stay live, and an operator could not tell the two
+  // apart. Thread the failure key instead; the screen renders the error card
+  // and drops every mutation affordance.
   const roster = rosterResult.ok ? rosterResult.data : [];
+  // The candidate pool is DECORATION for the enroll panel and is still
+  // force-mocked (no core endpoint enumerates unassigned students), so a pool
+  // failure deliberately does not blank a roster that loaded fine.
   const searchPool = poolResult.ok ? poolResult.data : [];
 
   const vm: StudentRosterScreenVm = {
@@ -37,6 +46,7 @@ async function RosterContent({ classId }: { classId?: string }) {
     activeCount: roster.filter((s) => s.status === "active").length,
     transferredCount: roster.filter((s) => s.status === "transferred").length,
     searchPool,
+    fetchError: rosterResult.ok ? null : rosterResult.error.type,
   };
 
   // Bind the active class to the screen's action contract (server actions).
