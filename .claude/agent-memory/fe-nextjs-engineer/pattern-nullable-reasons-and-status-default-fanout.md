@@ -37,6 +37,21 @@ work was three contract facts the brief could not see.
    blocker dies, the writes go real in the same commit (mock writes behind real
    reads = fake approve). Verify the write side wasn't separately blocked first.
 
+6. **Un-mocking wakes DORMANT security gaps.** The two mutation Server Actions had
+   no `requireRole` — harmless while mocked, a live ADR-0063 defense-in-depth hole
+   the moment the writes went real. When flipping a DI factory to real, AUDIT the
+   route's `actions.ts` for the guard before touching anything else; test it by
+   asserting zero calls to BOTH the DI factory and `execute`.
+7. **One error code can mean two things on two endpoints.** core's
+   `LEAVE_REQUEST_INVALID_INPUT` = "rejection reason empty" (422, reject) AND "bad
+   cursor" (400, list). A single unconditional `toFailure` mapping prints reject
+   copy on a paging failure ⇒ give `toFailure` a REQUIRED call-site discriminator
+   (`"list" | "approve" | "reject"`) rather than an optional one, so every catch
+   block must declare its context. Read the per-US tables in `ERROR_CODES.md`, not
+   just the code name. Corollary: a 400 that can never succeed on retry must NOT
+   fall through to the `network-error` bucket (its copy offers a retry) — add a
+   non-retryable member (`invalid-request`) with vi+en copy.
+
 Related: [[pattern-unmock-anticipatory-dto]] (the DTO here was likewise a shape only
 the mock ever produced — replace it, don't widen it), [[pattern-two-gaps-one-forcemock]],
 [[pattern-partial-gap-closure-wiring]].
