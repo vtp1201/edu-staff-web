@@ -9,7 +9,6 @@ import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
 import type { NotificationResponseDto } from "../dtos/notification-response.dto";
 import {
   MAX_BATCHES,
-  MAX_PAGES,
   NotificationRepository,
   toFailure,
 } from "./notification.repository";
@@ -145,14 +144,16 @@ describe("NotificationRepository.listNotifications", () => {
     );
   });
 
-  it("never sends an `unread` query param (no such param exists on the real wire)", async () => {
+  it("never sends a `read` param on the all/type paths (omitted = unfiltered)", async () => {
     const get = vi.fn().mockResolvedValue(makeEnvelope([]));
     const repo = new NotificationRepository(makeHttp({ get }));
-    await repo.listNotifications({ filter: "unread" });
-    const params = get.mock.calls[0]?.[1]?.params as Record<string, unknown>;
-    expect(params.unread).toBeUndefined();
-    expect(params.read).toBeUndefined();
-    expect(params.type).toBeUndefined();
+    await repo.listNotifications({ filter: "all" });
+    await repo.listNotifications({ filter: "grade" });
+    for (const call of get.mock.calls) {
+      const params = call[1]?.params as Record<string, unknown>;
+      expect(params.read).toBeUndefined();
+      expect(params.unread).toBeUndefined();
+    }
   });
 
   it("throws network-error failure when HTTP fails", async () => {
@@ -221,7 +222,7 @@ describe("NotificationRepository — real interceptor pipeline (raw-flag placeme
     expect(result.nextCursor).toBe("cursor-next");
   });
 
-  it("the unread drain survives the real unwrap too", async () => {
+  it("the unread (read=false) path survives the real unwrap too", async () => {
     const get = interceptedGet(() =>
       makeEnvelope([makeDto({ read: false })], null, false),
     );
@@ -232,24 +233,88 @@ describe("NotificationRepository — real interceptor pipeline (raw-flag placeme
   });
 });
 
-// ─── listNotifications: bounded client-side unread drain (US-E18.25) ─────────
+// ─── listNotifications: server-side unread filter (US-E18.37) ───────────────
 
-describe("NotificationRepository.listNotifications (US-E18.25 unread drain)", () => {
-  it("drains multiple pages to accumulate unread items when early pages are all-read", async () => {
+/**
+ * US-E18.37 — BE US-171 added `?read=false` to `GET /notifications`, replacing
+ * US-E18.25's bounded client-side drain (ADR 0066). Contract constraints from
+ * `services/notification/docs/openapi.yaml`:
+ *  - only `read=false` is supported (`read=true` → 400
+ *    NOTIFICATION_READ_FILTER_UNSUPPORTED);
+ *  - `read` cannot be combined with `type` (→ 400 NOTIFICATION_FILTER_CONFLICT).
+ * The UI filter is a single mutually-exclusive union ("all" | "unread" | one
+ * type), so the unread page sends `read=false` and NEVER `type`.
+ */
+describe("NotificationRepository.listNotifications (US-E18.37 server-side unread)", () => {
+  it("sends read=false as the ONLY filter param — never `type`, never read=true", async () => {
+    const get = vi.fn().mockResolvedValue(makeEnvelope([]));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    await repo.listNotifications({ filter: "unread", limit: 8 });
+
+    expect(get).toHaveBeenCalledTimes(1);
+    const params = get.mock.calls[0]?.[1]?.params as Record<string, unknown>;
+    expect(params.read).toBe("false");
+    expect(params.read).not.toBe("true");
+    expect(params.type).toBeUndefined();
+    expect(params.unread).toBeUndefined();
+    expect(params.limit).toBe(8);
+  });
+
+  it("issues exactly ONE request per page — no client-side drain loop", async () => {
+    // Under the old drain this all-read + hasMore:true response looped to
+    // MAX_PAGES (20 calls). The server now filters, so one call is the truth.
     const get = vi
       .fn()
-      .mockResolvedValueOnce(
+      .mockResolvedValue(
+        makeEnvelope([makeDto({ id: "u1", read: false })], "c-next", true),
+      );
+    const repo = new NotificationRepository(makeHttp({ get }));
+    const result = await repo.listNotifications({ filter: "unread" });
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(result.items.map((i) => i.id)).toEqual(["u1"]);
+  });
+
+  it("uses the server's OWN cursor/hasMore for the filtered result (not recomputed)", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
         makeEnvelope(
-          [
-            makeDto({ id: "r1", read: true }),
-            makeDto({ id: "r2", read: true }),
-            makeDto({ id: "r3", read: true }),
-          ],
-          "c1",
+          [makeDto({ id: "u1", read: false })],
+          "cursor-unread",
           true,
         ),
-      )
-      .mockResolvedValueOnce(
+      );
+    const repo = new NotificationRepository(makeHttp({ get }));
+    const result = await repo.listNotifications({ filter: "unread", limit: 8 });
+
+    expect(result.nextCursor).toBe("cursor-unread");
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("forwards the caller cursor and the caller limit (no forced 100-row drain page)", async () => {
+    const get = vi.fn().mockResolvedValue(makeEnvelope([]));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    await repo.listNotifications({ filter: "unread", cursor: "c1", limit: 8 });
+
+    const params = get.mock.calls[0]?.[1]?.params as Record<string, unknown>;
+    expect(params.cursor).toBe("c1");
+    expect(params.limit).toBe(8);
+  });
+
+  it("omits cursor on the first page", async () => {
+    const get = vi.fn().mockResolvedValue(makeEnvelope([]));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    await repo.listNotifications({ filter: "unread" });
+
+    const params = get.mock.calls[0]?.[1]?.params as Record<string, unknown>;
+    expect(params.cursor).toBeUndefined();
+  });
+
+  it("does not filter rows client-side — the server page IS the result", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
         makeEnvelope(
           [
             makeDto({ id: "u1", read: false }),
@@ -260,88 +325,11 @@ describe("NotificationRepository.listNotifications (US-E18.25 unread drain)", ()
         ),
       );
     const repo = new NotificationRepository(makeHttp({ get }));
-    const result = await repo.listNotifications({
-      filter: "unread",
-      limit: 8,
-    });
-
-    expect(get).toHaveBeenCalledTimes(2);
-    expect(result.items.map((i) => i.id)).toEqual(["u1", "u2"]);
-    expect(result.hasMore).toBe(false);
-
-    const firstParams = get.mock.calls[0]?.[1]?.params as Record<
-      string,
-      unknown
-    >;
-    const secondParams = get.mock.calls[1]?.[1]?.params as Record<
-      string,
-      unknown
-    >;
-    expect(firstParams.cursor).toBeUndefined();
-    expect(secondParams.cursor).toBe("c1");
-    expect(firstParams.type).toBeUndefined();
-    expect(secondParams.type).toBeUndefined();
-    expect(firstParams.limit).toBe(100);
-  });
-
-  it("stops draining once MAX_PAGES is hit even if hasMore stays true", async () => {
-    const get = vi
-      .fn()
-      .mockResolvedValue(
-        makeEnvelope([makeDto({ read: true })], "c-next", true),
-      );
-    const repo = new NotificationRepository(makeHttp({ get }));
     const result = await repo.listNotifications({ filter: "unread" });
-    expect(MAX_PAGES).toBe(20);
-    expect(get).toHaveBeenCalledTimes(MAX_PAGES);
-    expect(result.items).toEqual([]);
-    expect(result.hasMore).toBe(true);
+    expect(result.items.map((i) => i.id)).toEqual(["u1", "u2"]);
   });
 
-  it("reports the real hasMore from the last page fetched, not a locally computed one", async () => {
-    const get = vi
-      .fn()
-      .mockResolvedValue(
-        makeEnvelope(
-          [
-            makeDto({ id: "u1", read: false }),
-            makeDto({ id: "u2", read: false }),
-          ],
-          "c1",
-          true,
-        ),
-      );
-    const repo = new NotificationRepository(makeHttp({ get }));
-    const result = await repo.listNotifications({ filter: "unread", limit: 2 });
-    expect(get).toHaveBeenCalledTimes(1);
-    expect(result.items).toHaveLength(2);
-    expect(result.hasMore).toBe(true);
-    expect(result.nextCursor).toBe("c1");
-  });
-
-  it("returns EVERY unread row found on a page, never truncating to `limit`", async () => {
-    // The cursor is page-aligned: capping to `limit` here would strand the
-    // surplus unread rows of this page forever ("Load more" resumes past them).
-    const limit = 8;
-    const unreadOnThisPage = Array.from({ length: limit + 5 }, (_, i) =>
-      makeDto({ id: `u${i}`, read: false }),
-    );
-    const get = vi
-      .fn()
-      .mockResolvedValue(makeEnvelope(unreadOnThisPage, "c1", true));
-    const repo = new NotificationRepository(makeHttp({ get }));
-    const result = await repo.listNotifications({ filter: "unread", limit });
-
-    expect(get).toHaveBeenCalledTimes(1);
-    expect(result.items).toHaveLength(limit + 5);
-    expect(result.items.map((i) => i.id)).toEqual(
-      unreadOnThisPage.map((d) => d.id),
-    );
-    expect(result.nextCursor).toBe("c1");
-    expect(result.hasMore).toBe(true);
-  });
-
-  it("maps HTTP errors during the drain to a failure", async () => {
+  it("maps HTTP errors on the unread path to a failure", async () => {
     const err = new ApiError({
       code: "NOTIFICATION_INVALID_CURSOR",
       message: "bad cursor",

@@ -10,7 +10,8 @@ export const PAGE_SIZE = 8;
 export interface INotificationRepository {
   /**
    * Cursor-paged list of notifications for the current user.
-   * `filter` maps to the `type` query param; "all" omits it.
+   * `filter` is mutually exclusive: "all" sends no filter, "unread" narrows by
+   * read state, any other value narrows by notification type (US-E18.37).
    * `cursor` is undefined for the first page.
    */
   listNotifications(params: {
