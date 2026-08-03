@@ -18,7 +18,7 @@ describe("RejectStaffLeaveUseCase", () => {
     const reject = vi.fn();
     const useCase = new RejectStaffLeaveUseCase(makeRepo({ reject }));
 
-    const res = await useCase.execute("sl-001", "   ");
+    const res = await useCase.execute("sl-001", "mem-1", "   ");
 
     expect(res).toEqual({
       ok: false,
@@ -31,7 +31,7 @@ describe("RejectStaffLeaveUseCase", () => {
     const reject = vi.fn();
     const useCase = new RejectStaffLeaveUseCase(makeRepo({ reject }));
 
-    const res = await useCase.execute("sl-001", "  ngắn  ");
+    const res = await useCase.execute("sl-001", "mem-1", "  ngắn  ");
 
     expect(res).toEqual({ ok: false, error: { type: "reason-too-short" } });
     expect(reject).not.toHaveBeenCalled();
@@ -41,9 +41,17 @@ describe("RejectStaffLeaveUseCase", () => {
     const reject = vi.fn().mockResolvedValue({ ok: true });
     const useCase = new RejectStaffLeaveUseCase(makeRepo({ reject }));
 
-    const res = await useCase.execute("sl-001", "  Lý do hợp lệ đủ dài  ");
+    const res = await useCase.execute(
+      "sl-001",
+      "mem-1",
+      "  Lý do hợp lệ đủ dài  ",
+    );
 
-    expect(reject).toHaveBeenCalledWith("sl-001", "Lý do hợp lệ đủ dài");
+    expect(reject).toHaveBeenCalledWith(
+      "sl-001",
+      "mem-1",
+      "Lý do hợp lệ đủ dài",
+    );
     expect(res).toEqual({ ok: true });
   });
 
@@ -53,7 +61,7 @@ describe("RejectStaffLeaveUseCase", () => {
       .mockResolvedValue({ ok: false, error: { type: "not-found" } });
     const useCase = new RejectStaffLeaveUseCase(makeRepo({ reject }));
 
-    const res = await useCase.execute("sl-x", "Lý do hợp lệ đủ dài");
+    const res = await useCase.execute("sl-x", "mem-1", "Lý do hợp lệ đủ dài");
 
     expect(res).toEqual({ ok: false, error: { type: "not-found" } });
   });
@@ -64,7 +72,7 @@ describe("RejectStaffLeaveUseCase", () => {
       .mockResolvedValue({ ok: false, error: { type: "already-processed" } });
     const useCase = new RejectStaffLeaveUseCase(makeRepo({ reject }));
 
-    const res = await useCase.execute("sl-007", "Lý do hợp lệ đủ dài");
+    const res = await useCase.execute("sl-007", "mem-7", "Lý do hợp lệ đủ dài");
 
     expect(res).toEqual({ ok: false, error: { type: "already-processed" } });
   });

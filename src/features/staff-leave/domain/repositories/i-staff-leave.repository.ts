@@ -22,6 +22,17 @@ export interface IStaffLeaveRepository {
   listRequests(filter?: {
     status?: StaffLeaveStatus;
   }): Promise<StaffLeaveResult<StaffLeaveRequestEntity[]>>;
-  approve(id: string): Promise<StaffLeaveActionResult>;
-  reject(id: string, reason: string): Promise<StaffLeaveActionResult>;
+  /**
+   * `staffId` is NOT redundant with `id`: the real approve/reject routes take
+   * a MANDATORY `staffMemberId` query param because the storage key is
+   * `(tenantId, staffMemberId, requestId)` — `id` alone does not address a
+   * row (US-E18.36, core openapi `StaffLeaveStaffMemberId`). Callers take it
+   * from the list row they are acting on.
+   */
+  approve(id: string, staffId: string): Promise<StaffLeaveActionResult>;
+  reject(
+    id: string,
+    staffId: string,
+    reason: string,
+  ): Promise<StaffLeaveActionResult>;
 }

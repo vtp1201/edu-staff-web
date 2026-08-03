@@ -6,7 +6,8 @@ import type {
 export class ApproveStaffLeaveUseCase {
   constructor(private readonly repo: IStaffLeaveRepository) {}
 
-  execute(id: string): Promise<StaffLeaveActionResult> {
-    return this.repo.approve(id);
+  /** `staffId` completes the storage key — see `IStaffLeaveRepository`. */
+  execute(id: string, staffId: string): Promise<StaffLeaveActionResult> {
+    return this.repo.approve(id, staffId);
   }
 }
