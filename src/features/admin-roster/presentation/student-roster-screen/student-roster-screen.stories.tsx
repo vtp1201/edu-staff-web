@@ -5,6 +5,7 @@ import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
 import type { SearchStudent } from "../../domain/entities/search-student.entity";
+import { toRosterStudentFromEnrollment } from "../../infrastructure/mappers/roster.mapper";
 import { StudentRosterScreen } from "./student-roster-screen";
 import type { StudentRosterScreenVm } from "./student-roster-screen.i-vm";
 
@@ -35,11 +36,50 @@ const classes: ClassSummary[] = [
 const genders: Array<"F" | "M"> = ["F", "M"];
 const roster32: RosterStudent[] = Array.from({ length: 32 }, (_, i) => ({
   id: `HS250${String(i + 1).padStart(2, "0")}`,
+  code: `HS250${String(i + 1).padStart(2, "0")}`,
   name: `Học sinh ${i + 1}`,
   dob: "01/01/2010",
   gender: genders[i % 2],
   status: i === 7 || i === 18 ? "transferred" : "active",
 }));
+
+/**
+ * REAL-mode rows (US-E18.35), built by running the actual mapper over a real
+ * wire `EnrollmentResponse` + the IAM detail map — a hand-written fixture would
+ * keep passing even if the join regressed.
+ *
+ * The four cases the screen must survive: fully decorated, PII unset
+ * (ADR-0122), self-reported "OTHER", and a member IAM could not resolve.
+ */
+const realRoster: RosterStudent[] = (
+  [
+    [
+      "8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31",
+      {
+        name: "Nguyễn Minh Anh",
+        dob: "2010-03-15T00:00:00Z",
+        gender: "FEMALE" as const,
+      },
+    ],
+    ["b2c3d4e5-1111-4444-8888-222233334444", { name: "Trần Văn Bình" }],
+    [
+      "c3d4e5f6-2222-4444-8888-333344445555",
+      { name: "Lê Thị Cẩm", gender: "OTHER" as const },
+    ],
+    ["d4e5f6a7-3333-4444-8888-444455556666", undefined],
+  ] as const
+).map(([studentMemberId, detail]) =>
+  toRosterStudentFromEnrollment(
+    {
+      enrollmentId: `enr-${studentMemberId}`,
+      classId: "cls-10a1",
+      studentMemberId,
+      academicYearLabel: "2025–2026",
+      enrolledAt: "2025-09-05T02:00:00Z",
+    },
+    detail,
+  ),
+);
 
 const searchPool: SearchStudent[] = [
   {
@@ -156,6 +196,51 @@ export const BulkSelected: Story = {
 
 export const ErrorState: Story = {
   args: { vm: baseVm, ...handlers, onUnenroll: fail },
+};
+
+/**
+ * US-E18.35 — what an ADMIN actually sees against the live backend: real names
+ * from IAM, and honest placeholders where the wire has nothing (no student
+ * code exists in any contract; dob/gender are optional per user, ADR-0122).
+ */
+export const RealModeWithMissingFields: Story = {
+  args: {
+    vm: {
+      ...baseVm,
+      roster: realRoster,
+      activeCount: realRoster.length,
+      transferredCount: 0,
+    },
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const tbl = messages.adminRoster.table;
+
+    // Decorated row renders real data.
+    await expect(await canvas.findByText("Nguyễn Minh Anh")).toBeVisible();
+    await expect(canvas.getByText("15/03/2010")).toBeVisible();
+
+    // Absence is announced, never blank and never fabricated.
+    expect(canvas.getAllByText(tbl.notProvided).length).toBeGreaterThan(0);
+    await expect(canvas.getByText(tbl.unknownName)).toBeVisible();
+
+    // Self-reported "Khác" keeps its own badge.
+    await expect(
+      canvas.getByRole("img", { name: tbl.genderOther }),
+    ).toBeVisible();
+
+    // No member uuid is ever printed in a display cell.
+    expect(canvasElement.textContent ?? "").not.toContain(
+      "8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31",
+    );
+
+    // Every row still carries its mutation affordance (the join degrading
+    // must not silently disable admin actions).
+    await expect(
+      canvas.getAllByRole("checkbox", { name: /Chọn học sinh/ }),
+    ).toHaveLength(realRoster.length);
+  },
 };
 
 export const Loading: Story = {

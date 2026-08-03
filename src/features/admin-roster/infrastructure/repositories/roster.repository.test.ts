@@ -157,24 +157,191 @@ describe("RosterRepository — getClasses (US-E18.5 real wire, US-E18.30 enriche
   });
 });
 
-describe("RosterRepository — getClassRoster/getSearchPool (permanently mock-first)", () => {
-  // US-E18.5: EnrollmentResponse carries no display fields; the DI factory
-  // always delegates these two methods to the mock repo. The real stubs are
-  // never invoked and never touch HTTP.
-  it("getClassRoster returns the dead-code stub without any HTTP call", async () => {
-    const http = makeHttp();
-    const res = await new RosterRepository(http).getClassRoster("cls-10a1");
-    expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error.type).toBe("unknown");
-    expect(http.get).not.toHaveBeenCalled();
-  });
-
+describe("RosterRepository — getSearchPool (still permanently mock-first)", () => {
+  // US-E18.35 un-mocked getClassRoster but NOT this: the gap here is a MISSING
+  // ENDPOINT (no core query for unassigned/transfer-candidate students), which
+  // IAM US-169's dob/gender addition does nothing about. The DI factory still
+  // delegates this one method to the mock repo, so the stub stays dead code.
   it("getSearchPool returns the dead-code stub without any HTTP call", async () => {
     const http = makeHttp();
     const res = await new RosterRepository(http).getSearchPool("cls-10a1");
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.type).toBe("unknown");
     expect(http.get).not.toHaveBeenCalled();
+  });
+});
+
+const ROSTER_URL = "/core/api/v1/classes/cls-10a1/students";
+
+/** Wire `EnrollmentResponse` row. */
+function enrollmentDto(over: Record<string, unknown> = {}) {
+  return {
+    enrollmentId: "enr-1",
+    classId: "cls-10a1",
+    studentMemberId: "stu-1",
+    academicYearLabel: "2025–2026",
+    enrolledAt: "2025-09-05T02:00:00Z",
+    ...over,
+  };
+}
+
+describe("RosterRepository — getClassRoster (US-E18.35 real two-source composition)", () => {
+  it("composes core enrollments with ONE batched IAM detail lookup — never N+1", async () => {
+    // core = AUTHORITY for WHICH students are enrolled; IAM = DECORATION for
+    // the ids core returned. The security-relevant assertion is the exact id
+    // list handed to the lookup: it is never an existence oracle.
+    const get = vi.fn(async () =>
+      makeListEnvelope([
+        enrollmentDto(),
+        enrollmentDto({ enrollmentId: "enr-2", studentMemberId: "stu-2" }),
+        enrollmentDto({ enrollmentId: "enr-3", studentMemberId: "stu-3" }),
+      ]),
+    ) as unknown as AxiosInstance["get"];
+    const resolveDetails = vi.fn(
+      async () =>
+        new Map([
+          [
+            "stu-1",
+            {
+              name: "Nguyễn Minh Anh",
+              dob: "2010-03-15T00:00:00Z",
+              gender: "FEMALE" as const,
+            },
+          ],
+          ["stu-2", { name: "Trần Văn Bình", gender: "MALE" as const }],
+        ]),
+    );
+    const repo = new RosterRepository(makeHttp({ get }), resolveDetails);
+
+    const res = await repo.getClassRoster("cls-10a1");
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(resolveDetails).toHaveBeenCalledTimes(1);
+    expect(resolveDetails).toHaveBeenCalledWith(["stu-1", "stu-2", "stu-3"]);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data).toEqual([
+      {
+        id: "stu-1",
+        name: "Nguyễn Minh Anh",
+        dob: "15/03/2010",
+        gender: "F",
+        status: "active",
+      },
+      // dob unset for this member (ADR-0122) → key absent, no placeholder text
+      // baked in at the infrastructure layer.
+      { id: "stu-2", name: "Trần Văn Bình", gender: "M", status: "active" },
+      // unresolvable id → decorated with nothing at all, but still enrolled.
+      { id: "stu-3", status: "active" },
+    ]);
+  });
+
+  it("every row is active — the endpoint returns only current enrollments (hard-delete on unenroll)", async () => {
+    const get = vi.fn(async () =>
+      makeListEnvelope([
+        enrollmentDto(),
+        enrollmentDto({ studentMemberId: "stu-2" }),
+      ]),
+    ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-10a1",
+    );
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.every((s) => s.status === "active")).toBe(true);
+  });
+
+  it("follows the cursor so a class larger than one page is not silently truncated", async () => {
+    const get = vi.fn(
+      async (_url: string, config?: { params?: { cursor?: string } }) =>
+        config?.params?.cursor === "c1"
+          ? makeListEnvelope([enrollmentDto({ studentMemberId: "stu-2" })])
+          : {
+              ...makeListEnvelope([enrollmentDto()]),
+              meta: {
+                requestId: "req-test",
+                pagination: { nextCursor: "c1", hasMore: true },
+              },
+            },
+    ) as unknown as AxiosInstance["get"];
+    const repo = new RosterRepository(makeHttp({ get }));
+
+    const res = await repo.getClassRoster("cls-10a1");
+
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.map((s) => s.id)).toEqual(["stu-1", "stu-2"]);
+  });
+
+  it("sends raw:true at the TOP level (sibling of params) so the envelope reaches parseEnvelope", async () => {
+    const get = vi.fn(async () =>
+      makeListEnvelope([]),
+    ) as unknown as AxiosInstance["get"];
+    await new RosterRepository(makeHttp({ get })).getClassRoster("cls-10a1");
+    expect(get).toHaveBeenCalledWith(
+      ROSTER_URL,
+      expect.objectContaining({ raw: true }),
+    );
+  });
+
+  it("skips the IAM call entirely for an empty class", async () => {
+    const get = vi.fn(async () =>
+      makeListEnvelope([]),
+    ) as unknown as AxiosInstance["get"];
+    const resolveDetails = vi.fn(async () => new Map());
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      resolveDetails,
+    ).getClassRoster("cls-10a1");
+
+    expect(resolveDetails).not.toHaveBeenCalled();
+    expect(res).toEqual({ ok: true, data: [] });
+  });
+
+  it("degrades (never fails) when the IAM decoration throws — the roster still renders", async () => {
+    const get = vi.fn(async () =>
+      makeListEnvelope([enrollmentDto()]),
+    ) as unknown as AxiosInstance["get"];
+    const resolveDetails = vi.fn(async () => {
+      throw new Error("iam down");
+    });
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      resolveDetails,
+    ).getClassRoster("cls-10a1");
+
+    expect(res).toEqual({
+      ok: true,
+      data: [{ id: "stu-1", status: "active" }],
+    });
+  });
+
+  it("ROSTER_ACCESS_FORBIDDEN (403) → forbidden — the AUTHORITY read is not best-effort", async () => {
+    const get = vi
+      .fn()
+      .mockRejectedValue(apiError("ROSTER_ACCESS_FORBIDDEN", 403));
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-10a1",
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.type).toBe("forbidden");
+  });
+
+  it("CLASS_NOT_FOUND (404) → not-found", async () => {
+    const get = vi.fn().mockRejectedValue(apiError("CLASS_NOT_FOUND", 404));
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-gone",
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.type).toBe("not-found");
+  });
+
+  it("transport failure → network-error", async () => {
+    const get = vi.fn().mockRejectedValue(new Error("boom"));
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-10a1",
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.type).toBe("network-error");
   });
 });
 
@@ -299,5 +466,14 @@ describe("RosterRepository — real interceptor pipeline (raw-flag placement)", 
       expect(res.data[0].id).toBe("cls-10a1");
       expect(res.data[0].homeroomTeacher).toBe("Nguyễn Thị Hương");
     }
+  });
+
+  it("getClassRoster survives the real unwrap (US-E18.35 — new cursor-paginated caller)", async () => {
+    const get = interceptedGet(() => makeListEnvelope([enrollmentDto()]));
+    const res = await new RosterRepository(makeHttp({ get })).getClassRoster(
+      "cls-10a1",
+    );
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data).toEqual([{ id: "stu-1", status: "active" }]);
   });
 });

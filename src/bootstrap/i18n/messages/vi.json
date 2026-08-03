@@ -349,8 +349,10 @@
       "gender": "Giới tính",
       "genderFemale": "Nữ",
       "genderMale": "Nam",
+      "genderOther": "Khác",
       "name": "Họ và tên",
       "noMatch": "Không tìm thấy học sinh nào khớp.",
+      "notProvided": "Chưa cập nhật",
       "removeFromClass": "Xoá khỏi lớp",
       "searchPlaceholder": "Tìm theo tên hoặc mã học sinh...",
       "selectAll": "Chọn tất cả học sinh trên trang",
@@ -358,7 +360,8 @@
       "selected": "Đã chọn {count} học sinh",
       "showing": "Hiển thị {from}–{to} / {total} học sinh",
       "status": "Trạng thái",
-      "studentId": "Mã học sinh"
+      "studentId": "Mã học sinh",
+      "unknownName": "Chưa xác định tên"
     },
     "title": "Danh sách học sinh"
   },

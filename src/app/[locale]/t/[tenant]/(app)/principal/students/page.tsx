@@ -21,8 +21,13 @@ import { PrincipalRosterSkeleton } from "@/features/admin-roster/presentation/pr
  * `GET /api/v1/classes` explicitly grants `MANAGER` admin-tier read alongside
  * ADMIN/SUPER_ADMIN (US-164), and web's `principal` appRole collapses both BE
  * enums — so the class picker is a real call for this role, no 403, no hybrid
- * branch needed. `getClassRoster` stays mock-first for EVERY caller (admin
- * included) per the pre-existing US-E18.5 ask #9 wire gap.
+ * branch needed.
+ *
+ * `getClassRoster` is REAL for this screen too since US-E18.35 (core
+ * enrollments as the authority + IAM batch name/dob/gender as decoration).
+ * Core's `ListStudentsInClassUseCase` grants the same admin tier the class list
+ * does, and IAM's batch lookup treats MANAGER as staff tier — so a principal
+ * sees the same real rows an admin does, just with no mutation affordance.
  */
 async function PrincipalRosterContent({ classId }: { classId?: string }) {
   const repo = await makeRosterRepository();

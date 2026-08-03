@@ -4,6 +4,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
+import { toRosterStudentFromEnrollment } from "../../infrastructure/mappers/roster.mapper";
 import { PrincipalRosterScreen } from "./principal-roster-screen";
 import type { PrincipalRosterScreenVm } from "./principal-roster-screen.i-vm";
 import { PrincipalRosterSkeleton } from "./principal-roster-skeleton";
@@ -31,11 +32,47 @@ const classes: ClassSummary[] = [
 const genders: Array<"F" | "M"> = ["F", "M"];
 const roster: RosterStudent[] = Array.from({ length: 12 }, (_, i) => ({
   id: `HS250${String(i + 1).padStart(2, "0")}`,
+  code: `HS250${String(i + 1).padStart(2, "0")}`,
   name: `Học sinh ${i + 1}`,
   dob: "01/01/2010",
   gender: genders[i % 2],
   status: i === 3 ? "transferred" : "active",
 }));
+
+/**
+ * REAL-mode rows built by running the actual mapper over a wire
+ * `EnrollmentResponse` + IAM detail map (fully decorated / PII unset /
+ * self-reported OTHER / unresolved member).
+ */
+const realRoster: RosterStudent[] = (
+  [
+    [
+      "8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31",
+      {
+        name: "Nguyễn Minh Anh",
+        dob: "2010-03-15T00:00:00Z",
+        gender: "FEMALE" as const,
+      },
+    ],
+    ["b2c3d4e5-1111-4444-8888-222233334444", { name: "Trần Văn Bình" }],
+    [
+      "c3d4e5f6-2222-4444-8888-333344445555",
+      { name: "Lê Thị Cẩm", gender: "OTHER" as const },
+    ],
+    ["d4e5f6a7-3333-4444-8888-444455556666", undefined],
+  ] as const
+).map(([studentMemberId, detail]) =>
+  toRosterStudentFromEnrollment(
+    {
+      enrollmentId: `enr-${studentMemberId}`,
+      classId: "cls-10a1",
+      studentMemberId,
+      academicYearLabel: "2025–2026",
+      enrolledAt: "2025-09-05T02:00:00Z",
+    },
+    detail,
+  ),
+);
 
 const baseVm: PrincipalRosterScreenVm = {
   classes,
@@ -178,6 +215,38 @@ export const ClassSwitch: Story = {
     });
     await userEvent.click(item);
     await expect(args.onClassChange).toHaveBeenCalledWith("cls-10a2");
+  },
+};
+
+/**
+ * US-E18.35 — the read-only principal sees the SAME real rows an admin does
+ * (core enrollments + IAM detail), with the same honest placeholders and still
+ * zero mutation affordance. Rows are produced by the real mapper, not a
+ * fixture, so a regression in the join fails this story.
+ */
+export const RealModeWithMissingFields: Story = {
+  args: {
+    vm: {
+      ...baseVm,
+      roster: realRoster,
+      activeCount: realRoster.length,
+      transferredCount: 0,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const tbl = tRoster.table;
+
+    await expect(await canvas.findByText("Nguyễn Minh Anh")).toBeVisible();
+    await expect(canvas.getByText("15/03/2010")).toBeVisible();
+    expect(canvas.getAllByText(tbl.notProvided).length).toBeGreaterThan(0);
+    await expect(canvas.getByText(tbl.unknownName)).toBeVisible();
+    expect(canvasElement.textContent ?? "").not.toContain(
+      "8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31",
+    );
+
+    // Read-only guarantee holds on the degraded data too.
+    await expect(canvas.queryAllByRole("checkbox")).toHaveLength(0);
   },
 };
 
