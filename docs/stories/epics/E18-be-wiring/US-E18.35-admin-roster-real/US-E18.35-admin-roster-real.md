@@ -122,8 +122,17 @@ Registered via `harness-cli story add --id US-E18.35`.
 - `services/core/docs/openapi.yaml` `EnrollmentResponse` (L7706-7723): five
   fields, no status, no name, no student code. `GET /classes/{classId}/students`
   is cursor-paginated (`limit` ≤ 100, default 20) and admits ADMIN/SUPER_ADMIN
-  or a TEACHER assigned to the class; core `list_classes.go` also grants MANAGER
-  the admin tier, which is why the principal screen works unchanged.
+  or a TEACHER assigned to the class.
+  **Corrected in review round 1:** the earlier claim that "core `list_classes.go`
+  also grants MANAGER the admin tier, which is why the principal screen works
+  unchanged" conflated two use cases. The US-164 MANAGER grant is scoped to
+  `list_classes.go` ALONE (its own comment: "admin-tier read access on THIS use
+  case only … deliberately not folded into the shared isAdmin helper").
+  `list_students_in_class.go` `authorize()` allows only `isAdmin(...)`
+  (SUPER_ADMIN/ADMIN, per `usecase/shared.go`) or an assigned TEACHER — there is
+  NO MANAGER branch. Web's `principal` appRole maps from BOTH ADMIN and MANAGER,
+  so a MANAGER-principal gets a real 403 `roster_access_forbidden` on every class
+  roster read. See review-fix 1 below.
 - **`status: "active"` reasoning verified**, not assumed: `DELETE
   /classes/{classId}/students/{studentMemberId}` is documented as
   "Removes the enrollment link (hard-delete)" and
@@ -149,7 +158,9 @@ were corrected to stop conflating the two.
 | --- | --- |
 | `bun vitest run` (baseline, before changes) | 471 files / 3460 tests passed |
 | `bun vitest run` (after) | **472 files / 3492 tests passed** — +32 tests, zero regressions |
+| `bun vitest run` (after review round 1) | **474 files / 3502 tests passed** — +2 files / +10 tests, zero regressions |
 | `bunx vitest run --config vitest.storybook.mts` | **157 files / 1201 tests passed** (one unrelated `principal-classes-screen` Select story flaked on the first run and passed in isolation + on a clean re-run of the full suite) |
+| `bunx vitest run --config vitest.storybook.mts` (after review round 1) | **158 files / 1205 tests passed** |
 | `bunx tsc --noEmit` | clean |
 | `bun lint` | clean (1 pre-existing warning in `messaging/message-context-menu.tsx`, untouched) |
 | `bun run build` (real, `.env.local` `NEXT_PUBLIC_USE_MOCK=false`) | compiled successfully |
@@ -171,3 +182,73 @@ not break it.
    is a placeholder in real mode. Candidate cross-repo ask.
 3. `getSearchPool` (Add-student panel) is still mock-only, so the enroll/transfer
    flow is not usable against a live backend. Still-open cross-repo ask #9.
+
+### Review fixes — round 1 (2026-08-03)
+
+Three MUST-FIX + one SHOULD-FIX from `fe-tech-lead-reviewer`. All fixed on the
+same branch; `## Status` untouched (`fe-lead` owns Harness sync).
+
+**1. MANAGER-principal 403 — false BE authorization claim removed, degrade now
+tested.** `principal/students/page.tsx`'s header comment claimed core's
+`ListStudentsInClassUseCase` "grants the same admin tier the class list does".
+Re-read of `list_students_in_class.go` `authorize()` (+ `shared.go` `isAdmin`,
++ `list_classes.go`'s own scoping comment, + `enrollment.go`
+`ErrRosterAccessForbidden` = 403 `roster_access_forbidden`) disproves it. The
+comment now states the real gate and names the MANAGER 403 explicitly. Behaviour
+was already correct — `toRosterFailure` maps 403 → `forbidden`, `errorVm()`
+carries it, and `PrincipalRosterScreen` renders `ListError` with `showRetry=false`
+for `forbidden`/`unauthorized`. That path is now LOCKED by a test rather than
+holding incidentally: `principal/students/page.test.tsx` → "degrades honestly
+when a MANAGER-principal is 403'd on the roster read (class list still OK)"
+(class list succeeds, roster 403 → `fetchError === "forbidden"`, empty roster,
+no current class), paired with the pre-existing `ForbiddenError` story that proves
+the retry control is absent from the DOM. No BE workaround attempted — the gap is
+a cross-repo ask for `fe-lead` (same shape as asks #39/#43).
+
+**2. Admin roster false-empty closed.** `admin/roster/page.tsx` used
+`rosterResult.ok ? … : []`, unreachable while the method was force-mocked and
+newly live now. Added `fetchError: RosterFailure["type"] | null` to
+`student-roster-screen.i-vm.ts`; the RSC page threads the failure key; the screen
+renders the shared `ListError` with the existing `adminRoster.errors.*` copy
+(no new i18n keys) and `showRetry` false for `forbidden`/`unauthorized`. In that
+state ClassInfoCard, RosterTable and AddStudentPanel are all suppressed — no
+enroll/transfer/bulk-remove affordance can be reached on a roster we could not
+read; the class picker stays so the operator is not dead-ended. Proof: NEW
+`admin/roster/page.test.tsx` (6 cases: default class, `?classId=`, genuinely
+empty class keeps `fetchError: null`, 403 → `fetchError` not empty roster,
+transient key, pool-only failure does not blank a loaded roster) + stories
+`RosterReadFailed` (alert text, empty-state copy ABSENT, retry present, zero
+checkboxes, no enroll search box) and `RosterReadForbidden` (no retry button,
+picker survives).
+
+**3. Duplicate placeholder component promoted.** `admin-roster`'s `MissingValue`
+and `moderation`'s `UnavailableValue` (US-E18.32) were structurally identical
+(toned span + `aria-hidden` em dash + sr-only text, both resolving to
+`--edu-text-secondary`). Promoted to ONE canonical
+`src/components/shared/absent-value/` (folder + `index.ts` + `.stories.tsx` +
+`.test.tsx`) taking a pre-translated `label` prop, so each feature keeps its own
+copy ("Chưa cập nhật" vs "Không có dữ liệu"). All 6 call sites moved
+(`roster-table.tsx` ×3, `report-table.tsx`, `report-card.tsx`, `stat-row.tsx`,
+`report-detail-sheet.tsx`); BOTH originals deleted, no leftovers
+(`grep MissingValue|UnavailableValue` → only historical doc comments).
+Moderation's US-E18.32 tests/stories pass unchanged (they assert the announced
+text, never the component identity or class list).
+
+**4. SHOULD-FIX — batch-lookup comment corrected.** `roster.repository.ts` said
+the IAM decoration happens "in ONE batched call". `BatchResolveMembersUseCase`
+chunks at 50, so a 51+ student class costs `ceil(n/50)` sequential calls, and it
+`return`s on the FIRST failing chunk — so one chunk failure degrades EVERY row,
+not just that chunk's. Comment now says exactly that. The abort-all behaviour
+itself (US-E18.29/US-E18.33) is unchanged by this story.
+
+**Review-round proof:** `bunx tsc --noEmit` clean · `bun lint` clean (same single
+pre-existing `messaging` warning) · `bun vitest run` 474 files / 3502 tests passed
+· `bunx vitest run --config vitest.storybook.mts` 158 files / 1205 tests passed ·
+`bun run build` green with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) AND with
+`NEXT_PUBLIC_USE_MOCK=true`.
+
+**New follow-up spotted (not fixed — out of review scope):** on the same admin
+page a `getClasses` FAILURE still falls back to `[]` and the content returns
+`null`, i.e. a blank screen with no explanation. Pre-existing (that read has been
+real since US-E18.5), but it is the same false-empty family and deserves its own
+story.
