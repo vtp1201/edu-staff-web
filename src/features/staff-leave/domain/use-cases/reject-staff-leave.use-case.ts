@@ -9,7 +9,11 @@ const MIN_REASON_LENGTH = 10;
 export class RejectStaffLeaveUseCase {
   constructor(private readonly repo: IStaffLeaveRepository) {}
 
-  async execute(id: string, reason: string): Promise<StaffLeaveActionResult> {
+  async execute(
+    id: string,
+    staffId: string,
+    reason: string,
+  ): Promise<StaffLeaveActionResult> {
     const trimmed = reason.trim();
     if (trimmed.length === 0) {
       const error: StaffLeaveFailure = { type: "missing-reject-reason" };
@@ -19,6 +23,6 @@ export class RejectStaffLeaveUseCase {
       const error: StaffLeaveFailure = { type: "reason-too-short" };
       return { ok: false, error };
     }
-    return this.repo.reject(id, trimmed);
+    return this.repo.reject(id, staffId, trimmed);
   }
 }

@@ -3726,6 +3726,8 @@
     "card": {
       "approvedBy": "Approved by",
       "days": "{count} days",
+      "leaveTypeUnrecorded": "Leave type not recorded",
+      "noDepartment": "No department",
       "reason": "Reason",
       "rejectedBy": "Rejected by",
       "rejectionReason": "Rejection reason:",
@@ -3744,6 +3746,7 @@
     "errors": {
       "already-processed": "This request has already been processed.",
       "forbidden": "You are not allowed to perform this action on this leave request.",
+      "invalid-request": "Invalid request. Please reload the page.",
       "missing-reject-reason": "Please enter a rejection reason.",
       "network-error": "Connection error. Please try again.",
       "not-found": "Leave request not found.",

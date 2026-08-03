@@ -14,9 +14,33 @@ export interface StaffLeaveRequestEntity {
   staffName: string;
   initials: string;
   avatarTone: string; // CSS color string for avatar background
-  staffRole: StaffActorRole;
-  department: string;
-  leaveType: StaffLeaveType;
+  /**
+   * `null` when the staff member's role could not be resolved from the IAM
+   * directory (batch lookup unavailable / id not resolvable). The badge is
+   * OMITTED rather than defaulted — labelling someone "Giáo viên" or
+   * "Nhân viên" on a guess is a fabrication (US-E18.36).
+   */
+  staffRole: StaffActorRole | null;
+  /**
+   * The staff member's CURRENT department name, resolved by BE at READ time —
+   * NOT a snapshot of the department when the leave was submitted (a later
+   * reassignment changes this on old requests too).
+   *
+   * `null` whenever the staff member holds no ACTIVE department-scoped
+   * position assignment. This is a genuine, ONGOING business state that can
+   * persist indefinitely — NOT a legacy-data gap. Its placeholder copy must
+   * differ from {@link StaffLeaveRequestEntity.leaveType}'s (US-E18.36 /
+   * core US-170).
+   */
+  department: string | null;
+  /**
+   * `null` ONLY for requests submitted BEFORE core US-170 added the field —
+   * pre-existing rows are not backfilled. Every request submitted after that
+   * migration carries a value (required at submit time), so this null is a
+   * LEGACY-ONLY, diminishing-over-time state — semantically different from
+   * {@link StaffLeaveRequestEntity.department}'s ongoing null.
+   */
+  leaveType: StaffLeaveType | null;
   startDate: string; // "DD/MM/YYYY"
   endDate: string; // "DD/MM/YYYY"
   days: number;

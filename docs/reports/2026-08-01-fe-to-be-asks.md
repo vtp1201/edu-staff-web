@@ -140,11 +140,15 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
 
 ### Asks MỚI phát sinh khi wire (thêm vào P2)
 
-19. **#41 — `StaffLeaveRequestResponse` thiếu `department` + `leaveType`**
-    (phát hiện khi wire US-E18.23). US-149 (tenant-wide list) + US-144 (tên
-    qua batch lookup) đã đóng 2/3 blocker của màn admin staff-leave; đây là
-    mảnh cuối. Ask kèm câu hỏi: 2 field này sẽ land **required hay nullable**?
-    (FE cần biết để model entity + empty state.)
+19. **#41 — RESOLVED (US-E18.36, 2026-08-03).** BE US-170 đã thêm cả
+    `department` và `leaveType` vào `StaffLeaveRequestResponse`, cả hai đều
+    `nullable: true` nhưng với 2 LÝ DO null khác nhau: `leaveType` null chỉ
+    cho row cũ trước migration (sẽ giảm dần theo thời gian, không backfill);
+    `department` null là trạng thái nghiệp vụ hợp lệ, có thể xảy ra vô thời
+    hạn (staff không có department-scoped assignment đang active). FE đã
+    model đúng 2 lý do khác nhau (2 câu placeholder khác nhau, không dùng
+    chung 1 "N/A"), và wire TOÀN BỘ màn staff-leave real (cả đọc lẫn
+    approve/reject) — đóng US-E18.8's permanent force-mock.
 20. **#42 — notification inbox thiếu filter `?read=false`** (phát hiện khi
     wire US-E18.25). BE đã có per-status count chính xác (`unread-count`)
     nhưng list không filter được theo trạng thái đọc → tab "Chưa đọc" phía FE

@@ -73,7 +73,11 @@ Watch for these (each has bitten a story here):
 - **Read/query Server Actions missing `requireRole`** — engineers guard the mutations but leave
   the `get*`/`list*` actions unguarded, assuming the `/admin` layout role-guard covers them. It does
   NOT: Server Actions are independently invocable POST endpoints; the layout only guards RSC page
-  render. Unguarded reads leak seal status, audit trails (who/when — Nghị định 13 sensitive), tenant
+  render. Same gap recurs on MUTATION actions in a route whose actions.ts predates the un-mock
+  (US-E18.36 staff-leave approve/reject: zero `requireRole`, only the `/admin` layout) — an
+  un-mock US is exactly when a dormant unguarded action becomes a live one; the fix is 3 lines and
+  the sibling precedent (`admin/invitations/actions.ts`) even carries the rationale comment.
+  Unguarded reads leak seal status, audit trails (who/when — Nghị định 13 sensitive), tenant
   admin rosters + student lists (PII) to any authenticated non-admin. EVERY new Server Action in a
   role-gated route needs its own `requireRole`. Blocking in high-risk lanes. (US-E14.6 actions.ts:
   6 read actions unguarded, only seal/initiate/confirm guarded.)

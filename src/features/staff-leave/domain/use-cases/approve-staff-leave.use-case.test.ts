@@ -18,9 +18,9 @@ describe("ApproveStaffLeaveUseCase", () => {
     const approve = vi.fn().mockResolvedValue({ ok: true });
     const useCase = new ApproveStaffLeaveUseCase(makeRepo({ approve }));
 
-    const res = await useCase.execute("sl-001");
+    const res = await useCase.execute("sl-001", "mem-1");
 
-    expect(approve).toHaveBeenCalledWith("sl-001");
+    expect(approve).toHaveBeenCalledWith("sl-001", "mem-1");
     expect(res).toEqual({ ok: true });
   });
 
@@ -30,7 +30,7 @@ describe("ApproveStaffLeaveUseCase", () => {
       .mockResolvedValue({ ok: false, error: { type: "not-found" } });
     const useCase = new ApproveStaffLeaveUseCase(makeRepo({ approve }));
 
-    const res = await useCase.execute("sl-x");
+    const res = await useCase.execute("sl-x", "mem-1");
 
     expect(res).toEqual({ ok: false, error: { type: "not-found" } });
   });
@@ -41,7 +41,7 @@ describe("ApproveStaffLeaveUseCase", () => {
       .mockResolvedValue({ ok: false, error: { type: "already-processed" } });
     const useCase = new ApproveStaffLeaveUseCase(makeRepo({ approve }));
 
-    const res = await useCase.execute("sl-004");
+    const res = await useCase.execute("sl-004", "mem-4");
 
     expect(res).toEqual({ ok: false, error: { type: "already-processed" } });
   });

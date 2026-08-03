@@ -15,4 +15,12 @@ export type StaffLeaveFailure =
   | { type: "missing-reject-reason" }
   | { type: "forbidden" }
   | { type: "same-actor" }
+  /**
+   * A 400 the caller cannot fix by retrying: a bad list `cursor`/`status`
+   * param, or core's domain backstop on an unrecognised approval state
+   * (`LEAVE_REQUEST_INVALID_INPUT` off the reject path / `VIOLATION_INVALID_STATE`).
+   * Deliberately NOT folded into `network-error`, whose copy offers a retry
+   * that can never succeed (US-E18.36 review).
+   */
+  | { type: "invalid-request" }
   | { type: "network-error" };

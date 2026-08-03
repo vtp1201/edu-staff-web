@@ -3726,6 +3726,8 @@
     "card": {
       "approvedBy": "Phê duyệt bởi",
       "days": "{count} ngày",
+      "leaveTypeUnrecorded": "Chưa ghi nhận loại nghỉ",
+      "noDepartment": "Chưa có phòng ban",
       "reason": "Lý do",
       "rejectedBy": "Từ chối bởi",
       "rejectionReason": "Lý do từ chối:",
@@ -3744,6 +3746,7 @@
     "errors": {
       "already-processed": "Đơn đã được xử lý trước đó.",
       "forbidden": "Bạn không có quyền thực hiện hành động này trên đơn nghỉ phép này.",
+      "invalid-request": "Yêu cầu không hợp lệ. Vui lòng tải lại trang.",
       "missing-reject-reason": "Vui lòng nhập lý do từ chối.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "not-found": "Không tìm thấy đơn nghỉ phép.",
