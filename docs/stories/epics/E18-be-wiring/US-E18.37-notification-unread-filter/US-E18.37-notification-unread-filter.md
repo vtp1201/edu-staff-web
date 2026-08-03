@@ -123,7 +123,7 @@ in-memory), or in any presentation/story file.
 | `bunx tsc --noEmit` | clean |
 | `bun lint` | clean (1 pre-existing warning + 1 info, unrelated file) |
 | `bun vitest run` | 477 files / **3551** passed (baseline before change: 477 / 3549 → +2 net tests, 0 regressions) |
-| `bunx vitest run --config vitest.storybook.mts` | 158 files / 1206 passed (one flaky failure on the first run, green on two consecutive re-runs; unrelated to this change — no story touched) |
+| `bunx vitest run --config vitest.storybook.mts` | 158 files / 1206 passed. Flaky: `components/shared/tenant-card/tenant-switch-dialog.stories.tsx > Open Card List` failed on 2 of 7 full runs (intl `applyTimeZone` render throw) and passes 3/3 in isolation — unrelated (this story touches only a `server-only` repository that is in no story's import graph) |
 | `bun run build` (real branch, `.env.local` `NEXT_PUBLIC_USE_MOCK=false`) | ✓ compiled successfully |
 | `NEXT_PUBLIC_USE_MOCK=true bun run build` | ✓ compiled successfully |
 
