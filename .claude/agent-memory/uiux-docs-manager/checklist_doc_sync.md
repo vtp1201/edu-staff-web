@@ -71,3 +71,26 @@ DR-021 (2026-07-17, Lesson Plan + Question Bank, US-E18.16 design follow-up):
   checkbox" and reserved that self-audit step for itself — another
   confirmation that gate-flip ownership is stated per-run, not assumed from
   precedent (see existing note above on DR-020 vs DR-012..019).
+
+DR-022 (2026-07-25, Staff Discipline + Student Absences, US-E18.14 design
+follow-up — task explicitly directed this role to flip [x] delivered in both
+README and the DR file itself, plus the changelog entry):
+- Discovered the "design_src/edu/*.jsx inventory" bullet list near the bottom
+  of screens.md had never been updated for DR-021 (lesson-plan.jsx,
+  question-bank.jsx were added to the top-of-file version-changelog prose and
+  to the Teacher-section table rows, but never got their own bullet in the
+  inventory list). Backfilled DR-021's two bullets in the same edit as adding
+  DR-022's — flag this kind of gap when spotted rather than silently
+  replicating it forward only for the current DR.
+- One-screen-multiple-routes pattern (e.g. `student-absences.jsx` serving
+  `/teacher/absences` + `/principal/absences` + `/admin/absences` from a
+  single role-conditional component): give it ONE screens.md row per distinct
+  *role experience* (teacher record/edit row placed in the Teacher section;
+  admin/principal flag-mode row placed in Principal/Admin section) rather than
+  one row total — cross-reference each row to the other ("same component as
+  the X row above") so a reader in either section sees the full picture
+  without duplicating anatomy description.
+- Verified `src/app/tokens.css` git log unchanged across the DR's timeframe as
+  the "no tokens.css drift" check when the DR explicitly declares zero new
+  tokens — cheap sanity check via `git log --oneline -3 -- src/app/tokens.css`
+  rather than re-deriving every token from scratch.
