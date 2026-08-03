@@ -242,6 +242,62 @@ describe("IamDirectoryRepository.batchLookup", () => {
     expect(row && "roles" in row).toBe(false);
   });
 
+  it("staff tier — a row WITH dob/gender round-trips both PII fields (IAM US-169, US-E18.35)", async () => {
+    // Real staff-tier JSON: `dob` is a Go `*time.Time` → RFC3339 date-time, and
+    // `gender` is the raw UPPER enum. Neither is reshaped at this boundary; the
+    // consuming feature owns display formatting.
+    const get = vi.fn().mockResolvedValue([
+      {
+        memberId: "st-2",
+        displayName: "Nguyễn Minh Anh",
+        email: "anh@example.com",
+        roles: ["STUDENT"],
+        dob: "2010-03-15T00:00:00Z",
+        gender: "FEMALE",
+      },
+    ]);
+    const repo = new IamDirectoryRepository(makeHttp({ get }));
+
+    const result = await repo.batchLookup(["st-2"]);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        {
+          memberId: "st-2",
+          displayName: "Nguyễn Minh Anh",
+          email: "anh@example.com",
+          roles: ["STUDENT"],
+          dob: "2010-03-15T00:00:00Z",
+          gender: "FEMALE",
+        },
+      ],
+    });
+  });
+
+  it("staff tier + PII unset — dob/gender keys stay ABSENT (optional per user, ADR-0122)", async () => {
+    const get = vi.fn().mockResolvedValue([
+      {
+        memberId: "st-3",
+        displayName: "Trần Văn Bình",
+        email: "binh@example.com",
+        roles: ["STUDENT"],
+      },
+    ]);
+    const repo = new IamDirectoryRepository(makeHttp({ get }));
+
+    const result = await repo.batchLookup(["st-3"]);
+    const row = result.ok ? result.value[0] : undefined;
+
+    // `toEqual` ignores undefined-valued keys, so assert the KEY SET.
+    expect(row && Object.keys(row).sort()).toEqual([
+      "displayName",
+      "email",
+      "memberId",
+      "roles",
+    ]);
+  });
+
   it("maps too_many_member_ids → too-many-ids (defensive: the use-case chunks at 50)", async () => {
     const get = vi.fn().mockRejectedValue(apiError("too_many_member_ids", 400));
     const repo = new IamDirectoryRepository(makeHttp({ get }));

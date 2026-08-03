@@ -30,6 +30,12 @@ export const IamDirectoryMapper = {
    * omits those keys on the wire, and materialising them as
    * `email: undefined` would destroy the presence-based tier signal
    * (`"email" in summary`) the contract is built on.
+   *
+   * `dob`/`gender` (US-E18.35, IAM US-169) follow the SAME conditional-spread
+   * rule for a different reason: they are optional per USER even for a
+   * staff-tier caller (ADR-0122), so `dob: undefined` would turn "this student
+   * has not filled it in" into an indistinguishable blank. Absence is the only
+   * honest representation; the roster screen renders the placeholder.
    */
   toMemberSummary(dto: MemberBatchItemDto): MemberSummary {
     return {
@@ -37,6 +43,8 @@ export const IamDirectoryMapper = {
       displayName: dto.displayName,
       ...(dto.email !== undefined ? { email: dto.email } : {}),
       ...(dto.roles !== undefined ? { roles: dto.roles } : {}),
+      ...(dto.dob !== undefined ? { dob: dto.dob } : {}),
+      ...(dto.gender !== undefined ? { gender: dto.gender } : {}),
     };
   },
 };

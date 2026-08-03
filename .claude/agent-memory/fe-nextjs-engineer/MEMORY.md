@@ -86,4 +86,6 @@
 
 - [Un-mock an anticipatory DTO](pattern-unmock-anticipatory-dto.md) — E18.34: a DTO only the MOCK ever produced is UNVERIFIED (field names right, enum CASING wrong — invisible because the fixture matched the bad type); reuse the sibling feature's wire↔domain table; delete an honest-degrade whose premise was false + re-read its i18n copy; resetModules breaks `instanceof`-based isApiError → build ApiError inside the stub (+more in file)
 
+- [Two gaps, one force-mock](pattern-two-gaps-one-forcemock.md) — E18.35: a force-mock doc bundles SEVERAL reasons; BE closing one un-mocks only one method (env-matrix test proves the split); `status` can be a CONSTANT derived from a hard-delete semantic, but a code with no semantic must stay absent (never a uuid in a labelled slot) (+more in file)
+
 - [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined`; assert Object.keys); authority+decoration two-source roster; un-mock env-matrix must stub `lib/jwt` too, and it breaks unrelated RSC page tests via cookies() (+more in file)

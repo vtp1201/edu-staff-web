@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatusBadge } from "@/components/shared/status-badge/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,6 @@ import { DuplicateReportList } from "./duplicate-report-list";
 import { formatReportTimestamp } from "./format-report-row";
 import { ReportErrorBanner } from "./report-error-banner";
 import { ReportStatusBadge } from "./report-status-badge";
-import { UnavailableValue } from "./unavailable-value";
 
 export type DetailSheetStatus =
   | "loading"
@@ -188,7 +188,7 @@ export function ReportDetailSheet({
                       {detail.reporterName}
                     </span>
                   ) : (
-                    <UnavailableValue />
+                    <AbsentValue label={t("unavailable")} />
                   )}
                 </p>
                 {detail.note && (

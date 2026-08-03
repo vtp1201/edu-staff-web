@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
+import { ListError } from "@/components/shared/list-error";
 import { Button } from "@/components/ui/button";
 import type { SearchStudent } from "@/features/admin-roster/domain/entities/search-student.entity";
 import { AddStudentPanel } from "./components/add-student-panel";
@@ -32,6 +33,7 @@ export function StudentRosterScreen({
   onTransfer,
 }: StudentRosterScreenProps) {
   const t = useTranslations("adminRoster");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -110,6 +112,15 @@ export function StudentRosterScreen({
   };
 
   const isEmpty = vm.roster.length === 0;
+  // A failed READ must never be dressed as an empty class (US-E18.35 review):
+  // the counters, the table and — above all — the enroll/transfer affordances
+  // are suppressed, because acting on a roster we could not read is the actual
+  // hazard. `forbidden`/`unauthorized` can never be fixed by retrying with the
+  // same session, so the retry control is OMITTED rather than shipped dead
+  // (same convention as PrincipalRosterScreen / US-E13.8 AC-1.27).
+  const hasFetchError = vm.fetchError !== null;
+  const retryable =
+    vm.fetchError !== "forbidden" && vm.fetchError !== "unauthorized";
 
   return (
     <main className="flex-1 overflow-y-auto bg-edu-bg px-8 py-6">
@@ -139,37 +150,51 @@ export function StudentRosterScreen({
           </div>
         </div>
 
-        <ClassInfoCard
-          cls={vm.currentClass}
-          activeCount={vm.activeCount}
-          transferredCount={vm.transferredCount}
-        />
+        {hasFetchError ? (
+          <ListError
+            shape="bordered-card"
+            iconSize={12}
+            message={t(`errors.${vm.fetchError ?? "unknown"}`)}
+            onRetry={() => router.refresh()}
+            retryLabel={tCommon("confirmDialog.retry")}
+            retryIcon="refresh"
+            showRetry={retryable}
+          />
+        ) : (
+          <>
+            <ClassInfoCard
+              cls={vm.currentClass}
+              activeCount={vm.activeCount}
+              transferredCount={vm.transferredCount}
+            />
 
-        <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]">
-          {isEmpty ? (
-            <RosterEmptyState onAddFirstClick={focusPanelSearch} />
-          ) : (
-            <RosterTable
-              roster={vm.roster}
-              disabled={pending}
-              onRequestUnenrollOne={(id) =>
-                setConfirm({ type: "unenroll", targetIds: [id] })
-              }
-              onRequestUnenrollMany={(ids) =>
-                setConfirm({ type: "unenroll", targetIds: ids })
-              }
-            />
-          )}
-          <div ref={panelSearchRef}>
-            <AddStudentPanel
-              searchPool={vm.searchPool}
-              enrolledIds={enrolledIds}
-              recentlyAdded={recentlyAdded}
-              disabled={pending}
-              onRequestEnroll={handleRequestEnroll}
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]">
+              {isEmpty ? (
+                <RosterEmptyState onAddFirstClick={focusPanelSearch} />
+              ) : (
+                <RosterTable
+                  roster={vm.roster}
+                  disabled={pending}
+                  onRequestUnenrollOne={(id) =>
+                    setConfirm({ type: "unenroll", targetIds: [id] })
+                  }
+                  onRequestUnenrollMany={(ids) =>
+                    setConfirm({ type: "unenroll", targetIds: ids })
+                  }
+                />
+              )}
+              <div ref={panelSearchRef}>
+                <AddStudentPanel
+                  searchPool={vm.searchPool}
+                  enrolledIds={enrolledIds}
+                  recentlyAdded={recentlyAdded}
+                  disabled={pending}
+                  onRequestEnroll={handleRequestEnroll}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <DestructiveConfirmDialog

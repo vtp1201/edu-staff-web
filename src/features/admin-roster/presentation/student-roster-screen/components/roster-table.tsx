@@ -3,6 +3,7 @@
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,13 @@ import { RosterPagination } from "./roster-pagination";
 
 const PAGE_SIZE = 10;
 
-function initial(name: string): string {
+/**
+ * Avatar initial. `name` is optional on the entity (US-E18.35: the IAM lookup
+ * may not resolve a member), and "?" is the honest stand-in — never a letter
+ * from the raw member uuid.
+ */
+function initial(name: string | undefined): string {
+  if (!name) return "?";
   const parts = name.trim().split(/\s+/);
   return (parts.at(-1) ?? name).charAt(0).toUpperCase();
 }
@@ -48,6 +55,9 @@ export function RosterTable(props: RosterTableProps) {
   // narrows the union and the handlers are known-present in the mutating branch.
   const { roster, disabled = false } = props;
   const t = useTranslations("adminRoster");
+  // One translated placeholder for every absent cell (code / dob / gender):
+  // the SAME sentence must be announced wherever a field was not recorded.
+  const notProvided = t("table.notProvided");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
@@ -57,7 +67,10 @@ export function RosterTable(props: RosterTableProps) {
     const q = search.trim().toLowerCase();
     if (!q) return roster;
     return roster.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q),
+      (s) =>
+        (s.name ?? "").toLowerCase().includes(q) ||
+        (s.code ?? "").toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q),
     );
   }, [roster, search]);
 
@@ -237,6 +250,10 @@ export function RosterTable(props: RosterTableProps) {
                 const isSelected = selected.has(s.id);
                 const isTransferred = s.status === "transferred";
                 const absoluteIndex = (safePage - 1) * PAGE_SIZE + i + 1;
+                // Presentation owns the fallback COPY; the entity only ever
+                // says "absent" (US-E18.35). Never fall back to `s.id` — a raw
+                // member uuid would become this row's accessible name.
+                const displayName = s.name ?? t("table.unknownName");
                 return (
                   <tr
                     key={s.id}
@@ -249,7 +266,7 @@ export function RosterTable(props: RosterTableProps) {
                       <td className="py-3 pr-2 pl-5 align-middle">
                         <Checkbox
                           aria-label={t("table.selectStudent", {
-                            name: s.name,
+                            name: displayName,
                           })}
                           checked={isSelected}
                           onCheckedChange={() => toggleOne(s.id)}
@@ -277,20 +294,28 @@ export function RosterTable(props: RosterTableProps) {
                             isTransferred
                               ? "text-edu-text-secondary line-through"
                               : "text-edu-text-primary",
+                            s.name ? undefined : "italic",
                           )}
                         >
-                          {s.name}
+                          {displayName}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3 align-middle font-mono text-edu-text-secondary text-xs tabular-nums">
-                      {s.id}
+                      {/* Student CODE, not the member id: no core/IAM contract
+                          carries one, so the real roster shows a placeholder
+                          rather than a uuid under a "Mã học sinh" header. */}
+                      {s.code ?? <AbsentValue label={notProvided} />}
                     </td>
                     <td className="px-4 py-3 align-middle text-edu-text-secondary text-xs tabular-nums">
-                      {s.dob}
+                      {s.dob ?? <AbsentValue label={notProvided} />}
                     </td>
                     <td className="px-4 py-3 text-center align-middle">
-                      <GenderBadge gender={s.gender} />
+                      {s.gender ? (
+                        <GenderBadge gender={s.gender} />
+                      ) : (
+                        <AbsentValue label={notProvided} />
+                      )}
                     </td>
                     <td className="px-4 py-3 align-middle">
                       {isTransferred ? (
@@ -307,7 +332,7 @@ export function RosterTable(props: RosterTableProps) {
                       <td className="px-4 py-3 text-right align-middle">
                         <button
                           type="button"
-                          aria-label={`${t("table.removeFromClass")} — ${s.name}`}
+                          aria-label={`${t("table.removeFromClass")} — ${displayName}`}
                           disabled={disabled}
                           onClick={() => props.onRequestUnenrollOne(s.id)}
                           className={cn(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { AbsentValue } from "@/components/shared/absent-value";
 import { StatusBadge } from "@/components/shared/status-badge/status-badge";
 import {
   type ReportEntity,
@@ -9,7 +10,6 @@ import {
 } from "../../../domain/entities/report.entity";
 import { formatReportRow } from "./format-report-row";
 import { ReportStatusBadge } from "./report-status-badge";
-import { UnavailableValue } from "./unavailable-value";
 
 export interface ReportCardListProps {
   reports: ReportEntity[];
@@ -26,6 +26,7 @@ export function ReportCardList({ reports, onOpen }: ReportCardListProps) {
   const t = useTranslations("moderation.table");
   const tReason = useTranslations("moderation.reportDialog.reasons");
   const tKind = useTranslations("moderation.kinds");
+  const tRoot = useTranslations("moderation");
 
   return (
     <ul className="flex flex-col gap-3 md:hidden">
@@ -57,7 +58,7 @@ export function ReportCardList({ reports, onOpen }: ReportCardListProps) {
                     {row.reporterName}
                   </span>
                 ) : (
-                  <UnavailableValue />
+                  <AbsentValue label={tRoot("unavailable")} />
                 )}
                 <span className="text-muted-foreground">
                   · {row.createdAtLabel}

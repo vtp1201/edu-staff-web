@@ -376,7 +376,14 @@ export class MockRosterRepository implements IRosterRepository {
     await mockDelay(300);
     return {
       ok: true,
-      data: structuredClone(state.rosterByClass[classId] ?? []),
+      // In the seed the id IS the human student code ("HS25001"), so `code`
+      // mirrors it — the mock keeps demonstrating the "Mã học sinh" column that
+      // the real path (member uuids, no student code anywhere on the wire)
+      // renders as a placeholder.
+      data: structuredClone(state.rosterByClass[classId] ?? []).map((s) => ({
+        ...s,
+        code: s.id,
+      })),
     };
   }
 
@@ -404,8 +411,10 @@ export class MockRosterRepository implements IRosterRepository {
       for (const s of students) {
         if (s.status === "active" && !enrolledHere.has(s.id)) {
           pool.push({
+            // Seed rows always carry a name; the `?? s.id` only satisfies the
+            // entity's now-optional `name` (real rows can lack one).
             id: s.id,
-            name: s.name,
+            name: s.name ?? s.id,
             currentClassId: otherId,
             currentClassName: classNameOf(otherId),
           });
@@ -446,7 +455,7 @@ export class MockRosterRepository implements IRosterRepository {
     const idx = list.findIndex((s) => s.id === studentId);
     if (idx === -1) return { ok: false, error: { type: "not-found" } };
     const [removed] = list.splice(idx, 1);
-    state.unassigned.push({ id: removed.id, name: removed.name });
+    state.unassigned.push({ id: removed.id, name: removed.name ?? removed.id });
     return { ok: true, data: undefined };
   }
 
@@ -459,7 +468,8 @@ export class MockRosterRepository implements IRosterRepository {
     if (!list) return { ok: false, error: { type: "not-found" } };
     const idSet = new Set(studentIds);
     for (const s of list) {
-      if (idSet.has(s.id)) state.unassigned.push({ id: s.id, name: s.name });
+      if (idSet.has(s.id))
+        state.unassigned.push({ id: s.id, name: s.name ?? s.id });
     }
     state.rosterByClass[classId] = list.filter((s) => !idSet.has(s.id));
     return { ok: true, data: undefined };

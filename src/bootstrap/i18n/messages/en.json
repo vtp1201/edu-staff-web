@@ -349,8 +349,10 @@
       "gender": "Gender",
       "genderFemale": "Female",
       "genderMale": "Male",
+      "genderOther": "Other",
       "name": "Full name",
       "noMatch": "No matching students.",
+      "notProvided": "Not provided",
       "removeFromClass": "Remove from class",
       "searchPlaceholder": "Search by name or student ID...",
       "selectAll": "Select all students on this page",
@@ -358,7 +360,8 @@
       "selected": "{count} students selected",
       "showing": "Showing {from}–{to} of {total} students",
       "status": "Status",
-      "studentId": "Student ID"
+      "studentId": "Student ID",
+      "unknownName": "Name unavailable"
     },
     "title": "Student roster"
   },

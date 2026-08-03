@@ -21,6 +21,7 @@ const t = messages.adminRoster;
 const roster: RosterStudent[] = [
   {
     id: "HS25001",
+    code: "HS25001",
     name: "Nguyễn Văn An",
     dob: "01/01/2010",
     gender: "M",
@@ -28,6 +29,7 @@ const roster: RosterStudent[] = [
   },
   {
     id: "HS25002",
+    code: "HS25002",
     name: "Trần Thị Bình",
     dob: "02/02/2010",
     gender: "F",
@@ -105,5 +107,68 @@ describe("RosterTable — readOnly variant", () => {
     const html = render({ roster: [] });
 
     expect(html).toContain('colSpan="8"');
+  });
+});
+
+/**
+ * Real-mode degradation (US-E18.35). `code`/`name`/`dob`/`gender` are optional
+ * on the entity: a student may legitimately have no dob/gender recorded
+ * (ADR-0122), no core/IAM contract carries a student CODE at all, and the IAM
+ * batch lookup may not resolve a member. None of that is an error — each cell
+ * must show an honest placeholder, and none may ever show a raw member uuid.
+ */
+describe("RosterTable — missing per-student fields render placeholders", () => {
+  const degraded: RosterStudent[] = [
+    // Nothing resolved at all (worst case: IAM lookup degraded).
+    { id: "8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31", status: "active" },
+    // Resolved name, PII not filled in by the student.
+    {
+      id: "b2c3d4e5-0000-4444-8888-111122223333",
+      name: "Lê Thị Cẩm",
+      status: "active",
+    },
+  ];
+
+  it("shows the sr-announced placeholder instead of an empty or fabricated cell", () => {
+    const html = render({ roster: degraded, readOnly: true });
+
+    // The em dash is decorative; the meaning is in the sr-only text.
+    expect(html).toContain(t.table.notProvided);
+    expect(html).toContain("—");
+  });
+
+  it("never prints the raw member uuid — not as the code, not as the name", () => {
+    const html = render({ roster: degraded, readOnly: true });
+
+    expect(html).not.toContain("8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31");
+    expect(html).not.toContain("b2c3d4e5-0000-4444-8888-111122223333");
+  });
+
+  it("falls back to a named placeholder for an unresolved student, keeping the row usable", () => {
+    const html = render({ roster: degraded, readOnly: true });
+
+    expect(html).toContain(t.table.unknownName);
+    // The resolved sibling still renders normally.
+    expect(html).toContain("Lê Thị Cẩm");
+  });
+
+  it("labels the remove control with the placeholder name for the admin caller (never a uuid)", () => {
+    const html = render({ roster: degraded });
+
+    expect(html).toContain(
+      `${t.table.removeFromClass} — ${t.table.unknownName}`,
+    );
+    expect(html).not.toContain("8f14e45f-ceea-467a-9d0b-2c1a4b9e7d31");
+  });
+
+  it('renders IAM "OTHER" as its own badge — never coerced into Nam/Nữ', () => {
+    const html = render({
+      roster: [{ id: "s-1", name: "Trần An", gender: "O", status: "active" }],
+      readOnly: true,
+    });
+
+    expect(html).toContain(`aria-label="${t.table.genderOther}"`);
+    expect(html).not.toContain(`aria-label="${t.table.genderMale}"`);
+    expect(html).not.toContain(`aria-label="${t.table.genderFemale}"`);
   });
 });

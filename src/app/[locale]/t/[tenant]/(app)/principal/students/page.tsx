@@ -21,8 +21,32 @@ import { PrincipalRosterSkeleton } from "@/features/admin-roster/presentation/pr
  * `GET /api/v1/classes` explicitly grants `MANAGER` admin-tier read alongside
  * ADMIN/SUPER_ADMIN (US-164), and web's `principal` appRole collapses both BE
  * enums — so the class picker is a real call for this role, no 403, no hybrid
- * branch needed. `getClassRoster` stays mock-first for EVERY caller (admin
- * included) per the pre-existing US-E18.5 ask #9 wire gap.
+ * branch needed.
+ *
+ * `getClassRoster` is REAL for this screen too since US-E18.35 (core
+ * enrollments as the authority + IAM batch name/dob/gender as decoration) —
+ * but its RBAC is NOT the class list's, and a MANAGER-principal hits a 403.
+ *
+ * Ground truth (re-read 2026-08-03, edu-api
+ * `services/core/.../usecase/list_students_in_class.go` `authorize()`):
+ * `GET /classes/{id}/students` allows ONLY `isAdmin(...)` — i.e.
+ * `SUPER_ADMIN`/`ADMIN`, per `usecase/shared.go` — or a TEACHER holding an
+ * assignment to that class. There is NO `MANAGER` branch on THIS use case: the
+ * US-164 MANAGER grant is scoped to `list_classes.go` alone, which says so in
+ * its own comment ("admin-tier read access on THIS use case only ... not folded
+ * into the shared isAdmin helper").
+ *
+ * Web's `principal` appRole maps from BOTH BE enums, so:
+ * - an ADMIN-principal reads the roster normally;
+ * - a MANAGER-principal gets a real 403 `roster_access_forbidden` on EVERY
+ *   class roster read here — `toRosterFailure` turns it into `forbidden`, and
+ *   the screen shows the non-retryable error card (no retry button), never an
+ *   empty roster. Locked by `page.test.tsx` ("MANAGER-principal 403") +
+ *   `principal-roster-screen.stories.tsx` `ForbiddenError`.
+ * Every class fails the same way for that role, so `errorVm()` deliberately
+ * drops the class picker too — offering a picker whose every option 403s would
+ * be a dead control. Closing the gap is a BE ask (fe-lead's ask ledger), not
+ * something this page may work around.
  */
 async function PrincipalRosterContent({ classId }: { classId?: string }) {
   const repo = await makeRosterRepository();

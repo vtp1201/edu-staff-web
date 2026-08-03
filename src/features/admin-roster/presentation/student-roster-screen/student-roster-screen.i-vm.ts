@@ -21,6 +21,15 @@ export interface StudentRosterScreenVm {
   transferredCount: number;
   /** Candidate pool for AddStudentPanel — students NOT in currentClass. */
   searchPool: SearchStudent[];
+  /**
+   * Roster READ failure key, or `null` when the read succeeded (US-E18.35
+   * review). `getClassRoster` became a real HTTP call in US-E18.35, so a
+   * 403/404/transport failure is now reachable here; without this field the
+   * screen would render its "no students" empty state — indistinguishable from
+   * a genuinely empty class, while enroll/transfer stayed live. Mirrors
+   * `PrincipalRosterScreenVm.fetchError`.
+   */
+  fetchError: RosterFailure["type"] | null;
 }
 
 /** Action result — uniform shape across all Server Actions. */

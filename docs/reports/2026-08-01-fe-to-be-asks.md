@@ -76,15 +76,16 @@ buffer/timeout sớm với long-lived connection).
      hoặc cho PARENT batch-lookup đúng các id đã linked của mình.
    - Chặn: parent child-switcher ở grades + timetable (hiện mock).
 
-5. **#9 (phần còn lại) — roster cần DOB/gender**
-   - `EnrollmentResponse` (`GET /classes/{id}/students`) vẫn zero display
-     fields. Tên giờ join được qua US-144 batch (caller là ADMIN) nhưng
-     `dob`/`gender` không tồn tại ở đâu trên public API
-     (`MemberListItem`/`MemberBatchItem` không có).
-   - Ask (chọn 1): (a) denormalize `studentName`/`dob`/`gender` lên
-     `EnrollmentResponse`; hoặc (b) thêm `dob`+`gender` vào batch lookup item.
-   - Chặn: admin roster listing + unassigned-student search pool (US-E18.5
-     đang mock vĩnh viễn).
+5. **#9 — PARTIALLY RESOLVED (US-E18.35, 2026-08-03).** Option (b) đã ship:
+     BE US-169 thêm `dob`+`gender` vào `MemberBatchItem` (staff-tier, ADR-0122
+     PII). FE đã wire `getClassRoster` real bằng cách compose enrollment list
+     (`core`) + batch lookup (`iam`, US-E18.33's `BatchResolveMembersUseCase`)
+     — admin roster listing giờ hiển thị tên/dob/gender thật (ADR 0069).
+     **Phần CÒN LẠI, vẫn treo**: unassigned-student search pool
+     (`getSearchPool`) — không có endpoint core nào cho tập học sinh chưa
+     enroll, nên enroll/transfer flow vẫn không dùng được với backend thật.
+     Cần BE endpoint riêng cho search pool (không liên quan gì đến dob/gender
+     nữa — đã tách bạch rõ 2 gap này).
 
 ### P2 — field/endpoint bổ sung (mở khóa từng phần UI)
 
@@ -179,6 +180,17 @@ exam-bank edit/delete, US-E18.29 invitations list/resend). Tất cả đã merge
     `GET /members/{memberId}/attendance` cho PARENT đã liên kết hợp lệ, 403
     `ATTENDANCE_FORBIDDEN` cho parent chưa/không liên kết. Đề nghị BE cập nhật
     lại prose openapi cho khớp code (không cần đổi code).
+24. **#46 — `ListStudentsInClassUseCase.authorize()` thiếu nhánh MANAGER**
+    (phát hiện khi wire US-E18.35, admin roster → `getClassRoster` real).
+    `services/core/internal/class/core/application/usecase/list_students_in_class.go`
+    chỉ cho `isAdmin` (SUPER_ADMIN/ADMIN) hoặc TEACHER được assign vào lớp —
+    không có MANAGER. Principal (web appRole từ MANAGER) hiện 403 trên MỌI
+    lớp khi vào `/principal/students`, dù `list_classes.go` (danh sách lớp)
+    ĐÃ có nhánh MANAGER từ US-164. Cùng lớp gap với ask #39/#43 (MANAGER
+    thiếu quyền đọc trên một use case cụ thể, dù đã có ở use case liền kề).
+    FE xử lý honest degrade (403 → `forbidden`, không retry, ẩn hết control
+    mutation) — không chặn, nhưng cần BE thêm MANAGER vào `authorize()` để
+    principal thực sự xem được roster.
 
 ### Observation cho BE (không chặn)
 

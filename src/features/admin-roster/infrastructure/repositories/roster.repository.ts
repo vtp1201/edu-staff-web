@@ -15,11 +15,50 @@ import type {
   VoidResult,
 } from "../../domain/repositories/i-roster.repository";
 import type { ClassesResponseDto } from "../dtos/classes-response.dto";
-import { toClassSummary } from "../mappers/roster.mapper";
+import type { EnrollmentListResponseDto } from "../dtos/enrollment-response.dto";
+import type { RosterStudentDetail } from "../mappers/roster.mapper";
+import {
+  toClassSummary,
+  toRosterStudentFromEnrollment,
+} from "../mappers/roster.mapper";
 import { toRosterFailure } from "../mappers/roster-failure.mapper";
 
+/**
+ * `memberId → display detail` resolver, injected by
+ * `bootstrap/di/admin-roster.di.ts` from `iam-directory`'s
+ * `BatchResolveMembersUseCase` (the ONE batch-lookup client in this app — do
+ * not add a second). Composing across services belongs in `bootstrap/di`
+ * (decision 0017), so this repository sees a plain function and never spans
+ * `core` and `iam` itself.
+ *
+ * Contractually never reports per-id: ids it cannot resolve are simply absent
+ * from the returned map.
+ */
+export type ResolveStudentDetails = (
+  memberIds: string[],
+) => Promise<Map<string, RosterStudentDetail>>;
+
+/** BE caps `limit` at 100 (`listMaxLimit`, core `list_classes.go`). */
+const ROSTER_PAGE_SIZE = 100;
+/**
+ * Safety stop for cursor following. 10 × 100 = 1000 students in one class,
+ * far beyond any real roster — a higher count means a paging bug, and looping
+ * forever server-side would be the worse failure.
+ */
+const ROSTER_MAX_PAGES = 10;
+
 export class RosterRepository implements IRosterRepository {
-  constructor(private readonly http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /**
+     * Optional so the wire-level tests (and any caller that only needs the
+     * class list or the write paths) can construct the repository with just an
+     * http client. Absent = rows carry no name/dob/gender, which presentation
+     * renders as placeholders — a degraded display, never an error (same
+     * convention as `parent-child-list.repository.ts`).
+     */
+    private readonly resolveStudentDetails?: ResolveStudentDetails,
+  ) {}
 
   async getClasses(params: {
     academicYear?: string;
@@ -45,25 +84,93 @@ export class RosterRepository implements IRosterRepository {
   }
 
   /**
-   * PERMANENTLY mock-first regardless of `USE_MOCK` (US-E18.5, cross-repo
-   * ask #9) — matches class-management's `listTeachers` precedent (US-E18.4).
-   * The wire `EnrollmentResponse` (`GET /classes/{id}/students`) carries only
-   * `enrollmentId`/`classId`/`studentMemberId`/`academicYearLabel`/`enrolledAt`
-   * — no student name, DOB, gender, or status. IAM has no batch/by-id profile
-   * lookup on the public API (ask #7) and no `gender` field anywhere. Rendering
-   * raw UUIDs for every roster row is not a shippable screen, so the DI factory
-   * always delegates this method to the mock repo. This stub is never invoked.
+   * REAL since US-E18.35 — un-mocks the US-E18.5 "permanent" mock.
+   *
+   * That force-mock had one stated cause: `EnrollmentResponse` carries no
+   * display fields and "IAM has no batch/by-id profile lookup". IAM US-144 +
+   * ADR-0120 + US-169 removed exactly that blocker, so the roster is now a
+   * genuine two-source composition:
+   *
+   * 1. core `GET /classes/{id}/students` — the AUTHORITY for WHICH students are
+   *    enrolled (cursor-paginated; every page is followed so a large class is
+   *    not silently truncated).
+   * 2. IAM `GET /members?ids=` via the injected resolver — DECORATION ONLY, for
+   *    exactly the ids step 1 returned. It is never an existence oracle and must
+   *    never be handed an id core did not produce. NOT necessarily one call:
+   *    `BatchResolveMembersUseCase` chunks at 50 ids, so a class of 51+ students
+   *    costs `ceil(n / 50)` sequential calls.
+   *
+   * The decoration is best-effort: a failure degrades rows to
+   * name/dob/gender-less (placeholders) rather than failing the screen. Note the
+   * blast radius of that degrade is the WHOLE roster, not one chunk — the
+   * use-case returns on the first failing chunk (US-E18.29/US-E18.33 behaviour,
+   * unchanged here), so nothing already resolved survives. The enrollment read
+   * is NOT best-effort — without it there is no roster.
    */
-  async getClassRoster(_classId: string): Promise<Result<RosterStudent[]>> {
-    return { ok: false, error: { type: "unknown" } };
+  async getClassRoster(classId: string): Promise<Result<RosterStudent[]>> {
+    try {
+      const enrollments = await this.listEnrollments(classId);
+      const details = await this.studentDetailMap(
+        enrollments.map((e) => e.studentMemberId),
+      );
+      return {
+        ok: true,
+        data: enrollments.map((e) =>
+          toRosterStudentFromEnrollment(e, details.get(e.studentMemberId)),
+        ),
+      };
+    } catch (err) {
+      return { ok: false, error: toRosterFailure(err) };
+    }
+  }
+
+  /** Every enrollment page for the class ({ raw: true } + parseEnvelope, TR-031). */
+  private async listEnrollments(classId: string) {
+    const rows: EnrollmentListResponseDto = [];
+    let cursor: string | undefined;
+
+    for (let page = 0; page < ROSTER_MAX_PAGES; page++) {
+      const envelope = (await this.http.get(classStudentsPath(classId), {
+        params: {
+          limit: ROSTER_PAGE_SIZE,
+          ...(cursor ? { cursor } : {}),
+        },
+        // Top level, sibling of `params` — `isRawCall` reads `config.raw`.
+        raw: true,
+      })) as unknown as ApiEnvelope<EnrollmentListResponseDto>;
+      const { data, pagination } = parseEnvelope(envelope);
+      rows.push(...data);
+      if (!pagination?.hasMore || !pagination.nextCursor) break;
+      cursor = pagination.nextCursor;
+    }
+    return rows;
   }
 
   /**
-   * PERMANENTLY mock-first (US-E18.5, cross-repo ask #9). No core endpoint
-   * exists for the unassigned-student search pool (`/students/unassigned`
-   * doesn't exist), and even the roster listing carries no display fields (see
-   * `getClassRoster`). The DI factory always delegates this to the mock repo.
-   * This stub is never invoked.
+   * Names/dob/gender for EXACTLY the ids the enrollment list returned, in one
+   * batched call. Never throws: a lookup error degrades to an empty map and
+   * the rows render with placeholders.
+   */
+  private async studentDetailMap(
+    memberIds: string[],
+  ): Promise<Map<string, RosterStudentDetail>> {
+    if (!this.resolveStudentDetails || memberIds.length === 0) return new Map();
+    try {
+      return await this.resolveStudentDetails(memberIds);
+    } catch {
+      return new Map();
+    }
+  }
+
+  /**
+   * PERMANENTLY mock-first (US-E18.5, cross-repo ask #9) — and NOT unblocked by
+   * US-E18.35. This gap is a MISSING ENDPOINT, unrelated to the display-field
+   * gap that closed: core exposes no query for "students not enrolled in this
+   * class" (`/students/unassigned` does not exist), so there is nothing to
+   * call. Adding dob/gender to the IAM batch lookup does not help — a lookup by
+   * id cannot enumerate a candidate pool. The DI factory therefore still
+   * delegates THIS method (only) to the mock repo, and this stub is never
+   * invoked.
    */
   async getSearchPool(_classId: string): Promise<Result<SearchStudent[]>> {
     return { ok: false, error: { type: "unknown" } };

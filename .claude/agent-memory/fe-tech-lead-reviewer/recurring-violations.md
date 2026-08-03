@@ -468,6 +468,23 @@ before reading for style.
   `TONE[undefined]`, `t(undefined)` and `counts[undefined] += 1` (NaN). Latent while the BE enum is
   closed + validated; note it as CONSIDER whenever an un-mock newly routes REAL wire data through
   one of these tables.
+- **Un-mocking a read un-covers the RSC page's `result.ok ? result.data : []` swallow** (US-E18.35
+  `(app)/admin/roster/page.tsx:30`). While the method was force-mocked the failure branch was
+  unreachable, so the page never needed an error state and its VM has no `fetchError` field at all.
+  The moment the story flips it to real, a 403/404/transport failure renders "this class has no
+  students" — a silent false-empty on a roster/PII surface, with the enroll affordances still live.
+  Tell: the SIBLING page in the same feature (`principal/students/page.tsx`) already does it right
+  (`errorVm(...)` + `ListError` + no retry on `forbidden`), so the asymmetry is the giveaway. On
+  EVERY un-mock story, grep the consuming RSC pages for `.ok ? ... : []` / `?? []` and require the
+  error state. Blocking.
+- **A 2nd "data legitimately absent" em-dash marker invented instead of promoting the 1st**
+  (US-E18.35 `MissingValue` vs US-E18.32 `UnavailableValue`): byte-equivalent structure
+  (`<span tone><span aria-hidden>—</span><span class="sr-only">{t(...)}</span></span>`) and even the
+  same resolved colour (`text-muted-foreground` aliases to `--edu-text-secondary`), differing only in
+  the i18n namespace/copy. Decision 0026 case (b) → Revision Required. Fix = one
+  `components/shared/absent-value/` taking a pre-translated `label` prop. Cheap grep:
+  `grep -rn 'aria-hidden="true">—' src` (a 3rd inline instance lives in
+  `components/shared/grade-book-table/grade-book-table.tsx:214,234`).
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.

@@ -122,6 +122,34 @@ describe("PrincipalStudentsPage", () => {
     expect(getClassRoster).not.toHaveBeenCalled();
   });
 
+  /**
+   * MANAGER-principal 403 (US-E18.35 review). Core's
+   * `ListStudentsInClassUseCase.authorize()` allows only `isAdmin`
+   * (SUPER_ADMIN/ADMIN) or a TEACHER assigned to the class — the US-164 MANAGER
+   * grant is scoped to `list_classes.go` alone. Web's `principal` appRole maps
+   * from BOTH ADMIN and MANAGER, so this 403 is reachable in production, on a
+   * role whose class list read SUCCEEDS.
+   *
+   * The screen must therefore say "you may not read this" (non-retryable, no
+   * retry control — proven on `PrincipalRosterScreen`'s `ForbiddenError` story),
+   * never render a roster that merely looks empty.
+   */
+  it("degrades honestly when a MANAGER-principal is 403'd on the roster read (class list still OK)", async () => {
+    getClasses.mockResolvedValue({ ok: true, data: classes });
+    getClassRoster.mockResolvedValue({
+      ok: false,
+      error: { type: "forbidden" },
+    });
+
+    const vm = await renderPageVm();
+
+    expect(getClassRoster).toHaveBeenCalledWith("cls-10a1");
+    expect(vm.fetchError).toBe("forbidden");
+    // Not a false-empty: the roster/count slots must not read as "no students".
+    expect(vm.roster).toEqual([]);
+    expect(vm.currentClass).toBeNull();
+  });
+
   it("surfaces a roster failure as a fetchError key", async () => {
     getClasses.mockResolvedValue({ ok: true, data: classes });
     getClassRoster.mockResolvedValue({
