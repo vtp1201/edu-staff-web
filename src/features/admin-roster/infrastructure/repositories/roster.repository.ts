@@ -94,13 +94,18 @@ export class RosterRepository implements IRosterRepository {
    * 1. core `GET /classes/{id}/students` — the AUTHORITY for WHICH students are
    *    enrolled (cursor-paginated; every page is followed so a large class is
    *    not silently truncated).
-   * 2. IAM `GET /members?ids=` via the injected resolver — DECORATION ONLY, in
-   *    ONE batched call for exactly the ids step 1 returned. It is never an
-   *    existence oracle and must never be handed an id core did not produce.
+   * 2. IAM `GET /members?ids=` via the injected resolver — DECORATION ONLY, for
+   *    exactly the ids step 1 returned. It is never an existence oracle and must
+   *    never be handed an id core did not produce. NOT necessarily one call:
+   *    `BatchResolveMembersUseCase` chunks at 50 ids, so a class of 51+ students
+   *    costs `ceil(n / 50)` sequential calls.
    *
-   * The decoration is best-effort: a failure degrades every row to
-   * name/dob/gender-less (placeholders) rather than failing the screen. The
-   * enrollment read is NOT best-effort — without it there is no roster.
+   * The decoration is best-effort: a failure degrades rows to
+   * name/dob/gender-less (placeholders) rather than failing the screen. Note the
+   * blast radius of that degrade is the WHOLE roster, not one chunk — the
+   * use-case returns on the first failing chunk (US-E18.29/US-E18.33 behaviour,
+   * unchanged here), so nothing already resolved survives. The enrollment read
+   * is NOT best-effort — without it there is no roster.
    */
   async getClassRoster(classId: string): Promise<Result<RosterStudent[]>> {
     try {
