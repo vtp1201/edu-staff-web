@@ -76,15 +76,16 @@ buffer/timeout sớm với long-lived connection).
      hoặc cho PARENT batch-lookup đúng các id đã linked của mình.
    - Chặn: parent child-switcher ở grades + timetable (hiện mock).
 
-5. **#9 (phần còn lại) — roster cần DOB/gender**
-   - `EnrollmentResponse` (`GET /classes/{id}/students`) vẫn zero display
-     fields. Tên giờ join được qua US-144 batch (caller là ADMIN) nhưng
-     `dob`/`gender` không tồn tại ở đâu trên public API
-     (`MemberListItem`/`MemberBatchItem` không có).
-   - Ask (chọn 1): (a) denormalize `studentName`/`dob`/`gender` lên
-     `EnrollmentResponse`; hoặc (b) thêm `dob`+`gender` vào batch lookup item.
-   - Chặn: admin roster listing + unassigned-student search pool (US-E18.5
-     đang mock vĩnh viễn).
+5. **#9 — PARTIALLY RESOLVED (US-E18.35, 2026-08-03).** Option (b) đã ship:
+     BE US-169 thêm `dob`+`gender` vào `MemberBatchItem` (staff-tier, ADR-0122
+     PII). FE đã wire `getClassRoster` real bằng cách compose enrollment list
+     (`core`) + batch lookup (`iam`, US-E18.33's `BatchResolveMembersUseCase`)
+     — admin roster listing giờ hiển thị tên/dob/gender thật (ADR 0069).
+     **Phần CÒN LẠI, vẫn treo**: unassigned-student search pool
+     (`getSearchPool`) — không có endpoint core nào cho tập học sinh chưa
+     enroll, nên enroll/transfer flow vẫn không dùng được với backend thật.
+     Cần BE endpoint riêng cho search pool (không liên quan gì đến dob/gender
+     nữa — đã tách bạch rõ 2 gap này).
 
 ### P2 — field/endpoint bổ sung (mở khóa từng phần UI)
 
