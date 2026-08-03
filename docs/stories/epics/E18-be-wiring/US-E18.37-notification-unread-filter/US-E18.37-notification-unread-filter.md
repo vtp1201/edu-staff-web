@@ -23,6 +23,27 @@ replaces US-E18.25's client-side bounded-drain workaround for the "Chưa đọc"
 the server does it natively, real cursor/`hasMore` apply directly to the
 filtered result now.
 
+**Ground-truthed exact constraint (fe-lead, 2026-08-03) — read this before
+touching `drainUnread`:** `services/notification/docs/openapi.yaml`'s
+`GET /notifications` `read` param (~line 216-230):
+- Only `read=false` is supported — `read=true` is REJECTED with 400
+  `NOTIFICATION_READ_FILTER_UNSUPPORTED` (no materialized view serves
+  read-only). Never send `read=true`.
+- `read` CANNOT be combined with `type` — 400 `NOTIFICATION_FILTER_CONFLICT`
+  (no MV projects both dimensions). When the caller wants the unread tab,
+  send ONLY `read=false`, no `type` param — check `src/features/notification/infrastructure/repositories/notification.repository.ts`'s
+  current `listNotifications()` to confirm the "unread" filter value never
+  ALSO needs a simultaneous `type` filter in this screen's UX (if the
+  screen's tabs are mutually exclusive — "Tất cả"/"Chưa đọc"/per-type — this
+  should be a non-issue, but verify).
+- Omitted/empty `read` means unfiltered (current default behavior for
+  "all"/type-filtered tabs) — unchanged.
+
+The current `drainUnread()` method + its `MAX_PAGES`/`DRAIN_PAGE_SIZE`
+constants become entirely dead once replaced with a direct `read=false`
+server-side call — confirm they have no OTHER caller before deleting (grep
+first).
+
 ## Relevant Product Docs
 
 - Ask #42 in `docs/reports/2026-08-01-fe-to-be-asks.md` — mark RESOLVED.
