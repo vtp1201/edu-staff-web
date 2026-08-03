@@ -89,13 +89,14 @@ two semantically different null-reasons).
 
 ## Validation
 
-| Layer | Expected proof |
-| --- | --- |
-| Unit | mapper test (both fields present + null cases) |
-| Integration | repository test against the real DTO shape |
-| E2E | Storybook: populated + null-placeholder stories |
-| Platform | `bun build` clean both modes |
-| Release | design-review gate N/A if zero visual change beyond new fields; a11y spot-check placeholder contrast |
+| Layer | Expected proof | Actual |
+| --- | --- | --- |
+| Unit | mapper test (both fields present + null cases) | `staff-leave.mapper.test.ts` — 16 tests; each null asserted INDEPENDENTLY (the other field stays populated), absent-key ≡ explicit null, unknown enum → null |
+| Integration | repository test against the real DTO shape | `staff-leave.repository.test.ts` — 22 tests: 3-state fan-out by call COUNT + `staffMemberId` absent from every list call, cursor paging, newest-first merge, ONE batch IAM call for staff+approver, IAM failure degrades to raw ids, approve/reject param+body shape, error matrix |
+| DI | env matrix for the un-mock | `staff-leave.di.test.ts` — 6 tests: `true`→Mock, `false`/unset→Real, `ensureFreshSession` before the client, no http client in mock mode, mock seed carries exactly one both-nulls row |
+| E2E | Storybook: populated + null-placeholder stories | `NullableFields` story asserts BOTH placeholder strings are present AND `not.toBe` each other, and that no role badge is invented |
+| Platform | `bun build` clean both modes | green with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) and with `NEXT_PUBLIC_USE_MOCK=true` |
+| Release | a11y spot-check placeholder contrast | placeholders use `text-muted-foreground` (5.48:1, ADR 0049-safe); null state is conveyed by TEXT, not colour; role badge omitted rather than mislabelled |
 
 ## Harness Delta
 
@@ -103,4 +104,59 @@ Registered via `harness-cli story add --id US-E18.36`. Ask #41 → RESOLVED.
 
 ## Evidence
 
-(fill after implementation)
+Branch `feat/us-e18.36-staff-leave-fields`. Full un-mock — the DI factory is
+now `USE_MOCK ? Mock : Real` and BOTH the read and the write side are real.
+
+### Proof commands (all run on the branch)
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` (baseline before changes) | 474 files / 3502 tests passed |
+| `bun vitest run` (after) | **476 files / 3534 tests passed** — +2 files, +32 tests, zero regressions |
+| `bunx vitest run --config vitest.storybook.mts` | 158 files / 1206 tests passed |
+| `bunx tsc --noEmit` | clean |
+| `bun lint:fix` | clean (5 files auto-formatted; 1 pre-existing unrelated warning) |
+| `bun run build` with `.env.local` (`NEXT_PUBLIC_USE_MOCK=false`) | success |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | `✓ Compiled successfully` |
+
+### Contract deltas found while implementing (beyond the brief)
+
+1. **The pre-existing DTO was anticipatory, not real.** `StaffLeaveResponseDto`
+   declared an already-display-shaped row (`staffName`, `days`, `initials`,
+   `DD/MM/YYYY` dates) that BE has never produced — only the mock did. Merely
+   widening two of its fields would have kept a fictional contract, so it was
+   replaced with the real `StaffLeaveRequestResponse` shape (ids, ISO dates,
+   UPPERCASE enums) and the mapper now derives the display fields.
+2. **`approve` / `reject` require a MANDATORY `staffMemberId` query param**
+   (`StaffLeaveStaffMemberId` in core's openapi — it completes the storage key
+   `(tenantId, staffMemberId, requestId)`). `id` alone does not address a row,
+   so `staffId` was threaded through repository → use-case → Server Action →
+   VM → screen. This is a real signature change, not cosmetic.
+3. **An unfiltered list must fan out over three states.** The tenant-wide
+   branch is `status`-sliced and DEFAULTS to `SUBMITTED`; the screen loads
+   everything once and filters client-side, so omitting `status` would have
+   left the "Đã duyệt" / "Từ chối" tabs permanently and silently empty. The
+   repository issues one paged call per state and merges newest-first.
+4. **`staffRole` also has no wire source.** It is derived from the IAM
+   directory role (`TEACHER` → teacher, any other resolved role → staff) and
+   is `null` when unresolvable — the badge is then OMITTED. Defaulting it
+   would have labelled a person "Giáo viên"/"Nhân viên" on a guess.
+5. **Mutations went real in the same step.** They were never independently
+   blocked — the whole feature was force-mocked because of the read side.
+   Leaving them mocked behind real reads would be a fake approve/reject.
+
+### The two null reasons render DIFFERENT copy (AC)
+
+| Field | Null reason | vi copy | en copy |
+| --- | --- | --- | --- |
+| `leaveType` | legacy row submitted before core US-170; not backfilled — diminishing over time | `staffLeave.card.leaveTypeUnrecorded` = "Chưa ghi nhận loại nghỉ" | "Leave type not recorded" |
+| `department` | staff member holds no ACTIVE department-scoped assignment — a valid, ONGOING state | `staffLeave.card.noDepartment` = "Chưa có phòng ban" | "No department" |
+
+Enforced by the `NullableFields` Storybook story, which asserts both strings
+are present and `expect(a).not.toBe(b)`.
+
+### Ask #41 → RESOLVED
+
+`department` + `leaveType` are on the wire (core US-170) and consumed. The
+`staff-leave.di.ts` / `staff-leave.repository.ts` doc comments that recorded
+the permanent-mock rationale were rewritten to record the un-mock instead.
