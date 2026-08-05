@@ -16,7 +16,7 @@ import type {
   GradeScaleResponseDto,
   SetAssessmentSchemeRequestDto,
   SetGradeScaleRequestDto,
-  SubjectForGradeDto,
+  SubjectListItemDto,
   WireColumnType,
   WireLetterGrade,
   WireScaleType,
@@ -176,13 +176,21 @@ export function toSetAssessmentSchemeRequestDto(
   return { columns };
 }
 
-// ─── Subjects (UNCHANGED — mock-first, out of US-E18.7 scope) ────────────────
+// ─── Subjects (real `GET /subjects`, US-E18.42 / BE US-177) ──────────────────
 
-export function mapSubjectForGrade(dto: SubjectForGradeDto): SubjectForGrade {
+/**
+ * `SubjectResponse` → `SubjectForGrade`. The wire ids as `subjectId` and nests
+ * the assessment count under `master.requiredExamCount`; the BE always
+ * serialises `master` and uses `0` for "unset", so both absent and `0` collapse
+ * to `null` (same convention as subject-catalogue's mapper, US-E18.3).
+ */
+export function mapSubjectForGrade(dto: SubjectListItemDto): SubjectForGrade {
+  const required = dto.master?.requiredExamCount;
   return {
-    id: dto.id,
+    id: dto.subjectId,
     name: dto.name,
     gradeLevel: dto.gradeLevel,
-    requiredAssessmentCount: dto.requiredAssessmentCount,
+    requiredAssessmentCount:
+      required !== undefined && required > 0 ? required : null,
   };
 }

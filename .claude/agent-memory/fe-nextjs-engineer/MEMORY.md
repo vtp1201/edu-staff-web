@@ -76,3 +76,5 @@
 - [Dead-endpoint repoint](pattern-dead-endpoint-repoint.md) — E18.40: BE "won't implement" ⇒ the entity is UNAUDITED (classify every field: on-wire / derivable / composable / fiction→DELETE); "don't touch the mutations" still misses a wrong wire FIELD NAME (teacherId vs teacherMemberId = silent 422); bound a fan-out to 2× the BE page size + call-COUNT proof at N and N+1 (+more in file)
 
 - [Distinct null reasons + status-default fan-out](pattern-nullable-reasons-and-status-default-fanout.md) — E18.36: two nullables with DIFFERENT causes need DIFFERENT copy (prove `not.toBe`) (+more in file)
+
+- [Real mode that was never real](pattern-real-mode-that-was-never-real.md) — E18.42/43: a plain USE_MOCK gate ≠ a working real path (mock-era DTO ⇒ silent `id: undefined`); shared VALIDATION_FAILED needs the blamed field; path-scoped endpoint + key-less caller ⇒ failure with zero HTTP; nullable wire timestamp ⇒ Invalid Date (+more in file)
