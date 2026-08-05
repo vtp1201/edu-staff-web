@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [E18 BE-wiring batch 3 (E18.38-45)](project-e18-be-wiring-batch-3.md) — 8 US closing asks #43/#46/#44/#9/#12/#19 (#21 partial); first genuine parallel-worktree run; E18.44 needed 3 engineer rounds (route-reachability ≠ RBAC-correctness, check both)
 - [Dead sidebar links batch (E13.9/E13.10/E15.3/E20.4/E20.5)](project-dead-sidebar-links-batch.md) — 5 dead nav-config links closed in one session; 4/5 needed zero new BE work via reuse; 2 real BE 403 gaps found only by ground-truthing Go `authorize()`; component-promotion done twice with very different outcomes; asks #43/#44/#45 filed
 - [Promotion needs a parity checklist](feedback-promotion-needs-parity-checklist.md) — always brief fe-component-architect with an explicit before/after checklist when promoting a component, not just "make it work"
 - [Reuse claims need BE authorize() ground-truth](feedback-reuse-claims-need-be-authorize-groundtruth.md) — "role-agnostic/member-scoped" is not the same claim as "authorized for this new caller role" — grep the Go authorize() function before accepting reuse as risk-free
