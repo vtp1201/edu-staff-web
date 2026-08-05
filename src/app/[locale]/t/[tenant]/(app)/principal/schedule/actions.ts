@@ -47,9 +47,9 @@ export async function getPrincipalTeacherListAction(): Promise<TeacherListAction
 
 /**
  * Weekly timetable of the selected teacher. RBAC-guarded before any DI call.
- * Uses the PRINCIPAL-scoped (force-mocked) factory — see its doc comment: the
- * `core` by-member endpoint has no MANAGER branch, so the shared real factory
- * would 403 → `not-found` → a silent permanent empty state.
+ * Uses the PRINCIPAL-scoped factory, which since US-E18.38 is an ordinary
+ * `USE_MOCK ? Mock : Real` gate — BE US-175 granted `MANAGER` admin-tier read on
+ * `GET /members/{id}/timetable`, so the real path no longer 403s.
  */
 export async function getMemberTimetableAction(
   memberId: string,

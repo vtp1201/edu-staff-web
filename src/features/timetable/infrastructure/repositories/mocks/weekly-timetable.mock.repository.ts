@@ -37,10 +37,11 @@ export class MockWeeklyTimetableRepository
    * By-member fetch (US-E18.26; teacher branch added US-E15.3 fix round).
    *
    * Resolution order:
-   * 1. a TEACHER-keyed week (`t-001`…): the principal screen is force-mocked
-   *    (`core` grants no MANAGER on the by-member endpoint), so every teacher on
-   *    its picker must resolve to their OWN week — a shared fallback week would
-   *    make switching teachers look broken;
+   * 1. a TEACHER-keyed week (`t-001`…): the principal screen reads by member,
+   *    so in mock/demo mode every teacher on its picker must resolve to their OWN
+   *    week — a shared fallback week would make switching teachers look broken.
+   *    (Added when that screen was force-mocked; the force-mock is gone since
+   *    US-E18.38 / BE US-175, but mock mode still drives the demo.)
    * 2. a parent's `childId` → that child's fixture class (fixtures are
    *    class-keyed);
    * 3. anything else → the signed-in student's own class (mirrors how

@@ -208,10 +208,10 @@ const TEACHER_RAW: Record<
   },
 
   /*
-   * Principal-roster teachers (US-E15.3 fix round). The principal screen is
-   * force-mocked (`bootstrap/di/timetable-view.di.ts` — `core` grants no
-   * MANAGER on `GET /members/{id}/timetable`), and its picker is driven by
-   * `MockPrincipalTeachersRepository`'s roster, so each of its ids MUST resolve
+   * Principal-roster teachers (US-E15.3 fix round). In mock mode the principal
+   * screen's picker is driven by `MockPrincipalTeachersRepository`'s roster
+   * (the real path went live in US-E18.38 / BE US-175, but mock mode still
+   * powers the demo), so each of its ids MUST resolve
    * to a visibly different week — otherwise switching teachers is a no-op and
    * the picker looks broken in mock/demo mode. Keyed by that roster's ids and
    * matched to each teacher's `primarySubjectName`:
