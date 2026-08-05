@@ -1,5 +1,7 @@
 # Memory Index
 
+- [No-op hygiene verification](pattern-noop-hygiene-verification.md) — E18.45: prove the NEGATIVE by classifying every surviving force-mock reason, not by grepping the fixed phrase (+more in file)
+
 - [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus) (+more in file)
 - [Terminal error ≠ skeleton](gotcha-terminal-error-vs-skeleton.md) — `isLoading || !data → Skeleton` renders forever after a terminal error (+more in file)
 - [Composite-key point-read + unbacked read](pattern-composite-key-pointread-and-unbacked-read.md) — E18.32: a clustering-column id needs the whole ReportRef tuple (Sheet (+more in file)
