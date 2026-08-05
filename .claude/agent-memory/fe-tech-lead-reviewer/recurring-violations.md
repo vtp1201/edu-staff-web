@@ -489,6 +489,23 @@ before reading for style.
   `components/shared/absent-value/` taking a pre-translated `label` prop. Cheap grep:
   `grep -rn 'aria-hidden="true">—' src` (a 3rd inline instance lives in
   `components/shared/grade-book-table/grade-book-table.tsx:214,234`).
+- **A role-gated capability added to a screen that lives in a DIFFERENT role's route namespace =
+  unreachable dead affordance** (US-E18.44, blocking). Since INFRA-rsc-layout-guards-role-groups,
+  EVERY `(app)/<role>/**` namespace has a `layout.tsx` calling
+  `evaluateNamespaceAccess(role, …, "<role>")` with STRICT equality (`role === requiredRole`) — so
+  `/teacher/*` renders ONLY for appRole `teacher`. A story that adds an ADMIN/MANAGER-only control to
+  `(app)/teacher/grades/page.tsx` (`canReject = sessionRole ∈ {principal, admin}`) is dead in every
+  mode: a `teacher` reaches the page with `canReject === false`; a `principal`/`admin` is redirected
+  before render. `NAV_BY_ROLE` confirms it (only the teacher nav lists `/teacher/grades`). Mock mode
+  is worse, not better: `decodeRoleClaim` returns `"admin"` for any token when
+  `NEXT_PUBLIC_USE_MOCK=true` + non-prod, so the whole `/teacher/**` namespace is unreachable in mock
+  dev — "USE_MOCK=true fully demoable" claims about a teacher-namespace screen are false, and the only
+  real proof is Storybook (VM-level), never end-to-end. Check on ANY story adding a role-gated
+  capability: (1) `find src/app -name layout.tsx` for the namespace guard of the route that mounts the
+  screen; (2) compare its `requiredRole` against the capability's allowed roles; (3) grep
+  `NAV_BY_ROLE` for a route the allowed role can actually navigate to. Layer design can be perfect
+  (fail-closed `requireRole` in the action, capability-as-presence VM) and the feature still
+  unreachable — tsc/tests/build/Storybook all stay green.
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.

@@ -78,3 +78,5 @@
 - [Distinct null reasons + status-default fan-out](pattern-nullable-reasons-and-status-default-fanout.md) — E18.36: two nullables with DIFFERENT causes need DIFFERENT copy (prove `not.toBe`) (+more in file)
 
 - [Real mode that was never real](pattern-real-mode-that-was-never-real.md) — E18.42/43: a plain USE_MOCK gate ≠ a working real path (mock-era DTO ⇒ silent `id: undefined`); shared VALIDATION_FAILED needs the blamed field; path-scoped endpoint + key-less caller ⇒ failure with zero HTTP; nullable wire timestamp ⇒ Invalid Date (+more in file)
+
+- [FE-composed set difference](pattern-fe-composed-set-difference.md) — E18.41: BE closes a missing-endpoint gap with FE-COMPOSE (directory MINUS ids-only endpoint); one optional collaborator GROUP + fail-closed; delete the anticipatory DTO; un-mocking a DECORATION read creates a new honest-degrade surface (own VM key, not fetchError); Storybook runner works again

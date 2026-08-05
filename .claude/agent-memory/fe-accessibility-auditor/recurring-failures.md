@@ -325,6 +325,24 @@ Seen in: US-E21.1 invitations-skeleton.tsx.
 
 ## Copy — "authoring disabled" banner names only some of the gated actions
 Pattern: A single boolean flag (e.g. `authoringEnabled`) gates MULTIPLE affordances (create + edit + delete), but the explanatory banner text names only 1-2 of them ("creating and editing exams is not available") while delete is also silently removed. Users who previously had delete access see it vanish with no textual link to the reason.
+
+## PASS pattern — new canonical `ReasonConfirmDialog` (US-E18.44) built with every recurring fix already applied
+`src/components/shared/reason-confirm-dialog/reason-confirm-dialog.tsx` is a clean reference
+implementation of the "required-reason destructive confirm" pattern this repo keeps reforking
+(discipline reject-leave-dialog, grades revision-request-dialog, etc.): `<Label htmlFor>` +
+`aria-required` + `aria-invalid` + `aria-describedby` (composed from counter id + error id) on the
+`Textarea`; error uses `role="alert"` + `AlertTriangle` icon + text (never colour-only); confirm
+`disabled` while invalid so a blank reason can never reach `onConfirm` by keyboard or pointer;
+`useDialogReturnFocus(open)` restores focus to the invoker on close (the DEF-01 pattern, applied
+correctly here from the start); reason rendered only as a JSX text node (React-escaped) with an
+explicit "never dangerouslySetInnerHTML" comment. Worth pointing future reforks at this file instead
+of re-deriving the pattern. One thing to verify anew each time it's reused: the CALLER's per-cell
+"reject" trigger button also needs its own `aria-label` with context (student/column) — that part is
+NOT inside this shared component, it's the caller's job (done correctly in `grade-entry-table.tsx`).
+Seen in: US-E18.44 grade-reject-flow — audited PASS with only a Minor finding (unused/unreferenced
+`descriptionId` on the `RejectionIndicator` in the read-only `PENDING_APPROVAL` branch of
+`grade-entry-table.tsx`'s `ScoreCell` — the id is set but no `aria-describedby` in that branch
+points to it, unlike the editable `DRAFT` branch which wires it correctly).
 Fix: enumerate every gated action in the banner copy, not just the most prominent one(s).
 Seen in: US-E18.15 examBank.authoringDisabledNote (named create+edit, omitted delete).
 
