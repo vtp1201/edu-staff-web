@@ -91,3 +91,5 @@
 - [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined`; assert Object.keys); authority+decoration two-source roster; un-mock env-matrix must stub `lib/jwt` too, and it breaks unrelated RSC page tests via cookies() (+more in file)
 
 - [Distinct null reasons + status-default fan-out](pattern-nullable-reasons-and-status-default-fanout.md) — E18.36: two nullables with DIFFERENT causes need DIFFERENT copy (prove `not.toBe`); a `status` param that DEFAULTS to one state forces a per-state fan-out (call-count proof); a MANDATORY `staffMemberId` query param completes the storage key → signature ripples to the screen (+more in file)
+
+- [Structural privacy boundary](pattern-structural-privacy-boundary.md) — E18.44: role-stripped BE fields = SEPARATE staff cell type (not optional on the shared one) + @ts-expect-error compile-time proof; capability-as-presence VM prop AND requireRole in the action; canonical shared reason-dialog (4 forks remain); clicking a disabled button breaks a Storybook play (+more in file)
