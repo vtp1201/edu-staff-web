@@ -188,6 +188,13 @@ export const FetchError: Story = {
   },
 };
 
+/**
+ * Role-agnostic 403 state. Since BE US-175 a MANAGER-principal IS granted the
+ * roster read (US-E18.39, ask #46 closed), so this story no longer stands in for
+ * that role — it covers any caller core rejects (e.g. a TEACHER holding no
+ * assignment to the class). What it pins is unchanged: a 403 cannot be retried
+ * away, so the retry control must be ABSENT, not disabled.
+ */
 export const ForbiddenError: Story = {
   args: {
     vm: { ...baseVm, currentClass: null, roster: [], fetchError: "forbidden" },
