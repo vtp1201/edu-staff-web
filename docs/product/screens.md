@@ -64,7 +64,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Staff Discipline self-view (staff member's own violations/conduct notes, read-only) | `(app)/teacher/staff-discipline` | `features/staff-discipline` (proposed) | ✅ US-E09.5 (DR-022; BE force-mock) |
 | Student Absences (record/edit, GVCN own class) | `(app)/teacher/absences` | `features/student-absences` (proposed) | ✅ US-E09.6 (DR-022; BE force-mock) |
 | Grade Entry | `(app)/teacher/grades/enter` | `features/grades` | ✅ US-E14.2 — route thật `(app)/teacher/grade-book` (drift so với design route) |
-| Grade Book | `(app)/teacher/grades` | `features/grades` | ✅ US-E13.6 |
+| Grade Book | `(app)/teacher/grades` | `features/grades` | ✅ US-E13.6; per-cell reject/request-revision consumed via `rejectionReason` display since US-E18.44 (BE US-184) |
 | Lesson Bank | `(app)/teacher/lesson-bank` | `features/lesson-bank` | ✅ US-E11.2 (mock-first — lesson-bank không map BE contract, finding #27) |
 | Lesson Plan Authoring + Builder | `(app)/teacher/lesson-plans`,`/lesson-plans/create`,`/lesson-plans/:id/edit` | `features/lesson-plan` (proposed) | ✅ US-E11.8 (DR-021; mock-first — wiring = US-E18.16 reopen, core `/lms/lesson-plans` đã có) |
 | Exam Bank + Builder | `(app)/teacher/exam-bank`,`/exam-bank/create`,`/exam-bank/:id/edit` | `features/exam-bank` | ✅ US-E11.3 (BE hybrid ADR 0056 — list/detail/publish real, builder mock) |
@@ -81,13 +81,13 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Design file | Feature | Status |
 | --- | --- | --- | --- | --- |
 | School overview dashboard | `(app)/principal` | `teacher.jsx` (PrincipalDashboardHome) | `features/principal` | ✅ (UI mock-first) |
-| Teachers (GVCN/GVBM assignment sheet) | `(app)/principal/teachers` | `teacher.jsx` (PrincipalTeachersScreen + AssignmentSheet) | `features/principal` | ✅ US-E13.5 |
+| Teachers (GVCN/GVBM assignment sheet) | `(app)/principal/teachers` | `teacher.jsx` (PrincipalTeachersScreen + AssignmentSheet) | `features/principal` | ✅ US-E13.5; real since US-E18.40 — teacher list repointed to IAM directory (`role=TEACHER`), subject-assignment/homeroom composed from `core` US-181 (closes ask #44, option b) |
 | Classes | `(app)/principal/classes` | `teacher.jsx` (reference only, no dedicated mockup) | `features/principal` | ✅ US-E13.8 |
 | Students (read-only roster, per-class + class-switch) | `(app)/principal/students` | reuse of `admin-roster`'s roster screen (no dedicated mockup) | `features/admin-roster` | ✅ US-E13.10 (was a dead sidebar link — full 404; `RosterTable` gained a discriminated-union `readOnly` variant, no mutation affordances) |
-| Schedule (teacher-picker + weekly TKB, read-only) | `(app)/principal/schedule` | reuse of `timetable-view.jsx` (no dedicated mockup) | `features/timetable` | ✅ US-E15.3 (was a dead sidebar link — full 404; `TimetableView` widened to a 3rd `principal` role; `getByMember` force-mocked for this role only — real BE `authorize()` has no `MANAGER` branch, cross-repo ask #43) |
+| Schedule (teacher-picker + weekly TKB, read-only) | `(app)/principal/schedule` | reuse of `timetable-view.jsx` (no dedicated mockup) | `features/timetable` | ✅ US-E15.3; real since US-E18.38 (BE US-175 added `MANAGER` to `get_member_timetable.go`'s `authorize()`, closes ask #43) |
 | Class Log review/approve | `(app)/principal/class-log` | `classops.jsx` | `features/class-log` | ✅ E13.3 (route `(app)/principal/class-log` live) |
 | Discipline (school-wide) | `(app)/principal/discipline` | `discipline.jsx` | `features/discipline` | ✅ US-E09.1 |
-| Grade Book (principal read) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | ✅ US-E13.6 — route thật `(app)/principal/grade-book` (drift so với design route) |
+| Grade Book (principal read + reject) | `(app)/principal/grades` | `gradebook.jsx` | `features/grades` | ✅ US-E13.6 — route thật `(app)/principal/grade-book` (drift so với design route); từ US-E18.44 render entry-side grid (`viewerRole: "approver"` — xem, không sửa điểm, được reject cell `PENDING_APPROVAL`) thay vì read-only `GradeBookRow` cũ; nav entry thêm mới (route trước đó orphan) |
 | Teaching Plan review | `(app)/principal/teaching-plan` | `teaching-plan.jsx` | `features/teaching-plan` | ✅ US-E11.4 |
 | Reports | `(app)/principal/reports` | `reports.jsx` | `features/principal` | ✅ (US-E03.1; `reports.jsx`, DR-019; mock-first) |
 | **Parent–Student Links** (admin link management) | `(app)/admin/parent-links` | `parent-links.jsx` (US-E20.1) | `features/admin/parent-links` | ✅ implemented (US-E20.1; `ParentLinksScreen` + high-risk server-side re-auth Unlink, DR-014; consent counterpart attaches to Profile — see All-roles section); link-history audit-trail sub-section added to the detail dialog (US-E20.3, DR-023, mock-first per ADR 0064) |
@@ -97,7 +97,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | **Subject Departments (SubjectParent)** | `(app)/admin/subject-departments` | `subject-parents.jsx` (US-048) | `features/admin/subjects` | ✅ |
 | **Subject Catalogue (grade-scoped)** | `(app)/admin/subjects` | `subjects.jsx` + `subjects-dialogs.jsx` | `features/admin/subjects` | ✅ (BE wired US-E18.3; `restore` web-only ẩn) |
 | **Subject Detail (master editor)** | `(app)/admin/subjects/[id]` | `subject-detail.jsx` (US-048, ADR 0036) | `features/admin/subject-catalogue` | ✅ US-E12.13 — deep-link route built, shares editor body with the Sheet via `useSubjectDetailForm`/`SubjectDetailFields`; archived subjects read-only |
-| **Student Roster / Enrollment** | `(app)/admin/roster` | `roster.jsx` (US-043) | `features/admin/roster` | ✅ (BE hybrid US-E18.5 — roster/search-pool mock vĩnh viễn, ask #9) |
+| **Student Roster / Enrollment** | `(app)/admin/roster` | `roster.jsx` (US-043) | `features/admin/roster` | ✅ real since US-E18.35 (roster listing) + US-E18.41 (search pool, FE-compose ADR 0125) — ask #9 đóng đầy đủ, không còn force-mock nào trên `makeRosterRepository()` |
+| **Grade Book (admin read + reject)** | `(app)/admin/grade-book` | `gradebook.jsx` (reuse) | `features/grades` | ✅ US-E13.6 (reuse of `principal/grade-book`'s screen); từ US-E18.44 render entry-side grid (`viewerRole: "approver"`, view + reject `PENDING_APPROVAL`, no score edit) thay vì read-only `GradeBookRow` cũ (BE US-184); nav entry thêm mới (route trước đó orphan) |
 | **Timetable Builder** | `(app)/admin/timetable` | `timetable.jsx` (US-045) | `features/admin/timetable` | ✅ US-E12.5 (BE hybrid US-E18.11 — conflicts mock, ask #16) |
 | **Class Management** | `(app)/admin/classes` | — (US-E12.10) | `features/admin/class-management` | ✅ US-E12.10 |
 | **Assessment Scheme Config** | `(app)/admin/assessment` | `assessment.jsx` (1506) | `features/admin/assessment` | ✅ US-E12.6 (BE wired US-E18.7/ADR 0053) |
