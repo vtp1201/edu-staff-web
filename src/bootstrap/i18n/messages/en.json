@@ -3189,7 +3189,6 @@
       "addRow": "Add Row",
       "cancel": "Cancel",
       "classPicker": "Class",
-      "conflictWarning": "Timetable conflict exists",
       "deleteRow": "Delete row",
       "gvbmSection": "Subject Teachers (GVBM)",
       "gvcnPlaceholder": "Select class",
@@ -3202,7 +3201,8 @@
     },
     "status": {
       "ACTIVE": "Active",
-      "ON_LEAVE": "On Leave"
+      "INACTIVE": "Inactive",
+      "SUSPENDED": "Suspended"
     },
     "subtitle": "Assign homeroom (GVCN) and subject teachers (GVBM) to classes.",
     "table": {
@@ -3216,7 +3216,8 @@
       "status": "Status",
       "subjectAssignments": "Subject Assignments",
       "teacher": "Teacher",
-      "unassigned": "Unassigned"
+      "unassigned": "Unassigned",
+      "unknownSubject": "Unidentified subject"
     },
     "teacherCount": "{count} teachers",
     "title": "Teacher Management"
@@ -4593,7 +4594,8 @@
     "retry": "Try again",
     "semester": "Semester",
     "semesterValue": "Semester I",
-    "statusOnLeave": "On leave",
+    "statusInactive": "Inactive",
+    "statusSuspended": "Suspended",
     "subtitleParent": "Week {range} · read-only view.",
     "subtitlePrincipal": "Week {range} · the teacher's timetable, read-only view.",
     "subtitleStudent": "Read-only view. The school publishes the timetable; students cannot edit it.",

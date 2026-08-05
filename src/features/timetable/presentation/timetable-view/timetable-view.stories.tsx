@@ -318,7 +318,8 @@ const TEACHERS: PrincipalTeacher[] = [
     displayName: "Thầy Trần Văn Minh",
     homeroomClassId: null,
     homeroomClassName: null,
-    status: "ON_LEAVE",
+    // IAM membership status (US-E18.40) — the directory has no ON_LEAVE.
+    status: "SUSPENDED",
   }),
 ];
 
@@ -353,8 +354,9 @@ export const PrincipalView_SwitchTeacher: Story = {
     const second = canvas.getByRole("button", { name: /Trần Văn Minh/ });
     expect(first).toHaveAttribute("aria-pressed", "true");
     expect(second).toHaveAttribute("aria-pressed", "false");
-    // ON_LEAVE is labelled (text, not colour alone) and stays SELECTABLE.
-    expect(within(second).getByText("Đang nghỉ phép")).toBeVisible();
+    // A non-ACTIVE membership is labelled (text, not colour alone) and stays
+    // SELECTABLE — a principal still reads that teacher's published week.
+    expect(within(second).getByText("Bị tạm khóa")).toBeVisible();
     expect(second).toBeEnabled();
     expect(within(second).getByText("Chưa chủ nhiệm lớp nào")).toBeVisible();
 

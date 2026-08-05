@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react";
+import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
@@ -22,23 +22,22 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type { PrincipalClassSubject } from "@/features/principal/domain/teachers/entities/class-subject.entity";
 import type {
   AssignResult,
   TeacherAssignmentSheetVM,
 } from "./principal-teachers-screen.i-vm";
 
+/**
+ * A GVBM row being edited. There is no conflict flag: US-E18.40 removed the
+ * mock-only `hasConflict` from `SubjectAssignment` (no wire source anywhere).
+ * Timetable clashes are reported by `core` at write time
+ * (409 `TIMETABLE_TEACHER_CONFLICT`), not previewed here.
+ */
 interface SubjectRow {
   key: string;
   classId: string;
   subjectId: string;
-  hasConflict: boolean;
 }
 
 let rowSeq = 0;
@@ -67,7 +66,6 @@ export function TeacherAssignmentSheet({
       key: newRowKey(),
       classId: a.classId,
       subjectId: a.subjectId,
-      hasConflict: a.hasConflict,
     })),
   );
   // Per-row class-subject options, keyed by row key. Populated when a class is
@@ -79,7 +77,7 @@ export function TeacherAssignmentSheet({
   function addRow() {
     setRows((prev) => [
       ...prev,
-      { key: newRowKey(), classId: "", subjectId: "", hasConflict: false },
+      { key: newRowKey(), classId: "", subjectId: "" },
     ]);
   }
 
@@ -247,31 +245,6 @@ export function TeacherAssignmentSheet({
                         </SelectContent>
                       </Select>
                     </div>
-                    {row.hasConflict && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              role="img"
-                              // A11Y-006: make the conflict indicator keyboard-focusable so
-                              // sighted keyboard users can surface the tooltip explanation.
-                              // biome-ignore lint/a11y/noNoninteractiveTabindex: intentional focusable tooltip trigger (A11Y-006)
-                              tabIndex={0}
-                              className="flex h-9 items-center rounded-sm text-edu-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                              aria-label={t("sheet.conflictWarning")}
-                            >
-                              <TriangleAlertIcon
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {t("sheet.conflictWarning")}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
                     <Button
                       type="button"
                       variant="ghost"

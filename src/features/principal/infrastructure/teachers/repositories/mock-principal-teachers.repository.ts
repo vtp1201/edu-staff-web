@@ -12,12 +12,18 @@ import type { IPrincipalTeachersRepository } from "../../../domain/teachers/repo
 
 // Module-level mutable seed so assignments persist across calls within a single
 // dev server process (mock-first pattern, decision 0014).
+//
+// Kept HONEST against what the real composition can produce (US-E18.40): rows
+// come from the IAM member directory, so `status` uses IAM's own enum (no
+// `ON_LEAVE`), `primarySubjectName` is derived from the assignments rather than
+// authored independently, and an assignment carries no `classSubjectId` /
+// `hasConflict` (neither exists on the wire).
 let teachers: PrincipalTeacher[] = [
   {
     teacherId: "t-001",
     displayName: "Nguyễn Thị Lan",
     email: "lan@edu.vn",
-    primarySubjectName: "Toán",
+    primarySubjectName: null,
     homeroomClassId: "c-10a1",
     homeroomClassName: "10A1",
     subjectAssignments: [],
@@ -27,17 +33,15 @@ let teachers: PrincipalTeacher[] = [
     teacherId: "t-002",
     displayName: "Trần Văn Minh",
     email: "minh@edu.vn",
-    primarySubjectName: "Văn",
+    primarySubjectName: "Ngữ văn",
     homeroomClassId: null,
     homeroomClassName: null,
     subjectAssignments: [
       {
-        classSubjectId: "cs-001",
         classId: "c-11b1",
         className: "11B1",
         subjectId: "s-van",
         subjectName: "Ngữ văn",
-        hasConflict: false,
       },
     ],
     status: "ACTIVE",
@@ -46,20 +50,18 @@ let teachers: PrincipalTeacher[] = [
     teacherId: "t-003",
     displayName: "Lê Thị Hoa",
     email: "hoa@edu.vn",
-    primarySubjectName: "Lý",
+    primarySubjectName: "Vật lý",
     homeroomClassId: "c-12c2",
     homeroomClassName: "12C2",
     subjectAssignments: [
       {
-        classSubjectId: "cs-002",
         classId: "c-12c2",
         className: "12C2",
         subjectId: "s-ly",
         subjectName: "Vật lý",
-        hasConflict: true,
       },
     ],
-    status: "ON_LEAVE",
+    status: "INACTIVE",
   },
 ];
 

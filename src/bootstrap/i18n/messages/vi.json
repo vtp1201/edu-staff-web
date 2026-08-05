@@ -3189,7 +3189,6 @@
       "addRow": "Thêm hàng",
       "cancel": "Hủy",
       "classPicker": "Lớp",
-      "conflictWarning": "Có xung đột thời khóa biểu",
       "deleteRow": "Xóa hàng",
       "gvbmSection": "Giáo viên bộ môn (GVBM)",
       "gvcnPlaceholder": "Chọn lớp",
@@ -3201,8 +3200,9 @@
       "title": "Phân công: {name}"
     },
     "status": {
-      "ACTIVE": "Đang dạy",
-      "ON_LEAVE": "Nghỉ phép"
+      "ACTIVE": "Đang hoạt động",
+      "INACTIVE": "Ngừng hoạt động",
+      "SUSPENDED": "Bị tạm khóa"
     },
     "subtitle": "Phân công GVCN và giáo viên bộ môn cho các lớp.",
     "table": {
@@ -3216,7 +3216,8 @@
       "status": "Trạng thái",
       "subjectAssignments": "Phân công bộ môn",
       "teacher": "Giáo viên",
-      "unassigned": "Chưa phân công"
+      "unassigned": "Chưa phân công",
+      "unknownSubject": "Môn chưa xác định"
     },
     "teacherCount": "{count} giáo viên",
     "title": "Quản lý giáo viên"
@@ -4593,7 +4594,8 @@
     "retry": "Thử lại",
     "semester": "Học kỳ",
     "semesterValue": "Học kỳ I",
-    "statusOnLeave": "Đang nghỉ phép",
+    "statusInactive": "Ngừng hoạt động",
+    "statusSuspended": "Bị tạm khóa",
     "subtitleParent": "Tuần {range} · chế độ chỉ xem.",
     "subtitlePrincipal": "Tuần {range} · thời khoá biểu của giáo viên, chế độ chỉ xem.",
     "subtitleStudent": "Chế độ chỉ xem. Lịch học do nhà trường xếp; học sinh không thể chỉnh sửa.",

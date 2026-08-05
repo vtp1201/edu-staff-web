@@ -1,63 +1,117 @@
 import { describe, expect, it } from "vitest";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
 import type { ClassSubjectResponseDto } from "../dtos/class-subject-response.dto";
-import type {
-  PrincipalTeacherResponseDto,
-  SubjectAssignmentDto,
-} from "../dtos/principal-teacher-response.dto";
+import type { SubjectAssignmentResponseDto } from "../dtos/subject-assignment-response.dto";
 import { PrincipalTeachersMapper } from "./principal-teachers.mapper";
 
+const member: DirectoryMember = {
+  memberId: "m-002",
+  userId: "m-002",
+  displayName: "Trần Văn Minh",
+  email: "minh@edu.vn",
+  roles: ["TEACHER"],
+  status: "ACTIVE",
+};
+
 describe("PrincipalTeachersMapper", () => {
-  it("toSubjectAssignment maps all fields", () => {
-    const dto: SubjectAssignmentDto = {
-      classSubjectId: "cs-001",
-      classId: "c-11b1",
-      className: "11B1",
-      subjectId: "s-van",
-      subjectName: "Ngữ văn",
-      hasConflict: true,
-    };
-    expect(PrincipalTeachersMapper.toSubjectAssignment(dto)).toEqual(dto);
+  describe("toTeacherFromDirectoryMember", () => {
+    it("maps the directory row and starts every composed field empty", () => {
+      expect(
+        PrincipalTeachersMapper.toTeacherFromDirectoryMember(member),
+      ).toEqual({
+        teacherId: "m-002",
+        displayName: "Trần Văn Minh",
+        email: "minh@edu.vn",
+        primarySubjectName: null,
+        homeroomClassId: null,
+        homeroomClassName: null,
+        subjectAssignments: [],
+        status: "ACTIVE",
+      });
+    });
+
+    it("keys the teacher on memberId (=== userId), never a surrogate id", () => {
+      const entity = PrincipalTeachersMapper.toTeacherFromDirectoryMember({
+        ...member,
+        memberId: "m-009",
+        userId: "m-009",
+      });
+      expect(entity.teacherId).toBe("m-009");
+    });
+
+    it.each([
+      "ACTIVE",
+      "INACTIVE",
+      "SUSPENDED",
+    ] as const)("carries the IAM membership status %s through verbatim", (status) => {
+      expect(
+        PrincipalTeachersMapper.toTeacherFromDirectoryMember({
+          ...member,
+          status,
+        }).status,
+      ).toBe(status);
+    });
+
+    it("does not leak a roles field onto the entity", () => {
+      expect(
+        Object.keys(
+          PrincipalTeachersMapper.toTeacherFromDirectoryMember(member),
+        ).sort(),
+      ).toEqual([
+        "displayName",
+        "email",
+        "homeroomClassId",
+        "homeroomClassName",
+        "primarySubjectName",
+        "status",
+        "subjectAssignments",
+        "teacherId",
+      ]);
+    });
   });
 
-  it("toTeacher maps all fields including nested assignments", () => {
-    const dto: PrincipalTeacherResponseDto = {
-      teacherId: "t-002",
-      displayName: "Trần Văn Minh",
-      email: "minh@edu.vn",
-      primarySubjectName: "Văn",
-      homeroomClassId: null,
-      homeroomClassName: null,
-      subjectAssignments: [
-        {
-          classSubjectId: "cs-001",
-          classId: "c-11b1",
-          className: "11B1",
-          subjectId: "s-van",
-          subjectName: "Ngữ văn",
-          hasConflict: false,
-        },
-      ],
-      status: "ACTIVE",
+  describe("toSubjectAssignment", () => {
+    const dto: SubjectAssignmentResponseDto = {
+      classId: "c-11b1",
+      subjectId: "s-van",
+      teacherMemberId: "m-002",
+      assignedAt: "2026-01-05T02:00:00Z",
+      assignedBy: "m-admin",
     };
-    const entity = PrincipalTeachersMapper.toTeacher(dto);
-    expect(entity).toEqual({
-      teacherId: "t-002",
-      displayName: "Trần Văn Minh",
-      email: "minh@edu.vn",
-      primarySubjectName: "Văn",
-      homeroomClassId: null,
-      homeroomClassName: null,
-      subjectAssignments: [
-        {
-          classSubjectId: "cs-001",
-          classId: "c-11b1",
-          className: "11B1",
-          subjectId: "s-van",
-          subjectName: "Ngữ văn",
-          hasConflict: false,
-        },
-      ],
-      status: "ACTIVE",
+
+    it("takes className/subjectName from the caller (not on the wire)", () => {
+      expect(
+        PrincipalTeachersMapper.toSubjectAssignment(dto, "11B1", "Ngữ văn"),
+      ).toEqual({
+        classId: "c-11b1",
+        className: "11B1",
+        subjectId: "s-van",
+        subjectName: "Ngữ văn",
+      });
+    });
+
+    it("keeps subjectName null when the id is unresolvable (never the uuid)", () => {
+      const entity = PrincipalTeachersMapper.toSubjectAssignment(
+        dto,
+        "11B1",
+        null,
+      );
+      expect(entity.subjectName).toBeNull();
+      expect(entity.subjectName).not.toBe(dto.subjectId);
+    });
+
+    it("carries no classSubjectId / hasConflict (no wire source)", () => {
+      const entity = PrincipalTeachersMapper.toSubjectAssignment(
+        dto,
+        "11B1",
+        "Ngữ văn",
+      );
+      expect(Object.keys(entity).sort()).toEqual([
+        "classId",
+        "className",
+        "subjectId",
+        "subjectName",
+      ]);
     });
   });
 

@@ -217,7 +217,7 @@ const TEACHER_RAW: Record<
    * matched to each teacher's `primarySubjectName`:
    *   t-001 Nguyễn Thị Lan  — Toán  (dense week, homeroom 10A1)
    *   t-002 Trần Văn Minh   — Ngữ văn (mid-density, no homeroom)
-   *   t-003 Lê Thị Hoa      — Vật lý (sparse week, ON_LEAVE, no Saturday)
+   *   t-003 Lê Thị Hoa      — Vật lý (sparse week, INACTIVE membership, no Saturday)
    */
   "t-001": {
     0: {
