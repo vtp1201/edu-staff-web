@@ -47,18 +47,21 @@ async function makeRepository(): Promise<IAcademicRecordsRepository> {
 }
 
 /**
- * US-E18.13 + US-E18.24 hybrid: FIVE methods run REAL (`sealBatch`,
+ * US-E18.13 + US-E18.24 + US-E18.43 hybrid: SIX methods run REAL (`sealBatch`,
  * `getSealStatus`, `getPendingUnsealRequests`, `initiateUnseal`,
  * `confirmUnseal` — BE US-150 shipped the listing endpoint ADR `0055` said was
- * missing). The remaining four (`listAvailableClasses`, `getSealAuditTrail`,
- * `listSealedStudents`, `listTenantAdmins`) delegate to the mock: no BE
- * endpoint exists for the first three, and IAM cannot answer the fourth
+ * missing — plus `listSealedStudents`, BE US-183). The remaining three
+ * (`listAvailableClasses`, `getSealAuditTrail`, `listTenantAdmins`) delegate to
+ * the mock: no BE endpoint exists for the first two (and `getSealAuditTrail`
+ * never will — `core` stores only the latest seal cycle plus a reseal counter, so
+ * there is no multi-cycle seal event log), and IAM cannot answer the third
  * accurately (`MemberListItem.roles` has no `SUPER_ADMIN`, so an ADMIN-only
  * listing would under-count real approvers on a legal compliance gate).
  *
- * Unseal-request display names are resolved by COMPOSING `iam-directory`'s
- * `BatchResolveMembersUseCase` (IAM US-144, wired in US-E18.23) — ONE batch
- * call per listing page, chunked at 50 ids inside that module. `bootstrap/di`,
+ * Unseal-request AND sealed-student display names are resolved by COMPOSING
+ * `iam-directory`'s `BatchResolveMembersUseCase` (IAM US-144, wired in
+ * US-E18.23) — ONE batch call per listing page, chunked at 50 ids inside that
+ * module. The same injected resolver serves both real listings. `bootstrap/di`,
  * not a feature's domain, is where composing across features belongs (decision
  * 0017, same precedent as `staffing.di.ts`). The mock branch never reaches it:
  * its fixtures already carry inline names.

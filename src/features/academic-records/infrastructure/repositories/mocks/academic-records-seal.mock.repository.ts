@@ -189,6 +189,16 @@ export class MockAcademicRecordsSealRepository
     return { ok: true, data };
   }
 
+  /**
+   * Reached only in `USE_MOCK=true` mode since US-E18.43 (the hybrid facade now
+   * routes this method to the real repo). Deliberately KEEPS its tenant-wide
+   * behavior — an absent filter lists every sealed student across classes, which
+   * is what the screen's current caller expects — whereas the real endpoint is
+   * class+term path-scoped and rejects an incomplete key. That divergence is
+   * documented on the real repository, not papered over here: narrowing the mock
+   * would break the offline picker without making the real path reachable (the
+   * class/term selector is itself mock-sourced).
+   */
   async listSealedStudents(
     filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealedStudentOption[]>> {

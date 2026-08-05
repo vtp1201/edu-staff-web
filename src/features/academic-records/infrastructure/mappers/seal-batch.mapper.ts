@@ -1,6 +1,7 @@
 import type {
   ClassOption,
   SealAuditEntry,
+  SealBatchKey,
   SealBatchResult,
   SealBatchStatus,
   SealedStudentOption,
@@ -12,7 +13,7 @@ import type {
   SealAcademicRecordResponseDto,
   SealAuditEntryResponseDto,
   SealBatchResponseDto,
-  SealedStudentResponseDto,
+  SealedStudentListItemDto,
   TenantAdminResponseDto,
   UnsealRequestResponseDto,
 } from "../dtos/seal-response.dto";
@@ -94,15 +95,32 @@ export function classOptionMapper(dto: ClassOptionResponseDto): ClassOption {
   return { classId: dto.classId, className: dto.className };
 }
 
+/**
+ * US-E18.43 (BE US-183) — real `SealedStudentResponse` → {@link
+ * SealedStudentOption}. The wire row is KEY-LESS and name-less, so two things are
+ * re-attached here:
+ * - `classId`/`term`/`year` from the CALLER's `SealBatchKey` (the request path
+ *   already carried them; same precedent as `sealStatusRollupMapper`);
+ * - `studentName` from ONE IAM batch lookup — an id missing from `nameMap`
+ *   degrades to the raw id, a degraded display and never an error (same
+ *   convention as `unsealRequestSummaryMapper`).
+ *
+ * `sealedBy`/`resealCount` are deliberately DROPPED: no consumer renders them
+ * today (the picker shows name · class · year + a "sealed <date>" hint), and
+ * `SealedStudentOption` is the picker's boundary contract — a future UI story can
+ * widen the entity when it actually surfaces them.
+ */
 export function sealedStudentMapper(
-  dto: SealedStudentResponseDto,
+  dto: SealedStudentListItemDto,
+  key: SealBatchKey,
+  nameMap: Map<string, string>,
 ): SealedStudentOption {
   return {
-    studentId: dto.studentId,
-    studentName: dto.studentName,
-    classId: dto.classId,
-    term: dto.term,
-    year: dto.year,
+    studentId: dto.studentMemberId,
+    studentName: nameMap.get(dto.studentMemberId) ?? dto.studentMemberId,
+    classId: key.classId,
+    term: key.term,
+    year: key.year,
     sealedAt: dto.sealedAt,
   };
 }

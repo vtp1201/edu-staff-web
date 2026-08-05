@@ -1,13 +1,16 @@
 /**
- * Integration tests — AcademicRecordsSealRepository (US-E18.13 + US-E18.24).
+ * Integration tests — AcademicRecordsSealRepository (US-E18.13 + US-E18.24 +
+ * US-E18.43).
  *
- * FIVE methods are wired REAL: `sealBatch` (US-E18.13) plus `getSealStatus`,
+ * SIX methods are wired REAL: `sealBatch` (US-E18.13); `getSealStatus`,
  * `getPendingUnsealRequests`, `initiateUnseal`, `confirmUnseal` (US-E18.24,
- * BE US-150). The http interceptor unwraps the envelope; the repo receives the
- * payload directly and a normalised ApiError on failure — branch on error.code.
- * `listAvailableClasses`/`getSealAuditTrail`/`listSealedStudents`/
- * `listTenantAdmins` stay permanently dormant (`notImplemented`) — no BE
- * endpoint exists — reached only via the mock through the hybrid facade.
+ * BE US-150); and `listSealedStudents` (US-E18.43, BE US-183). The http
+ * interceptor unwraps the envelope; the repo receives the payload directly and a
+ * normalised ApiError on failure — branch on error.code.
+ * `listAvailableClasses`/`getSealAuditTrail`/`listTenantAdmins` stay permanently
+ * dormant (`notImplemented`) — no BE endpoint exists (and none can exist for the
+ * audit trail: no multi-cycle seal event log) — reached only via the mock through
+ * the hybrid facade.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,7 +20,10 @@ import type { AxiosInstance } from "axios";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
 import type { MemberSummary } from "@/features/iam-directory/domain/entities/member-summary.entity";
 import type { SealBatchKey } from "../../domain/entities/seal-batch.entity";
-import type { SealAcademicRecordResponseDto } from "../dtos/seal-response.dto";
+import type {
+  SealAcademicRecordResponseDto,
+  SealedStudentListItemDto,
+} from "../dtos/seal-response.dto";
 import type {
   ApproveUnsealResponseDto,
   SealStatusResponseDto,
@@ -120,16 +126,147 @@ describe("AcademicRecordsSealRepository.sealBatch", () => {
     expect(res).toEqual({ ok: false, error: { type: "network-error" } });
   });
 
-  it("keeps the four no-BE-endpoint methods dormant (notImplemented)", () => {
+  it("keeps the three no-BE-endpoint methods dormant (notImplemented)", () => {
     const repo = new AcademicRecordsSealRepository(
       postHttp(vi.fn() as unknown as AxiosInstance["post"]),
     );
     expect(() => repo.getSealAuditTrail()).toThrow("not-implemented");
-    expect(() => repo.listSealedStudents()).toThrow("not-implemented");
     expect(() => repo.listTenantAdmins()).toThrow("not-implemented");
     expect(() =>
       repo.listAvailableClasses({ term: "HK1", year: "2025-2026" }),
     ).toThrow("not-implemented");
+    // `listSealedStudents` is NO LONGER dormant (US-E18.43 / BE US-183) — see
+    // its own describe below.
+  });
+});
+
+describe("AcademicRecordsSealRepository.listSealedStudents (US-E18.43, BE US-183)", () => {
+  const ROW: SealedStudentListItemDto = {
+    studentMemberId: "m-student-1",
+    sealedAt: "2026-01-15T14:32:00.000Z",
+    sealedBy: "m-admin",
+    resealCount: 0,
+  };
+
+  it("GETs the real class/term path (unpaginated — no params, no raw flag)", async () => {
+    const get = vi.fn(async () => [ROW]) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(makeHttp({ get }));
+
+    const res = await repo.listSealedStudents(KEY);
+
+    expect(get).toHaveBeenCalledWith(
+      "/core/api/v1/classes/12C1/terms/HK1/academic-records/sealed-students",
+    );
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(res.ok).toBe(true);
+  });
+
+  it("maps the key-less rows into SealedStudentOption using the caller's key", async () => {
+    const get = vi.fn(async () => [ROW]) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(
+      makeHttp({ get }),
+      async () => ({
+        ok: true,
+        value: [member("m-student-1", "Lê Hoàng Nhật")],
+      }),
+    );
+
+    const res = await repo.listSealedStudents(KEY);
+
+    expect(res).toEqual({
+      ok: true,
+      data: [
+        {
+          studentId: "m-student-1",
+          studentName: "Lê Hoàng Nhật",
+          classId: "12C1",
+          term: "HK1",
+          year: "2025-2026",
+          sealedAt: "2026-01-15T14:32:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("resolves every student name in ONE deduped batch call", async () => {
+    const rows = [ROW, { ...ROW, studentMemberId: "m-student-2" }, ROW];
+    const get = vi.fn(async () => rows) as unknown as AxiosInstance["get"];
+    const calls: string[][] = [];
+    const repo = new AcademicRecordsSealRepository(
+      makeHttp({ get }),
+      async (ids) => {
+        calls.push(ids);
+        return { ok: true, value: [] };
+      },
+    );
+
+    await repo.listSealedStudents(KEY);
+
+    expect(calls).toHaveLength(1);
+    expect([...calls[0]].sort()).toEqual(["m-student-1", "m-student-2"]);
+  });
+
+  it("degrades to raw ids when the resolver fails — never an error", async () => {
+    const get = vi.fn(async () => [ROW]) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(
+      makeHttp({ get }),
+      async () => ({ ok: false, failure: { type: "network-error" } }),
+    );
+
+    const res = await repo.listSealedStudents(KEY);
+
+    expect(res.ok).toBe(true);
+    expect(res.ok && res.data[0].studentName).toBe("m-student-1");
+  });
+
+  it("keeps a nullable wire sealedAt as null", async () => {
+    const get = vi.fn(async () => [
+      { ...ROW, sealedAt: null, sealedBy: null },
+    ]) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(makeHttp({ get }));
+
+    const res = await repo.listSealedStudents(KEY);
+    expect(res.ok && res.data[0].sealedAt).toBeNull();
+  });
+
+  it("skips the name lookup entirely when no student is sealed", async () => {
+    const get = vi.fn(async () => []) as unknown as AxiosInstance["get"];
+    const resolve = vi.fn(async () => ({ ok: true as const, value: [] }));
+    const repo = new AcademicRecordsSealRepository(makeHttp({ get }), resolve);
+
+    expect(await repo.listSealedStudents(KEY)).toEqual({ ok: true, data: [] });
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [undefined],
+    [{ classId: "12C1" }],
+    [{ term: "HK1" as const }],
+  ] as const)("returns not-found WITHOUT any HTTP call when the key is incomplete (%o)", async (filter) => {
+    const get = vi.fn(async () => [ROW]) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(makeHttp({ get }));
+
+    expect(await repo.listSealedStudents(filter)).toEqual({
+      ok: false,
+      error: { type: "not-found" },
+    });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["ACADEMIC_RECORD_FORBIDDEN", 403, "forbidden"],
+    ["ACADEMIC_RECORD_NOT_FOUND", 404, "not-found"],
+    ["UNKNOWN_ERROR", 503, "network-error"],
+  ] as const)("maps %s → %s failure", async (code, status, expected) => {
+    const get = vi.fn(async () => {
+      throw apiError(code, status);
+    }) as unknown as AxiosInstance["get"];
+    const repo = new AcademicRecordsSealRepository(makeHttp({ get }));
+
+    expect(await repo.listSealedStudents(KEY)).toEqual({
+      ok: false,
+      error: { type: expected },
+    });
   });
 });
 

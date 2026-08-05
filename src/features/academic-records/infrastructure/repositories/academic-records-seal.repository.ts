@@ -30,14 +30,20 @@ import type {
   IAcademicRecordsSealRepository,
   SealResult,
 } from "../../domain/repositories/i-academic-records-seal.repository";
-import type { SealAcademicRecordResponseDto } from "../dtos/seal-response.dto";
+import type {
+  SealAcademicRecordResponseDto,
+  SealedStudentListItemDto,
+} from "../dtos/seal-response.dto";
 import type {
   ApproveUnsealResponseDto,
   RequestUnsealResponseDto,
   SealStatusResponseDto,
   UnsealRequestListItemDto,
 } from "../dtos/unseal-response.dto";
-import { sealBatchResultMapper } from "../mappers/seal-batch.mapper";
+import {
+  sealBatchResultMapper,
+  sealedStudentMapper,
+} from "../mappers/seal-batch.mapper";
 import {
   sealStatusRollupMapper,
   unsealApproveResultMapper,
@@ -106,26 +112,39 @@ export type MemberNameResolver = (
 /**
  * Real HTTP repository for the seal/unseal surface.
  *
- * FIVE methods are wired REAL: `sealBatch` (US-E18.13) and — since BE US-150
- * shipped the pending-request listing ADR `0055` said was missing —
- * `getSealStatus`, `getPendingUnsealRequests`, `initiateUnseal` and
- * `confirmUnseal` (US-E18.24).
+ * SIX methods are wired REAL: `sealBatch` (US-E18.13); `getSealStatus`,
+ * `getPendingUnsealRequests`, `initiateUnseal` and `confirmUnseal` (US-E18.24,
+ * once BE US-150 shipped the pending-request listing ADR `0055` said was
+ * missing); and `listSealedStudents` (US-E18.43, once BE US-183 shipped the
+ * per-student sealed listing — the LISTING half of ask #21).
  *
- * `listAvailableClasses`, `getSealAuditTrail`, `listSealedStudents` and
- * `listTenantAdmins` remain PERMANENTLY dormant (`notImplemented`): the first
- * three have no endpoint anywhere in `core`'s `AcademicRecords` tag, and the
- * fourth cannot be served accurately by IAM (`MemberListItem.roles` has no
- * `SUPER_ADMIN`, so an ADMIN-only listing would under-count real approvers and
- * turn a legal compliance gate into a wrong answer). They are never invoked on
- * the real branch: the DI factory composes this class behind
- * `HybridAcademicRecordsSealRepository`, which routes those four to the mock.
+ * `listAvailableClasses`, `getSealAuditTrail` and `listTenantAdmins` remain
+ * PERMANENTLY dormant (`notImplemented`): the first two have no endpoint
+ * anywhere in `core`'s `AcademicRecords` tag — and `getSealAuditTrail` never
+ * will, since the record stores only the LATEST seal cycle plus a reseal
+ * counter, i.e. there is no multi-cycle seal/unseal event log (BE US-183
+ * confirmed this; the unseal-REQUEST history is `getPendingUnsealRequests`) —
+ * while the third cannot be served accurately by IAM (`MemberListItem.roles`
+ * has no `SUPER_ADMIN`, so an ADMIN-only listing would under-count real
+ * approvers and turn a legal compliance gate into a wrong answer). They are
+ * never invoked on the real branch: the DI factory composes this class behind
+ * `HybridAcademicRecordsSealRepository`, which routes those three to the mock.
  *
- * NOTE (carried forward from US-E18.13, applying to ALL FIVE real methods):
+ * ⚠️ NOTE (carried forward from US-E18.13, applying to ALL SIX real methods —
+ * `listSealedStudents` inherits it unchanged, US-E18.43):
  * `SealBatchKey.term` is `'HK1'`/`'HK2'` — a LABEL, not a real termId (UUID).
  * The class/term selector feeding it is itself mock-sourced (ADR 0055,
  * `listAvailableClasses`), so these calls are not meaningfully reachable
  * end-to-end until that selector is wired to the real calendar/term feature.
  * Do NOT assume `key.term`/`termId` is a valid UUID once the selector changes.
+ * Wiring the HTTP call for real is still correct (it matches its five siblings
+ * and pins the boundary for the day the selector is fixed) — but do NOT claim
+ * end-to-end reachability. Additionally, the screen's current caller
+ * (`academic-record-seal-container.tsx`) invokes `listSealedStudents()` with NO
+ * filter, which this class+term-scoped endpoint cannot serve: that call fails
+ * with `not-found` (no HTTP request) instead of faking an empty picker. Scoping
+ * that query to the selected class/term is a UI change deliberately left out of
+ * US-E18.43 (it would not become reachable anyway while `term` is a label).
  */
 export class AcademicRecordsSealRepository
   implements IAcademicRecordsSealRepository
@@ -204,10 +223,46 @@ export class AcademicRecordsSealRepository
     return this.notImplemented();
   }
 
-  listSealedStudents(
-    _filter?: Partial<SealBatchKey>,
+  /**
+   * US-E18.43 (BE US-183) — the currently-SEALED subset of a class roster, the
+   * per-student companion to `getSealStatus`. UNPAGINATED (bounded by the
+   * roster) and already narrowed server-side, so there is no cursor to drain and
+   * no `raw: true` needed.
+   *
+   * The endpoint is class+term PATH-scoped: an incomplete key addresses no
+   * resource, so it fails with `not-found` and performs NO HTTP call rather than
+   * quietly returning an empty picker (the screen's current caller passes no
+   * filter — see the reachability note on this class).
+   *
+   * `year` is not on the wire and not in the path; like `getSealStatus` the
+   * caller's key is re-attached by the mapper. Display names come from ONE
+   * deduped IAM batch lookup — an unresolved id degrades to the raw id.
+   */
+  async listSealedStudents(
+    filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealedStudentOption[]>> {
-    return this.notImplemented();
+    const { classId, term, year } = filter ?? {};
+    if (!classId || !term) {
+      return { ok: false, error: { type: "not-found" } };
+    }
+    const key: SealBatchKey = { classId, term, year: year ?? "" };
+
+    try {
+      const rows = (await this.http.get(
+        ACADEMIC_RECORDS_EP.sealedStudents(classId, term),
+      )) as unknown as SealedStudentListItemDto[];
+
+      const nameMap = await this.memberNameMap([
+        ...new Set(rows.map((r) => r.studentMemberId)),
+      ]);
+
+      return {
+        ok: true,
+        data: rows.map((dto) => sealedStudentMapper(dto, key, nameMap)),
+      };
+    } catch (err) {
+      return { ok: false, error: toSealFailure(err) };
+    }
   }
 
   async getPendingUnsealRequests(

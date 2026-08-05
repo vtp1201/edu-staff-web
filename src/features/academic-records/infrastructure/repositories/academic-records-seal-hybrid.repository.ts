@@ -20,12 +20,14 @@ import type {
 } from "../../domain/repositories/i-academic-records-seal.repository";
 
 /**
- * US-E18.13 + US-E18.24 hybrid facade — wires the FIVE genuinely-real
- * operations (`sealBatch`, plus `getSealStatus`/`getPendingUnsealRequests`/
+ * US-E18.13 + US-E18.24 + US-E18.43 hybrid facade — wires the SIX genuinely-real
+ * operations (`sealBatch`; `getSealStatus`/`getPendingUnsealRequests`/
  * `initiateUnseal`/`confirmUnseal` once BE US-150 shipped the listing endpoint
- * ADR `0055` said was missing) to the real HTTP adapter, while the FOUR
- * permanently-dormant methods (no BE endpoint at all, or — for
- * `listTenantAdmins` — no accurate IAM answer, see the real repo's doc comment)
+ * ADR `0055` said was missing; and `listSealedStudents` once BE US-183 shipped
+ * the per-student sealed listing) to the real HTTP adapter, while the THREE
+ * permanently-dormant methods (no BE endpoint at all — and, for
+ * `getSealAuditTrail`, no multi-cycle seal event log to build one from — or, for
+ * `listTenantAdmins`, no accurate IAM answer; see the real repo's doc comment)
  * delegate to the in-memory mock. Chosen over a per-method
  * `if (USE_MOCK)` branch inside one class so the real adapter stays a pure,
  * single-purpose HTTP client and the mock stays the single source of truth for
@@ -40,7 +42,7 @@ export class HybridAcademicRecordsSealRepository
     private readonly mock: IAcademicRecordsSealRepository,
   ) {}
 
-  // ── REAL (5) ─────────────────────────────────────────────────────────────
+  // ── REAL (6) ─────────────────────────────────────────────────────────────
   sealBatch(
     key: SealBatchKey,
     actorId: string,
@@ -85,7 +87,18 @@ export class HybridAcademicRecordsSealRepository
     return this.real.confirmUnseal(requestId, coSignerId, classId, termId);
   }
 
-  // ── MOCK (4 — permanently dormant real BE, ADR 0055) ─────────────────────
+  /**
+   * US-E18.43 (BE US-183). Class+term-scoped on the wire, so the `filter` is
+   * forwarded verbatim — the real repo rejects an incomplete key rather than
+   * calling. Same term-label-vs-termId reachability caveat as its five siblings.
+   */
+  listSealedStudents(
+    filter?: Partial<SealBatchKey>,
+  ): Promise<SealResult<SealedStudentOption[]>> {
+    return this.real.listSealedStudents(filter);
+  }
+
+  // ── MOCK (3 — permanently dormant real BE, ADR 0055) ─────────────────────
   listAvailableClasses(filter: {
     term: Term;
     year: string;
@@ -97,12 +110,6 @@ export class HybridAcademicRecordsSealRepository
     filter?: Partial<SealBatchKey>,
   ): Promise<SealResult<SealAuditEntry[]>> {
     return this.mock.getSealAuditTrail(filter);
-  }
-
-  listSealedStudents(
-    filter?: Partial<SealBatchKey>,
-  ): Promise<SealResult<SealedStudentOption[]>> {
-    return this.mock.listSealedStudents(filter);
   }
 
   listTenantAdmins(): Promise<SealResult<TenantAdminSummary[]>> {
