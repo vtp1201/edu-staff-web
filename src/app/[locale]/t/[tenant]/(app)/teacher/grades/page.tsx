@@ -58,6 +58,20 @@ export default async function TeacherGradesPage({
     }
   }
 
+  // A locally-defined function CANNOT be handed from an RSC to a Client
+  // Component — Next.js throws "Functions cannot be passed directly to Client
+  // Components…" and the route 500s. So the no-selection state binds the REAL
+  // Server Actions to a placeholder key instead of a stub closure; nothing can
+  // invoke them in that state anyway (no sheet renders ⇒ no input, no submit
+  // control), and the server-side key validation is the backstop. Same idiom as
+  // `buildApproverGradeVm`'s `boundKey`.
+  const boundKey: ClassSubjectTermKey = key ?? {
+    classId: selectedClassId ?? "",
+    subjectId: selectedSubjectId ?? "",
+    termId: selectedTerm ?? "",
+    academicYearLabel,
+  };
+
   const vm: GradeEntryScreenVM = {
     // Teacher mode: enter + submit, never reject. The reject capability is not
     // "omitted" here — `TeacherGradeEntryVM` has no such field, so handing one
@@ -69,12 +83,8 @@ export default async function TeacherGradesPage({
     selectedTerm,
     sheet,
     error,
-    saveScoreAction: key
-      ? saveScoreAction.bind(null, key)
-      : async () => ({ ok: false, errorKey: "unknown" }),
-    submitScoresAction: key
-      ? submitScoresAction.bind(null, key)
-      : async () => ({ ok: false, errorKey: "unknown" }),
+    saveScoreAction: saveScoreAction.bind(null, boundKey),
+    submitScoresAction: submitScoresAction.bind(null, boundKey),
   };
 
   return <GradeEntryContainer vm={vm} />;

@@ -454,6 +454,9 @@ options, or raise that story's timeout.
    unchanged. The new approver builder deliberately does NOT copy the pattern —
    it binds the real Server Action with an empty-string key instead. Worth a
    small follow-up story to confirm and fix.
+   → **CLOSED in the reachability round below** (reviewer reproduced it
+   empirically as an HTTP 500; it sits on this story's own AC-1 reopen path, so it
+   was pulled into scope rather than deferred).
 2. `GradeBookRole` still includes `"principal"`/`"admin"` (the shared
    `GradeBookTable` accepts them, and its stories/tests cover them). The
    `GradeBookScreen` principal story was renamed to
@@ -462,3 +465,115 @@ options, or raise that story's timeout.
 3. Ask #18 (batch dashboard rollup) untouched as instructed:
    `IGradeApprovalRepository` and its force-mocked DI factory were not modified.
    Only that screen's dialog COMPONENT changed (fork → canonical).
+
+### Reachability + a11y round (fe-nextjs-engineer, 2026-08-06)
+
+Second `fe-tech-lead-reviewer` pass confirmed the security/privacy/architecture
+work of the routing fix, and raised two NEW **reachability** defects — both about
+a capability existing but being impossible (or fatal) to actually reach. Plus two
+findings from a fresh a11y pass. All four addressed here.
+
+**MUST-FIX 1 — the default load of `/teacher/grades` was an HTTP 500.** The
+latent bug flagged (and deferred) in the previous round was reproduced
+empirically by the reviewer: with no `classId`/`subjectId`/`term` query params —
+i.e. the route's DEFAULT load — the page handed locally-defined async closures to
+`GradeEntryContainer`, and Next.js refuses to serialize a plain function across
+the RSC→client boundary ("Functions cannot be passed directly to Client
+Components unless you explicitly expose it by marking it with 'use server'").
+That is exactly the code path AC-1 requires: a teacher must REOPEN the gradebook
+to read a rejection reason, and reopening lands on the no-selection default.
+
+Fix mirrors the idiom `buildApproverGradeVm` already established in this story —
+bind the REAL Server Actions to a placeholder key instead of stubbing them:
+
+```ts
+const boundKey: ClassSubjectTermKey = key ?? {
+  classId: selectedClassId ?? "", subjectId: selectedSubjectId ?? "",
+  termId: selectedTerm ?? "", academicYearLabel,
+};
+saveScoreAction:    saveScoreAction.bind(null, boundKey),
+submitScoresAction: submitScoresAction.bind(null, boundKey),
+```
+
+Nothing can invoke them in that state (no sheet ⇒ no input, no submit control),
+and server-side key validation is the backstop.
+
+**Why the regression lock had to be a unit test.** `tsc` accepts the closures
+(they satisfy the VM type), `bun run build` compiles them, and Storybook never
+crosses an RSC boundary — so none of the three gates can see this class of bug.
+New `app/[locale]/t/[tenant]/(app)/teacher/grades/page.test.tsx` (7 tests, same
+awaited-element/props technique as the sibling `principal/grade-book/page.test.tsx`)
+asserts the no-selection VM's `saveScoreAction`/`submitScoresAction` **delegate to
+the mocked action-module exports** with the empty-string key — an assertion a
+local closure fails by construction (observed RED: "Number of calls: 0"). It also
+pins teacher-mode capability shape (`"rejectEntryAction" in vm === false`), the
+AC-1 rejection-on-reopen read, and the typed-failure path.
+
+**MUST-FIX 2 — neither approver route had a nav entry.** `/principal/grade-book`
+and `/admin/grade-book` were pre-existing nav-less orphans on `main`; the routing
+fix made them the SOLE home of the reject capability, so a principal/admin session
+could only reach the new flow by typing a URL. Added to
+`components/layout/app-shell/sidebar/nav-config.ts`, reusing the EXISTING
+`shell.nav.grades` label key (`/teacher/grades` already uses it) — **no new i18n
+key**:
+
+- `principal`: after `/principal/classes`, before `/principal/schedule` — groups
+  with the other academic-record entries and keeps `/messages` + `/profile` as the
+  tail (`nav-config.test.ts` asserts `/profile` is LAST for non-admin roles);
+- `admin`: directly after `/admin/assessment` (the scheme these grades are graded
+  against), before `/admin/staffing`.
+
+`nav-config.test.ts` updated: the hardcoded `NAV_BY_ROLE.admin.length` assertion
+12 → **13** (there is no equivalent length assertion for `principal`, verified),
+plus 2 NEW tests — one asserting both approver hrefs exist, one asserting all
+three grade entries share `labelKey: "grades"` (locks the "no new key" decision).
+Observed RED: 3 failing.
+
+**A11Y-001 (was still open) — reject button now describes its stale rejection.**
+BE US-184 does not clear `rejection` when a teacher resubmits, so a
+`PENDING_APPROVAL` cell in the READ-ONLY (approver) branch can render the
+"rejected + why" indicator AND a live reject button side by side. The button
+carried no `aria-describedby`, so a screen-reader user heard "Từ chối …" with no
+hint that a prior reason was displayed beside it. Added
+`aria-describedby={rejection ? rejectionId : undefined}` to that specific button
+(the editable-branch input was already fixed in the first round). New interaction
+story `ApproverRejectButtonDescribedByStaleRejection` covers the previously
+uncovered COMBINED state and asserts the id resolves to the reason text — and, to
+prove the wiring is scoped rather than blanket, that the two rejection-free
+pending cells' buttons have NO `aria-describedby`. Observed RED before the fix.
+
+**A11Y-002 (touch target) — the auditor considered it resolved in practice**
+(text-label button clears 44×44 via `min-h-11` + padding). Took the optional
+defensive step anyway: added `min-w-11` alongside the existing `min-h-11`.
+
+**Files changed this round**
+
+- app (RSC): `teacher/grades/page.tsx` (bound-action fix),
+  `teacher/grades/page.test.tsx` (NEW — 7 tests).
+- layout: `app-shell/sidebar/nav-config.ts` (+2 nav entries),
+  `app-shell/sidebar/nav-config.test.ts` (12→13 + 2 new tests).
+- presentation (`'use client'`): `grade-entry-table.tsx`
+  (`aria-describedby` + `min-w-11` on the read-only reject button),
+  `grade-entry-screen.stories.tsx` (+1 interaction story).
+- No i18n keys added; no tokens touched; no repository/DI/domain change.
+
+**Proof actually run (from the worktree, after this round)**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **485 files / 3628 tests pass**, 0 fail (previous round 484/3619 → +1 file, +9 tests) |
+| `bunx vitest run --config vitest.storybook.mts` | **156 files / 1215 tests pass**, 0 fail (previous 1214 → +1 story) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean after `bun lint:fix` (1 formatting fix in the new story); the 1 warning + 1 info remain the pre-existing unrelated `messaging` pair |
+| `bun run build` | ✓ compiled in 9.5s; `/principal/grade-book` + `/admin/grade-book` + `/teacher/grades` all emitted |
+
+Note on `bunx tsc --noEmit`: a stale `.next/dev/types/validator.ts` referencing a
+deleted `src/app/closure-probe/page` (left behind by the reviewer's empirical
+reproduction) reported one phantom TS2307. `rm -rf .next` cleared it; tsc is clean
+on the real source tree, and `src/app/closure-probe/` does not exist.
+
+**Not touched (as instructed):** `IGradeApprovalRepository`/batch dashboard (ask
+#18 stays open), student/parent grade paths (privacy boundary still zero-diff),
+`staff-discipline-screen.stories.tsx` flake (unrelated/pre-existing), the packet's
+`## Status` field (fe-lead flips it), `docs/reports/*` + `EPIC-OVERVIEW.md`
+(fe-lead owns them).

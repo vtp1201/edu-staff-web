@@ -739,6 +739,70 @@ export const ApproverCanRejectFromTheApproverRoute: Story = {
   },
 };
 
+/**
+ * A11Y-001 — a `PENDING_APPROVAL` cell can ALSO carry a rejection: BE US-184
+ * does not clear `rejection` when the teacher resubmits, so the approver's
+ * read-only cell renders the stale "rejected + why" indicator right next to a
+ * live reject button. That button must point at the reason (`aria-describedby`),
+ * otherwise a screen-reader user hears "Từ chối" with no idea a previous
+ * rejection is already displayed beside it. Scoped, not blanket: the two
+ * rejection-free cells' buttons carry no `aria-describedby` at all.
+ */
+export const ApproverRejectButtonDescribedByStaleRejection: Story = {
+  name: "Approver — reject button on a pending cell WITH a stale rejection is described by it (A11Y-001)",
+  args: {
+    vm: approverVm({
+      sheet: sheet(
+        [
+          {
+            ...POPULATED[0],
+            scores: {
+              tx: { value: 8, status: "PENDING_APPROVAL" },
+              gk: { value: 7.5, status: "PENDING_APPROVAL" },
+              ck: {
+                value: 6,
+                status: "PENDING_APPROVAL",
+                rejection: {
+                  reason: "Lần trước lệch với bài thi",
+                  rejectedBy: "admin-1",
+                  rejectedAt: "2026-08-05T02:00:00Z",
+                },
+              },
+            },
+          },
+        ],
+        "ADMIN_APPROVAL",
+      ),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Both the stale rejection indicator AND a live reject control are present.
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectedBadge),
+    ).toBeInTheDocument();
+
+    const rejectBtn = canvas.getByRole("button", {
+      name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+    });
+    const describedBy = rejectBtn.getAttribute("aria-describedby");
+    if (!describedBy)
+      throw new Error("expected aria-describedby on the reject button");
+    const reasonEl = canvasElement.querySelector(`#${describedBy}`);
+    await expect(reasonEl?.textContent).toContain("Lần trước lệch với bài thi");
+
+    // The rejection-free pending cells get no description — only the cell that
+    // actually shows a reason references one.
+    for (const column of ["Thường xuyên", "Giữa kỳ"]) {
+      const btn = canvas.getByRole("button", {
+        name: REJECT_LABEL(column, "Nguyễn Văn An"),
+      });
+      await expect(btn).not.toHaveAttribute("aria-describedby");
+    }
+  },
+};
+
 export const TeacherHasNoLockTermControl: Story = {
   name: "Teacher — no term-lock control (capability absent)",
   args: { vm: baseVM },

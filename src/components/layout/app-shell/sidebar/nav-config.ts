@@ -66,6 +66,12 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     },
     { href: "/principal/students", labelKey: "students", icon: Users },
     { href: "/principal/classes", labelKey: "classes", icon: School },
+    // US-E18.44 — the approver grade view (view + reject + term lock). The
+    // reject capability lives ONLY here and on /admin/grade-book: /teacher/grades
+    // is guarded by a strict `role === "teacher"` layout, so a principal can
+    // never render it. Placed with the other academic-record entries, before the
+    // shared /messages + /profile tail.
+    { href: "/principal/grade-book", labelKey: "grades", icon: GraduationCap },
     { href: "/principal/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/principal/reports", labelKey: "reports", icon: FileText },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
@@ -118,6 +124,9 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
       labelKey: "assessmentScheme",
       icon: BarChart2,
     },
+    // US-E18.44 — approver grade view, sibling of /principal/grade-book. Sits
+    // next to the assessment scheme it grades against.
+    { href: "/admin/grade-book", labelKey: "grades", icon: GraduationCap },
     { href: "/admin/staffing", labelKey: "staffing", icon: Users2 },
     { href: "/admin/staff-leave", labelKey: "staffLeave", icon: CalendarClock },
     {

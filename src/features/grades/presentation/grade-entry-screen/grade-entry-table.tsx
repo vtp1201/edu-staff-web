@@ -143,11 +143,17 @@ function ScoreCell({
               type="button"
               variant="ghost"
               size="sm"
-              className="min-h-11 text-edu-error-text"
+              className="min-h-11 min-w-11 text-edu-error-text"
               aria-label={t("rejectCellLabel", {
                 column: col.label,
                 student: row.studentName,
               })}
+              // A11Y-001 — BE US-184 does not clear `rejection` when the teacher
+              // resubmits, so a PENDING_APPROVAL cell can still display a stale
+              // "rejected + why" indicator right beside this control. Point at
+              // it so the reason is announced with the button instead of being a
+              // visual-only neighbour.
+              aria-describedby={rejection ? rejectionId : undefined}
               onClick={() => onRejectCell?.(row.studentId, col.id)}
             >
               {t("rejectCellButton")}
