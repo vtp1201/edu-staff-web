@@ -73,4 +73,6 @@
 - [Un-mock an anticipatory DTO](pattern-unmock-anticipatory-dto.md) — E18.34: a DTO only the MOCK ever produced is UNVERIFIED (field names right (+more in file)
 - [Two gaps, one force-mock](pattern-two-gaps-one-forcemock.md) — E18.35: a force-mock doc bundles SEVERAL reasons; BE closing one un-mocks only one method (env-matrix test proves the split) (+more in file)
 - [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined` (+more in file)
+- [Dead-endpoint repoint](pattern-dead-endpoint-repoint.md) — E18.40: BE "won't implement" ⇒ the entity is UNAUDITED (classify every field: on-wire / derivable / composable / fiction→DELETE); "don't touch the mutations" still misses a wrong wire FIELD NAME (teacherId vs teacherMemberId = silent 422); bound a fan-out to 2× the BE page size + call-COUNT proof at N and N+1 (+more in file)
+
 - [Distinct null reasons + status-default fan-out](pattern-nullable-reasons-and-status-default-fanout.md) — E18.36: two nullables with DIFFERENT causes need DIFFERENT copy (prove `not.toBe`) (+more in file)
