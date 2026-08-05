@@ -34,3 +34,14 @@ proof of reachability but is the opposite — it's proof the mounting route is w
 - While writing tests for a moved mutation, re-check its guard: the moved
   `lockTermAction` (irreversible) turned out to have NO `requireRole` at all —
   route layouts don't protect a directly-invoked Server Action.
+- **A reachable ROUTE is not a reachable UI — check `nav-config.ts`.** Round 2 of
+  the same review: reusing the already-guarded `/principal/grade-book` +
+  `/admin/grade-book` was right, but both were pre-existing **nav-less orphans**,
+  so the capability was URL-only. Whenever you mount a capability on a route you
+  didn't create, grep `NAV_BY_ROLE` for its href. Adding an entry has two hard
+  constraints its test file enforces: `/profile` must stay LAST for non-admin
+  roles (insert BEFORE it), and `NAV_BY_ROLE.admin.length` is HARDCODED (bump it).
+  Reuse the existing `labelKey` (`grades`) — a second route for the same concept
+  needs no new i18n key; lock that with a test asserting all such entries share it.
+- See [[gotcha-rsc-closure-prop-500]] — the other half of the same round: the
+  route a role CAN reach also has to not 500 on its default load.
