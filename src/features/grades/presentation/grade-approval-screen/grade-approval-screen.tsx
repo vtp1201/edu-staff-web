@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { DestructiveConfirmDialog } from "@/components/shared/destructive-confirm-dialog";
+import { ReasonConfirmDialog } from "@/components/shared/reason-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,12 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { MIN_REVISION_NOTE_LENGTH } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
 import { cn } from "@/shared/utils";
 import { BatchReviewSheet } from "./components/batch-review-sheet";
 import { BatchStatusBadge } from "./components/batch-status-badge";
 import { GradeApprovalSkeleton } from "./components/grade-approval-skeleton";
 import { GradePublishModeWarning } from "./components/grade-publish-mode-warning";
-import { RevisionRequestDialog } from "./components/revision-request-dialog";
 import type {
   GradeApprovalScreenVM,
   StatusFilter,
@@ -209,14 +210,29 @@ export function GradeApprovalScreen({ vm }: { vm: GradeApprovalScreenVM }) {
         onCancel={() => setApproveOpen(false)}
       />
 
-      <RevisionRequestDialog
+      {/* US-E18.44: was a feature-local `RevisionRequestDialog` fork; now the
+          canonical `ReasonConfirmDialog` (decision 0026), which additionally
+          gives this field a counter, `role="alert"` errors and focus return.
+          Copy + the ≥10-char domain rule are unchanged. */}
+      <ReasonConfirmDialog
         open={revisionOpen}
-        onOpenChange={setRevisionOpen}
+        title={t("revisionDialog.title")}
+        reasonLabel={t("revisionDialog.noteLabel")}
+        reasonPlaceholder={t("revisionDialog.notePlaceholder")}
+        confirmLabel={t("revisionDialog.confirm")}
+        cancelLabel={t("revisionDialog.cancel")}
+        // No `maxLength`: the revision note has no documented server cap, and
+        // inventing one would fabricate a constraint (and an i18n string) that
+        // no contract states.
+        minLength={MIN_REVISION_NOTE_LENGTH}
+        requiredMessage={t("revisionDialog.noteMinLength")}
+        tooShortMessage={t("revisionDialog.noteMinLength")}
         isPending={vm.isRequestingRevision}
         onConfirm={(note) => {
           if (vm.detailBatchId) vm.onRequestRevision(vm.detailBatchId, note);
           setRevisionOpen(false);
         }}
+        onOpenChange={setRevisionOpen}
       />
 
       <DestructiveConfirmDialog

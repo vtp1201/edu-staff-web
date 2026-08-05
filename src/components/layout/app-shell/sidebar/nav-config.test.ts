@@ -41,6 +41,37 @@ describe("NAV_BY_ROLE", () => {
     }
   });
 
+  /**
+   * US-E18.44: the per-cell grade reject capability is mounted ONLY on the
+   * approver routes (`/teacher/grades` is guarded by a strict `role === "teacher"`
+   * layout, so the roles allowed to reject can never render it). Both approver
+   * routes existed as nav-less orphans; without an entry a principal/admin
+   * session cannot reach the reject flow without typing a URL.
+   */
+  it("exposes the approver grade book to principal and admin", () => {
+    expect(
+      NAV_BY_ROLE.principal.some((i) => i.href === "/principal/grade-book"),
+    ).toBe(true);
+    expect(NAV_BY_ROLE.admin.some((i) => i.href === "/admin/grade-book")).toBe(
+      true,
+    );
+  });
+
+  it("reuses the existing `grades` label key for the approver grade book", () => {
+    // No new i18n key: `shell.nav.grades` already labels /teacher/grades.
+    const teacherGrades = NAV_BY_ROLE.teacher.find(
+      (i) => i.href === "/teacher/grades",
+    );
+    expect(teacherGrades?.labelKey).toBe("grades");
+    expect(
+      NAV_BY_ROLE.principal.find((i) => i.href === "/principal/grade-book")
+        ?.labelKey,
+    ).toBe("grades");
+    expect(
+      NAV_BY_ROLE.admin.find((i) => i.href === "/admin/grade-book")?.labelKey,
+    ).toBe("grades");
+  });
+
   it("includes the role's home dashboard as the first item", () => {
     expect(NAV_BY_ROLE.teacher[0].href).toBe("/teacher");
     expect(NAV_BY_ROLE.principal[0].href).toBe("/principal");
@@ -50,8 +81,9 @@ describe("NAV_BY_ROLE", () => {
 });
 
 describe("admin role", () => {
-  it("returns exactly 12 nav items for admin", () => {
-    expect(NAV_BY_ROLE.admin.length).toBe(12);
+  it("returns exactly 13 nav items for admin", () => {
+    // 12 + the approver grade book added by US-E18.44.
+    expect(NAV_BY_ROLE.admin.length).toBe(13);
   });
 
   it("includes the audit-log nav item", () => {

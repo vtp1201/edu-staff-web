@@ -12,6 +12,7 @@ import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/clas
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
 import type { IGradeApprovalRepository } from "@/features/grades/domain/repositories/i-grade-approval.repository";
 import type { IGradeBookRepository } from "@/features/grades/domain/repositories/i-grade-book.repository";
+import type { IGradeRejectionRepository } from "@/features/grades/domain/repositories/i-grade-rejection.repository";
 import type { IGradesRepository } from "@/features/grades/domain/repositories/i-grades.repository";
 import type { IGradesTermRepository } from "@/features/grades/domain/repositories/i-grades-term.repository";
 import { ApproveGradeBatchUseCase } from "@/features/grades/domain/use-cases/approve-grade-batch.use-case";
@@ -22,6 +23,7 @@ import { GetGradeBookUseCase } from "@/features/grades/domain/use-cases/get-grad
 import { GetGradeSheetUseCase } from "@/features/grades/domain/use-cases/get-grade-sheet.use-case";
 import { GetMyGradesUseCase } from "@/features/grades/domain/use-cases/get-my-grades.use-case";
 import { LockTermUseCase } from "@/features/grades/domain/use-cases/lock-term.use-case";
+import { RejectColumnEntryUseCase } from "@/features/grades/domain/use-cases/reject-column-entry.use-case";
 import { RequestGradeRevisionUseCase } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
 import { SaveScoreUseCase } from "@/features/grades/domain/use-cases/save-score.use-case";
 import { SubmitColumnScoresUseCase } from "@/features/grades/domain/use-cases/submit-column-scores.use-case";
@@ -99,7 +101,9 @@ async function resolveDisplayNames(
 
 async function makeRepo(
   key: ClassSubjectTermKey,
-): Promise<IGradesRepository & IGradesTermRepository> {
+): Promise<
+  IGradesRepository & IGradesTermRepository & IGradeRejectionRepository
+> {
   const publishMode = await resolvePublishMode();
   if (USE_MOCK) {
     return new MockGradesRepository(publishMode);
@@ -125,6 +129,18 @@ export async function makeSubmitColumnScoresUseCase(key: ClassSubjectTermKey) {
 
 export async function makeLockTermUseCase(key: ClassSubjectTermKey) {
   return new LockTermUseCase(await makeRepo(key));
+}
+
+/**
+ * US-E18.44 (BE US-184) — per-cell reject / request-revision. ADMIN/MANAGER
+ * only; the Server Action re-checks the role before calling this factory and
+ * `core` enforces its own 403, so this factory carries no role logic of its
+ * own (same shape as `makeLockTermUseCase`, the other ADMIN/MANAGER action).
+ * Ordinary `USE_MOCK ? Mock : Real` — the mock supports the transition so the
+ * flow is demoable with `NEXT_PUBLIC_USE_MOCK=true`.
+ */
+export async function makeRejectColumnEntryUseCase(key: ClassSubjectTermKey) {
+  return new RejectColumnEntryUseCase(await makeRepo(key));
 }
 
 // ─── US-E13.6 / US-E18.12 — read-only multi-role grade book ─────────────────
@@ -257,9 +273,15 @@ export async function resolveCurrentStudentMemberId(): Promise<string | null> {
 /**
  * Force-mocked permanently (ADR 0054) — regardless of `USE_MOCK`, matching
  * `staff-leave.di.ts`'s unconditional-mock pattern. There is no batchId
- * resolution path, no tenant-wide pending-approval rollup, and no reject
- * transition for `GradeEntry` on the wire — a real branch here would 404/
- * silently misbehave the moment `USE_MOCK` flips false app-wide. The real
+ * resolution path and no tenant-wide pending-approval rollup on the wire
+ * (cross-repo ask #18, still OPEN) — a real branch here would 404/silently
+ * misbehave the moment `USE_MOCK` flips false app-wide.
+ *
+ * US-E18.44 note: BE US-184 DID add a reject transition, but it is PER-CELL
+ * (`.../grades/{studentId}/columns/{columnId}/reject`, wired through
+ * `makeRejectColumnEntryUseCase` above), NOT per-batch. It resolves only one of
+ * the reasons this factory is force-mocked; the missing `batchId` source and
+ * the missing tenant-wide rollup both stand, so this stays mock. The real
  * `GradeApprovalRepository`/`createServerHttpClient()` construction is
  * intentionally UNREACHABLE from this factory.
  */

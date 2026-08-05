@@ -1,16 +1,16 @@
-import { lockTermAction } from "@/app/[locale]/t/[tenant]/(app)/admin/grade-book/actions";
-import { makeGetGradeBookUseCase } from "@/bootstrap/di/grades.di";
+import {
+  lockTermAction,
+  rejectEntryAction,
+} from "@/app/[locale]/t/[tenant]/(app)/admin/grade-book/actions";
+import { makeGetGradeSheetUseCase } from "@/bootstrap/di/grades.di";
 import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { resolveMyGradeSubjects } from "@/bootstrap/lib/resolve-my-grade-subjects";
 import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/class-subject-term-key.entity";
-import type { GradeBook } from "@/features/grades/domain/entities/grade-book.entity";
+import type { GradeSheet } from "@/features/grades/domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
-import {
-  isGradeBookFailure,
-  isGradeBookPublished,
-} from "@/features/grades/presentation/grade-book-screen/build-grade-book-vm";
-import { GradeBookContainer } from "@/features/grades/presentation/grade-book-screen/grade-book-container";
-import type { GradeBookScreenVM } from "@/features/grades/presentation/grade-book-screen/grade-book-screen.i-vm";
+import { buildApproverGradeVm } from "@/features/grades/presentation/grade-entry-screen/build-approver-grade-vm";
+import { GradeEntryContainer } from "@/features/grades/presentation/grade-entry-screen/grade-entry-container";
+import type { GradeEntryScreenVM } from "@/features/grades/presentation/grade-entry-screen/grade-entry-screen.i-vm";
 
 type SearchParams = Promise<{
   classId?: string;
@@ -18,6 +18,19 @@ type SearchParams = Promise<{
   term?: string;
 }>;
 
+function isFailure(x: unknown): x is GradesFailure {
+  return typeof x === "object" && x !== null && "type" in x;
+}
+
+/**
+ * PRINCIPAL grade view (US-E18.44) — the `principal`-namespace twin of
+ * `/admin/grade-book`. Both BE MANAGER and ADMIN collapse onto the `principal`
+ * appRole (`ROLE_ENUM_TO_APP`), and `principal/layout.tsx` gates on strict
+ * equality, so this route is the ONLY place a manager-mapped session can reach
+ * the reject affordance. Same staff read path (`GradeSheet`), same screen in
+ * `viewerRole: "approver"` mode, same Server Actions (owned by the `admin`
+ * route so both namespaces share one implementation + one revalidation set).
+ */
 export default async function PrincipalGradeBookPage({
   searchParams,
 }: {
@@ -33,7 +46,7 @@ export default async function PrincipalGradeBookPage({
     () => "2025-2026",
   );
 
-  let gradeBook: GradeBook | null = null;
+  let sheet: GradeSheet | null = null;
   let error: GradesFailure["type"] | null = null;
 
   const key: ClassSubjectTermKey | null =
@@ -47,25 +60,26 @@ export default async function PrincipalGradeBookPage({
       : null;
 
   if (key) {
-    const result = await (await makeGetGradeBookUseCase(key)).execute(key);
-    if (isGradeBookFailure(result)) {
+    const result = await (await makeGetGradeSheetUseCase(key)).execute(key);
+    if (isFailure(result)) {
       error = result.type;
     } else {
-      gradeBook = result;
+      sheet = result;
     }
   }
 
-  const vm: GradeBookScreenVM = {
-    role: "principal",
+  const vm: GradeEntryScreenVM = buildApproverGradeVm({
     classSubjects,
     selectedClassId,
     selectedSubjectId,
     selectedTerm,
-    gradeBook,
-    isPublished: isGradeBookPublished(gradeBook),
+    academicYearLabel,
+    sheet,
     error,
-    lockTermAction: key ? () => lockTermAction(key) : undefined,
-  };
+    key,
+    rejectEntryAction,
+    lockTermAction,
+  });
 
-  return <GradeBookContainer vm={vm} />;
+  return <GradeEntryContainer vm={vm} />;
 }

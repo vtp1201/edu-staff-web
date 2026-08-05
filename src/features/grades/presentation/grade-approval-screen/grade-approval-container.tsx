@@ -46,6 +46,10 @@ const ERROR_KEY: Record<GradesFailure["type"], ErrorMsgKey> = {
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
   "not-pending-approval": "errorNotPendingApproval",
+  // US-E18.44 — per-cell reject failures; unreachable from this screen (it
+  // never calls the reject repository) but required for exhaustiveness.
+  "rejection-reason-required": "errorUnknown",
+  "rejection-reason-too-long": "errorUnknown",
   "not-published": "errorNotPublished",
   "invalid-revision-note": "errorUnknown",
   "batch-locked": "errorBatchLocked",

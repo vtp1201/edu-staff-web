@@ -6,18 +6,20 @@ import type { GradePublishMode } from "@/features/admin-school-setup/domain/enti
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import type { ClassSubjectTermKey } from "../../domain/entities/class-subject-term-key.entity";
 import type {
-  GradeCell,
   GradeSheet,
+  StaffGradeCell,
 } from "../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
+import type { IGradeRejectionRepository } from "../../domain/repositories/i-grade-rejection.repository";
 import type { IGradesRepository } from "../../domain/repositories/i-grades.repository";
 import type { IGradesTermRepository } from "../../domain/repositories/i-grades-term.repository";
 import type {
   GradeEntryResponseDto,
   ListGradesResponseDto,
   LockGradeResponseDto,
+  RejectGradeEntryRequestDto,
 } from "../dtos/grades-response.dto";
-import { mapGradeCell, mapGradeSheet } from "../mappers/grades.mapper";
+import { mapGradeSheet, mapStaffGradeCell } from "../mappers/grades.mapper";
 
 /**
  * Ground-truthed 11-code error taxonomy (US-E18.12, ADR 0054 — same
@@ -44,6 +46,10 @@ function throwFailure(err: unknown, columnId: string, maxScore: number): never {
     failure = { type: "not-draft" };
   } else if (code === "GRADE_ENTRY_NOT_PENDING_APPROVAL") {
     failure = { type: "not-pending-approval" };
+  } else if (code === "GRADE_REJECTION_REASON_REQUIRED") {
+    // US-E18.44 (BE US-184) 422 — the use-case already blocks a blank reason
+    // client-side, so reaching here means a race or a bypassed caller.
+    failure = { type: "rejection-reason-required" };
   } else if (code === "GRADE_ENTRY_NOT_PUBLISHED") {
     failure = { type: "not-published" };
   } else if (code === "GRADE_ENTRY_LOCKED") {
@@ -67,7 +73,7 @@ function throwFailure(err: unknown, columnId: string, maxScore: number): never {
 const DEFAULT_MAX_SCORE = 10;
 
 export class GradesRepository
-  implements IGradesRepository, IGradesTermRepository
+  implements IGradesRepository, IGradesTermRepository, IGradeRejectionRepository
 {
   /**
    * `scheme` + `publishMode` are sourced (by the DI factory) from the REAL
@@ -102,7 +108,7 @@ export class GradesRepository
     studentId: string,
     columnId: string,
     value: number,
-  ): Promise<{ studentId: string; columnId: string; cell: GradeCell }> {
+  ): Promise<{ studentId: string; columnId: string; cell: StaffGradeCell }> {
     try {
       const dto = (await this.http.put(
         GRADES_EP.entry(
@@ -117,7 +123,7 @@ export class GradesRepository
       return {
         studentId: dto.studentMemberId,
         columnId: dto.columnId,
-        cell: mapGradeCell(dto),
+        cell: mapStaffGradeCell(dto),
       };
     } catch (err) {
       throwFailure(err, columnId, DEFAULT_MAX_SCORE);
@@ -128,7 +134,7 @@ export class GradesRepository
     key: ClassSubjectTermKey,
     studentId: string,
     columnId: string,
-  ): Promise<{ studentId: string; columnId: string; cell: GradeCell }> {
+  ): Promise<{ studentId: string; columnId: string; cell: StaffGradeCell }> {
     try {
       const dto = (await this.http.post(
         GRADES_EP.submitEntry(
@@ -143,7 +149,44 @@ export class GradesRepository
       return {
         studentId: dto.studentMemberId,
         columnId: dto.columnId,
-        cell: mapGradeCell(dto),
+        cell: mapStaffGradeCell(dto),
+      };
+    } catch (err) {
+      throwFailure(err, columnId, DEFAULT_MAX_SCORE);
+    }
+  }
+
+  /**
+   * US-E18.44 (BE US-184) — ADMIN/MANAGER reject / request-revision on ONE
+   * pending-approval cell. `reason` arrives already trimmed + length-checked
+   * from `RejectColumnEntryUseCase`; BE re-validates (422
+   * `GRADE_REJECTION_REASON_REQUIRED`). Response is the updated entry, back in
+   * `DRAFT` and now carrying the staff-only rejection payload — mapped with
+   * `mapStaffGradeCell` (NOT `mapGradeCell`, which strips it for the
+   * student/parent read path).
+   */
+  async rejectEntry(
+    key: ClassSubjectTermKey,
+    studentId: string,
+    columnId: string,
+    reason: string,
+  ): Promise<{ studentId: string; columnId: string; cell: StaffGradeCell }> {
+    try {
+      const body: RejectGradeEntryRequestDto = { reason };
+      const dto = (await this.http.post(
+        GRADES_EP.rejectEntry(
+          key.classId,
+          key.subjectId,
+          key.termId,
+          studentId,
+          columnId,
+        ),
+        body,
+      )) as unknown as GradeEntryResponseDto;
+      return {
+        studentId: dto.studentMemberId,
+        columnId: dto.columnId,
+        cell: mapStaffGradeCell(dto),
       };
     } catch (err) {
       throwFailure(err, columnId, DEFAULT_MAX_SCORE);

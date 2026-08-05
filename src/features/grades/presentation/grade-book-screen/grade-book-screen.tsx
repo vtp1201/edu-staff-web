@@ -2,12 +2,8 @@
 
 import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { ChildSwitcher } from "@/components/shared/child-switcher";
-import {
-  DestructiveConfirmDialog,
-  type DestructiveConfirmErrorSlot,
-} from "@/components/shared/destructive-confirm-dialog";
 import { GradeBookTable } from "@/components/shared/grade-book-table";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 
-import { RankDistributionChart } from "./components/rank-distribution-chart";
+import { RankDistributionChart } from "../components/rank-distribution-chart";
 import type { GradeBookScreenVM } from "./grade-book-screen.i-vm";
 import { GradeBookSkeleton } from "./grade-book-skeleton";
 
@@ -44,6 +40,10 @@ const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
   "not-pending-approval": "errorUnknown",
+  // US-E18.44 — per-cell reject failures; unreachable from this screen (it
+  // never calls the reject repository) but required for exhaustiveness.
+  "rejection-reason-required": "errorUnknown",
+  "rejection-reason-too-long": "errorUnknown",
   "not-published": "errorUnknown",
   "invalid-revision-note": "errorUnknown",
   "batch-locked": "errorUnknown",
@@ -78,12 +78,6 @@ export function GradeBookScreen({
 }: GradeBookScreenProps) {
   const t = useTranslations("gradeBook");
   const [, startTransition] = useTransition();
-  const [lockDialogOpen, setLockDialogOpen] = useState(false);
-  const [lockPending, setLockPending] = useState(false);
-  const [lockBanner, setLockBanner] = useState<string | null>(null);
-  const [lockErrorKey, setLockErrorKey] = useState<
-    GradesFailure["type"] | null
-  >(null);
 
   const showSelectors =
     vm.role === "teacher" || vm.role === "principal" || vm.role === "admin";
@@ -118,49 +112,6 @@ export function GradeBookScreen({
     startTransition(() => onSelectionChange?.(next));
   }
 
-  const hasPublishedCell =
-    vm.gradeBook?.rows.some((r) =>
-      Object.values(r.scores).some((c) => c.status === "PUBLISHED"),
-    ) ?? false;
-
-  const canLockTerm =
-    Boolean(vm.lockTermAction) &&
-    Boolean(vm.selectedClassId && vm.selectedSubjectId && vm.selectedTerm) &&
-    hasPublishedCell;
-
-  async function confirmLockTerm() {
-    if (!vm.lockTermAction) return;
-    setLockPending(true);
-    setLockErrorKey(null);
-    const result = await vm.lockTermAction();
-    setLockPending(false);
-    if (result.ok) {
-      setLockDialogOpen(false);
-      setLockBanner(t("lockTermSuccess", { count: result.lockedCount ?? 0 }));
-      startTransition(() => onSelectionChange?.({}));
-    } else {
-      // A11Y-102: keep the dialog open on failure — surface the error via
-      // the dialog's own errorSlot (forbidden = no retry, transient = retry)
-      // instead of closing it and forcing a full re-open/re-confirm cycle.
-      setLockErrorKey(result.errorKey);
-    }
-  }
-
-  const lockErrorSlot: DestructiveConfirmErrorSlot | undefined = (() => {
-    if (!lockErrorKey) return undefined;
-    if (
-      lockErrorKey === "forbidden" ||
-      lockErrorKey === "teacher-not-assigned"
-    ) {
-      return { tone: "forbidden", message: t(ERROR_KEY_MAP[lockErrorKey]) };
-    }
-    return {
-      tone: "transient",
-      message: t(ERROR_KEY_MAP[lockErrorKey]),
-      onRetry: confirmLockTerm,
-    };
-  })();
-
   return (
     <div className="flex flex-col gap-5 p-5">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -178,19 +129,6 @@ export function GradeBookScreen({
             disabled={!(vm.selectedClassId && vm.selectedSubjectId)}
           >
             {t("enterGradesCta")}
-          </Button>
-        ) : null}
-        {vm.lockTermAction ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setLockErrorKey(null);
-              setLockDialogOpen(true);
-            }}
-            disabled={!canLockTerm}
-          >
-            {t("lockTermButton")}
           </Button>
         ) : null}
       </header>
@@ -251,15 +189,6 @@ export function GradeBookScreen({
         </div>
       ) : null}
 
-      {lockBanner ? (
-        <p
-          className="rounded-[8px] bg-muted px-4 py-2 text-foreground text-sm"
-          role="status"
-        >
-          {lockBanner}
-        </p>
-      ) : null}
-
       {showChildSwitcher && vm.childrenList ? (
         <ChildSwitcher
           childList={vm.childrenList}
@@ -291,24 +220,6 @@ export function GradeBookScreen({
           </>
         )}
       </div>
-
-      <DestructiveConfirmDialog
-        open={lockDialogOpen}
-        title={t("lockTermConfirmTitle")}
-        body={t("lockTermConfirmBody", {
-          className: vm.gradeBook?.className ?? "",
-          subjectName: vm.gradeBook?.subjectName ?? "",
-          term: vm.selectedTerm ?? "",
-        })}
-        confirmLabel={t("lockTermConfirmOk")}
-        isLoading={lockPending}
-        errorSlot={lockErrorSlot}
-        onConfirm={confirmLockTerm}
-        onCancel={() => {
-          setLockDialogOpen(false);
-          setLockErrorKey(null);
-        }}
-      />
     </div>
   );
 }

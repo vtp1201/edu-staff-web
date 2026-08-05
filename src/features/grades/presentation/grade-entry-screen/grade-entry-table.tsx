@@ -1,11 +1,13 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import {
   GradeEntryStatusBadge,
   GradeRowStatusSummaryBadge,
 } from "@/components/shared/grade-entry-status-badge";
+import { StatusBadge } from "@/components/shared/status-badge/status-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils";
 import { deriveRowStatus } from "../../domain/entities/derive-row-status";
@@ -20,22 +22,37 @@ interface Props {
   columns: AssessmentColumn[];
   rows: StudentScoreRow[];
   maxScore: number;
-  onSaveScore: (
+  /**
+   * Score-entry capability (US-E18.44 — capability-as-presence, same idiom as
+   * `onRejectCell` below). PRESENT ONLY for a TEACHER viewer. When absent the
+   * table is READ-ONLY: a DRAFT cell renders its value + status badge with NO
+   * number input, and no submit affordance is rendered anywhere (structural, not
+   * a disabled control). This is how the ADMIN/MANAGER approver view gets
+   * "view + reject" while being structurally unable to edit a teacher's score.
+   */
+  onSaveScore?: (
     studentId: string,
     columnId: string,
     value: number,
   ) => Promise<{ ok: boolean }>;
-  /** submits ONE cell (clicking the DRAFT badge) */
-  onSubmitCell: (studentId: string, columnId: string) => void;
-  /** submits every DRAFT cell in one row ("Nộp dòng này") */
-  onSubmitRow: (studentId: string) => void;
+  /** submits ONE cell (clicking the DRAFT badge) — teacher-only, see `onSaveScore` */
+  onSubmitCell?: (studentId: string, columnId: string) => void;
+  /** submits every DRAFT cell in one row ("Nộp dòng này") — teacher-only */
+  onSubmitRow?: (studentId: string) => void;
+  /**
+   * US-E18.44 — opens the reject/request-revision dialog for ONE
+   * `PENDING_APPROVAL` cell. PRESENT ONLY for an ADMIN/MANAGER viewer: when it
+   * is undefined no reject control is rendered at all (structural, not a hidden
+   * or disabled button), so a teacher's DOM has no reject affordance to find.
+   */
+  onRejectCell?: (studentId: string, columnId: string) => void;
   /**
    * A11Y-101 — cells whose most recent submit attempt failed, keyed
    * `${studentId}:${columnId}`. Rendered as a per-cell aria-invalid +
    * aria-describedby indicator so a partial fan-out failure is retryable
    * cell-by-cell, not just visible as an aggregate banner count.
    */
-  failedCells: Map<string, GradesFailure["type"]>;
+  failedCells?: Map<string, GradesFailure["type"]>;
   /** translates a failure type to already-localized copy (screen owns i18n). */
   getFailureMessage: (type: GradesFailure["type"]) => string;
 }
@@ -46,8 +63,42 @@ interface CellProps {
   maxScore: number;
   onSaveScore: Props["onSaveScore"];
   onSubmitCell: Props["onSubmitCell"];
+  onRejectCell?: Props["onRejectCell"];
   submitFailure?: GradesFailure["type"];
   getFailureMessage: Props["getFailureMessage"];
+}
+
+/**
+ * "This cell was rejected — here is why" indicator (US-E18.44). Distinguishes a
+ * DRAFT cell that came BACK from `PENDING_APPROVAL` from a never-submitted one.
+ *
+ * `reason` is staff-entered free text: it is rendered as a plain JSX text node,
+ * which React escapes — there is deliberately no `dangerouslySetInnerHTML`
+ * anywhere on this path. Meaning is carried by icon + text (the badge label and
+ * the reason itself), never by colour alone.
+ */
+function RejectionIndicator({
+  reason,
+  descriptionId,
+}: {
+  reason: string;
+  descriptionId: string;
+}) {
+  const t = useTranslations("gradeEntry");
+  return (
+    <span className="flex max-w-40 flex-col items-center gap-0.5">
+      <StatusBadge tone="error" className="gap-1">
+        <AlertTriangle className="size-3.5" aria-hidden="true" />
+        {t("rejectedBadge")}
+      </StatusBadge>
+      <span
+        id={descriptionId}
+        className="block text-balance text-edu-error-text text-xs"
+      >
+        {t("rejectedReason", { reason })}
+      </span>
+    </span>
+  );
 }
 
 function ScoreCell({
@@ -56,16 +107,22 @@ function ScoreCell({
   maxScore,
   onSaveScore,
   onSubmitCell,
+  onRejectCell,
   submitFailure,
   getFailureMessage,
 }: CellProps) {
   const t = useTranslations("gradeEntry");
   const errorId = useId();
+  const rejectionId = useId();
   const cell = row.scores[col.id];
   const current = cell?.value ?? null;
   const status = cell?.status ?? "DRAFT";
   const [hasError, setHasError] = useState(false);
-  const editable = status === "DRAFT";
+  // A DRAFT cell is editable only for a viewer who actually HAS the save
+  // capability — an approver sees the same DRAFT cell as read-only text.
+  const editable = status === "DRAFT" && onSaveScore !== undefined;
+  const rejection = cell?.rejection;
+  const canReject = status === "PENDING_APPROVAL" && onRejectCell !== undefined;
 
   if (!editable) {
     return (
@@ -75,6 +132,33 @@ function ScoreCell({
             {current ?? "—"}
           </span>
           <GradeEntryStatusBadge status={status} />
+          {rejection ? (
+            <RejectionIndicator
+              reason={rejection.reason}
+              descriptionId={rejectionId}
+            />
+          ) : null}
+          {canReject ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 min-w-11 text-edu-error-text"
+              aria-label={t("rejectCellLabel", {
+                column: col.label,
+                student: row.studentName,
+              })}
+              // A11Y-001 — BE US-184 does not clear `rejection` when the teacher
+              // resubmits, so a PENDING_APPROVAL cell can still display a stale
+              // "rejected + why" indicator right beside this control. Point at
+              // it so the reason is announced with the button instead of being a
+              // visual-only neighbour.
+              aria-describedby={rejection ? rejectionId : undefined}
+              onClick={() => onRejectCell?.(row.studentId, col.id)}
+            >
+              {t("rejectCellButton")}
+            </Button>
+          ) : null}
         </div>
       </td>
     );
@@ -99,14 +183,20 @@ function ScoreCell({
       setHasError(true);
       return;
     }
-    const result = await onSaveScore(row.studentId, col.id, value);
-    setHasError(!result.ok);
+    // Non-null by construction: this branch only renders when `editable`,
+    // which already required `onSaveScore` to be present.
+    const result = await onSaveScore?.(row.studentId, col.id, value);
+    setHasError(result ? !result.ok : false);
   }
 
   // Local validation error (out-of-range value) takes precedence over a
   // stale submit-failure indicator — both render the same aria/visual
   // treatment, just from different sources.
   const invalid = hasError || Boolean(submitFailure);
+  const describedBy =
+    [invalid ? errorId : null, rejection ? rejectionId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   const errorMessage = hasError
     ? t("errorOutOfRange", { max: maxScore })
     : submitFailure
@@ -124,7 +214,7 @@ function ScoreCell({
           defaultValue={current ?? ""}
           aria-label={ariaLabel}
           aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : undefined}
+          aria-describedby={describedBy}
           onBlur={(e) => void commit(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -143,7 +233,13 @@ function ScoreCell({
             {errorMessage}
           </span>
         ) : null}
-        {!hasError && current !== null ? (
+        {rejection ? (
+          <RejectionIndicator
+            reason={rejection.reason}
+            descriptionId={rejectionId}
+          />
+        ) : null}
+        {!hasError && current !== null && onSubmitCell ? (
           <button
             type="button"
             aria-label={submitAriaLabel}
@@ -165,10 +261,15 @@ export function GradeEntryTable({
   onSaveScore,
   onSubmitCell,
   onSubmitRow,
+  onRejectCell,
   failedCells,
   getFailureMessage,
 }: Props) {
   const t = useTranslations("gradeEntry");
+  // Read-only viewer (approver): the row-submit column has nothing to render, so
+  // it is omitted from BOTH <thead> and <tbody> — an empty trailing column would
+  // be announced by screen readers as a real (but meaningless) column.
+  const canSubmitRow = onSubmitRow !== undefined;
 
   return (
     <div className="overflow-x-auto rounded-card border border-border bg-card shadow-card">
@@ -204,9 +305,11 @@ export function GradeEntryTable({
             >
               {t("averageColumn")}
             </th>
-            <th scope="col" className="px-3 py-2.5">
-              <span className="sr-only">{t("submitRowButton")}</span>
-            </th>
+            {canSubmitRow ? (
+              <th scope="col" className="px-3 py-2.5">
+                <span className="sr-only">{t("submitRowButton")}</span>
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -236,7 +339,8 @@ export function GradeEntryTable({
                     maxScore={maxScore}
                     onSaveScore={onSaveScore}
                     onSubmitCell={onSubmitCell}
-                    submitFailure={failedCells.get(
+                    onRejectCell={onRejectCell}
+                    submitFailure={failedCells?.get(
                       `${row.studentId}:${col.id}`,
                     )}
                     getFailureMessage={getFailureMessage}
@@ -247,17 +351,19 @@ export function GradeEntryTable({
                     {row.average ?? "—"}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-center">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={!hasDraft}
-                    onClick={() => onSubmitRow(row.studentId)}
-                  >
-                    {t("submitRowButton")}
-                  </Button>
-                </td>
+                {onSubmitRow ? (
+                  <td className="px-3 py-2 text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={!hasDraft}
+                      onClick={() => onSubmitRow(row.studentId)}
+                    >
+                      {t("submitRowButton")}
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             );
           })}

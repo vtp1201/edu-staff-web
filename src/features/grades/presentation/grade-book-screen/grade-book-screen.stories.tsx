@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   GradeBook,
@@ -153,7 +153,17 @@ export const TeacherView_WithScores: Story = {
   },
 };
 
-export const PrincipalView: Story = {
+/**
+ * NOTE (US-E18.44): `/principal/grade-book` + `/admin/grade-book` no longer
+ * render THIS screen — they render `GradeEntryScreen` in approver mode (staff
+ * read shape, so it can carry rejections). The role is kept in `GradeBookRole`
+ * because the shared `GradeBookTable` still accepts it, and this story is kept
+ * to pin the read-only rendering contract (roster + distribution, no entry CTA)
+ * that the approver screen inherited — see
+ * `grade-entry-screen.stories.tsx` → `ApproverView*` for the live routes.
+ */
+export const PrincipalReadOnlyContract: Story = {
+  name: "Principal read-only rendering contract (route moved in US-E18.44)",
   args: { vm: vm({ role: "principal", gradeEntryPath: undefined }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -387,181 +397,12 @@ export const ErrorState: Story = {
   },
 };
 
-// ─── QA gate (fe-qa-playwright, US-E18.12) — new interaction tests for the
-// admin/principal-only term-lock action (A11Y-102 fix), not previously
-// covered by any Storybook interaction test. ──────────────────────────────
-
-function adminVmWithLock(
-  lockTermAction: GradeBookScreenVM["lockTermAction"],
-  over: Partial<GradeBookScreenVM> = {},
-): GradeBookScreenVM {
-  return vm({
-    role: "admin",
-    gradeEntryPath: undefined,
-    lockTermAction,
-    ...over,
-  });
-}
-
-const DRAFT_ONLY_BOOK: GradeBook = {
-  ...book,
-  rows: [
-    {
-      ...ROWS[0],
-      scores: {
-        tx: { value: 5, status: "DRAFT" },
-        gk: { value: 5, status: "DRAFT" },
-        ck: { value: null, status: "DRAFT" },
-      },
-    },
-  ],
-};
-
-export const LockTermButtonDisabledWithoutPublished: Story = {
-  name: "Lock-term button disabled with zero PUBLISHED cells",
-  args: {
-    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 0 }), {
-      gradeBook: DRAFT_ONLY_BOOK,
-    }),
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const lockBtn = canvas.getByRole("button", {
-      name: messages.gradeBook.lockTermButton,
-    });
-    await expect(lockBtn).toBeDisabled();
-  },
-};
-
-export const LockTermButtonEnabledWithPublished: Story = {
-  name: "Lock-term button enabled with ≥1 PUBLISHED cell",
-  args: {
-    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 0 })),
-  },
-  play: async ({ canvasElement }) => {
-    // default `book` fixture rows are all PUBLISHED.
-    const canvas = within(canvasElement);
-    const lockBtn = canvas.getByRole("button", {
-      name: messages.gradeBook.lockTermButton,
-    });
-    await expect(lockBtn).toBeEnabled();
-  },
-};
-
-export const LockTermConfirmSuccess: Story = {
-  name: "Lock-term confirm success — dialog closes, banner shows count",
-  args: {
-    vm: adminVmWithLock(async () => ({ ok: true, lockedCount: 3 })),
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const lockBtn = canvas.getByRole("button", {
-      name: messages.gradeBook.lockTermButton,
-    });
-    await userEvent.click(lockBtn);
-
-    const dialog = within(canvasElement.ownerDocument.body);
-    await expect(
-      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
-    ).toBeInTheDocument();
-
-    const confirmBtn = dialog.getByRole("button", {
-      name: messages.gradeBook.lockTermConfirmOk,
-    });
-    await userEvent.click(confirmBtn);
-
-    // Dialog closes on success (Radix exit-animation timing — wait it out).
-    await waitFor(() =>
-      expect(
-        dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
-      ).not.toBeInTheDocument(),
-    );
-
-    // Success banner reports the locked count.
-    const banner = canvas.getByRole("status");
-    await expect(banner.textContent).toContain("3");
-  },
-};
-
-export const LockTermConfirmFailureStaysOpen: Story = {
-  name: "Lock-term confirm failure — dialog stays open, shows errorSlot (A11Y-102)",
-  args: {
-    vm: adminVmWithLock(async () => ({
-      ok: false,
-      errorKey: "network-error",
-    })),
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const lockBtn = canvas.getByRole("button", {
-      name: messages.gradeBook.lockTermButton,
-    });
-    await userEvent.click(lockBtn);
-
-    const dialog = within(canvasElement.ownerDocument.body);
-    const confirmBtn = dialog.getByRole("button", {
-      name: messages.gradeBook.lockTermConfirmOk,
-    });
-    await userEvent.click(confirmBtn);
-
-    // A11Y-102: dialog must STAY open (not close-then-banner) and show its
-    // own errorSlot content.
-    await expect(
-      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
-    ).toBeInTheDocument();
-    const alert = dialog.getByRole("alert");
-    await expect(alert).toBeInTheDocument();
-    await expect(alert.textContent).toContain(
-      messages.gradeBook.errorNetworkError,
-    );
-    // transient tone → retry control present.
-    await expect(
-      dialog.getByRole("button", { name: messages.Common.confirmDialog.retry }),
-    ).toBeInTheDocument();
-  },
-};
-
-export const LockTermConfirmFailureForbiddenNoRetry: Story = {
-  name: "Lock-term confirm forbidden failure — no retry, confirm disabled",
-  args: {
-    vm: adminVmWithLock(async () => ({
-      ok: false,
-      errorKey: "forbidden",
-    })),
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const lockBtn = canvas.getByRole("button", {
-      name: messages.gradeBook.lockTermButton,
-    });
-    await userEvent.click(lockBtn);
-
-    const dialog = within(canvasElement.ownerDocument.body);
-    const confirmBtn = dialog.getByRole("button", {
-      name: messages.gradeBook.lockTermConfirmOk,
-    });
-    await userEvent.click(confirmBtn);
-
-    await expect(
-      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
-    ).toBeInTheDocument();
-    const alert = dialog.getByRole("alert");
-    await expect(alert.textContent).toContain(
-      messages.gradeBook.errorForbidden,
-    );
-    // forbidden tone → no retry button, confirm itself force-disabled.
-    await expect(
-      dialog.queryByRole("button", {
-        name: messages.Common.confirmDialog.retry,
-      }),
-    ).not.toBeInTheDocument();
-    await expect(
-      dialog.getByRole("button", {
-        name: messages.gradeBook.lockTermConfirmOk,
-      }),
-    ).toBeDisabled();
-  },
-};
+// ─── NOTE (US-E18.44): the admin/principal term-lock interaction tests that
+// used to live here MOVED to `grade-entry-screen.stories.tsx` together with the
+// control itself. `/principal/grade-book` + `/admin/grade-book` now render the
+// STAFF grade sheet (approver mode) so they can host the per-cell reject
+// affordance, so this screen no longer has a lock capability to exercise.
+// ──────────────────────────────────────────────────────────────────────────
 
 export const SelectionChange: Story = {
   args: {

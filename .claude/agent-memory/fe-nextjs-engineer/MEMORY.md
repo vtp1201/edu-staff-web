@@ -80,3 +80,17 @@
 - [Real mode that was never real](pattern-real-mode-that-was-never-real.md) — E18.42/43: a plain USE_MOCK gate ≠ a working real path (mock-era DTO ⇒ silent `id: undefined`); shared VALIDATION_FAILED needs the blamed field; path-scoped endpoint + key-less caller ⇒ failure with zero HTTP; nullable wire timestamp ⇒ Invalid Date (+more in file)
 
 - [FE-composed set difference](pattern-fe-composed-set-difference.md) — E18.41: BE closes a missing-endpoint gap with FE-COMPOSE (directory MINUS ids-only endpoint); one optional collaborator GROUP + fail-closed; delete the anticipatory DTO; un-mocking a DECORATION read creates a new honest-degrade surface (own VM key, not fetchError); Storybook runner works again
+
+- [Un-mock an anticipatory DTO](pattern-unmock-anticipatory-dto.md) — E18.34: a DTO only the MOCK ever produced is UNVERIFIED (field names right, enum CASING wrong — invisible because the fixture matched the bad type); reuse the sibling feature's wire↔domain table; delete an honest-degrade whose premise was false + re-read its i18n copy; resetModules breaks `instanceof`-based isApiError → build ApiError inside the stub (+more in file)
+
+- [Two gaps, one force-mock](pattern-two-gaps-one-forcemock.md) — E18.35: a force-mock doc bundles SEVERAL reasons; BE closing one un-mocks only one method (env-matrix test proves the split); `status` can be a CONSTANT derived from a hard-delete semantic, but a code with no semantic must stay absent (never a uuid in a labelled slot) (+more in file)
+
+- [Tiered-response widening](pattern-tiered-response-widening.md) — E18.33: field ABSENCE as tier signal ⇒ optional DTO + CONDITIONAL spread (toEqual hides `email: undefined`; assert Object.keys); authority+decoration two-source roster; un-mock env-matrix must stub `lib/jwt` too, and it breaks unrelated RSC page tests via cookies() (+more in file)
+
+- [Distinct null reasons + status-default fan-out](pattern-nullable-reasons-and-status-default-fanout.md) — E18.36: two nullables with DIFFERENT causes need DIFFERENT copy (prove `not.toBe`); a `status` param that DEFAULTS to one state forces a per-state fan-out (call-count proof); a MANDATORY `staffMemberId` query param completes the storage key → signature ripples to the screen (+more in file)
+
+- [Structural privacy boundary](pattern-structural-privacy-boundary.md) — E18.44: role-stripped BE fields = SEPARATE staff cell type (not optional on the shared one) + @ts-expect-error compile-time proof; capability-as-presence VM prop AND requireRole in the action; canonical shared reason-dialog (4 forks remain); clicking a disabled button breaks a Storybook play (+more in file)
+
+- [Affordance unreachable by role](gotcha-affordance-unreachable-by-role.md) — E18.44 review: correct fail-closed RBAC + WRONG MOUNTING ROUTE = an AC that cannot be exercised; strict-equality namespace guards; moving a mount can orphan the old screen's own affordances (+more in file)
+
+- [RSC closure prop = 500](gotcha-rsc-closure-prop-500.md) — E18.44 r2: a local `async () => …` stub prop from an RSC is a runtime HTTP 500 that tsc + build + Storybook ALL pass; bind the real action to a placeholder key; lock it with an awaited-page unit test that INVOKES the prop (+more in file)

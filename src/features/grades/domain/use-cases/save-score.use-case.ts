@@ -1,5 +1,5 @@
 import type { ClassSubjectTermKey } from "../entities/class-subject-term-key.entity";
-import type { GradeCell } from "../entities/grade-sheet.entity";
+import type { StaffGradeCell } from "../entities/grade-sheet.entity";
 import type { GradesFailure } from "../failures/grades.failure";
 import type { IGradesRepository } from "../repositories/i-grades.repository";
 import { validateScore } from "./validate-score.use-case";
@@ -14,7 +14,7 @@ function toFailure(err: unknown): GradesFailure {
 export interface SaveScoreResult {
   studentId: string;
   columnId: string;
-  cell: GradeCell;
+  cell: StaffGradeCell;
 }
 
 export class SaveScoreUseCase {

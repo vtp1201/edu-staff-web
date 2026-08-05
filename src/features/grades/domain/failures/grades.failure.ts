@@ -22,7 +22,10 @@ export type GradesFailure =
   | { type: "teacher-not-assigned" } // GRADE_ENTRY_TEACHER_NOT_ASSIGNED, 403
   | { type: "invalid-value"; columnId: string; maxScore: number } // GRADE_ENTRY_INVALID_VALUE, 400
   | { type: "not-draft" } // GRADE_ENTRY_NOT_DRAFT, 409 — submit attempted on a cell no longer DRAFT (raced)
-  | { type: "not-pending-approval" } // GRADE_ENTRY_NOT_PENDING_APPROVAL, 409
+  | { type: "not-pending-approval" } // GRADE_ENTRY_NOT_PENDING_APPROVAL, 409 — approve/reject attempted on a cell that is NOT PENDING_APPROVAL
+  // US-E18.44 (BE US-184) — per-cell reject / request-revision:
+  | { type: "rejection-reason-required" } // GRADE_REJECTION_REASON_REQUIRED, 422 — also raised client-side (defense in depth) for a blank reason
+  | { type: "rejection-reason-too-long" } // client-side only (reason > 500 chars). A DISTINCT key from `required` because the user's fix differs: "shorten it" vs "write something".
   | { type: "not-published" } // GRADE_ENTRY_NOT_PUBLISHED, 409 — lock attempted on a non-PUBLISHED entry
   | { type: "locked" } // GRADE_ENTRY_LOCKED, 409
   | { type: "scale-not-configured" } // GRADE_SCALE_NOT_CONFIGURED, 422

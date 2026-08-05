@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   AssessmentScheme,
@@ -12,8 +12,9 @@ import type {
 } from "../../domain/entities/grade-sheet.entity";
 import { GradeEntryScreen } from "./grade-entry-screen";
 import type {
+  ApproverGradeEntryVM,
   ClassSubjectOption,
-  GradeEntryScreenVM,
+  TeacherGradeEntryVM,
 } from "./grade-entry-screen.i-vm";
 
 const SCHEME: AssessmentScheme = {
@@ -97,7 +98,8 @@ function withStatus(status: GradeEntryStatus): StudentScoreRow[] {
   }));
 }
 
-const baseVM: GradeEntryScreenVM = {
+const baseVM: TeacherGradeEntryVM = {
+  viewerRole: "teacher",
   classSubjects: CLASS_SUBJECTS,
   selectedClassId: "class-001",
   selectedSubjectId: "subj-toan-10",
@@ -428,5 +430,531 @@ export const SubmitButtonsEnabledWithDraft: Story = {
     for (const btn of rowBtns) {
       await expect(btn).toBeEnabled();
     }
+  },
+};
+
+// ─── US-E18.44 (BE US-184) — ADMIN/MANAGER per-cell reject / request-revision ──
+
+const REJECT_LABEL = (column: string, student: string) =>
+  messages.gradeEntry.rejectCellLabel
+    .replace("{column}", column)
+    .replace("{student}", student);
+
+/** One PENDING_APPROVAL row so the reject affordance has an exact target. */
+const PENDING_ROWS: StudentScoreRow[] = [
+  {
+    studentId: "hs-001",
+    studentName: "Nguyễn Văn An",
+    studentCode: "HS001",
+    scores: {
+      tx: { value: 8, status: "PENDING_APPROVAL" },
+      gk: { value: 7.5, status: "PENDING_APPROVAL" },
+      ck: { value: 9, status: "PENDING_APPROVAL" },
+    },
+    average: 8.2,
+  },
+];
+
+/**
+ * The ADMIN/MANAGER approver VM as mounted at `/principal/grade-book` and
+ * `/admin/grade-book` (US-E18.44 routing fix). Note what is NOT here: no
+ * `saveScoreAction`, no `submitScoresAction` — `ApproverGradeEntryVM` has no
+ * such fields, so "an approver cannot edit a score" is a compile-time property
+ * of these stories, not something the play function has to remember to check.
+ */
+function approverVm(
+  over: Partial<ApproverGradeEntryVM> = {},
+): ApproverGradeEntryVM {
+  return {
+    viewerRole: "approver",
+    classSubjects: CLASS_SUBJECTS,
+    selectedClassId: "class-001",
+    selectedSubjectId: "subj-toan-10",
+    selectedTerm: "HK1",
+    sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL"),
+    error: null,
+    classLabel: "10A1",
+    subjectLabel: "Toán",
+    rejectEntryAction: async () => ({ ok: true }),
+    ...over,
+  };
+}
+
+const approverVM = approverVm();
+
+/**
+ * A TEACHER viewer's VM has no `rejectEntryAction`, so there is NO reject
+ * control in the DOM at all — the affordance is absent, not disabled.
+ */
+export const TeacherHasNoRejectAffordance: Story = {
+  name: "Reject — teacher viewer has no reject control (capability absent)",
+  args: {
+    vm: { ...baseVM, sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL") },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: REJECT_LABEL("Thường xuyên", "Nguyễn Văn An"),
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryAllByText(messages.gradeEntry.rejectCellButton).length,
+    ).toBe(0);
+  },
+};
+
+/** ADMIN/MANAGER viewer → a reject control per PENDING_APPROVAL cell. */
+export const ApproverSeesRejectControls: Story = {
+  name: "Reject — approver sees one reject control per pending cell",
+  args: { vm: approverVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const buttons = canvas.getAllByRole("button", {
+      name: new RegExp(messages.gradeEntry.rejectCellButton, "i"),
+    });
+    await expect(buttons.length).toBe(3);
+    for (const btn of buttons) {
+      await expect(btn).toBeEnabled();
+    }
+  },
+};
+
+/** Full happy path: open the dialog, blank reason blocked, type, confirm, banner. */
+export const RejectWithReasonSucceeds: Story = {
+  name: "Reject — required reason, confirm, success banner",
+  args: { vm: approverVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+
+    const dialog = await body.findByRole("dialog");
+    await expect(dialog).toBeInTheDocument();
+
+    // Blank reason cannot be submitted (defense in depth alongside BE 422).
+    const confirm = body.getByRole("button", {
+      name: messages.gradeEntry.rejectConfirm,
+    });
+    await expect(confirm).toBeDisabled();
+
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Điểm cuối kỳ lệch với bài thi",
+    );
+    await expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectSuccess),
+    ).toBeInTheDocument();
+  },
+};
+
+/** 409 from the server keeps the dialog open with an inline, non-generic error. */
+export const RejectNotPendingApprovalError: Story = {
+  name: "Reject — 409 not-pending-approval surfaces inline, dialog stays open",
+  args: {
+    vm: {
+      ...approverVM,
+      rejectEntryAction: async () => ({
+        ok: false,
+        errorKey: "not-pending-approval",
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Sai điểm",
+    );
+    await userEvent.click(
+      body.getByRole("button", { name: messages.gradeEntry.rejectConfirm }),
+    );
+
+    const alert = await body.findByRole("alert");
+    await expect(alert).toHaveTextContent(
+      messages.gradeEntry.errorNotPendingApproval,
+    );
+    await expect(body.getByRole("dialog")).toBeInTheDocument();
+  },
+};
+
+/**
+ * A DRAFT cell carrying a rejection renders the "rejected + why" indicator, so
+ * it reads differently from a never-submitted DRAFT. The reason is rendered as
+ * a TEXT NODE — the HTML-looking payload below must appear literally, proving
+ * no markup is interpreted (no `dangerouslySetInnerHTML` on this path).
+ */
+const XSS_REASON = '<img src=x onerror="alert(1)">Sai điểm';
+
+export const RejectedDraftIndicatorEscapesReason: Story = {
+  name: "Reject — rejected DRAFT cell shows reason, escaped as text",
+  args: {
+    vm: {
+      ...baseVM,
+      sheet: sheet(
+        [
+          {
+            ...POPULATED[0],
+            scores: {
+              tx: { value: 8, status: "DRAFT" },
+              gk: { value: 7.5, status: "DRAFT" },
+              ck: {
+                value: 6,
+                status: "DRAFT",
+                rejection: {
+                  reason: XSS_REASON,
+                  rejectedBy: "admin-1",
+                  rejectedAt: "2026-08-05T02:00:00Z",
+                },
+              },
+            },
+          },
+        ],
+        "ADMIN_APPROVAL",
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectedBadge),
+    ).toBeInTheDocument();
+
+    const reasonText = messages.gradeEntry.rejectedReason.replace(
+      "{reason}",
+      XSS_REASON,
+    );
+    const reasonEl = canvas.getByText(reasonText);
+    await expect(reasonEl).toBeInTheDocument();
+    // Escaped, not parsed: no injected element exists anywhere.
+    await expect(canvasElement.querySelector("img")).toBeNull();
+    await expect(reasonEl.innerHTML).not.toContain("<img");
+
+    // The rejection reason is also announced with the editable cell.
+    const input = canvas.getByRole("spinbutton", {
+      name: messages.gradeEntry.cellLabel
+        .replace("{column}", "Cuối kỳ")
+        .replace("{student}", "Nguyễn Văn An"),
+    });
+    const describedBy = input.getAttribute("aria-describedby");
+    if (!describedBy) throw new Error("expected aria-describedby");
+    await expect(
+      canvasElement.querySelector(`#${describedBy}`)?.textContent,
+    ).toContain("Sai điểm");
+  },
+};
+
+// ─── US-E18.44 routing fix — APPROVER mode (`/principal/grade-book`,
+// `/admin/grade-book`). The reject affordance was previously mounted only on
+// `/teacher/grades`, whose layout guard redirects the very roles allowed to use
+// it; these stories exercise the mode the approver routes actually render, and
+// the term-lock tests below MOVED here from `grade-book-screen.stories.tsx`
+// together with the control. ──────────────────────────────────────────────────
+
+/** DRAFT rows so "read-only" is proven on the one status a teacher COULD edit. */
+const DRAFT_ROWS: StudentScoreRow[] = withStatus("DRAFT");
+
+export const ApproverViewIsReadOnly: Story = {
+  name: "Approver — no score input, no submit affordance anywhere",
+  args: { vm: approverVm({ sheet: sheet(DRAFT_ROWS, "ADMIN_APPROVAL") }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // DRAFT cells are exactly what a teacher edits — an approver gets text.
+    await expect(canvas.queryAllByRole("spinbutton").length).toBe(0);
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.gradeEntry.submitAllDraftsButton,
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryAllByRole("button", {
+        name: messages.gradeEntry.submitRowButton,
+      }).length,
+    ).toBe(0);
+    // The roster itself is still fully visible (US-E13.6 read-only AC).
+    await expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
+    await expect(canvas.getByText("Trần Thị Bình")).toBeInTheDocument();
+    await expect(canvas.getByText("Lê Hoàng Cường")).toBeInTheDocument();
+  },
+};
+
+export const ApproverViewTitleAndRankDistribution: Story = {
+  name: "Approver — approver title + five-band rank distribution (US-E13.6)",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("heading", { name: messages.gradeEntry.titleApprover }),
+    ).toBeInTheDocument();
+    // The distribution region carried over from the read-only grade book.
+    const region = canvas.getByRole("region", {
+      name: messages.gradeBook.rankDistributionTitle,
+    });
+    await expect(region).toBeInTheDocument();
+    await expect(
+      within(region).getByText(messages.gradeBook.rankXuatSac),
+    ).toBeInTheDocument();
+  },
+};
+
+export const ApproverCanRejectFromTheApproverRoute: Story = {
+  name: "Approver — reject a pending cell end-to-end on the approver route",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Điểm cuối kỳ lệch với bài thi",
+    );
+    await userEvent.click(
+      body.getByRole("button", { name: messages.gradeEntry.rejectConfirm }),
+    );
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectSuccess),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * A11Y-001 — a `PENDING_APPROVAL` cell can ALSO carry a rejection: BE US-184
+ * does not clear `rejection` when the teacher resubmits, so the approver's
+ * read-only cell renders the stale "rejected + why" indicator right next to a
+ * live reject button. That button must point at the reason (`aria-describedby`),
+ * otherwise a screen-reader user hears "Từ chối" with no idea a previous
+ * rejection is already displayed beside it. Scoped, not blanket: the two
+ * rejection-free cells' buttons carry no `aria-describedby` at all.
+ */
+export const ApproverRejectButtonDescribedByStaleRejection: Story = {
+  name: "Approver — reject button on a pending cell WITH a stale rejection is described by it (A11Y-001)",
+  args: {
+    vm: approverVm({
+      sheet: sheet(
+        [
+          {
+            ...POPULATED[0],
+            scores: {
+              tx: { value: 8, status: "PENDING_APPROVAL" },
+              gk: { value: 7.5, status: "PENDING_APPROVAL" },
+              ck: {
+                value: 6,
+                status: "PENDING_APPROVAL",
+                rejection: {
+                  reason: "Lần trước lệch với bài thi",
+                  rejectedBy: "admin-1",
+                  rejectedAt: "2026-08-05T02:00:00Z",
+                },
+              },
+            },
+          },
+        ],
+        "ADMIN_APPROVAL",
+      ),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Both the stale rejection indicator AND a live reject control are present.
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectedBadge),
+    ).toBeInTheDocument();
+
+    const rejectBtn = canvas.getByRole("button", {
+      name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+    });
+    const describedBy = rejectBtn.getAttribute("aria-describedby");
+    if (!describedBy)
+      throw new Error("expected aria-describedby on the reject button");
+    const reasonEl = canvasElement.querySelector(`#${describedBy}`);
+    await expect(reasonEl?.textContent).toContain("Lần trước lệch với bài thi");
+
+    // The rejection-free pending cells get no description — only the cell that
+    // actually shows a reason references one.
+    for (const column of ["Thường xuyên", "Giữa kỳ"]) {
+      const btn = canvas.getByRole("button", {
+        name: REJECT_LABEL(column, "Nguyễn Văn An"),
+      });
+      await expect(btn).not.toHaveAttribute("aria-describedby");
+    }
+  },
+};
+
+export const TeacherHasNoLockTermControl: Story = {
+  name: "Teacher — no term-lock control (capability absent)",
+  args: { vm: baseVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.gradeBook.lockTermButton,
+      }),
+    ).toBeNull();
+  },
+};
+
+export const LockTermButtonDisabledWithoutPublished: Story = {
+  name: "Lock-term button disabled with zero PUBLISHED cells",
+  args: {
+    vm: approverVm({
+      sheet: sheet(DRAFT_ROWS),
+      lockTermAction: async () => ({ ok: true, lockedCount: 0 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    ).toBeDisabled();
+  },
+};
+
+export const LockTermButtonEnabledWithPublished: Story = {
+  name: "Lock-term button enabled with ≥1 PUBLISHED cell",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: true, lockedCount: 0 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    ).toBeEnabled();
+  },
+};
+
+export const LockTermConfirmSuccess: Story = {
+  name: "Lock-term confirm success — dialog closes, banner shows count",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: true, lockedCount: 3 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+
+    const dialog = within(canvasElement.ownerDocument.body);
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    // Dialog closes on success (Radix exit-animation timing — wait it out).
+    await waitFor(() =>
+      expect(
+        dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
+      ).not.toBeInTheDocument(),
+    );
+    const banner = canvas.getByRole("status");
+    await expect(banner.textContent).toContain("3");
+  },
+};
+
+export const LockTermConfirmFailureStaysOpen: Story = {
+  name: "Lock-term confirm failure — dialog stays open, shows errorSlot (A11Y-102)",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: false, errorKey: "network-error" }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+    const dialog = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    // A11Y-102: dialog must STAY open and surface its own errorSlot content.
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorNetworkError,
+    );
+    // transient tone → retry control present.
+    await expect(
+      dialog.getByRole("button", { name: messages.Common.confirmDialog.retry }),
+    ).toBeInTheDocument();
+  },
+};
+
+export const LockTermConfirmFailureForbiddenNoRetry: Story = {
+  name: "Lock-term confirm forbidden failure — no retry, confirm disabled",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: false, errorKey: "forbidden" }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+    const dialog = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorForbidden,
+    );
+    // forbidden tone → no retry button, confirm itself force-disabled.
+    await expect(
+      dialog.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).not.toBeInTheDocument();
+    await expect(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    ).toBeDisabled();
   },
 };

@@ -62,3 +62,13 @@ async function runSubmit(key: ClassSubjectTermKey, targets: SubmitTarget[]) {
   const useCase = await makeSubmitColumnScoresUseCase(key);
   return useCase.execute(key, targets);
 }
+
+/**
+ * NOTE (US-E18.44): `rejectEntryAction` deliberately does NOT live here. This
+ * route is inside the `teacher` namespace, whose layout guard is strict equality
+ * (`role === "teacher"`), so a `principal`/`admin` session — the only roles BE
+ * US-184 allows to reject — is redirected away before this page renders. The
+ * action lives with the screen that can actually reach it:
+ * `(app)/admin/grade-book/actions.ts`, consumed by both `/admin/grade-book` and
+ * `/principal/grade-book`.
+ */
