@@ -506,6 +506,16 @@ before reading for style.
   `NAV_BY_ROLE` for a route the allowed role can actually navigate to. Layer design can be perfect
   (fail-closed `requireRole` in the action, capability-as-presence VM) and the feature still
   unreachable — tsc/tests/build/Storybook all stay green.
+- **"Reachable route" ≠ "reachable feature" — check `NAV_BY_ROLE` too** (US-E18.44 round 2). After
+  the round-1 block above, the fix correctly re-mounted the capability on `(app)/principal/grade-book`
+  + `(app)/admin/grade-book` (both already role-guarded, both already existed). But NEITHER route has
+  an entry in `src/components/layout/app-shell/sidebar/nav-config.ts` — they are pre-existing ORPHAN
+  routes, so the only home of the new affordance is URL-typing-only for both authorized roles. The
+  2026-08-02 dead-link audit swept href→page (404s); the INVERSE direction (page with no href) was
+  never swept. Standing check on any story that mounts a capability on an existing route: grep the
+  route path in `nav-config.ts`, not just `find src/app -name page.tsx`. Adding the entry is usually
+  free — `shell.nav.grades` etc. already exist (watch the hardcoded `NAV_BY_ROLE.admin.length` count
+  assertion in `nav-config.test.ts`).
 - **Discriminated `errorKey` union that presentation never branches on** — a VM returns
   `errorKey: "forbidden" | "network-error"`, a unit test proves the distinction, then the screen does
   `throw new Error(result.errorKey)` and renders ONE generic error card with a retry button for both.

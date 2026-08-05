@@ -514,3 +514,15 @@ Confirmed facts (verify before citing if stale):
   Net effect for any NEW non-admin/non-self/non-parent caller: a SILENT "no timetable published"
   empty state on every row, in real mode only. Always trace 403→failure→data-state for a new caller
   of this endpoint.
+
+- **A plain closure passed as a Server-Action prop from an RSC to a `'use client'` component is a
+  RUNTIME 500, not a lint nit — EMPIRICALLY VERIFIED** (Next.js 16.2.7 / React 19.2.7, 2026-08-06,
+  probe route in a worktree): `GET` returns HTTP 500 with
+  `Error: Functions cannot be passed directly to Client Components unless you explicitly expose it by
+  marking it with "use server". … at stringify`. `bun run build` does NOT catch it for a
+  `searchParams`-dependent (dynamic) route, and neither does `tsc` (the closure satisfies the VM's
+  function type) nor Storybook (stories pass their own fns inside the client tree). So the
+  `action: key ? realAction.bind(null, key) : async () => ({ ok:false })` idiom is a live bug on the
+  no-selection branch. Correct fix = bind the real action with an empty-string key
+  (see `build-approver-grade-vm.ts` `boundKey`). Cheap repo scan:
+  `grep -rn "=> ({ ok: false" $(git ls-files 'src/app/**/page.tsx')`.
