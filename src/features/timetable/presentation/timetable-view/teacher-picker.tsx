@@ -29,11 +29,13 @@ function initials(name: string): string {
  * - no color-identity ring (teachers have no color token) → the neutral
  *   initials avatar already used on `principal-teachers-screen.tsx`;
  * - no ordinal name fallback (`displayName` has no documented gap);
- * - `ON_LEAVE` is surfaced with the SAME `StatusBadge tone="warning"`
- *   convention that screen established. `ON_LEAVE` teachers stay SELECTABLE —
- *   a principal legitimately reads an on-leave teacher's published week
- *   (coverage/handover), and the roster table does not disable them either.
- *   `ACTIVE` gets no badge (card density; only the exception is called out).
+ * - a non-`ACTIVE` membership is surfaced with the SAME `StatusBadge` tones that
+ *   screen establishes (`INACTIVE` muted / `SUSPENDED` error). Since US-E18.40
+ *   the status comes from the IAM member directory, which has no `ON_LEAVE`.
+ *   Such teachers stay SELECTABLE — a principal legitimately reads a departed or
+ *   suspended teacher's published week (coverage/handover), and the roster table
+ *   does not disable them either. `ACTIVE` gets no badge (card density; only the
+ *   exception is called out).
  */
 export function TeacherPicker({
   teacherList,
@@ -82,8 +84,14 @@ export function TeacherPicker({
                 {teacher.homeroomClassName
                   ? t("classLabel", { className: teacher.homeroomClassName })
                   : t("homeroomPending")}
-                {teacher.status === "ON_LEAVE" && (
-                  <StatusBadge tone="warning">{t("statusOnLeave")}</StatusBadge>
+                {teacher.status !== "ACTIVE" && (
+                  <StatusBadge
+                    tone={teacher.status === "SUSPENDED" ? "error" : "muted"}
+                  >
+                    {teacher.status === "SUSPENDED"
+                      ? t("statusSuspended")
+                      : t("statusInactive")}
+                  </StatusBadge>
                 )}
               </span>
             </span>

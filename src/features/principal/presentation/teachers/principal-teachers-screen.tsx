@@ -1,6 +1,5 @@
 "use client";
 
-import { TriangleAlertIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -17,13 +16,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { PrincipalTeacher } from "@/features/principal/domain/teachers/entities/principal-teacher.entity";
-import { cn } from "@/shared/utils";
 import type { PrincipalTeachersVM } from "./principal-teachers-screen.i-vm";
 import { TeacherAssignmentSheet } from "./teacher-assignment-sheet";
 
+/**
+ * IAM membership status → tone (US-E18.40). `ON_LEAVE` is gone: IAM carries no
+ * leave concept, so the badge now reflects the membership states the directory
+ * can actually return. Status is never colour-alone — the label carries it.
+ */
 const STATUS_TONE: Record<PrincipalTeacher["status"], StatusTone> = {
   ACTIVE: "success",
-  ON_LEAVE: "warning",
+  INACTIVE: "muted",
+  SUSPENDED: "error",
 };
 
 const MAX_VISIBLE_BADGES = 3;
@@ -193,27 +197,15 @@ export function PrincipalTeachersScreen({
                           </span>
                         ) : (
                           visible.map((a) => (
+                            // An assignment is keyed by (class, subject) — BE
+                            // allows one teacher per pair, so the composite is
+                            // unique. There is no `classSubjectId` on the wire.
                             <StatusBadge
-                              key={a.classSubjectId}
-                              tone={a.hasConflict ? "error" : "primary"}
-                              className={cn(
-                                "gap-1",
-                                a.hasConflict && "items-center",
-                              )}
+                              key={`${a.classId}:${a.subjectId}`}
+                              tone="primary"
                             >
-                              {a.hasConflict && (
-                                <span
-                                  role="img"
-                                  aria-label={t("sheet.conflictWarning")}
-                                  className="inline-flex items-center"
-                                >
-                                  <TriangleAlertIcon
-                                    className="size-3"
-                                    aria-hidden="true"
-                                  />
-                                </span>
-                              )}
-                              {a.className} · {a.subjectName}
+                              {a.className} ·{" "}
+                              {a.subjectName ?? t("table.unknownSubject")}
                             </StatusBadge>
                           ))
                         )}

@@ -67,17 +67,15 @@ const TEACHERS: PrincipalTeacher[] = [
     teacherId: "t-002",
     displayName: "Trần Văn Minh",
     email: "minh@edu.vn",
-    primarySubjectName: "Văn",
+    primarySubjectName: "Ngữ văn",
     homeroomClassId: null,
     homeroomClassName: null,
     subjectAssignments: [
       {
-        classSubjectId: "cs-001",
         classId: "c-11b1",
         className: "11B1",
         subjectId: "s-van",
         subjectName: "Ngữ văn",
-        hasConflict: false,
       },
     ],
     status: "ACTIVE",
@@ -86,20 +84,28 @@ const TEACHERS: PrincipalTeacher[] = [
     teacherId: "t-003",
     displayName: "Lê Thị Hoa",
     email: "hoa@edu.vn",
-    primarySubjectName: "Lý",
+    primarySubjectName: "Vật lý",
     homeroomClassId: "c-12c2",
     homeroomClassName: "12C2",
     subjectAssignments: [
       {
-        classSubjectId: "cs-002",
         classId: "c-12c2",
         className: "12C2",
         subjectId: "s-ly",
         subjectName: "Vật lý",
-        hasConflict: true,
+      },
+      // The subject id was not resolvable in the catalogue drain — presentation
+      // shows a placeholder, NEVER the raw uuid (US-E18.40).
+      {
+        classId: "c-11b1",
+        className: "11B1",
+        subjectId: "s-unknown",
+        subjectName: null,
       },
     ],
-    status: "ON_LEAVE",
+    // IAM membership status (US-E18.40): the directory returns
+    // ACTIVE/INACTIVE/SUSPENDED — there is no ON_LEAVE.
+    status: "INACTIVE",
   },
   {
     teacherId: "t-004",
@@ -110,36 +116,28 @@ const TEACHERS: PrincipalTeacher[] = [
     homeroomClassName: null,
     subjectAssignments: [
       {
-        classSubjectId: "cs-a",
         classId: "c-10a1",
         className: "10A1",
         subjectId: "s-hoa",
         subjectName: "Hóa học",
-        hasConflict: false,
       },
       {
-        classSubjectId: "cs-b",
         classId: "c-10a2",
         className: "10A2",
         subjectId: "s-hoa",
         subjectName: "Hóa học",
-        hasConflict: false,
       },
       {
-        classSubjectId: "cs-c",
         classId: "c-11b1",
         className: "11B1",
         subjectId: "s-hoa",
         subjectName: "Hóa học",
-        hasConflict: false,
       },
       {
-        classSubjectId: "cs-d",
         classId: "c-12c2",
         className: "12C2",
         subjectId: "s-hoa",
         subjectName: "Hóa học",
-        hasConflict: false,
       },
     ],
     status: "ACTIVE",
@@ -249,7 +247,7 @@ export const AssignmentSheet_Open: Story = {
   },
 };
 
-export const AssignmentSheet_WithConflict: Story = {
+export const UnresolvedSubjectAndInactiveStatus: Story = {
   args: {
     teachers: TEACHERS,
     fetchError: null,
@@ -257,15 +255,20 @@ export const AssignmentSheet_WithConflict: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Lê Thị Hoa (t-003) has a conflicting subject assignment — the conflict
-    // indicator renders in her table row badge (role=img + aria-label).
-    const conflictWarning = await canvas.findByRole("img", {
-      name: messages.principalTeachers.sheet.conflictWarning,
-    });
-    await expect(conflictWarning).toBeInTheDocument();
+    // Lê Thị Hoa (t-003) holds an assignment whose subject id the catalogue
+    // drain could not resolve → the honest placeholder renders instead of a uuid.
+    await expect(
+      await canvas.findByText(
+        new RegExp(messages.principalTeachers.table.unknownSubject),
+      ),
+    ).toBeInTheDocument();
+    // Her IAM membership is INACTIVE — the state is carried by the LABEL, not
+    // colour alone (a11y), and there is no ON_LEAVE badge anywhere any more.
+    await expect(
+      await canvas.findByText(messages.principalTeachers.status.INACTIVE),
+    ).toBeInTheDocument();
 
-    // Opening her sheet (vi sort: Lê, Nguyễn, Trần → first row) surfaces the
-    // conflicting GVBM row with its own keyboard-focusable conflict indicator.
+    // The sheet still opens for a non-ACTIVE teacher (vi sort: Lê is first).
     const buttons = await canvas.findAllByRole("button", {
       name: messages.principalTeachers.assignClass,
     });
