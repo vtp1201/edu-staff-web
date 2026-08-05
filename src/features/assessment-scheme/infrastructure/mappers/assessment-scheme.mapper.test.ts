@@ -3,7 +3,7 @@ import { GRADE_SCALE_PRESETS } from "../../domain/entities/grade-scale.entity";
 import type {
   AssessmentSchemeResponseDto,
   GradeScaleResponseDto,
-  SubjectForGradeDto,
+  SubjectListItemDto,
 } from "../dtos/assessment-scheme-response.dto";
 import {
   mapAssessmentScheme,
@@ -226,14 +226,45 @@ describe("assessment-scheme mapper — scheme", () => {
   });
 });
 
-describe("assessment-scheme mapper — subjects (unchanged)", () => {
-  it("maps a subject-for-grade DTO to entity", () => {
-    const dto: SubjectForGradeDto = {
+describe("assessment-scheme mapper — subjects (real GET /subjects, US-E18.42)", () => {
+  const wire: SubjectListItemDto = {
+    subjectId: "s1",
+    tenantId: "t1",
+    subjectParentId: "p1",
+    name: "Toán",
+    code: "TOAN",
+    gradeLevel: 10,
+    status: "ACTIVE",
+    createdAt: "2024-09-01T00:00:00.000Z",
+    updatedAt: "2024-09-01T00:00:00.000Z",
+  };
+
+  it("renames subjectId → id and unnests master.requiredExamCount", () => {
+    expect(
+      mapSubjectForGrade({ ...wire, master: { requiredExamCount: 4 } }),
+    ).toEqual({
       id: "s1",
       name: "Toán",
       gradeLevel: 10,
       requiredAssessmentCount: 4,
-    };
-    expect(mapSubjectForGrade(dto)).toEqual(dto);
+    });
+  });
+
+  it("collapses an absent master and a 0 requiredExamCount to null", () => {
+    expect(mapSubjectForGrade(wire).requiredAssessmentCount).toBeNull();
+    expect(
+      mapSubjectForGrade({ ...wire, master: { requiredExamCount: 0 } })
+        .requiredAssessmentCount,
+    ).toBeNull();
+  });
+
+  it("drops wire-only fields the entity does not carry", () => {
+    const entity = mapSubjectForGrade(wire);
+    expect(Object.keys(entity).sort()).toEqual([
+      "gradeLevel",
+      "id",
+      "name",
+      "requiredAssessmentCount",
+    ]);
   });
 });

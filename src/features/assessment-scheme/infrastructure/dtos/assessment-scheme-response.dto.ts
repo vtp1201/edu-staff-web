@@ -66,11 +66,41 @@ export interface SetAssessmentSchemeRequestDto {
   columns: AssessmentColumnRequestDto[];
 }
 
-// ─── Subjects (UNCHANGED — still mock-first, out of US-E18.7 scope) ───────────
+// ─── Subjects (real `GET /subjects`, US-E18.42 / BE US-177) ──────────────────
 
-export interface SubjectForGradeDto {
-  id: string;
+/**
+ * Grade-scoped master ("chuẩn") fields. The Go response struct embeds
+ * `MasterFieldsBody` by value with no `omitempty`, so `master` is ALWAYS present
+ * on the wire and its numbers are `0` when unset — declared optional anyway so a
+ * leaner payload cannot crash the mapper.
+ */
+export interface SubjectMasterFieldsDto {
+  masterSyllabus?: string;
+  periodCount?: number;
+  learningOutcomes?: string;
+  requiredExamCount?: number;
+}
+
+/**
+ * Wire shape of one `SubjectResponse` item from `GET /core/api/v1/subjects`
+ * (ground-truthed against `services/core/docs/openapi.yaml` +
+ * `internal/curriculum/adapter/http/dto/subject.go`, US-E18.42).
+ *
+ * ⚠️ The pre-US-E18.42 shape here (`{ id, name, gradeLevel,
+ * requiredAssessmentCount }`) was MOCK-ERA INVENTION — no endpoint ever emitted
+ * it. The real payload keys the id as `subjectId` and nests the assessment count
+ * as `master.requiredExamCount`, matching the subject-catalogue feature's own
+ * `SubjectResponseDto` (US-E18.3), which reads the SAME endpoint.
+ */
+export interface SubjectListItemDto {
+  subjectId: string;
+  tenantId: string;
+  subjectParentId: string;
   name: string;
+  code: string | null;
   gradeLevel: number;
-  requiredAssessmentCount: number | null;
+  master?: SubjectMasterFieldsDto;
+  status: "ACTIVE" | "ARCHIVED";
+  createdAt: string;
+  updatedAt: string;
 }

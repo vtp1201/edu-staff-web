@@ -1,7 +1,11 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
 import { ASSESSMENT_EP } from "@/bootstrap/endpoint/assessment-scheme.endpoint";
-import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
+import {
+  type ApiEnvelope,
+  errorCodeOf,
+  parseEnvelope,
+} from "@/bootstrap/lib/api-envelope";
 import type {
   AssessmentScheme,
   SubjectForGrade,
@@ -12,7 +16,7 @@ import type { IAssessmentSchemeRepository } from "../../domain/repositories/i-as
 import type {
   AssessmentSchemeResponseDto,
   GradeScaleResponseDto,
-  SubjectForGradeDto,
+  SubjectListItemDto,
 } from "../dtos/assessment-scheme-response.dto";
 import {
   mapAssessmentScheme,
@@ -26,15 +30,38 @@ type Result<T> =
   | { ok: true; data: T }
   | { ok: false; error: AssessmentSchemeFailure };
 
+/** Field names blamed by a 422 `VALIDATION_FAILED` (`error.fields[]`). */
+function blamedFields(err: unknown): string[] {
+  const fields = (err as { fields?: Array<{ field?: string }> })?.fields;
+  return Array.isArray(fields)
+    ? fields.map((f) => f?.field).filter((f): f is string => Boolean(f))
+    : [];
+}
+
 /**
  * Map a normalised {@link ApiError} (via its UPPER_SNAKE `code`) to the
  * assessment-scheme failure union. Codes ground-truthed against the Go source
  * (`services/core/internal/assessment/core/domain/error/config.go` +
+ * `internal/curriculum/adapter/http/dto/subject.go` +
  * `pkg/kit/response/error.go`, decision 0008 holds for `core`) — US-E18.7 /
- * ADR 0053. Branch on `code`, never the localised message.
+ * ADR 0053, extended for `GET /subjects` in US-E18.42. Branch on `code` (and,
+ * for the shared validation code, the blamed field) — never the localised
+ * message.
  */
 function mapFailure(err: unknown): AssessmentSchemeFailure {
   const code = errorCodeOf(err);
+
+  // 422 VALIDATION_FAILED is shared across `core` write/read paths, so it only
+  // means "bad grade level" when the server BLAMES `gradeLevel` — the sole
+  // validated query param of `GET /subjects` (BE US-177: int 1..13, out-of-range
+  // or non-numeric → 422 on field `gradeLevel`). Never branch on the message.
+  if (
+    code === "VALIDATION_FAILED" &&
+    blamedFields(err).includes("gradeLevel")
+  ) {
+    return { type: "invalid-grade-level" };
+  }
+
   switch (code) {
     case "GRADE_SCALE_NOT_FOUND":
     case "ASSESSMENT_SCHEME_NOT_FOUND":
@@ -88,14 +115,37 @@ export class AssessmentSchemeRepository implements IAssessmentSchemeRepository {
     }
   }
 
+  /**
+   * Every ACTIVE subject of one grade level. `gradeLevel` is a real BE filter
+   * ANDed with `status` and applied BEFORE pagination (BE US-177) — that makes
+   * each PAGE fully matching, not the only page, so this drains the cursor to
+   * the end (same pattern as subject-catalogue's `fetchAllSubjectDtos`,
+   * US-E18.3). `raw: true` MUST stay a top-level axios-config sibling of
+   * `params` (recurring bug class, `EPIC-OVERVIEW.md`).
+   */
   async listSubjectsForGrade(
     gradeLevel: number,
   ): Promise<Result<SubjectForGrade[]>> {
     try {
-      const data = (await this.http.get(
-        ASSESSMENT_EP.subjectsByGrade(gradeLevel),
-      )) as unknown as SubjectForGradeDto[];
-      return { ok: true, data: data.map(mapSubjectForGrade) };
+      const dtos: SubjectListItemDto[] = [];
+      let cursor: string | undefined;
+      do {
+        const env = (await this.http.get(ASSESSMENT_EP.subjects, {
+          params: {
+            gradeLevel,
+            status: "ACTIVE",
+            ...(cursor ? { cursor } : {}),
+          },
+          raw: true,
+        })) as unknown as ApiEnvelope<SubjectListItemDto[]>;
+        const { data, pagination } = parseEnvelope(env);
+        dtos.push(...data);
+        cursor =
+          pagination?.hasMore && pagination.nextCursor
+            ? pagination.nextCursor
+            : undefined;
+      } while (cursor);
+      return { ok: true, data: dtos.map(mapSubjectForGrade) };
     } catch (err) {
       return { ok: false, error: mapFailure(err) };
     }

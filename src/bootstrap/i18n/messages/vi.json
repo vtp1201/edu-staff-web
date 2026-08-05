@@ -627,6 +627,7 @@
     "errorGapsInCoverage": "Còn khoảng trống giữa các mức điểm.",
     "errorInvalidColumn": "Cột điểm không hợp lệ (tên/loại/hệ số/thứ tự).",
     "errorInvalidCount": "Số lần kiểm tra phải ≥ 1.",
+    "errorInvalidGradeLevel": "Khối lớp không hợp lệ. Vui lòng chọn khối từ 1 đến 13.",
     "errorInvalidGradeScale": "Thang điểm không hợp lệ. Vui lòng kiểm tra lại các mức.",
     "errorInvalidScaleType": "Loại thang điểm không hợp lệ.",
     "errorInvalidScheme": "Cấu trúc cột điểm không hợp lệ. Vui lòng kiểm tra lại.",

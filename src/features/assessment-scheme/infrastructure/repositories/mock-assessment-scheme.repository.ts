@@ -129,6 +129,12 @@ export class MockAssessmentSchemeRepository
     return { ok: true };
   }
 
+  /**
+   * Mirrors the real contract (US-E18.42): exactly one grade level, ACTIVE
+   * subjects only, already fully drained (the real repo follows the cursor to the
+   * end, so a caller never has to page). An unknown grade yields an empty list,
+   * not a failure — the BE only 422s for a level outside 1..13.
+   */
   async listSubjectsForGrade(
     gradeLevel: number,
   ): Promise<Result<SubjectForGrade[]>> {

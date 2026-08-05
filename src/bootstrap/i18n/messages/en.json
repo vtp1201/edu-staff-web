@@ -627,6 +627,7 @@
     "errorGapsInCoverage": "There are gaps between grade bands.",
     "errorInvalidColumn": "Invalid grade column (name/type/coefficient/order).",
     "errorInvalidCount": "Assessment count must be ≥ 1.",
+    "errorInvalidGradeLevel": "Invalid grade level. Please pick a grade between 1 and 13.",
     "errorInvalidGradeScale": "The grade scale is invalid. Please review the bands.",
     "errorInvalidScaleType": "Invalid grade scale type.",
     "errorInvalidScheme": "The grade column structure is invalid. Please review it.",

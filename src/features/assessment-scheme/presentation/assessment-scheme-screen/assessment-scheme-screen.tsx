@@ -82,6 +82,8 @@ const FAILURE_KEY: Record<string, string> = {
   "invalid-column": "errorInvalidColumn",
   "column-in-use": "errorColumnInUse",
   "max-columns": "errorMaxColumns",
+  // 422 VALIDATION_FAILED blaming the `gradeLevel` query param (US-E18.42).
+  "invalid-grade-level": "errorInvalidGradeLevel",
   "network-error": "errorNetwork",
   unknown: "errorUnknown",
   // client-side validation fallbacks (US-E18.7)

@@ -7,10 +7,13 @@
 export const ASSESSMENT_EP = {
   // Real path — no `/config/` segment (US-E18.7).
   gradeScale: "/core/api/v1/grade-scale",
-  // UNCHANGED — still mock-first (real GET /subjects has no gradeLevel filter,
-  // belongs to US-E18.3 subject-catalogue wiring). Do not real-wire here.
-  subjectsByGrade: (gradeLevel: number) =>
-    `/core/api/v1/subjects?gradeLevel=${gradeLevel}&status=ACTIVE`,
+  // Real path — `GET /subjects` now takes an optional `gradeLevel` (int 1..13)
+  // ANDed with `status`, applied BEFORE pagination (BE US-177, US-E18.42). The
+  // filters + `cursor` are passed as axios `params` (with `raw: true` as a
+  // TOP-LEVEL config sibling) so the repository can drain every page — a grade
+  // can hold more subjects than one page. Same endpoint the subject-catalogue
+  // feature reads (US-E18.3); this constant stays path-only.
+  subjects: "/core/api/v1/subjects",
   // Real path — adds trailing `/terms/{termId}` (US-E18.7).
   assessmentScheme: (subjectId: string, yearLabel: string, termId: string) =>
     `/core/api/v1/subjects/${subjectId}/assessment-schemes/${yearLabel}/terms/${termId}`,
