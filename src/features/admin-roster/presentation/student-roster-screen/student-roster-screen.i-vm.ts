@@ -30,6 +30,16 @@ export interface StudentRosterScreenVm {
    * `PrincipalRosterScreenVm.fetchError`.
    */
   fetchError: RosterFailure["type"] | null;
+  /**
+   * Candidate-pool READ failure key, or `null` when the pool loaded (US-E18.41).
+   * Separate from {@link StudentRosterScreenVm.fetchError} on purpose: the pool
+   * became a real two-service composition (IAM STUDENT directory MINUS core's
+   * enrolled ids for the year), so it can fail on its own — yet a side panel
+   * that could not fill must never blank a roster that loaded fine. Without this
+   * key an empty `searchPool` would render the panel's "no results" copy, i.e. a
+   * failed read dressed as "there is nobody left to enroll".
+   */
+  poolError: RosterFailure["type"] | null;
 }
 
 /** Action result — uniform shape across all Server Actions. */

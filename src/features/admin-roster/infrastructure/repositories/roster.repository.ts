@@ -6,15 +6,18 @@ import {
   unenrollPath,
 } from "@/bootstrap/endpoint/admin-roster.endpoint";
 import { type ApiEnvelope, parseEnvelope } from "@/bootstrap/lib/api-envelope";
+import type { IamDirectoryFailure } from "@/features/iam-directory/domain/failures/iam-directory.failure";
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
 import type { SearchStudent } from "../../domain/entities/search-student.entity";
+import type { RosterFailure } from "../../domain/failures/roster.failure";
 import type {
   IRosterRepository,
   Result,
   VoidResult,
 } from "../../domain/repositories/i-roster.repository";
 import type { ClassesResponseDto } from "../dtos/classes-response.dto";
+import type { EnrolledStudentIdsResponseDto } from "../dtos/enrolled-student-ids-response.dto";
 import type { EnrollmentListResponseDto } from "../dtos/enrollment-response.dto";
 import type { RosterStudentDetail } from "../mappers/roster.mapper";
 import {
@@ -38,6 +41,47 @@ export type ResolveStudentDetails = (
   memberIds: string[],
 ) => Promise<Map<string, RosterStudentDetail>>;
 
+/**
+ * The two collaborators the FE-composed search pool needs (US-E18.41, BE US-182
+ * / `edu-api` ADR 0125), injected together by
+ * `bootstrap/di/admin-roster.di.ts` because both cross a feature boundary this
+ * repository may not cross itself (decision 0017):
+ *
+ * - `searchStudentDirectory` — `iam-directory`'s `SearchMembersUseCase` with
+ *   `role: "STUDENT"` and the token-derived tenant id already pinned. It drains
+ *   EVERY directory page itself (the app's ONE directory client — do not add a
+ *   second draining loop here). Returns iam-directory's own `Result`, so its
+ *   failure union is translated ONCE, below.
+ * - `resolveAcademicYear` — the active year's label (e.g. `"2025-2026"`), the
+ *   mandatory query param of the enrolled-ids read. Lazy on purpose: it costs a
+ *   calendar round trip, and only `getSearchPool` needs it.
+ */
+export interface SearchPoolSources {
+  searchStudentDirectory: () => Promise<
+    | { ok: true; value: readonly { memberId: string; displayName: string }[] }
+    | { ok: false; failure: IamDirectoryFailure }
+  >;
+  resolveAcademicYear: () => Promise<string>;
+}
+
+/**
+ * `IamDirectoryFailure` → `RosterFailure`. Same shape of translation
+ * `class-management.repository.ts` does for its teacher picker: the directory's
+ * union never leaks to presentation, which only knows `adminRoster.errors.*`.
+ */
+function fromDirectoryFailure(failure: IamDirectoryFailure): RosterFailure {
+  switch (failure.type) {
+    case "forbidden":
+      return { type: "forbidden" };
+    case "network-error":
+      return { type: "network-error" };
+    // >50 ids in one batch is an IAM-internal guard the batch use-case already
+    // prevents; a roster operator can do nothing with it.
+    default:
+      return { type: "unknown" };
+  }
+}
+
 /** BE caps `limit` at 100 (`listMaxLimit`, core `list_classes.go`). */
 const ROSTER_PAGE_SIZE = 100;
 /**
@@ -58,6 +102,12 @@ export class RosterRepository implements IRosterRepository {
      * convention as `parent-child-list.repository.ts`).
      */
     private readonly resolveStudentDetails?: ResolveStudentDetails,
+    /**
+     * Optional for the same reason: absent = `getSearchPool` fails closed
+     * (`unknown`) rather than inventing an empty pool. See
+     * {@link SearchPoolSources}.
+     */
+    private readonly searchPoolSources?: SearchPoolSources,
   ) {}
 
   async getClasses(params: {
@@ -163,17 +213,85 @@ export class RosterRepository implements IRosterRepository {
   }
 
   /**
-   * PERMANENTLY mock-first (US-E18.5, cross-repo ask #9) — and NOT unblocked by
-   * US-E18.35. This gap is a MISSING ENDPOINT, unrelated to the display-field
-   * gap that closed: core exposes no query for "students not enrolled in this
-   * class" (`/students/unassigned` does not exist), so there is nothing to
-   * call. Adding dob/gender to the IAM batch lookup does not help — a lookup by
-   * id cannot enumerate a candidate pool. The DI factory therefore still
-   * delegates THIS method (only) to the mock repo, and this stub is never
-   * invoked.
+   * REAL since US-E18.41 — retires the US-E18.5 "permanent" mock (cross-repo
+   * ask #9, second and last half). BE's answer (US-182 / `edu-api` ADR 0125) is
+   * that "students not yet enrolled in any class" will NEVER be one endpoint:
+   * the enrolled set lives in `core`, the student identities live in `iam`, so
+   * the POOL IS A SET DIFFERENCE THE FE COMPOSES:
+   *
+   * 1. IAM STUDENT directory (drained by `SearchMembersUseCase`) — the
+   *    CANDIDATE universe, and the only source of display names;
+   * 2. core `GET /enrollments/student-ids?academicYear=` — the ids to SUBTRACT
+   *    (every class of the year, deduplicated, ids-only, unpaginated).
+   *
+   * Neither side is best-effort: a failure of either means the operator cannot
+   * be shown a trustworthy candidate list, and a partial pool would silently
+   * hide enrollable students, so both surface as a failure.
+   *
+   * `_classId` is deliberately UNUSED here (see the interface): the subtracted
+   * set is tenant-wide, so students already in the target class are excluded by
+   * the subtraction itself, and everyone remaining is unassigned in EVERY class
+   * — hence `currentClassId`/`currentClassName` are structurally `null` and no
+   * second lookup is made. Only `MockRosterRepository` still reads the param
+   * (its seed also offers transfer candidates from other classes).
+   *
+   * Accepted BE caveat (do not "fix" client-side): students of an ARCHIVED
+   * class still hold enrollments, so they stay subtracted and do not re-appear.
    */
   async getSearchPool(_classId: string): Promise<Result<SearchStudent[]>> {
-    return { ok: false, error: { type: "unknown" } };
+    const sources = this.searchPoolSources;
+    if (!sources) return { ok: false, error: { type: "unknown" } };
+
+    try {
+      // Sequential on purpose: the year label is a required param of the
+      // enrolled-ids read, so there is nothing to parallelise before it.
+      const academicYear = await sources.resolveAcademicYear();
+      const [directory, enrolledIds] = await Promise.all([
+        sources.searchStudentDirectory(),
+        this.listEnrolledStudentIds(academicYear),
+      ]);
+      if (!directory.ok) {
+        return { ok: false, error: fromDirectoryFailure(directory.failure) };
+      }
+
+      const enrolled = new Set(enrolledIds);
+      return {
+        ok: true,
+        data: directory.value
+          .filter((member) => !enrolled.has(member.memberId))
+          .map((member) => ({
+            // The enroll write posts `studentMemberId`, and on the directory
+            // wire `memberId === userId` — so the pool's id IS the member id.
+            id: member.memberId,
+            name: member.displayName,
+            currentClassId: null,
+            currentClassName: null,
+          })),
+      };
+    } catch (err) {
+      // `resolveAcademicYear` throws a TYPED `{ type: "invalid-term" }` when the
+      // tenant has no academic year configured. That is not an HTTP error, and
+      // `toRosterFailure` would mislabel it `network-error` (i.e. "retry"), so
+      // map it explicitly — retrying will never help.
+      if ((err as { type?: string } | null)?.type === "invalid-term") {
+        return { ok: false, error: { type: "unknown" } };
+      }
+      return { ok: false, error: toRosterFailure(err) };
+    }
+  }
+
+  /**
+   * The year's enrolled ids. UNPAGINATED and ids-only, so unlike every other
+   * list read here it is a plain unwrapped GET — no `raw: true`, no
+   * `parseEnvelope`, no cursor loop. `studentMemberIds` is `[]`, never null.
+   */
+  private async listEnrolledStudentIds(
+    academicYear: string,
+  ): Promise<string[]> {
+    const payload = (await this.http.get(ROSTER_EP.enrolledStudentIds, {
+      params: { academicYear },
+    })) as unknown as EnrolledStudentIdsResponseDto;
+    return payload.studentMemberIds ?? [];
   }
 
   async enrollStudent(classId: string, studentId: string): Promise<VoidResult> {

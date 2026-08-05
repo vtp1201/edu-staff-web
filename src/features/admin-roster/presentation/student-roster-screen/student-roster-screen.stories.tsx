@@ -110,6 +110,7 @@ const baseVm: StudentRosterScreenVm = {
   transferredCount: roster32.filter((s) => s.status === "transferred").length,
   searchPool,
   fetchError: null,
+  poolError: null,
 };
 
 const emptyVm: StudentRosterScreenVm = {
@@ -120,6 +121,7 @@ const emptyVm: StudentRosterScreenVm = {
   transferredCount: 0,
   searchPool,
   fetchError: null,
+  poolError: null,
 };
 
 const ok = async () => ({ ok: true as const });
@@ -314,6 +316,58 @@ export const RosterReadForbidden: Story = {
     await expect(
       canvas.getByText(messages.adminRoster.breadcrumb.classes),
     ).toBeVisible();
+  },
+};
+
+/**
+ * US-E18.41 — the pool became a REAL composition (IAM STUDENT directory MINUS
+ * core's enrolled ids), so it can fail while the roster loads fine. The panel
+ * must say so: an empty candidate list would otherwise claim there is nobody
+ * left to enroll.
+ */
+export const CandidatePoolReadFailed: Story = {
+  args: {
+    vm: { ...baseVm, searchPool: [], poolError: "network-error" },
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const alert = await canvas.findByRole("alert");
+    await expect(alert).toHaveTextContent(
+      messages.adminRoster.errors["network-error"],
+    );
+    // NOT the "no candidates" copy — the two must never be confusable.
+    await expect(
+      canvas.queryByText(messages.adminRoster.addPanel.noResults),
+    ).not.toBeInTheDocument();
+    // The roster itself is untouched: rows and their affordances stay.
+    await expect(
+      canvas.getAllByRole("checkbox", { name: /Chọn học sinh/ }).length,
+    ).toBeGreaterThan(0);
+    // Transient failure → retry offered inside the panel.
+    await expect(
+      canvas.getByRole("button", { name: messages.Common.confirmDialog.retry }),
+    ).toBeInTheDocument();
+  },
+};
+
+/** 403 on the pool read — retry omitted, roster still fully usable. */
+export const CandidatePoolForbidden: Story = {
+  args: {
+    vm: { ...baseVm, searchPool: [], poolError: "forbidden" },
+    ...handlers,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      await canvas.findByText(messages.adminRoster.errors.forbidden),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).not.toBeInTheDocument();
   },
 };
 

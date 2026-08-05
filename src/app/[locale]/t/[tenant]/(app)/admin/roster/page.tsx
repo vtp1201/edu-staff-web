@@ -34,9 +34,11 @@ async function RosterContent({ classId }: { classId?: string }) {
   // apart. Thread the failure key instead; the screen renders the error card
   // and drops every mutation affordance.
   const roster = rosterResult.ok ? rosterResult.data : [];
-  // The candidate pool is DECORATION for the enroll panel and is still
-  // force-mocked (no core endpoint enumerates unassigned students), so a pool
-  // failure deliberately does not blank a roster that loaded fine.
+  // The candidate pool is DECORATION for the enroll panel, so its failure does
+  // not blank a roster that loaded fine. But since US-E18.41 it IS a real
+  // two-service read (IAM STUDENT directory MINUS core's enrolled ids), so the
+  // failure must be shown IN the panel — an empty pool otherwise reads as "there
+  // is nobody left to enroll".
   const searchPool = poolResult.ok ? poolResult.data : [];
 
   const vm: StudentRosterScreenVm = {
@@ -47,6 +49,7 @@ async function RosterContent({ classId }: { classId?: string }) {
     transferredCount: roster.filter((s) => s.status === "transferred").length,
     searchPool,
     fetchError: rosterResult.ok ? null : rosterResult.error.type,
+    poolError: poolResult.ok ? null : poolResult.error.type,
   };
 
   // Bind the active class to the screen's action contract (server actions).

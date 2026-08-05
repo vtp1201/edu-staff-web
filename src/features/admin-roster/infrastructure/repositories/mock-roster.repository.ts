@@ -387,6 +387,14 @@ export class MockRosterRepository implements IRosterRepository {
     };
   }
 
+  /**
+   * Unchanged by US-E18.41 (mock mode only). The seed pool is deliberately
+   * RICHER than the real one: it also offers transfer candidates enrolled in
+   * OTHER classes (`currentClassId`/`currentClassName` set), which is why it
+   * still reads `classId`. The real pool is students enrolled in NO class of the
+   * academic year, so every real row carries `currentClassId: null` and the
+   * class parameter is irrelevant there.
+   */
   async getSearchPool(classId: string): Promise<Result<SearchStudent[]>> {
     await mockDelay(300);
     const enrolledHere = new Set(

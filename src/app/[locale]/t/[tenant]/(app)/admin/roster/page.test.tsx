@@ -143,11 +143,11 @@ describe("Admin RosterPage", () => {
   });
 
   /**
-   * The candidate pool is still force-mocked (no core endpoint enumerates
-   * unassigned students — US-E18.35 kept that half of the mock), so it cannot
-   * fail in production today. Deliberately it does NOT drive `fetchError`: the
-   * pool decorates the enroll panel, and blanking a roster that loaded fine
-   * because a side panel could not fill would be the opposite over-reaction.
+   * The candidate pool became a REAL two-service composition in US-E18.41, so
+   * `{ ok: false }` is now reachable in production. It still must NOT drive
+   * `fetchError` — blanking a roster that loaded fine because a side panel could
+   * not fill would be the opposite over-reaction — but it must not read as "no
+   * candidates" either, hence its own key.
    */
   it("keeps the loaded roster when only the candidate-pool read fails", async () => {
     getClasses.mockResolvedValue({ ok: true, data: classes });
@@ -159,5 +159,29 @@ describe("Admin RosterPage", () => {
     expect(screen?.props.vm.fetchError).toBeNull();
     expect(screen?.props.vm.roster).toHaveLength(2);
     expect(screen?.props.vm.searchPool).toEqual([]);
+  });
+
+  it("surfaces a failed pool read as poolError, never as an empty candidate list", async () => {
+    getClasses.mockResolvedValue({ ok: true, data: classes });
+    getClassRoster.mockResolvedValue({ ok: true, data: roster });
+    getSearchPool.mockResolvedValue({
+      ok: false,
+      error: { type: "forbidden" },
+    });
+
+    const screen = await renderPageProps();
+
+    expect(screen?.props.vm.poolError).toBe("forbidden");
+    expect(screen?.props.vm.searchPool).toEqual([]);
+  });
+
+  it("leaves poolError null when the pool read succeeds (even if genuinely empty)", async () => {
+    getClasses.mockResolvedValue({ ok: true, data: classes });
+    getClassRoster.mockResolvedValue({ ok: true, data: roster });
+    getSearchPool.mockResolvedValue({ ok: true, data: [] });
+
+    const screen = await renderPageProps();
+
+    expect(screen?.props.vm.poolError).toBeNull();
   });
 });
