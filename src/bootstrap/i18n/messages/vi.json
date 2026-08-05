@@ -2157,7 +2157,8 @@
     "tableLockedNotice": "Bảng điểm đã khóa, chỉ xem.",
     "termHK1": "Học kỳ 1",
     "termHK2": "Học kỳ 2",
-    "title": "Nhập điểm"
+    "title": "Nhập điểm",
+    "titleApprover": "Sổ điểm — duyệt điểm"
   },
   "gradeCellStatus": {
     "draft": "Nháp",

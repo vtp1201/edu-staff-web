@@ -32,12 +32,23 @@ export interface ReasonConfirmDialogProps {
   confirmLabel: string;
   /** Cancel-button copy. Defaults to `Common.confirmDialog.cancel`. */
   cancelLabel?: string;
-  /** Hard cap on the TRIMMED reason length (server-enforced too). */
-  maxLength: number;
+  /**
+   * Hard cap on the TRIMMED reason length (server-enforced too). Omit ONLY when
+   * the field genuinely has no documented maximum — do not invent one.
+   */
+  maxLength?: number;
+  /**
+   * Opt-in floor on the TRIMMED length, for a reason that must be ACTIONABLE
+   * (e.g. a grade-revision note telling a teacher what to fix). Omitted ⇒ any
+   * non-empty reason is accepted. Pair it with `tooShortMessage`.
+   */
+  minLength?: number;
   /** Message shown when the reason is empty. */
   requiredMessage: string;
-  /** Message shown when the reason exceeds `maxLength`. */
-  tooLongMessage: string;
+  /** Message shown when the reason is shorter than `minLength`. */
+  tooShortMessage?: string;
+  /** Message shown when the reason exceeds `maxLength`. Required with it. */
+  tooLongMessage?: string;
   /** `count/max` hint under the field — caller formats it (i18n + ICU). */
   formatCounter?: (count: number) => string;
   /** Disables both actions and marks confirm `aria-busy`. */
@@ -78,7 +89,9 @@ export function ReasonConfirmDialog({
   confirmLabel,
   cancelLabel,
   maxLength,
+  minLength,
   requiredMessage,
+  tooShortMessage,
   tooLongMessage,
   formatCounter,
   isPending = false,
@@ -102,11 +115,15 @@ export function ReasonConfirmDialog({
     }
   }, [open]);
 
-  const validity = validateReason(reason, maxLength);
+  const validity = validateReason(reason, maxLength, minLength);
   const invalid = validity !== "ok";
   const showValidation = touched && invalid;
   const validationMessage =
-    validity === "too-long" ? tooLongMessage : requiredMessage;
+    validity === "too-long"
+      ? (tooLongMessage ?? requiredMessage)
+      : validity === "too-short"
+        ? (tooShortMessage ?? requiredMessage)
+        : requiredMessage;
   const counterText = formatCounter?.(reason.trim().length);
 
   const describedBy =

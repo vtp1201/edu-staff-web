@@ -22,15 +22,23 @@ interface Props {
   columns: AssessmentColumn[];
   rows: StudentScoreRow[];
   maxScore: number;
-  onSaveScore: (
+  /**
+   * Score-entry capability (US-E18.44 — capability-as-presence, same idiom as
+   * `onRejectCell` below). PRESENT ONLY for a TEACHER viewer. When absent the
+   * table is READ-ONLY: a DRAFT cell renders its value + status badge with NO
+   * number input, and no submit affordance is rendered anywhere (structural, not
+   * a disabled control). This is how the ADMIN/MANAGER approver view gets
+   * "view + reject" while being structurally unable to edit a teacher's score.
+   */
+  onSaveScore?: (
     studentId: string,
     columnId: string,
     value: number,
   ) => Promise<{ ok: boolean }>;
-  /** submits ONE cell (clicking the DRAFT badge) */
-  onSubmitCell: (studentId: string, columnId: string) => void;
-  /** submits every DRAFT cell in one row ("Nộp dòng này") */
-  onSubmitRow: (studentId: string) => void;
+  /** submits ONE cell (clicking the DRAFT badge) — teacher-only, see `onSaveScore` */
+  onSubmitCell?: (studentId: string, columnId: string) => void;
+  /** submits every DRAFT cell in one row ("Nộp dòng này") — teacher-only */
+  onSubmitRow?: (studentId: string) => void;
   /**
    * US-E18.44 — opens the reject/request-revision dialog for ONE
    * `PENDING_APPROVAL` cell. PRESENT ONLY for an ADMIN/MANAGER viewer: when it
@@ -44,7 +52,7 @@ interface Props {
    * aria-describedby indicator so a partial fan-out failure is retryable
    * cell-by-cell, not just visible as an aggregate banner count.
    */
-  failedCells: Map<string, GradesFailure["type"]>;
+  failedCells?: Map<string, GradesFailure["type"]>;
   /** translates a failure type to already-localized copy (screen owns i18n). */
   getFailureMessage: (type: GradesFailure["type"]) => string;
 }
@@ -110,7 +118,9 @@ function ScoreCell({
   const current = cell?.value ?? null;
   const status = cell?.status ?? "DRAFT";
   const [hasError, setHasError] = useState(false);
-  const editable = status === "DRAFT";
+  // A DRAFT cell is editable only for a viewer who actually HAS the save
+  // capability — an approver sees the same DRAFT cell as read-only text.
+  const editable = status === "DRAFT" && onSaveScore !== undefined;
   const rejection = cell?.rejection;
   const canReject = status === "PENDING_APPROVAL" && onRejectCell !== undefined;
 
@@ -167,8 +177,10 @@ function ScoreCell({
       setHasError(true);
       return;
     }
-    const result = await onSaveScore(row.studentId, col.id, value);
-    setHasError(!result.ok);
+    // Non-null by construction: this branch only renders when `editable`,
+    // which already required `onSaveScore` to be present.
+    const result = await onSaveScore?.(row.studentId, col.id, value);
+    setHasError(result ? !result.ok : false);
   }
 
   // Local validation error (out-of-range value) takes precedence over a
@@ -221,7 +233,7 @@ function ScoreCell({
             descriptionId={rejectionId}
           />
         ) : null}
-        {!hasError && current !== null ? (
+        {!hasError && current !== null && onSubmitCell ? (
           <button
             type="button"
             aria-label={submitAriaLabel}
@@ -248,6 +260,10 @@ export function GradeEntryTable({
   getFailureMessage,
 }: Props) {
   const t = useTranslations("gradeEntry");
+  // Read-only viewer (approver): the row-submit column has nothing to render, so
+  // it is omitted from BOTH <thead> and <tbody> — an empty trailing column would
+  // be announced by screen readers as a real (but meaningless) column.
+  const canSubmitRow = onSubmitRow !== undefined;
 
   return (
     <div className="overflow-x-auto rounded-card border border-border bg-card shadow-card">
@@ -283,9 +299,11 @@ export function GradeEntryTable({
             >
               {t("averageColumn")}
             </th>
-            <th scope="col" className="px-3 py-2.5">
-              <span className="sr-only">{t("submitRowButton")}</span>
-            </th>
+            {canSubmitRow ? (
+              <th scope="col" className="px-3 py-2.5">
+                <span className="sr-only">{t("submitRowButton")}</span>
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
@@ -316,7 +334,7 @@ export function GradeEntryTable({
                     onSaveScore={onSaveScore}
                     onSubmitCell={onSubmitCell}
                     onRejectCell={onRejectCell}
-                    submitFailure={failedCells.get(
+                    submitFailure={failedCells?.get(
                       `${row.studentId}:${col.id}`,
                     )}
                     getFailureMessage={getFailureMessage}
@@ -327,17 +345,19 @@ export function GradeEntryTable({
                     {row.average ?? "—"}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-center">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={!hasDraft}
-                    onClick={() => onSubmitRow(row.studentId)}
-                  >
-                    {t("submitRowButton")}
-                  </Button>
-                </td>
+                {onSubmitRow ? (
+                  <td className="px-3 py-2 text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={!hasDraft}
+                      onClick={() => onSubmitRow(row.studentId)}
+                    >
+                      {t("submitRowButton")}
+                    </Button>
+                  </td>
+                ) : null}
               </tr>
             );
           })}

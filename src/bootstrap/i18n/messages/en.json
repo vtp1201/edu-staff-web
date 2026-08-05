@@ -2157,7 +2157,8 @@
     "tableLockedNotice": "Grade sheet is locked, read-only.",
     "termHK1": "Semester 1",
     "termHK2": "Semester 2",
-    "title": "Grade Entry"
+    "title": "Grade Entry",
+    "titleApprover": "Grade book — approvals"
   },
   "gradeCellStatus": {
     "draft": "Draft",

@@ -4,10 +4,7 @@ import type {
   GradeBookRole,
 } from "../../domain/entities/grade-book.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
-import type {
-  ActionResult,
-  ClassSubjectOption,
-} from "../grade-entry-screen/grade-entry-screen.i-vm";
+import type { ClassSubjectOption } from "../grade-entry-screen/grade-entry-screen.i-vm";
 
 export type { ClassSubjectOption };
 
@@ -30,11 +27,13 @@ export interface GradeBookScreenVM {
   /** parent role only — currently active child id; undefined for other roles */
   activeChildId?: string;
   /**
-   * NEW (US-E18.12, ADR 0054 §4) — admin/manager only (irreversible term
-   * lock). Undefined for teacher/student/parent — the screen gates the lock
-   * button's render on this being present, not just on `vm.role`, so the
-   * container/DI layer is the single source of truth for whether the actor is
-   * actually authorized (belt-and-suspenders with the BE's own 403 gate).
+   * NOTE (US-E18.44): the admin/manager irreversible term lock (US-E18.12, ADR
+   * 0054 §4) is deliberately NO LONGER part of this VM. Its only two routes —
+   * `/principal/grade-book` and `/admin/grade-book` — moved onto the STAFF grade
+   * sheet (`GradeEntryScreen`, `viewerRole: "approver"`) so that view can host
+   * the per-cell reject affordance, and the lock control moved WITH them to
+   * `presentation/components/lock-term-control.tsx` (moved, not copied —
+   * decision 0026). This screen now serves teacher/student/parent reads, none of
+   * which ever had a lock capability.
    */
-  lockTermAction?: () => Promise<ActionResult & { lockedCount?: number }>;
 }

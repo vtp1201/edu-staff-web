@@ -1,9 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { GradeBookRow } from "@/features/grades/domain/entities/grade-book.entity";
 import type { RankBand } from "@/features/grades/domain/use-cases/rank-band";
-import { calculateRankDistribution } from "@/features/grades/domain/use-cases/rank-distribution";
+import {
+  calculateRankDistribution,
+  type RankedRow,
+} from "@/features/grades/domain/use-cases/rank-distribution";
 import { cn } from "@/shared/utils";
 
 /** Bar fill per band (token-only). */
@@ -30,7 +32,20 @@ const BAND_LABEL: Record<RankBand, RankLabelKey> = {
   yeu: "rankYeu",
 };
 
-export function RankDistributionChart({ rows }: { rows: GradeBookRow[] }) {
+/**
+ * Five-band rank distribution (US-E13.6 AC). Canonical home is this
+ * feature-level `presentation/components/` folder because TWO grades screens
+ * render it (US-E18.44): the read-only `GradeBookScreen` (teacher/student/
+ * parent) and the staff `GradeEntryScreen` (teacher entry + principal/admin
+ * approver). It takes the structural {@link RankedRow} so both read shapes
+ * (`GradeBookRow` and `StudentScoreRow`) work with one component — moved, not
+ * copied (decision 0026).
+ */
+export function RankDistributionChart({
+  rows,
+}: {
+  rows: readonly RankedRow[];
+}) {
   const t = useTranslations("gradeBook");
   const distribution = calculateRankDistribution(rows);
 

@@ -320,3 +320,145 @@ any implementation existed.
    broke.
 4. Live-BE: core migration `047_grade_entries_rejection` must have run;
    BE bug US-185 (student-view staleness) is BE's, not chased here.
+
+### Routing fix — reject affordance made reachable (fe-nextjs-engineer, 2026-08-06)
+
+`fe-tech-lead-reviewer` returned **Revision Required** on exactly one blocking
+defect: the reject affordance was mounted ONLY inside `GradeEntryContainer`,
+which had exactly one route — `(app)/teacher/grades`. That route's layout
+(`teacher/layout.tsx` → `evaluateNamespaceAccess`) gates on STRICT EQUALITY
+`role === "teacher"`, so a `principal`/`admin` session is redirected away before
+the page renders, while a `teacher` session renders it but is never granted
+`canReject`. Nothing was insecure (everything failed closed) but **AC-1 was
+impossible to exercise: no reachable route existed for the roles BE US-184
+authorizes.**
+
+**Fix — reuse the already-guarded approver routes, do not invent a new one:**
+
+| Route | Guard | Before | After |
+| --- | --- | --- | --- |
+| `(app)/principal/grade-book` | `role === "principal"` (MANAGER + ADMIN collapse here via `ROLE_ENUM_TO_APP`) | `getGradeBook()` → `GradeBookScreen` | `getGradeSheet()` → `GradeEntryScreen` **approver mode** |
+| `(app)/admin/grade-book` | `role === "admin"` | same | same |
+| `(app)/teacher/grades` | `role === "teacher"` | entry + dead `canReject` wiring | entry only (dead wiring removed) |
+
+Both approver routes now read the **staff** shape (`GradeSheet` /
+`StaffGradeCell`). That was the necessary change, not an incidental one: the
+multi-role `GradeBook`/`GradeBookRow` path is built from the narrower
+`GradeCell` *precisely so* a student/parent surface cannot express a rejection —
+which also means it cannot carry one for an approver. The privacy boundary is
+untouched: `getMyGrades`/`getChildGrades`/`GradeBookRow` were not modified in
+any way, and `staff-rejection-privacy.test.ts` still compiles as the proof.
+
+**Role-discriminated VM (not a bag of booleans).** `GradeEntryScreenVM` is now a
+union:
+
+- `TeacherGradeEntryVM` — `saveScoreAction` + `submitScoresAction`, and NO
+  `rejectEntryAction` field at all;
+- `ApproverGradeEntryVM` — `rejectEntryAction` (required) + optional
+  `lockTermAction` + display labels, and NO save/submit fields at all.
+
+So "an approver cannot edit a score" and "a teacher cannot reject" are both
+COMPILE errors, not policies a screen has to remember to check. `tsc` rejected
+every mis-shaped VM literal in the stories while this was wired up (observed).
+`GradeEntryTable` follows the same capability-as-presence idiom the reject
+control already used: without `onSaveScore` a DRAFT cell renders as read-only
+text, and the row-submit column is dropped from `<thead>` AND `<tbody>` (an
+empty trailing column would be announced as a real one).
+
+**Moved, not copied (decision 0026).** The two affordances the approver routes
+already had moved WITH them:
+
+- `RankDistributionChart` → `features/grades/presentation/components/`
+  (rendered by both grade screens now). `calculateRankDistribution` was widened
+  from `GradeBookRow[]` to a structural `RankedRow[]` (`{ average }` only — the
+  sole field it ever read) so ONE implementation serves both read shapes.
+- Term lock → `features/grades/presentation/components/lock-term-control.tsx`,
+  extracted verbatim from `grade-book-screen.tsx` (A11Y-102 errorSlot behaviour
+  preserved) and REMOVED from `GradeBookScreenVM` — its only two routes moved,
+  and teacher/student/parent never had it. Its 4 interaction stories moved to
+  `grade-entry-screen.stories.tsx` with them.
+
+**Security fix found while writing the moved action's tests:** `lockTermAction`
+(irreversible bulk lock, ADR 0054 §4) had NO `requireRole` guard of its own — it
+relied entirely on the route layout, which a direct Server-Action invocation
+bypasses. It now fails closed on `requireRole(["principal","admin"])`, proven by
+a forge-role test asserting zero use-case construction. `rejectEntryAction` moved
+from `teacher/grades/actions.ts` to `admin/grade-book/actions.ts` (consumed by
+both approver routes, revalidating both paths) and keeps its own guard.
+
+**Reviewer CONSIDER items — both closed:**
+- stale comment in `grade-entry-screen.tsx` claiming `rejectTarget` carries
+  display labels (it carries identity only) — corrected;
+- `revision-request-dialog.tsx` (same-feature fork) — DELETED, call site now
+  uses the canonical `ReasonConfirmDialog`, which gained an opt-in `minLength` +
+  `tooShortMessage` for the ≥10-char revision-note rule. `maxLength` was ALSO
+  made optional rather than inventing a cap for a field with no documented
+  server maximum. Copy unchanged (no new i18n keys); the field gains
+  `role="alert"` errors and focus-return for free. This retires 1 of the 4 forks
+  flagged in the previous round.
+
+**Consequence to accept explicitly:** the approver table is the entry table, so
+the `conductGrade` column no longer renders on those two routes. On the REAL
+path that column was never real data — `grade-book.mapper.ts` hardcodes
+`DEFAULT_CONDUCT_GRADE = "TB"` for every row because conduct has no source on
+the `GradeEntry`/`GradeReport` wire. Removing a fabricated column is not a data
+loss, but it IS a visible change to the US-E13.6 read-only view and is called
+out here rather than buried. Everything else those screens had is preserved:
+roster, per-cell status badges, score colours, weighted average, five-band
+distribution, class/subject/term pickers, term lock, loading/empty/error states.
+
+**One new i18n key** (vi + en): `gradeEntry.titleApprover` — the approver route
+is a grade BOOK view, not a "nhập điểm" (grade entry) view. Lock + distribution
+copy stayed in the `gradeBook` namespace (moved screens, unchanged meaning, no
+duplicate keys minted).
+
+**Proof actually run (from the worktree, after the fix)**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **484 files / 3619 tests pass**, 0 fail (branch baseline 481/3590 → +3 files, +29 tests) |
+| `bunx vitest run --config vitest.storybook.mts` ×3 | run 1 **156/1214 pass**, run 2 **1 fail**, run 3 **156/1214 pass** |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | 1 warning + 1 info — byte-identical to the un-modified branch baseline (verified by `git stash`), both pre-existing in `messaging` |
+| `bun run build` (real, `NEXT_PUBLIC_USE_MOCK` unset) | ✓ compiled; both `principal/grade-book` + `admin/grade-book` routes emitted |
+| `bun run build` (`NEXT_PUBLIC_USE_MOCK=true`) | ✓ compiled in 9.7s |
+
+**Storybook flake investigation (reviewer SHOULD-FIX).** The one failure in run 2
+was `staff-discipline-screen.stories.tsx > Create Violation Dialog Staff Member
+Static Select` (1331 ms). Characterisation:
+
+- the file is in an UNRELATED feature and was not touched by this story;
+- isolated re-runs: **3/3 pass**;
+- full-suite runs 1 and 3: pass;
+- the un-modified branch HEAD (`git stash -u`) full suite: **156/1210 pass**, so
+  the flake is not introduced by this change.
+
+Mechanism: that play function opens a Radix `Select` TWICE, each time awaiting
+`findAllByRole("option")` immediately after the click, with a `waitFor` on the
+trigger text between them. Under parallel load the portal mount / previous
+listbox exit-animation can push the second open past the default query timeout —
+the same load-dependent class of flake seen elsewhere in this session, and the
+likely identity of the reviewer's unattributed 1/1210. **Deliberately not
+"fixed" here** (unrelated file, no production defect); recommended follow-up if
+it recurs: assert on the listbox via `findByRole("listbox")` before querying
+options, or raise that story's timeout.
+
+**Flags for `fe-lead`**
+1. **Latent bug, pre-existing, NOT fixed (out of assigned scope):**
+   `teacher/grades/page.tsx` passes locally-defined `async () => ({ ok: false,
+   … })` stubs as `saveScoreAction`/`submitScoresAction` when no class-subject-
+   term is selected — i.e. on the route's default load. A plain function cannot
+   be handed from an RSC to a Client Component; that is a render-time serialization
+   error, not something `bun run build` catches. It predates this story
+   (US-E18.12) and I did not touch it since teacher/grades was to stay
+   unchanged. The new approver builder deliberately does NOT copy the pattern —
+   it binds the real Server Action with an empty-string key instead. Worth a
+   small follow-up story to confirm and fix.
+2. `GradeBookRole` still includes `"principal"`/`"admin"` (the shared
+   `GradeBookTable` accepts them, and its stories/tests cover them). The
+   `GradeBookScreen` principal story was renamed to
+   `PrincipalReadOnlyContract` with a pointer to the live approver stories
+   rather than deleted, so the read-only rendering contract stays pinned.
+3. Ask #18 (batch dashboard rollup) untouched as instructed:
+   `IGradeApprovalRepository` and its force-mocked DI factory were not modified.
+   Only that screen's dialog COMPONENT changed (fork → canonical).

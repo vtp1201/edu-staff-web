@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GradeBookRow } from "../entities/grade-book.entity";
+import type { StudentScoreRow } from "../entities/grade-sheet.entity";
 import { calculateRankDistribution } from "./rank-distribution";
 
 function row(average: number | null): GradeBookRow {
@@ -50,5 +51,42 @@ describe("calculateRankDistribution", () => {
     expect(d.graded).toBe(1);
     const gioi = d.bands.find((b) => b.band === "gioi");
     expect(gioi?.percentage).toBe(100);
+  });
+
+  /**
+   * US-E18.44 routing fix — the principal/admin grade view now reads the
+   * STAFF-side `GradeSheet` (`StudentScoreRow`, which carries rejections) so it
+   * can host the reject affordance. The rank distribution is the SAME
+   * calculation on both read shapes: it only ever consumes `average`, so its
+   * parameter is structural rather than tied to `GradeBookRow`. This keeps ONE
+   * distribution implementation (and one chart) for both screens instead of a
+   * parallel copy per read shape.
+   */
+  it("accepts a staff GradeSheet row shape (no conductGrade) — average only", () => {
+    const sheetRows: StudentScoreRow[] = [
+      {
+        studentId: "hs-001",
+        studentName: "Nguyễn Văn An",
+        studentCode: "HS001",
+        scores: { ck: { value: 9, status: "PENDING_APPROVAL" } },
+        average: 9.7,
+      },
+      {
+        studentId: "hs-002",
+        studentName: "Trần Thị Bình",
+        studentCode: "HS002",
+        scores: { ck: { value: null, status: "DRAFT" } },
+        average: null,
+      },
+    ];
+    const d = calculateRankDistribution(sheetRows);
+    expect(d.total).toBe(2);
+    expect(d.graded).toBe(1);
+    expect(d.bands.find((b) => b.band === "xuat-sac")?.count).toBe(1);
+  });
+
+  it("still accepts the read-only GradeBookRow shape (no regression)", () => {
+    const bookRows: GradeBookRow[] = [row(8.5)];
+    expect(calculateRankDistribution(bookRows).graded).toBe(1);
   });
 });

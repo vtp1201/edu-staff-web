@@ -1,5 +1,18 @@
-import type { GradeBookRow } from "../entities/grade-book.entity";
 import { getRankBand, RANK_BANDS, type RankBand } from "./rank-band";
+
+/**
+ * The only field this calculation reads (US-E18.44). Declared structurally so
+ * BOTH grade read shapes satisfy it — the read-only multi-role `GradeBookRow`
+ * AND the staff-side `StudentScoreRow` (`GradeSheet`, which additionally
+ * carries per-cell rejections). Deliberately NOT typed as `GradeBookRow`: the
+ * principal/admin grade view moved onto the staff read shape so it can host the
+ * reject affordance, and the distribution must stay ONE implementation rather
+ * than being copied per shape.
+ */
+export interface RankedRow {
+  /** weighted average; null = not fully graded (excluded from band counts) */
+  average: number | null;
+}
 
 export interface RankBandCount {
   band: RankBand;
@@ -21,7 +34,7 @@ export interface RankDistribution {
  * a null average are excluded from the band counts but reflected in `total`.
  */
 export function calculateRankDistribution(
-  rows: GradeBookRow[],
+  rows: readonly RankedRow[],
 ): RankDistribution {
   const counts = new Map<RankBand, number>();
   for (const band of RANK_BANDS) counts.set(band, 0);

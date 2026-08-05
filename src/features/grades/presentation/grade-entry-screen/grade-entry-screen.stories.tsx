@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   AssessmentScheme,
@@ -12,8 +12,9 @@ import type {
 } from "../../domain/entities/grade-sheet.entity";
 import { GradeEntryScreen } from "./grade-entry-screen";
 import type {
+  ApproverGradeEntryVM,
   ClassSubjectOption,
-  GradeEntryScreenVM,
+  TeacherGradeEntryVM,
 } from "./grade-entry-screen.i-vm";
 
 const SCHEME: AssessmentScheme = {
@@ -97,7 +98,8 @@ function withStatus(status: GradeEntryStatus): StudentScoreRow[] {
   }));
 }
 
-const baseVM: GradeEntryScreenVM = {
+const baseVM: TeacherGradeEntryVM = {
+  viewerRole: "teacher",
   classSubjects: CLASS_SUBJECTS,
   selectedClassId: "class-001",
   selectedSubjectId: "subj-toan-10",
@@ -453,11 +455,32 @@ const PENDING_ROWS: StudentScoreRow[] = [
   },
 ];
 
-const approverVM: GradeEntryScreenVM = {
-  ...baseVM,
-  sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL"),
-  rejectEntryAction: async () => ({ ok: true }),
-};
+/**
+ * The ADMIN/MANAGER approver VM as mounted at `/principal/grade-book` and
+ * `/admin/grade-book` (US-E18.44 routing fix). Note what is NOT here: no
+ * `saveScoreAction`, no `submitScoresAction` — `ApproverGradeEntryVM` has no
+ * such fields, so "an approver cannot edit a score" is a compile-time property
+ * of these stories, not something the play function has to remember to check.
+ */
+function approverVm(
+  over: Partial<ApproverGradeEntryVM> = {},
+): ApproverGradeEntryVM {
+  return {
+    viewerRole: "approver",
+    classSubjects: CLASS_SUBJECTS,
+    selectedClassId: "class-001",
+    selectedSubjectId: "subj-toan-10",
+    selectedTerm: "HK1",
+    sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL"),
+    error: null,
+    classLabel: "10A1",
+    subjectLabel: "Toán",
+    rejectEntryAction: async () => ({ ok: true }),
+    ...over,
+  };
+}
+
+const approverVM = approverVm();
 
 /**
  * A TEACHER viewer's VM has no `rejectEntryAction`, so there is NO reject
@@ -634,5 +657,240 @@ export const RejectedDraftIndicatorEscapesReason: Story = {
     await expect(
       canvasElement.querySelector(`#${describedBy}`)?.textContent,
     ).toContain("Sai điểm");
+  },
+};
+
+// ─── US-E18.44 routing fix — APPROVER mode (`/principal/grade-book`,
+// `/admin/grade-book`). The reject affordance was previously mounted only on
+// `/teacher/grades`, whose layout guard redirects the very roles allowed to use
+// it; these stories exercise the mode the approver routes actually render, and
+// the term-lock tests below MOVED here from `grade-book-screen.stories.tsx`
+// together with the control. ──────────────────────────────────────────────────
+
+/** DRAFT rows so "read-only" is proven on the one status a teacher COULD edit. */
+const DRAFT_ROWS: StudentScoreRow[] = withStatus("DRAFT");
+
+export const ApproverViewIsReadOnly: Story = {
+  name: "Approver — no score input, no submit affordance anywhere",
+  args: { vm: approverVm({ sheet: sheet(DRAFT_ROWS, "ADMIN_APPROVAL") }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // DRAFT cells are exactly what a teacher edits — an approver gets text.
+    await expect(canvas.queryAllByRole("spinbutton").length).toBe(0);
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.gradeEntry.submitAllDraftsButton,
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryAllByRole("button", {
+        name: messages.gradeEntry.submitRowButton,
+      }).length,
+    ).toBe(0);
+    // The roster itself is still fully visible (US-E13.6 read-only AC).
+    await expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
+    await expect(canvas.getByText("Trần Thị Bình")).toBeInTheDocument();
+    await expect(canvas.getByText("Lê Hoàng Cường")).toBeInTheDocument();
+  },
+};
+
+export const ApproverViewTitleAndRankDistribution: Story = {
+  name: "Approver — approver title + five-band rank distribution (US-E13.6)",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("heading", { name: messages.gradeEntry.titleApprover }),
+    ).toBeInTheDocument();
+    // The distribution region carried over from the read-only grade book.
+    const region = canvas.getByRole("region", {
+      name: messages.gradeBook.rankDistributionTitle,
+    });
+    await expect(region).toBeInTheDocument();
+    await expect(
+      within(region).getByText(messages.gradeBook.rankXuatSac),
+    ).toBeInTheDocument();
+  },
+};
+
+export const ApproverCanRejectFromTheApproverRoute: Story = {
+  name: "Approver — reject a pending cell end-to-end on the approver route",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Điểm cuối kỳ lệch với bài thi",
+    );
+    await userEvent.click(
+      body.getByRole("button", { name: messages.gradeEntry.rejectConfirm }),
+    );
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectSuccess),
+    ).toBeInTheDocument();
+  },
+};
+
+export const TeacherHasNoLockTermControl: Story = {
+  name: "Teacher — no term-lock control (capability absent)",
+  args: { vm: baseVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: messages.gradeBook.lockTermButton,
+      }),
+    ).toBeNull();
+  },
+};
+
+export const LockTermButtonDisabledWithoutPublished: Story = {
+  name: "Lock-term button disabled with zero PUBLISHED cells",
+  args: {
+    vm: approverVm({
+      sheet: sheet(DRAFT_ROWS),
+      lockTermAction: async () => ({ ok: true, lockedCount: 0 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    ).toBeDisabled();
+  },
+};
+
+export const LockTermButtonEnabledWithPublished: Story = {
+  name: "Lock-term button enabled with ≥1 PUBLISHED cell",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: true, lockedCount: 0 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    ).toBeEnabled();
+  },
+};
+
+export const LockTermConfirmSuccess: Story = {
+  name: "Lock-term confirm success — dialog closes, banner shows count",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: true, lockedCount: 3 }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+
+    const dialog = within(canvasElement.ownerDocument.body);
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    // Dialog closes on success (Radix exit-animation timing — wait it out).
+    await waitFor(() =>
+      expect(
+        dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
+      ).not.toBeInTheDocument(),
+    );
+    const banner = canvas.getByRole("status");
+    await expect(banner.textContent).toContain("3");
+  },
+};
+
+export const LockTermConfirmFailureStaysOpen: Story = {
+  name: "Lock-term confirm failure — dialog stays open, shows errorSlot (A11Y-102)",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: false, errorKey: "network-error" }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+    const dialog = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    // A11Y-102: dialog must STAY open and surface its own errorSlot content.
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorNetworkError,
+    );
+    // transient tone → retry control present.
+    await expect(
+      dialog.getByRole("button", { name: messages.Common.confirmDialog.retry }),
+    ).toBeInTheDocument();
+  },
+};
+
+export const LockTermConfirmFailureForbiddenNoRetry: Story = {
+  name: "Lock-term confirm forbidden failure — no retry, confirm disabled",
+  args: {
+    vm: approverVm({
+      sheet: sheet(withStatus("PUBLISHED")),
+      lockTermAction: async () => ({ ok: false, errorKey: "forbidden" }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeBook.lockTermButton }),
+    );
+    const dialog = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    );
+
+    await expect(
+      dialog.getByText(messages.gradeBook.lockTermConfirmTitle),
+    ).toBeInTheDocument();
+    const alert = dialog.getByRole("alert");
+    await expect(alert.textContent).toContain(
+      messages.gradeBook.errorForbidden,
+    );
+    // forbidden tone → no retry button, confirm itself force-disabled.
+    await expect(
+      dialog.queryByRole("button", {
+        name: messages.Common.confirmDialog.retry,
+      }),
+    ).not.toBeInTheDocument();
+    await expect(
+      dialog.getByRole("button", {
+        name: messages.gradeBook.lockTermConfirmOk,
+      }),
+    ).toBeDisabled();
   },
 };

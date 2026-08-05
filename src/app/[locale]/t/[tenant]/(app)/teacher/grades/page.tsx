@@ -1,7 +1,6 @@
 import { makeGetGradeSheetUseCase } from "@/bootstrap/di/grades.di";
 import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { resolveMyGradeSubjects } from "@/bootstrap/lib/resolve-my-grade-subjects";
-import { getSessionRole } from "@/bootstrap/lib/session-role.server";
 import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/class-subject-term-key.entity";
 import type { GradeSheet } from "@/features/grades/domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
@@ -10,20 +9,7 @@ import type {
   ClassSubjectOption,
   GradeEntryScreenVM,
 } from "@/features/grades/presentation/grade-entry-screen/grade-entry-screen.i-vm";
-import {
-  rejectEntryAction,
-  saveScoreAction,
-  submitScoresAction,
-} from "./actions";
-
-/**
- * Roles allowed to reject a pending-approval cell (US-E18.44 / BE US-184:
- * ADMIN/MANAGER). Both BE enums collapse onto the `principal` appRole
- * (`ROLE_ENUM_TO_APP`); `admin` covers the platform-admin token and mock mode.
- * The Server Action re-checks this server-side — this gate only decides whether
- * the capability is handed to the UI at all.
- */
-const REJECT_ROLES = ["principal", "admin"] as const;
+import { saveScoreAction, submitScoresAction } from "./actions";
 
 type SearchParams = Promise<{
   classId?: string;
@@ -46,10 +32,6 @@ export default async function TeacherGradesPage({
   const selectedTerm = sp.term ?? null;
 
   const classSubjects: ClassSubjectOption[] = await resolveMyGradeSubjects();
-  const sessionRole = await getSessionRole();
-  const canReject =
-    sessionRole !== null &&
-    (REJECT_ROLES as readonly string[]).includes(sessionRole);
   const academicYearLabel = await resolveCurrentAcademicYear().catch(
     () => "2025-2026",
   );
@@ -77,6 +59,10 @@ export default async function TeacherGradesPage({
   }
 
   const vm: GradeEntryScreenVM = {
+    // Teacher mode: enter + submit, never reject. The reject capability is not
+    // "omitted" here — `TeacherGradeEntryVM` has no such field, so handing one
+    // over would be a compile error (US-E18.44).
+    viewerRole: "teacher",
     classSubjects,
     selectedClassId,
     selectedSubjectId,
@@ -89,10 +75,6 @@ export default async function TeacherGradesPage({
     submitScoresAction: key
       ? submitScoresAction.bind(null, key)
       : async () => ({ ok: false, errorKey: "unknown" }),
-    // Capability-as-presence: a teacher's VM has NO reject action at all, so no
-    // reject control (and no dialog) is rendered for them (US-E18.44).
-    rejectEntryAction:
-      canReject && key ? rejectEntryAction.bind(null, key) : undefined,
   };
 
   return <GradeEntryContainer vm={vm} />;

@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/bootstrap/auth-guard";
 import {
-  makeRejectColumnEntryUseCase,
   makeSaveScoreUseCase,
   makeSubmitColumnScoresUseCase,
 } from "@/bootstrap/di/grades.di";
@@ -66,30 +64,11 @@ async function runSubmit(key: ClassSubjectTermKey, targets: SubmitTarget[]) {
 }
 
 /**
- * US-E18.44 (BE US-184) — reject / request revision on ONE `PENDING_APPROVAL`
- * cell (`PENDING_APPROVAL → DRAFT` + a required reason ≤500 chars).
- *
- * A Server Action is a publicly callable endpoint, so the ADMIN/MANAGER gate is
- * re-checked HERE with the server-derived role claim, BEFORE any DI/HTTP call —
- * the VM's absent `rejectEntryAction` only removes the UI affordance, it is not
- * an authorization boundary. `core` enforces its own 403 on top (both BE
- * ADMIN and MANAGER collapse to the `principal` appRole via ROLE_ENUM_TO_APP;
- * `admin` covers the platform-admin/mock-mode token).
+ * NOTE (US-E18.44): `rejectEntryAction` deliberately does NOT live here. This
+ * route is inside the `teacher` namespace, whose layout guard is strict equality
+ * (`role === "teacher"`), so a `principal`/`admin` session — the only roles BE
+ * US-184 allows to reject — is redirected away before this page renders. The
+ * action lives with the screen that can actually reach it:
+ * `(app)/admin/grade-book/actions.ts`, consumed by both `/admin/grade-book` and
+ * `/principal/grade-book`.
  */
-export async function rejectEntryAction(
-  key: ClassSubjectTermKey,
-  studentId: string,
-  columnId: string,
-  reason: string,
-): Promise<ActionResult> {
-  const guard = await requireRole(["principal", "admin"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-
-  const useCase = await makeRejectColumnEntryUseCase(key);
-  const result = await useCase.execute(key, studentId, columnId, reason);
-  if (isFailure(result)) {
-    return { ok: false, errorKey: result.type };
-  }
-  revalidatePath(GRADES_PATH, "page");
-  return { ok: true };
-}
