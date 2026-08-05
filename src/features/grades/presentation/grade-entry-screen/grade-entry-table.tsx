@@ -1,11 +1,13 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import {
   GradeEntryStatusBadge,
   GradeRowStatusSummaryBadge,
 } from "@/components/shared/grade-entry-status-badge";
+import { StatusBadge } from "@/components/shared/status-badge/status-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/utils";
 import { deriveRowStatus } from "../../domain/entities/derive-row-status";
@@ -30,6 +32,13 @@ interface Props {
   /** submits every DRAFT cell in one row ("Nộp dòng này") */
   onSubmitRow: (studentId: string) => void;
   /**
+   * US-E18.44 — opens the reject/request-revision dialog for ONE
+   * `PENDING_APPROVAL` cell. PRESENT ONLY for an ADMIN/MANAGER viewer: when it
+   * is undefined no reject control is rendered at all (structural, not a hidden
+   * or disabled button), so a teacher's DOM has no reject affordance to find.
+   */
+  onRejectCell?: (studentId: string, columnId: string) => void;
+  /**
    * A11Y-101 — cells whose most recent submit attempt failed, keyed
    * `${studentId}:${columnId}`. Rendered as a per-cell aria-invalid +
    * aria-describedby indicator so a partial fan-out failure is retryable
@@ -46,8 +55,42 @@ interface CellProps {
   maxScore: number;
   onSaveScore: Props["onSaveScore"];
   onSubmitCell: Props["onSubmitCell"];
+  onRejectCell?: Props["onRejectCell"];
   submitFailure?: GradesFailure["type"];
   getFailureMessage: Props["getFailureMessage"];
+}
+
+/**
+ * "This cell was rejected — here is why" indicator (US-E18.44). Distinguishes a
+ * DRAFT cell that came BACK from `PENDING_APPROVAL` from a never-submitted one.
+ *
+ * `reason` is staff-entered free text: it is rendered as a plain JSX text node,
+ * which React escapes — there is deliberately no `dangerouslySetInnerHTML`
+ * anywhere on this path. Meaning is carried by icon + text (the badge label and
+ * the reason itself), never by colour alone.
+ */
+function RejectionIndicator({
+  reason,
+  descriptionId,
+}: {
+  reason: string;
+  descriptionId: string;
+}) {
+  const t = useTranslations("gradeEntry");
+  return (
+    <span className="flex max-w-40 flex-col items-center gap-0.5">
+      <StatusBadge tone="error" className="gap-1">
+        <AlertTriangle className="size-3.5" aria-hidden="true" />
+        {t("rejectedBadge")}
+      </StatusBadge>
+      <span
+        id={descriptionId}
+        className="block text-balance text-edu-error-text text-xs"
+      >
+        {t("rejectedReason", { reason })}
+      </span>
+    </span>
+  );
 }
 
 function ScoreCell({
@@ -56,16 +99,20 @@ function ScoreCell({
   maxScore,
   onSaveScore,
   onSubmitCell,
+  onRejectCell,
   submitFailure,
   getFailureMessage,
 }: CellProps) {
   const t = useTranslations("gradeEntry");
   const errorId = useId();
+  const rejectionId = useId();
   const cell = row.scores[col.id];
   const current = cell?.value ?? null;
   const status = cell?.status ?? "DRAFT";
   const [hasError, setHasError] = useState(false);
   const editable = status === "DRAFT";
+  const rejection = cell?.rejection;
+  const canReject = status === "PENDING_APPROVAL" && onRejectCell !== undefined;
 
   if (!editable) {
     return (
@@ -75,6 +122,27 @@ function ScoreCell({
             {current ?? "—"}
           </span>
           <GradeEntryStatusBadge status={status} />
+          {rejection ? (
+            <RejectionIndicator
+              reason={rejection.reason}
+              descriptionId={rejectionId}
+            />
+          ) : null}
+          {canReject ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 text-edu-error-text"
+              aria-label={t("rejectCellLabel", {
+                column: col.label,
+                student: row.studentName,
+              })}
+              onClick={() => onRejectCell?.(row.studentId, col.id)}
+            >
+              {t("rejectCellButton")}
+            </Button>
+          ) : null}
         </div>
       </td>
     );
@@ -107,6 +175,10 @@ function ScoreCell({
   // stale submit-failure indicator — both render the same aria/visual
   // treatment, just from different sources.
   const invalid = hasError || Boolean(submitFailure);
+  const describedBy =
+    [invalid ? errorId : null, rejection ? rejectionId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   const errorMessage = hasError
     ? t("errorOutOfRange", { max: maxScore })
     : submitFailure
@@ -124,7 +196,7 @@ function ScoreCell({
           defaultValue={current ?? ""}
           aria-label={ariaLabel}
           aria-invalid={invalid}
-          aria-describedby={invalid ? errorId : undefined}
+          aria-describedby={describedBy}
           onBlur={(e) => void commit(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -142,6 +214,12 @@ function ScoreCell({
           <span id={errorId} className="block text-xs text-edu-error-text">
             {errorMessage}
           </span>
+        ) : null}
+        {rejection ? (
+          <RejectionIndicator
+            reason={rejection.reason}
+            descriptionId={rejectionId}
+          />
         ) : null}
         {!hasError && current !== null ? (
           <button
@@ -165,6 +243,7 @@ export function GradeEntryTable({
   onSaveScore,
   onSubmitCell,
   onSubmitRow,
+  onRejectCell,
   failedCells,
   getFailureMessage,
 }: Props) {
@@ -236,6 +315,7 @@ export function GradeEntryTable({
                     maxScore={maxScore}
                     onSaveScore={onSaveScore}
                     onSubmitCell={onSubmitCell}
+                    onRejectCell={onRejectCell}
                     submitFailure={failedCells.get(
                       `${row.studentId}:${col.id}`,
                     )}

@@ -82,3 +82,85 @@ describe("MockGradesRepository", () => {
     expect(row?.scores.gk.status).toBe("LOCKED");
   });
 });
+
+describe("MockGradesRepository.rejectEntry — US-E18.44 (mirrors BE US-184)", () => {
+  async function pending(repo: MockGradesRepository) {
+    await repo.submitScore(key, "hs-001", "tx");
+  }
+
+  it("transitions a PENDING_APPROVAL cell back to DRAFT and records the rejection", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+
+    const result = await repo.rejectEntry(
+      key,
+      "hs-001",
+      "tx",
+      "Sai điểm thường xuyên",
+    );
+
+    expect(result.cell.status).toBe("DRAFT");
+    expect(result.cell.rejection?.reason).toBe("Sai điểm thường xuyên");
+    expect(result.cell.rejection?.rejectedBy).toBeTruthy();
+    expect(result.cell.rejection?.rejectedAt).toBeTruthy();
+  });
+
+  it("persists the rejection so a re-read of the sheet shows DRAFT + reason", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+    await repo.rejectEntry(key, "hs-001", "tx", "Nhập lại điểm");
+
+    const sheet = await repo.getGradeSheet(key);
+    const row = sheet.rows.find((r) => r.studentId === "hs-001");
+    expect(row?.scores.tx.status).toBe("DRAFT");
+    expect(row?.scores.tx.rejection?.reason).toBe("Nhập lại điểm");
+    // The score VALUE survives — the teacher edits it, they don't re-key it blind.
+    expect(row?.scores.tx.value).toBe(8);
+  });
+
+  it("does NOT clear the rejection when the teacher resubmits (approver keeps seeing it)", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+    await repo.rejectEntry(key, "hs-001", "tx", "Nhập lại điểm");
+
+    await repo.saveScore(key, "hs-001", "tx", 9);
+    const resubmitted = await repo.submitScore(key, "hs-001", "tx");
+
+    expect(resubmitted.cell.status).toBe("PENDING_APPROVAL");
+    expect(resubmitted.cell.rejection?.reason).toBe("Nhập lại điểm");
+  });
+
+  it("keeps only the LATEST rejection cycle", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+    await repo.rejectEntry(key, "hs-001", "tx", "Lần 1");
+    await repo.submitScore(key, "hs-001", "tx");
+    await repo.rejectEntry(key, "hs-001", "tx", "Lần 2");
+
+    const sheet = await repo.getGradeSheet(key);
+    const row = sheet.rows.find((r) => r.studentId === "hs-001");
+    expect(row?.scores.tx.rejection?.reason).toBe("Lần 2");
+  });
+
+  it("throws not-pending-approval for a cell that is not PENDING_APPROVAL", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await expect(
+      repo.rejectEntry(key, "hs-001", "tx", "Sai điểm"),
+    ).rejects.toEqual({ type: "not-pending-approval" });
+  });
+
+  it("throws rejection-reason-required for a blank reason (BE 422 parity)", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+    await expect(repo.rejectEntry(key, "hs-001", "tx", "   ")).rejects.toEqual({
+      type: "rejection-reason-required",
+    });
+  });
+
+  it("throws not-found for an unknown student", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await expect(
+      repo.rejectEntry(key, "hs-999", "tx", "Sai điểm"),
+    ).rejects.toEqual({ type: "not-found" });
+  });
+});

@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/bootstrap/auth-guard";
 import {
+  makeRejectColumnEntryUseCase,
   makeSaveScoreUseCase,
   makeSubmitColumnScoresUseCase,
 } from "@/bootstrap/di/grades.di";
@@ -61,4 +63,33 @@ export async function submitScoresAction(
 async function runSubmit(key: ClassSubjectTermKey, targets: SubmitTarget[]) {
   const useCase = await makeSubmitColumnScoresUseCase(key);
   return useCase.execute(key, targets);
+}
+
+/**
+ * US-E18.44 (BE US-184) — reject / request revision on ONE `PENDING_APPROVAL`
+ * cell (`PENDING_APPROVAL → DRAFT` + a required reason ≤500 chars).
+ *
+ * A Server Action is a publicly callable endpoint, so the ADMIN/MANAGER gate is
+ * re-checked HERE with the server-derived role claim, BEFORE any DI/HTTP call —
+ * the VM's absent `rejectEntryAction` only removes the UI affordance, it is not
+ * an authorization boundary. `core` enforces its own 403 on top (both BE
+ * ADMIN and MANAGER collapse to the `principal` appRole via ROLE_ENUM_TO_APP;
+ * `admin` covers the platform-admin/mock-mode token).
+ */
+export async function rejectEntryAction(
+  key: ClassSubjectTermKey,
+  studentId: string,
+  columnId: string,
+  reason: string,
+): Promise<ActionResult> {
+  const guard = await requireRole(["principal", "admin"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
+
+  const useCase = await makeRejectColumnEntryUseCase(key);
+  const result = await useCase.execute(key, studentId, columnId, reason);
+  if (isFailure(result)) {
+    return { ok: false, errorKey: result.type };
+  }
+  revalidatePath(GRADES_PATH, "page");
+  return { ok: true };
 }

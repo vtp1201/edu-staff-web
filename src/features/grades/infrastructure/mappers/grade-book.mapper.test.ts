@@ -116,4 +116,39 @@ describe("mapSubjectTermGroup", () => {
     expect(book.rows[0].studentId).toBe("hs-001");
     expect(book.rows[0].average).toBe(8.5);
   });
+
+  /**
+   * US-E18.44 PRIVACY BOUNDARY (runtime half; the compile-time half lives in
+   * `domain/entities/staff-rejection-privacy.test.ts`). BE already strips the 3
+   * rejection fields on student/parent reads — this proves web would ALSO drop
+   * them if a misconfigured/older BE ever leaked them into the self-view
+   * payload. Defense in depth, not a duplicate of the BE guarantee.
+   */
+  it("PRIVACY: drops staff-only rejection fields even if the self-view wire leaks them", () => {
+    const group: SubjectTermGradesResponseDto = {
+      subjectId: "subj-toan-10",
+      termId: "HK1",
+      entries: [
+        {
+          ...entry("ck", "6", "DRAFT"),
+          rejectionReason: "Sai điểm cuối kỳ — nhập lại",
+          rejectedBy: "admin-1",
+          rejectedAt: "2026-08-05T02:00:00Z",
+        },
+      ],
+    };
+    const book = mapSubjectTermGroup(
+      group,
+      scheme,
+      "SELF_PUBLISH",
+      "hs-001",
+      "2025-2026",
+      "",
+      "subj-toan-10",
+    );
+    expect(Object.keys(book.rows[0].scores.ck)).toEqual(["value", "status"]);
+    expect(JSON.stringify(book)).not.toContain("Sai điểm cuối kỳ");
+    expect(JSON.stringify(book)).not.toContain("admin-1");
+    expect(JSON.stringify(book)).not.toContain("reject");
+  });
 });

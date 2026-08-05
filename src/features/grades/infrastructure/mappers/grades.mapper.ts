@@ -4,6 +4,7 @@ import type {
   GradeCell,
   GradeEntryStatus,
   GradeSheet,
+  StaffGradeCell,
   StudentScoreRow,
 } from "../../domain/entities/grade-sheet.entity";
 import { calculateWeightedAverage } from "../../domain/use-cases/calculate-weighted-average.use-case";
@@ -25,9 +26,42 @@ function toStatus(raw: string): GradeEntryStatus {
   }
 }
 
-/** Maps one wire `GradeEntryResponse` to a domain `GradeCell`. */
+/**
+ * Maps one wire `GradeEntryResponse` to a domain `GradeCell`.
+ *
+ * PRIVACY (US-E18.44): deliberately DROPS
+ * `rejectionReason`/`rejectedBy`/`rejectedAt`. This is the mapper the
+ * student-self / parent-linked read path uses (`grade-book.mapper.ts`), so it
+ * must never carry staff-only data even if a BE build leaked it into that
+ * payload. Staff surfaces use {@link mapStaffGradeCell} instead — do NOT
+ * "simplify" the two into one.
+ */
 export function mapGradeCell(dto: GradeEntryResponseDto): GradeCell {
   return { value: Number(dto.value), status: toStatus(dto.status) };
+}
+
+/**
+ * Staff (teacher-entry / admin) variant — adds the rejection payload
+ * (US-E18.44, BE US-184). The `rejection` key is spread CONDITIONALLY so an
+ * un-rejected cell has no such key at all (absent is not an empty string): a
+ * blank/whitespace-only `rejectionReason` counts as "never rejected", and
+ * `rejectedBy`/`rejectedAt` are included only when the wire actually sent them
+ * (never defaulted).
+ */
+export function mapStaffGradeCell(dto: GradeEntryResponseDto): StaffGradeCell {
+  const base = mapGradeCell(dto);
+  const reason = dto.rejectionReason?.trim();
+  if (!reason) {
+    return base;
+  }
+  return {
+    ...base,
+    rejection: {
+      reason,
+      ...(dto.rejectedBy !== undefined ? { rejectedBy: dto.rejectedBy } : {}),
+      ...(dto.rejectedAt !== undefined ? { rejectedAt: dto.rejectedAt } : {}),
+    },
+  };
 }
 
 /**
@@ -41,11 +75,11 @@ export function mapStudentScoreRow(
   dto: StudentGradeRowResponseDto,
   scheme: AssessmentScheme,
 ): StudentScoreRow {
-  const scores: Record<string, GradeCell> = {};
+  const scores: Record<string, StaffGradeCell> = {};
   for (const col of scheme.columns) {
     const entry = dto.entries.find((e) => e.columnId === col.id);
     scores[col.id] = entry
-      ? mapGradeCell(entry)
+      ? mapStaffGradeCell(entry)
       : { value: null, status: "DRAFT" };
   }
   const values: Record<string, number | null> = {};

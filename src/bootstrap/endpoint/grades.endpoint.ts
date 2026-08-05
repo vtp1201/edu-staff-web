@@ -33,6 +33,20 @@ export const GRADES_EP = {
     columnId: string,
   ) =>
     `/core/api/v1/classes/${classId}/subjects/${subjectId}/terms/${termId}/grades/${studentId}/columns/${columnId}/approve`,
+  /**
+   * `POST` reject (request revision on) a PENDING_APPROVAL entry
+   * (ADMIN/MANAGER) — US-E18.44 / BE US-184. Body `{reason}` (required, ≤500
+   * chars); transitions `PENDING_APPROVAL → DRAFT`. Live only where core
+   * migration `047_grade_entries_rejection` has run.
+   */
+  rejectEntry: (
+    classId: string,
+    subjectId: string,
+    termId: string,
+    studentId: string,
+    columnId: string,
+  ) =>
+    `/core/api/v1/classes/${classId}/subjects/${subjectId}/terms/${termId}/grades/${studentId}/columns/${columnId}/reject`,
   /** `POST` bulk-lock every PUBLISHED entry for a class+subject+term (ADMIN/MANAGER). Irreversible. */
   lockTerm: (classId: string, subjectId: string, termId: string) =>
     `/core/api/v1/classes/${classId}/subjects/${subjectId}/terms/${termId}/lock`,

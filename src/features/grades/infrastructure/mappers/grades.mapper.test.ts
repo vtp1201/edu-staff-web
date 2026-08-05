@@ -8,6 +8,7 @@ import type {
 import {
   mapGradeCell,
   mapGradeSheet,
+  mapStaffGradeCell,
   mapStudentScoreRow,
 } from "./grades.mapper";
 
@@ -56,7 +57,76 @@ describe("mapGradeCell", () => {
   });
 });
 
+describe("mapStaffGradeCell — US-E18.44 staff-only rejection payload", () => {
+  const rejected: GradeEntryResponseDto = {
+    ...entry("ck", "6", "DRAFT"),
+    rejectionReason: "Sai điểm cuối kỳ",
+    rejectedBy: "admin-1",
+    rejectedAt: "2026-08-05T02:00:00Z",
+  };
+
+  it("groups the 3 wire fields into a single `rejection` object", () => {
+    expect(mapStaffGradeCell(rejected)).toEqual({
+      value: 6,
+      status: "DRAFT",
+      rejection: {
+        reason: "Sai điểm cuối kỳ",
+        rejectedBy: "admin-1",
+        rejectedAt: "2026-08-05T02:00:00Z",
+      },
+    });
+  });
+
+  it("OMITS the rejection key entirely when the wire carries no reason (absent ≠ empty)", () => {
+    const cell = mapStaffGradeCell(entry("ck", "6"));
+    expect(Object.keys(cell)).toEqual(["value", "status"]);
+    expect("rejection" in cell).toBe(false);
+  });
+
+  it("treats a blank/whitespace-only reason as absent, never as an empty rejection", () => {
+    const cell = mapStaffGradeCell({ ...rejected, rejectionReason: "   " });
+    expect("rejection" in cell).toBe(false);
+  });
+
+  it("keeps rejectedBy/rejectedAt absent (not defaulted) when the wire omits them", () => {
+    const cell = mapStaffGradeCell({
+      ...entry("ck", "6"),
+      rejectionReason: "Sai điểm",
+    });
+    expect(cell.rejection).toEqual({ reason: "Sai điểm" });
+    expect(Object.keys(cell.rejection ?? {})).toEqual(["reason"]);
+  });
+
+  it("PRIVACY: mapGradeCell (student/parent read path) drops the fields even when present on the wire", () => {
+    const cell = mapGradeCell(rejected);
+    expect(Object.keys(cell)).toEqual(["value", "status"]);
+    expect(JSON.stringify(cell)).not.toContain("Sai điểm");
+    expect(JSON.stringify(cell)).not.toContain("admin-1");
+  });
+});
+
 describe("mapStudentScoreRow", () => {
+  it("carries the staff-only rejection payload onto the entry-path row", () => {
+    const row = mapStudentScoreRow(
+      {
+        ...rowDto,
+        entries: [
+          entry("tx", "8"),
+          entry("gk", "7"),
+          {
+            ...entry("ck", "6"),
+            rejectionReason: "Sai điểm cuối kỳ",
+            rejectedBy: "admin-1",
+            rejectedAt: "2026-08-05T02:00:00Z",
+          },
+        ],
+      },
+      scheme,
+    );
+    expect(row.scores.ck.rejection?.reason).toBe("Sai điểm cuối kỳ");
+    expect("rejection" in row.scores.tx).toBe(false);
+  });
+
   it("maps a row's identity and per-cell scores correctly", () => {
     const row = mapStudentScoreRow(rowDto, scheme);
     expect(row.studentId).toBe("s1");

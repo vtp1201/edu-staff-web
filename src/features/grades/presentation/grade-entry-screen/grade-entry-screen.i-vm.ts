@@ -47,6 +47,21 @@ export interface GradeEntryScreenVM {
    * the DI-wired Server Action does the fan-out (US-E18.12, ADR 0054 §2.2).
    */
   submitScoresAction: (targets: SubmitTarget[]) => Promise<SubmitActionResult>;
+  /**
+   * NEW (US-E18.44, BE US-184) — reject/request-revision on ONE
+   * `PENDING_APPROVAL` cell (`PENDING_APPROVAL → DRAFT` + a required reason).
+   *
+   * PRESENT ONLY for an ADMIN/MANAGER viewer. Absence — not a boolean flag — is
+   * how the screen knows the viewer cannot reject, so the RSC page/DI layer is
+   * the single source of truth about authorization (same idiom as
+   * `GradeBookScreenVM.lockTermAction`, belt-and-suspenders with `core`'s own
+   * 403). A teacher's VM simply has no reject capability to render.
+   */
+  rejectEntryAction?: (
+    studentId: string,
+    columnId: string,
+    reason: string,
+  ) => Promise<ActionResult>;
 }
 
 export type { SubmitScoresResult, SubmitTarget };

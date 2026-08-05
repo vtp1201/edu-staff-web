@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { ReasonConfirmDialog } from "@/components/shared/reason-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,6 +16,7 @@ import {
 import type { GradeSheet } from "../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 import { calculateWeightedAverage } from "../../domain/use-cases/calculate-weighted-average.use-case";
+import { MAX_REJECTION_REASON_LENGTH } from "../../domain/use-cases/reject-column-entry.use-case";
 import type { SubmitTarget } from "../../domain/use-cases/submit-column-scores.use-case";
 import type {
   ActionResult,
@@ -28,11 +30,14 @@ type ErrorMsgKey =
   | "errorForbidden"
   | "errorTeacherNotAssigned"
   | "errorNotDraft"
+  | "errorNotPendingApproval"
   | "errorLocked"
   | "errorScaleNotConfigured"
   | "errorSchemeNotConfigured"
   | "errorColumnNotInScheme"
   | "errorStudentNotEnrolled"
+  | "errorRejectionReasonRequired"
+  | "errorRejectionReasonTooLong"
   | "errorNetworkError"
   | "errorUnknown";
 
@@ -49,9 +54,10 @@ const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "student-not-enrolled": "errorStudentNotEnrolled",
   "network-error": "errorNetworkError",
   unknown: "errorUnknown",
-  // US-E14.4 approval-pipeline failures are not reachable in grade-entry,
-  // but the shared GradesFailure union now includes them.
-  "not-pending-approval": "errorUnknown",
+  // US-E18.44 — per-cell reject (ADMIN/MANAGER) failures.
+  "not-pending-approval": "errorNotPendingApproval",
+  "rejection-reason-required": "errorRejectionReasonRequired",
+  "rejection-reason-too-long": "errorRejectionReasonTooLong",
   "not-published": "errorUnknown",
   "invalid-revision-note": "errorUnknown",
   "batch-locked": "errorUnknown",
@@ -92,6 +98,17 @@ export function GradeEntryScreen({
     return `${studentId}:${columnId}`;
   }
 
+  // US-E18.44 — the cell whose reject dialog is open (null = dialog closed).
+  // Carries the display labels so the dialog can name the target unambiguously
+  // without re-deriving them from the sheet.
+  const [rejectTarget, setRejectTarget] = useState<{
+    studentId: string;
+    columnId: string;
+  } | null>(null);
+  const [rejectError, setRejectError] = useState<GradesFailure["type"] | null>(
+    null,
+  );
+
   // Local working copy of the sheet so optimistic edits render immediately.
   const [sheet, setSheet] = useState<GradeSheet | null>(vm.sheet);
   // Keep local copy in sync when RSC delivers a new sheet (selection changed).
@@ -131,7 +148,13 @@ export function GradeEntryScreen({
             if (r.studentId !== vars.studentId) return r;
             const nextScores = {
               ...r.scores,
-              [vars.columnId]: { value: vars.value, status: "DRAFT" as const },
+              [vars.columnId]: {
+                // Keep any rejection payload — BE does not clear it on edit,
+                // so the "why this came back" indicator must not blink away.
+                ...r.scores[vars.columnId],
+                value: vars.value,
+                status: "DRAFT" as const,
+              },
             };
             const values: Record<string, number | null> = {};
             for (const [colId, c] of Object.entries(nextScores))
@@ -163,6 +186,11 @@ export function GradeEntryScreen({
   function errorMessage(key: GradesFailure["type"]): string {
     if (key === "invalid-value") {
       return t("errorOutOfRange", { max: maxScore });
+    }
+    if (key === "rejection-reason-too-long") {
+      return t("errorRejectionReasonTooLong", {
+        max: MAX_REJECTION_REASON_LENGTH,
+      });
     }
     return t(ERROR_KEY_MAP[key]);
   }
@@ -212,6 +240,48 @@ export function GradeEntryScreen({
       startTransition(() => onSelectionChange?.({}));
     },
   });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (vars: {
+      studentId: string;
+      columnId: string;
+      reason: string;
+    }): Promise<ActionResult> => {
+      // Unreachable unless the viewer has the capability — the dialog can only
+      // open from a control that is not rendered without `rejectEntryAction`.
+      if (!vm.rejectEntryAction) {
+        return { ok: false, errorKey: "forbidden" };
+      }
+      return vm.rejectEntryAction(vars.studentId, vars.columnId, vars.reason);
+    },
+    onSuccess: (result) => {
+      if (!result.ok) {
+        // Keep the dialog open with the reason intact so the approver can retry.
+        setRejectError(result.errorKey);
+        return;
+      }
+      setRejectError(null);
+      setRejectTarget(null);
+      setBanner(t("rejectSuccess"));
+      // Server-authoritative: re-read the sheet rather than guessing the new
+      // cell state (same rule as submit).
+      queryClient.invalidateQueries({ queryKey: ["grades"] });
+      startTransition(() => onSelectionChange?.({}));
+    },
+    onError: () => {
+      setRejectError("network-error");
+    },
+  });
+
+  function handleRejectCell(studentId: string, columnId: string) {
+    setRejectError(null);
+    setRejectTarget({ studentId, columnId });
+  }
+
+  function handleRejectConfirm(reason: string) {
+    if (!rejectTarget) return;
+    rejectMutation.mutate({ ...rejectTarget, reason });
+  }
 
   async function handleSaveScore(
     studentId: string,
@@ -372,8 +442,39 @@ export function GradeEntryScreen({
           onSaveScore={handleSaveScore}
           onSubmitCell={handleSubmitCell}
           onSubmitRow={handleSubmitRow}
+          onRejectCell={vm.rejectEntryAction ? handleRejectCell : undefined}
         />
       )}
+      {vm.rejectEntryAction ? (
+        <ReasonConfirmDialog
+          open={rejectTarget !== null}
+          title={t("rejectDialogTitle")}
+          description={t("rejectDialogDescription")}
+          reasonLabel={t("rejectReasonLabel")}
+          reasonPlaceholder={t("rejectReasonPlaceholder")}
+          confirmLabel={t("rejectConfirm")}
+          maxLength={MAX_REJECTION_REASON_LENGTH}
+          requiredMessage={t("errorRejectionReasonRequired")}
+          tooLongMessage={t("errorRejectionReasonTooLong", {
+            max: MAX_REJECTION_REASON_LENGTH,
+          })}
+          formatCounter={(count) =>
+            t("rejectReasonCounter", {
+              count,
+              max: MAX_REJECTION_REASON_LENGTH,
+            })
+          }
+          isPending={rejectMutation.isPending}
+          errorMessage={rejectError ? errorMessage(rejectError) : null}
+          onConfirm={handleRejectConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              setRejectTarget(null);
+              setRejectError(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

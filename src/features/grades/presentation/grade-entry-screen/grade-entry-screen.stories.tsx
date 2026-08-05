@@ -430,3 +430,209 @@ export const SubmitButtonsEnabledWithDraft: Story = {
     }
   },
 };
+
+// ─── US-E18.44 (BE US-184) — ADMIN/MANAGER per-cell reject / request-revision ──
+
+const REJECT_LABEL = (column: string, student: string) =>
+  messages.gradeEntry.rejectCellLabel
+    .replace("{column}", column)
+    .replace("{student}", student);
+
+/** One PENDING_APPROVAL row so the reject affordance has an exact target. */
+const PENDING_ROWS: StudentScoreRow[] = [
+  {
+    studentId: "hs-001",
+    studentName: "Nguyễn Văn An",
+    studentCode: "HS001",
+    scores: {
+      tx: { value: 8, status: "PENDING_APPROVAL" },
+      gk: { value: 7.5, status: "PENDING_APPROVAL" },
+      ck: { value: 9, status: "PENDING_APPROVAL" },
+    },
+    average: 8.2,
+  },
+];
+
+const approverVM: GradeEntryScreenVM = {
+  ...baseVM,
+  sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL"),
+  rejectEntryAction: async () => ({ ok: true }),
+};
+
+/**
+ * A TEACHER viewer's VM has no `rejectEntryAction`, so there is NO reject
+ * control in the DOM at all — the affordance is absent, not disabled.
+ */
+export const TeacherHasNoRejectAffordance: Story = {
+  name: "Reject — teacher viewer has no reject control (capability absent)",
+  args: {
+    vm: { ...baseVM, sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL") },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: REJECT_LABEL("Thường xuyên", "Nguyễn Văn An"),
+      }),
+    ).toBeNull();
+    await expect(
+      canvas.queryAllByText(messages.gradeEntry.rejectCellButton).length,
+    ).toBe(0);
+  },
+};
+
+/** ADMIN/MANAGER viewer → a reject control per PENDING_APPROVAL cell. */
+export const ApproverSeesRejectControls: Story = {
+  name: "Reject — approver sees one reject control per pending cell",
+  args: { vm: approverVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const buttons = canvas.getAllByRole("button", {
+      name: new RegExp(messages.gradeEntry.rejectCellButton, "i"),
+    });
+    await expect(buttons.length).toBe(3);
+    for (const btn of buttons) {
+      await expect(btn).toBeEnabled();
+    }
+  },
+};
+
+/** Full happy path: open the dialog, blank reason blocked, type, confirm, banner. */
+export const RejectWithReasonSucceeds: Story = {
+  name: "Reject — required reason, confirm, success banner",
+  args: { vm: approverVM },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+
+    const dialog = await body.findByRole("dialog");
+    await expect(dialog).toBeInTheDocument();
+
+    // Blank reason cannot be submitted (defense in depth alongside BE 422).
+    const confirm = body.getByRole("button", {
+      name: messages.gradeEntry.rejectConfirm,
+    });
+    await expect(confirm).toBeDisabled();
+
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Điểm cuối kỳ lệch với bài thi",
+    );
+    await expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectSuccess),
+    ).toBeInTheDocument();
+  },
+};
+
+/** 409 from the server keeps the dialog open with an inline, non-generic error. */
+export const RejectNotPendingApprovalError: Story = {
+  name: "Reject — 409 not-pending-approval surfaces inline, dialog stays open",
+  args: {
+    vm: {
+      ...approverVM,
+      rejectEntryAction: async () => ({
+        ok: false,
+        errorKey: "not-pending-approval",
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: REJECT_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(
+      body.getByLabelText(messages.gradeEntry.rejectReasonLabel),
+      "Sai điểm",
+    );
+    await userEvent.click(
+      body.getByRole("button", { name: messages.gradeEntry.rejectConfirm }),
+    );
+
+    const alert = await body.findByRole("alert");
+    await expect(alert).toHaveTextContent(
+      messages.gradeEntry.errorNotPendingApproval,
+    );
+    await expect(body.getByRole("dialog")).toBeInTheDocument();
+  },
+};
+
+/**
+ * A DRAFT cell carrying a rejection renders the "rejected + why" indicator, so
+ * it reads differently from a never-submitted DRAFT. The reason is rendered as
+ * a TEXT NODE — the HTML-looking payload below must appear literally, proving
+ * no markup is interpreted (no `dangerouslySetInnerHTML` on this path).
+ */
+const XSS_REASON = '<img src=x onerror="alert(1)">Sai điểm';
+
+export const RejectedDraftIndicatorEscapesReason: Story = {
+  name: "Reject — rejected DRAFT cell shows reason, escaped as text",
+  args: {
+    vm: {
+      ...baseVM,
+      sheet: sheet(
+        [
+          {
+            ...POPULATED[0],
+            scores: {
+              tx: { value: 8, status: "DRAFT" },
+              gk: { value: 7.5, status: "DRAFT" },
+              ck: {
+                value: 6,
+                status: "DRAFT",
+                rejection: {
+                  reason: XSS_REASON,
+                  rejectedBy: "admin-1",
+                  rejectedAt: "2026-08-05T02:00:00Z",
+                },
+              },
+            },
+          },
+        ],
+        "ADMIN_APPROVAL",
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.gradeEntry.rejectedBadge),
+    ).toBeInTheDocument();
+
+    const reasonText = messages.gradeEntry.rejectedReason.replace(
+      "{reason}",
+      XSS_REASON,
+    );
+    const reasonEl = canvas.getByText(reasonText);
+    await expect(reasonEl).toBeInTheDocument();
+    // Escaped, not parsed: no injected element exists anywhere.
+    await expect(canvasElement.querySelector("img")).toBeNull();
+    await expect(reasonEl.innerHTML).not.toContain("<img");
+
+    // The rejection reason is also announced with the editable cell.
+    const input = canvas.getByRole("spinbutton", {
+      name: messages.gradeEntry.cellLabel
+        .replace("{column}", "Cuối kỳ")
+        .replace("{student}", "Nguyễn Văn An"),
+    });
+    const describedBy = input.getAttribute("aria-describedby");
+    if (!describedBy) throw new Error("expected aria-describedby");
+    await expect(
+      canvasElement.querySelector(`#${describedBy}`)?.textContent,
+    ).toContain("Sai điểm");
+  },
+};
