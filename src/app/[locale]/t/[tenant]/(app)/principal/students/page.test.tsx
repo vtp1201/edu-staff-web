@@ -123,18 +123,41 @@ describe("PrincipalStudentsPage", () => {
   });
 
   /**
-   * MANAGER-principal 403 (US-E18.35 review). Core's
-   * `ListStudentsInClassUseCase.authorize()` allows only `isAdmin`
-   * (SUPER_ADMIN/ADMIN) or a TEACHER assigned to the class — the US-164 MANAGER
-   * grant is scoped to `list_classes.go` alone. Web's `principal` appRole maps
-   * from BOTH ADMIN and MANAGER, so this 403 is reachable in production, on a
-   * role whose class list read SUCCEEDS.
+   * A MANAGER-principal now reads the roster (US-E18.39). Core's
+   * `ListStudentsInClassUseCase.authorize()` grants
+   * `isAdmin(...) || hasRole(..., roleManager)` since BE US-175 (edu-api
+   * `011b82b2`, closing ask #46), matching `list_classes.go`'s US-164 grant. Web's
+   * `principal` appRole collapses BOTH ADMIN and MANAGER, so the whole
+   * class-list-OK-but-roster-403 shape that used to be pinned here for MANAGER is
+   * gone: this role reads through, with the class picker intact.
    *
-   * The screen must therefore say "you may not read this" (non-retryable, no
-   * retry control — proven on `PrincipalRosterScreen`'s `ForbiddenError` story),
-   * never render a roster that merely looks empty.
+   * The picker assertion is the regression guard — the old failure rendered
+   * `errorVm()`, i.e. `classes: []` + `currentClass: null`.
    */
-  it("degrades honestly when a MANAGER-principal is 403'd on the roster read (class list still OK)", async () => {
+  it("reads the roster with the class picker intact for a principal actor (BE US-175 MANAGER grant)", async () => {
+    getClasses.mockResolvedValue({ ok: true, data: classes });
+    getClassRoster.mockResolvedValue({ ok: true, data: roster });
+
+    const vm = await renderPageVm();
+
+    expect(vm.fetchError).toBeNull();
+    expect(vm.classes.map((c) => c.id)).toEqual(["cls-10a1", "cls-10a2"]);
+    expect(vm.currentClass?.id).toBe("cls-10a1");
+    expect(vm.roster).toHaveLength(2);
+  });
+
+  /**
+   * A roster-read 403 is still a legitimate, role-agnostic state to cover — the
+   * page has no role-specific branch, and callers without the grant (e.g. a
+   * TEACHER holding no assignment to the class, per the same `authorize()`) still
+   * get `ROSTER_ACCESS_FORBIDDEN`. What is NO LONGER true is that a
+   * MANAGER-principal triggers it (see the test above).
+   *
+   * When it does happen the screen must say "you may not read this"
+   * (non-retryable, no retry control — proven on `PrincipalRosterScreen`'s
+   * `ForbiddenError` story), never render a roster that merely looks empty.
+   */
+  it("degrades honestly when the roster read is 403'd (class list still OK)", async () => {
     getClasses.mockResolvedValue({ ok: true, data: classes });
     getClassRoster.mockResolvedValue({
       ok: false,
