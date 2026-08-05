@@ -186,7 +186,13 @@ export interface SealedStudentOption {
   classId: string;
   term: Term;
   year: string;
-  sealedAt: string; // ISO — for the "Sealed <date>" hint in the picker
+  /**
+   * ISO — for the "Sealed <date>" hint in the picker. NULLABLE since US-E18.43:
+   * the real `SealedStudentResponse` (BE US-183) declares `sealedAt` nullable, so
+   * the hint is hidden instead of rendering an Invalid Date. The row stays
+   * selectable — a sealed student must never vanish from the unseal picker.
+   */
+  sealedAt: string | null;
 }
 
 export interface InitiateUnsealInput {

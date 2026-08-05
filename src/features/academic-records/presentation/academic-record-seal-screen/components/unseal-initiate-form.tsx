@@ -113,7 +113,10 @@ export function UnsealInitiateForm({
                 ))}
               </SelectContent>
             </Select>
-            {student && (
+            {/* `sealedAt` is nullable on the real wire (US-E18.43): hide the
+                hint rather than render an Invalid Date — the row stays
+                selectable either way. */}
+            {student?.sealedAt && (
               <p className="text-muted-foreground text-xs tabular-nums">
                 {t("sealedHint", {
                   date: format.dateTime(new Date(student.sealedAt), {

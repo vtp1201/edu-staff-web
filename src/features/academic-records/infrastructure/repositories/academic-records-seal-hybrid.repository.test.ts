@@ -1,9 +1,10 @@
 /**
- * Unit test — HybridAcademicRecordsSealRepository (US-E18.13 + US-E18.24).
- * The facade routes the FIVE genuinely-real operations (`sealBatch`,
+ * Unit test — HybridAcademicRecordsSealRepository (US-E18.13 + US-E18.24 +
+ * US-E18.43). The facade routes the SIX genuinely-real operations (`sealBatch`,
  * `getSealStatus`, `getPendingUnsealRequests`, `initiateUnseal`,
- * `confirmUnseal`) to the REAL repo and the FOUR no-BE-endpoint operations to
- * the MOCK repo, which stays the source of truth for their state.
+ * `confirmUnseal`, and — since BE US-183 — `listSealedStudents`) to the REAL
+ * repo and the THREE no-BE-endpoint operations to the MOCK repo, which stays the
+ * source of truth for their state.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -58,7 +59,7 @@ function spyRepo(label: "real" | "mock"): IAcademicRecordsSealRepository & {
 }
 
 describe("HybridAcademicRecordsSealRepository", () => {
-  it("routes the FIVE real operations to the REAL repo only (US-E18.24)", async () => {
+  it("routes the SIX real operations to the REAL repo only (US-E18.24 + US-E18.43)", async () => {
     const real = spyRepo("real");
     const mock = spyRepo("mock");
     const hybrid = new HybridAcademicRecordsSealRepository(real, mock);
@@ -75,6 +76,7 @@ describe("HybridAcademicRecordsSealRepository", () => {
       initiatorId: "admin-1",
     });
     await hybrid.confirmUnseal("ur-1", "admin-2", "12C1", "HK1");
+    await hybrid.listSealedStudents(KEY);
 
     expect(real.__calls).toEqual([
       "real.sealBatch",
@@ -82,27 +84,42 @@ describe("HybridAcademicRecordsSealRepository", () => {
       "real.getPendingUnsealRequests",
       "real.initiateUnseal",
       "real.confirmUnseal",
+      "real.listSealedStudents",
     ]);
     expect(mock.__calls).toEqual([]);
   });
 
-  it("routes the FOUR no-BE-endpoint operations to the MOCK repo only", async () => {
+  it("routes the THREE no-BE-endpoint operations to the MOCK repo only", async () => {
     const real = spyRepo("real");
     const mock = spyRepo("mock");
     const hybrid = new HybridAcademicRecordsSealRepository(real, mock);
 
     await hybrid.listAvailableClasses({ term: "HK1", year: "2025-2026" });
     await hybrid.getSealAuditTrail();
-    await hybrid.listSealedStudents();
     await hybrid.listTenantAdmins();
 
     expect(real.__calls).toEqual([]);
     expect(mock.__calls).toEqual([
       "mock.listAvailableClasses",
       "mock.getSealAuditTrail",
-      "mock.listSealedStudents",
       "mock.listTenantAdmins",
     ]);
+  });
+
+  it("forwards the sealed-students key filter verbatim to the real repo (US-E18.43)", async () => {
+    const received: unknown[] = [];
+    const real = spyRepo("real");
+    real.listSealedStudents = async (filter) => {
+      received.push(filter);
+      return ok([]);
+    };
+    const hybrid = new HybridAcademicRecordsSealRepository(
+      real,
+      spyRepo("mock"),
+    );
+
+    await hybrid.listSealedStudents(KEY);
+    expect(received).toEqual([KEY]);
   });
 
   it("forwards the class/term scoping args verbatim on the real path", async () => {
