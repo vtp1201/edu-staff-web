@@ -1,21 +1,18 @@
 /**
- * Unit tests — `makeGetMemberTimetableForPrincipalUseCase()` (US-E15.3 fix round).
+ * Unit tests — `makeGetMemberTimetableForPrincipalUseCase()` (US-E18.38).
  *
- * `core`'s `GetMemberTimetableUseCase.authorize()` grants SUPER_ADMIN/ADMIN, the
- * target member itself, and a verified linked PARENT — `MANAGER` (the principal
- * `appRole`) is in NO branch, so the principal's by-member read is a hard 403.
- * The principal factory is therefore force-mocked. (It used to share that
- * posture with `makePrincipalClassesRepository()`; that one went REAL in
- * US-E18.30 once BE US-164 added `MANAGER` to `ListClassesUseCase` — no
- * equivalent branch was added to `get_member_timetable.go`'s `authorize()`,
- * re-verified US-E18.30.) These tests lock that in — mock
- * with `NEXT_PUBLIC_USE_MOCK` unset, `"false"` and `"true"` alike — so a future
- * "fix" that reintroduces a `USE_MOCK` branch fails here instead of silently
- * rendering a permanent empty state for every teacher in production.
+ * This factory used to be force-mocked unconditionally: `core`'s
+ * `get_member_timetable.go` `authorize()` had no `MANAGER` branch, so a
+ * principal's by-member read was a hard 403 that the repository mapped to
+ * `not-found` → a silent permanent empty state. BE **US-175** added
+ * `hasRole(ActorRoles, roleManager)` to that `authorize()` (admin-tier READ
+ * only, `shared.go`'s `roleManager`), closing cross-repo ask #43. The factory is
+ * therefore now an ordinary `USE_MOCK ? Mock : Real` gate like every sibling.
  *
- * The sibling factories (student self / teacher self / parent child) ARE
- * authorized by that same Go function, so they must stay real-capable; the last
- * test guards against an over-eager force-mock spreading across the file.
+ * These tests lock the gate in BOTH directions — mock under `USE_MOCK=true`,
+ * real (hybrid) under unset/`"false"` — and assert PARITY with an authorized
+ * sibling (`makeGetChildTimetableUseCase`), so the principal path can never
+ * silently drift back onto mock data in production.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,51 +49,56 @@ async function importDiWithEnv(value: string | undefined) {
   return import("./timetable-view.di");
 }
 
-describe("makeGetMemberTimetableForPrincipalUseCase", () => {
-  for (const value of [undefined, "false", "true"] as const) {
-    it(`is mock-backed when NEXT_PUBLIC_USE_MOCK=${String(value)}`, async () => {
-      const di = await importDiWithEnv(value);
-      const useCase = await di.makeGetMemberTimetableForPrincipalUseCase();
-      expect(repoOf(useCase).constructor.name).toBe(
-        "MockWeeklyTimetableRepository",
-      );
-    });
-  }
+/** Stubs the server-only edges `makeRepo()` touches on its real branch. */
+function stubRealEdges() {
+  const createServerHttpClient = vi.fn(async () => ({}));
+  vi.doMock("@/bootstrap/lib/http.server", () => ({ createServerHttpClient }));
+  vi.doMock("@/bootstrap/lib/auth-token.server", () => ({
+    getAccessToken: async () => null,
+  }));
+  vi.doMock("@/bootstrap/di/auth.di", () => ({
+    ensureFreshSession: async () => undefined,
+  }));
+  return { createServerHttpClient };
+}
 
-  it("never creates a server http client (no real 403-bound call is attempted)", async () => {
-    const createServerHttpClient = vi.fn();
-    vi.doMock("@/bootstrap/lib/http.server", () => ({
-      createServerHttpClient,
-    }));
-    const di = await importDiWithEnv("false");
-    await di.makeGetMemberTimetableForPrincipalUseCase();
+describe("makeGetMemberTimetableForPrincipalUseCase", () => {
+  it("is mock-backed when NEXT_PUBLIC_USE_MOCK=true", async () => {
+    const { createServerHttpClient } = stubRealEdges();
+    const di = await importDiWithEnv("true");
+    const useCase = await di.makeGetMemberTimetableForPrincipalUseCase();
+    expect(repoOf(useCase).constructor.name).toBe(
+      "MockWeeklyTimetableRepository",
+    );
     expect(createServerHttpClient).not.toHaveBeenCalled();
   });
 
-  it("serves a real week (never a failure) regardless of env", async () => {
+  for (const value of [undefined, "false"] as const) {
+    it(`is real (hybrid) when NEXT_PUBLIC_USE_MOCK=${String(value)} — BE US-175 grants MANAGER`, async () => {
+      const { createServerHttpClient } = stubRealEdges();
+      const di = await importDiWithEnv(value);
+      const useCase = await di.makeGetMemberTimetableForPrincipalUseCase();
+      expect(repoOf(useCase).constructor.name).toBe(
+        "HybridWeeklyTimetableRepository",
+      );
+      expect(createServerHttpClient).toHaveBeenCalled();
+    });
+  }
+
+  it("resolves the SAME repository as an authorized sibling factory (no bespoke gate left)", async () => {
+    stubRealEdges();
     const di = await importDiWithEnv("false");
+    const principal = await di.makeGetMemberTimetableForPrincipalUseCase();
+    const child = await di.makeGetChildTimetableUseCase();
+    expect(repoOf(principal).constructor.name).toBe(
+      repoOf(child).constructor.name,
+    );
+  });
+
+  it("still serves a mock week end-to-end under USE_MOCK=true (zero regression)", async () => {
+    const di = await importDiWithEnv("true");
     const useCase = await di.makeGetMemberTimetableForPrincipalUseCase();
     const res = await useCase.execute("t-001");
     expect(res.ok).toBe(true);
-  });
-
-  it("leaves the authorized sibling paths real-capable", async () => {
-    const createServerHttpClient = vi.fn(async () => ({}));
-    vi.doMock("@/bootstrap/lib/http.server", () => ({
-      createServerHttpClient,
-    }));
-    vi.doMock("@/bootstrap/lib/auth-token.server", () => ({
-      getAccessToken: async () => null,
-    }));
-    vi.doMock("@/bootstrap/di/auth.di", () => ({
-      ensureFreshSession: async () => undefined,
-    }));
-
-    const di = await importDiWithEnv("false");
-    const childUseCase = await di.makeGetChildTimetableUseCase();
-    expect(repoOf(childUseCase).constructor.name).toBe(
-      "HybridWeeklyTimetableRepository",
-    );
-    expect(createServerHttpClient).toHaveBeenCalled();
   });
 });

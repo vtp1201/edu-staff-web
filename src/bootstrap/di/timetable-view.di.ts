@@ -81,39 +81,15 @@ export async function makeGetChildTimetableUseCase() {
  * Member-scoped read for the PRINCIPAL screen (US-E15.3,
  * `(app)/principal/schedule`).
  *
- * ⚠️ INTENTIONALLY NOT GATED BY `USE_MOCK` — do NOT "fix" this to branch on
- * `NEXT_PUBLIC_USE_MOCK` like `makeRepo()` above. It is permanently forced onto
- * `MockWeeklyTimetableRepository`, because a REAL call cannot succeed for a
- * principal:
- *
- * - Go ground truth:
- *   `../edu-api/services/core/internal/timetable/core/application/usecase/get_member_timetable.go:119-139`
- *   → `(*GetMemberTimetableUseCase).authorize()` returns `nil` for
- *   `isAdmin(ActorIsSuperAdmin, ActorRoles)` (SUPER_ADMIN/ADMIN), for the target
- *   member itself (`ActorMemberID == memberID`), and for a `PARENT` with a
- *   verified link — otherwise `domainerror.ErrTimetableForbidden()`. `MANAGER`
- *   (the principal `appRole`) matches NO branch; `.../usecase/shared.go:14-24`
- *   confirms the role constant set is `ADMIN`/`TEACHER`/`STUDENT`/`PARENT` with
- *   no `MANAGER` at all. So `GET /members/{id}/timetable` is a hard
- *   `403 TIMETABLE_FORBIDDEN` for every principal user.
- * - Worse than a visible error: `RealWeeklyTimetableRepository` deliberately
- *   maps `TIMETABLE_FORBIDDEN → not-found` (existence-opacity for the parent
- *   path) and `toDataState()` collapses `not-found → empty`, so a real call
- *   would render a silent, permanent "no schedule published" empty state for
- *   EVERY teacher — cosmetically fine, functionally dead.
- * - Same CLASS of gap as cross-repo ask #39 (`MANAGER` missing from `core`'s
- *   class-list RBAC, US-E13.8) — but note that ask is now RESOLVED for the
- *   class list only: BE US-164 added a `roleManager` branch to
- *   `ListClassesUseCase`, so `bootstrap/di/principal-classes.di.ts` went real
- *   in US-E18.30. `get_member_timetable.go`'s `authorize()` got NO such
- *   branch (re-checked US-E18.30), so THIS factory stays force-mocked. Flip it
- *   to the `USE_MOCK ? Mock : Real` shape only once `core` grants MANAGER on
- *   this endpoint too.
- *
- * The sibling factories above are deliberately untouched: student self-view,
- * teacher self-view and the parent child-view are ALL authorized by that same
- * `authorize()`, so their real paths still work.
+ * Was force-mocked (US-E15.3 fix round, cross-repo ask #43): `MANAGER` — the
+ * principal `appRole` — matched no branch of `get_member_timetable.go`'s
+ * `authorize()`, and the 403 degraded INVISIBLY (`TIMETABLE_FORBIDDEN →
+ * not-found → empty`). BE **US-175** added `hasRole(ActorRoles, roleManager)`
+ * to that `authorize()` (admin-tier READ only — `roleManager` is deliberately
+ * kept out of `isAdmin`, which also gates timetable writes), so this factory
+ * now takes the ordinary `USE_MOCK ? Mock : Real` gate via `makeRepo()`, exactly
+ * like its siblings above (US-E18.38).
  */
 export async function makeGetMemberTimetableForPrincipalUseCase() {
-  return new GetMemberTimetableUseCase(new MockWeeklyTimetableRepository());
+  return new GetMemberTimetableUseCase(await makeRepo());
 }

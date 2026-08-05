@@ -62,10 +62,10 @@ describe("MockWeeklyTimetableRepository", () => {
   });
 
   /*
-   * US-E15.3 fix round: the principal screen is force-mocked (core's
-   * `GetMemberTimetableUseCase.authorize()` has no MANAGER branch), so the
-   * teacher picker is only meaningful if each roster teacher resolves to a
-   * VISIBLY different week. The roster ids come from
+   * US-E15.3 fix round: in mock/demo mode the principal screen's teacher picker
+   * is only meaningful if each roster teacher resolves to a VISIBLY different
+   * week (the real path is live since US-E18.38 / BE US-175; this fixture set
+   * still backs mock mode). The roster ids come from
    * `MockPrincipalTeachersRepository` (`t-001` / `t-002` / `t-003`).
    */
   it("getByMember resolves each principal-roster teacher to their OWN week", async () => {
