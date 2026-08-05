@@ -8,7 +8,7 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, unwrapResponse } from "@/bootstrap/lib/api-envelope";
-import { RosterRepository } from "./roster.repository";
+import { RosterRepository, type SearchPoolSources } from "./roster.repository";
 
 function apiError(code: string, status: number) {
   return new ApiError({ code, message: code, retryable: false, status });
@@ -157,17 +157,226 @@ describe("RosterRepository — getClasses (US-E18.5 real wire, US-E18.30 enriche
   });
 });
 
-describe("RosterRepository — getSearchPool (still permanently mock-first)", () => {
-  // US-E18.35 un-mocked getClassRoster but NOT this: the gap here is a MISSING
-  // ENDPOINT (no core query for unassigned/transfer-candidate students), which
-  // IAM US-169's dob/gender addition does nothing about. The DI factory still
-  // delegates this one method to the mock repo, so the stub stays dead code.
-  it("getSearchPool returns the dead-code stub without any HTTP call", async () => {
+const ENROLLED_IDS_URL = "/core/api/v1/enrollments/student-ids";
+
+/** Wire `EnrolledStudentIdsResponse` (US-182): ids-only, unpaginated. */
+function enrolledIdsPayload(ids: string[], year = "2025-2026") {
+  return { academicYear: year, studentMemberIds: ids };
+}
+
+/** A drained STUDENT directory page (iam-directory `SearchMembersUseCase`). */
+function directoryMember(memberId: string, displayName: string) {
+  return {
+    memberId,
+    userId: memberId,
+    displayName,
+    email: `${memberId}@example.test`,
+    roles: ["STUDENT" as const],
+    status: "ACTIVE" as const,
+  };
+}
+
+function poolSources(over: Partial<SearchPoolSources> = {}) {
+  const searchStudentDirectory = vi.fn<
+    SearchPoolSources["searchStudentDirectory"]
+  >(
+    over.searchStudentDirectory ??
+      (async () => ({
+        ok: true,
+        value: [
+          directoryMember("stu-1", "Nguyễn Minh Anh"),
+          directoryMember("stu-2", "Trần Văn Bình"),
+          directoryMember("stu-3", "Lê Thu Cúc"),
+        ],
+      })),
+  );
+  const resolveAcademicYear = vi.fn<SearchPoolSources["resolveAcademicYear"]>(
+    over.resolveAcademicYear ?? (async () => "2025-2026"),
+  );
+  return { searchStudentDirectory, resolveAcademicYear };
+}
+
+describe("RosterRepository — getSearchPool (US-E18.41 real FE-composed pool, BE US-182/ADR 0125)", () => {
+  it("fails closed with ZERO HTTP when the pool collaborators are absent", async () => {
+    // No core endpoint enumerates the pool on its own — without the injected
+    // directory + year resolver there is nothing to compose, so the repository
+    // must not invent an empty pool (an empty pool reads as "no candidates").
     const http = makeHttp();
     const res = await new RosterRepository(http).getSearchPool("cls-10a1");
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error.type).toBe("unknown");
     expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it("pool = STUDENT directory MINUS the year's enrolled ids, with null current-class fields", async () => {
+    const get = vi.fn(async () =>
+      enrolledIdsPayload(["stu-2"]),
+    ) as unknown as AxiosInstance["get"];
+    const sources = poolSources();
+
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      sources,
+    ).getSearchPool("cls-10a1");
+
+    expect(sources.resolveAcademicYear).toHaveBeenCalledTimes(1);
+    expect(sources.searchStudentDirectory).toHaveBeenCalledTimes(1);
+    // ids-only + unpaginated → a plain unwrapped GET, no raw:true/parseEnvelope.
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(ENROLLED_IDS_URL, {
+      params: { academicYear: "2025-2026" },
+    });
+    // Everyone left in the pool is UNASSIGNED by definition — no second lookup
+    // populates currentClassId/Name, they are structurally null.
+    expect(res).toEqual({
+      ok: true,
+      data: [
+        {
+          id: "stu-1",
+          name: "Nguyễn Minh Anh",
+          currentClassId: null,
+          currentClassName: null,
+        },
+        {
+          id: "stu-3",
+          name: "Lê Thu Cúc",
+          currentClassId: null,
+          currentClassName: null,
+        },
+      ],
+    });
+  });
+
+  it("returns the WHOLE directory when nobody is enrolled yet (empty id set)", async () => {
+    const get = vi.fn(async () =>
+      enrolledIdsPayload([]),
+    ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources(),
+    ).getSearchPool("cls-10a1");
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.map((s) => s.id)).toEqual(["stu-1", "stu-2", "stu-3"]);
+    }
+  });
+
+  it("ignores the classId — the pool is tenant-wide unassigned, identical for any class", async () => {
+    // The enrolled set spans EVERY class of the year, so students already in
+    // the target class are excluded by the subtraction itself. The parameter
+    // survives only for the mock repo (and the interface signature).
+    const get = vi.fn(async () =>
+      enrolledIdsPayload(["stu-2"]),
+    ) as unknown as AxiosInstance["get"];
+    const repo = new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources(),
+    );
+
+    const a = await repo.getSearchPool("cls-10a1");
+    const b = await repo.getSearchPool("cls-12c2");
+
+    expect(a).toEqual(b);
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenLastCalledWith(ENROLLED_IDS_URL, {
+      params: { academicYear: "2025-2026" },
+    });
+  });
+
+  it("reads the payload through the REAL interceptor (envelope unwrap end-to-end)", async () => {
+    const get = vi.fn(async () =>
+      unwrapResponse({
+        data: {
+          success: true,
+          data: enrolledIdsPayload(["stu-1", "stu-3"]),
+          error: null,
+          meta: { requestId: "req-test", timestamp: "2026-08-05T00:00:00Z" },
+        },
+        config: {},
+      }),
+    ) as unknown as AxiosInstance["get"];
+
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources(),
+    ).getSearchPool("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.map((s) => s.id)).toEqual(["stu-2"]);
+  });
+
+  it("CLASS_FORBIDDEN (403) on the enrolled-ids read → forbidden", async () => {
+    const get = vi
+      .fn()
+      .mockRejectedValue(
+        apiError("CLASS_FORBIDDEN", 403),
+      ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources(),
+    ).getSearchPool("cls-10a1");
+    expect(res).toEqual({ ok: false, error: { type: "forbidden" } });
+  });
+
+  it("transport failure on the enrolled-ids read → network-error", async () => {
+    const get = vi
+      .fn()
+      .mockRejectedValue(
+        new ApiError({ code: "NETWORK_ERROR", message: "x", retryable: true }),
+      ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources(),
+    ).getSearchPool("cls-10a1");
+    expect(res).toEqual({ ok: false, error: { type: "network-error" } });
+  });
+
+  it.each([
+    ["forbidden", "forbidden"],
+    ["network-error", "network-error"],
+    // IAM-internal guard (>50 ids) cannot be acted on by a roster operator.
+    ["too-many-ids", "unknown"],
+    ["unknown", "unknown"],
+  ] as const)("translates the iam-directory failure %s → roster %s (never a silent empty pool)", async (directoryFailure, expected) => {
+    const get = vi.fn(async () =>
+      enrolledIdsPayload([]),
+    ) as unknown as AxiosInstance["get"];
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      poolSources({
+        searchStudentDirectory: async () => ({
+          ok: false,
+          failure: { type: directoryFailure },
+        }),
+      }),
+    ).getSearchPool("cls-10a1");
+    expect(res).toEqual({ ok: false, error: { type: expected } });
+  });
+
+  it("no academic year configured → unknown, and the enrolled-ids call is never made", async () => {
+    // `resolveCurrentAcademicYear` throws a TYPED { type: "invalid-term" } — not
+    // an ApiError — so it must not be mislabelled `network-error` (retryable).
+    const get = vi.fn() as unknown as AxiosInstance["get"];
+    const sources = poolSources({
+      resolveAcademicYear: async () => {
+        throw { type: "invalid-term", message: "No academic year configured" };
+      },
+    });
+    const res = await new RosterRepository(
+      makeHttp({ get }),
+      undefined,
+      sources,
+    ).getSearchPool("cls-10a1");
+
+    expect(res).toEqual({ ok: false, error: { type: "unknown" } });
+    expect(get).not.toHaveBeenCalled();
   });
 });
 

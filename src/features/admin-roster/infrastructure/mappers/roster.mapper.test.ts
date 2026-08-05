@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  toClassSummary,
-  toRosterStudentFromEnrollment,
-  toSearchStudent,
-} from "./roster.mapper";
+import { toClassSummary, toRosterStudentFromEnrollment } from "./roster.mapper";
 
 /** Wire `EnrollmentResponse` row (`GET /classes/{classId}/students`). */
 function enrollmentDto(over: Record<string, unknown> = {}) {
@@ -151,29 +147,5 @@ describe("roster.mapper", () => {
       dob: "not-a-date",
     });
     expect("dob" in result).toBe(false);
-  });
-
-  it("toSearchStudent passes nullable class fields through", () => {
-    expect(
-      toSearchStudent({
-        id: "HS25202",
-        name: "Trần Thuỵ Vân",
-        currentClassId: "cls-10a2",
-        currentClassName: "10A2",
-      }),
-    ).toEqual({
-      id: "HS25202",
-      name: "Trần Thuỵ Vân",
-      currentClassId: "cls-10a2",
-      currentClassName: "10A2",
-    });
-    expect(
-      toSearchStudent({
-        id: "HS25201",
-        name: "x",
-        currentClassId: null,
-        currentClassName: null,
-      }).currentClassId,
-    ).toBeNull();
   });
 });

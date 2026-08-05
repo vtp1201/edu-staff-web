@@ -3,6 +3,7 @@
 import { Check, Plus, Search, TriangleAlert, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import { ListError } from "@/components/shared/list-error";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +19,18 @@ function initial(name: string): string {
 
 interface AddStudentPanelProps {
   searchPool: SearchStudent[];
+  /**
+   * Already-translated pool READ failure message, or `null` when the pool
+   * loaded (US-E18.41 — the pool is a real IAM-directory-MINUS-enrolled-ids
+   * composition now). When set it REPLACES the result list: an empty list plus
+   * the "no results" copy would claim there is nobody left to enroll.
+   */
+  errorMessage?: string | null;
+  /** `false` for failures a retry can never fix (403/401) — control omitted. */
+  errorRetryable?: boolean;
+  onRetry?: () => void;
+  /** Already-translated retry label. */
+  retryLabel?: string;
   /** Ids already in the roster — disables their rows. */
   enrolledIds: ReadonlySet<string>;
   /** Ids that were just acted on (optimistic guard) — disables their rows. */
@@ -28,6 +41,10 @@ interface AddStudentPanelProps {
 
 export function AddStudentPanel({
   searchPool,
+  errorMessage = null,
+  errorRetryable = true,
+  onRetry,
+  retryLabel = "",
   enrolledIds,
   recentlyAdded,
   disabled = false,
@@ -77,7 +94,19 @@ export function AddStudentPanel({
       </div>
 
       <ScrollArea className="max-h-[460px]">
-        {results.length === 0 ? (
+        {errorMessage ? (
+          <ListError
+            shape="bordered-card"
+            iconSize={10}
+            className="border-0 px-5 py-8"
+            message={errorMessage}
+            onRetry={() => onRetry?.()}
+            retryLabel={retryLabel}
+            retryIcon="refresh"
+            retryButtonSize="sm"
+            showRetry={errorRetryable}
+          />
+        ) : results.length === 0 ? (
           <div className="px-5 py-6 text-center text-edu-text-muted text-xs">
             {t("addPanel.noResults")}
           </div>

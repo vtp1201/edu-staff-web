@@ -1,9 +1,7 @@
 import type { ClassSummary } from "../../domain/entities/class-summary.entity";
 import type { RosterStudent } from "../../domain/entities/roster-student.entity";
-import type { SearchStudent } from "../../domain/entities/search-student.entity";
 import type { ClassDto } from "../dtos/classes-response.dto";
 import type { EnrollmentDto } from "../dtos/enrollment-response.dto";
-import type { SearchStudentDto } from "../dtos/search-students-response.dto";
 
 /**
  * The IAM decoration for ONE student, as the injected lookup port yields it
@@ -106,11 +104,12 @@ export function toRosterStudentFromEnrollment(
   };
 }
 
-export function toSearchStudent(dto: SearchStudentDto): SearchStudent {
-  return {
-    id: dto.id,
-    name: dto.name,
-    currentClassId: dto.currentClassId,
-    currentClassName: dto.currentClassName,
-  };
-}
+/**
+ * There is NO `toSearchStudent` mapper any more (US-E18.41). The Add-panel's
+ * candidate pool has no wire DTO of its own: it is a SET DIFFERENCE the FE
+ * composes (IAM STUDENT directory MINUS core's enrolled ids, BE US-182 / ADR
+ * 0125), built directly in `RosterRepository.getSearchPool`. The former
+ * `SearchStudentDto` described the response of `/core/api/v1/students/
+ * unassigned`, an endpoint that never existed on any server, so it and its
+ * mapper were deleted rather than left as unverified fiction.
+ */

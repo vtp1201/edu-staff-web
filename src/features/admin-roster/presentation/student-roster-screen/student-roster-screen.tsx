@@ -186,6 +186,17 @@ export function StudentRosterScreen({
               <div ref={panelSearchRef}>
                 <AddStudentPanel
                   searchPool={vm.searchPool}
+                  // A failed pool read is shown IN the panel (US-E18.41): the
+                  // roster itself loaded, so only the candidate list degrades.
+                  errorMessage={
+                    vm.poolError ? t(`errors.${vm.poolError}`) : null
+                  }
+                  errorRetryable={
+                    vm.poolError !== "forbidden" &&
+                    vm.poolError !== "unauthorized"
+                  }
+                  onRetry={() => router.refresh()}
+                  retryLabel={tCommon("confirmDialog.retry")}
                   enrolledIds={enrolledIds}
                   recentlyAdded={recentlyAdded}
                   disabled={pending}

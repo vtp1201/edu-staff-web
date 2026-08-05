@@ -1,12 +1,21 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
-import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
+import {
+  makeBatchResolveMembersUseCase,
+  makeSearchMembersUseCase,
+} from "@/bootstrap/di/iam-directory.di";
+import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { decodeTenantId } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import type { IRosterRepository } from "@/features/admin-roster/domain/repositories/i-roster.repository";
 import type { RosterStudentDetail } from "@/features/admin-roster/infrastructure/mappers/roster.mapper";
 import { MockRosterRepository } from "@/features/admin-roster/infrastructure/repositories/mock-roster.repository";
-import type { ResolveStudentDetails } from "@/features/admin-roster/infrastructure/repositories/roster.repository";
+import type {
+  ResolveStudentDetails,
+  SearchPoolSources,
+} from "@/features/admin-roster/infrastructure/repositories/roster.repository";
 import { RosterRepository } from "@/features/admin-roster/infrastructure/repositories/roster.repository";
 
 /**
@@ -25,11 +34,21 @@ import { RosterRepository } from "@/features/admin-roster/infrastructure/reposit
  *   batch-lookup client; do NOT add a second. A failed lookup yields an EMPTY
  *   map, never throws — the roster still renders, with placeholders.
  *
- * `getSearchPool` STAYS force-mocked regardless of `USE_MOCK`. That is a
- * DIFFERENT, still-open gap and US-169 does nothing for it: core exposes no
- * endpoint for the unassigned/transfer-candidate pool at all (`/students/
- * unassigned` does not exist), and a lookup BY ID cannot enumerate candidates.
- * Same precedent as class-management's `listTeachers` (US-E18.4).
+ * `getSearchPool` went REAL in US-E18.41 — the LAST force-mock on this
+ * repository, so the anonymous per-method composition below is gone and the
+ * factory is a plain `USE_MOCK ? Mock : Real` gate (decision 0014). BE's answer
+ * to ask #9 (US-182 / `edu-api` ADR 0125) is that the unassigned pool will never
+ * be one endpoint, so the FE composes it from two services — again only in
+ * `bootstrap/di` (decision 0017):
+ * - `iam-directory`'s `SearchMembersUseCase` with `role: "STUDENT"` + the
+ *   token-derived tenant id → the candidate universe (it drains every page
+ *   itself; this app has ONE directory client, do not add a second);
+ * - core `GET /enrollments/student-ids?academicYear=` (inside the repository,
+ *   it is core's own endpoint) → the ids to subtract.
+ * The year label comes from `resolveCurrentAcademicYear()`
+ * (`bootstrap/lib/resolve-current-term.ts`, US-E18.12), REUSED rather than
+ * re-deriving "which academic year is active" a third time. It is passed as a
+ * lazy callback so pages that never open the Add panel pay no calendar call.
  *
  * `getClasses` (+ enriched homeroom name) and the write operations
  * (`enrollStudent`/`unenrollStudent`/`unenrollStudents`/`transferStudent`) were
@@ -58,20 +77,18 @@ export async function makeRosterRepository(): Promise<IRosterRepository> {
     return details;
   };
 
-  const real = new RosterRepository(
+  const tenantId = decodeTenantId((await getAccessToken()) ?? "") ?? "";
+  const searchMembers = await makeSearchMembersUseCase();
+  const searchPoolSources: SearchPoolSources = {
+    searchStudentDirectory: () =>
+      searchMembers.execute({ tenantId, role: "STUDENT" }),
+    // Lazy: only invoked when the Add panel's pool is actually read.
+    resolveAcademicYear: resolveCurrentAcademicYear,
+  };
+
+  return new RosterRepository(
     await createServerHttpClient(),
     resolveStudentDetails,
+    searchPoolSources,
   );
-  const mock = new MockRosterRepository();
-
-  return new (class implements IRosterRepository {
-    getClasses = real.getClasses.bind(real);
-    getClassRoster = real.getClassRoster.bind(real);
-    enrollStudent = real.enrollStudent.bind(real);
-    unenrollStudent = real.unenrollStudent.bind(real);
-    unenrollStudents = real.unenrollStudents.bind(real);
-    transferStudent = real.transferStudent.bind(real);
-    // mock-first fallback — MISSING ENDPOINT, see the doc above.
-    getSearchPool = mock.getSearchPool.bind(mock);
-  })();
 }

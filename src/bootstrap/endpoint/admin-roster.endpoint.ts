@@ -34,15 +34,23 @@ export const ROSTER_EP = {
   /** DELETE one student from a class. Build path with unenrollPath(). */
   unenroll: "/core/api/v1/classes/:classId/students/:studentMemberId",
   /**
-   * Search pool for the Add-panel: NO core endpoint exists for this query
-   * (`/students/unassigned` is a placeholder). Still permanently mock-first
-   * after US-E18.35 — this is a MISSING-ENDPOINT gap, unrelated to the
-   * display-field gap that story closed, and an IAM lookup BY ID cannot
-   * enumerate candidates. The DI factory always delegates `getSearchPool` to
-   * the mock repo (US-E18.5, cross-repo ask #9). Kept here only as
-   * documentation of the missing endpoint.
+   * Enrolled-student ids for ONE academic year (`?academicYear=2025-2026`):
+   * tenant-wide, deduplicated, ids-only, UNPAGINATED (BE US-182 / `edu-api`
+   * ADR 0125; ADMIN/SUPER_ADMIN/MANAGER). Plain unwrapped GET — there is no
+   * `meta.pagination` on this response, so no `raw: true`.
+   *
+   * This is HALF of the Add-panel search pool, which core deliberately does NOT
+   * expose as one endpoint: BE's answer to ask #9 is FE-COMPOSE, so
+   * pool = IAM's STUDENT directory (`GET /iam/api/v1/tenants/{id}/members?
+   * role=STUDENT`, fully drained) MINUS this id set. The composition lives in
+   * `bootstrap/di/admin-roster.di.ts` (decision 0017). The former placeholder
+   * `searchPool: "/core/api/v1/students/unassigned"` never existed on any
+   * server and is DELETED (US-E18.41).
+   *
+   * Accepted BE caveat: an ARCHIVED class still holds its enrollments, so its
+   * students stay in this set and do NOT re-appear in the pool.
    */
-  searchPool: "/core/api/v1/students/unassigned",
+  enrolledStudentIds: "/core/api/v1/enrollments/student-ids",
 } as const;
 
 export function classStudentsPath(classId: string): string {
