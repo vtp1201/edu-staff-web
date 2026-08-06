@@ -74,21 +74,42 @@ buffer/timeout sớm với long-lived connection).
    get); FE đã bỏ 5 chỗ fan-out 2×N.
 7. **#21 (phần còn lại)** — `sealed-students` listing + seal/unseal
    `audit-trail` (US-150 mới ship list + seal-status).
-8. **#18** — rollup tenant-wide "grade entries pending approval" — admin
-   batch-oversight dashboard không tự populate được (phải biết trước
-   `(classId,subjectId,termId)`).
-9. **#19** — reject/request-revision transition cho `GradeEntry`
-   (`PENDING_APPROVAL → DRAFT`/`REJECTED`, mirror conduct-grade reject đã có).
-10. **#28** — `GET /classes/{classId}/attendance?startDate=&endDate=`
-    (class-scoped range, mirror member-range đã có) — bỏ fan-out ≤31 ngày
-    phía client.
+8. **#18 — RESOLVED (BE US-186, 2026-08-05).** Mới:
+   `GET /api/v1/grade-entries/pending-approval?cursor=&limit=` (ADMIN/MANAGER/
+   SUPER_ADMIN — cùng gate với approve/reject). Trả
+   `items[{classId, subjectId, termId, pendingCount, submittedAt}]` + cursor
+   pagination (limit mặc định 20, max 100, clamp) — dashboard tự populate,
+   không cần biết trước tuple. Đã deploy (migration 049).
+9. **#19 — RESOLVED (BE US-184, 2026-08-04).** Đã có
+   `POST .../grade-entries/.../reject` — `PENDING_APPROVAL → DRAFT` kèm
+   `reason`, mirror conduct-grade reject. Xem `INTEGRATION.md` core.
+10. **#28 — RESOLVED (BE US-187, 2026-08-06).**
+    `GET /api/v1/classes/{classId}/attendance?startDate=&endDate=` đã ship —
+    range mode trên chính route cũ (`date` giờ optional; `date` XOR
+    `startDate+endDate`, trộn 2 mode → 400). Response
+    `{classId, records[{date, studentMemberId, status}]}`, không pagination,
+    cap 366 ngày. Bỏ được fan-out ≤31 call/ngày. Đã deploy (không migration).
 11. **#12** — `GET /subjects` thêm query `gradeLevel=` (field đã có trên
     `SubjectResponse`, chỉ thiếu filter).
-12. **#16** — bulk/whole-school timetable-conflicts scan (nếu proactive
-    conflict dashboard là real requirement; hiện chỉ có reactive 409).
-13. **#10/#11** — `bands: [{label, minThreshold}]` cho numeric grade scales;
-    `requiredCount` cho `AssessmentColumnResponse` — hoặc BE confirm 2 cái
-    này là client-only label để FE ngừng imply persist.
+12. **#16 — RESOLVED (BE US-188, 2026-08-06).** Mới:
+    `GET /api/v1/timetable/conflicts?termId=` (ADMIN/SUPER_ADMIN only —
+    MANAGER không có quyền whole-school scan). Trả `{termId, conflicts[],
+    truncated}`; mỗi conflict: `{type: TEACHER_DOUBLE_BOOKED |
+    ROOM_DOUBLE_BOOKED, day, period, classes[≥2]{classId, subjectId},
+    teacherMemberId?, room?}`. termId lạ → 200 rỗng (không 404). Lưu ý
+    (ADR 0128): ROOM_DOUBLE_BOOKED chỉ được *phát hiện* khi đọc — write path
+    hiện KHÔNG chặn room trùng, FE đừng assume tạo mới sẽ 409 vì room. Đã
+    deploy (không migration).
+13. **#10/#11 — RESOLVED (BE US-189, 2026-08-06) — persist thật, không phải
+    client-only.** (#10) Numeric grade scale nhận + trả
+    `bands: [{label, minThreshold}]` (optional, ≤10 bands, label ≤32 ký tự,
+    threshold trong [min,max], **giảm dần nghiêm ngặt, band cao nhất trước**;
+    sai → 422 `GRADE_SCALE_INVALID_BANDS`; letter scale không nhận bands).
+    (#11) `requiredCount` (int 1–100, optional/nullable) persist trên
+    assessment column, nhận ở write path + trả trên
+    `AssessmentColumnResponse`. Lưu ý: `requiredCount` hiện là display
+    metadata — BE chưa enforce với số điểm thực tế đã nhập. FE bỏ mock được.
+    Đã deploy (migration 050).
 
 ### P3 — cần quyết định product / doc hygiene
 
