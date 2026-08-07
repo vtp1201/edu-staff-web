@@ -51,6 +51,24 @@ and expensive to miss.
    Related: swallowed reads (`res.ok ? res.value : undefined`) turn this into an
    infinite fake-loading state rather than an error.
 
+9. **`cn()` used to join non-class strings** (US-E18.53). `cn` is clsx +
+   **tailwind-merge**; joining DOM ids with it (`aria-describedby={cn(hintId, err && errId)}`)
+   risks tailwind-merge dropping a token that looks like a utility class. GREP TEST:
+   `cn(` inside an `aria-describedby`/`aria-labelledby`/`id`/`htmlFor` attribute →
+   `[a, b].filter(Boolean).join(" ")`.
+
+9. **An un-mock/un-block story that REVERSES an ADR leaves `docs/decisions/` untouched**
+   (US-E18.24, again at US-E18.54). Cheap grep:
+   `git diff main...HEAD --stat -- docs/decisions/` being EMPTY on a story whose packet
+   says "removes the permanent force-mock / reverses ADR NNNN" is the tell. The ADR's
+   closed/decided item then states the opposite of the code. Required fix is a dated
+   in-place `## Supersession note (<date>, <US-id>)` — not a new ADR.
+   Sibling check on the same class of story: a NEW port method added to a foreign
+   feature's repository (e.g. `listAllSubjects()` on subject-catalogue) often ships with
+   ZERO direct test because the consuming story's own suite exercises it indirectly.
+   `grep <methodName> src` — if the only hits are the two impls, the interface and the
+   DI call site, demand a test in the OWNING feature's repo suite.
+
 Verified clean conventions worth not re-litigating: role-discriminated VM unions
 (`viewerRole` field, absent action = compile error), capability-as-presence for
 affordances, throwing repositories + failure-union mapping by `error.code`.

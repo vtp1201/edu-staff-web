@@ -114,3 +114,6 @@
 - [Public unauthenticated flow](pattern-public-unauth-flow.md) — E18.53: bare-client DI (no cookie/refresh) for `security: []` endpoints; real-axios adapter test proves the token never reaches a query string; IAM wire codes are UPPER_SNAKE (sibling mapper assumes lowercase); concurrent build+vitest = phantom timeouts
 
 - [Embedded field → own resource](pattern-embedded-field-to-own-resource.md) — E18.51: real contract exposes a mock-era embedded array as its OWN gated endpoint ⇒ DELETE the field (3 tests: different gate / lifecycle / host availability); `""` on the wire = absent; tri-state a mock-era capability gate or the control is dead in real mode; prove refetch by call-count
+
+- [RBAC-blocked client-side join](pattern-rbac-blocked-clientside-join.md) — E18.54: "resolve it client-side" dies on RBAC not N+1; pick the widest allow-list endpoint, degrade the residue + file the ask
+- [Cold-cache 5s timeouts](gotcha-cold-cache-5s-timeouts.md) — editing i18n/endpoint files invalidates the vitest transform cache → fake RSC page-test timeouts; re-run warm before blaming

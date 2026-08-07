@@ -44,6 +44,20 @@ The same capability had already been widened 3× — but on the OTHER endpoint.
    and it is the only one a narrowed row has at all.
 7. Two 403s with different remedies ⇒ two failure types (`role-filter-required` vs
    `forbidden`), asserted with an explicit `not.toEqual` so a later refactor cannot collapse them.
+8. **The un-mock is not done until the RSC page stops swallowing the failure.** Review MUST-FIX:
+   `initialX={result.ok ? result.value : []}` was fine while the mock could not fail; against a
+   real endpoint it turns 403/wiring/transport into a silent empty list that reads as real data
+   — and leaves the new `errors.*` key dead. Give the failure its OWN VM field (never fold it
+   into a sibling `loadError`: two independent reads = two channels), and check every un-mock
+   for this shape. The dead-i18n-key smell is the fastest detector.
+9. **A newly-reachable EMPTY state ships with the un-mock.** The mock always seeded rows, so
+   "zero rows" was unreachable; a real filtered query makes it reachable the same day. And the
+   error must REPLACE the empty copy, never sit beside it (two contradictory explanations of
+   one blank list).
+10. **A pinned filter narrows EVERY tier, not just the new one.** Say so explicitly in Evidence.
+    Rejecting the "omit the param for the privileged tier" alternative is itself the decision:
+    omitting it here returns the WHOLE directory (students+parents), i.e. a much bigger product
+    change than the defect, and makes one component two products.
 
 See also [[pattern-tiered-response-widening]], [[pattern-unmock-anticipatory-dto]],
 [[pattern-partial-gap-closure-wiring]], [[pattern-two-gaps-one-forcemock]].

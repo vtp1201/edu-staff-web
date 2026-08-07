@@ -17,3 +17,4 @@
 - [social self-service group rooms](be-social-group-rooms.md) — US-193: only create+archive are real; why the other 5 group methods are blocked (no member display name, no PATCH room)
 - [social message-pin + pin board](be-social-message-pin.md) — senderName always `""`, no wire capability (tri-state gate), self-healing board read, two 409s
 - [core member-attendance read](be-member-attendance-read.md) — PARENT allowed since US-047 (openapi prose stale), guard ordering, UPPER_SNAKE enum, ATTENDANCE_FORBIDDEN
+- [core academic-record member read](be-core-academic-record-member-read.md) — TEACHER absent from the allow-list, PARENT can never resolve a year, decimal-string wire
