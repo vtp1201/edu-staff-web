@@ -408,14 +408,211 @@ describe("MessagingRepository (real social contract)", () => {
       expect(mock.post).not.toHaveBeenCalled();
       expect(res.ok).toBe(false);
     });
+  });
 
-    it("pinMessage never silently succeeds and makes no HTTP call", async () => {
+  // ── US-E18.51 message pin / unpin / pin board (BE US-192) ────────────────
+  describe("pinMessage", () => {
+    it("POSTs the per-message pin path with no body and returns ok(true)", async () => {
       const { http, mock } = makeHttp();
+      mock.post.mockResolvedValue({
+        messageId: "m-1",
+        pinnedBy: SELF,
+        pinnedAt: "2026-08-02T04:00:00.000Z",
+      });
       const repo = new MessagingRepository(http, SELF);
 
       const res = await repo.pinMessage("room-1", "m-1");
-      expect(mock.post).not.toHaveBeenCalled();
-      expect(res.ok).toBe(false);
+
+      expect(mock.post).toHaveBeenCalledWith(
+        MESSAGING_EP.roomMessagePin("room-1", "m-1"),
+      );
+      expect(res).toEqual({ ok: true, value: true });
+    });
+
+    it("maps 409 SOCIAL_PIN_LIMIT_REACHED to the distinct cap failure", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(apiError("SOCIAL_PIN_LIMIT_REACHED", 409));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.pinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "pin-limit-reached" },
+      });
+    });
+
+    it("maps 409 SOCIAL_MESSAGE_ALREADY_PINNED distinctly from the cap (same status, different code)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(
+        apiError("SOCIAL_MESSAGE_ALREADY_PINNED", 409),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.pinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "message-already-pinned" },
+      });
+    });
+
+    it("maps 403 SOCIAL_INSUFFICIENT_ROOM_PERMISSION to pin-forbidden", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(
+        apiError("SOCIAL_INSUFFICIENT_ROOM_PERMISSION", 403),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.pinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "pin-forbidden" },
+      });
+    });
+
+    it("maps 403 ROOM_NOT_MEMBER to pin-forbidden too (non-member guard)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(apiError("ROOM_NOT_MEMBER", 403));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.pinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "pin-forbidden" },
+      });
+    });
+
+    it("keeps a 404 (deleted/unknown message) generic with the wire code as cause", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(apiError("MESSAGE_ALREADY_DELETED", 404));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.pinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "pin-failed", cause: "MESSAGE_ALREADY_DELETED" },
+      });
+    });
+  });
+
+  describe("unpinMessage", () => {
+    it("DELETEs the same per-message pin path (204, no body)", async () => {
+      const { http, mock } = makeHttp();
+      mock.delete.mockResolvedValue(undefined);
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.unpinMessage("room-1", "m-1");
+
+      expect(mock.delete).toHaveBeenCalledWith(
+        MESSAGING_EP.roomMessagePin("room-1", "m-1"),
+      );
+      expect(res).toEqual({ ok: true, value: true });
+    });
+
+    it("maps 404 SOCIAL_MESSAGE_NOT_PINNED to the distinct not-pinned failure", async () => {
+      const { http, mock } = makeHttp();
+      mock.delete.mockRejectedValue(apiError("SOCIAL_MESSAGE_NOT_PINNED", 404));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.unpinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "message-not-pinned" },
+      });
+    });
+
+    it("maps 403 to pin-forbidden (unpin needs moderate_msg, not ownership)", async () => {
+      const { http, mock } = makeHttp();
+      mock.delete.mockRejectedValue(
+        apiError("SOCIAL_INSUFFICIENT_ROOM_PERMISSION", 403),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.unpinMessage("room-1", "m-1")).toEqual({
+        ok: false,
+        failure: { type: "pin-forbidden" },
+      });
+    });
+  });
+
+  describe("getPinnedMessages", () => {
+    it("GETs the flat, non-paginated pin board (no raw:true, no cursor params)", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockResolvedValue([
+        {
+          messageId: "m-1",
+          pinnedBy: "u-mod",
+          pinnedAt: "2026-08-02T04:00:00.000Z",
+          message,
+        },
+      ]);
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.getPinnedMessages("room-1");
+
+      expect(mock.get).toHaveBeenCalledWith(
+        MESSAGING_EP.roomPinnedMessages("room-1"),
+      );
+      expect(res).toEqual({
+        ok: true,
+        value: [
+          {
+            messageId: "m-1",
+            senderId: SELF,
+            excerpt: "Chào cả lớp",
+            sentAt: "2026-07-20T03:15:00.000Z",
+            pinnedAt: "2026-08-02T04:00:00.000Z",
+            pinnedBy: "u-mod",
+          },
+        ],
+      });
+    });
+
+    it("drops a pin whose embedded message is soft-deleted (no broken row)", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockResolvedValue([
+        {
+          messageId: "m-2",
+          pinnedBy: "u-mod",
+          pinnedAt: "2026-08-02T04:00:00.000Z",
+          message: { ...message, messageId: "m-2", status: "deleted" },
+        },
+      ]);
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.getPinnedMessages("room-1")).toEqual({
+        ok: true,
+        value: [],
+      });
+    });
+
+    it("tolerates a null payload as an empty board", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockResolvedValue(null);
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.getPinnedMessages("room-1")).toEqual({
+        ok: true,
+        value: [],
+      });
+    });
+
+    it("maps the 429 shared with message history the same way history does (code as cause)", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockRejectedValue(apiError("SOCIAL_READ_RATE_LIMITED", 429));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.getPinnedMessages("room-1")).toEqual({
+        ok: false,
+        failure: {
+          type: "load-pinned-failed",
+          cause: "SOCIAL_READ_RATE_LIMITED",
+        },
+      });
+    });
+
+    it("does NOT map a read 403 to pin-forbidden (reading pins needs membership only)", async () => {
+      const { http, mock } = makeHttp();
+      mock.get.mockRejectedValue(apiError("ROOM_NOT_MEMBER", 403));
+      const repo = new MessagingRepository(http, SELF);
+
+      expect(await repo.getPinnedMessages("room-1")).toEqual({
+        ok: false,
+        failure: { type: "load-pinned-failed", cause: "ROOM_NOT_MEMBER" },
+      });
     });
   });
 });

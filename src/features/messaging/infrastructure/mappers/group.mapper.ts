@@ -1,11 +1,9 @@
 import type {
   GroupEntity,
   GroupMember,
-  PinnedMessage,
 } from "@/features/messaging/domain/entities/group.entity";
 import type { GroupMemberResponseDto } from "../dtos/group-member-response.dto";
 import type { GroupResponseDto } from "../dtos/group-response.dto";
-import type { PinnedMessageResponseDto } from "../dtos/pinned-message-response.dto";
 
 export function toGroupMember(dto: GroupMemberResponseDto): GroupMember {
   return {
@@ -21,16 +19,10 @@ export function toGroupMember(dto: GroupMemberResponseDto): GroupMember {
   };
 }
 
-export function toPinnedMessage(dto: PinnedMessageResponseDto): PinnedMessage {
-  return {
-    messageId: dto.messageId,
-    senderId: dto.senderId,
-    senderName: dto.senderName,
-    excerpt: dto.excerpt,
-    sentAt: dto.sentAt,
-  };
-}
-
+/**
+ * US-E18.51 — the pin board moved OUT of the group entity (its own resource on
+ * the real contract); `toPinnedMessages` now lives in `pinned-message.mapper.ts`.
+ */
 export function toGroupEntity(dto: GroupResponseDto): GroupEntity {
   return {
     id: dto.id,
@@ -40,6 +32,5 @@ export function toGroupEntity(dto: GroupResponseDto): GroupEntity {
     color: dto.color,
     conversationId: dto.conversationId,
     members: dto.members.map(toGroupMember),
-    pinnedMessages: dto.pinnedMessages.map(toPinnedMessage),
   };
 }

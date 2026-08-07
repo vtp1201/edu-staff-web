@@ -15,6 +15,7 @@ import { GetContactsUseCase } from "@/features/messaging/domain/use-cases/get-co
 import { GetConversationsUseCase } from "@/features/messaging/domain/use-cases/get-conversations.use-case";
 import { GetGroupUseCase } from "@/features/messaging/domain/use-cases/get-group.use-case";
 import { GetMessagesUseCase } from "@/features/messaging/domain/use-cases/get-messages.use-case";
+import { GetPinnedMessagesUseCase } from "@/features/messaging/domain/use-cases/get-pinned-messages.use-case";
 import { GetPresenceUseCase } from "@/features/messaging/domain/use-cases/get-presence.use-case";
 import { LeaveGroupUseCase } from "@/features/messaging/domain/use-cases/leave-group.use-case";
 import { MarkConversationReadUseCase } from "@/features/messaging/domain/use-cases/mark-conversation-read.use-case";
@@ -22,6 +23,7 @@ import { PinMessageUseCase } from "@/features/messaging/domain/use-cases/pin-mes
 import { RemoveGroupMemberUseCase } from "@/features/messaging/domain/use-cases/remove-group-member.use-case";
 import { SendMessageUseCase } from "@/features/messaging/domain/use-cases/send-message.use-case";
 import { SendTypingIndicatorUseCase } from "@/features/messaging/domain/use-cases/send-typing-indicator.use-case";
+import { UnpinMessageUseCase } from "@/features/messaging/domain/use-cases/unpin-message.use-case";
 import { UpdateGroupUseCase } from "@/features/messaging/domain/use-cases/update-group.use-case";
 import { HybridMessagingRepository } from "@/features/messaging/infrastructure/repositories/hybrid-messaging.repository";
 import { MessagingRepository } from "@/features/messaging/infrastructure/repositories/messaging.repository";
@@ -37,8 +39,9 @@ async function makeRepo(): Promise<IMessagingRepository> {
   const token = await getAccessToken();
   const currentUserId = token ? decodeSubClaim(token) : null;
   // ADR 0060 partial-real facade: the rooms/messages/read/typing/1:1-DM slice
-  // is served by the real repo; group lifecycle / pin / contacts have no real
-  // contract and are force-mocked regardless of USE_MOCK.
+  // plus the US-E18.51 pin slice (BE US-192) are served by the real repo;
+  // group lifecycle / contacts have no real contract and are force-mocked
+  // regardless of USE_MOCK.
   return new HybridMessagingRepository(
     new MessagingRepository(http, currentUserId),
     new MockMessagingRepository(),
@@ -114,6 +117,14 @@ export async function makeDeleteGroupUseCase() {
 
 export async function makePinMessageUseCase() {
   return new PinMessageUseCase(await makeRepo());
+}
+
+export async function makeUnpinMessageUseCase() {
+  return new UnpinMessageUseCase(await makeRepo());
+}
+
+export async function makeGetPinnedMessagesUseCase() {
+  return new GetPinnedMessagesUseCase(await makeRepo());
 }
 
 export async function makeDeleteMessageUseCase() {

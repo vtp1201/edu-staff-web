@@ -3,6 +3,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type {
   CreateGroupInput,
@@ -15,10 +16,15 @@ import type { Result } from "@/features/messaging/domain/use-cases/result";
 /**
  * US-E18.17 / ADR 0060 partial-real facade. The rooms/messages/read/typing/
  * 1:1-DM slice has a real `social` contract and is served by `real`; the group
- * lifecycle, message-pin, and contacts flows have NO real contract and are
- * force-served by `mock` regardless of `NEXT_PUBLIC_USE_MOCK` — the same hybrid
- * pattern as US-E18.4/US-E18.5/US-E18.11. Zero UI/behavior change for the
- * force-mocked flows.
+ * lifecycle and contacts flows have NO real contract and are force-served by
+ * `mock` regardless of `NEXT_PUBLIC_USE_MOCK` — the same hybrid pattern as
+ * US-E18.4/US-E18.5/US-E18.11. Zero UI/behavior change for the force-mocked
+ * flows.
+ *
+ * US-E18.51 (BE US-192): ADR 0060 listed message-pin among the three
+ * confirmed-no-real-contract capabilities. That premise is now FALSE for pin —
+ * `pinMessage`/`unpinMessage`/`getPinnedMessages` moved to the real slice below
+ * (group lifecycle stays blocked per US-E18.50, contacts per US-E18.52).
  */
 export class HybridMessagingRepository implements IMessagingRepository {
   constructor(
@@ -65,6 +71,24 @@ export class HybridMessagingRepository implements IMessagingRepository {
   ): Promise<Result<boolean, MessagingFailure>> {
     return this.real.sendTypingIndicator(conversationId, typing);
   }
+  // US-E18.51 — real pin board (BE US-192).
+  pinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    return this.real.pinMessage(conversationId, messageId);
+  }
+  unpinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    return this.real.unpinMessage(conversationId, messageId);
+  }
+  getPinnedMessages(
+    conversationId: string,
+  ): Promise<Result<PinnedMessage[], MessagingFailure>> {
+    return this.real.getPinnedMessages(conversationId);
+  }
 
   // --- Force-mocked slice (no real contract, ADR 0060) ---
   getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
@@ -102,17 +126,5 @@ export class HybridMessagingRepository implements IMessagingRepository {
   }
   deleteGroup(groupId: string): Promise<Result<boolean, MessagingFailure>> {
     return this.mock.deleteGroup(groupId);
-  }
-  pinMessage(
-    conversationId: string,
-    messageId: string,
-  ): Promise<Result<boolean, MessagingFailure>> {
-    return this.mock.pinMessage(conversationId, messageId);
-  }
-  unpinMessage(
-    conversationId: string,
-    messageId: string,
-  ): Promise<Result<boolean, MessagingFailure>> {
-    return this.mock.unpinMessage(conversationId, messageId);
   }
 }

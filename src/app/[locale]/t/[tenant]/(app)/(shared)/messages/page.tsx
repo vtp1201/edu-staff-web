@@ -11,6 +11,7 @@ import {
   deleteMessageAction,
   getGroupAction,
   getMessagesAction,
+  getPinnedMessagesAction,
   getPresenceAction,
   leaveGroupAction,
   markConversationReadAction,
@@ -18,6 +19,7 @@ import {
   removeGroupMemberAction,
   sendMessageAction,
   sendTypingIndicatorAction,
+  unpinMessageAction,
   updateGroupAction,
 } from "./actions";
 
@@ -53,6 +55,8 @@ export default async function MessagesPage({
       removeGroupMemberAction={removeGroupMemberAction}
       addGroupMembersAction={addGroupMembersAction}
       pinMessageAction={pinMessageAction}
+      unpinMessageAction={unpinMessageAction}
+      getPinnedMessagesAction={getPinnedMessagesAction}
       deleteMessageAction={deleteMessageAction}
       leaveGroupAction={leaveGroupAction}
       deleteGroupAction={deleteGroupAction}
