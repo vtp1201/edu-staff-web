@@ -23,6 +23,11 @@ vi.mock("@/bootstrap/di", () => ({
   makeGetContactsUseCase: async () => ({ execute: contactsExecute }),
 }));
 
+// US-E18.50 — the page derives the create-group gate from the session role.
+vi.mock("@/bootstrap/lib/session-role.server", () => ({
+  getSessionRole: vi.fn().mockResolvedValue("TEACHER"),
+}));
+
 vi.mock("./actions", () => ({
   addGroupMembersAction: vi.fn(),
   createConversationAction: vi.fn(),
@@ -31,6 +36,7 @@ vi.mock("./actions", () => ({
   deleteMessageAction: vi.fn(),
   getGroupAction: vi.fn(),
   getMessagesAction: vi.fn(),
+  getPinnedMessagesAction: vi.fn(),
   getPresenceAction: vi.fn(),
   leaveGroupAction: vi.fn(),
   markConversationReadAction: vi.fn(),
@@ -38,6 +44,7 @@ vi.mock("./actions", () => ({
   removeGroupMemberAction: vi.fn(),
   sendMessageAction: vi.fn(),
   sendTypingIndicatorAction: vi.fn(),
+  unpinMessageAction: vi.fn(),
   updateGroupAction: vi.fn(),
 }));
 

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
@@ -197,6 +198,9 @@ const meta: Meta<typeof MessagingScreen> = {
             <div className="h-screen">
               <Story />
             </div>
+            {/* US-E18.51 — pin/unpin feedback (success + the cap-reached and
+                forbidden failures) is surfaced through sonner. */}
+            <Toaster />
           </QueryClientProvider>
         </NextIntlClientProvider>
       );
@@ -211,6 +215,10 @@ const meta: Meta<typeof MessagingScreen> = {
     getPresenceAction,
     markConversationReadAction: async () => ({ ok: true }),
     sendTypingIndicatorAction: async () => ({ ok: true }),
+    // US-E18.51 — pin board defaults (empty, succeeding) so any story that
+    // opens the group-info panel renders its real empty state.
+    getPinnedMessagesAction: async () => ({ ok: true, value: [] }),
+    unpinMessageAction: async () => ({ ok: true }),
   },
 };
 export default meta;
@@ -864,7 +872,6 @@ const CREATED_GROUP: GroupEntity = {
       isOnline: true,
     },
   ],
-  pinnedMessages: [],
 };
 
 const noopGroupAction = async (): Promise<ActionResult> => ({ ok: true });
@@ -874,14 +881,15 @@ const noopGetGroup = async (): Promise<GetGroupResult> => ({
 });
 
 /**
- * AC-4 (create-group optimistic prepend):
- * User clicks "+ Tạo nhóm", fills name in step 1, selects a member in step 2,
- * submits → new group conversation appears at the top of the list optimistically
- * and the modal closes.
+ * AC-4 (create-group optimistic prepend), reshaped by US-E18.50: a staff-tier
+ * viewer clicks "+ Tạo nhóm", types a name into the now single-step, name-only
+ * form and submits → the new group conversation appears at the top of the list
+ * optimistically and the modal closes.
  */
 export const CreateGroup_Optimistic_Prepend: Story = {
   args: {
     initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    canCreateGroup: true,
     createGroupAction: async (): Promise<CreateGroupResult> => ({
       ok: true,
       value: CREATED_GROUP,
@@ -908,19 +916,11 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     });
     await userEvent.click(createBtn);
 
-    // Step 1: fill the group name (dialog is in a Radix portal)
+    // Fill the group name (dialog is in a Radix portal). US-E18.50: this is
+    // the whole form — no step 2, no member picker.
     const nameInput = await waitFor(() => body.getByLabelText("Tên nhóm"));
     await userEvent.type(nameInput, "Nhóm Vật Lý");
 
-    const nextBtn = body.getByRole("button", { name: /tiếp theo/i });
-    await waitFor(() => expect(nextBtn).toBeEnabled());
-    await userEvent.click(nextBtn);
-
-    // Step 2: select one member and submit
-    await waitFor(() =>
-      expect(body.getByText("Thêm thành viên")).toBeInTheDocument(),
-    );
-    await userEvent.click(body.getByText("Trần Minh Quân"));
     const submitBtn = body.getByRole("button", { name: /^tạo nhóm$/i });
     await waitFor(() => expect(submitBtn).toBeEnabled());
     await userEvent.click(submitBtn);
@@ -1097,16 +1097,21 @@ const ADMIN_GROUP: GroupEntity = {
       isOnline: true,
     },
   ],
-  pinnedMessages: [
-    {
-      messageId: "g1-2",
-      senderId: "u2",
-      senderName: "Trần Văn Bình",
-      excerpt: "Cô ơi, bài tập trang 87 nộp khi nào ạ?",
-      sentAt: "2026-06-20T07:30:00.000Z",
-    },
-  ],
 };
+
+// US-E18.51 — the pin board is a SEPARATE fetch (its own endpoint + gate), so
+// stories seed it through getPinnedMessagesAction, not through ADMIN_GROUP.
+const ADMIN_GROUP_PINNED = [
+  {
+    messageId: "g1-2",
+    senderId: "u2",
+    senderName: "Trần Văn Bình",
+    excerpt: "Cô ơi, bài tập trang 87 nộp khi nào ạ?",
+    sentAt: "2026-06-20T07:30:00.000Z",
+    pinnedAt: "2026-06-20T07:40:00.000Z",
+    pinnedBy: "me",
+  },
+];
 
 /**
  * DEF-02 (add-members wiring):
@@ -1209,6 +1214,10 @@ export const ScrollToPinned_Highlight_Wired: Story = {
       ok: true,
       value: ADMIN_GROUP,
     }),
+    getPinnedMessagesAction: async () => ({
+      ok: true,
+      value: ADMIN_GROUP_PINNED,
+    }),
     createGroupAction: async (): Promise<CreateGroupResult> => ({
       ok: false,
       errorKey: "create-group-failed",
@@ -1267,5 +1276,313 @@ export const ScrollToPinned_Highlight_Wired: Story = {
     // `storybook/test` does not expose vi/fake-timers, so this interaction story
     // intentionally asserts only the wiring (panel → pinned click → highlight
     // applied) and does NOT do a real-clock wait — keeping it flake-free.
+  },
+};
+
+// ── US-E18.51 message pin / unpin against the real contract (BE US-192) ─────
+
+/** Shared arg block for the pin stories: a group the user administers. */
+const PIN_STORY_ARGS = {
+  initialConversations: [ADMIN_GROUP_CONVERSATION],
+  getMessagesAction: async (): Promise<GetMessagesResult> => ({
+    ok: true,
+    value: MESSAGES.g1 ?? [],
+  }),
+  getGroupAction: async (): Promise<GetGroupResult> => ({
+    ok: true,
+    value: ADMIN_GROUP,
+  }),
+  createGroupAction: async (): Promise<CreateGroupResult> => ({
+    ok: false,
+    errorKey: "create-group-failed",
+  }),
+  addGroupMembersAction: noopGetGroup,
+  deleteMessageAction: noopGroupAction,
+  removeGroupMemberAction: noopGetGroup,
+  leaveGroupAction: noopGroupAction,
+  deleteGroupAction: noopGroupAction,
+  updateGroupAction: noopGetGroup,
+};
+
+async function pinFromContextMenu(canvasElement: HTMLElement) {
+  const canvas = within(canvasElement);
+  const body = within(canvasElement.ownerDocument.body);
+  const bubble = await waitFor(() =>
+    canvas.getByText("Cô ơi, bài tập trang 87 nộp khi nào ạ?"),
+  );
+  await userEvent.pointer({ target: bubble, keys: "[MouseRight]" });
+  await waitFor(() => expect(body.getByRole("menu")).toBeInTheDocument());
+  await userEvent.click(body.getByRole("menuitem", { name: /ghim tin nhắn/i }));
+  return body;
+}
+
+/**
+ * AC — pin succeeds: a success toast appears AND the pin board is refetched.
+ * There is no realtime pin signal on the real contract, so the refetch after
+ * the 201 is the only thing keeping the panel fresh.
+ */
+export const Pin_Success_RefetchesBoard: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    pinMessageAction: fn(async () => ({ ok: true }) as const),
+    getPinnedMessagesAction: fn(async () => ({
+      ok: true as const,
+      value: ADMIN_GROUP_PINNED,
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    // The board is read once when the group opens…
+    await waitFor(() =>
+      expect(args.getPinnedMessagesAction).toHaveBeenCalledWith("g1"),
+    );
+    const readsBeforePin = (
+      args.getPinnedMessagesAction as ReturnType<typeof fn>
+    ).mock.calls.length;
+
+    const body = await pinFromContextMenu(canvasElement);
+
+    await expect(args.pinMessageAction).toHaveBeenCalledWith("g1", "g1-2");
+    await expect(
+      await body.findByText("Đã ghim tin nhắn."),
+    ).toBeInTheDocument();
+
+    // …and AGAIN after the pin: there is no realtime pin signal, so the
+    // invalidation-driven refetch is the only thing that keeps it fresh.
+    await waitFor(() =>
+      expect(
+        (args.getPinnedMessagesAction as ReturnType<typeof fn>).mock.calls
+          .length,
+      ).toBeGreaterThan(readsBeforePin),
+    );
+  },
+};
+
+/**
+ * AC — the 50-pin cap surfaces its OWN copy ("unpin something first"), never a
+ * generic "could not pin".
+ */
+export const Pin_CapReached: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    pinMessageAction: fn(
+      async () => ({ ok: false, errorKey: "pin-limit-reached" }) as const,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const body = await pinFromContextMenu(canvasElement);
+    await expect(
+      await body.findByText(
+        "Nhóm đã đạt tối đa 50 tin nhắn ghim. Hãy bỏ ghim một tin nhắn trước khi ghim tin mới.",
+      ),
+    ).toBeInTheDocument();
+    await expect(
+      body.queryByText("Không thể ghim tin nhắn."),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * AC — a member without the room's `moderate_msg` capability. The real wire
+ * exposes no room role, so the control stays enabled (reactive gate) and the
+ * server's 403 is surfaced as its own message.
+ */
+export const Pin_Forbidden: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    // Capability UNKNOWN (as in real mode) — the pin item must be enabled.
+    initialConversations: [
+      { ...ADMIN_GROUP_CONVERSATION, selfIsGroupAdmin: undefined },
+    ],
+    pinMessageAction: fn(
+      async () => ({ ok: false, errorKey: "pin-forbidden" }) as const,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const body = await pinFromContextMenu(canvasElement);
+    await expect(
+      await body.findByText(
+        "Bạn không có quyền ghim hoặc bỏ ghim tin nhắn trong phòng này.",
+      ),
+    ).toBeInTheDocument();
+  },
+};
+
+/** AC — unpin from the pin board calls the action and refetches the board. */
+export const Unpin_Wired: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    pinMessageAction: noopGroupAction,
+    unpinMessageAction: fn(async () => ({ ok: true }) as const),
+    getPinnedMessagesAction: fn(async () => ({
+      ok: true as const,
+      value: ADMIN_GROUP_PINNED,
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    await userEvent.click(
+      await canvas.findByRole("button", { name: /thông tin nhóm/i }),
+    );
+    const unpin = await body.findByRole("button", {
+      name: "Bỏ ghim tin nhắn của Trần Văn Bình",
+    });
+    const readsBeforeUnpin = (
+      args.getPinnedMessagesAction as ReturnType<typeof fn>
+    ).mock.calls.length;
+    await userEvent.click(unpin);
+
+    await expect(args.unpinMessageAction).toHaveBeenCalledWith("g1", "g1-2");
+    await waitFor(() =>
+      expect(
+        (args.getPinnedMessagesAction as ReturnType<typeof fn>).mock.calls
+          .length,
+      ).toBeGreaterThan(readsBeforeUnpin),
+    );
+    await expect(
+      await body.findByText("Đã bỏ ghim tin nhắn."),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * AC — a pin whose message was soft-deleted is silently absent from the board
+ * (the server skips it): the panel shows its empty state, not a broken row.
+ */
+export const PinnedBoard_SkipsDeletedMessage: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    pinMessageAction: noopGroupAction,
+    getPinnedMessagesAction: async () => ({ ok: true, value: [] }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: /thông tin nhóm/i }),
+    );
+    await expect(
+      await body.findByText("Chưa có tin nhắn được ghim."),
+    ).toBeInTheDocument();
+  },
+};
+
+/** AC — the pin-board read failed (e.g. 429): only that section degrades. */
+export const PinnedBoard_LoadError: Story = {
+  args: {
+    ...PIN_STORY_ARGS,
+    pinMessageAction: noopGroupAction,
+    getPinnedMessagesAction: async () =>
+      ({ ok: false, errorKey: "load-pinned-failed" }) as const,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: /thông tin nhóm/i }),
+    );
+    await expect(
+      await body.findByText(
+        "Không thể tải danh sách tin nhắn đã ghim. Vui lòng thử lại.",
+      ),
+    ).toBeInTheDocument();
+    await expect(body.getByText("THÀNH VIÊN")).toBeInTheDocument();
+  },
+};
+
+// ---------------------------------------------------------------------------
+// US-E18.50 — self-service group rooms (BE US-193 / ADR 0132)
+// ---------------------------------------------------------------------------
+
+/**
+ * AC (role gate): a STUDENT/PARENT viewer (`canCreateGroup: false`, the
+ * fail-closed default) gets NO create-group affordance — neither the inline CTA
+ * above the group list nor the empty-state button. The server would answer 403
+ * `SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN`, so offering the button would be an
+ * affordance that can only fail.
+ */
+export const CreateGroup_Hidden_ForStudentOrParent: Story = {
+  args: {
+    initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    canCreateGroup: false,
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-forbidden",
+    }),
+    getGroupAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    addGroupMembersAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("tab", { name: "Nhóm" }));
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", { name: /tạo nhóm/i }),
+      ).not.toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * AC (archive 409): archiving a system-provisioned room (class_chat /
+ * parent_group) maps to `group-not-self-service` and reads as an explanation —
+ * "this is a system-managed group" — not the generic "please try again" copy.
+ */
+export const ArchiveGroup_NotSelfService_Error: Story = {
+  args: {
+    initialConversations: [ADMIN_GROUP_CONVERSATION],
+    canCreateGroup: true,
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    getGroupAction: async (): Promise<GetGroupResult> => ({
+      ok: true,
+      value: ADMIN_GROUP,
+    }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    deleteGroupAction: async (): Promise<ActionResult> => ({
+      ok: false,
+      errorKey: "group-not-self-service",
+    }),
+    addGroupMembersAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    const header = await canvas.findByRole("button", {
+      name: /thông tin nhóm/i,
+    });
+    await userEvent.click(header);
+
+    const panel = await waitFor(() =>
+      body.getByRole("dialog", { name: /thông tin nhóm/i }),
+    );
+    await userEvent.click(
+      within(panel).getByRole("button", { name: /^xoá nhóm$/i }),
+    );
+
+    const confirm = await waitFor(() =>
+      body.getByRole("button", { name: /xác nhận xoá/i }),
+    );
+    await userEvent.click(confirm);
+
+    // The conversation must SURVIVE (nothing was archived) and the distinct
+    // reason must be announced.
+    const alert = await waitFor(() => canvas.getByRole("alert"));
+    await expect(alert).toHaveTextContent(/nhóm do hệ thống tạo/i);
   },
 };

@@ -1,21 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useRealtimeEvents } from "@/bootstrap/realtime";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
+import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
 import { CreateGroupModal } from "../create-group-modal";
 import { NewConversationModal } from "../new-conversation-modal/new-conversation-modal";
 import { EmptyMessagingState } from "./empty-messaging-state";
+import { createGroupErrorKey } from "./group-creation-gate";
+import { isMessagingErrorKey } from "./messaging-error-key";
 import type {
   MessagingScreenActions,
   MessagingScreenVM,
@@ -41,6 +46,11 @@ const TYPING_INDICATOR_TTL_MS = 6_000;
 const messagesKey = (id: string) => ["messaging", "messages", id] as const;
 const conversationsKey = () => ["messaging", "conversations"] as const;
 const groupKey = (id: string) => ["messaging", "group", id] as const;
+// US-E18.51 — the pin board is its OWN query key, not a slice of the group
+// query: it is a separate endpoint with a separate gate, and pin/unpin
+// invalidate only it (there is no realtime pin signal, so a refetch after the
+// 201/204 is the whole freshness story).
+const pinnedKey = (id: string) => ["messaging", "pinned", id] as const;
 // US-E10.6 — presence queries. Both sit under the ["messaging","presence"]
 // prefix so the presence.changed SSE invalidation (event-invalidation.ts) hits
 // them via prefix match without listing each key.
@@ -73,6 +83,7 @@ export function MessagingScreen({
   contactsLoadError,
   selfId = "me",
   tenantId,
+  canCreateGroup = false,
   sendMessageAction,
   createConversationAction,
   getMessagesAction,
@@ -80,6 +91,8 @@ export function MessagingScreen({
   createGroupAction,
   getGroupAction,
   pinMessageAction,
+  unpinMessageAction,
+  getPinnedMessagesAction,
   deleteMessageAction,
   removeGroupMemberAction,
   addGroupMembersAction,
@@ -90,7 +103,21 @@ export function MessagingScreen({
   sendTypingIndicatorAction,
 }: MessagingScreenProps) {
   const t = useTranslations("messaging");
+  const tErrors = useTranslations("messaging.errors");
+  const tCommon = useTranslations("Common");
   const isMobile = useIsMobile();
+  /**
+   * Mutations reject with `new Error(errorKey)` (the repo's stable failure key)
+   * — translate it here, at the presentation boundary. An unknown message can
+   * only come from a non-action throw, so it degrades to the generic pin copy.
+   */
+  const tFailure = useCallback(
+    (err: unknown) => {
+      const key = err instanceof Error ? err.message : "";
+      return isMessagingErrorKey(key) ? tErrors(key) : tErrors("pin-failed");
+    },
+    [tErrors],
+  );
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams?.get("conversation") ?? null;
@@ -133,6 +160,9 @@ export function MessagingScreen({
   const [isModalOpen, setModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
+  // US-E18.50 — last failed group action (archive), as a stable failure key.
+  const [groupActionError, setGroupActionError] =
+    useState<MessagingFailure["type"]>();
   // US-E10.6 AC-10.6.3.2 — lifted from ChatWindow so the member-panel presence
   // query is gated on the panel actually being open, not on group selection.
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
@@ -248,14 +278,58 @@ export function MessagingScreen({
     },
   });
 
+  // US-E18.51 — the room pin board. Its own query key (own endpoint, own gate),
+  // enabled for the active GROUP conversation rather than only while the panel
+  // is open: pin/unpin have NO realtime signal, so their invalidation must be
+  // able to trigger a real refetch even when the panel is closed (otherwise the
+  // board would be silently stale the next time it opens). One extra read per
+  // opened group against the 120/min quota it shares with message history —
+  // the same order of cost as the history read itself.
+  const {
+    data: pinnedResult,
+    isLoading: pinnedLoading,
+    isFetching: pinnedFetching,
+  } = useQuery({
+    queryKey: activeId ? pinnedKey(activeId) : ["messaging", "pinned"],
+    queryFn: async () => {
+      if (!activeId) return { ok: true as const, value: [] };
+      return getPinnedMessagesAction(activeId);
+    },
+    enabled: Boolean(activeId) && isGroup,
+  });
+  const pinnedMessages = pinnedResult?.ok ? pinnedResult.value : [];
+  const pinnedError =
+    pinnedResult?.ok === false ? pinnedResult.errorKey : undefined;
+
   const pinMutation = useMutation({
     mutationFn: async (vars: { conversationId: string; messageId: string }) => {
       const res = await pinMessageAction(vars.conversationId, vars.messageId);
       if (!res.ok) throw new Error(res.errorKey);
     },
+    onSuccess: () => toast.success(t("toast.pinned")),
+    onError: (err) => toast.error(tFailure(err)),
+    onSettled: (_d, _e, vars) => {
+      // No realtime pin signal exists — refetch the board (and the messages,
+      // whose isPinned flag the mock world tracks) after the 201.
+      queryClient.invalidateQueries({
+        queryKey: pinnedKey(vars.conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: messagesKey(vars.conversationId),
+      });
+    },
+  });
+
+  const unpinMutation = useMutation({
+    mutationFn: async (vars: { conversationId: string; messageId: string }) => {
+      const res = await unpinMessageAction(vars.conversationId, vars.messageId);
+      if (!res.ok) throw new Error(res.errorKey);
+    },
+    onSuccess: () => toast.success(t("toast.unpinned")),
+    onError: (err) => toast.error(tFailure(err)),
     onSettled: (_d, _e, vars) => {
       queryClient.invalidateQueries({
-        queryKey: groupKey(vars.conversationId),
+        queryKey: pinnedKey(vars.conversationId),
       });
       queryClient.invalidateQueries({
         queryKey: messagesKey(vars.conversationId),
@@ -313,7 +387,11 @@ export function MessagingScreen({
         lastMessage: "",
         lastMessageTime: "",
         unreadCount: 0,
-        memberCount: created.members.length,
+        // US-E18.50: the real 201 echoes no membership, so `members` is empty
+        // there. The contract still GUARANTEES the creator is seeded as OWNER,
+        // so "at least 1" is an inference from the contract, not invented data;
+        // the next room read replaces it with the server-confirmed count.
+        memberCount: Math.max(created.members.length, 1),
         selfIsGroupAdmin: true,
       };
       queryClient.setQueryData<ConversationEntity[]>(
@@ -473,6 +551,26 @@ export function MessagingScreen({
 
   return (
     <div className="relative flex h-[calc(100vh-64px)] overflow-hidden">
+      {/* US-E18.50 — archiving a group can fail for a reason the user can act
+          on (a system-provisioned room is not archivable; only the owner may
+          archive), so the failure gets a real, dismissible surface instead of
+          being dropped on the floor. */}
+      {groupActionError && (
+        <div
+          role="alert"
+          className="absolute inset-x-0 top-0 z-20 flex items-start gap-2 border-edu-error/30 border-b bg-edu-error-light px-4 py-2.5 text-edu-error-text text-sm"
+        >
+          <span className="flex-1">{tErrors(groupActionError)}</span>
+          <button
+            type="button"
+            onClick={() => setGroupActionError(undefined)}
+            aria-label={tCommon("close")}
+            className="rounded-md p-0.5 hover:bg-edu-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div
         ref={listPaneRef}
         className={listPaneClass(mobilePane)}
@@ -486,7 +584,11 @@ export function MessagingScreen({
           loadError={loadError}
           onSelect={handleSelect}
           onNewMessage={() => setModalOpen(true)}
-          onCreateGroup={() => setCreateGroupOpen(true)}
+          // US-E18.50: STUDENT/PARENT get no create-group affordance at all —
+          // the list renders the CTA only when the handler is present.
+          onCreateGroup={
+            canCreateGroup ? () => setCreateGroupOpen(true) : undefined
+          }
         />
       </div>
 
@@ -509,6 +611,9 @@ export function MessagingScreen({
             group={groupWithPresence}
             groupLoading={groupLoading}
             onGroupInfoOpenChange={setGroupInfoOpen}
+            pinnedMessages={pinnedMessages}
+            pinnedLoading={pinnedLoading || pinnedFetching}
+            pinnedError={pinnedError}
             onPinMessage={(messageId) => {
               if (activeId)
                 pinMutation.mutate({ conversationId: activeId, messageId });
@@ -533,6 +638,10 @@ export function MessagingScreen({
                 if (res.ok) refreshGroup(res.value);
               },
               onAddMembers: () => setAddMembersOpen(true),
+              onUnpin: (messageId) => {
+                if (activeId)
+                  unpinMutation.mutate({ conversationId: activeId, messageId });
+              },
               onRemoveMember: async (userId) => {
                 if (!activeId) return;
                 const res = await removeGroupMemberAction(activeId, userId);
@@ -551,6 +660,7 @@ export function MessagingScreen({
               },
               onDelete: async () => {
                 if (!activeId) return;
+                setGroupActionError(undefined);
                 const res = await deleteGroupAction(activeId);
                 if (res.ok) {
                   queryClient.setQueryData<ConversationEntity[]>(
@@ -558,6 +668,10 @@ export function MessagingScreen({
                     (old = []) => old.filter((c) => c.id !== activeId),
                   );
                   setActiveId(null);
+                } else {
+                  // Distinct keys survive to the copy: "system-managed group"
+                  // vs "owner only" vs a generic retryable failure.
+                  setGroupActionError(res.errorKey);
                 }
               },
             }}
@@ -575,15 +689,15 @@ export function MessagingScreen({
         onSelectContact={handleSelectContact}
       />
 
-      <CreateGroupModal
-        open={createGroupOpen}
-        contacts={initialContacts}
-        contactsError={contactsLoadError}
-        isSubmitting={createGroupMutation.isPending}
-        submitError={createGroupMutation.isError}
-        onOpenChange={setCreateGroupOpen}
-        onSubmit={(values) => createGroupMutation.mutate(values)}
-      />
+      {canCreateGroup && (
+        <CreateGroupModal
+          open={createGroupOpen}
+          isSubmitting={createGroupMutation.isPending}
+          submitError={createGroupErrorKey(createGroupMutation.error)}
+          onOpenChange={setCreateGroupOpen}
+          onSubmit={(values) => createGroupMutation.mutate(values)}
+        />
+      )}
 
       <AddMembersModal
         open={addMembersOpen}

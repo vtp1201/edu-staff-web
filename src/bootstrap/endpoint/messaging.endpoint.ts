@@ -4,19 +4,32 @@
  * ADR 0060) and share the `/social/api/v1/...` prefix convention already used by
  * `MODERATION_EP`/`FEED_EP`. No magic strings in repositories.
  *
- * The group lifecycle / contacts-directory / message-pin flows have NO real
- * contract (ADR 0060) — `MockMessagingRepository` serves them with in-memory
- * fixtures and never reads endpoint constants for them, and the real
- * `MessagingRepository` returns an explicit fail Result without any HTTP call
- * (see its "Permanently unsupported" section) — so no constants for those
- * flows are kept here; there is nothing for them to point at.
+ * US-E18.50 (BE US-193, ADR 0132) added exactly TWO self-service group-room
+ * paths — `groups` (create) and `roomArchive` (soft-delete). The REST of the
+ * group-lifecycle slice (read a group with named members, rename, add/remove
+ * members, self-leave) still has no usable contract, keeps its mock service,
+ * and gets no constants here — there is nothing for it to point at. Same for
+ * the contacts-directory flow (ADR 0060, US-E18.52).
+ *
+ * US-E18.51 (BE US-192) closed the MESSAGE-PIN third of that gap: pin, unpin and
+ * the pin board are real and have constants below.
  */
 export const MESSAGING_EP = {
   /** List rooms: `GET ?userId=<self>` (create is worker/provisioned, not used by web). */
   rooms: "/social/api/v1/rooms",
+  /** US-193: create a self-service `custom` group room; body is `{name}` ONLY. */
+  groups: "/social/api/v1/rooms/groups",
+  /** US-193: soft-archive a self-service (`custom`) group room; no body → 204. */
+  roomArchive: (roomId: string) => `/social/api/v1/rooms/${roomId}/archive`,
   roomMessages: (roomId: string) => `/social/api/v1/rooms/${roomId}/messages`,
   roomMessageById: (roomId: string, messageId: string) =>
     `/social/api/v1/rooms/${roomId}/messages/${messageId}`,
+  /** US-E18.51 — `POST` pins (201), `DELETE` unpins (204). No request body. */
+  roomMessagePin: (roomId: string, messageId: string) =>
+    `/social/api/v1/rooms/${roomId}/messages/${messageId}/pin`,
+  /** US-E18.51 — the room's pin board: flat array, newest-pin-first, NOT paginated. */
+  roomPinnedMessages: (roomId: string) =>
+    `/social/api/v1/rooms/${roomId}/pinned-messages`,
   roomRead: (roomId: string) => `/social/api/v1/rooms/${roomId}/read`,
   roomTyping: (roomId: string) => `/social/api/v1/rooms/${roomId}/typing`,
   schoolDms: "/social/api/v1/rooms/school-dms",

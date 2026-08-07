@@ -2,6 +2,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type { CreateGroupFormValues } from "@/features/messaging/presentation/create-group-modal";
@@ -29,6 +30,15 @@ export interface MessagingScreenVM {
    * EventSource is opened.
    */
   tenantId?: string;
+  /**
+   * US-E18.50 — may the viewer create a group room? The real
+   * `POST /rooms/groups` allow-list is ADMIN/MANAGER/TEACHER/STAFF, so a
+   * STUDENT/PARENT attempt is a guaranteed 403. Resolved server-side from the
+   * access-token role claim and passed down so the affordance is simply ABSENT
+   * for those roles rather than a button that always fails. Fail-closed:
+   * `undefined` (a caller that says nothing) means "no".
+   */
+  canCreateGroup?: boolean;
 }
 
 /** Result of a sendMessage / createConversation server action. */
@@ -50,6 +60,11 @@ export type CreateGroupResult =
 
 export type GetGroupResult =
   | { ok: true; value: GroupEntity }
+  | { ok: false; errorKey: MessagingFailure["type"] };
+
+/** US-E18.51 — the room's pin board (its own resource, not part of the group). */
+export type GetPinnedMessagesResult =
+  | { ok: true; value: PinnedMessage[] }
   | { ok: false; errorKey: MessagingFailure["type"] };
 
 /** US-E10.6 — presence snapshot (INT-401) for a batch of member ids. */
@@ -82,6 +97,15 @@ export interface MessagingScreenActions {
   ) => Promise<CreateGroupResult>;
   getGroupAction: (groupId: string) => Promise<GetGroupResult>;
   pinMessageAction: (
+    conversationId: string,
+    messageId: string,
+  ) => Promise<ActionResult>;
+  /** US-E18.51 — read the pin board (any room member). */
+  getPinnedMessagesAction: (
+    conversationId: string,
+  ) => Promise<GetPinnedMessagesResult>;
+  /** US-E18.51 — unpin (moderation action, needs `moderate_msg`). */
+  unpinMessageAction: (
     conversationId: string,
     messageId: string,
   ) => Promise<ActionResult>;

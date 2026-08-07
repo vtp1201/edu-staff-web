@@ -16,7 +16,9 @@ import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 import { msgPresence } from "@/features/messaging/domain/entities/presence";
+import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { cn } from "@/shared/utils";
 import { ChatBubble, DateDivider } from "../chat-bubble/chat-bubble";
@@ -66,6 +68,14 @@ export interface ChatWindowProps {
   selfId?: string;
   groupActions?: Omit<GroupInfoPanelActions, "onOpenChange" | "onPinnedClick">;
   /**
+   * US-E18.51 — the room's pin board, fetched by the screen INDEPENDENTLY of
+   * group detail (its own endpoint + its own gate). Passed straight through to
+   * the panel; defaults keep standalone ChatWindow stories working.
+   */
+  pinnedMessages?: PinnedMessage[];
+  pinnedLoading?: boolean;
+  pinnedError?: MessagingFailure["type"];
+  /**
    * US-E10.6 AC-10.6.3.2 — notified when the group-info panel opens/closes so
    * the screen can gate the member-panel presence fetch on the panel's own open
    * state (the fetch must NOT fire from merely selecting a group). Optional:
@@ -93,6 +103,9 @@ export function ChatWindow({
   groupLoading = false,
   selfId = "me",
   groupActions,
+  pinnedMessages = [],
+  pinnedLoading = false,
+  pinnedError,
   onGroupInfoOpenChange,
 }: ChatWindowProps) {
   const t = useTranslations("messaging");
@@ -439,7 +452,7 @@ export function ChatWindow({
           isMine={contextMenu.isMine}
           sentAt={contextMenu.sentAt}
           isGroup={isGroup}
-          selfIsGroupAdmin={selfIsGroupAdmin}
+          selfIsGroupAdmin={conversation.selfIsGroupAdmin}
           onReply={handleReplyFromMenu}
           onPin={() => {
             onPinMessage?.(contextMenu.targetMessageId);
@@ -461,6 +474,10 @@ export function ChatWindow({
           isLoading={groupLoading}
           selfIsAdmin={selfIsGroupAdmin}
           selfId={selfId}
+          pinnedMessages={pinnedMessages}
+          pinnedLoading={pinnedLoading}
+          pinnedError={pinnedError}
+          canUnpin={conversation.selfIsGroupAdmin}
           onOpenChange={setGroupInfoOpen}
           onPinnedClick={(messageId) => {
             setGroupInfoOpen(false);
