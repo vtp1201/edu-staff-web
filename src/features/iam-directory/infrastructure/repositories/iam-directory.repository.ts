@@ -35,6 +35,11 @@ function toFailure(err: unknown): IamDirectoryFailure {
     return { type: "network-error" };
   }
   switch (code) {
+    case "member_list_role_filter_required":
+      // ADR 0129: narrowed-tier caller with a missing/disallowed `role=`.
+      // Checked BEFORE the bare-403 fallback and kept separate from
+      // `member_list_forbidden` — different cause, different remedy.
+      return { type: "role-filter-required" };
     case "member_list_forbidden":
       // 403 on the directory list (missing reader RBAC) AND on the batch
       // lookup when the token carries no active tenant claim.

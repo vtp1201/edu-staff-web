@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
 import type { PresenceResponseDto } from "../dtos/presence-response.dto";
 import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
 import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import {
-  toContactEntity,
+  toContactFromDirectoryMember,
   toConversationEntity,
   toConversationEntityFromRoom,
   toMessageEntity,
@@ -108,58 +107,89 @@ describe("messaging.mapper", () => {
     });
   });
 
-  describe("toContactEntity", () => {
-    it("maps all contact fields", () => {
-      const dto: ContactResponseDto = {
-        id: "u1",
-        name: "Trần Minh Quân",
-        role: "Hiệu trưởng",
-        avatarInitials: "TQ",
-        color: "success",
-        isOnline: true,
-      };
+  describe("toContactFromDirectoryMember (US-E18.52, IAM ADR 0129)", () => {
+    it("maps a NARROWED-tier row (memberId/userId/displayName only)", () => {
+      const contact = toContactFromDirectoryMember(
+        { memberId: "u-1", userId: "u-1", displayName: "Lê Thị Hoa" },
+        "TEACHER",
+      );
 
-      expect(toContactEntity(dto)).toEqual({
-        id: "u1",
-        name: "Trần Minh Quân",
-        role: "Hiệu trưởng",
-        avatarInitials: "TQ",
-        color: "success",
-        isOnline: true,
+      expect(contact).toEqual({
+        // `createConversation` posts `targetUserId`, so the contact id must be
+        // the USER id (on this wire memberId === userId, but be explicit).
+        id: "u-1",
+        name: "Lê Thị Hoa",
+        roleKey: "teacher",
+        avatarInitials: roomInitials("Lê Thị Hoa"),
+        color: roomColorKey("u-1"),
+        isOnline: false,
       });
     });
 
-    // US-E10.6 — additive presence passthrough.
-    it("carries presence/lastActiveAt when present on the DTO", () => {
-      const dto: ContactResponseDto = {
-        id: "u2",
-        name: "Phạm Quốc Bảo",
-        role: "Giáo viên Văn",
-        avatarInitials: "PB",
-        color: "purple",
-        isOnline: false,
-        presence: "recent",
-        lastActiveAt: "2026-07-14T09:57:00Z",
-      };
-
-      const entity = toContactEntity(dto);
-      expect(entity.presence).toBe("recent");
-      expect(entity.lastActiveAt).toBe("2026-07-14T09:57:00Z");
+    it("emits a stable roleKey, never a translated label (i18n happens in presentation)", () => {
+      expect(
+        toContactFromDirectoryMember(
+          { memberId: "u-2", userId: "u-2", displayName: "Nguyễn Văn A" },
+          "STAFF",
+        ).roleKey,
+      ).toBe("staff");
+      expect(
+        toContactFromDirectoryMember(
+          { memberId: "u-3", userId: "u-3", displayName: "Trần B" },
+          "MANAGER",
+        ).roleKey,
+      ).toBe("manager");
     });
 
-    it("leaves presence/lastActiveAt undefined when absent (never defaults)", () => {
-      const dto: ContactResponseDto = {
-        id: "u3",
-        name: "Nguyễn Văn Đức",
-        role: "Phụ huynh",
-        avatarInitials: "ND",
-        color: "purple",
-        isOnline: true,
-      };
+    it("takes the role from the PINNED query filter, not from roles[0]", () => {
+      // A staff-tier row lists every role the member holds; `roles[0]` may be
+      // "ADMIN" for someone the query matched as a TEACHER. The filter is the
+      // only fact guaranteed true of every returned row.
+      const contact = toContactFromDirectoryMember(
+        {
+          memberId: "u-4",
+          userId: "u-4",
+          displayName: "Phạm Quốc Bảo",
+          email: "bao@example.com",
+          roles: ["ADMIN", "TEACHER"],
+          status: "ACTIVE",
+        },
+        "TEACHER",
+      );
 
-      const entity = toContactEntity(dto);
-      expect(entity.presence).toBeUndefined();
-      expect(entity.lastActiveAt).toBeUndefined();
+      expect(contact.roleKey).toBe("teacher");
+    });
+
+    it("never leaks staff-tier PII (email/status) into the contact picker", () => {
+      const contact = toContactFromDirectoryMember(
+        {
+          memberId: "u-5",
+          userId: "u-5",
+          displayName: "Trần Minh Quân",
+          email: "quan@example.com",
+          roles: ["TEACHER"],
+          status: "SUSPENDED",
+        },
+        "TEACHER",
+      );
+
+      expect(Object.keys(contact).sort()).toEqual([
+        "avatarInitials",
+        "color",
+        "id",
+        "isOnline",
+        "name",
+        "roleKey",
+      ]);
+      expect(JSON.stringify(contact)).not.toContain("quan@example.com");
+    });
+
+    it("carries NO free-text `role` — the picker translates `roleKey` instead", () => {
+      const contact = toContactFromDirectoryMember(
+        { memberId: "u-6", userId: "u-6", displayName: "Võ Thị Bình" },
+        "ADMIN",
+      );
+      expect("role" in contact).toBe(false);
     });
   });
 

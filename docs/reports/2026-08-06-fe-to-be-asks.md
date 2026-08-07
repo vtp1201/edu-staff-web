@@ -38,7 +38,26 @@
     mapper hết fallback-preset vô điều kiện + hết hardcode `count: 1`, write
     path gửi bands cho scale số / omit `requiredCount` khi chưa đặt, thêm
     failure `invalid-bands` cho 422 `GRADE_SCALE_INVALID_BANDS`.
-17. **#32** — messaging product decisions (self-service group room, message-pin, STUDENT/PARENT directory variant).
+17. **#32** — messaging product decisions — **CẢ BA ĐÃ ĐÓNG** (FE tiêu thụ xong
+    2026-08-07): **(a) self-service group room** — BE US-193/ADR 0132, FE wire ở
+    **US-E18.50** (create `POST /rooms/groups` + archive real; 5 method còn lại
+    của group slice vẫn mock vì contract chưa đủ — lý do per-method trong packet).
+    **(b) message-pin** — BE US-192, FE wire ở **US-E18.51**: xoá
+    `GroupEntity.pinnedMessages` (pin board là resource riêng, gate riêng), map
+    4 failure riêng (cap-50 / already-pinned / not-pinned / forbidden) và tái
+    dùng nguyên mapping 429 của message-history. **(c) STUDENT/PARENT directory
+    variant** — BE US-190/ADR 0129, FE tiêu thụ ở **US-E18.52**: `getContacts()`
+    rời slice force-mock, pin `role=TEACHER`, parent→parent qua `?ids=` batch
+    không đổi.
+    **Ask mới phát sinh từ US-E18.51 — #32(b′):** pin board nhúng message với
+    `senderName` LUÔN rỗng (`toMessageDTO(msg, "")` — sender name không được
+    persist cùng message, chỉ stamp từ claims lúc gửi), nên UI phải hiển thị
+    "Không rõ người gửi" cho mọi tin đã ghim. Đề nghị BE cân nhắc denormalize
+    sender name vào `pinned_messages` (hoặc cho FE một lookup theo `senderUserId`).
+    Ghi chú phụ: Go handler CÓ emit `senderName` trên `MessageResponse` nhưng
+    `openapi.yaml` schema `Message` KHÔNG khai báo field này — drift nên sync.
+    Ngoài ra wire không có capability/room-role nào của caller nên FE không thể
+    ẩn nút pin trước; đang dùng reactive 403 (chấp nhận được, chỉ ghi nhận).
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
 19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
 

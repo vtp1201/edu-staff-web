@@ -21,12 +21,16 @@ export const PrincipalTeachersMapper = {
     return {
       teacherId: member.memberId,
       displayName: member.displayName,
-      email: member.email,
+      // `email`/`status` are staff-tier only since ADR 0129 (US-E18.52).
+      // `/principal/*` IS staff-tier so both always arrive here; they are
+      // still carried across HONESTLY rather than defaulted — absent email →
+      // key absent (no `""`), absent status → `null` (no fabricated ACTIVE).
+      ...(member.email !== undefined ? { email: member.email } : {}),
       primarySubjectName: null,
       homeroomClassId: null,
       homeroomClassName: null,
       subjectAssignments: [],
-      status: member.status,
+      status: member.status ?? null,
     };
   },
 

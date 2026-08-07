@@ -26,6 +26,60 @@ describe("IamDirectoryMapper.toDirectoryMember", () => {
     });
   });
 
+  it("staff tier — the full row is byte-identical to the pre-ADR-0129 shape (regression, US-E18.52)", () => {
+    // The SAME mapper now serves both tiers. A staff-tier caller
+    // (SUPER_ADMIN / tenant ADMIN|MANAGER|TEACHER) must keep receiving all six
+    // keys, unchanged — every existing consumer (class picker, staffing, admin
+    // roster, principal teacher directory) depends on it.
+    const entity = IamDirectoryMapper.toDirectoryMember({
+      memberId: "u-20",
+      userId: "u-20",
+      displayName: "Nguyễn Thị Staff",
+      email: "staff@example.com",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+    });
+
+    expect(Object.keys(entity).sort()).toEqual([
+      "displayName",
+      "email",
+      "memberId",
+      "roles",
+      "status",
+      "userId",
+    ]);
+    expect(entity).toEqual({
+      memberId: "u-20",
+      userId: "u-20",
+      displayName: "Nguyễn Thị Staff",
+      email: "staff@example.com",
+      roles: ["TEACHER"],
+      status: "ACTIVE",
+    });
+  });
+
+  it("narrowed tier (STAFF/STUDENT/PARENT caller) — email/roles/status keys are ABSENT, not undefined-valued (ADR 0129)", () => {
+    // Same tiered-response idiom as `MemberSummary` (ADR-0120) and `dob`/
+    // `gender` (ADR-0122): presence IS the tier signal, so a conditional
+    // spread — never `?? ""` — is the only honest map. `toEqual` alone would
+    // pass with an `email: undefined` key present, hence the key-set + `in`
+    // assertions.
+    const entity = IamDirectoryMapper.toDirectoryMember({
+      memberId: "u-21",
+      userId: "u-21",
+      displayName: "Lê Văn Giáo",
+    });
+
+    expect(Object.keys(entity).sort()).toEqual([
+      "displayName",
+      "memberId",
+      "userId",
+    ]);
+    expect("email" in entity).toBe(false);
+    expect("roles" in entity).toBe(false);
+    expect("status" in entity).toBe(false);
+  });
+
   it("does NOT filter on status itself — BE owns the LEFT-exclusion rule", () => {
     // BE excludes LEFT members from the directory list but INCLUDES them in the
     // batch lookup (historical rows keep their names). That rule lives BE-side;

@@ -2675,6 +2675,12 @@
       "typing": "Typing a message...",
       "you": "You"
     },
+    "contactRole": {
+      "admin": "Administrator",
+      "manager": "School management",
+      "staff": "Staff",
+      "teacher": "Teacher"
+    },
     "contextMenu": {
       "copy": "Copy text",
       "delete": "Delete",
@@ -2705,44 +2711,38 @@
     "errors": {
       "create-conversation-failed": "Could not create the conversation. Please try again.",
       "create-group-failed": "Could not create group. Please try again.",
+      "create-group-forbidden": "You are not allowed to create groups. Only teachers, staff and school leaders can.",
+      "group-not-self-service": "This is a system-managed group (class or parent group) and cannot be archived.",
       "delete-message-failed": "Could not delete message.",
       "delete-window-expired": "The 5-minute window to delete this message has passed.",
       "mark-read-failed": "Could not mark the conversation as read.",
       "typing-signal-failed": "Could not send the typing signal.",
       "group-mutation-failed": "Group action failed. Please try again.",
       "leave-group-failed": "Could not leave group.",
+      "load-contacts-failed": "Could not load the contact directory. Please try again.",
       "load-conversations-failed": "Could not load conversations. Please try again.",
       "load-messages-failed": "Could not load messages. Please try again.",
       "load-presence-failed": "Could not load presence.",
       "not-group-admin": "Only group admins can perform this action.",
       "pin-failed": "Could not pin message.",
-      "send-message-failed": "Could not send the message. Please try again."
+      "send-message-failed": "Could not send the message. Please try again.",
+      "pin-limit-reached": "This room already has the maximum of 50 pinned messages. Unpin one before pinning another.",
+      "message-already-pinned": "This message is already pinned.",
+      "message-not-pinned": "This message is not currently pinned.",
+      "pin-forbidden": "You do not have permission to pin or unpin messages in this room.",
+      "load-pinned-failed": "Could not load pinned messages. Please try again."
     },
     "group": {
-      "colorLabel": "Group color",
       "createButton": "Create group",
       "createTitle": "Create new group",
-      "descLabel": "Description",
-      "descPlaceholder": "Group description (optional)...",
       "emptyCreateCta": "Create new group",
       "emptySubtitle": "Create a new group to collaborate.",
       "emptyTitle": "You haven't joined any groups yet.",
       "memberCount": "{count} members",
+      "membersAfterCreate": "You can add members once the group exists.",
       "nameLabel": "Group name",
       "namePlaceholder": "Enter group name...",
-      "nextStep": "Next",
-      "noMembersFound": "No matching members found.",
-      "prevStep": "Back",
-      "removeChip": "Remove {name}",
-      "searchMembersPlaceholder": "Search members...",
-      "selectedCount": "{count} selected",
-      "stepInfo": "Group info",
-      "stepMembers": "Add members",
-      "typeClass": "Class",
-      "typeClub": "Club",
-      "typeDept": "Department",
-      "typeLabel": "Group type",
-      "typeOther": "Other"
+      "nameTooShort": "The group name needs at least 2 characters."
     },
     "groupInfo": {
       "addMembers": "+ Add members",
@@ -2763,7 +2763,10 @@
       "removeMember": "Remove from group",
       "removeMemberAria": "Remove {name} from group",
       "save": "Save",
-      "title": "Group info"
+      "title": "Group info",
+      "pinnedLoading": "Loading pinned messages…",
+      "unknownSender": "Unknown sender",
+      "unpinAria": "Unpin message from {sender}"
     },
     "addMembersModal": {
       "title": "Add members",
@@ -2777,6 +2780,7 @@
     },
     "newMessage": {
       "button": "New message",
+      "noContacts": "There is no one available to message yet.",
       "searchPlaceholder": "Search users...",
       "suggestions": "Suggestions",
       "title": "New message"
@@ -2808,7 +2812,11 @@
       "groups": "Groups"
     },
     "title": "Messages",
-    "totalUnread": "{count} unread messages"
+    "totalUnread": "{count} unread messages",
+    "toast": {
+      "pinned": "Message pinned.",
+      "unpinned": "Message unpinned."
+    }
   },
   "moderation": {
     "reportDialog": {

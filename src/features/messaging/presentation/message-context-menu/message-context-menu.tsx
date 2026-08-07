@@ -63,7 +63,10 @@ export function MessageContextMenu({
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [pos, setPos] = useState({ left: x, top: y });
 
-  const pinDisabled = isGroup && !selfIsGroupAdmin;
+  // US-E18.51 reactive gate: only a KNOWN non-admin disables pin. When the
+  // capability is unknown (real mode — no room-role on the wire) the user may
+  // try and gets the server's forbidden failure, instead of a dead control.
+  const pinDisabled = isGroup && selfIsGroupAdmin === false;
   const deleteExpired = sentAt
     ? Date.now() - Date.parse(sentAt) > FIVE_MINUTES_MS
     : true;

@@ -11,4 +11,10 @@
 - [core grade-scale bands + requiredCount](be-core-grade-scale-bands.md) — asymmetric omitempty (null vs absent), one 422 for all band rules, count is display-only
 - [appRole `admin` unreachable in real mode](platform-admin-approle-unreachable.md) — ROLE_ENUM_TO_APP has no `admin`; /admin/* is mock-only; ADR-worthy, not a story fix
 - [Flaky principal-classes story](flaky-storybook-principal-classes.md) — the one Storybook test that intermittently fails; re-run before blaming a branch
+- [IAM member LIST tiers (ADR 0129)](be-iam-member-list-tiers.md) — narrowed tier, required `role=`, two distinct 403s, and the LIST-vs-BATCH entity split
+- [IAM wire error-code casing](be-iam-error-code-casing.md) — wire is UPPER_SNAKE; `iam-member.repository.ts`'s lowercase mapper is a suspected live bug
+- [Public-endpoint DI discipline](public-endpoint-di-discipline.md) — bare `createHttpClient()` for pre-session calls + the FE-server-IP rate-limit bucketing caveat
+- [social self-service group rooms](be-social-group-rooms.md) — US-193: only create+archive are real; why the other 5 group methods are blocked (no member display name, no PATCH room)
+- [social message-pin + pin board](be-social-message-pin.md) — senderName always `""`, no wire capability (tri-state gate), self-healing board read, two 409s
 - [core member-attendance read](be-member-attendance-read.md) — PARENT allowed since US-047 (openapi prose stale), guard ordering, UPPER_SNAKE enum, ATTENDANCE_FORBIDDEN
+- [core academic-record member read](be-core-academic-record-member-read.md) — TEACHER absent from the allow-list, PARENT can never resolve a year, decimal-string wire

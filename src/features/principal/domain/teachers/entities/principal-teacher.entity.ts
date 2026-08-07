@@ -37,7 +37,14 @@ export interface PrincipalTeacher {
   /** IAM `memberId` (=== `userId`; a membership's identity IS `(tenantId, userId)`). */
   teacherId: string;
   displayName: string;
-  email: string;
+  /**
+   * Staff-tier only (IAM ADR 0129, US-E18.52). `/principal/*` IS a staff-tier
+   * surface (ADMIN/MANAGER), so the directory always serves it here in
+   * practice — but the row it is mapped from no longer guarantees it at the
+   * type level, and `""` would be a fabricated value. Absent → the UI omits
+   * the caption instead of rendering an empty one.
+   */
+  email?: string;
   /**
    * DERIVED, not authoritative: the subject this teacher is assigned to in the
    * most classes (ties resolved alphabetically). IAM carries no "primary
@@ -49,5 +56,10 @@ export interface PrincipalTeacher {
   homeroomClassId: string | null;
   homeroomClassName: string | null;
   subjectAssignments: SubjectAssignment[];
-  status: TeacherStatus;
+  /**
+   * Staff-tier only (IAM ADR 0129) — `null` only if IAM ever narrowed this
+   * caller, which `/principal/*` never is. Never defaulted to `"ACTIVE"`: a
+   * fabricated "Đang công tác" badge would be worse than no badge.
+   */
+  status: TeacherStatus | null;
 }
