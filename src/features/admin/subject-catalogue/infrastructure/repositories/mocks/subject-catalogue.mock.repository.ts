@@ -114,6 +114,11 @@ export class MockSubjectCatalogueRepository
     return ok([...parent.subjects]);
   }
 
+  async listAllSubjects(): Promise<Result<Subject[], SubjectCatalogueFailure>> {
+    await mockDelay(150);
+    return ok(_state.flatMap((parent) => [...parent.subjects]));
+  }
+
   async createSubject(
     data: CreateSubjectInput,
   ): Promise<Result<Subject, SubjectCatalogueFailure>> {

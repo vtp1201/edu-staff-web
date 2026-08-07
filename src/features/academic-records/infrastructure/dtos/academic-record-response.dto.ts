@@ -1,42 +1,51 @@
-export interface SubjectScoreDto {
+/**
+ * REAL `core` wire shapes for the academic-record viewer (US-E18.54),
+ * ground-truthed against `edu-api/services/core`'s
+ * `internal/assessment/adapter/http/dto/academic_record_dto.go` (the Go struct,
+ * not only `openapi.yaml`).
+ *
+ * The pre-remodel DTOs (`AcademicRecordResponseDto` with `years[]` /
+ * `SubjectScoreDto` with tx1/tx2/giuaKy/cuoiKy) were an ANTICIPATORY shape no
+ * server ever produced — deleted, not adapted.
+ */
+
+/** One frozen grade column. `coefficient`/`value` are DECIMAL STRINGS. */
+export interface GradeSnapshotItemDto {
   subjectId: string;
-  subjectName: string;
-  tx1: number | null;
-  tx2: number | null;
-  giuaKy: number | null;
-  cuoiKy: number | null;
+  columnId: string;
+  columnName: string;
+  columnType: string;
+  /** e.g. `"1.0"`, `"2.0"` — a string on the wire, parsed by the mapper. */
+  coefficient: string;
+  /** Frozen grade value at seal time, e.g. `"8.50"` — a string on the wire. */
+  value: string;
 }
 
-export interface TermRecordDto {
-  termId: "HK1" | "HK2";
+/**
+ * ONE `(classId, termId, studentMemberId)` record. Go marshals the pointer
+ * fields with `omitempty`, so `sealedAt`/`sealedBy`/`unsealReason`/
+ * `unsealedBy`/`unsealedAt` are ABSENT (not `null`) when unset — hence
+ * optional, never defaulted. `termAverage` is a plain string field that is
+ * `""` when the server computed none.
+ */
+export interface AcademicRecordRowDto {
+  classId: string;
+  /** Free-form (`"HK1"` / uuid) — a clustering key, not a constrained enum. */
+  termId: string;
+  studentMemberId: string;
   status: "PENDING" | "SEALED" | "UNSEALED";
-  classId: string | null;
-  conductGrade: string | null; // "Tot"|"Kha"|"TrungBinh"|"Yeu"
-  sealedAt: string | null;
-  sealedBy: string | null;
-  unsealedAt: string | null;
-  unsealReason: string | null;
-  subjects: SubjectScoreDto[];
+  gradeSnapshot: GradeSnapshotItemDto[];
+  termAverage: string;
+  sealedAt?: string;
+  sealedBy?: string;
+  unsealReason?: string;
+  unsealedBy?: string;
+  unsealedAt?: string;
+  resealCount: number;
 }
 
-export interface AcademicYearDto {
-  yearId: string;
-  yearLabel: string;
-  classId: string | null;
-  grade: number | null;
-  isCurrent: boolean;
-  terms: TermRecordDto[];
-}
-
-export interface AcademicRecordResponseDto {
-  studentId: string;
-  studentName: string;
-  studentCode: string;
-  dateOfBirth: string | null;
-  currentClassId: string | null;
-  currentSchoolYear: string | null;
-  years: AcademicYearDto[];
-  sealed: boolean;
-  sealedAt: string | null;
-  sealedBy: string | null;
+/** `GET /members/{memberId}/academic-records` payload (UNPAGINATED). */
+export interface ListStudentAcademicRecordsResponseDto {
+  studentMemberId: string;
+  records: AcademicRecordRowDto[];
 }

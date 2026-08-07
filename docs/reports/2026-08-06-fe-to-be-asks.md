@@ -59,7 +59,7 @@
     Ngoài ra wire không có capability/room-role nào của caller nên FE không thể
     ẩn nút pin trước; đang dùng reactive 403 (chấp nhận được, chỉ ghi nhận).
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
-19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
+19. ~~**Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.~~ — **ĐÃ TRẢ LỜI + TIÊU THỤ (2026-08-07, US-E18.54).** BE chốt `classId+termId` vĩnh viễn, year-grouping làm client-side qua `GET /members/{memberId}/academic-records` (US-064, đã ship từ lâu, chưa ai gọi). FE đã bỏ force-mock viewer + remodel entity sang derived-view. Phát sinh **2 ask mới** (`docs/reports/2026-08-07-fe-to-be-academic-record-viewer-asks.md`): **#47** denormalize `academicYear` lên record row (join client-side KHÔNG khả thi cho PARENT — không read class-context nào cho PARENT), **#48** TEACHER không nằm trong allow-list của chính read học bạ (route teacher hiện degrade `forbidden`).
 
 ## Phần 3 — Batch 4 tiêu thụ xong (BE US-186..189, 2026-08-07)
 

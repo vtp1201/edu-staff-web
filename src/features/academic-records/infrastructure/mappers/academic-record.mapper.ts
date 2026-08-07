@@ -1,99 +1,90 @@
 import { getRankBand } from "@/features/grades/domain/use-cases/rank-band";
 import type {
-  AcademicRecord,
-  AcademicYear,
-  ConductGrade,
+  SubjectColumnScore,
   SubjectScore,
   TermRecord,
 } from "../../domain/entities/academic-record.entity";
 import { calculateSubjectAvg } from "../../domain/use-cases/calculate-subject-avg";
-import { deriveYearSealStatus } from "../../domain/use-cases/derive-year-seal-status";
-import type {
-  AcademicRecordResponseDto,
-  SubjectScoreDto,
-  TermRecordDto,
-} from "../dtos/academic-record-response.dto";
+import type { AcademicRecordRowDto } from "../dtos/academic-record-response.dto";
 
-const CONDUCT_VALUES: ConductGrade[] = ["Tot", "Kha", "TrungBinh", "Yeu"];
-
-function mapConduct(raw: string | null): ConductGrade | null {
-  if (raw === null) return null;
-  return CONDUCT_VALUES.includes(raw as ConductGrade)
-    ? (raw as ConductGrade)
-    : null;
+/**
+ * Decimal STRINGS on the wire (`coefficient`, `value`, `termAverage`) →
+ * numbers. An empty/unparseable string is `null`, never `0` — a missing score
+ * and a zero score are different facts in a học bạ.
+ */
+function parseDecimal(raw: string | undefined): number | null {
+  if (raw === undefined || raw.trim() === "") return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function mapSubject(dto: SubjectScoreDto): SubjectScore {
-  const termAvg = calculateSubjectAvg(dto.tx1, dto.tx2, dto.giuaKy, dto.cuoiKy);
-  return {
-    subjectId: dto.subjectId,
-    subjectName: dto.subjectName,
-    tx1: dto.tx1,
-    tx2: dto.tx2,
-    giuaKy: dto.giuaKy,
-    cuoiKy: dto.cuoiKy,
-    termAvg,
-    rankBand: getRankBand(termAvg),
-  };
+/** Absent optional wire key (Go `omitempty`) → explicit `null`. */
+function orNull(raw: string | undefined): string | null {
+  return raw === undefined ? null : raw;
 }
 
-function mapTerm(dto: TermRecordDto): TermRecord {
-  const subjects = dto.subjects.map(mapSubject);
-  const avgs = subjects
-    .map((s) => s.termAvg)
-    .filter((v): v is number => v !== null);
-  const gpa =
-    avgs.length === 0
-      ? null
-      : Math.round((avgs.reduce((a, b) => a + b, 0) / avgs.length) * 100) / 100;
+/**
+ * Maps ONE `(classId, termId)` wire record to a {@link TermRecord}, rolling the
+ * DYNAMIC `gradeSnapshot` column array up per subject.
+ *
+ * `subjectNames` is the OPTIONAL tenant subject-catalogue lookup composed in
+ * `bootstrap/di` — an unresolved subject keeps a `null` name (presentation owns
+ * the placeholder); a raw subjectId uuid must never reach a labelled slot.
+ */
+export function mapAcademicRecordRow(
+  dto: AcademicRecordRowDto,
+  subjectNames: Map<string, string>,
+): TermRecord {
+  const bySubject = new Map<string, SubjectColumnScore[]>();
+  for (const snapshotItem of dto.gradeSnapshot ?? []) {
+    const column: SubjectColumnScore = {
+      columnId: snapshotItem.columnId,
+      columnName: snapshotItem.columnName,
+      columnType: snapshotItem.columnType,
+      coefficient: parseDecimal(snapshotItem.coefficient),
+      value: parseDecimal(snapshotItem.value),
+    };
+    const existing = bySubject.get(snapshotItem.subjectId);
+    if (existing) existing.push(column);
+    else bySubject.set(snapshotItem.subjectId, [column]);
+  }
+
+  const subjects: SubjectScore[] = [...bySubject.entries()].map(
+    ([subjectId, columns]) => {
+      const termAvg = calculateSubjectAvg(columns);
+      return {
+        subjectId,
+        subjectName: subjectNames.get(subjectId) ?? null,
+        columns,
+        termAvg,
+        rankBand: getRankBand(termAvg),
+      };
+    },
+  );
 
   return {
+    classId: dto.classId,
     termId: dto.termId,
     status: dto.status,
-    classId: dto.classId,
-    conductGrade: mapConduct(dto.conductGrade),
-    sealedAt: dto.sealedAt,
-    sealedBy: dto.sealedBy,
-    unsealedAt: dto.unsealedAt,
-    unsealReason: dto.unsealReason,
+    sealedAt: orNull(dto.sealedAt),
+    sealedBy: orNull(dto.sealedBy),
+    unsealedAt: orNull(dto.unsealedAt),
+    unsealedBy: orNull(dto.unsealedBy),
+    unsealReason: orNull(dto.unsealReason),
+    resealCount: dto.resealCount,
     subjects,
-    gpa,
+    // The server-computed `termAverage` is what was FROZEN at seal time — it
+    // wins over any client recomputation. Fall back to the mean of the subject
+    // averages only when the server sent none.
+    gpa: parseDecimal(dto.termAverage) ?? deriveGpa(subjects),
   };
 }
 
-function mapYear(
-  dto: AcademicRecordResponseDto["years"][number],
-): AcademicYear {
-  const terms = dto.terms.map(mapTerm);
-  return {
-    yearId: dto.yearId,
-    yearLabel: dto.yearLabel,
-    classId: dto.classId,
-    grade: dto.grade,
-    isCurrent: dto.isCurrent,
-    sealStatus: deriveYearSealStatus(terms),
-    terms,
-  };
-}
-
-/** Maps an academic-record API payload to the domain entity, computing each
- * subject's weighted termAvg + rank band, each term's GPA, and each year's
- * seal status. The record is `sealed` only when every year is all_sealed. */
-export function academicRecordMapper(
-  dto: AcademicRecordResponseDto,
-): AcademicRecord {
-  const years = dto.years.map(mapYear);
-  return {
-    studentId: dto.studentId,
-    studentName: dto.studentName,
-    studentCode: dto.studentCode,
-    dateOfBirth: dto.dateOfBirth,
-    currentClassId: dto.currentClassId,
-    currentSchoolYear: dto.currentSchoolYear,
-    years,
-    sealed:
-      years.length > 0 && years.every((y) => y.sealStatus === "all_sealed"),
-    sealedAt: dto.sealedAt,
-    sealedBy: dto.sealedBy,
-  };
+function deriveGpa(subjects: SubjectScore[]): number | null {
+  const averages = subjects
+    .map((s) => s.termAvg)
+    .filter((v): v is number => v !== null);
+  if (averages.length === 0) return null;
+  const mean = averages.reduce((a, b) => a + b, 0) / averages.length;
+  return Math.round(mean * 100) / 100;
 }

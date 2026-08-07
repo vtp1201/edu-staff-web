@@ -1,132 +1,208 @@
 import { describe, expect, it } from "vitest";
-import type { AcademicRecordResponseDto } from "../dtos/academic-record-response.dto";
-import { academicRecordMapper } from "./academic-record.mapper";
+import type {
+  AcademicRecordRowDto,
+  GradeSnapshotItemDto,
+} from "../dtos/academic-record-response.dto";
+import { mapAcademicRecordRow } from "./academic-record.mapper";
 
-function makeDto(
-  overrides: Partial<AcademicRecordResponseDto> = {},
-): AcademicRecordResponseDto {
+function item(
+  subjectId: string,
+  columnName: string,
+  coefficient: string,
+  value: string,
+  columnId = `${subjectId}-${columnName}`,
+): GradeSnapshotItemDto {
   return {
-    studentId: "std-001",
-    studentName: "Nguyễn Minh Khoa",
-    studentCode: "NDU-2009-0184",
-    dateOfBirth: "2009-04-12",
-    currentClassId: "10A1",
-    currentSchoolYear: "2025-2026",
-    sealed: false,
-    sealedAt: null,
-    sealedBy: null,
-    years: [
-      {
-        yearId: "2023-2024",
-        yearLabel: "2023 — 2024",
-        classId: "8A1",
-        grade: 8,
-        isCurrent: false,
-        terms: [
-          {
-            termId: "HK1",
-            status: "SEALED",
-            classId: "8A1",
-            conductGrade: "Tot",
-            sealedAt: "2024-01-10",
-            sealedBy: "GVCN",
-            unsealedAt: null,
-            unsealReason: null,
-            subjects: [
-              {
-                subjectId: "math",
-                subjectName: "Toán",
-                tx1: 8,
-                tx2: 9,
-                giuaKy: 7,
-                cuoiKy: 10,
-              },
-              {
-                subjectId: "lit",
-                subjectName: "Ngữ Văn",
-                tx1: 6,
-                tx2: 6,
-                giuaKy: 6,
-                cuoiKy: 6,
-              },
-            ],
-          },
-          {
-            termId: "HK2",
-            status: "SEALED",
-            classId: "8A1",
-            conductGrade: "Tot",
-            sealedAt: "2024-05-20",
-            sealedBy: "GVCN",
-            unsealedAt: null,
-            unsealReason: null,
-            subjects: [],
-          },
-        ],
-      },
-    ],
-    ...overrides,
+    subjectId,
+    columnId,
+    columnName,
+    columnType: "REGULAR",
+    coefficient,
+    value,
   };
 }
 
-describe("academicRecordMapper", () => {
-  it("computes weighted termAvg per subject", () => {
-    const rec = academicRecordMapper(makeDto());
-    const math = rec.years[0].terms[0].subjects[0];
-    // (8+9+14+30)/7 = 8.714…
-    expect(math.termAvg).toBeCloseTo(8.71, 2);
+function row(over: Partial<AcademicRecordRowDto> = {}): AcademicRecordRowDto {
+  return {
+    classId: "c-10a1",
+    termId: "HK1",
+    studentMemberId: "stu-1",
+    status: "SEALED",
+    gradeSnapshot: [],
+    termAverage: "",
+    resealCount: 0,
+    ...over,
+  };
+}
+
+describe("mapAcademicRecordRow — wire row → TermRecord (US-E18.54)", () => {
+  it("groups the flat gradeSnapshot array by subjectId, preserving first-seen order", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        gradeSnapshot: [
+          item("s-math", "TX1", "1.0", "8.0"),
+          item("s-lit", "TX1", "1.0", "7.0"),
+          item("s-math", "Cuối kỳ", "3.0", "9.0"),
+        ],
+      }),
+      new Map(),
+    );
+
+    expect(term.subjects.map((s) => s.subjectId)).toEqual(["s-math", "s-lit"]);
+    expect(term.subjects[0].columns.map((c) => c.columnName)).toEqual([
+      "TX1",
+      "Cuối kỳ",
+    ]);
   });
 
-  it("computes rankBand from termAvg", () => {
-    const rec = academicRecordMapper(makeDto());
-    expect(rec.years[0].terms[0].subjects[0].rankBand).toBe("gioi"); // 8.71 ≥ 8
-    expect(rec.years[0].terms[0].subjects[1].rankBand).toBe("trung-binh"); // 6.0 → ≥5,<6.5
+  it("parses the decimal-STRING coefficient and value into numbers", () => {
+    const term = mapAcademicRecordRow(
+      row({ gradeSnapshot: [item("s-math", "TX1", "2.0", "8.50")] }),
+      new Map(),
+    );
+
+    const column = term.subjects[0].columns[0];
+    expect(column.coefficient).toBe(2);
+    expect(column.value).toBe(8.5);
   });
 
-  it("computes term GPA as the average of subject termAvgs", () => {
-    const rec = academicRecordMapper(makeDto());
-    // subjects: 8.71 and 6.0 → (8.714 + 6)/2 ≈ 7.36
-    expect(rec.years[0].terms[0].gpa).toBeCloseTo(7.36, 1);
+  it("maps an unparseable/empty value to null, never 0", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        gradeSnapshot: [
+          item("s-math", "TX1", "", ""),
+          item("s-math", "TX2", "n/a", "n/a"),
+        ],
+      }),
+      new Map(),
+    );
+
+    expect(term.subjects[0].columns[0]).toMatchObject({
+      coefficient: null,
+      value: null,
+    });
+    expect(term.subjects[0].columns[1]).toMatchObject({
+      coefficient: null,
+      value: null,
+    });
+    expect(term.subjects[0].termAvg).toBeNull();
   });
 
-  it("derives year seal status from terms", () => {
-    const rec = academicRecordMapper(makeDto());
-    expect(rec.years[0].sealStatus).toBe("all_sealed");
+  it("computes each subject's coefficient-weighted average and rank band", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        gradeSnapshot: [
+          item("s-math", "TX1", "1.0", "8.0"),
+          item("s-math", "Cuối kỳ", "3.0", "9.0"),
+        ],
+      }),
+      new Map(),
+    );
+
+    // (8×1 + 9×3) / 4 = 8.75
+    expect(term.subjects[0].termAvg).toBe(8.75);
+    expect(term.subjects[0].rankBand).toBe("gioi");
   });
 
-  it("marks record sealed only when all years are all_sealed", () => {
-    const rec = academicRecordMapper(makeDto());
-    expect(rec.sealed).toBe(true);
+  it("resolves subject names from the injected catalogue, and leaves null (never the uuid) when unknown", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        gradeSnapshot: [
+          item("s-math", "TX1", "1.0", "8.0"),
+          item("s-ghost", "TX1", "1.0", "8.0"),
+        ],
+      }),
+      new Map([["s-math", "Toán"]]),
+    );
+
+    expect(term.subjects[0].subjectName).toBe("Toán");
+    expect(term.subjects[1].subjectName).toBeNull();
   });
 
-  it("does not seal a record with an unsealed term", () => {
-    const dto = makeDto();
-    dto.years[0].terms[1].status = "UNSEALED";
-    const rec = academicRecordMapper(dto);
-    expect(rec.years[0].sealStatus).toBe("unsealed_in_year");
-    expect(rec.sealed).toBe(false);
+  it("prefers the server-computed termAverage over the derived mean", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        termAverage: "7.25",
+        gradeSnapshot: [item("s-math", "TX1", "1.0", "10.0")],
+      }),
+      new Map(),
+    );
+
+    expect(term.gpa).toBe(7.25);
   });
 
-  it("yields null termAvg and gpa when subject scores are all null", () => {
-    const dto = makeDto();
-    dto.years[0].terms[0].subjects = [
-      {
-        subjectId: "math",
-        subjectName: "Toán",
-        tx1: null,
-        tx2: null,
-        giuaKy: null,
-        cuoiKy: null,
-      },
-    ];
-    dto.years[0].terms[1].subjects = [];
-    const rec = academicRecordMapper(dto);
-    expect(rec.years[0].terms[0].subjects[0].termAvg).toBeNull();
-    expect(rec.years[0].terms[0].gpa).toBeNull();
+  it("derives the GPA from the subject averages when termAverage is empty", () => {
+    const term = mapAcademicRecordRow(
+      row({
+        termAverage: "",
+        gradeSnapshot: [
+          item("s-math", "TX1", "1.0", "8.0"),
+          item("s-lit", "TX1", "1.0", "6.0"),
+        ],
+      }),
+      new Map(),
+    );
+
+    expect(term.gpa).toBe(7);
   });
 
-  it("returns sealed=false for a record with no years", () => {
-    const rec = academicRecordMapper(makeDto({ years: [] }));
-    expect(rec.sealed).toBe(false);
+  it("carries the seal/unseal metadata, mapping ABSENT optional keys to null", () => {
+    const sealed = mapAcademicRecordRow(
+      row({
+        sealedAt: "2026-01-18T00:00:00Z",
+        sealedBy: "adm-1",
+        resealCount: 2,
+      }),
+      new Map(),
+    );
+    expect(sealed).toMatchObject({
+      sealedAt: "2026-01-18T00:00:00Z",
+      sealedBy: "adm-1",
+      unsealedAt: null,
+      unsealedBy: null,
+      unsealReason: null,
+      resealCount: 2,
+    });
+
+    const unsealed = mapAcademicRecordRow(
+      row({
+        status: "UNSEALED",
+        unsealedAt: "2026-02-01T00:00:00Z",
+        unsealedBy: "adm-2",
+        unsealReason: "Phúc khảo môn Hoá",
+      }),
+      new Map(),
+    );
+    expect(unsealed).toMatchObject({
+      status: "UNSEALED",
+      unsealedAt: "2026-02-01T00:00:00Z",
+      unsealedBy: "adm-2",
+      unsealReason: "Phúc khảo môn Hoá",
+      sealedAt: null,
+    });
+  });
+
+  it("tolerates a PENDING record whose gradeSnapshot the server withholds entirely", () => {
+    const term = mapAcademicRecordRow(
+      // `gradeSnapshot` is a required key on the Go struct, but a nil slice
+      // would marshal to `null` — never crash on it.
+      row({
+        status: "PENDING",
+        gradeSnapshot: null as unknown as [],
+      }),
+      new Map(),
+    );
+
+    expect(term.subjects).toEqual([]);
+    expect(term.gpa).toBeNull();
+  });
+
+  it("keeps classId + the free-form termId verbatim", () => {
+    const term = mapAcademicRecordRow(
+      row({ classId: "c-9a1", termId: "HK2" }),
+      new Map(),
+    );
+    expect(term.classId).toBe("c-9a1");
+    expect(term.termId).toBe("HK2");
   });
 });

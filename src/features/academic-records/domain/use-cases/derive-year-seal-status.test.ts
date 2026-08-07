@@ -9,12 +9,13 @@ function term(status: TermStatus): TermRecord {
   return {
     termId: "HK1",
     status,
-    classId: null,
-    conductGrade: null,
+    classId: "c-1",
     sealedAt: null,
     sealedBy: null,
     unsealedAt: null,
+    unsealedBy: null,
     unsealReason: null,
+    resealCount: 0,
     subjects: [],
     gpa: null,
   };

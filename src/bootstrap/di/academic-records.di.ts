@@ -1,7 +1,10 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
+import { makeSubjectCatalogueRepository } from "@/bootstrap/di/subject-catalogue.di";
+import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { decodeSubClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IAcademicRecordsRepository } from "@/features/academic-records/domain/repositories/i-academic-records.repository";
 import type { IAcademicRecordsSealRepository } from "@/features/academic-records/domain/repositories/i-academic-records-seal.repository";
@@ -10,40 +13,72 @@ import { GetAcademicRecordUseCase } from "@/features/academic-records/domain/use
 import { GetSealAuditTrailUseCase } from "@/features/academic-records/domain/use-cases/get-seal-audit-trail.use-case";
 import { GetSealStatusUseCase } from "@/features/academic-records/domain/use-cases/get-seal-status.use-case";
 import { InitiateUnsealUseCase } from "@/features/academic-records/domain/use-cases/initiate-unseal.use-case";
-import { ListAcademicYearsUseCase } from "@/features/academic-records/domain/use-cases/list-academic-years.use-case";
 import { ListAvailableClassesUseCase } from "@/features/academic-records/domain/use-cases/list-available-classes.use-case";
 import { ListPendingUnsealRequestsUseCase } from "@/features/academic-records/domain/use-cases/list-pending-unseal-requests.use-case";
 import { ListSealedStudentsUseCase } from "@/features/academic-records/domain/use-cases/list-sealed-students.use-case";
 import { ListTenantAdminsUseCase } from "@/features/academic-records/domain/use-cases/list-tenant-admins.use-case";
 import { SealAcademicRecordUseCase } from "@/features/academic-records/domain/use-cases/seal-academic-record.use-case";
+import { AcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/academic-records.repository";
 import { AcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal.repository";
 import { HybridAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal-hybrid.repository";
+import { makeEnrollmentYearResolver } from "@/features/academic-records/infrastructure/repositories/enrollment-year.resolver";
 import { MockAcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records.mock.repository";
 import { MockAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records-seal.mock.repository";
 
 /**
  * Read-only student/parent academic-record VIEWER repository factory
- * (per-request).
+ * (per-request). **US-E18.54 removed the permanent mock-force** this factory
+ * carried since US-E18.21 (ADR 0055 §Context #6): the standard
+ * `USE_MOCK ? Mock : Real` gate is back.
  *
- * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.21, closing ADR
- * `0055` §Follow-Up's internal item) — same shape as `staff-leave.di.ts`
- * (US-E18.8), `teaching-plan.di.ts` (US-E18.9) and `feed.di.ts`/
- * `moderation.di.ts` (US-E18.20). The hold is a domain-model gap in `core`'s
- * real contract, NOT the app-wide mock toggle: the real
- * `AcademicRecordResponse` is keyed by `(classId, termId, studentMemberId)`
- * with a dynamic `gradeSnapshot` column array — no `(studentId, yearId?)`
- * lookup, no year-grouping, no fixed tx1/tx2/giuaKy/cuoiKy slots, no
- * student-identity fields (ADR 0055 §Context point 6). Remapping the viewer's
- * multi-year gradebook UI onto that shape is a `uiux`/`ba`-level model
- * redesign, not a wiring remap.
+ * What changed is the MODEL, not a path. BE's 2026-08-07 answer confirmed the
+ * aggregate stays `(classId, termId, studentMemberId)` FOREVER — but pointed at
+ * `GET /members/{memberId}/academic-records` (BE US-064), which was already
+ * shipped and simply never consumed. The viewer's year dimension is now derived
+ * CLIENT-SIDE (`buildAcademicRecord`), so no wire year is needed.
  *
- * Until then this factory must never hand out `AcademicRecordsRepository` —
- * flipping `NEXT_PUBLIC_USE_MOCK=false` app-wide would otherwise silently
- * break this screen. (That class is itself a permanent blocked stub now, see
- * its doc comment — this factory is the first of the two guards.)
+ * Two collaborators are composed here (decision 0017 — cross-aggregate joins
+ * belong in `bootstrap/di`, never inside a repository), both FAIL-SOFT so a
+ * decoration failure can never take the record read down with it:
+ *
+ * 1. `classId → academicYearLabel` via an enrollment point read, deduped and
+ *    bounded (`makeEnrollmentYearResolver`). It resolves for ADMIN/MANAGER,
+ *    STUDENT-self and assigned TEACHERs. It CANNOT resolve for a PARENT — no
+ *    class-context read in `core` admits the PARENT role — so a parent's
+ *    records land, honestly labelled, in the "unresolved year" bucket until
+ *    cross-repo ask #47 (denormalize `academicYear` onto the record row, which
+ *    BE pre-offered) lands.
+ * 2. `subjectId → name` via the subject catalogue (`GET /subjects`, readable by
+ *    any authenticated member). Without it the table's subject column would
+ *    have to show a uuid — it shows an i18n placeholder instead.
  */
 async function makeRepository(): Promise<IAcademicRecordsRepository> {
-  return new MockAcademicRecordsRepository();
+  if (USE_MOCK) return new MockAcademicRecordsRepository();
+  // Proactive refresh (decision 0018, playbook step 6).
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  const subjects = await makeSubjectCatalogueRepository();
+  const resolveSubjectNames = async () => {
+    const names = new Map<string, string>();
+    const result = await subjects.listAllSubjects();
+    if (result.ok) for (const s of result.value) names.set(s.id, s.name);
+    return names;
+  };
+  return new AcademicRecordsRepository(
+    http,
+    makeEnrollmentYearResolver(http),
+    resolveSubjectNames,
+  );
+}
+
+/**
+ * The signed-in caller's own memberId, from the access-token `sub` claim — the
+ * student self-view's `memberId`, which the client must never supply. Mirrors
+ * `grades.di.ts`'s `resolveCurrentMemberId`.
+ */
+export async function resolveCurrentMemberId(): Promise<string | null> {
+  const token = await getAccessToken();
+  return token ? decodeSubClaim(token) : null;
 }
 
 /**
@@ -80,10 +115,6 @@ async function makeSealRepository(): Promise<IAcademicRecordsSealRepository> {
 
 export async function makeGetAcademicRecordUseCase(): Promise<GetAcademicRecordUseCase> {
   return new GetAcademicRecordUseCase(await makeRepository());
-}
-
-export async function makeListAcademicYearsUseCase(): Promise<ListAcademicYearsUseCase> {
-  return new ListAcademicYearsUseCase(await makeRepository());
 }
 
 // ── US-E14.6 seal / unseal factories (per-request) ──────────────────────────

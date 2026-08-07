@@ -30,12 +30,6 @@
       "record": "Học bạ",
       "students": "Học sinh"
     },
-    "conduct": {
-      "Kha": "Khá",
-      "Tot": "Tốt",
-      "TrungBinh": "Trung Bình",
-      "Yeu": "Yếu"
-    },
     "empty": {
       "description": "Chưa có bản ghi học bạ nào cho năm học này.",
       "title": "Không có dữ liệu học bạ"
@@ -86,28 +80,20 @@
       "unsealed": "Chưa niêm phong"
     },
     "student": {
-      "code": "Mã HS",
-      "currentClass": "Lớp hiện tại",
-      "currentYear": "Năm học hiện tại",
-      "dob": "Ngày sinh"
+      "summary": "Học bạ tổng hợp theo từng năm học và học kỳ."
     },
     "table": {
       "caption": "Bảng điểm học kỳ",
-      "conduct": "Hạnh Kiểm",
-      "final": "Cuối Kỳ",
       "gpa": "GPA",
-      "midterm": "Giữa Kỳ",
       "rank": "Xếp Loại",
       "subject": "Môn học",
       "termAvg": "TB Kỳ",
       "termSummary": "Tổng kết kỳ",
-      "tx1": "TX1",
-      "tx2": "TX2"
+      "unknownSubject": "Môn học chưa xác định"
     },
     "termSection": {
       "class": "Lớp",
       "sealedOn": "Đã ký ngày",
-      "signedBy": "Người ký",
       "term1": "Học kỳ 1",
       "term2": "Học kỳ 2",
       "unsealedBanner": "Học bạ đã được mở",
@@ -118,6 +104,9 @@
       "SEALED": "Đã ký",
       "UNSEALED": "Đã mở"
     },
+    "unresolvedYear": {
+      "description": "Không xác định được năm học cho các bản ghi dưới đây (không đọc được thông tin lớp). Dữ liệu điểm vẫn chính xác."
+    },
     "yearStatus": {
       "all_sealed": "Đã ký đủ",
       "none": "Chưa có học bạ",
@@ -126,7 +115,8 @@
     },
     "yearTimeline": {
       "ariaLabel": "Chọn năm học",
-      "currentBadge": "Năm hiện tại"
+      "currentBadge": "Năm hiện tại",
+      "unresolvedLabel": "Chưa xác định năm học"
     }
   },
   "academicRecordSeal": {
