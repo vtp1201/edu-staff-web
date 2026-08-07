@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -166,4 +166,108 @@ normal
 
 ## Evidence
 
-(filled in after implementation)
+Implemented 2026-08-07 (`feat/us-e18.48-timetable-conflicts-scan-real`).
+
+### Contract re-ground-truthed (not taken from the packet summary)
+
+Checked BOTH `services/core/docs/openapi.yaml` (`TimetableConflictEntry` /
+`TimetableConflictsResponse`, ~L8233–8299) AND the Go structs that actually
+serialise it (`internal/timetable/adapter/http/dto/conflicts.go`,
+`core/application/dto/conflicts.go`) — they agree. Two details the summary did
+not spell out and that changed the code:
+
+- `day` is the **`MON|TUE|WED|THU|FRI` string enum**, not a number — joined by
+  the existing `day-enum.ts` bridge.
+- `teacherMemberId` / `room` carry Go **`omitempty`**, so they are ABSENT (not
+  `null`, not `""`) on the kind that does not own them. That is what makes a
+  discriminated union safe and why an entry missing its kind-defining field is
+  dropped rather than coerced.
+- `scannedClassCount` exists in the application DTO but is deliberately NOT in
+  the HTTP contract — not declared FE-side.
+- Error surface: no conflict-specific codes. `get_timetable_conflicts.md`
+  authorises first (403 `TIMETABLE_FORBIDDEN`, zero reads) then parses
+  (`timetable_invalid_tenant_id` / `timetable_invalid_term_id`, 400). All three
+  were already in `mapTimetableFailure`'s 11-code taxonomy — no new failure
+  type. The reactive `TIMETABLE_TEACHER_CONFLICT` 409 does NOT apply to this GET.
+
+### Design decisions
+
+1. **Signature, not just implementation.** `getConflicts(classId, yearId)` →
+   `getConflicts()`. The endpoint's path is FLAT (`/api/v1/timetable/conflicts`,
+   not nested under `/classes/{id}`), the tenant comes from the token claim, and
+   `termId` is the only input — resolved inside the repo via the established
+   shared `resolveCurrentTermId()` (US-E18.11), because the builder screen has a
+   mock YEAR selector, not a term. A test asserts the requested path does not
+   contain `/classes/`.
+2. **`ConflictInfo` widened into a discriminated union** rather than a flat
+   optional-field record, so `room` on a teacher conflict is a compile error.
+   That is what structurally keeps the two BE-distinct semantics (rejected on
+   write vs detected on read) from sharing copy. New `TimetableConflictScan`
+   wrapper carries `termId` + `truncated`.
+3. **`TimetableData.conflicts` DELETED.** It was hard-coded `[]` by the real
+   mapper — a fiction field no real read could ever fill. The scan is now the
+   single conflict source, which also makes the per-cell highlight
+   (`conflictSlotKeys`) real in real mode for the first time.
+4. **`detectConflicts()` KEPT, extended, not merged/forked.** Ground-truth
+   correction to the packet's premise: it is NOT a client-side per-cell
+   highlighter — its only caller is `MockTimetableRepository`. It is the mock's
+   conflict ENGINE (the `USE_MOCK` stand-in for the BE scan), and
+   `presentation/` never imports it. So the two do not compete: they are the two
+   implementations of one port. It was extended to emit room conflicts and the
+   BE's deterministic `(type, day, period, key)` order so mock mode mirrors real.
+   The per-cell highlight lives where it always did — in `buildTimetableVM`.
+5. **One conflicts surface, not two.** The screen already had a mock-only
+   `ConflictSummary` (ported from `design_src/edu/timetable.jsx`) fed by the
+   permanently-empty `TimetableData.conflicts`. The new `ConflictScanPanel`
+   REPLACES it (decision 0026 — one component, one home); adding a second
+   whole-school card next to it would have been the duplication the rule bans.
+6. **ADR 0128 copy.** Room rows use `warning` tone (not `error`) and carry
+   `conflicts.roomManualHint` — "trùng phòng chỉ được phát hiện khi rà soát; hệ
+   thống không chặn khi lưu tiết nên cần xử lý thủ công". Their action label is
+   "Xem để xử lý", not "Giải quyết". Nothing in the copy implies a 409.
+7. **`Suspense` + `Promise.all`.** The scan is a bounded but genuinely heavy
+   tenant-wide read (BE pages up to 2000 classes); it runs in parallel with the
+   class read and the whole content streams behind a skeleton.
+8. **Honest degrade.** `ConflictScanVM` is a union — a failed scan is
+   `{status:"error"}`, structurally never an empty row list, so "Không có xung
+   đột" (a strong whole-school claim) can never be shown for a read that did not
+   complete. Rendered with the shared `ListError` + a `router.refresh()` retry;
+   the grid stays fully usable.
+
+### Role gate (AC: MANAGER/principal unreachable)
+
+`(app)/admin/layout.tsx` → `evaluateAdminAccess` → `evaluateNamespaceAccess`
+with **strict equality** `role === "admin"`. BE `MANAGER` **and** `ADMIN` both
+collapse onto the appRole `principal` (`role-meta.ts` `ROLE_ENUM_TO_APP`), so
+neither reaches `/admin/*`. Proven end-to-end (claim decode → verdict, not just
+a hand-written appRole) in `admin-only-reachability.test.ts`. No principal-facing
+route or component references the scan.
+
+> ⚠️ Flagged to `fe-lead` (pre-existing, platform-wide, NOT introduced here):
+> because no BE role enum maps to the appRole `admin`, the ENTIRE `/admin/*`
+> namespace is reachable only with a token whose `role` claim is literally
+> `"admin"` — i.e. mock mode. This over-satisfies the AC but means the real-mode
+> surface is currently unreachable by the very role the endpoint authorises.
+> Changing `ROLE_ENUM_TO_APP` would move every BE ADMIN user out of the
+> `principal` namespace app-wide — an ADR-level decision, not a story fix.
+
+### Proof
+
+- `bunx vitest run` — **491 files / 3750 tests pass**, zero regression.
+- `bunx vitest run --config vitest.storybook.mts` — **156 files / 1221 tests
+  pass** (7 timetable stories incl. `RoomConflict`, `BothConflictKinds`,
+  `TruncatedScan`, `ConflictScanError`).
+- `bunx tsc --noEmit` — clean.
+- `bun run build` — green in mock mode AND with `NEXT_PUBLIC_USE_MOCK=false`.
+- `bun lint` — clean (Biome; the 1 warning + 1 info are pre-existing, in
+  unrelated files).
+- Design hook (`impeccable` PostToolUse) reported **no anti-patterns** on every
+  new/edited UI file.
+
+### Harness delta done
+
+`docs/TEST_MATRIX.md` row · `docs/product/screens.md` (`/admin/timetable`) ·
+`docs/product/design-spec.jsonc` §`timetableConflictScanPanel` (new — the panel
+has no handoff mockup, so this entry is its normative source; no new token, no
+new visual language) · `EPIC-OVERVIEW.md` Wave 7 · ask **#16 closed** in
+`docs/reports/2026-08-06-fe-to-be-asks.md`.

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ConflictInfo, TimetableData } from "../entities/timetable.entity";
+import type {
+  TimetableConflictScan,
+  TimetableData,
+} from "../entities/timetable.entity";
 import type { TimetableSlot } from "../entities/timetable-slot.entity";
 import type { ITimetableRepository } from "../repositories/i-timetable.repository";
 import { UpdateSlotUseCase } from "./update-slot.use-case";
@@ -13,7 +16,6 @@ function fakeRepo(
         classId: "cls-a",
         yearId: "y1",
         slots: {},
-        conflicts: [],
       }),
     ),
     updateSlot: vi.fn(
@@ -26,7 +28,13 @@ function fakeRepo(
       }),
     ),
     clearSlot: vi.fn(async () => {}),
-    getConflicts: vi.fn(async (): Promise<ConflictInfo[]> => []),
+    getConflicts: vi.fn(
+      async (): Promise<TimetableConflictScan> => ({
+        termId: "term-1",
+        conflicts: [],
+        truncated: false,
+      }),
+    ),
     ...overrides,
   };
 }

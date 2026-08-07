@@ -4547,13 +4547,25 @@
     "classConflictCount": "{count} conflicts in this class",
     "classLabel": "Class",
     "conflicts": {
-      "conflictsWith": "conflicts with class {classes}",
+      "cellLabel": "{day} — Period {period}",
       "count": "{count} conflicts detected",
+      "errorTitle": "Could not scan the school for conflicts",
       "hint": "Click a conflict to highlight the cell.",
       "jumpedTo": "Moved to conflict slot",
+      "loading": "Scanning the school for conflicts…",
       "noConflicts": "No conflicts",
       "resolve": "Resolve",
-      "title": "Conflict summary",
+      "retry": "Scan again",
+      "review": "Review",
+      "roomDetail": "Room {room} is booked for {classes} at the same time",
+      "roomManualHint": "Room clashes are only surfaced by this scan; saving a period is not blocked, so they need to be resolved manually.",
+      "teacherDetail": "{teacher} is scheduled to teach {classes} at the same time",
+      "title": "School-wide conflicts",
+      "truncatedHint": "The scan hit its limit — there may be more conflicts than shown. Resolve some, then scan again.",
+      "type": {
+        "room-double-booked": "Room clash",
+        "teacher-double-booked": "Teacher clash"
+      },
       "validHint": "Timetable is valid across the school."
     },
     "errors": {
@@ -4593,7 +4605,7 @@
       "teacherBusy": "Already busy this period",
       "title": "Edit slot"
     },
-    "subtitle": "Click a cell to edit. Teacher conflicts are detected automatically across the school.",
+    "subtitle": "Click a cell to edit. Teacher and room conflicts are scanned across the school.",
     "title": "Timetable",
     "titleForClass": "Timetable — Class {class}",
     "yearLabel": "Academic Year"

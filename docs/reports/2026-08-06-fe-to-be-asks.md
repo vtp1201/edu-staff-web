@@ -26,10 +26,10 @@
 
 ## Phần 2 — Asks CÒN TREO (không đổi so với 2026-08-05, theo BE xác nhận)
 
-12. **#18** — rollup tenant-wide "grade entries pending approval" — chưa có read path tenant-wide; `IGradeApprovalRepository` (batch dashboard) vẫn force-mock 100%. BE nói sẽ làm sau US-185.
+12. ~~**#18** — rollup tenant-wide "grade entries pending approval"~~ — **ĐÓNG (FE tiêu thụ 2026-08-07, US-E18.46).** BE US-186 ship `GET /api/v1/grade-entries/pending-approval?cursor=&limit=` (rollup theo `(classId,subjectId,termId)`, KHÔNG có `batchId`/per-entry id) — FE wire vào 2 route approver (`admin/grade-book`, `principal/grade-book`) + wire luôn `approveEntry` (dormant real endpoint đã có sẵn từ US-E18.44). **`IGradeApprovalRepository`/`admin/grades/approval` (batch dashboard cũ) VẪN force-mock, không đụng** — US-186 xác nhận `batchId` chưa từng có nguồn wire, nên dashboard batch-level đó là gap riêng, khác với discovery-rollup vừa đóng.
 13. **#21 (còn lại)** — audit-trail seal/unseal đa cycle. BE đã chốt: chỉ giữ cycle mới nhất + lịch sử unseal-request (US-150) — không có event-log seal đa cycle trong data model. Nếu cần hơn, phải gửi ask mới nêu field cụ thể cho một design story.
 14. **#28** — `GET /classes/{classId}/attendance?startDate=&endDate=` (class-scoped range) — nhận, xếp sau US-185.
-15. **#16** — bulk/whole-school timetable-conflicts scan — cần confirm đây là real requirement trước khi BE build.
+15. ~~**#16** — bulk/whole-school timetable-conflicts scan~~ — **ĐÓNG (FE tiêu thụ xong 2026-08-07, US-E18.48).** BE US-188 đã ship `GET /api/v1/timetable/conflicts?termId=` (ADMIN/SUPER_ADMIN, MANAGER không được cấp); FE đã wire real + dựng UI "Xung đột toàn trường" trên `(app)/admin/timetable`. Ghi nhận **ADR 0128**: `ROOM_DOUBLE_BOOKED` chỉ phát hiện khi ĐỌC — write path KHÔNG chặn room trùng, nên copy phía FE nói rõ "cần xử lý thủ công", không hứa hẹn 409. Không còn ask nào treo cho timetable conflicts.
 16. ~~**#10/#11** — `bands`/`requiredCount` — BE nghiêng client-only, sẽ confirm sau.~~
     **RESOLVED 2026-08-07 (BE US-189):** BE đã làm cả hai field thành real +
     persisted (`GradeBand{label,minThreshold}` cho scale số, `requiredCount`
@@ -42,14 +42,29 @@
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
 19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
 
+## Phần 3 — Batch 4 tiêu thụ xong (BE US-186..189, 2026-08-07)
+
+> FE tiêu thụ 4 US wiring mới (US-E18.46→49, Wave 7), đóng nốt 4 asks P2 cuối
+> BE đã báo resolved ở commit `1aca5e47`: #18 (rollup, item 12 trên), #28
+> (item bên dưới), #16 (item 15 trên), #10/#11 (item 16 trên).
+
+20. ~~**#28** — `GET /classes/{classId}/attendance?startDate=&endDate=`~~ — **ĐÓNG (US-E18.47).** BE US-187 mở range-mode trên chính route cũ (`date` optional, XOR `startDate+endDate`, cap 366 ngày). FE thay fan-out ≤31 call/ngày bằng 1 call range; `AttendanceDaySummary[]` re-aggregate từ `records[]` phẳng, cùng contract, zero UI diff. `MAX_HISTORY_DAYS=31` giữ nguyên (ADR 0058 §5 cần amend nếu muốn tăng — flagged, chưa làm).
+
+**Phát hiện mới, KHÔNG chặn batch này nhưng đáng một ADR riêng (từ US-E18.48 review):**
+`ROLE_ENUM_TO_APP` (`src/features/auth/domain/policies/role-meta.ts` hay tương đương) không có entry nào map sang appRole `"admin"` — cả BE `ADMIN` lẫn `MANAGER` đều map vào `principal`. Hệ quả: toàn bộ namespace `/admin/*` (kể cả `/admin/timetable` mới xong ở US-E18.48) hiện chỉ reachable qua mock-mode (`NEXT_PUBLIC_USE_MOCK=true`, nhánh cấp quyền `admin` riêng trong `bootstrap/lib/jwt.ts`), không có token IAM thật nào đưa một actor vào appRole `admin`. Đây KHÔNG phải lỗ hổng bảo mật (namespace vẫn fail-closed đúng), nhưng là gap platform-wide cần quyết định kiến trúc (BE mint claim `ADMIN`-riêng, hay FE tách `ADMIN` khỏi `principal`) — fe-lead sẽ mở ADR riêng, không gộp vào US nào ở batch này.
+
 ## Observation (không chặn)
 
 - Migration `047_grade_entries_rejection` (core) phải chạy trước khi US-184 sống thật ở môi trường real — không ảnh hưởng mock/unit, chỉ ghi chú vận hành.
 - BE tự phát hiện US-185 (clone `grade_entries_by_student` stale sau lần nhập điểm đầu) — nếu QA/real-mode thấy điểm học sinh lệch gradebook giáo viên, đó là bug BE đã biết, KHÔNG phải bug FE.
+- Storybook flake pre-existing, không liên quan batch này: `principal-classes-screen.stories.tsx`'s sort-Select story thiếu retry wrapper cho Radix portal timing — chore riêng, chưa fix.
 
 ---
 
-**Tóm tắt hành động phía FE đã hoàn tất:** 8/8 US wiring merged, 0 regression,
-zero contract drift phát hiện thêm. Asks #43/#46/#44/#9/#12/#19 đóng đầy đủ;
-#21 đóng một nửa (listing); #18/#28/#16/#10/#11/#32/#31/viewer-học-bạ còn treo
-theo đúng trạng thái BE đã xác nhận, không cần FE hành động thêm lúc này.
+**Tóm tắt hành động phía FE đã hoàn tất (batch 3 + batch 4):** 12/12 US wiring
+merged, 0 regression, zero contract drift phát hiện thêm ngoài các bug thật đã
+ghi nhận trong từng US. Asks #43/#46/#44/#9/#12/#19/#18/#28/#16/#10/#11 đóng
+đầy đủ; #21 đóng một nửa (listing, audit-trail vẫn treo theo model BE đã
+chốt); #32/#31/viewer-học-bạ còn treo theo đúng trạng thái BE đã xác nhận,
+không cần FE hành động thêm lúc này. 1 phát hiện mới (ROLE_ENUM_TO_APP admin
+gap) cần ADR riêng, không chặn batch.

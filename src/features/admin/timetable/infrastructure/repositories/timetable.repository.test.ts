@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
 import type { TimetableFailure } from "../../domain/failures/timetable.failure";
+import type { TimetableConflictsResponseDto } from "../dtos/timetable-conflicts-response.dto";
 import type { TimetableResponseDto } from "../dtos/timetable-slot-response.dto";
 import { TimetableRepository } from "./timetable.repository";
 
@@ -51,7 +52,6 @@ describe("TimetableRepository — getTimetable (real GET)", () => {
     );
     expect(data.classId).toBe("cls-1");
     expect(data.slots["cls-1|0|1"]?.subjectId).toBe("s-old");
-    expect(data.conflicts).toEqual([]);
   });
 });
 
@@ -256,12 +256,136 @@ describe("TimetableRepository — clearSlot (real DELETE)", () => {
   });
 });
 
-describe("TimetableRepository — getConflicts (force-empty, no HTTP, ask #16)", () => {
-  it("returns [] without touching the network", async () => {
-    const http = makeHttp({});
+describe("TimetableRepository — getConflicts (real whole-school scan, BE US-188)", () => {
+  const SCAN_DTO: TimetableConflictsResponseDto = {
+    termId: TERM_ID,
+    truncated: false,
+    conflicts: [
+      {
+        type: "ROOM_DOUBLE_BOOKED",
+        day: "MON",
+        period: 1,
+        classes: [
+          { classId: "cls-1", subjectId: "sub-1" },
+          { classId: "cls-2", subjectId: "sub-2" },
+        ],
+        room: "P.201",
+      },
+      {
+        type: "TEACHER_DOUBLE_BOOKED",
+        day: "WED",
+        period: 4,
+        classes: [
+          { classId: "cls-1", subjectId: "sub-3" },
+          { classId: "cls-3", subjectId: "sub-3" },
+        ],
+        teacherMemberId: "member-9",
+      },
+    ],
+  };
+
+  it("GETs the FLAT tenant-wide path with only the resolved termId (no classId)", async () => {
+    const http = makeHttp({ get: vi.fn(async () => SCAN_DTO) });
     const repo = new TimetableRepository(http, resolveTermId);
 
-    expect(await repo.getConflicts("cls-1", "2025-2026")).toEqual([]);
+    await repo.getConflicts();
+
+    expect(http.get).toHaveBeenCalledWith("/core/api/v1/timetable/conflicts", {
+      params: { termId: TERM_ID },
+    });
+    // The path must NOT be nested under /classes/... (a real contract detail:
+    // the scan is whole-tenant, the tenant comes from the token claim).
+    expect(http.get.mock.calls[0][0]).not.toContain("/classes/");
+  });
+
+  it("maps both conflict kinds onto the domain's stable keys", async () => {
+    const http = makeHttp({ get: vi.fn(async () => SCAN_DTO) });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    const scan = await repo.getConflicts();
+
+    expect(scan.termId).toBe(TERM_ID);
+    expect(scan.conflicts).toEqual([
+      {
+        type: "room-double-booked",
+        day: 0,
+        period: 1,
+        classes: [
+          { classId: "cls-1", subjectId: "sub-1" },
+          { classId: "cls-2", subjectId: "sub-2" },
+        ],
+        room: "P.201",
+      },
+      {
+        type: "teacher-double-booked",
+        day: 2,
+        period: 4,
+        classes: [
+          { classId: "cls-1", subjectId: "sub-3" },
+          { classId: "cls-3", subjectId: "sub-3" },
+        ],
+        teacherId: "member-9",
+      },
+    ]);
+  });
+
+  it("passes `truncated: true` through — a bounded scan is not a failure", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => ({ ...SCAN_DTO, truncated: true })),
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    await expect(repo.getConflicts()).resolves.toMatchObject({
+      truncated: true,
+    });
+  });
+
+  it("returns an empty scan for an unknown termId (BE answers 200 + [], not 404)", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => ({
+        termId: "unknown",
+        truncated: false,
+        conflicts: [],
+      })),
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    await expect(repo.getConflicts()).resolves.toEqual({
+      termId: "unknown",
+      truncated: false,
+      conflicts: [],
+    });
+  });
+
+  it("maps a 403 TIMETABLE_FORBIDDEN to the forbidden failure (MANAGER is not authorized)", async () => {
+    const http = makeHttp({
+      get: vi.fn(async () => {
+        throw new ApiError({
+          code: "TIMETABLE_FORBIDDEN",
+          message: "admin only",
+          retryable: false,
+          status: 403,
+        });
+      }),
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    await expect(repo.getConflicts()).rejects.toMatchObject({
+      type: "forbidden",
+    });
+  });
+
+  it("surfaces an unresolvable term as invalid-term without calling the endpoint", async () => {
+    const http = makeHttp({ get: vi.fn() });
+    resolveTermId.mockRejectedValueOnce({
+      type: "invalid-term",
+      message: "No academic term covers this date",
+    });
+    const repo = new TimetableRepository(http, resolveTermId);
+
+    await expect(repo.getConflicts()).rejects.toMatchObject({
+      type: "invalid-term",
+    });
     expect(http.get).not.toHaveBeenCalled();
   });
 });

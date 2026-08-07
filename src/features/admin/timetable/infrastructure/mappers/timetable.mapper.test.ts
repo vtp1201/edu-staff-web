@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { TimetableSlot } from "../../domain/entities/timetable-slot.entity";
 import type {
+  ConflictEntryDto,
+  TimetableConflictsResponseDto,
+} from "../dtos/timetable-conflicts-response.dto";
+import type {
   SlotResponseDto,
   TimetableResponseDto,
 } from "../dtos/timetable-slot-response.dto";
-import { TimetableMapper, TimetableSlotMapper } from "./timetable.mapper";
+import {
+  TimetableConflictsMapper,
+  TimetableMapper,
+  TimetableSlotMapper,
+} from "./timetable.mapper";
 
 const SLOT_DTO: SlotResponseDto = {
   day: "WED",
@@ -111,7 +119,133 @@ describe("TimetableMapper.toEntity", () => {
     expect(data.slots["cls-1|4|5"]?.teacherId).toBe("t2");
   });
 
-  it("returns no proactive conflicts in real mode (reactive-only, ask #16)", () => {
-    expect(TimetableMapper.toEntity(RESPONSE).conflicts).toEqual([]);
+  it("no longer carries a conflicts field — conflicts are their own scan (US-E18.48)", () => {
+    expect(Object.keys(TimetableMapper.toEntity(RESPONSE)).sort()).toEqual([
+      "classId",
+      "slots",
+      "yearId",
+    ]);
+  });
+});
+
+describe("TimetableConflictsMapper.toEntity (BE US-188 whole-school scan)", () => {
+  const RESPONSE: TimetableConflictsResponseDto = {
+    termId: "term-uuid",
+    truncated: false,
+    conflicts: [
+      {
+        type: "TEACHER_DOUBLE_BOOKED",
+        day: "WED",
+        period: 4,
+        classes: [
+          { classId: "cls-a", subjectId: "sub-1" },
+          { classId: "cls-b", subjectId: "sub-2" },
+        ],
+        teacherMemberId: "member-uuid",
+      },
+      {
+        type: "ROOM_DOUBLE_BOOKED",
+        day: "MON",
+        period: 1,
+        classes: [
+          { classId: "cls-c", subjectId: "sub-3" },
+          { classId: "cls-d", subjectId: "sub-4" },
+        ],
+        room: "P.201",
+      },
+    ],
+  };
+
+  it("translates the wire enum to the stable domain key (never the raw enum)", () => {
+    const scan = TimetableConflictsMapper.toEntity(RESPONSE);
+    expect(scan.conflicts.map((c) => c.type)).toEqual([
+      "teacher-double-booked",
+      "room-double-booked",
+    ]);
+  });
+
+  it("joins the day enum to the 0-indexed domain day and keeps the period", () => {
+    const scan = TimetableConflictsMapper.toEntity(RESPONSE);
+    expect(scan.conflicts[0]).toMatchObject({ day: 2, period: 4 }); // WED
+    expect(scan.conflicts[1]).toMatchObject({ day: 0, period: 1 }); // MON
+  });
+
+  it("maps teacherMemberId → teacherId on a teacher conflict", () => {
+    const scan = TimetableConflictsMapper.toEntity(RESPONSE);
+    const teacher = scan.conflicts[0];
+    expect(teacher.type).toBe("teacher-double-booked");
+    if (teacher.type !== "teacher-double-booked") return;
+    expect(teacher.teacherId).toBe("member-uuid");
+  });
+
+  it("carries the room on a room conflict and the classes' subjectIds on both", () => {
+    const scan = TimetableConflictsMapper.toEntity(RESPONSE);
+    const room = scan.conflicts[1];
+    expect(room.type).toBe("room-double-booked");
+    if (room.type !== "room-double-booked") return;
+    expect(room.room).toBe("P.201");
+    expect(room.classes).toEqual([
+      { classId: "cls-c", subjectId: "sub-3" },
+      { classId: "cls-d", subjectId: "sub-4" },
+    ]);
+  });
+
+  it("passes termId and truncated through untouched", () => {
+    expect(
+      TimetableConflictsMapper.toEntity({ ...RESPONSE, truncated: true }),
+    ).toMatchObject({ termId: "term-uuid", truncated: true });
+  });
+
+  it("preserves the BE's deterministic order (no client re-sort)", () => {
+    const scan = TimetableConflictsMapper.toEntity(RESPONSE);
+    expect(scan.conflicts.map((c) => c.period)).toEqual([4, 1]);
+  });
+
+  it("drops an entry whose `type` is unknown (forward-compatible, never renders a blank row)", () => {
+    const scan = TimetableConflictsMapper.toEntity({
+      ...RESPONSE,
+      conflicts: [
+        ...RESPONSE.conflicts,
+        {
+          type: "CLASS_DOUBLE_BOOKED" as ConflictEntryDto["type"],
+          day: "FRI",
+          period: 2,
+          classes: [
+            { classId: "cls-e", subjectId: "sub-5" },
+            { classId: "cls-f", subjectId: "sub-6" },
+          ],
+        },
+      ],
+    });
+    expect(scan.conflicts).toHaveLength(2);
+  });
+
+  it("drops an entry whose kind-defining field is absent (omitempty on the wire)", () => {
+    const scan = TimetableConflictsMapper.toEntity({
+      ...RESPONSE,
+      conflicts: [
+        {
+          type: "ROOM_DOUBLE_BOOKED",
+          day: "FRI",
+          period: 2,
+          classes: [
+            { classId: "cls-e", subjectId: "sub-5" },
+            { classId: "cls-f", subjectId: "sub-6" },
+          ],
+          // no `room` — a room conflict without a room is not renderable
+        },
+      ],
+    });
+    expect(scan.conflicts).toEqual([]);
+  });
+
+  it("maps an empty scan (unknown termId returns 200 + [], never 404)", () => {
+    expect(
+      TimetableConflictsMapper.toEntity({
+        termId: "unknown",
+        truncated: false,
+        conflicts: [],
+      }),
+    ).toEqual({ termId: "unknown", truncated: false, conflicts: [] });
   });
 });

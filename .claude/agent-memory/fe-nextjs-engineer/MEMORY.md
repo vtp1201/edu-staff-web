@@ -94,6 +94,10 @@
 
 - [Structural privacy boundary](pattern-structural-privacy-boundary.md) — E18.44: role-stripped BE fields = SEPARATE staff cell type (not optional on the shared one) + @ts-expect-error compile-time proof; capability-as-presence VM prop AND requireRole in the action; canonical shared reason-dialog (4 forks remain); clicking a disabled button breaks a Storybook play (+more in file)
 
+- [First UI for a stubbed read](pattern-first-ui-for-a-stubbed-read.md) — E18.48: verify the packet's claim about an existing helper (detectConflicts was the MOCK ENGINE, not a client highlighter); delete the always-`[]` fiction field; REPLACE the mock-only surface, don't add a second; two BE kinds with different enforcement (ADR 0128) = union + different tone/copy
+
+- [/admin/* unreachable in real mode](gotcha-admin-namespace-unreachable-real-mode.md) — no BE role enum maps to appRole `admin` (ADMIN+MANAGER→principal), so the whole admin namespace is mock-mode-only; prove role ACs by composing decodeRoleClaim→guard with USE_MOCK stubbed false
+
 - [Affordance unreachable by role](gotcha-affordance-unreachable-by-role.md) — E18.44 review: correct fail-closed RBAC + WRONG MOUNTING ROUTE = an AC that cannot be exercised; strict-equality namespace guards; moving a mount can orphan the old screen's own affordances (+more in file)
 
 - [RSC closure prop = 500](gotcha-rsc-closure-prop-500.md) — E18.44 r2: a local `async () => …` stub prop from an RSC is a runtime HTTP 500 that tsc + build + Storybook ALL pass; bind the real action to a placeholder key; lock it with an awaited-page unit test that INVOKES the prop (+more in file)

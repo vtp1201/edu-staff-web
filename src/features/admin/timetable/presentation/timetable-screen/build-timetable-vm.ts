@@ -1,4 +1,9 @@
-import type { TimetableData } from "../../domain/entities/timetable.entity";
+import type {
+  TimetableConflictScan,
+  TimetableData,
+} from "../../domain/entities/timetable.entity";
+import type { Result } from "../../domain/use-cases/result";
+import { buildConflictScanVM } from "./build-conflict-scan-vm";
 import type {
   TimetablePeriodVM,
   TimetableScreenVM,
@@ -17,17 +22,26 @@ import {
  * Pure VM builder: enriches the domain {@link TimetableData} with static subject
  * / teacher reference data (mock-only for US-E12.5) and derives the per-class
  * conflict slot-key set. Client-safe — used by the RSC page and Storybook.
+ *
+ * Conflicts arrive as their own whole-school scan (US-E18.48) rather than riding
+ * along on the class read, so the per-cell highlight is now driven by the SAME
+ * real data as the conflicts panel — in real mode as well as mock, where it used
+ * to be permanently empty. A failed scan simply yields no highlights (the panel
+ * shows the error); it must never be mistaken for "this class is clean".
  */
 export function buildTimetableVM(
   data: TimetableData,
   classId: string,
   yearId: string,
+  scanResult: Result<TimetableConflictScan>,
 ): TimetableScreenVM {
-  // Conflict slot-keys for the CURRENT class (a teacher clash at d/p means this
-  // class's slot at d/p is in conflict if this class is one of the parties).
+  const conflicts = scanResult.ok ? scanResult.value.conflicts : [];
+
+  // Conflict slot-keys for the CURRENT class (a clash at d/p means this class's
+  // slot at d/p is in conflict if this class is one of the parties).
   const conflictSlotKeys = new Set<string>();
-  for (const c of data.conflicts) {
-    if (c.classIds.includes(classId)) {
+  for (const c of conflicts) {
+    if (c.classes.some((party) => party.classId === classId)) {
       conflictSlotKeys.add(`${classId}|${c.day}|${c.period}`);
     }
   }
@@ -67,7 +81,8 @@ export function buildTimetableVM(
     days: TT_DAYS.map((d) => ({ vi: d.vi, en: d.en })),
     periods,
     slots,
-    conflicts: data.conflicts,
+    conflicts,
     conflictSlotKeys,
+    conflictScan: buildConflictScanVM(scanResult, classId),
   };
 }

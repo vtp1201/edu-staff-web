@@ -104,13 +104,18 @@ export function SlotEditorDialog({
     );
   }, [subjectId, classId]);
 
-  // A candidate teacher is "busy" if a school-wide conflict already places them
-  // at this (day, period) in another class.
+  // A candidate teacher is "busy" if a school-wide TEACHER conflict already
+  // places them at this (day, period) in another class. Room conflicts are
+  // skipped here on purpose: they say nothing about a teacher's availability.
   const busyTeacherIds = useMemo(() => {
     const set = new Set<string>();
     if (!target) return set;
     for (const c of conflicts) {
-      if (c.day === target.day && c.period === target.period) {
+      if (
+        c.type === "teacher-double-booked" &&
+        c.day === target.day &&
+        c.period === target.period
+      ) {
         set.add(c.teacherId);
       }
     }

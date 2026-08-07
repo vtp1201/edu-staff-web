@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Download,
-  Plus,
-  Upload,
-} from "lucide-react";
+import { AlertTriangle, Download, Plus, Upload } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useId, useMemo, useState, useTransition } from "react";
@@ -22,17 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/shared/utils";
+import { ConflictScanPanel } from "./conflict-scan-panel";
 import { SlotEditorDialog, type SlotEditorTarget } from "./slot-editor-dialog";
 import type {
   TimetableActions,
   TimetableScreenVM,
   TimetableSlotVM,
 } from "./timetable-screen.i-vm";
-import { findClass, TT_TEACHERS } from "./timetable-static";
-
-const TEACHER_NAME_BY_ID: Record<string, string> = Object.fromEntries(
-  TT_TEACHERS.map((tch) => [tch.id, tch.name]),
-);
+import { findClass } from "./timetable-static";
 
 export interface TimetableScreenProps {
   vm: TimetableScreenVM;
@@ -43,6 +33,11 @@ export interface TimetableScreenProps {
    */
   onSelectClass?: (classId: string) => void;
   onSelectYear?: (yearId: string) => void;
+  /**
+   * Optional override for re-running the whole-school conflicts scan (Storybook).
+   * When absent, the screen refreshes the RSC route, which re-issues the scan.
+   */
+  onRescanConflicts?: () => void;
 }
 
 const slotKeyOf = (classId: string, day: number, period: number) =>
@@ -53,6 +48,7 @@ export function TimetableScreen({
   actions,
   onSelectClass,
   onSelectYear,
+  onRescanConflicts,
 }: TimetableScreenProps) {
   const t = useTranslations("timetable");
   const tErrors = useTranslations("timetable.errors");
@@ -74,6 +70,8 @@ export function TimetableScreen({
 
   const selectClass = onSelectClass ?? ((id) => navigate("classId", id));
   const selectYear = onSelectYear ?? ((id) => navigate("yearId", id));
+  // Re-running the scan = re-rendering the RSC page (the scan has no client cache).
+  const rescanConflicts = onRescanConflicts ?? (() => router.refresh());
 
   const [editing, setEditing] = useState<SlotEditorTarget | null>(null);
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
@@ -334,8 +332,13 @@ export function TimetableScreen({
         </div>
       </div>
 
-      {/* Conflict summary */}
-      <ConflictSummary vm={vm} dayLabel={dayLabel} onJump={jumpToConflict} />
+      {/* Whole-school conflicts scan (US-E18.48) */}
+      <ConflictScanPanel
+        scan={vm.conflictScan}
+        dayLabel={dayLabel}
+        onJump={jumpToConflict}
+        onRetry={rescanConflicts}
+      />
 
       <SlotEditorDialog
         open={editing !== null}
@@ -431,121 +434,4 @@ function SlotCell({
       )}
     </button>
   );
-}
-
-function ConflictSummary({
-  vm,
-  dayLabel,
-  onJump,
-}: {
-  vm: TimetableScreenVM;
-  dayLabel: (idx: number) => string;
-  onJump: (classId: string, day: number, period: number) => void;
-}) {
-  const t = useTranslations("timetable");
-  const tConf = useTranslations("timetable.conflicts");
-  const hasConflicts = vm.conflicts.length > 0;
-
-  return (
-    <section
-      className={cn(
-        "overflow-hidden rounded-xl border bg-card shadow-card",
-        hasConflicts ? "border-edu-error-text/40" : "border-border",
-      )}
-      aria-label={tConf("title")}
-    >
-      <div
-        className={cn(
-          "flex items-center gap-3 px-5 py-3.5",
-          hasConflicts ? "bg-edu-error/10" : "bg-muted",
-        )}
-      >
-        <span
-          className={cn(
-            "flex size-8 items-center justify-center rounded-lg",
-            hasConflicts ? "bg-edu-error/20" : "bg-edu-success/20",
-          )}
-        >
-          {hasConflicts ? (
-            <AlertTriangle className="size-4 text-edu-error-text" aria-hidden />
-          ) : (
-            <CheckCircle2
-              className="size-4 text-edu-success-text"
-              aria-hidden
-            />
-          )}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              "text-sm font-extrabold",
-              hasConflicts ? "text-edu-error-text" : "text-edu-success-text",
-            )}
-          >
-            {hasConflicts
-              ? tConf("count", { count: vm.conflicts.length })
-              : tConf("noConflicts")}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {hasConflicts ? tConf("hint") : tConf("validHint")}
-          </p>
-        </div>
-      </div>
-      {hasConflicts && (
-        <ul className="divide-y divide-border border-t border-border">
-          {[...vm.conflicts]
-            .sort(
-              (a, b) =>
-                a.day - b.day ||
-                a.period - b.period ||
-                a.teacherId.localeCompare(b.teacherId),
-            )
-            .map((c, i) => {
-              const teacher = findTeacherName(c.teacherId);
-              const otherClasses = c.classIds
-                .filter((id) => id !== vm.classId)
-                .map((id) => findClass(id)?.name ?? id)
-                .join(", ");
-              const targetClass = c.classIds.includes(vm.classId)
-                ? vm.classId
-                : c.classIds[0];
-              return (
-                <li key={`${c.teacherId}-${c.day}-${c.period}`}>
-                  <button
-                    type="button"
-                    onClick={() => onJump(targetClass, c.day, c.period)}
-                    className="flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-edu-error/10"
-                  >
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-edu-error/15 text-[11px] font-extrabold text-edu-error-text">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span className="min-w-0 flex-1 text-xs leading-relaxed text-foreground">
-                      <span className="font-extrabold">{teacher}</span>{" "}
-                      <span className="text-muted-foreground">—</span>{" "}
-                      <span className="font-bold">{dayLabel(c.day)}</span>{" "}
-                      <span className="text-muted-foreground">—</span>{" "}
-                      <span className="font-bold">
-                        {t("periodN", { n: c.period })}
-                      </span>
-                      {": "}
-                      <span className="font-bold text-edu-error-text">
-                        {tConf("conflictsWith", { classes: otherClasses })}
-                      </span>
-                    </span>
-                    <span className="flex items-center gap-1 text-xs font-bold text-primary">
-                      {tConf("resolve")}
-                      <ArrowRight className="size-3.5" aria-hidden />
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function findTeacherName(teacherId: string): string {
-  return TEACHER_NAME_BY_ID[teacherId] ?? teacherId;
 }
