@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { PublishConfirmDialog } from "@/components/shared/publish-confirm-dialog";
 import { ReasonConfirmDialog } from "@/components/shared/reason-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ import { calculateWeightedAverage } from "../../domain/use-cases/calculate-weigh
 import { MAX_REJECTION_REASON_LENGTH } from "../../domain/use-cases/reject-column-entry.use-case";
 import type { SubmitTarget } from "../../domain/use-cases/submit-column-scores.use-case";
 import { LockTermControl } from "../components/lock-term-control";
+import { PendingApprovalList } from "../components/pending-approval-list";
 import { RankDistributionChart } from "../components/rank-distribution-chart";
 import type {
   ActionResult,
@@ -40,6 +42,7 @@ type ErrorMsgKey =
   | "errorStudentNotEnrolled"
   | "errorRejectionReasonRequired"
   | "errorRejectionReasonTooLong"
+  | "errorInvalidCursor"
   | "errorNetworkError"
   | "errorUnknown";
 
@@ -61,6 +64,8 @@ const ERROR_KEY_MAP: Record<GradesFailure["type"], ErrorMsgKey> = {
   "rejection-reason-required": "errorRejectionReasonRequired",
   "rejection-reason-too-long": "errorRejectionReasonTooLong",
   "not-published": "errorUnknown",
+  // US-E18.46 — the pending-approval rollup's only endpoint-specific failure.
+  "invalid-cursor": "errorInvalidCursor",
   "invalid-revision-note": "errorUnknown",
   "batch-locked": "errorUnknown",
 };
@@ -134,6 +139,17 @@ export function GradeEntryScreen({
   const [rejectError, setRejectError] = useState<GradesFailure["type"] | null>(
     null,
   );
+
+  // US-E18.46 — the cell whose approve confirmation is open (null = closed).
+  // Approve is a one-way publish, so it is confirmed (never fired straight off
+  // the row button) but needs no reason field.
+  const [approveTarget, setApproveTarget] = useState<{
+    studentId: string;
+    columnId: string;
+  } | null>(null);
+  const [approveError, setApproveError] = useState<
+    GradesFailure["type"] | null
+  >(null);
 
   // Local working copy of the sheet so optimistic edits render immediately.
   const [sheet, setSheet] = useState<GradeSheet | null>(vm.sheet);
@@ -315,6 +331,41 @@ export function GradeEntryScreen({
     },
   });
 
+  const approveMutation = useMutation({
+    mutationFn: async (vars: {
+      studentId: string;
+      columnId: string;
+    }): Promise<ActionResult> => {
+      // Unreachable without the capability — the approve control is not
+      // rendered outside approver mode. Fails closed rather than throwing.
+      if (!approverVM) {
+        return { ok: false, errorKey: "forbidden" };
+      }
+      return approverVM.approveEntryAction(vars.studentId, vars.columnId);
+    },
+    onSuccess: (result) => {
+      if (!result.ok) {
+        // Stay open so the approver reads WHY (e.g. a colleague already acted).
+        setApproveError(result.errorKey);
+        return;
+      }
+      setApproveError(null);
+      setApproveTarget(null);
+      setBanner(t("approveSuccess"));
+      // Server-authoritative: re-read rather than guessing the new cell state.
+      queryClient.invalidateQueries({ queryKey: ["grades"] });
+      startTransition(() => onSelectionChange?.({}));
+    },
+    onError: () => {
+      setApproveError("network-error");
+    },
+  });
+
+  function handleApproveCell(studentId: string, columnId: string) {
+    setApproveError(null);
+    setApproveTarget({ studentId, columnId });
+  }
+
   function handleRejectCell(studentId: string, columnId: string) {
     setRejectError(null);
     setRejectTarget({ studentId, columnId });
@@ -421,6 +472,26 @@ export function GradeEntryScreen({
         ) : null}
       </header>
 
+      {/* US-E18.46 — tenant-wide discovery, ABOVE the picker on purpose: it is
+          what tells the approver which tuple to pick, so it has to be readable
+          before the picker, not after the sheet it leads to. */}
+      {approverVM ? (
+        <PendingApprovalList
+          seed={approverVM.pendingApproval}
+          classSubjects={vm.classSubjects}
+          loadPage={approverVM.loadPendingApprovalPage}
+          getFailureMessage={errorMessage}
+          isLoading={isLoading}
+          onSelect={(batch) =>
+            changeSelection({
+              classId: batch.classId,
+              subjectId: batch.subjectId,
+              term: batch.termId,
+            })
+          }
+        />
+      ) : null}
+
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex min-w-52 flex-col gap-1.5">
           <Label htmlFor="grade-cs" className="text-xs">
@@ -509,12 +580,45 @@ export function GradeEntryScreen({
             onSubmitCell={teacherVM ? handleSubmitCell : undefined}
             onSubmitRow={teacherVM ? handleSubmitRow : undefined}
             onRejectCell={approverVM ? handleRejectCell : undefined}
+            onApproveCell={approverVM ? handleApproveCell : undefined}
           />
           {/* Five-band rank distribution (US-E13.6 AC) — the roster-wide read
               the principal/admin grade view has always shown. */}
           {approverVM ? <RankDistributionChart rows={sheet.rows} /> : null}
         </>
       )}
+      {approverVM ? (
+        <PublishConfirmDialog
+          open={approveTarget !== null}
+          isLoading={approveMutation.isPending}
+          labels={{
+            title: t("approveDialogTitle"),
+            body: t("approveDialogBody"),
+            confirm: t("approveConfirm"),
+            publishing: t("approvePending"),
+            cancel: t("approveCancel"),
+          }}
+          // `blocked` for a state the same click can only hit again (the cell
+          // moved on, or the role is wrong); `transient` for a retryable
+          // transport failure — tone is carried by icon AND colour.
+          errorSlot={
+            approveError
+              ? {
+                  tone:
+                    approveError === "network-error" ? "transient" : "blocked",
+                  message: errorMessage(approveError),
+                }
+              : undefined
+          }
+          onConfirm={() => {
+            if (approveTarget) approveMutation.mutate(approveTarget);
+          }}
+          onCancel={() => {
+            setApproveTarget(null);
+            setApproveError(null);
+          }}
+        />
+      ) : null}
       {approverVM ? (
         <ReasonConfirmDialog
           open={rejectTarget !== null}

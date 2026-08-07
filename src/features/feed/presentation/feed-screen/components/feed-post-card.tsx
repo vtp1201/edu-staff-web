@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { formatAbsoluteTime, formatRelativeTime } from "@/shared/relative-time";
 import { cn } from "@/shared/utils";
 import type { FeedPostEntity } from "../../../domain/entities/feed-post.entity";
 import type { ReactionType } from "../../../domain/entities/reaction.entity";
@@ -15,7 +16,6 @@ import { FeedMenu } from "./feed-menu";
 import { FeedPinBadge } from "./feed-pin-badge";
 import { FeedReactionBar } from "./feed-reaction-bar";
 import { feedRoleTone } from "./feed-role-tone";
-import { formatAbsoluteTime, formatRelativeTime } from "./feed-time";
 
 const TONE_TEXT: Record<string, string> = {
   primary: "text-primary",

@@ -10,7 +10,7 @@ import type {
   StaffGradeCell,
 } from "../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
-import type { IGradeRejectionRepository } from "../../domain/repositories/i-grade-rejection.repository";
+import type { IGradeDecisionRepository } from "../../domain/repositories/i-grade-decision.repository";
 import type { IGradesRepository } from "../../domain/repositories/i-grades.repository";
 import type { IGradesTermRepository } from "../../domain/repositories/i-grades-term.repository";
 import type {
@@ -73,7 +73,7 @@ function throwFailure(err: unknown, columnId: string, maxScore: number): never {
 const DEFAULT_MAX_SCORE = 10;
 
 export class GradesRepository
-  implements IGradesRepository, IGradesTermRepository, IGradeRejectionRepository
+  implements IGradesRepository, IGradesTermRepository, IGradeDecisionRepository
 {
   /**
    * `scheme` + `publishMode` are sourced (by the DI factory) from the REAL
@@ -182,6 +182,43 @@ export class GradesRepository
           columnId,
         ),
         body,
+      )) as unknown as GradeEntryResponseDto;
+      return {
+        studentId: dto.studentMemberId,
+        columnId: dto.columnId,
+        cell: mapStaffGradeCell(dto),
+      };
+    } catch (err) {
+      throwFailure(err, columnId, DEFAULT_MAX_SCORE);
+    }
+  }
+
+  /**
+   * US-E18.46 — ADMIN/MANAGER approve on ONE pending cell
+   * (`PENDING_APPROVAL → PUBLISHED`). Bodyless POST: BE's `ApproveGradeInput`
+   * carries nothing beyond the path plus the actor's own claims, so `{}` is
+   * sent (same shape as `submitEntry`/`lockTerm`) — there is deliberately no
+   * reason-carrying body to mirror from `rejectEntry`.
+   *
+   * Mapped with `mapStaffGradeCell` like every other staff write: an approved
+   * entry has no rejection to carry, but keeping the staff mapper means the
+   * returned cell type never silently narrows to the student/parent shape.
+   */
+  async approveEntry(
+    key: ClassSubjectTermKey,
+    studentId: string,
+    columnId: string,
+  ): Promise<{ studentId: string; columnId: string; cell: StaffGradeCell }> {
+    try {
+      const dto = (await this.http.post(
+        GRADES_EP.approveEntry(
+          key.classId,
+          key.subjectId,
+          key.termId,
+          studentId,
+          columnId,
+        ),
+        {},
       )) as unknown as GradeEntryResponseDto;
       return {
         studentId: dto.studentMemberId,

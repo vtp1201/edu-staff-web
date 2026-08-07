@@ -1,7 +1,7 @@
 import type { ClassSubjectTermKey } from "../entities/class-subject-term-key.entity";
 import type { StaffGradeCell } from "../entities/grade-sheet.entity";
 import type { GradesFailure } from "../failures/grades.failure";
-import type { IGradeRejectionRepository } from "../repositories/i-grade-rejection.repository";
+import type { IGradeDecisionRepository } from "../repositories/i-grade-decision.repository";
 
 /** BE cap on `reason` (US-184: "bắt buộc, ≤500 ký tự"). */
 export const MAX_REJECTION_REASON_LENGTH = 500;
@@ -31,7 +31,7 @@ export interface RejectEntryResult {
  * budget or be stored as blank-looking text.
  */
 export class RejectColumnEntryUseCase {
-  constructor(private readonly repo: IGradeRejectionRepository) {}
+  constructor(private readonly repo: IGradeDecisionRepository) {}
 
   async execute(
     key: ClassSubjectTermKey,

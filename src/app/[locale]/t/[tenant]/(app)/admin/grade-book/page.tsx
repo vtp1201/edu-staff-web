@@ -7,7 +7,13 @@ import type { GradesFailure } from "@/features/grades/domain/failures/grades.fai
 import { buildApproverGradeVm } from "@/features/grades/presentation/grade-entry-screen/build-approver-grade-vm";
 import { GradeEntryContainer } from "@/features/grades/presentation/grade-entry-screen/grade-entry-container";
 import type { GradeEntryScreenVM } from "@/features/grades/presentation/grade-entry-screen/grade-entry-screen.i-vm";
-import { lockTermAction, rejectEntryAction } from "./actions";
+import {
+  approveEntryAction,
+  loadPendingApprovalPageAction,
+  lockTermAction,
+  rejectEntryAction,
+} from "./actions";
+import { loadPendingApprovalSeed } from "./load-pending-approval";
 
 type SearchParams = Promise<{
   classId?: string;
@@ -47,6 +53,9 @@ export default async function AdminGradeBookPage({
   const selectedTerm = sp.term ?? null;
 
   const classSubjects = await resolveMyGradeSubjects();
+  // Independent of the sheet read: the rollup is what tells the approver WHICH
+  // tuple to open, so it must load even when no selection exists yet.
+  const pendingApproval = await loadPendingApprovalSeed();
   const academicYearLabel = await resolveCurrentAcademicYear().catch(
     () => "2025-2026",
   );
@@ -83,6 +92,9 @@ export default async function AdminGradeBookPage({
     error,
     key,
     rejectEntryAction,
+    approveEntryAction,
+    pendingApproval,
+    loadPendingApprovalPage: loadPendingApprovalPageAction,
     lockTermAction,
   });
 

@@ -52,6 +52,9 @@ const ERROR_KEY: Record<GradesFailure["type"], ErrorMsgKey> = {
   "rejection-reason-too-long": "errorUnknown",
   "not-published": "errorNotPublished",
   "invalid-revision-note": "errorUnknown",
+  // US-E18.46: the rollup's `invalid-cursor` cannot reach this screen (it has
+  // no paginated grade read) — mapped only to keep the union exhaustive.
+  "invalid-cursor": "errorUnknown",
   "batch-locked": "errorBatchLocked",
 };
 

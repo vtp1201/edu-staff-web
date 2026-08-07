@@ -1,6 +1,7 @@
 import type { AssessmentScheme } from "@/features/assessment-scheme/domain/entities/assessment-scheme.entity";
 import type { ClassSubjectTermKey } from "../../../domain/entities/class-subject-term-key.entity";
 import type { StudentScoreRow } from "../../../domain/entities/grade-sheet.entity";
+import type { PendingApprovalBatch } from "../../../domain/entities/pending-approval-batch.entity";
 
 export const MOCK_KEY: ClassSubjectTermKey = {
   classId: "class-001",
@@ -87,5 +88,37 @@ export const MOCK_ROWS: StudentScoreRow[] = [
       ck: { value: 10, status: "DRAFT" },
     },
     average: null,
+  },
+];
+
+/**
+ * Tenant-wide pending-approval rollup fixture (US-E18.46, BE US-186) — seed
+ * DATA, not UI copy. Deliberately unsorted here: the repository applies the
+ * BE's oldest-`submittedAt`-first order, so this fixture also proves the mock
+ * does that sorting rather than relying on declaration order. Every tuple
+ * matches a `MOCK_GRADE_SUBJECT_OPTIONS` entry so a click-to-jump row lands on
+ * a sheet the mock can actually load.
+ */
+export const MOCK_PENDING_APPROVAL_BATCHES: PendingApprovalBatch[] = [
+  {
+    classId: "class-002",
+    subjectId: "subj-toan-10",
+    termId: "HK1",
+    pendingCount: 8,
+    submittedAt: "2026-07-30T03:15:00.000Z",
+  },
+  {
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    termId: "HK1",
+    pendingCount: 12,
+    submittedAt: "2026-07-28T01:00:00.000Z",
+  },
+  {
+    classId: "class-003",
+    subjectId: "subj-toan-11",
+    termId: "HK2",
+    pendingCount: 3,
+    submittedAt: "2026-08-02T07:45:00.000Z",
   },
 ];

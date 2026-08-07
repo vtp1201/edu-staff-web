@@ -3,11 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/bootstrap/auth-guard";
 import {
+  makeApproveColumnEntryUseCase,
+  makeListPendingApprovalBatchesUseCase,
   makeLockTermUseCase,
   makeRejectColumnEntryUseCase,
 } from "@/bootstrap/di/grades.di";
 import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/class-subject-term-key.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
+import type { PendingApprovalPageResult } from "@/features/grades/presentation/grade-entry-screen/grade-entry-screen.i-vm";
 
 /**
  * Both ADMIN/MANAGER grade-view routes. The two namespaces are separate because
@@ -92,4 +95,57 @@ export async function rejectEntryAction(
   }
   for (const path of PATHS) revalidatePath(path, "page");
   return { ok: true };
+}
+
+/**
+ * US-E18.46 (BE `ApproveGradeUseCase`) — approve ONE `PENDING_APPROVAL` cell
+ * (`PENDING_APPROVAL → PUBLISHED`). No reason, no body: approval is
+ * unqualified, so nothing but the target is threaded through.
+ *
+ * Same gate + same home as `rejectEntryAction`, for the same reason: the
+ * affordance is only ever mounted on the two ADMIN/MANAGER grade views, and the
+ * VM's mere possession of this action decides UI VISIBILITY only — the
+ * server-derived role claim is re-checked HERE, before any DI/HTTP call,
+ * because a Server Action is a publicly callable endpoint.
+ */
+export async function approveEntryAction(
+  key: ClassSubjectTermKey,
+  studentId: string,
+  columnId: string,
+): Promise<ActionResult> {
+  const guard = await requireRole(APPROVER_ROLES);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
+
+  const useCase = await makeApproveColumnEntryUseCase(key);
+  const result = await useCase.execute(key, studentId, columnId);
+  if (isFailure(result)) {
+    return { ok: false, errorKey: result.type };
+  }
+  for (const path of PATHS) revalidatePath(path, "page");
+  return { ok: true };
+}
+
+/**
+ * US-E18.46 (BE US-186) — one page of the tenant-wide pending-approval rollup.
+ * Drives both "load more" and the section's retry (`cursor: null` = first
+ * page).
+ *
+ * READ-only, but still `requireRole`-gated: the rollup discloses tenant-wide
+ * which classes have ungraded/unapproved work, which is exactly the oversight
+ * view BE restricts to ADMIN/MANAGER (`isAdminOrManager` — the SAME gate as
+ * approve/reject). It performs no `revalidatePath`: it returns data to a client
+ * component, it does not mutate anything.
+ */
+export async function loadPendingApprovalPageAction(
+  cursor: string | null,
+): Promise<PendingApprovalPageResult> {
+  const guard = await requireRole(APPROVER_ROLES);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
+
+  const useCase = await makeListPendingApprovalBatchesUseCase();
+  const result = await useCase.execute({ cursor: cursor ?? undefined });
+  if (isFailure(result)) {
+    return { ok: false, errorKey: result.type };
+  }
+  return { ok: true, page: result };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ClassSubjectTermKey } from "../entities/class-subject-term-key.entity";
 import type { StaffGradeCell } from "../entities/grade-sheet.entity";
 import type { GradesFailure } from "../failures/grades.failure";
-import type { IGradeRejectionRepository } from "../repositories/i-grade-rejection.repository";
+import type { IGradeDecisionRepository } from "../repositories/i-grade-decision.repository";
 import {
   MAX_REJECTION_REASON_LENGTH,
   RejectColumnEntryUseCase,
@@ -26,9 +26,9 @@ const rejectedCell: StaffGradeCell = {
 };
 
 function makeRepo(
-  over: Partial<IGradeRejectionRepository> = {},
-): IGradeRejectionRepository {
-  return { rejectEntry: vi.fn(), ...over } as IGradeRejectionRepository;
+  over: Partial<IGradeDecisionRepository> = {},
+): IGradeDecisionRepository {
+  return { rejectEntry: vi.fn(), ...over } as IGradeDecisionRepository;
 }
 
 function isFailure(x: unknown): x is GradesFailure {

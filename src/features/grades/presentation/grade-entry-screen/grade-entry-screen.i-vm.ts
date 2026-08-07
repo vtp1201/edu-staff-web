@@ -1,4 +1,8 @@
 import type { GradeSheet } from "../../domain/entities/grade-sheet.entity";
+import type {
+  PendingApprovalBatch,
+  PendingApprovalPage,
+} from "../../domain/entities/pending-approval-batch.entity";
 import type { GradesFailure } from "../../domain/failures/grades.failure";
 import type {
   SubmitScoresResult,
@@ -15,6 +19,25 @@ export interface ClassSubjectOption {
 
 export type ActionResult =
   | { ok: true }
+  | { ok: false; errorKey: GradesFailure["type"] };
+
+/**
+ * US-E18.46 — the RSC-seeded FIRST page of the tenant-wide pending-approval
+ * rollup, plus how that read went. `error` is a stable failure key (never
+ * translated copy) and is INDEPENDENT of the sheet's own `error`: the rollup is
+ * a secondary read, so failing to load it degrades that one section and never
+ * blocks the grade sheet.
+ */
+export interface PendingApprovalVM {
+  items: PendingApprovalBatch[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  error: GradesFailure["type"] | null;
+}
+
+/** Result of a client-driven rollup page fetch (load-more / retry). */
+export type PendingApprovalPageResult =
+  | { ok: true; page: PendingApprovalPage }
   | { ok: false; errorKey: GradesFailure["type"] };
 
 export type SubmitActionResult =
@@ -83,6 +106,31 @@ export interface ApproverGradeEntryVM extends GradeEntryScreenVMBase {
     columnId: string,
     reason: string,
   ) => Promise<ActionResult>;
+  /**
+   * Approve (publish) ONE `PENDING_APPROVAL` cell (US-E18.46). REQUIRED for the
+   * same reason `rejectEntryAction` is: approve/reject are the two outcomes of
+   * the one job this mode exists to do, so a mode that could only reject would
+   * be a half-built approver screen. Takes no reason — approval is unqualified.
+   */
+  approveEntryAction: (
+    studentId: string,
+    columnId: string,
+  ) => Promise<ActionResult>;
+  /**
+   * Tenant-wide "what is waiting on me" rollup, first page (US-E18.46). Always
+   * present in approver mode — an empty `items` with a null `error` is the
+   * legitimate "nothing pending" state and must render as such, which a missing
+   * field could not distinguish from "not wired".
+   */
+  pendingApproval: PendingApprovalVM;
+  /**
+   * Fetches ONE further rollup page (or re-fetches the first, `cursor: null`,
+   * as the section's retry). A real Server Action bound by the RSC page — never
+   * a locally-defined closure, which cannot cross the RSC→client boundary.
+   */
+  loadPendingApprovalPage: (
+    cursor: string | null,
+  ) => Promise<PendingApprovalPageResult>;
   /**
    * Irreversible term lock (US-E18.12, ADR 0054 §4). Optional because it is
    * only bindable once a full class-subject-term is selected; absent ⇒ the

@@ -2,10 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { formatAbsoluteTime, formatRelativeTime } from "@/shared/relative-time";
 import type { FeedCommentEntity } from "../../../domain/entities/feed-comment.entity";
 import { FeedMenu } from "./feed-menu";
 import { feedRoleTone } from "./feed-role-tone";
-import { formatAbsoluteTime, formatRelativeTime } from "./feed-time";
 
 const TONE_TEXT: Record<string, string> = {
   primary: "text-primary",

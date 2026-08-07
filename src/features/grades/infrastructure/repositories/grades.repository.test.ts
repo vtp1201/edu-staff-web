@@ -36,6 +36,9 @@ const key = {
   academicYearLabel: "2025-2026",
 };
 
+const APPROVE_PATH =
+  "/core/api/v1/classes/class-1/subjects/subj-1/terms/HK1/grades/s1/columns/ck/approve";
+
 const REJECT_PATH =
   "/core/api/v1/classes/class-1/subjects/subj-1/terms/HK1/grades/s1/columns/ck/reject";
 
@@ -187,5 +190,53 @@ describe("GradesRepository.getGradeSheet — staff rejection payload on the list
       rejectedBy: "admin-1",
       rejectedAt: "2026-08-05T02:00:00Z",
     });
+  });
+});
+
+describe("GradesRepository.approveEntry — US-E18.46 (wires the dormant endpoint)", () => {
+  function approvedDto(): GradeEntryResponseDto {
+    return {
+      classId: "class-1",
+      subjectId: "subj-1",
+      termId: "HK1",
+      studentMemberId: "s1",
+      columnId: "ck",
+      value: "9",
+      status: "PUBLISHED",
+      enteredBy: "teacher-1",
+      enteredAt: "2026-08-01T00:00:00Z",
+      updatedAt: "2026-08-06T02:00:00Z",
+    };
+  }
+
+  it("POSTs the approve path with NO body fields (approval is unqualified)", async () => {
+    const post = vi.fn().mockResolvedValue(approvedDto());
+
+    const result = await makeRepo({ post }).approveEntry(key, "s1", "ck");
+
+    expect(post).toHaveBeenCalledWith(APPROVE_PATH, {});
+    expect(result).toEqual({
+      studentId: "s1",
+      columnId: "ck",
+      cell: { value: 9, status: "PUBLISHED" },
+    });
+  });
+
+  /** The approve path is one segment different from reject — never the same URL. */
+  it("does not post to the reject path", async () => {
+    const post = vi.fn().mockResolvedValue(approvedDto());
+    await makeRepo({ post }).approveEntry(key, "s1", "ck");
+    expect(post).not.toHaveBeenCalledWith(REJECT_PATH, expect.anything());
+  });
+
+  it.each([
+    ["GRADE_ENTRY_NOT_PENDING_APPROVAL", 409, "not-pending-approval"],
+    ["GRADE_ENTRY_FORBIDDEN", 403, "forbidden"],
+    ["GRADE_ENTRY_NOT_FOUND", 404, "not-found"],
+  ])("maps %s to the %s failure", async (code, status, type) => {
+    const post = vi.fn().mockRejectedValue(apiError(code, status));
+    expect(
+      await failureOf(makeRepo({ post }).approveEntry(key, "s1", "ck")),
+    ).toEqual({ type });
   });
 });

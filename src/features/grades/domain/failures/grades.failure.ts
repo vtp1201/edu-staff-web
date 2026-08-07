@@ -26,6 +26,8 @@ export type GradesFailure =
   // US-E18.44 (BE US-184) — per-cell reject / request-revision:
   | { type: "rejection-reason-required" } // GRADE_REJECTION_REASON_REQUIRED, 422 — also raised client-side (defense in depth) for a blank reason
   | { type: "rejection-reason-too-long" } // client-side only (reason > 500 chars). A DISTINCT key from `required` because the user's fix differs: "shorten it" vs "write something".
+  // US-E18.46 (BE US-186) — tenant-wide pending-approval rollup:
+  | { type: "invalid-cursor" } // GRADE_ENTRY_INVALID_CURSOR, 400 — only reachable from the paginated discovery read
   | { type: "not-published" } // GRADE_ENTRY_NOT_PUBLISHED, 409 — lock attempted on a non-PUBLISHED entry
   | { type: "locked" } // GRADE_ENTRY_LOCKED, 409
   | { type: "scale-not-configured" } // GRADE_SCALE_NOT_CONFIGURED, 422
