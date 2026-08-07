@@ -2,27 +2,34 @@
  * Academic-records endpoint constants (`core` service).
  * No magic strings in repositories.
  *
- * SIX constants are REACHABLE: `sealBatch` (US-E18.13) plus `sealStatus`,
- * `unsealRequests` (POST create + GET list, same path) and `unsealApprove`
- * (US-E18.24, after BE US-150 shipped the listing endpoint ADR `0055` said was
- * missing), and `sealedStudents` (US-E18.43, BE US-183). The remaining constants
- * stay **permanently unreachable dead constants**: the viewer repository
- * (`academic-records.repository.ts`, US-E18.21 — model mismatch, ADR 0055
- * §Context point 6) and the three no-BE-endpoint operations
- * (`availableClasses`, `sealAuditTrail`, tenant-admin listing) are force-mocked
- * and never perform an HTTP call. They are kept accurate-as-documentation only
- * (same convention as `staff-leave.endpoint.ts`).
+ * SEVEN constants are REACHABLE: `memberRecords` (US-E18.54 — the viewer read),
+ * `sealBatch` (US-E18.13) plus `sealStatus`, `unsealRequests` (POST create +
+ * GET list, same path) and `unsealApprove` (US-E18.24, after BE US-150 shipped
+ * the listing endpoint ADR `0055` said was missing), and `sealedStudents`
+ * (US-E18.43, BE US-183). The remaining two constants stay **permanently
+ * unreachable dead constants**: `availableClasses` and `sealAuditTrail` have no
+ * BE endpoint at all, so the hybrid facade routes them to the mock. They are
+ * kept accurate-as-documentation only (same convention as
+ * `staff-leave.endpoint.ts`).
  */
 export const ACADEMIC_RECORDS_EP = {
-  // DEAD (US-E18.21): never called. Also not the real shape — the real viewer
-  // read is `GET /classes/{classId}/terms/{termId}/students/{studentId}/academic-record`
-  // (or `GET /members/{memberId}/academic-records`), keyed by class+term, not
-  // by `(studentId, yearId?)`. ADR 0055 §Context point 6.
-  record: (studentId: string) => `/core/api/v1/academic-records/${studentId}`,
-  // DEAD (US-E18.21): never called. No per-student "academic years" endpoint
-  // exists on the wire at all — there is no year-grouping concept in `core`.
-  years: (studentId: string) =>
-    `/core/api/v1/academic-records/${studentId}/years`,
+  /**
+   * US-E18.54 — REAL per-student read-everything (`ListStudentAcademicRecords`,
+   * BE US-064). Returns `{studentMemberId, records: AcademicRecordResponse[]}`
+   * for EVERY `(classId, termId)` the member holds. UNPAGINATED — plain
+   * unwrapped GET, no `raw: true`.
+   *
+   * RBAC (`ListStudentAcademicRecordsUseCase`): ADMIN/MANAGER/SUPER_ADMIN any
+   * student, STUDENT self only, PARENT linked child only. **TEACHER is NOT in
+   * the allow-list** (`default: forbidden`) — the teacher route degrades to the
+   * `forbidden` state in real mode; see cross-repo ask #48.
+   *
+   * The two pre-remodel constants (`record`, `years`) modelled a
+   * `(studentId, yearId?)` contract that never existed on any server and are
+   * DELETED, not kept as documentation.
+   */
+  memberRecords: (memberId: string) =>
+    `/core/api/v1/members/${encodeURIComponent(memberId)}/academic-records`,
   // US-E18.13 — REAL batch-seal (core, ground-truthed openapi.yaml AcademicRecords
   // tag). Bare POST, no body: server derives the actor from the Bearer token and
   // performs the "all grades locked" check server-side (ADR 0055).

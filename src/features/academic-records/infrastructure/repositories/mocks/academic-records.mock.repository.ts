@@ -2,32 +2,35 @@ import "server-only";
 import { mockDelay } from "@/bootstrap/lib/mock";
 import type {
   AcademicRecordResult,
-  AcademicYearListResult,
   IAcademicRecordsRepository,
 } from "../../../domain/repositories/i-academic-records.repository";
-import { academicRecordMapper } from "../../mappers/academic-record.mapper";
-import { ACADEMIC_RECORD_YEAR_IDS, MOCK_ACADEMIC_RECORD } from "./fixtures";
+import { buildAcademicRecord } from "../../../domain/use-cases/build-academic-record";
+import { mapAcademicRecordRow } from "../../mappers/academic-record.mapper";
+import {
+  MOCK_CLASS_YEARS,
+  MOCK_STUDENT_ACADEMIC_RECORDS,
+  MOCK_SUBJECT_NAMES,
+} from "./fixtures";
 
+/**
+ * Mock viewer repository. Its fixture is WIRE-SHAPED (a flat
+ * `(classId, termId)` list), so it runs the exact same mapper + grouping as
+ * `AcademicRecordsRepository` — the two branches cannot drift in how a record
+ * becomes a year (US-E18.54). Only the two decoration collaborators are local
+ * maps here instead of HTTP reads.
+ */
 export class MockAcademicRecordsRepository
   implements IAcademicRecordsRepository
 {
-  async getRecord(
-    _studentId: string,
-    yearId?: string,
-  ): Promise<AcademicRecordResult> {
+  async getRecords(_memberId: string): Promise<AcademicRecordResult> {
     await mockDelay(200);
-    const dto = structuredClone(MOCK_ACADEMIC_RECORD);
-    const data = academicRecordMapper(dto);
-    if (yearId) {
-      // Narrow to the requested year while preserving the year list (timeline).
-      const match = data.years.find((y) => y.yearId === yearId);
-      if (!match) return { ok: false, error: { type: "not-found" } };
-    }
-    return { ok: true, data };
-  }
-
-  async listYears(_studentId: string): Promise<AcademicYearListResult> {
-    await mockDelay(200);
-    return { ok: true, data: [...ACADEMIC_RECORD_YEAR_IDS] };
+    const dto = structuredClone(MOCK_STUDENT_ACADEMIC_RECORDS);
+    const rows = dto.records.map((record) =>
+      mapAcademicRecordRow(record, MOCK_SUBJECT_NAMES),
+    );
+    return {
+      ok: true,
+      data: buildAcademicRecord(dto.studentMemberId, rows, MOCK_CLASS_YEARS),
+    };
   }
 }

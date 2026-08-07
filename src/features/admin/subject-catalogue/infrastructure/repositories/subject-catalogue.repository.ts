@@ -293,6 +293,16 @@ export class SubjectCatalogueRepository implements ISubjectCatalogueRepository {
     }
   }
 
+  /** Every subject in the tenant — one bounded cursor drain, no parent filter. */
+  async listAllSubjects(): Promise<Result<Subject[], SubjectCatalogueFailure>> {
+    try {
+      const subjectDtos = await this.fetchAllSubjectDtos();
+      return ok(subjectDtos.map(SubjectCatalogueMapper.toSubject));
+    } catch (err) {
+      return fail(toFailure(err));
+    }
+  }
+
   async createSubject(
     input: CreateSubjectInput,
   ): Promise<Result<Subject, SubjectCatalogueFailure>> {

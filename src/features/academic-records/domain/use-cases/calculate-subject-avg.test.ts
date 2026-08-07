@@ -1,27 +1,54 @@
 import { describe, expect, it } from "vitest";
+import type { SubjectColumnScore } from "../entities/academic-record.entity";
 import { calculateSubjectAvg } from "./calculate-subject-avg";
 
-describe("calculateSubjectAvg", () => {
-  it("computes the weighted average across all four components", () => {
-    // (8*1 + 9*1 + 7*2 + 10*3) / (1+1+2+3) = (8+9+14+30)/7 = 61/7 = 8.714…
-    expect(calculateSubjectAvg(8, 9, 7, 10)).toBeCloseTo(8.71, 2);
+function col(
+  value: number | null,
+  coefficient: number | null,
+  columnId = `c-${value}-${coefficient}`,
+): SubjectColumnScore {
+  return {
+    columnId,
+    columnName: "col",
+    columnType: "REGULAR",
+    coefficient,
+    value,
+  };
+}
+
+describe("calculateSubjectAvg — dynamic snapshot columns (US-E18.54)", () => {
+  it("weights each column by its own coefficient", () => {
+    // (8×1 + 6×1 + 7×2 + 9×3) / 7 = 55/7 = 7.857… → 7.86
+    expect(
+      calculateSubjectAvg([col(8, 1), col(6, 1), col(7, 2), col(9, 3)]),
+    ).toBe(7.86);
   });
 
-  it("excludes null components from sum and denominator", () => {
-    // cuoiKy null → (8*1 + 9*1 + 7*2) / (1+1+2) = 31/4 = 7.75
-    expect(calculateSubjectAvg(8, 9, 7, null)).toBe(7.75);
+  it("returns null for an empty column list", () => {
+    expect(calculateSubjectAvg([])).toBeNull();
   });
 
-  it("handles a single non-null score", () => {
-    expect(calculateSubjectAvg(null, null, null, 6)).toBe(6);
+  it("skips columns with a null value (frozen snapshot may be partial)", () => {
+    // (8×1 + 9×3) / 4 = 35/4 = 8.75
+    expect(calculateSubjectAvg([col(8, 1), col(null, 2), col(9, 3)])).toBe(
+      8.75,
+    );
   });
 
-  it("returns null when all inputs are null", () => {
-    expect(calculateSubjectAvg(null, null, null, null)).toBeNull();
+  it("returns null when every value is null", () => {
+    expect(calculateSubjectAvg([col(null, 1), col(null, 3)])).toBeNull();
   });
 
-  it("rounds to two decimals", () => {
-    // (10*1) / 1 = 10
-    expect(calculateSubjectAvg(10, null, null, null)).toBe(10);
+  it("treats a null coefficient as weight 1 rather than dropping the column", () => {
+    // (10×1 + 6×1) / 2 = 8
+    expect(calculateSubjectAvg([col(10, null), col(6, 1)])).toBe(8);
+  });
+
+  it("returns null when the total weight is zero (all coefficients 0)", () => {
+    expect(calculateSubjectAvg([col(8, 0), col(6, 0)])).toBeNull();
+  });
+
+  it("rounds to 2 decimals", () => {
+    expect(calculateSubjectAvg([col(7, 1), col(8, 1), col(8, 1)])).toBe(7.67);
   });
 });

@@ -26,6 +26,14 @@ export interface ISubjectCatalogueRepository {
   listSubjects(
     parentId: string,
   ): Promise<Result<Subject[], SubjectCatalogueFailure>>;
+  /**
+   * EVERY subject in the tenant, ungrouped (US-E18.54). `GET /subjects` is
+   * readable by ANY authenticated member (`core`'s `ListSubjectsUseCase`),
+   * which is what makes this the `subjectId → name` source for
+   * student/parent-facing surfaces. `listSubjects(parentId)` cannot serve them:
+   * it needs a parent id, and it re-drains the same pages once per parent.
+   */
+  listAllSubjects(): Promise<Result<Subject[], SubjectCatalogueFailure>>;
   createSubject(
     data: CreateSubjectInput,
   ): Promise<Result<Subject, SubjectCatalogueFailure>>;

@@ -31,7 +31,20 @@ export const ROSTER_EP = {
    * Build the path with classStudentsPath().
    */
   classStudents: "/core/api/v1/classes/:classId/students",
-  /** DELETE one student from a class. Build path with unenrollPath(). */
+  /**
+   * ONE enrollment row: DELETE = unenroll (build with unenrollPath()),
+   * GET = read that row (build with studentEnrollmentPath(), US-E18.54).
+   *
+   * The GET is the academic-record viewer's `classId → academicYearLabel`
+   * source, and it is the ONLY class-context read whose RBAC covers a STUDENT:
+   * `GetStudentEnrollmentUseCase` allows ADMIN/SUPER_ADMIN/MANAGER, a TEACHER
+   * assigned to the class, and a STUDENT reading their OWN row — whereas
+   * `GET /classes/{classId}` (which also carries `academicYearLabel` plus the
+   * class name) is ADMIN/MANAGER/assigned-TEACHER only. **PARENT is in neither
+   * allow-list**, so a parent cannot resolve the year for a linked child's
+   * record at all today — cross-repo ask #47 (denormalize `academicYear` onto
+   * the academic-record row) is what closes that.
+   */
   unenroll: "/core/api/v1/classes/:classId/students/:studentMemberId",
   /**
    * Enrolled-student ids for ONE academic year (`?academicYear=2025-2026`):
@@ -61,4 +74,12 @@ export function unenrollPath(classId: string, studentMemberId: string): string {
   return ROSTER_EP.unenroll
     .replace(":classId", classId)
     .replace(":studentMemberId", studentMemberId);
+}
+
+/** GET path for one enrollment row — same path as {@link unenrollPath}, different verb. */
+export function studentEnrollmentPath(
+  classId: string,
+  studentMemberId: string,
+): string {
+  return unenrollPath(classId, studentMemberId);
 }

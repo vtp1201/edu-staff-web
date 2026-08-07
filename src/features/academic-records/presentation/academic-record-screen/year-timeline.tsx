@@ -80,7 +80,9 @@ export function YearTimeline({
                   active ? "text-primary" : "text-foreground",
                 )}
               >
-                {year.yearLabel}
+                {/* `null` = the classId → academic-year join did not resolve
+                    (US-E18.54). Label it honestly; never invent a year. */}
+                {year.yearLabel ?? t("yearTimeline.unresolvedLabel")}
               </span>
               {year.isCurrent && (
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">

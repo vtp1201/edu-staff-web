@@ -30,12 +30,6 @@
       "record": "Academic Record",
       "students": "Students"
     },
-    "conduct": {
-      "Kha": "Fair",
-      "Tot": "Good",
-      "TrungBinh": "Average",
-      "Yeu": "Weak"
-    },
     "empty": {
       "description": "There is no academic record for this school year yet.",
       "title": "No academic record data"
@@ -86,28 +80,20 @@
       "unsealed": "Not sealed"
     },
     "student": {
-      "code": "Student ID",
-      "currentClass": "Current class",
-      "currentYear": "Current school year",
-      "dob": "Date of birth"
+      "summary": "Academic record grouped by school year and term."
     },
     "table": {
       "caption": "Term grade sheet",
-      "conduct": "Conduct",
-      "final": "Final",
       "gpa": "GPA",
-      "midterm": "Midterm",
       "rank": "Rank",
       "subject": "Subject",
       "termAvg": "Term Avg",
       "termSummary": "Term summary",
-      "tx1": "RG1",
-      "tx2": "RG2"
+      "unknownSubject": "Unidentified subject"
     },
     "termSection": {
       "class": "Class",
       "sealedOn": "Signed on",
-      "signedBy": "Signed by",
       "term1": "Term 1",
       "term2": "Term 2",
       "unsealedBanner": "This record has been unsealed",
@@ -118,6 +104,9 @@
       "SEALED": "Signed",
       "UNSEALED": "Unsealed"
     },
+    "unresolvedYear": {
+      "description": "The school year for the records below could not be determined (class details are not readable). The grades themselves are unchanged."
+    },
     "yearStatus": {
       "all_sealed": "Fully signed",
       "none": "No record",
@@ -126,7 +115,8 @@
     },
     "yearTimeline": {
       "ariaLabel": "Select school year",
-      "currentBadge": "Current year"
+      "currentBadge": "Current year",
+      "unresolvedLabel": "School year unknown"
     }
   },
   "academicRecordSeal": {
