@@ -11,6 +11,7 @@ const MESSAGING_ERROR_KEYS: Record<MessagingFailure["type"], true> = {
   "load-messages-failed": true,
   "send-message-failed": true,
   "create-conversation-failed": true,
+  "load-contacts-failed": true,
   "create-group-failed": true,
   "create-group-forbidden": true,
   "group-not-self-service": true,

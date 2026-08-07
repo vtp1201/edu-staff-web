@@ -10,6 +10,8 @@ import {
   errorCodeOf,
   parseEnvelope,
 } from "@/bootstrap/lib/api-envelope";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
+import type { IamDirectoryFailure } from "@/features/iam-directory/domain/failures/iam-directory.failure";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
@@ -34,6 +36,8 @@ import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import type { SchoolDmResponseDto } from "../dtos/school-dm-response.dto";
 import { toGroupEntityFromCreatedRoom } from "../mappers/group.mapper";
 import {
+  type ContactDirectoryRole,
+  toContactFromDirectoryMember,
   toConversationEntityFromRoom,
   toMessageEntityFromRoom,
 } from "../mappers/messaging.mapper";
@@ -64,10 +68,31 @@ import { toPinnedMessages } from "../mappers/pinned-message.mapper";
  * each one is still unsupported — "US-193 shipped group rooms" is not the same
  * statement as "the group slice is now real".
  */
+/**
+ * `iam-directory` collaborator for the contact picker (US-E18.52), injected by
+ * `bootstrap/di/messaging.di.ts` — the only layer allowed to compose across
+ * features (decision 0017).
+ *
+ * `role` is the filter the DI PINNED on the query. IAM requires it for a
+ * narrowed-tier caller and restricts it to `ADMIN|MANAGER|TEACHER|STAFF`
+ * (ADR 0129), so it is also the one role fact guaranteed true of every row
+ * that comes back — the mapper labels contacts with it.
+ */
+export type ContactDirectoryPort = {
+  role: ContactDirectoryRole;
+  list: () => Promise<Result<DirectoryMember[], IamDirectoryFailure>>;
+};
+
 export class MessagingRepository implements IMessagingRepository {
   constructor(
     private readonly http: AxiosInstance,
     private readonly currentUserId: string | null,
+    /**
+     * Absent = misconfigured DI (or a caller that never wired contacts), which
+     * fails closed rather than silently returning an empty picker — the same
+     * precedent as `ClassManagementRepository.searchDirectory`.
+     */
+    private readonly contactDirectory?: ContactDirectoryPort,
   ) {}
 
   async getConversations(): Promise<
@@ -396,6 +421,45 @@ export class MessagingRepository implements IMessagingRepository {
     }
   }
 
+  /**
+   * REAL since US-E18.52 (IAM ADR 0129 / BE US-190) — retires the ADR 0060
+   * "the only people-directory endpoint is role-gated ADMIN/TEACHER-only"
+   * force-mock, which BE made FALSE: `GET /iam/api/v1/tenants/{id}/members` now
+   * serves a NARROWED tier to STUDENT/PARENT/STAFF callers too.
+   *
+   * The read itself is NOT made here — it belongs to `iam`, and one repository
+   * never spans two services (decision 0017). `bootstrap/di/messaging.di.ts`
+   * composes `iam-directory`'s `SearchMembersUseCase` (which owns the
+   * "trust `hasMore`, not page length" draining loop) and pins the role filter.
+   *
+   * Fails CLOSED when the port is missing: an empty picker would look like
+   * "the school has no teachers" rather than a wiring bug.
+   */
+  async getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
+    if (!this.contactDirectory) {
+      return fail({
+        type: "load-contacts-failed",
+        cause: "directory-port-not-wired",
+      });
+    }
+
+    const result = await this.contactDirectory.list();
+    if (!result.ok) {
+      // The two 403s stay DISTINCT down here as well: `role-filter-required`
+      // is a FE wiring bug (fix the pinned filter), `forbidden` is a genuine
+      // access problem. Never collapsed into one opaque cause.
+      return fail({
+        type: "load-contacts-failed",
+        cause: result.failure.type,
+      });
+    }
+
+    const role = this.contactDirectory.role;
+    return ok(
+      result.value.map((member) => toContactFromDirectoryMember(member, role)),
+    );
+  }
+
   // --- Still unsupported by the real contract (ADR 0060, re-verified per
   // method for US-E18.50 against `services/social/docs/openapi.yaml` and the
   // Go handlers at BE US-193) ---
@@ -424,13 +488,6 @@ export class MessagingRepository implements IMessagingRepository {
     type: "group-mutation-failed",
     cause: "not-supported-by-real-contract",
   };
-
-  async getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
-    return fail({
-      type: "load-conversations-failed",
-      cause: "not-supported-by-real-contract",
-    });
-  }
 
   async getGroup(
     _groupId: string,

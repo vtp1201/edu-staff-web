@@ -33,9 +33,9 @@ import type { Result } from "@/features/messaging/domain/use-cases/result";
  * | `removeGroupMember` | mock      | same `GroupEntity` blocker as add-members     |
  * | `leaveGroup`        | mock      | self-leave exists but is not `custom`-scoped (would allow leaving a provisioned class_chat) |
  *
- * The contacts flow still has no real contract and stays force-served by `mock`
- * regardless of `NEXT_PUBLIC_USE_MOCK` (US-E18.52) — the same hybrid pattern as
- * US-E18.4/5/11.
+ * US-E18.52 moved `getContacts` from the force-mocked slice to the real one
+ * (IAM ADR 0129 / BE US-190) — the directory list now serves a narrowed tier
+ * to STUDENT/PARENT/STAFF callers as well.
  *
  * Consequence to keep in mind: in real mode a group CREATED here is real, but
  * its info panel (members, rename, add/remove) is still mock-backed. That
@@ -117,10 +117,18 @@ export class HybridMessagingRepository implements IMessagingRepository {
     return this.real.deleteGroup(groupId);
   }
 
-  // --- Force-mocked slice (no real contract, ADR 0060 + re-verified 0132) ---
+  /**
+   * US-E18.52 — MOVED out of the force-mocked slice. ADR 0060's reason ("the
+   * only people-directory endpoint is role-gated ADMIN/TEACHER-only") became
+   * false with IAM ADR 0129 / BE US-190: the directory list now serves a
+   * narrowed tier (`memberId`/`userId`/`displayName`) to STUDENT/PARENT/STAFF
+   * callers as well. The real path reads IAM through a port composed in DI.
+   */
   getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
-    return this.mock.getContacts();
+    return this.real.getContacts();
   }
+
+  // --- Force-mocked slice (no real contract, ADR 0060 + re-verified 0132) ---
   getGroup(groupId: string): Promise<Result<GroupEntity, MessagingFailure>> {
     return this.mock.getGroup(groupId);
   }

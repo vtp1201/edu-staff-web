@@ -38,13 +38,17 @@
     mapper hết fallback-preset vô điều kiện + hết hardcode `count: 1`, write
     path gửi bands cho scale số / omit `requiredCount` khi chưa đặt, thêm
     failure `invalid-bands` cho 422 `GRADE_SCALE_INVALID_BANDS`.
-17. **#32** — messaging product decisions. **(b) message-pin ĐÓNG (FE tiêu thụ
-    xong 2026-08-07, US-E18.51)** — BE US-192 đã ship pin/unpin +
-    `GET /rooms/{roomId}/pinned-messages`; FE wire real, xoá
+17. **#32** — messaging product decisions — **CẢ BA ĐÃ ĐÓNG** (FE tiêu thụ xong
+    2026-08-07): **(a) self-service group room** — BE US-193/ADR 0132, FE wire ở
+    **US-E18.50** (create `POST /rooms/groups` + archive real; 5 method còn lại
+    của group slice vẫn mock vì contract chưa đủ — lý do per-method trong packet).
+    **(b) message-pin** — BE US-192, FE wire ở **US-E18.51**: xoá
     `GroupEntity.pinnedMessages` (pin board là resource riêng, gate riêng), map
     4 failure riêng (cap-50 / already-pinned / not-pinned / forbidden) và tái
-    dùng nguyên mapping 429 của message-history. **(a) self-service group room**
-    và **(c) STUDENT/PARENT directory variant** vẫn treo (US-E18.50 / US-E18.52).
+    dùng nguyên mapping 429 của message-history. **(c) STUDENT/PARENT directory
+    variant** — BE US-190/ADR 0129, FE tiêu thụ ở **US-E18.52**: `getContacts()`
+    rời slice force-mock, pin `role=TEACHER`, parent→parent qua `?ids=` batch
+    không đổi.
     **Ask mới phát sinh từ US-E18.51 — #32(b′):** pin board nhúng message với
     `senderName` LUÔN rỗng (`toMessageDTO(msg, "")` — sender name không được
     persist cùng message, chỉ stamp từ claims lúc gửi), nên UI phải hiển thị

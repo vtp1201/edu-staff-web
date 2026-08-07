@@ -1,8 +1,11 @@
-import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
+import type {
+  ContactEntity,
+  ContactRoleKey,
+} from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
-import type { ContactResponseDto } from "../dtos/contact-response.dto";
 import type { ConversationResponseDto } from "../dtos/conversation-response.dto";
 import type { MessageResponseDto } from "../dtos/message-response.dto";
 import type { PresenceResponseDto } from "../dtos/presence-response.dto";
@@ -94,17 +97,51 @@ export function toMessageEntityFromRoom(
   };
 }
 
-export function toContactEntity(dto: ContactResponseDto): ContactEntity {
+/**
+ * The four roles the contact picker may query (IAM ADR 0129 allow-list) mapped
+ * to their stable i18n key. STUDENT/PARENT are unreachable — the directory
+ * endpoint rejects them for a narrowed-tier caller — so they are excluded at
+ * the TYPE level rather than silently dropped at runtime.
+ */
+const CONTACT_ROLE_KEY = {
+  ADMIN: "admin",
+  MANAGER: "manager",
+  TEACHER: "teacher",
+  STAFF: "staff",
+} as const satisfies Record<string, ContactRoleKey>;
+
+/** The subset of `DirectoryRole` the contact picker is allowed to filter on. */
+export type ContactDirectoryRole = keyof typeof CONTACT_ROLE_KEY;
+
+/**
+ * IAM directory row → contact picker row (US-E18.52, ADR 0129).
+ *
+ * The directory list is TIERED: a STUDENT/PARENT caller receives only
+ * `memberId`/`userId`/`displayName`, so every other field the picker shows is
+ * DERIVED, never read off the wire:
+ * - `avatarInitials`/`color` — the same deterministic derivations the real room
+ *   list already uses (`room-derive.ts`), so a person keeps one colour;
+ * - `roleKey` — the PINNED query filter, the only role fact guaranteed true of
+ *   every returned row (`roles[0]` can be a different role the member also
+ *   holds, and is absent entirely for a narrowed caller);
+ * - `isOnline` — seeded `false`; presence is a separate `noti` read (INT-401).
+ *
+ * `email`/`status` are deliberately NOT carried: the picker never shows them,
+ * and a narrowed caller must not receive them at all.
+ */
+export function toContactFromDirectoryMember(
+  member: DirectoryMember,
+  role: ContactDirectoryRole,
+): ContactEntity {
   return {
-    id: dto.id,
-    name: dto.name,
-    role: dto.role,
-    avatarInitials: dto.avatarInitials,
-    color: dto.color,
-    isOnline: dto.isOnline,
-    // US-E10.6 — additive presence passthrough (undefined when absent on wire).
-    presence: dto.presence,
-    lastActiveAt: dto.lastActiveAt,
+    // `createConversation` posts `targetUserId` → the contact id IS the user id
+    // (`memberId === userId` on this wire, but stay explicit).
+    id: member.userId,
+    name: member.displayName,
+    roleKey: CONTACT_ROLE_KEY[role],
+    avatarInitials: roomInitials(member.displayName),
+    color: roomColorKey(member.userId),
+    isOnline: false,
   };
 }
 

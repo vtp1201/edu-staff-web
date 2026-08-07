@@ -24,7 +24,9 @@ import { TeacherAssignmentSheet } from "./teacher-assignment-sheet";
  * leave concept, so the badge now reflects the membership states the directory
  * can actually return. Status is never colour-alone — the label carries it.
  */
-const STATUS_TONE: Record<PrincipalTeacher["status"], StatusTone> = {
+type PrincipalTeacherStatus = NonNullable<PrincipalTeacher["status"]>;
+
+const STATUS_TONE: Record<PrincipalTeacherStatus, StatusTone> = {
   ACTIVE: "success",
   INACTIVE: "muted",
   SUSPENDED: "error",
@@ -165,9 +167,13 @@ export function PrincipalTeachersScreen({
                           <span className="font-medium text-foreground">
                             {teacher.displayName}
                           </span>
-                          <span className="text-muted-foreground text-xs">
-                            {teacher.email}
-                          </span>
+                          {/* Staff-tier only (ADR 0129) — omit the caption
+                              rather than render an empty line. */}
+                          {teacher.email ? (
+                            <span className="text-muted-foreground text-xs">
+                              {teacher.email}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     </TableCell>
@@ -217,9 +223,15 @@ export function PrincipalTeachersScreen({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge tone={STATUS_TONE[teacher.status]}>
-                        {t(`status.${teacher.status}`)}
-                      </StatusBadge>
+                      {/* Membership status is staff-tier only (ADR 0129).
+                          `/principal/*` always receives it; if it ever went
+                          missing, show nothing rather than a fabricated
+                          "Đang công tác" badge. */}
+                      {teacher.status ? (
+                        <StatusBadge tone={STATUS_TONE[teacher.status]}>
+                          {t(`status.${teacher.status}`)}
+                        </StatusBadge>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

@@ -1,8 +1,9 @@
 import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { makeSearchMembersUseCase } from "@/bootstrap/di/iam-directory.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { decodeSubClaim } from "@/bootstrap/lib/jwt";
+import { decodeSubClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { IMessagingRepository } from "@/features/messaging/domain/repositories/i-messaging.repository";
 import type { IPresenceRepository } from "@/features/messaging/domain/repositories/i-presence.repository";
@@ -31,6 +32,27 @@ import { MockMessagingRepository } from "@/features/messaging/infrastructure/rep
 import { MockPresenceRepository } from "@/features/messaging/infrastructure/repositories/mocks/presence.mock.repository";
 import { PresenceRepository } from "@/features/messaging/infrastructure/repositories/presence.repository";
 
+/**
+ * Which staff role the contact picker lists (US-E18.52, IAM ADR 0129).
+ *
+ * IAM now serves the member directory to a NARROWED tier (STAFF/STUDENT/PARENT
+ * callers) but makes `role=` REQUIRED there, restricted to
+ * `ADMIN|MANAGER|TEACHER|STAFF` — a student/parent can never list other
+ * students/parents through this endpoint, so ONE of those four must be pinned.
+ *
+ * `TEACHER` is the documented choice: neither `docs/product/design-spec.jsonc`
+ * nor `docs/product/screens.md` scopes the messaging contact picker, and the
+ * picker's primary job for a STUDENT/PARENT is "nhắn cho giáo viên của tôi".
+ * It matches the filter every other directory composition already pins
+ * (`class-management.di.ts`, `principal-teachers.di.ts`), and the same query
+ * serves a staff-tier caller unchanged — they additionally receive the full
+ * row, of which the picker uses only the three shared fields.
+ *
+ * The endpoint takes ONE role, so covering several would mean N drains of the
+ * whole directory: a deliberate single value, not an oversight.
+ */
+const CONTACT_PICKER_ROLE = "TEACHER" as const;
+
 async function makeRepo(): Promise<IMessagingRepository> {
   if (USE_MOCK) return new MockMessagingRepository();
   // decision 0018 — proactive refresh BEFORE the shared http client is created.
@@ -38,12 +60,25 @@ async function makeRepo(): Promise<IMessagingRepository> {
   const http = await createServerHttpClient();
   const token = await getAccessToken();
   const currentUserId = token ? decodeSubClaim(token) : null;
+  const tenantId = decodeTenantId(token ?? "") ?? "";
+  // The contact picker reads `iam`, not `social` — one repository never spans
+  // two services (decision 0017), so `iam-directory`'s SearchMembersUseCase
+  // (which owns the "trust hasMore, not page length" draining loop) is
+  // COMPOSED here, the only layer allowed to cross features. Same precedent as
+  // `class-management.di.ts` / `principal-teachers.di.ts`.
+  const searchMembers = await makeSearchMembersUseCase();
+
   // ADR 0060 partial-real facade: the rooms/messages/read/typing/1:1-DM slice
-  // plus the US-E18.51 pin slice (BE US-192) are served by the real repo;
-  // group lifecycle / contacts have no real contract and are force-mocked
+  // plus the US-E18.51 pin slice (BE US-192), contacts (US-E18.52) and the
+  // US-E18.50 group create/archive pair are served by the real repo; the rest
+  // of the group lifecycle has no real contract and is force-mocked
   // regardless of USE_MOCK.
   return new HybridMessagingRepository(
-    new MessagingRepository(http, currentUserId),
+    new MessagingRepository(http, currentUserId, {
+      role: CONTACT_PICKER_ROLE,
+      list: () =>
+        searchMembers.execute({ tenantId, role: CONTACT_PICKER_ROLE }),
+    }),
     new MockMessagingRepository(),
   );
 }

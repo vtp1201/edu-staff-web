@@ -15,6 +15,10 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       createConversation: vi.fn().mockResolvedValue(ok({})),
       markConversationRead: vi.fn().mockResolvedValue(ok(true)),
       sendTypingIndicator: vi.fn().mockResolvedValue(ok(true)),
+      // US-E18.52 — contacts MOVED to the real slice: IAM's directory list now
+      // serves a narrowed tier to STUDENT/PARENT callers (ADR 0129), so the
+      // ADR 0060 force-mock is retired for this method only.
+      getContacts: vi.fn().mockResolvedValue(ok([])),
       // US-E18.51 — the pin slice moved from force-mock to real (BE US-192).
       pinMessage: vi.fn().mockResolvedValue(ok(true)),
       unpinMessage: vi.fn().mockResolvedValue(ok(true)),
@@ -34,8 +38,10 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     await hybrid.pinMessage("r1", "m1");
     await hybrid.unpinMessage("r1", "m1");
     await hybrid.getPinnedMessages("r1");
+    await hybrid.getContacts();
 
     expect(realFns.getConversations).toHaveBeenCalled();
+    expect(realFns.getContacts).toHaveBeenCalled();
     expect(realFns.getMessages).toHaveBeenCalledWith("r1", undefined);
     expect(realFns.sendMessage).toHaveBeenCalledWith("r1", "hi");
     expect(realFns.deleteMessage).toHaveBeenCalledWith("r1", "m1");
@@ -94,7 +100,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
 
   it("routes the permanently-mock slice to the MOCK repo (never the real one)", async () => {
     const mockFns = {
-      getContacts: vi.fn().mockResolvedValue(ok([])),
       getGroup: vi.fn().mockResolvedValue(ok({})),
       updateGroup: vi.fn().mockResolvedValue(ok({})),
       addGroupMembers: vi.fn().mockResolvedValue(ok({})),
@@ -102,7 +107,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       leaveGroup: vi.fn().mockResolvedValue(ok(true)),
     };
     const realFns = {
-      getContacts: vi.fn(),
       getGroup: vi.fn(),
       updateGroup: vi.fn(),
       addGroupMembers: vi.fn(),
@@ -114,7 +118,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       makeMessagingRepo(mockFns),
     );
 
-    await hybrid.getContacts();
     await hybrid.getGroup("g1");
     await hybrid.updateGroup({ groupId: "g1" });
     await hybrid.addGroupMembers("g1", ["u"]);

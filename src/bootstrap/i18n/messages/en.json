@@ -2604,6 +2604,12 @@
       "typing": "Typing a message...",
       "you": "You"
     },
+    "contactRole": {
+      "admin": "Administrator",
+      "manager": "School management",
+      "staff": "Staff",
+      "teacher": "Teacher"
+    },
     "contextMenu": {
       "copy": "Copy text",
       "delete": "Delete",
@@ -2642,6 +2648,7 @@
       "typing-signal-failed": "Could not send the typing signal.",
       "group-mutation-failed": "Group action failed. Please try again.",
       "leave-group-failed": "Could not leave group.",
+      "load-contacts-failed": "Could not load the contact directory. Please try again.",
       "load-conversations-failed": "Could not load conversations. Please try again.",
       "load-messages-failed": "Could not load messages. Please try again.",
       "load-presence-failed": "Could not load presence.",
@@ -2702,6 +2709,7 @@
     },
     "newMessage": {
       "button": "New message",
+      "noContacts": "There is no one available to message yet.",
       "searchPlaceholder": "Search users...",
       "suggestions": "Suggestions",
       "title": "New message"

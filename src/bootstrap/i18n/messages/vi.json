@@ -2604,6 +2604,12 @@
       "typing": "Đang nhập tin nhắn...",
       "you": "Bạn"
     },
+    "contactRole": {
+      "admin": "Quản trị viên",
+      "manager": "Ban giám hiệu",
+      "staff": "Nhân viên",
+      "teacher": "Giáo viên"
+    },
     "contextMenu": {
       "copy": "Sao chép văn bản",
       "delete": "Xóa",
@@ -2642,6 +2648,7 @@
       "typing-signal-failed": "Không thể gửi tín hiệu đang soạn tin.",
       "group-mutation-failed": "Thao tác nhóm thất bại. Vui lòng thử lại.",
       "leave-group-failed": "Không thể rời nhóm.",
+      "load-contacts-failed": "Không thể tải danh bạ liên hệ. Vui lòng thử lại.",
       "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
       "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
       "load-presence-failed": "Không thể tải trạng thái hoạt động.",
@@ -2702,6 +2709,7 @@
     },
     "newMessage": {
       "button": "Tin nhắn mới",
+      "noContacts": "Chưa có liên hệ nào để nhắn tin.",
       "searchPlaceholder": "Tìm kiếm người dùng...",
       "suggestions": "Gợi ý",
       "title": "Tin nhắn mới"

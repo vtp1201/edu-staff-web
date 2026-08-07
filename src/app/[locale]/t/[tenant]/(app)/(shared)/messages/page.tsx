@@ -48,6 +48,9 @@ export default async function MessagesPage({
       initialConversations={convoResult.ok ? convoResult.value : []}
       initialContacts={contactsResult.ok ? contactsResult.value : []}
       loadError={convoResult.ok ? undefined : convoResult.failure.type}
+      contactsLoadError={
+        contactsResult.ok ? undefined : contactsResult.failure.type
+      }
       selfId="me"
       tenantId={tenant}
       canCreateGroup={canCreateGroupFor(sessionRole)}
