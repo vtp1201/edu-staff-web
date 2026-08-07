@@ -10,11 +10,14 @@ import type {
   ClassSummary,
   IAttendanceRepository,
 } from "../../domain/repositories/i-attendance.repository";
-import type { ClassAttendanceResponseDto } from "../dtos/class-attendance-response.dto";
+import type {
+  ClassAttendanceRangeResponseDto,
+  ClassAttendanceResponseDto,
+} from "../dtos/class-attendance-response.dto";
 import type { ClassSummaryDto } from "../dtos/class-list-response.dto";
 import type { ClassRosterItemDto } from "../dtos/class-roster-response.dto";
 import {
-  aggregateDaySummaries,
+  aggregateRangeDaySummaries,
   mapClassAttendance,
   mapStatusToWire,
 } from "../mappers/attendance.mapper";
@@ -82,27 +85,35 @@ export class AttendanceRepository implements IAttendanceRepository {
     });
   }
 
-  /** Bounded fan-out (clamp enforced upstream by the use-case) — ONE roster
-   *  fetch (for `totalStudents`), then one `GetAttendanceByDate` per date,
-   *  fired concurrently and aggregated via `Promise.allSettled` (ADR `0058` §5). */
+  /**
+   * ONE range call + the roster drain (for `totalStudents`), in parallel.
+   *
+   * US-E18.47 / BE US-187: the same route now accepts `startDate`+`endDate`
+   * instead of `date` and answers every record in the range in a single shot
+   * (no pagination), replacing the ≤31-call-per-day `Promise.allSettled`
+   * fan-out ADR `0058` §5 described. `date` MUST NOT be sent alongside the
+   * bounds — the two modes are mutually exclusive (`400
+   * ATTENDANCE_INVALID_DATE`). The ≤31-day clamp stays enforced upstream by
+   * `ListAttendanceHistoryUseCase`, well under the BE's 366-day ceiling.
+   */
   async getAttendanceHistory(
     classId: string,
     from: string,
     to: string,
   ): Promise<AttendanceDaySummary[]> {
-    const dates = enumerateDates(from, to);
-    const roster = await this.fetchAllPages<ClassRosterItemDto>(
-      ATTENDANCE_EP.classStudents(classId),
-    );
-    const results = await Promise.allSettled(
-      dates.map(
-        (date) =>
-          this.http.get(ATTENDANCE_EP.classAttendance(classId), {
-            params: { date },
-          }) as Promise<ClassAttendanceResponseDto>,
+    const [range, roster] = await Promise.all([
+      this.http.get(ATTENDANCE_EP.classAttendance(classId), {
+        params: { startDate: from, endDate: to },
+      }) as Promise<ClassAttendanceRangeResponseDto>,
+      this.fetchAllPages<ClassRosterItemDto>(
+        ATTENDANCE_EP.classStudents(classId),
       ),
+    ]);
+    return aggregateRangeDaySummaries(
+      enumerateDates(from, to),
+      range.records,
+      roster.length,
     );
-    return aggregateDaySummaries(dates, results, roster.length);
   }
 
   /** Drain a cursor-paginated list endpoint into a single array. `raw: true`

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "@/bootstrap/lib/api-envelope";
-import type { ClassAttendanceResponseDto } from "../dtos/class-attendance-response.dto";
+import type {
+  ClassAttendanceRangeRecordDto,
+  ClassAttendanceResponseDto,
+} from "../dtos/class-attendance-response.dto";
 import {
-  aggregateDaySummaries,
+  aggregateRangeDaySummaries,
   countStatuses,
   mapAttendanceRecord,
   mapClassAttendance,
@@ -90,92 +92,65 @@ describe("countStatuses / zeroCounts", () => {
   });
 });
 
-describe("aggregateDaySummaries", () => {
+describe("aggregateRangeDaySummaries (US-E18.47 — flat range records)", () => {
   const dates = ["2026-06-01", "2026-06-02", "2026-06-03"];
 
-  it("aggregates fulfilled days into status counts", () => {
-    const results: PromiseSettledResult<ClassAttendanceResponseDto>[] = [
-      {
-        status: "fulfilled",
-        value: {
-          classId: "c-1",
-          date: dates[0],
-          records: [
-            { studentMemberId: "s1", status: "PRESENT" },
-            { studentMemberId: "s2", status: "LATE" },
-          ],
-        },
-      },
-      {
-        status: "fulfilled",
-        value: { classId: "c-1", date: dates[1], records: [] },
-      },
-      {
-        status: "fulfilled",
-        value: { classId: "c-1", date: dates[2], records: [] },
-      },
+  it("groups the flat records by date into per-day status counts", () => {
+    const records: ClassAttendanceRangeRecordDto[] = [
+      { date: dates[0], studentMemberId: "s1", status: "PRESENT" },
+      { date: dates[0], studentMemberId: "s2", status: "LATE" },
+      { date: dates[2], studentMemberId: "s1", status: "ABSENT" },
+      { date: dates[2], studentMemberId: "s2", status: "EXCUSED_ABSENT" },
     ];
 
-    const summaries = aggregateDaySummaries(dates, results, 2);
-    expect(summaries[0]).toEqual({
-      date: dates[0],
-      counts: { present: 1, absent: 0, late: 1, excusedAbsent: 0 },
-      totalStudents: 2,
-    });
+    const summaries = aggregateRangeDaySummaries(dates, records, 2);
+
+    expect(summaries).toEqual([
+      {
+        date: dates[0],
+        counts: { present: 1, absent: 0, late: 1, excusedAbsent: 0 },
+        totalStudents: 2,
+      },
+      { date: dates[1], counts: zeroCounts(), totalStudents: 2 },
+      {
+        date: dates[2],
+        counts: { present: 0, absent: 1, late: 0, excusedAbsent: 1 },
+        totalStudents: 2,
+      },
+    ]);
   });
 
-  it("treats ATTENDANCE_NOT_FOUND as a legitimate zero-count day", () => {
-    const notFound = new ApiError({
-      code: "ATTENDANCE_NOT_FOUND",
-      message: "not found",
-      retryable: false,
-    });
-    const results: PromiseSettledResult<ClassAttendanceResponseDto>[] = [
-      { status: "rejected", reason: notFound },
-      {
-        status: "fulfilled",
-        value: { classId: "c-1", date: dates[1], records: [] },
-      },
-      { status: "rejected", reason: notFound },
+  it("emits a zero-count summary for every requested day with no records (a day never recorded reads the same as a day recorded empty — the pre-US-E18.47 fan-out made no distinction either)", () => {
+    const summaries = aggregateRangeDaySummaries(dates, [], 5);
+
+    expect(summaries.map((s) => s.date)).toEqual(dates);
+    for (const s of summaries) {
+      expect(s.counts).toEqual(zeroCounts());
+      expect(s.totalStudents).toBe(5);
+    }
+  });
+
+  it("keeps one summary per requested day and preserves the requested order", () => {
+    const records: ClassAttendanceRangeRecordDto[] = [
+      { date: dates[2], studentMemberId: "s1", status: "PRESENT" },
+      { date: dates[0], studentMemberId: "s1", status: "PRESENT" },
     ];
 
-    const summaries = aggregateDaySummaries(dates, results, 5);
-    expect(summaries).toHaveLength(3);
-    expect(summaries[0].counts).toEqual(zeroCounts());
-    expect(summaries[0].totalStudents).toBe(5);
+    const summaries = aggregateRangeDaySummaries(dates, records, 1);
+
+    expect(summaries).toHaveLength(dates.length);
+    expect(summaries.map((s) => s.date)).toEqual(dates);
   });
 
-  it("omits days that failed for another reason when SOME days succeed (partial failure)", () => {
-    const forbidden = new ApiError({
-      code: "ATTENDANCE_FORBIDDEN",
-      message: "forbidden",
-      retryable: false,
-    });
-    const results: PromiseSettledResult<ClassAttendanceResponseDto>[] = [
-      {
-        status: "fulfilled",
-        value: { classId: "c-1", date: dates[0], records: [] },
-      },
-      { status: "rejected", reason: forbidden },
-      {
-        status: "fulfilled",
-        value: { classId: "c-1", date: dates[2], records: [] },
-      },
+  it("ignores records dated outside the requested range instead of inventing a day", () => {
+    const records: ClassAttendanceRangeRecordDto[] = [
+      { date: "2026-05-31", studentMemberId: "s1", status: "PRESENT" },
+      { date: dates[1], studentMemberId: "s1", status: "PRESENT" },
     ];
 
-    const summaries = aggregateDaySummaries(dates, results, 0);
-    expect(summaries.map((s) => s.date)).toEqual([dates[0], dates[2]]);
-  });
+    const summaries = aggregateRangeDaySummaries(dates, records, 1);
 
-  it("re-throws the aggregate failure when EVERY day fails for a non-not-found reason", () => {
-    const forbidden = new ApiError({
-      code: "ATTENDANCE_FORBIDDEN",
-      message: "forbidden",
-      retryable: false,
-    });
-    const results: PromiseSettledResult<ClassAttendanceResponseDto>[] =
-      dates.map(() => ({ status: "rejected" as const, reason: forbidden }));
-
-    expect(() => aggregateDaySummaries(dates, results, 0)).toThrow(forbidden);
+    expect(summaries.map((s) => s.date)).toEqual(dates);
+    expect(summaries[1].counts.present).toBe(1);
   });
 });

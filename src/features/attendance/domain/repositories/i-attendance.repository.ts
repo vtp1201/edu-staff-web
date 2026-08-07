@@ -18,8 +18,9 @@ export interface IAttendanceRepository {
     records: AttendanceRecord[],
   ): Promise<void>;
   /** Bounded (≤31 days) aggregate — see `list-attendance-history.use-case.ts`
-   *  for the clamp and `attendance.mapper.ts#aggregateDaySummaries` for the
-   *  fan-out aggregation this delegates to (ADR `0058` §5). */
+   *  for the clamp and `attendance.mapper.ts#aggregateRangeDaySummaries` for the
+   *  per-day rollup this delegates to. Since US-E18.47 the real implementation
+   *  costs ONE range call (BE US-187), not one call per day (ADR `0058` §5). */
   getAttendanceHistory(
     classId: string,
     from: string,
