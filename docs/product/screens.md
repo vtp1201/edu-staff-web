@@ -124,7 +124,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Assignments | `(app)/student/assignments` | `features/lms` | ✅ US-E11.7 (mock-first — lms service scaffold) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | ✅ US-E13.6 |
-| Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 |
+| Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 + US-E18.54 (viewer remodel lên real member-read, year-grouping client-side; identity block bỏ; teacher route `/teacher/students/:id/academic-record` ở real mode trả `forbidden` vĩnh viễn — BE không cho TEACHER đọc aggregate, ask #48) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | ✅ US-E09.2 (BE force-mock — US-E18.14) |
 | **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | Resources | `(app)/student/resources` | `features/lms` | ⬜ (chưa có design/mockup; nav item đã gỡ khỏi sidebar 2026-08-02 để hết 404 — thêm lại khi có DR) |

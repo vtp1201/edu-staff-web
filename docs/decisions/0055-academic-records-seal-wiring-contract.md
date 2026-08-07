@@ -212,6 +212,13 @@ Tradeoffs:
   never called). `sealBatch` remains wired REAL, unchanged.
   Cross-repo ask #21 (the unseal listing endpoint) stays OPEN — this closes
   only the in-repo DI item.
+  **Superseded (2026-08-07, US-E18.54):** the viewer force-mock is REVERSED —
+  BE US-064's `GET /core/api/v1/members/{memberId}/academic-records` gives the
+  viewer a real read path, so `makeRepository()` is back to the standard
+  `USE_MOCK ? Mock : Real` gate and the viewer repository was remodeled onto
+  the member-read (year-grouping client-side qua `classId`+`termId`, per BE's
+  2026-08-07 response §2). The seal/unseal slice is untouched. See
+  `US-E18.54-academic-records-viewer-remodel/`.
 - **`key.term` vs real `termId`:** `SealBatchKey.term` is a label
   (`"HK1"`/`"HK2"`), not the real BE's UUID `termId`. The class/term selector
   feeding `sealBatch` is itself mock-sourced, so a real seal call isn't
