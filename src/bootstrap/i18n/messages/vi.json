@@ -2594,6 +2594,12 @@
       "typing": "Đang nhập tin nhắn...",
       "you": "Bạn"
     },
+    "contactRole": {
+      "admin": "Quản trị viên",
+      "manager": "Ban giám hiệu",
+      "staff": "Nhân viên",
+      "teacher": "Giáo viên"
+    },
     "contextMenu": {
       "copy": "Sao chép văn bản",
       "delete": "Xóa",
@@ -2624,44 +2630,38 @@
     "errors": {
       "create-conversation-failed": "Không thể tạo cuộc hội thoại. Vui lòng thử lại.",
       "create-group-failed": "Không thể tạo nhóm. Vui lòng thử lại.",
+      "create-group-forbidden": "Bạn không có quyền tạo nhóm. Chỉ giáo viên, nhân viên và ban giám hiệu mới tạo được nhóm.",
+      "group-not-self-service": "Đây là nhóm do hệ thống tạo (lớp học, hội phụ huynh) nên không thể lưu trữ.",
       "delete-message-failed": "Không thể xoá tin nhắn.",
       "delete-window-expired": "Đã quá thời hạn 5 phút để xoá tin nhắn.",
       "mark-read-failed": "Không thể đánh dấu đã đọc.",
       "typing-signal-failed": "Không thể gửi tín hiệu đang soạn tin.",
       "group-mutation-failed": "Thao tác nhóm thất bại. Vui lòng thử lại.",
       "leave-group-failed": "Không thể rời nhóm.",
+      "load-contacts-failed": "Không thể tải danh bạ liên hệ. Vui lòng thử lại.",
       "load-conversations-failed": "Không thể tải danh sách tin nhắn. Vui lòng thử lại.",
       "load-messages-failed": "Không thể tải tin nhắn. Vui lòng thử lại.",
       "load-presence-failed": "Không thể tải trạng thái hoạt động.",
       "not-group-admin": "Chỉ admin nhóm mới có quyền thực hiện.",
       "pin-failed": "Không thể ghim tin nhắn.",
-      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
+      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại.",
+      "pin-limit-reached": "Nhóm đã đạt tối đa 50 tin nhắn ghim. Hãy bỏ ghim một tin nhắn trước khi ghim tin mới.",
+      "message-already-pinned": "Tin nhắn này đã được ghim.",
+      "message-not-pinned": "Tin nhắn này hiện không được ghim.",
+      "pin-forbidden": "Bạn không có quyền ghim hoặc bỏ ghim tin nhắn trong phòng này.",
+      "load-pinned-failed": "Không thể tải danh sách tin nhắn đã ghim. Vui lòng thử lại."
     },
     "group": {
-      "colorLabel": "Màu nhóm",
       "createButton": "Tạo nhóm",
       "createTitle": "Tạo nhóm mới",
-      "descLabel": "Mô tả",
-      "descPlaceholder": "Mô tả nhóm (tuỳ chọn)...",
       "emptyCreateCta": "Tạo nhóm mới",
       "emptySubtitle": "Tạo nhóm mới để cộng tác với đồng nghiệp.",
       "emptyTitle": "Bạn chưa tham gia nhóm nào.",
       "memberCount": "{count} thành viên",
+      "membersAfterCreate": "Sau khi tạo, bạn có thể thêm thành viên vào nhóm.",
       "nameLabel": "Tên nhóm",
       "namePlaceholder": "Nhập tên nhóm...",
-      "nextStep": "Tiếp theo",
-      "noMembersFound": "Không tìm thấy thành viên phù hợp.",
-      "prevStep": "Quay lại",
-      "removeChip": "Xóa {name}",
-      "searchMembersPlaceholder": "Tìm thành viên...",
-      "selectedCount": "{count} đã chọn",
-      "stepInfo": "Thông tin nhóm",
-      "stepMembers": "Thêm thành viên",
-      "typeClass": "Lớp học",
-      "typeClub": "Câu lạc bộ",
-      "typeDept": "Bộ môn",
-      "typeLabel": "Loại nhóm",
-      "typeOther": "Khác"
+      "nameTooShort": "Tên nhóm cần ít nhất 2 ký tự."
     },
     "groupInfo": {
       "addMembers": "+ Thêm thành viên",
@@ -2682,7 +2682,10 @@
       "removeMember": "Xoá khỏi nhóm",
       "removeMemberAria": "Xóa {name} khỏi nhóm",
       "save": "Lưu",
-      "title": "Thông tin nhóm"
+      "title": "Thông tin nhóm",
+      "pinnedLoading": "Đang tải tin nhắn đã ghim…",
+      "unknownSender": "Không rõ người gửi",
+      "unpinAria": "Bỏ ghim tin nhắn của {sender}"
     },
     "addMembersModal": {
       "title": "Thêm thành viên",
@@ -2696,6 +2699,7 @@
     },
     "newMessage": {
       "button": "Tin nhắn mới",
+      "noContacts": "Chưa có liên hệ nào để nhắn tin.",
       "searchPlaceholder": "Tìm kiếm người dùng...",
       "suggestions": "Gợi ý",
       "title": "Tin nhắn mới"
@@ -2727,7 +2731,11 @@
       "groups": "Nhóm"
     },
     "title": "Tin nhắn",
-    "totalUnread": "{count} tin nhắn chưa đọc"
+    "totalUnread": "{count} tin nhắn chưa đọc",
+    "toast": {
+      "pinned": "Đã ghim tin nhắn.",
+      "unpinned": "Đã bỏ ghim tin nhắn."
+    }
   },
   "moderation": {
     "reportDialog": {

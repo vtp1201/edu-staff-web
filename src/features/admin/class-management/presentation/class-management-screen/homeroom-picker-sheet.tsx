@@ -103,9 +103,14 @@ export function HomeroomPickerSheet({
                         <span className="font-medium text-foreground">
                           {tch.displayName}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {tch.email}
-                        </span>
+                        {/* Email is staff-tier only (ADR 0129). Omit the line
+                            entirely when absent — an empty caption row would
+                            imply "missing data" where there simply is none. */}
+                        {tch.email ? (
+                          <span className="text-xs text-muted-foreground">
+                            {tch.email}
+                          </span>
+                        ) : null}
                       </span>
                       {isCurrent ? (
                         <Check

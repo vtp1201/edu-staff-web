@@ -13,14 +13,24 @@ import type { MemberListItemDto } from "../dtos/member-list-item.dto";
  * it web-side would silently swallow a future BE change.
  */
 export const IamDirectoryMapper = {
+  /**
+   * TIERED since ADR 0129 (US-E18.52). `email`/`roles`/`status` are spread
+   * CONDITIONALLY for exactly the reason {@link IamDirectoryMapper.toMemberSummary}
+   * already does it on the batch endpoint: a narrowed-tier row (STAFF/STUDENT/
+   * PARENT caller) omits those keys on the wire, and materialising them as
+   * `email: undefined` would destroy the presence-based tier signal.
+   *
+   * A staff-tier row is byte-identical to the pre-ADR-0129 shape (all six
+   * keys) — every existing consumer keeps its guarantees.
+   */
   toDirectoryMember(dto: MemberListItemDto): DirectoryMember {
     return {
       memberId: dto.memberId,
       userId: dto.userId,
       displayName: dto.displayName,
-      email: dto.email,
-      roles: dto.roles,
-      status: dto.status,
+      ...(dto.email !== undefined ? { email: dto.email } : {}),
+      ...(dto.roles !== undefined ? { roles: dto.roles } : {}),
+      ...(dto.status !== undefined ? { status: dto.status } : {}),
     };
   },
 

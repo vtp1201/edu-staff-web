@@ -8,6 +8,7 @@ import {
   makeDeleteMessageUseCase,
   makeGetGroupUseCase,
   makeGetMessagesUseCase,
+  makeGetPinnedMessagesUseCase,
   makeGetPresenceUseCase,
   makeLeaveGroupUseCase,
   makeMarkConversationReadUseCase,
@@ -15,6 +16,7 @@ import {
   makeRemoveGroupMemberUseCase,
   makeSendMessageUseCase,
   makeSendTypingIndicatorUseCase,
+  makeUnpinMessageUseCase,
   makeUpdateGroupUseCase,
 } from "@/bootstrap/di";
 import type { CreateGroupFormValues } from "@/features/messaging/presentation/create-group-modal";
@@ -24,6 +26,7 @@ import type {
   CreateGroupResult,
   GetGroupResult,
   GetMessagesResult,
+  GetPinnedMessagesResult,
   GetPresenceResult,
   SendMessageResult,
 } from "@/features/messaging/presentation/messaging-screen";
@@ -134,6 +137,27 @@ export async function pinMessageAction(
   const result = await useCase.execute(conversationId, messageId);
   return result.ok
     ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function unpinMessageAction(
+  conversationId: string,
+  messageId: string,
+): Promise<ActionResult> {
+  const useCase = await makeUnpinMessageUseCase();
+  const result = await useCase.execute(conversationId, messageId);
+  return result.ok
+    ? { ok: true }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function getPinnedMessagesAction(
+  conversationId: string,
+): Promise<GetPinnedMessagesResult> {
+  const useCase = await makeGetPinnedMessagesUseCase();
+  const result = await useCase.execute(conversationId);
+  return result.ok
+    ? { ok: true, value: result.value }
     : { ok: false, errorKey: result.failure.type };
 }
 

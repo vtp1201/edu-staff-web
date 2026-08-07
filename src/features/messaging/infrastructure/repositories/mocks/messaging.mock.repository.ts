@@ -4,6 +4,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type {
   CreateGroupInput,
@@ -16,21 +17,28 @@ import {
   ok,
   type Result,
 } from "@/features/messaging/domain/use-cases/result";
+import { roomColorKey } from "../../mappers/room-derive";
 import {
   MOCK_CONTACTS,
   MOCK_CONVERSATIONS,
   MOCK_GROUPS,
   MOCK_MESSAGES,
+  MOCK_PINNED_MESSAGES,
   MOCK_SELF_ID,
 } from "./fixtures";
 
 const cloneGroup = (g: GroupEntity): GroupEntity => ({
   ...g,
   members: g.members.map((m) => ({ ...m })),
-  pinnedMessages: g.pinnedMessages.map((p) => ({ ...p })),
 });
 
 const PAGE_SIZE = 20;
+
+/**
+ * US-E18.51 — the real per-room pin cap (hard 50, not configurable). Mirrored
+ * here so the mock can exercise the cap-reached UI without a backend.
+ */
+export const MOCK_MAX_PINNED_PER_ROOM = 50;
 
 /**
  * In-memory mock for the `social` service (not yet shipped — decision 0017).
@@ -42,6 +50,8 @@ export class MockMessagingRepository implements IMessagingRepository {
   private messages: Record<string, MessageEntity[]>;
   private readonly contacts: ContactEntity[];
   private groups: Record<string, GroupEntity>;
+  /** US-E18.51 — pin board per room, independent of group detail. */
+  private pinned: Record<string, PinnedMessage[]>;
   private seq = 0;
 
   constructor() {
@@ -55,6 +65,12 @@ export class MockMessagingRepository implements IMessagingRepository {
     this.contacts = MOCK_CONTACTS.map((c) => ({ ...c }));
     this.groups = Object.fromEntries(
       Object.entries(MOCK_GROUPS).map(([id, g]) => [id, cloneGroup(g)]),
+    );
+    this.pinned = Object.fromEntries(
+      Object.entries(MOCK_PINNED_MESSAGES).map(([id, rows]) => [
+        id,
+        rows.map((p) => ({ ...p })),
+      ]),
     );
   }
 
@@ -157,25 +173,19 @@ export class MockMessagingRepository implements IMessagingRepository {
       .slice(0, 3)
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("");
-    const memberRows = input.memberIds.map((userId) => {
-      const c = this.contacts.find((x) => x.id === userId);
-      return {
-        userId,
-        name: c?.name ?? userId,
-        initials: c?.avatarInitials ?? "?",
-        color: c?.color ?? "primary",
-        role: "member" as const,
-        isOnline: c?.isOnline ?? false,
-      };
-    });
+    // US-E18.50: creation is name-only, mirroring the real `{name}` body — no
+    // description/kind/colour is collected any more, and no member list is sent
+    // (the real contract has no batch-add). The colour is derived from the id
+    // exactly as the real path does, so mock and real groups look alike.
     const group: GroupEntity = {
       id,
       name: input.name.trim(),
-      description: input.description ?? "",
-      kind: input.kind,
-      color: input.color,
+      description: "",
+      kind: "other",
+      color: roomColorKey(id),
       conversationId: id,
-      // Creator becomes admin (TR-008).
+      // Creator becomes admin/OWNER (TR-008). The mock knows the self member's
+      // display name, so unlike the real path it can show the row immediately.
       members: [
         {
           userId: MOCK_SELF_ID,
@@ -185,9 +195,7 @@ export class MockMessagingRepository implements IMessagingRepository {
           role: "admin",
           isOnline: true,
         },
-        ...memberRows,
       ],
-      pinnedMessages: [],
     };
     this.groups[id] = group;
     const conversation: ConversationEntity = {
@@ -304,8 +312,13 @@ export class MockMessagingRepository implements IMessagingRepository {
     return ok(true);
   }
 
-  // --- US-E10.4 message interactions ---
+  // --- US-E10.4 message interactions (real since US-E18.51 / BE US-192) ---
 
+  /**
+   * Mirrors the real guard order: capability → already-pinned → cap → write.
+   * The mock's stand-in for `moderate_msg` is the group-admin role (the mock
+   * world has no room-capability matrix); a direct chat has no gate.
+   */
   async pinMessage(
     conversationId: string,
     messageId: string,
@@ -314,46 +327,79 @@ export class MockMessagingRepository implements IMessagingRepository {
     const g = this.groups[conversationId];
     const list = this.messages[conversationId] ?? [];
     const msg = list.find((m) => m.id === messageId);
-    if (!msg) return fail({ type: "pin-failed", cause: "not-found" });
-    // Group pin is admin-only (TR-015); direct messages allow anyone.
     if (g && !this.selfIsAdmin(conversationId)) {
-      return fail({ type: "not-group-admin" });
+      return fail({ type: "pin-forbidden" });
+    }
+    if (!msg || msg.isDeleted) {
+      return fail({ type: "pin-failed", cause: "not-found" });
+    }
+    const board = this.pinned[conversationId] ?? [];
+    if (board.some((p) => p.messageId === messageId)) {
+      return fail({ type: "message-already-pinned" });
+    }
+    if (board.length >= MOCK_MAX_PINNED_PER_ROOM) {
+      return fail({ type: "pin-limit-reached" });
     }
     msg.isPinned = true;
-    if (g && !g.pinnedMessages.some((p) => p.messageId === messageId)) {
-      g.pinnedMessages = [
-        {
-          messageId,
-          senderId: msg.from === "me" ? MOCK_SELF_ID : (msg.senderName ?? ""),
-          senderName: msg.from === "me" ? "Bạn" : (msg.senderName ?? ""),
-          excerpt: msg.text.slice(0, 80),
-          sentAt: msg.sentAt ?? new Date().toISOString(),
-        },
-        ...g.pinnedMessages,
-      ];
-    }
+    this.pinned[conversationId] = [
+      {
+        messageId,
+        senderId: msg.from === "me" ? MOCK_SELF_ID : (msg.senderName ?? ""),
+        senderName: msg.from === "me" ? "Nguyễn Thị Hương" : msg.senderName,
+        excerpt: msg.text,
+        sentAt: msg.sentAt ?? new Date().toISOString(),
+        pinnedAt: new Date().toISOString(),
+        pinnedBy: MOCK_SELF_ID,
+      },
+      ...board,
+    ];
     return ok(true);
   }
 
+  /**
+   * Unpin deliberately does NOT require the message to still exist — that is
+   * how a moderator clears a pin whose message was deleted (real US-192
+   * semantics). An unpin against a message that is not on the board is a
+   * distinct 404-equivalent failure, never a silent no-op.
+   */
   async unpinMessage(
     conversationId: string,
     messageId: string,
   ): Promise<Result<boolean, MessagingFailure>> {
     await mockDelay(150);
     const g = this.groups[conversationId];
-    const list = this.messages[conversationId] ?? [];
-    const msg = list.find((m) => m.id === messageId);
-    if (!msg) return fail({ type: "pin-failed", cause: "not-found" });
     if (g && !this.selfIsAdmin(conversationId)) {
-      return fail({ type: "not-group-admin" });
+      return fail({ type: "pin-forbidden" });
     }
-    msg.isPinned = false;
-    if (g) {
-      g.pinnedMessages = g.pinnedMessages.filter(
-        (p) => p.messageId !== messageId,
-      );
+    const board = this.pinned[conversationId] ?? [];
+    if (!board.some((p) => p.messageId === messageId)) {
+      return fail({ type: "message-not-pinned" });
     }
+    const msg = (this.messages[conversationId] ?? []).find(
+      (m) => m.id === messageId,
+    );
+    if (msg) msg.isPinned = false;
+    this.pinned[conversationId] = board.filter(
+      (p) => p.messageId !== messageId,
+    );
     return ok(true);
+  }
+
+  /**
+   * The pin board — readable by any member (no admin gate, matching the real
+   * membership-only read), newest-pin-first, and self-healing: a pin whose
+   * message was since deleted is skipped rather than rendered broken.
+   */
+  async getPinnedMessages(
+    conversationId: string,
+  ): Promise<Result<PinnedMessage[], MessagingFailure>> {
+    await mockDelay(150);
+    const list = this.messages[conversationId] ?? [];
+    const rows = (this.pinned[conversationId] ?? []).filter((p) => {
+      const msg = list.find((m) => m.id === p.messageId);
+      return !msg?.isDeleted;
+    });
+    return ok(rows.map((p) => ({ ...p })));
   }
 
   async deleteMessage(

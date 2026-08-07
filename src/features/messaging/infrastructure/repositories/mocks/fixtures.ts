@@ -2,6 +2,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 
 /** Synthetic id of the current authenticated user in the mock world. */
 export const MOCK_SELF_ID = "me";
@@ -405,15 +406,6 @@ export const MOCK_GROUPS: Record<string, GroupEntity> = {
         isOnline: true,
       },
     ],
-    pinnedMessages: [
-      {
-        messageId: "g1-3",
-        senderId: MOCK_SELF_ID,
-        senderName: "Nguyễn Thị Hương",
-        excerpt: "Các em nộp trước tiết học ngày mai nhé!",
-        sentAt: "2026-06-20T07:45:00.000Z",
-      },
-    ],
   },
   g2: {
     id: "g2",
@@ -440,7 +432,6 @@ export const MOCK_GROUPS: Record<string, GroupEntity> = {
         isOnline: false,
       },
     ],
-    pinnedMessages: [],
   },
   g3: {
     id: "g3",
@@ -475,7 +466,6 @@ export const MOCK_GROUPS: Record<string, GroupEntity> = {
         isOnline: false,
       },
     ],
-    pinnedMessages: [],
   },
   g4: {
     id: "g4",
@@ -502,6 +492,24 @@ export const MOCK_GROUPS: Record<string, GroupEntity> = {
         isOnline: true,
       },
     ],
-    pinnedMessages: [],
   },
+};
+
+/**
+ * US-E18.51 — the pin board is its OWN store, keyed by room id, exactly like
+ * the real contract (`GET /rooms/{roomId}/pinned-messages`) rather than a field
+ * of the group fixture. Newest-pin-first.
+ */
+export const MOCK_PINNED_MESSAGES: Record<string, PinnedMessage[]> = {
+  g1: [
+    {
+      messageId: "g1-3",
+      senderId: MOCK_SELF_ID,
+      senderName: "Nguyễn Thị Hương",
+      excerpt: "Các em nộp trước tiết học ngày mai nhé!",
+      sentAt: "2026-06-20T07:45:00.000Z",
+      pinnedAt: "2026-06-20T08:00:00.000Z",
+      pinnedBy: MOCK_SELF_ID,
+    },
+  ],
 };

@@ -11,12 +11,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
+import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
+import { ContactRoleCaption } from "@/features/messaging/presentation/contact-role-caption";
+import { ContactsErrorNotice } from "@/features/messaging/presentation/contacts-error-notice";
 import { cn } from "@/shared/utils";
 
 export interface NewConversationModalProps {
   open: boolean;
   contacts: ContactEntity[];
+  /** US-E18.52 — set when the SSR contact-directory read failed (403, wiring, transport). */
+  contactsError?: MessagingFailure["type"];
   onOpenChange: (open: boolean) => void;
   onSelectContact: (contact: ContactEntity) => void;
 }
@@ -24,6 +29,7 @@ export interface NewConversationModalProps {
 export function NewConversationModal({
   open,
   contacts,
+  contactsError,
   onOpenChange,
   onSelectContact,
 }: NewConversationModalProps) {
@@ -64,52 +70,62 @@ export function NewConversationModal({
             className="w-full rounded-lg border-[1.5px] border-border bg-background py-2 pr-2.5 pl-8 text-foreground text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           />
         </div>
-        <p className="mb-1 font-bold text-[11px] text-muted-foreground uppercase tracking-wider">
-          {t("newMessage.suggestions")}
-        </p>
-        <ul aria-label={t("newMessage.suggestions")}>
-          {filtered.map((c) => (
-            <li key={c.id}>
-              <button
-                type="button"
-                onClick={() => onSelectContact(c)}
-                className="flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span className="relative flex-shrink-0">
-                  <span
-                    className={cn(
-                      "flex size-9 items-center justify-center rounded-full text-xs font-bold",
-                      avatarToneClasses(c.color),
-                    )}
-                  >
-                    {c.avatarInitials}
-                  </span>
-                  {c.isOnline && (
-                    <>
-                      <span
+        {contactsError ? (
+          <ContactsErrorNotice errorKey={contactsError} />
+        ) : (
+          <>
+            <p className="mb-1 font-bold text-[11px] text-muted-foreground uppercase tracking-wider">
+              {t("newMessage.suggestions")}
+            </p>
+            {filtered.length > 0 ? (
+              <ul aria-label={t("newMessage.suggestions")}>
+                {filtered.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onClick={() => onSelectContact(c)}
+                      className="flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="relative flex-shrink-0">
+                        <span
+                          className={cn(
+                            "flex size-9 items-center justify-center rounded-full text-xs font-bold",
+                            avatarToneClasses(c.color),
+                          )}
+                        >
+                          {c.avatarInitials}
+                        </span>
+                        {c.isOnline && (
+                          <>
+                            <span
+                              aria-hidden="true"
+                              className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
+                            />
+                            <span className="sr-only">{t("chat.online")}</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold text-foreground text-sm">
+                          {c.name}
+                        </span>
+                        <ContactRoleCaption contact={c} />
+                      </span>
+                      <ArrowRight
+                        className="size-3.5 flex-shrink-0 text-muted-foreground"
                         aria-hidden="true"
-                        className="absolute right-0.5 bottom-0.5 size-2.5 rounded-full border-2 border-card bg-edu-success"
                       />
-                      <span className="sr-only">{t("chat.online")}</span>
-                    </>
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-bold text-foreground text-sm">
-                    {c.name}
-                  </span>
-                  <span className="block truncate text-muted-foreground text-xs">
-                    {c.role}
-                  </span>
-                </span>
-                <ArrowRight
-                  className="size-3.5 flex-shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-2 py-6 text-center text-muted-foreground text-sm">
+                {t("newMessage.noContacts")}
+              </p>
+            )}
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
