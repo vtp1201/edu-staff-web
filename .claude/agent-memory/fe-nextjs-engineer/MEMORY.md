@@ -97,3 +97,5 @@
 - [Affordance unreachable by role](gotcha-affordance-unreachable-by-role.md) — E18.44 review: correct fail-closed RBAC + WRONG MOUNTING ROUTE = an AC that cannot be exercised; strict-equality namespace guards; moving a mount can orphan the old screen's own affordances (+more in file)
 
 - [RSC closure prop = 500](gotcha-rsc-closure-prop-500.md) — E18.44 r2: a local `async () => …` stub prop from an RSC is a runtime HTTP 500 that tsc + build + Storybook ALL pass; bind the real action to a placeholder key; lock it with an awaited-page unit test that INVOKES the prop (+more in file)
+
+- [Un-fake a "non-persistent" field](pattern-unfake-non-persistent-field.md) — E18.49: an unconditional preset fallback + a hardcoded `count: 1` are the two default-shaped bugs; Go no-`omitempty` slice ⇒ `null` not `[]`; prove absence NEGATIVELY; persisted ≠ enforced (keep the informational hint)

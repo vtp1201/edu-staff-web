@@ -8,4 +8,5 @@
 - [core class-roster read](be-core-class-roster-read.md) — MANAGER is NOT authorized on `/classes/{id}/students`; hard-delete enrollment; no status/code on the wire
 - [core staff-leave contract](be-core-staff-leave.md) — tenant-wide list defaults to SUBMITTED (3-state fan-out), approve/reject composite key, US-170 nullables
 - [core enrollment pool (unassigned students)](be-core-enrollment-pool.md) — ids-only unpaginated enrolled-ids read + the FE-COMPOSE set-difference rule (no BE pool endpoint, ever)
+- [core grade-scale bands + requiredCount](be-core-grade-scale-bands.md) — asymmetric omitempty (null vs absent), one 422 for all band rules, count is display-only
 - [core member-attendance read](be-member-attendance-read.md) — PARENT allowed since US-047 (openapi prose stale), guard ordering, UPPER_SNAKE enum, ATTENDANCE_FORBIDDEN
