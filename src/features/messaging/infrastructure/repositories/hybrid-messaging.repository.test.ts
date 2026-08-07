@@ -37,28 +37,47 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     expect(realFns.sendTypingIndicator).toHaveBeenCalledWith("r1", true);
   });
 
+  // US-E18.50 — BE US-193 (ADR 0132) shipped create + archive ONLY. The split
+  // inside the 7-method group-lifecycle slice is the whole point of this story,
+  // so it is asserted method by method, in both directions.
+  it("routes the two US-193 group methods (create + archive) to the REAL repo", async () => {
+    const realFns = {
+      createGroup: vi.fn().mockResolvedValue(ok({})),
+      deleteGroup: vi.fn().mockResolvedValue(ok(true)),
+    };
+    const mockFns = { createGroup: vi.fn(), deleteGroup: vi.fn() };
+    const hybrid = new HybridMessagingRepository(
+      makeMessagingRepo(realFns),
+      makeMessagingRepo(mockFns),
+    );
+
+    await hybrid.createGroup({ name: "Tổ Toán" });
+    await hybrid.deleteGroup("g1");
+
+    expect(realFns.createGroup).toHaveBeenCalledWith({ name: "Tổ Toán" });
+    expect(realFns.deleteGroup).toHaveBeenCalledWith("g1");
+    expect(mockFns.createGroup).not.toHaveBeenCalled();
+    expect(mockFns.deleteGroup).not.toHaveBeenCalled();
+  });
+
   it("routes the permanently-mock slice to the MOCK repo (never the real one)", async () => {
     const mockFns = {
       getContacts: vi.fn().mockResolvedValue(ok([])),
-      createGroup: vi.fn().mockResolvedValue(ok({})),
       getGroup: vi.fn().mockResolvedValue(ok({})),
       updateGroup: vi.fn().mockResolvedValue(ok({})),
       addGroupMembers: vi.fn().mockResolvedValue(ok({})),
       removeGroupMember: vi.fn().mockResolvedValue(ok({})),
       leaveGroup: vi.fn().mockResolvedValue(ok(true)),
-      deleteGroup: vi.fn().mockResolvedValue(ok(true)),
       pinMessage: vi.fn().mockResolvedValue(ok(true)),
       unpinMessage: vi.fn().mockResolvedValue(ok(true)),
     };
     const realFns = {
       getContacts: vi.fn(),
-      createGroup: vi.fn(),
       getGroup: vi.fn(),
       updateGroup: vi.fn(),
       addGroupMembers: vi.fn(),
       removeGroupMember: vi.fn(),
       leaveGroup: vi.fn(),
-      deleteGroup: vi.fn(),
       pinMessage: vi.fn(),
       unpinMessage: vi.fn(),
     };
@@ -68,18 +87,11 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     );
 
     await hybrid.getContacts();
-    await hybrid.createGroup({
-      name: "n",
-      kind: "class",
-      color: "primary",
-      memberIds: [],
-    });
     await hybrid.getGroup("g1");
     await hybrid.updateGroup({ groupId: "g1" });
     await hybrid.addGroupMembers("g1", ["u"]);
     await hybrid.removeGroupMember("g1", "u");
     await hybrid.leaveGroup("g1");
-    await hybrid.deleteGroup("g1");
     await hybrid.pinMessage("g1", "m1");
     await hybrid.unpinMessage("g1", "m1");
 

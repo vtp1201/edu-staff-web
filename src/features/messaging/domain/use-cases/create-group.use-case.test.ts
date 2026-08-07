@@ -8,7 +8,7 @@ const group: GroupEntity = {
   id: "g-new",
   name: "Nhóm Toán",
   description: "",
-  kind: "class",
+  kind: "other",
   color: "primary",
   conversationId: "g-new",
   members: [],
@@ -20,16 +20,11 @@ describe("CreateGroupUseCase", () => {
     const createGroup = vi.fn().mockResolvedValue(ok(group));
     const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
 
-    const res = await useCase.execute({
-      name: "Nhóm Toán",
-      kind: "class",
-      color: "primary",
-      memberIds: ["u1"],
-    });
+    const res = await useCase.execute({ name: "  Nhóm Toán  " });
 
-    expect(createGroup).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "Nhóm Toán", memberIds: ["u1"] }),
-    );
+    // US-E18.50: the wire body is `{name}` ONLY — the use-case must not smuggle
+    // any extra key through to the repository.
+    expect(createGroup).toHaveBeenCalledWith({ name: "Nhóm Toán" });
     expect(res).toEqual({ ok: true, value: group });
   });
 
@@ -37,12 +32,7 @@ describe("CreateGroupUseCase", () => {
     const createGroup = vi.fn();
     const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
 
-    const res = await useCase.execute({
-      name: "",
-      kind: "class",
-      color: "primary",
-      memberIds: ["u1"],
-    });
+    const res = await useCase.execute({ name: "" });
 
     expect(res).toEqual({
       ok: false,
@@ -55,29 +45,46 @@ describe("CreateGroupUseCase", () => {
     const createGroup = vi.fn();
     const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
 
-    const res = await useCase.execute({
-      name: "A",
-      kind: "class",
-      color: "primary",
-      memberIds: ["u1"],
-    });
+    const res = await useCase.execute({ name: "A" });
 
     expect(res.ok).toBe(false);
     expect(createGroup).not.toHaveBeenCalled();
   });
 
-  it("fails when no members are selected", async () => {
+  // The real contract caps `name` at 255 (`CreateGroupRoomRequest`) — reject
+  // locally instead of spending a round trip on a guaranteed 422.
+  it("fails when the name exceeds the contract's 255-character cap", async () => {
     const createGroup = vi.fn();
     const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
 
-    const res = await useCase.execute({
-      name: "Nhóm Toán",
-      kind: "class",
-      color: "primary",
-      memberIds: [],
-    });
+    const res = await useCase.execute({ name: "n".repeat(256) });
 
-    expect(res.ok).toBe(false);
+    expect(res).toEqual({
+      ok: false,
+      failure: { type: "create-group-failed", cause: "validation" },
+    });
     expect(createGroup).not.toHaveBeenCalled();
+  });
+
+  it("accepts a name exactly at the 255-character cap", async () => {
+    const createGroup = vi.fn().mockResolvedValue(ok(group));
+    const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
+
+    const res = await useCase.execute({ name: "n".repeat(255) });
+
+    expect(res.ok).toBe(true);
+    expect(createGroup).toHaveBeenCalledTimes(1);
+  });
+
+  // Members are no longer part of creation at all (no batch-add surface on the
+  // real contract) — a name-only create must reach the repository.
+  it("no longer requires members up front", async () => {
+    const createGroup = vi.fn().mockResolvedValue(ok(group));
+    const useCase = new CreateGroupUseCase(makeMessagingRepo({ createGroup }));
+
+    const res = await useCase.execute({ name: "Nhóm Toán" });
+
+    expect(res.ok).toBe(true);
+    expect(createGroup).toHaveBeenCalled();
   });
 });

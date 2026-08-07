@@ -874,14 +874,15 @@ const noopGetGroup = async (): Promise<GetGroupResult> => ({
 });
 
 /**
- * AC-4 (create-group optimistic prepend):
- * User clicks "+ Tạo nhóm", fills name in step 1, selects a member in step 2,
- * submits → new group conversation appears at the top of the list optimistically
- * and the modal closes.
+ * AC-4 (create-group optimistic prepend), reshaped by US-E18.50: a staff-tier
+ * viewer clicks "+ Tạo nhóm", types a name into the now single-step, name-only
+ * form and submits → the new group conversation appears at the top of the list
+ * optimistically and the modal closes.
  */
 export const CreateGroup_Optimistic_Prepend: Story = {
   args: {
     initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    canCreateGroup: true,
     createGroupAction: async (): Promise<CreateGroupResult> => ({
       ok: true,
       value: CREATED_GROUP,
@@ -908,19 +909,11 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     });
     await userEvent.click(createBtn);
 
-    // Step 1: fill the group name (dialog is in a Radix portal)
+    // Fill the group name (dialog is in a Radix portal). US-E18.50: this is
+    // the whole form — no step 2, no member picker.
     const nameInput = await waitFor(() => body.getByLabelText("Tên nhóm"));
     await userEvent.type(nameInput, "Nhóm Vật Lý");
 
-    const nextBtn = body.getByRole("button", { name: /tiếp theo/i });
-    await waitFor(() => expect(nextBtn).toBeEnabled());
-    await userEvent.click(nextBtn);
-
-    // Step 2: select one member and submit
-    await waitFor(() =>
-      expect(body.getByText("Thêm thành viên")).toBeInTheDocument(),
-    );
-    await userEvent.click(body.getByText("Trần Minh Quân"));
     const submitBtn = body.getByRole("button", { name: /^tạo nhóm$/i });
     await waitFor(() => expect(submitBtn).toBeEnabled());
     await userEvent.click(submitBtn);
@@ -1267,5 +1260,101 @@ export const ScrollToPinned_Highlight_Wired: Story = {
     // `storybook/test` does not expose vi/fake-timers, so this interaction story
     // intentionally asserts only the wiring (panel → pinned click → highlight
     // applied) and does NOT do a real-clock wait — keeping it flake-free.
+  },
+};
+
+// ---------------------------------------------------------------------------
+// US-E18.50 — self-service group rooms (BE US-193 / ADR 0132)
+// ---------------------------------------------------------------------------
+
+/**
+ * AC (role gate): a STUDENT/PARENT viewer (`canCreateGroup: false`, the
+ * fail-closed default) gets NO create-group affordance — neither the inline CTA
+ * above the group list nor the empty-state button. The server would answer 403
+ * `SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN`, so offering the button would be an
+ * affordance that can only fail.
+ */
+export const CreateGroup_Hidden_ForStudentOrParent: Story = {
+  args: {
+    initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
+    canCreateGroup: false,
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-forbidden",
+    }),
+    getGroupAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    addGroupMembersAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    deleteGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("tab", { name: "Nhóm" }));
+    await waitFor(() =>
+      expect(
+        canvas.queryByRole("button", { name: /tạo nhóm/i }),
+      ).not.toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * AC (archive 409): archiving a system-provisioned room (class_chat /
+ * parent_group) maps to `group-not-self-service` and reads as an explanation —
+ * "this is a system-managed group" — not the generic "please try again" copy.
+ */
+export const ArchiveGroup_NotSelfService_Error: Story = {
+  args: {
+    initialConversations: [ADMIN_GROUP_CONVERSATION],
+    canCreateGroup: true,
+    getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
+    getGroupAction: async (): Promise<GetGroupResult> => ({
+      ok: true,
+      value: ADMIN_GROUP,
+    }),
+    createGroupAction: async (): Promise<CreateGroupResult> => ({
+      ok: false,
+      errorKey: "create-group-failed",
+    }),
+    deleteGroupAction: async (): Promise<ActionResult> => ({
+      ok: false,
+      errorKey: "group-not-self-service",
+    }),
+    addGroupMembersAction: noopGetGroup,
+    pinMessageAction: noopGroupAction,
+    deleteMessageAction: noopGroupAction,
+    removeGroupMemberAction: noopGetGroup,
+    leaveGroupAction: noopGroupAction,
+    updateGroupAction: noopGetGroup,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+
+    const header = await canvas.findByRole("button", {
+      name: /thông tin nhóm/i,
+    });
+    await userEvent.click(header);
+
+    const panel = await waitFor(() =>
+      body.getByRole("dialog", { name: /thông tin nhóm/i }),
+    );
+    await userEvent.click(
+      within(panel).getByRole("button", { name: /^xoá nhóm$/i }),
+    );
+
+    const confirm = await waitFor(() =>
+      body.getByRole("button", { name: /xác nhận xoá/i }),
+    );
+    await userEvent.click(confirm);
+
+    // The conversation must SURVIVE (nothing was archived) and the distinct
+    // reason must be announced.
+    const alert = await waitFor(() => canvas.getByRole("alert"));
+    await expect(alert).toHaveTextContent(/nhóm do hệ thống tạo/i);
   },
 };

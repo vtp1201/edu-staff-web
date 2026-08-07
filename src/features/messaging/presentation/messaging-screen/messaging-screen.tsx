@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -10,12 +11,14 @@ import type { ConversationEntity } from "@/features/messaging/domain/entities/co
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
 import type { PresenceRecord } from "@/features/messaging/domain/entities/presence";
+import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
 import { CreateGroupModal } from "../create-group-modal";
 import { NewConversationModal } from "../new-conversation-modal/new-conversation-modal";
 import { EmptyMessagingState } from "./empty-messaging-state";
+import { createGroupErrorKey } from "./group-creation-gate";
 import type {
   MessagingScreenActions,
   MessagingScreenVM,
@@ -72,6 +75,7 @@ export function MessagingScreen({
   loadError,
   selfId = "me",
   tenantId,
+  canCreateGroup = false,
   sendMessageAction,
   createConversationAction,
   getMessagesAction,
@@ -89,6 +93,8 @@ export function MessagingScreen({
   sendTypingIndicatorAction,
 }: MessagingScreenProps) {
   const t = useTranslations("messaging");
+  const tErrors = useTranslations("messaging.errors");
+  const tCommon = useTranslations("Common");
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -132,6 +138,9 @@ export function MessagingScreen({
   const [isModalOpen, setModalOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMembersOpen, setAddMembersOpen] = useState(false);
+  // US-E18.50 — last failed group action (archive), as a stable failure key.
+  const [groupActionError, setGroupActionError] =
+    useState<MessagingFailure["type"]>();
   // US-E10.6 AC-10.6.3.2 — lifted from ChatWindow so the member-panel presence
   // query is gated on the panel actually being open, not on group selection.
   const [groupInfoOpen, setGroupInfoOpen] = useState(false);
@@ -312,7 +321,11 @@ export function MessagingScreen({
         lastMessage: "",
         lastMessageTime: "",
         unreadCount: 0,
-        memberCount: created.members.length,
+        // US-E18.50: the real 201 echoes no membership, so `members` is empty
+        // there. The contract still GUARANTEES the creator is seeded as OWNER,
+        // so "at least 1" is an inference from the contract, not invented data;
+        // the next room read replaces it with the server-confirmed count.
+        memberCount: Math.max(created.members.length, 1),
         selfIsGroupAdmin: true,
       };
       queryClient.setQueryData<ConversationEntity[]>(
@@ -472,6 +485,26 @@ export function MessagingScreen({
 
   return (
     <div className="relative flex h-[calc(100vh-64px)] overflow-hidden">
+      {/* US-E18.50 — archiving a group can fail for a reason the user can act
+          on (a system-provisioned room is not archivable; only the owner may
+          archive), so the failure gets a real, dismissible surface instead of
+          being dropped on the floor. */}
+      {groupActionError && (
+        <div
+          role="alert"
+          className="absolute inset-x-0 top-0 z-20 flex items-start gap-2 border-edu-error/30 border-b bg-edu-error-light px-4 py-2.5 text-edu-error-text text-sm"
+        >
+          <span className="flex-1">{tErrors(groupActionError)}</span>
+          <button
+            type="button"
+            onClick={() => setGroupActionError(undefined)}
+            aria-label={tCommon("close")}
+            className="rounded-md p-0.5 hover:bg-edu-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div
         ref={listPaneRef}
         className={listPaneClass(mobilePane)}
@@ -485,7 +518,11 @@ export function MessagingScreen({
           loadError={loadError}
           onSelect={handleSelect}
           onNewMessage={() => setModalOpen(true)}
-          onCreateGroup={() => setCreateGroupOpen(true)}
+          // US-E18.50: STUDENT/PARENT get no create-group affordance at all —
+          // the list renders the CTA only when the handler is present.
+          onCreateGroup={
+            canCreateGroup ? () => setCreateGroupOpen(true) : undefined
+          }
         />
       </div>
 
@@ -550,6 +587,7 @@ export function MessagingScreen({
               },
               onDelete: async () => {
                 if (!activeId) return;
+                setGroupActionError(undefined);
                 const res = await deleteGroupAction(activeId);
                 if (res.ok) {
                   queryClient.setQueryData<ConversationEntity[]>(
@@ -557,6 +595,10 @@ export function MessagingScreen({
                     (old = []) => old.filter((c) => c.id !== activeId),
                   );
                   setActiveId(null);
+                } else {
+                  // Distinct keys survive to the copy: "system-managed group"
+                  // vs "owner only" vs a generic retryable failure.
+                  setGroupActionError(res.errorKey);
                 }
               },
             }}
@@ -573,14 +615,15 @@ export function MessagingScreen({
         onSelectContact={handleSelectContact}
       />
 
-      <CreateGroupModal
-        open={createGroupOpen}
-        contacts={initialContacts}
-        isSubmitting={createGroupMutation.isPending}
-        submitError={createGroupMutation.isError}
-        onOpenChange={setCreateGroupOpen}
-        onSubmit={(values) => createGroupMutation.mutate(values)}
-      />
+      {canCreateGroup && (
+        <CreateGroupModal
+          open={createGroupOpen}
+          isSubmitting={createGroupMutation.isPending}
+          submitError={createGroupErrorKey(createGroupMutation.error)}
+          onOpenChange={setCreateGroupOpen}
+          onSubmit={(values) => createGroupMutation.mutate(values)}
+        />
+      )}
 
       <AddMembersModal
         open={addMembersOpen}

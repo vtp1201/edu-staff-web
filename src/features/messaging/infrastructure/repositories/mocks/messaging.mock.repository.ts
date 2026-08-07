@@ -16,6 +16,7 @@ import {
   ok,
   type Result,
 } from "@/features/messaging/domain/use-cases/result";
+import { roomColorKey } from "../../mappers/room-derive";
 import {
   MOCK_CONTACTS,
   MOCK_CONVERSATIONS,
@@ -157,25 +158,19 @@ export class MockMessagingRepository implements IMessagingRepository {
       .slice(0, 3)
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("");
-    const memberRows = input.memberIds.map((userId) => {
-      const c = this.contacts.find((x) => x.id === userId);
-      return {
-        userId,
-        name: c?.name ?? userId,
-        initials: c?.avatarInitials ?? "?",
-        color: c?.color ?? "primary",
-        role: "member" as const,
-        isOnline: c?.isOnline ?? false,
-      };
-    });
+    // US-E18.50: creation is name-only, mirroring the real `{name}` body — no
+    // description/kind/colour is collected any more, and no member list is sent
+    // (the real contract has no batch-add). The colour is derived from the id
+    // exactly as the real path does, so mock and real groups look alike.
     const group: GroupEntity = {
       id,
       name: input.name.trim(),
-      description: input.description ?? "",
-      kind: input.kind,
-      color: input.color,
+      description: "",
+      kind: "other",
+      color: roomColorKey(id),
       conversationId: id,
-      // Creator becomes admin (TR-008).
+      // Creator becomes admin/OWNER (TR-008). The mock knows the self member's
+      // display name, so unlike the real path it can show the row immediately.
       members: [
         {
           userId: MOCK_SELF_ID,
@@ -185,7 +180,6 @@ export class MockMessagingRepository implements IMessagingRepository {
           role: "admin",
           isOnline: true,
         },
-        ...memberRows,
       ],
       pinnedMessages: [],
     };

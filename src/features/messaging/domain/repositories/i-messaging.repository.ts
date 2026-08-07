@@ -1,6 +1,6 @@
 import type { ContactEntity } from "../entities/contact.entity";
 import type { ConversationEntity } from "../entities/conversation.entity";
-import type { GroupEntity, GroupKind } from "../entities/group.entity";
+import type { GroupEntity } from "../entities/group.entity";
 import type { MessageEntity } from "../entities/message.entity";
 import type { MessagingFailure } from "../failures/messaging.failure";
 import type { Result } from "../use-cases/result";
@@ -11,13 +11,19 @@ export type MessagePage = {
   hasMore: boolean;
 };
 
-/** Input for INT-001 create group. */
+/**
+ * Input for INT-001 create group. US-E18.50 / BE US-193 (ADR 0132): the real
+ * `POST /rooms/groups` body is `{name}` and NOTHING else — creator and tenant
+ * come from the verified Gateway claims, and the Room entity has no
+ * description/kind/colour column at all. The mock-era shape
+ * (`description`/`kind`/`color`/`memberIds`) was invented with zero wire
+ * backing, so the TYPE is narrowed here: a caller can no longer even attempt to
+ * send fields the server would drop. Members are added after creation via the
+ * separate add-member surface (still mock — see `HybridMessagingRepository`).
+ */
 export type CreateGroupInput = {
+  /** 1..255 on the wire; the use-case additionally requires ≥2 after trim. */
   name: string;
-  description?: string;
-  kind: GroupKind;
-  color: string;
-  memberIds: string[];
 };
 
 /** Partial update for INT-003 update group (admin only). */
@@ -51,6 +57,9 @@ export interface IMessagingRepository {
   getContacts(): Promise<Result<ContactEntity[], MessagingFailure>>;
 
   // --- US-E10.4 group lifecycle ---
+  // US-E18.50: `createGroup` (POST /rooms/groups) and `deleteGroup`
+  // (POST /rooms/{roomId}/archive) are REAL as of BE US-193 / ADR 0132; the
+  // other five have no real contract and stay mock-served.
   createGroup(
     input: CreateGroupInput,
   ): Promise<Result<GroupEntity, MessagingFailure>>;
