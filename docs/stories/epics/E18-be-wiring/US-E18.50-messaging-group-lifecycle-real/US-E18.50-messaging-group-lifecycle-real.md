@@ -221,3 +221,119 @@ nobody reads the feature as fully wired.
 - `bun run build` green in mock mode AND with `NEXT_PUBLIC_USE_MOCK=false`.
 - `USE_MOCK=true` behaviour unchanged apart from the intentional name-only
   create form.
+
+## Accessibility Audit (fe-accessibility-auditor, WCAG 2.1 AA — decision `0013`)
+
+**Verdict: PASS.** No Blocking/Critical/Major findings. Two Minor notes below
+(non-blocking; recorded so they don't get re-litigated).
+
+### 1. Storybook interaction suite re-run (scoped)
+
+Re-ran independently rather than trusting the engineer's report:
+
+- `bun vitest run --config vitest.storybook.mts create-group-modal` →
+  **1 file / 8 tests pass** (`Empty`, `NameOnly_NoDroppedFields`,
+  `Valid_SubmitsNameOnly`, `ValidationError`, `Submitting`,
+  `SubmitError_Generic`, `SubmitError_Forbidden`, `Mobile_375`).
+- `bun vitest run --config vitest.storybook.mts messaging-screen` →
+  **2 files / 30 tests pass**, including `CreateGroup_Hidden_ForStudentOrParent`
+  and `ArchiveGroup_NotSelfService_Error`.
+
+### 2. Simplified name-only form (`create-group-modal.tsx`)
+
+- Label: `<label htmlFor={nameId}>` (l.118-123) correctly bound to the `<input
+  id={nameId}>` (l.124-137) — WCAG 1.3.1/4.1.2 satisfied.
+- Error state: on invalid name, `aria-invalid="true"` + `aria-describedby={errId}`
+  wired to the visible `<p id={errId}>{t("nameTooShort")}</p>` (l.134-142) — WCAG
+  3.3.1/4.1.3. Error text uses `text-edu-error-text` (not color-only) and the
+  message is actionable ("Tên nhóm cần ít nhất 2 ký tự.").
+- Focus trap/restore: `create-group-modal.tsx` uses the shared `Dialog` primitive
+  (`src/components/ui/dialog/dialog.tsx`), which already wires
+  `useDialogReturnFocus` on `onCloseAutoFocus` (repo-wide precedent, DEF-01/
+  US-E22.1) — no custom override here, so trap + return-focus are inherited
+  correctly. Radix `DialogTitle`/`DialogDescription` are used as-is (l.85-90),
+  so the dialog's `aria-labelledby`/`aria-describedby` stay intact — WCAG 2.4.3,
+  4.1.2.
+- Keyboard: single tab stop (name input) → Cancel → Create; `Enter` in the input
+  submits directly (l.130-132) without requiring a tab to the button — no
+  regression from the prior multi-step flow, arguably simpler now. `Escape`
+  closes via Radix default (resets local `name`/`nameTouched` state, l.67-73).
+
+### 3. Role-gated create-group entry point
+
+- Server-derived: `app/[locale]/t/[tenant]/(app)/(shared)/messages/page.tsx`
+  computes `canCreateGroupFor(sessionRole)` (fail-closed on `null`/unknown role,
+  `group-creation-gate.ts` l.16-18) in the RSC and passes it down as
+  `canCreateGroup` — not a client-only check.
+  `conversation-list.tsx` only renders the "Tạo nhóm" CTA (inline + empty-state)
+  when `onCreateGroup` is **present** (l.151, l.186) — for STUDENT/PARENT the
+  handler is `undefined` (`messaging-screen.tsx` l.523-525), so the button is
+  **fully absent from the DOM**, not `disabled` with no explanation. This is the
+  correct pattern per WCAG 2.4.3/ARIA APG guidance (a disabled-but-visible button
+  with no accessible reason text is worse than a hidden affordance) — confirmed
+  by `CreateGroup_Hidden_ForStudentOrParent` asserting `queryByRole("button", {
+  name: /tạo nhóm/i })` is `not.toBeInTheDocument()`.
+- No explanatory copy exists for why STUDENT/PARENT don't see the CTA. Judgment:
+  **acceptable, not a finding.** Other role-gated affordances in this app (e.g.
+  admin-only sidebar links) follow the same fully-absent-no-copy pattern, and a
+  messaging surface where students/parents never had a "create group" mental
+  model to begin with doesn't create the "where did my button go" dead-end that
+  a *removed* feature would. Defense-in-depth (403 → `create-group-forbidden`,
+  distinct forbidden copy) covers the one case where a stale client renders the
+  CTA anyway.
+
+### 4. Archive / `group-not-self-service` error state
+
+- Announced via `role="alert"` (`conversation-list.tsx`, dismissible banner) —
+  not color-only; text content is the specific, actionable copy: vi
+  `"Đây là nhóm do hệ thống tạo (lớp học, hội phụ huynh) nên không thể lưu trữ."`
+  / en `"This is a system-managed group (class or parent group) and cannot be
+  archived."` (`messages/{vi,en}.json`) — explains *why* and implicitly *that
+  retrying won't help*, satisfying the "error messages say how to fix" baseline
+  better than a generic "action failed" would (no literal fix action exists, but
+  the reason removes the urge to retry). WCAG 3.3.1/4.1.3.
+- Dismiss control has `aria-label={tCommon("close")}` (icon-only `<X>` button,
+  `aria-hidden` on the icon itself) — WCAG 1.1.1/4.1.2 for icon-only controls.
+- `ArchiveGroup_NotSelfService_Error` story confirms end-to-end: opens group
+  info panel (Radix `dialog` role, named), clicks delete, confirms, then asserts
+  `canvas.getByRole("alert")` has text matching `/nhóm do hệ thống tạo/i` — SR
+  users get the same explanation sighted users see.
+
+### 5. Contrast (resolved against `src/app/tokens.css`, not eyeballed)
+
+- `text-edu-error-text` (`#c0392b`) on `bg-edu-error-light` (`#fff5f2`) →
+  **≈5.08:1**, passes 4.5:1 for normal `text-sm` body text (both the submit-error
+  banner in the modal and the archive-error banner in `conversation-list.tsx`
+  reuse this exact pattern, matching ADR 0049's canonical error-text token
+  choice — `text-destructive` was correctly avoided).
+- No white-on-warning found in the diff (this story touches error, not warning,
+  tokens).
+- No raw color introduced — `create-group-modal.tsx` uses only
+  `bg-primary`/`text-primary-foreground`/`border-border`/`text-muted-foreground`/
+  `text-edu-error-text`/`bg-edu-error-light`/`border-edu-error/30`, all
+  pre-existing semantic tokens.
+
+### 6. Deleted color-swatch picker — no orphaned debt
+
+- `color-swatches.ts` (41 lines) is fully deleted in this commit (`git show
+  c49a270e --stat`), not left dangling.
+- Grep for `swatch`/`colorSwatch` in `src/features/messaging` after the change
+  turns up only two doc-comments (`group.entity.ts` l.5/39,
+  `create-group-modal.tsx` l.39) describing the *removed* palette for context —
+  no orphaned CSS classes, no dead i18n keys referencing swatch colors (the 16
+  dead `messaging.group.*` keys were pruned per the story's own Evidence
+  section, verified present in `vi.json`/`en.json` diff).
+- The decorative avatar preview (`avatarToneClasses("primary")` →
+  `bg-edu-primary/15 text-edu-primary`, l.106-114) is `aria-hidden="true"` and
+  reuses an existing, already-audited avatar-tone pattern shared with the
+  conversation list — not new contrast debt from this story.
+
+### Quick wins (optional, non-blocking)
+
+- None required. If closing the loop on Minor items: consider a follow-up note
+  in the packet (not a code change) that `leaveGroup`'s still-mock status
+  (Evidence §7) means a self-service creator who leaves their own group sees no
+  real-mode last-OWNER guard yet — purely a functional/BE-wiring note, not an
+  a11y finding, flagging only because a future real-mode `leaveGroup` will need
+  the same "distinct failure, not generic error" treatment this story applied
+  to archive.
