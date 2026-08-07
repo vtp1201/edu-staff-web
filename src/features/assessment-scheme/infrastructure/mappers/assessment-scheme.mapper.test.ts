@@ -243,10 +243,22 @@ describe("assessment-scheme mapper — grade scale", () => {
       ],
     });
     expect(req.bands).toEqual([
-      { label: "Đạt", minThreshold: "5.0" },
-      { label: "Chưa đạt", minThreshold: "0.0" },
+      { label: "Đạt", minThreshold: "5" },
+      { label: "Chưa đạt", minThreshold: "0" },
     ]);
     expect(req.letterGrades).toBeUndefined();
+  });
+
+  it("preserves sub-0.1 precision on a numeric-scale threshold (no rounding)", () => {
+    const req = toSetGradeScaleRequestDto({
+      type: "SCALE_4",
+      maxScore: 4,
+      effectiveFrom: "2024-09-01T00:00:00.000Z",
+      bands: [
+        { id: "a", label: "A", minThreshold: 3.25, colorToken: "success" },
+      ],
+    });
+    expect(req.bands).toEqual([{ label: "A", minThreshold: "3.25" }]);
   });
 
   it("serialises bands for SCALE_4 too (the wire cares about the scale type, not the range)", () => {
@@ -255,11 +267,11 @@ describe("assessment-scheme mapper — grade scale", () => {
     expect(req.bands?.map((b) => b.minThreshold)).toEqual([
       "3.7",
       "3.3",
-      "3.0",
+      "3",
       "2.7",
-      "2.0",
-      "1.0",
-      "0.0",
+      "2",
+      "1",
+      "0",
     ]);
   });
 

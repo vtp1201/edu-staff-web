@@ -82,6 +82,10 @@ not weakened. All translation happens in
   reusing data already in the codebase, inventing nothing new. Band edits for
   numeric scales are **not persisted** to BE (BE has no such concept) —
   cosmetic-only until/unless BE adds one.
+  > ⚠️ Amended 2026-08-07 by US-E18.49 — no longer true, see §Status. BE
+  > shipped `GradeBand{label, minThreshold}` on `HE_10`/`HE_4_GPA`; numeric
+  > bands are now genuinely persisted (write + read), the preset is a
+  > fallback ONLY for a tenant with no wire bands yet, not the sole path.
 - **`coefficient` ↔ `weight`**: `coefficient = weight / 10` on write,
   `weight = coefficient * 10` on read. This is a lossless, reversible unit
   scaling (not a business-rule change) for any scheme this UI creates: weight
@@ -98,6 +102,10 @@ not weakened. All translation happens in
   non-persistent `1`; writes omit the key entirely. Same class of finding as
   US-E18.3's `restore` (web-only) / US-E18.5's roster display fields
   (BE has no source of truth) — documented, not solved here.
+  > ⚠️ Amended 2026-08-07 by US-E18.49 — no longer true, see §Status. BE
+  > shipped `requiredCount` (optional int 1-100, display metadata only, not
+  > enforced against entries) on `AssessmentColumnRequest`/`Response`; `count`
+  > is read/written for real now (`null` = unset, never defaulted to `1`).
 - **`termId`**: a genuinely new required path/response field. Added a
   lightweight `["HK1", "HK2"]` term selector to the assessment-scheme screen,
   matching the existing hardcoded-terms precedent already in this codebase
@@ -148,7 +156,11 @@ Tradeoffs:
 
 - Grade-scale band customization is decorative-only for `HE_10`/`HE_4_GPA`
   scales under the real API (no BE persistence) until BE adds the concept.
+  > ⚠️ Amended 2026-08-07 by US-E18.49 — BE added the concept (`GradeBand`);
+  > no longer decorative, see §Status.
 - `count` (assessments per column) is non-persistent under the real API.
+  > ⚠️ Amended 2026-08-07 by US-E18.49 — BE added `requiredCount`; `count` is
+  > persisted now (display metadata, not enforced), see §Status.
 - A scheme created by a hypothetical other BE client with a different
   coefficient convention could trip this UI's own weight-sum-100 validation
   on re-save (BE itself is unaffected — its grading math doesn't care).

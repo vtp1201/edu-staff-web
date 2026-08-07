@@ -106,10 +106,10 @@ describe("AssessmentSchemeRepository — grade scale", () => {
       effectiveFrom: GRADE_SCALE_PRESETS.SCALE_10.effectiveFrom,
       bands: [
         { label: "Xuất sắc", minThreshold: "9.5" },
-        { label: "Giỏi", minThreshold: "8.0" },
+        { label: "Giỏi", minThreshold: "8" },
         { label: "Khá", minThreshold: "6.5" },
-        { label: "Trung bình", minThreshold: "5.0" },
-        { label: "Yếu", minThreshold: "0.0" },
+        { label: "Trung bình", minThreshold: "5" },
+        { label: "Yếu", minThreshold: "0" },
       ],
     });
     // a numeric scale still must not send letterGrades

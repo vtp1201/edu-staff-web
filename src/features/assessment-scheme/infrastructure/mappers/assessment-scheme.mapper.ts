@@ -165,7 +165,12 @@ export function toSetGradeScaleRequestDto(
       .sort((a, b) => b.minThreshold - a.minThreshold)
       .map((band) => ({
         label: band.label.trim(),
-        minThreshold: band.minThreshold.toFixed(1),
+        // Exact value, NOT `.toFixed(1)` — a numeric-scale threshold is a
+        // real value the read path already parses with full precision
+        // (`Number(dto.minThreshold)`), so rounding here would silently
+        // truncate anything finer than 1 decimal (e.g. a GPA cutoff like
+        // 3.25) even though the wire field allows up to 16 chars.
+        minThreshold: String(band.minThreshold),
       }));
   }
 
