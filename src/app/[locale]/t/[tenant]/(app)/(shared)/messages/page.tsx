@@ -2,7 +2,9 @@ import {
   makeGetContactsUseCase,
   makeGetConversationsUseCase,
 } from "@/bootstrap/di";
+import { getSessionRole } from "@/bootstrap/lib/session-role.server";
 import { MessagingScreen } from "@/features/messaging/presentation/messaging-screen";
+import { canCreateGroupFor } from "@/features/messaging/presentation/messaging-screen/group-creation-gate";
 import {
   addGroupMembersAction,
   createConversationAction,
@@ -33,9 +35,12 @@ export default async function MessagesPage({
     makeGetConversationsUseCase(),
     makeGetContactsUseCase(),
   ]);
-  const [convoResult, contactsResult] = await Promise.all([
+  const [convoResult, contactsResult, sessionRole] = await Promise.all([
     convoUseCase.execute(),
     contactsUseCase.execute(),
+    // US-E18.50 — the create-group affordance is role-gated to the same
+    // staff tier the real `POST /rooms/groups` allow-list accepts.
+    getSessionRole(),
   ]);
 
   return (
@@ -45,6 +50,7 @@ export default async function MessagesPage({
       loadError={convoResult.ok ? undefined : convoResult.failure.type}
       selfId="me"
       tenantId={tenant}
+      canCreateGroup={canCreateGroupFor(sessionRole)}
       sendMessageAction={sendMessageAction}
       createConversationAction={createConversationAction}
       getMessagesAction={getMessagesAction}

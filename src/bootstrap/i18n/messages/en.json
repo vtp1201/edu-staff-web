@@ -2634,6 +2634,8 @@
     "errors": {
       "create-conversation-failed": "Could not create the conversation. Please try again.",
       "create-group-failed": "Could not create group. Please try again.",
+      "create-group-forbidden": "You are not allowed to create groups. Only teachers, staff and school leaders can.",
+      "group-not-self-service": "This is a system-managed group (class or parent group) and cannot be archived.",
       "delete-message-failed": "Could not delete message.",
       "delete-window-expired": "The 5-minute window to delete this message has passed.",
       "mark-read-failed": "Could not mark the conversation as read.",
@@ -2653,30 +2655,16 @@
       "load-pinned-failed": "Could not load pinned messages. Please try again."
     },
     "group": {
-      "colorLabel": "Group color",
       "createButton": "Create group",
       "createTitle": "Create new group",
-      "descLabel": "Description",
-      "descPlaceholder": "Group description (optional)...",
       "emptyCreateCta": "Create new group",
       "emptySubtitle": "Create a new group to collaborate.",
       "emptyTitle": "You haven't joined any groups yet.",
       "memberCount": "{count} members",
+      "membersAfterCreate": "You can add members once the group exists.",
       "nameLabel": "Group name",
       "namePlaceholder": "Enter group name...",
-      "nextStep": "Next",
-      "noMembersFound": "No matching members found.",
-      "prevStep": "Back",
-      "removeChip": "Remove {name}",
-      "searchMembersPlaceholder": "Search members...",
-      "selectedCount": "{count} selected",
-      "stepInfo": "Group info",
-      "stepMembers": "Add members",
-      "typeClass": "Class",
-      "typeClub": "Club",
-      "typeDept": "Department",
-      "typeLabel": "Group type",
-      "typeOther": "Other"
+      "nameTooShort": "The group name needs at least 2 characters."
     },
     "groupInfo": {
       "addMembers": "+ Add members",

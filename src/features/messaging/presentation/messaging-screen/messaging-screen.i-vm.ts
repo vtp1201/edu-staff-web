@@ -22,6 +22,15 @@ export interface MessagingScreenVM {
    * EventSource is opened.
    */
   tenantId?: string;
+  /**
+   * US-E18.50 — may the viewer create a group room? The real
+   * `POST /rooms/groups` allow-list is ADMIN/MANAGER/TEACHER/STAFF, so a
+   * STUDENT/PARENT attempt is a guaranteed 403. Resolved server-side from the
+   * access-token role claim and passed down so the affordance is simply ABSENT
+   * for those roles rather than a button that always fails. Fail-closed:
+   * `undefined` (a caller that says nothing) means "no".
+   */
+  canCreateGroup?: boolean;
 }
 
 /** Result of a sendMessage / createConversation server action. */

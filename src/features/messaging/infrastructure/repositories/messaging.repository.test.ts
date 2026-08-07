@@ -1,7 +1,13 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { MESSAGING_EP } from "@/bootstrap/endpoint/messaging.endpoint";
-import { type ApiEnvelope, ApiError } from "@/bootstrap/lib/api-envelope";
+import {
+  type ApiEnvelope,
+  ApiError,
+  normalizeError,
+  unwrapResponse,
+} from "@/bootstrap/lib/api-envelope";
+import type { CreateGroupRoomResponseDto } from "../dtos/create-group-room-response.dto";
 import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
 import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import type { SchoolDmResponseDto } from "../dtos/school-dm-response.dto";
@@ -385,7 +391,154 @@ describe("MessagingRepository (real social contract)", () => {
     });
   });
 
-  describe("unsupported methods (no real contract — ADR 0060)", () => {
+  // US-E18.50 — BE US-193 / ADR 0132 shipped exactly TWO self-service group
+  // endpoints. Everything else in the 7-method group-lifecycle slice stays
+  // unsupported (see the block below).
+  describe("createGroup (POST /rooms/groups — US-193)", () => {
+    const created: CreateGroupRoomResponseDto = {
+      roomId: "room-new",
+      scope: "SCHOOL",
+      tenantId: "t1",
+      roomType: "custom",
+      name: "Tổ Toán",
+      status: "active",
+      createdAt: "2026-08-03T02:00:00.000Z",
+    };
+
+    it("posts ONLY `{name}` — the wire body carries no description/kind/color/memberIds", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockResolvedValue(created);
+      const repo = new MessagingRepository(http, SELF);
+
+      await repo.createGroup({ name: "Tổ Toán" });
+
+      expect(mock.post).toHaveBeenCalledTimes(1);
+      const [url, body] = mock.post.mock.calls[0];
+      expect(url).toBe(MESSAGING_EP.groups);
+      expect(body).toEqual({ name: "Tổ Toán" });
+      expect(Object.keys(body as object)).toEqual(["name"]);
+    });
+
+    it("maps the 201 payload to a GroupEntity with an EMPTY member list (membership is not echoed)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockResolvedValue(created);
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.createGroup({ name: "Tổ Toán" });
+
+      expect(res).toEqual({
+        ok: true,
+        value: {
+          id: "room-new",
+          name: "Tổ Toán",
+          description: "",
+          kind: "other",
+          color: expect.any(String),
+          conversationId: "room-new",
+          members: [],
+        },
+      });
+    });
+
+    it("maps 403 SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN to the distinct forbidden failure", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(
+        apiError("SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN", 403),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.createGroup({ name: "Tổ Toán" });
+      expect(res).toEqual({
+        ok: false,
+        failure: { type: "create-group-forbidden" },
+      });
+    });
+
+    it("maps any other error to create-group-failed by CODE (never message)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(apiError("VALIDATION_FAILED", 422));
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.createGroup({ name: "x" });
+      expect(res).toEqual({
+        ok: false,
+        failure: { type: "create-group-failed", cause: "VALIDATION_FAILED" },
+      });
+    });
+  });
+
+  describe("deleteGroup → archive (POST /rooms/{roomId}/archive — US-193)", () => {
+    it("posts to the archive path with NO body and returns ok(true)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockResolvedValue(undefined);
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.deleteGroup("room-1");
+
+      expect(mock.post).toHaveBeenCalledTimes(1);
+      expect(mock.post).toHaveBeenCalledWith(
+        MESSAGING_EP.roomArchive("room-1"),
+      );
+      expect(res).toEqual({ ok: true, value: true });
+    });
+
+    it("is idempotent — a second archive of the same room is still ok(true)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockResolvedValue(undefined);
+      const repo = new MessagingRepository(http, SELF);
+
+      await repo.deleteGroup("room-1");
+      const res = await repo.deleteGroup("room-1");
+
+      expect(res).toEqual({ ok: true, value: true });
+    });
+
+    it("maps 409 SOCIAL_ROOM_NOT_SELF_SERVICE to its OWN failure, not the generic one", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(
+        apiError("SOCIAL_ROOM_NOT_SELF_SERVICE", 409),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.deleteGroup("room-1");
+      expect(res).toEqual({
+        ok: false,
+        failure: { type: "group-not-self-service" },
+      });
+      expect(res).not.toEqual({
+        ok: false,
+        failure: {
+          type: "group-mutation-failed",
+          cause: "SOCIAL_ROOM_NOT_SELF_SERVICE",
+        },
+      });
+    });
+
+    it("maps 403 SOCIAL_INSUFFICIENT_ROOM_PERMISSION to not-group-admin (OWNER-only, ADR 0065)", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(
+        apiError("SOCIAL_INSUFFICIENT_ROOM_PERMISSION", 403),
+      );
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.deleteGroup("room-1");
+      expect(res).toEqual({ ok: false, failure: { type: "not-group-admin" } });
+    });
+
+    it("maps any other error to the generic group-mutation-failed with the CODE as cause", async () => {
+      const { http, mock } = makeHttp();
+      mock.post.mockRejectedValue(apiError("ROOM_NOT_FOUND", 404));
+      const repo = new MessagingRepository(http, SELF);
+
+      const res = await repo.deleteGroup("room-1");
+      expect(res).toEqual({
+        ok: false,
+        failure: { type: "group-mutation-failed", cause: "ROOM_NOT_FOUND" },
+      });
+    });
+  });
+
+  describe("unsupported methods (no real contract — ADR 0060/0132)", () => {
     it("getContacts never silently succeeds and makes no HTTP call", async () => {
       const { http, mock } = makeHttp();
       const repo = new MessagingRepository(http, SELF);
@@ -395,17 +548,30 @@ describe("MessagingRepository (real social contract)", () => {
       expect(res.ok).toBe(false);
     });
 
-    it("createGroup never silently succeeds and makes no HTTP call", async () => {
+    it.each([
+      ["getGroup", (r: MessagingRepository) => r.getGroup("g1")],
+      [
+        "updateGroup",
+        (r: MessagingRepository) => r.updateGroup({ groupId: "g1" }),
+      ],
+      [
+        "addGroupMembers",
+        (r: MessagingRepository) => r.addGroupMembers("g1", ["u1"]),
+      ],
+      [
+        "removeGroupMember",
+        (r: MessagingRepository) => r.removeGroupMember("g1", "u1"),
+      ],
+      ["leaveGroup", (r: MessagingRepository) => r.leaveGroup("g1")],
+    ])("%s stays unsupported after US-193 — fails without any HTTP call", async (_name, call) => {
       const { http, mock } = makeHttp();
       const repo = new MessagingRepository(http, SELF);
 
-      const res = await repo.createGroup({
-        name: "n",
-        kind: "class",
-        color: "primary",
-        memberIds: [],
-      });
+      const res = await call(repo);
       expect(mock.post).not.toHaveBeenCalled();
+      expect(mock.get).not.toHaveBeenCalled();
+      expect(mock.delete).not.toHaveBeenCalled();
+      expect(mock.patch).not.toHaveBeenCalled();
       expect(res.ok).toBe(false);
     });
   });
@@ -613,6 +779,108 @@ describe("MessagingRepository (real social contract)", () => {
         ok: false,
         failure: { type: "load-pinned-failed", cause: "ROOM_NOT_MEMBER" },
       });
+    });
+  });
+});
+
+/**
+ * Integration-level guard for the US-E18.50 group-room slice: the suites above
+ * hand the repository a pre-unwrapped payload, so they cannot catch a mismatch
+ * between what the REAL interceptor produces and what the repo expects. Here
+ * `http.post` runs the actual `unwrapResponse` / `normalizeError` pipeline over
+ * the real envelope shapes — a 201 success envelope, a 204 no-content body, and
+ * a `success:false` error envelope.
+ */
+describe("MessagingRepository — real interceptor pipeline (group rooms)", () => {
+  const created: CreateGroupRoomResponseDto = {
+    roomId: "room-new",
+    scope: "SCHOOL",
+    tenantId: "t1",
+    roomType: "custom",
+    name: "Tổ Toán",
+    status: "active",
+    createdAt: "2026-08-03T02:00:00.000Z",
+  };
+
+  function interceptedPost(bodyFor: (url: string) => unknown) {
+    return vi.fn(async (url: string) =>
+      unwrapResponse({ data: bodyFor(url), config: { url } }),
+    ) as unknown as AxiosInstance["post"];
+  }
+
+  function rejectingPost(status: number, code: string) {
+    return vi.fn(async () => {
+      throw normalizeError({
+        response: {
+          status,
+          data: {
+            success: false,
+            data: null,
+            error: { code, message: "boom", retryable: false },
+            meta: { requestId: "req-1", timestamp: "t" },
+          },
+        },
+      });
+    }) as unknown as AxiosInstance["post"];
+  }
+
+  it("createGroup survives the real unwrap of the 201 success envelope", async () => {
+    const post = interceptedPost(() => ({
+      success: true,
+      data: created,
+      error: null,
+      meta: { requestId: "req-1", timestamp: "t" },
+    }));
+    const { http } = makeHttp({ post: post as unknown as Http["post"] });
+    const res = await new MessagingRepository(http, SELF).createGroup({
+      name: "Tổ Toán",
+    });
+
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.id).toBe("room-new");
+    expect(res.value.name).toBe("Tổ Toán");
+  });
+
+  it("deleteGroup tolerates the real 204 no-content body (no envelope at all)", async () => {
+    // A 204 leaves axios with an empty body; the interceptor passes it through
+    // untouched. The repo must treat "nothing" as success, not as a parse error.
+    const post = interceptedPost(() => "");
+    const { http } = makeHttp({ post: post as unknown as Http["post"] });
+    const res = await new MessagingRepository(http, SELF).deleteGroup("room-1");
+
+    expect(res).toEqual({ ok: true, value: true });
+  });
+
+  it("maps a real 403 error envelope to create-group-forbidden through normalizeError", async () => {
+    const { http } = makeHttp({
+      post: rejectingPost(
+        403,
+        "SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN",
+      ) as unknown as Http["post"],
+    });
+    const res = await new MessagingRepository(http, SELF).createGroup({
+      name: "Tổ Toán",
+    });
+
+    expect(res).toEqual({
+      ok: false,
+      failure: { type: "create-group-forbidden" },
+    });
+  });
+
+  it("maps a real 409 error envelope to group-not-self-service through normalizeError", async () => {
+    const { http } = makeHttp({
+      post: rejectingPost(
+        409,
+        "SOCIAL_ROOM_NOT_SELF_SERVICE",
+      ) as unknown as Http["post"],
+    });
+    const res = await new MessagingRepository(http, SELF).deleteGroup("room-1");
+
+    expect(res).toEqual({
+      ok: false,
+      failure: { type: "group-not-self-service" },
     });
   });
 });

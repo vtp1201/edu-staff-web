@@ -1,36 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
-import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import { CreateGroupModal } from "./create-group-modal";
-
-const CONTACTS: ContactEntity[] = [
-  {
-    id: "u1",
-    name: "Trần Minh Quân",
-    role: "Hiệu trưởng",
-    avatarInitials: "TQ",
-    color: "success",
-    isOnline: true,
-  },
-  {
-    id: "u2",
-    name: "Phạm Quốc Bảo",
-    role: "Giáo viên Văn",
-    avatarInitials: "PB",
-    color: "purple",
-    isOnline: false,
-  },
-  {
-    id: "u4",
-    name: "Lê Thị Hoa",
-    role: "Giáo viên Hóa",
-    avatarInitials: "LH",
-    color: "warning",
-    isOnline: true,
-  },
-];
 
 const meta: Meta<typeof CreateGroupModal> = {
   title: "Features/Messaging/CreateGroupModal",
@@ -45,7 +17,6 @@ const meta: Meta<typeof CreateGroupModal> = {
   ],
   args: {
     open: true,
-    contacts: CONTACTS,
     onOpenChange: () => {},
     onSubmit: () => {},
   },
@@ -55,81 +26,90 @@ export default meta;
 type Story = StoryObj<typeof CreateGroupModal>;
 const body = () => within(document.body);
 
-/** Step 1 default — Next disabled, avatar preview shows fallback. */
-export const CreateGroup_Step1_Empty: Story = {
+/** Empty — the create button is disabled until a valid name is typed. */
+export const Empty: Story = {
   play: async () => {
     await waitFor(() =>
-      expect(body().getByText("Thông tin nhóm")).toBeInTheDocument(),
+      expect(body().getByText("Tạo nhóm mới")).toBeInTheDocument(),
     );
-    await expect(body().getByText("Tiếp theo")).toBeDisabled();
+    await expect(body().getByText("Tạo nhóm")).toBeDisabled();
   },
 };
 
-/** Step 1 valid — name filled + color selected → Next enabled. */
-export const CreateGroup_Step1_Valid: Story = {
+/**
+ * US-E18.50 — the form collects a NAME and nothing else: no description, no
+ * group type, no colour swatch, no member picker (the real `{name}`-only body
+ * would drop every one of them).
+ */
+export const NameOnly_NoDroppedFields: Story = {
   play: async () => {
     await waitFor(() =>
-      expect(body().getByText("Thông tin nhóm")).toBeInTheDocument(),
+      expect(body().getByLabelText("Tên nhóm")).toBeInTheDocument(),
     );
-    const name = body().getByLabelText("Tên nhóm");
-    await userEvent.type(name, "Nhóm Toán");
-    await expect(body().getByText("Tiếp theo")).toBeEnabled();
+    expect(body().queryByText("Mô tả")).not.toBeInTheDocument();
+    expect(body().queryByText("Loại nhóm")).not.toBeInTheDocument();
+    expect(body().queryByText("Màu nhóm")).not.toBeInTheDocument();
+    expect(body().queryByText("Thêm thành viên")).not.toBeInTheDocument();
   },
 };
 
-/** Step 1 validation error — name <2 chars after blur. */
-export const CreateGroup_Step1_ValidationError: Story = {
+/** Valid name → the create button submits exactly `{name}`, trimmed. */
+export const Valid_SubmitsNameOnly: Story = {
+  args: { onSubmit: fn() },
+  play: async ({ args }) => {
+    const name = await waitFor(() => body().getByLabelText("Tên nhóm"));
+    await userEvent.type(name, "  Nhóm Toán  ");
+    const create = body().getByText("Tạo nhóm");
+    await waitFor(() => expect(create).toBeEnabled());
+    await userEvent.click(create);
+    await waitFor(() =>
+      expect(args.onSubmit).toHaveBeenCalledWith({ name: "Nhóm Toán" }),
+    );
+  },
+};
+
+/** Validation — a 1-character name is announced as an error, not just red. */
+export const ValidationError: Story = {
   play: async () => {
     const name = await waitFor(() => body().getByLabelText("Tên nhóm"));
     await userEvent.type(name, "A");
     await userEvent.tab();
     await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
-    await expect(body().getByText("Tiếp theo")).toBeDisabled();
-  },
-};
-
-async function advanceToStep2() {
-  const name = await waitFor(() => body().getByLabelText("Tên nhóm"));
-  await userEvent.type(name, "Nhóm Toán");
-  await userEvent.click(body().getByText("Tiếp theo"));
-  await waitFor(() =>
-    expect(body().getByText("Thêm thành viên")).toBeInTheDocument(),
-  );
-}
-
-/** Step 2 with no members — Submit disabled. */
-export const CreateGroup_Step2_NoMembers: Story = {
-  play: async () => {
-    await advanceToStep2();
+    await expect(
+      body().getByText("Tên nhóm cần ít nhất 2 ký tự."),
+    ).toBeInTheDocument();
     await expect(body().getByText("Tạo nhóm")).toBeDisabled();
   },
 };
 
-/** Step 2 with members — chips render, Submit enabled. */
-export const CreateGroup_Step2_WithMembers: Story = {
-  play: async () => {
-    await advanceToStep2();
-    await userEvent.click(body().getByText("Trần Minh Quân"));
-    await userEvent.click(body().getByText("Lê Thị Hoa"));
-    await waitFor(() => expect(body().getByText("Tạo nhóm")).toBeEnabled());
-  },
-};
-
-/** Submit loading — isSubmitting disables the create button. */
-export const CreateGroup_Submit_Loading: Story = {
+/** Loading — the create button is disabled while the mutation is in flight. */
+export const Submitting: Story = {
   args: { isSubmitting: true },
   play: async () => {
-    await advanceToStep2();
-    await userEvent.click(body().getByText("Trần Minh Quân"));
+    const name = await waitFor(() => body().getByLabelText("Tên nhóm"));
+    await userEvent.type(name, "Nhóm Toán");
     await expect(body().getByText("Tạo nhóm")).toBeDisabled();
   },
 };
 
-/** Submit error — inline error banner is shown. */
-export const CreateGroup_Submit_Error: Story = {
-  args: { submitError: true },
+/** Error — a retryable create failure shows the generic banner. */
+export const SubmitError_Generic: Story = {
+  args: { submitError: "create-group-failed" },
   play: async () => {
-    await waitFor(() => expect(body().getByRole("alert")).toBeInTheDocument());
+    const alert = await waitFor(() => body().getByRole("alert"));
+    await expect(alert).toHaveTextContent("Không thể tạo nhóm");
+  },
+};
+
+/**
+ * Error — a 403 from the role allow-list reads as "you may not", NOT as a
+ * generic "try again" (defense-in-depth: the affordance is normally hidden).
+ */
+export const SubmitError_Forbidden: Story = {
+  args: { submitError: "create-group-forbidden" },
+  play: async () => {
+    const alert = await waitFor(() => body().getByRole("alert"));
+    await expect(alert).toHaveTextContent("Bạn không có quyền tạo nhóm");
   },
 };
 

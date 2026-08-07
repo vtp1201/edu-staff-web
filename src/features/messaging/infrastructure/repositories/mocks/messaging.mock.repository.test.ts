@@ -111,15 +111,12 @@ describe("MockMessagingRepository", () => {
 
   it("createGroup prepends a group conversation with the creator as admin", async () => {
     const repo = new MockMessagingRepository();
-    const created = await repo.createGroup({
-      name: "Nhóm mới",
-      kind: "club",
-      color: "purple",
-      memberIds: ["u2", "u3"],
-    });
+    // US-E18.50: name-only, mirroring the real `{name}` body.
+    const created = await repo.createGroup({ name: "Nhóm mới" });
 
     expect(created.ok).toBe(true);
     if (!created.ok) return;
+    expect(created.value.members).toHaveLength(1);
     expect(created.value.members[0]?.role).toBe("admin");
 
     const list = await repo.getConversations();

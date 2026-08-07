@@ -10,6 +10,15 @@ export type MessagingFailure =
   | { type: "create-conversation-failed"; cause?: string }
   // US-E10.4 — group lifecycle + message interactions
   | { type: "create-group-failed"; cause?: string }
+  // US-E18.50 / BE US-193 — the real `POST /rooms/groups` is role-gated
+  // (ADMIN/MANAGER/TEACHER/STAFF allow-list); a STUDENT/PARENT attempt returns
+  // 403 SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN. Distinct from a generic create
+  // failure: retrying can never help — the copy must say "not permitted".
+  | { type: "create-group-forbidden" }
+  // US-E18.50 / BE US-193 — archive is scoped to self-service (`custom`) rooms;
+  // a system-provisioned class_chat/parent_group returns
+  // 409 SOCIAL_ROOM_NOT_SELF_SERVICE. Distinct so the UI can explain WHY.
+  | { type: "group-not-self-service" }
   | { type: "group-mutation-failed"; action?: string; cause?: string }
   | { type: "leave-group-failed"; cause?: string }
   | { type: "pin-failed"; cause?: string }

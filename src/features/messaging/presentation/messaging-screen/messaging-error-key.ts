@@ -12,6 +12,8 @@ const MESSAGING_ERROR_KEYS: Record<MessagingFailure["type"], true> = {
   "send-message-failed": true,
   "create-conversation-failed": true,
   "create-group-failed": true,
+  "create-group-forbidden": true,
+  "group-not-self-service": true,
   "group-mutation-failed": true,
   "leave-group-failed": true,
   "pin-failed": true,

@@ -27,10 +27,12 @@ import {
   ok,
   type Result,
 } from "@/features/messaging/domain/use-cases/result";
+import type { CreateGroupRoomResponseDto } from "../dtos/create-group-room-response.dto";
 import type { PinnedMessageResponseDto } from "../dtos/pinned-message-response.dto";
 import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
 import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import type { SchoolDmResponseDto } from "../dtos/school-dm-response.dto";
+import { toGroupEntityFromCreatedRoom } from "../mappers/group.mapper";
 import {
   toConversationEntityFromRoom,
   toMessageEntityFromRoom,
@@ -51,10 +53,16 @@ import { toPinnedMessages } from "../mappers/pinned-message.mapper";
  * for the mandatory `?userId=` filter on `GET /rooms` and for `me` vs `other`
  * message attribution.
  *
- * The group lifecycle / contacts methods have NO real contract (ADR 0060);
- * they return a fail Result with a `not-supported-by-real-contract`
- * cause here (never a doomed HTTP call), and the DI factory force-mocks them so
- * those flows keep their mock behavior unchanged.
+ * US-E18.50 (BE US-193, ADR 0132) made TWO of the seven group-lifecycle methods
+ * real: `createGroup` (`POST /rooms/groups`) and `deleteGroup` (mapped to
+ * `POST /rooms/{roomId}/archive`). The other five group methods, plus the
+ * contacts methods, still have no real contract (message-pin is REAL since
+ * US-E18.51); they return a
+ * fail Result with a `not-supported-by-real-contract` cause here (never a
+ * doomed HTTP call), and the hybrid facade force-mocks them so those flows keep
+ * their mock behavior unchanged. See the per-method notes further down for WHY
+ * each one is still unsupported — "US-193 shipped group rooms" is not the same
+ * statement as "the group slice is now real".
  */
 export class MessagingRepository implements IMessagingRepository {
   constructor(
@@ -259,6 +267,72 @@ export class MessagingRepository implements IMessagingRepository {
     }
   }
 
+  // --- US-E18.50 / BE US-193 (ADR 0132): the self-service group-room slice ---
+  // Exactly TWO of the seven group-lifecycle methods have a real contract.
+
+  /**
+   * `POST /rooms/groups` (201). The body is `{name}` and nothing else — creator
+   * and tenant come from the verified Gateway claims, so sending them would be
+   * both useless and a spoofing surface. The role allow-list
+   * (ADMIN/MANAGER/TEACHER/STAFF) is enforced server-side; the UI additionally
+   * hides the affordance for STUDENT/PARENT, and the 403 branch below is the
+   * defense-in-depth half of that pair.
+   */
+  async createGroup(
+    input: CreateGroupInput,
+  ): Promise<Result<GroupEntity, MessagingFailure>> {
+    try {
+      const dto = (await this.http.post(MESSAGING_EP.groups, {
+        name: input.name,
+      })) as unknown as CreateGroupRoomResponseDto;
+      return ok(toGroupEntityFromCreatedRoom(dto));
+    } catch (err) {
+      const code = errorCodeOf(err);
+      if (code === "SOCIAL_GROUP_ROOM_CREATION_FORBIDDEN") {
+        return fail({ type: "create-group-forbidden" });
+      }
+      return fail({
+        type: "create-group-failed",
+        cause: code ?? "social-service-not-available",
+      });
+    }
+  }
+
+  /**
+   * `POST /rooms/{roomId}/archive` (204). The real contract's "delete" for a
+   * self-service group is a soft ARCHIVE (history retained; new sends rejected
+   * by the pre-existing `ROOM_ARCHIVED` guard, which is not reachable from this
+   * path). Mapped onto the existing `deleteGroup` domain method instead of
+   * renaming it: the UI affordance and the `boolean` Result shape are
+   * unchanged, so this stays the smallest honest diff. Idempotent server-side —
+   * re-archiving returns 204, so there is no client-side "already archived"
+   * special case to write.
+   */
+  async deleteGroup(
+    groupId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.post(MESSAGING_EP.roomArchive(groupId));
+      return ok(true);
+    } catch (err) {
+      const code = errorCodeOf(err);
+      // 409: a system-provisioned room (class_chat/parent_group) is not
+      // archivable through this path — a permanent, explainable state, NOT a
+      // generic "please try again" error.
+      if (code === "SOCIAL_ROOM_NOT_SELF_SERVICE") {
+        return fail({ type: "group-not-self-service" });
+      }
+      // 403: a member without the OWNER-only `delete_room` capability (0065).
+      if (code === "SOCIAL_INSUFFICIENT_ROOM_PERMISSION") {
+        return fail({ type: "not-group-admin" });
+      }
+      return fail({
+        type: "group-mutation-failed",
+        cause: code ?? "social-service-not-available",
+      });
+    }
+  }
+
   // --- US-E18.51 message pin / unpin / pin board (BE US-192) ---
 
   /**
@@ -322,10 +396,29 @@ export class MessagingRepository implements IMessagingRepository {
     }
   }
 
-  // --- Permanently unsupported by the real contract (ADR 0060) ---
-  // These have no real endpoint; return an explicit fail so they can never
-  // silently succeed against a non-existent contract. The DI factory
-  // force-mocks them, so real mode still serves their mock behavior.
+  // --- Still unsupported by the real contract (ADR 0060, re-verified per
+  // method for US-E18.50 against `services/social/docs/openapi.yaml` and the
+  // Go handlers at BE US-193) ---
+  // These five have no usable real endpoint; they return an explicit fail so
+  // they can never silently succeed against a non-existent contract, and the
+  // hybrid facade force-mocks them so real mode keeps their mock behavior:
+  //
+  // - getGroup / addGroupMembers / removeGroupMember — a room-member surface
+  //   (`GET|POST /rooms/{id}/members`, `DELETE /rooms/{id}/members/{userId}`)
+  //   DOES exist, but all three of these methods return a full `GroupEntity`,
+  //   which needs per-member display names (`RoomMember` carries userId /
+  //   roomRole / joinedAt only) plus description/kind/colour that no room
+  //   endpoint has. Wiring them means a 3-call fan-out (detail + members +
+  //   profile directory) AND an entity reshape — a separate story, not a swap.
+  // - updateGroup — there is NO `PATCH`/`PUT /rooms/{roomId}` at all; a room's
+  //   name cannot be edited through the public contract.
+  // - leaveGroup — `DELETE /rooms/{id}/members/{self}` does permit self-leave
+  //   (ADR 0094 capability bypass) and the `boolean` shape would fit, but
+  //   unlike archive it is NOT scoped to `custom` rooms: wiring it would let a
+  //   member leave a system-provisioned class_chat with no re-provisioning
+  //   contract, and the retained sole-OWNER guard (every self-service creator
+  //   IS the sole OWNER) needs its own failure + copy. Flagged to fe-lead as a
+  //   follow-up rather than silently enabled here.
 
   private readonly unsupported: MessagingFailure = {
     type: "group-mutation-failed",
@@ -335,15 +428,6 @@ export class MessagingRepository implements IMessagingRepository {
   async getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
     return fail({
       type: "load-conversations-failed",
-      cause: "not-supported-by-real-contract",
-    });
-  }
-
-  async createGroup(
-    _input: CreateGroupInput,
-  ): Promise<Result<GroupEntity, MessagingFailure>> {
-    return fail({
-      type: "create-group-failed",
       cause: "not-supported-by-real-contract",
     });
   }
@@ -381,12 +465,6 @@ export class MessagingRepository implements IMessagingRepository {
       type: "leave-group-failed",
       cause: "not-supported-by-real-contract",
     });
-  }
-
-  async deleteGroup(
-    _groupId: string,
-  ): Promise<Result<boolean, MessagingFailure>> {
-    return fail(this.unsupported);
   }
 }
 
