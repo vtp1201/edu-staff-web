@@ -213,7 +213,7 @@ function ConflictRow({
         )}
       </span>
 
-      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-primary">
+      <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-edu-primary-accessible">
         {isRoom ? t("review") : t("resolve")}
         <ArrowRight className="size-3.5" aria-hidden />
       </span>

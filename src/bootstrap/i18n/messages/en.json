@@ -4534,7 +4534,6 @@
       "review": "Review",
       "roomDetail": "Room {room} is booked for {classes} at the same time",
       "roomManualHint": "Room clashes are only surfaced by this scan; saving a period is not blocked, so they need to be resolved manually.",
-      "subtitle": "Scans every class in the current term.",
       "teacherDetail": "{teacher} is scheduled to teach {classes} at the same time",
       "title": "School-wide conflicts",
       "truncatedHint": "The scan hit its limit — there may be more conflicts than shown. Resolve some, then scan again.",
