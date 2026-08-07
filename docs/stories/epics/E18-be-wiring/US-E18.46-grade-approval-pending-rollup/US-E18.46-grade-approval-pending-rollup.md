@@ -300,3 +300,76 @@ full run was 1225/1225 green. Recorded as a load-dependent flake, not chased.
 4. Live-BE dependency: US-186's `grade_entries_pending_by_tenant` clone +
    its reconciler must exist on the target environment; the endpoint 404s
    otherwise (the failure maps to `unknown`, rendering the retryable error card).
+
+### Review fix round (fe-nextjs-engineer, 2026-08-07)
+
+Four findings from `fe-tech-lead-reviewer` + `fe-accessibility-auditor`, all in
+`components/pending-approval-list.tsx` (+ its new pure helper, its new story
+file and the i18n messages).
+
+1. **MUST-FIX — the rollup went permanently stale after an approve/reject.**
+   The list seeded `items`/`cursor`/`hasMore`/`error` from the `seed` prop with
+   plain `useState` and never re-read it. The approve/reject flow revalidates
+   the RSC page, which delivers a NEW seed to the still-MOUNTED component, so
+   clearing the last pending cell of a tuple left that tuple in the queue for
+   the rest of the session. Fixed with the render-phase key-sync idiom the
+   sibling `grade-entry-screen.tsx` already uses for its sheet
+   (`if (syncKey !== k) { setSyncKey(k); … }`), keyed on a new pure
+   `pendingApprovalSeedKey(seed)` that hashes every batch's tuple + pendingCount
+   + submittedAt plus the cursor, `hasMore` and the read outcome — so a partial
+   approve (count shrinks) re-seeds just as a full clear (batch disappears)
+   does. A locally-paginated list is NOT clobbered when the seed is unchanged.
+   The key is a framework-free module so the "what counts as a different seed"
+   rule is unit-tested rather than asserted through a re-render; the re-render
+   itself is proven by a Storybook story that swaps the seed of a mounted list.
+2. **SHOULD-FIX — `hasMore: true` with a null `nextCursor` silently REPLACED
+   the list.** `fetchPage` inferred "first page" from `next === null`, so a
+   cursor-less "has more" response would re-read page 1 over every accumulated
+   page. `fetchPage(next, mode)` now takes an EXPLICIT `"first" | "append"`
+   mode (retry passes `"first"`, load-more passes `"append"`), an append with a
+   null cursor is a no-op, and `LoadMoreButton` is only rendered when
+   `hasMore && cursor !== null` so the dead action is not offered at all.
+3. **A11Y-046-01 (Major, WCAG 1.3.1/4.1.2) — the row's accessible name omitted
+   the wait time.** `aria-label` OVERRIDES the visible row body, so the "nộp X
+   trước" triage signal a sighted approver reads was invisible to a screen
+   reader even though the code comment claimed otherwise. `pendingRowLabel` now
+   takes a `{time}` param in BOTH `vi.json` and `en.json` and is passed the
+   same `formatRelativeTime(...)` string the row renders (hoisted to one
+   `waited` const so the two can never drift).
+4. **A11Y-046-02 (Major, WCAG 4.1.3) — "load more" appended rows silently.** An
+   `sr-only` `role="status" aria-live="polite"` region (the convention
+   `invitations-screen.tsx` already uses) is rendered UNCONDITIONALLY — present
+   and empty from the first paint, because a region added together with its
+   content is not reliably announced — and is filled with `pendingLoadedMore`
+   ("Đã tải thêm {count} mục" / "Loaded {count} more items") after a successful
+   append only. It is cleared on a re-seed.
+
+**TDD.** `pending-approval-seed-key.test.ts` was written first and observed RED
+("Failed to load … pending-approval-seed-key"). The four new interaction
+stories were then run against the PRE-fix component (via `git stash` of that
+one file): all 4 failed for their own reasons — no `{time}` in the accessible
+name, no `role="status"` region, a load-more button rendered for a null cursor,
+and the stale queue surviving a re-seed — and all 4 pass after the fix.
+
+**Files changed (fix round)**
+
+- presentation (`'use client'`): `components/pending-approval-list.tsx`,
+  `components/pending-approval-seed-key.ts` (new, pure),
+  `components/pending-approval-seed-key.test.ts` (new),
+  `components/pending-approval-list.stories.tsx` (new, 4 stories),
+  `grade-entry-screen/grade-entry-screen.stories.tsx` (one query narrowed: an
+  approver screen now legitimately holds TWO live regions, so the lock-term
+  banner assertion picks the region that actually spoke instead of
+  `getByRole("status")`).
+- i18n: `pendingRowLabel` gained `{time}`, new `pendingLoadedMore` — vi + en.
+- docs: this section + the `TEST_MATRIX.md` US-E18.46 row.
+
+**Proof actually run (from the worktree, after the fixes)**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **494 files / 3764 tests pass**, 0 fail (was 493/3758) |
+| `bunx vitest run --config vitest.storybook.mts` | **157 files / 1229 tests pass**, 0 fail (was 156/1225) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (same 1 pre-existing warning + 1 info in `messaging`) |
+| `bun run build` | ✓ compiled |

@@ -15,6 +15,7 @@ import type {
   PendingApprovalVM,
 } from "../grade-entry-screen/grade-entry-screen.i-vm";
 import { buildPendingApprovalRows } from "./build-pending-approval-rows";
+import { pendingApprovalSeedKey } from "./pending-approval-seed-key";
 
 export interface PendingApprovalListProps {
   /** RSC-seeded first page + how that read went. */
@@ -75,14 +76,42 @@ export function PendingApprovalList({
   const [error, setError] = useState<GradesFailure["type"] | null>(seed.error);
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  // A11Y-046-02 — "load more" appends rows with no visual anchor for a screen
+  // reader; the live region announces how many arrived.
+  const [liveMessage, setLiveMessage] = useState("");
 
-  async function fetchPage(next: string | null) {
+  // Render-phase sync with a freshly delivered RSC seed (same idiom as
+  // `grade-entry-screen`'s sheet sync). The approve/reject flow revalidates the
+  // page, so a new seed IS how this queue learns that a tuple it lists no
+  // longer has pending cells — ignoring it would leave the queue stale for the
+  // rest of the session (no remount ever happens).
+  const seedKey = pendingApprovalSeedKey(seed);
+  const [syncKey, setSyncKey] = useState(seedKey);
+  if (syncKey !== seedKey) {
+    setSyncKey(seedKey);
+    setItems(seed.items);
+    setCursor(seed.nextCursor);
+    setHasMore(seed.hasMore);
+    setError(seed.error);
+    setLoadMoreError(false);
+    setLiveMessage("");
+  }
+
+  /**
+   * `mode` is explicit rather than inferred from `next === null`: a server that
+   * reports `hasMore: true` with a null `nextCursor` would otherwise silently
+   * REPLACE every accumulated page with a re-read of the first one. In "append"
+   * mode a null cursor is a contract violation, so it is a no-op (the control
+   * is also not rendered in that state) instead of a silent truncation.
+   */
+  async function fetchPage(next: string | null, mode: "first" | "append") {
+    if (mode === "append" && next === null) return;
     setIsFetching(true);
     setLoadMoreError(false);
     const result = await loadPage(next);
     setIsFetching(false);
     if (!result.ok) {
-      if (next === null) setError(result.errorKey);
+      if (mode === "first") setError(result.errorKey);
       else setLoadMoreError(true);
       return;
     }
@@ -90,7 +119,12 @@ export function PendingApprovalList({
     setCursor(result.page.nextCursor);
     setHasMore(result.page.hasMore);
     setItems((prev) =>
-      next === null ? result.page.items : [...prev, ...result.page.items],
+      mode === "first" ? result.page.items : [...prev, ...result.page.items],
+    );
+    setLiveMessage(
+      mode === "append"
+        ? t("pendingLoadedMore", { count: result.page.items.length })
+        : "",
     );
   }
 
@@ -108,6 +142,13 @@ export function PendingApprovalList({
       >
         {t("pendingTitle")}
       </h2>
+
+      {/* A11Y-046-02 — rendered unconditionally (an empty region present from
+          the first paint is what makes a later update announceable) and
+          visually hidden: sighted users see the new rows appear. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {liveMessage}
+      </p>
 
       {isLoading ? (
         <ListSkeleton
@@ -128,7 +169,7 @@ export function PendingApprovalList({
           retryIcon="rotate"
           message={getFailureMessage(error)}
           retryLabel={t("pendingRetry")}
-          onRetry={() => void fetchPage(null)}
+          onRetry={() => void fetchPage(null, "first")}
         />
       ) : rows.length === 0 ? (
         <p className="rounded-[var(--edu-radius-card)] border border-border border-dashed bg-card px-4 py-8 text-center text-muted-foreground text-sm">
@@ -137,67 +178,77 @@ export function PendingApprovalList({
       ) : (
         <>
           <ul className="divide-y divide-border overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
-            {rows.map((row) => (
-              <li key={row.key}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onSelect({
-                      classId: row.classId,
-                      subjectId: row.subjectId,
-                      termId: row.termId,
-                    })
-                  }
-                  // The visible label is already the full sentence a screen
-                  // reader needs; `aria-label` restates it as ONE string so the
-                  // count and the wait time are announced with the target
-                  // instead of as loose neighbouring text.
-                  aria-label={t("pendingRowLabel", {
-                    class: row.classLabel,
-                    subject: row.subjectLabel,
-                    term: row.termId,
-                    count: row.pendingCount,
-                  })}
-                  className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                >
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate font-bold text-foreground text-sm">
-                      {row.classLabel} — {row.subjectLabel}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                      <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-                      <span title={formatAbsoluteTime(row.submittedAt, locale)}>
-                        {t("pendingWaiting", {
-                          time: formatRelativeTime(
-                            row.submittedAt,
-                            locale,
-                            now,
-                          ),
-                        })}
+            {rows.map((row) => {
+              const waited = formatRelativeTime(row.submittedAt, locale, now);
+              return (
+                <li key={row.key}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSelect({
+                        classId: row.classId,
+                        subjectId: row.subjectId,
+                        termId: row.termId,
+                      })
+                    }
+                    // The visible label is already the full sentence a screen
+                    // reader needs; `aria-label` restates it as ONE string so the
+                    // count and the wait time are announced with the target
+                    // instead of as loose neighbouring text. The wait time is the
+                    // triage signal this whole rollup exists to surface, so it
+                    // must be IN the accessible name (A11Y-046-01), not only in
+                    // the visible row body an aria-label overrides.
+                    aria-label={t("pendingRowLabel", {
+                      class: row.classLabel,
+                      subject: row.subjectLabel,
+                      term: row.termId,
+                      count: row.pendingCount,
+                      time: waited,
+                    })}
+                    className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  >
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate font-bold text-foreground text-sm">
+                        {row.classLabel} — {row.subjectLabel}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                        <Clock
+                          className="size-3.5 shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span
+                          title={formatAbsoluteTime(row.submittedAt, locale)}
+                        >
+                          {t("pendingWaiting", { time: waited })}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    <StatusBadge tone="warning">
-                      {t("pendingCountLabel", { count: row.pendingCount })}
-                    </StatusBadge>
-                    <span className="text-muted-foreground text-xs">
-                      {row.termId}
+                    <span className="flex shrink-0 items-center gap-2">
+                      <StatusBadge tone="warning">
+                        {t("pendingCountLabel", { count: row.pendingCount })}
+                      </StatusBadge>
+                      <span className="text-muted-foreground text-xs">
+                        {row.termId}
+                      </span>
+                      <ChevronRight
+                        className="size-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
                     </span>
-                    <ChevronRight
-                      className="size-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+          {/* `cursor !== null` guards a `hasMore: true` + null-cursor response:
+              without a cursor there is no next page to ask for, so the control
+              is removed rather than offering an action that could only re-read
+              the first page over the accumulated ones. */}
           <LoadMoreButton
-            hasMore={hasMore}
+            hasMore={hasMore && cursor !== null}
             isLoadingMore={isFetching}
             hasError={loadMoreError}
-            onLoadMore={() => void fetchPage(cursor)}
+            onLoadMore={() => void fetchPage(cursor, "append")}
             label={t("pendingLoadMore")}
             errorLabel={t("pendingLoadMoreError")}
           />

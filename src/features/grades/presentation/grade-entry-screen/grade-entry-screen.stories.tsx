@@ -915,8 +915,12 @@ export const LockTermConfirmSuccess: Story = {
         dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
       ).not.toBeInTheDocument(),
     );
-    const banner = canvas.getByRole("status");
-    await expect(banner.textContent).toContain("3");
+    // An approver screen mounts TWO live regions: this banner and the rollup's
+    // (empty) load-more announcer (A11Y-046-02) — pick the one that spoke.
+    const banner = canvas
+      .getAllByRole("status")
+      .find((el) => el.textContent?.includes("3"));
+    await expect(banner).toBeDefined();
   },
 };
 
