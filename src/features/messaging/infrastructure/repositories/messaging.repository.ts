@@ -14,6 +14,7 @@ import type { ContactEntity } from "@/features/messaging/domain/entities/contact
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { GroupEntity } from "@/features/messaging/domain/entities/group.entity";
 import type { MessageEntity } from "@/features/messaging/domain/entities/message.entity";
+import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-message.entity";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
 import type {
   CreateGroupInput,
@@ -27,6 +28,7 @@ import {
   type Result,
 } from "@/features/messaging/domain/use-cases/result";
 import type { CreateGroupRoomResponseDto } from "../dtos/create-group-room-response.dto";
+import type { PinnedMessageResponseDto } from "../dtos/pinned-message-response.dto";
 import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
 import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import type { SchoolDmResponseDto } from "../dtos/school-dm-response.dto";
@@ -35,6 +37,7 @@ import {
   toConversationEntityFromRoom,
   toMessageEntityFromRoom,
 } from "../mappers/messaging.mapper";
+import { toPinnedMessages } from "../mappers/pinned-message.mapper";
 
 /**
  * Real `social` repository, remapped onto the ground-truthed rooms/messages/
@@ -53,7 +56,8 @@ import {
  * US-E18.50 (BE US-193, ADR 0132) made TWO of the seven group-lifecycle methods
  * real: `createGroup` (`POST /rooms/groups`) and `deleteGroup` (mapped to
  * `POST /rooms/{roomId}/archive`). The other five group methods, plus the
- * message-pin and contacts methods, still have no real contract; they return a
+ * contacts methods, still have no real contract (message-pin is REAL since
+ * US-E18.51); they return a
  * fail Result with a `not-supported-by-real-contract` cause here (never a
  * doomed HTTP call), and the hybrid facade force-mocks them so those flows keep
  * their mock behavior unchanged. See the per-method notes further down for WHY
@@ -329,6 +333,69 @@ export class MessagingRepository implements IMessagingRepository {
     }
   }
 
+  // --- US-E18.51 message pin / unpin / pin board (BE US-192) ---
+
+  /**
+   * Pin a message. No request body — the Go handler builds its input from the
+   * path params plus `actorFrom(c)` (JWT). The 201 payload
+   * (`{messageId, pinnedBy, pinnedAt}`) carries nothing the caller needs (the
+   * board is refetched), so it is discarded.
+   */
+  async pinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.post(
+        MESSAGING_EP.roomMessagePin(conversationId, messageId),
+      );
+      return ok(true);
+    } catch (err) {
+      return fail(toPinFailure(err));
+    }
+  }
+
+  /** Unpin (204). Same `moderate_msg` gate as pin — not limited to the pinner. */
+  async unpinMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<Result<boolean, MessagingFailure>> {
+    try {
+      await this.http.delete(
+        MESSAGING_EP.roomMessagePin(conversationId, messageId),
+      );
+      return ok(true);
+    } catch (err) {
+      return fail(toPinFailure(err));
+    }
+  }
+
+  /**
+   * The room's pin board. Enveloped but NOT paginated (bounded by the 50-pin
+   * cap), so the interceptor's unwrap gives the array directly — no
+   * `{ raw: true }` / `parseEnvelope` here, unlike message history.
+   *
+   * Read access is membership-only, so a 403 here is NOT `pin-forbidden`
+   * (that key means "lacks moderate_msg"); it stays a load failure carrying the
+   * wire code, exactly like the message-history read this endpoint shares its
+   * 120/min quota with (429 `SOCIAL_READ_RATE_LIMITED`).
+   */
+  async getPinnedMessages(
+    conversationId: string,
+  ): Promise<Result<PinnedMessage[], MessagingFailure>> {
+    try {
+      const rows = (await this.http.get(
+        MESSAGING_EP.roomPinnedMessages(conversationId),
+      )) as unknown as PinnedMessageResponseDto[] | null;
+      return ok(toPinnedMessages(rows ?? []));
+    } catch (err) {
+      return fail({
+        type: "load-pinned-failed",
+        cause: errorCodeOf(err) ?? "social-service-not-available",
+      });
+    }
+  }
+
   // --- Still unsupported by the real contract (ADR 0060, re-verified per
   // method for US-E18.50 against `services/social/docs/openapi.yaml` and the
   // Go handlers at BE US-193) ---
@@ -399,24 +466,30 @@ export class MessagingRepository implements IMessagingRepository {
       cause: "not-supported-by-real-contract",
     });
   }
+}
 
-  async pinMessage(
-    _conversationId: string,
-    _messageId: string,
-  ): Promise<Result<boolean, MessagingFailure>> {
-    return fail({
-      type: "pin-failed",
-      cause: "not-supported-by-real-contract",
-    });
-  }
-
-  async unpinMessage(
-    _conversationId: string,
-    _messageId: string,
-  ): Promise<Result<boolean, MessagingFailure>> {
-    return fail({
-      type: "pin-failed",
-      cause: "not-supported-by-real-contract",
-    });
+/**
+ * US-E18.51 — shared pin/unpin error mapping. Branches on the UPPER_SNAKE wire
+ * CODE (never the message, never the status alone): the two 409s mean different
+ * things to the user, and 403 covers both "not a member" and "member without
+ * `moderate_msg`" — both are the same dead end for the actor.
+ */
+function toPinFailure(err: unknown): MessagingFailure {
+  const code = errorCodeOf(err);
+  switch (code) {
+    case "SOCIAL_PIN_LIMIT_REACHED":
+      return { type: "pin-limit-reached" };
+    case "SOCIAL_MESSAGE_ALREADY_PINNED":
+      return { type: "message-already-pinned" };
+    case "SOCIAL_MESSAGE_NOT_PINNED":
+      return { type: "message-not-pinned" };
+    case "SOCIAL_INSUFFICIENT_ROOM_PERMISSION":
+    case "ROOM_NOT_MEMBER":
+      return { type: "pin-forbidden" };
+    default:
+      return {
+        type: "pin-failed",
+        cause: code ?? "social-service-not-available",
+      };
   }
 }

@@ -47,6 +47,10 @@ export function GroupInfoPanel({
   isLoading,
   selfIsAdmin,
   selfId,
+  pinnedMessages,
+  pinnedLoading = false,
+  pinnedError,
+  canUnpin,
   onOpenChange,
   onRename,
   onAddMembers,
@@ -54,8 +58,10 @@ export function GroupInfoPanel({
   onLeave,
   onDelete,
   onPinnedClick,
+  onUnpin,
 }: GroupInfoPanelProps) {
   const t = useTranslations("messaging.groupInfo");
+  const tErrors = useTranslations("messaging.errors");
   const tDialog = useTranslations("messaging.deleteDialog");
   const tGroup = useTranslations("messaging.group");
   const tChat = useTranslations("messaging.chat");
@@ -293,11 +299,29 @@ export function GroupInfoPanel({
               <h3 className="mb-2 font-bold text-[10.5px] text-muted-foreground uppercase tracking-wide">
                 {t("pinnedSection")}
               </h3>
-              {group.pinnedMessages.length > 0 ? (
+              {/* US-E18.51 — the pin board is its own async surface: it loads,
+                  fails and empties independently of the group detail above. */}
+              {pinnedLoading && pinnedMessages.length === 0 ? (
+                <p
+                  className="py-2 text-center text-muted-foreground text-xs"
+                  role="status"
+                >
+                  {t("pinnedLoading")}
+                </p>
+              ) : pinnedError ? (
+                <p className="py-2 text-center text-edu-error-text text-xs">
+                  {tErrors(pinnedError)}
+                </p>
+              ) : pinnedMessages.length > 0 ? (
                 <ul className="space-y-0.5">
-                  {group.pinnedMessages.map((p) => (
+                  {pinnedMessages.map((p) => (
                     <li key={p.messageId}>
-                      <PinnedMessageRow pinned={p} onClick={onPinnedClick} />
+                      <PinnedMessageRow
+                        pinned={p}
+                        onClick={onPinnedClick}
+                        canUnpin={canUnpin !== false}
+                        onUnpin={onUnpin}
+                      />
                     </li>
                   ))}
                 </ul>

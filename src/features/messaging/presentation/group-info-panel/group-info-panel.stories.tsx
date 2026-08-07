@@ -38,8 +38,20 @@ const GROUP: GroupEntity = {
       isOnline: false,
     },
   ],
-  pinnedMessages: [],
 };
+
+// US-E18.51 — the pin board is its own prop, fetched independently of GROUP.
+const PINNED = [
+  {
+    messageId: "g1-3",
+    senderId: "me",
+    senderName: "Nguyễn Thị Hương",
+    excerpt: "Các em nộp trước tiết học ngày mai nhé!",
+    sentAt: "2026-06-20T07:45:00.000Z",
+    pinnedAt: "2026-06-20T08:00:00.000Z",
+    pinnedBy: "me",
+  },
+];
 
 const noop = () => {};
 const ACTIONS = {
@@ -69,6 +81,7 @@ const meta: Meta<typeof GroupInfoPanel> = {
     isLoading: false,
     selfIsAdmin: true,
     selfId: "me",
+    pinnedMessages: [],
     ...ACTIONS,
   },
 };
@@ -151,27 +164,99 @@ export const GroupInfoPanel_DeleteConfirm: Story = {
   },
 };
 
-/** Pinned messages — pinned section with rows. */
+/** Pinned messages — pinned section with rows (US-E18.51: own prop). */
 export const GroupInfoPanel_PinnedMessages: Story = {
+  args: { pinnedMessages: PINNED },
+  play: async () => {
+    await waitFor(() =>
+      expect(
+        body().getByText("Các em nộp trước tiết học ngày mai nhé!"),
+      ).toBeInTheDocument(),
+    );
+  },
+};
+
+/** US-E18.51 — pin board still loading while group detail is already rendered. */
+export const GroupInfoPanel_PinnedLoading: Story = {
+  args: { pinnedMessages: [], pinnedLoading: true },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("THÀNH VIÊN")).toBeInTheDocument(),
+    );
+    await expect(body().getByRole("status")).toHaveTextContent(
+      "Đang tải tin nhắn đã ghim",
+    );
+    await expect(
+      body().queryByText("Chưa có tin nhắn được ghim."),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.51 — the pin board read failed (e.g. the 429 shared with message
+ * history). Group detail stays usable; only the pinned section degrades.
+ */
+export const GroupInfoPanel_PinnedError: Story = {
+  args: { pinnedMessages: [], pinnedError: "load-pinned-failed" },
+  play: async () => {
+    await waitFor(() =>
+      expect(
+        body().getByText(
+          "Không thể tải danh sách tin nhắn đã ghim. Vui lòng thử lại.",
+        ),
+      ).toBeInTheDocument(),
+    );
+    await expect(body().getByText("THÀNH VIÊN")).toBeInTheDocument();
+  },
+};
+
+/** US-E18.51 — unpin control fires onUnpin with the message id. */
+export const GroupInfoPanel_Unpin: Story = {
+  args: { pinnedMessages: PINNED, canUnpin: true, onUnpin: fn() },
+  play: async ({ args }) => {
+    const unpin = await body().findByRole("button", {
+      name: "Bỏ ghim tin nhắn của Nguyễn Thị Hương",
+    });
+    const rect = unpin.getBoundingClientRect();
+    await expect(rect.height).toBeGreaterThanOrEqual(44);
+    await userEvent.click(unpin);
+    await expect(args.onUnpin).toHaveBeenCalledWith("g1-3");
+  },
+};
+
+/**
+ * US-E18.51 — a member KNOWN not to hold the pin capability sees no unpin
+ * control (only an explicit `false` hides it; `undefined` = unknown = shown).
+ */
+export const GroupInfoPanel_UnpinHiddenForNonModerator: Story = {
   args: {
-    group: {
-      ...GROUP,
-      pinnedMessages: [
-        {
-          messageId: "g1-3",
-          senderId: "me",
-          senderName: "Nguyễn Thị Hương",
-          excerpt: "Các em nộp trước tiết học ngày mai nhé!",
-          sentAt: "2026-06-20T07:45:00.000Z",
-        },
-      ],
-    },
+    pinnedMessages: PINNED,
+    canUnpin: false,
+    onUnpin: fn(),
+    selfIsAdmin: false,
   },
   play: async () => {
     await waitFor(() =>
       expect(
         body().getByText("Các em nộp trước tiết học ngày mai nhé!"),
       ).toBeInTheDocument(),
+    );
+    await expect(
+      body().queryByRole("button", {
+        name: "Bỏ ghim tin nhắn của Nguyễn Thị Hương",
+      }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** US-E18.51 — no wire senderName on the real board → i18n fallback, never blank. */
+export const GroupInfoPanel_PinnedUnknownSender: Story = {
+  args: {
+    pinnedMessages: [{ ...PINNED[0], senderName: undefined }],
+  },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("Không rõ người gửi")).toBeInTheDocument(),
     );
   },
 };

@@ -12,7 +12,6 @@ const group: GroupEntity = {
   color: "primary",
   conversationId: "g1",
   members: [],
-  pinnedMessages: [],
 };
 
 describe("RemoveGroupMemberUseCase", () => {

@@ -22,7 +22,6 @@ describe("group.mapper — toGroupEntityFromCreatedRoom (US-E18.50 / BE US-193)"
 
   it("leaves members EMPTY — the 201 does not echo membership", () => {
     expect(toGroupEntityFromCreatedRoom(dto).members).toEqual([]);
-    expect(toGroupEntityFromCreatedRoom(dto).pinnedMessages).toEqual([]);
   });
 
   it("does not invent a description or a kind the wire has no column for", () => {

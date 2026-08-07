@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useRealtimeEvents } from "@/bootstrap/realtime";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
@@ -19,6 +20,7 @@ import { CreateGroupModal } from "../create-group-modal";
 import { NewConversationModal } from "../new-conversation-modal/new-conversation-modal";
 import { EmptyMessagingState } from "./empty-messaging-state";
 import { createGroupErrorKey } from "./group-creation-gate";
+import { isMessagingErrorKey } from "./messaging-error-key";
 import type {
   MessagingScreenActions,
   MessagingScreenVM,
@@ -44,6 +46,11 @@ const TYPING_INDICATOR_TTL_MS = 6_000;
 const messagesKey = (id: string) => ["messaging", "messages", id] as const;
 const conversationsKey = () => ["messaging", "conversations"] as const;
 const groupKey = (id: string) => ["messaging", "group", id] as const;
+// US-E18.51 — the pin board is its OWN query key, not a slice of the group
+// query: it is a separate endpoint with a separate gate, and pin/unpin
+// invalidate only it (there is no realtime pin signal, so a refetch after the
+// 201/204 is the whole freshness story).
+const pinnedKey = (id: string) => ["messaging", "pinned", id] as const;
 // US-E10.6 — presence queries. Both sit under the ["messaging","presence"]
 // prefix so the presence.changed SSE invalidation (event-invalidation.ts) hits
 // them via prefix match without listing each key.
@@ -83,6 +90,8 @@ export function MessagingScreen({
   createGroupAction,
   getGroupAction,
   pinMessageAction,
+  unpinMessageAction,
+  getPinnedMessagesAction,
   deleteMessageAction,
   removeGroupMemberAction,
   addGroupMembersAction,
@@ -96,6 +105,18 @@ export function MessagingScreen({
   const tErrors = useTranslations("messaging.errors");
   const tCommon = useTranslations("Common");
   const isMobile = useIsMobile();
+  /**
+   * Mutations reject with `new Error(errorKey)` (the repo's stable failure key)
+   * — translate it here, at the presentation boundary. An unknown message can
+   * only come from a non-action throw, so it degrades to the generic pin copy.
+   */
+  const tFailure = useCallback(
+    (err: unknown) => {
+      const key = err instanceof Error ? err.message : "";
+      return isMessagingErrorKey(key) ? tErrors(key) : tErrors("pin-failed");
+    },
+    [tErrors],
+  );
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const deepLinkId = searchParams?.get("conversation") ?? null;
@@ -256,14 +277,58 @@ export function MessagingScreen({
     },
   });
 
+  // US-E18.51 — the room pin board. Its own query key (own endpoint, own gate),
+  // enabled for the active GROUP conversation rather than only while the panel
+  // is open: pin/unpin have NO realtime signal, so their invalidation must be
+  // able to trigger a real refetch even when the panel is closed (otherwise the
+  // board would be silently stale the next time it opens). One extra read per
+  // opened group against the 120/min quota it shares with message history —
+  // the same order of cost as the history read itself.
+  const {
+    data: pinnedResult,
+    isLoading: pinnedLoading,
+    isFetching: pinnedFetching,
+  } = useQuery({
+    queryKey: activeId ? pinnedKey(activeId) : ["messaging", "pinned"],
+    queryFn: async () => {
+      if (!activeId) return { ok: true as const, value: [] };
+      return getPinnedMessagesAction(activeId);
+    },
+    enabled: Boolean(activeId) && isGroup,
+  });
+  const pinnedMessages = pinnedResult?.ok ? pinnedResult.value : [];
+  const pinnedError =
+    pinnedResult?.ok === false ? pinnedResult.errorKey : undefined;
+
   const pinMutation = useMutation({
     mutationFn: async (vars: { conversationId: string; messageId: string }) => {
       const res = await pinMessageAction(vars.conversationId, vars.messageId);
       if (!res.ok) throw new Error(res.errorKey);
     },
+    onSuccess: () => toast.success(t("toast.pinned")),
+    onError: (err) => toast.error(tFailure(err)),
+    onSettled: (_d, _e, vars) => {
+      // No realtime pin signal exists — refetch the board (and the messages,
+      // whose isPinned flag the mock world tracks) after the 201.
+      queryClient.invalidateQueries({
+        queryKey: pinnedKey(vars.conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: messagesKey(vars.conversationId),
+      });
+    },
+  });
+
+  const unpinMutation = useMutation({
+    mutationFn: async (vars: { conversationId: string; messageId: string }) => {
+      const res = await unpinMessageAction(vars.conversationId, vars.messageId);
+      if (!res.ok) throw new Error(res.errorKey);
+    },
+    onSuccess: () => toast.success(t("toast.unpinned")),
+    onError: (err) => toast.error(tFailure(err)),
     onSettled: (_d, _e, vars) => {
       queryClient.invalidateQueries({
-        queryKey: groupKey(vars.conversationId),
+        queryKey: pinnedKey(vars.conversationId),
       });
       queryClient.invalidateQueries({
         queryKey: messagesKey(vars.conversationId),
@@ -545,6 +610,9 @@ export function MessagingScreen({
             group={groupWithPresence}
             groupLoading={groupLoading}
             onGroupInfoOpenChange={setGroupInfoOpen}
+            pinnedMessages={pinnedMessages}
+            pinnedLoading={pinnedLoading || pinnedFetching}
+            pinnedError={pinnedError}
             onPinMessage={(messageId) => {
               if (activeId)
                 pinMutation.mutate({ conversationId: activeId, messageId });
@@ -569,6 +637,10 @@ export function MessagingScreen({
                 if (res.ok) refreshGroup(res.value);
               },
               onAddMembers: () => setAddMembersOpen(true),
+              onUnpin: (messageId) => {
+                if (activeId)
+                  unpinMutation.mutate({ conversationId: activeId, messageId });
+              },
               onRemoveMember: async (userId) => {
                 if (!activeId) return;
                 const res = await removeGroupMemberAction(activeId, userId);

@@ -15,6 +15,10 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       createConversation: vi.fn().mockResolvedValue(ok({})),
       markConversationRead: vi.fn().mockResolvedValue(ok(true)),
       sendTypingIndicator: vi.fn().mockResolvedValue(ok(true)),
+      // US-E18.51 — the pin slice moved from force-mock to real (BE US-192).
+      pinMessage: vi.fn().mockResolvedValue(ok(true)),
+      unpinMessage: vi.fn().mockResolvedValue(ok(true)),
+      getPinnedMessages: vi.fn().mockResolvedValue(ok([])),
     };
     const real = makeMessagingRepo(realFns);
     const mock = makeMessagingRepo();
@@ -27,6 +31,9 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     await hybrid.createConversation(["t1"]);
     await hybrid.markConversationRead("r1");
     await hybrid.sendTypingIndicator("r1", true);
+    await hybrid.pinMessage("r1", "m1");
+    await hybrid.unpinMessage("r1", "m1");
+    await hybrid.getPinnedMessages("r1");
 
     expect(realFns.getConversations).toHaveBeenCalled();
     expect(realFns.getMessages).toHaveBeenCalledWith("r1", undefined);
@@ -35,6 +42,31 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     expect(realFns.createConversation).toHaveBeenCalledWith(["t1"], undefined);
     expect(realFns.markConversationRead).toHaveBeenCalledWith("r1");
     expect(realFns.sendTypingIndicator).toHaveBeenCalledWith("r1", true);
+    expect(realFns.pinMessage).toHaveBeenCalledWith("r1", "m1");
+    expect(realFns.unpinMessage).toHaveBeenCalledWith("r1", "m1");
+    expect(realFns.getPinnedMessages).toHaveBeenCalledWith("r1");
+  });
+
+  it("never routes the pin slice to the mock once it is real (US-E18.51)", async () => {
+    const mockFns = {
+      pinMessage: vi.fn(),
+      unpinMessage: vi.fn(),
+      getPinnedMessages: vi.fn(),
+    };
+    const hybrid = new HybridMessagingRepository(
+      makeMessagingRepo({
+        pinMessage: vi.fn().mockResolvedValue(ok(true)),
+        unpinMessage: vi.fn().mockResolvedValue(ok(true)),
+        getPinnedMessages: vi.fn().mockResolvedValue(ok([])),
+      }),
+      makeMessagingRepo(mockFns),
+    );
+
+    await hybrid.pinMessage("r1", "m1");
+    await hybrid.unpinMessage("r1", "m1");
+    await hybrid.getPinnedMessages("r1");
+
+    for (const fn of Object.values(mockFns)) expect(fn).not.toHaveBeenCalled();
   });
 
   // US-E18.50 — BE US-193 (ADR 0132) shipped create + archive ONLY. The split
@@ -68,8 +100,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       addGroupMembers: vi.fn().mockResolvedValue(ok({})),
       removeGroupMember: vi.fn().mockResolvedValue(ok({})),
       leaveGroup: vi.fn().mockResolvedValue(ok(true)),
-      pinMessage: vi.fn().mockResolvedValue(ok(true)),
-      unpinMessage: vi.fn().mockResolvedValue(ok(true)),
     };
     const realFns = {
       getContacts: vi.fn(),
@@ -78,8 +108,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       addGroupMembers: vi.fn(),
       removeGroupMember: vi.fn(),
       leaveGroup: vi.fn(),
-      pinMessage: vi.fn(),
-      unpinMessage: vi.fn(),
     };
     const hybrid = new HybridMessagingRepository(
       makeMessagingRepo(realFns),
@@ -92,8 +120,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     await hybrid.addGroupMembers("g1", ["u"]);
     await hybrid.removeGroupMember("g1", "u");
     await hybrid.leaveGroup("g1");
-    await hybrid.pinMessage("g1", "m1");
-    await hybrid.unpinMessage("g1", "m1");
 
     for (const fn of Object.values(mockFns)) expect(fn).toHaveBeenCalled();
     for (const fn of Object.values(realFns)) expect(fn).not.toHaveBeenCalled();

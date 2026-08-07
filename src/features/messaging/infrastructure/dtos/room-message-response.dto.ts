@@ -8,6 +8,15 @@ export type RoomMessageResponseDto = {
   messageId: string;
   roomId: string;
   senderUserId: string;
+  /**
+   * US-E18.51 ground-truth: the Go handler DOES emit `senderName`
+   * (`httpdto.MessageResponse.SenderName`) even though `openapi.yaml`'s
+   * `Message` schema omits it — a documented drift (FE→BE ask). It is stamped
+   * from the SENDER's JWT claims at send time and never persisted, so any
+   * read-back path emits `""` — the pin board calls `toMessageDTO(msg, "")`.
+   * Optional here; consumers MUST treat `""` as absent.
+   */
+  senderName?: string;
   text: string;
   status: "active" | "edited" | "deleted";
   editCount: number;

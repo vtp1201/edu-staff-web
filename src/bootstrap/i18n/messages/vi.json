@@ -2647,7 +2647,12 @@
       "load-presence-failed": "Không thể tải trạng thái hoạt động.",
       "not-group-admin": "Chỉ admin nhóm mới có quyền thực hiện.",
       "pin-failed": "Không thể ghim tin nhắn.",
-      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại."
+      "send-message-failed": "Không thể gửi tin nhắn. Vui lòng thử lại.",
+      "pin-limit-reached": "Nhóm đã đạt tối đa 50 tin nhắn ghim. Hãy bỏ ghim một tin nhắn trước khi ghim tin mới.",
+      "message-already-pinned": "Tin nhắn này đã được ghim.",
+      "message-not-pinned": "Tin nhắn này hiện không được ghim.",
+      "pin-forbidden": "Bạn không có quyền ghim hoặc bỏ ghim tin nhắn trong phòng này.",
+      "load-pinned-failed": "Không thể tải danh sách tin nhắn đã ghim. Vui lòng thử lại."
     },
     "group": {
       "createButton": "Tạo nhóm",
@@ -2680,7 +2685,10 @@
       "removeMember": "Xoá khỏi nhóm",
       "removeMemberAria": "Xóa {name} khỏi nhóm",
       "save": "Lưu",
-      "title": "Thông tin nhóm"
+      "title": "Thông tin nhóm",
+      "pinnedLoading": "Đang tải tin nhắn đã ghim…",
+      "unknownSender": "Không rõ người gửi",
+      "unpinAria": "Bỏ ghim tin nhắn của {sender}"
     },
     "addMembersModal": {
       "title": "Thêm thành viên",
@@ -2725,7 +2733,11 @@
       "groups": "Nhóm"
     },
     "title": "Tin nhắn",
-    "totalUnread": "{count} tin nhắn chưa đọc"
+    "totalUnread": "{count} tin nhắn chưa đọc",
+    "toast": {
+      "pinned": "Đã ghim tin nhắn.",
+      "unpinned": "Đã bỏ ghim tin nhắn."
+    }
   },
   "moderation": {
     "reportDialog": {

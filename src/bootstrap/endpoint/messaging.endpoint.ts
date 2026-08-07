@@ -9,7 +9,10 @@
  * group-lifecycle slice (read a group with named members, rename, add/remove
  * members, self-leave) still has no usable contract, keeps its mock service,
  * and gets no constants here — there is nothing for it to point at. Same for
- * the contacts-directory and message-pin flows (ADR 0060).
+ * the contacts-directory flow (ADR 0060, US-E18.52).
+ *
+ * US-E18.51 (BE US-192) closed the MESSAGE-PIN third of that gap: pin, unpin and
+ * the pin board are real and have constants below.
  */
 export const MESSAGING_EP = {
   /** List rooms: `GET ?userId=<self>` (create is worker/provisioned, not used by web). */
@@ -21,6 +24,12 @@ export const MESSAGING_EP = {
   roomMessages: (roomId: string) => `/social/api/v1/rooms/${roomId}/messages`,
   roomMessageById: (roomId: string, messageId: string) =>
     `/social/api/v1/rooms/${roomId}/messages/${messageId}`,
+  /** US-E18.51 — `POST` pins (201), `DELETE` unpins (204). No request body. */
+  roomMessagePin: (roomId: string, messageId: string) =>
+    `/social/api/v1/rooms/${roomId}/messages/${messageId}/pin`,
+  /** US-E18.51 — the room's pin board: flat array, newest-pin-first, NOT paginated. */
+  roomPinnedMessages: (roomId: string) =>
+    `/social/api/v1/rooms/${roomId}/pinned-messages`,
   roomRead: (roomId: string) => `/social/api/v1/rooms/${roomId}/read`,
   roomTyping: (roomId: string) => `/social/api/v1/rooms/${roomId}/typing`,
   schoolDms: "/social/api/v1/rooms/school-dms",

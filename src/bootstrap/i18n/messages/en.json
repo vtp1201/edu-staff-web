@@ -2647,7 +2647,12 @@
       "load-presence-failed": "Could not load presence.",
       "not-group-admin": "Only group admins can perform this action.",
       "pin-failed": "Could not pin message.",
-      "send-message-failed": "Could not send the message. Please try again."
+      "send-message-failed": "Could not send the message. Please try again.",
+      "pin-limit-reached": "This room already has the maximum of 50 pinned messages. Unpin one before pinning another.",
+      "message-already-pinned": "This message is already pinned.",
+      "message-not-pinned": "This message is not currently pinned.",
+      "pin-forbidden": "You do not have permission to pin or unpin messages in this room.",
+      "load-pinned-failed": "Could not load pinned messages. Please try again."
     },
     "group": {
       "createButton": "Create group",
@@ -2680,7 +2685,10 @@
       "removeMember": "Remove from group",
       "removeMemberAria": "Remove {name} from group",
       "save": "Save",
-      "title": "Group info"
+      "title": "Group info",
+      "pinnedLoading": "Loading pinned messages…",
+      "unknownSender": "Unknown sender",
+      "unpinAria": "Unpin message from {sender}"
     },
     "addMembersModal": {
       "title": "Add members",
@@ -2725,7 +2733,11 @@
       "groups": "Groups"
     },
     "title": "Messages",
-    "totalUnread": "{count} unread messages"
+    "totalUnread": "{count} unread messages",
+    "toast": {
+      "pinned": "Message pinned.",
+      "unpinned": "Message unpinned."
+    }
   },
   "moderation": {
     "reportDialog": {

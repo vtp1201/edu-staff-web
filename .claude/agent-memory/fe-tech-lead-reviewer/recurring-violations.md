@@ -31,6 +31,25 @@ and expensive to miss.
    `hasMore && cursor !== null`.
 6. **RSC handing a locally-defined closure as a Server Action prop** — `tsc`, `build`
    and Storybook all miss it; only a unit test that INVOKES the prop catches it.
+7. **Un-mocked read whose failure is swallowed in `page.tsx`** (US-E18.52). The E18
+   signature defect: a force-mocked method that could never fail becomes a real
+   fallible read, the repo carefully "fails closed" with a new failure type + a new
+   `errors.<type>` i18n key in vi+en — and `page.tsx` still does
+   `result.ok ? result.value : []`, so the user sees an empty list, not the error.
+   GREP TEST: every new `errors.*` key added by an un-mocking story must appear in a
+   `t(...)`/`tErrors(...)` render path, and the newly-fallible surface needs empty AND
+   error states (they were unreachable while mocked, so they usually don't exist).
+
+8. **Newly-real WRITE whose only UI caller is gated behind a still-mock READ**
+   (US-E18.50). In a PARTIAL un-mock, check reachability of every newly-real mutation
+   in REAL mode, not just its repository test: `deleteGroup`→archive was wired real
+   while `getGroup` stayed mock, and the archive button lives inside the
+   `!isLoading && group` branch of `group-info-panel.tsx` — for a real room id the mock
+   read 404s, `group` is `undefined`, the panel renders a permanent "…" and the archive
+   affordance never mounts. GREP TEST: for each method moved mock→real, find its UI
+   caller and ask "what feeds the data this caller is gated on, in real mode?"
+   Related: swallowed reads (`res.ok ? res.value : undefined`) turn this into an
+   infinite fake-loading state rather than an error.
 
 Verified clean conventions worth not re-litigating: role-discriminated VM unions
 (`viewerRole` field, absent action = compile error), capability-as-presence for

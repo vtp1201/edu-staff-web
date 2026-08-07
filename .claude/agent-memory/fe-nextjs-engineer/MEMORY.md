@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Nth widening of a shared entity](pattern-nth-widening-shared-entity.md) — E18.52: confirm WHICH entity the endpoint owns (LIST vs BATCH); the compile fallout is the real decision (+more in file)
 - [No-op hygiene verification](pattern-noop-hygiene-verification.md) — E18.45: prove the NEGATIVE by classifying every surviving force-mock reason, not by grepping the fixed phrase (+more in file)
 
 - [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus) (+more in file)
@@ -107,3 +108,9 @@
 - [Seed re-sync + live region](pattern-seed-resync-and-live-region.md) — E18.46 review: useState(seedProp) is stale forever; explicit first|append page mode; a 2nd always-on role=status breaks sibling getByRole("status") stories
 
 - [Discovery rollup + dormant endpoint](pattern-discovery-rollup-and-dormant-endpoint.md) — E18.46: split ports on addressing/kind/construction (else RENAME and join); gate the READ too; no misleading aggregate
+
+- [Return-type blocker on partial un-mock](pattern-partial-unmock-return-type-blocker.md) — E18.50: endpoint exists ≠ method is wirable (rich entity return needs a fan-out + reshape); a real endpoint can be correctly left mock (unscoped self-leave) and flagged; narrowing an invented input type = delete the UI controls, never "collect but never send"
+
+- [Public unauthenticated flow](pattern-public-unauth-flow.md) — E18.53: bare-client DI (no cookie/refresh) for `security: []` endpoints; real-axios adapter test proves the token never reaches a query string; IAM wire codes are UPPER_SNAKE (sibling mapper assumes lowercase); concurrent build+vitest = phantom timeouts
+
+- [Embedded field → own resource](pattern-embedded-field-to-own-resource.md) — E18.51: real contract exposes a mock-era embedded array as its OWN gated endpoint ⇒ DELETE the field (3 tests: different gate / lifecycle / host availability); `""` on the wire = absent; tri-state a mock-era capability gate or the control is dead in real mode; prove refetch by call-count
