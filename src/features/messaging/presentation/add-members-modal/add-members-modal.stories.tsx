@@ -99,6 +99,23 @@ export const SubmitError: Story = {
 };
 
 /**
+ * US-E18.52 (review fix) — the SSR contact-directory read FAILED. The second
+ * consumer of the shared `ContactsErrorNotice`: the failure must REPLACE the
+ * "no members left to add" copy, which would otherwise mislead.
+ */
+export const ContactsLoadForbidden: Story = {
+  args: { contacts: [], contactsError: "load-contacts-failed" },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const alert = await waitFor(() => body.getByRole("alert"));
+    expect(alert).toHaveTextContent(/không thể tải danh bạ liên hệ/i);
+    expect(
+      body.queryByText(/không còn thành viên nào để thêm/i),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
  * US-E18.52 — contacts as the REAL IAM directory serves them to a narrowed-tier
  * (STUDENT/PARENT) caller: only `memberId`/`userId`/`displayName` are on the
  * wire, so the row carries a stable `roleKey` (translated here) and NO

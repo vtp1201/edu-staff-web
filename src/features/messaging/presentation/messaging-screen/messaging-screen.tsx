@@ -70,6 +70,7 @@ export function MessagingScreen({
   initialConversations,
   initialContacts,
   loadError,
+  contactsLoadError,
   selfId = "me",
   tenantId,
   sendMessageAction,
@@ -569,6 +570,7 @@ export function MessagingScreen({
       <NewConversationModal
         open={isModalOpen}
         contacts={initialContacts}
+        contactsError={contactsLoadError}
         onOpenChange={setModalOpen}
         onSelectContact={handleSelectContact}
       />
@@ -576,6 +578,7 @@ export function MessagingScreen({
       <CreateGroupModal
         open={createGroupOpen}
         contacts={initialContacts}
+        contactsError={contactsLoadError}
         isSubmitting={createGroupMutation.isPending}
         submitError={createGroupMutation.isError}
         onOpenChange={setCreateGroupOpen}
@@ -587,6 +590,7 @@ export function MessagingScreen({
         contacts={initialContacts.filter(
           (c) => !group?.members.some((m) => m.userId === c.id),
         )}
+        contactsError={contactsLoadError}
         isSubmitting={addMembersMutation.isPending}
         submitError={addMembersMutation.isError}
         onOpenChange={setAddMembersOpen}

@@ -12,6 +12,14 @@ export interface MessagingScreenVM {
   initialContacts: ContactEntity[];
   /** Set when the SSR conversation load failed → pane-left error banner (AC-9). */
   loadError?: MessagingFailure["type"];
+  /**
+   * US-E18.52 — set when the SSR contact-directory read failed (403 forbidden,
+   * a `role=` wiring bug, transport). Kept SEPARATE from `loadError`: the
+   * conversation list can be fine while the picker is not. Without it an empty
+   * `initialContacts` is indistinguishable from "this school genuinely has no
+   * teachers", so every contact picker renders this key instead of a bare list.
+   */
+  contactsLoadError?: MessagingFailure["type"];
   /** Synthetic id of the current user (mock-first auth). */
   selfId?: string;
   /**

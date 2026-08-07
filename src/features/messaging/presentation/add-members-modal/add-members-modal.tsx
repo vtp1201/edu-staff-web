@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
 import { ContactRoleCaption } from "@/features/messaging/presentation/contact-role-caption";
+import { ContactsErrorNotice } from "@/features/messaging/presentation/contacts-error-notice";
 import { cn } from "@/shared/utils";
 import type {
   AddMemberModalActions,
@@ -29,6 +30,7 @@ export interface AddMembersModalProps
 export function AddMembersModal({
   open,
   contacts,
+  contactsError,
   isSubmitting,
   submitError,
   onOpenChange,
@@ -124,7 +126,12 @@ export function AddMembersModal({
           </div>
 
           <div className="max-h-[240px] overflow-y-auto rounded-lg border border-border">
-            {filtered.length > 0 ? (
+            {contactsError ? (
+              <ContactsErrorNotice
+                errorKey={contactsError}
+                className="border-0 bg-transparent px-3 py-6 text-center"
+              />
+            ) : filtered.length > 0 ? (
               <ul>
                 {filtered.map((c) => {
                   const checked = memberIds.includes(c.id);

@@ -211,10 +211,74 @@ arrive; they were made optional/nullable and carried across CONDITIONALLY (no
 `?? ""`, no fabricated `"ACTIVE"`), with the UI omitting the caption/badge.
 Zero behavior change in practice.
 
+### Review fix (fe-tech-lead-reviewer, 2026-08-07) — the contacts failure was swallowed
+
+`page.tsx` passed `initialContacts={contactsResult.ok ? … : []}` and dropped the
+failure. A 403 `forbidden`, a `role-filter-required` wiring bug or a transport
+error therefore rendered an EMPTY picker — indistinguishable from "this school
+genuinely has no teachers" — and made the new
+`messaging.errors.load-contacts-failed` key dead code.
+
+- `MessagingScreenVM` gained `contactsLoadError?: MessagingFailure["type"]`,
+  kept SEPARATE from `loadError` (the conversation list can be healthy while the
+  directory is not); `page.tsx` now passes
+  `contactsResult.ok ? undefined : contactsResult.failure.type`.
+- All THREE contact consumers render it: `new-conversation-modal`,
+  `create-group-modal` (step 2) and `add-members-modal`. The banner lives in ONE
+  canonical home — `presentation/contacts-error-notice/` (decision 0026) — whose
+  markup deliberately mirrors the already-proven `conversation-list` load-error
+  banner instead of inventing a second error convention.
+  `components/shared/list-error` is NOT reused: it is a full-height card built
+  around a retry control, and these contacts are SSR-loaded, so there is no
+  client retry to offer inside a dialog.
+- The error REPLACES the empty/heading copy in every picker — the two must never
+  appear together (contradictory explanations of the same blank list).
+- `new-conversation-modal` had NO empty state under the "Gợi ý" heading
+  (unreachable while the mock always seeded contacts; reachable now that a real
+  tenant's `role=TEACHER` query can return zero rows) → new key
+  `messaging.newMessage.noContacts` (vi + en).
+- New proof: `messages/page.test.tsx` (RSC composition — success carries no
+  error key, a failure carries `load-contacts-failed` instead of a bare `[]`,
+  and the conversations channel stays independent);
+  `new-conversation-modal.stories.tsx` NEW with `Default`, `EmptyDirectory` and
+  **`ContactsLoadForbidden`** (the story the Validation row demanded);
+  `add-members-modal.stories.tsx` `ContactsLoadForbidden` for the second
+  consumer of the shared notice.
+
+### `CONTACT_PICKER_ROLE = "TEACHER"` also narrows the STAFF-TIER audience (decision note for `fe-lead`)
+
+Understated in the first pass, so stated plainly: the pinned filter applies to
+EVERY caller, not just the narrowed tier. An ADMIN/MANAGER using this picker can
+now start a DM only with **TEACHERs** — not with other admins/managers/staff —
+whereas the retired mock seeded a mixed set. That is a real (if small) behaviour
+change for staff-tier users.
+
+**Kept as-is deliberately.** ADR 0129 does not restrict the staff tier, so a
+staff caller COULD omit `role=` and drain the unrestricted directory in one
+call, but that was rejected:
+
+1. Omitting `role=` returns the WHOLE member directory — every STUDENT and
+   PARENT included. Turning a staff member's picker into "DM any of ~2000
+   students" is a far larger product change than the defect being fixed, and
+   nothing in `design-spec.jsonc`/`screens.md` asks for it.
+2. It would make the picker's audience role-dependent (two different products
+   behind one component) and would need a token-derived tier branch in the DI
+   plus its own RBAC reasoning — for a surface no staff-tier AC covers.
+3. The current behaviour is uniform, predictable and fail-safe: everybody sees
+   teachers.
+
+The open product ask is unchanged and belongs to `fe-lead`: if the picker must
+reach ADMIN/MANAGER/STAFF (for anyone), that is either N directory drains or a
+BE ask for a multi-value `role=` — not a one-line edit.
+
 ### Commands run (from the worktree)
 
-- `bunx vitest run` → 500 files / 3868 tests pass.
-- `bunx vitest run --config vitest.storybook.mts` → 157 files / 1237 tests pass.
+- `bunx vitest run` → 501 files / 3871 tests pass (baseline 497/3852).
+- `bunx vitest run --config vitest.storybook.mts` → 158 files / 1241 tests pass.
+  Note: two of three consecutive runs showed ONE intermittent failure in
+  `staff-discipline-screen.stories.tsx` (a feature this story never touches);
+  it passes in isolation (40/40) and in a clean full run — a pre-existing
+  parallel-load flake, not a regression.
 - `bunx tsc --noEmit` → clean.
 - `bun lint` → clean (1 pre-existing warning + 1 info in `messaging`, untouched
   by this story).
