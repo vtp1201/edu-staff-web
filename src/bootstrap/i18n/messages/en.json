@@ -2244,7 +2244,8 @@
       "student": "Student",
       "parent": "Parent",
       "manager": "Board",
-      "admin": "Admin"
+      "admin": "Admin",
+      "staff": "Staff"
     },
     "statusLabels": {
       "pending": "Pending",
@@ -2356,6 +2357,76 @@
         "expired": {
           "title": "This invitation has expired",
           "body": "Invite links are only valid for a limited time. Please contact the school office to receive a new invitation."
+        },
+        "contactOffice": "Contact the school office for help.",
+        "backToLogin": "Back to sign in"
+      }
+    },
+    "redeem": {
+      "preview": {
+        "title": "Activate your account",
+        "intro": "You've been invited to join {tenantName} on EduPortal.",
+        "roleLabel": "Invited role",
+        "noRole": "No role assigned",
+        "emailLabel": "Sign-in email",
+        "emailHint": "This email comes from the invitation and cannot be changed.",
+        "expiresAt": "This invitation is valid until {date}."
+      },
+      "form": {
+        "legend": "Account details",
+        "fullName": "Full name",
+        "fullNamePlaceholder": "Jane Doe",
+        "password": "Password",
+        "passwordHint": "At least 8 characters; include letters, numbers and a special character.",
+        "confirm": "Confirm password",
+        "mismatch": "The two passwords don't match.",
+        "submit": "Create account and join",
+        "submitting": "Creating your account…"
+      },
+      "fieldErrors": {
+        "passwordRequired": "Please enter a password.",
+        "passwordTooShort": "Password must be at least 8 characters.",
+        "passwordTooLong": "Password is too long (72 characters max).",
+        "passwordWeak": "Password isn't strong enough: include letters, numbers and a special character.",
+        "passwordInvalid": "That password isn't accepted. Please choose a different one.",
+        "fullNameRequired": "Please enter your full name.",
+        "fullNameTooLong": "Full name is too long (128 characters max).",
+        "fullNameInvalid": "That full name isn't valid."
+      },
+      "submitErrors": {
+        "invalidInput": "Please check the details below.",
+        "linkInvalid": "This invitation can no longer be used (already used or revoked). Ask the school to send a new one.",
+        "linkExpired": "This invitation has expired. Ask the school to send a new one.",
+        "rateLimited": "Too many attempts. Please wait about a minute and try again.",
+        "tenantInactive": "This school isn't active yet, so you can't join right now. Please contact the school.",
+        "network": "Could not connect. Please try again.",
+        "unknown": "Something went wrong. Please try again."
+      },
+      "accountExists": {
+        "title": "This email already has an account",
+        "body": "{email} is already registered on EduPortal. Sign in with that account to join the school — the password you just entered was not applied to it.",
+        "cta": "Sign in to join"
+      },
+      "states": {
+        "invalid": {
+          "title": "This link is no longer valid",
+          "body": "The invite token is missing, already used or revoked. Open the latest link from your email, or ask the school for a new invitation — retrying this same link won't help."
+        },
+        "expired": {
+          "title": "This invitation has expired",
+          "body": "Invite links are only valid for a limited time. Please contact the school to receive a new invitation."
+        },
+        "rateLimited": {
+          "title": "Too many attempts",
+          "body": "For safety, opening an invitation is rate-limited. Please wait about a minute and reload the page."
+        },
+        "tenantInactive": {
+          "title": "School not active",
+          "body": "The school that sent this invitation isn't active yet, so an account can't be created. Please contact the school."
+        },
+        "error": {
+          "title": "Couldn't load the invitation",
+          "body": "Something went wrong while connecting. Please reload the page to try again."
         },
         "contactOffice": "Contact the school office for help.",
         "backToLogin": "Back to sign in"

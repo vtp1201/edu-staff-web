@@ -2244,7 +2244,8 @@
       "student": "Học sinh",
       "parent": "Phụ huynh",
       "manager": "BGH",
-      "admin": "Admin"
+      "admin": "Admin",
+      "staff": "Nhân viên"
     },
     "statusLabels": {
       "pending": "Chờ chấp nhận",
@@ -2356,6 +2357,76 @@
         "expired": {
           "title": "Lời mời đã hết hạn",
           "body": "Link mời chỉ có hiệu lực trong thời hạn được cấp. Vui lòng liên hệ nhà trường để được gửi lời mời mới."
+        },
+        "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
+        "backToLogin": "Quay lại đăng nhập"
+      }
+    },
+    "redeem": {
+      "preview": {
+        "title": "Kích hoạt tài khoản",
+        "intro": "Bạn được mời tham gia {tenantName} trên EduPortal.",
+        "roleLabel": "Vai trò được mời",
+        "noRole": "Chưa gán vai trò",
+        "emailLabel": "Email đăng nhập",
+        "emailHint": "Email lấy từ lời mời và không thể thay đổi.",
+        "expiresAt": "Lời mời có hiệu lực đến {date}."
+      },
+      "form": {
+        "legend": "Thông tin tài khoản",
+        "fullName": "Họ và tên",
+        "fullNamePlaceholder": "Nguyễn Văn A",
+        "password": "Mật khẩu",
+        "passwordHint": "Tối thiểu 8 ký tự, nên gồm chữ, số và ký tự đặc biệt.",
+        "confirm": "Nhập lại mật khẩu",
+        "mismatch": "Hai mật khẩu chưa khớp.",
+        "submit": "Tạo tài khoản và tham gia",
+        "submitting": "Đang tạo tài khoản…"
+      },
+      "fieldErrors": {
+        "passwordRequired": "Vui lòng nhập mật khẩu.",
+        "passwordTooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+        "passwordTooLong": "Mật khẩu quá dài (tối đa 72 ký tự).",
+        "passwordWeak": "Mật khẩu chưa đủ mạnh: cần có chữ, số và ký tự đặc biệt.",
+        "passwordInvalid": "Mật khẩu không hợp lệ. Vui lòng chọn mật khẩu khác.",
+        "fullNameRequired": "Vui lòng nhập họ và tên.",
+        "fullNameTooLong": "Họ và tên quá dài (tối đa 128 ký tự).",
+        "fullNameInvalid": "Họ và tên không hợp lệ."
+      },
+      "submitErrors": {
+        "invalidInput": "Vui lòng kiểm tra lại các thông tin bên dưới.",
+        "linkInvalid": "Lời mời này không còn dùng được (đã sử dụng hoặc bị thu hồi). Hãy nhờ nhà trường gửi lời mời mới.",
+        "linkExpired": "Lời mời đã hết hạn. Hãy nhờ nhà trường gửi lời mời mới.",
+        "rateLimited": "Bạn đã thử quá nhiều lần. Vui lòng chờ khoảng một phút rồi thử lại.",
+        "tenantInactive": "Trường này hiện chưa hoạt động nên chưa thể tham gia. Vui lòng liên hệ nhà trường.",
+        "network": "Không thể kết nối. Vui lòng thử lại.",
+        "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+      },
+      "accountExists": {
+        "title": "Email này đã có tài khoản",
+        "body": "Địa chỉ {email} đã được đăng ký trên EduPortal. Đăng nhập bằng tài khoản đó rồi tham gia trường — mật khẩu bạn vừa nhập không bị áp dụng cho tài khoản cũ.",
+        "cta": "Đăng nhập để tham gia"
+      },
+      "states": {
+        "invalid": {
+          "title": "Liên kết không còn hiệu lực",
+          "body": "Link mời này bị thiếu token, đã được sử dụng hoặc đã bị thu hồi. Mở lại đúng link mới nhất trong email, hoặc nhờ nhà trường gửi lời mời mới — thử lại chính link này sẽ không có tác dụng."
+        },
+        "expired": {
+          "title": "Lời mời đã hết hạn",
+          "body": "Link mời chỉ có hiệu lực trong thời hạn được cấp. Vui lòng liên hệ nhà trường để nhận lời mời mới."
+        },
+        "rateLimited": {
+          "title": "Bạn đã thử quá nhiều lần",
+          "body": "Vì lý do an toàn, số lần mở lời mời bị giới hạn. Vui lòng chờ khoảng một phút rồi tải lại trang."
+        },
+        "tenantInactive": {
+          "title": "Trường chưa hoạt động",
+          "body": "Trường gửi lời mời này hiện chưa hoạt động nên chưa thể tạo tài khoản. Vui lòng liên hệ nhà trường."
+        },
+        "error": {
+          "title": "Không tải được lời mời",
+          "body": "Đã xảy ra lỗi khi kết nối. Vui lòng tải lại trang để thử lại."
         },
         "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
         "backToLogin": "Quay lại đăng nhập"

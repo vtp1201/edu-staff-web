@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Clock,
-  LogIn,
-  MessageCircle,
-  School,
-} from "lucide-react";
+import { AlertTriangle, Clock, LogIn, School } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { AuthBrandPanel } from "@/components/shared/auth-brand-panel";
+import { InvitationNotice } from "@/components/shared/invitation-notice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { IamMemberFailure } from "@/features/auth/domain/failures/iam-member.failure";
-import { cn } from "@/shared/utils";
 import type { InviteAcceptVM } from "./invite-accept.i-vm";
 
 type JoinResult = { errorKey?: IamMemberFailure["type"] };
@@ -192,6 +186,12 @@ export function InviteAcceptScreen({
   );
 }
 
+/**
+ * The visual shell moved to `components/shared/invitation-notice` when the
+ * public redeem screen (US-E18.53) needed the same pattern — promoted, not
+ * copied (decision `0026`). Same DOM/classes as before; this wrapper keeps the
+ * accept screen's own copy and its kind→tone/icon choice.
+ */
 function TokenError({
   kind,
   loginHref,
@@ -201,49 +201,16 @@ function TokenError({
 }) {
   const t = useTranslations("invitations.accept.tokenError");
   const isExpired = kind === "expired";
-  const Icon = isExpired ? Clock : AlertTriangle;
 
   return (
-    <div role="alert" className="flex flex-col items-center gap-4 text-center">
-      <div className="relative size-24">
-        <div
-          className={cn(
-            "absolute inset-0 rounded-full",
-            isExpired ? "bg-edu-warning-light" : "bg-edu-error-light",
-          )}
-        />
-        <div
-          className={cn(
-            "absolute inset-3.5 flex items-center justify-center rounded-full border border-dashed bg-card",
-            isExpired ? "border-edu-warning-text" : "border-edu-error-text",
-          )}
-        >
-          <Icon
-            className={cn(
-              "size-8",
-              isExpired ? "text-edu-warning-text" : "text-edu-error-text",
-            )}
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
-        </div>
-      </div>
-      <h1 className="text-lg font-extrabold text-foreground">
-        {isExpired ? t("expired.title") : t("invalid.title")}
-      </h1>
-      <p className="max-w-[360px] text-sm leading-relaxed text-muted-foreground">
-        {isExpired ? t("expired.body") : t("invalid.body")}
-      </p>
-      <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2 text-xs text-muted-foreground">
-        <MessageCircle className="size-3.5 shrink-0" aria-hidden="true" />
-        {t("contactOffice")}
-      </div>
-      <a
-        href={loginHref}
-        className="inline-flex min-h-11 items-center font-bold text-primary hover:underline"
-      >
-        {t("backToLogin")}
-      </a>
-    </div>
+    <InvitationNotice
+      tone={isExpired ? "warning" : "error"}
+      icon={isExpired ? Clock : AlertTriangle}
+      title={isExpired ? t("expired.title") : t("invalid.title")}
+      body={isExpired ? t("expired.body") : t("invalid.body")}
+      hint={t("contactOffice")}
+      linkLabel={t("backToLogin")}
+      linkHref={loginHref}
+    />
   );
 }
