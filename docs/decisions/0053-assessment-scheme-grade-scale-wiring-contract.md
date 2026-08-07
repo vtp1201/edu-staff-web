@@ -4,7 +4,25 @@ Date: 2026-07-16
 
 ## Status
 
-Accepted
+Accepted — **amended 2026-08-07 by US-E18.49** (the "Follow-Up" below landed):
+BE US-189 added BOTH a numeric-scale banding concept (`bands: GradeBand{label,
+minThreshold}` on `SCALE_10`/`SCALE_4`, never on `LETTER_ABCD`) and a
+per-column `requiredCount` (integer 1..100, optional, **display metadata — the
+BE does not enforce it against recorded grade entries**). The two consequences
+recorded below are therefore NO LONGER TRUE and have been un-faked in code:
+
+- "Band edits for numeric scales are **not persisted**" / "decorative-only" →
+  they ARE persisted. `mapGradeScale()` reads the real `dto.bands` and falls
+  back to `GRADE_SCALE_PRESETS[type].bands` only when the response carries
+  none; `toSetGradeScaleRequestDto()` sends them for numeric scales (and still
+  never for `LETTER_ABCD`).
+- "`count`: zero wire representation … non-persistent `1`" → `count` maps to
+  the wire `requiredCount`. Absence on read means UNSET (`count: number | null`
+  in the entity), never a fabricated `1`; writes OMIT the key when unset.
+
+Everything else in this ADR (Request≠Response schemas, `coefficient ↔ weight`,
+`ordinal` from array position, `termId` path segment, error-code remap) still
+stands.
 
 ## Context
 

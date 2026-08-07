@@ -19,6 +19,10 @@ export async function saveGradeScaleAction(
   const validation = validateGradeScale(
     input.scale.bands,
     input.scale.maxScore,
+    // The scale type decides the band rules: a LETTER scale serialises its
+    // bands as `letterGrades` (up to 64), a numeric one as the real `bands`
+    // array the BE caps at 10 (US-E18.49 / BE US-189).
+    input.scale.type,
   );
   if (validation) {
     // Client-side band-continuity/coverage rejection — NOT a server failure key.

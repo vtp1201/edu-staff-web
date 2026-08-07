@@ -7,6 +7,13 @@ export interface GradeScaleBand {
   colorToken: "success" | "primary" | "warning" | "error"; // maps to edu-* tokens
 }
 
+/**
+ * BE caps on a numeric scale's persisted `bands` (US-189 / US-E18.49):
+ * `maxItems: 10`, each `label` 1..32 characters after trimming.
+ */
+export const MAX_NUMERIC_BANDS = 10;
+export const MAX_BAND_LABEL_LENGTH = 32;
+
 export interface GradeScale {
   type: GradeScaleType;
   maxScore: number; // 10 for SCALE_10, 4 for SCALE_4, 100 for LETTER (normalized %)

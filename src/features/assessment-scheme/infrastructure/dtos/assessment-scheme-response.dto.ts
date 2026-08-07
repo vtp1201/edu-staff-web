@@ -16,12 +16,24 @@ export interface WireLetterGrade {
   maxScore?: string;
 }
 
+/**
+ * One qualitative band on a NUMERIC scale (`HE_10` / `HE_4_GPA`) — real and
+ * persisted since BE US-189. `minThreshold` is a wire decimal **string**, same
+ * convention as `minValue`/`maxValue`. Never valid on `LETTER_ABCD`.
+ */
+export interface WireGradeBand {
+  label: string; // 1..32 chars
+  minThreshold: string; // decimal string, e.g. "8.0"
+}
+
 export interface GradeScaleResponseDto {
   tenantId: string;
   scaleType: WireScaleType;
   minValue?: string;
   maxValue?: string;
   letterGrades?: WireLetterGrade[];
+  /** `null` when the tenant has none — the Go field carries no `omitempty`. */
+  bands?: WireGradeBand[] | null;
   effectiveFrom: string; // ISO date-time
   updatedAt: string;
 }
@@ -31,6 +43,8 @@ export interface SetGradeScaleRequestDto {
   minValue?: string;
   maxValue?: string;
   letterGrades?: WireLetterGrade[];
+  /** Numeric scales only; omitted entirely otherwise. */
+  bands?: WireGradeBand[];
   effectiveFrom: string;
 }
 
@@ -44,6 +58,13 @@ export interface AssessmentColumnResponseDto {
   columnType: WireColumnType;
   coefficient: number;
   ordinal: number;
+  /**
+   * Expected number of scores for this column (BE US-189). **Omitted entirely**
+   * when unspecified (`json:"requiredCount,omitempty"` on a `*int`) — absence is
+   * the unset state, not a `0`/`null`. Display metadata only: the BE does not
+   * enforce it against recorded grade entries.
+   */
+  requiredCount?: number;
 }
 
 export interface AssessmentSchemeResponseDto {
@@ -60,6 +81,8 @@ export interface AssessmentColumnRequestDto {
   columnType: WireColumnType;
   coefficient: number;
   ordinal: number;
+  /** Integer 1..100 (BE US-189). OMIT the key when unset — never send `null`. */
+  requiredCount?: number;
 }
 
 export interface SetAssessmentSchemeRequestDto {

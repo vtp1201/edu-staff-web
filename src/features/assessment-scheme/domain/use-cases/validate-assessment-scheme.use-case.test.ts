@@ -29,6 +29,35 @@ describe("validateAssessmentScheme", () => {
     expect(validateAssessmentScheme(columns)).toBe("INVALID_COUNT");
   });
 
+  // US-E18.49 — `count` is the wire's optional `requiredCount`: display
+  // metadata the BE does NOT enforce. "Unset" (null) is a legitimate state and
+  // must never be treated as invalid, nor silently defaulted to 1.
+  it("accepts a null count (requiredCount unset) on every column", () => {
+    const columns: AssessmentColumn[] = [
+      { id: "tx", type: "TX", label: "TX", count: null, weight: 50 },
+      { id: "ck", type: "CK", label: "CK", count: null, weight: 50 },
+    ];
+    expect(validateAssessmentScheme(columns)).toBeNull();
+  });
+
+  it("returns INVALID_COUNT above the BE maximum of 100", () => {
+    const columns: AssessmentColumn[] = [
+      { id: "tx", type: "TX", label: "TX", count: 100, weight: 50 },
+      { id: "ck", type: "CK", label: "CK", count: 101, weight: 50 },
+    ];
+    expect(validateAssessmentScheme(columns)).toBe("INVALID_COUNT");
+    expect(
+      validateAssessmentScheme(columns.map((c) => ({ ...c, count: 100 }))),
+    ).toBeNull();
+  });
+
+  it("returns INVALID_COUNT for a non-integer count (wire type is an integer)", () => {
+    const columns: AssessmentColumn[] = [
+      { id: "tx", type: "TX", label: "TX", count: 2.5, weight: 100 },
+    ];
+    expect(validateAssessmentScheme(columns)).toBe("INVALID_COUNT");
+  });
+
   it("tolerates floating-point weight sums that round to 100", () => {
     const columns: AssessmentColumn[] = [
       { id: "a", type: "TX", label: "A", count: 1, weight: 33.33 },

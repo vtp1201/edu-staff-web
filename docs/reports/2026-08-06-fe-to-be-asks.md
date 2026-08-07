@@ -30,7 +30,14 @@
 13. **#21 (còn lại)** — audit-trail seal/unseal đa cycle. BE đã chốt: chỉ giữ cycle mới nhất + lịch sử unseal-request (US-150) — không có event-log seal đa cycle trong data model. Nếu cần hơn, phải gửi ask mới nêu field cụ thể cho một design story.
 14. **#28** — `GET /classes/{classId}/attendance?startDate=&endDate=` (class-scoped range) — nhận, xếp sau US-185.
 15. **#16** — bulk/whole-school timetable-conflicts scan — cần confirm đây là real requirement trước khi BE build.
-16. **#10/#11** — `bands`/`requiredCount` — BE nghiêng client-only, sẽ confirm sau.
+16. ~~**#10/#11** — `bands`/`requiredCount` — BE nghiêng client-only, sẽ confirm sau.~~
+    **RESOLVED 2026-08-07 (BE US-189):** BE đã làm cả hai field thành real +
+    persisted (`GradeBand{label,minThreshold}` cho scale số, `requiredCount`
+    integer 1..100 optional trên assessment column, **display metadata — BE
+    KHÔNG enforce theo điểm đã nhập**). FE tiêu thụ ở **US-E18.49** (Wave 7):
+    mapper hết fallback-preset vô điều kiện + hết hardcode `count: 1`, write
+    path gửi bands cho scale số / omit `requiredCount` khi chưa đặt, thêm
+    failure `invalid-bands` cho 422 `GRADE_SCALE_INVALID_BANDS`.
 17. **#32** — messaging product decisions (self-service group room, message-pin, STUDENT/PARENT directory variant).
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
 19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
