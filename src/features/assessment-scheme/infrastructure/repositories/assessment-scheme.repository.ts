@@ -74,6 +74,10 @@ function mapFailure(err: unknown): AssessmentSchemeFailure {
       return { type: "invalid-scale-type" };
     case "GRADE_SCALE_LETTER_GRADES_REQUIRED":
       return { type: "letter-grades-required" };
+    // One shared 422 for every band violation (BE US-189) — no `error.fields[]`
+    // detail to disambiguate, so the client mirrors the same rules up front.
+    case "GRADE_SCALE_INVALID_BANDS":
+      return { type: "invalid-bands" };
     case "ASSESSMENT_SCHEME_COLUMN_IN_USE":
       return { type: "column-in-use" };
     case "ASSESSMENT_SCHEME_MAX_COLUMNS":

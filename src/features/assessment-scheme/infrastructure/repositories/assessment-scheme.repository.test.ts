@@ -92,7 +92,7 @@ describe("AssessmentSchemeRepository — grade scale", () => {
     }
   });
 
-  it("saveGradeScale PUTs the mapped request DTO (not the raw domain object)", async () => {
+  it("saveGradeScale PUTs the mapped request DTO including the real bands (BE US-189)", async () => {
     const put = vi.fn().mockResolvedValue(undefined);
     const repo = new AssessmentSchemeRepository(makeHttp({ put }));
 
@@ -104,10 +104,26 @@ describe("AssessmentSchemeRepository — grade scale", () => {
       minValue: "0",
       maxValue: "10",
       effectiveFrom: GRADE_SCALE_PRESETS.SCALE_10.effectiveFrom,
+      bands: [
+        { label: "Xuất sắc", minThreshold: "9.5" },
+        { label: "Giỏi", minThreshold: "8" },
+        { label: "Khá", minThreshold: "6.5" },
+        { label: "Trung bình", minThreshold: "5" },
+        { label: "Yếu", minThreshold: "0" },
+      ],
     });
-    // numeric scale must not send letterGrades / bands
+    // a numeric scale still must not send letterGrades
+    expect(JSON.stringify(put.mock.calls[0][1])).not.toContain("letterGrades");
+  });
+
+  it("saveGradeScale sends letterGrades but NEVER bands for a LETTER scale", async () => {
+    const put = vi.fn().mockResolvedValue(undefined);
+    const repo = new AssessmentSchemeRepository(makeHttp({ put }));
+
+    await repo.saveGradeScale(GRADE_SCALE_PRESETS.LETTER);
+
     const body = put.mock.calls[0][1];
-    expect(JSON.stringify(body)).not.toContain("letterGrades");
+    expect(JSON.stringify(body)).toContain("letterGrades");
     expect(JSON.stringify(body)).not.toContain("bands");
   });
 });
@@ -173,14 +189,55 @@ describe("AssessmentSchemeRepository — assessment scheme", () => {
       "/core/api/v1/subjects/subj-1/assessment-schemes/2024-2025/terms/HK2",
       {
         columns: [
-          { name: "TX", columnType: "TX", coefficient: 4, ordinal: 1 },
-          { name: "CK", columnType: "CK", coefficient: 6, ordinal: 2 },
+          {
+            name: "TX",
+            columnType: "TX",
+            coefficient: 4,
+            ordinal: 1,
+            requiredCount: 2,
+          },
+          {
+            name: "CK",
+            columnType: "CK",
+            coefficient: 6,
+            ordinal: 2,
+            requiredCount: 1,
+          },
         ],
       },
     );
     const body = put.mock.calls[0][1];
-    expect(JSON.stringify(body)).not.toContain("count");
+    expect(JSON.stringify(body)).not.toContain('"count"');
     expect(JSON.stringify(body)).not.toContain("termId");
+  });
+
+  it("getAssessmentScheme carries requiredCount through, leaving an omitted one unset", async () => {
+    const get = vi.fn().mockResolvedValue({
+      ...dto,
+      columns: [{ ...dto.columns[0], requiredCount: 3 }, { ...dto.columns[1] }],
+    });
+    const repo = new AssessmentSchemeRepository(makeHttp({ get }));
+
+    const res = await repo.getAssessmentScheme("subj-1", "2024-2025", "HK1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.data.columns.map((c) => c.count)).toEqual([3, null]);
+  });
+
+  it("saveAssessmentScheme omits requiredCount for an unset column (never sends null)", async () => {
+    const put = vi.fn().mockResolvedValue(undefined);
+    const repo = new AssessmentSchemeRepository(makeHttp({ put }));
+
+    await repo.saveAssessmentScheme({
+      subjectId: "subj-1",
+      yearLabel: "2024-2025",
+      termId: "HK1",
+      columns: [
+        { id: "tx", type: "TX", label: "TX", count: null, weight: 100 },
+      ],
+    });
+
+    expect(JSON.stringify(put.mock.calls[0][1])).not.toContain("requiredCount");
   });
 });
 
@@ -372,6 +429,9 @@ describe("AssessmentSchemeRepository — failure mapping (ground-truthed UPPER_S
     ["SUBJECT_NOT_FOUND", 404, "not-found"],
     ["GRADE_SCALE_INVALID_TYPE", 400, "invalid-scale-type"],
     ["GRADE_SCALE_LETTER_GRADES_REQUIRED", 422, "letter-grades-required"],
+    // BE US-189 — one shared code for every band violation (label, threshold
+    // range, ordering, count, or bands sent on a LETTER scale).
+    ["GRADE_SCALE_INVALID_BANDS", 422, "invalid-bands"],
     ["ASSESSMENT_SCHEME_COLUMN_IN_USE", 409, "column-in-use"],
     ["ASSESSMENT_SCHEME_MAX_COLUMNS", 422, "max-columns"],
     ["ASSESSMENT_SCHEME_INVALID_COLUMN", 400, "invalid-column"],

@@ -20,7 +20,10 @@ import type {
   AssessmentColumn,
   ColumnType,
 } from "../../domain/entities/assessment-scheme.entity";
-import { TT22_PRESET } from "../../domain/entities/assessment-scheme.entity";
+import {
+  MAX_REQUIRED_COUNT,
+  TT22_PRESET,
+} from "../../domain/entities/assessment-scheme.entity";
 import type {
   GradeScale,
   GradeScaleBand,
@@ -62,6 +65,11 @@ const GRADE_SCALE_VALIDATION_KEY: Record<GradeScaleValidationError, string> = {
   LOWEST_BAND_NOT_ZERO: "errorLowestBandNotZero",
   OVERLAPPING_THRESHOLDS: "errorOverlappingThresholds",
   GAPS_IN_COVERAGE: "errorGapsInCoverage",
+  // US-E18.49 — client mirror of the BE's single GRADE_SCALE_INVALID_BANDS 422,
+  // so the admin sees which rule was broken.
+  TOO_MANY_BANDS: "errorTooManyBands",
+  BAND_LABEL_REQUIRED: "errorBandLabelRequired",
+  BAND_LABEL_TOO_LONG: "errorBandLabelTooLong",
 };
 
 const SCHEME_VALIDATION_KEY: Record<SchemeValidationError, string> = {
@@ -79,6 +87,9 @@ const FAILURE_KEY: Record<string, string> = {
   forbidden: "errorForbidden",
   "invalid-scale-type": "errorInvalidScaleType",
   "letter-grades-required": "errorLetterGradesRequiredServer",
+  // 422 GRADE_SCALE_INVALID_BANDS (BE US-189) — the server's backstop for the
+  // band rules the client already checks.
+  "invalid-bands": "errorInvalidBands",
   "invalid-column": "errorInvalidColumn",
   "column-in-use": "errorColumnInUse",
   "max-columns": "errorMaxColumns",
@@ -101,6 +112,15 @@ let columnSeq = 0;
 function newColumnId(): string {
   columnSeq += 1;
   return `col-${columnSeq}`;
+}
+
+/**
+ * A column's `count` (wire `requiredCount`) is optional: `null` = unset, which
+ * is valid. A SET value must be an integer within the BE's 1..100 range.
+ */
+function isCountInvalid(count: number | null): boolean {
+  if (count === null) return false;
+  return !Number.isInteger(count) || count < 1 || count > MAX_REQUIRED_COUNT;
 }
 
 export function AssessmentSchemeScreen({
@@ -167,7 +187,11 @@ function GradeScaleEditor({
   const newBandIdRef = useRef<string | null>(null);
   const addButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const validationError = validateGradeScale(scale.bands, scale.maxScore);
+  const validationError = validateGradeScale(
+    scale.bands,
+    scale.maxScore,
+    scale.type,
+  );
 
   function applyPreset(type: GradeScaleType) {
     setScale(structuredClone(GRADE_SCALE_PRESETS[type]));
@@ -479,7 +503,9 @@ function SchemeEditor({
     newColumnIdRef.current = id;
     setColumns((prev) => [
       ...prev,
-      { id, type: "TX", label: "", count: 1, weight: 0 },
+      // `count` starts UNSET — a fabricated 1 would be persisted as a real
+      // `requiredCount` the admin never chose (US-E18.49).
+      { id, type: "TX", label: "", count: null, weight: 0 },
     ]);
     setSaveMessage(null);
   }
@@ -719,23 +745,38 @@ function SchemeEditor({
                   <Label htmlFor={`col-count-${col.id}`} className="text-xs">
                     {t("columnCount")}
                   </Label>
-                  {/* A11Y-042: per-column count error with aria-describedby */}
+                  {/*
+                    `count` is the wire's optional `requiredCount` (US-E18.49):
+                    an empty field means UNSET, which is a legitimate, saved
+                    state — not 1. Display metadata only; the BE never enforces
+                    it against entered grades, so the hint must stay
+                    informational.
+                    A11Y-042: per-column count error with aria-describedby.
+                  */}
                   <Input
                     id={`col-count-${col.id}`}
                     type="number"
                     min={1}
-                    value={col.count}
+                    max={MAX_REQUIRED_COUNT}
+                    step={1}
+                    value={col.count ?? ""}
+                    placeholder={t("columnCountPlaceholder")}
                     aria-label={t("columnCount")}
-                    aria-invalid={col.count < 1}
+                    aria-invalid={isCountInvalid(col.count)}
                     aria-describedby={
-                      col.count < 1 ? `col-count-error-${col.id}` : undefined
+                      isCountInvalid(col.count)
+                        ? `col-count-error-${col.id}`
+                        : `col-count-hint-${col.id}`
                     }
-                    onChange={(e) =>
-                      updateColumn(col.id, { count: Number(e.target.value) })
-                    }
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      updateColumn(col.id, {
+                        count: raw === "" ? null : Number(raw),
+                      });
+                    }}
                     className="w-24"
                   />
-                  {col.count < 1 ? (
+                  {isCountInvalid(col.count) ? (
                     <p
                       id={`col-count-error-${col.id}`}
                       className="text-edu-error-text text-xs"
@@ -743,7 +784,14 @@ function SchemeEditor({
                     >
                       {t("errorInvalidCount")}
                     </p>
-                  ) : null}
+                  ) : (
+                    <p
+                      id={`col-count-hint-${col.id}`}
+                      className="max-w-44 text-muted-foreground text-xs"
+                    >
+                      {t("columnCountHint")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1">
                   <Label htmlFor={`col-weight-${col.id}`} className="text-xs">
