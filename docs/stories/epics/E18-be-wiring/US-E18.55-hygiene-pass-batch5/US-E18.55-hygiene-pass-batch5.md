@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented — 2026-08-07
 
 ## Lane
 
@@ -87,4 +87,25 @@ packets' individual Evidence sections.
 
 ## Evidence
 
-(filled in after implementation)
+**Done 2026-08-07 (doc-only, zero `src/` change — grep-confirmed):**
+
+1. **US-185 sweep:** grep toàn repo (`src/`, `docs/`) cho
+   `US-185`/`grade_entries_by_student`/`year-heal`/symptom "student view lagging".
+   Kết quả: `src/` sạch (0 citation); citation duy nhất còn mô tả bug như caveat
+   HIỆN TẠI là 3 chỗ trong packet `US-E18.44-grade-reject-flow.md` (Ground truth,
+   NOT-in-scope, Evidence §4) — cả 3 được đánh dấu resolved kèm ngày + nguồn
+   (core migration 048, BE report 2026-08-07). Các report
+   `2026-08-05-be-to-fe-response.md`/`2026-08-06-fe-to-be-asks.md` giữ nguyên —
+   là record lịch sử tại thời điểm viết, không phải caveat sống.
+2. **Deploy-order notes:** hợp nhất vào section mới
+   `EPIC-OVERVIEW.md` §"Deploy notes (go-live real mode)" (đặt ngay trước
+   §"Dependencies & thứ tự" — vị trí cross-story operational duy nhất của epic):
+   core 047→050 theo thứ tự, social 038 trước pin/group-lifecycle real, IAM
+   binary-only + 2 env optional.
+3. **Gap thật tìm thấy (vẫn doc-only):** hai phiên song song US-E18.50 và
+   US-E18.53 quên ghi row Wave 8 trong `EPIC-OVERVIEW.md` — bổ sung cả hai
+   (tóm tắt từ packet + verdict review), cùng row US-E18.55 này.
+
+Platform proof: `bunx tsc --noEmit` clean; diff không chạm `src/` nên
+`bun vitest run` là zero-regression theo cấu trúc (pre-push gate chạy full suite
+khi merge).

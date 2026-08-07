@@ -53,11 +53,11 @@ GradeEntry) → US-184":
 - No notification/event fires on reject (matches conduct's precedent) —
   teacher discovers the rejection by seeing `DRAFT` status + `rejectionReason`
   when they reopen the gradebook. No new SSE/notification wiring needed here.
-- **Known BE bug (US-185, already registered on BE side, NOT your concern):**
-  a stale-clone bug in `grade_entries_by_student` can make a student's OWN
-  grade view lag behind the teacher's gradebook after the FIRST score entry.
-  If QA sees a real-mode mismatch between a teacher's gradebook and a
-  student's grade view, that is the KNOWN BE bug — do not chase it, do not
+- **~~Known BE bug (US-185)~~ — FIXED by BE (core migration 048 "year-heal",
+  BE report 2026-08-07; sweep US-E18.55):** the stale-clone bug in
+  `grade_entries_by_student` (student's own grade view lagging the teacher's
+  gradebook after the FIRST score entry) is no longer a current caveat. A
+  real-mode mismatch seen from now on is NOT explained by this bug — do not
   "fix" it client-side, just note it if observed.
 
 ## Current state (read before designing anything)
@@ -161,7 +161,8 @@ the existing model:
 - Any notification/event wiring for the reject action (BE confirms none
   exists).
 - Chasing the known BE bug US-185 (student-view staleness) if observed during
-  QA — note it, don't fix it.
+  QA — note it, don't fix it. *(Update 2026-08-07, US-E18.55: BE fixed US-185
+  via core migration 048 — this caveat is closed.)*
 
 ## Acceptance Criteria
 
@@ -319,7 +320,8 @@ any implementation existed.
    rejection visible to the approver. Assignability is preserved, so no caller
    broke.
 4. Live-BE: core migration `047_grade_entries_rejection` must have run;
-   BE bug US-185 (student-view staleness) is BE's, not chased here.
+   BE bug US-185 (student-view staleness) was BE's, not chased here — and is
+   now FIXED (core migration 048, BE report 2026-08-07; sweep US-E18.55).
 
 ### Routing fix — reject affordance made reachable (fe-nextjs-engineer, 2026-08-06)
 
