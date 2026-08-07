@@ -1,10 +1,10 @@
-import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
 import type { AttendanceDaySummary } from "../../domain/entities/attendance-day-summary.entity";
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
 import type { AttendanceRoster } from "../../domain/entities/attendance-roster.entity";
 import type { AttendanceStatus } from "../../domain/entities/attendance-status.entity";
 import type {
   AttendanceRecordDto,
+  ClassAttendanceRangeRecordDto,
   ClassAttendanceResponseDto,
   WireAttendanceStatus,
 } from "../dtos/class-attendance-response.dto";
@@ -73,52 +73,42 @@ export function countStatuses(
 }
 
 /**
- * Aggregates the bounded per-day fan-out (`Promise.allSettled` results) into
- * day summaries (ADR `0058` §5, ground rules from `state-architecture.md` §3):
- * - a fulfilled day → its status counts.
- * - a rejected day with `ATTENDANCE_NOT_FOUND` → a legitimate zero-count day
- *   (no attendance recorded yet), NOT an error.
- * - a rejected day with any OTHER code → omitted from the result UNLESS every
- *   single day failed, in which case the first such error is re-thrown so the
- *   caller surfaces an aggregate failure (a single flaky day must not blank
- *   the whole history tab, but a fully-unreachable range must not report an
- *   empty "0 records" summary either — that would be a lying-green result).
+ * Aggregates the FLAT range response (`GET …/attendance?startDate&endDate`,
+ * US-E18.47 / BE US-187) into one summary per requested day.
+ *
+ * Replaces the pre-US-E18.47 `aggregateDaySummaries(dates, allSettledResults)`,
+ * which folded a ≤31-call-per-day fan-out. Output contract is unchanged:
+ * - exactly one `AttendanceDaySummary` per date in `dates`, in that order;
+ * - a day with NO record is a zero-count day. The old fan-out likewise reported
+ *   both "day fetched, empty `records`" and "day rejected `ATTENDANCE_NOT_FOUND`"
+ *   as zero counts, so no "never recorded" vs "recorded empty" distinction is
+ *   lost — the wire never carried one (BE returns 200 + empty list, never 404);
+ * - records dated outside `dates` are ignored rather than inventing a day.
+ *
+ * The one behavioural difference is a strict improvement: there is no longer a
+ * per-day partial failure to swallow. One call either succeeds (every day is
+ * reported) or throws (the caller maps it via `toAttendanceFailure`), so the
+ * old "omit a flaky day / re-throw only if every day failed" branch is gone.
  */
-export function aggregateDaySummaries(
+export function aggregateRangeDaySummaries(
   dates: string[],
-  results: PromiseSettledResult<ClassAttendanceResponseDto>[],
+  records: ClassAttendanceRangeRecordDto[],
   totalStudents: number,
 ): AttendanceDaySummary[] {
-  const summaries: AttendanceDaySummary[] = [];
-  let anySucceeded = false;
-  let firstOtherError: unknown;
+  const countsByDate = new Map<string, Record<AttendanceStatus, number>>(
+    dates.map((date) => [date, zeroCounts()]),
+  );
 
-  results.forEach((result, i) => {
-    const date = dates[i];
-    if (result.status === "fulfilled") {
-      anySucceeded = true;
-      summaries.push({
-        date,
-        counts: countStatuses(
-          result.value.records.map((r) => mapStatusFromWire(r.status)),
-        ),
-        totalStudents,
-      });
-      return;
-    }
-
-    if (errorCodeOf(result.reason) === "ATTENDANCE_NOT_FOUND") {
-      anySucceeded = true;
-      summaries.push({ date, counts: zeroCounts(), totalStudents });
-      return;
-    }
-
-    firstOtherError ??= result.reason;
-  });
-
-  if (!anySucceeded && firstOtherError !== undefined) {
-    throw firstOtherError;
+  for (const record of records) {
+    const counts = countsByDate.get(record.date);
+    if (counts === undefined) continue; // outside the requested range
+    counts[mapStatusFromWire(record.status)]++;
   }
 
-  return summaries;
+  return dates.map((date) => ({
+    date,
+    // Non-null: every requested date was seeded above.
+    counts: countsByDate.get(date) ?? zeroCounts(),
+    totalStudents,
+  }));
 }

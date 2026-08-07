@@ -17,3 +17,19 @@ export interface ClassAttendanceResponseDto {
   date: string;
   records: AttendanceRecordDto[];
 }
+
+/** Range mode (US-E18.47 / BE US-187): the SAME route answers
+ *  `ClassAttendanceRangeResponse` when called with `startDate`+`endDate`
+ *  instead of `date`. Records carry their own `date` (the response is flat,
+ *  ordered by `(date, studentMemberId)` ascending) and days with no record at
+ *  all are simply absent — there is no per-day placeholder. */
+export interface ClassAttendanceRangeRecordDto {
+  date: string;
+  studentMemberId: string;
+  status: WireAttendanceStatus;
+}
+
+export interface ClassAttendanceRangeResponseDto {
+  classId: string;
+  records: ClassAttendanceRangeRecordDto[];
+}
