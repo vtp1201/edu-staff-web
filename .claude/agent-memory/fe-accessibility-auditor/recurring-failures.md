@@ -303,6 +303,11 @@ Pattern: `EmptyState` (shared component) deliberately renders its title as a `<p
 Fix: `<h1 className="sr-only">{t("unavailable.title")}</h1>` above/around the `EmptyState` in the new blocked-state component.
 Seen in: US-E18.15 exam-builder-unavailable.tsx (blocks teacher exam-bank create/[id]/edit routes in real mode — sibling exam-builder-screen.tsx has an sr-only h1, the new component didn't).
 
+## Contrast — `text-primary` on plain white/card bg for small bold CTA text (yet another recurrence, US-E18.48)
+Pattern: a row/list-item trailing CTA (e.g. "Xem để xử lý"/"Giải quyết" + arrow icon) uses `text-xs font-bold text-primary` directly on `bg-card` (white) — NOT a tinted badge bg this time, just plain white. `--primary` = `--edu-primary-dark` (#4570EA) = 4.41:1 on white — fails 4.5:1 for 12px text (12px bold doesn't clear the 14px-bold "large text" threshold). This is the same root token (`--edu-primary-dark`) already flagged failing at exactly 4.41:1 in US-E12.4/US-E13.4/US-E03.1 audits — confirms it's a systemic default-Button/CTA-text gap, not badge-specific. Also found via grep at the same audit: `homeroom-picker-sheet.tsx`, `profile-screen.tsx`, `exam-briefing.tsx`, `exam-result.tsx` all reuse `text-xs font-bold text-primary` (worth a sweep).
+Fix: swap `text-primary` → `text-edu-primary-accessible` (#4468E0, 4.88:1 on white) for any small (<14px or non-bold-14px) CTA/link text — same fix as decision 0031's pagination case, just a different consumer.
+Seen in: US-E18.48 conflict-scan-panel.tsx line 216 (ConflictRow "review"/"resolve" CTA).
+
 ## Contrast — Tab count badge: text-primary on bg-primary/20 tint (new variant of the recurring self-color-on-own-tint bug)
 Pattern: active-tab count pill uses `bg-primary/20 text-primary` (not white-on-solid like the US-E09.1 variant). `--edu-primary` (#5D87FF) as text on its own 20%-tint blended bg (~#DFE7FF) computes to ~2.67:1 — fails both the 3:1 UI-component floor and 4.5:1 text floor. Same root cause as the StatusBadge `TONE_CLASS` fixes (self-hue text on self-hue tint never passes) but reproduced in a screen-local component that didn't reuse `StatusBadge`/`statusToneClass`.
 Fix: `text-edu-text-primary` (or `text-foreground`) for the active pill text instead of `text-primary`; keep `bg-primary/20` (or /15 to match the badge convention) as the tint.
