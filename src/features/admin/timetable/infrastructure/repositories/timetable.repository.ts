@@ -4,7 +4,7 @@ import { TIMETABLE_EP } from "@/bootstrap/endpoint/timetable.endpoint";
 import { errorCodeOf } from "@/bootstrap/lib/api-envelope";
 import { dayIndexToEnum } from "../../domain/day-enum";
 import type {
-  ConflictInfo,
+  TimetableConflictScan,
   TimetableData,
 } from "../../domain/entities/timetable.entity";
 import type { TimetableSlot } from "../../domain/entities/timetable-slot.entity";
@@ -13,12 +13,14 @@ import type {
   ITimetableRepository,
   UpdateSlotInput,
 } from "../../domain/repositories/i-timetable.repository";
+import type { TimetableConflictsResponseDto } from "../dtos/timetable-conflicts-response.dto";
 import type {
   SetTimetableRequestDto,
   SlotRequestDto,
   TimetableResponseDto,
 } from "../dtos/timetable-slot-response.dto";
 import {
+  TimetableConflictsMapper,
   TimetableMapper,
   TimetableSlotMapper,
 } from "../mappers/timetable.mapper";
@@ -106,8 +108,8 @@ function mapTimetableFailure(err: unknown): TimetableFailure {
  *   changed cell in, PUT the full `{termId, slots}` body (BE has no per-slot
  *   PUT — only full-replace). A 409 becomes a `teacher-conflict` failure.
  * - `clearSlot`     → DELETE `/classes/{classId}/timetable/slots?termId&day&period`.
- * - `getConflicts`  → `[]` (no whole-school proactive endpoint — ask #16;
- *   conflicts surface reactively as a `teacher-conflict` on `updateSlot`).
+ * - `getConflicts`  → GET `/timetable/conflicts?termId=` — the whole-TENANT
+ *   double-booking scan (BE US-188, US-E18.48; ask #16 closed). ADMIN only.
  *
  * The HTTP interceptor unwraps the envelope → the repo receives payload directly.
  */
@@ -209,15 +211,27 @@ export class TimetableRepository implements ITimetableRepository {
   }
 
   /**
-   * No whole-school proactive conflicts endpoint exists (cross-repo ask #16) —
-   * conflicts are only discoverable reactively (a 409 on `updateSlot`). Returns
-   * an empty set without touching the network; the proactive conflict summary
-   * is a mock-only affordance.
+   * Whole-school proactive conflicts scan — REAL since BE US-188 (cross-repo ask
+   * #16 closed, US-E18.48). `GET /api/v1/timetable/conflicts?termId=`.
+   *
+   * Note the path is FLAT, not nested under `/classes/{classId}`: the scan
+   * covers every class in the tenant and derives the tenant from the verified
+   * token claim, so `termId` is the only input. That is why this method takes no
+   * arguments at all — the interface's previous `(classId, yearId)` signature
+   * was modelled on a per-class read that never existed.
+   *
+   * ADMIN/SUPER_ADMIN only — a MANAGER token gets 403 `TIMETABLE_FORBIDDEN`,
+   * which maps to the `forbidden` failure like every other timetable 403.
    */
-  async getConflicts(
-    _classId: string,
-    _yearId: string,
-  ): Promise<ConflictInfo[]> {
-    return [];
+  async getConflicts(): Promise<TimetableConflictScan> {
+    try {
+      const termId = await this.resolveTermId();
+      const dto = (await this.http.get(TIMETABLE_EP.conflicts, {
+        params: { termId },
+      })) as unknown as TimetableConflictsResponseDto;
+      return TimetableConflictsMapper.toEntity(dto);
+    } catch (err) {
+      throw mapTimetableFailure(err);
+    }
   }
 }

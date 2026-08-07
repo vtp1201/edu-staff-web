@@ -662,6 +662,91 @@
       }
     },
 
+    "timetableConflictScanPanel": {
+      // US-E18.48 — whole-school conflicts scan on the ADMIN timetable builder
+      // (BE US-188). NO handoff mockup exists for this panel: design_src/edu/
+      // timetable.jsx only ever had a teacher-only ConflictSummary computed
+      // client-side. This entry is therefore the normative source, authored from
+      // the existing system (no new token, no new visual language) — it reuses
+      // that summary's header shell + the shared StatusBadge/ListError.
+      "route": "/admin/timetable",
+      "component": "features/admin/timetable/presentation/timetable-screen/conflict-scan-panel.tsx",
+      "roleGate": "ADMIN only — evaluateAdminAccess strict equality. MANAGER/principal never reach it (BE US-188 does not authorize MANAGER).",
+      "container": {
+        "borderRadius": 12,
+        "background": "var(--edu-card)",
+        "shadow": "shadow-card",
+        "border": "1px solid var(--edu-border); with conflicts: var(--edu-error-text) @ 40%"
+      },
+      "header": {
+        "padding": "14px 20px",
+        "background": "with conflicts: var(--edu-error) @ 10%; clean: var(--edu-bg-muted)",
+        "iconBox": {
+          "size": 32,
+          "borderRadius": 8,
+          "background": "with conflicts: var(--edu-error) @ 20%; clean: var(--edu-success) @ 20%",
+          "icon": "alertTriangle | checkCircle2, size 16"
+        },
+        "eyebrow": {
+          "fontSize": 11,
+          "fontWeight": 700,
+          "textTransform": "uppercase",
+          "color": "var(--edu-text-secondary)"
+        },
+        "count": {
+          "fontSize": 14,
+          "fontWeight": 800,
+          "color": "with conflicts: var(--edu-error-text); clean: var(--edu-success-text)"
+        },
+        "hint": { "fontSize": 12, "color": "var(--edu-text-secondary)" }
+      },
+      "truncatedNotice": {
+        // BE scan is budget-bounded. NOT an error — warning tone, role="status".
+        "background": "var(--edu-warning) @ 10%",
+        "borderTop": "1px solid var(--edu-warning) @ 40%",
+        "color": "var(--edu-warning-foreground)",
+        "fontSize": 12,
+        "icon": "info, size 14"
+      },
+      "row": {
+        "padding": "12px 20px",
+        "divider": "1px solid var(--edu-border)",
+        "index": {
+          "size": 28,
+          "borderRadius": "full",
+          "fontSize": 11,
+          "fontWeight": 800
+        },
+        "typeBadge": "shared StatusBadge — teacher-double-booked → tone 'error'; room-double-booked → tone 'warning'",
+        "cellLabel": {
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "var(--edu-text-primary)"
+        },
+        "detail": { "fontSize": 12, "color": "var(--edu-text-primary)" },
+        "roomManualNote": {
+          // ADR 0128 (BE): a duplicate room is DETECTED on read; the write path
+          // does NOT reject it. Copy must never imply a save will be blocked.
+          "fontSize": 11,
+          "color": "var(--edu-text-secondary)",
+          "requiredOn": "room-double-booked rows only"
+        },
+        "action": {
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "var(--edu-primary)",
+          "icon": "arrowRight, size 14"
+        }
+      },
+      "states": {
+        "loading": "route-level Suspense skeleton (timetable-skeleton.tsx) — the scan is a heavy tenant-wide read",
+        "empty": "header only, success tone, 'Không có xung đột' + validHint",
+        "error": "shared ListError (shape 'bordered-card', iconVariant 'boxed') + 'Rà soát lại' retry; the grid stays usable",
+        "truncated": "list still rendered + truncatedNotice above it"
+      },
+      "i18nNamespace": "timetable.conflicts"
+    },
+
     // ── Grade screens — DR-002 (US-E13.1) — design_src/edu/gradebook.jsx,
     //    grade-entry.jsx, grade-approval.jsx. Reconciled 2026-06-20.
     //    Implementation: src/features/grades/ (fully built).

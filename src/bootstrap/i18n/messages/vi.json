@@ -4522,13 +4522,26 @@
     "classConflictCount": "{count} xung đột ở lớp này",
     "classLabel": "Lớp",
     "conflicts": {
-      "conflictsWith": "trùng với lớp {classes}",
+      "cellLabel": "{day} — Tiết {period}",
       "count": "{count} xung đột phát hiện",
+      "errorTitle": "Không rà soát được xung đột toàn trường",
       "hint": "Bấm vào một xung đột để xem ô liên quan.",
       "jumpedTo": "Đã chuyển đến ô xung đột",
+      "loading": "Đang rà soát xung đột toàn trường…",
       "noConflicts": "Không có xung đột",
       "resolve": "Giải quyết",
-      "title": "Tổng hợp xung đột",
+      "retry": "Rà soát lại",
+      "review": "Xem để xử lý",
+      "roomDetail": "Phòng {room} được xếp cho {classes} cùng lúc",
+      "roomManualHint": "Trùng phòng chỉ được phát hiện khi rà soát; hệ thống không chặn khi lưu tiết nên cần xử lý thủ công.",
+      "subtitle": "Rà soát toàn bộ lớp trong học kỳ hiện tại.",
+      "teacherDetail": "{teacher} được xếp dạy cùng lúc ở {classes}",
+      "title": "Xung đột toàn trường",
+      "truncatedHint": "Đã đạt giới hạn rà soát — có thể còn xung đột chưa hiển thị. Xử lý bớt rồi rà soát lại.",
+      "type": {
+        "room-double-booked": "Trùng phòng học",
+        "teacher-double-booked": "Trùng giáo viên"
+      },
       "validHint": "TKB hợp lệ trên toàn trường."
     },
     "errors": {
@@ -4568,7 +4581,7 @@
       "teacherBusy": "Đã có lịch tiết này",
       "title": "Chỉnh sửa tiết"
     },
-    "subtitle": "Bấm vào ô để chỉnh sửa. Xung đột giáo viên được phát hiện tự động trên toàn trường.",
+    "subtitle": "Bấm vào ô để chỉnh sửa. Xung đột giáo viên và phòng học được rà soát trên toàn trường.",
     "title": "Thời khoá biểu",
     "titleForClass": "Thời khoá biểu — Lớp {class}",
     "yearLabel": "Năm học"

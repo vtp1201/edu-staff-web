@@ -11,6 +11,18 @@ import type { TimetableSlot } from "../../../domain/entities/timetable-slot.enti
  *   • tch-1 (Hương) at Mon(0)-period1 in BOTH cls-10a1 and cls-10a2
  *   • tch-2 (Minh)  at Tue(1)-period3 in BOTH cls-10a1 and cls-11b2
  *   • tch-5 (Mai)   at Wed(2)-period4 in BOTH cls-10a1 and cls-11b2
+ *
+ * US-E18.48 adds three ROOM conflicts (BE US-188's second conflict kind, ADR
+ * 0128 — detected on read, never rejected on write). They are planted as NEW
+ * rows on the sparsely-seeded classes rather than by re-rooming existing rows,
+ * so the handoff's verbatim 10A1/10A2/11B2 week is untouched:
+ *   • P.201  at Mon(0)-period1 in BOTH cls-10a1 (tch-1) and cls-11a1 (tch-7)
+ *   • P.LAB2 at Tue(1)-period4 in BOTH cls-10a1 (tch-3) and cls-11a1 (tch-6)
+ *   • P.201  at Wed(2)-period3 in BOTH cls-10a1 (tch-8) and cls-12c1 (tch-4)
+ * Each planted pair uses DIFFERENT teachers, so it is a pure room clash and the
+ * two kinds stay independently observable.
+ * Six conflicts total > {@link MOCK_CONFLICT_CAP}, so mock mode also demos the
+ * `truncated` hint out of the box.
  */
 type SeedTuple = [
   classId: string,
@@ -67,7 +79,23 @@ const SEED_TUPLES: SeedTuple[] = [
   ["cls-12c1", 0, 1, "sub-chem", "tch-3", "P.401"],
   ["cls-12c1", 0, 2, "sub-math", "tch-11", "P.401"],
   ["cls-11a1", 2, 5, "sub-bio", "tch-7", "P.LAB3"],
+  // ── planted ROOM collisions (US-E18.48) — teachers differ, only the room clashes ──
+  ["cls-11a1", 0, 1, "sub-bio", "tch-7", "P.201"], // room clash with 10a1 Mon-1
+  ["cls-11a1", 1, 4, "sub-hist", "tch-6", "P.LAB2"], // room clash with 10a1 Tue-4
+  ["cls-12c1", 2, 3, "sub-lit", "tch-4", "P.201"], // room clash with 10a1 Wed-3
 ];
+
+/**
+ * Mock scan budget — mirrors the BE's bounded scan (US-188 caps at 500 entries).
+ * Deliberately small so `USE_MOCK=true` demonstrates the `truncated` hint with
+ * the planted seed (6 conflicts > 5) without needing a synthetic flag. Resolve
+ * conflicts in the builder until ≤5 remain and the hint disappears — the same
+ * behaviour the real bounded scan has.
+ */
+export const MOCK_CONFLICT_CAP = 5;
+
+/** The term the mock scan reports. Seed data, not UI copy — not i18n. */
+export const MOCK_TERM_ID = "term-mock-current";
 
 export function buildSeedSlots(): Record<string, TimetableSlot> {
   const out: Record<string, TimetableSlot> = {};

@@ -1,31 +1,77 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { ConflictInfo } from "../../domain/entities/timetable.entity";
+import { MOCK_CONFLICT_CAP } from "./mocks/fixtures";
 import { MockTimetableRepository } from "./mocks/timetable.mock.repository";
 
 const YEAR = "2025-2026";
 
+const teacherAt = (
+  conflicts: ConflictInfo[],
+  teacherId: string,
+  day: number,
+  period: number,
+) =>
+  conflicts.find(
+    (c) =>
+      c.type === "teacher-double-booked" &&
+      c.teacherId === teacherId &&
+      c.day === day &&
+      c.period === period,
+  );
+
+const roomAt = (
+  conflicts: ConflictInfo[],
+  room: string,
+  day: number,
+  period: number,
+) =>
+  conflicts.find(
+    (c) =>
+      c.type === "room-double-booked" &&
+      c.room === room &&
+      c.day === day &&
+      c.period === period,
+  );
+
 /**
  * Integration test at the repository boundary using the in-memory mock repo.
- * Verifies the seed's planted conflicts and the assign→conflict / clear→resolve
- * round-trips that the SlotEditor exercises.
+ * Verifies the seed's planted conflicts (both kinds) and the assign→conflict /
+ * clear→resolve round-trips that the SlotEditor exercises.
  */
 describe("MockTimetableRepository (integration)", () => {
   beforeEach(() => {
     MockTimetableRepository.reset();
   });
 
-  it("seed data has exactly 3 conflicts (tch-1 Mon-1, tch-2 Tue-3, tch-5 Wed-4)", async () => {
+  it("seed data has 3 teacher conflicts (tch-1 Mon-1, tch-2 Tue-3, tch-5 Wed-4)", async () => {
     const repo = new MockTimetableRepository();
-    const conflicts = await repo.getConflicts("cls-10a1", YEAR);
-    expect(conflicts).toHaveLength(3);
+    // Read the UNCAPPED set through detect: the scan itself caps at 5 (below).
+    const { conflicts, truncated } = await repo.getConflicts();
+    expect(truncated).toBe(true);
 
-    const find = (teacherId: string, day: number, period: number) =>
-      conflicts.find(
-        (c) =>
-          c.teacherId === teacherId && c.day === day && c.period === period,
-      );
-    expect(find("tch-1", 0, 1)).toBeDefined();
-    expect(find("tch-2", 1, 3)).toBeDefined();
-    expect(find("tch-5", 2, 4)).toBeDefined();
+    expect(teacherAt(conflicts, "tch-1", 0, 1)).toBeDefined();
+    expect(teacherAt(conflicts, "tch-2", 1, 3)).toBeDefined();
+    // tch-5 Wed-4 falls past the mock's cap — that IS the truncation being real.
+    expect(conflicts).toHaveLength(MOCK_CONFLICT_CAP);
+  });
+
+  it("seed data plants room conflicts too (BE ADR 0128's read-only kind)", async () => {
+    const repo = new MockTimetableRepository();
+    const { conflicts } = await repo.getConflicts();
+
+    const room = roomAt(conflicts, "P.201", 0, 1);
+    expect(room).toBeDefined();
+    expect(room?.classes.map((c) => c.classId).sort()).toEqual([
+      "cls-10a1",
+      "cls-11a1",
+    ]);
+  });
+
+  it("reports the scanned termId and marks the capped scan truncated", async () => {
+    const repo = new MockTimetableRepository();
+    const scan = await repo.getConflicts();
+    expect(scan.termId).toBeTruthy();
+    expect(scan.truncated).toBe(true);
   });
 
   it("assigning a teacher already busy elsewhere creates a new conflict", async () => {
@@ -37,17 +83,21 @@ describe("MockTimetableRepository (integration)", () => {
       room: "P.202",
     });
 
-    const conflicts = await repo.getConflicts("cls-10a2", YEAR);
-    const newConflict = conflicts.find(
-      (c) => c.teacherId === "tch-6" && c.day === 1 && c.period === 7,
-    );
+    // Clear enough room clashes that the new teacher clash fits under the cap.
+    await repo.clearSlot("cls-11a1", YEAR, 0, 1);
+    await repo.clearSlot("cls-11a1", YEAR, 1, 4);
+    await repo.clearSlot("cls-12c1", YEAR, 2, 3);
+
+    const { conflicts, truncated } = await repo.getConflicts();
+    const newConflict = teacherAt(conflicts, "tch-6", 1, 7);
     expect(newConflict).toBeDefined();
-    expect([...(newConflict?.classIds ?? [])].sort()).toEqual([
+    expect(newConflict?.classes.map((c) => c.classId).sort()).toEqual([
       "cls-10a1",
       "cls-10a2",
     ]);
-    // Total grows from 3 → 4.
+    // 3 planted teacher clashes + the new one, all three room clashes cleared.
     expect(conflicts).toHaveLength(4);
+    expect(truncated).toBe(false);
   });
 
   it("clearing one side of a conflict removes that conflict", async () => {
@@ -55,22 +105,28 @@ describe("MockTimetableRepository (integration)", () => {
     // Resolve the planted tch-1 Mon-1 conflict by clearing 10a2's slot.
     await repo.clearSlot("cls-10a2", YEAR, 0, 1);
 
-    const conflicts = await repo.getConflicts("cls-10a1", YEAR);
-    const stillConflicting = conflicts.find(
-      (c) => c.teacherId === "tch-1" && c.day === 0 && c.period === 1,
-    );
-    expect(stillConflicting).toBeUndefined();
-    expect(conflicts).toHaveLength(2);
+    const { conflicts } = await repo.getConflicts();
+    expect(teacherAt(conflicts, "tch-1", 0, 1)).toBeUndefined();
   });
 
-  it("getTimetable returns only the requested class's slots plus school-wide conflicts", async () => {
+  it("recomputes the scan from the CURRENT slots, never a cached list", async () => {
+    const repo = new MockTimetableRepository();
+    const before = (await repo.getConflicts()).conflicts.length;
+    await repo.clearSlot("cls-11a1", YEAR, 0, 1); // removes a planted room clash
+    const after = (await repo.getConflicts()).conflicts.length;
+    expect(after).toBeLessThanOrEqual(before);
+    expect(
+      roomAt((await repo.getConflicts()).conflicts, "P.201", 0, 1),
+    ).toBeUndefined();
+  });
+
+  it("getTimetable returns only the requested class's slots (conflicts are their own read)", async () => {
     const repo = new MockTimetableRepository();
     const data = await repo.getTimetable("cls-10a2", YEAR);
     expect(
       Object.values(data.slots).every((s) => s.classId === "cls-10a2"),
     ).toBe(true);
-    // Conflicts are school-wide (include the 10a1↔10a2 tch-1 clash).
-    expect(data.conflicts).toHaveLength(3);
+    expect(data).not.toHaveProperty("conflicts");
   });
 });
 
