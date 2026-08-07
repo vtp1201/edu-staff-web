@@ -27,6 +27,20 @@ export const IAM_MEMBER_EP = {
   invitationResend: (tenantId: string, invId: string) =>
     `${tenantInvitation(tenantId, invId)}/resend`,
   acceptInvitation: "/iam/api/v1/invitations/accept",
+  /**
+   * `POST` — PUBLIC, unauthenticated preview of an invitation (IAM US-191,
+   * ADR 0131 D10). The token is the request BODY, never a query string: a query
+   * string is written to gateway access logs, browser history and `Referer`
+   * headers, and this token is a live single-use credential.
+   */
+  lookupInvitation: "/iam/api/v1/invitations/lookup",
+  /**
+   * `POST` — PUBLIC, unauthenticated self-serve redemption: creates the account
+   * + an ACTIVE membership and returns a tenant-scoped session (IAM US-191).
+   * Same body-only token rule as `lookupInvitation`, and shares its per-IP
+   * rate-limit budget.
+   */
+  redeemInvitation: "/iam/api/v1/invitations/redeem",
   /** `POST` — add a member to the tenant. */
   members: tenantMembers,
   /**
