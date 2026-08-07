@@ -377,7 +377,9 @@ export function InviteRedeemScreen({
                       required
                       value={password}
                       aria-invalid={pwIssue ? true : undefined}
-                      aria-describedby={cn(pwHintId, pwIssue && pwErrId)}
+                      aria-describedby={[pwHintId, pwIssue && pwErrId]
+                        .filter(Boolean)
+                        .join(" ")}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     {/* Decorative: the actionable rule is the text hint below,

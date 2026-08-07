@@ -4,7 +4,9 @@ Date: 2026-07-18
 
 ## Status
 
-Accepted
+Accepted — **amended by `0071` (2026-08-07)**: BE US-191 ship redeem/lookup
+public; kết luận "no guest account-creation" hết hiệu lực cho REDEEM flow
+(accept-flow trong ADR này giữ nguyên). Xem `0071-invitation-redeem-public-registration.md`.
 
 ## Context
 
