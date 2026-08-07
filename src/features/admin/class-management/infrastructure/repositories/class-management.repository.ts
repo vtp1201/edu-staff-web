@@ -276,7 +276,11 @@ export class ClassManagementRepository implements IClassManagementRepository {
         // `assignHomeroomTeacher` both key on `userId`.
         userId: member.userId,
         displayName: member.displayName,
-        email: member.email,
+        // Tiered since ADR 0129: spread CONDITIONALLY so a (theoretical)
+        // narrowed-tier row keeps the key absent instead of gaining
+        // `email: undefined`. `/admin/*` is a staff-tier surface, so the full
+        // row always arrives here in practice — behavior is unchanged.
+        ...(member.email !== undefined ? { email: member.email } : {}),
       })),
     );
   }

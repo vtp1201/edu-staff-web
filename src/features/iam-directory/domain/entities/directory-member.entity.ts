@@ -23,12 +23,25 @@ export type DirectoryRole =
  * `LEFT` members are excluded by BE from this list (but ARE resolvable via the
  * batch lookup, so historical rows keep their names) — hence `status` here
  * never carries `LEFT`.
+ *
+ * TIERED since ADR 0129 (BE US-190), the same idiom `MemberSummary` already
+ * uses on the batch endpoint: a STAFF/STUDENT/PARENT caller receives ONLY
+ * `memberId`/`userId`/`displayName`. Presence — not a sentinel value — is the
+ * tier signal.
  */
 export interface DirectoryMember {
   memberId: string;
   userId: string;
   displayName: string;
-  email: string;
-  roles: DirectoryRole[];
-  status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  /**
+   * Staff-tier only (SUPER_ADMIN, or tenant ADMIN/MANAGER/TEACHER — ADR 0129).
+   * ABSENT (not empty, not null) for a narrowed-tier caller. A consumer that
+   * needs a guaranteed value must be reachable only from a staff-tier surface
+   * (`/admin/*`, `/principal/*`), or degrade honestly by omitting it.
+   */
+  email?: string;
+  /** Staff-tier only — see {@link DirectoryMember.email}. */
+  roles?: DirectoryRole[];
+  /** Staff-tier only — see {@link DirectoryMember.email}. */
+  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
 }

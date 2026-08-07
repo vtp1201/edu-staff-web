@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { MESSAGING_EP } from "@/bootstrap/endpoint/messaging.endpoint";
 import { type ApiEnvelope, ApiError } from "@/bootstrap/lib/api-envelope";
+import type { DirectoryMember } from "@/features/iam-directory/domain/entities/directory-member.entity";
 import type { RoomMessageResponseDto } from "../dtos/room-message-response.dto";
 import type { RoomSummaryResponseDto } from "../dtos/room-summary-response.dto";
 import type { SchoolDmResponseDto } from "../dtos/school-dm-response.dto";
@@ -385,16 +386,120 @@ describe("MessagingRepository (real social contract)", () => {
     });
   });
 
-  describe("unsupported methods (no real contract — ADR 0060)", () => {
-    it("getContacts never silently succeeds and makes no HTTP call", async () => {
+  describe("getContacts — REAL via the IAM directory port (US-E18.52, ADR 0129)", () => {
+    const directoryRow = (over: Partial<DirectoryMember> = {}) => ({
+      memberId: "u-1",
+      userId: "u-1",
+      displayName: "Lê Thị Hoa",
+      ...over,
+    });
+
+    it("maps the narrowed-tier directory rows into contacts, with NO `social` HTTP call", async () => {
+      // The contacts read belongs to `iam`, not `social` — one repository never
+      // spans two services (decision 0017); the port is composed in DI.
+      const { http, mock } = makeHttp();
+      const list = vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          directoryRow(),
+          directoryRow({
+            memberId: "u-2",
+            userId: "u-2",
+            displayName: "Phạm Quốc Bảo",
+          }),
+        ],
+      });
+      const repo = new MessagingRepository(http, SELF, {
+        role: "TEACHER",
+        list,
+      });
+
+      const res = await repo.getContacts();
+
+      expect(list).toHaveBeenCalledOnce();
+      expect(mock.get).not.toHaveBeenCalled();
+      expect(mock.post).not.toHaveBeenCalled();
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.value.map((c) => c.id)).toEqual(["u-1", "u-2"]);
+      expect(res.value[0].roleKey).toBe("teacher");
+      expect(res.value[0].name).toBe("Lê Thị Hoa");
+    });
+
+    it("maps a STAFF-TIER response identically — the extra wire fields change nothing (regression)", async () => {
+      // The SAME endpoint serves ADMIN/MANAGER/TEACHER callers the FULL row.
+      // The picker must render exactly the same contact from it, and must not
+      // pass email/status along.
+      const { http } = makeHttp();
+      const list = vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          directoryRow({
+            email: "hoa@example.com",
+            roles: ["TEACHER"],
+            status: "ACTIVE",
+          }),
+        ],
+      });
+      const repo = new MessagingRepository(http, SELF, {
+        role: "TEACHER",
+        list,
+      });
+
+      const staffTier = await repo.getContacts();
+
+      const narrowedRepo = new MessagingRepository(http, SELF, {
+        role: "TEACHER",
+        list: vi.fn().mockResolvedValue({ ok: true, value: [directoryRow()] }),
+      });
+      expect(staffTier).toEqual(await narrowedRepo.getContacts());
+    });
+
+    it("maps role-filter-required and forbidden to DISTINCT causes (never collapsed)", async () => {
+      const { http } = makeHttp();
+      const failWith = async (type: string) => {
+        const repo = new MessagingRepository(http, SELF, {
+          role: "TEACHER",
+          list: vi.fn().mockResolvedValue({ ok: false, failure: { type } }),
+        });
+        return repo.getContacts();
+      };
+
+      const roleFilter = await failWith("role-filter-required");
+      const forbidden = await failWith("forbidden");
+
+      expect(roleFilter).toEqual({
+        ok: false,
+        failure: {
+          type: "load-contacts-failed",
+          cause: "role-filter-required",
+        },
+      });
+      expect(forbidden).toEqual({
+        ok: false,
+        failure: { type: "load-contacts-failed", cause: "forbidden" },
+      });
+      expect(roleFilter).not.toEqual(forbidden);
+    });
+
+    it("fails closed (no empty picker) when DI wired no directory port", async () => {
       const { http, mock } = makeHttp();
       const repo = new MessagingRepository(http, SELF);
 
       const res = await repo.getContacts();
-      expect(mock.get).not.toHaveBeenCalled();
-      expect(res.ok).toBe(false);
-    });
 
+      expect(mock.get).not.toHaveBeenCalled();
+      expect(res).toEqual({
+        ok: false,
+        failure: {
+          type: "load-contacts-failed",
+          cause: "directory-port-not-wired",
+        },
+      });
+    });
+  });
+
+  describe("unsupported methods (no real contract — ADR 0060)", () => {
     it("createGroup never silently succeeds and makes no HTTP call", async () => {
       const { http, mock } = makeHttp();
       const repo = new MessagingRepository(http, SELF);

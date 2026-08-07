@@ -73,7 +73,8 @@
 12. **#32** — messaging: (a) self-service group-room endpoint hoặc confirm
     redesign quanh `class_chat`/`parent_group`; (b) message-pin endpoint;
     (c) directory variant cho STUDENT/PARENT hoặc confirm contact picker
-    staff-only.
+    staff-only — **(c) RESOLVED** 2026-08-07 (BE US-190 / ADR 0129 narrowed
+    tier; FE tiêu thụ ở US-E18.52). (a)/(b) còn treo.
 13. **#31** — self-serve registration gắn invitation token (joint FE+BE,
     tương lai).
 14. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có

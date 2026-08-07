@@ -151,6 +151,52 @@ describe("IamDirectoryRepository.listMembers", () => {
     });
   });
 
+  it("maps 403 member_list_role_filter_required → role-filter-required, NOT the generic forbidden (ADR 0129)", async () => {
+    // Two DIFFERENT 403s with different remedies: this one means "you are a
+    // narrowed-tier caller and must pass role=ADMIN|MANAGER|TEACHER|STAFF"
+    // (a caller/wiring bug), the generic one means "no directory access at
+    // all". Collapsing them would hide a wiring mistake behind access-denied.
+    const get = vi
+      .fn()
+      .mockRejectedValue(apiError("member_list_role_filter_required", 403));
+    const roleFilter = await new IamDirectoryRepository(
+      makeHttp({ get }),
+    ).listMembers({ tenantId: "t-1" });
+
+    expect(roleFilter).toEqual({
+      ok: false,
+      failure: { type: "role-filter-required" },
+    });
+
+    const forbidden = await new IamDirectoryRepository(
+      makeHttp({
+        get: vi.fn().mockRejectedValue(apiError("member_list_forbidden", 403)),
+      }),
+    ).listMembers({ tenantId: "t-1" });
+    expect(roleFilter).not.toEqual(forbidden);
+  });
+
+  it("maps a narrowed-tier page — rows keep only memberId/userId/displayName", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        envelope([
+          { memberId: "u-5", userId: "u-5", displayName: "Cô Lan" },
+        ] as MemberListItemDto[]),
+      );
+    const repo = new IamDirectoryRepository(makeHttp({ get }));
+
+    const result = await repo.listMembers({ tenantId: "t-1", role: "TEACHER" });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(Object.keys(result.value.data[0]).sort()).toEqual([
+      "displayName",
+      "memberId",
+      "userId",
+    ]);
+  });
+
   it("maps a bare 403 (no recognised code) → forbidden", async () => {
     const get = vi.fn().mockRejectedValue(apiError("some_other_code", 403));
     const repo = new IamDirectoryRepository(makeHttp({ get }));

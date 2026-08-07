@@ -38,7 +38,12 @@
     mapper hết fallback-preset vô điều kiện + hết hardcode `count: 1`, write
     path gửi bands cho scale số / omit `requiredCount` khi chưa đặt, thêm
     failure `invalid-bands` cho 422 `GRADE_SCALE_INVALID_BANDS`.
-17. **#32** — messaging product decisions (self-service group room, message-pin, STUDENT/PARENT directory variant).
+17. **#32** — messaging product decisions: (a) self-service group room và
+    (b) message-pin **còn treo**; **(c) directory variant cho STUDENT/PARENT
+    ĐÃ ĐÓNG** — BE US-190 / ADR 0129 mở narrowed tier trên
+    `GET /iam/api/v1/tenants/{id}/members`, FE tiêu thụ ở **US-E18.52**
+    (Wave 8): `getContacts()` rời slice force-mock, pin `role=TEACHER`,
+    parent→parent qua `?ids=` batch không đổi.
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
 19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
 

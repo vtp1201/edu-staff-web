@@ -15,10 +15,14 @@ import type { Result } from "@/features/messaging/domain/use-cases/result";
 /**
  * US-E18.17 / ADR 0060 partial-real facade. The rooms/messages/read/typing/
  * 1:1-DM slice has a real `social` contract and is served by `real`; the group
- * lifecycle, message-pin, and contacts flows have NO real contract and are
- * force-served by `mock` regardless of `NEXT_PUBLIC_USE_MOCK` — the same hybrid
- * pattern as US-E18.4/US-E18.5/US-E18.11. Zero UI/behavior change for the
- * force-mocked flows.
+ * lifecycle and message-pin flows have NO real contract and are force-served by
+ * `mock` regardless of `NEXT_PUBLIC_USE_MOCK` — the same hybrid pattern as
+ * US-E18.4/US-E18.5/US-E18.11. Zero UI/behavior change for the force-mocked
+ * flows.
+ *
+ * US-E18.52 moved `getContacts` from the force-mocked slice to the real one
+ * (IAM ADR 0129) — it is the only method whose force-mock reason expired; the
+ * group lifecycle and pin still have no endpoint at all.
  */
 export class HybridMessagingRepository implements IMessagingRepository {
   constructor(
@@ -65,11 +69,18 @@ export class HybridMessagingRepository implements IMessagingRepository {
   ): Promise<Result<boolean, MessagingFailure>> {
     return this.real.sendTypingIndicator(conversationId, typing);
   }
+  /**
+   * US-E18.52 — MOVED out of the force-mocked slice. ADR 0060's reason ("the
+   * only people-directory endpoint is role-gated ADMIN/TEACHER-only") became
+   * false with IAM ADR 0129 / BE US-190: the directory list now serves a
+   * narrowed tier (`memberId`/`userId`/`displayName`) to STUDENT/PARENT/STAFF
+   * callers as well. The real path reads IAM through a port composed in DI.
+   */
+  getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
+    return this.real.getContacts();
+  }
 
   // --- Force-mocked slice (no real contract, ADR 0060) ---
-  getContacts(): Promise<Result<ContactEntity[], MessagingFailure>> {
-    return this.mock.getContacts();
-  }
   createGroup(
     input: CreateGroupInput,
   ): Promise<Result<GroupEntity, MessagingFailure>> {

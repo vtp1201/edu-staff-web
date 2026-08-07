@@ -97,3 +97,41 @@ export const SubmitError: Story = {
     await waitFor(() => expect(body.getByRole("alert")).toBeInTheDocument());
   },
 };
+
+/**
+ * US-E18.52 — contacts as the REAL IAM directory serves them to a narrowed-tier
+ * (STUDENT/PARENT) caller: only `memberId`/`userId`/`displayName` are on the
+ * wire, so the row carries a stable `roleKey` (translated here) and NO
+ * free-text role. A row with neither must render no caption at all rather than
+ * an empty line that reads as missing data.
+ */
+export const NarrowedTierContacts: Story = {
+  args: {
+    contacts: [
+      {
+        id: "m-1",
+        name: "Lê Thị Hoa",
+        roleKey: "teacher",
+        avatarInitials: "LH",
+        color: "warning",
+        isOnline: false,
+      },
+      {
+        id: "m-2",
+        name: "Phạm Văn Sơn",
+        avatarInitials: "PS",
+        color: "info",
+        isOnline: false,
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    await waitFor(() => expect(body.getByRole("dialog")).toBeInTheDocument());
+    // roleKey → translated caption (never a raw key, never a wire label).
+    expect(body.getByText("Giáo viên")).toBeInTheDocument();
+    // No role information at all → the caption line is omitted entirely.
+    const row = body.getByText("Phạm Văn Sơn").parentElement;
+    expect(row?.textContent).toBe("Phạm Văn Sơn");
+  },
+};

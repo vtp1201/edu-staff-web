@@ -15,6 +15,10 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       createConversation: vi.fn().mockResolvedValue(ok({})),
       markConversationRead: vi.fn().mockResolvedValue(ok(true)),
       sendTypingIndicator: vi.fn().mockResolvedValue(ok(true)),
+      // US-E18.52 — contacts MOVED to the real slice: IAM's directory list now
+      // serves a narrowed tier to STUDENT/PARENT callers (ADR 0129), so the
+      // ADR 0060 force-mock is retired for this method only.
+      getContacts: vi.fn().mockResolvedValue(ok([])),
     };
     const real = makeMessagingRepo(realFns);
     const mock = makeMessagingRepo();
@@ -27,6 +31,7 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     await hybrid.createConversation(["t1"]);
     await hybrid.markConversationRead("r1");
     await hybrid.sendTypingIndicator("r1", true);
+    await hybrid.getContacts();
 
     expect(realFns.getConversations).toHaveBeenCalled();
     expect(realFns.getMessages).toHaveBeenCalledWith("r1", undefined);
@@ -35,11 +40,11 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
     expect(realFns.createConversation).toHaveBeenCalledWith(["t1"], undefined);
     expect(realFns.markConversationRead).toHaveBeenCalledWith("r1");
     expect(realFns.sendTypingIndicator).toHaveBeenCalledWith("r1", true);
+    expect(realFns.getContacts).toHaveBeenCalled();
   });
 
   it("routes the permanently-mock slice to the MOCK repo (never the real one)", async () => {
     const mockFns = {
-      getContacts: vi.fn().mockResolvedValue(ok([])),
       createGroup: vi.fn().mockResolvedValue(ok({})),
       getGroup: vi.fn().mockResolvedValue(ok({})),
       updateGroup: vi.fn().mockResolvedValue(ok({})),
@@ -51,7 +56,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       unpinMessage: vi.fn().mockResolvedValue(ok(true)),
     };
     const realFns = {
-      getContacts: vi.fn(),
       createGroup: vi.fn(),
       getGroup: vi.fn(),
       updateGroup: vi.fn(),
@@ -67,7 +71,6 @@ describe("HybridMessagingRepository (ADR 0060 partial-real wiring)", () => {
       makeMessagingRepo(mockFns),
     );
 
-    await hybrid.getContacts();
     await hybrid.createGroup({
       name: "n",
       kind: "class",

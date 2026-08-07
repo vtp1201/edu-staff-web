@@ -87,7 +87,7 @@ scope decision and rationale (what's wired real vs. permanently mock).
 | `createConversation` | **Real for 1:1 only** (`contactIds.length===1`) — `POST /rooms/school-dms`; `length>1` → `create-conversation-failed` (group path, see below) |
 | `markConversationRead` *(NEW)* | **Real** — `POST /rooms/{id}/read` |
 | `sendTypingIndicator` *(NEW)* | **Real** — `POST /rooms/{id}/typing` (outbound only; inbound signal stays mock, needs SSE/E18.18) |
-| `getContacts` | **Stays mock permanently** — role-gated real endpoint, no fork in current UI |
+| `getContacts` | ~~**Stays mock permanently** — role-gated real endpoint~~ — **SUPERSEDED by US-E18.52** (2026-08-07): IAM ADR 0129 opened a narrowed tier, so this is REAL now |
 | `createGroup`/`getGroup`/`updateGroup`/`addGroupMembers`/`removeGroupMember`/`leaveGroup`/`deleteGroup` | **Stays mock permanently** — no self-service group contract |
 | `pinMessage`/`unpinMessage` | **Stays mock permanently** — no wire capability |
 

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import type { GroupKind } from "@/features/messaging/domain/entities/group.entity";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
+import { ContactRoleCaption } from "@/features/messaging/presentation/contact-role-caption";
 import { cn } from "@/shared/utils";
 import {
   GROUP_COLOR_SWATCHES,
@@ -371,9 +372,7 @@ export function CreateGroupModal({
                             <span className="block truncate font-semibold text-foreground text-sm">
                               {c.name}
                             </span>
-                            <span className="block truncate text-muted-foreground text-xs">
-                              {c.role}
-                            </span>
+                            <ContactRoleCaption contact={c} />
                           </span>
                         </button>
                       </li>

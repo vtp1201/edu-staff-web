@@ -8,6 +8,12 @@ export type MessagingFailure =
   | { type: "load-messages-failed"; conversationId?: string; cause?: string }
   | { type: "send-message-failed"; cause?: string }
   | { type: "create-conversation-failed"; cause?: string }
+  // US-E18.52 — the contact picker is a REAL IAM directory read now. One
+  // user-facing type; `cause` keeps the IAM failure distinguishable:
+  // `role-filter-required` (a disallowed/missing `role=` filter — an FE wiring
+  // bug) vs `forbidden` (no directory access at all) vs
+  // `directory-port-not-wired` (DI misconfiguration).
+  | { type: "load-contacts-failed"; cause?: string }
   // US-E10.4 — group lifecycle + message interactions
   | { type: "create-group-failed"; cause?: string }
   | { type: "group-mutation-failed"; action?: string; cause?: string }

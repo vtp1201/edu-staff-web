@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
+import { ContactRoleCaption } from "@/features/messaging/presentation/contact-role-caption";
 import { cn } from "@/shared/utils";
 import type {
   AddMemberModalActions,
@@ -159,9 +160,7 @@ export function AddMembersModal({
                           <span className="block truncate font-semibold text-foreground text-sm">
                             {c.name}
                           </span>
-                          <span className="block truncate text-muted-foreground text-xs">
-                            {c.role}
-                          </span>
+                          <ContactRoleCaption contact={c} />
                         </span>
                       </button>
                     </li>

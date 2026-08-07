@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ContactEntity } from "@/features/messaging/domain/entities/contact.entity";
 import { avatarToneClasses } from "@/features/messaging/presentation/avatar-tone";
+import { ContactRoleCaption } from "@/features/messaging/presentation/contact-role-caption";
 import { cn } from "@/shared/utils";
 
 export interface NewConversationModalProps {
@@ -98,9 +99,7 @@ export function NewConversationModal({
                   <span className="block truncate font-bold text-foreground text-sm">
                     {c.name}
                   </span>
-                  <span className="block truncate text-muted-foreground text-xs">
-                    {c.role}
-                  </span>
+                  <ContactRoleCaption contact={c} />
                 </span>
                 <ArrowRight
                   className="size-3.5 flex-shrink-0 text-muted-foreground"
