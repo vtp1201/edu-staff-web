@@ -47,6 +47,13 @@ interface Props {
    */
   onRejectCell?: (studentId: string, columnId: string) => void;
   /**
+   * US-E18.46 — approves ONE `PENDING_APPROVAL` cell. Same
+   * capability-as-presence rule as `onRejectCell`: absent ⇒ no approve control
+   * exists in the DOM at all (not a disabled one), so only an ADMIN/MANAGER
+   * viewer can see it.
+   */
+  onApproveCell?: (studentId: string, columnId: string) => void;
+  /**
    * A11Y-101 — cells whose most recent submit attempt failed, keyed
    * `${studentId}:${columnId}`. Rendered as a per-cell aria-invalid +
    * aria-describedby indicator so a partial fan-out failure is retryable
@@ -64,6 +71,7 @@ interface CellProps {
   onSaveScore: Props["onSaveScore"];
   onSubmitCell: Props["onSubmitCell"];
   onRejectCell?: Props["onRejectCell"];
+  onApproveCell?: Props["onApproveCell"];
   submitFailure?: GradesFailure["type"];
   getFailureMessage: Props["getFailureMessage"];
 }
@@ -108,6 +116,7 @@ function ScoreCell({
   onSaveScore,
   onSubmitCell,
   onRejectCell,
+  onApproveCell,
   submitFailure,
   getFailureMessage,
 }: CellProps) {
@@ -123,6 +132,8 @@ function ScoreCell({
   const editable = status === "DRAFT" && onSaveScore !== undefined;
   const rejection = cell?.rejection;
   const canReject = status === "PENDING_APPROVAL" && onRejectCell !== undefined;
+  const canApprove =
+    status === "PENDING_APPROVAL" && onApproveCell !== undefined;
 
   if (!editable) {
     return (
@@ -137,6 +148,21 @@ function ScoreCell({
               reason={rejection.reason}
               descriptionId={rejectionId}
             />
+          ) : null}
+          {canApprove ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 min-w-11 text-edu-success-text"
+              aria-label={t("approveCellLabel", {
+                column: col.label,
+                student: row.studentName,
+              })}
+              onClick={() => onApproveCell?.(row.studentId, col.id)}
+            >
+              {t("approveCellButton")}
+            </Button>
           ) : null}
           {canReject ? (
             <Button
@@ -262,6 +288,7 @@ export function GradeEntryTable({
   onSubmitCell,
   onSubmitRow,
   onRejectCell,
+  onApproveCell,
   failedCells,
   getFailureMessage,
 }: Props) {
@@ -340,6 +367,7 @@ export function GradeEntryTable({
                     onSaveScore={onSaveScore}
                     onSubmitCell={onSubmitCell}
                     onRejectCell={onRejectCell}
+                    onApproveCell={onApproveCell}
                     submitFailure={failedCells?.get(
                       `${row.studentId}:${col.id}`,
                     )}

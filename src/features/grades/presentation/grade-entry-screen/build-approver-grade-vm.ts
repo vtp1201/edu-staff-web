@@ -5,6 +5,8 @@ import type {
   ActionResult,
   ApproverGradeEntryVM,
   ClassSubjectOption,
+  PendingApprovalPageResult,
+  PendingApprovalVM,
 } from "./grade-entry-screen.i-vm";
 
 export interface BuildApproverGradeVmInput {
@@ -24,6 +26,21 @@ export interface BuildApproverGradeVmInput {
     columnId: string,
     reason: string,
   ) => Promise<ActionResult>;
+  /** unbound Server Action — bound to the key here */
+  approveEntryAction: (
+    key: ClassSubjectTermKey,
+    studentId: string,
+    columnId: string,
+  ) => Promise<ActionResult>;
+  /**
+   * US-E18.46 — RSC-seeded first page of the tenant-wide rollup + the Server
+   * Action that fetches further pages. The action is passed through UNBOUND
+   * (it takes only a cursor and is addressed tenant-wide, not by key).
+   */
+  pendingApproval: PendingApprovalVM;
+  loadPendingApprovalPage: (
+    cursor: string | null,
+  ) => Promise<PendingApprovalPageResult>;
   /** unbound Server Action — bound to the key here */
   lockTermAction: (
     key: ClassSubjectTermKey,
@@ -58,6 +75,9 @@ export function buildApproverGradeVm(
     error,
     key,
     rejectEntryAction,
+    approveEntryAction,
+    pendingApproval,
+    loadPendingApprovalPage,
     lockTermAction,
   } = input;
 
@@ -86,6 +106,11 @@ export function buildApproverGradeVm(
     classLabel: selected?.className ?? "",
     subjectLabel: selected?.subjectName ?? "",
     rejectEntryAction: rejectEntryAction.bind(null, boundKey),
+    approveEntryAction: approveEntryAction.bind(null, boundKey),
+    pendingApproval,
+    // Deliberately NOT bound to the key: the rollup is what DISCOVERS keys, so
+    // it is addressed tenant-wide and takes only a cursor.
+    loadPendingApprovalPage,
     // Absent until a full selection exists ⇒ no lock control is rendered.
     lockTermAction: key ? lockTermAction.bind(null, key) : undefined,
   };

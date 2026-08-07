@@ -12,9 +12,11 @@ import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/clas
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
 import type { IGradeApprovalRepository } from "@/features/grades/domain/repositories/i-grade-approval.repository";
 import type { IGradeBookRepository } from "@/features/grades/domain/repositories/i-grade-book.repository";
-import type { IGradeRejectionRepository } from "@/features/grades/domain/repositories/i-grade-rejection.repository";
+import type { IGradeDecisionRepository } from "@/features/grades/domain/repositories/i-grade-decision.repository";
 import type { IGradesRepository } from "@/features/grades/domain/repositories/i-grades.repository";
 import type { IGradesTermRepository } from "@/features/grades/domain/repositories/i-grades-term.repository";
+import type { IPendingApprovalRepository } from "@/features/grades/domain/repositories/i-pending-approval.repository";
+import { ApproveColumnEntryUseCase } from "@/features/grades/domain/use-cases/approve-column-entry.use-case";
 import { ApproveGradeBatchUseCase } from "@/features/grades/domain/use-cases/approve-grade-batch.use-case";
 import { BulkLockBatchesUseCase } from "@/features/grades/domain/use-cases/bulk-lock-batches.use-case";
 import { GetChildGradesUseCase } from "@/features/grades/domain/use-cases/get-child-grades.use-case";
@@ -22,6 +24,7 @@ import { GetChildListUseCase } from "@/features/grades/domain/use-cases/get-chil
 import { GetGradeBookUseCase } from "@/features/grades/domain/use-cases/get-grade-book.use-case";
 import { GetGradeSheetUseCase } from "@/features/grades/domain/use-cases/get-grade-sheet.use-case";
 import { GetMyGradesUseCase } from "@/features/grades/domain/use-cases/get-my-grades.use-case";
+import { ListPendingApprovalBatchesUseCase } from "@/features/grades/domain/use-cases/list-pending-approval-batches.use-case";
 import { LockTermUseCase } from "@/features/grades/domain/use-cases/lock-term.use-case";
 import { RejectColumnEntryUseCase } from "@/features/grades/domain/use-cases/reject-column-entry.use-case";
 import { RequestGradeRevisionUseCase } from "@/features/grades/domain/use-cases/request-grade-revision.use-case";
@@ -32,10 +35,12 @@ import { GradesRepository } from "@/features/grades/infrastructure/repositories/
 import { MockGradeApprovalRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-approval.mock.repository";
 import { MockGradeBookRepository } from "@/features/grades/infrastructure/repositories/mocks/grade-book.mock.repository";
 import { MockGradesRepository } from "@/features/grades/infrastructure/repositories/mocks/grades.mock.repository";
+import { MockPendingApprovalRepository } from "@/features/grades/infrastructure/repositories/mocks/pending-approval.mock.repository";
 import {
   ParentChildListRepository,
   type ResolveChildNames,
 } from "@/features/grades/infrastructure/repositories/parent-child-list.repository";
+import { PendingApprovalRepository } from "@/features/grades/infrastructure/repositories/pending-approval.repository";
 import { makeAdminSettingsRepository } from "./admin-settings.di";
 import { makeAssessmentSchemeRepository } from "./assessment-scheme.di";
 import { makeBatchResolveMembersUseCase } from "./iam-directory.di";
@@ -102,7 +107,7 @@ async function resolveDisplayNames(
 async function makeRepo(
   key: ClassSubjectTermKey,
 ): Promise<
-  IGradesRepository & IGradesTermRepository & IGradeRejectionRepository
+  IGradesRepository & IGradesTermRepository & IGradeDecisionRepository
 > {
   const publishMode = await resolvePublishMode();
   if (USE_MOCK) {
@@ -141,6 +146,39 @@ export async function makeLockTermUseCase(key: ClassSubjectTermKey) {
  */
 export async function makeRejectColumnEntryUseCase(key: ClassSubjectTermKey) {
   return new RejectColumnEntryUseCase(await makeRepo(key));
+}
+
+/**
+ * US-E18.46 — per-cell APPROVE (`PENDING_APPROVAL → PUBLISHED`). Same actor,
+ * same gate and same `USE_MOCK ? Mock : Real` shape as the reject factory
+ * above; the Server Action re-checks the role and `core` enforces its own 403,
+ * so this factory carries no role logic of its own.
+ */
+export async function makeApproveColumnEntryUseCase(key: ClassSubjectTermKey) {
+  return new ApproveColumnEntryUseCase(await makeRepo(key));
+}
+
+/**
+ * US-E18.46 (BE US-186) — tenant-wide pending-approval rollup.
+ *
+ * Takes NO `ClassSubjectTermKey`: this read is what TELLS the approver which
+ * tuples exist, so it cannot be keyed by one. It therefore also skips the
+ * per-key scheme/publish-mode resolution `makeRepo` performs — the rollup needs
+ * neither, and doing them would cost two service reads per page for data the
+ * response never carries.
+ */
+export async function makeListPendingApprovalBatchesUseCase() {
+  return new ListPendingApprovalBatchesUseCase(await makePendingApprovalRepo());
+}
+
+async function makePendingApprovalRepo(): Promise<IPendingApprovalRepository> {
+  if (USE_MOCK) {
+    return new MockPendingApprovalRepository();
+  }
+  // Proactive refresh (decision 0018, playbook step 6).
+  await ensureFreshSession();
+  const http = await createServerHttpClient();
+  return new PendingApprovalRepository(http);
 }
 
 // ─── US-E13.6 / US-E18.12 — read-only multi-role grade book ─────────────────

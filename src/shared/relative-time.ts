@@ -1,5 +1,11 @@
 /**
- * Relative + absolute time from an ISO timestamp (spec.md [ASSUMPTION]:
+ * Relative + absolute time from an ISO timestamp.
+ *
+ * Promoted verbatim from `features/feed/.../feed-time.ts` on its 2nd consumer
+ * (US-E18.46's pending-approval rollup, which shows how long a batch has been
+ * waiting) — moved, not copied (component-organization.md, decision 0026).
+ *
+ * (spec.md [ASSUMPTION]:
  * relative-time is computed client-side via Intl, NOT an i18n key). Pure and
  * clock-injectable so it is deterministic in tests/stories.
  */

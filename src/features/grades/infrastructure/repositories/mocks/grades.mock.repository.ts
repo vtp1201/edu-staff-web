@@ -7,7 +7,7 @@ import type {
   StaffGradeCell,
 } from "../../../domain/entities/grade-sheet.entity";
 import type { GradesFailure } from "../../../domain/failures/grades.failure";
-import type { IGradeRejectionRepository } from "../../../domain/repositories/i-grade-rejection.repository";
+import type { IGradeDecisionRepository } from "../../../domain/repositories/i-grade-decision.repository";
 import type { IGradesRepository } from "../../../domain/repositories/i-grades.repository";
 import type { IGradesTermRepository } from "../../../domain/repositories/i-grades-term.repository";
 import { calculateWeightedAverage } from "../../../domain/use-cases/calculate-weighted-average.use-case";
@@ -35,7 +35,7 @@ let _rows = cloneRows();
  * `MOCK_REJECTED_BY`/the injected clock keep it deterministic for tests.
  */
 export class MockGradesRepository
-  implements IGradesRepository, IGradesTermRepository, IGradeRejectionRepository
+  implements IGradesRepository, IGradesTermRepository, IGradeDecisionRepository
 {
   /**
    * @param now injected clock — keeps `rejectedAt` deterministic in tests
@@ -159,6 +159,37 @@ export class MockGradesRepository
         rejectedAt: this.now().toISOString(),
       },
     };
+    row.scores = { ...row.scores, [columnId]: cell };
+    return { studentId, columnId, cell: structuredClone(cell) };
+  }
+
+  /**
+   * US-E18.46 — ADMIN/MANAGER approve (`PENDING_APPROVAL → PUBLISHED`). Same
+   * guard order as reject minus the reason check (approve has no body).
+   *
+   * The rejection payload is DROPPED on approval: unlike an edit/resubmit —
+   * where BE deliberately keeps it so the approver still sees why the cell came
+   * back — an approved cell has no outstanding objection, and `GradeEntry`'s
+   * approve transition writes `approvedBy`/`approvedAt` rather than carrying the
+   * rejection forward.
+   */
+  async approveEntry(
+    _key: ClassSubjectTermKey,
+    studentId: string,
+    columnId: string,
+  ): Promise<{ studentId: string; columnId: string; cell: StaffGradeCell }> {
+    await mockDelay();
+    const row = _rows.find((r) => r.studentId === studentId);
+    const current = row?.scores[columnId];
+    if (!row || !current) {
+      const failure: GradesFailure = { type: "not-found" };
+      throw failure;
+    }
+    if (current.status !== "PENDING_APPROVAL") {
+      const failure: GradesFailure = { type: "not-pending-approval" };
+      throw failure;
+    }
+    const cell: StaffGradeCell = { value: current.value, status: "PUBLISHED" };
     row.scores = { ...row.scores, [columnId]: cell };
     return { studentId, columnId, cell: structuredClone(cell) };
   }

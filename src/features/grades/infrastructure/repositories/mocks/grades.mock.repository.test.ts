@@ -164,3 +164,52 @@ describe("MockGradesRepository.rejectEntry — US-E18.44 (mirrors BE US-184)", (
     ).rejects.toEqual({ type: "not-found" });
   });
 });
+
+describe("MockGradesRepository.approveEntry — US-E18.46", () => {
+  async function pending(repo: MockGradesRepository) {
+    await repo.submitScore(key, "hs-001", "tx");
+  }
+
+  it("transitions a PENDING_APPROVAL cell to PUBLISHED", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+
+    const result = await repo.approveEntry(key, "hs-001", "tx");
+
+    expect(result.cell.status).toBe("PUBLISHED");
+    const sheet = await repo.getGradeSheet(key);
+    expect(
+      sheet.rows.find((r) => r.studentId === "hs-001")?.scores.tx.status,
+    ).toBe("PUBLISHED");
+  });
+
+  /**
+   * Unlike an edit/resubmit (where BE deliberately keeps the rejection so the
+   * approver still sees why it came back), approval settles the objection.
+   */
+  it("drops a prior rejection payload once approved", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await pending(repo);
+    await repo.rejectEntry(key, "hs-001", "tx", "Sai điểm");
+    await repo.saveScore(key, "hs-001", "tx", 9);
+    await repo.submitScore(key, "hs-001", "tx");
+
+    const result = await repo.approveEntry(key, "hs-001", "tx");
+
+    expect(result.cell.rejection).toBeUndefined();
+  });
+
+  it("throws not-pending-approval for a cell that is not PENDING_APPROVAL", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await expect(repo.approveEntry(key, "hs-001", "tx")).rejects.toEqual({
+      type: "not-pending-approval",
+    });
+  });
+
+  it("throws not-found for an unknown student", async () => {
+    const repo = new MockGradesRepository("ADMIN_APPROVAL");
+    await expect(repo.approveEntry(key, "hs-999", "tx")).rejects.toEqual({
+      type: "not-found",
+    });
+  });
+});

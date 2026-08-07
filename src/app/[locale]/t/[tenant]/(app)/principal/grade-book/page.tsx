@@ -1,7 +1,10 @@
 import {
+  approveEntryAction,
+  loadPendingApprovalPageAction,
   lockTermAction,
   rejectEntryAction,
 } from "@/app/[locale]/t/[tenant]/(app)/admin/grade-book/actions";
+import { loadPendingApprovalSeed } from "@/app/[locale]/t/[tenant]/(app)/admin/grade-book/load-pending-approval";
 import { makeGetGradeSheetUseCase } from "@/bootstrap/di/grades.di";
 import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { resolveMyGradeSubjects } from "@/bootstrap/lib/resolve-my-grade-subjects";
@@ -42,6 +45,8 @@ export default async function PrincipalGradeBookPage({
   const selectedTerm = sp.term ?? null;
 
   const classSubjects = await resolveMyGradeSubjects();
+  // See the admin twin: the rollup loads independently of any selection.
+  const pendingApproval = await loadPendingApprovalSeed();
   const academicYearLabel = await resolveCurrentAcademicYear().catch(
     () => "2025-2026",
   );
@@ -78,6 +83,9 @@ export default async function PrincipalGradeBookPage({
     error,
     key,
     rejectEntryAction,
+    approveEntryAction,
+    pendingApproval,
+    loadPendingApprovalPage: loadPendingApprovalPageAction,
     lockTermAction,
   });
 

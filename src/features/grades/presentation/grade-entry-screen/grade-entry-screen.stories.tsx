@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type {
   AssessmentScheme,
@@ -440,6 +440,12 @@ const REJECT_LABEL = (column: string, student: string) =>
     .replace("{column}", column)
     .replace("{student}", student);
 
+/** Mirrors the approve control's `aria-label` template (US-E18.46). */
+const APPROVE_LABEL = (column: string, student: string) =>
+  messages.gradeEntry.approveCellLabel
+    .replace("{column}", column)
+    .replace("{student}", student);
+
 /** One PENDING_APPROVAL row so the reject affordance has an exact target. */
 const PENDING_ROWS: StudentScoreRow[] = [
   {
@@ -476,9 +482,40 @@ function approverVm(
     classLabel: "10A1",
     subjectLabel: "Toán",
     rejectEntryAction: async () => ({ ok: true }),
+    approveEntryAction: async () => ({ ok: true }),
+    // Default: the rollup loaded and found nothing — the quiet state, so the
+    // reject/lock stories are not perturbed by an unrelated list.
+    pendingApproval: {
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+      error: null,
+    },
+    loadPendingApprovalPage: async () => ({
+      ok: true,
+      page: { items: [], nextCursor: null, hasMore: false },
+    }),
     ...over,
   };
 }
+
+/** Two rollup batches, oldest first (the BE's tenant-wide triage order). */
+const PENDING_BATCHES = [
+  {
+    classId: "class-001",
+    subjectId: "subj-toan-10",
+    termId: "HK1",
+    pendingCount: 12,
+    submittedAt: "2026-07-28T01:00:00.000Z",
+  },
+  {
+    classId: "class-002",
+    subjectId: "subj-toan-10",
+    termId: "HK2",
+    pendingCount: 3,
+    submittedAt: "2026-07-30T03:15:00.000Z",
+  },
+];
 
 const approverVM = approverVm();
 
@@ -878,8 +915,12 @@ export const LockTermConfirmSuccess: Story = {
         dialog.queryByText(messages.gradeBook.lockTermConfirmTitle),
       ).not.toBeInTheDocument(),
     );
-    const banner = canvas.getByRole("status");
-    await expect(banner.textContent).toContain("3");
+    // An approver screen mounts TWO live regions: this banner and the rollup's
+    // (empty) load-more announcer (A11Y-046-02) — pick the one that spoke.
+    const banner = canvas
+      .getAllByRole("status")
+      .find((el) => el.textContent?.includes("3"));
+    await expect(banner).toBeDefined();
   },
 };
 
@@ -956,5 +997,235 @@ export const LockTermConfirmFailureForbiddenNoRetry: Story = {
         name: messages.gradeBook.lockTermConfirmOk,
       }),
     ).toBeDisabled();
+  },
+};
+
+// ─── US-E18.46 — pending-approval rollup + approve action ───────────────────
+
+/**
+ * The discovery list an approver lands on: which class-subject-term tuples have
+ * pending work, oldest first, with the count and how long each has waited.
+ */
+export const PendingRollupListsBatches: Story = {
+  name: "Rollup — approver sees the tenant-wide pending list, oldest first",
+  args: {
+    vm: approverVm({
+      pendingApproval: {
+        items: PENDING_BATCHES,
+        nextCursor: null,
+        hasMore: false,
+        error: null,
+      },
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const rows = canvas.getAllByRole("button", { name: /Mở bảng điểm/ });
+    await expect(rows.length).toBe(2);
+    // Order is the server's, not a client re-sort: the oldest batch is first.
+    await expect(rows[0]).toHaveAccessibleName(/10A1/);
+    await expect(rows[1]).toHaveAccessibleName(/10A2/);
+  },
+};
+
+/** Clicking a row jumps the picker straight to that class-subject-term tuple. */
+export const PendingRollupRowJumpsToTuple: Story = {
+  name: "Rollup — clicking a row selects that class-subject-term",
+  args: {
+    onSelectionChange: fn(),
+    vm: approverVm({
+      pendingApproval: {
+        items: PENDING_BATCHES,
+        nextCursor: null,
+        hasMore: false,
+        error: null,
+      },
+    }),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Mở bảng điểm/ })[1],
+    );
+    // All THREE parts of the tuple in one navigation — the whole point is that
+    // the approver never has to assemble the selection by hand.
+    await waitFor(() =>
+      expect(args.onSelectionChange).toHaveBeenCalledWith({
+        classId: "class-002",
+        subjectId: "subj-toan-10",
+        term: "HK2",
+      }),
+    );
+  },
+};
+
+/** Nothing pending is a legitimate, explicitly-worded state — not a blank gap. */
+export const PendingRollupEmpty: Story = {
+  name: "Rollup — empty state when nothing is waiting",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.gradeEntry.pendingEmpty),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * A failed rollup read degrades ONLY its own section (the sheet below still
+ * renders) and offers a retry that re-reads the first page.
+ */
+export const PendingRollupErrorRetries: Story = {
+  name: "Rollup — failed read shows a retryable error, sheet still renders",
+  args: {
+    vm: approverVm({
+      pendingApproval: {
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+        error: "network-error",
+      },
+      loadPendingApprovalPage: async () => ({
+        ok: true,
+        page: { items: PENDING_BATCHES, nextCursor: null, hasMore: false },
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.gradeEntry.errorNetworkError),
+    ).toBeInTheDocument();
+    // The grade sheet is untouched by the rollup's failure.
+    await expect(canvas.getByText("Nguyễn Văn An")).toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeEntry.pendingRetry }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getAllByRole("button", { name: /Mở bảng điểm/ }).length,
+      ).toBe(2),
+    );
+  },
+};
+
+/** The queue must never silently truncate: `hasMore` yields a load-more page. */
+export const PendingRollupLoadsMore: Story = {
+  name: "Rollup — load more appends the next page",
+  args: {
+    vm: approverVm({
+      pendingApproval: {
+        items: [PENDING_BATCHES[0]],
+        nextCursor: "cur-2",
+        hasMore: true,
+        error: null,
+      },
+      loadPendingApprovalPage: async (cursor) => ({
+        ok: true,
+        page: {
+          items: cursor === "cur-2" ? [PENDING_BATCHES[1]] : [],
+          nextCursor: null,
+          hasMore: false,
+        },
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getAllByRole("button", { name: /Mở bảng điểm/ }).length,
+    ).toBe(1);
+    await userEvent.click(
+      canvas.getByRole("button", { name: messages.gradeEntry.pendingLoadMore }),
+    );
+    await waitFor(() =>
+      expect(
+        canvas.getAllByRole("button", { name: /Mở bảng điểm/ }).length,
+      ).toBe(2),
+    );
+  },
+};
+
+/**
+ * A teacher's VM has no `approveEntryAction` at all (it is not even a field on
+ * `TeacherGradeEntryVM`), so no approve control exists in the DOM — absent, not
+ * disabled.
+ */
+export const TeacherHasNoApproveAffordance: Story = {
+  name: "Approve — teacher viewer has no approve control (capability absent)",
+  args: { vm: { ...baseVM, sheet: sheet(PENDING_ROWS, "ADMIN_APPROVAL") } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", {
+        name: APPROVE_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    ).toBeNull();
+  },
+};
+
+/** Approve is confirmed (one-way publish) but needs NO reason field. */
+export const ApproverApprovesCell: Story = {
+  name: "Approve — approver approves a pending cell end-to-end",
+  args: { vm: approverVm() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: APPROVE_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    const dialog = await body.findByRole("alertdialog");
+    // No reason input: approval is unqualified, unlike reject.
+    await expect(within(dialog).queryByRole("textbox")).toBeNull();
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: messages.gradeEntry.approveConfirm,
+      }),
+    );
+    await expect(
+      canvas.getByText(messages.gradeEntry.approveSuccess),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * A raced approve (someone else already acted) keeps the dialog OPEN with a
+ * `blocked`-tone message — re-clicking could only fail again, so the way out is
+ * Cancel.
+ */
+export const ApproveNotPendingApprovalStaysOpen: Story = {
+  name: "Approve — 409 not-pending-approval keeps the dialog open with the reason",
+  args: {
+    vm: approverVm({
+      approveEntryAction: async () => ({
+        ok: false,
+        errorKey: "not-pending-approval",
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: APPROVE_LABEL("Cuối kỳ", "Nguyễn Văn An"),
+      }),
+    );
+    const dialog = await body.findByRole("alertdialog");
+    await userEvent.click(
+      within(dialog).getByRole("button", {
+        name: messages.gradeEntry.approveConfirm,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        within(dialog).getByText(messages.gradeEntry.errorNotPendingApproval),
+      ).toBeInTheDocument(),
+    );
+    await expect(body.getByRole("alertdialog")).toBeInTheDocument();
   },
 };

@@ -101,3 +101,5 @@
 - [Un-fake a "non-persistent" field](pattern-unfake-non-persistent-field.md) — E18.49: an unconditional preset fallback + a hardcoded `count: 1` are the two default-shaped bugs; Go no-`omitempty` slice ⇒ `null` not `[]`; prove absence NEGATIVELY; persisted ≠ enforced (keep the informational hint)
 
 - [Seed re-sync + live region](pattern-seed-resync-and-live-region.md) — E18.46 review: useState(seedProp) is stale forever; explicit first|append page mode; a 2nd always-on role=status breaks sibling getByRole("status") stories
+
+- [Discovery rollup + dormant endpoint](pattern-discovery-rollup-and-dormant-endpoint.md) — E18.46: split ports on addressing/kind/construction (else RENAME and join); gate the READ too; no misleading aggregate
