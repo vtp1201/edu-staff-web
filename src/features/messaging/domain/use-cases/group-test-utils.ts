@@ -20,6 +20,7 @@ export function makeMessagingRepo(
     deleteGroup: vi.fn(),
     pinMessage: vi.fn(),
     unpinMessage: vi.fn(),
+    getPinnedMessages: vi.fn(),
     deleteMessage: vi.fn(),
     markConversationRead: vi.fn(),
     sendTypingIndicator: vi.fn(),

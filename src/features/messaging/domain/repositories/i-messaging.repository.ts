@@ -2,6 +2,7 @@ import type { ContactEntity } from "../entities/contact.entity";
 import type { ConversationEntity } from "../entities/conversation.entity";
 import type { GroupEntity, GroupKind } from "../entities/group.entity";
 import type { MessageEntity } from "../entities/message.entity";
+import type { PinnedMessage } from "../entities/pinned-message.entity";
 import type { MessagingFailure } from "../failures/messaging.failure";
 import type { Result } from "../use-cases/result";
 
@@ -80,6 +81,17 @@ export interface IMessagingRepository {
     conversationId: string,
     messageId: string,
   ): Promise<Result<boolean, MessagingFailure>>;
+  /**
+   * US-E18.51 — the room's pin board
+   * (`GET /rooms/{roomId}/pinned-messages`), newest-pin-first. Its OWN
+   * resource, deliberately not a field of `GroupEntity`: readable by ANY room
+   * member while pin/unpin require `moderate_msg`. Flat + non-paginated
+   * (bounded by the 50-pin cap); pins whose message was soft-deleted are
+   * absent (self-healing read, mirrored by the mock).
+   */
+  getPinnedMessages(
+    conversationId: string,
+  ): Promise<Result<PinnedMessage[], MessagingFailure>>;
   deleteMessage(
     conversationId: string,
     messageId: string,

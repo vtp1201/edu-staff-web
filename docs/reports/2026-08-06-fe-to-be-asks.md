@@ -38,7 +38,22 @@
     mapper hết fallback-preset vô điều kiện + hết hardcode `count: 1`, write
     path gửi bands cho scale số / omit `requiredCount` khi chưa đặt, thêm
     failure `invalid-bands` cho 422 `GRADE_SCALE_INVALID_BANDS`.
-17. **#32** — messaging product decisions (self-service group room, message-pin, STUDENT/PARENT directory variant).
+17. **#32** — messaging product decisions. **(b) message-pin ĐÓNG (FE tiêu thụ
+    xong 2026-08-07, US-E18.51)** — BE US-192 đã ship pin/unpin +
+    `GET /rooms/{roomId}/pinned-messages`; FE wire real, xoá
+    `GroupEntity.pinnedMessages` (pin board là resource riêng, gate riêng), map
+    4 failure riêng (cap-50 / already-pinned / not-pinned / forbidden) và tái
+    dùng nguyên mapping 429 của message-history. **(a) self-service group room**
+    và **(c) STUDENT/PARENT directory variant** vẫn treo (US-E18.50 / US-E18.52).
+    **Ask mới phát sinh từ US-E18.51 — #32(b′):** pin board nhúng message với
+    `senderName` LUÔN rỗng (`toMessageDTO(msg, "")` — sender name không được
+    persist cùng message, chỉ stamp từ claims lúc gửi), nên UI phải hiển thị
+    "Không rõ người gửi" cho mọi tin đã ghim. Đề nghị BE cân nhắc denormalize
+    sender name vào `pinned_messages` (hoặc cho FE một lookup theo `senderUserId`).
+    Ghi chú phụ: Go handler CÓ emit `senderName` trên `MessageResponse` nhưng
+    `openapi.yaml` schema `Message` KHÔNG khai báo field này — drift nên sync.
+    Ngoài ra wire không có capability/room-role nào của caller nên FE không thể
+    ẩn nút pin trước; đang dùng reactive 403 (chấp nhận được, chỉ ghi nhận).
 18. **#31** — self-serve registration + invitation token (joint FE+BE, tương lai).
 19. **Viewer học bạ** — BE confirm model `classId+termId` là chốt hay sẽ có year-grouping.
 

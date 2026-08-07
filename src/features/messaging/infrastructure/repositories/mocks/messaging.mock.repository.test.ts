@@ -158,32 +158,71 @@ describe("MockMessagingRepository", () => {
     expect(res.failure.type).toBe("not-group-admin");
   });
 
-  it("pin then unpin updates the group pinned list (admin g1)", async () => {
+  // US-E18.51 — the pin board is its own resource, read via getPinnedMessages
+  // (never a field of the group entity).
+  it("pin then unpin updates the room pin board, not the group entity (admin g1)", async () => {
     const repo = new MockMessagingRepository();
     const pinned = await repo.pinMessage("g1", "g1-2");
     expect(pinned.ok).toBe(true);
 
+    const board = await repo.getPinnedMessages("g1");
+    if (!board.ok) return;
+    expect(board.value.some((p) => p.messageId === "g1-2")).toBe(true);
+    // newest-pin-first
+    expect(board.value[0]?.messageId).toBe("g1-2");
+
     const group = await repo.getGroup("g1");
     if (!group.ok) return;
-    expect(group.value.pinnedMessages.some((p) => p.messageId === "g1-2")).toBe(
-      true,
-    );
+    expect(group.value).not.toHaveProperty("pinnedMessages");
 
     const unpinned = await repo.unpinMessage("g1", "g1-2");
     expect(unpinned.ok).toBe(true);
-    const after = await repo.getGroup("g1");
+    const after = await repo.getPinnedMessages("g1");
     if (!after.ok) return;
-    expect(after.value.pinnedMessages.some((p) => p.messageId === "g1-2")).toBe(
-      false,
-    );
+    expect(after.value.some((p) => p.messageId === "g1-2")).toBe(false);
   });
 
-  it("non-admin pin on a group message returns not-group-admin (g2)", async () => {
+  it("re-pinning the same message returns message-already-pinned", async () => {
+    const repo = new MockMessagingRepository();
+    await repo.pinMessage("g1", "g1-2");
+    const again = await repo.pinMessage("g1", "g1-2");
+    expect(again.ok).toBe(false);
+    if (again.ok) return;
+    expect(again.failure.type).toBe("message-already-pinned");
+  });
+
+  it("unpinning a message that is not on the board returns message-not-pinned", async () => {
+    const repo = new MockMessagingRepository();
+    const res = await repo.unpinMessage("g1", "g1-2");
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.failure.type).toBe("message-not-pinned");
+  });
+
+  it("non-admin pin on a group message returns pin-forbidden (g2)", async () => {
     const repo = new MockMessagingRepository();
     const res = await repo.pinMessage("g2", "g2-1");
     expect(res.ok).toBe(false);
     if (res.ok) return;
-    expect(res.failure.type).toBe("not-group-admin");
+    expect(res.failure.type).toBe("pin-forbidden");
+  });
+
+  it("any member may READ the pin board even without the pin capability (g2)", async () => {
+    const repo = new MockMessagingRepository();
+    const res = await repo.getPinnedMessages("g2");
+    expect(res.ok).toBe(true);
+  });
+
+  it("a soft-deleted pinned message drops off the board (self-healing read)", async () => {
+    const repo = new MockMessagingRepository();
+    // u1 is a direct chat (no capability gate) and u1-2 is an own message.
+    await repo.pinMessage("u1", "u1-2");
+    expect((await repo.getPinnedMessages("u1")).ok).toBe(true);
+    await repo.deleteMessage("u1", "u1-2");
+
+    const board = await repo.getPinnedMessages("u1");
+    if (!board.ok) return;
+    expect(board.value.some((p) => p.messageId === "u1-2")).toBe(false);
   });
 
   it("deleteMessage soft-deletes an own message", async () => {

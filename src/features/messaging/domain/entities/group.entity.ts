@@ -22,15 +22,12 @@ export type GroupMember = {
   lastActiveAt?: string;
 };
 
-export type PinnedMessage = {
-  messageId: string;
-  senderId: string;
-  senderName: string;
-  excerpt: string;
-  /** ISO8601 timestamp. */
-  sentAt: string;
-};
-
+/**
+ * NOTE (US-E18.51): the pin board is NOT part of this entity. It lives in
+ * `pinned-message.entity.ts` and is fetched independently
+ * (`IMessagingRepository.getPinnedMessages`), mirroring the real contract where
+ * `GET /rooms/{roomId}/pinned-messages` is its own membership-gated resource.
+ */
 export type GroupEntity = {
   id: string;
   name: string;
@@ -40,5 +37,4 @@ export type GroupEntity = {
   color: string;
   conversationId: string;
   members: GroupMember[];
-  pinnedMessages: PinnedMessage[];
 };

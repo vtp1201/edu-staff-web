@@ -12,7 +12,6 @@ const group: GroupEntity = {
   color: "primary",
   conversationId: "g-new",
   members: [],
-  pinnedMessages: [],
 };
 
 describe("CreateGroupUseCase", () => {

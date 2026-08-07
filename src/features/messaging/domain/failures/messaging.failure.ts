@@ -13,6 +13,21 @@ export type MessagingFailure =
   | { type: "group-mutation-failed"; action?: string; cause?: string }
   | { type: "leave-group-failed"; cause?: string }
   | { type: "pin-failed"; cause?: string }
+  // US-E18.51 — real pin board (BE US-192). Each maps 1:1 to a distinct wire
+  // outcome so an actionable failure never shows as a generic "pin failed".
+  /** 409 `SOCIAL_PIN_LIMIT_REACHED` — the room already holds 50 pins. */
+  | { type: "pin-limit-reached" }
+  /** 409 `SOCIAL_MESSAGE_ALREADY_PINNED`. */
+  | { type: "message-already-pinned" }
+  /** 404 `SOCIAL_MESSAGE_NOT_PINNED` — unpin against a stale pin board. */
+  | { type: "message-not-pinned" }
+  /** 403 `SOCIAL_INSUFFICIENT_ROOM_PERMISSION` / `ROOM_NOT_MEMBER` — the caller
+   *  lacks the room's `moderate_msg` capability (OWNER/ADMIN/MODERATOR). */
+  | { type: "pin-forbidden" }
+  /** Pin-board read failed. Carries the wire code as `cause`, exactly like the
+   *  message-history read whose 120/min quota it shares (429
+   *  `SOCIAL_READ_RATE_LIMITED`) — no parallel rate-limit mapping. */
+  | { type: "load-pinned-failed"; cause?: string }
   | { type: "delete-message-failed"; cause?: string }
   // US-E18.17 — real self-delete window is 5 min; a reactive 403 past the
   // window (client/server race) surfaces this distinct key.

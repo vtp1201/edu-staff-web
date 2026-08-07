@@ -4,12 +4,15 @@
  * ADR 0060) and share the `/social/api/v1/...` prefix convention already used by
  * `MODERATION_EP`/`FEED_EP`. No magic strings in repositories.
  *
- * The group lifecycle / contacts-directory / message-pin flows have NO real
- * contract (ADR 0060) — `MockMessagingRepository` serves them with in-memory
- * fixtures and never reads endpoint constants for them, and the real
- * `MessagingRepository` returns an explicit fail Result without any HTTP call
- * (see its "Permanently unsupported" section) — so no constants for those
- * flows are kept here; there is nothing for them to point at.
+ * The group lifecycle / contacts-directory flows have NO real contract (ADR
+ * 0060) — `MockMessagingRepository` serves them with in-memory fixtures and
+ * never reads endpoint constants for them, and the real `MessagingRepository`
+ * returns an explicit fail Result without any HTTP call (see its "Permanently
+ * unsupported" section) — so no constants for those flows are kept here; there
+ * is nothing for them to point at.
+ *
+ * US-E18.51 (BE US-192) closed the MESSAGE-PIN third of that gap: pin, unpin and
+ * the pin board are real and have constants below.
  */
 export const MESSAGING_EP = {
   /** List rooms: `GET ?userId=<self>` (create is worker/provisioned, not used by web). */
@@ -17,6 +20,12 @@ export const MESSAGING_EP = {
   roomMessages: (roomId: string) => `/social/api/v1/rooms/${roomId}/messages`,
   roomMessageById: (roomId: string, messageId: string) =>
     `/social/api/v1/rooms/${roomId}/messages/${messageId}`,
+  /** US-E18.51 — `POST` pins (201), `DELETE` unpins (204). No request body. */
+  roomMessagePin: (roomId: string, messageId: string) =>
+    `/social/api/v1/rooms/${roomId}/messages/${messageId}/pin`,
+  /** US-E18.51 — the room's pin board: flat array, newest-pin-first, NOT paginated. */
+  roomPinnedMessages: (roomId: string) =>
+    `/social/api/v1/rooms/${roomId}/pinned-messages`,
   roomRead: (roomId: string) => `/social/api/v1/rooms/${roomId}/read`,
   roomTyping: (roomId: string) => `/social/api/v1/rooms/${roomId}/typing`,
   schoolDms: "/social/api/v1/rooms/school-dms",
