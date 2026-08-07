@@ -30,6 +30,26 @@ Ground-truthed 2026-08-03 (US-E18.34) in `../edu-api`, NOT from openapi:
   and `pkg/kit/response/error.go:108 codeFromKey = strings.ToUpper` →
   `ATTENDANCE_FORBIDDEN`. `*apperror.ValidationError` still short-circuits to
   422 `VALIDATION_FAILED` (see [[recurring-violations]]).
+**Class-scoped range (BE US-187, consumed US-E18.47)** — SAME route as the
+single-day read, `GET /core/api/v1/classes/{classId}/attendance`:
+- `date` alone = single-day mode; `startDate`+`endDate` (with `date` OMITTED)
+  = range mode → `{classId, records:[{date, studentMemberId, status}]}`, FLAT,
+  ordered `(date, studentMemberId)`, **no pagination** (no `raw:true`).
+  Sending `date` WITH the bounds = `400 ATTENDANCE_INVALID_DATE` (ambiguous) —
+  the modes are mutually exclusive, so a repo test should assert the params
+  object `not.toHaveProperty("date")`.
+- Empty range → `200` + empty `records`, NEVER 404. So the pre-US-E18.47
+  per-day fan-out's `ATTENDANCE_NOT_FOUND`-day branch and its
+  fulfilled-but-empty branch produced the IDENTICAL zero-count summary —
+  there was never a "never recorded" vs "recorded empty" distinction to lose.
+- Range guards: `endDate < startDate` → `ATTENDANCE_INVALID_DATE_RANGE`;
+  span > 366d → `ATTENDANCE_DATE_RANGE_TOO_LARGE`. Both already live in
+  `attendance-failure.mapper.ts` `INVALID_REQUEST_CODES` → `invalid-request`.
+- FE clamp `MAX_HISTORY_DAYS = 31` (`list-attendance-history.use-case.ts`) is
+  justified by ADR `0058` §5 on *client fan-out cost* — an argument US-E18.47
+  removed. Raising it toward 366 is now cheap technically but is a product/UX
+  call needing the ADR updated; default stays 31.
+
 - FE canonical wire↔domain table = `features/attendance/infrastructure/mappers/
   attendance.mapper.ts` (`mapStatusFromWire`/`mapStatusToWire` +
   `WireAttendanceStatus`). Only `features/attendance` and `parent-attendance`

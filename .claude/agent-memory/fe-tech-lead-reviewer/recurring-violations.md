@@ -325,6 +325,13 @@ before reading for style.
   failing field trips a `validate:"required,min=..."` tag (→ VALIDATION_FAILED → unknown) or a domain
   guard (→ specific key). Worse when the repo does a NON-ATOMIC multi-call sequence: earlier writes
   already persisted when the generic error fires. Consider mapping `VALIDATION_FAILED` explicitly.
+- **Harness Delta partially landed: TEST_MATRIX row done, EPIC-OVERVIEW row + ask-ledger closure NOT**
+  (US-E18.47). The engineer treats the TEST_MATRIX row as "the doc item" and skips the other two the
+  packet's own Harness Delta names. Two cheap greps, run BOTH every E18 story:
+  `grep -c "US-E18.NN" docs/stories/epics/E18-be-wiring/EPIC-OVERVIEW.md` (every closed sibling has a
+  row → `0` is unambiguous) and `grep -rn "#NN" docs/reports/<LATEST>-fe-to-be-asks.md` (the ask the
+  story closes is usually still sitting in "Phần 2 — Asks CÒN TREO" *and* in the trailing summary
+  line, so it needs 2 edits, not 1). Pre-close blocker; code can be fully Approved alongside it.
 - **`docs/TEST_MATRIX.md` row missing for an E18 story** keeps recurring (US-E18.18, US-E12.13,
   US-E18.26). Cheapest possible check: `grep -oE "^\| US-E18\.[0-9]+" docs/TEST_MATRIX.md | sort -u`
   — every sibling has a row, so an absent one is unambiguous. Pair it with the packet's `## Status`
