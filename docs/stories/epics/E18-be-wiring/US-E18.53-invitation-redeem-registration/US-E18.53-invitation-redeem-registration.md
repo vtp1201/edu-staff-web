@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress → implemented (pending review gates)
+implemented — review gates PASSED 2026-08-07 (tech-lead Approved + a11y PASS, xem cuối packet); ADR 0071 registered (amends 0059)
 
 ## Lane
 
