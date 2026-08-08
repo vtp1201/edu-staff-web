@@ -32,6 +32,14 @@ export interface AcademicRecordRowDto {
   classId: string;
   /** Free-form (`"HK1"` / uuid) — a clustering key, not a constrained enum. */
   termId: string;
+  /**
+   * DENORMALIZED academic year, e.g. `"2025-2026"` (BE ask #47, migration 051 —
+   * US-E18.56). `omitempty`: always present on a new seal, and healed lazily on
+   * this list read for a pre-migration one. ABSENT on a genuinely old row whose
+   * first heal has not run (or whose best-effort lookup failed) — that is a
+   * legitimate degrade, never an error.
+   */
+  academicYear?: string;
   studentMemberId: string;
   status: "PENDING" | "SEALED" | "UNSEALED";
   gradeSnapshot: GradeSnapshotItemDto[];

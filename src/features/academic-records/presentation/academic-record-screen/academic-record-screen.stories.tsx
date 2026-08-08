@@ -6,7 +6,7 @@ import type { AcademicRecord } from "../../domain/entities/academic-record.entit
 import { buildAcademicRecord } from "../../domain/use-cases/build-academic-record";
 import { mapAcademicRecordRow } from "../../infrastructure/mappers/academic-record.mapper";
 import {
-  MOCK_CLASS_YEARS,
+  MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR,
   MOCK_STUDENT_ACADEMIC_RECORDS,
   MOCK_SUBJECT_NAMES,
 } from "../../infrastructure/repositories/mocks/fixtures";
@@ -16,17 +16,13 @@ import { AcademicRecordSkeleton } from "./academic-record-skeleton";
 
 /** Same mapper + grouping the repositories run — stories cannot drift from prod. */
 function build(
-  yearByClassId: Map<string, string> = MOCK_CLASS_YEARS,
+  payload = MOCK_STUDENT_ACADEMIC_RECORDS,
   subjectNames: Map<string, string> = MOCK_SUBJECT_NAMES,
 ): AcademicRecord {
-  const rows = MOCK_STUDENT_ACADEMIC_RECORDS.records.map((r) =>
+  const rows = payload.records.map((r) =>
     mapAcademicRecordRow(r, subjectNames),
   );
-  return buildAcademicRecord(
-    MOCK_STUDENT_ACADEMIC_RECORDS.studentMemberId,
-    rows,
-    yearByClassId,
-  );
+  return buildAcademicRecord(payload.studentMemberId, rows);
 }
 
 const RECORD = build();
@@ -150,15 +146,16 @@ export const PendingTerm: Story = {
 };
 
 /**
- * The honest degrade: no class → academic-year join resolved (what a PARENT
- * sees in real mode today, cross-repo ask #47). Records are shown, never
- * dropped, and never given an invented year.
+ * The honest degrade, now driven by an explicitly year-LESS wire payload: an
+ * unhealed pre-migration-051 row (US-E18.56 — BE denormalized `academicYear`,
+ * so this is rare rather than every PARENT read, but the path must stay alive).
+ * Records are shown, never dropped, never given an invented year.
  */
 export const UnresolvedYear: Story = {
   args: {
     vm: vm({
       role: "parent",
-      record: build(new Map()),
+      record: build(MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR),
       selectedYearId: null,
     }),
   },
@@ -179,7 +176,7 @@ export const UnresolvedSubjectNames: Story = {
   args: {
     vm: vm({
       role: "student",
-      record: build(MOCK_CLASS_YEARS, new Map()),
+      record: build(MOCK_STUDENT_ACADEMIC_RECORDS, new Map()),
       selectedYearId: "2023-2024",
     }),
   },

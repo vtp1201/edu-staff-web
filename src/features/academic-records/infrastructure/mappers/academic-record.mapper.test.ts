@@ -205,4 +205,18 @@ describe("mapAcademicRecordRow — wire row → TermRecord (US-E18.54)", () => {
     expect(term.classId).toBe("c-9a1");
     expect(term.termId).toBe("HK2");
   });
+
+  it("carries the denormalized wire academicYear verbatim (US-E18.56)", () => {
+    const term = mapAcademicRecordRow(
+      row({ academicYear: "2025-2026" }),
+      new Map(),
+    );
+    expect(term.academicYear).toBe("2025-2026");
+  });
+
+  it("maps an ABSENT academicYear to null — an unhealed pre-migration row, not an error", () => {
+    const term = mapAcademicRecordRow(row(), new Map());
+    expect(term.academicYear).toBeNull();
+    expect("academicYear" in term).toBe(true);
+  });
 });

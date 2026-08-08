@@ -179,4 +179,91 @@ normal
 
 ## Evidence
 
-(fe-nextjs-engineer / fe-tech-lead-reviewer / fe-accessibility-auditor / fe-qa-playwright fill in below as work proceeds.)
+### fe-nextjs-engineer — implementation (2026-08-08)
+
+TDD red→green: the four affected suites were edited FIRST (2-arg
+`buildAcademicRecord`, wire `academicYear` in the repository/DI fixtures, new
+mapper present/absent cases) and run red — **14 failed / 32 passed** across
+`build-academic-record.test.ts`, `academic-record.mapper.test.ts`,
+`academic-records.repository.test.ts`, `academic-records.di.test.ts` — before a
+single line of production code changed. Then green, then doc-comment refactor.
+
+**Files changed** (17 tracked paths, seal slice byte-identical):
+
+| Layer | File | Change |
+| --- | --- | --- |
+| domain/entities | `academic-record.entity.ts` | `+ academicYear: string \| null` on `TermRecord`; header + `UNRESOLVED_YEAR_ID` doc rewritten (the "injected resolver" sentence was false) |
+| domain/use-cases | `build-academic-record.ts` | 3rd param `yearByClassId` DELETED; groups on `record.academicYear ?? UNRESOLVED_YEAR_ID`; doc rewritten |
+| domain/use-cases | `build-academic-record.test.ts` | rewritten for the 2-arg signature (11 tests, incl. a NEW one the old join could not express: the same `classId` in two different years now splits correctly) |
+| domain/use-cases | `derive-year-seal-status.test.ts` | its `TermRecord` literal gained `academicYear` (compile fallout of a required field) |
+| infrastructure/dtos | `academic-record-response.dto.ts` | `+ academicYear?: string` (`omitempty`, exact wire name) |
+| infrastructure/mappers | `academic-record.mapper.ts` | `academicYear: orNull(dto.academicYear)` |
+| infrastructure/mappers | `academic-record.mapper.test.ts` | +2 tests (verbatim carry; ABSENT → `null` AND the key still present on the entity) |
+| infrastructure/repositories | `academic-records.repository.ts` | `resolveYears` ctor param + call DELETED (`resolveSubjectNames` moves to arg 2); class doc rewritten |
+| infrastructure/repositories | `academic-records.repository.test.ts` | fan-out assertions replaced by a call-COUNT proof (`get` called exactly once for 3 rows / 2 classes) + wire-field grouping + absent-field degrade |
+| infrastructure/repositories | `enrollment-year.resolver.ts` + `.test.ts` | **DELETED** (grep-confirmed single consumer) |
+| infrastructure/repositories/mocks | `fixtures.ts` | `record()` takes `academicYear`; every row carries one; `MOCK_CLASS_YEARS` deleted; NEW `MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR` (key ABSENT, not `null`/`""`) keeps the degrade path alive |
+| infrastructure/repositories/mocks | `academic-records.mock.repository.ts` | 2-arg `buildAcademicRecord`, year-map import gone |
+| presentation | `academic-record-screen.stories.tsx` | `build()` now takes a wire PAYLOAD instead of a year map; `UnresolvedYear` drives the bucket from the year-less fixture; no component/markup change |
+| bootstrap/di | `academic-records.di.ts` | `makeEnrollmentYearResolver(http)` no longer imported/constructed; factory doc rewritten. `makeSealRepository()` untouched |
+| bootstrap/di | `academic-records.di.test.ts` | the "deduped and bounded fan-out" suite became a ZERO-enrollment-call proof (throws on any unexpected URL) + 3-bucket grouping incl. an unhealed row |
+| bootstrap/endpoint | `admin-roster.endpoint.ts` | `studentEnrollmentPath()` DELETED (see deviation #1); `unenroll` doc updated |
+
+**Proof commands actually run:**
+
+- `bun vitest run` → **517 files / 4079 tests passed**, 0 failed (was 500/3879 at
+  US-E18.54; the delta is other stories landing since, plus this story's net
+  −5 resolver tests / +3 new ones).
+- Seal regression guard, re-run explicitly by name:
+  `academic-records-seal.repository.test.ts`,
+  `academic-records-seal-hybrid.repository.test.ts`,
+  `academic-records-seal.mock.repository.test.ts`, `seal-batch.mapper.test.ts`,
+  `seal-academic-record` / `get-seal-status` / `initiate-unseal` /
+  `confirm-unseal` use-case suites → **8 files / 101 tests passed**;
+  `list-pending-unseal-requests.use-case.test.ts` → **3 passed** (9 files / 104
+  total). Note: `get-seal-audit-trail.use-case` has **no** test file in the repo
+  (pre-existing, not a regression of this story) — the packet's "5 seal
+  use-case suites" is really 5 = the four above + `list-pending-unseal-requests`.
+- `git diff main...HEAD -- '**/academic-records-seal*'` → **0 lines**.
+- `bunx tsc --noEmit` → clean (exit 0). The only compile fallout of the new
+  required entity field was `derive-year-seal-status.test.ts`, fixed above.
+- `bun lint` → clean for this story after `bun lint:fix` (Biome reformatted one
+  wrapped line in the stories file). Remaining repo-wide: **1 warning + 1 info,
+  both pre-existing and untouched** — `message-context-menu.tsx:167`
+  "suppression comment has no effect" (messaging feature) and one Biome info.
+- `bun run build` → green. `NEXT_PUBLIC_USE_MOCK=false bun run build` → green.
+- Storybook interaction suite `bun vitest run --config vitest.storybook.mts` →
+  **163 files / 1285 tests passed**, including the 12 academic-record-screen
+  stories (`UnresolvedYear` re-verified against the year-less fixture). The
+  `<tfoot> cannot contain a nested <p>` console noise in that log comes from a
+  different story (shadcn `TableFooter` default classes — the academic-record
+  table's own `<tfoot>` has no `<p>`); it is pre-existing and non-failing.
+- Grep: `enrollment-year.resolver|makeEnrollmentYearResolver|ResolveYearByClassId|MAX_CLASS_YEAR_LOOKUPS|studentEnrollmentPath|MOCK_CLASS_YEARS`
+  over `src/` → the only hit is the *prose* mention inside the
+  `admin-roster.endpoint.ts` doc comment explaining why the builder is gone.
+
+### Deviations from Scope (both justified)
+
+1. **Scope §8 left the `studentEnrollmentPath` decision open — I DELETED it.**
+   Grep proved the resolver was its only caller anywhere in `src/`, and it was
+   a one-line alias of `unenrollPath()` (same path, different verb), so keeping
+   it would be exported dead code. The `unenroll` path CONSTANT stays — the
+   admin-roster DELETE still uses it — and its doc comment now records how to
+   re-add a GET builder if a screen ever needs the single-enrollment read.
+2. **Scope §9's "mock-side year-resolution shim" is `MOCK_CLASS_YEARS`**, and
+   instead of only deleting it I added `MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR`.
+   Without it the AC "keep ONE story exercising the unresolved bucket" would
+   have had no wire-shaped source (every normal fixture row now resolves), and
+   the degrade path would have become untested dead code.
+
+### Notes for review
+
+- No i18n keys added or changed; `unresolvedYear.*` copy is untouched (still
+  reachable — proven by both the DI test and the Storybook story).
+- No token, component, or markup change → no new design-system surface; the
+  screen renders byte-identically for a resolved year (grouping key SOURCE
+  changed, not its value).
+- No ADR trigger: this is a data-source simplification within the existing
+  contract, and it *removes* a cross-aggregate join rather than adding one.
+- Real-mode network cost for this screen drops from `1 + N(distinct classes)`
+  reads to `1` (plus the unchanged subject-catalogue read).

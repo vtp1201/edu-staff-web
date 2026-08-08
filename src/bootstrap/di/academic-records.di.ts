@@ -21,7 +21,6 @@ import { SealAcademicRecordUseCase } from "@/features/academic-records/domain/us
 import { AcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/academic-records.repository";
 import { AcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal.repository";
 import { HybridAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/academic-records-seal-hybrid.repository";
-import { makeEnrollmentYearResolver } from "@/features/academic-records/infrastructure/repositories/enrollment-year.resolver";
 import { MockAcademicRecordsRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records.mock.repository";
 import { MockAcademicRecordsSealRepository } from "@/features/academic-records/infrastructure/repositories/mocks/academic-records-seal.mock.repository";
 
@@ -34,23 +33,19 @@ import { MockAcademicRecordsSealRepository } from "@/features/academic-records/i
  * What changed is the MODEL, not a path. BE's 2026-08-07 answer confirmed the
  * aggregate stays `(classId, termId, studentMemberId)` FOREVER — but pointed at
  * `GET /members/{memberId}/academic-records` (BE US-064), which was already
- * shipped and simply never consumed. The viewer's year dimension is now derived
- * CLIENT-SIDE (`buildAcademicRecord`), so no wire year is needed.
+ * shipped and simply never consumed. The viewer's year dimension is grouped
+ * CLIENT-SIDE (`buildAcademicRecord`) off the row's own `academicYear`, which
+ * BE denormalized in US-E18.56 (ask #47 / migration 051). That REMOVED the
+ * `classId → academicYearLabel` enrollment point-read this factory used to
+ * compose — the join that could never resolve for a PARENT (no class-context
+ * read in `core` admits that role) and cost one extra call per distinct class.
  *
- * Two collaborators are composed here (decision 0017 — cross-aggregate joins
- * belong in `bootstrap/di`, never inside a repository), both FAIL-SOFT so a
- * decoration failure can never take the record read down with it:
- *
- * 1. `classId → academicYearLabel` via an enrollment point read, deduped and
- *    bounded (`makeEnrollmentYearResolver`). It resolves for ADMIN/MANAGER,
- *    STUDENT-self and assigned TEACHERs. It CANNOT resolve for a PARENT — no
- *    class-context read in `core` admits the PARENT role — so a parent's
- *    records land, honestly labelled, in the "unresolved year" bucket until
- *    cross-repo ask #47 (denormalize `academicYear` onto the record row, which
- *    BE pre-offered) lands.
- * 2. `subjectId → name` via the subject catalogue (`GET /subjects`, readable by
- *    any authenticated member). Without it the table's subject column would
- *    have to show a uuid — it shows an i18n placeholder instead.
+ * ONE collaborator is still composed here (decision 0017 — cross-aggregate
+ * joins belong in `bootstrap/di`, never inside a repository), FAIL-SOFT so a
+ * decoration failure can never take the record read down with it: `subjectId →
+ * name` via the subject catalogue (`GET /subjects`, readable by any
+ * authenticated member). Without it the table's subject column would have to
+ * show a uuid — it shows an i18n placeholder instead.
  */
 async function makeRepository(): Promise<IAcademicRecordsRepository> {
   if (USE_MOCK) return new MockAcademicRecordsRepository();
@@ -64,11 +59,7 @@ async function makeRepository(): Promise<IAcademicRecordsRepository> {
     if (result.ok) for (const s of result.value) names.set(s.id, s.name);
     return names;
   };
-  return new AcademicRecordsRepository(
-    http,
-    makeEnrollmentYearResolver(http),
-    resolveSubjectNames,
-  );
+  return new AcademicRecordsRepository(http, resolveSubjectNames);
 }
 
 /**

@@ -32,18 +32,16 @@ export const ROSTER_EP = {
    */
   classStudents: "/core/api/v1/classes/:classId/students",
   /**
-   * ONE enrollment row: DELETE = unenroll (build with unenrollPath()),
-   * GET = read that row (build with studentEnrollmentPath(), US-E18.54).
+   * ONE enrollment row: DELETE = unenroll (build with unenrollPath()).
    *
-   * The GET is the academic-record viewer's `classId → academicYearLabel`
-   * source, and it is the ONLY class-context read whose RBAC covers a STUDENT:
-   * `GetStudentEnrollmentUseCase` allows ADMIN/SUPER_ADMIN/MANAGER, a TEACHER
-   * assigned to the class, and a STUDENT reading their OWN row — whereas
-   * `GET /classes/{classId}` (which also carries `academicYearLabel` plus the
-   * class name) is ADMIN/MANAGER/assigned-TEACHER only. **PARENT is in neither
-   * allow-list**, so a parent cannot resolve the year for a linked child's
-   * record at all today — cross-repo ask #47 (denormalize `academicYear` onto
-   * the academic-record row) is what closes that.
+   * The GET on this same path used to be the academic-record viewer's
+   * `classId → academicYearLabel` source (US-E18.54) — the only class-context
+   * read whose RBAC covers a STUDENT, but which admits no PARENT. US-E18.56
+   * deleted that join outright: BE denormalized `academicYear` onto every
+   * academic-record row (ask #47 / migration 051), so nothing in this app reads
+   * this path with GET any more and the `studentEnrollmentPath()` builder is
+   * gone with it. Re-add a builder here (do not inline the string) if a future
+   * screen genuinely needs the single-enrollment read.
    */
   unenroll: "/core/api/v1/classes/:classId/students/:studentMemberId",
   /**
@@ -74,12 +72,4 @@ export function unenrollPath(classId: string, studentMemberId: string): string {
   return ROSTER_EP.unenroll
     .replace(":classId", classId)
     .replace(":studentMemberId", studentMemberId);
-}
-
-/** GET path for one enrollment row — same path as {@link unenrollPath}, different verb. */
-export function studentEnrollmentPath(
-  classId: string,
-  studentMemberId: string,
-): string {
-  return unenrollPath(classId, studentMemberId);
 }

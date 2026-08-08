@@ -91,13 +91,17 @@ describe("academic-records.di — viewer factory is on the standard USE_MOCK gat
   });
 });
 
-describe("academic-records.di — the composed year join is deduped and bounded", () => {
-  it("issues ONE enrollment read per DISTINCT classId, and never fails the record read when a class 403s", async () => {
+describe("academic-records.di — the year rides the record row, no enrollment fan-out (US-E18.56)", () => {
+  it("issues ZERO class-enrollment reads and groups by the wire academicYear, degrading a row that omits it", async () => {
     const calls: string[] = [];
     const get = vi.fn(async (url: string) => {
       calls.push(url);
       if (url.includes("/academic-records")) {
-        const rec = (classId: string, termId: string) => ({
+        const rec = (
+          classId: string,
+          termId: string,
+          academicYear?: string,
+        ) => ({
           classId,
           termId,
           studentMemberId: "stu-1",
@@ -105,26 +109,21 @@ describe("academic-records.di — the composed year join is deduped and bounded"
           gradeSnapshot: [],
           termAverage: "8.00",
           resealCount: 0,
+          ...(academicYear === undefined ? {} : { academicYear }),
         });
         return {
           studentMemberId: "stu-1",
           records: [
-            rec("c-9", "HK1"),
-            rec("c-9", "HK2"),
-            rec("c-10", "HK1"),
-            rec("c-10", "HK2"),
+            rec("c-9", "HK1", "2024-2025"),
+            rec("c-9", "HK2", "2024-2025"),
+            rec("c-10", "HK1", "2025-2026"),
+            // Unhealed pre-migration-051 row: the field is simply absent.
+            rec("c-old", "HK1"),
           ],
         };
       }
       if (url.includes("/subjects")) return [];
-      if (url.includes("c-10")) throw new Error("403 forbidden");
-      return {
-        enrollmentId: "e-1",
-        classId: "c-9",
-        studentMemberId: "stu-1",
-        academicYearLabel: "2024-2025",
-        enrolledAt: "2024-09-01T00:00:00Z",
-      };
+      throw new Error(`unexpected call: ${url}`);
     });
     stubRealSeams(get);
     setEnv("false");
@@ -137,13 +136,13 @@ describe("academic-records.di — the composed year join is deduped and bounded"
     const enrollmentCalls = calls.filter((u) =>
       /\/classes\/[^/]+\/students\//.test(u),
     );
-    // 4 records, 2 distinct classes → 2 enrollment reads, not 4.
-    expect(enrollmentCalls).toHaveLength(2);
+    expect(enrollmentCalls).toHaveLength(0);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // The resolvable class groups by year; the forbidden one degrades honestly.
+    // Two real years from the wire; the field-less row degrades honestly, last.
     expect(result.data.years.map((y) => y.yearLabel)).toEqual([
       "2024-2025",
+      "2025-2026",
       null,
     ]);
   });

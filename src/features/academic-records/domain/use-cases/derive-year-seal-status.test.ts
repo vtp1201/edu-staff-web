@@ -10,6 +10,7 @@ function term(status: TermStatus): TermRecord {
     termId: "HK1",
     status,
     classId: "c-1",
+    academicYear: "2025-2026",
     sealedAt: null,
     sealedBy: null,
     unsealedAt: null,

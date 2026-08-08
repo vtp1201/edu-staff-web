@@ -10,7 +10,6 @@ import type {
 import { buildAcademicRecord } from "../../domain/use-cases/build-academic-record";
 import type { ListStudentAcademicRecordsResponseDto } from "../dtos/academic-record-response.dto";
 import { mapAcademicRecordRow } from "../mappers/academic-record.mapper";
-import type { ResolveYearByClassId } from "./enrollment-year.resolver";
 
 /**
  * Map a normalised ApiError to the viewer failure union. Branch on
@@ -38,25 +37,25 @@ export type ResolveSubjectNames = () => Promise<Map<string, string>>;
  *
  * ONE member-scoped read (`GET /members/{memberId}/academic-records`, BE
  * US-064) returns every `(classId, termId)` record the student holds,
- * UNPAGINATED. Two OPTIONAL collaborators decorate it, both composed in
- * `bootstrap/di` (decision 0017) and both FAIL-SOFT:
+ * UNPAGINATED — and, since US-E18.56, each row carries its own denormalized
+ * `academicYear` (BE closed ask #47 with migration 051). That killed the
+ * enrollment point-read fan-out this repository used to compose: the year
+ * grouping now reads a field already on the row, so a PARENT — who is in no
+ * class-context read's allow-list — finally sees real years, and every role
+ * pays FEWER network calls. A row whose `academicYear` is absent (an unhealed
+ * pre-migration row) still degrades into the viewer's "unresolved year" bucket.
  *
- * - `resolveYears` — the `classId → academicYearLabel` join the year grouping
- *   needs, because the record wire carries no year and BE confirmed it never
- *   will. Called ONCE with the DISTINCT classIds; whatever it cannot resolve
- *   degrades into the viewer's "unresolved year" bucket. Absent collaborator =
- *   every record degrades — which is the honest outcome for a PARENT, who is
- *   in no class-context read's allow-list (cross-repo ask #47).
- * - `resolveSubjectNames` — the subject catalogue. Absent/failed = `null`
- *   names; a subjectId uuid is never shown as a subject label.
+ * ONE OPTIONAL collaborator remains, composed in `bootstrap/di` (decision 0017)
+ * and FAIL-SOFT so a decoration failure can never take the record read down:
+ * `resolveSubjectNames` — the subject catalogue. Absent/failed = `null` names;
+ * a subjectId uuid is never shown as a subject label.
  *
- * The student id used for the join is the one the SERVER echoed
+ * The student id on the result is the one the SERVER echoed
  * (`studentMemberId` on the payload), not the caller's argument.
  */
 export class AcademicRecordsRepository implements IAcademicRecordsRepository {
   constructor(
     private readonly http: AxiosInstance,
-    private readonly resolveYears?: ResolveYearByClassId,
     private readonly resolveSubjectNames?: ResolveSubjectNames,
   ) {}
 
@@ -74,15 +73,9 @@ export class AcademicRecordsRepository implements IAcademicRecordsRepository {
         mapAcademicRecordRow(record, subjectNames),
       );
 
-      const classIds = rows.map((r) => r.classId);
-      const years =
-        this.resolveYears && classIds.length > 0
-          ? await this.resolveYears([...new Set(classIds)], studentMemberId)
-          : new Map<string, string>();
-
       return {
         ok: true,
-        data: buildAcademicRecord(studentMemberId, rows, years),
+        data: buildAcademicRecord(studentMemberId, rows),
       };
     } catch (err) {
       return { ok: false, error: toFailure(err) };
