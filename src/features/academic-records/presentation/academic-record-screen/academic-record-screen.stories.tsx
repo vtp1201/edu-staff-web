@@ -201,6 +201,41 @@ export const EmptyRecord: Story = {
     await expect(
       canvas.getByText("Không có dữ liệu học bạ"),
     ).toBeInTheDocument();
+    // The homeroom-scope explanation is TEACHER-only — it must not leak into
+    // the other three roles' empty state (US-E18.57).
+    await expect(
+      canvas.queryByText("Không có học bạ nào bạn được xem"),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.57 — the TEACHER read is homeroom-scoped (BE ADR 0136): a teacher who
+ * is GVCN of none of this student's classes gets `200 { records: [] }`, NOT a
+ * 403. That is the EMPTY branch with teacher-specific copy — asserting here
+ * that the generic "no data" wording and the forbidden alert are both absent,
+ * since either would misstate why the screen is empty.
+ */
+export const TeacherNoHomeroomAccessEmpty: Story = {
+  args: {
+    vm: vm({
+      role: "teacher",
+      record: { studentMemberId: "stu-001", years: [], sealed: false },
+      selectedYearId: null,
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText("Không có học bạ nào bạn được xem"),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.getByText(/chỉ xem được học bạ của những lớp bạn đang chủ nhiệm/),
+    ).toBeInTheDocument();
+    await expect(
+      canvas.queryByText("Không có dữ liệu học bạ"),
+    ).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
   },
 };
 

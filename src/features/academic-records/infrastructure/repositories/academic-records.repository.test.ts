@@ -137,6 +137,28 @@ describe("AcademicRecordsRepository.getRecords", () => {
     expect(result.data.sealed).toBe(false);
   });
 
+  /**
+   * US-E18.57 regression guard (BE ADR 0136, ask #48). The TEACHER read is now
+   * homeroom-SCOPED, not all-or-nothing: BE narrows `records[]` to the classes
+   * the caller is the current GVCN of, and a teacher with ZERO homeroom overlap
+   * gets `200 { records: [] }` — explicitly NOT a 403. A "no rows means the
+   * caller isn't allowed, so fail" shortcut anywhere in this repository would
+   * turn that into the forbidden alert and lie to the teacher; pin the
+   * success-with-empty contract so it cannot be reintroduced.
+   */
+  it("treats BE's homeroom-filtered-to-EMPTY response as SUCCESS, never a forbidden failure", async () => {
+    const { http } = makeHttp({ studentMemberId: "stu-1", records: [] });
+
+    const result = await new AcademicRecordsRepository(http).getRecords(
+      "stu-1",
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      data: { studentMemberId: "stu-1", years: [], sealed: false },
+    });
+  });
+
   it("resolves subject names through the injected catalogue collaborator", async () => {
     const { http } = makeHttp({ studentMemberId: "stu-1", records: [row()] });
     const resolveSubjectNames = vi.fn(

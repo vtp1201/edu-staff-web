@@ -74,6 +74,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Schedule (lịch dạy cá nhân, read-only) | `(app)/teacher/schedule` | `features/timetable` | ✅ US-E15.2 (`timetable-view.jsx` edustaff_5) |
 | Classes / Class roster | `(app)/teacher/classes`,`/classes/:classId/students` | `features/teacher` | ✅ US-E13.1 |
 | Students (cross-class roster index) | `(app)/teacher/students` | `features/teacher` | ✅ US-E13.9 (was a dead sidebar link — only `/students/:studentId/academic-record` existed, no index; aggregates every class via `list-my-students.use-case.ts`) |
+| Academic Record (Hoc ba — per student, read-only) | `(app)/teacher/students/:studentId/academic-record` | `features/academic-records` | ✅ US-E14.5 + US-E18.54 + US-E18.57 (real mode, **homeroom-scoped**: BE ADR 0136/ask #48 grants TEACHER a FILTERED read of the classes they are the current GVCN of; zero homeroom overlap = `200 records:[]` → empty state with teacher-specific copy, NOT forbidden. No write/seal affordance — seal/unseal stays ADMIN-only) |
 
 ## Principal / Admin (E03, E09, E10, E11, E12 Admin Core, E14 Academic Records)
 
@@ -125,7 +126,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Assignments | `(app)/student/assignments` | `features/lms` | ✅ US-E11.7 (mock-first — lms service scaffold) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | ✅ US-E13.6 |
-| Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 + US-E18.54 (viewer remodel lên real member-read, year-grouping client-side; identity block bỏ; teacher route `/teacher/students/:id/academic-record` ở real mode trả `forbidden` vĩnh viễn — BE không cho TEACHER đọc aggregate, ask #48) |
+| Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 + US-E18.54 (viewer remodel lên real member-read, year-grouping client-side; identity block bỏ) + US-E18.56 (`academicYear` denorm — bỏ enrollment fan-out) + US-E18.57 (ask #48 đã đóng: teacher route `/teacher/students/:id/academic-record` KHÔNG còn `forbidden` vĩnh viễn — BE cho TEACHER đọc theo phạm vi chủ nhiệm, xem hàng ở mục Teacher) |
 | Conduct + leave request | `(app)/student/conduct` | `features/discipline` | ✅ US-E09.2 (BE force-mock — US-E18.14) |
 | **Schedule (Timetable read-only)** | `(app)/student/schedule` | `features/timetable` | ✅ implemented (US-E15.1; `timetable-view.jsx` edustaff_5) |
 | Resources | `(app)/student/resources` | `features/lms` | ⬜ (chưa có design/mockup; nav item đã gỡ khỏi sidebar 2026-08-02 để hết 404 — thêm lại khi có DR) |

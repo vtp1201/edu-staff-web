@@ -20,9 +20,13 @@ export const ACADEMIC_RECORDS_EP = {
    * unwrapped GET, no `raw: true`.
    *
    * RBAC (`ListStudentAcademicRecordsUseCase`): ADMIN/MANAGER/SUPER_ADMIN any
-   * student, STUDENT self only, PARENT linked child only. **TEACHER is NOT in
-   * the allow-list** (`default: forbidden`) — the teacher route degrades to the
-   * `forbidden` state in real mode; see cross-repo ask #48.
+   * student, STUDENT self only, PARENT linked child only, and — since BE's
+   * ADR 0136 (ask #48, consumed by US-E18.57) — **TEACHER homeroom-scoped**:
+   * the response is FILTERED to the records of classes where the caller is the
+   * CURRENT GVCN. Not all-or-nothing: zero homeroom overlap returns `200` with
+   * `records: []`, NOT a 403, so the teacher route renders the EMPTY state
+   * (with its own copy), never the forbidden alert. FE sends no role parameter
+   * — the scoping is entirely BE-side off the Bearer token.
    *
    * The two pre-remodel constants (`record`, `years`) modelled a
    * `(studentId, yearId?)` contract that never existed on any server and are

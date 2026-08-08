@@ -52,6 +52,13 @@ export type ResolveSubjectNames = () => Promise<Map<string, string>>;
  *
  * The student id on the result is the one the SERVER echoed
  * (`studentMemberId` on the payload), not the caller's argument.
+ *
+ * RBAC lives entirely BE-side (no role parameter on the wire). Since BE's
+ * ADR 0136 (US-E18.57) a TEACHER reads a homeroom-FILTERED subset, and zero
+ * homeroom overlap is `200 { records: [] }` — a SUCCESS. This repository must
+ * therefore never treat an empty `records[]` as an authorization failure: an
+ * empty list maps to an empty record, and only a real wire error maps to a
+ * failure.
  */
 export class AcademicRecordsRepository implements IAcademicRecordsRepository {
   constructor(

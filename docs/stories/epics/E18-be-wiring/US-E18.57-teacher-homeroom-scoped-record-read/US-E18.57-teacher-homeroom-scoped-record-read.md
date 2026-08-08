@@ -181,3 +181,132 @@ New allow-list for BOTH học bạ reads:
 ## Evidence
 
 (fe-nextjs-engineer / fe-tech-lead-reviewer / fe-accessibility-auditor / fe-qa-playwright fill in below as work proceeds.)
+
+### fe-nextjs-engineer (2026-08-08)
+
+**Packet's central prediction CONFIRMED — verified, not assumed.** The pipeline
+needed **zero** repository / mapper / use-case / DI / mock change. Read end to
+end before touching anything:
+
+- `AcademicRecordsRepository.getRecords()` maps `dto.records ?? []` through the
+  mapper and hands the (possibly empty) row list to `buildAcademicRecord()`.
+  There is no "no rows ⇒ the caller must not be allowed" shortcut anywhere in
+  the repo, the use case or `buildAcademicRecordVM` — a failure is produced
+  ONLY from a thrown wire error via `toFailure`. So BE's new
+  `200 { records: [] }` already resolved to `{ok: true, data: {years: []}}`,
+  and the screen already renders that through its `record.years.length === 0`
+  branch, which is textually separate from the `error` branch.
+- `git grep` over `features/academic-records`: the ONLY role reference in the
+  whole feature is presentational (`ROLE_TONE`, `roleBadge` i18n). The wire
+  carries no role parameter — scoping is entirely BE-side off the Bearer token,
+  which is exactly why a BE RBAC widening is a no-op for this call chain.
+- `MockAcademicRecordsRepository` grep for `role|teacher`: **zero matches**. No
+  pre-existing teacher special-casing to correct, and none added (per-role
+  filtering stays BE-only, decision `0014`).
+- No seal/unseal affordance exists in `academic-record-screen.tsx` (the only
+  action is the disabled print button); none was added.
+
+So the real payload of this story is copy + docs + regression guards, which is
+the packet's own expected outcome, not a shortfall.
+
+**Delta (red → green).** Wrote the failing tests first; the run at that point
+failed 5 tests across 2 files (`emptyStateCopyKey is not a function`) while the
+new repository test passed trivially — expected, it is a contract *guard*, and
+it is written so it WOULD have failed under the old all-or-nothing-403 reading
+(it pins `records: []` → `{ok:true, …}` rather than a `forbidden` failure).
+
+1. `emptyStateCopyKey(role)` — new pure selector in
+   `academic-record-screen.i-vm.ts` returning `"empty.teacherNoHomeroomAccess"`
+   for `teacher`, `"empty"` for the other three roles. Static-union return type,
+   so `t(\`${emptyKey}.title\`)` stays compile-checked against typed messages
+   (no raw-string `t()`).
+2. New i18n keys `academicRecord.empty.teacherNoHomeroomAccess.{title,
+   description}` in **both** `vi.json` (source) and `en.json` (mirror). vi:
+   *"Không có học bạ nào bạn được xem" / "Bạn chỉ xem được học bạ của những lớp
+   bạn đang chủ nhiệm. Học sinh này có thể có học bạ ở lớp khác mà bạn không
+   được xem."* — true under BOTH readings of an empty response (genuinely zero
+   records OR zero homeroom overlap), since BE gives no signal to tell them
+   apart. No second call was added to probe for that distinction (that would be
+   a scope leak, explicitly out of scope).
+3. `academic-record-screen.tsx` empty branch selects the copy via the helper —
+   markup, tokens and a11y semantics unchanged (no new token, no new role/aria
+   attribute, no motion). The `error` branch (`role="alert"`, `forbidden`
+   included) is untouched, so a genuine 403 still alerts exactly as before.
+4. Stale documentation corrected where it now lies:
+   - `bootstrap/endpoint/academic-records.endpoint.ts` — the RBAC block said
+     "**TEACHER is NOT in the allow-list** … degrades to `forbidden`"; now
+     states the homeroom-scoped grant and the `200 records:[]`-not-403 rule.
+   - `academic-records.repository.ts` doc-comment — added the explicit
+     invariant that an empty `records[]` must never be treated as an
+     authorization failure.
+   - `docs/product/screens.md` — closes the US-E18.54 review's open SHOULD-FIX
+     (its rows 75/127/137, drifted to 76/128/141 on `main`): row 128's
+     "teacher route … trả `forbidden` vĩnh viễn — BE không cho TEACHER đọc
+     aggregate, ask #48" removed and replaced with the accurate US-E18.56 +
+     US-E18.57 history, and a dedicated **teacher-section row** added for
+     `(app)/teacher/students/:studentId/academic-record` describing the
+     homeroom-scoped read + the empty-not-forbidden behaviour + "no write/seal
+     affordance". The parent row (141) carried no forbidden claim and was left
+     alone.
+5. `docs/TEST_MATRIX.md` — US-E18.57 row added (`implemented`, all four proof
+   columns) directly under the US-E18.56 row.
+
+**Deviations from the packet.** Two, both additive:
+(a) the packet named only "the rows" in `screens.md`; there was in fact no
+teacher row at all in the Teacher section (the claim lived inside the STUDENT
+row's parenthetical), so a proper teacher row was added rather than just
+editing prose — otherwise the corrected fact would still be undiscoverable
+where a reader looks for it; (b) two source doc-comments
+(`academic-records.endpoint.ts`, `academic-records.repository.ts`) carried the
+same now-false "TEACHER is NOT in the allow-list" claim as `screens.md`; they
+were corrected under the same rationale (a stale in-code RBAC claim is more
+dangerous than a stale doc — the next engineer reads it as ground truth).
+
+**Still-open pre-existing item, deliberately NOT touched (packet Scope §6).**
+`docs/decisions/0055-academic-records-seal-wiring-contract.md` — the US-E18.54
+review's SHOULD-FIX about the viewer force-mock supersession. Current state on
+`main`: §Follow-Up *does* carry a dated "**Superseded (2026-08-07, US-E18.54)**"
+paragraph, so the item looks at least partially addressed, but I made no
+judgement on whether the reviewer considers it closed and made **zero** edits to
+that file (`git diff -- docs/decisions/` is empty for this branch). Grep
+confirms ADR 0055 contains no stale TEACHER/forbidden claim, so nothing in it is
+made wrong by this US. The other US-E18.54 SHOULD-FIX (subject-catalogue
+`listAllSubjects()` direct test coverage) is likewise untouched — out of scope.
+
+**Proof (commands run in this checkout, real output).**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | **518 files / 4086 tests passed** (baseline on `main` after US-E18.56: 517 / 4079 → +1 file, +7 tests, zero regression; includes every academic-records seal/unseal suite) |
+| `bunx vitest run --config vitest.storybook.mts src/features/academic-records` | **2 files / 40 tests passed** (was 36 — +1 new story with 4 assertions; the console noise from `UnsealRequestCard`'s Invalid-Date formatter is pre-existing and non-failing) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean — 0 errors; the only findings are the 2 pre-existing unrelated ones in `messaging/message-context-menu.tsx` (1 warning + 1 info), identical to the US-E18.56 baseline. (`bun lint:fix` reflowed two of my own imports; re-run clean.) |
+| `NEXT_PUBLIC_USE_MOCK= bun run build` | green |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | green |
+
+Tests added (7):
+- `academic-record-screen.i-vm.test.ts` (NEW, 5): teacher → homeroom copy key;
+  student/parent/admin → generic key; `roleBadgeKey`.
+- `build-academic-record-vm.test.ts` (+1): teacher role + `{ok:true, years:[]}`
+  → `error: null`, `record.years: []`, `selectedYearId: null`, teacher copy key
+  selected. **This is the test that fails under the old 403 assumption.**
+- `academic-records.repository.test.ts` (+1): homeroom-filtered-to-EMPTY wire
+  response asserted `toEqual({ok:true, data:{studentMemberId, years: [],
+  sealed:false}})` — never a failure. The 403 → `forbidden` matrix is untouched
+  and still green, so the forbidden branch is not weakened.
+- Storybook `TeacherNoHomeroomAccessEmpty` (new story): asserts the teacher
+  title + description render AND that the generic "Không có dữ liệu học bạ"
+  and `role="alert"` are both ABSENT; `EmptyRecord` strengthened to assert the
+  teacher copy does NOT leak into the other roles (screenshot-distinct pair).
+
+**AC status.** Homeroom subset renders unchanged (same pipeline, covered by the
+existing role stories) · empty-with-teacher-copy proven by story + VM test ·
+genuine 403 still alerts (untouched failure matrix + `ErrorState` story) · no
+new write affordance (none added; only the pre-existing disabled print button)
+· `screens.md` no longer says "always forbidden" · zero regression across the
+full suite.
+
+**Flagged to `fe-lead`:** nothing requiring an ADR — no new design token, no new
+data contract, no architecture decision. UI delta is copy-only inside an
+existing empty-state block, so the design-review/a11y gates have a trivially
+small surface (no token, no color, no motion, no new interactive element).
