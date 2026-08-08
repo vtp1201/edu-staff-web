@@ -81,7 +81,7 @@ export interface TermRecord {
 export const UNRESOLVED_YEAR_ID = "__unresolved-year__";
 
 export interface AcademicYear {
-  /** The resolved `academicYearLabel`, or {@link UNRESOLVED_YEAR_ID}. */
+  /** The wire's `academicYear`, or {@link UNRESOLVED_YEAR_ID}. */
   yearId: string;
   /** `null` ONLY for the unresolved bucket — presentation labels it in i18n. */
   yearLabel: string | null;
