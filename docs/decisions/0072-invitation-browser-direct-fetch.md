@@ -129,6 +129,29 @@ Tradeoffs:
 - `finalizeRedeemAction` is a second Server Action surface that must be kept
   narrow (cookie-write + redirect ONLY) — a reviewer must check it does not
   quietly grow a second IAM call.
+- **[R-1, flagged by `fe-tech-lead-reviewer` during US-E18.59's review, MUST
+  verify before go-live]** — both browser calls are now genuinely
+  cross-origin from the browser's perspective (previously the ORIGIN of the
+  request was this Next server, now it's the visitor's own browser origin
+  hitting the public Kong host). `Content-Type: application/json` is not a
+  CORS-safelisted header, so both calls trigger a CORS **preflight**
+  (`OPTIONS`), and `redeem` additionally sends `X-Client-Id`. BE's own
+  US-207 verification (§5.2 of `docs/reports/2026-08-08-be-to-fe-response.md`)
+  only exercised `POST` directly against the anchored-regex Kong route — it
+  did NOT verify an `OPTIONS` preflight against that same route, nor that
+  `Access-Control-Allow-Headers` includes `X-Client-Id`. If the preflight
+  does not match the public route the same way the `POST` now does, every
+  browser will block BOTH calls with a CORS error before they ever reach
+  IAM — a 100% go-live failure of the exact flow this ADR exists to fix,
+  masquerading as a generic `network-error` card with no server-side error
+  to grep for. **Action**: file this as a new ask to BE (verify `OPTIONS
+  /iam/api/v1/invitations/{lookup,redeem}` against the live Kong route +
+  confirm `Access-Control-Allow-Headers` covers `Content-Type` and
+  `X-Client-Id`) and treat it as a THIRD deploy-order gate alongside the
+  migration 051 / Kong-reload notes in `EPIC-OVERVIEW.md`. `X-Client-Id` is
+  audit metadata only (not required for correctness) — dropping it from the
+  `redeem` call is a one-line fallback if BE cannot add it to the allowed
+  headers quickly.
 - The BE stack itself had a **latent gateway bug**, discovered while verifying
   this ask (US-207 §5.2): `/iam/api/v1/invitations/{redeem,lookup}` were never
   actually reachable through Kong before this fix (both 401'd at the edge —
@@ -146,6 +169,32 @@ Tradeoffs:
   same treatment, promote the browser-fetch collaborator + failure-mapping
   pattern to a shared `bootstrap/lib/http.browser.ts` instead of duplicating a
   second bespoke `fetch()` wrapper.
+
+## Addendum (2026-08-08, US-E18.59 implementation)
+
+§Decision 3 said the redirect target is built "exactly as the old
+`redeemAction` did" — `member.tenantId` + `member.roles[0]`. Implementation
+surfaced a trust-boundary consequence worth recording explicitly: `member` now
+arrives at `finalizeRedeemAction` FROM THE CLIENT (the browser holds the
+`redeem` response), not from a server-side IAM call, so it is no longer
+server-attested the way it was when `redeemAction` called IAM itself. Next's
+Server-Action origin check is what stops a cross-site caller from invoking
+`finalizeRedeemAction` at all; nothing in this action can re-verify the
+`member`/`tokens` pair against IAM without reintroducing the very call this
+story removes.
+
+`finalizeRedeemAction` therefore derives the tenant segment from the ACCESS
+TOKEN's own `tenantId` claim (`decodeTenantId(tokens.accessToken)`) first,
+falling back to `member.tenantId` only if that claim is absent. This is
+STRICTER than the literal §Decision 3 text, not a weakening of it: the access
+token is the same value about to be written into the httpOnly session cookie
+and used for every subsequent authenticated call, so deriving the redirect
+from it (rather than from the separately-transmitted `member` object) means an
+incoherent client payload can only ever land the visitor inside the workspace
+their new session actually authorizes — never a mismatched one. The role
+segment is unaffected (still `member.roles[0]`, and a wrong role only changes
+which *page* the same authorized session opens, not the tenant it's scoped
+to). Accepted as the implementation, not a deviation requiring rework.
 
 ## Liên quan
 
