@@ -301,3 +301,160 @@ before the module it covers, and the red run was observed).
 - `docs/TEST_MATRIX.md` has **no US-E18.59 row** (the packet's own rule is that fe-lead adds it as `planned` before coding). It needs the row plus a correction to the US-E18.53 row, which still describes the RSC lookup + `redeemAction` and cites the four deleted test files.
 - `docs/product/screens.md` line for the redeem screen was updated here with the browser-direct note + the new `loading` state (flagged for the design-review gate as a materially new visible state).
 - The flow works against a real stack only once Kong is reloaded with BE's fixed `kong.yml` (deploy-order dependency, already recorded in the ADR and EPIC-OVERVIEW).
+
+### A11y audit — fe-accessibility-auditor (2026-08-08)
+
+**Verdict: PASS with 1 non-blocking (Major) finding.** Scope: the new `loading`
+VM variant + its skeleton render (`invite-redeem-screen.tsx`), the container
+driving the transition (`invite-redeem-container.tsx`), and a regression check
+on the five pre-existing terminal states + the form (all via `InvitationNotice`,
+untouched).
+
+#### 1. Audit Summary
+
+- Checked: contrast/tokens of the new skeleton, motion-safe gating, keyboard/
+  focus during and across the loading transition, status-message announcement
+  (WCAG 4.1.3), copy quality of the new loading string, and a diff-based
+  regression check on the five terminal states + the form.
+- Findings: 1 Major (status-message asymmetry on the success transition), 1
+  Minor (copy could be marginally more reassuring for a first-time visitor).
+  Zero Blocking/Critical.
+- Overall: no regression to the already-audited (US-E18.53) terminal states or
+  form — `git diff main...HEAD -- .../invite-redeem-screen.tsx` shows the only
+  changes outside the new `loading` branch are the `onRedeem?` optionality
+  guard and the `Skeleton` import; every terminal/form JSX branch is
+  byte-identical.
+
+#### 2. WCAG 2.1 AA Coverage
+
+| Criterion | Description | PASS/FAIL | Finding ID |
+| --- | --- | --- | --- |
+| 1.4.3 Contrast (Minimum) | Skeleton uses `bg-accent` token, no raw color | PASS | — |
+| 1.4.1 Use of Color | Loading conveyed via text + `aria-busy`, not color alone | PASS | — |
+| 2.1.1 Keyboard | No focusable/tabbable element inside the skeleton | PASS | — |
+| 2.1.2 No Keyboard Trap | N/A — nothing captures focus during loading | PASS | — |
+| 2.2.2 Pause, Stop, Hide | `motion-safe:animate-pulse` (`Skeleton` primitive) — gated per `.claude/rules/accessibility.md` | PASS | — |
+| 2.4.3 Focus Order | Diff-confirmed: form/terminal tab order unchanged | PASS | — |
+| 4.1.2 Name, Role, Value | `role="status"` on loading region is correctly paired with content describing what's loading | PASS | — |
+| 4.1.3 Status Messages | Failure transition (`loading → invalid/expired/rate-limited/tenant-inactive/error`) announces via `InvitationNotice`'s `role="alert"`; **success transition (`loading → form`) has no live region, so it is silent** | FAIL | A11Y-001 |
+| 3.3.2 Labels or Instructions | Form fields unchanged, still correctly labelled (regression-checked, not in scope of new code) | PASS | — |
+
+#### 3. Findings Catalogue
+
+```
+A11Y-001
+Severity: Major (WCAG 4.1.3 Status Messages)
+Component: src/features/auth/presentation/invite-redeem/invite-redeem-screen.tsx
+            (the `vm.kind === "form"` branch, line ~298)
+            src/features/auth/presentation/invite-redeem/invite-redeem-container.tsx
+            (drives the loading→form transition)
+Issue: When the browser lookup succeeds, the `loading` skeleton (which sits
+  inside `role="status" aria-live="polite"`) unmounts and is replaced by the
+  `form` branch, which has NO live region of its own. Removal of a live region
+  is not announced by screen readers, and the newly-inserted heading/dl/form
+  is a silent DOM insertion elsewhere on the page — a screen-reader user who
+  is not actively re-reading that spot gets no signal that the invitation
+  resolved. This is asymmetric with the FAILURE transitions
+  (`loading → invalid/expired/rate-limited/tenant-inactive/error`), which DO
+  announce correctly because `InvitationNotice` uses `role="alert"` (an
+  implicit, always-announcing live region on insertion). For this screen's
+  audience — a first-time, possibly non-technical invitee — the practical
+  effect is: "the page did something after a pause, but nothing told me what."
+Evidence:
+  - `invite-redeem-screen.tsx:177-197` — loading branch: `role="status"
+    aria-live="polite" aria-busy="true"` wrapping the skeleton + sr-only
+    `{t("states.loading")}`.
+  - `invite-redeem-screen.tsx:298-491` — form branch: plain `<div>`, `<h1>`,
+    no `role`/`aria-live` anywhere in the subtree.
+  - Contrast check confirmed via `invitation-notice.tsx:61` — `role="alert"`
+    already present for every failure branch, so only the success path is
+    missing coverage.
+Fix: Add a single sr-only, `aria-live="polite"` announcement that fires once
+  when the VM transitions into `form` (or `invalid`/`expired`/etc. — but those
+  are already covered by `role="alert"`, so this only needs to cover `form`).
+  Simplest implementation — a small `useEffect` keyed on `vm.kind` that sets a
+  transient announcement string, rendered in a persistent live region at the
+  top of the `<Card>` (outside the `vm.kind === "..."` branches so it survives
+  the swap):
+  ```tsx
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    if (vm.kind === "form") setAnnouncement(t("states.loaded"));
+  }, [vm.kind, t]);
+  // ...
+  <Card className="p-8">
+    <span className="sr-only" role="status" aria-live="polite">
+      {announcement}
+    </span>
+    {vm.kind === "loading" && ( /* unchanged */ )}
+    ...
+  ```
+  Add `invitations.redeem.states.loaded` to `messages/{vi,en}.json`, e.g.
+  vi: `"Đã tải xong lời mời. Vui lòng điền thông tin bên dưới."` / en:
+  `"Invitation loaded. Please fill in your details below."` — names what
+  happened AND what to do next, matching the audience note in the story.
+Reference: WCAG 2.1 §4.1.3 Status Messages
+  (https://www.w3.org/WAI/WCAG21/Understanding/status-messages.html);
+  ARIA Authoring Practices §Live Regions.
+```
+
+```
+A11Y-002
+Severity: Minor (UX writing, no WCAG criterion — quality bar in this team's
+  remit per `.claude/CLAUDE.md` §Agent Teams / a11y auditor scope)
+Component: src/bootstrap/i18n/messages/{vi,en}.json →
+  `invitations.redeem.states.loading`
+Issue: Current copy ("Đang tải lời mời…" / "Loading invitation…") correctly
+  names WHAT is loading (better than a bare "Đang tải…"), satisfying the
+  audit's minimum bar. For this audience (a first-time, non-technical invitee
+  who has never seen this product), a touch more reassurance costs nothing and
+  reduces anxiety during the pause.
+Evidence: `src/bootstrap/i18n/messages/vi.json` /
+  `src/bootstrap/i18n/messages/en.json` → `invitations.redeem.states.loading`.
+Fix (optional, non-blocking): vi: `"Đang kiểm tra lời mời của bạn…"` / en:
+  `"Checking your invitation…"` — same length class, slightly warmer framing.
+  Not required to close this story; note for `uiux-ux-writer` if a copy pass
+  ever touches this screen.
+Reference: `.claude/rules/i18n.md` (microcopy quality), general WCAG 3.3
+  best-practice guidance (clear, task-oriented microcopy).
+```
+
+#### 4. Keyboard Navigation Map
+
+| State | Tab order | Notes |
+| --- | --- | --- |
+| `loading` | (nothing focusable) | Skeleton has no interactive elements; a keyboard user who tabs during this window simply moves past the card to whatever follows (none, on this page) — no trap. |
+| `form` | back-link (bottom) is the ONLY link before the fields in DOM order — actually: full name → password → confirm → submit button → "back to login" link, all in visual/reading order (unchanged from US-E18.53) | Regression-checked via diff; identical to pre-story. |
+| `invalid`/`expired`/`rate-limited`/`tenant-inactive`/`error` | optional CTA (if any) → "back to login" link | Unchanged (`InvitationNotice`, untouched by this diff). |
+
+#### 5. Screen Reader Script
+
+**Before this story** (RSC render, no loading state existed): page loads with
+the form (or a terminal notice) already resolved; SR hears the heading, then
+the dl/labels/form fields in order, or the `role="alert"` notice.
+
+**After this story:**
+- *Happy path:* SR briefly hears "status: Đang tải lời mời…" (announced only
+  if the DOM swap happens after AT has attached and the region already existed
+  — true here since it's a post-hydration query transition), THEN — with
+  A11Y-001 unfixed — **silence**, followed by whatever the SR user's virtual
+  cursor happens to land on if they navigate forward (the resolved heading and
+  form, un-announced). With A11Y-001's fix applied: "status: Đã tải xong lời
+  mời. Vui lòng điền thông tin bên dưới." announces the resolution, then normal
+  form navigation proceeds.
+- *Failure path:* SR hears "status: Đang tải lời mời…", then — correctly,
+  already — "alert: [terminal title], [terminal body]" when the swap lands on
+  a `role="alert"` branch. No fix needed here.
+
+#### 6. Quick Wins (< 30 min, sorted by severity)
+
+1. **A11Y-001** (Major) — add the persistent sr-only `role="status"`
+   announcement + `states.loaded` i18n key (~15 min: 1 `useState`/`useEffect`,
+   2 JSON keys, 1 new story assertion).
+2. **A11Y-002** (Minor) — swap the `states.loading` copy in both locale files
+   (~2 min; optional/non-blocking).
+
+No Blocking or Critical findings. Recommend fe-lead route A11Y-001 back to
+`fe-nextjs-engineer` before closing the design-review gate (it is a real,
+user-facing gap on a first-impression public screen, even though it does not
+block merge on its own); A11Y-002 can be deferred to a future copy pass.
