@@ -129,6 +129,17 @@ Tradeoffs:
 - `finalizeRedeemAction` is a second Server Action surface that must be kept
   narrow (cookie-write + redirect ONLY) — a reviewer must check it does not
   quietly grow a second IAM call.
+- **[R-1 — RESOLVED 2026-08-08, ask #50 closed]** BE verified on the live
+  stack (`docs/reports/2026-08-08-be-to-fe-response-batch6.md`, edu-api
+  `f5ed5a86`): preflight `OPTIONS` returns 200 on both paths (global CORS
+  plugin, priority 2000, short-circuits before `edu-edge-auth` at 1000 —
+  no dedicated OPTIONS route needed), and `X-Client-Id` — previously
+  missing — was added to the global `Access-Control-Allow-Headers`. FE
+  keeps the `X-Client-Id` header; the one-line drop-fallback below is moot.
+  Operational note from the same verification: DB-less Kong does NOT
+  re-read declarative config on `kong reload` — the deploy gate requires a
+  container **restart** (or `deck sync`). Original finding kept below for
+  the record:
 - **[R-1, flagged by `fe-tech-lead-reviewer` during US-E18.59's review, MUST
   verify before go-live]** — both browser calls are now genuinely
   cross-origin from the browser's perspective (previously the ORIGIN of the

@@ -1057,7 +1057,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.56 | Academic-record `academicYear` denorm consumption (core US-204, ask #47) | thấp | normal | **Done** 2026-08-08 — `academicYear` (wire key, `omitempty`) giờ nằm ngay trên mỗi record row ⇒ xoá `enrollment-year.resolver.ts` (fan-out point-read chưa từng hoạt động cho PARENT); `buildAcademicRecord()` group thẳng theo field, không còn map `classId→year` injected. `makeSealRepository()` cùng file byte-identical. Tech-lead **Approved**; design-review gate skip (zero markup diff, xác nhận bằng diff Storybook). Đóng ask #47. See `US-E18.56-academic-year-denorm-wiring/`. |
 | US-E18.57 | Teacher homeroom-scoped academic-record read (core ADR 0136, ask #48) | trung bình | high-risk | **Done** 2026-08-08 — BE cấp quyền TEACHER lọc theo homeroom (GVCN); `records: []` khi không GVCN lớp nào (KHÔNG 403). Pipeline hiện có (repo/use-case/VM) không cần đổi gì — RBAC hoàn toàn phía BE, empty-state đã tách khỏi error-state sẵn từ US-E18.54. Delta thật: copy empty-state riêng cho teacher (`academicRecord.empty.teacherNoHomeroomAccess.*`) + regression guard cấm suy diễn "empty = forbidden" + sửa `docs/product/screens.md` (US-E18.54 review's SHOULD-FIX cũ). Tech-lead **Approved** + a11y **PASS** (zero finding — content-only swap, không ARIA/token mới). Đóng ask #48. See `US-E18.57-teacher-homeroom-scoped-record-read/`. |
 | US-E18.58 | Pin-board `senderName` real + sentinel localization (social US-205, ask #32(b′)) | thấp | tiny | **Done** 2026-08-08 — `senderName` giờ resolve thật server-side; sender chưa project → literal `"Member"` (không còn `""`). Mapper thêm exact-match guard coi `"Member"` như absent, tái dùng fallback i18n có sẵn (`unknownSender`) — không branch UI mới. History/search/edit đi qua mapper KHÁC (`toMessageEntityFromRoom`, không đọc `senderName`) — xác nhận không đụng. Tech-lead **Approved** (mutation-test exact-match guard). Đóng ask #32(b′). See `US-E18.58-pin-board-sender-name/`. |
-| US-E18.59 | Invitation redeem/lookup — browser-direct fetch (IAM US-207, ask #49, **ADR 0072**) | cao | high-risk | **Done** 2026-08-08 — per-IP rate-limit ở Kong cần IP thật của người dùng; Next server proxy làm mọi visitor chung 1 IP (một kẻ abuse có thể 429-khoá cả batch invitee). Chuyển CẢ HAI call (`lookup`+`redeem`) sang gọi thẳng từ browser (`fetch`, `credentials:"omit"`) — LẦN ĐẦU TIÊN một BE call phát ra trực tiếp từ Client Component trong repo này, ghi ADR `0072`. Repo mới `invitation-redeem.browser.repository.ts` (KHÔNG `server-only`, có chủ đích) throw `ApiError` tay để tái dùng nguyên `mapInvitationRedeemFailure`/use-case cũ không đổi 1 dòng. Session-write vẫn server-side qua Server Action MỚI, hẹp (`finalizeRedeemAction`: chỉ `setAuthCookies`+redirect, KHÔNG gọi lại IAM — có test mutation-proof + allowlist import). Xoá `bootstrap/di/invitation-redeem.di.ts` + 2 repo server cũ. VM thêm state `loading` (lookup giờ async phía client) — a11y audit tìm A11Y-001 (chuyển loading→form im lặng với screen reader) đã fix (live region riêng). Tech-lead **Revision Required → fixed → Approved** (2 vòng); design-review gate PASS (fe-lead tự audit skeleton, tokens-only). ⚠️ **R-1 finding chưa đóng hết ở FE**: CORS preflight (`OPTIONS`) của 2 route public này CHƯA được BE verify trên Kong thật (chỉ verify `POST` trực tiếp) — ghi làm ask mới + gate go-live thứ 3 (xem Deploy notes dưới). Đóng ask #49 (kèm 1 ask mới, xem report batch 6). See `US-E18.59-invitation-browser-direct-fetch/` + `docs/decisions/0072-invitation-browser-direct-fetch.md`. |
+| US-E18.59 | Invitation redeem/lookup — browser-direct fetch (IAM US-207, ask #49, **ADR 0072**) | cao | high-risk | **Done** 2026-08-08 — per-IP rate-limit ở Kong cần IP thật của người dùng; Next server proxy làm mọi visitor chung 1 IP (một kẻ abuse có thể 429-khoá cả batch invitee). Chuyển CẢ HAI call (`lookup`+`redeem`) sang gọi thẳng từ browser (`fetch`, `credentials:"omit"`) — LẦN ĐẦU TIÊN một BE call phát ra trực tiếp từ Client Component trong repo này, ghi ADR `0072`. Repo mới `invitation-redeem.browser.repository.ts` (KHÔNG `server-only`, có chủ đích) throw `ApiError` tay để tái dùng nguyên `mapInvitationRedeemFailure`/use-case cũ không đổi 1 dòng. Session-write vẫn server-side qua Server Action MỚI, hẹp (`finalizeRedeemAction`: chỉ `setAuthCookies`+redirect, KHÔNG gọi lại IAM — có test mutation-proof + allowlist import). Xoá `bootstrap/di/invitation-redeem.di.ts` + 2 repo server cũ. VM thêm state `loading` (lookup giờ async phía client) — a11y audit tìm A11Y-001 (chuyển loading→form im lặng với screen reader) đã fix (live region riêng). Tech-lead **Revision Required → fixed → Approved** (2 vòng); design-review gate PASS (fe-lead tự audit skeleton, tokens-only). ✅ **R-1 đã đóng 2026-08-08 (ask #50)**: BE verify preflight `OPTIONS` → 200 (global CORS plugin chạy trước edge-auth) + thêm `X-Client-Id` vào allow-headers (edu-api `f5ed5a86`); FE giữ nguyên header, gate go-live #3 gộp vào #2 (xem Deploy notes dưới). Đóng ask #49 (kèm 1 ask mới, xem report batch 6). See `US-E18.59-invitation-browser-direct-fetch/` + `docs/decisions/0072-invitation-browser-direct-fetch.md`. |
 
 ## Deploy notes (go-live real mode) — hợp nhất từ batch 4+5 (US-E18.55) + batch 6 (US-E18.59)
 
@@ -1069,18 +1069,24 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    `academic_year_label`, thuần additive) TRƯỚC binary `core` mới có
    `academicYear`/homeroom-scope (US-E18.56/57). Nối tiếp thứ tự cũ: 047 →
    050 (US-E18.44/46/49), rồi 051.
-2. **Reload/restart Kong** để nạp `gateway/kong/kong.yml` mới (route public
+2. **RESTART container Kong (hoặc `deck sync`) — KHÔNG phải `kong reload`**
+   để nạp `gateway/kong/kong.yml` mới (route public
    `POST /iam/api/v1/invitations/{redeem,lookup}` — trước fix này 2 route bị
-   `edu-edge-auth` chặn 401 kể cả qua Server Action cũ). Bắt buộc trước khi
-   bật US-E18.59 real-mode.
-3. **⚠️ GATE MỚI, CHƯA XÁC NHẬN (US-E18.59, ask #50 trong batch 6 report):**
-   verify `OPTIONS /iam/api/v1/invitations/{redeem,lookup}` qua Kong thật +
-   `Access-Control-Allow-Headers` có `Content-Type` VÀ `X-Client-Id`. BE mới
-   verify `POST` trực tiếp (US-207 §5.2), CHƯA verify preflight. Thiếu gate
-   này = luồng redeem/lookup 100% fail ở mọi browser thật (CORS block trước
-   khi request rời máy khách) — không phải lỗi 500/503 dễ thấy trong log, mà
-   một lỗi generic `network-error` phía client. **KHÔNG bật US-E18.59
-   real-mode cho tới khi BE xác nhận gate này.**
+   `edu-edge-auth` chặn 401 kể cả qua Server Action cũ). BE xác nhận khi
+   verify #50: DB-less Kong không re-read declarative config qua `reload`
+   (edu-api `US-207/validation.md` §5.3). Cần bản kong.yml từ edu-api
+   `f5ed5a86` trở lên (có `X-Client-Id` trong CORS allow-headers). Bắt buộc
+   trước khi bật US-E18.59 real-mode.
+3. **✅ ĐÃ XÁC NHẬN 2026-08-08 (ask #50 đóng — US-E18.59):** BE verify trên
+   stack thật (`docs/reports/2026-08-08-be-to-fe-response-batch6.md`, edu-api
+   `f5ed5a86`): preflight `OPTIONS` trả 200 trên cả 2 path (global CORS
+   plugin priority 2000 short-circuit trước `edu-edge-auth` priority 1000 —
+   không cần route OPTIONS riêng); `X-Client-Id` trước đó THIẾU trong
+   `Access-Control-Allow-Headers`, đã thêm ở `f5ed5a86`. FE giữ nguyên header
+   `X-Client-Id`, không dùng contingency. Gate này gộp vào gate #2 (deploy
+   kong.yml ≥ `f5ed5a86` bằng restart/deck sync) — không còn bước verify
+   riêng. Regression BE: `POST lookup → 410`, `POST redeem → 422`,
+   `GET /invitations → 401` (surface protected còn nguyên).
 4. **social**: US-E18.58 chỉ deploy binary — không migration.
 5. **IAM**: US-E18.56/57/59 không cần migration IAM mới (BE US-206/207 chỉ
    đổi allow-list + gateway route, ADR 0136 phía BE).
