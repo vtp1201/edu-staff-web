@@ -32,6 +32,10 @@
     },
     "empty": {
       "description": "There is no academic record for this school year yet.",
+      "teacherNoHomeroomAccess": {
+        "description": "You can only view records for classes where you are the homeroom teacher. This student may hold records in other classes that you are not authorized to see.",
+        "title": "No academic records you can view"
+      },
       "title": "No academic record data"
     },
     "error": {

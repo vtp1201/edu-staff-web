@@ -13,7 +13,7 @@ import type {
   AcademicRecordScreenVM,
   AcademicRecordViewerRole,
 } from "./academic-record-screen.i-vm";
-import { roleBadgeKey } from "./academic-record-screen.i-vm";
+import { emptyStateCopyKey, roleBadgeKey } from "./academic-record-screen.i-vm";
 import { AcademicRecordTable } from "./academic-record-table";
 import { SealStatusBadge } from "./seal-status-badge";
 import { YearTimeline } from "./year-timeline";
@@ -179,13 +179,16 @@ export function AcademicRecordScreen({
   }
 
   if (!record || record.years.length === 0) {
+    // Role-aware copy: a TEACHER's read is homeroom-scoped, so "there is
+    // nothing here" would be a false claim for them (US-E18.57).
+    const emptyKey = emptyStateCopyKey(vm.role);
     return (
       <div className="space-y-6">
         {title}
         <div className="flex flex-col items-center gap-2 rounded-xl border border-border border-dashed bg-card p-10 text-center">
-          <p className="font-bold text-foreground">{t("empty.title")}</p>
+          <p className="font-bold text-foreground">{t(`${emptyKey}.title`)}</p>
           <p className="text-sm text-muted-foreground">
-            {t("empty.description")}
+            {t(`${emptyKey}.description`)}
           </p>
         </div>
       </div>

@@ -22,6 +22,7 @@ import {
   type AcademicRecord,
   UNRESOLVED_YEAR_ID,
 } from "../../domain/entities/academic-record.entity";
+import { emptyStateCopyKey } from "./academic-record-screen.i-vm";
 import {
   buildAcademicRecordVM,
   SELF_MEMBER_ID,
@@ -141,6 +142,28 @@ describe("buildAcademicRecordVM", () => {
     });
 
     expect(vm.selectedYearId).toBe(UNRESOLVED_YEAR_ID);
+  });
+
+  /**
+   * US-E18.57 — the TEACHER read is homeroom-SCOPED, not all-or-nothing: BE
+   * filters `records[]` down to the classes the caller is the current GVCN of
+   * and returns `200 { records: [] }` (never 403) when that overlap is zero.
+   * The VM must therefore carry a SUCCESS with an empty record — the empty
+   * branch — not a `forbidden` error. This test would have failed under the
+   * pre-ADR-0136 assumption that a teacher always got a blanket 403.
+   */
+  it("maps a homeroom-filtered-to-nothing teacher read to an EMPTY record, not an error", async () => {
+    execute.mockResolvedValue({ ok: true, data: record([]) });
+
+    const vm = await buildAcademicRecordVM({
+      role: "teacher",
+      studentId: "stu-1",
+    });
+
+    expect(vm.error).toBeNull();
+    expect(vm.record?.years).toEqual([]);
+    expect(vm.selectedYearId).toBeNull();
+    expect(emptyStateCopyKey(vm.role)).toBe("empty.teacherNoHomeroomAccess");
   });
 
   it("surfaces the failure key without translating it", async () => {

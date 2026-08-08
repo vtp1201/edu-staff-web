@@ -32,6 +32,10 @@
     },
     "empty": {
       "description": "Chưa có bản ghi học bạ nào cho năm học này.",
+      "teacherNoHomeroomAccess": {
+        "description": "Bạn chỉ xem được học bạ của những lớp bạn đang chủ nhiệm. Học sinh này có thể có học bạ ở lớp khác mà bạn không được xem.",
+        "title": "Không có học bạ nào bạn được xem"
+      },
       "title": "Không có dữ liệu học bạ"
     },
     "error": {
