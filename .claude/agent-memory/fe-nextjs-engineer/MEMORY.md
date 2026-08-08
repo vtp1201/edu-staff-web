@@ -1,5 +1,6 @@
 # Memory Index
 
+- [BE sentinel string = absent](pattern-be-sentinel-as-absent.md) — E18.58: normalize a placeholder name ("Member") to undefined in the MAPPER, not a 2nd UI check; exact match, shared DTO ≠ shared mapper
 - [RBAC widening = zero code delta](pattern-rbac-widening-zero-code-delta.md) — E18.57: 403→filtered-200 needs no repo change; payload is honest role-aware empty copy + stale in-code RBAC claims (+file)
 - [Denorm field kills a collaborator](pattern-denorm-field-kills-collaborator.md) — E18.56: BE denormalizing a field deletes the whole fan-out collaborator; call-COUNT=1 proof + keep… (+file)
 - [Nth widening of a shared entity](pattern-nth-widening-shared-entity.md) — E18.52: confirm WHICH entity the endpoint owns (LIST vs BATCH); the compile fallout is the real… (+file)

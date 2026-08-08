@@ -23,13 +23,20 @@ Verified by reading the Go source directly, not just `openapi.yaml`.
 it to a `pin-forbidden`-style key.
 
 ## Two traps confirmed in the Go source
-1. **`senderName` is ALWAYS `""` on the pin board.**
-   `list_pinned_messages.go` calls `toMessageDTO(msg, "")`. The name is stamped
-   from the SENDER's claims at send time and never persisted, so any read-back
-   path emits empty. `httpdto.MessageResponse` DOES emit the field but
-   `openapi.yaml`'s `Message` schema omits it — a real drift. Treat `""` as
-   ABSENT; render an i18n fallback in presentation, never mint a placeholder in
-   the mapper. FE→BE ask #32(b′).
+1. **`senderName` — SUPERSEDED 2026-08-08 (BE US-205, consumed by US-E18.58).**
+   Was always `""` on the pin board (`toMessageDTO(msg, "")`); ask #32(b′) is now
+   answered. Current contract, and it is **per-endpoint**:
+   - **pin board** — resolved server-side from the member projection: a REAL
+     name, never `""`; when the sender is not projected yet BE emits the literal
+     English sentinel **`"Member"`**.
+   - **history / search / edit** — still `toMessageDTO(m, "")` i.e. `""`
+     (unchanged; names come from the room directory instead).
+   FE rule: normalise BOTH the `"Member"` sentinel (exact, case-sensitive,
+   post-trim — a real name may *contain* the word) and a blank to an ABSENT
+   entity key, and render the one existing i18n fallback. Never mint a
+   placeholder in the mapper; never print the English sentinel in a vi locale.
+   The `openapi.yaml` `Message`-schema drift was fixed BE-side (additive,
+   non-required field).
 2. **No caller room-role/capability exists anywhere on the wire** (`RoomSummary`
    carries none). Any binary `disabled = !isAdmin` gate is permanently dead in
    real mode. Correct pattern = tri-state: `undefined` (unknown) ⇒ enabled +
