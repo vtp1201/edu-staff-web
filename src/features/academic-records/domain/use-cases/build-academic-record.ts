@@ -10,13 +10,13 @@ import { deriveYearSealStatus } from "./derive-year-seal-status";
  * Assembles the multi-year viewer VIEW from the flat `(classId, termId)` record
  * list `core` actually returns (US-E18.54).
  *
- * The year dimension does NOT exist on the academic-record wire and BE has
- * confirmed it never will — it is resolved per `classId` by an injected
- * collaborator (`yearByClassId`) and grouped here. Keeping that grouping in
- * `domain/` (pure, no HTTP) is what lets the mock repository and the real
+ * Each row carries its OWN `academicYear` (BE denormalized it in ask #47 /
+ * migration 051 — US-E18.56 dropped the enrollment point-read fan-out that used
+ * to join `classId → year`), so grouping is a pure fold over the rows. Keeping
+ * it in `domain/` (pure, no HTTP) is what lets the mock repository and the real
  * repository share ONE derivation.
  *
- * Degrade rules (AC): a record whose class year did not resolve is NEVER
+ * Degrade rules (AC): a record whose `academicYear` is absent is NEVER
  * dropped and NEVER given an invented year — it lands in a single
  * {@link UNRESOLVED_YEAR_ID} bucket rendered last with a `null` label, and that
  * bucket is never "the current year".
@@ -28,11 +28,10 @@ import { deriveYearSealStatus } from "./derive-year-seal-status";
 export function buildAcademicRecord(
   studentMemberId: string,
   records: TermRecord[],
-  yearByClassId: Map<string, string>,
 ): AcademicRecord {
   const buckets = new Map<string, TermRecord[]>();
   for (const record of records) {
-    const yearId = yearByClassId.get(record.classId) ?? UNRESOLVED_YEAR_ID;
+    const yearId = record.academicYear ?? UNRESOLVED_YEAR_ID;
     const bucket = buckets.get(yearId);
     if (bucket) bucket.push(record);
     else buckets.set(yearId, [record]);

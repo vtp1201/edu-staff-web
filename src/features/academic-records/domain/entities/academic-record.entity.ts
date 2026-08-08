@@ -11,7 +11,9 @@ import type { RankBand } from "@/features/grades/domain/use-cases/rank-band";
  * real contract) is gone: a {@link TermRecord} IS one wire row, and
  * {@link AcademicYear} is assembled client-side by `buildAcademicRecord`
  * (`domain/use-cases/build-academic-record.ts`) from a classId → academic-year
- * resolution supplied by the repository's injected resolver.
+ * resolution — which US-E18.56 replaced: BE denormalized `academicYear` onto
+ * every record row (ask #47, migration 051), so grouping now reads a field the
+ * row already carries and the enrollment point-read resolver is deleted.
  *
  * Fields with NO wire source were DELETED rather than faked: student
  * name/code/dateOfBirth (no identity fields on this contract, and no lookup a
@@ -54,6 +56,12 @@ export interface TermRecord {
   classId: string;
   /** Free-form on the wire (`"HK1"`, `"HK2"`, or a uuid) — NOT a union. */
   termId: string;
+  /**
+   * The row's own academic year (`"2025-2026"`), denormalized by BE in
+   * US-E18.56. `null` when the wire key is absent — a rare unhealed
+   * pre-migration row, which lands in the {@link UNRESOLVED_YEAR_ID} bucket.
+   */
+  academicYear: string | null;
   status: TermStatus;
   sealedAt: string | null;
   sealedBy: string | null;
@@ -69,11 +77,11 @@ export interface TermRecord {
   gpa: number | null;
 }
 
-/** Sentinel year bucket for records whose classId → year join did not resolve. */
+/** Sentinel year bucket for records the wire sent with no `academicYear`. */
 export const UNRESOLVED_YEAR_ID = "__unresolved-year__";
 
 export interface AcademicYear {
-  /** The resolved `academicYearLabel`, or {@link UNRESOLVED_YEAR_ID}. */
+  /** The wire's `academicYear`, or {@link UNRESOLVED_YEAR_ID}. */
   yearId: string;
   /** `null` ONLY for the unresolved bucket — presentation labels it in i18n. */
   yearLabel: string | null;

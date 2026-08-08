@@ -65,6 +65,9 @@ export function mapAcademicRecordRow(
   return {
     classId: dto.classId,
     termId: dto.termId,
+    // Denormalized by BE (US-E18.56). Absent on an unhealed pre-migration row
+    // → `null`, which the year grouping degrades into its unresolved bucket.
+    academicYear: orNull(dto.academicYear),
     status: dto.status,
     sealedAt: orNull(dto.sealedAt),
     sealedBy: orNull(dto.sealedBy),

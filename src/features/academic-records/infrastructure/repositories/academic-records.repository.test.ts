@@ -4,9 +4,11 @@
  * The viewer was a PERMANENT blocked stub since US-E18.21 (the entity shape
  * assumed a year-keyed contract that never existed). BE's 2026-08-07 answer
  * unblocked it: `GET /members/{memberId}/academic-records` (BE US-064) returns
- * every `(classId, termId)` record, and the year dimension is derived
- * client-side. These tests pin the wire call, the deduped year join, the
- * honest degrade when that join cannot resolve, and the failure mapping.
+ * every `(classId, termId)` record. US-E18.56 then removed the enrollment
+ * fan-out that used to resolve the year per classId — BE denormalized
+ * `academicYear` onto every row (ask #47) — so these tests pin the SINGLE wire
+ * call, the grouping straight off that field, the honest degrade when the field
+ * is absent (an unhealed pre-migration row), and the failure mapping.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -70,42 +72,34 @@ describe("AcademicRecordsRepository.getRecords", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("passes the DISTINCT classIds (deduped) and the wire studentMemberId to the year resolver", async () => {
-    const { http } = makeHttp({
+  it("issues NO per-class enrollment read any more — one call total, whatever the class count (US-E18.56)", async () => {
+    const { http, get } = makeHttp({
       studentMemberId: "stu-wire",
       records: [
-        row({ classId: "c-9", termId: "HK1" }),
-        row({ classId: "c-9", termId: "HK2" }),
-        row({ classId: "c-10", termId: "HK1" }),
+        row({ classId: "c-9", termId: "HK1", academicYear: "2024-2025" }),
+        row({ classId: "c-9", termId: "HK2", academicYear: "2024-2025" }),
+        row({ classId: "c-10", termId: "HK1", academicYear: "2025-2026" }),
       ],
     });
-    const resolveYears = vi.fn(async () => new Map([["c-9", "2024-2025"]]));
 
-    await new AcademicRecordsRepository(http, resolveYears).getRecords("stu-1");
+    await new AcademicRecordsRepository(http).getRecords("stu-1");
 
-    expect(resolveYears).toHaveBeenCalledTimes(1);
-    expect(resolveYears).toHaveBeenCalledWith(["c-9", "c-10"], "stu-wire");
+    expect(get).toHaveBeenCalledTimes(1);
   });
 
-  it("groups the flat records into the derived year view", async () => {
+  it("groups the flat records into the derived year view using the wire academicYear", async () => {
     const { http } = makeHttp({
       studentMemberId: "stu-1",
       records: [
-        row({ classId: "c-9", termId: "HK1" }),
-        row({ classId: "c-9", termId: "HK2" }),
-        row({ classId: "c-10", termId: "HK1" }),
+        row({ classId: "c-9", termId: "HK1", academicYear: "2024-2025" }),
+        row({ classId: "c-9", termId: "HK2", academicYear: "2024-2025" }),
+        row({ classId: "c-10", termId: "HK1", academicYear: "2025-2026" }),
       ],
     });
-    const resolveYears = async () =>
-      new Map([
-        ["c-9", "2024-2025"],
-        ["c-10", "2025-2026"],
-      ]);
 
-    const result = await new AcademicRecordsRepository(
-      http,
-      resolveYears,
-    ).getRecords("stu-1");
+    const result = await new AcademicRecordsRepository(http).getRecords(
+      "stu-1",
+    );
 
     if (!result.ok) throw new Error("expected ok");
     expect(result.data.studentMemberId).toBe("stu-1");
@@ -116,7 +110,7 @@ describe("AcademicRecordsRepository.getRecords", () => {
     expect(result.data.years[0].terms).toHaveLength(2);
   });
 
-  it("degrades to the unresolved-year bucket (never fails, never fabricates) when NO resolver is injected", async () => {
+  it("degrades to the unresolved-year bucket (never fails, never fabricates) when the wire omits academicYear", async () => {
     const { http } = makeHttp({ studentMemberId: "stu-1", records: [row()] });
 
     const result = await new AcademicRecordsRepository(http).getRecords(
@@ -130,16 +124,14 @@ describe("AcademicRecordsRepository.getRecords", () => {
     expect(result.data.years[0].terms).toHaveLength(1);
   });
 
-  it("does not call the year resolver when the student has no records", async () => {
-    const { http } = makeHttp({ studentMemberId: "stu-1", records: [] });
-    const resolveYears = vi.fn(async () => new Map<string, string>());
+  it("returns an empty year list — and still exactly one call — when the student has no records", async () => {
+    const { http, get } = makeHttp({ studentMemberId: "stu-1", records: [] });
 
-    const result = await new AcademicRecordsRepository(
-      http,
-      resolveYears,
-    ).getRecords("stu-1");
+    const result = await new AcademicRecordsRepository(http).getRecords(
+      "stu-1",
+    );
 
-    expect(resolveYears).not.toHaveBeenCalled();
+    expect(get).toHaveBeenCalledTimes(1);
     if (!result.ok) throw new Error("expected ok");
     expect(result.data.years).toEqual([]);
     expect(result.data.sealed).toBe(false);
@@ -153,7 +145,6 @@ describe("AcademicRecordsRepository.getRecords", () => {
 
     const result = await new AcademicRecordsRepository(
       http,
-      undefined,
       resolveSubjectNames,
     ).getRecords("stu-1");
 
