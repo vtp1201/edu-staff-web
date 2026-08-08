@@ -88,7 +88,9 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/student/exams", labelKey: "exams", icon: GraduationCap },
     { href: "/student/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/student/conduct", labelKey: "conduct", icon: Scale },
-    { href: "/student/schedule", labelKey: "schedule", icon: CalendarDays },
+    // US-E08.7 — student views their own class timetable, not a "teaching
+    // schedule"; reuse the existing `timetable` key (already used by admin).
+    { href: "/student/schedule", labelKey: "timetable", icon: CalendarDays },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],
@@ -99,7 +101,9 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/parent/attendance", labelKey: "attendance", icon: ClipboardList },
     { href: "/parent/conduct", labelKey: "conduct", icon: Scale },
     { href: "/parent/discipline", labelKey: "discipline", icon: Scale },
-    { href: "/parent/schedule", labelKey: "schedule", icon: CalendarDays },
+    // US-E08.7 — parent views their child's class timetable, same rationale
+    // as student; reuse the existing `timetable` key.
+    { href: "/parent/schedule", labelKey: "timetable", icon: CalendarDays },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
     { href: "/profile", labelKey: "profile", icon: User },
   ],

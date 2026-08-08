@@ -78,6 +78,31 @@ describe("NAV_BY_ROLE", () => {
     expect(NAV_BY_ROLE.student[0].href).toBe("/student");
     expect(NAV_BY_ROLE.parent[0].href).toBe("/parent");
   });
+
+  /**
+   * US-E08.7: student/parent view their own (or their child's) class
+   * timetable, not a "teaching schedule" — reuse the existing `timetable`
+   * key (already used by admin's `/admin/timetable`), no new i18n key.
+   * Teacher/principal keep `schedule` — for them the label is correct as-is.
+   */
+  it("labels the student and parent schedule nav item as `timetable`, not `schedule`", () => {
+    expect(
+      NAV_BY_ROLE.student.find((i) => i.href === "/student/schedule")?.labelKey,
+    ).toBe("timetable");
+    expect(
+      NAV_BY_ROLE.parent.find((i) => i.href === "/parent/schedule")?.labelKey,
+    ).toBe("timetable");
+  });
+
+  it("keeps the teacher and principal schedule nav item labelled `schedule`", () => {
+    expect(
+      NAV_BY_ROLE.teacher.find((i) => i.href === "/teacher/schedule")?.labelKey,
+    ).toBe("schedule");
+    expect(
+      NAV_BY_ROLE.principal.find((i) => i.href === "/principal/schedule")
+        ?.labelKey,
+    ).toBe("schedule");
+  });
 });
 
 describe("admin role", () => {
