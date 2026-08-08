@@ -555,3 +555,26 @@ Confirmed facts (verify before citing if stale):
   - Design-review gate: a copy-only change reusing the existing empty-state markup/tokens with no new
     layout/component is signable-off as a MINOR CONTENT CHANGE — say so explicitly to `fe-lead` rather
     than reflexively demanding a full `/impeccable` pass.
+- **Force-mock DI pin review — the exit-condition citation is the thing that actually rots**
+  (US-E18.60 `lms.di.ts`, ADR 0073; same shape as 0054/US-E18.9/US-E18.21). Code review of these is
+  ~10 minutes (unconditional `return new MockXRepo()`, `server-only` kept, dead `USE_MOCK`/
+  `createServerHttpClient`/real-repo imports removed, env-matrix test over `"true"`/`"false"`/unset ×
+  every exported factory + a "`createServerHttpClient` never called" recorder). The recurring DEFECT is
+  documentary: the ADR + the DI doc comment + the packet all cite a cross-repo ask report
+  (`docs/reports/<date>-fe-to-be-asks-*.md`) that was never actually written — `ls docs/reports/` and
+  grep the ask number before approving, because that citation is the pin's ONLY exit trigger and a
+  permanent silent mock in prod is the failure mode. Also check the harness `decision` row has its
+  `path` column populated (`sqlite3 harness.db "select * from decision order by rowid desc limit 3"`) —
+  0073 landed with it empty while 0071/0072 have it.
+  - `screens.md` convention for these rows is Vietnamese inline: `✅ US-XX (… BE force-mock — US-E18.N
+    contract block)`. `TEST_MATRIX.md` proof columns are `| yes | n/a | n/a | yes |` (7 prior rows).
+- **In a `fe-worktree` worktree, local `main` is STALE — always diff against `origin/main`.**
+  `scripts/bin/fe-worktree add` branches off `origin/main` but the shared local `main` ref is only
+  updated by whichever session last ran `git pull` in the primary checkout. So `git diff main...HEAD`
+  routinely shows a PRIOR merged story's files as if they were this story's scope (seen US-E08.8:
+  US-E08.7's nav-config + TEST_MATRIX + packet appeared in the diff). Run `git fetch --prune` then
+  `git diff origin/main...HEAD --stat` before judging scope, and don't accuse an engineer of scope
+  creep off the stale-main diff.
+  - The real repo class is kept DORMANT (never deleted) by ADR precedent — but check whether it is
+    actually unit-tested before letting an ADR claim it is; `lms.repository.ts` has NO test file, so
+    the un-pin day has zero safety net.

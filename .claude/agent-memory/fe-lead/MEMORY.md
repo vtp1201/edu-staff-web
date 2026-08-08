@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [US-E18.60 + US-E08.8 (LMS force-mock + RoleSwitcher removal)](project-e18-60-e08-8-lms-mock-role-switcher.md) — race-commit recovery live; a 2nd concurrent session independently converged on the same fix, causing an add/add merge conflict; worktree local `main` is stale, diff against `origin/main`
 - [E18 BE-wiring batch 6 (E18.56-59)](project-e18-be-wiring-batch6.md) — 4 US closing asks #47/#48/#32(b')/#49; first FE call issued directly from a Client Component (ADR 0072, invitation redeem/lookup); denylist-vs-allowlist "prove zero calls" test lesson; RBAC widening = FE no-op if branches already separate; CORS preflight gap found only because a call moved client-side
 - [E18 BE-wiring batch 4 (E18.46-49)](project-e18-be-wiring-batch-4.md) — 4 US closing last P2 asks #18/#28/#16/#10/#11; first fully-parallel dispatch (all 4 concurrent from start); ADR 0070 registered for a platform-wide admin-appRole-unreachable finding
 - [E18 BE-wiring batch 3 (E18.38-45)](project-e18-be-wiring-batch-3.md) — 8 US closing asks #43/#46/#44/#9/#12/#19 (#21 partial); first genuine parallel-worktree run; E18.44 needed 3 engineer rounds (route-reachability ≠ RBAC-correctness, check both)

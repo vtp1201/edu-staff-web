@@ -8,6 +8,7 @@
 - [Nth widening of a shared entity](pattern-nth-widening-shared-entity.md) — E18.52: confirm WHICH entity the endpoint owns (LIST vs BATCH); the compile fallout is the real… (+file)
 - [No-op hygiene verification](pattern-noop-hygiene-verification.md) — E18.45: prove the NEGATIVE by classifying every surviving force-mock reason, not by grepping the… (+file)
 
+- [Placeholder twin of a mounted-gate](gotcha-mounted-gate-placeholder-twin.md) — E08.8: deleting a control behind `mounted ?` must also delete its aria-hidden SSR twin (invisible to all tests)
 - [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus) (+file)
 - [Terminal error ≠ skeleton](gotcha-terminal-error-vs-skeleton.md) — `isLoading || !data → Skeleton` renders forever after a terminal error (+file)
 - [Composite-key point-read + unbacked read](pattern-composite-key-pointread-and-unbacked-read.md) — E18.32: a clustering-column id needs the whole ReportRef tuple (Sheet (+file)
