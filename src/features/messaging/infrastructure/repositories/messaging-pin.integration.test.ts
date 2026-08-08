@@ -79,8 +79,10 @@ const pinRow = {
     messageId: "m-1",
     roomId: "room-1",
     senderUserId: "u-1",
-    // The pin board always stamps this empty (senderName is not persisted).
-    senderName: "",
+    // US-E18.58 — BE resolves this from the member projection; it is the
+    // literal "Member" sentinel only while the sender is unprojected, and it
+    // is no longer ever the empty string.
+    senderName: "Member",
     text: "Lịch thi cuối kỳ",
     status: "active",
     editCount: 0,
@@ -114,13 +116,26 @@ describe("MessagingRepository pin slice — real interceptor pipeline", () => {
     });
   });
 
-  it("never invents a sender name from the wire's empty senderName", async () => {
+  it("never renders the unresolved-sender sentinel as a name (US-E18.58)", async () => {
     const { http } = interceptedHttp(() => envelope([pinRow]));
     const repo = new MessagingRepository(http, SELF);
 
     const res = await repo.getPinnedMessages("room-1");
     if (!res.ok) throw new Error("expected ok");
     expect(res.value[0]).not.toHaveProperty("senderName");
+  });
+
+  it("surfaces a server-resolved sender name end-to-end (US-E18.58)", async () => {
+    const resolved = {
+      ...pinRow,
+      message: { ...pinRow.message, senderName: "Cô Lan" },
+    };
+    const { http } = interceptedHttp(() => envelope([resolved]));
+    const repo = new MessagingRepository(http, SELF);
+
+    const res = await repo.getPinnedMessages("room-1");
+    if (!res.ok) throw new Error("expected ok");
+    expect(res.value[0].senderName).toBe("Cô Lan");
   });
 
   it("posts the pin with no body and survives the 201 unwrap", async () => {

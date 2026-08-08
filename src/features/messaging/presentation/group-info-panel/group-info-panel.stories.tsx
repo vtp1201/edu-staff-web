@@ -249,7 +249,29 @@ export const GroupInfoPanel_UnpinHiddenForNonModerator: Story = {
   },
 };
 
-/** US-E18.51 — no wire senderName on the real board → i18n fallback, never blank. */
+/**
+ * US-E18.58 — the pin board resolves the sender server-side, so a real name
+ * renders verbatim (no i18n fallback, no mapper-minted placeholder).
+ */
+export const GroupInfoPanel_PinnedResolvedSender: Story = {
+  // A sender who is NOT in the member list, so the assertion below can only
+  // match the pinned row (member rows render names too).
+  args: { pinnedMessages: [{ ...PINNED[0], senderName: "Cô Lan Anh" }] },
+  play: async () => {
+    await waitFor(() =>
+      expect(body().getByText("Cô Lan Anh")).toBeInTheDocument(),
+    );
+    await expect(
+      body().queryByText("Không rõ người gửi"),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E18.51/US-E18.58 — sender not resolvable (BE's `"Member"` sentinel, or a
+ * defensive blank) is normalised to `undefined` by the mapper → the localized
+ * fallback renders, never blank and never the English word "Member".
+ */
 export const GroupInfoPanel_PinnedUnknownSender: Story = {
   args: {
     pinnedMessages: [{ ...PINNED[0], senderName: undefined }],
@@ -258,6 +280,7 @@ export const GroupInfoPanel_PinnedUnknownSender: Story = {
     await waitFor(() =>
       expect(body().getByText("Không rõ người gửi")).toBeInTheDocument(),
     );
+    await expect(body().queryByText("Member")).not.toBeInTheDocument();
   },
 };
 

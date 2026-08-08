@@ -127,4 +127,74 @@ tiny
 
 ## Evidence
 
-(fe-nextjs-engineer / fe-tech-lead-reviewer fill in below as work proceeds.)
+### fe-nextjs-engineer — 2026-08-08
+
+**Change (mapper only, no UI branch added).**
+`pinned-message.mapper.ts` gained a module-private
+`UNRESOLVED_SENDER_SENTINEL = "Member"` + `isRealSenderName()` type guard
+(trim → non-empty → `!== sentinel`, exact & case-sensitive) replacing the inline
+`senderName ? {…} : {}` truthiness spread. Both "absent" causes (BE sentinel,
+defensive blank) now normalise to `senderName: undefined` and flow through the
+ONE existing presentation fallback.
+
+`pinned-message-row.tsx` render logic untouched — read it first and confirmed
+`pinned.senderName ?? t("unknownSender")` (line ~43) and the `unpinAria` label
+(line ~56) already handle `undefined`; no redundant second check added. Only its
+file doc comment changed.
+
+**Stale docs corrected** (all asserted "senderName is `""` / has no wire source"):
+- `pinned-message.mapper.ts` inline comment
+- `pinned-message.entity.ts` → `PinnedMessage.senderName` TSDoc
+- `pinned-message-row.tsx` file comment
+- `room-message-response.dto.ts` → `senderName` TSDoc, now stating the split
+  explicitly: pin board = server-resolved (real name or `"Member"` sentinel);
+  history / search / edit = still `toMessageDTO(m, "")` = `""`, unchanged.
+
+**History/search/edit confirmed untouched (scope item 4).** `grep -rn "senderName" src/`:
+the pin board and message history share the DTO **type**
+(`RoomMessageResponseDto`, embedded as `PinnedMessageResponseDto.message`) but
+NOT a mapper. History/search/edit go through
+`messaging.mapper.ts#toMessageEntityFromRoom(dto, currentUserId)` — called from
+`messaging.repository.ts` L171 (history) and L194 (send/edit) — which does not
+map `senderName` at all (the field is simply not read; `MessageEntity.senderName`
+stays `undefined` and the chat bubble renders that case). The pin board is the
+only caller of `pinned-message.mapper.ts#toPinnedMessages`. So there is NO shared
+mapper; this change is structurally incapable of reaching history/search/edit.
+Regression also covered by the untouched `messaging.mapper.test.ts` (L293 asserts
+`senderName` undefined) staying green.
+
+**Tests (red → green).**
+- RED first: 4 new failing assertions —
+  `bun vitest run <mapper.test> <pin.integration.test>` →
+  `Test Files 2 failed | Tests 4 failed | 12 passed (16)`, e.g.
+  `expected [ 'messageId', 'senderId', …(5) ] to not include 'senderName'` at
+  `pinned-message.mapper.test.ts:57` (`"Member"` case).
+- Unit `pinned-message.mapper.test.ts` (+4 cases, now 9): resolved name passes
+  through verbatim; `"Member"` → key absent; `"  Member  "` (padded) → key
+  absent; `"Member Nguyễn"` (real name containing the word) → passes through
+  (proves exact-match, not `includes`); `""` → key absent (regression guard).
+- Integration `messaging-pin.integration.test.ts`: fixture flipped from the dead
+  `senderName: ""` contract to `"Member"`; renamed the assertion to
+  "never renders the unresolved-sender sentinel as a name"; added a second case
+  asserting a resolved `"Cô Lan"` reaches the entity through the real
+  interceptor pipeline.
+- Storybook `group-info-panel.stories.tsx`: extended the existing
+  `GroupInfoPanel_PinnedUnknownSender` (now also asserts the literal "Member" is
+  NOT in the DOM) and added `GroupInfoPanel_PinnedResolvedSender` (resolved name
+  renders verbatim, no fallback text). The resolved-name story uses a sender NOT
+  in the member list ("Cô Lan Anh") because member rows render names too —
+  the first attempt failed on `Found multiple elements with the text`.
+
+**Proof commands actually run.**
+| Command | Result |
+| --- | --- |
+| `bun vitest run` (full suite) | **518 files / 4090 tests passed** |
+| `bun vitest run --config vitest.storybook.mts src/features/messaging/presentation/group-info-panel/group-info-panel.stories.tsx` | **17 passed** (incl. both pin-sender stories) |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | no new findings — 1 warning + 1 info, both pre-existing in `message-context-menu.tsx` (untouched by this story) |
+| `bun run build` (real mode) | success |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | success |
+
+**No decisions flagged** — no new token, no contract gap, no architecture change.
+The i18n fallback reuses the existing `messaging.groupInfo.unknownSender` /
+`unpinAria` keys; no new i18n keys were needed.

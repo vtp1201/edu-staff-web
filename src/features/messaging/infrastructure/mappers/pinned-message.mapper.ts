@@ -2,6 +2,20 @@ import type { PinnedMessage } from "@/features/messaging/domain/entities/pinned-
 import type { PinnedMessageResponseDto } from "../dtos/pinned-message-response.dto";
 
 /**
+ * BE's generic placeholder for a sender it could not resolve from the member
+ * projection yet (US-E18.58 / BE US-205). It is NOT a name: rendering it
+ * verbatim would print the English word "Member" to a Vietnamese-locale user.
+ * Exact, case-sensitive match — this is a fixed wire sentinel, not user input.
+ */
+const UNRESOLVED_SENDER_SENTINEL = "Member";
+
+/** True only for a name worth rendering verbatim (not blank, not the sentinel). */
+function isRealSenderName(raw: string | undefined): raw is string {
+  const trimmed = raw?.trim();
+  return !!trimmed && trimmed !== UNRESOLVED_SENDER_SENTINEL;
+}
+
+/**
  * US-E18.51 — map the real pin board (`GET /rooms/{roomId}/pinned-messages`) to
  * domain rows. Two rows are dropped rather than rendered broken:
  *
@@ -19,14 +33,17 @@ export function toPinnedMessages(
   for (const dto of dtos) {
     const msg = dto.message;
     if (!msg || msg.status === "deleted") continue;
-    // `senderName` is `""` on every pin-board row (not persisted server-side);
-    // an empty string must not become a rendered name — presentation shows an
-    // i18n fallback instead of a placeholder minted here.
+    // US-E18.58 — the pin board resolves `senderName` server-side, so it is a
+    // REAL name here (never `""` anymore) EXCEPT when the sender is not yet
+    // projected: then BE sends the literal `"Member"` sentinel. Both that
+    // sentinel and a (defensive) blank string are normalised to "absent" so
+    // presentation renders ONE localized fallback — no placeholder is minted
+    // in the mapper, and no English word leaks into a Vietnamese UI.
     const senderName = msg.senderName?.trim();
     rows.push({
       messageId: dto.messageId,
       senderId: msg.senderUserId,
-      ...(senderName ? { senderName } : {}),
+      ...(isRealSenderName(senderName) ? { senderName } : {}),
       excerpt: msg.text,
       sentAt: msg.createdAt,
       pinnedAt: dto.pinnedAt,
