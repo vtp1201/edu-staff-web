@@ -27,8 +27,15 @@ const CODE_MAP: Record<string, AuthFailure> = {
 export function mapAuthError(err: unknown): AuthFailure {
   const code = errorCodeOf(err);
   if (code && CODE_MAP[code]) return CODE_MAP[code];
+  const status = statusOf(err);
   // 429 without a recognised code → still a rate-limit signal.
-  if (statusOf(err) === 429) return { type: "too-many-requests" };
-  if (statusOf(err) === undefined) return { type: "network-error" };
+  if (status === 429) return { type: "too-many-requests" };
+  if (status === undefined) return { type: "network-error" };
+  // Gateway/upstream statuses are transient infra conditions (BE or Kong
+  // restarting), not application errors — surface them as network-error so the
+  // user is told to retry instead of hitting the opaque `unknown` copy.
+  if (status === 502 || status === 503 || status === 504) {
+    return { type: "network-error" };
+  }
   return { type: "unknown", message: code ?? String(err) };
 }

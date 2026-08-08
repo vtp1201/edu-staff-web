@@ -31,7 +31,14 @@ export function createHttpClient(token?: string) {
 
   instance.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-      if (token && config.headers) {
+      // The client's `token` is only a FALLBACK: a per-request `Authorization`
+      // header set by the caller always wins (US-E01.3). Clobbering it made a
+      // stale cookie token overwrite the fresh one `auth.repository.ts` passes
+      // to `/users/me` right after signin → permanent login deadlock.
+      // `.has()` is case-INSENSITIVE (AxiosHeaders#findKey); dot access is not,
+      // so a lowercase `authorization` would otherwise slip past the guard and
+      // get a second, differently-cased key appended next to it.
+      if (token && config.headers && !config.headers.has("Authorization")) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;

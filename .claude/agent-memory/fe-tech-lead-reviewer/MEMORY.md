@@ -18,4 +18,5 @@
 - [social message-pin + pin board](be-social-message-pin.md) — senderName always `""`, no wire capability (tri-state gate), self-healing board read, two 409s
 - [core member-attendance read](be-member-attendance-read.md) — PARENT allowed since US-047 (openapi prose stale), guard ordering, UPPER_SNAKE enum, ATTENDANCE_FORBIDDEN
 - [core academic-record member read](be-core-academic-record-member-read.md) — wire key is `academicYear` (not `...Label`), lazy heal ⇒ legit absence, killed the enrollment fan-out
+- [AxiosHeaders dot access is case-sensitive](axios-header-dot-access.md) — `.Authorization` misses a lowercase header and assignment duplicates it; demand `.has()`
 - [Reviewing a denorm/collaborator-removal story](review-checks-denorm-removal.md) — prove the negative at runtime, grep `main` for old consumers, check TEST_MATRIX for stale proof

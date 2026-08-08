@@ -113,4 +113,5 @@
 - [Embedded field → own resource](pattern-embedded-field-to-own-resource.md) — E18.51: real contract exposes a mock-era embedded array as its OWN gated endpoint ⇒ DELETE the… (+file)
 
 - [RBAC-blocked client-side join](pattern-rbac-blocked-clientside-join.md) — E18.54: "resolve it client-side" dies on RBAC not N+1; pick the widest allow-list endpoint, degrade… (+file)
+- [Testing axios interceptors](pattern-testing-axios-interceptors.md) — E01.3: stub `client.defaults.adapter` to capture config (no network, no mock lib); AxiosHeaders dot-access works
 - [Cold-cache 5s timeouts](gotcha-cold-cache-5s-timeouts.md) — editing i18n/endpoint files invalidates the vitest transform cache → fake RSC page-test timeouts;… (+file)
