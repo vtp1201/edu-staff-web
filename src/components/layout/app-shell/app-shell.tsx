@@ -64,7 +64,11 @@ export function AppShell({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tSwitch = useTranslations("tenant.switch");
-  const [role, setRole] = useState<Role>(initialRole);
+  // Role is a property of the authenticated session (token/membership claim) —
+  // there is no client-side role mutation in the shell anymore (US-E08.8 removed
+  // the mock-era RoleSwitcher; switching workspace goes through the real
+  // tenant-switch dialog / server action instead).
+  const role = initialRole;
   const [mobileOpen, setMobileOpen] = useState(false);
   const { collapsed, toggle } = useSidebarCollapsed();
 
@@ -91,15 +95,6 @@ export function AppShell({
   const bannerStatus =
     showBanner && sseStatus !== "connected" ? sseStatus : undefined;
 
-  // Switch workspace via client navigation — no full reload, scoped to the
-  // current tenant (`/t/{tenantId}/{role}`); the layout re-renders the new nav.
-  function handleRoleChange(next: Role) {
-    if (next === role) return;
-    setRole(next);
-    setMobileOpen(false);
-    router.push(tenantUrl(tenantId, `/${next}`));
-  }
-
   return (
     <EmailVerifyProvider initialEmailVerified={emailVerified} email={email}>
       <div className="flex min-h-screen bg-background">
@@ -124,7 +119,6 @@ export function AppShell({
             role={role}
             userName={userName}
             onMenuClick={() => setMobileOpen(true)}
-            onRoleChange={handleRoleChange}
             memberships={memberships}
             currentTenantId={currentTenantId}
             onSwitchTenant={onSwitchTenant}
