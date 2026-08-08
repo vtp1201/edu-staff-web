@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -133,3 +133,38 @@ one-branch removal → **6/6 pass**.
 `grep -rn "LmsRepository" src/ \| grep -v MockLmsRepository` confirms
 `lms.di.ts` was the only construction site of the real repository, so nothing
 else in the repo expected real-mode behaviour.
+
+### fe-lead gate close-out (2026-08-08)
+
+Design-review gate: **N/A** — this story has zero UI-visible change (DI-factory
+pin only; the two student screens render identical mock data whether
+`USE_MOCK` is true or false). No component/page/style/token/copy diff.
+`fe-accessibility-auditor` not spawned for this US (nothing renders
+differently) — confirmed by `fe-tech-lead-reviewer`.
+
+`fe-tech-lead-reviewer`: **Revision Required (docs-only)** on first pass — code
+itself Approved with zero change needed. Findings closed by fe-lead in this
+commit:
+- **[MUST FIX]** `docs/reports/2026-08-08-fe-to-be-asks-lms.md` (ask #51) was
+  cited by the ADR/DI comment/packet but did not exist on this branch — filed.
+- **[SHOULD FIX]** ADR `0073` alternative #3 overstated `LmsRepository` as
+  "unit-tested" — corrected to note it has NO test of its own (only the mock
+  repo is tested) and added an explicit follow-up requirement (a real
+  repo↔HTTP contract test before restoring the branch when ask #51 ships).
+- **[SHOULD FIX]** `docs/TEST_MATRIX.md` `bun run build` note updated to
+  record the actual independently-verified result (fe-lead + reviewer both
+  re-ran it: exit 0, full route manifest).
+- **[CONSIDER]** harness `decision` row `0073` has an empty `path` column
+  (the CLI's `decision add` was run once without `--doc`, then rejected the
+  retry as a duplicate id with no update subcommand available) — left as a
+  known minor gap, lowest severity per reviewer.
+
+Re-verified independently by fe-lead after the doc fixes:
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` (full suite, worktree, after merging origin/main) | pass |
+| `bunx tsc --noEmit` | clean |
+| `bun run build` | exit 0, full route manifest |
+
+**Verdict: gate PASS. Ready to merge.**

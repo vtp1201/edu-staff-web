@@ -63,9 +63,14 @@ continue to work; this ADR only touches `lms.di.ts`'s `makeRepo()`.
    the branch inside the repository class would split the "is this real or
    mock" answer across two files for no benefit.
 3. **Delete the real `LmsRepository` implementation entirely** until BE
-   ships — rejected: it is dormant, harmless, unit-tested groundwork for the
-   day ask #51 lands (matches `0054`'s choice to keep the real-mode error
-   taxonomy dormant rather than delete it).
+   ships — rejected: it is dormant, harmless groundwork for the day ask #51
+   lands (matches `0054`'s choice to keep the real-mode error taxonomy
+   dormant rather than delete it). **Caveat, unlike `0054`'s dormant branch:**
+   `LmsRepository` has NO test of its own today (only
+   `lms.mock.repository.test.ts` exists) — it is unreferenced AND untested
+   after this pin, so the un-pin has zero safety net. The follow-up story that
+   consumes ask #51 must add a real repo↔HTTP contract test before restoring
+   the branch, not assume this dormant code is already proven.
 
 ## Consequences
 
