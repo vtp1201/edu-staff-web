@@ -105,23 +105,66 @@ export const LookupLoading: Story = {
   args: { repository: stubRepo({ lookup: "pending" }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const status = await canvas.findByRole("status");
+    const status = await waitFor(() => {
+      const busy = canvas
+        .getAllByRole("status")
+        .find((el) => el.getAttribute("aria-busy") === "true");
+      if (!busy) throw new Error("no aria-busy status region yet");
+      return busy;
+    });
     await expect(status).toHaveAttribute("aria-busy", "true");
     await expect(canvas.getByText("Đang tải lời mời…")).toBeInTheDocument();
     await expect(canvas.queryByLabelText("Mật khẩu")).toBeNull();
+    // Nothing resolved yet → the success live region is present but silent.
+    await expect(canvas.getByTestId("redeem-announcement")).toHaveTextContent(
+      "",
+    );
   },
 };
 
-/** Lookup resolves → the read-only summary + the form, loading gone. */
+/**
+ * Lookup resolves → the read-only summary + the form, skeleton gone, and the
+ * resolution ANNOUNCED (A11Y-001): the failure transitions already announce via
+ * `role="alert"`; this is the success half of that symmetry, driven here by the
+ * real `useQuery` transition rather than a hand-set VM.
+ */
 export const LookupResolvesToForm: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const live = canvas.getByTestId("redeem-announcement");
     await waitFor(async () => {
       await expect(canvas.getByText("Giáo viên")).toBeVisible();
     });
     await expect(canvas.getByText("lan.pham@nguyendu.edu.vn")).toBeVisible();
-    await expect(canvas.queryByRole("status")).toBeNull();
+    // The busy skeleton region is gone…
+    await expect(
+      canvas
+        .queryAllByRole("status")
+        .find((el) => el.getAttribute("aria-busy") === "true"),
+    ).toBeUndefined();
+    // …and the SAME persistent region now carries the resolution.
+    await expect(canvas.getByTestId("redeem-announcement")).toBe(live);
+    await waitFor(async () => {
+      await expect(live).toHaveTextContent(
+        "Đã tải xong lời mời. Vui lòng điền thông tin bên dưới.",
+      );
+    });
     await expect(submitButton(canvas)).toBeDisabled();
+  },
+};
+
+/** A terminal lookup failure must NOT claim the invitation loaded. */
+export const LookupFailureAnnouncesOnlyTheAlert: Story = {
+  args: { repository: stubRepo({ lookup: { type: "link-expired" } }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(async () => {
+      await expect(canvas.getByText("Lời mời đã hết hạn")).toBeVisible();
+    });
+    await expect(canvas.getByRole("alert")).toBeVisible();
+    await expect(canvas.getByTestId("redeem-announcement")).toHaveTextContent(
+      "",
+    );
   },
 };
 

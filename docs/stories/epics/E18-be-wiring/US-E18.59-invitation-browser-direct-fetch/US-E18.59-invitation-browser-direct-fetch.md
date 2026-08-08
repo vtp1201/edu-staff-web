@@ -717,3 +717,83 @@ test hardening. **No change is required to the shipped production code**, and
 the `decodeTenantId` choice is explicitly accepted as documented in the ADR
 addendum. Once R-1's answer is in hand and R-2/R-3 land, this is an approve —
 the implementation itself is the strongest work in this batch.
+
+### fe-nextjs-engineer — fix round (2026-08-08)
+
+Scope: exactly two items — **R-3** (tech-lead, SHOULD FIX) and **A11Y-001**
+(a11y auditor, Major). R-1 (BE ask + ADR preflight note) and R-2 (TEST_MATRIX)
+are `fe-lead`'s; R-4/R-5 (CONSIDER) deliberately not taken; the `decodeTenantId`
+trust-boundary choice was left untouched, as accepted by the reviewer.
+
+**R-3 — the no-IAM-call guard is now an exact-match import ALLOWLIST.**
+`actions.test.ts` keeps both existing guards (the runtime `globalThis.fetch` spy
+and the four denylist patterns) and adds a third: `importSpecifiersOf()` parses
+every module specifier out of `actions.ts` — static `from "x"` (value or type),
+bare `import "x"`, dynamic `import("x")` and `require("x")` — sorts/dedupes them
+and asserts `toEqual` against the eight current specifiers. Any new import, HTTP
+client or not, now fails until someone edits the allowlist, which is the moment
+to re-ask whether the action still calls zero IAM endpoints.
+
+Mutation proof (same probe the reviewer ran, re-run before/after):
+
+| Probe on `finalizeRedeemAction` | Old guard (reviewer) | New guard (this branch) |
+| --- | --- | --- |
+| `import axios` + `await axios.post(...)` | **10 passed** (bypass) | **9 failed / 2 passed** — allowlist test among the failures |
+| `import axios` + `try { await axios.post(...) } catch {}` (silent variant — isolates the guard from the runtime crash) | n/a | **1 failed / 10 passed** — the allowlist test is the ONLY thing that catches it; the 10 pre-existing tests, including the fetch spy and the denylist, all still pass |
+
+The silent variant is the exact hole the reviewer demonstrated: under the old
+guard it was 10/10 green. `actions.ts` was restored byte-identical after each
+probe (`git diff` clean) and the file is 11/11 green.
+
+**A11Y-001 — the `loading → form` transition now announces.**
+`invite-redeem-screen.tsx` gained a persistent, initially-empty sr-only
+`role="status" aria-live="polite"` span rendered OUTSIDE the `vm.kind` branch
+switch (top of the `<Card>`), populated by a `useEffect` keyed on
+`vm.kind === "form"` with the new `invitations.redeem.states.loaded` key. It is
+never re-mounted, so the resolution is a text change inside a region the AT is
+already observing — the shape screen readers reliably announce (inserting a
+region together with its text is not). The failure branches are untouched:
+`InvitationNotice`'s `role="alert"` still carries them, and the new region stays
+empty on those paths (asserted). The loading skeleton's own `role="status"`
+region is unchanged, so two status regions coexist while pending (one busy, one
+silent) — the stories select the busy one explicitly.
+
+i18n (vi source + en mirror, added together):
+`invitations.redeem.states.loaded` = "Đã tải xong lời mời. Vui lòng điền thông
+tin bên dưới." / "Invitation loaded. Please fill in your details below." — the
+auditor's suggested key name and copy verbatim. Key-path parity verified
+programmatically: 3623 keys in each file, identical sorted path sets.
+A11Y-002 (Minor, `states.loading` copy warmth) deliberately NOT taken — the
+auditor marked it optional and deferred it to a future copy pass.
+
+New/changed proof (red observed before each fix, green after):
+
+- `invite-redeem-screen.stories.tsx` → new `LoadedAnnouncesToScreenReaders`: a
+  render harness that flips `vm` `loading → form` after mount and asserts the
+  live region (a) exists, is `sr-only`, `role="status"`, `aria-live="polite"`
+  and EMPTY before resolution, (b) is the SAME node afterwards (`toBe`), and
+  (c) then carries the loaded copy. `LookupLoading` updated for the two status
+  regions + asserts the announcement is still silent while pending.
+- `invite-redeem-container.stories.tsx` → `LookupResolvesToForm` now drives the
+  same assertion through the REAL `useQuery` transition (not a hand-set VM), and
+  new `LookupFailureAnnouncesOnlyTheAlert` proves a terminal lookup failure
+  raises the `role="alert"` and leaves the success region empty (no false
+  "invitation loaded" claim).
+
+**Proof commands (run on this branch, output observed):**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` | 518 files / **4111 tests passed**, 0 failed (was 4110 — +1 allowlist test; zero regression) |
+| `bun run vitest:storybook run src/features/auth/presentation/invite-redeem` | 2 files / **31 tests passed** (was 29; +2 new stories) |
+| red run of the same, before the screen change | **5 failed** / 26 passed |
+| mutation probes on `actions.ts` | table above; file restored, `git diff` clean |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun lint` | 0 errors; 1 warning + 1 info, both pre-existing in `message-context-menu.tsx` |
+| `bun run build` | success; `NEXT_PUBLIC_USE_MOCK=true bun run build` → `✓ Compiled successfully`, `/[locale]/invitations/redeem` present in both |
+
+Still open for `fe-lead` (unchanged by this round): R-1 (BE ask on the CORS
+preflight for `OPTIONS` on both public paths + ADR 0072 §Consequences note) and
+R-2 (`docs/TEST_MATRIX.md` — add the US-E18.59 row, amend the stale US-E18.53
+row). The design-review gate's short `/impeccable audit` on the `loading` story
+is also still outstanding.

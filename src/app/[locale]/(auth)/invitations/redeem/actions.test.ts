@@ -43,6 +43,30 @@ function redirectUrl(err: unknown): string {
 
 const TOKENS = { accessToken: "a", refreshToken: "r", sessionId: "s" };
 
+function actionsSource(): string {
+  return readFileSync(new URL("./actions.ts", import.meta.url), "utf8");
+}
+
+/**
+ * Every module specifier the file pulls in, whatever the syntax: static
+ * `from "x"` (value or type), bare side-effect `import "x"`, dynamic
+ * `import("x")` and `require("x")`. Sorted + de-duplicated so the assertion is
+ * order-independent.
+ */
+function importSpecifiersOf(source: string): string[] {
+  const patterns = [
+    /\bfrom\s*["']([^"']+)["']/g,
+    /\bimport\s+["']([^"']+)["']/g,
+    /\bimport\s*\(\s*["']([^"']+)["']/g,
+    /\brequire\s*\(\s*["']([^"']+)["']/g,
+  ];
+  const found = new Set<string>();
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) found.add(match[1]);
+  }
+  return [...found].sort();
+}
+
 function member(roles: string[], tenantId = "t-9"): Member {
   return { tenantId, userId: "u-9", roles, status: "ACTIVE" };
 }
@@ -65,14 +89,35 @@ describe("finalizeRedeemAction — makes NO IAM call", () => {
   });
 
   it("imports no DI factory, repository or http client — the redeem call must originate in the browser", () => {
-    const source = readFileSync(
-      new URL("./actions.ts", import.meta.url),
-      "utf8",
-    );
+    const source = actionsSource();
     expect(source).not.toMatch(/bootstrap\/di/);
     expect(source).not.toMatch(/infrastructure\/repositories/);
     expect(source).not.toMatch(/bootstrap\/lib\/http/);
     expect(source).not.toMatch(/UseCase/);
+  });
+
+  /**
+   * The denylist above is necessary but NOT sufficient: it only catches the
+   * import shapes we thought of. A tech-lead mutation probe proved the hole —
+   * adding `import axios from "axios"` + `axios.post(...)` left the file 10/10
+   * green (axios does not go through `globalThis.fetch` in node, so the runtime
+   * spy misses it too). So the module's import surface is an EXACT ALLOWLIST:
+   * any new import — HTTP client, DI factory, or something innocuous — fails
+   * here until someone deliberately adds it to this list, which is the moment
+   * to re-ask "does this action still make zero IAM calls?".
+   */
+  it("imports EXACTLY the allowlisted specifiers — any addition is a deliberate edit here", () => {
+    const specifiers = importSpecifiersOf(actionsSource());
+    expect(specifiers).toEqual([
+      "@/bootstrap/lib/auth-token.server",
+      "@/bootstrap/lib/jwt",
+      "@/bootstrap/tenant",
+      "@/features/auth/domain/entities/auth-user.entity",
+      "@/features/auth/domain/entities/member.entity",
+      "@/features/auth/domain/entities/role-meta",
+      "next-intl/server",
+      "next/navigation",
+    ]);
   });
 });
 

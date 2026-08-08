@@ -2423,6 +2423,7 @@
           "body": "Something went wrong while connecting. Please reload the page to try again."
         },
         "loading": "Loading invitation…",
+        "loaded": "Invitation loaded. Please fill in your details below.",
         "contactOffice": "Contact the school office for help.",
         "backToLogin": "Back to sign in"
       }

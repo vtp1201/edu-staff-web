@@ -8,7 +8,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { AuthBrandPanel } from "@/components/shared/auth-brand-panel";
 import { InvitationNotice } from "@/components/shared/invitation-notice";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -126,6 +126,18 @@ export function InviteRedeemScreen({
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [issues, setIssues] = useState<InvitationFieldIssue[]>([]);
+  // A11Y-001 (WCAG 4.1.3): the FAILURE transitions announce themselves —
+  // `InvitationNotice` is a `role="alert"`, which announces on insertion. The
+  // SUCCESS transition (`loading` → `form`) had nothing: the skeleton's own live
+  // region merely UNMOUNTS (removal is never announced) and the form is a silent
+  // DOM insertion. So this region lives OUTSIDE the branch switch — it is in the
+  // DOM, empty, while the lookup is pending, and gets its text once the
+  // invitation resolves, which is the shape screen readers actually announce.
+  const [announcement, setAnnouncement] = useState("");
+  const loaded = vm.kind === "form";
+  useEffect(() => {
+    if (loaded) setAnnouncement(t("states.loaded"));
+  }, [loaded, t]);
 
   const nameId = `${fieldId}-name`;
   const pwId = `${fieldId}-password`;
@@ -170,6 +182,17 @@ export function InviteRedeemScreen({
       <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
         <div className="w-full max-w-[460px]">
           <Card className="p-8">
+            {/* Persistent (never re-mounted) polite live region — see the
+                `announcement` state above. Empty until the invitation resolves. */}
+            <span
+              className="sr-only"
+              role="status"
+              aria-live="polite"
+              data-testid="redeem-announcement"
+            >
+              {announcement}
+            </span>
+
             {/* NEW in US-E18.59 (ADR 0072): the preview is now fetched by the
                 BROWSER, so there is a real pending moment the server-rendered
                 version never had. Mirrors the resolved card's rhythm so the

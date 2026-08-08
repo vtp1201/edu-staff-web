@@ -2423,6 +2423,7 @@
           "body": "Đã xảy ra lỗi khi kết nối. Vui lòng tải lại trang để thử lại."
         },
         "loading": "Đang tải lời mời…",
+        "loaded": "Đã tải xong lời mời. Vui lòng điền thông tin bên dưới.",
         "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
         "backToLogin": "Quay lại đăng nhập"
       }

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
+import { useEffect, useState } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { InviteRedeemVM } from "./invite-redeem.i-vm";
@@ -50,6 +51,19 @@ async function fillForm(
   await userEvent.type(canvas.getByLabelText("Họ và tên"), "Phạm Thị Lan");
   await userEvent.type(canvas.getByLabelText("Mật khẩu"), password);
   await userEvent.type(canvas.getByLabelText("Nhập lại mật khẩu"), password);
+}
+
+/**
+ * The skeleton's own live region. Two `role="status"` nodes coexist while the
+ * lookup is pending (the busy skeleton + the persistent, still-empty success
+ * announcement), so pick the busy one explicitly.
+ */
+function busyRegion(canvas: ReturnType<typeof within>): HTMLElement {
+  const region = canvas
+    .getAllByRole("status")
+    .find((el: HTMLElement) => el.getAttribute("aria-busy") === "true");
+  if (!region) throw new Error("no aria-busy status region found");
+  return region;
 }
 
 /**
@@ -301,11 +315,58 @@ export const LookupLoading: Story = {
   args: { vm: { kind: "loading" } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const status = canvas.getByRole("status");
+    const status = busyRegion(canvas);
     await expect(status).toHaveAttribute("aria-busy", "true");
     await expect(status).toHaveAttribute("aria-live", "polite");
     await expect(canvas.getByText("Đang tải lời mời…")).toBeInTheDocument();
     await expect(canvas.queryByLabelText("Mật khẩu")).toBeNull();
+    // The persistent success live region exists already, but is still silent —
+    // nothing has resolved yet.
+    await expect(canvas.getByTestId("redeem-announcement")).toHaveTextContent(
+      "",
+    );
+  },
+};
+
+/**
+ * A11Y-001 (fix round, WCAG 4.1.3): the FAILURE transitions announce via
+ * `InvitationNotice`'s `role="alert"`, but `loading → form` used to be a silent
+ * DOM swap — the skeleton's own live region unmounts, and removing a live
+ * region announces nothing. A persistent, initially-empty `role="status"` span
+ * survives the swap, so the resolution is announced in the region the AT is
+ * already observing.
+ */
+export const LoadedAnnouncesToScreenReaders: Story = {
+  render: function LookupTransition(args) {
+    const [vm, setVm] = useState<InviteRedeemVM>({ kind: "loading" });
+    useEffect(() => {
+      const id = setTimeout(() => setVm(PREVIEW), 30);
+      return () => clearTimeout(id);
+    }, []);
+    return <InviteRedeemScreen {...args} vm={vm} />;
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const live = canvas.getByTestId("redeem-announcement");
+    // Present BEFORE the content arrives, and sr-only (visual design unchanged).
+    await expect(live).toHaveAttribute("role", "status");
+    await expect(live).toHaveAttribute("aria-live", "polite");
+    await expect(live).toHaveClass("sr-only");
+    await expect(live).toHaveTextContent("");
+
+    await waitFor(async () => {
+      await expect(canvas.getByLabelText("Mật khẩu")).toBeVisible();
+    });
+    // Same node (not a re-inserted one) now carries the resolution — the
+    // announcement lands one effect-commit after the form paints.
+    await expect(canvas.getByTestId("redeem-announcement")).toBe(live);
+    await waitFor(async () => {
+      await expect(live).toHaveTextContent(
+        "Đã tải xong lời mời. Vui lòng điền thông tin bên dưới.",
+      );
+    });
+    // The skeleton's own busy region is gone; only the success one remains.
+    await expect(canvas.queryByText("Đang tải lời mời…")).toBeNull();
   },
 };
 
