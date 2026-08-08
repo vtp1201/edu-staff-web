@@ -32,7 +32,6 @@ import {
 import { Input } from "@/components/ui/input";
 import type { Role } from "../sidebar/nav-config";
 import { deriveTenantMenu } from "./derive-tenant-menu";
-import { RoleSwitcher } from "./role-switcher";
 
 /** Role → semantic badge tone (design-system.md "Role → màu"). */
 const ROLE_TONE: Record<Role, StatusTone> = {
@@ -55,7 +54,6 @@ type HeaderProps = {
   role: Role;
   userName?: string;
   onMenuClick?: () => void;
-  onRoleChange?: (role: Role) => void;
   // NEW (US-E23.1) — all optional, default to "feature absent" so existing
   // stories/tests that don't pass them keep compiling/passing unchanged.
   /** Caller's enriched tenant memberships (RSC-fetched, fail-closed []). */
@@ -73,7 +71,6 @@ export function Header({
   role,
   userName = "User",
   onMenuClick,
-  onRoleChange,
   memberships = [],
   currentTenantId,
   onSwitchTenant,
@@ -163,8 +160,6 @@ export function Header({
       <div className="ml-auto flex items-center gap-2">
         {mounted ? (
           <>
-            <RoleSwitcher currentRole={role} onChange={onRoleChange} />
-
             <Button
               variant="ghost"
               size="icon"
@@ -276,16 +271,6 @@ export function Header({
 function HeaderPlaceholder({ initials }: { initials: string }) {
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        aria-hidden
-        tabIndex={-1}
-      >
-        <span className="size-2 rounded-full bg-muted" />
-        <span className="hidden sm:inline">···</span>
-      </Button>
       <Button
         variant="ghost"
         size="icon"
