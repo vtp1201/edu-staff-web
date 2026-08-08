@@ -1073,7 +1073,7 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
    `POST /iam/api/v1/invitations/{redeem,lookup}` — trước fix này 2 route bị
    `edu-edge-auth` chặn 401 kể cả qua Server Action cũ). Bắt buộc trước khi
    bật US-E18.59 real-mode.
-3. **⚠️ GATE MỚI, CHƯA XÁC NHẬN (US-E18.59, ask mới trong batch 6 report):**
+3. **⚠️ GATE MỚI, CHƯA XÁC NHẬN (US-E18.59, ask #50 trong batch 6 report):**
    verify `OPTIONS /iam/api/v1/invitations/{redeem,lookup}` qua Kong thật +
    `Access-Control-Allow-Headers` có `Content-Type` VÀ `X-Client-Id`. BE mới
    verify `POST` trực tiếp (US-207 §5.2), CHƯA verify preflight. Thiếu gate

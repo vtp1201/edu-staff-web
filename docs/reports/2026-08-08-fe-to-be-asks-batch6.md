@@ -19,7 +19,7 @@
 
 ## Phần 2 — Ask MỚI (phát sinh khi implement #49)
 
-21. **CORS preflight (`OPTIONS`) của `POST /iam/api/v1/invitations/{redeem,lookup}`
+21. **#50 — CORS preflight (`OPTIONS`) của `POST /iam/api/v1/invitations/{redeem,lookup}`
     chưa được verify qua Kong thật.** US-207 §5.2 verify `POST` trực tiếp
     (đúng, đã fix blocker route-chưa-reachable), nhưng **không** verify
     `OPTIONS` — và giờ FE gọi cả hai route này **trực tiếp từ browser**
