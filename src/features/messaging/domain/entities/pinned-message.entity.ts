@@ -15,11 +15,14 @@ export type PinnedMessage = {
   /** Global user id of the message's sender. */
   senderId: string;
   /**
-   * Sender display name. OPTIONAL because the real pin board has NO wire source
-   * for it: the social service stamps `senderName` from the caller's claims at
-   * send time only and returns `""` for every embedded pin-board message
-   * (`toMessageDTO(msg, "")`). Presentation renders an i18n fallback — never a
-   * placeholder minted in the mapper.
+   * Sender display name, server-resolved (US-E18.58 / BE US-205: the pin board
+   * resolves it from the member projection — it is a real name, never `""`).
+   *
+   * Still OPTIONAL: when the sender has not been projected yet BE emits its
+   * generic `"Member"` sentinel, which the mapper normalises to absent (as it
+   * does a defensive blank). `undefined` therefore means "no name to show" and
+   * presentation renders an i18n fallback — never a placeholder minted in the
+   * mapper, never the literal English word "Member".
    */
   senderName?: string;
   /** Current message text (the pin board embeds live content, not a snapshot). */

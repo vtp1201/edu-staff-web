@@ -37,15 +37,41 @@ describe("toPinnedMessages (US-E18.51 real pin board)", () => {
   });
 
   it("omits senderName entirely when the wire sends the empty string", () => {
-    // The pin board calls toMessageDTO(msg, "") server-side — senderName is
-    // never populated there. An empty string must NOT become a rendered name.
+    // Defensive regression guard for the pre-US-E18.58 contract
+    // (`toMessageDTO(msg, "")`): an empty string must NOT become a rendered
+    // name. BE no longer emits it, but the fallback path stays cheap to keep.
     const [pinned] = toPinnedMessages([
       row({ message: { ...MESSAGE, senderName: "" } }),
     ]);
     expect(Object.keys(pinned)).not.toContain("senderName");
   });
 
-  it("passes a non-empty senderName through (forward-compatible if BE fills it)", () => {
+  it("omits senderName when BE sends the literal unresolved-sender sentinel", () => {
+    // US-E18.58 — the sender is not yet projected, so BE emits its generic
+    // English placeholder "Member". Rendering it verbatim would show an
+    // English word to a Vietnamese-locale user; it must take the SAME
+    // "absent → i18n fallback" path as the empty string.
+    const [pinned] = toPinnedMessages([
+      row({ message: { ...MESSAGE, senderName: "Member" } }),
+    ]);
+    expect(Object.keys(pinned)).not.toContain("senderName");
+  });
+
+  it("treats the sentinel as absent even when padded (trim before compare)", () => {
+    const [pinned] = toPinnedMessages([
+      row({ message: { ...MESSAGE, senderName: "  Member  " } }),
+    ]);
+    expect(Object.keys(pinned)).not.toContain("senderName");
+  });
+
+  it("keeps a REAL name that merely contains the sentinel word (exact match only)", () => {
+    const [pinned] = toPinnedMessages([
+      row({ message: { ...MESSAGE, senderName: "Member Nguyễn" } }),
+    ]);
+    expect(pinned.senderName).toBe("Member Nguyễn");
+  });
+
+  it("passes the server-resolved senderName through verbatim", () => {
     const [pinned] = toPinnedMessages([
       row({ message: { ...MESSAGE, senderName: "Cô Lan" } }),
     ]);

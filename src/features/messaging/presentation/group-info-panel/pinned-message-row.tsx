@@ -14,8 +14,10 @@ export interface PinnedMessageRowProps {
 
 /**
  * A single pinned-message row in the group info panel (US-E10.4, real board in
- * US-E18.51). `senderName` has no wire source on the real pin board, so an
- * i18n fallback is rendered here — never a placeholder minted in the mapper.
+ * US-E18.51). `senderName` is server-resolved (US-E18.58) and rendered
+ * verbatim when present; the mapper leaves it `undefined` when BE could not
+ * resolve the sender (its `"Member"` sentinel) or, defensively, sent a blank —
+ * both take this single localized fallback, never a mapper-minted placeholder.
  */
 export function PinnedMessageRow({
   pinned,

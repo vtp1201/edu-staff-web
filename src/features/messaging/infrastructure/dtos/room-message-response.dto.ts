@@ -9,12 +9,19 @@ export type RoomMessageResponseDto = {
   roomId: string;
   senderUserId: string;
   /**
-   * US-E18.51 ground-truth: the Go handler DOES emit `senderName`
-   * (`httpdto.MessageResponse.SenderName`) even though `openapi.yaml`'s
-   * `Message` schema omits it — a documented drift (FE→BE ask). It is stamped
-   * from the SENDER's JWT claims at send time and never persisted, so any
-   * read-back path emits `""` — the pin board calls `toMessageDTO(msg, "")`.
-   * Optional here; consumers MUST treat `""` as absent.
+   * Emitted by the Go handler (`httpdto.MessageResponse.SenderName`); the
+   * `openapi.yaml` drift noted in US-E18.51 was fixed BE-side (additive,
+   * non-required field) in US-E18.58.
+   *
+   * Population depends on the ENDPOINT:
+   * - pin board (`GET /rooms/{roomId}/pinned-messages`) — resolved server-side
+   *   from the member projection: a real name, or the literal `"Member"`
+   *   sentinel when the sender is not projected yet (US-E18.58 / BE US-205);
+   * - message history / search / edit — still `toMessageDTO(m, "")`, i.e. `""`
+   *   (names are resolved from the room directory instead; unchanged).
+   *
+   * Optional here; consumers MUST treat `""` (and, on the pin board, the
+   * `"Member"` sentinel) as absent rather than as a renderable name.
    */
   senderName?: string;
   text: string;
