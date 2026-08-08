@@ -14,7 +14,8 @@ card vĩnh viễn.
 
 **FE đã làm gì trong lúc chờ:** force-mock DI của feature `lms` trong real
 mode (precedent ADR 0054 — grade-approval dashboard), để hai tab chạy mock
-data thay vì lỗi. Điều kiện gỡ force-mock = ask này được ship.
+data thay vì lỗi. Điều kiện gỡ force-mock = ask này được ship (US-E18.60,
+ADR 0073).
 
 **Contract FE cần** (đã mirror sẵn trong `src/bootstrap/endpoint/lms.endpoint.ts`
 + mock repository từ US-E11.6/E11.7 — DTO shape lấy từ đó làm tham chiếu):
@@ -60,4 +61,4 @@ tuỳ BE chọn, FE chỉ báo hiện tượng.
 | --- | --- |
 | FE endpoint mirror + mock contract | `src/bootstrap/endpoint/lms.endpoint.ts`, `src/features/lms/infrastructure/repositories/mocks/` |
 | Story gốc màn student | US-E11.6 (courses + lesson player), US-E11.7 (assignments) |
-| Force-mock stopgap | US mới trong `docs/stories/epics/` (đang chạy, xem git log `force-mock lms`) |
+| Force-mock stopgap | US-E18.60 (`src/bootstrap/di/lms.di.ts`), ADR `0073` |
