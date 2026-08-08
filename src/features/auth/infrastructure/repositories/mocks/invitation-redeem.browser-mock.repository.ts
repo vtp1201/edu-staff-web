@@ -1,4 +1,20 @@
-import "server-only";
+/**
+ * Mock PUBLIC invitation repository for `NEXT_PUBLIC_USE_MOCK=true`
+ * (US-E18.59, ADR 0072), replacing the deleted server-only mock.
+ *
+ * ── NO `import "server-only"`, and NO `Buffer` ────────────────────────────
+ * Since ADR 0072 the lookup/redeem pair runs IN THE BROWSER, so its mock runs
+ * there too. That rules out `bootstrap/lib/mock.ts` (a `server-only` module,
+ * hence also its `USE_MOCK`/`mockDelay` exports) and rules out
+ * `Buffer.from(...).toString("base64url")`, which does not exist in a browser
+ * realm. Base64url is minted with `btoa` instead.
+ *
+ * It models the ONE behaviour that matters for this flow's correctness: an
+ * invitation is SINGLE-USE. A second `redeem` with the same token is
+ * `link-invalid` (410, a replay), never `account-exists` (409) — the exact
+ * distinction the real BE makes and the one easiest to get wrong. `lookup` of a
+ * consumed token is likewise dead, matching the real read.
+ */
 import type { InvitationPreview } from "../../../domain/entities/invitation-preview.entity";
 import type { RedeemedInvitation } from "../../../domain/entities/redeemed-invitation.entity";
 import type { InvitationRedeemFailure } from "../../../domain/failures/invitation-redeem.failure";
@@ -33,30 +49,45 @@ function failureFor(token: string): InvitationRedeemFailure | null {
   );
 }
 
-/**
- * Mock PUBLIC invitation repository (`NEXT_PUBLIC_USE_MOCK=true`).
- *
- * It models the ONE behaviour that matters for this flow's correctness: an
- * invitation is SINGLE-USE. A second `redeem` with the same token is
- * `link-invalid` (410, a replay), never `account-exists` (409) — the exact
- * distinction the real BE makes and the one easiest to get wrong. `lookup` of a
- * consumed token is likewise dead, matching the real read.
- */
-export class MockInvitationRedeemRepository
+/** Browser-safe `base64url` — the replacement for `Buffer#toString("base64url")`. */
+function base64Url(value: unknown): string {
+  // `btoa` is Latin-1 only; the payloads minted here are ASCII JSON, and
+  // `encodeURIComponent`+`unescape` would be the fix if that ever changed.
+  return btoa(JSON.stringify(value))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+export class BrowserMockInvitationRedeemRepository
   implements IInvitationRedeemRepository
 {
-  /** Tokens already consumed in this process — replay detection. */
+  /**
+   * Artificial latency, injected rather than read from an env flag so tests
+   * stay instant and deterministic while dev (`USE_MOCK`) still shows the new
+   * client-side loading state for long enough to be seen.
+   */
+  constructor(private readonly latencyMs = 0) {}
+
+  /** Tokens already consumed in this browser tab — replay detection. */
   private static readonly consumed = new Set<string>();
 
   /** Test/dev seam so a fresh scenario can start from a clean slate. */
   static reset(): void {
-    MockInvitationRedeemRepository.consumed.clear();
+    BrowserMockInvitationRedeemRepository.consumed.clear();
+  }
+
+  private async delay(): Promise<void> {
+    if (this.latencyMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, this.latencyMs));
+    }
   }
 
   async lookup(token: string): Promise<InvitationPreview> {
+    await this.delay();
     const failure = failureFor(token);
     if (failure) throw failure;
-    if (MockInvitationRedeemRepository.consumed.has(token)) {
+    if (BrowserMockInvitationRedeemRepository.consumed.has(token)) {
       throw { type: "link-invalid" } satisfies InvitationRedeemFailure;
     }
     return {
@@ -68,19 +99,21 @@ export class MockInvitationRedeemRepository
   }
 
   async redeem(command: RedeemInvitationCommand): Promise<RedeemedInvitation> {
+    await this.delay();
     const failure = failureFor(command.token);
     if (failure) throw failure;
-    if (MockInvitationRedeemRepository.consumed.has(command.token)) {
+    if (BrowserMockInvitationRedeemRepository.consumed.has(command.token)) {
       // A REPLAY is 410, not 409 — see the class comment.
       throw { type: "link-invalid" } satisfies InvitationRedeemFailure;
     }
-    MockInvitationRedeemRepository.consumed.add(command.token);
+    BrowserMockInvitationRedeemRepository.consumed.add(command.token);
 
     const exp = Math.floor(Date.now() / 1000) + 3600;
-    const b64 = (o: unknown) =>
-      Buffer.from(JSON.stringify(o)).toString("base64url");
     const tenantId = "tenant-acme";
-    const accessToken = `${b64({ alg: "none" })}.${b64({ tenantId, exp })}.mock`;
+    const accessToken = `${base64Url({ alg: "none" })}.${base64Url({
+      tenantId,
+      exp,
+    })}.mock`;
 
     return {
       member: {

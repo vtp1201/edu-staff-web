@@ -16,7 +16,11 @@ declare module "axios" {
 // constant already encodes the full external path including service prefix and
 // `/api/v1` segment (e.g. `/iam/api/v1/auth/signin`).
 // Override for direct-service debug: NEXT_PUBLIC_API_URL=http://localhost:8080
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Exported (US-E18.59 / ADR 0072) so the ONE browser-direct caller in the app —
+// the public invitation lookup/redeem `fetch` repository — targets the identical
+// origin as every axios client instead of minting a second source of truth.
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export function createHttpClient(token?: string) {
   const instance = axios.create({

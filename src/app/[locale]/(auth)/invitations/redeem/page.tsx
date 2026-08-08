@@ -1,36 +1,19 @@
 import { getLocale } from "next-intl/server";
-import { makeLookupInvitationUseCase } from "@/bootstrap/di/invitation-redeem.di";
-import type { InvitationRedeemFailure } from "@/features/auth/domain/failures/invitation-redeem.failure";
-import type { InviteRedeemVM } from "@/features/auth/presentation/invite-redeem/invite-redeem.i-vm";
+import { InviteRedeemContainer } from "@/features/auth/presentation/invite-redeem/invite-redeem-container";
 import { InviteRedeemScreen } from "@/features/auth/presentation/invite-redeem/invite-redeem-screen";
-import { redeemAction } from "./actions";
-
-/** Lookup failure → screen state. Unmapped keys degrade to the retryable error. */
-function vmForFailure(type: InvitationRedeemFailure["type"]): InviteRedeemVM {
-  switch (type) {
-    case "link-invalid":
-      return { kind: "invalid" };
-    case "link-expired":
-      return { kind: "expired" };
-    case "rate-limited":
-      return { kind: "rate-limited" };
-    case "tenant-inactive":
-      return { kind: "tenant-inactive" };
-    default:
-      // `network-error`/`unknown` — and `account-exists`/`invalid-input`, which
-      // the lookup endpoint cannot produce; if one ever appears, the generic
-      // retryable error is the only honest thing to show.
-      return { kind: "error" };
-  }
-}
+import { finalizeRedeemAction } from "./actions";
 
 /**
- * PUBLIC `/invitations/redeem?token=...` (US-E18.53, IAM US-191, amending
- * ADR 0059's "no guest account-creation" premise now that BE ships the
- * capability). Step 1 of the two-step flow runs here, server-side: one
- * `POST /invitations/lookup` resolves the invitation so the form can name the
- * school, the roles and the invited email instead of asking for a password
- * blind. Step 2 (the password + full-name submit) is `redeemAction`.
+ * PUBLIC `/invitations/redeem?token=...` (US-E18.53, rewired by US-E18.59 /
+ * ADR 0072).
+ *
+ * This page NO LONGER fetches. Both IAM calls — the `lookup` preview and the
+ * `redeem` submit — are per-IP rate limited (10/min) and are now issued by the
+ * BROWSER from `InviteRedeemContainer`, so Kong sees each visitor's own IP
+ * rather than this server's single egress IP (one abusive invitee used to be
+ * able to 429-lock every other invitee out of account creation). All that is
+ * left here is routing: read the param, build the two hrefs, hand over the
+ * narrow `finalizeRedeemAction` that writes the session cookies afterwards.
  *
  * The token reaches this page as a `?token=` PAGE param — the emailed link's
  * unavoidable shape, matching the sibling `invitations/accept?token=`. It is
@@ -51,24 +34,26 @@ export default async function InviteRedeemPage({
     ? `/${locale}/invitations/accept?token=${encodeURIComponent(token)}`
     : `/${locale}/invitations/accept`;
 
-  let vm: InviteRedeemVM;
+  // Zero network AND zero query machinery: lookup shares its per-IP rate-limit
+  // budget with redeem, so a malformed link must not spend a slot the real
+  // attempt will need. Rendering the dead-link card straight from the server
+  // keeps that guarantee structural rather than a flag inside the container.
   if (!token?.trim()) {
-    // Zero network: lookup shares its per-IP rate-limit budget with redeem, so
-    // a malformed link must not spend a slot the real attempt will need.
-    vm = { kind: "invalid" };
-  } else {
-    const result = await (await makeLookupInvitationUseCase()).execute(token);
-    vm = result.data
-      ? { kind: "form", token, preview: result.data }
-      : vmForFailure(result.error.type);
+    return (
+      <InviteRedeemScreen
+        vm={{ kind: "invalid" }}
+        loginHref={loginHref}
+        acceptHref={acceptHref}
+      />
+    );
   }
 
   return (
-    <InviteRedeemScreen
-      vm={vm}
+    <InviteRedeemContainer
+      token={token}
       loginHref={loginHref}
       acceptHref={acceptHref}
-      onRedeem={redeemAction}
+      onFinalize={finalizeRedeemAction}
     />
   );
 }

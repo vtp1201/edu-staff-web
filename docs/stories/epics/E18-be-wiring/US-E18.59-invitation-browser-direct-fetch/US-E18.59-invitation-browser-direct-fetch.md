@@ -253,3 +253,51 @@ before that fix (worked only via mocks or a direct-to-service debug URL).
 ## Evidence
 
 (fe-nextjs-engineer / fe-tech-lead-reviewer / fe-accessibility-auditor / fe-qa-playwright fill in below as work proceeds.)
+
+### fe-nextjs-engineer — implementation (2026-08-08)
+
+**What was built** (TDD red → green throughout; every test file below was written
+before the module it covers, and the red run was observed).
+
+| Layer | File | Note |
+| --- | --- | --- |
+| bootstrap/lib | `http.ts` | `API_URL` promoted from module-private const to a named export. No other change; every axios client still reads the same constant. |
+| infrastructure (NO `server-only`, ADR 0072 exception) | `invitation-redeem.browser.repository.ts` | `fetch`-based `IInvitationRedeemRepository`. `credentials: "omit"`, `Content-Type` only on lookup, `+X-Client-Id` on redeem. Exports `apiErrorFromResponse()` — the fetch→`ApiError` adapter, which is why `mapInvitationRedeemFailure` needed **zero** changes. Success maps through the EXISTING `mapInvitationPreview`/`mapRedeemedInvitation`. |
+| infrastructure (mock) | `mocks/invitation-redeem.browser-mock.repository.ts` | Behaviour-identical to the deleted server mock (failure markers, single-use replay → `link-invalid`, 3-day expiry) but `Buffer`-free (`btoa` base64url) and `server-only`-free. Latency is an injected constructor arg (0 in tests, 400ms from the factory) instead of `mock.ts#mockDelay`, which is `server-only`. |
+| infrastructure (client composition) | `make-browser-invitation-redeem-repository.ts` | Reads `process.env.NEXT_PUBLIC_USE_MOCK` directly per call. Deliberately NOT under `bootstrap/di/` (that directory's contract is `server-only`). |
+| presentation | `invite-redeem-flow.ts` | Framework-free core: `lookupVm()` (query state → VM incl. the new `loading`), `toActionResult()`, `runRedeem()` (browser redeem → narrow finalize; rethrows the finalize/redirect throw). |
+| presentation | `invite-redeem-container.tsx` (`'use client'`) | Local `QueryClient` (`retry: false` everywhere — an automatic retry would spend the visitor's own rate-limit slots), `useQuery` lookup (`enabled` only for a non-blank token), `useMutation` redeem, both built on the reused pure use-cases. `repository?` prop is a story/test seam the RSC never passes. |
+| presentation | `invite-redeem.i-vm.ts`, `invite-redeem-screen.tsx` | New `{ kind: "loading" }` variant + skeleton render (`role="status"`, `aria-live="polite"`, `aria-busy`, sr-only copy). `onRedeem` is now optional (the formless states have nothing to submit). |
+| app | `redeem/page.tsx` | Thin RSC: reads the param, builds the hrefs, renders the container. Blank token renders the `invalid` card directly — no container mounted at all, so the zero-network guarantee is structural. |
+| app | `redeem/actions.ts` | `redeemAction` → `finalizeRedeemAction(member, tokens)`: `setAuthCookies` + redirect ONLY. |
+| deleted | `bootstrap/di/invitation-redeem.di.ts` (+test), `invitation-redeem.repository.ts` (+test), `invitation-redeem.http.test.ts`, `mocks/invitation-redeem.mock.repository.ts` (+test) | Plus the `export *` line in `bootstrap/di/index.ts`. Grep-confirmed zero remaining references. |
+
+**Proof (all commands run on this branch, output observed):**
+
+- `bun vitest run` → **518 files / 4110 tests passed**, 0 failed (full suite, zero regression; accept-flow, login and every other auth screen untouched and green).
+- `bun run vitest:storybook run src/features/auth/presentation/invite-redeem` → **2 files / 29 tests passed** (17 screen + 12 container interaction stories).
+- `bunx tsc --noEmit` → clean (no output).
+- `bun lint` → 0 errors (1 warning + 1 info, both pre-existing in `message-context-menu.tsx`; verified identical on a stashed baseline).
+- `bun run build` → success in real mode AND with `NEXT_PUBLIC_USE_MOCK=true` (`✓ Compiled successfully`, `/[locale]/invitations/redeem` present in both route trees). The mock-mode build is the meaningful proof that no `server-only` module reaches the client bundle.
+
+**AC-specific proofs:**
+
+- *Token never in a query string/header:* `invitation-redeem.browser.repository.test.ts` asserts, for BOTH calls, that the requested URL contains no `?` and no token substring, that `Object.keys(headers)` is exactly `["Content-Type"]` on lookup, and that no header VALUE contains the token on redeem (where `X-Client-Id` is the fixed client id). This replaces the deleted real-axios `invitation-redeem.http.test.ts` at the new boundary.
+- *No credentials:* asserted `credentials === "omit"` on the outbound init.
+- *`finalizeRedeemAction` makes no IAM call:* two tests — a runtime one spying `globalThis.fetch` (never called) and a static one reading `actions.ts` and asserting it matches no `bootstrap/di`, `infrastructure/repositories`, `bootstrap/lib/http` or `UseCase`. The same static guard is applied to `page.tsx`.
+- *Lookup fires client-side, not from a server prop:* `page.test.ts` asserts the returned element's `type` IS `InviteRedeemContainer` and that the RSC issues no fetch while rendering; the container stories drive the real `useQuery` through an injected repository.
+- *Every VM state reachable in mock mode:* the failure markers (`expired`/`used`/`exists`/`limited`/`inactive`/`offline`) survive unchanged in the browser mock, and `loading` is now genuinely visible thanks to the injected 400ms mock latency.
+
+**Deviations / decisions taken (flagged for adjudication):**
+
+1. **`finalizeRedeemAction` prefers the access token's `tenantId` claim over the submitted `member.tenantId`** (falling back to `member.tenantId` when the claim is unreadable, which preserves the old behaviour for opaque tokens). The packet said "compute the redirect target exactly as the old `redeemAction` did". The reason for the delta: the old action derived that target from a response IT had just received from IAM, whereas both halves now arrive across the client boundary, so `member` is no longer server-attested. Using the claim off the very token that becomes the session means an incoherent payload can only land the visitor in a workspace their session actually authorizes. The role segment is deliberately left on `member.roles[0]` so the landing route is otherwise byte-identical to the pre-US-E18.59 behaviour. **This is an accepted-consequence area of ADR 0072 §Decision 3 that the ADR does not spell out; if `fe-lead` prefers strict packet parity, deleting the `decodeTenantId` line restores it.** Either way the broader consequence should probably be recorded as an ADR 0072 addendum: *the redeem response is now client-supplied when it reaches the server; Next's Server-Action origin check is the only thing standing between a cross-site caller and `setAuthCookies`, and no server-side re-verification is possible without reintroducing the IAM call the story removed.*
+2. **`onRedeem` on `InviteRedeemScreen` became optional.** Needed so the RSC can render the blank-token `invalid` card without mounting the container (the literal "renders `invalid` directly, no fetch" instruction). The form path always supplies it; `submit()` early-returns if absent.
+3. **`Retry-After` parsing is re-implemented locally** (3 lines over a `Headers` object) rather than exporting `api-envelope.ts#parseRetryAfter`, which takes a plain header bag and not a `Headers` instance. This is the option the packet explicitly allowed; no ADR amendment needed.
+4. **The container exposes a `repository?` prop** as a story/test seam. The RSC never passes it, so production composition stays solely in `makeBrowserInvitationRedeemRepository()`. Without it the interaction stories could not drive the real `useQuery`/`useMutation` code path.
+5. **The lookup query key contains the raw token** (`["invitation-lookup", token]`). It is client-memory only (same value already in the page URL); it is not logged and not sent anywhere. Noting it because React Query devtools would display it.
+
+**Not done / follow-ups:**
+
+- `docs/TEST_MATRIX.md` has **no US-E18.59 row** (the packet's own rule is that fe-lead adds it as `planned` before coding). It needs the row plus a correction to the US-E18.53 row, which still describes the RSC lookup + `redeemAction` and cites the four deleted test files.
+- `docs/product/screens.md` line for the redeem screen was updated here with the browser-direct note + the new `loading` state (flagged for the design-review gate as a materially new visible state).
+- The flow works against a real stack only once Kong is reloaded with BE's fixed `kong.yml` (deploy-order dependency, already recorded in the ADR and EPIC-OVERVIEW).

@@ -2422,6 +2422,7 @@
           "title": "Không tải được lời mời",
           "body": "Đã xảy ra lỗi khi kết nối. Vui lòng tải lại trang để thử lại."
         },
+        "loading": "Đang tải lời mời…",
         "contactOffice": "Liên hệ văn phòng nhà trường để được hỗ trợ.",
         "backToLogin": "Quay lại đăng nhập"
       }

@@ -292,6 +292,23 @@ export const NetworkErrorOnSubmit: Story = {
   },
 };
 
+/**
+ * NEW in US-E18.59 (ADR 0072): the preview is fetched by the browser, so the
+ * screen has a real pending state. It is announced to assistive tech rather
+ * than being a silent grey block.
+ */
+export const LookupLoading: Story = {
+  args: { vm: { kind: "loading" } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    await expect(status).toHaveAttribute("aria-busy", "true");
+    await expect(status).toHaveAttribute("aria-live", "polite");
+    await expect(canvas.getByText("Đang tải lời mời…")).toBeInTheDocument();
+    await expect(canvas.queryByLabelText("Mật khẩu")).toBeNull();
+  },
+};
+
 /** Page-load 410 (unknown/used/revoked token): no form at all. */
 export const LookupLinkInvalid: Story = {
   args: { vm: { kind: "invalid" } },

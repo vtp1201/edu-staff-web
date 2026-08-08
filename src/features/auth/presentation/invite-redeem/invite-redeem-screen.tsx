@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { InvitationFieldIssue } from "@/features/auth/domain/failures/invitation-redeem.failure";
 import {
   checkRules,
@@ -34,8 +35,13 @@ interface InviteRedeemScreenProps {
   loginHref: string;
   /** Locale-prefixed `/invitations/accept?token=…` — the 409 way forward. */
   acceptHref: string;
-  /** Submits the redemption; redirects internally on success (never returns then). */
-  onRedeem: (
+  /**
+   * Submits the redemption; redirects internally on success (never returns
+   * then). Optional because the formless states (`loading`, and the blank-token
+   * `invalid` the RSC renders without mounting the container) have nothing to
+   * submit — the form is the only consumer.
+   */
+  onRedeem?: (
     token: string,
     password: string,
     fullName: string,
@@ -141,6 +147,7 @@ export function InviteRedeemScreen({
       setErrorKey("__mismatch");
       return;
     }
+    if (!onRedeem) return;
     setIsPending(true);
     try {
       const r = await onRedeem(token, password, fullName);
@@ -163,6 +170,32 @@ export function InviteRedeemScreen({
       <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
         <div className="w-full max-w-[460px]">
           <Card className="p-8">
+            {/* NEW in US-E18.59 (ADR 0072): the preview is now fetched by the
+                BROWSER, so there is a real pending moment the server-rendered
+                version never had. Mirrors the resolved card's rhythm so the
+                layout does not jump when the invitation arrives. */}
+            {vm.kind === "loading" && (
+              <div
+                className="flex flex-col gap-5"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <span className="sr-only">{t("states.loading")}</span>
+                <div className="flex flex-col items-center gap-3">
+                  <Skeleton className="size-14 rounded-2xl" />
+                  <Skeleton className="h-6 w-2/3" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <Skeleton className="h-11 w-full rounded-lg" />
+              </div>
+            )}
+
             {vm.kind === "invalid" && (
               <InvitationNotice
                 tone="error"

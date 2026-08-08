@@ -15,7 +15,6 @@ export * from "./exam-bank.di";
 export * from "./feed.di";
 export * from "./grades.di";
 export * from "./iam-directory.di";
-export * from "./invitation-redeem.di";
 export * from "./lesson-bank.di";
 export * from "./lms.di";
 export * from "./messaging.di";

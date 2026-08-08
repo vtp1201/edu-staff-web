@@ -2422,6 +2422,7 @@
           "title": "Couldn't load the invitation",
           "body": "Something went wrong while connecting. Please reload the page to try again."
         },
+        "loading": "Loading invitation…",
         "contactOffice": "Contact the school office for help.",
         "backToLogin": "Back to sign in"
       }
