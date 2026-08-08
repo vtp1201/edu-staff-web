@@ -198,3 +198,77 @@ Regression also covered by the untouched `messaging.mapper.test.ts` (L293 assert
 **No decisions flagged** — no new token, no contract gap, no architecture change.
 The i18n fallback reuses the existing `messaging.groupInfo.unknownSender` /
 `unpinAria` keys; no new i18n keys were needed.
+
+### Tech-lead review — fe-tech-lead-reviewer, 2026-08-08
+
+**Verdict: APPROVED.** All four engineer claims independently verified against the
+code and by re-running the gates (nothing taken on report).
+
+**1. Exact-match correctness — verified, and the test is proven meaningful.**
+`pinned-message.mapper.ts:12` is `trimmed !== UNRESOLVED_SENDER_SENTINEL` — a
+strict, case-sensitive equality, not `includes`/`startsWith`. To prove the
+guard test is not vacuous I mutated the operator to
+`!trimmed.includes(UNRESOLVED_SENDER_SENTINEL)` and re-ran the unit file:
+`Tests 1 failed | 8 passed` — the failing one is exactly
+`"keeps a REAL name that merely contains the sentinel word"` ("Member Nguyễn").
+Mapper restored byte-identical (`git diff --stat -- src/` empty).
+
+**2. History/search/edit isolation — verified by reading, not by trust.**
+`messaging.mapper.ts#toMessageEntityFromRoom` (L83–98) returns
+`id/conversationId/from/text/time/date/isDeleted/sentAt` and never references
+`dto.senderName`; the only `senderName:` read in that file is L44 in the
+unrelated `toMessageEntity(MessageResponseDto)` (mock DTO, different type).
+`git diff main...HEAD --name-only` confirms neither `messaging.mapper.ts` nor
+`messaging.mapper.test.ts` is in the changeset, and the L293
+`expect(entity.senderName).toBeUndefined()` assertion is green. Shared DTO
+*type*, no shared mapper — claim holds.
+
+**3. Fourth file (`room-message-response.dto.ts`) — doc-only and accurate.**
+Diff touches only the TSDoc block above `senderName?: string;`; the field, its
+optionality and the type are unchanged. Content matches the BE ground truth in
+§Ground truth (pin board resolved / history-search-edit still `""`).
+
+**4. i18n — genuinely zero key delta.** `git diff main...HEAD -- src/bootstrap/i18n/`
+is empty; `unknownSender` / `unpinAria` exist at vi.json:2762-2763 and
+en.json:2762-2763 (parity intact). No hardcoded copy introduced — `"Member"` is
+a wire sentinel constant in infrastructure, never rendered.
+
+**5. Design-review gate — signing off without a full `/impeccable` pass**, same
+reasoning as US-E18.56/57 in this batch: `pinned-message-row.tsx` has zero
+markup/class/DOM change (comment-only diff, verified line by line); the two
+story edits are data fixtures + assertions, not new UI. Existing tokens
+(`bg-edu-warning/20`, `text-edu-warning-foreground`, `text-muted-foreground`),
+`aria-label` and the 44px (`size-11`) unpin target are untouched. No raw color,
+no new component, no placement question. A visual gate would review an unchanged
+surface.
+
+**6. Standard gates.** No `any`, no non-null `!`; mapper/entity/DTO stay plain TS
+with no `server-only` added (correct — they are pure types/functions imported by
+server infra; the repository above them keeps the directive). Layer directions
+unchanged; presentation still imports only the domain entity.
+
+| Command I ran | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun vitest run` (full suite) | **518 files / 4090 tests passed** |
+| `bun vitest run <mapper> <messaging.mapper> <pin.integration>` | 3 files / 41 passed |
+| mutation `!==` → `.includes()` then re-run unit file | 1 failed (the exact-match test) → guard is real; reverted |
+| `bun vitest run --config vitest.storybook.mts …/group-info-panel.stories.tsx` | 17 passed |
+| `bun lint` | 1 warning + 1 info, both pre-existing in `message-context-menu.tsx` (not in this changeset) |
+| `bun run build` | success |
+
+**Required changes**
+
+- `[CONSIDER]` `messaging.mapper.ts:79-81` — the doc still says
+  `senderName` "has no wire source". Post-US-E18.58 the precise statement is
+  "the wire emits it as `""` on history/search/edit and this mapper deliberately
+  does not read it". Out of this story's scope; fold into the next messaging
+  touch so the next reader does not conclude the field is absent from the DTO.
+- `[CONSIDER]` `pinned-message.mapper.ts:11,36` — `senderName` is trimmed at the
+  call site and `isRealSenderName` trims again. Harmless (idempotent), but the
+  guard could take the raw value and the call site could use the guard's output;
+  not worth a respin on its own.
+
+Nothing blocking. Note for `fe-lead`: the working tree also carries unrelated
+untracked artefacts (`docs/decisions/0072-…`, the US-E18.59 packet, engineer
+memory) — keep them out of this story's commits.
