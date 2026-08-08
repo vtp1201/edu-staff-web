@@ -526,3 +526,32 @@ Confirmed facts (verify before citing if stale):
   no-selection branch. Correct fix = bind the real action with an empty-string key
   (see `build-approver-grade-vm.ts` `boundKey`). Cheap repo scan:
   `grep -rn "=> ({ ok: false" $(git ls-files 'src/app/**/page.tsx')`.
+
+- **Dynamic `t()` key via template literal over a LITERAL-UNION return IS compile-checked** — and the
+  way to PROVE it is a negative tsc probe, not reading (US-E18.57 `emptyStateCopyKey(role): "empty" |
+  "empty.teacherNoHomeroomAccess"` → `t(\`${key}.title\`)`). Temporarily rename the union member to a
+  bogus path, run `bunx tsc --noEmit`, expect `TS2345: Argument of type '"empty.title" |
+  "empty.bogus.title"' is not assignable to … NamespacedMessageKeys<…>` (one error per call site),
+  then restore and confirm `git diff --stat` is clean on the file. The template literal DISTRIBUTES
+  over the union, so this satisfies i18n.md's "no raw string into `t()`". Contrast the weak form in
+  the same file: `roleBadgeKey(): string` forces `t(roleBadgeKey(role) as never)` at
+  `academic-record-screen.tsx:57` — a `string` return is the tell that a cast will be needed. When
+  reviewing any dynamic key, check the RETURN TYPE first: literal union = safe, `string` = cast smell.
+- **RBAC-WIDENING un-block where BE turns a 403 into a filtered-empty `200` = a distinct, near-zero-
+  code-delta pattern** (US-E18.57 teacher homeroom-scoped academic records, BE ADR 0136). Because
+  scoping is entirely BE-side off the Bearer token (FE sends no role param), repo/mapper/use-case/DI/
+  mock correctly need ZERO change — the whole legitimate delta is (a) role-aware EMPTY-state copy,
+  because the generic "there is nothing here" becomes a FALSE claim for the scoped role, and (b)
+  regression guards pinning `[]` → success-with-empty. The five things to actually verify, in order:
+  (1) `git diff main...HEAD -- <feature>.di.ts` and the mock repo are EMPTY (per-role filtering must
+  stay BE-only, decision 0014); (2) the repo test diff has ZERO deleted lines, so the 403 → `forbidden`
+  matrix is intact and a genuine forbidden still alerts; (3) NO new HTTP call anywhere — a client-side
+  probe for "does this student have ANY records" would itself be the scope leak; (4) the VM builder has
+  no "empty ⇒ forbidden" shortcut (grep its `forbidden` returns and confirm each is a different,
+  pre-existing guard); (5) the new copy must be TRUE under BOTH readings, since BE gives no signal
+  separating "genuinely 0" from "0 authorized" — look for a hedge ("**có thể** có học bạ ở lớp khác" /
+  "may hold records") and reject any wording that asserts records exist. Non-enumerating copy (no class
+  names, no filtered-out count) is the right call.
+  - Design-review gate: a copy-only change reusing the existing empty-state markup/tokens with no new
+    layout/component is signable-off as a MINOR CONTENT CHANGE — say so explicitly to `fe-lead` rather
+    than reflexively demanding a full `/impeccable` pass.
