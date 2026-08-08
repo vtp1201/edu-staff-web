@@ -8,7 +8,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { AuthBrandPanel } from "@/components/shared/auth-brand-panel";
 import { InvitationNotice } from "@/components/shared/invitation-notice";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { InvitationFieldIssue } from "@/features/auth/domain/failures/invitation-redeem.failure";
 import {
   checkRules,
@@ -34,8 +35,13 @@ interface InviteRedeemScreenProps {
   loginHref: string;
   /** Locale-prefixed `/invitations/accept?token=…` — the 409 way forward. */
   acceptHref: string;
-  /** Submits the redemption; redirects internally on success (never returns then). */
-  onRedeem: (
+  /**
+   * Submits the redemption; redirects internally on success (never returns
+   * then). Optional because the formless states (`loading`, and the blank-token
+   * `invalid` the RSC renders without mounting the container) have nothing to
+   * submit — the form is the only consumer.
+   */
+  onRedeem?: (
     token: string,
     password: string,
     fullName: string,
@@ -120,6 +126,18 @@ export function InviteRedeemScreen({
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [issues, setIssues] = useState<InvitationFieldIssue[]>([]);
+  // A11Y-001 (WCAG 4.1.3): the FAILURE transitions announce themselves —
+  // `InvitationNotice` is a `role="alert"`, which announces on insertion. The
+  // SUCCESS transition (`loading` → `form`) had nothing: the skeleton's own live
+  // region merely UNMOUNTS (removal is never announced) and the form is a silent
+  // DOM insertion. So this region lives OUTSIDE the branch switch — it is in the
+  // DOM, empty, while the lookup is pending, and gets its text once the
+  // invitation resolves, which is the shape screen readers actually announce.
+  const [announcement, setAnnouncement] = useState("");
+  const loaded = vm.kind === "form";
+  useEffect(() => {
+    if (loaded) setAnnouncement(t("states.loaded"));
+  }, [loaded, t]);
 
   const nameId = `${fieldId}-name`;
   const pwId = `${fieldId}-password`;
@@ -141,6 +159,7 @@ export function InviteRedeemScreen({
       setErrorKey("__mismatch");
       return;
     }
+    if (!onRedeem) return;
     setIsPending(true);
     try {
       const r = await onRedeem(token, password, fullName);
@@ -163,6 +182,43 @@ export function InviteRedeemScreen({
       <main className="flex flex-1 items-center justify-center p-6 sm:p-8">
         <div className="w-full max-w-[460px]">
           <Card className="p-8">
+            {/* Persistent (never re-mounted) polite live region — see the
+                `announcement` state above. Empty until the invitation resolves. */}
+            <span
+              className="sr-only"
+              role="status"
+              aria-live="polite"
+              data-testid="redeem-announcement"
+            >
+              {announcement}
+            </span>
+
+            {/* NEW in US-E18.59 (ADR 0072): the preview is now fetched by the
+                BROWSER, so there is a real pending moment the server-rendered
+                version never had. Mirrors the resolved card's rhythm so the
+                layout does not jump when the invitation arrives. */}
+            {vm.kind === "loading" && (
+              <div
+                className="flex flex-col gap-5"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <span className="sr-only">{t("states.loading")}</span>
+                <div className="flex flex-col items-center gap-3">
+                  <Skeleton className="size-14 rounded-2xl" />
+                  <Skeleton className="h-6 w-2/3" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <Skeleton className="h-11 w-full rounded-lg" />
+              </div>
+            )}
+
             {vm.kind === "invalid" && (
               <InvitationNotice
                 tone="error"

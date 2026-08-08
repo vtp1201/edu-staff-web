@@ -1,90 +1,76 @@
 /**
- * Unit tests — public `/invitations/redeem` RSC page (US-E18.53).
+ * Unit tests — public `/invitations/redeem` RSC page (US-E18.53, rewritten for
+ * US-E18.59 / ADR 0072).
  *
- * The page performs the PREVIEW half of the two-step flow server-side (one
- * `POST /invitations/lookup`) and derives the screen state from it; the client
- * component only renders. These assertions cover the derivation before any
- * component mount — including the negative ones (a blank token must not spend
- * a rate-limit slot that `redeem` shares).
+ * The page used to perform the `lookup` server-side. It must not any more: the
+ * per-IP rate limit only works if the BROWSER makes that call, so the strongest
+ * assertion here is a NEGATIVE one — the RSC does no data fetching at all and
+ * simply hands the token to the client container. A blank token still renders
+ * the dead-link card with no container mounted, so no request can be issued for
+ * a link that cannot work.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const lookupExecute = vi.fn();
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn(async () => "vi"),
 }));
 
-vi.mock("@/bootstrap/di/invitation-redeem.di", () => ({
-  makeLookupInvitationUseCase: vi.fn(async () => ({ execute: lookupExecute })),
-}));
+// 'use server' module — covered by actions.test.ts; stubbed so this file only
+// covers the RSC's own wiring.
+vi.mock("./actions", () => ({ finalizeRedeemAction: vi.fn() }));
 
-// 'use server' module — exercised by actions.test.ts; stubbed so this file only
-// covers the RSC's own derivation.
-vi.mock("./actions", () => ({ redeemAction: vi.fn() }));
-
+import { InviteRedeemContainer } from "@/features/auth/presentation/invite-redeem/invite-redeem-container";
+import { InviteRedeemScreen } from "@/features/auth/presentation/invite-redeem/invite-redeem-screen";
 import InviteRedeemPage from "./page";
-
-const PREVIEW = {
-  email: "lan.pham@nguyendu.edu.vn",
-  tenantName: "THPT Nguyễn Du",
-  roles: ["TEACHER"],
-  expiresAt: "2026-08-14T02:00:00Z",
-};
-
-beforeEach(() => {
-  vi.clearAllMocks();
-});
 
 function searchParams(token?: string) {
   return Promise.resolve(token === undefined ? {} : { token });
 }
 
-describe("InviteRedeemPage — vm derivation", () => {
-  it("a valid token renders the redemption form seeded with the server-resolved preview", async () => {
-    lookupExecute.mockResolvedValue({ data: PREVIEW });
+describe("InviteRedeemPage — no server-side fetching", () => {
+  it("renders the CLIENT container with the raw token: the rate-limited lookup must originate in the browser", async () => {
     const el = await InviteRedeemPage({ searchParams: searchParams("tok-1") });
-    expect(el.props.vm).toEqual({
-      kind: "form",
-      token: "tok-1",
-      preview: PREVIEW,
-    });
-    expect(lookupExecute).toHaveBeenCalledWith("tok-1");
+    expect(el.type).toBe(InviteRedeemContainer);
+    expect(el.props.token).toBe("tok-1");
   });
 
+  it("issues no request of its own while rendering", async () => {
+    const fetchSpy = vi.fn();
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      await InviteRedeemPage({ searchParams: searchParams("tok-1") });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("imports no DI factory or repository — the deleted server path must not come back", () => {
+    const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+    expect(source).not.toMatch(/bootstrap\/di/);
+    expect(source).not.toMatch(/infrastructure\/repositories/);
+    expect(source).not.toMatch(/UseCase/);
+  });
+});
+
+describe("InviteRedeemPage — blank token short-circuit", () => {
   it.each([
     undefined,
     "",
     "   ",
-  ])("a missing/blank token %p → invalid, with ZERO lookup call (never burn a slot of the shared rate-limit budget)", async (token) => {
+  ])("a missing/blank token %p renders the dead-link card directly, with NO container mounted (zero network)", async (token) => {
     const el = await InviteRedeemPage({ searchParams: searchParams(token) });
+    expect(el.type).toBe(InviteRedeemScreen);
     expect(el.props.vm).toEqual({ kind: "invalid" });
-    expect(lookupExecute).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ["link-invalid", "invalid"],
-    ["link-expired", "expired"],
-    ["rate-limited", "rate-limited"],
-    ["tenant-inactive", "tenant-inactive"],
-    ["network-error", "error"],
-    ["unknown", "error"],
-  ])("a %s lookup failure derives the %p state", async (type, kind) => {
-    lookupExecute.mockResolvedValue({ error: { type } });
-    const el = await InviteRedeemPage({ searchParams: searchParams("tok-1") });
-    expect(el.props.vm).toEqual({ kind });
-  });
-
-  it("a 409 can never come from lookup (the BE never returns one there) — an unexpected key still degrades to the generic error, not a crash", async () => {
-    lookupExecute.mockResolvedValue({ error: { type: "account-exists" } });
-    const el = await InviteRedeemPage({ searchParams: searchParams("tok-1") });
-    expect(el.props.vm).toEqual({ kind: "error" });
+    // Nothing to submit on a dead link.
+    expect(el.props.onRedeem).toBeUndefined();
   });
 });
 
 describe("InviteRedeemPage — hrefs + action wiring", () => {
   it("builds locale-prefixed login/accept hrefs, URL-encoding the token into the accept fallback", async () => {
-    lookupExecute.mockResolvedValue({ data: PREVIEW });
     const el = await InviteRedeemPage({
       searchParams: searchParams("tok with space"),
     });
@@ -101,10 +87,9 @@ describe("InviteRedeemPage — hrefs + action wiring", () => {
     expect(el.props.acceptHref).toBe("/vi/invitations/accept");
   });
 
-  it("wires onRedeem to the actions module's export (never a locally-defined closure — that would 500 at runtime)", async () => {
-    lookupExecute.mockResolvedValue({ data: PREVIEW });
+  it("wires onFinalize to the actions module's export (never a locally-defined closure — that would 500 at runtime)", async () => {
     const actions = await import("./actions");
     const el = await InviteRedeemPage({ searchParams: searchParams("tok-1") });
-    expect(el.props.onRedeem).toBe(actions.redeemAction);
+    expect(el.props.onFinalize).toBe(actions.finalizeRedeemAction);
   });
 });

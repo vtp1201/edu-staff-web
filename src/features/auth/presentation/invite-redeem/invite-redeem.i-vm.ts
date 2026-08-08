@@ -6,15 +6,21 @@ import type {
 
 /**
  * ViewModel for the public `/invitations/redeem` screen (US-E18.53, IAM
- * US-191). Derived once server-side in `page.tsx` from the `?token=` param plus
- * the `POST /invitations/lookup` preview — the client component never fetches.
+ * US-191). Since US-E18.59 / ADR 0072 it is derived CLIENT-side from the
+ * `?token=` param plus a browser `POST /invitations/lookup`, so the per-IP rate
+ * limit sees each visitor's own IP instead of this server's single egress IP.
  *
- * No `loading`/`success` variant: submitting is local pending state, and
- * success is a Server Action redirect into the tenant workspace, never a render.
+ * No `success` variant: submitting is local pending state, and success is a
+ * Server Action redirect into the tenant workspace, never a render.
  * `account-exists` is likewise absent — it can only come back from the SUBMIT,
  * so it is a post-submit state inside the form, not a page-load state.
  */
 export type InviteRedeemVM =
+  /**
+   * The browser lookup is in flight. NEW in US-E18.59: the preview used to be
+   * resolved server-side before the first paint, so this state did not exist.
+   */
+  | { kind: "loading" }
   /** Preview resolved → show the read-only invitation summary + the form. */
   | { kind: "form"; token: string; preview: InvitationPreview }
   /** Missing/blank token, or a 410 for an unknown/used/REVOKED/replayed link. */
