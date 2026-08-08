@@ -310,3 +310,79 @@ full suite.
 data contract, no architecture decision. UI delta is copy-only inside an
 existing empty-state block, so the design-review/a11y gates have a trivially
 small surface (no token, no color, no motion, no new interactive element).
+
+### A11y audit — fe-accessibility-auditor (2026-08-08)
+
+**Scope.** Only the diff introduced by this story: `academic-record-screen.tsx`
+role-aware empty-state branch, `academic-record-screen.i-vm.ts`
+`emptyStateCopyKey()`, the two new i18n subkeys, and the new
+`TeacherNoHomeroomAccessEmpty` story. Verified against `git diff main...HEAD --
+src/features/academic-records/presentation` directly (not assumed from the
+engineer's report).
+
+**Checks performed:**
+
+1. **No new interactive element / ARIA / heading — CONFIRMED.** The diff is
+   template-literal-only: `t("empty.title")` → `` t(`${emptyKey}.title`) ``
+   and same for `.description`. Same two `<p>` tags, same wrapping `<div>`,
+   same `space-y-6` outer container. `emptyStateCopyKey()` is a pure string
+   selector with no JSX. No `aria-*`, `role`, or heading tag touched.
+2. **Reading order / association — PASS.** Title `<p>` then description `<p>`
+   as plain DOM siblings inside one dashed-border container — identical
+   pattern to the pre-existing generic empty state and to the `error` block
+   above it. No `aria-label`/`aria-describedby` exists anywhere on this
+   container (confirmed via `grep -n "aria-"` on the file — the only
+   `aria-*` occurrences are on the unrelated `error` block's icon
+   (`aria-hidden`), the disabled print button, and the tablist), so there is
+   no stale-announcement risk: nothing hardcodes an ARIA reference to the old
+   copy's text that could now point at content that no longer matches.
+3. **Contrast — PASS, no new token.** Container classes unchanged: `rounded-xl
+   border border-border border-dashed bg-card p-10 text-center` (dashed
+   border unchanged); title `font-bold text-foreground`; description
+   `text-sm text-muted-foreground`. Both text classes are the same ones used
+   by the generic empty copy already audited in US-E18.54 — `text-foreground`
+   (`--edu-text-primary` 11.52:1) and `text-muted-foreground` (aliased to
+   `--edu-text-secondary`, 5.48:1 on white/card) — both PASS AA for normal
+   text. No raw color, no new `--edu-*` token introduced by this story.
+4. **Screen-reader script — PASS, correctly non-alarming.** For a teacher
+   landing on this state, NVDA/VoiceOver in a linear read announces: "Không
+   có học bạ nào bạn được xem" (title, bold text — not a heading, so it does
+   not appear in a heading-navigation (H-key) outline; this matches the
+   pre-existing generic empty state, which is also a `<p>`, so no regression
+   in navigability was introduced by this story) followed immediately by
+   "Bạn chỉ xem được học bạ của những lớp bạn đang chủ nhiệm. Học sinh này có
+   thể có học bạ ở lớp khác mà bạn không được xem." Confirmed via the diff and
+   the story's own assertion (`canvas.queryByRole("alert")` → not present)
+   that `role="alert"` was NOT added to this branch — the teacher-empty state
+   is announced as ordinary content, not interrupted/flagged as an error,
+   which is correct: BE ADR-0136 makes this a `200 {records: []}` success,
+   not a permission failure, and forcing `role="alert"` here would misrepresent
+   a normal, expected outcome to a screen-reader user as something having gone
+   wrong. The genuine `forbidden` branch (`role="alert"`, separate code path)
+   is untouched, so a real 403 still interrupts correctly.
+5. **Storybook reachability — PASS.** `TeacherNoHomeroomAccessEmpty` is
+   exported the same way as every other `Story` in this file (default args +
+   `play` function) — reachable by the addon-a11y (axe-core) panel like its
+   siblings. No new color/contrast/landmark issue is introduced for axe to
+   catch (same container/token profile as `EmptyRecord`, which already passed
+   in US-E18.54's audit). No manual browser run was performed as part of this
+   audit — Storybook a11y-addon results should be spot-checked once by
+   `fe-qa-playwright` per the pipeline's usual division of labor, but nothing
+   in the diff creates a plausible new violation.
+6. **i18n copy quality — PASS.** vi title "Không có học bạ nào bạn được xem" /
+   description "Bạn chỉ xem được học bạ của những lớp bạn đang chủ nhiệm. Học
+   sinh này có thể có học bạ ở lớp khác mà bạn không được xem." — plain,
+   non-technical Vietnamese; explains the homeroom-scope rule in a factual
+   register without implying the teacher made a mistake or was denied
+   something they should have. en mirror ("You can only view records for
+   classes where you are the homeroom teacher…") matches in tone and meaning.
+   Both live in `messages/{vi,en}.json` under `academicRecord.empty.
+   teacherNoHomeroomAccess.*` (typed keys, no hardcoded string) — consistent
+   with `.claude/rules/i18n.md`.
+
+**Verdict: PASS — no findings, zero A11Y-XXX entries.** This is a genuinely
+narrow, content-only change: same markup, same tokens, same ARIA surface as
+the already-audited (US-E18.54) empty-state block, with correct non-alarming
+semantics (no stray `role="alert"`) for what is a success response, not an
+error. Gate is green from the accessibility side; nothing blocking for
+`fe-lead`.
