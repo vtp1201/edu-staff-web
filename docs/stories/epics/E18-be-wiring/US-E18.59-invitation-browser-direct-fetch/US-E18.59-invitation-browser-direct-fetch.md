@@ -458,3 +458,262 @@ No Blocking or Critical findings. Recommend fe-lead route A11Y-001 back to
 `fe-nextjs-engineer` before closing the design-review gate (it is a real,
 user-facing gap on a first-impression public screen, even though it does not
 block merge on its own); A11Y-002 can be deferred to a future copy pass.
+
+### Tech-lead review (2026-08-08) — REVISION REQUIRED
+
+**1. Review Summary.** This moves the two PUBLIC, per-IP-rate-limited IAM calls
+(`invitations/lookup`, `invitations/redeem`) out of the Next server and into the
+browser, per ADR 0072, and keeps session issuance server-side behind a new,
+deliberately narrow `finalizeRedeemAction`. The implementation is of a high
+standard: the exception to the server-only HTTP rule is documented in the file
+that takes it (not just in the ADR), the pure domain use-cases and the whole
+failure-mapping path are reused **unchanged** via a hand-built `ApiError`
+adapter, the deleted server path is genuinely gone (grep-clean), and the call
+shape is regression-tested at exactly the properties that matter. Verdict is
+Revision Required for three items, **none of which is a defect in the shipped
+code**: one un-analysed protocol consequence of moving to the browser (CORS
+preflight vs BE's `methods:[POST]`-only Kong carve-out) that will break this
+flow at go-live if not confirmed, a `docs/TEST_MATRIX.md` gap that `tdd.md`
+makes blocking for `implemented`, and one demonstrated hole in the
+"no-IAM-call" guard.
+
+**2. Architecture Compliance — PASS.** Layer directives are exactly right for
+the exception being taken:
+
+- `invitation-redeem.browser.repository.ts:1-23` and
+  `mocks/invitation-redeem.browser-mock.repository.ts:1-17` each carry a header
+  comment stating the *absence* of `server-only` is intentional and pointing at
+  ADR 0072 — this is the requested "a grep for infra-without-server-only lands
+  on an intentional exception" property, satisfied per-file, not merely implied.
+- `make-browser-invitation-redeem-repository.ts` is correctly OUTSIDE
+  `bootstrap/di/` and reads `process.env.NEXT_PUBLIC_USE_MOCK` directly rather
+  than importing `bootstrap/lib/mock.ts` (verified `server-only` at
+  `src/bootstrap/lib/mock.ts:1`).
+- `page.tsx` is a thin RSC importing only presentation + `./actions`; the
+  blank-token short-circuit is structural (the container is never mounted),
+  which is stronger than a flag inside the container.
+- `bootstrap/di/invitation-redeem.di.ts`, both server repositories and their
+  tests are deleted, and the `export *` line is gone from `bootstrap/di/index.ts`.
+  Independently grep-confirmed: zero remaining references to
+  `invitation-redeem.di`, `InvitationRedeemRepository` (non-Browser) or
+  `MockInvitationRedeemRepository` anywhere in `src/`.
+- Component placement: nothing new under `components/`; the only primitive used
+  is the existing `components/ui/skeleton`. No duplication introduced.
+
+**3. Code Quality — Excellent.** Strict types throughout, no `any` outside test
+transport stubs (each `biome-ignore`d with a reason), no unexplained `!`.
+`postJson` correctly treats a 2xx `success:false` envelope as a failure
+(`invitation-redeem.browser.repository.ts:122`) and degrades an unparseable
+gateway body instead of crashing (`:119`). `invite-redeem-flow.ts` extracting
+the state derivation + submit orchestration as pure functions is the right call
+in a `node`-environment test setup and keeps the container a thin binding.
+`invite-redeem-container.tsx:56-66` disabling retry everywhere, with the reason
+(a retry storm manufactures the 429 it is trying to survive), is exactly the
+kind of judgment this lane needs.
+
+**4. Data & Contract Review — PASS.**
+
+- Payload consumed directly (`envelope.data`), never a `.data` re-read on the
+  repository side; failures branch on `error.code`/status via the untouched
+  `mapInvitationRedeemFailure`, never on `message`.
+- `retryAfterFrom` (`:55-60`) restates `parseRetryAfter`'s delta-seconds-only
+  rule for a `Headers` object — the option the packet explicitly permitted;
+  non-numeric (HTTP-date) is ignored rather than guessed, and tested (`:218`).
+- No pagination surface here; no `{raw:true}` needed.
+- `credentials: "omit"` on both calls (`:103`), asserted in test (`:126`).
+- Mock/real parity empirically verified, not just reasoned: I grepped the
+  existing `.next/static/chunks` build output — **no** `AxiosHeaders` in any
+  client chunk (so exporting `API_URL` from `http.ts` did not drag axios into
+  the browser bundle; only the constant survives tree-shaking) and **no** mock
+  fixture string (`lan.pham@nguyendu.edu.vn`) in any client chunk, i.e. the
+  `NEXT_PUBLIC_USE_MOCK` branch was dead-code-eliminated in the real build. The
+  build-time-inlining reasoning holds. This is the first client-side
+  `NEXT_PUBLIC_*` gate in `src/` (every other `USE_MOCK` read is a server DI
+  factory) — worth knowing, correctly relied upon.
+
+**5. Design System & i18n — PASS.** No raw color anywhere in the diff (scanned
+the whole `src/` hunk set for `#hex`/`bg-[#`/`text-gray-`/`slate-`/`zinc-`:
+none). The skeleton uses the existing `Skeleton` primitive plus `border-border`.
+One key added, `invitations.redeem.states.loading`, at the identical path and
+position in both `vi.json` and `en.json` — parity clean; translated at
+presentation only; the actions/use-cases still return stable failure keys.
+
+**6. Security Review — PASS (with one deploy-time verification required, see
+[MUST FIX] R-1).**
+
+- *Token discipline:* both `fetch` calls build the URL as
+  `` `${API_URL}${path}` `` with no query construction anywhere; the token is a
+  body field only. Tested at both endpoints, both directions: URL contains no
+  `?` and no token substring; on lookup `Object.keys(headers)` is asserted to be
+  exactly `["Content-Type"]`; on redeem no header *value* contains the token and
+  `X-Client-Id` is asserted equal to the fixed `OAUTH_CLIENT_ID`
+  (`invitation-redeem.browser.repository.test.ts:129-138`, `:182-189`). The
+  redeem body is field-listed, never `...command`, with a test that a future
+  field cannot leak (`:167`).
+- *`finalizeRedeemAction` narrowness:* the whole function body is
+  `setAuthCookies` → locale → role/tenant segment → `redirect`. No DI import, no
+  repository import, no use-case, no HTTP. I did not take the test's word for it
+  — I mutated `actions.ts` locally to insert `await fetch(...)` before
+  `setAuthCookies` and re-ran the suite: **9 of 10 tests failed**, the runtime
+  `globalThis.fetch` spy included. Guard is real. See R-3 for the one bypass it
+  does not catch.
+- *No caller-controlled redirect:* no `next`/`returnTo` is accepted; the path is
+  always assembled through `tenantUrl` with a locale prefix, and there is a test
+  proving a hostile `tenantId` cannot produce an absolute URL (`:157-164`).
+- *Local QueryClient / no session leakage:* the `QueryClient` is created inside
+  `InviteRedeemContainer` via `useState(() => new QueryClient())` and provided
+  only to its own subtree; `git diff main...HEAD -- 'src/app/**/layout.tsx'
+  'src/bootstrap/lib/react-query-provider.tsx'` is **empty** — the shared
+  root/`(app)` provider is untouched, as required. The lookup query key holds
+  the raw token, which is the same value already visible in the page URL, held
+  in tab memory only, never persisted and never logged (no persister, no
+  devtools mounted on this route). Acceptable; noted as [CONSIDER] R-4 for the
+  mutation-variables analogue.
+- *Accept-flow:* `git diff main...HEAD -- '**/invitations/accept/**'` is
+  **empty**. Zero regression, confirmed.
+
+**7. Test Coverage — PASS.** TDD proof is meaningful, not ceremonial: the
+browser repository test covers call shape, credential omission, token
+non-leakage, the full status/code→failure matrix, `Retry-After` (numeric and
+date), a 2xx-`success:false` envelope, a rejected fetch and an HTML 502; the
+mock repository test covers markers/replay/`btoa` minting; `invite-redeem-flow`
+covers every VM branch; `actions.test.ts` covers ordering, role normalisation
+and the new tenant-claim precedence; 12 container interaction stories drive the
+real `useQuery`/`useMutation` through an injected repository, including
+`LookupLoading` and `BlankTokenNeverCalls`. Only gap is documentation, not
+coverage — R-2.
+
+**Commands I ran on this branch (output observed):**
+
+| Command | Result |
+| --- | --- |
+| `bun vitest run` (redeem route + auth repositories + invite-redeem presentation) | 9 files / **137 tests passed** |
+| `bun run vitest:storybook run src/features/auth/presentation/invite-redeem` | 2 files / **29 tests passed** |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bun lint` | 0 errors; 1 warning + 1 info, both in `message-context-menu.tsx` (pre-existing, untouched by this branch) |
+| mutation probe A — inserted `await fetch(...)` into `finalizeRedeemAction`, re-ran `actions.test.ts` | **9 failed / 1 passed** → guard verified, file restored |
+| mutation probe B — inserted `import axios` + `axios.post(...)` into `finalizeRedeemAction`, re-ran `actions.test.ts` | **10 passed** → guard bypassable, see R-3; file restored |
+| grep of existing `.next/static/chunks` | no `AxiosHeaders`, no mock fixture string → real-mode client bundle is clean |
+
+(I did not re-run the full 4110-test suite or `bun run build`; the pre-push gate
+covers both and the engineer's run is consistent with everything I did observe.)
+
+**On the `decodeTenantId` deviation — ACCEPTABLE AS DOCUMENTED, no change
+required.** I judged this independently of the addendum's framing:
+
+- `decodeTenantId` (`src/bootstrap/lib/jwt.ts`) is a **pure decode** — split on
+  `.`, base64url-decode the payload, read `tenantId`. There is **no signature
+  verification** anywhere in that module (its own header comment says so:
+  "signature verification is BE's job").
+- That is nonetheless fine *here*, and the addendum's reasoning holds, for the
+  reason the reviewer prompt anticipates: the same `tokens.accessToken` is
+  written verbatim into the httpOnly session cookie one line earlier and is the
+  bearer for every subsequent call. A forged/incoherent token is already fully
+  determinative of what the session can do; reading a claim off it adds **zero**
+  new trust. The risk surface is unchanged by this choice — only the coherence
+  of the *redirect target* changes, and it changes in the safer direction: the
+  visitor can only land in the workspace the session they just received actually
+  authorizes, instead of one named by a separately-transmitted `member` object
+  that no longer has server attestation. A mismatch lands them somewhere the
+  route guards will bounce them out of anyway; this avoids that confusing state.
+- Fallback to `member.tenantId` when the claim is unreadable preserves the exact
+  pre-US-E18.59 behaviour for opaque tokens — tested (`actions.test.ts:149`).
+- Role-segment logic is **byte-identical** to the deleted `redeemAction`:
+  `member.roles[0] ?? ""` → `appRoleOf(roleEnum) ?? roleEnum.toLowerCase()` →
+  `tenantUrl(..., appRole ? "/"+appRole : "/")`. Diffed against
+  `git show main:…/actions.ts`; only the `tenantId` line differs. The ENUM
+  matrix, the unknown-role lowercase fallback and the empty-`roles[]` tenant-root
+  case are all covered (`:104-130`).
+
+So: stricter than the packet text, not weaker; correctly recorded in the ADR
+addendum; no rework.
+
+**Design-review recommendation — a SHORT `/impeccable` pass IS warranted, not a
+skip.** Reasoning both ways, stated as asked: the skeleton is built purely from
+the existing `Skeleton` primitive with token-only classes and deliberately
+mirrors the resolved card's rhythm (icon block → title → subtitle → detail box →
+CTA) so the layout does not jump — by the letter of the gate that is
+"reuses existing patterns closely enough". But this is (a) genuinely NEW visible
+UI, (b) on a PUBLIC, unauthenticated, first-impression screen for a brand-new
+user, (c) whose duration is now a real network round-trip through Kong rather
+than 400ms of mock latency, and (d) it already has one open Major a11y finding
+(A11Y-001) in the same state. Those four together make it worth ~10 minutes of
+`/impeccable audit` on the `loading` story specifically — skeleton proportions
+vs the resolved card, and whether the empty detail-box outline reads as an error
+at first glance. A full `critique`/`polish` of the whole screen is not needed;
+the resolved/failure states are unchanged from the already-gated US-E18.53 pass.
+
+#### Required changes
+
+- **[MUST FIX] R-1 — CORS preflight vs BE's `methods:[POST]`-only Kong route.**
+  `invitation-redeem.browser.repository.ts:98-106`. Moving to the browser makes
+  these **cross-origin** requests, and both carry
+  `Content-Type: application/json` (not a CORS-safelisted value), so **both will
+  emit an `OPTIONS` preflight** — and redeem additionally sends `X-Client-Id`,
+  which must appear in `Access-Control-Allow-Headers`. BE's response §5.1 only
+  confirms "methods có POST, headers có `Content-Type`", and §5.2's fix is
+  explicitly an *anchored regex + `methods:[POST]`* carve-out whose own
+  verification table shows a non-POST verb on the same path returning **401 at
+  the edge** (`GET /iam/api/v1/invitations/lookup → 401`). If the preflight
+  `OPTIONS` does not match the public route (or the CORS plugin is route-scoped
+  rather than service/global-scoped), every visitor's browser will block both
+  calls and the screen will show the generic `network-error` card — a silent
+  100% go-live failure of the flow this story exists to fix, which the old
+  server-side path could not have exhibited. This is not an FE code defect and I
+  am not asking for a code change: **`fe-lead` must (a) raise a BE ask
+  confirming `OPTIONS` on both paths is served with `Access-Control-Allow-Origin`,
+  `Allow-Methods: POST` and `Allow-Headers: Content-Type, X-Client-Id`, and
+  (b) record the preflight dependency in ADR 0072 §Consequences next to the
+  existing Kong-reload deploy-order note** so it is verified during the same
+  reload rather than discovered by invitees. (Contingency if BE cannot allow the
+  header: `X-Client-Id` is audit metadata only — dropping it from the browser
+  call is a one-line change, but that is BE's call, not a unilateral FE one.)
+- **[MUST FIX] R-2 — `docs/TEST_MATRIX.md` is stale and has no row for this
+  story.** `.claude/rules/tdd.md` forbids marking a story `implemented` without
+  a matrix row, and the existing **US-E18.53 row (line 22)** now describes a
+  flow that no longer exists ("RSC calls `POST /invitations/lookup`",
+  `setAuthCookies` inside the redeem action) and cites **four deleted test
+  files** (`invitation-redeem.mock.repository.test.ts`,
+  `invitation-redeem.di.test.ts`, `invitation-redeem.http.test.ts`,
+  `invitation-redeem.repository.test.ts`). Add the US-E18.59 row and amend the
+  US-E18.53 row to point at the surviving proof
+  (`invitation-redeem.browser.repository.test.ts` replaces the `http` test at
+  the new boundary). The engineer flagged this himself; it is `fe-lead`'s
+  packet-hygiene action, but it blocks `--status implemented`.
+- **[SHOULD FIX] R-3 — the "no IAM call" static guard has a demonstrated
+  bypass.** `actions.test.ts:67-76` matches four import-path patterns and the
+  runtime spy watches `globalThis.fetch`. Axios does **not** use `fetch` in
+  node, and `import axios from "axios"` matches none of the four patterns — I
+  verified by mutation: adding a real `axios.post(...)` call to
+  `finalizeRedeemAction` leaves the file **10/10 green**. Given this guard is
+  the story's stated primary invariant, tighten it from a denylist to an
+  **exact-match allowlist of import specifiers** (parse the `import … from "x"`
+  specifiers out of the source and `expect(specifiers).toEqual([...])` with the
+  six current ones), the way the exact-match guards elsewhere in this batch
+  work. ~10 lines, no production change.
+- **[CONSIDER] R-4 — mutation variables retain the plaintext password in the
+  query cache.** `invite-redeem-container.tsx:104-110`: TanStack keeps
+  `mutation.variables` (which include `password`) in the mutation cache for the
+  default `gcTime` after settling. On the success path the redirect tears the
+  client down; on a failure path (e.g. `account-exists`) it lingers in tab
+  memory. This is **not** an incremental exposure — `InviteRedeemScreen` already
+  holds the password in React state for the same lifetime, nothing is persisted,
+  and no devtools are mounted on this route — so I am not requiring a change.
+  If you want belt-and-braces, `gcTime: 0` on the mutation defaults costs
+  nothing here (there is no reuse of the mutation result).
+- **[CONSIDER] R-5 — ADR 0072 §Follow-Up trigger is correctly not pulled
+  forward.** Confirming for the record: I checked that no other route copies
+  this pattern (only `invitation-redeem.browser.repository.ts` imports
+  `@/bootstrap/lib/http`'s `API_URL` outside its own test), so the ADR's "second
+  consumer promotes it to `bootstrap/lib/http.browser.ts`" clause has not been
+  triggered and should stay deferred.
+
+#### Final decision
+
+**REVISION REQUIRED** — for R-1 (BE ask + ADR deploy note; a go-live-blocking
+protocol consequence of the browser move that no artifact yet covers) and R-2
+(TEST_MATRIX rows, blocking per `tdd.md`), plus R-3 as a strongly-recommended
+test hardening. **No change is required to the shipped production code**, and
+the `decodeTenantId` choice is explicitly accepted as documented in the ADR
+addendum. Once R-1's answer is in hand and R-2/R-3 land, this is an approve —
+the implementation itself is the strongest work in this batch.
