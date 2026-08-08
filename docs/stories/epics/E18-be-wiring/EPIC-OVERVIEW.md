@@ -1050,19 +1050,51 @@ guard chạy `unwrapResponse` thật (pattern `staffing.repository.test.ts`
 | US-E18.54 | Academic-record viewer remodel + un-force-mock (core US-064 đã ship sẵn) | cao | normal | **Done** 2026-08-07 — remap model thật sự (cùng hạng US-E18.7/ADR 0053, US-E18.12/ADR 0054), không phải vá đường dẫn. BE chốt aggregate `(classId, termId, studentMemberId)` VĨNH VIỄN ⇒ port `getRecord(studentId, yearId?)` + `listYears(studentId)` và entity tx1/tx2/giữa-kỳ/cuối-kỳ (một shape chưa server nào sinh ra) bị **XOÁ**, không adapt: port còn `getRecords(memberId)` trên `GET /members/{memberId}/academic-records`; `AcademicYear`/`TermRecord`/`SubjectScore` thành **derived view client-side** (`buildAcademicRecord` gom năm; `mapAcademicRecordRow` gom `gradeSnapshot` ĐỘNG theo subject + parse decimal STRING; `termAverage` server thắng giá trị suy lại). `makeRepository()` bỏ force-mock vĩnh viễn (US-E18.21) về gate chuẩn `USE_MOCK ? Mock : Real`; **`makeSealRepository()` cùng file KHÔNG đụng** (guard env-matrix cả 2 mode). Year join compose ở `bootstrap/di` (0017): enrollment point-read `GET /classes/{classId}/students/{studentMemberId}` — read class-context DUY NHẤT mà RBAC cho STUDENT — dedupe theo classId, cap 24 call, fail-soft từng lớp. ⚠️ **PARENT không resolve được năm** (không read class-context nào cho PARENT) và **TEACHER không nằm trong allow-list của chính read học bạ** ⇒ 2 ask mới **#47** (denorm `academicYear`, BE đã pre-offer) + **#48** (TEACHER read grant hoặc bỏ route); cả hai surface degrade trung thực (bucket "Chưa xác định năm học" có notice riêng / trạng thái `forbidden`), không drop record, không bịa năm. Xoá field không có nguồn wire thay vì bịa: tên/mã/ngày sinh học sinh + hạnh kiểm; `sealedBy` là uuid nên hiện NGÀY ký. Subject name resolve qua `GET /subjects` (any authenticated member) — thêm `listAllSubjects()` vào port subject-catalogue; thiếu thì hiện placeholder i18n, không bao giờ in uuid. Answers ask item 19 (viewer học bạ). See `US-E18.54-academic-records-viewer-remodel/US-E18.54-academic-records-viewer-remodel.md`. |
 | US-E18.55 | Hygiene pass batch 5: US-185 stale-note sweep + deploy-order notes | thấp | tiny | **Done** 2026-08-07 — (a) BE fix US-185 (core migration 048 "year-heal") ⇒ sweep mọi note còn mô tả staleness `grade_entries_by_student` như caveat HIỆN TẠI: 3 chỗ trong packet US-E18.44 được đánh dấu resolved (report 2026-08-05/06 giữ nguyên — là record lịch sử); `src/` không có citation nào (grep-confirmed). (b) Deploy-order notes hợp nhất vào §"Deploy notes (go-live real mode)" ngay dưới đây. (c) Bổ sung 2 row EPIC bị thiếu (US-E18.50, US-E18.53 — hai phiên song song quên ghi). Doc-only, zero code change. |
 
-## Deploy notes (go-live real mode) — hợp nhất từ batch 4+5 (US-E18.55)
+### Wave 9 — batch 6 tiêu thụ BE US-204..207 (đóng asks #47/#48/#32(b′)/#49, 2026-08-08)
+
+| Story | Title | Drift | Lane | Ghi chú |
+|-------|-------|-------|------|---------|
+| US-E18.56 | Academic-record `academicYear` denorm consumption (core US-204, ask #47) | thấp | normal | **Done** 2026-08-08 — `academicYear` (wire key, `omitempty`) giờ nằm ngay trên mỗi record row ⇒ xoá `enrollment-year.resolver.ts` (fan-out point-read chưa từng hoạt động cho PARENT); `buildAcademicRecord()` group thẳng theo field, không còn map `classId→year` injected. `makeSealRepository()` cùng file byte-identical. Tech-lead **Approved**; design-review gate skip (zero markup diff, xác nhận bằng diff Storybook). Đóng ask #47. See `US-E18.56-academic-year-denorm-wiring/`. |
+| US-E18.57 | Teacher homeroom-scoped academic-record read (core ADR 0136, ask #48) | trung bình | high-risk | **Done** 2026-08-08 — BE cấp quyền TEACHER lọc theo homeroom (GVCN); `records: []` khi không GVCN lớp nào (KHÔNG 403). Pipeline hiện có (repo/use-case/VM) không cần đổi gì — RBAC hoàn toàn phía BE, empty-state đã tách khỏi error-state sẵn từ US-E18.54. Delta thật: copy empty-state riêng cho teacher (`academicRecord.empty.teacherNoHomeroomAccess.*`) + regression guard cấm suy diễn "empty = forbidden" + sửa `docs/product/screens.md` (US-E18.54 review's SHOULD-FIX cũ). Tech-lead **Approved** + a11y **PASS** (zero finding — content-only swap, không ARIA/token mới). Đóng ask #48. See `US-E18.57-teacher-homeroom-scoped-record-read/`. |
+| US-E18.58 | Pin-board `senderName` real + sentinel localization (social US-205, ask #32(b′)) | thấp | tiny | **Done** 2026-08-08 — `senderName` giờ resolve thật server-side; sender chưa project → literal `"Member"` (không còn `""`). Mapper thêm exact-match guard coi `"Member"` như absent, tái dùng fallback i18n có sẵn (`unknownSender`) — không branch UI mới. History/search/edit đi qua mapper KHÁC (`toMessageEntityFromRoom`, không đọc `senderName`) — xác nhận không đụng. Tech-lead **Approved** (mutation-test exact-match guard). Đóng ask #32(b′). See `US-E18.58-pin-board-sender-name/`. |
+| US-E18.59 | Invitation redeem/lookup — browser-direct fetch (IAM US-207, ask #49, **ADR 0072**) | cao | high-risk | **Done** 2026-08-08 — per-IP rate-limit ở Kong cần IP thật của người dùng; Next server proxy làm mọi visitor chung 1 IP (một kẻ abuse có thể 429-khoá cả batch invitee). Chuyển CẢ HAI call (`lookup`+`redeem`) sang gọi thẳng từ browser (`fetch`, `credentials:"omit"`) — LẦN ĐẦU TIÊN một BE call phát ra trực tiếp từ Client Component trong repo này, ghi ADR `0072`. Repo mới `invitation-redeem.browser.repository.ts` (KHÔNG `server-only`, có chủ đích) throw `ApiError` tay để tái dùng nguyên `mapInvitationRedeemFailure`/use-case cũ không đổi 1 dòng. Session-write vẫn server-side qua Server Action MỚI, hẹp (`finalizeRedeemAction`: chỉ `setAuthCookies`+redirect, KHÔNG gọi lại IAM — có test mutation-proof + allowlist import). Xoá `bootstrap/di/invitation-redeem.di.ts` + 2 repo server cũ. VM thêm state `loading` (lookup giờ async phía client) — a11y audit tìm A11Y-001 (chuyển loading→form im lặng với screen reader) đã fix (live region riêng). Tech-lead **Revision Required → fixed → Approved** (2 vòng); design-review gate PASS (fe-lead tự audit skeleton, tokens-only). ⚠️ **R-1 finding chưa đóng hết ở FE**: CORS preflight (`OPTIONS`) của 2 route public này CHƯA được BE verify trên Kong thật (chỉ verify `POST` trực tiếp) — ghi làm ask mới + gate go-live thứ 3 (xem Deploy notes dưới). Đóng ask #49 (kèm 1 ask mới, xem report batch 6). See `US-E18.59-invitation-browser-direct-fetch/` + `docs/decisions/0072-invitation-browser-direct-fetch.md`. |
+
+## Deploy notes (go-live real mode) — hợp nhất từ batch 4+5 (US-E18.55) + batch 6 (US-E18.59)
 
 Điều kiện BẮT BUỘC trước khi bật build real-mode tương ứng (nguồn:
-`docs/reports/2026-08-07-be-to-fe-response.md` §4):
+`docs/reports/2026-08-07-be-to-fe-response.md` §4,
+`docs/reports/2026-08-08-be-to-fe-response.md` §6):
 
-1. **core migrations 047 → 050 theo thứ tự**: 047 rejection-metadata (US-184 →
-   US-E18.44), 048 year-heal (US-185 — fix staleness `grade_entries_by_student`),
-   049 pending-rollup (US-186 → US-E18.46), 050 grade-scale bands (US-189 →
-   US-E18.49).
-2. **social migration 038** (`pinned_messages`) trước khi bật US-E18.51 (pin)
-   và US-E18.50 (group lifecycle) real-mode.
-3. **IAM: không có migration** — US-E18.52/53 chỉ cần deploy binary IAM mới.
-   Env optional (có default): `RATELIMIT_REDEEM_MAX` / `RATELIMIT_REDEEM_WINDOW`.
+1. **core migration 051** (`academic_records`/`academic_records_by_student` +
+   `academic_year_label`, thuần additive) TRƯỚC binary `core` mới có
+   `academicYear`/homeroom-scope (US-E18.56/57). Nối tiếp thứ tự cũ: 047 →
+   050 (US-E18.44/46/49), rồi 051.
+2. **Reload/restart Kong** để nạp `gateway/kong/kong.yml` mới (route public
+   `POST /iam/api/v1/invitations/{redeem,lookup}` — trước fix này 2 route bị
+   `edu-edge-auth` chặn 401 kể cả qua Server Action cũ). Bắt buộc trước khi
+   bật US-E18.59 real-mode.
+3. **⚠️ GATE MỚI, CHƯA XÁC NHẬN (US-E18.59, ask mới trong batch 6 report):**
+   verify `OPTIONS /iam/api/v1/invitations/{redeem,lookup}` qua Kong thật +
+   `Access-Control-Allow-Headers` có `Content-Type` VÀ `X-Client-Id`. BE mới
+   verify `POST` trực tiếp (US-207 §5.2), CHƯA verify preflight. Thiếu gate
+   này = luồng redeem/lookup 100% fail ở mọi browser thật (CORS block trước
+   khi request rời máy khách) — không phải lỗi 500/503 dễ thấy trong log, mà
+   một lỗi generic `network-error` phía client. **KHÔNG bật US-E18.59
+   real-mode cho tới khi BE xác nhận gate này.**
+4. **social**: US-E18.58 chỉ deploy binary — không migration.
+5. **IAM**: US-E18.56/57/59 không cần migration IAM mới (BE US-206/207 chỉ
+   đổi allow-list + gateway route, ADR 0136 phía BE).
+6. Gate cũ batch 4+5 vẫn hiệu lực (giữ nguyên số thứ tự cũ để không lệch tài
+   liệu đã dẫn chiếu):
+   1. **core migrations 047 → 050 theo thứ tự**: 047 rejection-metadata
+      (US-184 → US-E18.44), 048 year-heal (US-185 — fix staleness
+      `grade_entries_by_student`), 049 pending-rollup (US-186 → US-E18.46),
+      050 grade-scale bands (US-189 → US-E18.49).
+   2. **social migration 038** (`pinned_messages`) trước khi bật US-E18.51
+      (pin) và US-E18.50 (group lifecycle) real-mode.
+   3. **IAM: không có migration** — US-E18.52/53 chỉ cần deploy binary IAM
+      mới. Env optional (có default): `RATELIMIT_REDEEM_MAX` /
+      `RATELIMIT_REDEEM_WINDOW`.
 
 ## Dependencies & thứ tự
 

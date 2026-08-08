@@ -797,3 +797,46 @@ preflight for `OPTIONS` on both public paths + ADR 0072 §Consequences note) and
 R-2 (`docs/TEST_MATRIX.md` — add the US-E18.59 row, amend the stale US-E18.53
 row). The design-review gate's short `/impeccable audit` on the `loading` story
 is also still outstanding.
+
+### fe-lead close-out (2026-08-08)
+
+**R-1 — closed as documentation + a new cross-repo ask.** ADR
+`0072`'s §Consequences now carries the CORS-preflight-vs-Kong-route gap as an
+explicit, dated finding (both browser calls send `Content-Type:
+application/json`, not CORS-safelisted, so both trigger an `OPTIONS`
+preflight; `redeem` additionally sends `X-Client-Id`; BE's US-207
+verification only exercised `POST` directly, never `OPTIONS`, against the
+anchored-regex Kong route). Filed as a new ask in the batch consumption
+report (`docs/reports/2026-08-08-fe-to-be-asks-batch6.md`) and folded into
+`EPIC-OVERVIEW.md`'s deploy notes as a THIRD go-live gate alongside migration
+051 and the Kong reload — this flow must not be flipped live against a real
+gateway until BE confirms the preflight is covered. No FE code change is
+possible here (Kong config is BE-owned); `X-Client-Id` is the one-line
+fallback if BE cannot extend `Access-Control-Allow-Headers` quickly.
+
+**R-2 — closed.** `docs/TEST_MATRIX.md` gets the US-E18.59 row + the
+US-E18.53 row amended (done in the same pass as the Harness `story update`
+for this US — see the commit that follows this one).
+
+**Design-review gate — PASS, no `/impeccable` skill invocation needed; I
+audited the loading markup directly against `.claude/rules/design-system.md`
++ `.claude/rules/accessibility.md` and it clears both.** The block
+(`invite-redeem-screen.tsx` lines ~200-220) uses ONLY the shared `Skeleton`
+primitive (`components/ui/skeleton`) and existing semantic tokens
+(`border-border`, the `Card`'s own `p-8`) — zero raw color, zero new
+component, zero new token. Proportions deliberately mirror the resolved
+card's rhythm (icon-box → title-line → subtitle-line, then a bordered detail
+block, then a full-width action-height placeholder) so there is no layout
+jump on resolution, which is exactly the concern the reviewer's "polish"
+suggestion raised — I read it and confirm the shapes already track the real
+content they stand in for (title/subtitle/two detail lines/button height),
+so there's no risk of the bordered placeholder reading as an empty error
+card at a glance. Motion is inherited from `Skeleton`'s own
+`motion-safe:animate-pulse` (pre-existing primitive, not re-implemented
+here). A11Y-001 (silent success transition) is independently closed by the
+fix round above. Verdict: no redesign needed, gate closed.
+
+Harness: `harness-cli story update --id US-E18.59 --status implemented
+--unit 1 --integration 1 --e2e 1 --platform 1` to follow once the final
+platform gate (`bun vitest run && bun run build`, both modes) is re-confirmed
+on this branch after all fix-round commits.
