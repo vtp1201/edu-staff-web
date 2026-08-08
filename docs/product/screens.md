@@ -122,8 +122,8 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | Overview | `(app)/student` | `features/student` | ✅ (UI mock-first) |
-| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ✅ US-E11.6 (grid+tabs, 2-col player, video/pdf/text, notes/Q&A, mark-complete; mock-first) |
-| Assignments | `(app)/student/assignments` | `features/lms` | ✅ US-E11.7 (mock-first — lms service scaffold) |
+| Courses + lesson player | `(app)/student/courses`,`/courses/[courseId]` | `features/lms` | ✅ US-E11.6 (grid+tabs, 2-col player, video/pdf/text, notes/Q&A, mark-complete; mock-first — BE force-mock bất kể `USE_MOCK`, US-E18.60/ADR 0073, chờ ask #51) |
+| Assignments | `(app)/student/assignments` | `features/lms` | ✅ US-E11.7 (mock-first — lms service scaffold; BE force-mock bất kể `USE_MOCK`, US-E18.60/ADR 0073, chờ ask #51) |
 | Exams (list/briefing/taking/result) | `(app)/student/exams`,`/exams/[id]` | `features/exam` | ✅ US-E11.1 (base); ⬜ US-E11.5 (mixed MCQ+essay variant) |
 | Grades (Grade Book) | `(app)/student/grades` | `features/grades` | ✅ US-E13.6 |
 | Academic Record (Hoc ba) | `(app)/student/academic-record` | `features/academic-records` | ✅ US-E14.5 + US-E18.54 (viewer remodel lên real member-read, year-grouping client-side; identity block bỏ) + US-E18.56 (`academicYear` denorm — bỏ enrollment fan-out) + US-E18.57 (ask #48 đã đóng: teacher route `/teacher/students/:id/academic-record` KHÔNG còn `forbidden` vĩnh viễn — BE cho TEACHER đọc theo phạm vi chủ nhiệm, xem hàng ở mục Teacher) |
