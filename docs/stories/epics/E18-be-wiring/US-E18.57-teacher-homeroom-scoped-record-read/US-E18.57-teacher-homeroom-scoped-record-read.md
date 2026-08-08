@@ -386,3 +386,163 @@ the already-audited (US-E18.54) empty-state block, with correct non-alarming
 semantics (no stray `role="alert"`) for what is a success response, not an
 error. Gate is green from the accessibility side; nothing blocking for
 `fe-lead`.
+
+### Tech-lead review — fe-tech-lead-reviewer (2026-08-08)
+
+**Verdict: APPROVED.** Zero `[MUST FIX]`, zero `[SHOULD FIX]`. Every claim in
+the engineer's Evidence section was re-verified independently (commands listed
+below), including the packet's central "zero code delta" prediction. This is
+the correct shape for an RBAC-widening story: the widening happened BE-side off
+the Bearer token, and the FE change is confined to the one place the widening
+made a user-facing sentence untrue.
+
+**Review Summary.** BE ADR 0136 replaced a blanket TEACHER `403` on
+`GET /members/{memberId}/academic-records` with a homeroom-scoped filter whose
+zero-overlap case is `200 { records: [] }`. The delta is 4 production lines
+(`emptyStateCopyKey` + its two call sites), 2 i18n keys × 2 locales, 3 doc/
+comment corrections, and 3 regression tests. Nothing in the data pipeline moved.
+
+**Architecture Compliance — PASS.**
+- `emptyStateCopyKey()` is a pure function in `academic-record-screen.i-vm.ts`,
+  which is exactly the right home: the ViewModel file is the server↔client
+  contract, the function has zero deps, and both a client component and a
+  server-side VM test consume it. No layer crossed.
+- `presentation/` imports nothing from `infrastructure/` or `bootstrap/di/`;
+  `academic-records.repository.ts` keeps `import 'server-only'`. Naming
+  conventions (`.i-vm.ts`, `.i-vm.test.ts`) followed.
+- **`src/bootstrap/di/academic-records.di.ts` is byte-identical to `main`**
+  (`git diff main...HEAD -- <path>` → empty), as the packet predicted. Same for
+  `mocks/academic-records.mock.repository.ts` — I confirmed the mock repository
+  is genuinely role-free (grep for `role|teacher|homeroom` returns only a
+  `fixtures.ts` comment about subject/teacher *names as data*). Per-role
+  filtering stays BE-only, consistent with decision `0014`.
+
+**Code Quality — Excellent.** The change is minimal and the reasoning is
+recorded where it will be read (repository doc-comment, `emptyStateCopyKey`
+doc-comment, endpoint constant comment) rather than only in the packet. No
+`any`, no new non-null assertions. The three doc corrections are real fixes, not
+padding: the endpoint comment previously asserted "TEACHER is NOT in the
+allow-list", which is now false and would mislead the next reader.
+
+**Data & Contract Review — PASS.** Verified by reading, not by trusting the
+report:
+- `AcademicRecordsRepository.getRecords()` makes exactly **one** `this.http.get`
+  plus the pre-existing injected subject-catalogue collaborator. **No new call,
+  no second request, no client-side probe** was added anywhere — confirmed by
+  grepping the whole feature. This is the single most important negative in a
+  story like this: a "does this student have ANY records" probe would itself be
+  the scope leak the packet's NOT-in-scope section forbids, and it is absent.
+- `buildAcademicRecordVM()` has no "empty means forbidden" shortcut. Its only
+  `forbidden` return (line 43) is the pre-existing `SELF_MEMBER_ID` self-id
+  resolution guard, unreachable on the teacher route (which passes a real
+  `studentId`). A successful empty read flows to
+  `{ record: {years: []}, selectedYearId: null, error: null }`.
+- **The forbidden branch is NOT weakened.** `git diff` of
+  `academic-records.repository.test.ts` shows **zero deleted lines** — the
+  failure matrix (`ACADEMIC_RECORD_FORBIDDEN`/`ROSTER_ACCESS_FORBIDDEN` 403 →
+  `forbidden`) is untouched and green, and the screen still renders its
+  `role="alert"` error block for it. Failure mapping remains by `error.code`/
+  status, never by message.
+
+**Design System & i18n — PASS.**
+- Zero token/markup change: the empty-state block is the same dashed-border
+  card with `border-border`/`bg-card`/`text-muted-foreground`. No raw colour
+  introduced (none in the diff at all).
+- **i18n parity mechanically verified**, not eyeballed: a recursive key-flatten
+  of both message files gives **3621 keys in vi, 3621 in en, empty symmetric
+  difference**, with both new keys present in both locales in the same commit.
+- **Type-safety of the dynamic key PROVEN by negative test.** The concern with
+  `t(\`${emptyKey}.title\`)` is that it silently degrades to `string`. It does
+  not. I temporarily renamed the union member to `"empty.bogusKeyNotInMessages"`
+  and re-ran `bunx tsc --noEmit`, which failed exactly as it should:
+  `error TS2345: Argument of type '"empty.title" | "empty.bogusKeyNotInMessages.title"' is not assignable to parameter of type 'NamespacedMessageKeys<…>'`
+  — two errors, one per call site. The template literal over a literal union
+  distributes into a checked union of message keys, so this satisfies
+  `.claude/rules/i18n.md`'s "no raw string into `t()`". The file was restored
+  (`git diff --stat` clean on it afterwards).
+- **Copy is accurate under BOTH readings** — the key correctness question, since
+  BE gives no signal separating "genuinely 0 records" from "0 authorized
+  records". vi title "Không có học bạ nào bạn được xem" is scoped to what the
+  viewer may see, so it stays true when the student genuinely has none. The
+  description hedges with "**có thể** có học bạ ở lớp khác" ("may hold records
+  in other classes"), not an assertion that such records exist — so it does not
+  overclaim in the genuinely-empty case either. Critically, the generic
+  `academicRecord.empty.description` ("Chưa có bản ghi học bạ nào…") is exactly
+  the sentence that WOULD be false for a scoped teacher, and it is correctly no
+  longer shown to them. en mirrors the same hedge.
+
+**Security Review — PASS (no findings).** This is the dimension that matters
+most in this lane, so stating the negatives explicitly:
+- No new RBAC surface. `emptyStateCopyKey` is a *copy* selector — it gates a
+  sentence, not data or an action. Authorization remains entirely BE-side; FE
+  sends no role parameter.
+- **No new write affordance for TEACHER.** Read
+  `academic-record-screen.tsx` end to end: the only seal-related elements are
+  the read-only `SealStatusBadge` (record- and term-level) and the
+  `UNSEALED` informational banner. There is no seal/unseal button, menu, or
+  handler in this screen at all, for any role — nothing became reachable that
+  was not before. `makeSealRepository()` and the seal repositories are
+  untouched.
+- No PII added to the client. The copy references no student identity, no class
+  name, no memberId. Notably it also does not leak *which* classes exist or how
+  many records were filtered out — the message is deliberately non-enumerating,
+  which is the right call for a scoped read.
+- No secrets, no `dangerouslySetInnerHTML`, no redirect, no storage write.
+
+**Test Coverage — PASS.** Proof is meaningful, not ceremonial. The repository
+regression pins `records: []` → `toEqual({ok:true, data:{…, years: []}})`, which
+would fail loudly if anyone reintroduced a "no rows ⇒ not allowed" shortcut. The
+VM test asserts `error === null` on a teacher empty read — it genuinely would
+have failed under the pre-ADR-0136 assumption. The `EmptyRecord` story was
+strengthened to assert the teacher copy does NOT leak into other roles
+(negative assertion), and `TeacherNoHomeroomAccessEmpty` asserts both the
+teacher copy present and `queryByRole("alert")` absent, which is the precise
+"empty is not an error" guarantee. Tests are deterministic (no clock/random).
+
+**Design-review gate — sign-off that a full `/impeccable` pass is NOT required.**
+Reasoning, per `docs/DESIGN_REVIEW.md` scope: the rendered diff is two text
+nodes inside the *existing* empty-state block. No new component, no new layout,
+no new token, no spacing/hierarchy/state change — the markup, class list, and
+element structure are byte-identical to the US-E18.54-audited block; only the
+i18n key feeding the two `<p>` elements varies by role. The one new Storybook
+story renders that same block. `fe-accessibility-auditor` independently returned
+PASS with zero findings on the same branch, including confirming no new ARIA and
+correct non-alarming semantics (no stray `role="alert"` on a success response) —
+screen-reader announcement is unchanged in kind, only in wording. `fe-lead` may
+treat this as a **minor content change** and close without a full gate pass. If
+the copy length ever grows enough to reflow the card, revisit.
+
+**Required Changes:** none blocking.
+
+- `[CONSIDER]` `academic-record-screen.i-vm.ts:19` — `roleBadgeKey()` returns
+  `string`, which forces the `as never` escape hatch at
+  `academic-record-screen.tsx:57` to satisfy `t()`. Pre-existing, out of this
+  US's scope, but the new `emptyStateCopyKey()` demonstrates the better pattern
+  (literal-union return → compile-checked key, no cast). Worth aligning
+  `roleBadgeKey` to a `"STUDENT" | "TEACHER" | "PARENT" | "ADMIN"` return in a
+  future hygiene pass to delete the last `as never` in this screen.
+- `[CONSIDER]` `academic-record-table.tsx:118` — the Storybook run surfaces a
+  pre-existing React DOM-nesting warning, `<tfoot> cannot contain a nested <p>`.
+  Untouched by this US (the table file is not in the diff) and not a regression,
+  but it is noise in this feature's test output and should get its own hygiene
+  item.
+
+**Verification commands I personally ran** (all on
+`feat/us-e18.57-teacher-homeroom-scoped-record-read`, branch confirmed via
+`git branch --show-current` first):
+
+| Command | Result |
+| --- | --- |
+| `git diff main...HEAD -- src/bootstrap/di/academic-records.di.ts` | **empty** — DI byte-identical, as predicted |
+| `git diff main...HEAD -- …/mocks/academic-records.mock.repository.ts` | **empty** — mock untouched |
+| `git diff main...HEAD -- …/academic-records.repository.test.ts \| grep '^-'` | **zero deletions** — forbidden matrix untouched |
+| `bunx tsc --noEmit` | clean (exit 0) |
+| `bunx tsc --noEmit` with a deliberately bogus key injected | **2 expected TS2345 errors** — proves `t()` is compile-checked; file restored |
+| `bun vitest run` | **518 files / 4086 tests passed** (baseline 517/4079) |
+| `bun vitest run --testNamePattern="seal\|Seal\|unseal\|Unseal"` | 15 files / **143 tests passed** |
+| `bun vitest run src/features/academic-records` | 18 files / **191 tests passed** |
+| `bunx vitest run --config vitest.storybook.mts` | **163 files / 1286 tests passed** (was 1285, +1 new story) |
+| `bun lint` | clean — same 1 pre-existing warning + 1 info in `messaging/`, unrelated |
+| `bun run build` | green; teacher academic-record route present as `ƒ` (dynamic) |
+| i18n key-flatten parity script (vi vs en) | **3621 = 3621**, empty diff both directions; both new keys in both locales |
+| grep for new HTTP calls / probes in the feature | **none** — one `http.get` + the pre-existing subject-catalogue collaborator |
