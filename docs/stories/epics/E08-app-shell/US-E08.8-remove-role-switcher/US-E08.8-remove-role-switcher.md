@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -150,3 +150,49 @@ write; the proof is the existing suite staying green (regression proof).
 | `bun lint` (repo-wide) | ✅ no errors — 1 pre-existing warning in `features/messaging/.../message-context-menu.tsx` (unused suppression), untouched by this US |
 
 `bun build` + design-review gate + merge: owned by `fe-lead`.
+
+### fe-lead gate close-out (2026-08-08)
+
+`bun run build` (re-run independently by fe-lead + fe-tech-lead-reviewer,
+both green, full route manifest emitted) — exit 0.
+
+`fe-tech-lead-reviewer`: **Approved**. Independently re-ran `tsc --noEmit`,
+full `vitest run` (519/519, 4119/4119), `bun run build`, and the header
+Storybook suite — all green, matching the engineer's report. Confirmed the
+`HeaderPlaceholder` pill removal was correct (not scope creep — it was the
+SSR mirror of the exact same control, keeping it would ship a phantom-pill
+layout-shift bug). Confirmed zero remaining `RoleSwitcher`/`onRoleChange`/
+`switchRole`/`ROLE_DOT` references in `src/`; `--edu-role-*` tokens NOT
+orphaned (still used by `role-select` foundations). Two SHOULD-FIX items
+(this TEST_MATRIX row + packet status) closed by fe-lead in this same commit.
+
+`fe-accessibility-auditor`: **PASS**, 0 blocking findings. 1 non-blocking
+note (A11Y-001, informational): role was previously visible as sighted text
+in the header at all times via the switcher; post-removal it's only visible
+inside the user-menu dropdown's `StatusBadge` (behind a click, and only when
+`currentMembership` is truthy). Auditor judged this an information-
+architecture / discoverability question, not a WCAG SC violation — no
+keyboard/focus/contrast regression, tab order for the remaining controls
+(menu → search → bell → theme → avatar) is unchanged and correct. Logged for
+design-review awareness; not blocking, no fix required (design-spec's
+canonical `app-shell.header` never specified a header-level role element).
+
+```text
+Design review: pass
+- design-system: conform — removal matches docs/product/design-spec.jsonc
+  `app-shell.header` (height/background/borderBottom/search/notificationBell
+  only, no role element ever specified there); no raw color, no new token;
+  --edu-role-* tokens still consumed elsewhere (role-select), not orphaned.
+- a11y: WCAG AA OK — fe-accessibility-auditor PASS; keyboard/focus/tab-order
+  unaffected; 1 non-blocking discoverability note (role now only visible via
+  user-menu dropdown badge, not a color/contrast/keyboard issue).
+- impeccable audit: 0 anti-pattern findings (PostToolUse hook ran on every
+  edit during implementation, per engineer report — no manual /impeccable
+  audit needed beyond that for a pure-deletion tiny-lane story with no new
+  visual surface).
+- states: no new state — pure removal; existing header states (mounted/
+  unmounted placeholder, multi-tenant/single-tenant/fetch-fail dropdown
+  variants) all still exercised green by the unmodified Storybook stories.
+```
+
+**Verdict: gate PASS. Ready to merge.**
