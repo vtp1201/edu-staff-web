@@ -267,3 +267,175 @@ single line of production code changed. Then green, then doc-comment refactor.
   contract, and it *removes* a cross-aggregate join rather than adding one.
 - Real-mode network cost for this screen drops from `1 + N(distinct classes)`
   reads to `1` (plus the unchanged subject-catalogue read).
+
+### Tech-lead review (2026-08-08)
+
+**Verdict: APPROVED.** No blocking findings. Two doc-integrity items must land
+before the story is marked `implemented` (§Required changes 1–2); neither is a
+behaviour defect. Explicit sign-off on **skipping the design-review gate** for
+this story — see §Design system.
+
+Checks actually run on this branch (`feat/us-e18.56-academic-year-denorm`, not
+taken on trust):
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean, exit 0 |
+| `bun vitest run` | **517 files / 4079 tests passed**, 0 failed — matches the engineer's figure exactly |
+| `bun vitest run src/features/academic-records src/bootstrap/di/academic-records.di.test.ts` | 18 files / 191 passed |
+| `bun vitest run <all *seal*/*unseal* test files>` | **11 files / 127 passed** (regression guard) |
+| `git diff main...HEAD --stat -- '**/*seal*'` | only `derive-year-seal-status.test.ts` **+1 line** (the required-field literal). `-- '**/academic-records-seal*'` = **0 lines** — the engineer's byte-identical claim on the seal repositories is TRUE |
+| `bun lint` | 1 warning + 1 info, both `messaging/message-context-menu.tsx` — pre-existing, not in this diff |
+| `bun vitest run --config vitest.storybook.mts` | run 1: 1 failed / 1284 passed; runs 2 and 3: **163 files / 1285 passed**, exit 0. Flake, NOT academic-records (see §Test coverage) |
+| `bun run build` | green (exit 0) |
+| `NEXT_PUBLIC_USE_MOCK=false bun run build` | green (exit 0) |
+| `git diff main...HEAD --stat -- src/bootstrap/i18n` | **empty** — the "zero i18n keys" claim is TRUE |
+
+**Contract ground truth re-verified** against
+`docs/reports/2026-08-08-be-to-fe-response.md` §2 (not the packet's paraphrase):
+the wire field is `academicYear`, and the report states verbatim "Field là
+**`academicYear`**, không phải `academicYearLabel`". `AcademicRecordRowDto`
+(`academic-record-response.dto.ts:41`) and the mapper
+(`academic-record.mapper.ts:68`) both use that exact key — grep-confirmed, no
+`academicYearLabel` anywhere in `features/academic-records/` except the one
+stale doc line flagged below. The `omitempty` / lazy-heal / best-effort
+semantics in the DTO doc comment match the report line-for-line.
+
+**Architecture Compliance — PASS.** `academic-records.repository.ts:1` and
+`mocks/academic-records.mock.repository.ts:1` keep `import "server-only"`;
+`bootstrap/di/academic-records.di.ts:1` keeps it. The pure mapper still
+correctly does NOT carry it (repo-wide convention, same as US-E18.54's review
+recorded). `domain/` stays pure — `build-academic-record.ts` lost a parameter
+and gained no import; `academic-record.entity.ts` gained a primitive field only.
+Dependency direction is strictly IMPROVED: the repository no longer takes a
+foreign-feature collaborator, and `bootstrap/di` composes one port instead of
+two — decision `0017` still honoured (the surviving `resolveSubjectNames` join
+lives in DI, not the repository).
+
+**Code Quality — Excellent.** Zero `any`, zero non-null `!` in the diff
+(grep-confirmed). The 3-arg → 2-arg collapse is the minimal change; the
+`Map`-building code in `getRecords()` is deleted outright rather than left
+inert. `MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR` derives from the canonical fixture
+with `delete stripped.academicYear` — the key is genuinely ABSENT, not `null` or
+`""`, which is the only shape that actually exercises `orNull`'s undefined
+branch. Making `TermRecord.academicYear` REQUIRED (not optional) was the right
+call: `bunx tsc --noEmit` is the enforcement, and it surfaced exactly one other
+`TermRecord` literal (`derive-year-seal-status.test.ts:13`), which was fixed. No
+silently-wrong literal survives — the type checker proves that, not a grep.
+
+**Data & Contract Review — PASS.**
+- `orNull()` (`academic-record.mapper.ts:22-24`) is `raw === undefined ? null :
+  raw`. Semantics transfer correctly: Go `omitempty` on a plain `string` omits
+  the key for `""`, so absence arrives as `undefined` → `null` → the
+  `UNRESOLVED_YEAR_ID` bucket. Never fabricates, never coerces.
+- **Un-fan-out proof is real, not declarative.** Two independent tests, both
+  re-run and inspected: (a) `academic-records.repository.test.ts:75-84` asserts
+  `expect(get).toHaveBeenCalledTimes(1)` for 3 rows across 2 distinct classes —
+  a call-COUNT proof that would fail if any per-class read were reintroduced;
+  (b) `academic-records.di.test.ts:56` makes the stub **throw** on any
+  unexpected URL (`throw new Error(\`unexpected call: ${url}\`)`) and then
+  asserts `enrollmentCalls` has length 0 while the read still returns `ok`. The
+  second is the stronger form and is exactly what the packet asked for.
+- Failure mapping, envelope handling, and `raw:true` absence (endpoint is
+  unpaginated) are untouched by this story and still correct.
+
+**Design system & i18n — PASS.** Zero token/color/class changes anywhere in the
+diff. **Design-review gate sign-off:** I read
+`academic-record-screen.stories.tsx`'s full diff line by line — the only changes
+are (1) `build()`'s first parameter switching from a `Map<string,string>` year
+map to a wire payload, (2) `UnresolvedYear` passing
+`MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR`, (3) `UnresolvedSubjectNames` passing the
+canonical payload explicitly, (4) a doc comment. **No JSX, no `className`, no
+token, no component import changed.** Rendered output for a resolved year is
+byte-identical. `fe-lead` may skip the full design-review pass for US-E18.56 on
+that basis. i18n: `src/bootstrap/i18n` diff is empty and `unresolvedYear.*` copy
+is untouched and still reachable (proven by the DI test AND the story).
+
+**Security Review — PASS.** This story only REMOVES a collaborator and its
+network calls; no new data reaches the client, no PII surface added, no token
+handling touched. Nothing was left half-wired: the deleted resolver, its test,
+its endpoint builder, and its mock shim (`MOCK_CLASS_YEARS`) are all gone
+together, with no dangling import (verified by `tsc` + a grep for
+`enrollment-year|makeEnrollmentYearResolver|ResolveYearByClassId|MAX_CLASS_YEAR_LOOKUPS|studentEnrollmentPath|MOCK_CLASS_YEARS`
+over `src/` — the only hit is prose inside `admin-roster.endpoint.ts`'s doc
+comment). Attack surface strictly shrinks.
+
+**Deviation #1 (deleting `studentEnrollmentPath()`) — VERIFIED CORRECT.** I did
+not take the report on trust: `git grep -n "studentEnrollmentPath" main -- src/`
+returns exactly 5 hits, all inside `enrollment-year.resolver.ts`, its test, and
+the endpoint file's own declaration + doc line. No other feature — including
+`admin-roster`, whose DELETE still uses the retained `unenrollPath()` — ever
+consumed it. The packet's "do NOT delete a constant a different feature still
+needs" condition is satisfied, and the replacement doc comment records how to
+re-add the builder. Deletion approved.
+
+**Deviation #2 (`MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR`) — approved and, in my
+view, required.** Without it the degrade path becomes untested dead code, which
+the packet's AC explicitly forbids.
+
+**Test Coverage — PASS.** TDD proof is meaningful, not ceremonial: the
+`build-academic-record` suite gained a case the OLD design could not express
+(same `classId` in two different years splits correctly —
+`build-academic-record.test.ts:106-117`), the mapper gained both the
+present-verbatim and absent→`null` cases (including `"academicYear" in term`,
+which catches a mapper that drops the key entirely), and the repository/DI
+suites converted resolver-mock assertions into call-count/throw-on-unexpected
+proofs. Net test count is down 5 (the deleted resolver suite) and up 3, which is
+correct — those 5 tested a mechanism that no longer exists.
+
+*Storybook flake note:* my first `vitest.storybook.mts` run had 1 failure; two
+consecutive re-runs were 163/1285 green with exit 0, and the academic-records
+stories (12) passed in all three runs plus in the scoped 18-file run. Consistent
+with the known intermittent story in this repo — not attributable to this
+branch.
+
+#### Required changes
+
+1. **[MUST FIX — before `--status implemented`] `docs/TEST_MATRIX.md` has no
+   US-E18.56 row, and line 179's US-E18.54 row now describes deleted code as
+   live proof.** It still reads "The year dimension is a DI-composed, deduped,
+   bounded enrollment point-read join" and cites "`enrollment-year.resolver.test.ts`
+   5" and "`academic-records.di.test.ts` 7 (… 4 records → 2 enrollment reads
+   with the 403 class degrading)" — all three describe a mechanism and a file
+   that no longer exist. The packet's §Harness Delta explicitly required
+   updating that row rather than adding a parallel one. *Why:* the matrix is
+   this repo's proof registry; a row citing a deleted test file makes the whole
+   registry untrustworthy. *How:* amend the US-E18.54 row's note in place to
+   say the year now rides the wire row (US-E18.56, ask #47/migration 051),
+   drop the `enrollment-year.resolver.test.ts` citation, and restate the DI
+   test as the ZERO-enrollment-call proof.
+
+2. **[SHOULD FIX] `src/features/academic-records/domain/entities/academic-record.entity.ts:84`
+   — one stale doc line survived the §11 sweep.** `AcademicYear.yearId` still
+   reads `/** The resolved \`academicYearLabel\`, or {@link UNRESOLVED_YEAR_ID}. */`.
+   `academicYearLabel` is now a *different* feature's wire field; this one is
+   fed by `TermRecord.academicYear`. *Why:* the packet flagged doc accuracy as
+   in-scope precisely because a wrong field name here is what sends the next
+   reader to the wrong endpoint. *How:* one-line edit → "The row's own
+   `academicYear`, or {@link UNRESOLVED_YEAR_ID}." Everything else in §11 (entity
+   header, `UNRESOLVED_YEAR_ID`, repository class doc, use-case doc, DI factory
+   doc, `ROSTER_EP.unenroll` doc) was updated correctly and accurately.
+
+3. **[CONSIDER] The blank-label guard was lost in the migration.**
+   `build-academic-record.ts:33` uses `record.academicYear ?? UNRESOLVED_YEAR_ID`,
+   so a `""` or `"   "` value would produce a real year bucket with a blank
+   label instead of degrading. The deleted resolver had an explicit guard for
+   this (its test "omits a class whose row carries a blank academicYearLabel").
+   Go `omitempty` on a plain `string` makes `""` unreachable from this endpoint
+   today, so this is **not blocking** — but if you want the old defence back it
+   is one token: `record.academicYear?.trim() ? record.academicYear : UNRESOLVED_YEAR_ID`.
+
+4. **[CONSIDER — pre-existing, not this story's debt]** the stories file imports
+   `infrastructure/mappers/…` and `infrastructure/repositories/mocks/fixtures`
+   from under `presentation/`. That predates this branch (only the argument
+   shape changed here) and is a deliberate "stories cannot drift from prod"
+   choice on a non-shipped test artifact. Noting it so it is not mistaken for a
+   new boundary crossing.
+
+**Good work worth calling out:** the call-count/throw-on-unexpected-URL pair is
+the right way to prove a *negative* (no call happened) — an assertion that the
+resolver file is gone would have proved nothing about runtime. Making the entity
+field required so `tsc` finds the stragglers, rather than optional so they stay
+silently wrong, is the correct trade. And adding
+`MOCK_RECORDS_WITHOUT_ACADEMIC_YEAR` instead of just deleting `MOCK_CLASS_YEARS`
+kept a fallback path alive that would otherwise have quietly rotted.
