@@ -5,8 +5,10 @@ metadata:
   type: feedback
 ---
 
-After touching `src/bootstrap/i18n/messages/{vi,en}.json` or a shared
-`bootstrap/endpoint/*.ts`, the first `bun vitest run` can report ~9 failures —
+After touching `src/bootstrap/i18n/messages/{vi,en}.json`, a shared
+`bootstrap/endpoint/*.ts`, or `bootstrap/lib/http.ts` (US-E01.3: 3 failures on
+the first run, then 4117/4117 green on three consecutive re-runs), the first
+`bun vitest run` can report a handful of failures —
 always the FIRST test of an `app/**/page.test.ts(x)` file, always
 `Test timed out in 5000ms`. They are not real: the 5s budget is being eaten by
 cold vite transform of a large RSC module graph.

@@ -29,8 +29,29 @@ describe("mapAuthError", () => {
     });
   });
 
+  it("maps gateway/upstream statuses (502/503/504) to network-error", () => {
+    for (const status of [502, 503, 504]) {
+      expect(mapAuthError(axiosErr(status))).toEqual({ type: "network-error" });
+      expect(mapAuthError(axiosErr(status, "BAD_GATEWAY"))).toEqual({
+        type: "network-error",
+      });
+    }
+  });
+
+  it("lets a recognised code win over the status (branch on code, never status)", () => {
+    // Pins `.claude/rules/api-integration.md`: hoisting the gateway-status
+    // check above CODE_MAP would silently violate it while staying green.
+    expect(mapAuthError(axiosErr(503, "TOKEN_EXPIRED"))).toEqual({
+      type: "token-expired",
+    });
+    expect(mapAuthError(axiosErr(429, "USER_INVALID_CREDENTIALS"))).toEqual({
+      type: "invalid-credentials",
+    });
+  });
+
   it("falls back to unknown for unrecognized codes with a response", () => {
     const f = mapAuthError(axiosErr(500, "WEIRD_CODE"));
     expect(f.type).toBe("unknown");
+    expect(mapAuthError(axiosErr(418, "TEAPOT")).type).toBe("unknown");
   });
 });
