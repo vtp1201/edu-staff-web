@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 3 ask từ smoke-test role TEACHER trên stack thật
+# FE → BE (2026-08-09): 4 ask từ smoke-test role TEACHER trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -71,6 +71,25 @@ không có lỗi nào hiện ra.
 `*MemberId` của core (`homeroomTeacherId`, `studentMemberId`,
 `teacherMemberId`, `authorMemberId`) đều là member id, không phải user id —
 FE sẽ ghi thành ADR để không ai đọc nhầm `sub` lần nữa.
+
+## #4 — `GET /noti/api/v1/notifications/unread-count` trả 500
+
+Phát hiện khi wire badge "chưa đọc" trên chuông ở header (gọi trên MỌI trang,
+mọi role):
+
+```bash
+curl -s "$KONG/noti/api/v1/notifications/unread-count" -H "Authorization: Bearer $TOKEN"
+# {"success":false,"data":null,
+#  "error":{"code":"INTERNAL_SERVER_ERROR","message":"An internal error occurred",
+#           "retryable":false},"meta":{"requestId":"297ef3c9-..."}}
+```
+
+Token cùng phiên vẫn gọi được core/iam bình thường (xem bảng cuối), nên không
+phải vấn đề auth. FE fail-safe về `0` (chuông không hiện badge) nên không vỡ
+giao diện, nhưng badge sẽ luôn trống tới khi BE sửa.
+
+**Ask:** BE trace `requestId` ở trên trong log `noti` và cho biết đây là lỗi
+hạ tầng (thiếu bảng/migration của noti trên môi trường demo) hay lỗi code.
 
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 

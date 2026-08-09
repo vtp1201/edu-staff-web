@@ -17,6 +17,7 @@ import type {
 } from "../../domain/entities/notification.entity";
 import type { NotificationFailure } from "../../domain/failures/notification.failure";
 import { PAGE_SIZE } from "../../domain/repositories/i-notification.repository";
+import { notificationKeys } from "../notification-keys";
 import type { NotificationsCenterScreenProps } from "./notifications-center";
 import { NotificationsCenterScreen } from "./notifications-center";
 import { useNotificationNewEvent } from "./use-notification-new-event";
@@ -43,12 +44,10 @@ export interface NotificationsCenterContainerProps {
 
 // ─── Query key factory ───────────────────────────────────────────────────────
 
-export const notificationKeys = {
-  all: ["notifications"] as const,
-  list: (filter: NotificationFilter) =>
-    ["notifications", "list", filter] as const,
-  unreadCount: () => ["notifications", "unread-count"] as const,
-} as const;
+// Re-exported for existing importers; defined in `../notification-keys` so the
+// app-shell header can share the unread-count entry without importing this
+// module (and dragging the whole centre into every page bundle).
+export { notificationKeys };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

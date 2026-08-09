@@ -33,6 +33,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  notificationKeys,
+  type UnreadCountCache,
+} from "@/features/notification/presentation/notification-keys";
 import type { Role } from "../sidebar/nav-config";
 import { deriveTenantMenu } from "./derive-tenant-menu";
 import { NOTIFICATION_BADGE_CLASS } from "./notification-badge";
@@ -107,12 +111,16 @@ export function Header({
     setMounted(true);
   }, []);
 
+  // Shares its cache entry with the notifications centre — so the cached value
+  // MUST stay `{ count }` (the centre writes that shape on an SSE
+  // notification.new). Unwrapped via `select`, never stored as a bare number.
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["notifications", "unread-count"],
-    queryFn: async () => {
+    queryKey: notificationKeys.unreadCount(),
+    queryFn: async (): Promise<UnreadCountCache> => {
       const res = await onFetchUnreadCount?.();
-      return res && "count" in res ? res.count : 0;
+      return { count: res && "count" in res ? res.count : 0 };
     },
+    select: (data: UnreadCountCache) => data.count,
     enabled: onFetchUnreadCount !== undefined,
   });
 
