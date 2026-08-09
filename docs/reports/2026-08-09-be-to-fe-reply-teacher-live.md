@@ -1,7 +1,8 @@
-# BE → FE (2026-08-09): trả lời 12 ask từ smoke-test TEACHER / hiệu trưởng / phụ huynh
+# BE → FE (2026-08-09): trả lời 13 ask từ smoke-test TEACHER / hiệu trưởng / phụ huynh
 
 > Trả lời cho `2026-08-09-fe-to-be-asks-teacher-live.md`.
-> **Cả 12 ask đã xử lý xong** — 10 fix + 1 xác nhận contract + 1 từ chối có lý do.
+> **Cả 13 ask đã xử lý xong** — 11 fix + 1 xác nhận contract + 1 từ chối có lý do.
+> ⚠️ #13 có **một phát hiện quan trọng** cho kế hoạch un-mock: xem cuối mục #13.
 > #8 và #9 là **hai lỗi thật của BE**, cảm ơn team đã bắt được. Toàn bộ verify lại
 > bằng curl thật qua Kong `localhost:8000`, tenant
 > `aeb0e462-9ced-48b3-ba36-803f9266b09d`, ngày 2026-08-09.
@@ -23,6 +24,7 @@
 | 10 | Thiếu dữ liệu cho hiệu trưởng | ✅ ĐÃ SEED — 31 lớp / 150 HS / điểm danh | Không |
 | 11 | `GET .../consents` trả 405 | ✅ ĐÃ LÀM endpoint đọc consent | Bỏ mock phần consent |
 | 12 | `me` alias + thiếu tên con | ✅ Đã thêm `studentName`; xác nhận **không có** `me` | Bỏ lượt decorate IAM |
+| 13 | Conduct/kỷ luật rỗng | ✅ ĐÃ SEED đủ 4 trạng thái | ⚠️ Un-mock được GV/BGH; **màn phụ huynh thì KHÔNG** — đọc kỹ mục #13 |
 
 ---
 
@@ -414,6 +416,81 @@ Lý do: resolve nhãn lúc đọc thì **không lưu gì cả**, và đó đúng
 client gọi thêm một chặng liên service cho 1-3 cái tên, trên màn phụ huynh mở
 đầu tiên, là đánh đổi tệ hơn. Comment trong DTO ghi lại việc đảo quyết định thay
 vì lặng lẽ mâu thuẫn với nó.
+
+## #13 — Đã seed conduct/kỷ luật, và một cảnh báo trước khi un-mock
+
+**Đã seed** (tenant demo, chạy lại được bằng `seeddemo`):
+
+| Bảng | Số lượng | Trạng thái |
+| --- | --- | --- |
+| Điểm hạnh kiểm | **1.350** | kỳ đã xong = `APPROVED`; kỳ đang chạy = trộn `DRAFT`/`SUBMITTED`/`APPROVED`/`REJECTED` |
+| Vi phạm học sinh | **318** | đủ 4 trạng thái × 3 mức `MINOR`/`MODERATE`/`SEVERE` |
+| Đơn xin nghỉ | **150** | `APPROVED` / `SUBMITTED` / `DRAFT` |
+| Bản ghi vắng mặt | **150** | `RECORDED` + `FLAGGED_UNEXCUSED` |
+| Nhận xét cán bộ (staff notes) | 6 | đủ 4 trạng thái × 3 rating |
+| Vi phạm cán bộ | 3 | `APPROVED` |
+
+Kiểm chứng bằng token ADMIN, lớp 12A2, HK1 2026-2027:
+
+```
+violations    : 25 | {'APPROVED': 7, 'DRAFT': 6, 'REJECTED': 6, 'SUBMITTED': 6}
+conduct-grades: 25 | {'APPROVED': 7, 'SUBMITTED': 6, 'DRAFT': 6, 'REJECTED': 6}
+leave (lớp)   : 27 | {'APPROVED': 9, 'DRAFT': 9, 'SUBMITTED': 9}
+```
+
+Phủ **100% học sinh của năm đang chạy**, năm cũ thưa hơn (mỗi 4 học sinh) —
+có chủ ý: client đọc các list này **theo từng con**, nên phủ thưa nghĩa là việc
+màn có dữ liệu hay không phụ thuộc vào việc tài khoản demo được gắn với đứa trẻ
+nào. Phủ kín năm đang demo bỏ hẳn cái xổ số đó.
+
+### ⚠️ Trước khi mở US un-mock: PARENT **không bao giờ** thấy vi phạm
+
+Ba endpoint trả 200 cho PARENT, nhưng **không đồng nhất** về phạm vi. Đã kiểm
+bằng token phụ huynh thật, cùng lớp, cùng kỳ, ngay sau khi seed:
+
+| Endpoint | PARENT thấy gì | Vì sao |
+| --- | --- | --- |
+| `student-conduct-grades` | ✅ **2** (đúng 2 con) | có nhánh `listForParent` thật |
+| `student-leave-requests` | ✅ **1** | check `IsLinked(parent, student)` |
+| `student-violations` | ❌ **0 — LUÔN LUÔN** | so `studentMemberId == memberId của chính người gọi` |
+
+Đây **không phải thiếu dữ liệu** và cũng **không phải lỗ hổng** — nó là phạm vi
+bị descope ở US-070, ghi thẳng trong code:
+
+```go
+// PARENT linked-child visibility is descoped in US-070 (no ParentStudentLink
+// lookup): a PARENT therefore sees only records whose studentMemberId matches
+// their own id, which is the safe, no-consent default.
+func ownRecord(r *entity.StudentViolationRecord, actorMemberID string) bool {
+	return r.StudentMemberID().String() == actorMemberID
+}
+```
+
+Nghĩa là màn **kỷ luật của phụ huynh không un-mock được từ endpoint này** — dù
+seed bao nhiêu cũng vẫn rỗng. Un-mock ngay bây giờ sẽ biến "mock đẹp" thành
+"trống vĩnh viễn", đúng thứ các bạn muốn tránh.
+
+**Khuyến nghị chia US un-mock làm hai:**
+
+1. **Làm ngay:** màn GV chủ nhiệm + BGH (vi phạm, hạnh kiểm, duyệt đơn nghỉ) —
+   dữ liệu đầy đủ, đủ 4 trạng thái để test luồng duyệt/từ chối.
+2. **Chờ quyết định:** màn phụ huynh xem vi phạm của con. Mở rộng phạm vi này là
+   **đổi chính sách phân quyền trên dữ liệu kỷ luật của trẻ vị thành niên**, và
+   hạ tầng cho nó đã có sẵn — bảng consent có đúng category
+   `CONDUCT_NOTIFICATION`. Thiết kế đúng gần như chắc chắn là: *phụ huynh thấy
+   vi phạm đã `APPROVED` của con mình, khi consent `GRANTED`*. BE **không tự nới**
+   — cần một ask/ADR riêng, cùng nhóm quyết định với #11.
+
+Ghi chú thêm: hạnh kiểm và đơn nghỉ **đã** cho phụ huynh xem mà **không** kiểm
+consent. Sự không nhất quán giữa ba endpoint này nên được chốt một lần trong
+cùng quyết định đó, thay vì vá lẻ từng cái.
+
+### Xác nhận RBAC như các bạn hỏi
+
+PARENT gọi `student-violations` / `student-conduct-grades` với `classId` của con
+là **hợp lệ và cố ý** (200, không phải lỗ hổng). Điều khác nhau là *nội dung*:
+hạnh kiểm lọc theo con, vi phạm lọc theo chính người gọi nên luôn rỗng. Không có
+đường nào để phụ huynh đọc dữ liệu của trẻ khác qua các endpoint này.
 
 ## Hai điểm "không phải ask"
 
