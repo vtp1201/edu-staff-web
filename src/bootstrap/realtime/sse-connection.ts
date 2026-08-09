@@ -28,7 +28,8 @@ export interface SseConnectionOptions {
   /** Locale segment of the same-origin SSE proxy URL. */
   locale: string;
   /** Report a connection-lifecycle transition. */
-  onStatus: (status: SseStatus) => void;
+  /** `failedAttempts` = consecutive failures since the last successful open. */
+  onStatus: (status: SseStatus, failedAttempts: number) => void;
   /** Invalidate the mapped TanStack Query keys for a dispatched event. */
   onInvalidate: (keys: QueryKey[]) => void;
   /** A `message.new` arrived while the user is NOT on the messages route. */
@@ -55,14 +56,24 @@ export interface SseConnection {
 }
 
 /**
- * Derived banner-visibility rule (AC-1 / AC-3): never on the very first
- * 'connecting' (fresh page load), always on 'disconnected', and on every
- * 'connecting' that follows an actual disconnect.
+ * Derived banner-visibility rule: stay quiet until a RECONNECT has also failed.
+ *
+ * A single dropped stream is not worth a banner — the client retries by itself
+ * and usually wins, so announcing every blip is pure noise (and with an upstream
+ * that closes streams immediately, it was permanent noise). `failedAttempts`
+ * counts consecutive failures since the last successful open, so `>= 2` means
+ * "it dropped AND the retry failed too" — a real outage the user can act on.
+ *
+ * Still never on the very first 'connecting' of a fresh page load.
  */
+export const BANNER_AFTER_FAILED_ATTEMPTS = 2;
+
 export function deriveShowBanner(
   status: SseStatus,
   hasEverConnected: boolean,
+  failedAttempts = Number.POSITIVE_INFINITY,
 ): boolean {
+  if (failedAttempts < BANNER_AFTER_FAILED_ATTEMPTS) return false;
   return (
     status === "disconnected" || (status === "connecting" && hasEverConnected)
   );
@@ -123,22 +134,23 @@ export function openSseConnection(
 
     source.onopen = () => {
       failures = 0;
-      options.onStatus("connected");
+      options.onStatus("connected", failures);
     };
 
     source.onerror = () => {
       // Close before scheduling to avoid a second live connection racing the
       // explicit 4s re-instantiate loop (we do not rely on native retry).
       source.close();
-      options.onStatus("disconnected");
+      const delayMs = reconnectDelayFor(failures++, options.reconnectDelayMs);
+      options.onStatus("disconnected", failures);
       timeoutHandle = scheduleReconnect({
         onReconnect: () => {
           if (disposed) return;
-          options.onStatus("connecting");
+          options.onStatus("connecting", failures);
           connect();
         },
         previousTimer: timeoutHandle,
-        delayMs: reconnectDelayFor(failures++, options.reconnectDelayMs),
+        delayMs,
       });
     };
 
@@ -161,8 +173,11 @@ export function openSseConnection(
         timeoutHandle = null;
       }
       source.close();
-      failures = 0;
-      options.onStatus("connecting");
+      // 1, not 0: a manual retry restarts the backoff near the bottom, but the
+      // session is still in a failed state — so if THIS attempt fails too the
+      // banner comes straight back instead of hiding for another round.
+      failures = 1;
+      options.onStatus("connecting", failures);
       connect();
     },
     close() {

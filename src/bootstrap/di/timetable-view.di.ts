@@ -6,7 +6,7 @@ import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { decodeSubClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
-import { resolveCurrentTermId } from "@/bootstrap/lib/resolve-current-term";
+import { resolveCurrentTermContext } from "@/bootstrap/lib/resolve-current-term";
 import type { IWeeklyTimetableRepository } from "@/features/timetable/domain/repositories/i-weekly-timetable.repository";
 import { GetChildListUseCase } from "@/features/timetable/domain/use-cases/get-child-list.use-case";
 import { GetChildTimetableUseCase } from "@/features/timetable/domain/use-cases/get-child-timetable.use-case";
@@ -51,7 +51,7 @@ async function makeRepo(): Promise<IWeeklyTimetableRepository> {
   };
   const real = new RealWeeklyTimetableRepository(
     http,
-    resolveCurrentTermId,
+    resolveCurrentTermContext,
     currentUserId,
     resolveChildNames,
   );

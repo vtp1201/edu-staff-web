@@ -80,6 +80,31 @@ export const StudentView_FullWeek: Story = {
   },
 };
 
+/**
+ * The header used to print a hardcoded "2025–2026 (hiện tại)" / "Học kỳ I" that
+ * went stale the moment a new academic year became active. When the read
+ * resolves the calendar, the header shows what was actually read.
+ */
+export const StudentView_ShowsResolvedYearAndTerm: Story = {
+  args: {
+    viewerRole: "student",
+    initialState: {
+      status: "success",
+      timetable: {
+        ...TT_11A2,
+        academicYearLabel: "2026–2027",
+        termName: "Học kỳ II",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.getByText("2026–2027")).toBeVisible();
+    expect(canvas.getByText("Học kỳ II")).toBeVisible();
+    expect(canvas.queryByText("2025–2026 (hiện tại)")).toBeNull();
+  },
+};
+
 /* ── AC5: empty class ───────────────────────────────────────────────────── */
 export const StudentView_EmptyTimetable: Story = {
   args: { viewerRole: "student", initialState: { status: "empty" } },

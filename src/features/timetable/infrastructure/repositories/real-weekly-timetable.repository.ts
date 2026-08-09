@@ -24,9 +24,29 @@ import {
   mapRealWeeklyTimetable,
 } from "../mappers/real-weekly-timetable.mapper";
 
-/** Resolves the mandatory `termId` from a date (default: today) — same
- *  contract as the admin builder's `TermIdResolver`; injected by DI. */
-export type TermIdResolver = (date?: Date) => Promise<string>;
+/**
+ * Resolves the calendar context for a date (default: today) — the mandatory
+ * `termId` every core timetable call needs, plus the term/year LABELS the
+ * screen header shows (it used to print a hardcoded string that went stale the
+ * moment a new academic year became active). Injected by DI.
+ */
+export type TermResolver = (date?: Date) => Promise<{
+  termId: string;
+  termName: string;
+  academicYearLabel: string;
+}>;
+
+/** Stamp the calendar labels the header displays onto a mapped grid. */
+function withTermContext(
+  timetable: WeeklyTimetable,
+  term: { termName: string; academicYearLabel: string },
+): WeeklyTimetable {
+  return {
+    ...timetable,
+    termName: term.termName,
+    academicYearLabel: term.academicYearLabel,
+  };
+}
 
 /**
  * Map a normalised `ApiError` (by UPPER_SNAKE `error.code`, never by message)
@@ -82,7 +102,7 @@ export class RealWeeklyTimetableRepository
 {
   constructor(
     private readonly http: AxiosInstance,
-    private readonly resolveTermId: TermIdResolver,
+    private readonly resolveTerm: TermResolver,
     private readonly currentUserId: string | null,
     /**
      * `memberId → displayName` resolver — the parent's children (US-E18.33)
@@ -107,14 +127,14 @@ export class RealWeeklyTimetableRepository
     weekStart?: string,
   ): Promise<WeeklyTimetable> {
     try {
-      const termId = await this.termFor(weekStart);
+      const term = await this.termContextFor(weekStart);
       const dto = (await this.http.get(
         TIMETABLE_VIEW_EP.classTimetable(classId),
         {
-          params: { termId },
+          params: { termId: term.termId },
         },
       )) as unknown as RealTimetableResponseDto;
-      return mapRealWeeklyTimetable(dto, classId);
+      return withTermContext(mapRealWeeklyTimetable(dto, classId), term);
     } catch (err) {
       throw toTimetableViewFailure(err);
     }
@@ -133,12 +153,18 @@ export class RealWeeklyTimetableRepository
   ): Promise<WeeklyTimetable> {
     try {
       const dto = await this.fetchMemberTimetable(memberId, weekStart);
-      const teacherNames = await this.tryResolveTeacherNames(dto);
-      return mapMemberWeeklyTimetable(
-        dto,
-        () => undefined,
-        { classId: memberId, className: "" },
-        (id) => teacherNames.get(id),
+      const [teacherNames, term] = await Promise.all([
+        this.tryResolveTeacherNames(dto),
+        this.termContextFor(weekStart),
+      ]);
+      return withTermContext(
+        mapMemberWeeklyTimetable(
+          dto,
+          () => undefined,
+          { classId: memberId, className: "" },
+          (id) => teacherNames.get(id),
+        ),
+        term,
       );
     } catch (err) {
       throw toTimetableViewFailure(err);
@@ -172,19 +198,23 @@ export class RealWeeklyTimetableRepository
       throw toTimetableViewFailure(err);
     }
 
-    const [enrollment, teacherNames] = await Promise.all([
+    const [enrollment, teacherNames, term] = await Promise.all([
       this.tryFetchEnrollment(selfId),
       this.tryResolveTeacherNames(dto),
+      this.termContextFor(weekStart),
     ]);
-    return mapMemberWeeklyTimetable(
-      dto,
-      (classId) =>
-        classId === enrollment?.classId ? enrollment.className : undefined,
-      {
-        classId: enrollment?.classId ?? selfId,
-        className: enrollment?.className ?? "",
-      },
-      (id) => teacherNames.get(id),
+    return withTermContext(
+      mapMemberWeeklyTimetable(
+        dto,
+        (classId) =>
+          classId === enrollment?.classId ? enrollment.className : undefined,
+        {
+          classId: enrollment?.classId ?? selfId,
+          className: enrollment?.className ?? "",
+        },
+        (id) => teacherNames.get(id),
+      ),
+      term,
     );
   }
 
@@ -206,12 +236,18 @@ export class RealWeeklyTimetableRepository
         this.fetchAllPages<ClassSummaryDto>(TIMETABLE_VIEW_EP.myClasses),
       ]);
       const classNames = new Map(classes.map((c) => [c.classId, c.name]));
-      const teacherNames = await this.tryResolveTeacherNames(dto);
-      return mapMemberWeeklyTimetable(
-        dto,
-        (classId) => classNames.get(classId),
-        { classId: teacherId, className: teacherId },
-        (id) => teacherNames.get(id),
+      const [teacherNames, term] = await Promise.all([
+        this.tryResolveTeacherNames(dto),
+        this.termContextFor(weekStart),
+      ]);
+      return withTermContext(
+        mapMemberWeeklyTimetable(
+          dto,
+          (classId) => classNames.get(classId),
+          { classId: teacherId, className: teacherId },
+          (id) => teacherNames.get(id),
+        ),
+        term,
       );
     } catch (err) {
       throw toTimetableViewFailure(err);
@@ -287,8 +323,12 @@ export class RealWeeklyTimetableRepository
     }
   }
 
-  private termFor(weekStart?: string): Promise<string> {
-    return this.resolveTermId(weekStart ? new Date(weekStart) : undefined);
+  private async termFor(weekStart?: string): Promise<string> {
+    return (await this.termContextFor(weekStart)).termId;
+  }
+
+  private termContextFor(weekStart?: string) {
+    return this.resolveTerm(weekStart ? new Date(weekStart) : undefined);
   }
 
   private async fetchMemberTimetable(
