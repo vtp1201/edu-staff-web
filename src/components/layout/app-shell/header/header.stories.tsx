@@ -56,6 +56,36 @@ export const WithUnreadNotifications: Story = {
   },
 };
 
+/**
+ * Regression: the header SHARES the ["notifications","unread-count"] cache
+ * entry with the notifications centre, which stores `{ count }`. Reading it as
+ * a bare number crashed the shell with "Objects are not valid as a React child".
+ */
+export const UnreadCountSeededByTheCentre: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    onFetchUnreadCount: async () => ({ count: 0 }),
+  },
+  decorators: [
+    (Story) => {
+      const client = new QueryClient();
+      client.setQueryData(["notifications", "unread-count"], { count: 7 });
+      return (
+        <QueryClientProvider client={client}>
+          <Story />
+        </QueryClientProvider>
+      );
+    },
+  ],
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByRole("link", { name: /7 thông báo chưa đọc/ }),
+    ).toBeInTheDocument();
+  },
+};
+
 /** Zero unread → no badge at all (no fake dot). */
 export const NoUnreadNotifications: Story = {
   args: {
