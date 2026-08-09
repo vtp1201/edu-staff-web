@@ -60,10 +60,24 @@ export type ResolveSubjectNames = () => Promise<Map<string, string>>;
  * empty list maps to an empty record, and only a real wire error maps to a
  * failure.
  */
+/** Runs an optional name lookup, degrading to "no names" on any failure. */
+async function bestEffort(
+  resolve?: () => Promise<Map<string, string>>,
+): Promise<Map<string, string>> {
+  if (!resolve) return new Map();
+  try {
+    return await resolve();
+  } catch {
+    return new Map();
+  }
+}
+
 export class AcademicRecordsRepository implements IAcademicRecordsRepository {
   constructor(
     private readonly http: AxiosInstance,
     private readonly resolveSubjectNames?: ResolveSubjectNames,
+    /** `termId → name` from the calendar; absent leaves headings unnamed. */
+    private readonly resolveTermNames?: () => Promise<Map<string, string>>,
   ) {}
 
   async getRecords(memberId: string): Promise<AcademicRecordResult> {
@@ -73,11 +87,14 @@ export class AcademicRecordsRepository implements IAcademicRecordsRepository {
       )) as unknown as ListStudentAcademicRecordsResponseDto;
 
       const studentMemberId = dto?.studentMemberId ?? memberId;
-      const subjectNames = this.resolveSubjectNames
-        ? await this.resolveSubjectNames()
-        : new Map<string, string>();
+      // Both lookups are DECORATION: a catalogue/calendar hiccup must never
+      // turn a readable record into an error screen.
+      const [subjectNames, termNames] = await Promise.all([
+        bestEffort(this.resolveSubjectNames),
+        bestEffort(this.resolveTermNames),
+      ]);
       const rows = (dto?.records ?? []).map((record) =>
-        mapAcademicRecordRow(record, subjectNames),
+        mapAcademicRecordRow(record, subjectNames, termNames),
       );
 
       return {

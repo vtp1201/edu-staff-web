@@ -12,6 +12,8 @@ export type ClassLogActionResult<T = undefined> = T extends undefined
 export interface ClassLogScreenVM {
   classId: string;
   className: string;
+  /** Classes the viewer may switch between — omit/short-circuit for one class. */
+  classes?: { id: string; name: string }[];
   entries: HomeroomEntry[];
   nextCursor?: string;
   hasMore: boolean;

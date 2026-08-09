@@ -8,6 +8,7 @@ import { deriveYearSealStatus } from "./derive-year-seal-status";
 function term(status: TermStatus): TermRecord {
   return {
     termId: "HK1",
+    termName: null,
     status,
     classId: "c-1",
     academicYear: "2025-2026",

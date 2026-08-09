@@ -149,7 +149,9 @@ export const AllStats: Story = {
     await expect(statGrid.getByText("Điểm chờ duyệt")).toBeInTheDocument();
     await expect(statGrid.getByText("Tin nhắn mới")).toBeInTheDocument();
     // AC-4: ADMIN_APPROVAL annotation text visible beneath the card
-    await expect(canvas.getByText("Chế độ ADMIN_APPROVAL")).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Cần Ban giám hiệu duyệt"),
+    ).toBeInTheDocument();
     // AC-5: trend arrow label present (pending grades stat has trend)
     await expect(canvas.getByText("so tuần trước")).toBeInTheDocument();
   },

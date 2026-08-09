@@ -65,20 +65,24 @@ function RecordHeader({ vm }: { vm: AcademicRecordScreenVM }) {
 
 /**
  * `termId` is a FREE-FORM clustering key in `core` (`"HK1"`, `"HK2"`, or a
- * uuid). The two conventional labels get their i18n copy; anything else renders
- * verbatim — a term this app has never seen is not a reason to hide it.
+ * uuid). Prefer the calendar's own name (resolved in the repository); then the
+ * two conventional labels; and only fall back to the key itself when it is not
+ * a uuid — printing a raw uuid as a section heading is never useful.
  */
-function useTermTitle(termId: string): string {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function useTermTitle(term: Pick<TermRecord, "termId" | "termName">): string {
   const t = useTranslations("academicRecord.termSection");
-  if (termId === "HK1") return t("term1");
-  if (termId === "HK2") return t("term2");
-  return termId;
+  if (term.termName?.trim()) return term.termName;
+  if (term.termId === "HK1") return t("term1");
+  if (term.termId === "HK2") return t("term2");
+  return UUID.test(term.termId) ? t("termUnknown") : term.termId;
 }
 
 function TermSection({ term }: { term: TermRecord }) {
   const t = useTranslations("academicRecord");
   const format = useFormatter();
-  const title = useTermTitle(term.termId);
+  const title = useTermTitle(term);
 
   return (
     <section className="space-y-3">

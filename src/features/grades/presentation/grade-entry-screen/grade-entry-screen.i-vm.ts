@@ -50,6 +50,9 @@ interface GradeEntryScreenVMBase {
   selectedClassId: string | null;
   selectedSubjectId: string | null;
   selectedTerm: string | null;
+  /** Real calendar terms (`termId` is a uuid on the wire). Absent → the legacy
+   *  HK1/HK2 constants, which is all mock mode and the stories ever had. */
+  terms?: { id: string; name: string }[];
   /** null when no selection or while loading */
   sheet: GradeSheet | null;
   /** stable i18n error key, not translated copy */

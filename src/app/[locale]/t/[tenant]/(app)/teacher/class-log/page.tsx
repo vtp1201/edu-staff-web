@@ -1,8 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { makeListEntriesUseCase } from "@/bootstrap/di/class-log.di";
 import { makeListMyTeacherClassesUseCase } from "@/bootstrap/di/teacher-class.di";
-import { Link } from "@/bootstrap/i18n/routing";
-import { tenantUrl } from "@/bootstrap/tenant";
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { HomeroomEntryStatus } from "@/features/class-log/domain/entities/homeroom-entry-status.entity";
 import { ClassLogScreen } from "@/features/class-log/presentation/class-log-screen/class-log-screen";
@@ -16,9 +14,8 @@ import {
 } from "./actions";
 
 type SearchParams = Promise<{ classId?: string; status?: string }>;
-type Params = Promise<{ tenant: string }>;
 
-/** The teacher's classes — the picker's options, and the `classId → name`
+/** The teacher's classes — the switcher's options, and the `classId → name`
  *  lookup for the header (it used to print the raw uuid). */
 async function myClasses(): Promise<TeacherClass[]> {
   const result = await (await makeListMyTeacherClassesUseCase()).execute();
@@ -26,39 +23,26 @@ async function myClasses(): Promise<TeacherClass[]> {
 }
 
 export default async function TeacherClassLogPage({
-  params,
   searchParams,
 }: {
-  params: Params;
   searchParams: SearchParams;
 }) {
-  const { tenant } = await params;
   const sp = await searchParams;
-  const classId = sp.classId;
   const filterStatus = sp.status as HomeroomEntryStatus | undefined;
   const classes = await myClasses();
+  // Auto-select the first class: the old "pick a class" screen was a dead click
+  // for a teacher with one class. Switching now lives in the screen's own header
+  // (`ClassLogClassPicker`); the URL param still wins.
+  const classId = sp.classId ?? classes[0]?.id;
 
   if (!classId) {
     const t = await getTranslations("classLog");
     return (
-      <div className="m-8 rounded-[var(--edu-radius-card)] border border-border bg-card px-6 py-12 text-center">
-        <p className="text-muted-foreground text-sm">
-          {classes.length > 0
-            ? t("detail.noClassSelected")
-            : t("detail.noClasses")}
-        </p>
-        <ul className="mt-6 flex flex-wrap justify-center gap-2">
-          {classes.map((cls) => (
-            <li key={cls.id}>
-              <Link
-                href={`${tenantUrl(tenant, "/teacher/class-log")}?classId=${encodeURIComponent(cls.id)}`}
-                className="inline-flex min-h-11 items-center rounded-[var(--edu-radius-btn)] border border-border bg-background px-4 font-semibold text-foreground text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                {cls.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <div
+        role="status"
+        className="m-8 rounded-[var(--edu-radius-card)] border border-border border-dashed bg-card px-6 py-16 text-center text-muted-foreground text-sm"
+      >
+        {t("detail.noClasses")}
       </div>
     );
   }
@@ -75,6 +59,7 @@ export default async function TeacherClassLogPage({
     <ClassLogScreen
       classId={classId}
       className={classes.find((c) => c.id === classId)?.name ?? classId}
+      classes={classes.map((c) => ({ id: c.id, name: c.name }))}
       entries={entries}
       hasMore={false}
       isPrincipal={false}

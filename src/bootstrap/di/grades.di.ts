@@ -117,7 +117,18 @@ async function makeRepo(
   await ensureFreshSession();
   const scheme = await resolveScheme(key);
   const http = await createServerHttpClient();
-  return new GradesRepository(http, scheme, publishMode);
+  // Student display names: the grades wire has only memberIds, so the sheet
+  // printed a uuid in both the code and name columns. Same batched IAM lookup
+  // the roster screens use (decision 0017 — composition lives here).
+  const batchResolve = await makeBatchResolveMembersUseCase();
+  const resolveStudentNames = async (memberIds: string[]) => {
+    const names = new Map<string, string>();
+    const result = await batchResolve.execute(memberIds);
+    if (result.ok)
+      for (const m of result.value) names.set(m.memberId, m.displayName);
+    return names;
+  };
+  return new GradesRepository(http, scheme, publishMode, resolveStudentNames);
 }
 
 export async function makeGetGradeSheetUseCase(key: ClassSubjectTermKey) {

@@ -100,6 +100,7 @@
       "sealedOn": "Signed on",
       "term1": "Term 1",
       "term2": "Term 2",
+      "termUnknown": "Term",
       "unsealedBanner": "This record has been unsealed",
       "unsealedOn": "Unsealed on"
     },
@@ -1081,6 +1082,7 @@
       "back": "Back to list",
       "bghReview": "BGH Review",
       "cancelReject": "Cancel",
+      "classPickerLabel": "Class",
       "confirmReject": "Confirm rejection",
       "noClassSelected": "Select a class to view its log",
       "noClasses": "You are not assigned to any class",
@@ -4487,7 +4489,7 @@
       "upcoming": "Upcoming"
     },
     "stats": {
-      "adminApprovalMode": "ADMIN_APPROVAL mode",
+      "adminApprovalMode": "Awaiting leadership approval",
       "classesToday": "Classes Today",
       "newMessages": "New Messages",
       "pendingApproval": "Grades Awaiting Approval",

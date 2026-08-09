@@ -27,13 +27,14 @@ function orNull(raw: string | undefined): string | null {
  * Maps ONE `(classId, termId)` wire record to a {@link TermRecord}, rolling the
  * DYNAMIC `gradeSnapshot` column array up per subject.
  *
- * `subjectNames` is the OPTIONAL tenant subject-catalogue lookup composed in
- * `bootstrap/di` — an unresolved subject keeps a `null` name (presentation owns
- * the placeholder); a raw subjectId uuid must never reach a labelled slot.
+ * `subjectNames` / `termNames` are the OPTIONAL catalogue + calendar lookups
+ * composed in `bootstrap/di` — an unresolved entry keeps a `null` name
+ * (presentation owns the placeholder); a raw uuid must never reach a label.
  */
 export function mapAcademicRecordRow(
   dto: AcademicRecordRowDto,
   subjectNames: Map<string, string>,
+  termNames: Map<string, string> = new Map(),
 ): TermRecord {
   const bySubject = new Map<string, SubjectColumnScore[]>();
   for (const snapshotItem of dto.gradeSnapshot ?? []) {
@@ -65,6 +66,10 @@ export function mapAcademicRecordRow(
   return {
     classId: dto.classId,
     termId: dto.termId,
+    // The wire carries no term name, so the section heading printed the raw
+    // uuid; resolved from the calendar in `bootstrap/di` (same composition as
+    // `subjectNames`).
+    termName: termNames.get(dto.termId) ?? null,
     // Denormalized by BE (US-E18.56). Absent on an unhealed pre-migration row
     // → `null`, which the year grouping degrades into its unresolved bucket.
     academicYear: orNull(dto.academicYear),

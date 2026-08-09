@@ -40,6 +40,14 @@ vi.mock("@/bootstrap/lib/resolve-my-grade-subjects", () => ({
 }));
 vi.mock("@/bootstrap/lib/resolve-current-term", () => ({
   resolveCurrentAcademicYear: async () => "2025-2026",
+  // The page now takes the whole calendar context so it can DEFAULT the term.
+  resolveCurrentTermContext: async () => ({
+    termId: "HK1",
+    termName: "Học kỳ 1",
+    academicYearLabel: "2025-2026",
+  }),
+  // Real terms feed the picker (its options used to be hardcoded HK1/HK2).
+  resolveTermNames: async () => new Map([["HK1", "Học kỳ 1"]]),
 }));
 
 const saveScoreAction = vi.fn(async () => ({ ok: true }) as const);
@@ -150,41 +158,41 @@ describe("TeacherGradesPage", () => {
 
   // ─── the regression lock (MUST-FIX 1) ──────────────────────────────────────
 
-  it("reads no sheet before a full class-subject-term selection", async () => {
+  it("defaults to the first class-subject and the current term when the URL says nothing", async () => {
+    // Every parameter here is a uuid in real mode, so an unselected sheet was a
+    // screen the teacher could only fill by walking three dropdowns.
     const vm = await renderVm({});
-    expect(execute).not.toHaveBeenCalled();
-    expect(vm.sheet).toBeNull();
+    expect(vm.selectedClassId).toBe("class-001");
+    expect(vm.selectedSubjectId).toBe("subj-toan-10");
+    expect(vm.selectedTerm).toBe("HK1");
+    expect(execute).toHaveBeenCalledWith({
+      classId: "class-001",
+      subjectId: "subj-toan-10",
+      termId: "HK1",
+      academicYearLabel: "2025-2026",
+    });
+    expect(vm.sheet).toEqual(SHEET);
   });
 
-  it("still passes the REAL Server Actions with no selection (never local closures)", async () => {
+  it("still passes the REAL Server Actions bound to the resolved key (never local closures)", async () => {
     const vm = await renderVm({});
     if (vm.viewerRole !== "teacher") throw new Error("expected teacher mode");
 
     // A locally-defined closure would resolve without ever reaching the action
     // module — and would 500 the route the moment Next.js tried to serialize it.
+    const key = {
+      classId: "class-001",
+      subjectId: "subj-toan-10",
+      termId: "HK1",
+      academicYearLabel: "2025-2026",
+    };
     await vm.saveScoreAction("hs-001", "ck", 9);
-    expect(saveScoreAction).toHaveBeenCalledWith(
-      {
-        classId: "",
-        subjectId: "",
-        termId: "",
-        academicYearLabel: "2025-2026",
-      },
-      "hs-001",
-      "ck",
-      9,
-    );
+    expect(saveScoreAction).toHaveBeenCalledWith(key, "hs-001", "ck", 9);
 
     await vm.submitScoresAction([{ studentId: "hs-001", columnId: "ck" }]);
-    expect(submitScoresAction).toHaveBeenCalledWith(
-      {
-        classId: "",
-        subjectId: "",
-        termId: "",
-        academicYearLabel: "2025-2026",
-      },
-      [{ studentId: "hs-001", columnId: "ck" }],
-    );
+    expect(submitScoresAction).toHaveBeenCalledWith(key, [
+      { studentId: "hs-001", columnId: "ck" },
+    ]);
   });
 
   it("surfaces a typed failure key instead of throwing", async () => {

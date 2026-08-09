@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 5 ask từ smoke-test role TEACHER trên stack thật
+# FE → BE (2026-08-09): 7 ask từ smoke-test role TEACHER trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -120,6 +120,39 @@ còn nhưng giãn còn 1 lần/phút thay vì 15 lần/phút mỗi tab.
 (`: ping\n\n` mỗi ~15–30s) như SSE thường làm. Nếu stream cố tình đóng khi
 không có subscriber, xin cho biết để FE chuyển hẳn sang polling.
 
+## #6 — Seed lịch dạy phi thực tế: 1 giáo viên dạy TẤT CẢ tiết của 1 lớp
+
+`GET /core/api/v1/members/{teacherMemberId}/timetable?termId=` trả **25 slot**:
+Thứ 2→Thứ 6, tiết 1→5, tất cả đều lớp 10A1, phòng P.201, và cả ba môn
+(Toán / Ngữ văn / Tiếng Anh) đều do **cùng một** `teacherMemberId`.
+
+```
+MON 1 Ngu Van 59db9632 P.201     MON 2 Tieng Anh 59db9632 P.201
+MON 3 Toan   59db9632 P.201     MON 4 Ngu Van   59db9632 P.201 …
+```
+
+FE render đúng những gì BE trả (đã đối chiếu từng slot), nên đây **không phải
+bug FE** — nhưng nó làm màn "Lịch dạy" trông sai và không demo được các case
+thật (giáo viên dạy nhiều lớp, có tiết trống, môn khác nhau khác GV).
+
+**Ask:** seed lại thời khoá biểu demo cho giống thực tế — mỗi GV chỉ dạy môn
+mình phụ trách, xen kẽ nhiều lớp, có tiết trống. Nếu tiện, thêm 2–3 tài khoản
+giáo viên nữa (hiện chỉ có `giaovien@demo.local`) để test màn phân công.
+
+## #7 — Học bạ: `AcademicRecordResponse` không có tên học kỳ (đang lộ uuid)
+
+`GET /core/api/v1/members/{id}/academic-records` trả `termId` là uuid và không
+có `termName`, nên tiêu đề từng khối trong màn Học bạ hiện thẳng
+`85823bdd-6fa1-4685-b4fc-408cde4641a8`.
+
+**FE đã tự xử lý:** resolve `termId → name` từ `GET /academic-years/{id}/terms`
+(best-effort — calendar lỗi thì học bạ vẫn render, chỉ mất nhãn). Cùng bản chất
+với ask #1/#2: core giữ id, tên nằm ở aggregate khác.
+
+**Ask (tuỳ chọn):** denormalize `termName` (+ `academicYearLabel` đã có) vào
+`AcademicRecordResponse` để bỏ thêm một lượt gọi calendar. Trả lời "không làm"
+cũng đủ để FE đóng ask.
+
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 
 1. **Không có học kỳ nào phủ ngày hôm nay.** Năm học ACTIVE `2026-2027` có
@@ -129,7 +162,13 @@ không có subscriber, xin cho biết để FE chuyển hẳn sang polling.
    hôm nay" mà là **term gần nhất chưa kết thúc** (rơi ngoài → hiện lịch của
    kỳ sắp tới), nên màn đã chạy. Nêu ở đây phòng khi BE muốn seed lại năm học
    cho khớp thời gian demo.
-2. **`GET /core/api/v1/terms` trả 404** (chỉ có
+2. **Điểm cho năm học ACTIVE chưa được seed**: `GET /members/{id}/grades?year=2026-2027`
+   trả `groups: []` trong khi `?year=2025-2026` có dữ liệu. Màn "Bảng điểm" của
+   học sinh khoá theo năm ACTIVE (đúng design — xem năm cũ là màn Học bạ) nên
+   hiện empty. FE đã đổi copy để nói rõ "Chưa có điểm cho năm học 2026-2027".
+   Sheet của giáo viên (`/classes/{c}/subjects/{s}/terms/{t}/grades?year=`) thì
+   CÓ dữ liệu cho 2026-2027 — chỉ luồng self-view của học sinh là trống.
+3. **`GET /core/api/v1/terms` trả 404** (chỉ có
    `/core/api/v1/academic-years/{yearId}/terms`, FE đang dùng route này —
    không cần đổi). Nêu ra chỉ để BE xác nhận route phẳng là cố ý không có.
 

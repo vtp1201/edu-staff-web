@@ -219,4 +219,35 @@ describe("mapAcademicRecordRow — wire row → TermRecord (US-E18.54)", () => {
     expect(term.academicYear).toBeNull();
     expect("academicYear" in term).toBe(true);
   });
+
+  it("labels the term from the calendar instead of printing its uuid", () => {
+    const row = mapAcademicRecordRow(
+      {
+        classId: "c-1",
+        termId: "9b2b0074-9e41-438d-93a9-44958c07d467",
+        studentMemberId: "stu-1",
+        status: "PENDING",
+        gradeSnapshot: [],
+        resealCount: 0,
+      } as never,
+      new Map(),
+      new Map([["9b2b0074-9e41-438d-93a9-44958c07d467", "Học kỳ 1"]]),
+    );
+    expect(row.termName).toBe("Học kỳ 1");
+  });
+
+  it("leaves termName null when the calendar knows no such term", () => {
+    const row = mapAcademicRecordRow(
+      {
+        classId: "c-1",
+        termId: "HK1",
+        studentMemberId: "stu-1",
+        status: "PENDING",
+        gradeSnapshot: [],
+        resealCount: 0,
+      } as never,
+      new Map(),
+    );
+    expect(row.termName).toBeNull();
+  });
 });
