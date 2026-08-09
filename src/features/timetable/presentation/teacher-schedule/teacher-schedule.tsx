@@ -46,7 +46,13 @@ export function TeacherScheduleScreen({
     <main className="flex-1 overflow-y-auto bg-edu-bg px-4 py-6 sm:px-8">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-4">
         <Header />
-        <ReadOnlySelectors />
+        <ReadOnlySelectors
+          academicYearLabel={
+            initialState.status === "success"
+              ? initialState.timetable.academicYearLabel
+              : undefined
+          }
+        />
 
         {initialState.status === "loading" && <TimetableSkeleton />}
 
@@ -114,11 +120,20 @@ function Header() {
 
 /* ── Read-only selectors (decorative — no data reload) ──────────────────── */
 
-function ReadOnlySelectors() {
+function ReadOnlySelectors({
+  academicYearLabel,
+}: {
+  academicYearLabel?: string;
+}) {
   const t = useTranslations("timetableView");
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-edu-border bg-edu-card px-5 py-3.5 shadow-card">
-      <ReadOnlyField label={t("academicYear")} value={t("yearValue")} />
+      {/* Real calendar label when the read resolved one; the static string is
+          the mock-mode / story fallback. */}
+      <ReadOnlyField
+        label={t("academicYear")}
+        value={academicYearLabel || t("yearValue")}
+      />
       <div className="flex-1" />
       <ReadOnlyBadge />
     </div>

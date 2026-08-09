@@ -67,6 +67,7 @@ export function useRealtimeEvents({
   const [sseStatus, setSseStatus] = useState<SseStatus>("connecting");
   const [pendingMsgCount, setPendingMsgCount] = useState(0);
   const hasConnectedRef = useRef(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
   const pathnameRef = useRef(pathname);
   const connectionRef = useRef<SseConnection | null>(null);
   // Keep `onTyping` in a ref so a caller passing an inline callback never forces
@@ -74,7 +75,12 @@ export function useRealtimeEvents({
   const onTypingRef = useRef(onTyping);
   onTypingRef.current = onTyping;
 
-  const showBanner = deriveShowBanner(sseStatus, hasConnectedRef.current);
+  // Quiet until a reconnect has ALSO failed — one dropped stream is not news.
+  const showBanner = deriveShowBanner(
+    sseStatus,
+    hasConnectedRef.current,
+    failedAttempts,
+  );
 
   // Effect 1 — connection lifecycle. Deps intentionally EXCLUDE `pathname` so
   // navigation never recreates the EventSource (see Effect 2).
@@ -87,9 +93,10 @@ export function useRealtimeEvents({
     const connection = openSseConnection({
       tenantId,
       locale,
-      onStatus: (status) => {
+      onStatus: (status, failures) => {
         if (status === "connected") hasConnectedRef.current = true;
         setSseStatus(status);
+        setFailedAttempts(failures);
       },
       onInvalidate: (keys) => {
         for (const queryKey of keys) {

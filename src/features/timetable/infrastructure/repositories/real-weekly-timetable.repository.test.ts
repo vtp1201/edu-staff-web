@@ -18,7 +18,11 @@ import {
 } from "./real-weekly-timetable.repository";
 
 const TERM_ID = "term-1";
-const resolveTermId = vi.fn(async () => TERM_ID);
+const resolveTermId = vi.fn(async () => ({
+  termId: TERM_ID,
+  termName: "Học kỳ I",
+  academicYearLabel: "2026–2027",
+}));
 
 function listEnvelope<T>(items: T[], nextCursor: string | null = null) {
   return {

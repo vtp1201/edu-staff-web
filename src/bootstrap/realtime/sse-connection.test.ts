@@ -392,20 +392,37 @@ describe("openSseConnection", () => {
 });
 
 describe("deriveShowBanner", () => {
-  it("hides the banner on the first-ever 'connecting' (AC-1)", () => {
+  // `failedAttempts` defaults to Infinity in these legacy cases: the rule they
+  // encode (never on first connect, always once disconnected) still holds once
+  // the "a retry failed too" threshold is met.
+  it("stays hidden on the very first connecting of a page load", () => {
     expect(deriveShowBanner("connecting", false)).toBe(false);
   });
 
-  it("hides the banner while 'connected'", () => {
+  it("stays hidden while connected", () => {
     expect(deriveShowBanner("connected", true)).toBe(false);
   });
 
-  it("shows the banner while 'disconnected'", () => {
+  it("shows once disconnected", () => {
     expect(deriveShowBanner("disconnected", false)).toBe(true);
     expect(deriveShowBanner("disconnected", true)).toBe(true);
   });
 
-  it("shows the banner on a post-disconnect 'connecting' (AC-3)", () => {
+  it("shows while reconnecting after a real disconnect", () => {
     expect(deriveShowBanner("connecting", true)).toBe(true);
+  });
+
+  it("stays quiet on the FIRST failure — the client retries by itself", () => {
+    expect(deriveShowBanner("disconnected", true, 1)).toBe(false);
+    expect(deriveShowBanner("connecting", true, 1)).toBe(false);
+  });
+
+  it("appears once the reconnect has failed too", () => {
+    expect(deriveShowBanner("disconnected", true, 2)).toBe(true);
+    expect(deriveShowBanner("connecting", true, 3)).toBe(true);
+  });
+
+  it("never shows while connected, however many failures preceded it", () => {
+    expect(deriveShowBanner("connected", true, 9)).toBe(false);
   });
 });

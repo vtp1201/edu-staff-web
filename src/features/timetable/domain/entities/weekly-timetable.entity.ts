@@ -14,4 +14,9 @@ export interface WeeklyTimetable {
   classId: string;
   className: string;
   slots: Record<number, Record<number, TimetableSlot | null>>;
+  /** Calendar context the week was read for — the screen header used to print
+   *  a hardcoded year/semester string that went stale silently. Optional: the
+   *  mock repository has no calendar to resolve them from. */
+  academicYearLabel?: string;
+  termName?: string;
 }

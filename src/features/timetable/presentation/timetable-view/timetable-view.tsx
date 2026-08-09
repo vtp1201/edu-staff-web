@@ -166,7 +166,16 @@ export function TimetableView({
             onChange={setWeekOffset}
           />
         ) : (
-          <ReadOnlySelectors />
+          <ReadOnlySelectors
+            academicYearLabel={
+              view.status === "success"
+                ? view.timetable.academicYearLabel
+                : undefined
+            }
+            termName={
+              view.status === "success" ? view.timetable.termName : undefined
+            }
+          />
         )}
 
         {showChildPicker && (
@@ -294,12 +303,26 @@ function Header({
 
 /* ── Student read-only selectors (decorative — no data reload) ──────────── */
 
-function ReadOnlySelectors() {
+function ReadOnlySelectors({
+  academicYearLabel,
+  termName,
+}: {
+  academicYearLabel?: string;
+  termName?: string;
+}) {
   const t = useTranslations("timetableView");
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-edu-border bg-edu-card px-5 py-3.5 shadow-card">
-      <ReadOnlyField label={t("academicYear")} value={t("yearValue")} />
-      <ReadOnlyField label={t("semester")} value={t("semesterValue")} />
+      {/* Real calendar labels when the read resolved them; the static strings
+          remain only for mock mode / stories, which have no calendar. */}
+      <ReadOnlyField
+        label={t("academicYear")}
+        value={academicYearLabel || t("yearValue")}
+      />
+      <ReadOnlyField
+        label={t("semester")}
+        value={termName || t("semesterValue")}
+      />
       <div className="flex-1" />
       <ReadOnlyBadge />
     </div>

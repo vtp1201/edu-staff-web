@@ -23,6 +23,21 @@ import { resolveNearestTermId } from "@/features/admin/timetable/domain/resolve-
 export async function resolveCurrentTermId(
   date: Date = new Date(),
 ): Promise<string> {
+  return (await resolveCurrentTermContext(date)).termId;
+}
+
+/** What the calendar says "now" is — the id every core call needs, plus the
+ *  LABELS screens display. Screens used to print a hardcoded year/semester
+ *  string, which quietly went stale the moment a new year became active. */
+export interface CurrentTermContext {
+  termId: string;
+  termName: string;
+  academicYearLabel: string;
+}
+
+export async function resolveCurrentTermContext(
+  date: Date = new Date(),
+): Promise<CurrentTermContext> {
   const years = await (await makeListYearsUseCase()).execute();
   const activeYear = years.find((y) => y.isActive) ?? years[0];
   const terms = activeYear?.terms ?? [];
@@ -36,7 +51,11 @@ export async function resolveCurrentTermId(
       message: "No academic term covers this date",
     };
   }
-  return termId;
+  return {
+    termId,
+    termName: terms.find((t) => t.id === termId)?.name ?? "",
+    academicYearLabel: activeYear?.label ?? "",
+  };
 }
 
 /**
