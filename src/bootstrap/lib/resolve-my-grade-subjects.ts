@@ -5,6 +5,7 @@ import { CLASS_EP } from "@/bootstrap/endpoint/class.endpoint";
 import { type ApiEnvelope, parseEnvelope } from "@/bootstrap/lib/api-envelope";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { MOCK_GRADE_SUBJECT_OPTIONS } from "@/features/grades/infrastructure/repositories/mocks/fixtures";
 
 /**
@@ -38,9 +39,15 @@ export async function resolveMyGradeSubjects(): Promise<GradeSubjectOption[]> {
     return MOCK_GRADE_SUBJECT_OPTIONS.map((o) => ({ ...o }));
   }
 
+  // The year is REQUIRED for an ADMIN/MANAGER caller — core's admin branch
+  // answers an unfiltered class list with nothing at all (the teacher branch
+  // auto-filters), so a principal saw an empty class-subject picker.
+  const academicYear = await resolveCurrentAcademicYear().catch(
+    () => undefined,
+  );
   const classesResult = await (
     await makeClassManagementRepository()
-  ).listClasses({});
+  ).listClasses({ academicYear });
   if (!classesResult.ok) return [];
 
   const http = await createServerHttpClient();

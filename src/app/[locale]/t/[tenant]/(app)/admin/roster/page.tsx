@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { makeRosterRepository } from "@/bootstrap/di/admin-roster.di";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { StudentRosterScreen } from "@/features/admin-roster/presentation/student-roster-screen/student-roster-screen";
 import type { StudentRosterScreenVm } from "@/features/admin-roster/presentation/student-roster-screen/student-roster-screen.i-vm";
 import {
@@ -12,7 +13,11 @@ import { RosterSkeleton } from "./roster-skeleton";
 
 async function RosterContent({ classId }: { classId?: string }) {
   const repo = await makeRosterRepository();
-  const classesResult = await repo.getClasses({});
+  // See the principal roster page: core's admin branch returns NOTHING for an
+  // unfiltered class list, so the year has to be explicit.
+  const classesResult = await repo.getClasses({
+    academicYear: await resolveCurrentAcademicYear().catch(() => undefined),
+  });
   const classes = classesResult.ok ? classesResult.data : [];
 
   if (classes.length === 0) {

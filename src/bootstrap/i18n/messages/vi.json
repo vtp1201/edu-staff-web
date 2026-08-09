@@ -1339,6 +1339,7 @@
       "viewChild": "Xem chi tiết"
     },
     "principal": {
+      "alertsEmpty": "Chưa có cảnh báo nào cần xử lý.",
       "alertsTitle": "Cần chú ý",
       "reportsTitle": "Báo cáo nhanh",
       "stats": {

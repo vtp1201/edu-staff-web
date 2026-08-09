@@ -1339,6 +1339,7 @@
       "viewChild": "View details"
     },
     "principal": {
+      "alertsEmpty": "Nothing needs your attention right now.",
       "alertsTitle": "Needs attention",
       "reportsTitle": "Quick reports",
       "stats": {

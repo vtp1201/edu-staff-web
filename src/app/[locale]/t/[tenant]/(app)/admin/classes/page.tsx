@@ -1,5 +1,6 @@
 import { makeSchoolConfigRepository } from "@/bootstrap/di/admin-school-setup.di";
 import { makeClassManagementRepository } from "@/bootstrap/di/class-management.di";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { ClassManagementScreen } from "@/features/admin/class-management/presentation/class-management-screen/class-management-screen";
 import {
   archiveClassAction,
@@ -14,8 +15,13 @@ export default async function ClassesPage() {
     makeSchoolConfigRepository(),
   ]);
 
+  // Core's admin branch returns an EMPTY list for an unfiltered `GET /classes`,
+  // so the current year must be explicit or the screen shows "no classes".
+  const academicYear = await resolveCurrentAcademicYear().catch(
+    () => undefined,
+  );
   const [classesResult, configResult, teachersResult] = await Promise.all([
-    classRepo.listClasses({}),
+    classRepo.listClasses({ academicYear }),
     schoolRepo.getConfig(),
     classRepo.listTeachers({}),
   ]);
