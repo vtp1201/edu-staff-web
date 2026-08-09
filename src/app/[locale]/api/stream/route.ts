@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { NOTI_EP } from "@/bootstrap/endpoint";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
@@ -32,6 +33,11 @@ const KONG_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
  * segment/cookie when E05.1 lands.
  */
 export async function GET(request: NextRequest) {
+  // A route handler is one of the few places cookies are writable, so this is
+  // where a stale access token gets rotated (decision 0018). Without it the
+  // long-lived EventSource kept re-opening with an expired token and every
+  // attempt died upstream with 401.
+  await ensureFreshSession();
   const token = await getAccessToken();
   if (!token) {
     return new Response("Unauthorized", { status: 401 });
@@ -74,6 +80,12 @@ export async function GET(request: NextRequest) {
   );
 
   if (!upstream.ok || !upstream.body) {
+    // Pass an auth rejection through as-is: 502 told the client "upstream is
+    // broken, keep retrying" when the truth was "this session is no longer
+    // valid", which no amount of retrying fixes.
+    if (upstream.status === 401 || upstream.status === 403) {
+      return new Response("Unauthorized", { status: upstream.status });
+    }
     return new Response("Bad Gateway", { status: 502 });
   }
 
