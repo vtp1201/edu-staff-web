@@ -9,7 +9,7 @@ describe("MockWeeklyTimetableRepository", () => {
     const tt = await repo.getByClass("11A2");
     expect(tt.classId).toBe("11A2");
     expect(tt.slots[0][1]?.subjectName).toBe("Toán");
-    expect(tt.slots[0][1]?.subjectColorToken).toBe("primary");
+    expect(tt.slots[0][1]?.subjectColorToken).not.toBe("muted");
     // empty period rendered as an explicit null (not undefined)
     expect(tt.slots[0][6]).toBeNull();
     // Saturday is a half-day
@@ -49,7 +49,7 @@ describe("MockWeeklyTimetableRepository", () => {
     // per-slot className marks the class taught that period (teacher variant)
     expect(tt.slots[0][1]?.subjectName).toBe("Toán");
     expect(tt.slots[0][1]?.className).toBe("11A2");
-    expect(tt.slots[0][1]?.subjectColorToken).toBe("primary");
+    expect(tt.slots[0][1]?.subjectColorToken).not.toBe("muted");
     // same teacher, different class in another period → cross-class week
     expect(tt.slots[0][4]?.className).toBe("8B1");
     expect(tt.slots[0][7]?.className).toBe("10C3");

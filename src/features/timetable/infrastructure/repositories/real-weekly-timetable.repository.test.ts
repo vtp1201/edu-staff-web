@@ -284,6 +284,42 @@ describe("RealWeeklyTimetableRepository — getByTeacher (by-member + classes lo
     expect(vm.slots[1]?.[3]?.className).toBe("8B1");
   });
 
+  it("resolves teacher display names in one batched lookup", async () => {
+    const http = teacherHttp();
+    const resolveNames = vi
+      .fn()
+      .mockResolvedValue(new Map([["me", "Cô Nguyễn Thị Hương"]]));
+    const repo = new RealWeeklyTimetableRepository(
+      http,
+      resolveTermId,
+      "me",
+      resolveNames,
+    );
+
+    const vm = await repo.getByTeacher();
+
+    // one call, deduped ids — not one lookup per slot
+    expect(resolveNames).toHaveBeenCalledTimes(1);
+    expect(resolveNames).toHaveBeenCalledWith(["me"]);
+    expect(vm.slots[0]?.[1]?.teacherName).toBe("Cô Nguyễn Thị Hương");
+  });
+
+  it("keeps the raw member id when the name lookup fails", async () => {
+    const http = teacherHttp();
+    const repo = new RealWeeklyTimetableRepository(
+      http,
+      resolveTermId,
+      "me",
+      async () => {
+        throw new Error("iam down");
+      },
+    );
+
+    const vm = await repo.getByTeacher();
+
+    expect(vm.slots[0]?.[1]?.teacherName).toBe("me");
+  });
+
   it("passes raw:true as a top-level axios-config sibling of params (US-E18.19 regression guard)", async () => {
     const http = teacherHttp();
     const repo = new RealWeeklyTimetableRepository(http, resolveTermId, "me");
