@@ -5,6 +5,10 @@
 > `aeb0e462-9ced-48b3-ba36-803f9266b09d`. Toàn bộ evidence dưới đây là curl
 > thật, chạy 2026-08-09.
 >
+> **CẬP NHẬT 2026-08-09 (sau khi BE báo đã apply):** FE đã verify lại **toàn bộ
+> 13 ask** bằng curl thật — tất cả đúng như BE mô tả. Chi tiết verify + việc FE
+> đã làm theo: `docs/reports/2026-08-09-fe-verify-be-fixes.md`.
+>
 > **Tin tốt trước:** ask cũ *"IAM không mint `memberId` vào token tenant-scoped"*
 > (`2026-08-02-fe-to-be-missing-memberid-claim.md`) đã **ĐÓNG** — token sau
 > `POST /iam/api/v1/members/switch-tenant` giờ có `memberId` + `memberRoles`,

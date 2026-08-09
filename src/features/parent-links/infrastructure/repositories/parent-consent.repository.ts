@@ -54,8 +54,12 @@ export class ParentConsentRepository implements IParentConsentRepository {
         PARENT_CONSENT_EP.linkedStudents(this.selfMemberId ?? SELF_MEMBER_ID),
       )) as unknown as LinkedStudentsResponseDto;
       const links = dto?.links ?? [];
+      // Only the rows BE could not name itself (ask #12 made `studentName`
+      // best-effort) still cost an IAM lookup — usually zero.
       const names = await this.tryResolveNames(
-        links.map((l) => l.studentMemberId),
+        links
+          .filter((l) => !l.studentName?.trim())
+          .map((l) => l.studentMemberId),
       );
       return ok(links.map((link) => toLinkedStudentSummary(link, names)));
     } catch (err) {

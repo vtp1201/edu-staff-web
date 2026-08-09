@@ -93,6 +93,13 @@ signout → revoke session (server đọc session từ token; không gửi trong
 > `auth_token_exp`. Rotation chạy **proactive server-side** (`ensureFreshSession`);
 > reactive 401-interceptor refresh **defer** (follow-up). Xem `docs/product/auth.md`.
 
+> **Đọc `memberId`, không đọc `sub` (decision `0074`):** mọi field `*MemberId`
+> của core (`homeroomTeacherId`, `studentMemberId`, `teacherMemberId`,
+> `authorMemberId`) là member id của tenant hiện tại. Giá trị nó **bằng**
+> `userId` (IAM không có surrogate member id) nhưng client PHẢI đọc claim
+> `memberId` (`decodeMemberId()`), vì chỉ claim đó bảo chứng token đã scope
+> tenant — so theo `sub` sẽ "chạy được" cả trên phiên chưa chọn tenant.
+
 > **Repository-boundary authorization (decision `0063`):** route gates
 > (`requireRole()`, `(app)/admin/layout.tsx`) không đủ cho mutation theo-record
 > — mọi role-gated mutation phải thread một `authCtx` server-derived
