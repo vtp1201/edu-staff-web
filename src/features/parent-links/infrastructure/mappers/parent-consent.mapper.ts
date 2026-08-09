@@ -22,6 +22,7 @@ export function toLinkedStudentSummary(
     fullName:
       names.get(dto.studentMemberId) ?? dto.className ?? dto.studentMemberId,
     linkId: dto.linkId,
+    ...(dto.className ? { className: dto.className } : {}),
   };
 }
 

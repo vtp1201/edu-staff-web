@@ -1330,6 +1330,7 @@
     },
     "parent": {
       "childrenTitle": "My children",
+      "noChildren": "Your account is not linked to any student yet.",
       "stats": {
         "attendance": "Attendance",
         "avgScore": "Avg score",
