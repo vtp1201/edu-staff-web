@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeNavHref,
   DEFAULT_ROUTE,
   NAV_BY_ROLE,
   ROLE_LABEL_KEY,
@@ -161,5 +162,41 @@ describe("ROLE_LABEL_KEY", () => {
     for (const role of ROLES) {
       expect(ROLE_LABEL_KEY[role]).toBe(role);
     }
+  });
+});
+
+describe("activeNavHref", () => {
+  const HREFS = [
+    "/t/acme/teacher",
+    "/t/acme/teacher/classes",
+    "/t/acme/teacher/class-log",
+    "/t/acme/messages",
+  ];
+
+  it("marks only the dashboard on the dashboard route", () => {
+    expect(activeNavHref("/t/acme/teacher", HREFS)).toBe("/t/acme/teacher");
+  });
+
+  it("prefers the longest match so the dashboard does not stay lit", () => {
+    expect(activeNavHref("/t/acme/teacher/classes", HREFS)).toBe(
+      "/t/acme/teacher/classes",
+    );
+  });
+
+  it("keeps the parent item active on a nested child route", () => {
+    expect(activeNavHref("/t/acme/teacher/classes/10a1", HREFS)).toBe(
+      "/t/acme/teacher/classes",
+    );
+  });
+
+  it("does not match on a partial segment", () => {
+    expect(activeNavHref("/t/acme/teacher/class-log", HREFS)).toBe(
+      "/t/acme/teacher/class-log",
+    );
+  });
+
+  it("returns null for a route outside the nav and for no pathname", () => {
+    expect(activeNavHref("/t/acme/other", HREFS)).toBeNull();
+    expect(activeNavHref(null, HREFS)).toBeNull();
   });
 });

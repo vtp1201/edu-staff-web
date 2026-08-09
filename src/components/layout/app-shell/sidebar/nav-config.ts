@@ -160,3 +160,25 @@ export const ROLE_LABEL_KEY: Record<
   parent: "parent",
   admin: "admin",
 };
+
+/**
+ * Which nav href the current pathname belongs to: the LONGEST href that the
+ * pathname matches exactly or sits under. A plain `startsWith` lit up the
+ * dashboard ("/teacher") on every child route ("/teacher/classes", …), so two
+ * items looked active at once.
+ *
+ * `hrefs` are already tenant-scoped absolute paths; returns `null` when the
+ * pathname belongs to no nav item.
+ */
+export function activeNavHref(
+  pathname: string | null,
+  hrefs: readonly string[],
+): string | null {
+  if (!pathname) return null;
+  let match: string | null = null;
+  for (const href of hrefs) {
+    const hit = pathname === href || pathname.startsWith(`${href}/`);
+    if (hit && (match === null || href.length > match.length)) match = href;
+  }
+  return match;
+}

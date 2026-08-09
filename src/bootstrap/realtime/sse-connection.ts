@@ -18,7 +18,7 @@ import {
   shouldHandle,
 } from "./event";
 import { type QueryKey, queryKeysFor } from "./event-invalidation";
-import { scheduleReconnect } from "./schedule-reconnect";
+import { reconnectDelayFor, scheduleReconnect } from "./schedule-reconnect";
 
 export type SseStatus = "connected" | "connecting" | "disconnected";
 
@@ -78,6 +78,8 @@ export function openSseConnection(
   let source: EventSource;
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
+  /** Consecutive failures since the last successful open — drives the backoff. */
+  let failures = 0;
 
   const handle = (raw: string, knownType?: string) => {
     const event = parseEvent(raw, knownType);
@@ -120,6 +122,7 @@ export function openSseConnection(
     source = new EventSource(url, { withCredentials: true });
 
     source.onopen = () => {
+      failures = 0;
       options.onStatus("connected");
     };
 
@@ -135,7 +138,7 @@ export function openSseConnection(
           connect();
         },
         previousTimer: timeoutHandle,
-        delayMs: options.reconnectDelayMs,
+        delayMs: reconnectDelayFor(failures++, options.reconnectDelayMs),
       });
     };
 
@@ -158,6 +161,7 @@ export function openSseConnection(
         timeoutHandle = null;
       }
       source.close();
+      failures = 0;
       options.onStatus("connecting");
       connect();
     },
