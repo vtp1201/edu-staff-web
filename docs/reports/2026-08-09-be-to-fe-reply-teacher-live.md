@@ -1,7 +1,8 @@
-# BE → FE (2026-08-09): trả lời 7 ask từ smoke-test role TEACHER
+# BE → FE (2026-08-09): trả lời 10 ask từ smoke-test TEACHER + hiệu trưởng
 
 > Trả lời cho `2026-08-09-fe-to-be-asks-teacher-live.md`.
-> **Cả 7 ask đã xử lý xong** — 5 fix + 1 xác nhận contract + 1 từ chối có lý do. Toàn bộ verify lại
+> **Cả 10 ask đã xử lý xong** — 8 fix + 1 xác nhận contract + 1 từ chối có lý do.
+> #8 và #9 là **hai lỗi thật của BE**, cảm ơn team đã bắt được. Toàn bộ verify lại
 > bằng curl thật qua Kong `localhost:8000`, tenant
 > `aeb0e462-9ced-48b3-ba36-803f9266b09d`, ngày 2026-08-09.
 >
@@ -17,6 +18,9 @@
 | 5 | SSE 0 byte → reconnect loop | ✅ FIXED (lỗi code BE) | Không (backoff của FE cứ giữ) |
 | 6 | TKB phi thực tế, 1 GV dạy hết | ✅ ĐÃ SEED LẠI + thêm 3 tài khoản GV | Không |
 | 7 | `termName` trong học bạ | ❌ **KHÔNG LÀM** — xem lý do ở #7 | Giữ nguyên join hiện tại |
+| 8 | ADMIN bị 403 ở `tenants/{id}/members` | ✅ FIXED — **lỗi BE**, gate leak | Bỏ workaround nếu có |
+| 9 | `classes` rỗng khi thiếu `academicYear` | ✅ FIXED — giờ trả mọi năm | Không (truyền year vẫn đúng) |
+| 10 | Thiếu dữ liệu cho hiệu trưởng | ✅ ĐÃ SEED — 31 lớp / 150 HS / điểm danh | Không |
 
 ---
 
@@ -240,6 +244,101 @@ Nếu sau này màn học bạ phải render nhiều năm trong một lần tả
 calendar tăng theo, cứ mở lại ask — lúc đó BE sẽ làm một endpoint batch
 `terms?ids=` thay vì denormalize vào bản ghi đã seal.
 
+## #8 — Lỗi BE thật: middleware của group `/api/v1/tenants` phủ luôn route của context khác
+
+Không phải cố ý, và cũng không phải chuyện phân quyền — là **rò rỉ middleware**.
+
+Context `tenant` mount route như sau:
+
+```go
+app.Group("/api/v1/tenants", RequireAuth, RequireSuperAdmin)   // ← thủ phạm
+```
+
+Middleware của một Fiber group chạy cho **MỌI request khớp prefix**, không chỉ
+route do chính group đó khai báo. Mà context `membership` lại sở hữu
+`/api/v1/tenants/:id/members` và `/api/v1/tenants/:id/invitations` **dưới cùng
+prefix đó**. Kết quả: cổng `RequireSuperAdmin` chặn luôn mọi lời gọi member /
+invitation của tenant-admin — họ có tenant role, không có platform role.
+
+Đây cũng là lý do endpoint batch `/api/v1/members?ids=` vẫn chạy: nó nằm ở
+prefix khác (`/api/v1/members`), không dính group.
+
+Sửa: gắn cổng vào **từng route**, không gắn vào group — cổng platform giờ chỉ
+bảo vệ đúng 4 endpoint quản trị tenant. Hai test khoá hành vi lại: route lồng
+đăng ký sau group **không** được kế thừa cổng, và 4 endpoint tenant **vẫn** phải
+403 với người không phải SUPER_ADMIN.
+
+```bash
+curl -s "$KONG/iam/api/v1/tenants/aeb0e462-.../members?role=TEACHER&limit=100" -H "Authorization: Bearer $ADMIN_TOKEN"
+# OK — 6 giáo viên: Giao Vien Demo 4, Giao Vien Demo 2, Giao Vien Demo, GV Đặng Hữu Khanh, …
+```
+
+Cùng lúc được vá: `GET/POST /tenants/{id}/invitations`, `POST /tenants/{id}/members`,
+`PATCH|DELETE /tenants/{id}/members/{userId}` — tất cả đều đang 403 vì cùng nguyên nhân.
+
+## #9 — Lỗi BE thật: nhánh admin đọc nhầm bảng khi không có `academicYear`
+
+Đúng như các bạn mô tả, và đây là "cái bẫy khó thấy nhất" theo đúng nghĩa đen:
+không lỗi, không cảnh báo, chỉ là mảng rỗng.
+
+Nhánh admin đưa thẳng label rỗng vào `ListByYear`, mà bảng `classes_by_year`
+partition theo `(tenant, năm)` — nên label `""` là một **partition hợp lệ và
+rỗng**. Không có gì fail cả; kết quả chỉ đơn giản là một lời nói dối mà client
+không phân biệt được với "trường chưa có lớp nào".
+
+Chọn phương án các bạn xếp thứ nhất (thống nhất hai nhánh), vì bảng gốc
+`classes` partition theo `(tenant)` — đọc toàn trường là **một partition duy
+nhất**, vẫn cursor-paginate bình thường, không phải scan. Thêm
+`ClassRepository.ListByTenant` và dùng nó khi không có filter.
+
+```bash
+curl -s "$KONG/core/api/v1/classes?limit=100" -H "Authorization: Bearer $ADMIN_TOKEN"
+# 31 lớp: {'2022-2023': 6, '2023-2024': 6, '2024-2025': 6, '2025-2026': 7, '2026-2027': 6}
+
+curl -s "$KONG/core/api/v1/classes?academicYear=2026-2027" -H "Authorization: Bearer $ADMIN_TOKEN"
+# 6 lớp: 10A1 10A2 11A1 11A2 12A1 12A2
+```
+
+**Không truyền `academicYear` giờ mang đúng một nghĩa trên cả hai nhánh: tất cả.**
+FE cứ giữ việc truyền year tường minh — nó vẫn đúng và rõ ràng hơn.
+`openapi.yaml` + `INTEGRATION.md` đã ghi rõ ngữ nghĩa này.
+
+## #10 — Đã seed cả một ngôi trường
+
+| | Trước | Sau |
+| --- | --- | --- |
+| Lớp | 2 | **31** (6 lớp/năm × 5 năm học: 10/11/12 × A1/A2) |
+| Học sinh | 24 | **150**, mỗi lớp **25** |
+| Phụ huynh | 24 | **150**, mỗi PH gắn 1 HS |
+| Giáo viên | 6 | 6, phân công GVCN/GVBM khác nhau từng lớp |
+| Ghi danh | 48 | **750** (mỗi HS 1 lớp mỗi năm) |
+| Ô điểm | 1.368 | **23.245** |
+| Thời khoá biểu | 60 tiết | **930 tiết** |
+| **Điểm danh** | 0 | **1.512** bản ghi, 14 ngày gần nhất |
+
+Mỗi học sinh học **một lớp mỗi năm** (không còn cảnh 1 HS ở mọi lớp), nên ai
+cũng có học bạ đã niêm phong cho các năm đã xong **và** điểm của năm đang chạy.
+Điểm danh: đa số `PRESENT`, rải rác `LATE` / `ABSENT` / `EXCUSED_ABSENT`, chỉ
+ngày trong tuần — kiểm chứng:
+
+```bash
+curl -s "$KONG/core/api/v1/classes/9f066819-.../attendance?date=2026-08-07" -H "Authorization: Bearer $ADMIN_TOKEN"
+# 25 bản ghi: {'PRESENT': 22, 'LATE': 1, 'EXCUSED_ABSENT': 1, 'ABSENT': 1}
+```
+
+Về **tỉ lệ chuyên cần toàn trường**: vẫn **chưa có endpoint tổng hợp**. Dữ liệu
+thô đã có (`GET /classes/{id}/attendance?date=` cho từng lớp), nên FE có thể cộng
+theo lớp nếu cần, nhưng BE khuyên **cứ giữ dấu "—"** cho tới khi có endpoint
+rollup thật — cộng ở client trên 31 lớp là 31 lượt gọi cho một con số. Nếu ô đó
+quan trọng cho bản demo, mở ask riêng, BE sẽ làm
+`GET /api/v1/attendance/summary?date=`.
+
+Cỡ trường điều chỉnh được khi seed:
+
+```bash
+STUDENTS_PER_CLASS=30 ATTENDANCE_DAYS=30 TENANT_ID=aeb0e462-... go run ./cmd/seeddemo
+```
+
 ## Hai điểm "không phải ask"
 
 1. **Không kỳ nào phủ hôm nay — ĐÃ SỬA.** HK1 2026-2027 nay là
@@ -253,43 +352,27 @@ calendar tăng theo, cứ mở lại ask — lúc đó BE sẽ làm một endpoi
    năm học (partition key là `(tenant_id, academic_year_id)`, không có cách đọc
    toàn tenant mà không quét bảng). FE đang dùng đúng route, không phải đổi.
 
-## Dữ liệu demo đã được bơm đầy (2026-08-09)
+## Tổng kết dữ liệu demo (2026-08-09)
 
-Tiện thể: tenant demo trước đó rất mỏng (2 học sinh, 1 giáo viên, 9 tiết TKB,
-22 ô điểm, 0 học bạ). Đã bơm đầy để mọi màn có dữ liệu thật:
+Xem bảng chi tiết ở #10. Tài khoản mới dùng **cùng mật khẩu** với các acc demo
+sẵn có, email theo mẫu `hocsinh<N>@demo.local`, `phuhuynh<N>@demo.local`,
+`giaovien<N>@demo.local`; tên hiển thị là tên Việt tổng hợp (Nguyễn Văn An,
+Trần Thị Mai…) — bảng 25 dòng chỉ đọc được khi tên trông giống tên thật.
 
-| | Trước | Sau |
-| --- | --- | --- |
-| Học sinh | 2 | **24** (đủ 24 dòng ở mọi roster / sổ điểm) |
-| Phụ huynh | 1 | **24**, mỗi PH gắn 1 HS |
-| Giáo viên | 1 | **6** — 1 chuyên gia mỗi môn + dự phòng |
-| Thời khoá biểu | 9 tiết | 60 tiết (15/25 ô mỗi lớp-kỳ, có tiết trống, có phòng) |
-| Bảng điểm | 22 ô, 1 môn | **1368 ô**, đủ 3 môn × mọi kỳ × mọi HS |
-| Học bạ | 0 | **96** (`SEALED` có `gradeSnapshot` cho năm đã xong) |
-| Hạnh kiểm | 2 (giá trị sai `GOOD`/`AVERAGE`) | 50, chuẩn hoá `TOT`/`KHA`/`TRUNG_BINH` |
-| Vi phạm | 0 | 4 |
+Câu chuyện dữ liệu: **các năm đã kết thúc** = điểm `LOCKED` + học bạ `SEALED` +
+hạnh kiểm `APPROVED`; **2026-2027 (đang diễn ra, HK1 phủ hôm nay)** = TKB đầy
+đủ, cột TX `PUBLISHED`, giữa kỳ/cuối kỳ `DRAFT`, điểm danh 14 ngày gần nhất.
 
-Tài khoản mới dùng **cùng mật khẩu** với các acc demo sẵn có, email theo mẫu
-`hocsinh<N>@demo.local`, `phuhuynh<N>@demo.local`, `giaovien<N>@demo.local`. Tên
-hiển thị là tên Việt tổng hợp (Nguyễn Văn An, Trần Thị Mai…) — sổ điểm 24 dòng
-chỉ đọc được khi tên trông giống tên thật.
-
-Câu chuyện dữ liệu: **9A1 (2025-2026, đã kết thúc)** = điểm `LOCKED` + học bạ
-`SEALED` + hạnh kiểm `APPROVED`; **10A1 (2026-2027, đang diễn ra)** = TKB đầy đủ,
-cột TX `PUBLISHED`, giữa kỳ/cuối kỳ `DRAFT`.
-
-Tool bơm nằm ở `edu-api`: `services/core/cmd/seeddemo` — idempotent, không xoá
-dữ liệu của app:
+Tool bơm nằm ở `edu-api`: `services/core/cmd/seeddemo` — idempotent, dọn cả dữ
+liệu rác của chính nó (lớp trùng, ghi danh thừa, TKB cũ):
 
 ```bash
 cd services/core
 TENANT_ID=aeb0e462-9ced-48b3-ba36-803f9266b09d go run ./cmd/seeddemo
-# muốn đông hơn:
-STUDENT_COUNT=40 TEACHER_COUNT=10 TENANT_ID=aeb0e462-... go run ./cmd/seeddemo
 ```
 
-`STUDENT_COUNT` / `TEACHER_COUNT` là **tổng số mong muốn**, không phải số thêm
-vào, nên chạy lại nhiều lần không làm trường phình ra.
+Biến điều chỉnh: `STUDENTS_PER_CLASS` (25), `TEACHER_COUNT`, `ATTENDANCE_DAYS`
+(14), `STUDENT_COUNT`. Tất cả là **tổng số mong muốn**, không phải số thêm vào.
 
 **Lưu ý cho ai chạy stack local:** `homeroomTeacherName` và `displayName` chỉ có
 giá trị khi `INTERNAL_API_SECRET` được set cho cả `iam` lẫn `core` — đã có sẵn
