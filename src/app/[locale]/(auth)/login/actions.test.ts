@@ -123,6 +123,7 @@ describe("logoutAction", () => {
     });
     expect(logoutExecute).toHaveBeenCalled();
     expect(mockClearAuthCookies).toHaveBeenCalled();
-    expect(mockRedirect).toHaveBeenCalledWith("/login");
+    // Locale-prefixed — bare "/login" is not a route and 404s.
+    expect(mockRedirect).toHaveBeenCalledWith("/vi/login");
   });
 });
