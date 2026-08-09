@@ -2077,6 +2077,7 @@
     "conductTot": "Good",
     "conductYeu": "Weak",
     "emptyState": "No grades yet",
+    "emptyStateForYear": "No grades for the {year} school year yet",
     "enterGradesCta": "Enter grades",
     "errorForbidden": "You do not have permission to view this grade book",
     "errorNetworkError": "Connection error, please try again",

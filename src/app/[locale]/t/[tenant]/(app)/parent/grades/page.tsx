@@ -60,6 +60,7 @@ export default async function ParentGradesPage({
     selectedSubjectId: null,
     selectedTerm,
     gradeBook,
+    academicYearLabel,
     isPublished: isGradeBookPublished(gradeBook),
     error,
   };

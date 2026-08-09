@@ -209,7 +209,7 @@ export function GradeBookScreen({
         ) : vm.error ? (
           <ErrorBanner message={t(ERROR_KEY_MAP[vm.error])} onRetry={onRetry} />
         ) : !vm.gradeBook ? (
-          <GradeBookEmptyState />
+          <GradeBookEmptyState academicYearLabel={vm.academicYearLabel} />
         ) : (
           <>
             <GradeBookTable
@@ -246,7 +246,11 @@ function EmptyState({ message }: { message: string }) {
  * the legacy dashed-border box. The "no selection" prompt above keeps using
  * the legacy `EmptyState` — unchanged per AC-02.
  */
-function GradeBookEmptyState() {
+function GradeBookEmptyState({
+  academicYearLabel,
+}: {
+  academicYearLabel?: string;
+}) {
   const t = useTranslations("gradeBook");
   return (
     <div
@@ -256,7 +260,9 @@ function GradeBookEmptyState() {
     >
       <FileText className="size-16 text-edu-text-muted" aria-hidden="true" />
       <p className="mt-4 font-bold text-base text-foreground">
-        {t("emptyState")}
+        {academicYearLabel
+          ? t("emptyStateForYear", { year: academicYearLabel })
+          : t("emptyState")}
       </p>
     </div>
   );
