@@ -242,6 +242,16 @@ async function makeSelfViewGradeBookRepo(): Promise<IGradeBookRepository> {
     termId: string,
     academicYearLabel: string,
   ) => resolveScheme({ classId: "", subjectId, termId, academicYearLabel });
+  // Student display name: the self-view wire has only the memberId, so the
+  // single row rendered its uuid. Same batched IAM lookup as everywhere else.
+  const batchResolve = await makeBatchResolveMembersUseCase();
+  const resolveNames = async (memberIds: string[]) => {
+    const names = new Map<string, string>();
+    const result = await batchResolve.execute(memberIds);
+    if (result.ok)
+      for (const m of result.value) names.set(m.memberId, m.displayName);
+    return names;
+  };
   return new GradeBookRepository(
     http,
     fallbackScheme,
@@ -249,6 +259,7 @@ async function makeSelfViewGradeBookRepo(): Promise<IGradeBookRepository> {
     "",
     "",
     resolveSchemeFor,
+    resolveNames,
   );
 }
 

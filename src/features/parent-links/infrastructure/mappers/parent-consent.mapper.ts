@@ -12,11 +12,15 @@ import type { ParentStudentConsentResponseDto } from "../dtos/parent-student-con
 /** INT-001 DTO → domain entity (nullable avatarUrl → undefined). */
 export function toLinkedStudentSummary(
   dto: LinkedStudentResponseDto,
+  /** `memberId → displayName` (IAM batch) — the wire carries no name. */
+  names: Map<string, string> = new Map(),
 ): LinkedStudentSummary {
   return {
-    studentId: dto.studentId,
-    fullName: dto.fullName,
-    avatarUrl: dto.avatarUrl ?? undefined,
+    studentId: dto.studentMemberId,
+    // No name on the wire; an unresolved id keeps the class label or the id
+    // itself rather than rendering blank.
+    fullName:
+      names.get(dto.studentMemberId) ?? dto.className ?? dto.studentMemberId,
     linkId: dto.linkId,
   };
 }

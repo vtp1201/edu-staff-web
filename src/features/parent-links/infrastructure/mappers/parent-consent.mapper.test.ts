@@ -9,29 +9,30 @@ import {
 } from "./parent-consent.mapper";
 
 describe("toLinkedStudentSummary", () => {
-  it("maps the DTO to the entity", () => {
-    const dto: LinkedStudentResponseDto = {
-      studentId: "st1",
-      fullName: "Nguyễn Minh Khoa",
-      avatarUrl: "https://cdn/x.png",
-      linkId: "l1",
-    };
-    expect(toLinkedStudentSummary(dto)).toEqual({
-      studentId: "st1",
-      fullName: "Nguyễn Minh Khoa",
-      avatarUrl: "https://cdn/x.png",
-      linkId: "l1",
-    });
+  const dto: LinkedStudentResponseDto = {
+    linkId: "l1",
+    parentMemberId: "p1",
+    studentMemberId: "st1",
+    className: "12A2",
+  };
+
+  it("keys the child by studentMemberId (the wire's own field)", () => {
+    expect(toLinkedStudentSummary(dto).studentId).toBe("st1");
+    expect(toLinkedStudentSummary(dto).linkId).toBe("l1");
   });
 
-  it("maps a null/absent avatarUrl to undefined", () => {
-    const dto: LinkedStudentResponseDto = {
-      studentId: "st2",
-      fullName: "Trần Quốc Bảo",
-      avatarUrl: null,
-      linkId: "l2",
-    };
-    expect(toLinkedStudentSummary(dto).avatarUrl).toBeUndefined();
+  it("takes the display name from the IAM lookup — the wire carries none", () => {
+    const names = new Map([["st1", "Nguyễn Minh Khoa"]]);
+    expect(toLinkedStudentSummary(dto, names).fullName).toBe(
+      "Nguyễn Minh Khoa",
+    );
+  });
+
+  it("falls back to the class label, then the id, rather than rendering blank", () => {
+    expect(toLinkedStudentSummary(dto).fullName).toBe("12A2");
+    expect(
+      toLinkedStudentSummary({ ...dto, className: undefined }).fullName,
+    ).toBe("st1");
   });
 });
 

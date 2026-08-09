@@ -26,6 +26,7 @@ const DEFAULT_CONDUCT_GRADE: ConductGrade = "TB";
 function mapRow(
   dto: StudentGradeRowResponseDto,
   scheme: AssessmentScheme,
+  studentName?: string,
 ): GradeBookRow {
   const scores: Record<string, GradeCell> = {};
   for (const col of scheme.columns) {
@@ -40,8 +41,11 @@ function mapRow(
   }
   return {
     studentId: dto.studentMemberId,
-    studentName: dto.studentMemberId, // no display-name field on the wire (see grades.mapper.ts)
-    studentCode: dto.studentMemberId,
+    // No display name on the wire (see grades.mapper.ts) — the caller resolves
+    // it; an unresolved id keeps itself as the label, never a blank cell. The
+    // code slot stays empty: repeating the uuid under the name is not a code.
+    studentName: studentName ?? dto.studentMemberId,
+    studentCode: "",
     scores,
     average: calculateWeightedAverage(values, scheme.columns),
     conductGrade: DEFAULT_CONDUCT_GRADE,
@@ -82,6 +86,7 @@ export function mapSubjectTermGroup(
   academicYearLabel: string,
   className: string,
   subjectName: string,
+  studentName?: string,
 ): GradeBook {
   const studentRow: StudentGradeRowResponseDto = {
     studentMemberId,
@@ -96,7 +101,7 @@ export function mapSubjectTermGroup(
     className,
     subjectName,
     scheme,
-    rows: [mapRow(studentRow, scheme)],
+    rows: [mapRow(studentRow, scheme, studentName)],
     publishMode,
   };
 }
