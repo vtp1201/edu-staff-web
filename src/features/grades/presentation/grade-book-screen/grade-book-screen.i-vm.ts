@@ -18,6 +18,12 @@ export interface GradeBookScreenVM {
   gradeBook: GradeBook | null;
   /** whether grades are visible to the viewer (student / parent gate) */
   isPublished: boolean;
+  /**
+   * Academic year the read was scoped to (student/parent self-views resolve it
+   * server-side). Names the year in the empty state so "nothing here" cannot be
+   * mistaken for "you have no grades at all".
+   */
+  academicYearLabel?: string;
   /** stable i18n error key, not translated copy */
   error: GradesFailure["type"] | null;
   /** teacher only — grade-entry route to navigate to via the CTA */

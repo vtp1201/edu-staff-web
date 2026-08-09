@@ -2077,6 +2077,7 @@
     "conductTot": "Tốt",
     "conductYeu": "Yếu",
     "emptyState": "Chưa có điểm",
+    "emptyStateForYear": "Chưa có điểm cho năm học {year}",
     "enterGradesCta": "Nhập điểm",
     "errorForbidden": "Bạn không có quyền xem bảng điểm này",
     "errorNetworkError": "Lỗi kết nối, thử lại sau",

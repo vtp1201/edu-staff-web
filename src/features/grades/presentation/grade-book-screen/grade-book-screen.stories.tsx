@@ -369,6 +369,22 @@ export const EmptyState: Story = {
   },
 };
 
+/**
+ * A self-view scoped to a year with no grades yet (observed live: the active
+ * year had none, the previous one did) must SAY which year is empty — "Chưa có
+ * điểm" alone reads as "you have no grades at all".
+ */
+export const EmptyStateNamesTheYear: Story = {
+  args: { vm: vm({ gradeBook: null, academicYearLabel: "2026-2027" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const status = canvas.getByRole("status");
+    expect(
+      within(status).getByText("Chưa có điểm cho năm học 2026-2027"),
+    ).toBeInTheDocument();
+  },
+};
+
 export const NoSelectionUnchanged: Story = {
   // AC-02.1/02.2: no-selection prompt keeps the legacy dashed-border look and
   // does NOT render the canonical role="status" empty state.

@@ -64,6 +64,7 @@ export default async function StudentGradesPage({
     selectedSubjectId: null,
     selectedTerm,
     gradeBook,
+    academicYearLabel,
     isPublished: isGradeBookPublished(gradeBook),
     error,
   };
