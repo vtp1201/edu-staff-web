@@ -55,13 +55,16 @@ export const TeacherView_FullWeek: Story = {
         "svg.lucide-pencil, svg.lucide-square-pen, svg.lucide-edit, svg.lucide-edit-2, svg.lucide-edit-3",
       ),
     ).toBeNull();
-    // AC3 — visual consistency: subjectColor/15 tint + 3px left accent border,
-    // same token pair `TimetableGrid` renders for the student/parent variant
-    // (subject "Toán" → subjectColorToken "primary" per the mapper table).
+    // AC3 — visual consistency: a subject-colour /15 tint + 3px left accent
+    // border, the same token pair `TimetableGrid` renders for the
+    // student/parent variant. WHICH colour a subject gets is assigned per week
+    // (domain/subject-color.ts), so assert the shape, not one hue — and assert
+    // it is never the grey fallback, which is what every real slot used to be.
     const mathCellLabel = canvas.getAllByText("Toán")[0];
     const mathCell = mathCellLabel.parentElement;
-    expect(mathCell?.className).toContain("bg-edu-primary/15");
-    expect(mathCell?.className).toContain("border-l-edu-primary");
+    expect(mathCell?.className).toMatch(/bg-edu-[a-z-]+\/15/);
+    expect(mathCell?.className).toMatch(/border-l-edu-[a-z-]+/);
+    expect(mathCell?.className).not.toContain("edu-text-muted");
     // AC4 — legend shows only subjects actually taught (Toán + GDCD).
     const legend = canvas.getByRole("region", { name: "Chú thích môn" });
     expect(within(legend).getByText("Toán")).toBeVisible();
