@@ -1,5 +1,8 @@
 import { makeGetGradeSheetUseCase } from "@/bootstrap/di/grades.di";
-import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
+import {
+  resolveCurrentTermContext,
+  resolveTermNames,
+} from "@/bootstrap/lib/resolve-current-term";
 import { resolveMyGradeSubjects } from "@/bootstrap/lib/resolve-my-grade-subjects";
 import type { ClassSubjectTermKey } from "@/features/grades/domain/entities/class-subject-term-key.entity";
 import type { GradeSheet } from "@/features/grades/domain/entities/grade-sheet.entity";
@@ -27,13 +30,20 @@ export default async function TeacherGradesPage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const selectedClassId = sp.classId ?? null;
-  const selectedSubjectId = sp.subjectId ?? null;
-  const selectedTerm = sp.term ?? null;
-
   const classSubjects: ClassSubjectOption[] = await resolveMyGradeSubjects();
-  const academicYearLabel = await resolveCurrentAcademicYear().catch(
-    () => "2025-2026",
+  const term = await resolveCurrentTermContext().catch(() => null);
+  const academicYearLabel = term?.academicYearLabel ?? "2025-2026";
+
+  // Auto-select the first class-subject and the CURRENT term: every parameter
+  // here is a uuid, so an unselected sheet was a screen the teacher could only
+  // fill by walking three dropdowns. The URL still wins.
+  const selectedClassId = sp.classId ?? classSubjects[0]?.classId ?? null;
+  const selectedSubjectId = sp.subjectId ?? classSubjects[0]?.subjectId ?? null;
+  const selectedTerm = sp.term ?? term?.termId ?? null;
+  // Real terms for the picker — its options were the hardcoded HK1/HK2 keys,
+  // which match nothing on a wire whose termIds are uuids.
+  const terms = [...(await resolveTermNames().catch(() => new Map()))].map(
+    ([id, name]) => ({ id, name }),
   );
 
   let sheet: GradeSheet | null = null;
@@ -78,6 +88,7 @@ export default async function TeacherGradesPage({
     // over would be a compile error (US-E18.44).
     viewerRole: "teacher",
     classSubjects,
+    terms,
     selectedClassId,
     selectedSubjectId,
     selectedTerm,

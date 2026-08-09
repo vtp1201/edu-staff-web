@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { HomeroomEntry } from "../../domain/entities/homeroom-entry.entity";
 import type { HomeroomEntryStatus } from "../../domain/entities/homeroom-entry-status.entity";
+import { ClassLogClassPicker } from "./class-log-class-picker";
 import type { ClassLogScreenVM } from "./class-log-screen.i-vm";
 import { ClassLogEntryDetail } from "./components/class-log-entry-detail";
 import {
@@ -22,6 +23,7 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
   const {
     classId,
     className,
+    classes = [],
     entries,
     isPrincipal,
     filterStatus: initialFilter,
@@ -154,12 +156,20 @@ export function ClassLogScreen(props: ClassLogScreenVM) {
                 {isPrincipal ? t("principalSubtitle") : t("teacherSubtitle")}
               </p>
             </div>
-            {!isPrincipal && (
-              <Button type="button" onClick={() => setView("new")}>
-                <Plus className="size-4" aria-hidden="true" />
-                {t("newEntry")}
-              </Button>
-            )}
+            <div className="flex flex-wrap items-end gap-3">
+              {/* Mounted only when there IS something to switch between: the
+                  picker needs the app router, which single-class screens (and
+                  stories) have no reason to require. */}
+              {classes.length >= 2 && (
+                <ClassLogClassPicker classes={classes} classId={classId} />
+              )}
+              {!isPrincipal && (
+                <Button type="button" onClick={() => setView("new")}>
+                  <Plus className="size-4" aria-hidden="true" />
+                  {t("newEntry")}
+                </Button>
+              )}
+            </div>
           </header>
 
           <ClassLogStatsRow entries={localEntries} isPrincipal={isPrincipal} />

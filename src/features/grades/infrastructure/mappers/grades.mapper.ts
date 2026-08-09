@@ -66,14 +66,14 @@ export function mapStaffGradeCell(dto: GradeEntryResponseDto): StaffGradeCell {
 
 /**
  * `StudentGradeRowResponse` has NO display fields (no `studentName`/
- * `studentCode` on the wire — only `studentMemberId`) — same recurring gap as
- * the epic's other "list" endpoints (e.g. `memberName` falling back to
- * `memberId` in US-E18.2). Falls back to the id until a display-name source
- * exists (cross-repo ask).
+ * `studentCode` on the wire — only `studentMemberId`), so `studentNames` (the
+ * batched IAM directory lookup composed in `bootstrap/di`) supplies them. An
+ * unresolved id still falls back to itself — a degraded label, never an error.
  */
 export function mapStudentScoreRow(
   dto: StudentGradeRowResponseDto,
   scheme: AssessmentScheme,
+  studentNames: Map<string, string> = new Map(),
 ): StudentScoreRow {
   const scores: Record<string, StaffGradeCell> = {};
   for (const col of scheme.columns) {
@@ -88,8 +88,10 @@ export function mapStudentScoreRow(
   }
   return {
     studentId: dto.studentMemberId,
-    studentName: dto.studentMemberId,
-    studentCode: dto.studentMemberId,
+    studentName: studentNames.get(dto.studentMemberId) ?? dto.studentMemberId,
+    // No student code on the wire. Repeating the raw memberId under the name
+    // is noise, not a code — leave the slot empty unless BE ships a real one.
+    studentCode: "",
     scores,
     // Recompute defensively so the average always agrees with the scores +
     // scheme weights, regardless of what the wire's own `termAverage` said.
@@ -102,6 +104,7 @@ export function mapGradeSheet(
   scheme: AssessmentScheme,
   publishMode: GradePublishMode,
   academicYearLabel: string,
+  studentNames: Map<string, string> = new Map(),
 ): GradeSheet {
   return {
     classId: dto.classId,
@@ -109,7 +112,7 @@ export function mapGradeSheet(
     termId: dto.termId,
     academicYearLabel,
     scheme,
-    rows: dto.students.map((s) => mapStudentScoreRow(s, scheme)),
+    rows: dto.students.map((s) => mapStudentScoreRow(s, scheme, studentNames)),
     publishMode,
   };
 }

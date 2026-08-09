@@ -67,5 +67,24 @@ export async function resolveMyGradeSubjects(): Promise<GradeSubjectOption[]> {
     }
   }
 
-  return options;
+  return dedupeGradeSubjects(options);
+}
+
+/**
+ * Keep the first option per `(classId, subjectId)`. The picker renders one
+ * `<SelectItem>` keyed on exactly that pair, so any repeat upstream (a class
+ * listed twice, a subject assigned twice) crashed React with a duplicate-key
+ * error. A picker should never offer the same option twice, whatever the wire
+ * returns.
+ */
+export function dedupeGradeSubjects(
+  options: readonly GradeSubjectOption[],
+): GradeSubjectOption[] {
+  const seen = new Set<string>();
+  return options.filter((o) => {
+    const key = `${o.classId}:${o.subjectId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

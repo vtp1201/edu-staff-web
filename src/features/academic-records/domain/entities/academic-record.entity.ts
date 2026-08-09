@@ -56,6 +56,10 @@ export interface TermRecord {
   classId: string;
   /** Free-form on the wire (`"HK1"`, `"HK2"`, or a uuid) — NOT a union. */
   termId: string;
+  /** Calendar display name for {@link termId} (`"Học kỳ 1"`). `null` when the
+   *  calendar has no such term — presentation owns the fallback; a raw uuid
+   *  must never reach a heading. */
+  termName: string | null;
   /**
    * The row's own academic year (`"2025-2026"`), denormalized by BE in
    * US-E18.56. `null` when the wire key is absent — a rare unhealed

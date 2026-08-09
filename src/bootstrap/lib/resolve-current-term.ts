@@ -76,3 +76,17 @@ export async function resolveCurrentAcademicYear(): Promise<string> {
   }
   return activeYear.label;
 }
+
+/**
+ * `termId → name` for every term of every academic year — the display names
+ * `core` does not carry on records/timetables. One calendar read, same
+ * `ListYearsUseCase` composition as {@link resolveCurrentTermContext}.
+ */
+export async function resolveTermNames(): Promise<Map<string, string>> {
+  const years = await (await makeListYearsUseCase()).execute();
+  const names = new Map<string, string>();
+  for (const year of years) {
+    for (const term of year.terms) names.set(term.id, term.name);
+  }
+  return names;
+}

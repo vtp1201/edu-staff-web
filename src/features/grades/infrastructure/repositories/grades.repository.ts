@@ -84,7 +84,25 @@ export class GradesRepository
     private readonly http: AxiosInstance,
     private readonly scheme: AssessmentScheme,
     private readonly publishMode: GradePublishMode,
+    /** Batched IAM `memberId → displayName`; the grades wire carries none. */
+    private readonly resolveStudentNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
   ) {}
+
+  /** Decoration, never a failure path: no resolver / a failed lookup simply
+   *  leaves the rows labelled by id, as they were before. */
+  private async tryResolveStudentNames(
+    memberIds: string[],
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(memberIds)].filter(Boolean);
+    if (!this.resolveStudentNames || ids.length === 0) return new Map();
+    try {
+      return await this.resolveStudentNames(ids);
+    } catch {
+      return new Map();
+    }
+  }
 
   async getGradeSheet(key: ClassSubjectTermKey): Promise<GradeSheet> {
     try {
@@ -97,6 +115,9 @@ export class GradesRepository
         this.scheme,
         this.publishMode,
         key.academicYearLabel,
+        await this.tryResolveStudentNames(
+          dto.students.map((s) => s.studentMemberId),
+        ),
       );
     } catch (err) {
       throwFailure(err, "", DEFAULT_MAX_SCORE);

@@ -6,6 +6,7 @@ import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { decodeSubClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
+import { resolveTermNames } from "@/bootstrap/lib/resolve-current-term";
 import type { IAcademicRecordsRepository } from "@/features/academic-records/domain/repositories/i-academic-records.repository";
 import type { IAcademicRecordsSealRepository } from "@/features/academic-records/domain/repositories/i-academic-records-seal.repository";
 import { ConfirmUnsealUseCase } from "@/features/academic-records/domain/use-cases/confirm-unseal.use-case";
@@ -59,7 +60,13 @@ async function makeRepository(): Promise<IAcademicRecordsRepository> {
     if (result.ok) for (const s of result.value) names.set(s.id, s.name);
     return names;
   };
-  return new AcademicRecordsRepository(http, resolveSubjectNames);
+  // Term display names come from the calendar — the records wire has none, so
+  // the section headings printed raw uuids (same composition as subject names).
+  return new AcademicRecordsRepository(
+    http,
+    resolveSubjectNames,
+    resolveTermNames,
+  );
 }
 
 /**

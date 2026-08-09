@@ -536,9 +536,15 @@ export function GradeEntryScreen({
               <SelectValue placeholder={t("selectTerm")} />
             </SelectTrigger>
             <SelectContent>
-              {TERMS.map((term) => (
-                <SelectItem key={term} value={term}>
-                  {term === "HK1" ? t("termHK1") : t("termHK2")}
+              {(vm.terms?.length
+                ? vm.terms
+                : TERMS.map((id) => ({
+                    id,
+                    name: id === "HK1" ? t("termHK1") : t("termHK2"),
+                  }))
+              ).map((term) => (
+                <SelectItem key={term.id} value={term.id}>
+                  {term.name}
                 </SelectItem>
               ))}
             </SelectContent>

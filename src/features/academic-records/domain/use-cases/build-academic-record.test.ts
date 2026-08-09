@@ -20,6 +20,7 @@ function term(
   return {
     classId,
     termId,
+    termName: null,
     academicYear,
     status,
     sealedAt: null,

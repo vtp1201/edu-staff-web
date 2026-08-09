@@ -100,6 +100,7 @@
       "sealedOn": "Đã ký ngày",
       "term1": "Học kỳ 1",
       "term2": "Học kỳ 2",
+      "termUnknown": "Học kỳ",
       "unsealedBanner": "Học bạ đã được mở",
       "unsealedOn": "Mở ngày"
     },
@@ -1081,6 +1082,7 @@
       "back": "Quay lại danh sách",
       "bghReview": "Phê duyệt của BGH",
       "cancelReject": "Huỷ",
+      "classPickerLabel": "Lớp",
       "confirmReject": "Xác nhận từ chối",
       "noClassSelected": "Chọn một lớp để xem sổ đầu bài",
       "noClasses": "Bạn chưa được phân công lớp nào",
@@ -4487,7 +4489,7 @@
       "upcoming": "Sắp tới"
     },
     "stats": {
-      "adminApprovalMode": "Chế độ ADMIN_APPROVAL",
+      "adminApprovalMode": "Cần Ban giám hiệu duyệt",
       "classesToday": "Tiết học hôm nay",
       "newMessages": "Tin nhắn mới",
       "pendingApproval": "Điểm chờ duyệt",

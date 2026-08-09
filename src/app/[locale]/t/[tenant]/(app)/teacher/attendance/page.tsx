@@ -16,15 +16,17 @@ export default async function AttendancePage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const classId = sp.class;
-  const date = sp.date;
-
   const classes = await (await makeListMyHomeroomClassesUseCase()).execute();
 
-  const roster =
-    classId && date
-      ? await (await makeGetClassAttendanceUseCase()).execute(classId, date)
-      : null;
+  // Land on something useful: a teacher with one homeroom class had to pick it
+  // (and today's date) by hand before any roster appeared. The URL still wins,
+  // so switching class/date keeps working exactly as before.
+  const classId = sp.class ?? classes[0]?.id;
+  const date = sp.date ?? new Date().toISOString().slice(0, 10);
+
+  const roster = classId
+    ? await (await makeGetClassAttendanceUseCase()).execute(classId, date)
+    : null;
 
   return (
     <AttendanceScreen
