@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { makeRosterRepository } from "@/bootstrap/di/admin-roster.di";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import { PrincipalRosterScreen } from "@/features/admin-roster/presentation/principal-roster-screen/principal-roster-screen";
 import type { PrincipalRosterScreenVm } from "@/features/admin-roster/presentation/principal-roster-screen/principal-roster-screen.i-vm";
 import { PrincipalRosterSkeleton } from "@/features/admin-roster/presentation/principal-roster-screen/principal-roster-skeleton";
@@ -47,7 +48,12 @@ import { PrincipalRosterSkeleton } from "@/features/admin-roster/presentation/pr
  */
 async function PrincipalRosterContent({ classId }: { classId?: string }) {
   const repo = await makeRosterRepository();
-  const classesResult = await repo.getClasses({});
+  // `academicYear` is NOT optional for an ADMIN/MANAGER caller: core's admin
+  // branch answers an unfiltered `GET /classes` with an EMPTY list (the teacher
+  // branch auto-filters instead), which read as "the school has no classes".
+  const classesResult = await repo.getClasses({
+    academicYear: await resolveCurrentAcademicYear().catch(() => undefined),
+  });
 
   if (!classesResult.ok) {
     return <PrincipalRosterScreen vm={errorVm(classesResult.error.type)} />;

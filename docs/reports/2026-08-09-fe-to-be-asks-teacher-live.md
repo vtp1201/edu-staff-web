@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 7 ask từ smoke-test role TEACHER trên stack thật
+# FE → BE (2026-08-09): 10 ask từ smoke-test role TEACHER + PRINCIPAL trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -152,6 +152,74 @@ với ask #1/#2: core giữ id, tên nằm ở aggregate khác.
 **Ask (tuỳ chọn):** denormalize `termName` (+ `academicYearLabel` đã có) vào
 `AcademicRecordResponse` để bỏ thêm một lượt gọi calendar. Trả lời "không làm"
 cũng đủ để FE đóng ask.
+
+## #8 — `GET /iam/api/v1/tenants/{id}/members` FORBIDDEN cho member role `ADMIN`
+
+Tài khoản `hieutruong@demo.local` có `memberRoles: ["ADMIN"]` (đúng tier hiệu
+trưởng), nhưng không đọc được danh bạ thành viên của chính tenant mình:
+
+```bash
+curl -s "$KONG/iam/api/v1/tenants/aeb0e462-.../members?role=TEACHER&limit=100" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+# {"success":false,"error":{"code":"FORBIDDEN_ACTION",
+#  "message":"You do not have permission to perform this action"}}
+```
+
+Trong khi endpoint batch **lại cho phép** cùng token đó:
+
+```bash
+curl -s "$KONG/iam/api/v1/members?ids=1e821c2b-..." -H "Authorization: Bearer $ADMIN_TOKEN"
+# {"success":true,"data":[{"memberId":"1e821c2b-...","displayName":"Admin Demo",
+#   "email":"hieutruong@demo.local","roles":["ADMIN"]}]}
+```
+
+Hệ quả: màn **Giáo viên** (`/principal/teachers`) hiện "Bạn không có quyền truy
+cập" — nó đọc danh bạ IAM lọc `role=TEACHER` (US-E18.40, chính là phương án
+BE chọn khi đóng ask #44). Ô "Giáo viên" trên Tổng quan cũng không có nguồn.
+
+**Ask:** cho member role `ADMIN` (và `MANAGER`) đọc `GET /tenants/{id}/members`
+trong tenant của chính họ. Nếu chỉ `SUPER_ADMIN` được phép là cố ý, xin nói rõ —
+khi đó FE cần một endpoint khác để liệt kê giáo viên, vì không có cách nào lấy
+danh sách member nếu không biết trước id.
+
+## #9 — `GET /core/api/v1/classes` trả RỖNG cho caller admin-tier khi thiếu `academicYear`
+
+Cùng tenant, cùng thời điểm — chỉ khác role:
+
+```bash
+# TEACHER (tự lọc theo phân công): 2 lớp
+curl -s "$KONG/core/api/v1/classes" -H "Authorization: Bearer $TEACHER_TOKEN"   # → 2 rows
+
+# ADMIN: rỗng khi KHÔNG truyền academicYear …
+curl -s "$KONG/core/api/v1/classes" -H "Authorization: Bearer $ADMIN_TOKEN"     # → data: []
+# … nhưng có dữ liệu khi truyền
+curl -s "$KONG/core/api/v1/classes?academicYear=2026-2027" -H "…$ADMIN_TOKEN"   # → 10A1
+```
+
+Đây là lý do gốc khiến gần như MỌI màn của hiệu trưởng trống (Học sinh, Sổ đầu
+bài, Bảng điểm, Lớp học): FE gọi `listClasses({})` như tài liệu cho phép
+(`academicYear` optional) và nhận về rỗng — không lỗi, không cảnh báo.
+
+**FE đã tự xử lý:** mọi màn "năm hiện tại" giờ truyền `academicYear` tường minh.
+
+**Ask:** thống nhất hành vi giữa hai nhánh — hoặc nhánh admin cũng trả tất cả
+khi thiếu filter (giống nhánh teacher), hoặc `academicYear` thành **bắt buộc**
+và thiếu thì trả `400` thay vì rỗng im lặng. Trạng thái hiện tại là cái bẫy khó
+thấy nhất trong ba lựa chọn.
+
+## #10 — Thiếu dữ liệu demo cho vai trò hiệu trưởng
+
+Với seed hiện tại, trường demo có **1 lớp** (10A1), **2 học sinh**, **1 giáo
+viên**. Các màn quản trị vì thế đúng-mà-trống, không demo được gì:
+
+- Tổng quan: Lớp 1 / Học sinh 2 (số thật, FE đã bỏ số giả 48/1.240/96,4% trước đó).
+- Không có nguồn cho ô "Giáo viên" (chặn bởi #8) và "Tỉ lệ chuyên cần" (không có
+  endpoint tổng hợp nào — FE đang để dấu "—" thay vì bịa số).
+
+**Ask:** seed thêm cho tenant demo — khoảng 6–10 lớp trải 2–3 khối, 20–30 học
+sinh/lớp, 5–8 giáo viên có phân công GVCN/GVBM khác nhau, cộng điểm danh vài
+ngày gần đây. Nếu có endpoint tổng hợp tỉ lệ chuyên cần theo trường/ngày thì
+càng tốt; chưa có thì FE giữ dấu "—".
 
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 
