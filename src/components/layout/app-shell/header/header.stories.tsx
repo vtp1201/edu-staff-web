@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import {
   expect,
@@ -20,9 +21,11 @@ const meta: Meta<typeof Header> = {
     (Story) => {
       document.body.style.pointerEvents = "";
       return (
-        <NextIntlClientProvider locale="vi" messages={messages}>
-          <Story />
-        </NextIntlClientProvider>
+        <QueryClientProvider client={new QueryClient()}>
+          <NextIntlClientProvider locale="vi" messages={messages}>
+            <Story />
+          </NextIntlClientProvider>
+        </QueryClientProvider>
       );
     },
   ],
@@ -36,6 +39,35 @@ export const Teacher: Story = {
 };
 export const Student: Story = {
   args: { role: "student", userName: "Tran Thi B" },
+};
+
+/** Unread badge renders the real count and folds it into the bell's label. */
+export const WithUnreadNotifications: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    onFetchUnreadCount: async () => ({ count: 5 }),
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByRole("link", { name: /5 thông báo chưa đọc/ }),
+    ).toBeInTheDocument();
+  },
+};
+
+/** Zero unread → no badge at all (no fake dot). */
+export const NoUnreadNotifications: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    onFetchUnreadCount: async () => ({ count: 0 }),
+  },
+  play: async ({ canvas }) => {
+    const bell = await canvas.findByRole("link", { name: "Thông báo" });
+    await expect(bell).toHaveTextContent("");
+  },
 };
 
 const twoTenants: TenantCardViewModel[] = [
