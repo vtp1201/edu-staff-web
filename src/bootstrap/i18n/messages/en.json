@@ -1083,6 +1083,7 @@
       "cancelReject": "Cancel",
       "confirmReject": "Confirm rejection",
       "noClassSelected": "Select a class to view its log",
+      "noClasses": "You are not assigned to any class",
       "reject": "Reject",
       "rejectReason": "Rejection reason",
       "rejectReasonPlaceholder": "e.g. Missing homework details...",

@@ -207,6 +207,50 @@ describe("TeacherClassRepository (US-E13.1)", () => {
     });
   });
 
+  // ── getClassStudents decorates missing names from the IAM directory ──────
+  it("getClassStudents fills blank displayNames from the injected resolver", async () => {
+    const get = vi.fn().mockResolvedValue(
+      listEnvelope([
+        enrollmentDto({
+          enrollmentId: "enr-1",
+          studentMemberId: "HS25001",
+          displayName: "",
+          status: "active",
+        }),
+      ]),
+    );
+    const resolveNames = vi
+      .fn()
+      .mockResolvedValue(new Map([["HS25001", "Nguyễn Văn A"]]));
+    const repo = new TeacherClassRepository(makeHttp(get), null, resolveNames);
+
+    const res = await repo.getClassStudents("cls-10a1");
+
+    expect(resolveNames).toHaveBeenCalledWith(["HS25001"]);
+    expect(res.ok && res.data[0].displayName).toBe("Nguyễn Văn A");
+  });
+
+  it("getClassStudents keeps the id fallback when the resolver finds nothing", async () => {
+    const get = vi.fn().mockResolvedValue(
+      listEnvelope([
+        enrollmentDto({
+          enrollmentId: "enr-1",
+          studentMemberId: "HS25002",
+          displayName: "",
+        }),
+      ]),
+    );
+    const repo = new TeacherClassRepository(
+      makeHttp(get),
+      null,
+      async () => new Map<string, string>(),
+    );
+
+    const res = await repo.getClassStudents("cls-10a1");
+
+    expect(res.ok && res.data[0].displayName).toBe("HS25002");
+  });
+
   // ── getClassStudents handles empty result ────────────────────────────────
   it("getClassStudents returns an empty array for an empty class", async () => {
     const get = vi.fn().mockResolvedValue(listEnvelope([]));

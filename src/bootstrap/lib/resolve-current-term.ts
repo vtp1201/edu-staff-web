@@ -1,7 +1,7 @@
 import "server-only";
 
 import { makeListYearsUseCase } from "@/bootstrap/di/calendar.di";
-import { resolveContainingTermId } from "@/features/admin/timetable/domain/resolve-term";
+import { resolveNearestTermId } from "@/features/admin/timetable/domain/resolve-term";
 
 /**
  * Shared term-resolution composition (US-E18.11 BE wiring) — every real
@@ -26,7 +26,10 @@ export async function resolveCurrentTermId(
   const years = await (await makeListYearsUseCase()).execute();
   const activeYear = years.find((y) => y.isActive) ?? years[0];
   const terms = activeYear?.terms ?? [];
-  const termId = resolveContainingTermId(terms, date);
+  // Nearest, not strictly containing: between/before terms (e.g. the summer
+  // break) every timetable screen would otherwise fail to load. Only a year
+  // with NO terms is a real error.
+  const termId = resolveNearestTermId(terms, date);
   if (termId === null) {
     throw {
       type: "invalid-term",

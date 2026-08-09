@@ -84,6 +84,16 @@ export function decodeSubClaim(token: string): string | null {
   return typeof sub === "string" ? sub : null;
 }
 
+/**
+ * Returns the tenant-scoped `memberId` claim — the id core's resources are keyed
+ * by (homeroomTeacherId, studentMemberId, …). Falls back to `sub` for tokens
+ * minted before IAM added the claim, where the two coincide.
+ */
+export function decodeMemberId(token: string): string | null {
+  const memberId = decodeJwtClaims(token)?.memberId;
+  return typeof memberId === "string" ? memberId : decodeSubClaim(token);
+}
+
 /** Returns the tenant-scoped `tenantId` claim (after switch-tenant) or `null`. */
 export function decodeTenantId(token: string): string | null {
   const tenantId = decodeJwtClaims(token)?.tenantId;

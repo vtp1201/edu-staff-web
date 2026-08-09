@@ -1,7 +1,8 @@
 import "server-only";
+import { makeBatchResolveMembersUseCase } from "@/bootstrap/di/iam-directory.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { decodeSubClaim } from "@/bootstrap/lib/jwt";
+import { decodeMemberId } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ITeacherClassRepository } from "@/features/teacher/domain/repositories/i-teacher-class.repository";
 import { GetClassStudentsUseCase } from "@/features/teacher/domain/use-cases/get-class-students.use-case";
@@ -14,8 +15,20 @@ async function makeRepo(): Promise<ITeacherClassRepository> {
   if (USE_MOCK) return new MockTeacherClassRepository();
   const http = await createServerHttpClient();
   const token = await getAccessToken();
-  const currentUserId = token ? decodeSubClaim(token) : null;
-  return new TeacherClassRepository(http, currentUserId);
+  // core keys classes/enrollments by MEMBER id, not user id (they only
+  // coincide on seed data) — read the tenant-scoped `memberId` claim.
+  const currentUserId = token ? decodeMemberId(token) : null;
+  // core's enrollment rows carry no student names; decorate them with one
+  // batched IAM directory lookup (same composition as `admin-roster.di.ts`).
+  const batchResolve = await makeBatchResolveMembersUseCase();
+  const resolveNames = async (memberIds: string[]) => {
+    const names = new Map<string, string>();
+    const result = await batchResolve.execute(memberIds);
+    if (result.ok)
+      for (const m of result.value) names.set(m.memberId, m.displayName);
+    return names;
+  };
+  return new TeacherClassRepository(http, currentUserId, resolveNames);
 }
 
 /** Named `…TeacherClasses…` to avoid colliding with attendance's

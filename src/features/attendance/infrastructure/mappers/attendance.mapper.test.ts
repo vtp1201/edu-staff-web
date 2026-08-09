@@ -70,6 +70,38 @@ describe("mapClassAttendance", () => {
       { studentId: "s1", studentName: "An", status: "late" },
     ]);
   });
+
+  it("yields one row per ENROLLED student, defaulting the unmarked to present", () => {
+    const dto: ClassAttendanceResponseDto = {
+      classId: "c-1",
+      date: "2026-06-07",
+      records: [{ studentMemberId: "s2", status: "ABSENT" }],
+    };
+    const roster = mapClassAttendance(
+      dto,
+      new Map([
+        ["s1", "An"],
+        ["s2", "Binh"],
+      ]),
+      ["s1", "s2"],
+    );
+    expect(roster.records).toEqual([
+      { studentId: "s1", studentName: "An", status: "present" },
+      { studentId: "s2", studentName: "Binh", status: "absent" },
+    ]);
+  });
+
+  it("still renders the roster on a day nobody has marked yet", () => {
+    const dto: ClassAttendanceResponseDto = {
+      classId: "c-1",
+      date: "2026-06-07",
+      records: [],
+    };
+    const roster = mapClassAttendance(dto, new Map(), ["s1"]);
+    expect(roster.records).toEqual([
+      { studentId: "s1", studentName: "s1", status: "present" },
+    ]);
+  });
 });
 
 describe("countStatuses / zeroCounts", () => {

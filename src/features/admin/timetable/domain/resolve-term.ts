@@ -37,3 +37,25 @@ export function resolveContainingTermId(
   }
   return null;
 }
+
+/**
+ * Same as {@link resolveContainingTermId} but never gives up while the year has
+ * ANY term: outside every window (school holidays, or the weeks before term 1
+ * starts) it falls back to the next term that has not ended yet, else the last
+ * one. Callers that must show a timetable — the teacher/student schedule — use
+ * this so "no term covers today" reads as "next term's schedule" instead of a
+ * load error. `null` only when the year has no terms at all.
+ */
+export function resolveNearestTermId(
+  terms: readonly TermWindow[],
+  date: Date,
+): string | null {
+  const containing = resolveContainingTermId(terms, date);
+  if (containing !== null) return containing;
+  const iso = date.toISOString().slice(0, 10);
+  const byStart = [...terms].sort((a, b) =>
+    a.startDate < b.startDate ? -1 : 1,
+  );
+  const upcoming = byStart.find((t) => t.endDate >= iso);
+  return upcoming?.id ?? byStart.at(-1)?.id ?? null;
+}
