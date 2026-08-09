@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 12 ask từ smoke-test TEACHER + PRINCIPAL + PARENT trên stack thật
+# FE → BE (2026-08-09): 13 ask từ smoke-test TEACHER + PRINCIPAL + PARENT trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -255,6 +255,34 @@ Hai điểm FE đã sửa nhưng nên ghi lại vì spec cũ nói khác:
 
 **Ask (nhỏ):** cập nhật `openapi.yaml` cho khớp thực tế (không có `me`, có
 wrapper `links`), và cân nhắc kèm `studentName` như ask #1.
+
+## #13 — Conduct/discipline: blocker đã GỠ, nhưng chưa có dữ liệu
+
+Cả cụm hạnh kiểm/kỷ luật của FE đang **force-mock vĩnh viễn** (`discipline.di.ts`,
+US-E18.14) vì hai blocker được ghi trong story: (1) không tra được UUID học sinh
+và (2) STUDENT/PARENT không có cách nào biết `classId` của mình để gọi list
+(ask #15/#22).
+
+**Cả hai giờ đã hết:** `linked-students` trả kèm `classId`/`className` (US-148)
+và `/members/{id}/enrollment` trả lớp của học sinh. Verify bằng token PARENT thật:
+
+```bash
+GET /core/api/v1/conduct/student-violations?classId=97bba43f-…        → 200 data: []
+GET /core/api/v1/conduct/student-conduct-grades?classId=…&termId=…    → 200 data: []
+GET /core/api/v1/conduct/student-leave-requests?studentMemberId=…     → 200 data: []
+```
+
+Nghĩa là FE **có thể** un-mock cụm này (một US wiring riêng, không phải sửa vặt) —
+nhưng với dữ liệu hiện tại thì cả 3 màn sẽ chỉ đổi từ "mock đẹp" sang "trống".
+
+**Ask:** seed dữ liệu hạnh kiểm/kỷ luật cho tenant demo — vài vi phạm ở các mức
+độ khác nhau (đủ trạng thái DRAFT/SUBMITTED/APPROVED/REJECTED), điểm hạnh kiểm
+theo học kỳ cho học sinh của lớp demo, và vài đơn xin nghỉ. Có dữ liệu rồi FE
+sẽ mở US un-mock (đóng luôn ask #15/#22).
+
+Cũng xin xác nhận: PARENT có được gọi `student-conduct-grades`/`student-violations`
+với `classId` của **con mình** một cách chính thức không (hiện trả 200 — muốn
+chắc đó là RBAC cố ý chứ không phải lỗ hổng).
 
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 

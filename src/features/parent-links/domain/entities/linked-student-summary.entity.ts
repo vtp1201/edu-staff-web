@@ -10,4 +10,6 @@ export interface LinkedStudentSummary {
   fullName: string;
   avatarUrl?: string;
   linkId: string;
+  /** Class the child is enrolled in, when the wire carries it (BE US-148). */
+  className?: string;
 }

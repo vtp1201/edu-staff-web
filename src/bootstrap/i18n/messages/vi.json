@@ -1330,6 +1330,7 @@
     },
     "parent": {
       "childrenTitle": "Con của tôi",
+      "noChildren": "Tài khoản của bạn chưa liên kết với học sinh nào.",
       "stats": {
         "attendance": "Chuyên cần",
         "avgScore": "Điểm TB",
