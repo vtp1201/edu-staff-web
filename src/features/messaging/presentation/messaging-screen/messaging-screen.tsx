@@ -193,9 +193,10 @@ export function MessagingScreen({
   const { data: group, isLoading: groupLoading } = useQuery({
     queryKey: activeId ? groupKey(activeId) : ["messaging", "group"],
     queryFn: async () => {
-      if (!activeId) return undefined;
+      // null, not undefined — TanStack rejects an undefined query result.
+      if (!activeId) return null;
       const res = await getGroupAction(activeId);
-      return res.ok ? res.value : undefined;
+      return res.ok ? res.value : null;
     },
     enabled: Boolean(activeId) && isGroup,
   });
@@ -224,7 +225,7 @@ export function MessagingScreen({
     }),
   });
   const groupWithPresence = useMemo<GroupEntity | undefined>(() => {
-    if (!group || groupPresence.length === 0) return group;
+    if (!group || groupPresence.length === 0) return group ?? undefined;
     const byId = new Map(groupPresence.map((r) => [r.memberId, r]));
     return {
       ...group,

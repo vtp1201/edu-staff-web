@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeftRight,
   Bell,
@@ -11,6 +12,8 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@/bootstrap/i18n/routing";
+import { tenantUrl } from "@/bootstrap/tenant";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { StatusTone } from "@/components/shared/status-badge/status-badge";
@@ -32,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import type { Role } from "../sidebar/nav-config";
 import { deriveTenantMenu } from "./derive-tenant-menu";
+import { NOTIFICATION_BADGE_CLASS } from "./notification-badge";
 
 /** Role → semantic badge tone (design-system.md "Role → màu"). */
 const ROLE_TONE: Record<Role, StatusTone> = {
@@ -42,18 +46,31 @@ const ROLE_TONE: Record<Role, StatusTone> = {
   admin: "primary",
 };
 
-/**
- * Notification dot. DR-009 US-E16.2: error-ramp contrast — the bell badge dot
- * uses `bg-edu-error-dark` (#b91c1c, AA on white) instead of the lighter
- * `bg-edu-error` hue which fails small-target contrast.
- */
-export const NOTIFICATION_DOT_CLASS =
-  "absolute top-2 right-2 size-2 rounded-full bg-edu-error-dark";
+/** Unread pill on the bell — hidden at 0 (no fake "you have mail" dot). */
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span aria-hidden="true" className={NOTIFICATION_BADGE_CLASS}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
 
 type HeaderProps = {
   role: Role;
   userName?: string;
   onMenuClick?: () => void;
+  /** Active tenant — makes the bell link to the notifications centre. */
+  tenantId?: string;
+  /** Server Action: revoke the session + clear cookies, then redirect. */
+  onLogout?: () => Promise<void>;
+  /**
+   * Server Action: current unread-notification count. Shares the
+   * `["notifications","unread-count"]` query key with the notifications centre,
+   * so the realtime `notification.new` invalidation refreshes the badge too
+   * (bootstrap/realtime/event-invalidation.ts).
+   */
+  onFetchUnreadCount?: () => Promise<{ count: number } | { errorKey: string }>;
   // NEW (US-E23.1) — all optional, default to "feature absent" so existing
   // stories/tests that don't pass them keep compiling/passing unchanged.
   /** Caller's enriched tenant memberships (RSC-fetched, fail-closed []). */
@@ -71,11 +88,15 @@ export function Header({
   role,
   userName = "User",
   onMenuClick,
+  tenantId,
+  onLogout,
+  onFetchUnreadCount,
   memberships = [],
   currentTenantId,
   onSwitchTenant,
 }: HeaderProps) {
   const t = useTranslations("shell.header");
+  const tNoti = useTranslations("notifications");
   const tSwitch = useTranslations("tenant.switch");
   const tRoles = useTranslations("shell.roles");
   const [mounted, setMounted] = useState(false);
@@ -85,6 +106,15 @@ export function Header({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const res = await onFetchUnreadCount?.();
+      return res && "count" in res ? res.count : 0;
+    },
+    enabled: onFetchUnreadCount !== undefined,
+  });
 
   // Zero-noise gate (FR-001/002) + current-tenant match (FR-007) — pure
   // derivation, unit-tested in derive-tenant-menu.test.ts.
@@ -161,13 +191,27 @@ export function Header({
         {mounted ? (
           <>
             <Button
+              asChild={tenantId !== undefined}
               variant="ghost"
               size="icon"
-              aria-label={t("notifications")}
+              aria-label={
+                unreadCount > 0
+                  ? `${t("notifications")} — ${tNoti("unreadCountAriaLabel", { count: unreadCount })}`
+                  : t("notifications")
+              }
               className="relative"
             >
-              <Bell className="size-5" />
-              <span className={NOTIFICATION_DOT_CLASS} />
+              {tenantId !== undefined ? (
+                <Link href={tenantUrl(tenantId, "/notifications")}>
+                  <Bell className="size-5" />
+                  <UnreadBadge count={unreadCount} />
+                </Link>
+              ) : (
+                <>
+                  <Bell className="size-5" />
+                  <UnreadBadge count={unreadCount} />
+                </>
+              )}
             </Button>
 
             <ThemeToggle />
@@ -230,11 +274,27 @@ export function Header({
                     {tSwitch("menuItem")}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>
-                  <User className="mr-2 size-4" />
-                  {t("profile")}
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                {tenantId !== undefined ? (
+                  <DropdownMenuItem asChild>
+                    <Link href={tenantUrl(tenantId, "/profile")}>
+                      <User className="mr-2 size-4" />
+                      {t("profile")}
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem>
+                    <User className="mr-2 size-4" />
+                    {t("profile")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onSelect={() => {
+                    // Server Action: revokes the session, clears the httpOnly
+                    // cookies and redirects to /login. Fire-and-forget — the
+                    // redirect throw is handled inside the action.
+                    void onLogout?.();
+                  }}
+                >
                   <LogOut className="mr-2 size-4" />
                   {t("logout")}
                 </DropdownMenuItem>

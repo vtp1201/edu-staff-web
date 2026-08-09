@@ -33,10 +33,14 @@ import {
  * cross-feature composition/injection.
  */
 export class AttendanceRepository implements IAttendanceRepository {
-  /** `currentUserId` (JWT `sub`) drives the homeroom (GVCN) filter. */
+  /** `currentUserId` (the token's `memberId`) drives the homeroom (GVCN) filter. */
   constructor(
     private readonly http: AxiosInstance,
     private readonly currentUserId: string | null,
+    /** Batched IAM display-name lookup — core's enrollment rows carry none. */
+    private readonly resolveNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
   ) {}
 
   async getMyHomeroomClasses(): Promise<ClassSummary[]> {
@@ -65,10 +69,25 @@ export class AttendanceRepository implements IAttendanceRepository {
         ATTENDANCE_EP.classStudents(classId),
       ),
     ]);
-    const nameByMemberId = new Map(
+    const nameByMemberId = new Map<string, string | undefined>(
       roster.map((s) => [s.studentMemberId, s.displayName]),
     );
-    return mapClassAttendance(dayDto, nameByMemberId);
+    const missing = roster
+      .filter((s) => !s.displayName?.trim())
+      .map((s) => s.studentMemberId);
+    if (this.resolveNames && missing.length > 0) {
+      for (const [id, name] of await this.resolveNames(missing)) {
+        nameByMemberId.set(id, name);
+      }
+    }
+    // The roster — not the saved records — is the source of rows: a day nobody
+    // has marked yet answers `records: []`, which would otherwise render an
+    // empty screen instead of the class waiting to be marked.
+    return mapClassAttendance(
+      dayDto,
+      nameByMemberId,
+      roster.map((s) => s.studentMemberId),
+    );
   }
 
   async saveClassAttendance(

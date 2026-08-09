@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { logoutAction } from "@/app/[locale]/(auth)/login/actions";
 import { switchTenantAction } from "@/app/[locale]/(auth)/select-tenant/actions";
 import { evaluateAccess } from "@/bootstrap/auth-guard";
 import { makeGetProfileUseCase } from "@/bootstrap/di/auth.di";
@@ -9,6 +10,7 @@ import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import { enrichMemberships } from "@/features/tenant/infrastructure/enrich-memberships";
+import { fetchUnreadCountAction } from "./(shared)/notifications/actions";
 import { requestEmailVerificationAction } from "./email-verification.actions";
 
 /**
@@ -76,6 +78,8 @@ export default async function AppLayout({
         memberships={memberships}
         currentTenantId={tokenTenantId ?? undefined}
         onSwitchTenant={switchTenantAction}
+        onLogout={logoutAction}
+        onFetchUnreadCount={fetchUnreadCountAction}
       >
         {children}
       </AppShell>

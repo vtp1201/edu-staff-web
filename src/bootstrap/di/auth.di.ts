@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  canWriteCookies,
   getRefreshToken,
   isCurrentAccessExpired,
   setAuthCookies,
@@ -103,6 +104,12 @@ export async function ensureFreshSession(): Promise<void> {
   if (!(await isCurrentAccessExpired())) return;
   const refreshToken = await getRefreshToken();
   if (!refreshToken) return;
+
+  // An RSC render cannot write cookies. Rotating here would burn the refresh
+  // token (BE rotates on use) with no way to persist the new pair — the next
+  // request would then be logged out. So skip: rotation happens in Server
+  // Actions / route handlers, where the cookie store is writable.
+  if (!(await canWriteCookies())) return;
 
   const useCase = await makeRefreshSessionUseCase();
   const result = await useCase.execute(refreshToken);

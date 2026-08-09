@@ -41,6 +41,10 @@ type AppShellProps = {
   // default) so existing callers/tests/stories keep working unchanged.
   memberships?: TenantCardViewModel[];
   currentTenantId?: string;
+  /** Server Action: sign out (revoke + clear cookies + redirect). */
+  onLogout?: () => Promise<void>;
+  /** Server Action feeding the header's unread-notification badge. */
+  onFetchUnreadCount?: () => Promise<{ count: number } | { errorKey: string }>;
   onSwitchTenant?: (
     tenantId: string,
     role: string,
@@ -58,6 +62,8 @@ export function AppShell({
   memberships,
   currentTenantId,
   onSwitchTenant,
+  onLogout,
+  onFetchUnreadCount,
   children,
 }: AppShellProps) {
   const router = useRouter();
@@ -118,6 +124,9 @@ export function AppShell({
           <Header
             role={role}
             userName={userName}
+            tenantId={tenantId}
+            onLogout={onLogout}
+            onFetchUnreadCount={onFetchUnreadCount}
             onMenuClick={() => setMobileOpen(true)}
             memberships={memberships}
             currentTenantId={currentTenantId}

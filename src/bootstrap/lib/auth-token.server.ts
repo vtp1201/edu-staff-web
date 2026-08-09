@@ -47,6 +47,21 @@ export async function isCurrentAccessExpired(skewSec = 30): Promise<boolean> {
   return isAccessExpired(await getAccessExp(), skewSec);
 }
 
+/**
+ * True only where Next allows `cookies().set()` — a Server Action, route
+ * handler or middleware. During an RSC render the store is read-only and any
+ * write throws. Probed by deleting a name that is never used, so it is a no-op
+ * wherever it succeeds.
+ */
+export async function canWriteCookies(): Promise<boolean> {
+  try {
+    (await cookies()).delete("__writable_probe");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Persist a rotated token pair; derives the `exp` sibling from the access JWT. */
 export async function setAuthCookies(tokens: AuthTokens): Promise<void> {
   const store = await cookies();

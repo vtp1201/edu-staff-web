@@ -50,13 +50,31 @@ export function mapAttendanceRecord(
   };
 }
 
+/**
+ * `enrolledMemberIds` (when given) is the row set: every enrolled student gets
+ * a row, defaulting to `present`, with any saved record overlaid. Marking a
+ * class is a full-roster edit — an unmarked day answers `records: []`, and
+ * rendering that literally would show an empty screen with nothing to save.
+ */
 export function mapClassAttendance(
   dto: ClassAttendanceResponseDto,
   nameByMemberId: Map<string, string | undefined>,
+  enrolledMemberIds?: string[],
 ): AttendanceRoster {
+  const saved = new Map(dto.records.map((r) => [r.studentMemberId, r]));
+  const ids = enrolledMemberIds ?? dto.records.map((r) => r.studentMemberId);
   return {
     classDate: { classId: dto.classId, date: dto.date },
-    records: dto.records.map((r) => mapAttendanceRecord(r, nameByMemberId)),
+    records: ids.map((id) => {
+      const record = saved.get(id);
+      return record
+        ? mapAttendanceRecord(record, nameByMemberId)
+        : {
+            studentId: id,
+            studentName: nameByMemberId.get(id)?.trim() || id,
+            status: "present" as const,
+          };
+    }),
   };
 }
 

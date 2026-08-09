@@ -14,11 +14,23 @@ import { toTeacherRosterStudent } from "../mappers/teacher-class.mapper";
 import { toTeacherClassFailure } from "../mappers/teacher-class-failure.mapper";
 import { toTeacherClass } from "../mappers/teacher-dashboard.mapper";
 
+/** Batch member-id → display-name lookup (IAM directory), injected from DI. */
+export type ResolveMemberNames = (
+  memberIds: string[],
+) => Promise<Map<string, string>>;
+
 export class TeacherClassRepository implements ITeacherClassRepository {
-  /** `currentUserId` (JWT `sub`) drives the GVCN flag on each class. */
+  /** `currentUserId` (the token's `memberId`) drives the GVCN flag on each class. */
   constructor(
     private readonly http: AxiosInstance,
     private readonly currentUserId: string | null,
+    /**
+     * core's `EnrollmentResponse` carries no student display fields, so the
+     * roster would render raw member ids. Decorated here with ONE batched IAM
+     * `GET /members?ids=` (same composition as `admin-roster.di.ts`). Absent in
+     * mock mode; a failed lookup yields an empty map, never throws.
+     */
+    private readonly resolveNames?: ResolveMemberNames,
   ) {}
 
   async listMyClasses(): Promise<ClassResult<TeacherClass[]>> {
@@ -49,7 +61,23 @@ export class TeacherClassRepository implements ITeacherClassRepository {
       const roster = await this.fetchAllPages<ClassRosterResponseDto>(
         TEACHER_EP.classStudents(classId),
       );
-      return { ok: true, data: roster.map(toTeacherRosterStudent) };
+      const missing = roster
+        .filter((r) => !r.displayName?.trim())
+        .map((r) => r.studentMemberId);
+      const names =
+        this.resolveNames && missing.length > 0
+          ? await this.resolveNames(missing)
+          : new Map<string, string>();
+      return {
+        ok: true,
+        data: roster.map((dto) =>
+          toTeacherRosterStudent({
+            ...dto,
+            displayName:
+              dto.displayName?.trim() || names.get(dto.studentMemberId),
+          }),
+        ),
+      };
     } catch (err) {
       return { ok: false, error: toTeacherClassFailure(err) };
     }

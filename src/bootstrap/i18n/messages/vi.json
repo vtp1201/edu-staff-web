@@ -1083,6 +1083,7 @@
       "cancelReject": "Huỷ",
       "confirmReject": "Xác nhận từ chối",
       "noClassSelected": "Chọn một lớp để xem sổ đầu bài",
+      "noClasses": "Bạn chưa được phân công lớp nào",
       "reject": "Từ chối",
       "rejectReason": "Lý do từ chối",
       "rejectReasonPlaceholder": "VD: Thiếu nội dung bài tập về nhà...",

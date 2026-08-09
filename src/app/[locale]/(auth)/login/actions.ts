@@ -76,5 +76,7 @@ export async function logoutAction(): Promise<void> {
   const useCase = await makeLogoutUseCase();
   await useCase.execute(); // best-effort server revoke
   await clearAuthCookies();
-  redirect("/login");
+  // Locale-prefixed like every other redirect in this file — bare "/login" is
+  // not a route (next-intl routes are `/{locale}/…`) and 404s.
+  redirect(`/${await getLocale()}/login`);
 }
