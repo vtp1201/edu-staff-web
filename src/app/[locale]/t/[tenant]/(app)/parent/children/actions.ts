@@ -1,6 +1,6 @@
 "use server";
 
-import { makeGetLinkedStudentsWithConsentsUseCase } from "@/bootstrap/di/parent-consent.di";
+import { makeGetLinkedStudentsUseCase } from "@/bootstrap/di/parent-consent.di";
 import { buildChildrenOverviewVM } from "@/features/parent/presentation/children-overview-screen/build-children-overview-vm";
 import type { ChildrenOverviewFetchResult } from "@/features/parent/presentation/children-overview-screen/children-overview-screen.i-vm";
 
@@ -18,6 +18,13 @@ import type { ChildrenOverviewFetchResult } from "@/features/parent/presentation
  * Returns stable `errorKey`s, never translated strings (i18n.md).
  */
 export async function fetchParentChildrenAction(): Promise<ChildrenOverviewFetchResult> {
-  const useCase = await makeGetLinkedStudentsWithConsentsUseCase();
-  return buildChildrenOverviewVM(await useCase.execute());
+  // Children only: this screen drops the consent payload anyway, and a failing
+  // consents read used to take the whole list down with it.
+  const useCase = await makeGetLinkedStudentsUseCase();
+  const result = await useCase.execute();
+  return buildChildrenOverviewVM(
+    result.ok
+      ? { ok: true, value: { students: result.value, consentByStudentId: {} } }
+      : result,
+  );
 }

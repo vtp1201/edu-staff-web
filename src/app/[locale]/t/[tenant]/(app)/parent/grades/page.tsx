@@ -1,4 +1,7 @@
-import { makeGetChildGradesUseCase } from "@/bootstrap/di/grades.di";
+import {
+  makeGetChildGradesUseCase,
+  makeGetChildListUseCase,
+} from "@/bootstrap/di/grades.di";
 import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import type { GradeBook } from "@/features/grades/domain/entities/grade-book.entity";
 import type { GradesFailure } from "@/features/grades/domain/failures/grades.failure";
@@ -8,16 +11,6 @@ import {
 } from "@/features/grades/presentation/grade-book-screen/build-grade-book-vm";
 import { GradeBookContainer } from "@/features/grades/presentation/grade-book-screen/grade-book-container";
 import type { GradeBookScreenVM } from "@/features/grades/presentation/grade-book-screen/grade-book-screen.i-vm";
-
-// Fallback child id used when the URL carries no `?childId=`. It is a MOCK
-// fixture id, pre-dating this page's grade read going real — the grade read
-// here (`makeGetChildGradesUseCase`) has always been a separate data path from
-// the child-switcher roster, so nothing resolves it today.
-//
-// TODO(follow-up, out of scope for US-E18.33): default to the FIRST linked
-// child from `makeGetChildListUseCase()` (the roster is real since US-E18.33)
-// instead of this hardcoded id.
-const MOCK_CHILD_ID = "child-1";
 
 type SearchParams = Promise<{ term?: string; childId?: string }>;
 
@@ -33,7 +26,17 @@ export default async function ParentGradesPage({
 }) {
   const sp = await searchParams;
   const selectedTerm = sp.term ?? "HK1";
-  const childId = sp.childId ?? MOCK_CHILD_ID;
+
+  // The default child used to be the literal mock id "child-1", which no real
+  // deployment knows — every parent without an explicit `?childId=` got an
+  // "unknown error". Default to the FIRST linked child instead (the roster has
+  // been real since US-E18.33).
+  const childListResult = await (await makeGetChildListUseCase())
+    .execute()
+    .catch(() => ({ ok: false }) as const);
+  const childId =
+    sp.childId ??
+    (childListResult.ok ? childListResult.data[0]?.childId : undefined);
 
   const academicYearLabel = await resolveCurrentAcademicYear().catch(
     () => "2025-2026",
@@ -42,15 +45,17 @@ export default async function ParentGradesPage({
   let gradeBook: GradeBook | null = null;
   let error: GradesFailure["type"] | null = null;
 
-  const result = await (await makeGetChildGradesUseCase()).execute(
-    childId,
-    academicYearLabel,
-  );
-  if (isGradeBookFailure(result)) {
-    error = result.type;
-  } else {
-    gradeBook =
-      result.find((b) => b.termId === selectedTerm) ?? result[0] ?? null;
+  if (childId) {
+    const result = await (await makeGetChildGradesUseCase()).execute(
+      childId,
+      academicYearLabel,
+    );
+    if (isGradeBookFailure(result)) {
+      error = result.type;
+    } else {
+      gradeBook =
+        result.find((b) => b.termId === selectedTerm) ?? result[0] ?? null;
+    }
   }
 
   const vm: GradeBookScreenVM = {

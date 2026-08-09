@@ -12,7 +12,7 @@ import type {
   UpdateConsentInput,
 } from "../../domain/repositories/i-parent-consent.repository";
 import { fail, ok, type Result } from "../../domain/use-cases/result";
-import type { LinkedStudentResponseDto } from "../dtos/linked-student-response.dto";
+import type { LinkedStudentsResponseDto } from "../dtos/linked-student-response.dto";
 import type { ParentStudentConsentResponseDto } from "../dtos/parent-student-consent-response.dto";
 import {
   toConsentFailure,
@@ -35,16 +35,44 @@ type PCResult<T> = Result<T, ParentConsentFailure>;
  * (`SELF_MEMBER_ID` alias) — the client never supplies a parent id (NFR-007).
  */
 export class ParentConsentRepository implements IParentConsentRepository {
-  constructor(private readonly http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /** The caller's own memberId, decoded from the token in `bootstrap/di`. */
+    private readonly selfMemberId: string | null = null,
+    /** Batched IAM `memberId → displayName`; the links wire carries no name. */
+    private readonly resolveNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
+  ) {}
 
   async getLinkedStudents(): Promise<PCResult<LinkedStudentSummary[]>> {
     try {
-      const dtos = (await this.http.get(
-        PARENT_CONSENT_EP.linkedStudents(SELF_MEMBER_ID),
-      )) as unknown as LinkedStudentResponseDto[];
-      return ok((dtos ?? []).map(toLinkedStudentSummary));
+      // `me` is NOT a real path segment — core answered it with
+      // PARENTLINK_FORBIDDEN, which surfaced as "you may not view this list".
+      // The id comes from the token, server-side (NFR-007 holds either way).
+      const dto = (await this.http.get(
+        PARENT_CONSENT_EP.linkedStudents(this.selfMemberId ?? SELF_MEMBER_ID),
+      )) as unknown as LinkedStudentsResponseDto;
+      const links = dto?.links ?? [];
+      const names = await this.tryResolveNames(
+        links.map((l) => l.studentMemberId),
+      );
+      return ok(links.map((link) => toLinkedStudentSummary(link, names)));
     } catch (err) {
       return fail(toConsentFailure(err));
+    }
+  }
+
+  /** Decoration only — a failed lookup leaves ids as labels, never an error. */
+  private async tryResolveNames(
+    memberIds: string[],
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(memberIds)].filter(Boolean);
+    if (!this.resolveNames || ids.length === 0) return new Map();
+    try {
+      return await this.resolveNames(ids);
+    } catch {
+      return new Map();
     }
   }
 

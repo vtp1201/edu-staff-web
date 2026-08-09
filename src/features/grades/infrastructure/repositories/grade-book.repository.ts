@@ -70,7 +70,21 @@ export class GradeBookRepository implements IGradeBookRepository {
       termId: string,
       academicYearLabel: string,
     ) => Promise<AssessmentScheme>,
+    /** Batched IAM `memberId → displayName` — the grades wire carries none. */
+    private readonly resolveNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
   ) {}
+
+  /** Decoration only — a failed lookup leaves the id as the label. */
+  private async nameOf(memberId: string): Promise<string | undefined> {
+    if (!this.resolveNames || !memberId) return undefined;
+    try {
+      return (await this.resolveNames([memberId])).get(memberId);
+    } catch {
+      return undefined;
+    }
+  }
 
   async getGradeBook(key: ClassSubjectTermKey): Promise<GradeBook> {
     try {
@@ -100,6 +114,7 @@ export class GradeBookRepository implements IGradeBookRepository {
         params: { year: academicYearLabel },
       })) as unknown as StudentGradesResponseDto;
       const books: GradeBook[] = [];
+      const studentName = await this.nameOf(dto.studentMemberId);
       for (const group of dto.groups) {
         const scheme = this.resolveScheme
           ? await this.resolveScheme(
@@ -117,9 +132,10 @@ export class GradeBookRepository implements IGradeBookRepository {
             dto.academicYearLabel,
             this.className,
             // No subjectName source per-group on this wire response (only
-            // subjectId) — falls back to the id (same gap as studentName in
-            // grades.mapper.ts) until a subject-catalogue join is composed.
+            // subjectId) — falls back to the id until a subject-catalogue join
+            // is composed.
             group.subjectId,
+            studentName,
           ),
         );
       }

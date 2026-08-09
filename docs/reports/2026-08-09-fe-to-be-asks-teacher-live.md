@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 10 ask từ smoke-test role TEACHER + PRINCIPAL trên stack thật
+# FE → BE (2026-08-09): 12 ask từ smoke-test TEACHER + PRINCIPAL + PARENT trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -220,6 +220,41 @@ viên**. Các màn quản trị vì thế đúng-mà-trống, không demo đư�
 sinh/lớp, 5–8 giáo viên có phân công GVCN/GVBM khác nhau, cộng điểm danh vài
 ngày gần đây. Nếu có endpoint tổng hợp tỉ lệ chuyên cần theo trường/ngày thì
 càng tốt; chưa có thì FE giữ dấu "—".
+
+## #11 — `GET /core/api/v1/parent-student-links/consents` trả 405
+
+Endpoint đọc consent của phụ huynh (INT-002 trong spec US-E20.2) không nhận
+`GET`:
+
+```bash
+curl -s "$KONG/core/api/v1/parent-student-links/consents" -H "Authorization: Bearer $PARENT_TOKEN"
+# 405 {"error":{"code":"METHOD_NOT_ALLOWED", …}}
+curl -s "$KONG/core/api/v1/members/{parentMemberId}/consents" -H "…"   # 404
+```
+
+Hệ quả trước khi FE vá: màn **"Con của tôi"** chết theo — nó dùng chung use-case
+"linked students + consents", nên consents lỗi là cả danh sách con biến mất.
+FE đã tách: màn danh sách con giờ chỉ đọc linked-students (nó vốn không hiển thị
+consent). Nhưng **phần chỉnh consent trong Hồ sơ** vẫn chưa có nguồn.
+
+**Ask:** xác nhận đường dẫn/động từ đúng của read + update consent (hoặc cho
+biết endpoint chưa làm, để FE giữ mock cho riêng phần đó).
+
+## #12 — `GET /members/{id}/linked-students` không nhận alias `me`, và không trả tên con
+
+Hai điểm FE đã sửa nhưng nên ghi lại vì spec cũ nói khác:
+
+1. `GET /core/api/v1/members/me/linked-students` → `PARENTLINK_FORBIDDEN`.
+   Alias `me` (spec US-E20.2 INT-001 mô tả "server tự resolve memberId") KHÔNG
+   tồn tại; phải truyền memberId thật. FE trước đây gửi `me` nên phụ huynh nhận
+   thông báo "Bạn không có quyền xem danh sách này" — một lỗi 403 giả.
+2. Response là **object bọc** `{ "links": [...] }` với khoá `studentMemberId`,
+   **không** phải mảng phẳng `{studentId, fullName}` như DTO cũ của FE, và
+   **không có tên học sinh** → FE decorate bằng `GET /iam/api/v1/members?ids=`
+   (hoạt động tốt với token PARENT, cảm ơn ADR-0120).
+
+**Ask (nhỏ):** cập nhật `openapi.yaml` cho khớp thực tế (không có `me`, có
+wrapper `links`), và cân nhắc kèm `studentName` như ask #1.
 
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 
