@@ -1,7 +1,7 @@
-# BE → FE (2026-08-09): trả lời 5 ask từ smoke-test role TEACHER
+# BE → FE (2026-08-09): trả lời 7 ask từ smoke-test role TEACHER
 
 > Trả lời cho `2026-08-09-fe-to-be-asks-teacher-live.md`.
-> **Cả 5 ask đã xử lý xong** — 4 fix + 1 xác nhận contract. Toàn bộ verify lại
+> **Cả 7 ask đã xử lý xong** — 5 fix + 1 xác nhận contract + 1 từ chối có lý do. Toàn bộ verify lại
 > bằng curl thật qua Kong `localhost:8000`, tenant
 > `aeb0e462-9ced-48b3-ba36-803f9266b09d`, ngày 2026-08-09.
 >
@@ -15,6 +15,8 @@
 | 3 | `memberId` ↔ `userId` | ✅ Đã xác nhận — **luôn bằng nhau**, nhưng đọc `memberId` vẫn đúng | Ghi ADR theo mục #3 |
 | 4 | `unread-count` 500 | ✅ FIXED (hạ tầng) | Không |
 | 5 | SSE 0 byte → reconnect loop | ✅ FIXED (lỗi code BE) | Không (backoff của FE cứ giữ) |
+| 6 | TKB phi thực tế, 1 GV dạy hết | ✅ ĐÃ SEED LẠI + thêm 3 tài khoản GV | Không |
+| 7 | `termName` trong học bạ | ❌ **KHÔNG LÀM** — xem lý do ở #7 | Giữ nguyên join hiện tại |
 
 ---
 
@@ -153,14 +155,99 @@ lại — đây là hành vi cố ý, không phải lỗi).
 
 ---
 
+## #6 — Đã seed lại thời khoá biểu cho giống thật
+
+Đúng, đó là lỗi của tool seed (BE), không phải FE. Bản cũ đổ đầy 25/25 tiết và
+lấy **một** giáo viên cho mọi môn của lớp. Đã viết lại bộ xếp lịch theo đúng hai
+ràng buộc có thật:
+
+- một lớp chỉ có một tiết tại mỗi (thứ, tiết);
+- một **giáo viên** không thể ở hai lớp cùng (thứ, tiết) — đây chính là thứ
+  `teacher_schedule` chặn bằng LWT ở production, nên lịch seed vi phạm sẽ là dữ
+  liệu không thể ghi được thật.
+
+Mỗi môn giờ có **một tiết mỗi ngày**, ở vị trí xoay theo ngày **và** theo lớp,
+nên không còn cảnh một môn chạy liền 5 tiết sáng, và hai lớp không bao giờ giành
+cùng một giáo viên ở cùng tiết. 15/25 ô có tiết, phần còn lại **để trống**.
+
+Lớp 10A1, HK1 2026-2027:
+
+```
+          MON        TUE        WED        THU        FRI
+tiet1  Ngu Van          -          -       Toan  Tieng Anh
+tiet2 TiengAnh    Ngu Van          -          -       Toan
+tiet3     Toan  Tieng Anh    Ngu Van          -          -
+tiet4        -       Toan  Tieng Anh    Ngu Van          -
+tiet5        -          -       Toan  Tieng Anh    Ngu Van
+```
+
+Lịch dạy của `giaovien@demo.local` (chuyên Toán) — 5 tiết, rải đủ 5 ngày, chỉ
+dạy đúng môn của mình:
+
+```
+MON tiet3 Toan · TUE tiet4 Toan · WED tiet5 Toan · THU tiet1 Toan · FRI tiet2 Toan
+```
+
+**Ba tài khoản giáo viên mới** (đúng như đề nghị), mật khẩu **giống hệt** các
+acc demo hiện có:
+
+| Email | Chuyên môn |
+| --- | --- |
+| `giaovien@demo.local` | Toán (10A1) |
+| `giaovien2@demo.local` | Ngữ văn |
+| `giaovien3@demo.local` | Tiếng Anh |
+| `giaovien4@demo.local` | Toán (9A1) |
+
+(Tool copy `password_hash` của một member sẵn có sang tài khoản mới, nên nó
+không cần biết — và không hardcode — mật khẩu thật.)
+
+Tiện thể sửa luôn điểm "không phải ask" số 2 của các bạn: **điểm năm ACTIVE giờ
+không còn rỗng ở self-view của học sinh**. Không phải bug — `GetStudentGrades`
+lọc `!IsReadableByStudent()`, tức HS/PH **chỉ thấy PUBLISHED/LOCKED**, mà cả kỳ
+đang DRAFT nên trả `groups: []`. Seed giờ đặt trạng thái **theo từng cột**: kỳ
+đang diễn ra thì các cột TX đã `PUBLISHED`, giữa kỳ/cuối kỳ còn `DRAFT` — đúng
+kiểu sổ điểm đang chấm dở. Kiểm chứng:
+
+```bash
+curl -s "$KONG/core/api/v1/members/1aff4f6f-.../grades?year=2026-2027" -H "Authorization: Bearer $STUDENT"
+# groups: 3 | entries: 8 | status: {'PUBLISHED'}
+```
+
+Copy "Chưa có điểm cho năm học 2026-2027" của FE vẫn nên giữ — nó đúng cho một
+kỳ chưa khai giảng.
+
+## #7 — `termName` trong học bạ: BE xin **không làm**
+
+Các bạn cho phép trả lời "không làm", và đây là câu trả lời — kèm lý do, không
+phải vì ngại:
+
+1. **Học bạ là ảnh chụp đã niêm phong.** `academic_records` cố ý chỉ giữ những gì
+   được chốt tại thời điểm seal. Denormalize `termName` vào đó nghĩa là **đóng
+   băng cái tên**: admin đổi tên kỳ về sau thì học bạ sẽ hiện tên cũ mãi mãi.
+   Ngược lại nếu join sống tại lúc đọc thì nó lại mâu thuẫn với chính ngữ nghĩa
+   "snapshot" của bảng.
+2. **Cách FE đang làm là đúng nhất.** Resolve `termId → name` từ calendar lúc
+   render luôn cho ra tên **hiện tại** của kỳ, và các bạn đã để best-effort nên
+   calendar chết thì học bạ vẫn hiện.
+3. **Chi phí thấp.** Khác #1 (một round-trip **liên service**, từ browser, lặp
+   lại mỗi lần render danh sách), #7 là **một** lệnh gọi core→core cho cả trang.
+
+Khác biệt so với #1/#2 nằm ở chỗ đó: tên người là dữ liệu **hiển thị thuần**,
+sống ở service khác, và join lại tốn một chặng mạng thật; tên học kỳ nằm ngay
+trong core và chỉ tốn một lệnh gọi cho mỗi trang.
+
+Nếu sau này màn học bạ phải render nhiều năm trong một lần tải và số lệnh gọi
+calendar tăng theo, cứ mở lại ask — lúc đó BE sẽ làm một endpoint batch
+`terms?ids=` thay vì denormalize vào bản ghi đã seal.
+
 ## Hai điểm "không phải ask"
 
-1. **Không kỳ nào phủ hôm nay** — BE **chưa đổi**, và đây là lựa chọn có chủ ý:
-   `start_date` là clustering key của bảng `terms`, nên dời ngày = DELETE + INSERT
-   lại row, tức xoá dữ liệu đang có của tenant demo. Rule resolve mới của FE
-   ("term gần nhất chưa kết thúc") đúng và bền hơn — **giữ nguyên nó**. Nếu team
-   muốn demo có kỳ hiện tại thật, nói một tiếng, BE sẽ dời HK1 2026-2027 về
-   `2026-08-01 → 2026-12-31` (term_id không đổi nên TKB/điểm/học bạ giữ nguyên).
+1. **Không kỳ nào phủ hôm nay — ĐÃ SỬA.** HK1 2026-2027 nay là
+   **`2026-08-01 → 2026-12-31`**, tức phủ ngày hôm nay. Dời qua API chính thức
+   (`PATCH /academic-years/{yearId}/terms/{termId}`, ADMIN) chứ không sửa DB tay;
+   use case tự kiểm tra chồng lấn với các kỳ khác. **`term_id` không đổi**, nên
+   toàn bộ TKB / điểm / học bạ / hạnh kiểm giữ nguyên — không phải seed lại gì.
+   Rule "term gần nhất chưa kết thúc" của FE vẫn đúng và bền hơn, **cứ giữ**.
 2. **`GET /core/api/v1/terms` 404** — xác nhận: route phẳng **cố ý không có**.
    Term luôn nằm dưới `/api/v1/academic-years/{yearId}/terms` vì nó là con của
    năm học (partition key là `(tenant_id, academic_year_id)`, không có cách đọc
