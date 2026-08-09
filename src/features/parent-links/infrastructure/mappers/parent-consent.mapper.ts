@@ -19,8 +19,14 @@ export function toLinkedStudentSummary(
     studentId: dto.studentMemberId,
     // No name on the wire; an unresolved id keeps the class label or the id
     // itself rather than rendering blank.
+    // BE resolves `studentName` server-side now (reply 2026-08-09, ask #12),
+    // best-effort — so keep the fallback chain behind it: injected lookup,
+    // then the class label, then the id. Never blank.
     fullName:
-      names.get(dto.studentMemberId) ?? dto.className ?? dto.studentMemberId,
+      dto.studentName?.trim() ||
+      names.get(dto.studentMemberId) ||
+      dto.className ||
+      dto.studentMemberId,
     linkId: dto.linkId,
     ...(dto.className ? { className: dto.className } : {}),
   };

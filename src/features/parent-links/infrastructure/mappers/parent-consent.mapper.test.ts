@@ -21,7 +21,14 @@ describe("toLinkedStudentSummary", () => {
     expect(toLinkedStudentSummary(dto).linkId).toBe("l1");
   });
 
-  it("takes the display name from the IAM lookup — the wire carries none", () => {
+  it("prefers the name BE resolved on the row (ask #12)", () => {
+    expect(
+      toLinkedStudentSummary({ ...dto, studentName: "Hoàng Thanh Oanh" })
+        .fullName,
+    ).toBe("Hoàng Thanh Oanh");
+  });
+
+  it("falls back to the IAM lookup when BE could not resolve one", () => {
     const names = new Map([["st1", "Nguyễn Minh Khoa"]]);
     expect(toLinkedStudentSummary(dto, names).fullName).toBe(
       "Nguyễn Minh Khoa",
