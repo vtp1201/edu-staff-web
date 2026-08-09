@@ -1,7 +1,7 @@
-# BE → FE (2026-08-09): trả lời 10 ask từ smoke-test TEACHER + hiệu trưởng
+# BE → FE (2026-08-09): trả lời 12 ask từ smoke-test TEACHER / hiệu trưởng / phụ huynh
 
 > Trả lời cho `2026-08-09-fe-to-be-asks-teacher-live.md`.
-> **Cả 10 ask đã xử lý xong** — 8 fix + 1 xác nhận contract + 1 từ chối có lý do.
+> **Cả 12 ask đã xử lý xong** — 10 fix + 1 xác nhận contract + 1 từ chối có lý do.
 > #8 và #9 là **hai lỗi thật của BE**, cảm ơn team đã bắt được. Toàn bộ verify lại
 > bằng curl thật qua Kong `localhost:8000`, tenant
 > `aeb0e462-9ced-48b3-ba36-803f9266b09d`, ngày 2026-08-09.
@@ -21,6 +21,8 @@
 | 8 | ADMIN bị 403 ở `tenants/{id}/members` | ✅ FIXED — **lỗi BE**, gate leak | Bỏ workaround nếu có |
 | 9 | `classes` rỗng khi thiếu `academicYear` | ✅ FIXED — giờ trả mọi năm | Không (truyền year vẫn đúng) |
 | 10 | Thiếu dữ liệu cho hiệu trưởng | ✅ ĐÃ SEED — 31 lớp / 150 HS / điểm danh | Không |
+| 11 | `GET .../consents` trả 405 | ✅ ĐÃ LÀM endpoint đọc consent | Bỏ mock phần consent |
+| 12 | `me` alias + thiếu tên con | ✅ Đã thêm `studentName`; xác nhận **không có** `me` | Bỏ lượt decorate IAM |
 
 ---
 
@@ -338,6 +340,80 @@ Cỡ trường điều chỉnh được khi seed:
 ```bash
 STUDENTS_PER_CLASS=30 ATTENDANCE_DAYS=30 TENANT_ID=aeb0e462-... go run ./cmd/seeddemo
 ```
+
+## #11 — Endpoint đọc consent: chưa từng có, giờ đã có
+
+405 là đúng thực tế: route `/parent-student-links/consents` chỉ đăng ký `POST`
+(grant) và `DELETE` (revoke) — **chưa bao giờ có `GET`**. Không phải sai đường
+dẫn hay sai động từ; phần đọc đơn giản là thiếu.
+
+Đã thêm `GET /api/v1/parent-student-links/consents`, địa chỉ bằng **query
+param** (không phải body — GET kèm body không phải proxy nào cũng forward):
+
+```bash
+curl -s "$KONG/core/api/v1/parent-student-links/consents?parentMemberId=fb675f69-…&studentMemberId=fc1cbceb-…" \
+  -H "Authorization: Bearer $PARENT_TOKEN"
+# {"success":true,"data":{"parentMemberId":"fb675f69-…","studentMemberId":"fc1cbceb-…",
+#   "category":"CONDUCT_NOTIFICATION","status":"GRANTED",
+#   "method":"ADMIN_RECORDED_PAPER_FORM","recordedBy":"1e821c2b-…",
+#   "grantedAt":"2026-08-09T06:25:01Z","revokedAt":null}}
+```
+
+Ba điều cần biết:
+
+1. **Phụ huynh đọc được consent của chính mình.** Quyền ở đây **rộng hơn**
+   grant/revoke một cách có chủ ý: ghi nhận consent vẫn là việc của ADMIN (nó
+   phản ánh tờ giấy đã ký), nhưng người mà bản ghi nói về phải xem được — nếu
+   không thì đó là ghi chú riêng, không phải sổ đăng ký. Staff đọc mọi cặp;
+   PARENT chỉ đọc cặp của mình (đã verify: đọc cặp người khác → **403**).
+2. **Chưa ghi nhận = `404 PARENTLINK_CONSENT_NOT_FOUND`**, không phải 200 rỗng.
+   "Chưa từng có consent" và "có nhưng đã REVOKED" là hai trạng thái khác nhau,
+   FE hành xử khác nhau ở mỗi cái. Đã verify cả hai nhánh.
+3. **Không có API liệt kê consent của một phụ huynh.** Bảng khoá
+   `((tenant, parent, student, category))` nên liệt kê = quét bảng. Phụ huynh có
+   N con thì gọi N lần — với `category` chỉ có một giá trị ở v1, đây là N point
+   read rất rẻ.
+
+Ghi consent (`POST`/`DELETE`) **vẫn chỉ ADMIN** — không đổi. Nếu màn Hồ sơ định
+cho phụ huynh **tự bật/tắt**, đó là thay đổi chính sách (ADR 0075 nói rõ MVP
+không có self-service), cần mở ask riêng chứ BE không tự nới.
+
+## #12 — `me` không tồn tại (spec cũ sai), và đã có `studentName`
+
+**Về `me`:** xác nhận — core **không hỗ trợ alias `me` ở bất kỳ đâu**, không
+riêng endpoint này. `openapi.yaml` vốn đã khai `memberId` là `format: uuid`, tức
+spec BE chưa từng hứa có `me`; tài liệu US-E20.2 INT-001 của FE mới là chỗ sai.
+Đã ghi thẳng điều đó vào mô tả tham số dùng chung để không ai đọc nhầm lần nữa:
+
+> UUID of the member. A literal `me` alias is NOT supported anywhere in core —
+> read the member id from the `memberId` token claim and send it.
+
+(IAM thì có `/api/v1/members/me/tenants` — đó là IAM, không phải core. Khác biệt
+này là nguồn nhầm lẫn, nên FE cứ theo openapi của từng service.)
+
+**Về shape:** wrapper `{ "links": [...] }` với khoá `studentMemberId` là **đúng
+như openapi đã mô tả từ đầu** — không phải drift, DTO cũ của FE mới lệch.
+
+**Về tên con:** đã thêm, cùng cơ chế ask #1 — **một** lệnh gọi `DisplayNames` cho
+cả danh sách:
+
+```json
+{ "links": [
+  { "linkId": "7633e5a6-…", "studentMemberId": "fc1cbceb-…",
+    "classId": "97bba43f-…", "className": "12A2",
+    "studentName": "Hoàng Thanh Oanh" } ] }
+```
+
+`studentName` **best-effort** và **omitempty** (vắng mặt, không phải null — khớp
+với `classId`/`className` cùng struct): IAM lỗi thì tên biến mất còn danh sách
+con vẫn trả — danh sách là thứ phụ huynh dùng để điều hướng.
+
+Việc này **đảo lại** ghi chú của US-148 ("core never duplicates IAM name data").
+Lý do: resolve nhãn lúc đọc thì **không lưu gì cả**, và đó đúng là pattern context
+`class` đang chạy (`homeroomTeacherName` US-173, `displayName` ask #1). Bắt mọi
+client gọi thêm một chặng liên service cho 1-3 cái tên, trên màn phụ huynh mở
+đầu tiên, là đánh đổi tệ hơn. Comment trong DTO ghi lại việc đảo quyết định thay
+vì lặng lẽ mâu thuẫn với nó.
 
 ## Hai điểm "không phải ask"
 
