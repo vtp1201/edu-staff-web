@@ -24,6 +24,12 @@ vi.mock("@/bootstrap/lib/auth-token.server", () => ({
   getAccessToken: vi.fn(),
 }));
 
+// The handler rotates a stale session before proxying (route handlers are one
+// of the few places cookies are writable); stubbed so no refresh call is made.
+vi.mock("@/bootstrap/di/auth.di", () => ({
+  ensureFreshSession: vi.fn(async () => {}),
+}));
+
 function makeJwt(payload: Record<string, unknown>): string {
   const b64 = (o: unknown) =>
     Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -123,6 +129,31 @@ describe("SSE proxy route GET (US-E18.22 Kong-routed real branch)", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(response.headers.get("Content-Type")).toBe("text/event-stream");
+  });
+
+  it("passes an upstream 401 through instead of masking it as 502", async () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "false");
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://kong:8000");
+    const { getAccessToken } = await import(
+      "@/bootstrap/lib/auth-token.server"
+    );
+    vi.mocked(getAccessToken).mockResolvedValue(
+      makeJwt({ tenantId: "t-1", sub: "u-1" }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 401 })),
+    );
+    const { NextRequest } = await import("next/server");
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new NextRequest("http://localhost/vi/api/stream?tenant=t-1"),
+    );
+
+    // 502 reads as "upstream is broken, keep retrying"; 401 is the truth and
+    // retrying cannot fix it.
+    expect(response.status).toBe(401);
   });
 
   it("AC-4: upstream 502 surfaces as Bad Gateway", async () => {
