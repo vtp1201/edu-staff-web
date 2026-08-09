@@ -13,6 +13,28 @@
  */
 
 export const SSE_RECONNECT_DELAY_MS = 4000;
+/** Ceiling for the backoff below — a dead upstream settles at one try/minute. */
+export const SSE_RECONNECT_MAX_DELAY_MS = 60_000;
+
+/**
+ * Exponential backoff for consecutive failures: 4s, 8s, 16s … capped at
+ * {@link SSE_RECONNECT_MAX_DELAY_MS}. `attempt` is 0 for the first retry after
+ * a successful connection and resets on every `open`.
+ *
+ * Why: with a fixed 4s delay an upstream that accepts the connection and then
+ * closes it immediately (observed 2026-08-09 — `noti` closed the stream after
+ * 1–3s with zero bytes) turns into a permanent request-every-4s loop per tab,
+ * forever, with nothing on screen to explain it.
+ */
+export function reconnectDelayFor(
+  attempt: number,
+  baseMs = SSE_RECONNECT_DELAY_MS,
+): number {
+  return Math.min(
+    baseMs * 2 ** Math.max(0, attempt),
+    SSE_RECONNECT_MAX_DELAY_MS,
+  );
+}
 
 export interface ScheduleReconnectOptions {
   /** Invoked once, after `delayMs`, to re-run the connect logic. */

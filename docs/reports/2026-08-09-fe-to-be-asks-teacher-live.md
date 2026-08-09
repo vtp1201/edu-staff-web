@@ -1,4 +1,4 @@
-# FE → BE (2026-08-09): 4 ask từ smoke-test role TEACHER trên stack thật
+# FE → BE (2026-08-09): 5 ask từ smoke-test role TEACHER trên stack thật
 
 > Bối cảnh: chạy `edu-staff-web` với `NEXT_PUBLIC_USE_MOCK=false` qua Kong
 > `localhost:8000`, tài khoản `giaovien@demo.local`, tenant
@@ -90,6 +90,35 @@ giao diện, nhưng badge sẽ luôn trống tới khi BE sửa.
 
 **Ask:** BE trace `requestId` ở trên trong log `noti` và cho biết đây là lỗi
 hạ tầng (thiếu bảng/migration của noti trên môi trường demo) hay lỗi code.
+
+## #5 — `GET /noti/api/v1/stream` đóng kết nối ngay, không gửi byte nào
+
+Nghiêm trọng hơn #4 vì nó tạo **vòng lặp request vô hạn**: browser mở
+`EventSource`, upstream nhận rồi đóng sau 1–3 giây với **0 byte** (không frame,
+không comment keep-alive, không `retry:`), `EventSource` coi đó là mất kết nối
+và mở lại → lặp mãi trên mọi tab đang mở.
+
+```bash
+for i in 1 2; do
+  curl -sN --max-time 20 -o /dev/null \
+    -w "conn=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
+    "$KONG/noti/api/v1/stream?tenant=aeb0e462-..." \
+    -H "Authorization: Bearer $TOKEN" -H "Accept: text/event-stream"
+done
+# conn=1.019965s total=1.019982s bytes=0
+# conn=3.109726s total=3.122911s bytes=0
+```
+
+Header trả về đúng (`200`, `Content-Type: text/event-stream`,
+`X-Kong-Upstream-Latency: 3013`), nên vấn đề nằm ở `noti` chứ không phải Kong.
+
+**FE đã giảm đau** (merge cùng ngày): reconnect đổi từ cố định 4s sang backoff
+luỹ thừa 4s → 8s → 16s … trần 60s, reset khi `open` thành công. Vòng lặp vẫn
+còn nhưng giãn còn 1 lần/phút thay vì 15 lần/phút mỗi tab.
+
+**Ask:** `noti` giữ stream mở và phát ít nhất một comment keep-alive định kỳ
+(`: ping\n\n` mỗi ~15–30s) như SSE thường làm. Nếu stream cố tình đóng khi
+không có subscriber, xin cho biết để FE chuyển hẳn sang polling.
 
 ## Không phải ask — 2 điểm dữ liệu/seed để BE biết
 

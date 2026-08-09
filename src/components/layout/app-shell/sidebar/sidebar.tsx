@@ -11,7 +11,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/shared/utils";
-import { NAV_BY_ROLE, type NavItem, type Role } from "./nav-config";
+import {
+  activeNavHref,
+  NAV_BY_ROLE,
+  type NavItem,
+  type Role,
+} from "./nav-config";
 import { sidebarGridStyle } from "./sidebar-grid";
 
 type SidebarProps = {
@@ -33,6 +38,12 @@ export function Sidebar({
   const t = useTranslations("shell.nav");
   const pathname = usePathname();
   const items = NAV_BY_ROLE[role];
+  // One winner: the longest href the pathname sits under (a plain prefix test
+  // kept the dashboard lit on every child route).
+  const activeHref = activeNavHref(
+    pathname,
+    items.map((item) => tenantUrl(tenantId, item.href)),
+  );
 
   return (
     // DR-009 US-E16.4: the collapse/expand animation runs on the wrapper's
@@ -76,10 +87,7 @@ export function Sidebar({
                   href={href}
                   label={t(item.labelKey)}
                   collapsed={collapsed}
-                  active={
-                    pathname === href ||
-                    (pathname?.startsWith(`${href}/`) ?? false)
-                  }
+                  active={href === activeHref}
                 />
               );
             })}

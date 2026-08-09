@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  reconnectDelayFor,
   SSE_RECONNECT_DELAY_MS,
+  SSE_RECONNECT_MAX_DELAY_MS,
   scheduleReconnect,
 } from "./schedule-reconnect";
 
@@ -65,5 +67,21 @@ describe("scheduleReconnect (SSE 4s auto-reconnect timer)", () => {
     expect(onReconnect).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(onReconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("reconnectDelayFor", () => {
+  it("doubles per consecutive failure", () => {
+    expect(reconnectDelayFor(0)).toBe(4000);
+    expect(reconnectDelayFor(1)).toBe(8000);
+    expect(reconnectDelayFor(2)).toBe(16000);
+  });
+
+  it("caps at one attempt per minute so a dead upstream stops hammering", () => {
+    expect(reconnectDelayFor(10)).toBe(SSE_RECONNECT_MAX_DELAY_MS);
+  });
+
+  it("treats a negative attempt as the first one", () => {
+    expect(reconnectDelayFor(-1)).toBe(4000);
   });
 });
