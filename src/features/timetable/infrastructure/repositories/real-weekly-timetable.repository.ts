@@ -85,18 +85,19 @@ export class RealWeeklyTimetableRepository
     private readonly resolveTermId: TermIdResolver,
     private readonly currentUserId: string | null,
     /**
-     * `memberId → displayName` resolver for the parent's children
-     * (US-E18.33), injected by `bootstrap/di/timetable-view.di.ts` from
+     * `memberId → displayName` resolver — the parent's children (US-E18.33)
+     * and, since the grid stopped printing raw teacher ids, the TEACHERS of a
+     * member timetable's slots. Injected by `bootstrap/di/timetable-view.di.ts` from
      * `iam-directory`'s `BatchResolveMembersUseCase` — the app's single
      * batch-lookup client. Cross-feature composition belongs in
      * `bootstrap/di`, never inside a feature's own layers (decision 0017).
      *
      * OPTIONAL so the ~30 existing wire-level tests can keep constructing this
-     * repository with three arguments. Absent = every child keeps the ordinal
-     * fallback, i.e. exactly the pre-US-E18.33 behaviour — a degraded display,
-     * never an error.
+     * repository with three arguments. Absent = children keep the ordinal
+     * fallback and teachers keep their raw id — a degraded display, never an
+     * error.
      */
-    private readonly resolveChildNames?: (
+    private readonly resolveMemberNames?: (
       memberIds: string[],
     ) => Promise<Map<string, string>>,
   ) {}
@@ -132,10 +133,13 @@ export class RealWeeklyTimetableRepository
   ): Promise<WeeklyTimetable> {
     try {
       const dto = await this.fetchMemberTimetable(memberId, weekStart);
-      return mapMemberWeeklyTimetable(dto, () => undefined, {
-        classId: memberId,
-        className: "",
-      });
+      const teacherNames = await this.tryResolveTeacherNames(dto);
+      return mapMemberWeeklyTimetable(
+        dto,
+        () => undefined,
+        { classId: memberId, className: "" },
+        (id) => teacherNames.get(id),
+      );
     } catch (err) {
       throw toTimetableViewFailure(err);
     }
@@ -168,7 +172,10 @@ export class RealWeeklyTimetableRepository
       throw toTimetableViewFailure(err);
     }
 
-    const enrollment = await this.tryFetchEnrollment(selfId);
+    const [enrollment, teacherNames] = await Promise.all([
+      this.tryFetchEnrollment(selfId),
+      this.tryResolveTeacherNames(dto),
+    ]);
     return mapMemberWeeklyTimetable(
       dto,
       (classId) =>
@@ -177,6 +184,7 @@ export class RealWeeklyTimetableRepository
         classId: enrollment?.classId ?? selfId,
         className: enrollment?.className ?? "",
       },
+      (id) => teacherNames.get(id),
     );
   }
 
@@ -198,10 +206,12 @@ export class RealWeeklyTimetableRepository
         this.fetchAllPages<ClassSummaryDto>(TIMETABLE_VIEW_EP.myClasses),
       ]);
       const classNames = new Map(classes.map((c) => [c.classId, c.name]));
+      const teacherNames = await this.tryResolveTeacherNames(dto);
       return mapMemberWeeklyTimetable(
         dto,
         (classId) => classNames.get(classId),
         { classId: teacherId, className: teacherId },
+        (id) => teacherNames.get(id),
       );
     } catch (err) {
       throw toTimetableViewFailure(err);
@@ -252,9 +262,26 @@ export class RealWeeklyTimetableRepository
     const ids = [...links]
       .sort((a, b) => a.linkId.localeCompare(b.linkId))
       .map((l) => l.studentMemberId);
-    if (!this.resolveChildNames || ids.length === 0) return new Map();
+    if (!this.resolveMemberNames || ids.length === 0) return new Map();
     try {
-      return await this.resolveChildNames(ids);
+      return await this.resolveMemberNames(ids);
+    } catch {
+      return new Map();
+    }
+  }
+
+  /** Best-effort teacher display names for a member timetable's slots — one
+   *  batched IAM lookup, never throws (an unresolved id keeps rendering as the
+   *  raw id, which is what the grid showed for every slot before US-E18.60+). */
+  private async tryResolveTeacherNames(
+    dto: MemberTimetableResponseDto,
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(dto.slots.map((s) => s.teacherMemberId))].filter(
+      Boolean,
+    );
+    if (!this.resolveMemberNames || ids.length === 0) return new Map();
+    try {
+      return await this.resolveMemberNames(ids);
     } catch {
       return new Map();
     }

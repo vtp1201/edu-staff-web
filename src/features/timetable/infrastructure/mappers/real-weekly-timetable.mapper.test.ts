@@ -37,9 +37,13 @@ describe("mapRealWeeklyTimetable", () => {
     expect(slot?.room).toBeUndefined();
   });
 
-  it("defaults the color token to muted for an unrecognised (real UUID) subjectId", () => {
+  it("colours UUID subjectIds too, one colour each (they used to render grey)", () => {
     const vm = mapRealWeeklyTimetable(DTO, "11A2");
-    expect(vm.slots[0]?.[1]?.subjectColorToken).toBe("muted");
+    const a = vm.slots[0]?.[1]?.subjectColorToken;
+    const b = vm.slots[4]?.[5]?.subjectColorToken;
+    expect(a).not.toBe("muted");
+    expect(b).not.toBe("muted");
+    expect(a).not.toBe(b);
   });
 });
 

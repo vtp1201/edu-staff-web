@@ -1,33 +1,8 @@
 import { dayEnumToIndex } from "../../domain/day-enum";
-import type { SubjectColorToken } from "../../domain/entities/timetable-slot.entity";
 import type { WeeklyTimetable } from "../../domain/entities/weekly-timetable.entity";
+import { assignSubjectColors } from "../../domain/subject-color";
 import type { MemberTimetableResponseDto } from "../dtos/member-timetable-response.dto";
 import type { RealTimetableResponseDto } from "../dtos/real-timetable-response.dto";
-
-/**
- * subjectId → semantic color token, mirrors
- * `weekly-timetable.mapper.ts`'s mock-fixture table. Real wire `subjectId`s are
- * UUIDs (not the mock's short slugs like `"math"`) so this table will not match
- * in practice today — every real slot falls back to `"muted"` until the
- * subject-catalogue (US-E18.3, already real) is joined in a follow-up. Kept for
- * parity/documentation, not removed, since a future join can reuse it verbatim.
- */
-const SUBJECT_COLOR_TABLE: Record<string, SubjectColorToken> = {
-  math: "primary",
-  lit: "purple",
-  eng: "success",
-  phys: "warning",
-  chem: "error",
-  bio: "teal",
-  hist: "info",
-  geo: "geo",
-  civic: "muted",
-  pe: "primary-dark",
-};
-
-function resolveColorToken(subjectId: string): SubjectColorToken {
-  return SUBJECT_COLOR_TABLE[subjectId] ?? "muted";
-}
 
 /**
  * Class-scoped real-mode mapper (US-E18.11, signature unchanged in US-E18.26 —
@@ -43,13 +18,14 @@ export function mapRealWeeklyTimetable(
   className: string,
 ): WeeklyTimetable {
   const slots: WeeklyTimetable["slots"] = {};
+  const colors = assignSubjectColors(dto.slots.map((s) => s.subjectId));
   for (const slot of dto.slots) {
     const dayIndex = dayEnumToIndex(slot.day);
     slots[dayIndex] ??= {};
     slots[dayIndex][slot.period] = {
       subjectId: slot.subjectId,
       subjectName: slot.subjectName ?? slot.subjectId, // id fallback — ask #6/#7
-      subjectColorToken: resolveColorToken(slot.subjectId),
+      subjectColorToken: colors.get(slot.subjectId) ?? "muted",
       teacherName: slot.teacherMemberId, // no wire display name — ask #6/#7
       room: slot.room,
       className: undefined,
@@ -81,16 +57,19 @@ export function mapMemberWeeklyTimetable(
   dto: MemberTimetableResponseDto,
   classNameOf: (classId: string) => string | undefined,
   identity: { classId: string; className: string },
+  /** memberId → display name (IAM batch lookup); unresolved keeps the id. */
+  teacherNameOf: (memberId: string) => string | undefined = () => undefined,
 ): WeeklyTimetable {
   const slots: WeeklyTimetable["slots"] = {};
+  const colors = assignSubjectColors(dto.slots.map((s) => s.subjectId));
   for (const slot of dto.slots) {
     const dayIndex = dayEnumToIndex(slot.day);
     slots[dayIndex] ??= {};
     slots[dayIndex][slot.period] = {
       subjectId: slot.subjectId,
       subjectName: slot.subjectName ?? slot.subjectId,
-      subjectColorToken: resolveColorToken(slot.subjectId),
-      teacherName: slot.teacherMemberId, // no wire display name — ask #6/#7
+      subjectColorToken: colors.get(slot.subjectId) ?? "muted",
+      teacherName: teacherNameOf(slot.teacherMemberId) ?? slot.teacherMemberId,
       room: slot.room,
       className: classNameOf(slot.classId),
     };

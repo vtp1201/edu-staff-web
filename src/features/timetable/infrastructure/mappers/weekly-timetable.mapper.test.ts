@@ -31,22 +31,33 @@ describe("mapWeeklyTimetable", () => {
     expect(tt.slots[0][2]).toBeNull();
   });
 
-  it("resolves the subject color token from subjectId", () => {
+  it("colours every subject in the week, one colour per subject", () => {
     const tt = mapWeeklyTimetable(DTO);
-    expect(tt.slots[0][1]?.subjectColorToken).toBe("primary");
+    const bySubject = new Map<string, Set<string>>();
+    for (const periods of Object.values(tt.slots)) {
+      for (const slot of Object.values(periods)) {
+        if (!slot) continue;
+        const seen = bySubject.get(slot.subjectId) ?? new Set<string>();
+        seen.add(slot.subjectColorToken);
+        bySubject.set(slot.subjectId, seen);
+      }
+    }
+    // one subject → exactly one colour, and never the grey fallback
+    for (const [, tokens] of bySubject) {
+      expect(tokens.size).toBe(1);
+      expect([...tokens][0]).not.toBe("muted");
+    }
+    // distinct subjects → distinct colours (this week has ≤ palette size)
+    const used = [...bySubject.values()].map((s) => [...s][0]);
+    expect(new Set(used).size).toBe(bySubject.size);
   });
 
-  it("maps the Địa lý placeholder token (pending dedicated-token ADR)", () => {
-    const tt = mapWeeklyTimetable(DTO);
-    expect(tt.slots[2][3]?.subjectColorToken).toBe("geo");
-  });
-
-  it("falls back to the muted token for an unknown subjectId", () => {
+  it("colours an unrecognised subjectId too (no grey fallback)", () => {
     const tt = mapWeeklyTimetable({
       classId: "x",
       className: "x",
       slots: { "0": { "1": { subjectId: "unknown", subjectName: "?" } } },
     });
-    expect(tt.slots[0][1]?.subjectColorToken).toBe("muted");
+    expect(tt.slots[0][1]?.subjectColorToken).not.toBe("muted");
   });
 });
