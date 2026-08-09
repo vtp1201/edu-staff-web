@@ -255,22 +255,41 @@ calendar tăng theo, cứ mở lại ask — lúc đó BE sẽ làm một endpoi
 
 ## Dữ liệu demo đã được bơm đầy (2026-08-09)
 
-Tiện thể: tenant demo trước đó rất mỏng (9 tiết TKB, 22 ô điểm, 0 học bạ,
-0 vi phạm). Đã bơm đầy để test đủ mọi màn:
+Tiện thể: tenant demo trước đó rất mỏng (2 học sinh, 1 giáo viên, 9 tiết TKB,
+22 ô điểm, 0 học bạ). Đã bơm đầy để mọi màn có dữ liệu thật:
 
 | | Trước | Sau |
 | --- | --- | --- |
-| Thời khoá biểu | 9 tiết | 100 tiết (2 lớp × 2 kỳ × 5 ngày × 5 tiết, có phòng học) |
-| Bảng điểm | 22 ô, 1 môn | 114 ô, đủ 3 môn × mọi kỳ × mọi HS |
-| Học bạ | 0 | 8 (4 `SEALED` có `gradeSnapshot`, 4 `PENDING`) |
-| Hạnh kiểm | 2 (giá trị sai `GOOD`/`AVERAGE`) | 6, chuẩn hoá `TOT`/`KHA` |
+| Học sinh | 2 | **24** (đủ 24 dòng ở mọi roster / sổ điểm) |
+| Phụ huynh | 1 | **24**, mỗi PH gắn 1 HS |
+| Giáo viên | 1 | **6** — 1 chuyên gia mỗi môn + dự phòng |
+| Thời khoá biểu | 9 tiết | 60 tiết (15/25 ô mỗi lớp-kỳ, có tiết trống, có phòng) |
+| Bảng điểm | 22 ô, 1 môn | **1368 ô**, đủ 3 môn × mọi kỳ × mọi HS |
+| Học bạ | 0 | **96** (`SEALED` có `gradeSnapshot` cho năm đã xong) |
+| Hạnh kiểm | 2 (giá trị sai `GOOD`/`AVERAGE`) | 50, chuẩn hoá `TOT`/`KHA`/`TRUNG_BINH` |
 | Vi phạm | 0 | 4 |
-| Phân công GVBM | 1 | 4 (+6 dòng subject-teacher) |
+
+Tài khoản mới dùng **cùng mật khẩu** với các acc demo sẵn có, email theo mẫu
+`hocsinh<N>@demo.local`, `phuhuynh<N>@demo.local`, `giaovien<N>@demo.local`. Tên
+hiển thị là tên Việt tổng hợp (Nguyễn Văn An, Trần Thị Mai…) — sổ điểm 24 dòng
+chỉ đọc được khi tên trông giống tên thật.
 
 Câu chuyện dữ liệu: **9A1 (2025-2026, đã kết thúc)** = điểm `LOCKED` + học bạ
-`SEALED` + hạnh kiểm `APPROVED`; **10A1 (2026-2027, ACTIVE)** = TKB đầy đủ, điểm
-`DRAFT`. Tool bơm nằm ở `edu-api`: `services/core/cmd/seeddemo`
-(`TENANT_ID=aeb0e462-... go run ./cmd/seeddemo`, idempotent, không xoá gì).
+`SEALED` + hạnh kiểm `APPROVED`; **10A1 (2026-2027, đang diễn ra)** = TKB đầy đủ,
+cột TX `PUBLISHED`, giữa kỳ/cuối kỳ `DRAFT`.
+
+Tool bơm nằm ở `edu-api`: `services/core/cmd/seeddemo` — idempotent, không xoá
+dữ liệu của app:
+
+```bash
+cd services/core
+TENANT_ID=aeb0e462-9ced-48b3-ba36-803f9266b09d go run ./cmd/seeddemo
+# muốn đông hơn:
+STUDENT_COUNT=40 TEACHER_COUNT=10 TENANT_ID=aeb0e462-... go run ./cmd/seeddemo
+```
+
+`STUDENT_COUNT` / `TEACHER_COUNT` là **tổng số mong muốn**, không phải số thêm
+vào, nên chạy lại nhiều lần không làm trường phình ra.
 
 **Lưu ý cho ai chạy stack local:** `homeroomTeacherName` và `displayName` chỉ có
 giá trị khi `INTERNAL_API_SECRET` được set cho cả `iam` lẫn `core` — đã có sẵn
