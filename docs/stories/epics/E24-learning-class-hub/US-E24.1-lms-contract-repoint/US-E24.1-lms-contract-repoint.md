@@ -365,3 +365,120 @@ Design review: pass
 Gate verdict: **PASS** — proceeding to `fe-qa-playwright`.
 
 Not pushed (fe-lead handles push/merge); `## Status` intentionally unchanged.
+
+## Evidence — fe-qa-playwright independent AC verification (2026-09-02)
+
+Re-derived AC coverage from the actual test/code artifacts (not the prior
+reports' prose). Also ground-truthed `LMS_EP` against the SIBLING `edu-api`
+checkout's `services/lms/docs/openapi.yaml` directly (`grep -n "^  /"` — all 15
+paths), not just the endpoint test's own assertions.
+
+### AC traceability (independently re-derived)
+
+| AC | Proof | Verdict |
+| --- | --- | --- |
+| `LMS_EP` = `/lms/api/v1/lms/*`, 1:1 with `openapi.yaml` | `lms.endpoint.test.ts` (6 tests) + manual diff against `edu-api/services/lms/docs/openapi.yaml` (all 15 paths match) | PASS |
+| Mapper: 4 item types, null-safe `exam`, null window, `state` passthrough | `lms.mapper.test.ts` (17 tests) — genuinely covers all 4 types incl. the "EXAM without examId → no exam block" and "flat fields never leak onto a non-EXAM item" defensive cases | PASS |
+| Repo: `listItems` BE order; 2nd submit → `already-submitted`; course authz → `not-found`; `reorderItems` `{itemIds}` | `lms.repository.test.ts` (25 tests) — all four literally asserted, plus `invalid-content` (422), `network-error` fallback, malformed-uuid→`unknown` | PASS |
+| DI: `USE_MOCK=false`→real, `=true`→mock | `lms.di.test.ts` (6 tests), all 7 factories exercised each direction | PASS |
+| Kong smoke with student token | Not run — stack down (kong/iam/core exited), correctly disclosed as a substitute (lms-only curl showing well-formed envelope). Genuinely not blocking (infra unavailability, not a code defect) | ACCEPTED GAP |
+| `0073` superseded | `docs/decisions/0073-*.md` Status block: "Superseded by 0075" | PASS |
+| `/student/courses` + `/student/assignments` render, no crash (mock+real) | **GAP FOUND AND CLOSED** — see below | PASS (after fix) |
+| tsc/vitest/build/lint green | Re-ran independently: `tsc --noEmit` clean, `bun vitest run` 523 files/4210 tests green (was 520/4196 — +3 files/+14 tests from this QA pass), `bun lint` clean (same 1 pre-existing warning), `bun vitest --config vitest.storybook.mts run` re-run on touched story files (16/16 green) | PASS |
+| `screens.md` force-mock notes removed | Both student-LMS rows confirmed rewritten, no "force-mocked pending ask #51" left | PASS |
+| ADR 0075/0076 registered | `harness-cli query decisions` shows both `accepted` | PASS |
+| Harness Delta: `api-integration.md` draft-contract row + `lms` service-map note | Confirmed present (`openapi.draft.yaml` row + "lms live MỘT PHẦN" note with the double-`lms`-segment explanation) | PASS |
+
+### Gap found: AC "renders without crash" was evidenced only by `bun build`, which does NOT execute these pages
+
+All three RSC pages (`student/courses/page.tsx`, `student/courses/[courseId]/page.tsx`,
+`student/assignments/page.tsx`) call `requireRole()`, which reads `next/headers`
+cookies — this forces dynamic rendering, so `next build` never executes the
+page body for either `USE_MOCK` value; it only proves the module *compiles*.
+There was **zero test** actually invoking these page functions with a real
+entity shape through the DI→mapper→VM chain. Closed by writing 3 new
+`page.test.ts` files (guard/no-class/failure/success branches, plus the
+course-timeline page's `notFound()` existence-oracle path and its
+"course renders even when the timeline read fails independently" contract):
+
+- `src/app/[locale]/t/[tenant]/(app)/student/courses/page.test.ts` (4 tests)
+- `src/app/[locale]/t/[tenant]/(app)/student/assignments/page.test.ts` (5 tests)
+- `src/app/[locale]/t/[tenant]/(app)/student/courses/[courseId]/page.test.ts` (5 tests)
+
+All 14 pass. No production code was changed to make them pass — the wiring was
+already correct, only unproven.
+
+### New Storybook interaction coverage (defect-hunt driven)
+
+1. **`Assignments_SubmitAlreadySubmitted`** (`student-assignments-screen.stories.tsx`) —
+   the task explicitly called out "hitting `already-submitted` on a second
+   submit attempt" as required coverage; the existing
+   `Assignments_OpenSheet_AlreadySubmitted` story only covered the case where
+   the DETAIL read already knows about the submission (read-only view, no
+   form). The race where the form IS rendered (client's own `mySubmission`
+   read was `null`) but a concurrent submit elsewhere beat this one to
+   `POST .../submissions` (409 `LMS_SUBMISSION_ALREADY_SUBMITTED`) had zero
+   coverage, despite its own distinct i18n copy ("Bài tập này đã được nộp.")
+   separate from `closed`'s copy. Added and green.
+2. **`Timeline_ExamNoDeepLink`** (`lesson-player.stories.tsx`) — BE documents
+   `examUrl` as legally null "when the deployment has not configured one";
+   every existing EXAM fixture in this feature (fixtures, mock repo, all
+   stories) carried a link. The code path (`item.url || item.examUrl` falsy →
+   plain `<div>`, no `<a href="#">`) was already correct
+   (`timeline-list.tsx:190-196`) but unexercised by any test. Added and green
+   — asserts no `<a>` inside the tile's `<li>`.
+
+Both files re-run under `bun vitest --config vitest.storybook.mts run` (16/16
+green, no regressions in the other 14 pre-existing stories in these two files).
+
+### Defect hunt — no new production defects found
+
+- EXAM item with no `examUrl`: handled correctly (informational tile, no
+  broken link) — now covered by a story (above), not a defect.
+- `dueAt: null` on an assignment: `isOverdue()` returns `false` for `null`
+  (never derives lateness from a missing deadline); `assignmentBadge()` has
+  its own `dueAt === null` branch → `noDeadline` copy, tested in
+  `assignment-badge.test.ts`. No defect.
+- Submit-sheet hides/disables the submit affordance once `getMySubmission`
+  resolves an existing submission: `submitted !== null` renders a read-only
+  block and the `<SheetFooter>` (Save draft / Submit buttons) is conditionally
+  unmounted (`detail !== null && submitted === null`) — verified by code
+  reading `submit-sheet.tsx:222` and the existing
+  `Assignments_OpenSheet_AlreadySubmitted` story
+  (`queryByLabelText("Nội dung bài làm")` → null). No defect.
+- Repository-boundary and use-case failure-mapping fix-round claims
+  (`isLmsFailure` narrowing rejecting a stray `{type:"ECONNRESET"}`,
+  `resolve-my-class.ts`'s `memberId`-only claim read with no `sub` fallback)
+  were independently re-read in their test files and hold up exactly as
+  claimed — not re-derived from the reviewer's prose.
+
+### Mobile/responsive (320/375px) — static check, no fixed-width risk found
+
+`grep -rn "w-\[\|min-w-\[\|px-\["` across `src/features/lms/presentation/`
+returns nothing — no hardcoded pixel widths in any touched component. Course
+grid is `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` (mobile-first, 1 column at
+320/375px). Course timeline is `grid-cols-1 md:grid-cols-[...]` (single column
+below `md`). Submit sheet is `w-full sm:max-w-lg` (full-width below `sm`, no
+overflow). This is a static-analysis check (grep + reading Tailwind classes),
+not a rendered-browser resize test — matches the design-review gate's own
+disclosure of this as "not independently re-checked... a light gap, not
+blocking." No overflow/clip risk identified; not escalating beyond that.
+
+### Gate (all commands re-run by fe-qa-playwright, not trusted from prior reports)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean (0 errors) |
+| `bun vitest run` | **523 files / 4210 tests passed** |
+| `bun vitest --config vitest.storybook.mts run` (scoped to touched files) | **16/16 tests passed** across both edited story files |
+| `bun lint` | clean (same 1 pre-existing warning, untouched file) |
+
+### Verdict: **GO**
+
+No BLOCKER/CRITICAL/MAJOR defects. One genuine coverage gap (RSC page "no
+crash" claim resting on a build that never executes the page body) was found
+and closed with 14 new unit tests; two genuine Storybook interaction gaps
+(already-submitted submit race, EXAM-no-link) were found and closed with 2 new
+stories. All fixes are test-only, in the repo's standard test locations, no
+production code touched. Full gate re-run green
+(tsc/vitest/storybook-vitest/lint). Ready for `fe-lead` to push/merge.

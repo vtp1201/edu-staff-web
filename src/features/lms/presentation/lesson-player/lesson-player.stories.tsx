@@ -211,3 +211,42 @@ export const Timeline_CourseError: Story = {
     );
   },
 };
+
+/**
+ * QA gap-fill (US-E24.1) — BE documents `examUrl` as legally null "when the
+ * deployment has not configured one". No story exercised this: every EXAM
+ * fixture so far carried a link. Asserts the tile renders as a plain
+ * informational row (no `<a>`, no broken `href="#"`, no ExternalLink icon)
+ * rather than crashing or producing a dead link.
+ */
+export const Timeline_ExamNoDeepLink: Story = {
+  args: {
+    vm: {
+      ...BASE_VM,
+      items: [
+        ...ITEMS,
+        {
+          id: "ex-2",
+          itemType: "EXAM",
+          title: "Kiểm tra cuối kỳ — chưa cấu hình liên kết",
+          description: null,
+          url: null,
+          dueAt: "2026-06-01T02:00:00.000Z",
+          state: "UPCOMING_HIDDEN",
+          examUrl: null,
+          examDurationMinutes: null,
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = await canvas.findByText(
+      "Kiểm tra cuối kỳ — chưa cấu hình liên kết",
+    );
+    // The tile renders (no crash) as a non-interactive row: its ancestor is a
+    // <div>, never an <a href="#">.
+    const tile = title.closest("li");
+    expect(tile?.querySelector("a")).toBeNull();
+  },
+};

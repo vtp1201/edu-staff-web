@@ -269,3 +269,37 @@ export const Assignments_SubmitClosed: Story = {
     );
   },
 };
+
+/**
+ * QA gap-fill (US-E24.1) — a race, not a UI-known state: the sheet's own
+ * detail read said `mySubmission: null` (so the form renders, unlike
+ * `Assignments_OpenSheet_AlreadySubmitted`), but a second tab/device beat this
+ * one to `POST .../submissions`. BE's 409 `LMS_SUBMISSION_ALREADY_SUBMITTED`
+ * must surface as its own distinct copy, not be folded into `closed`.
+ */
+export const Assignments_SubmitAlreadySubmitted: Story = {
+  args: {
+    actions: makeActions({
+      submitAssignmentAction: async () => ({
+        ok: false,
+        errorKey: "already-submitted",
+      }),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /Cảm ứng điện từ/ })[0],
+    );
+    const sheet = within(await within(document.body).findByRole("dialog"));
+    const textarea = await sheet.findByLabelText("Nội dung bài làm");
+    await userEvent.type(textarea, "Bài làm của em");
+    await userEvent.click(sheet.getByRole("button", { name: "Nộp bài" }));
+    await waitFor(() =>
+      expect(sheet.getByText("Bài tập này đã được nộp.")).toBeInTheDocument(),
+    );
+    // The form must not silently vanish or re-enable submit — the error is
+    // additive, described-by the submit button, and the textarea stays put.
+    await expect(sheet.getByLabelText("Nội dung bài làm")).toBeInTheDocument();
+  },
+};
