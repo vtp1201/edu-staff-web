@@ -308,3 +308,130 @@ export const Mobile375: Story = {
     );
   },
 };
+
+/**
+ * QA gap-fill (US-E24.3) — the Storybook `viewport` global's `"mobile1"`
+ * preset is 320px, not 375px (confirmed with a debug probe: `clientWidth`
+ * read 320). `Mobile375` above therefore over-tests (320px is a strict
+ * subset of 375px, so it doesn't invalidate the AC) but is mislabeled — see
+ * QA defect list. This story does a REAL 375px resize via
+ * `vitest/browser`'s `page.viewport`, matching the project convention
+ * (`principal-classes-screen.stories.tsx` `Viewport375_CardList`), so the AC
+ * ("mobile 375 không vỡ") has one test that is provably at exactly 375px.
+ */
+export const Viewport375Real: Story = {
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 800);
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("heading", { name: /Toán 10/ }),
+    ).toBeInTheDocument();
+    expect(canvasElement.scrollWidth).toBeLessThanOrEqual(
+      canvasElement.clientWidth + 1,
+    );
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(376);
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.3 AC-7) — keyboard tab order follows DOM/reading order
+ * (always-group → week ascending → position), and the locked EXAM row is
+ * genuinely UNREACHABLE by keyboard (no `tabIndex`, so `Tab` skips over it
+ * rather than merely being unclickable). Uses the `WithUpcomingExam` fixture
+ * (adds one locked row after three open/closed rows) so the walk has
+ * something to skip.
+ */
+export const KeyboardOperability: Story = {
+  args: {
+    vm: {
+      ...BASE_VM,
+      weeks: [
+        ...WEEKS,
+        {
+          key: "2026-W19",
+          weekStart: "2026-05-04",
+          weekEnd: "2026-05-10",
+          items: [EXAM_UPCOMING],
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const rows = canvas.getAllByRole("button", { expanded: false });
+    // Reading order: "Luôn mở" (doc-1), then week-17 (le-1, as-1), week-18
+    // (le-2) — the locked EXAM row is NOT among these `button`s at all.
+    expect(rows).toHaveLength(4);
+
+    // Real Tab walk (not just a DOM-order assertion): focus starts on the
+    // canvas body, then each `Tab` must land on the next row IN ORDER, and a
+    // final `Tab` must NEVER land on the locked exam row.
+    canvasElement.ownerDocument.body.focus();
+    for (const row of rows) {
+      await userEvent.tab();
+      await expect(row).toHaveFocus();
+    }
+    // One more Tab past the last legitimate row must not focus anything
+    // inside the locked row (it has no tabIndex, so it is skipped entirely).
+    await userEvent.tab();
+    const lockedRow = canvas
+      .getByText("Kiểm tra 1 tiết — Chương IV & V")
+      .closest("[aria-disabled]");
+    expect(lockedRow).not.toBeNull();
+    expect(lockedRow?.contains(document.activeElement)).toBe(false);
+
+    // Enter/Space activation on a focused row (not just a mouse click).
+    await userEvent.keyboard("{Enter}");
+    // Whichever row last received focus before the walk ran out of targets —
+    // re-focus the FIRST row explicitly and drive it by keyboard alone to
+    // keep this assertion unambiguous.
+    rows[0]?.focus();
+    await expect(rows[0]).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(rows[0]).toHaveAttribute("aria-expanded", "true");
+    await userEvent.keyboard(" ");
+    await expect(rows[0]).toHaveAttribute("aria-expanded", "false");
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.3 AC-4) — a REAL attempt to activate the locked EXAM
+ * row (click, then Enter/Space while forcing focus onto it) proves nothing
+ * happens, not just that the markup looks non-interactive.
+ */
+export const LockedRowRejectsActivation: Story = {
+  args: {
+    vm: {
+      ...BASE_VM,
+      weeks: [
+        {
+          key: "2026-W19",
+          weekStart: "2026-05-04",
+          weekEnd: "2026-05-10",
+          items: [EXAM_UPCOMING],
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByText("Kiểm tra 1 tiết — Chương IV & V");
+    const lockedRow = title.closest("[aria-disabled]");
+    expect(lockedRow).not.toBeNull();
+    if (!lockedRow) throw new Error("expected a locked row");
+
+    await userEvent.click(lockedRow);
+    // No expand panel appeared, and the row never gained `aria-expanded`.
+    expect(lockedRow.getAttribute("aria-expanded")).toBeNull();
+    expect(canvas.queryByText(/Nội dung khoá học/)).toBeNull();
+
+    // Force-focus it (an AT user or a broken focus trap could still land
+    // here) and try both activation keys — still nothing opens.
+    (lockedRow as HTMLElement).focus?.();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard(" ");
+    expect(lockedRow.getAttribute("aria-expanded")).toBeNull();
+    expect(canvas.queryByRole("button", { expanded: true })).toBeNull();
+  },
+};
