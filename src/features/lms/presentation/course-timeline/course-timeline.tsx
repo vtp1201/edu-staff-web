@@ -129,7 +129,10 @@ function StudentTimeline({
             body={t("timeline.empty")}
           />
         ) : (
-          <nav aria-label={t("timeline.navLabel")}>
+          // Not a `<nav>`: every row is a toggle-expand button, not a link to
+          // somewhere else, and each week already exposes its own labelled
+          // `<section>` — a landmark here would only add noise.
+          <div>
             {weeks.map((week, index) => (
               <WeekSection
                 key={week.key}
@@ -145,7 +148,7 @@ function StudentTimeline({
                 isLastWeek={index === weeks.length - 1}
               />
             ))}
-          </nav>
+          </div>
         )}
       </div>
     </div>

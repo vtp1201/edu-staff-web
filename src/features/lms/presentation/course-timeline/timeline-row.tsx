@@ -13,7 +13,15 @@ import type {
 import { ItemDetail } from "./item-detail";
 
 /** Rail node colour by BE state (design-spec `…timeline.rail`). Decorative —
- *  the pill next to it carries the same information as text. */
+ *  the pill next to it carries the same information as text.
+ *
+ *  Deliberately NOT merged with `STATE_DOT_CLASS` in `item-state-pill.tsx`,
+ *  even though OPEN/UPCOMING_HIDDEN agree: CLOSED differs on purpose. The rail
+ *  dot sits ON the rail line (spec colour `#C3CBD9` = `--border`) and must read
+ *  as part of that spent line; the pill dot sits inside a muted badge on the
+ *  card, where `bg-border` would be all but invisible, so it takes the darker
+ *  `bg-edu-text-secondary`. Two surfaces, two legibility constraints — one
+ *  shared map would break whichever surface lost. */
 const STATE_DOT: Record<TimelineItemVm["state"], string> = {
   OPEN: "bg-edu-success-text",
   UPCOMING_HIDDEN: "bg-edu-info",
@@ -86,6 +94,8 @@ export function TimelineRow({
           : t("timeline.window.always");
 
   const Chevron = expanded ? ChevronDown : ChevronRight;
+  /** Ties `aria-expanded` to the thing it expands (WCAG 4.1.2 / A11Y-001). */
+  const panelId = `ci-panel-${item.id}`;
 
   const head = (
     <>
@@ -168,10 +178,14 @@ export function TimelineRow({
             <button
               type="button"
               aria-expanded={expanded}
+              aria-controls={panelId}
               onClick={() => onToggleExpand(item.id)}
               // `ring-inset`: the card clips its corners and the button fills
               // it edge to edge, so an outward ring would be cut off.
-              className="flex w-full flex-wrap items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              // `hover:bg-muted/60` is a no-op once expanded (the card is
+              // already `bg-muted`, and muted-over-muted blends to itself), so
+              // hover only ever signals "this collapsed row is clickable".
+              className="flex w-full flex-wrap items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               {head}
               <Chevron
@@ -185,7 +199,7 @@ export function TimelineRow({
           {expanded && !item.locked && (
             // TEMP (US-E24.3): inline expand until US-E24.5 ships the real
             // /items/[itemId] route — delete this block with `item-detail.tsx`.
-            <div className="border-border border-t px-3.5 py-3">
+            <div id={panelId} className="border-border border-t px-3.5 py-3">
               <ItemDetail
                 item={item}
                 getLesson={getLesson}

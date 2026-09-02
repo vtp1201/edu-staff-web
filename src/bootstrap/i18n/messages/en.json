@@ -1215,10 +1215,6 @@
     },
     "player": {
       "content": {
-        "empty": {
-          "title": "No content yet",
-          "body": "Pick a lesson from the timeline to start."
-        },
         "loading": "Loading lesson content...",
         "loadError": "Could not load the lesson content."
       }
@@ -1230,7 +1226,6 @@
         "closed": "Closed — view only"
       },
       "legendLabel": "Status legend",
-      "navLabel": "Course timeline",
       "alwaysOpen": "Always open",
       "weekLabel": "Week {start} – {end}",
       "window": {
@@ -1241,7 +1236,6 @@
       },
       "opensAt": "Content opens at {date}.",
       "opensAtUnknown": "This content has not opened yet.",
-      "closedReadOnly": "Closed — you can still review the content, but submissions are locked.",
       "empty": "The teacher has not added any content to this course yet.",
       "emptyTitle": "No content yet",
       "retry": "Try again",
@@ -1277,10 +1271,6 @@
           "open": "Go to the assignments page"
         }
       }
-    },
-    "a11y": {
-      "activeLessonState": "currently viewing",
-      "lessonChanged": "Now viewing lesson: {title}"
     },
     "errors": {
       "not-found": "Course not found.",

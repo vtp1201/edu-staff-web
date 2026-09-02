@@ -173,6 +173,14 @@ export const ExpandRow: Story = {
         canvas.getByText(/Đạo hàm mô tả tốc độ biến thiên/),
       ).toBeInTheDocument(),
     );
+
+    // A11Y-001: `aria-expanded` must point at what it expands — the id on the
+    // button's `aria-controls` has to resolve to the panel that just appeared.
+    const panelId = row.getAttribute("aria-controls");
+    await expect(panelId).toBeTruthy();
+    const panel = canvasElement.ownerDocument.getElementById(panelId ?? "");
+    await expect(panel).toBeInTheDocument();
+    await expect(panel).toHaveTextContent(/Đạo hàm mô tả tốc độ biến thiên/);
   },
 };
 

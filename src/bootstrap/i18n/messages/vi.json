@@ -1215,10 +1215,6 @@
     },
     "player": {
       "content": {
-        "empty": {
-          "title": "Chưa có nội dung",
-          "body": "Chọn một bài học trong dòng thời gian để bắt đầu."
-        },
         "loading": "Đang tải nội dung bài học...",
         "loadError": "Không tải được nội dung bài học."
       }
@@ -1230,7 +1226,6 @@
         "closed": "Đã đóng — chỉ xem"
       },
       "legendLabel": "Chú thích trạng thái",
-      "navLabel": "Dòng thời gian khoá học",
       "alwaysOpen": "Luôn mở",
       "weekLabel": "Tuần {start} – {end}",
       "window": {
@@ -1241,7 +1236,6 @@
       },
       "opensAt": "Nội dung sẽ mở lúc {date}.",
       "opensAtUnknown": "Nội dung này chưa được mở.",
-      "closedReadOnly": "Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.",
       "empty": "Giáo viên chưa thêm nội dung cho khoá học này.",
       "emptyTitle": "Chưa có nội dung",
       "retry": "Thử lại",
@@ -1277,10 +1271,6 @@
           "open": "Mở trang bài tập"
         }
       }
-    },
-    "a11y": {
-      "activeLessonState": "đang xem",
-      "lessonChanged": "Đang xem bài học: {title}"
     },
     "errors": {
       "not-found": "Không tìm thấy khoá học.",

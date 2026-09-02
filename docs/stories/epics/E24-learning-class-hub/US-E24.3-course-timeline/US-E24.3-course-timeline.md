@@ -84,7 +84,46 @@ None.
 
 ## Evidence
 
-(điền sau)
+### Deviations vs `docs/product/design-spec.jsonc#student-course-timeline`
+
+Ghi TRƯỚC design-review gate. Hai điểm cố ý lệch spec; `status` của entry tương ứng đã
+sync sang `partially implemented … (US-E24.3, 2 deviations)`.
+
+1. **Bỏ `opacity .72` cho dòng `UPCOMING_HIDDEN`.** Spec làm mờ cả dòng sắp mở. Chữ meta
+   của dòng dùng `text-muted-foreground` (= `--edu-text-secondary`, 5.48:1); nhân thêm
+   `.72` alpha kéo tương phản thực tế xuống dưới 4.5:1 → vi phạm WCAG 1.4.3
+   (`.claude/rules/accessibility.md`). Trạng thái "sắp mở" vẫn đủ kênh: **text pill**
+   ("Sắp mở"), **dot rail** `bg-edu-info`, và dòng `opensAt` in rõ giờ mở — không kênh nào
+   chỉ dựa vào màu/opacity. Không cần token mới.
+
+2. **Lesson tự load nội dung khi expand, thay cho nút "Xem bài giảng" riêng.** Spec cho
+   dòng LESSON một nút điều hướng sang trang bài giảng. Route đó
+   (`/student/courses/[courseId]/items/[itemId]`) thuộc scope **US-E24.5** và chưa tồn tại
+   → một nút dẫn tới 404 tệ hơn. Tạm thời `item-detail.tsx` gọi `getLesson` ngay khi dòng
+   mở và render inline (loading/error/ready). Đây là **TEMP code đã đánh dấu trong file**
+   (header `item-detail.tsx` + block comment trong `timeline-row.tsx`): US-E24.5 xoá
+   `item-detail.tsx` và trả dòng về đúng href của spec. Mọi key
+   `courses.timeline.itemDetail.*` chỉ phục vụ file này và chết cùng nó.
+
+### Review fix round (fe-tech-lead-reviewer SHOULD FIX + fe-accessibility-auditor minor)
+
+- Dọn i18n chết sau migration `player.*` → `timeline.*` (vi + en, parity 4157/4157 keys):
+  xoá `courses.player.content.empty.{title,body}`, `courses.a11y.{activeLessonState,
+  lessonChanged}`, `courses.timeline.closedReadOnly` (trùng nội dung
+  `timeline.itemDetail.closedNote` — giữ bản đang dùng ở `item-detail.tsx:51`), và
+  `courses.timeline.navLabel` (chết theo thay đổi `<nav>` → `<div>` bên dưới).
+- `item-type-chip.tsx`: thêm `"use client"` cho khớp `item-state-pill.tsx`.
+- `course-timeline.tsx`: `<nav aria-label>` → `<div>` — các dòng là button toggle-expand,
+  không phải navigation; mỗi tuần đã có `<section aria-label>` riêng.
+- `timeline-row.tsx`: comment giải thích vì sao rail-dot CLOSED (`bg-border`, bám màu rail
+  `#C3CBD9`) khác pill-dot CLOSED (`bg-edu-text-secondary`, nếu dùng `bg-border` sẽ chìm
+  trong badge muted) — hai map giữ riêng có chủ đích, KHÔNG hợp nhất.
+- **A11Y-001**: nút toggle nhận `aria-controls={panelId}`, panel expand nhận
+  `id={"ci-panel-" + item.id}`; assert bằng `getAttribute` + `getElementById` trong story
+  `ExpandRow`.
+- **A11Y-002**: nút dòng OPEN/CLOSED thêm `transition-colors hover:bg-muted/60` (tiền lệ
+  `features/grades/.../pending-approval-list.tsx`); no-op khi đã expand vì card lúc đó đã
+  là `bg-muted`, nên hover chỉ báo "dòng đang đóng này bấm được".
 
 ## Implementation Plan
 
@@ -298,6 +337,10 @@ timeline.header.openCount  // "{count} mục đang mở"
   both files in the same commit (no dangling dead keys, no side-by-side duplicate catalogue).
 - Keep `player.content.*`, `a11y.lessonChanged`, `a11y.activeLessonState` (still used by the
   lazy-lesson-body fetch inside `item-detail.tsx`).
+  > **Corrected in the fix round** (xem §Evidence): chỉ `player.content.{loading,loadError}`
+  > thực sự còn consumer. `player.content.empty.*`, `a11y.lessonChanged`,
+  > `a11y.activeLessonState`, `timeline.closedReadOnly` (trùng `timeline.itemDetail.closedNote`)
+  > và `timeline.navLabel` đã bị xoá khỏi cả `vi.json` + `en.json`.
 
 ### 8. Test plan → Validation table
 
