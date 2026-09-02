@@ -161,6 +161,20 @@ describe("GetCourseUseCase", () => {
     expect(result).toEqual({ ok: false, failure: { type: "not-found" } });
   });
 
+  it("degrades a stray `{ type }` object to `unknown` — never leaks its type as an errorKey", async () => {
+    // A thrown object that merely LOOKS like a failure (any library error with
+    // a `type` field) must not have its `type` handed to the client, where
+    // `t("errors." + key)` would render a raw untranslated key.
+    const result = await new GetCourseUseCase(
+      repoStub({
+        getCourse: vi.fn(async () =>
+          Promise.reject({ type: "ECONNRESET", message: "socket hang up" }),
+        ),
+      }),
+    ).execute("c1");
+    expect(result).toEqual({ ok: false, failure: { type: "unknown" } });
+  });
+
   it("degrades a non-failure throw to `unknown` instead of escaping", async () => {
     const result = await new GetCourseUseCase(
       repoStub({

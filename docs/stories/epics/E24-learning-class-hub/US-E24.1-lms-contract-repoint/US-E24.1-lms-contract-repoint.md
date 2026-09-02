@@ -284,3 +284,53 @@ runs before routing. Route existence therefore rests on
 - `listLessons` is implemented and tested but currently has no caller — the
   timeline already carries lesson tiles. Kept because it is the only route that
   enumerates lessons for the E24.10 authoring UI.
+
+---
+
+## Evidence — review fix round (2026-09-02, appended)
+
+`fe-tech-lead-reviewer` (REVISION REQUIRED, 1 must-fix + 5 should-fix + 2
+consider) and `fe-accessibility-auditor` (PASS, 5 findings) both returned. All
+must/should items and all 5 a11y findings are fixed on this branch; both
+"consider" items were handled (one applied, one deliberately deferred).
+
+### Reviewer items
+
+| Item | Fix |
+| --- | --- |
+| MUST — missing `import "server-only"` in `lms.mock.repository.ts` | restored as line 1 |
+| SHOULD 1 — `isLmsFailure` accepted any `{ type: string }` | narrowed to membership in `LMS_FAILURE_TYPES`; new use-case test rejects a stray `{ type: "ECONNRESET" }` |
+| SHOULD 2 — `bootstrap/lib/resolve-my-class.ts` imported an LMS fixture | helper now takes `mockClassId` (default `null`); `bootstrap/di/lms.di.ts` exports `resolveMyLmsClassId()` which supplies `MOCK_CLASS_ID`; all 3 call sites (2 pages + actions) go through the DI |
+| SHOULD 3 — `not-found` vs `no-class` for the same condition | Server Action now returns `no-class`; `AssignmentsErrorKey = LmsFailure["type"] \| "no-class"` shared by the action result, screen VM and sheet props |
+| SHOULD 4 — `memberId`-absent path untested | new test: a `sub`-only token resolves `null` AND fires no enrollment request. **It failed red for a real reason** — `decodeMemberId()` falls back to `sub` repo-wide, so `resolve-my-class` was violating decision 0074 in practice. Added `decodeMemberIdClaim()` (no fallback) in `bootstrap/lib/jwt.ts` and switched this helper to it; the legacy fallback stays for existing callers |
+| SHOULD 5 — tautological assertion in `lms.endpoint.test.ts` | replaced by an offenders-list assertion that still names the drifted endpoint |
+| CONSIDER — 422 submission-content codes unmapped | applied: new `invalid-content` failure member; `LMS_SUBMISSION_CONTENT_REQUIRED` / `_TOO_LONG` → `invalid-content`; i18n key in `courses.errors` + `assignments.errors` (vi+en); repo test covers both codes |
+| CONSIDER — unreachable DRAFT branch on the course card | **skipped on purpose**: E24.10 (teacher view) needs it, and it is now load-bearing for a11y (the status is folded into the card's `aria-label`, A11Y-005) |
+
+### A11y findings
+
+| ID | Fix |
+| --- | --- |
+| A11Y-001 | new `app/[locale]/t/[tenant]/(app)/student/courses/loading.tsx` rendering `CoursesSkeleton` (no longer dead code) + sr-only `role="status"`; new key `courses.skeleton.loading`; source-lock test `loading.test.ts` (3) |
+| A11Y-002 | sr-only `role="status"` before the interim skeletons in `submit-sheet.tsx` and `lesson-player.tsx`; keys `assignments.submit.detailLoading`, `courses.player.content.loading` |
+| A11Y-003 | submit error `<p role="alert">` got `id={submit-error-<rowId>}`; a single `describedBy` string (length error + empty hint + submit error) wired to both the Textarea and the Submit button |
+| A11Y-004 | visible hint `assignments.submit.emptyContentHint` while the work text is empty, referenced by the disabled Submit button |
+| A11Y-005 | card `aria-label` is now `${title} — ${statusLabel} — ${cta}` |
+
+New i18n keys (vi source + en mirror, 6 total): `courses.skeleton.loading`,
+`courses.player.content.loading`, `courses.errors.invalid-content`,
+`assignments.errors.invalid-content`, `assignments.submit.detailLoading`,
+`assignments.submit.emptyContentHint`.
+
+### Gate re-run (all six, actually executed 2026-09-02)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean (0 errors) |
+| `bun vitest run` | **520 files / 4196 tests passed** (+1 file, +7 tests) |
+| `bun vitest --config vitest.storybook.mts run` | **162 files / 1269 interaction tests passed** |
+| `bun lint` | exit 0 — same single pre-existing warning + info in `messaging/message-context-menu.tsx` (untouched) |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | green, full route manifest |
+| `NEXT_PUBLIC_USE_MOCK=false bun run build` | green |
+
+Not pushed (fe-lead handles push/merge); `## Status` intentionally unchanged.

@@ -750,6 +750,7 @@
       "exam-window-not-editable": "Lịch kiểm tra do module Kiểm tra quản lý, không sửa được tại đây.",
       "invalid-window": "Hạn kết thúc phải sau thời điểm bắt đầu.",
       "invalid-url": "Liên kết phải là địa chỉ https hợp lệ.",
+      "invalid-content": "Nội dung bài làm không hợp lệ. Vui lòng kiểm tra lại.",
       "limit-exceeded": "Đã đạt giới hạn số mục cho phép.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
@@ -758,11 +759,13 @@
     "submit": {
       "sheetTitle": "Chi tiết bài tập",
       "closeAriaLabel": "Đóng",
+      "detailLoading": "Đang tải chi tiết bài tập...",
       "noInstructions": "Giáo viên chưa ghi hướng dẫn cho bài tập này.",
       "answerLabel": "Nội dung bài làm",
       "answerPlaceholder": "Nhập nội dung bài làm của bạn…",
       "contentTooLong": "Nội dung bài làm không được vượt quá {max} ký tự.",
       "singleAttemptHelper": "Bạn chỉ được nộp bài một lần duy nhất.",
+      "emptyContentHint": "Nhập nội dung bài làm để có thể nộp bài.",
       "submittedAt": "Đã nộp lúc {date}",
       "saveDraftButton": "Lưu nháp",
       "submitButton": "Nộp bài",
@@ -1202,6 +1205,9 @@
     "empty": {
       "allTab": "Lớp của bạn chưa có khoá học nào."
     },
+    "skeleton": {
+      "loading": "Đang tải khoá học..."
+    },
     "player": {
       "breadcrumb": {
         "navLabel": "Đường dẫn điều hướng",
@@ -1213,6 +1219,7 @@
           "title": "Chưa có nội dung",
           "body": "Chọn một bài học trong dòng thời gian để bắt đầu."
         },
+        "loading": "Đang tải nội dung bài học...",
         "loadError": "Không tải được nội dung bài học."
       },
       "timeline": {
@@ -1250,6 +1257,7 @@
       "exam-window-not-editable": "Lịch kiểm tra do module Kiểm tra quản lý, không sửa được tại đây.",
       "invalid-window": "Hạn kết thúc phải sau thời điểm bắt đầu.",
       "invalid-url": "Liên kết phải là địa chỉ https hợp lệ.",
+      "invalid-content": "Nội dung bài làm không hợp lệ. Vui lòng kiểm tra lại.",
       "limit-exceeded": "Đã đạt giới hạn số mục cho phép.",
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",

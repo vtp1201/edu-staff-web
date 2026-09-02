@@ -41,15 +41,22 @@ async function importFresh(useMock: string | undefined) {
 }
 
 describe("mock mode", () => {
-  it("returns the seeded class and never touches the network", async () => {
+  it("returns the CALLER's seeded class and never touches the network", async () => {
     const { resolveMyClassId } = await importFresh("true");
     const { MOCK_CLASS_ID } = await import(
       "@/features/lms/infrastructure/repositories/mocks/lms.fixtures"
     );
 
-    await expect(resolveMyClassId()).resolves.toBe(MOCK_CLASS_ID);
+    // The seed is supplied by the feature's DI factory — the generic helper
+    // owns no fixture of its own (no `bootstrap/lib` → feature import).
+    await expect(resolveMyClassId(MOCK_CLASS_ID)).resolves.toBe(MOCK_CLASS_ID);
     expect(getAccessToken).not.toHaveBeenCalled();
     expect(httpGet).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the caller supplies no mock class", async () => {
+    const { resolveMyClassId } = await importFresh("true");
+    await expect(resolveMyClassId()).resolves.toBeNull();
   });
 });
 
@@ -65,6 +72,15 @@ describe("real mode", () => {
     expect(httpGet).toHaveBeenCalledWith(
       "/core/api/v1/members/mem-1/enrollment",
     );
+  });
+
+  it("returns null for a token carrying `sub` but no `memberId` claim — `sub` is never a fallback (decision 0074)", async () => {
+    getAccessToken.mockResolvedValue(tokenWith({ sub: "user-1" }));
+
+    const { resolveMyClassId } = await importFresh("false");
+    await expect(resolveMyClassId()).resolves.toBeNull();
+    // Critically: no enrollment read addressed at `sub`.
+    expect(httpGet).not.toHaveBeenCalled();
   });
 
   it("returns null with no token at all", async () => {

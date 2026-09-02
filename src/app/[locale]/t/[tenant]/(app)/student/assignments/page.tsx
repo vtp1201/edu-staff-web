@@ -1,6 +1,8 @@
 import { requireRole } from "@/bootstrap/auth-guard";
-import { makeListAssignmentsUseCase } from "@/bootstrap/di/lms.di";
-import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
+import {
+  makeListAssignmentsUseCase,
+  resolveMyLmsClassId,
+} from "@/bootstrap/di/lms.di";
 import type { AssignmentSummary } from "@/features/lms/domain/entities/assignment.entity";
 import { StudentAssignmentsScreen } from "@/features/lms/presentation/student-assignments/student-assignments-screen";
 import type { StudentAssignmentsScreenVm } from "@/features/lms/presentation/student-assignments/student-assignments-screen.i-vm";
@@ -32,7 +34,7 @@ export default async function StudentAssignmentsPage() {
     return <StudentAssignmentsScreen {...vm} actions={ACTIONS} />;
   }
 
-  const classId = await resolveMyClassId();
+  const classId = await resolveMyLmsClassId();
   if (classId === null) {
     const vm: StudentAssignmentsScreenVm = {
       assignments: [],

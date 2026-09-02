@@ -1,3 +1,5 @@
+import "server-only";
+
 import { mockDelay } from "@/bootstrap/lib/mock";
 import type {
   Assignment,

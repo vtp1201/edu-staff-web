@@ -275,6 +275,21 @@ describe("submitAssignment", () => {
     ).rejects.toEqual({ type: "closed" });
   });
 
+  it("maps BE's own content validation (422) to `invalid-content`, not `unknown`", async () => {
+    for (const code of [
+      "LMS_SUBMISSION_CONTENT_REQUIRED",
+      "LMS_SUBMISSION_CONTENT_TOO_LONG",
+    ]) {
+      const http = makeHttp({
+        post: vi.fn(async () => Promise.reject(apiError(code, 422))),
+      });
+
+      await expect(
+        new LmsRepository(http).submitAssignment("a1", "x"),
+      ).rejects.toEqual({ type: "invalid-content" });
+    }
+  });
+
   it("maps an unknown/absent assignment to `not-found`", async () => {
     const http = makeHttp({
       post: vi.fn(async () =>

@@ -102,11 +102,16 @@ export function LessonPlayer({
               body={t("player.content.empty.body")}
             />
           ) : lessonQuery.isPending ? (
-            <div className="space-y-2.5 px-7 py-6" aria-hidden="true">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-11/12" />
-              <Skeleton className="h-4 w-9/12" />
-            </div>
+            <>
+              <span className="sr-only" role="status">
+                {t("player.content.loading")}
+              </span>
+              <div className="space-y-2.5 px-7 py-6" aria-hidden="true">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-4 w-9/12" />
+              </div>
+            </>
           ) : lessonQuery.isError || lesson === null ? (
             <p role="alert" className="px-7 py-6 text-edu-error-text text-sm">
               {t("player.content.loadError")}

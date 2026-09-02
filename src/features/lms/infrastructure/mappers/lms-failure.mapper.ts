@@ -52,6 +52,11 @@ const CODE_TO_FAILURE: Record<string, LmsFailure["type"]> = {
   // ── 422, request-shape conflicts ────────────────────────────────────────
   LMS_ITEM_INVALID_WINDOW: "invalid-window",
   LMS_ITEM_URL_INVALID: "invalid-url",
+  // BE re-validates the work text (empty / over its 20 000-rune cap). The
+  // client guards both first, so these only reach us when the two limits
+  // disagree — still an honest, actionable message rather than `unknown`.
+  LMS_SUBMISSION_CONTENT_REQUIRED: "invalid-content",
+  LMS_SUBMISSION_CONTENT_TOO_LONG: "invalid-content",
 };
 
 export function toLmsFailure(err: unknown): LmsFailure {

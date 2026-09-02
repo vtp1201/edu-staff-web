@@ -750,6 +750,7 @@
       "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
       "invalid-window": "The end time must be after the start time.",
       "invalid-url": "The link must be a valid https address.",
+      "invalid-content": "The submitted work is not valid. Please check it again.",
       "limit-exceeded": "The maximum number of items has been reached.",
       "network-error": "Connection error. Please try again.",
       "unknown": "Something went wrong. Please try again.",
@@ -758,11 +759,13 @@
     "submit": {
       "sheetTitle": "Assignment details",
       "closeAriaLabel": "Close",
+      "detailLoading": "Loading assignment details...",
       "noInstructions": "The teacher has not written any instructions for this assignment.",
       "answerLabel": "Your work",
       "answerPlaceholder": "Type your work here…",
       "contentTooLong": "Your work cannot exceed {max} characters.",
       "singleAttemptHelper": "You may submit only once.",
+      "emptyContentHint": "Enter your work to enable submitting.",
       "submittedAt": "Submitted at {date}",
       "saveDraftButton": "Save draft",
       "submitButton": "Submit",
@@ -1202,6 +1205,9 @@
     "empty": {
       "allTab": "Your class has no courses yet."
     },
+    "skeleton": {
+      "loading": "Loading courses..."
+    },
     "player": {
       "breadcrumb": {
         "navLabel": "Breadcrumb",
@@ -1213,6 +1219,7 @@
           "title": "No content yet",
           "body": "Pick a lesson from the timeline to start."
         },
+        "loading": "Loading lesson content...",
         "loadError": "Could not load the lesson content."
       },
       "timeline": {
@@ -1250,6 +1257,7 @@
       "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
       "invalid-window": "The end time must be after the start time.",
       "invalid-url": "The link must be a valid https address.",
+      "invalid-content": "The submitted work is not valid. Please check it again.",
       "limit-exceeded": "The maximum number of items has been reached.",
       "network-error": "Connection error. Please try again.",
       "unknown": "Something went wrong. Please try again.",

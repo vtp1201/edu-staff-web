@@ -16,10 +16,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import type { AssignmentSummary } from "@/features/lms/domain/entities/assignment.entity";
-import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
 import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
-import type { AssignmentDetailVm } from "./student-assignments-screen.i-vm";
+import type {
+  AssignmentDetailVm,
+  AssignmentsErrorKey,
+} from "./student-assignments-screen.i-vm";
 import { useAssignmentDraft } from "./use-assignment-draft";
 
 /** BE caps submission content at 20 000 runes (`LMS_SUBMISSION_CONTENT_TOO_LONG`). */
@@ -31,11 +33,11 @@ export interface SubmitSheetProps {
   /** Full detail + the caller's own submission; `null` while loading. */
   detail: AssignmentDetailVm | null;
   detailLoading: boolean;
-  detailErrorKey: LmsFailure["type"] | null;
+  detailErrorKey: AssignmentsErrorKey | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   submitting: boolean;
-  submitErrorKey: LmsFailure["type"] | null;
+  submitErrorKey: AssignmentsErrorKey | null;
   onSubmit: (content: string) => void;
 }
 
@@ -76,15 +78,28 @@ export function SubmitSheet({
   }, [open, getDraft]);
 
   const submitted = detail?.mySubmission ?? null;
+  const isEmpty = content.trim().length === 0;
+  const tooLong = content.length > MAX_CONTENT_LENGTH;
   const canSubmit =
     !submitting &&
     detail !== null &&
     submitted === null &&
-    content.trim().length > 0 &&
+    !isEmpty &&
     content.length <= MAX_CONTENT_LENGTH;
 
-  const tooLong = content.length > MAX_CONTENT_LENGTH;
   const contentErrorId = `submit-content-error-${row.id}`;
+  const emptyHintId = `submit-content-hint-${row.id}`;
+  const submitErrorId = `submit-error-${row.id}`;
+  // Everything the Textarea and the Submit button are described by, so a
+  // disabled/failed submit is never silent to a screen reader.
+  const describedBy =
+    [
+      tooLong ? contentErrorId : null,
+      isEmpty && !submitErrorKey ? emptyHintId : null,
+      submitErrorKey ? submitErrorId : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   const fmtDate = (iso: string) =>
     format.dateTime(new Date(iso), {
@@ -112,11 +127,16 @@ export function SubmitSheet({
 
         <div className="flex-1 overflow-y-auto px-4 py-5">
           {detailLoading ? (
-            <div className="space-y-2.5" aria-hidden="true">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
+            <>
+              <span className="sr-only" role="status">
+                {t("submit.detailLoading")}
+              </span>
+              <div className="space-y-2.5" aria-hidden="true">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            </>
           ) : detailErrorKey || detail === null ? (
             <p role="alert" className="text-edu-error-text text-sm">
               {t(`errors.${detailErrorKey ?? "unknown"}`)}
@@ -161,7 +181,7 @@ export function SubmitSheet({
                     onChange={(e) => setContent(e.target.value)}
                     placeholder={t("submit.answerPlaceholder")}
                     aria-invalid={tooLong || undefined}
-                    aria-describedby={tooLong ? contentErrorId : undefined}
+                    aria-describedby={describedBy}
                   />
                   {tooLong && (
                     <p
@@ -172,6 +192,14 @@ export function SubmitSheet({
                       {t("submit.contentTooLong", { max: MAX_CONTENT_LENGTH })}
                     </p>
                   )}
+                  {isEmpty && !submitErrorKey && (
+                    <p
+                      id={emptyHintId}
+                      className="mt-1.5 text-edu-text-secondary text-xs"
+                    >
+                      {t("submit.emptyContentHint")}
+                    </p>
+                  )}
                   <p className="mt-1.5 text-edu-text-secondary text-xs">
                     {t("submit.singleAttemptHelper")}
                   </p>
@@ -179,7 +207,11 @@ export function SubmitSheet({
               )}
 
               {submitErrorKey && (
-                <p role="alert" className="mt-3 text-edu-error-text text-sm">
+                <p
+                  id={submitErrorId}
+                  role="alert"
+                  className="mt-3 text-edu-error-text text-sm"
+                >
                   {t(`errors.${submitErrorKey}`)}
                 </p>
               )}
@@ -205,6 +237,7 @@ export function SubmitSheet({
               type="button"
               className="flex-1"
               disabled={!canSubmit}
+              aria-describedby={describedBy}
               onClick={() => {
                 onSubmit(content.trim());
                 clearDraft();

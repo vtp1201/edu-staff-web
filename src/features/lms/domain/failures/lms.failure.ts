@@ -26,6 +26,8 @@ export type LmsFailure =
   | { type: "invalid-window" }
   /** LMS_ITEM_URL_INVALID — not an absolute https URL with a host. */
   | { type: "invalid-url" }
+  /** LMS_SUBMISSION_CONTENT_REQUIRED / _TOO_LONG — BE rejected the work text. */
+  | { type: "invalid-content" }
   /** LMS_*_LIMIT_EXCEEDED — per-course/class caps. */
   | { type: "limit-exceeded" }
   /** Transport / gateway / anything with no usable code. */
@@ -42,6 +44,7 @@ export const LMS_FAILURE_TYPES = [
   "exam-window-not-editable",
   "invalid-window",
   "invalid-url",
+  "invalid-content",
   "limit-exceeded",
   "network-error",
   "unknown",

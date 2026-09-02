@@ -3,6 +3,7 @@ import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
+import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
 import type { ILmsRepository } from "@/features/lms/domain/repositories/i-lms.repository";
 import { GetAssignmentDetailUseCase } from "@/features/lms/domain/use-cases/get-assignment.use-case";
 import { GetCourseUseCase } from "@/features/lms/domain/use-cases/get-course.use-case";
@@ -12,6 +13,7 @@ import { ListCourseItemsUseCase } from "@/features/lms/domain/use-cases/list-cou
 import { ListCoursesUseCase } from "@/features/lms/domain/use-cases/list-courses.use-case";
 import { SubmitAssignmentUseCase } from "@/features/lms/domain/use-cases/submit-assignment.use-case";
 import { LmsRepository } from "@/features/lms/infrastructure/repositories/lms.repository";
+import { MOCK_CLASS_ID } from "@/features/lms/infrastructure/repositories/mocks/lms.fixtures";
 import { MockLmsRepository } from "@/features/lms/infrastructure/repositories/mocks/lms.mock.repository";
 
 /**
@@ -63,4 +65,16 @@ export async function makeGetAssignmentDetailUseCase() {
 
 export async function makeSubmitAssignmentUseCase() {
   return new SubmitAssignmentUseCase(await makeRepo());
+}
+
+/**
+ * The signed-in student's own `classId`, for the class-scoped `lms` reads.
+ *
+ * The generic helper lives in `bootstrap/lib` (it composes core's enrollment
+ * read), but the MOCK seed belongs to this feature — so the LMS composition
+ * root, not the helper, supplies `MOCK_CLASS_ID`. Keeps `bootstrap/lib` free
+ * of any feature's fixtures.
+ */
+export async function resolveMyLmsClassId(): Promise<string | null> {
+  return resolveMyClassId(MOCK_CLASS_ID);
 }

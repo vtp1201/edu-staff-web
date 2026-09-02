@@ -5,8 +5,8 @@ import {
   makeGetAssignmentDetailUseCase,
   makeListAssignmentsUseCase,
   makeSubmitAssignmentUseCase,
+  resolveMyLmsClassId,
 } from "@/bootstrap/di/lms.di";
-import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
 import type {
   GetAssignmentDetailResult,
   ListAssignmentsResult,
@@ -18,9 +18,10 @@ export async function listAssignmentsAction(): Promise<ListAssignmentsResult> {
   const guard = await requireRole(["student"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
 
-  const classId = await resolveMyClassId();
+  const classId = await resolveMyLmsClassId();
   // No resolvable class → the class-scoped list cannot be requested at all.
-  if (classId === null) return { ok: false, errorKey: "not-found" };
+  // Same condition, same key as the RSC page: `no-class`, never `not-found`.
+  if (classId === null) return { ok: false, errorKey: "no-class" };
 
   const result = await (await makeListAssignmentsUseCase()).execute(classId);
   if (!result.ok) return { ok: false, errorKey: result.failure.type };

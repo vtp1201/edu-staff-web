@@ -1,6 +1,8 @@
 import { requireRole } from "@/bootstrap/auth-guard";
-import { makeListCoursesUseCase } from "@/bootstrap/di/lms.di";
-import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
+import {
+  makeListCoursesUseCase,
+  resolveMyLmsClassId,
+} from "@/bootstrap/di/lms.di";
 import { StudentCoursesScreen } from "@/features/lms/presentation/student-courses/student-courses-screen";
 import type {
   CourseCardVm,
@@ -30,7 +32,7 @@ export default async function StudentCoursesPage({ params }: Props) {
     return <StudentCoursesScreen {...vm} />;
   }
 
-  const classId = await resolveMyClassId();
+  const classId = await resolveMyLmsClassId();
   if (classId === null) {
     const vm: StudentCoursesScreenVm = { courses: [], errorKey: "no-class" };
     return <StudentCoursesScreen {...vm} />;

@@ -1,4 +1,4 @@
-import type { LmsFailure } from "../failures/lms.failure";
+import { LMS_FAILURE_TYPES, type LmsFailure } from "../failures/lms.failure";
 
 /** Discriminated result returned by every LMS use-case. */
 export type Result<T> =
@@ -13,12 +13,20 @@ export function fail<T = never>(failure: LmsFailure): Result<T> {
   return { ok: false, failure };
 }
 
-/** True for a value the repository threw as an `LmsFailure`. */
+/**
+ * True ONLY for a value the repository threw as a real `LmsFailure`.
+ *
+ * Membership in `LMS_FAILURE_TYPES` is the whole point: a loose
+ * `typeof type === "string"` check would hand a stray thrown object's `type`
+ * to the client as an `errorKey`, which presentation renders through
+ * `t("errors." + key)` — i.e. a raw untranslated key on screen.
+ */
 function isLmsFailure(err: unknown): err is LmsFailure {
+  if (typeof err !== "object" || err === null) return false;
+  const type = (err as { type?: unknown }).type;
   return (
-    typeof err === "object" &&
-    err !== null &&
-    typeof (err as { type?: unknown }).type === "string"
+    typeof type === "string" &&
+    (LMS_FAILURE_TYPES as readonly string[]).includes(type)
   );
 }
 

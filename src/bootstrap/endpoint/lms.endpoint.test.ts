@@ -51,10 +51,12 @@ describe("LMS_EP — 1:1 with services/lms/docs/openapi.yaml", () => {
   });
 
   it("every path is gateway-prefixed with the double `lms` segment", () => {
-    for (const [name, path] of Object.entries(RESOLVED)) {
-      expect(`${name}:${path}`).toBe(`${name}:${path}`);
-      expect(path.startsWith(`${BASE}/`)).toBe(true);
-    }
+    // Listing the offenders (name + path) instead of asserting per-entry, so a
+    // regression names the endpoint that drifted.
+    const offenders = Object.entries(RESOLVED).filter(
+      ([, path]) => !path.startsWith(`${BASE}/`),
+    );
+    expect(offenders).toEqual([]);
   });
 
   it("carries no query string — filters travel as axios `params`", () => {

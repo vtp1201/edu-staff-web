@@ -25,11 +25,14 @@ export function CourseCard({ course, labels }: CourseCardProps) {
   const published = course.status === "PUBLISHED";
   const statusLabel = published ? labels.statusPublished : labels.statusDraft;
 
+  // The card's aria-label overrides the whole subtree's accessible-name
+  // computation, so the status badge text has to be folded into it or it is
+  // never announced.
   return (
     <Card className="overflow-hidden p-0 shadow-card transition-shadow motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-card-hover">
       <Link
         href={course.href}
-        aria-label={`${course.title} — ${labels.cta}`}
+        aria-label={`${course.title} — ${statusLabel} — ${labels.cta}`}
         className="block rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className={cn("h-2", TONE_BG[course.tone])} />

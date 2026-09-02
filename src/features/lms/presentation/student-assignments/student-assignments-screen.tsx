@@ -7,11 +7,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { AssignmentSummary } from "@/features/lms/domain/entities/assignment.entity";
-import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
 import { AssignmentCard } from "./assignment-card";
 import { AssignmentsError } from "./assignments-error";
 import { AssignmentsSkeleton } from "./assignments-skeleton";
 import type {
+  AssignmentsErrorKey,
   StudentAssignmentsActions,
   StudentAssignmentsScreenProps,
 } from "./student-assignments-screen.i-vm";
@@ -26,13 +26,13 @@ const assignmentsKeys = {
 /** Carries a stable failure key from a failed Server Action through the query /
  *  mutation error channel so presentation can translate it. */
 export class AssignmentActionError extends Error {
-  constructor(readonly errorKey: LmsFailure["type"]) {
+  constructor(readonly errorKey: AssignmentsErrorKey) {
     super(errorKey);
     this.name = "AssignmentActionError";
   }
 }
 
-function errorKeyOf(error: unknown): LmsFailure["type"] | null {
+function errorKeyOf(error: unknown): AssignmentsErrorKey | null {
   if (error instanceof AssignmentActionError) return error.errorKey;
   return error ? "unknown" : null;
 }

@@ -19,10 +19,18 @@ import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
  * row's submission state is resolved when the sheet OPENS it.
  */
 
+/**
+ * Every stable error key this screen can render: the LMS failure catalog plus
+ * `no-class` (the student's class could not be resolved at all, so a
+ * class-scoped read was never even attempted). Both the RSC page and the
+ * Server Action use `no-class` for that identical condition.
+ */
+export type AssignmentsErrorKey = LmsFailure["type"] | "no-class";
+
 /** Server Action result for the list refetch (stable errorKey, no i18n). */
 export type ListAssignmentsResult =
   | { ok: true; data: AssignmentSummary[] }
-  | { ok: false; errorKey: LmsFailure["type"] };
+  | { ok: false; errorKey: AssignmentsErrorKey };
 
 /** Full detail for one assignment + the caller's own submission (or null). */
 export interface AssignmentDetailVm {
@@ -55,7 +63,7 @@ export interface StudentAssignmentsScreenVm {
    *  instead of showing a (wrong) empty state. */
   assignments: AssignmentSummary[] | null;
   /** Hard/guard failure (forbidden, no resolvable class) — top-level error. */
-  errorKey: LmsFailure["type"] | "no-class" | null;
+  errorKey: AssignmentsErrorKey | null;
 }
 
 export type StudentAssignmentsScreenProps = StudentAssignmentsScreenVm & {
