@@ -24,7 +24,7 @@ export function TeacherClassesScreen({
       </h1>
 
       {loading ? (
-        <ClassGridSkeleton />
+        <ClassGridSkeleton loadingLabel={t("loadingClasses")} />
       ) : vm.status === "error" ? (
         <ErrorState
           message={t(`errors.${vm.errorKey ?? "unknown"}`)}
@@ -36,7 +36,7 @@ export function TeacherClassesScreen({
         <ul
           // biome-ignore lint/a11y/noRedundantRoles: VoiceOver drops list semantics when list-style is removed by the grid layout; keep explicit.
           role="list"
-          className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]"
         >
           {vm.classes.map((cls) => (
             <li key={cls.id}>
@@ -49,19 +49,26 @@ export function TeacherClassesScreen({
   );
 }
 
-function ClassGridSkeleton() {
+function ClassGridSkeleton({ loadingLabel }: { loadingLabel: string }) {
   return (
-    <div
-      className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4"
-      aria-hidden="true"
-    >
-      {Array.from({ length: 4 }, (_, i) => i).map((i) => (
-        <div
-          key={i}
-          className="h-[196px] rounded-[var(--edu-radius-card)] border border-border bg-muted/50 motion-safe:animate-pulse"
-        />
-      ))}
-    </div>
+    <>
+      {/* A11Y-002 — the skeleton itself is decorative (aria-hidden), so the
+          load state would otherwise be silent for a screen-reader user. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {loadingLabel}
+      </div>
+      <div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]"
+        aria-hidden="true"
+      >
+        {Array.from({ length: 4 }, (_, i) => i).map((i) => (
+          <div
+            key={i}
+            className="h-[196px] rounded-[var(--edu-radius-card)] border border-border bg-muted/50 motion-safe:animate-pulse"
+          />
+        ))}
+      </div>
+    </>
   );
 }
 

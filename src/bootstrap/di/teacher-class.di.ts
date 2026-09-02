@@ -6,6 +6,7 @@ import { decodeMemberId } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ITeacherClassRepository } from "@/features/teacher/domain/repositories/i-teacher-class.repository";
 import { GetClassStudentsUseCase } from "@/features/teacher/domain/use-cases/get-class-students.use-case";
+import { GetHomeroomKpiUseCase } from "@/features/teacher/domain/use-cases/get-homeroom-kpi.use-case";
 import { ListMyClassesUseCase } from "@/features/teacher/domain/use-cases/list-my-classes.use-case";
 import { ListMyStudentsUseCase } from "@/features/teacher/domain/use-cases/list-my-students.use-case";
 import { MockTeacherClassRepository } from "@/features/teacher/infrastructure/repositories/mock-teacher-class.repository";
@@ -35,6 +36,12 @@ async function makeRepo(): Promise<ITeacherClassRepository> {
  *  `makeListMyClassesUseCase` in the `bootstrap/di` barrel. */
 export async function makeListMyTeacherClassesUseCase() {
   return new ListMyClassesUseCase(await makeRepo());
+}
+
+/** GVCN KPI slice for one class (US-E24.7) — called per homeroom class from the
+ *  RSC classes page; every field degrades to `undefined` on its own. */
+export async function makeGetHomeroomKpiUseCase() {
+  return new GetHomeroomKpiUseCase(await makeRepo());
 }
 
 export async function makeGetTeacherClassStudentsUseCase() {

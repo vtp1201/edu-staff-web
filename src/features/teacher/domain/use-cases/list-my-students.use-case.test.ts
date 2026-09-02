@@ -18,6 +18,8 @@ function cls(id: string, name: string, gradeLevel = 10): TeacherClass {
     gradeLevel,
     studentCount: 0,
     isHomeroom: false,
+    roles: [],
+    subjects: [],
     academicYearLabel: YEAR,
   };
 }
@@ -54,6 +56,7 @@ function makeRepo(
   return {
     listMyClasses: vi.fn().mockResolvedValue({ ok: true, data: [] }),
     getClassStudents: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+    getHomeroomKpi: vi.fn().mockResolvedValue({ ok: true, data: {} }),
     ...over,
   };
 }
