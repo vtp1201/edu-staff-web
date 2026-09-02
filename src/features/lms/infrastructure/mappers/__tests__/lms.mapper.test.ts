@@ -1,170 +1,297 @@
+/**
+ * DTO → entity mapper tests (US-E24.1). The one reshape in this feature is the
+ * `CourseItem` exam block: four FLAT wire fields become one nested `exam`
+ * object that exists only for an EXAM item. Everything else is a pass-through
+ * whose job is to NOT invent a value.
+ */
 import { describe, expect, it } from "vitest";
-import type { AssignmentDto } from "../../dtos/assignment-response.dto";
-import type { CourseLessonsDto } from "../../dtos/course-lessons-response.dto";
-import type { CourseDto } from "../../dtos/course-response.dto";
+import type {
+  AssignmentResponseDto,
+  AssignmentSummaryResponseDto,
+} from "../../dtos/assignment-response.dto";
+import type { CourseItemResponseDto } from "../../dtos/course-item-response.dto";
+import type {
+  CourseResponseDto,
+  CourseSummaryResponseDto,
+} from "../../dtos/course-response.dto";
+import type { LessonResponseDto } from "../../dtos/lesson-response.dto";
+import type { SubmissionResponseDto } from "../../dtos/submission-response.dto";
 import {
-  mapAssignment,
-  mapColorToTone,
-  mapCourseLessons,
-  mapCourseSummary,
+  toAssignment,
+  toAssignmentSummary,
+  toCourse,
+  toCourseItem,
+  toCourseSummary,
+  toLesson,
+  toLessonSummary,
+  toSubmission,
 } from "../lms.mapper";
 
-describe("mapColorToTone", () => {
-  it("maps each palette hex to its semantic tone (case/whitespace-insensitive)", () => {
-    expect(mapColorToTone("#5D87FF")).toBe("primary");
-    expect(mapColorToTone("#13deb9")).toBe("success");
-    expect(mapColorToTone(" #FFAE1F ")).toBe("warning");
-    expect(mapColorToTone("#7B5EA7")).toBe("purple");
-    expect(mapColorToTone("#00B8A9")).toBe("teal");
-    expect(mapColorToTone("#FA896B")).toBe("error");
+const ITEM_DTO: CourseItemResponseDto = {
+  id: "i1",
+  courseId: "c1",
+  itemType: "LESSON",
+  refId: "i1",
+  title: "Bài 1",
+  description: null,
+  url: null,
+  position: 0,
+  startAt: null,
+  dueAt: null,
+  state: "OPEN",
+  createdBy: "t1",
+  createdAt: "2026-08-01T00:00:00Z",
+  updatedAt: "2026-08-02T00:00:00Z",
+  examId: null,
+  scheduledDate: null,
+  durationMinutes: null,
+  examUrl: null,
+};
+
+describe("toCourseItem — the 4 item types", () => {
+  it("LESSON: no document fields, no exam block", () => {
+    const item = toCourseItem(ITEM_DTO);
+    expect(item).toEqual({
+      id: "i1",
+      courseId: "c1",
+      itemType: "LESSON",
+      refId: "i1",
+      title: "Bài 1",
+      description: null,
+      url: null,
+      position: 0,
+      startAt: null,
+      dueAt: null,
+      state: "OPEN",
+      createdBy: "t1",
+      createdAt: "2026-08-01T00:00:00Z",
+      updatedAt: "2026-08-02T00:00:00Z",
+      exam: null,
+    });
   });
 
-  it("falls back to primary for an unknown color", () => {
-    expect(mapColorToTone("#123456")).toBe("primary");
+  it("ASSIGNMENT: refId points at the assignment, exam stays null", () => {
+    const item = toCourseItem({
+      ...ITEM_DTO,
+      id: "a1",
+      itemType: "ASSIGNMENT",
+      refId: "a1",
+      dueAt: "2026-09-10T00:00:00Z",
+      state: "CLOSED",
+    });
+    expect(item.itemType).toBe("ASSIGNMENT");
+    expect(item.refId).toBe("a1");
+    expect(item.dueAt).toBe("2026-09-10T00:00:00Z");
+    expect(item.state).toBe("CLOSED");
+    expect(item.exam).toBeNull();
+  });
+
+  it("DOCUMENT: self-contained (description + url), refId null", () => {
+    const item = toCourseItem({
+      ...ITEM_DTO,
+      id: "d1",
+      itemType: "DOCUMENT",
+      refId: null,
+      description: "Tài liệu tham khảo",
+      url: "https://example.org/doc.pdf",
+    });
+    expect(item.refId).toBeNull();
+    expect(item.description).toBe("Tài liệu tham khảo");
+    expect(item.url).toBe("https://example.org/doc.pdf");
+    expect(item.exam).toBeNull();
+  });
+
+  it("EXAM: nests the 4 flat exam fields into `exam`", () => {
+    const item = toCourseItem({
+      ...ITEM_DTO,
+      id: "e1",
+      itemType: "EXAM",
+      refId: "e1",
+      startAt: "2026-09-20T01:00:00Z",
+      dueAt: "2026-09-20T02:30:00Z",
+      state: "UPCOMING_HIDDEN",
+      examId: "e1",
+      scheduledDate: "2026-09-20T01:00:00Z",
+      durationMinutes: 90,
+      examUrl: "https://school.example/exams/e1",
+    });
+    expect(item.exam).toEqual({
+      examId: "e1",
+      scheduledDate: "2026-09-20T01:00:00Z",
+      durationMinutes: 90,
+      examUrl: "https://school.example/exams/e1",
+    });
+    // UPCOMING_HIDDEN reaches a STUDENT only for an EXAM tile — passed through,
+    // never rewritten to OPEN.
+    expect(item.state).toBe("UPCOMING_HIDDEN");
+  });
+
+  it("EXAM with an unconfigured deep link / open-ended duration keeps the nulls", () => {
+    const item = toCourseItem({
+      ...ITEM_DTO,
+      itemType: "EXAM",
+      examId: "e2",
+      scheduledDate: null,
+      durationMinutes: null,
+      examUrl: null,
+    });
+    expect(item.exam).toEqual({
+      examId: "e2",
+      scheduledDate: null,
+      durationMinutes: null,
+      examUrl: null,
+    });
+  });
+
+  it("EXAM without an examId gets NO exam block (never a fabricated id)", () => {
+    const item = toCourseItem({ ...ITEM_DTO, itemType: "EXAM", examId: null });
+    expect(item.exam).toBeNull();
+  });
+
+  it("never leaks the flat exam fields onto a non-EXAM item", () => {
+    // A defensive case: BE promises these are null off an EXAM row, but a
+    // stray value must not silently produce an exam block on a LESSON.
+    const item = toCourseItem({ ...ITEM_DTO, itemType: "LESSON", examId: "x" });
+    expect(item.exam).toBeNull();
+    expect(item).not.toHaveProperty("examId");
+  });
+
+  it("preserves a null window (null = open immediately / no deadline)", () => {
+    const item = toCourseItem({ ...ITEM_DTO, startAt: null, dueAt: null });
+    expect(item.startAt).toBeNull();
+    expect(item.dueAt).toBeNull();
   });
 });
 
-describe("mapCourseSummary", () => {
-  const dto: CourseDto = {
-    id: "1",
-    name: "Toán học",
-    teacherName: "Nguyễn Thị Hương",
-    color: "#5D87FF",
-    lessonsDone: 18,
-    lessonsTotal: 24,
-    grade: 8.5,
+describe("course mappers", () => {
+  const dto: CourseResponseDto = {
+    id: "c1",
+    classId: "cl1",
+    subjectId: "s1",
+    title: "Toán 10",
+    description: "Mô tả",
+    status: "PUBLISHED",
+    isDefault: true,
+    createdBy: "t1",
+    createdAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-08-02T00:00:00Z",
+    publishedAt: "2026-08-02T00:00:00Z",
   };
 
-  it("maps a course DTO to a summary with tone + computed progress (no hex leaks)", () => {
-    const summary = mapCourseSummary(dto);
-    expect(summary).toEqual({
-      id: "1",
-      name: "Toán học",
-      teacherName: "Nguyễn Thị Hương",
-      tone: "primary",
-      gradeAvg: 8.5,
-      progress: { done: 18, total: 24, pct: 75, status: "in-progress" },
-    });
-    expect(JSON.stringify(summary)).not.toContain("#");
+  it("toCourse passes every field through", () => {
+    expect(toCourse(dto)).toEqual(dto);
   });
 
-  it("preserves a null grade", () => {
-    expect(mapCourseSummary({ ...dto, grade: null }).gradeAvg).toBeNull();
+  it("toCourse keeps a DRAFT's null publishedAt", () => {
+    expect(
+      toCourse({ ...dto, status: "DRAFT", publishedAt: null }),
+    ).toMatchObject({
+      status: "DRAFT",
+      publishedAt: null,
+    });
+  });
+
+  it("toCourseSummary does NOT invent description/createdAt", () => {
+    const summaryDto: CourseSummaryResponseDto = {
+      id: "c1",
+      classId: "cl1",
+      subjectId: "s1",
+      title: "Toán 10",
+      status: "PUBLISHED",
+      isDefault: false,
+      createdBy: "t1",
+      updatedAt: "2026-08-02T00:00:00Z",
+      publishedAt: "2026-08-02T00:00:00Z",
+    };
+    const summary = toCourseSummary(summaryDto);
+    expect(summary).toEqual(summaryDto);
+    expect(summary).not.toHaveProperty("description");
+    expect(summary).not.toHaveProperty("createdAt");
   });
 });
 
-describe("mapCourseLessons", () => {
-  const dto: CourseLessonsDto = {
-    course: { id: "1", name: "Toán học", color: "#5D87FF" },
-    chapters: [
-      {
-        id: "ch1",
-        title: "Chương 1",
-        lessons: [
-          {
-            id: "l1",
-            chapterId: "ch1",
-            type: "video",
-            order: 1,
-            title: "Bài 1",
-            durationLabel: "32 phút",
-            done: true,
-          },
-          {
-            id: "l3",
-            chapterId: "ch1",
-            type: "pdf",
-            order: 3,
-            title: "Bài 3",
-            durationLabel: "12 trang",
-            done: false,
-            downloadHref: "/x.pdf",
-          },
-        ],
-      },
-      { id: "ch2", title: "Chương 2", lessons: [] },
-    ],
+describe("lesson mappers", () => {
+  const dto: LessonResponseDto = {
+    id: "l1",
+    courseId: "c1",
+    title: "Bài 1",
+    content: "Nội dung dài",
+    position: 3,
+    startAt: "2026-09-01T00:00:00Z",
+    dueAt: null,
+    createdAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-08-02T00:00:00Z",
   };
 
-  it("maps the hierarchy, preserves the done flag, and flags empty chapters", () => {
-    const result = mapCourseLessons(dto);
-
-    expect(result.course).toEqual({
-      id: "1",
-      name: "Toán học",
-      tone: "primary",
-    });
-    expect(result.chapters).toHaveLength(2);
-    expect(result.chapters[0]?.isEmpty).toBe(false);
-    expect(result.chapters[0]?.lessons[0]?.done).toBe(true);
-    expect(result.chapters[0]?.lessons[1]?.downloadHref).toBe("/x.pdf");
-    expect(result.chapters[1]?.isEmpty).toBe(true);
-    expect(result.chapters[1]?.lessons).toHaveLength(0);
+  it("toLesson keeps the content body", () => {
+    expect(toLesson(dto)).toEqual(dto);
   });
 
-  it("omits type-specific fields for lessons that don't carry them", () => {
-    const video = mapCourseLessons(dto).chapters[0]?.lessons[0];
-    expect(video?.downloadHref).toBeUndefined();
-    expect(video?.blocks).toBeUndefined();
+  it("toLessonSummary carries no content field at all", () => {
+    const summary = toLessonSummary({
+      id: "l1",
+      courseId: "c1",
+      title: "Bài 1",
+      position: 3,
+      createdAt: "2026-08-01T00:00:00Z",
+      updatedAt: "2026-08-02T00:00:00Z",
+    });
+    expect(summary).not.toHaveProperty("content");
+    expect(summary.position).toBe(3);
   });
 });
 
-describe("mapAssignment", () => {
-  const base: AssignmentDto = {
+describe("assignment + submission mappers", () => {
+  const dto: AssignmentResponseDto = {
     id: "a1",
-    title: "Giải phương trình bậc 2",
-    description: "Hoàn thành bài tập trang 62.",
-    subject: "Toán học",
-    className: "10A1",
-    teacherName: "Nguyễn Văn A",
-    courseColor: "#5D87FF",
-    dueDate: "2026-07-20T00:00:00.000Z",
-    status: "pending",
-    submittedAt: null,
-    gradedAt: null,
-    score: null,
-    maxScore: null,
-    teacherComment: null,
-    fileName: null,
-    answerText: null,
-    gradedFileName: null,
+    classId: "cl1",
+    subjectId: "s1",
+    courseId: "c1",
+    title: "Bài tập 1",
+    instructions: null,
+    startAt: null,
+    dueAt: "2026-09-10T00:00:00Z",
+    state: "OPEN",
+    createdBy: "t1",
+    createdAt: "2026-09-01T00:00:00Z",
+    updatedAt: "2026-09-01T00:00:00Z",
   };
 
-  it("resolves the hex courseColor to a semantic tone (no hex leaks)", () => {
-    const entity = mapAssignment({ ...base, courseColor: "#13DEB9" });
-    expect(entity.tone).toBe("success");
-    expect(JSON.stringify(entity)).not.toContain("#");
+  it("toAssignment keeps a null instructions as null (not an empty string)", () => {
+    const a = toAssignment(dto);
+    expect(a.instructions).toBeNull();
+    expect(a.state).toBe("OPEN");
   });
 
-  it("preserves an empty-string teacherComment (not coerced to null)", () => {
-    const entity = mapAssignment({
-      ...base,
-      status: "graded",
-      teacherComment: "",
-      score: 7,
-      maxScore: 10,
-    });
-    expect(entity.teacherComment).toBe("");
+  it("toAssignment keeps a null courseId (pre-US-229 rows)", () => {
+    expect(toAssignment({ ...dto, courseId: null }).courseId).toBeNull();
   });
 
-  it("carries all graded fields through unchanged", () => {
-    const entity = mapAssignment({
-      ...base,
-      status: "graded",
-      submittedAt: "2026-07-04T21:02:00.000Z",
-      gradedAt: "2026-07-06T09:30:00.000Z",
-      score: 9,
-      maxScore: 10,
-      teacherComment: "Tốt.",
-      gradedFileName: "nhan-xet.pdf",
-    });
-    expect(entity).toMatchObject({
-      score: 9,
-      maxScore: 10,
-      teacherComment: "Tốt.",
-      gradedFileName: "nhan-xet.pdf",
-      submittedAt: "2026-07-04T21:02:00.000Z",
-      gradedAt: "2026-07-06T09:30:00.000Z",
-    });
+  it("toAssignmentSummary exposes no `state` — the list row does not carry one", () => {
+    const summaryDto: AssignmentSummaryResponseDto = {
+      id: "a1",
+      classId: "cl1",
+      subjectId: "s1",
+      courseId: "c1",
+      title: "Bài tập 1",
+      dueAt: null,
+      createdBy: "t1",
+      updatedAt: "2026-09-01T00:00:00Z",
+    };
+    const summary = toAssignmentSummary(summaryDto);
+    expect(summary).toEqual(summaryDto);
+    expect(summary).not.toHaveProperty("state");
+    expect(summary).not.toHaveProperty("instructions");
+  });
+
+  it("toSubmission passes the single-value status through", () => {
+    const dtoSub: SubmissionResponseDto = {
+      assignmentId: "a1",
+      studentUserId: "u1",
+      content: "Bài làm",
+      status: "SUBMITTED",
+      submittedAt: "2026-09-05T00:00:00Z",
+    };
+    expect(toSubmission(dtoSub)).toEqual(dtoSub);
   });
 });

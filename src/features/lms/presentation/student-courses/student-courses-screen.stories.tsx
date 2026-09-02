@@ -1,60 +1,37 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { CoursesSkeleton } from "./courses-skeleton";
 import { StudentCoursesScreen } from "./student-courses-screen";
 import type { CourseCardVm } from "./student-courses-screen.i-vm";
 
+/** Shaped from the REAL `CourseSummary` — title + publish status, nothing else
+ *  (no progress/grade: the contract carries neither). */
 const MOCK_COURSES: CourseCardVm[] = [
   {
-    id: "1",
-    name: "Toán học",
-    teacherName: "Nguyễn Thị Hương",
+    id: "co-toan-10",
+    title: "Toán 10 — Đại số & Giải tích",
+    status: "PUBLISHED",
+    isDefault: true,
     tone: "primary",
-    lessonsDone: 2,
-    lessonsTotal: 4,
-    progressPct: 50,
-    gradeAvg: 8.5,
-    status: "in-progress",
-    href: "/vi/t/demo/student/courses/1",
+    href: "/vi/t/demo/student/courses/co-toan-10",
   },
   {
-    id: "2",
-    name: "Vật Lý",
-    teacherName: "Trần Văn Minh",
+    id: "co-ly-10",
+    title: "Vật lý 10 — Điện từ trường",
+    status: "PUBLISHED",
+    isDefault: true,
     tone: "success",
-    lessonsDone: 14,
-    lessonsTotal: 22,
-    progressPct: 64,
-    gradeAvg: 9.0,
-    status: "in-progress",
-    href: "/vi/t/demo/student/courses/2",
+    href: "/vi/t/demo/student/courses/co-ly-10",
   },
   {
-    id: "3",
-    name: "Ngữ Văn",
-    teacherName: "Phạm Quốc Bảo",
+    id: "co-van-10",
+    title: "Ngữ văn 10 — Truyện Kiều",
+    status: "DRAFT",
+    isDefault: false,
     tone: "purple",
-    lessonsDone: 24,
-    lessonsTotal: 24,
-    progressPct: 100,
-    gradeAvg: 8.0,
-    status: "completed",
-    href: "/vi/t/demo/student/courses/3",
-  },
-  {
-    id: "4",
-    name: "Lịch Sử",
-    teacherName: "Hoàng Văn Nam",
-    tone: "error",
-    lessonsDone: 0,
-    lessonsTotal: 24,
-    progressPct: 0,
-    gradeAvg: 7.2,
-    status: "not-started",
-    href: "/vi/t/demo/student/courses/4",
+    href: "/vi/t/demo/student/courses/co-van-10",
   },
 ];
 
@@ -63,20 +40,13 @@ const meta: Meta<typeof StudentCoursesScreen> = {
   component: StudentCoursesScreen,
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   decorators: [
-    (Story) => {
-      const qc = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-      });
-      return (
-        <QueryClientProvider client={qc}>
-          <NextIntlClientProvider locale="vi" messages={messages}>
-            <div className="min-h-screen bg-edu-bg p-6">
-              <Story />
-            </div>
-          </NextIntlClientProvider>
-        </QueryClientProvider>
-      );
-    },
+    (Story) => (
+      <NextIntlClientProvider locale="vi" messages={messages}>
+        <div className="min-h-screen bg-edu-bg p-6">
+          <Story />
+        </div>
+      </NextIntlClientProvider>
+    ),
   ],
 };
 export default meta;
@@ -87,28 +57,16 @@ export const CoursesGrid_Loading: Story = {
   render: () => <CoursesSkeleton />,
 };
 
-export const CoursesGrid_AllTab: Story = {
+export const CoursesGrid_Success: Story = {
   args: { courses: MOCK_COURSES, errorKey: null },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Toán học")).toBeInTheDocument();
-    await expect(canvas.getByText("Lịch Sử")).toBeInTheDocument();
-    // "Tiếp tục học" for started courses, "Bắt đầu" for the not-started one.
-    await expect(canvas.getAllByText("Tiếp tục học").length).toBeGreaterThan(0);
-    await expect(canvas.getByText("Bắt đầu")).toBeInTheDocument();
-  },
-};
-
-export const CoursesGrid_InProgressTab: Story = {
-  args: { courses: MOCK_COURSES, errorKey: null },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const tab = canvas.getByRole("tab", { name: /Đang học/ });
-    await userEvent.click(tab);
-    await expect(tab).toHaveAttribute("aria-selected", "true");
-    // In-progress courses shown, the completed one hidden.
-    await expect(canvas.getByText("Toán học")).toBeInTheDocument();
-    await expect(canvas.queryByText("Ngữ Văn")).not.toBeInTheDocument();
+    await expect(
+      canvas.getByText("Toán 10 — Đại số & Giải tích"),
+    ).toBeInTheDocument();
+    // Status comes from the wire `status` field — the only badge left.
+    await expect(canvas.getAllByText("Đã xuất bản")).toHaveLength(2);
+    await expect(canvas.getByText("Bản nháp")).toBeInTheDocument();
   },
 };
 
@@ -117,7 +75,29 @@ export const CoursesGrid_Empty: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText("Bạn chưa ghi danh khoá học nào."),
+      canvas.getByText("Lớp của bạn chưa có khoá học nào."),
     ).toBeInTheDocument();
+  },
+};
+
+export const CoursesGrid_Error: Story = {
+  args: { courses: [], errorKey: "network-error" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("alert")).toHaveTextContent(
+      "Lỗi kết nối. Vui lòng thử lại.",
+    );
+  },
+};
+
+/** The student has no resolvable class enrollment, so the class-scoped list
+ *  cannot be requested at all — a distinct, actionable state. */
+export const CoursesGrid_NoClass: Story = {
+  args: { courses: [], errorKey: "no-class" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("alert")).toHaveTextContent(
+      "Chưa xác định được lớp của bạn",
+    );
   },
 };

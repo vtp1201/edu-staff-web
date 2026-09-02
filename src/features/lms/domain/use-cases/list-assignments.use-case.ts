@@ -1,28 +1,16 @@
-import type {
-  AssignmentEntity,
-  AssignmentStatusFilter,
-} from "../entities/assignment.entity";
+import type { AssignmentSummary } from "../entities/assignment.entity";
 import type { ILmsRepository } from "../repositories/i-lms.repository";
-import { type AssignmentResult, asgFail, asgOk } from "./assignment-result";
+import { type Result, runCatching } from "./result";
 
-/**
- * Lists the student's assignments, optionally filtered by the active tab. Maps a
- * thrown repository error to an `AssignmentFailure` — only `network-error` and
- * `unknown` are reachable from the list call (integration.md INT-117-01).
- */
+/** Assignments of ONE class. Rows carry no `state` and no `instructions` —
+ *  that is the by-class table's shape, not an omission to patch up here. */
 export class ListAssignmentsUseCase {
   constructor(private readonly repo: ILmsRepository) {}
 
-  async execute(
-    studentId: string,
-    statusFilter?: AssignmentStatusFilter,
-  ): Promise<AssignmentResult<AssignmentEntity[]>> {
-    try {
-      return asgOk(await this.repo.listAssignments(studentId, statusFilter));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg === "network-error") return asgFail({ type: "network-error" });
-      return asgFail({ type: "unknown" });
-    }
+  execute(
+    classId: string,
+    filter?: { subjectId?: string; courseId?: string },
+  ): Promise<Result<AssignmentSummary[]>> {
+    return runCatching(() => this.repo.listAssignments(classId, filter));
   }
 }

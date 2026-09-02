@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -122,4 +122,165 @@ When updating durable proof status, use numeric booleans:
 
 ## Evidence
 
-(điền sau)
+Implemented 2026-09-02 on `feat/us-e24.1-lms-contract-repoint`. Not merged —
+pending `fe-tech-lead-reviewer` + a11y review (this section is the reviewer's
+starting point).
+
+### Gate (all four commands actually run)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean (0 errors) |
+| `bun vitest run` | **519 files / 4189 tests passed** |
+| `bun lint` | exit 0 — only the 1 pre-existing warning + 1 info in `messaging/message-context-menu.tsx` (untouched) |
+| `bun vitest --config vitest.storybook.mts run` | **162 files / 1269 interaction tests passed** |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | green, full route manifest emitted |
+| `NEXT_PUBLIC_USE_MOCK=false bun run build` | green (`✓ Compiled successfully in 11.4s`) |
+
+`.env.local` leaves `NEXT_PUBLIC_USE_MOCK` UNSET (the committed comment warns
+against pinning it) — both build modes were driven by an explicit env prefix,
+not by editing that file.
+
+### Final `LMS_EP` (asserted literally in `lms.endpoint.test.ts`)
+
+All paths share `BASE = "/lms/api/v1/lms"` — the **double `lms` segment** is
+correct: Kong route `/lms/api/v1` with `strip_path: true` → upstream
+`http://lms:3004/api/v1`, and the service mounts its own routes under
+`/api/v1/lms/...` (verified against `edu-api/gateway/kong/kong.yml`
+§`lms-protected` and `services/lms/docs/openapi.yaml`).
+
+```
+courses            /lms/api/v1/lms/courses                                  (const)
+course(id)         /lms/api/v1/lms/courses/{id}
+publishCourse(id)  /lms/api/v1/lms/courses/{id}/publish
+lessons(cid)       /lms/api/v1/lms/courses/{cid}/lessons
+lesson(cid,lid)    /lms/api/v1/lms/courses/{cid}/lessons/{lid}
+items(cid)         /lms/api/v1/lms/courses/{cid}/items
+itemDocuments(cid) /lms/api/v1/lms/courses/{cid}/items/documents
+itemsOrder(cid)    /lms/api/v1/lms/courses/{cid}/items/order
+item(cid,iid)      /lms/api/v1/lms/courses/{cid}/items/{iid}
+assignments        /lms/api/v1/lms/assignments                              (const)
+assignment(aid)    /lms/api/v1/lms/assignments/{aid}
+submissions(aid)   /lms/api/v1/lms/assignments/{aid}/submissions
+mySubmission(aid)  /lms/api/v1/lms/assignments/{aid}/submissions/me
+submission(aid,s)  /lms/api/v1/lms/assignments/{aid}/submissions/{s}
+```
+
+`courses`/`assignments` are plain CONSTANTS, not `(classId) => …` as the packet
+sketched: the filters (`classId`, `subjectId`, `courseId`) travel as axios
+`params` so the repository owns encoding and no caller can build
+`?classId=undefined`. The test asserts no `LMS_EP` value contains `?`.
+Deleted keys asserted absent: `completeLesson`, `note`, `questions`,
+`courseLessons`, `submitAssignment` (plus no path matching `/lms/api/v1/courses`,
+`/students/`, `/note`, `/questions`, `/complete`). `QUESTION_BANK_EP` (core
+service, unrelated) is unchanged except one stale comment that referenced the
+now-deleted `LMS_EP.questions`.
+
+### Kong smoke test — NOT possible, and why
+
+`docker ps`: `edu-kong`, `edu-iam` and `edu-core` are all **`Exited` (3 weeks
+ago)**; only `edu-lms`, `edu-social`, scylla, redis and rabbitmq are up.
+`curl http://localhost:8000/` → exit 7 (connection refused). No gateway, and no
+IAM to mint a student token, so the AC's
+`GET /lms/api/v1/lms/courses?classId=<demo>` could not be exercised.
+
+What WAS verified instead (recorded honestly, not dressed up as the AC):
+
+```
+$ docker run --rm --network container:edu-lms curlimages/curl -s -o /dev/null -w '%{http_code}' \
+    http://localhost:3004/health
+200
+
+$ docker run --rm --network container:edu-lms curlimages/curl -s -i \
+    'http://localhost:3004/api/v1/lms/courses?classId=00000000-0000-0000-0000-000000000000'
+HTTP/1.1 401 Unauthorized
+{"success":false,"data":null,
+ "error":{"code":"UNAUTHORIZED_ACCESS","message":"Unauthorized","retryable":false},
+ "meta":{"requestId":"9e04b873-…","timestamp":"2026-09-02T11:47:34Z"}}
+```
+
+The service is up and answers with a **well-formed envelope** carrying the
+documented error shape. It does NOT prove the route exists: a deliberately
+bogus path (`/api/v1/courses`) returns the same 401, i.e. the auth middleware
+runs before routing. Route existence therefore rests on
+`services/lms/docs/openapi.yaml` (`grep -n "^  /"` lists all 15 paths, matched
+1:1 by the endpoint test) and the gateway composition on `kong.yml`.
+**Follow-up for whoever next has the full stack up: run the real curl.**
+
+### What changed beyond the packet's letter (and why)
+
+1. **`bootstrap/lib/resolve-my-class.ts` (new, not in the packet).** Both list
+   endpoints REQUIRE `classId` and `lms` has no self-scope discovery route
+   (`GET /courses/me` is DRAFT-only, BE US-254). The student's class comes from
+   core's `GET /members/{memberId}/enrollment` (BE US-148, self-readable by a
+   STUDENT), using the `memberId` claim per ADR 0074. Cross-service composition
+   sits in `bootstrap`, not in `LmsRepository` (decision 0017). Fail-soft to
+   `null` → a distinct `no-class` UI state; it never falls back to another class.
+   **Consequence worth reviewing:** the two `lms` screens now depend on `core`
+   being reachable.
+2. **`CourseItem.exam` is NESTED** (the packet allowed either). BE sends the
+   four exam fields flat and null off an EXAM row; nesting makes "these belong
+   to an exam tile" a type fact instead of four null checks per call site. The
+   block is non-null only when `itemType === "EXAM"` AND `examId !== null`.
+3. **One `LmsFailure` union** — `assignment.failure.ts` is deleted and folded
+   in. One service, one `error.code` namespace, one mapping table. Eleven
+   members, every one produced by a tested mapping; all eleven have vi+en keys
+   under BOTH `courses.errors.*` and `assignments.errors.*` (the screens use
+   dynamic `t("errors." + key)`).
+4. **UI removed, not stubbed** (packet §5 "ưu tiên: xoá"). Deleted:
+   `chapter-list`, `notes-panel`, `qna-panel`, `mark-complete-button`,
+   `video-player`, `pdf-preview`, `progress-card`, `lesson-tabs`, `lesson-body`,
+   `course-tabs`, `assignment-tabs`, `graded-sheet`(+story), `score-tone`,
+   `overdue-confirm-dialog`, `submit-sheet.stories`. The `[courseId]` screen is
+   now a course timeline + a lazily-fetched plain-text lesson reader
+   (`timeline-list.tsx` replaces `chapter-list.tsx`); the folder keeps the name
+   `lesson-player/` to avoid churn ahead of the E24.3/E24.5 redesign.
+5. **`CourseTone` moved to presentation** (`presentation/tone.ts`) with a
+   deterministic `toneForId(id)`. The wire carries no color, so tone is
+   decoration derived from an id — never mapped from data, and nothing may be
+   inferred from it. The old domain `CourseTone` (fed by a mock-invented hex)
+   is gone.
+6. **The late-submit confirm dialog is gone** — a real behaviour change. BE
+   US-228 made `dueAt` ENFORCING (`409 LMS_ITEM_CLOSED`), so there is nothing
+   for a student to confirm; the refusal is surfaced instead.
+7. **`derive-overdue.ts` was KEPT** (packet listed it as a delete candidate) —
+   rewritten to `isOverdue(dueAt: string | null, now)`. It is contract-
+   sanctioned: BE states plainly that the client renders lateness from `dueAt`.
+   It is NOT used to derive `state`, which only BE computes.
+8. **Teacher commands land at the REPOSITORY layer only.** `createLesson`,
+   `createAssignment`, `addDocumentItem`, `patchItem`, `reorderItems` exist and
+   are tested (incl. the AC's `{ itemIds }` body assertion) but have no
+   use-case, no DI factory and no UI — that is E24.10. No dead use-cases were
+   created to pad the layer.
+9. **No draft endpoint is consumed.** ADR 0076 documents the convention; the
+   progress/completion family (BE US-254, `openapi.draft.yaml`
+   `draft-2026-09-02`) stays absent from the UI in this story.
+
+### AC status
+
+| AC | Status |
+| --- | --- |
+| Every `LMS_EP` path `/lms/api/v1/lms/*`, 1:1 with openapi.yaml, old shapes gone | ✅ `lms.endpoint.test.ts` (6) |
+| Mapper: 4 item types, null-safe `exam`, null window, `state` passthrough | ✅ `lms.mapper.test.ts` (17) |
+| Repo: `listItems` BE order; 2nd submit → `already-submitted`; course authz → `not-found` not `[]`; `reorderItems` body `{ itemIds }` | ✅ `lms.repository.test.ts` (25) |
+| DI: `USE_MOCK=false` → real, `=true` → mock (inverse of US-E18.60) | ✅ `lms.di.test.ts` (6) |
+| Kong smoke with a student token | ⚠️ **not run** — stack down (kong/iam/core exited). Substitute evidence above |
+| `0073` marked superseded | ✅ `docs/decisions/0073-*.md` Status block |
+| `/student/courses` + `/student/assignments` still render, no crash | ✅ both builds green; screens re-derived and story-covered in mock + error + empty + no-class states |
+| tsc / vitest / build green, lint clean | ✅ table above |
+| `screens.md` force-mock notes removed | ✅ both rows rewritten |
+
+### Known gaps for the reviewer
+
+- Storybook interaction stories DID run (the runner's previously-recorded
+  repo-wide `ERR_REQUIRE_ESM` breakage no longer reproduces): 162 files / 1269
+  tests green. It caught one real defect — `card.daysLeft.noDeadline` and
+  `card.noDueDate` shared the string "Không có hạn nộp", so the badge query was
+  ambiguous; the badge is now "Không có hạn" and the date line keeps "Không có
+  hạn nộp" (both locales).
+- No subject NAME is shown anywhere (course card, assignment card): the wire
+  carries `subjectId` (uuid) and no endpoint a STUDENT may call resolves it.
+  Printing a uuid would be worse; E24.2 should decide the source.
+- `listLessons` is implemented and tested but currently has no caller — the
+  timeline already carries lesson tiles. Kept because it is the only route that
+  enumerates lessons for the E24.10 authoring UI.

@@ -1,15 +1,14 @@
-import type { AssignmentStatus } from "../entities/assignment.entity";
-
 /**
- * A pending assignment whose deadline has passed is *overdue* — a client-derived
- * visual state (FR-003), never a server status. Submitted/graded assignments are
- * NEVER overdue even if the deadline has passed. Single source of truth so the
- * card badge and the submit-click overdue-confirm gate can't drift (AC-1176.6).
+ * `dueAt` has passed. CLIENT-derived on purpose: BE states plainly that a
+ * submission's lateness "is rendered by the client from `dueAt` +
+ * `submittedAt`" — there is no `late` flag on the wire. Null `dueAt` means the
+ * assignment/item has no deadline, so it is never overdue.
+ *
+ * This is NOT a substitute for `state`/`CourseItemState`, which only BE
+ * computes; it is purely the deadline framing the UI shows.
  */
-export function isOverdue(
-  status: AssignmentStatus,
-  dueDate: string,
-  now: Date,
-): boolean {
-  return status === "pending" && new Date(dueDate).getTime() < now.getTime();
+export function isOverdue(dueAt: string | null, now: Date): boolean {
+  if (dueAt === null) return false;
+  const due = new Date(dueAt).getTime();
+  return Number.isFinite(due) && due < now.getTime();
 }

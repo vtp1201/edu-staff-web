@@ -1,80 +1,35 @@
 "use server";
 
 import { requireRole } from "@/bootstrap/auth-guard";
-import {
-  makeAskQuestionUseCase,
-  makeGetNoteUseCase,
-  makeListQuestionsUseCase,
-  makeMarkLessonCompleteUseCase,
-  makeSaveNoteUseCase,
-} from "@/bootstrap/di/lms.di";
-import type {
-  AskQuestionResult,
-  GetNoteResult,
-  ListQuestionsResult,
-  MarkCompleteResult,
-  SaveNoteResult,
-} from "@/features/lms/presentation/lesson-player/lesson-player.i-vm";
+import { makeGetLessonUseCase } from "@/bootstrap/di/lms.di";
+import type { GetLessonResult } from "@/features/lms/presentation/lesson-player/lesson-player.i-vm";
 
-export async function markLessonCompleteAction(
+/**
+ * Lazily reads ONE lesson's body. The timeline endpoint (and the lesson LIST
+ * endpoint) omit `content` by design, so the body is a separate round trip made
+ * when the student opens a lesson tile.
+ *
+ * `courseId` is bound by the page (the route owns it) so the client cannot ask
+ * for a lesson under a course it did not navigate to.
+ */
+export async function getLessonAction(
+  courseId: string,
   lessonId: string,
-): Promise<MarkCompleteResult> {
+): Promise<GetLessonResult> {
   const guard = await requireRole(["student"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  const useCase = await makeMarkLessonCompleteUseCase();
-  const result = await useCase.execute(lessonId);
+
+  const result = await (await makeGetLessonUseCase()).execute(
+    courseId,
+    lessonId,
+  );
   if (!result.ok) return { ok: false, errorKey: result.failure.type };
-  return { ok: true, data: result.data };
-}
-
-export async function getNoteAction(lessonId: string): Promise<GetNoteResult> {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  try {
-    const useCase = await makeGetNoteUseCase();
-    return { ok: true, data: await useCase.execute(lessonId) };
-  } catch {
-    return { ok: false, errorKey: "unknown" };
-  }
-}
-
-export async function saveNoteAction(
-  lessonId: string,
-  content: string,
-): Promise<SaveNoteResult> {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  try {
-    const useCase = await makeSaveNoteUseCase();
-    return { ok: true, data: await useCase.execute(lessonId, content) };
-  } catch {
-    return { ok: false, errorKey: "unknown" };
-  }
-}
-
-export async function listQuestionsAction(
-  lessonId: string,
-): Promise<ListQuestionsResult> {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  try {
-    const useCase = await makeListQuestionsUseCase();
-    return { ok: true, data: await useCase.execute(lessonId) };
-  } catch {
-    return { ok: false, errorKey: "unknown" };
-  }
-}
-
-export async function askQuestionAction(
-  lessonId: string,
-  question: string,
-): Promise<AskQuestionResult> {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  try {
-    const useCase = await makeAskQuestionUseCase();
-    return { ok: true, data: await useCase.execute(lessonId, question) };
-  } catch {
-    return { ok: false, errorKey: "unknown" };
-  }
+  return {
+    ok: true,
+    data: {
+      id: result.data.id,
+      title: result.data.title,
+      content: result.data.content,
+    },
+  };
 }

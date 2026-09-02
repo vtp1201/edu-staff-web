@@ -1,62 +1,22 @@
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
 import { CourseCard } from "./course-card";
-import { CourseTabs } from "./course-tabs";
 import { CoursesEmpty } from "./courses-empty";
-import type {
-  CourseTab,
-  StudentCoursesScreenVm,
-} from "./student-courses-screen.i-vm";
-
-const coursesListKey = () => ["lms", "courses", "list"] as const;
+import type { StudentCoursesScreenVm } from "./student-courses-screen.i-vm";
 
 /**
- * Client container for `/student/courses`. RSC seeds the full unfiltered course
- * list via `initialData`; the 3 tabs filter it client-side (no refetch).
+ * `/student/courses` — the class's published courses.
+ *
+ * A plain server-rendered grid since US-E24.1: the three progress tabs
+ * ("Tất cả / Đang học / Hoàn thành") were filtering on a client-computed
+ * completion status that the `lms` contract does not provide, so they filtered
+ * on nothing real and are gone. Progress-aware browsing returns with BE US-254
+ * (ADR 0076). No client state remains → no `'use client'`.
  */
 export function StudentCoursesScreen({
-  courses: initialCourses,
+  courses,
   errorKey,
 }: StudentCoursesScreenVm) {
   const t = useTranslations("courses");
-  const [activeTab, setActiveTab] = useState<CourseTab>("all");
-
-  const { data: courses = initialCourses } = useQuery({
-    queryKey: coursesListKey(),
-    queryFn: async () => initialCourses,
-    initialData: initialCourses,
-    staleTime: 120_000,
-    gcTime: 300_000,
-    refetchOnWindowFocus: false,
-  });
-
-  const filtered = useMemo(() => {
-    if (activeTab === "in-progress") {
-      return courses.filter((c) => c.status === "in-progress");
-    }
-    if (activeTab === "completed") {
-      return courses.filter((c) => c.status === "completed");
-    }
-    return courses;
-  }, [courses, activeTab]);
-
-  const cardLabels = {
-    gradeLabel: t("card.gradeLabel"),
-    lessonsLabel: t("card.lessonsLabel"),
-    progressLabel: t("card.progressLabel"),
-    ctaStart: t("card.ctaStart"),
-    ctaContinue: t("card.ctaContinue"),
-  };
-
-  const emptyTitle =
-    activeTab === "in-progress"
-      ? t("empty.inProgressTab")
-      : activeTab === "completed"
-        ? t("empty.completedTab")
-        : t("empty.allTab");
 
   return (
     <div className="flex flex-col gap-5">
@@ -66,38 +26,22 @@ export function StudentCoursesScreen({
         <p role="alert" className="text-edu-error-text text-sm">
           {t(`errors.${errorKey}`)}
         </p>
+      ) : courses.length === 0 ? (
+        <CoursesEmpty title={t("empty.allTab")} />
       ) : (
-        <>
-          <CourseTabs
-            courses={courses}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            labels={{
-              all: t("tabs.all"),
-              inProgress: t("tabs.inProgress"),
-              completed: t("tabs.completed"),
-            }}
-          />
-
-          {filtered.length === 0 ? (
-            <CoursesEmpty title={emptyTitle} />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  labels={{
-                    ...cardLabels,
-                    progressAria: t("card.progressAria", {
-                      pct: course.progressPct,
-                    }),
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => (
+            <CourseCard
+              key={course.id}
+              course={course}
+              labels={{
+                statusPublished: t("card.statusPublished"),
+                statusDraft: t("card.statusDraft"),
+                cta: t("card.ctaOpen"),
+              }}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

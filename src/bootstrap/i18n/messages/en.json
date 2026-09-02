@@ -714,95 +714,61 @@
   "assignments": {
     "page": {
       "title": "Assignments",
-      "subtitle": "{count} assignments pending",
-      "subtitleZero": "No assignments to submit"
-    },
-    "tabs": {
-      "groupLabel": "Filter assignments",
-      "all": "All",
-      "pending": "Pending",
-      "submitted": "Submitted",
-      "graded": "Graded"
+      "subtitle": "Your class's assignments"
     },
     "card": {
-      "title": "Assignment: {title}",
-      "meta": "{subject} · Class {className} · Teacher: {teacherName}",
       "dueDate": "Due: {date}",
-      "submittedAt": "Submitted: {date}",
+      "noDueDate": "No deadline",
       "daysLeft": {
         "remaining": "{days} days left",
         "dueToday": "Due today",
-        "overdue": "{days}d overdue"
-      },
-      "status": {
-        "pending": "Pending",
-        "submitted": "Submitted",
-        "graded": "Graded",
-        "overdue": "Overdue"
+        "overdue": "{days} days overdue",
+        "noDeadline": "No deadline"
       },
       "cta": {
         "viewDetail": "View details",
-        "submit": "Submit",
-        "viewSubmission": "View submission",
-        "viewGrade": "View grade & feedback"
+        "openAria": "View assignment details: {title}"
       }
     },
     "empty": {
-      "allTab": "You don't have any assignments yet.",
-      "pendingTab": "No assignments due 🎉",
-      "submittedTab": "No submissions yet.",
-      "gradedTab": "No submissions yet."
+      "allTab": "Your class has no assignments yet."
     },
     "skeleton": {
       "loading": "Loading assignments..."
     },
     "error": {
-      "title": "Couldn't load assignments",
+      "title": "Could not load the assignments",
       "description": "Something went wrong. Please try again.",
-      "retry": "Retry"
+      "retry": "Try again"
     },
     "errors": {
-      "network-error": "Connection error. Please try again.",
       "not-found": "Assignment not found.",
-      "forbidden": "You don't have permission to view this assignment.",
+      "forbidden": "You do not have access to this assignment.",
       "already-submitted": "This assignment has already been submitted.",
-      "file-too-large": "Attached file exceeds the allowed size (max 20MB).",
-      "unknown": "Something went wrong. Please try again."
+      "closed": "Past the deadline — this assignment no longer accepts work.",
+      "not-document": "Only document items can be edited.",
+      "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
+      "invalid-window": "The end time must be after the start time.",
+      "invalid-url": "The link must be a valid https address.",
+      "limit-exceeded": "The maximum number of items has been reached.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "Something went wrong. Please try again.",
+      "no-class": "We could not determine your class. Please contact your homeroom teacher."
     },
     "submit": {
-      "sheetTitle": "Submit assignment",
+      "sheetTitle": "Assignment details",
       "closeAriaLabel": "Close",
-      "descriptionLabel": "Assignment description",
-      "attachLabel": "Attach file",
-      "attachPlaceholder": "Choose a file or drag and drop here",
-      "attachHelper": "Supports PDF, DOCX, JPG, PNG (max 20MB).",
-      "attachRemoveAriaLabel": "Remove attached file",
-      "fileSelectedLabel": "Selected: {fileName}",
-      "answerLabel": "Your answer",
-      "answerPlaceholder": "Enter your answer…",
-      "answerHelper": "Optional for some assignment types.",
+      "noInstructions": "The teacher has not written any instructions for this assignment.",
+      "answerLabel": "Your work",
+      "answerPlaceholder": "Type your work here…",
+      "contentTooLong": "Your work cannot exceed {max} characters.",
+      "singleAttemptHelper": "You may submit only once.",
+      "submittedAt": "Submitted at {date}",
       "saveDraftButton": "Save draft",
       "submitButton": "Submit",
       "submittingButton": "Submitting…",
       "draftSavedToast": "Draft saved.",
-      "submitSuccessToast": "Assignment submitted successfully.",
-      "confirmOverdue": {
-        "title": "Submit late?",
-        "description": "You're submitting this assignment after the deadline. Do you want to continue?",
-        "cancel": "Cancel",
-        "confirm": "Continue submitting"
-      }
-    },
-    "graded": {
-      "scoreLabel": "Score",
-      "scoreValue": "{score}/{max}",
-      "commentLabel": "Teacher's feedback",
-      "commentEmpty": "The teacher hasn't left any feedback yet.",
-      "attachedFileLabel": "Teacher's attached file",
-      "downloadAriaLabel": "Download teacher's attached file",
-      "mockDownloadToast": "This is a demo — there's no real file to download.",
-      "submittedAtLabel": "Submitted at",
-      "gradedAtLabel": "Graded at"
+      "submitSuccessToast": "Submitted successfully."
     }
   },
   "attendance": {
@@ -1228,23 +1194,13 @@
   },
   "courses": {
     "title": "My courses",
-    "tabs": {
-      "all": "All",
-      "inProgress": "In progress",
-      "completed": "Completed"
-    },
     "card": {
-      "gradeLabel": "Grade",
-      "lessonsLabel": "Lessons",
-      "progressLabel": "Progress",
-      "progressAria": "Progress {pct}%",
-      "ctaStart": "Start",
-      "ctaContinue": "Continue"
+      "statusPublished": "Published",
+      "statusDraft": "Draft",
+      "ctaOpen": "Open course"
     },
     "empty": {
-      "allTab": "You are not enrolled in any courses yet.",
-      "inProgressTab": "No courses in progress.",
-      "completedTab": "You haven't completed any courses yet."
+      "allTab": "Your class has no courses yet."
     },
     "player": {
       "breadcrumb": {
@@ -1252,76 +1208,52 @@
         "coursesLink": "Courses",
         "pickLesson": "Pick a lesson"
       },
-      "progress": {
-        "label": "Progress",
-        "count": "{done}/{total} lessons · {pct}%"
-      },
-      "chapterList": {
-        "navAriaLabel": "Lesson list",
-        "toggleMobile": "Lesson list",
-        "emptyChapter": "The teacher hasn't uploaded content for this chapter yet.",
-        "emptyCourse": "The teacher hasn't uploaded content for this course yet.",
-        "nextButton": "Next"
-      },
-      "lessonType": {
-        "video": "Video",
-        "pdf": "PDF",
-        "text": "Text"
-      },
       "content": {
-        "video": {
-          "lectureLabel": "Lecture video",
-          "playAriaLabel": "Play video",
-          "pauseAriaLabel": "Pause video",
-          "seekAriaLabel": "Video seek bar",
-          "fullscreenAriaLabel": "Fullscreen",
-          "playingAnnounce": "Playing",
-          "pausedAnnounce": "Paused"
-        },
-        "pdf": {
-          "title": "Lecture handout",
-          "downloadButton": "Download",
-          "downloadAriaLabel": "Download PDF handout"
-        },
         "empty": {
           "title": "No content yet",
-          "body": "The teacher hasn't uploaded content for this course yet."
-        }
+          "body": "Pick a lesson from the timeline to start."
+        },
+        "loadError": "Could not load the lesson content."
       },
-      "markComplete": {
-        "button": "Mark as complete",
-        "doneLabel": "Completed"
+      "timeline": {
+        "navAriaLabel": "Course timeline",
+        "empty": "This course has no content yet.",
+        "dueAt": "Due: {date}",
+        "noDueAt": "No deadline",
+        "openDocument": "Open the document in a new tab",
+        "openAssignment": "Go to the assignments page",
+        "openExam": "Open the exam in a new tab",
+        "examDuration": "{minutes} minutes"
       },
-      "tabs": {
-        "notes": "Notes",
-        "qna": "Q & A"
+      "itemType": {
+        "lesson": "Lesson",
+        "assignment": "Assignment",
+        "document": "Document",
+        "exam": "Exam"
       },
-      "notes": {
-        "placeholder": "Your notes…",
-        "saveButton": "Save note",
-        "saving": "Saving…",
-        "savedToast": "Note saved.",
-        "loadError": "Couldn't load the note."
-      },
-      "qna": {
-        "emptyState": "No questions yet for this lesson.",
-        "askButton": "Ask a question",
-        "inputPlaceholder": "Type your question…",
-        "submitButton": "Send question",
-        "submitting": "Sending…",
-        "unanswered": "Awaiting teacher's answer",
-        "loadError": "Couldn't load questions."
+      "itemState": {
+        "open": "Open",
+        "closed": "Closed",
+        "upcoming": "Upcoming"
       }
     },
     "a11y": {
-      "activeLessonState": "in progress",
-      "doneLessonState": "completed",
+      "activeLessonState": "currently viewing",
       "lessonChanged": "Now viewing lesson: {title}"
     },
     "errors": {
       "not-found": "Course not found.",
-      "forbidden": "You don't have access to this content.",
-      "unknown": "Something went wrong. Please try again."
+      "forbidden": "You do not have access to this content.",
+      "already-submitted": "This assignment has already been submitted.",
+      "closed": "Past the deadline — this item no longer accepts work.",
+      "not-document": "Only document items can be edited.",
+      "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
+      "invalid-window": "The end time must be after the start time.",
+      "invalid-url": "The link must be a valid https address.",
+      "limit-exceeded": "The maximum number of items has been reached.",
+      "network-error": "Connection error. Please try again.",
+      "unknown": "Something went wrong. Please try again.",
+      "no-class": "We could not determine your class. Please contact your homeroom teacher."
     }
   },
   "dashboard": {

@@ -1,4 +1,35 @@
-import type { CourseTone } from "@/features/lms/domain/entities/course.entity";
+/**
+ * Semantic design-system tone a course/timeline surface is displayed with.
+ *
+ * PRESENTATION-OWNED (US-E24.1): the `lms` contract carries no color at all, so
+ * a tone is never mapped from data — `toneForId` picks a stable one from the
+ * course id purely so a grid of cards is legible at a glance. It is decoration,
+ * not information; nothing may be inferred from it.
+ */
+export type CourseTone =
+  | "primary"
+  | "success"
+  | "warning"
+  | "purple"
+  | "teal"
+  | "error";
+
+const TONE_CYCLE: readonly CourseTone[] = [
+  "primary",
+  "success",
+  "purple",
+  "teal",
+  "warning",
+  "error",
+];
+
+/** Deterministic id → tone, so a course keeps its color across renders and
+ *  between server and client (no `Math.random`, no index-in-list). */
+export function toneForId(id: string): CourseTone {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return TONE_CYCLE[Math.abs(hash) % TONE_CYCLE.length] ?? "primary";
+}
 
 /**
  * Course-tone → literal Tailwind class lookups. Full class strings (not

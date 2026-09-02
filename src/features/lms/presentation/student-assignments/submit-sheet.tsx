@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2, Paperclip, Send, X } from "lucide-react";
+import { CheckSquare, Loader2, Send } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,35 +13,49 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import type {
-  AssignmentEntity,
-  SubmitAssignmentInput,
-} from "@/features/lms/domain/entities/assignment.entity";
-import type { AssignmentFailure } from "@/features/lms/domain/failures/assignment.failure";
-import { isOverdue } from "@/features/lms/domain/use-cases/derive-overdue";
+import type { AssignmentSummary } from "@/features/lms/domain/entities/assignment.entity";
+import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
 import { useDialogReturnFocus } from "@/shared/use-dialog-return-focus";
 import { cn } from "@/shared/utils";
-import { OverdueConfirmDialog } from "./overdue-confirm-dialog";
+import type { AssignmentDetailVm } from "./student-assignments-screen.i-vm";
 import { useAssignmentDraft } from "./use-assignment-draft";
 
-/** 20MB client-side attachment cap (FR-005) — validated on "Nộp bài" only. */
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
+/** BE caps submission content at 20 000 runes (`LMS_SUBMISSION_CONTENT_TOO_LONG`). */
+const MAX_CONTENT_LENGTH = 20_000;
 
 export interface SubmitSheetProps {
-  assignment: AssignmentEntity;
-  /** "edit" = pending (submittable); "readonly" = already-submitted view. */
-  mode: "edit" | "readonly";
+  /** The list row that opened the sheet (title is available immediately). */
+  row: AssignmentSummary;
+  /** Full detail + the caller's own submission; `null` while loading. */
+  detail: AssignmentDetailVm | null;
+  detailLoading: boolean;
+  detailErrorKey: LmsFailure["type"] | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   submitting: boolean;
-  submitErrorKey: AssignmentFailure["type"] | null;
-  onSubmit: (input: SubmitAssignmentInput) => void;
+  submitErrorKey: LmsFailure["type"] | null;
+  onSubmit: (content: string) => void;
 }
 
+/**
+ * Assignment detail + submit (US-E24.1).
+ *
+ * Three real changes from the pre-US-E24.1 sheet, all forced by the contract:
+ * - the file-attachment field is gone — a submission is `{ content }`, text only;
+ * - the "confirm late submission" dialog is gone — since BE US-228 a submit
+ *   after `dueAt` is REJECTED (`409 LMS_ITEM_CLOSED`), so there is nothing to
+ *   confirm; the sheet surfaces the refusal instead;
+ * - "already submitted" is a real read (`.../submissions/me`), so the sheet
+ *   switches to a read-only view of the submitted text rather than guessing
+ *   from a list-row status.
+ */
 export function SubmitSheet({
-  assignment,
-  mode,
+  row,
+  detail,
+  detailLoading,
+  detailErrorKey,
   open,
   onOpenChange,
   submitting,
@@ -50,30 +64,27 @@ export function SubmitSheet({
 }: SubmitSheetProps) {
   const t = useTranslations("assignments");
   const format = useFormatter();
-  const { getDraft, saveDraft, clearDraft } = useAssignmentDraft(assignment.id);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { getDraft, saveDraft, clearDraft } = useAssignmentDraft(row.id);
   const restoreFocusOnClose = useDialogReturnFocus(open);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [answerText, setAnswerText] = useState("");
-  const [fileTooLarge, setFileTooLarge] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [content, setContent] = useState("");
 
-  // Prefill from a saved draft whenever the edit sheet opens.
+  // Prefill from a saved draft whenever the sheet opens.
   useEffect(() => {
     if (!open) return;
-    setFileTooLarge(false);
-    setSelectedFile(null);
-    if (mode === "edit") {
-      const draft = getDraft();
-      setAnswerText(draft?.answerText ?? "");
-      setFileName(draft?.fileName ?? null);
-    } else {
-      setAnswerText("");
-      setFileName(null);
-    }
-  }, [open, mode, getDraft]);
+    setContent(getDraft() ?? "");
+  }, [open, getDraft]);
+
+  const submitted = detail?.mySubmission ?? null;
+  const canSubmit =
+    !submitting &&
+    detail !== null &&
+    submitted === null &&
+    content.trim().length > 0 &&
+    content.length <= MAX_CONTENT_LENGTH;
+
+  const tooLong = content.length > MAX_CONTENT_LENGTH;
+  const contentErrorId = `submit-content-error-${row.id}`;
 
   const fmtDate = (iso: string) =>
     format.dateTime(new Date(iso), {
@@ -83,58 +94,6 @@ export function SubmitSheet({
       hour: "2-digit",
       minute: "2-digit",
     });
-
-  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    e.target.value = "";
-    if (!file) return;
-    setSelectedFile(file);
-    setFileName(file.name);
-    setFileTooLarge(false);
-  };
-
-  const removeFile = () => {
-    setSelectedFile(null);
-    setFileName(null);
-    setFileTooLarge(false);
-  };
-
-  const canSubmit =
-    mode === "edit" &&
-    !submitting &&
-    Boolean(fileName || answerText.trim().length > 0);
-
-  const doSubmit = (overdueConfirmed: boolean) => {
-    onSubmit({
-      answerText: answerText.trim() || undefined,
-      fileName: fileName ?? undefined,
-      overdueConfirmed,
-    });
-    clearDraft();
-  };
-
-  const onSubmitClick = () => {
-    setFileTooLarge(false);
-    // File-too-large blocks ONLY submit (not draft) and never round-trips.
-    if (selectedFile && selectedFile.size > MAX_FILE_BYTES) {
-      setFileTooLarge(true);
-      return;
-    }
-    // Overdue is recomputed at click-time, not at sheet-open (AC-1176.6).
-    if (isOverdue(assignment.status, assignment.dueDate, new Date())) {
-      setConfirmOpen(true);
-      return;
-    }
-    doSubmit(false);
-  };
-
-  const onSaveDraft = () => {
-    saveDraft({
-      answerText: answerText.trim() || undefined,
-      fileName: fileName ?? undefined,
-    });
-    toast.success(t("submit.draftSavedToast"));
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -148,176 +107,124 @@ export function SubmitSheet({
           <SheetTitle className="font-extrabold text-[15px]">
             {t("submit.sheetTitle")}
           </SheetTitle>
-          <SheetDescription>
-            {t("card.meta", {
-              subject: assignment.subject,
-              className: assignment.className,
-              teacherName: assignment.teacherName,
-            })}
-          </SheetDescription>
+          <SheetDescription>{row.title}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-5">
-          <h3 className="font-bold text-foreground text-sm">
-            {t("card.title", { title: assignment.title })}
-          </h3>
-          <p className="mt-1.5 whitespace-pre-line text-edu-text-secondary text-sm leading-relaxed">
-            {assignment.description}
-          </p>
-          <p
-            className={cn(
-              "mt-3 text-xs",
-              isOverdue(assignment.status, assignment.dueDate, new Date())
-                ? "font-bold text-edu-error-text"
-                : "text-edu-text-secondary",
-            )}
-          >
-            {t("card.dueDate", { date: fmtDate(assignment.dueDate) })}
-          </p>
-
-          {mode === "readonly" ? (
-            <div className="mt-5 space-y-3 rounded-[10px] border border-border bg-edu-bg p-4">
-              {assignment.submittedAt && (
-                <p className="text-edu-text-secondary text-xs">
-                  {t("submit.fileSelectedLabel", {
-                    fileName: assignment.fileName ?? "—",
-                  })}
-                </p>
-              )}
-              {assignment.answerText && (
-                <p className="whitespace-pre-line text-foreground text-sm leading-relaxed">
-                  {assignment.answerText}
-                </p>
-              )}
+          {detailLoading ? (
+            <div className="space-y-2.5" aria-hidden="true">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-24 w-full" />
             </div>
+          ) : detailErrorKey || detail === null ? (
+            <p role="alert" className="text-edu-error-text text-sm">
+              {t(`errors.${detailErrorKey ?? "unknown"}`)}
+            </p>
           ) : (
-            <div className="mt-5 space-y-5">
-              <div>
-                <p
-                  id={`attach-label-${assignment.id}`}
-                  className="mb-2 font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
-                >
-                  {t("submit.attachLabel")}
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="sr-only"
-                  aria-labelledby={`attach-label-${assignment.id}`}
-                  onChange={onPickFile}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-center border-dashed"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Paperclip className="size-4" aria-hidden="true" />
-                  {t("submit.attachPlaceholder")}
-                </Button>
-                <p className="mt-1.5 text-edu-text-secondary text-xs">
-                  {t("submit.attachHelper")}
-                </p>
+            <>
+              <p className="whitespace-pre-line text-edu-text-secondary text-sm leading-relaxed">
+                {detail.assignment.instructions ?? t("submit.noInstructions")}
+              </p>
+              <p className="mt-3 text-edu-text-secondary text-xs">
+                {detail.assignment.dueAt
+                  ? t("card.dueDate", {
+                      date: fmtDate(detail.assignment.dueAt),
+                    })
+                  : t("card.noDueDate")}
+              </p>
 
-                {fileName && (
-                  <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
-                    <Paperclip
-                      className="size-3.5 shrink-0 text-edu-primary-accessible"
-                      aria-hidden="true"
-                    />
-                    <span className="min-w-0 flex-1 truncate text-foreground text-sm">
-                      {fileName}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t("submit.attachRemoveAriaLabel")}
-                      onClick={removeFile}
-                    >
-                      <X className="size-3.5" aria-hidden="true" />
-                    </Button>
-                  </div>
-                )}
-
-                {fileTooLarge && (
-                  <p role="alert" className="mt-2 text-edu-error-text text-xs">
-                    {t("errors.file-too-large")}
+              {submitted ? (
+                <div className="mt-5 space-y-2 rounded-[10px] border border-border bg-edu-bg p-4">
+                  <p className="flex items-center gap-1.5 font-bold text-edu-success-text text-xs">
+                    <CheckSquare className="size-3.5" aria-hidden="true" />
+                    {t("submit.submittedAt", {
+                      date: fmtDate(submitted.submittedAt),
+                    })}
                   </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor={`answer-${assignment.id}`}
-                  className="mb-2 block font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
-                >
-                  {t("submit.answerLabel")}
-                </label>
-                <Textarea
-                  id={`answer-${assignment.id}`}
-                  rows={6}
-                  value={answerText}
-                  onChange={(e) => setAnswerText(e.target.value)}
-                  placeholder={t("submit.answerPlaceholder")}
-                />
-                <p className="mt-1.5 text-edu-text-secondary text-xs">
-                  {t("submit.answerHelper")}
-                </p>
-              </div>
+                  <p className="whitespace-pre-line text-foreground text-sm leading-relaxed">
+                    {submitted.content}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <label
+                    htmlFor={`submit-content-${row.id}`}
+                    className="mb-2 block font-bold text-edu-text-secondary text-xs uppercase tracking-wide"
+                  >
+                    {t("submit.answerLabel")}
+                  </label>
+                  <Textarea
+                    id={`submit-content-${row.id}`}
+                    rows={8}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder={t("submit.answerPlaceholder")}
+                    aria-invalid={tooLong || undefined}
+                    aria-describedby={tooLong ? contentErrorId : undefined}
+                  />
+                  {tooLong && (
+                    <p
+                      id={contentErrorId}
+                      role="alert"
+                      className="mt-1.5 text-edu-error-text text-xs"
+                    >
+                      {t("submit.contentTooLong", { max: MAX_CONTENT_LENGTH })}
+                    </p>
+                  )}
+                  <p className="mt-1.5 text-edu-text-secondary text-xs">
+                    {t("submit.singleAttemptHelper")}
+                  </p>
+                </div>
+              )}
 
               {submitErrorKey && (
-                <p role="alert" className="text-edu-error-text text-sm">
+                <p role="alert" className="mt-3 text-edu-error-text text-sm">
                   {t(`errors.${submitErrorKey}`)}
                 </p>
               )}
-            </div>
+            </>
           )}
         </div>
 
-        {mode === "edit" && (
-          <SheetFooter className="flex-row justify-end gap-2 border-border border-t">
+        {detail !== null && submitted === null && (
+          <SheetFooter className="flex-row gap-2 border-border border-t">
             <Button
               type="button"
-              variant="secondary"
-              onClick={onSaveDraft}
+              variant="outline"
+              className="flex-1"
               disabled={submitting}
+              onClick={() => {
+                saveDraft(content);
+                toast.success(t("submit.draftSavedToast"));
+              }}
             >
               {t("submit.saveDraftButton")}
             </Button>
             <Button
               type="button"
-              onClick={onSubmitClick}
+              className="flex-1"
               disabled={!canSubmit}
-              aria-busy={submitting}
+              onClick={() => {
+                onSubmit(content.trim());
+                clearDraft();
+              }}
             >
               {submitting ? (
-                <>
-                  <Loader2
-                    className="size-4 motion-safe:animate-spin"
-                    aria-hidden="true"
-                  />
-                  {t("submit.submittingButton")}
-                </>
+                <Loader2
+                  className={cn("size-4 motion-safe:animate-spin")}
+                  aria-hidden="true"
+                />
               ) : (
-                <>
-                  <Send className="size-4" aria-hidden="true" />
-                  {t("submit.submitButton")}
-                </>
+                <Send className="size-4" aria-hidden="true" />
               )}
+              {submitting
+                ? t("submit.submittingButton")
+                : t("submit.submitButton")}
             </Button>
           </SheetFooter>
         )}
       </SheetContent>
-
-      <OverdueConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          doSubmit(true);
-        }}
-      />
     </Sheet>
   );
 }

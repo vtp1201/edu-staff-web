@@ -1,30 +1,39 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/bootstrap/auth-guard";
-import { makeGetCourseLessonsUseCase } from "@/bootstrap/di/lms.di";
+import {
+  makeGetCourseUseCase,
+  makeListCourseItemsUseCase,
+} from "@/bootstrap/di/lms.di";
 import { LessonPlayer } from "@/features/lms/presentation/lesson-player/lesson-player";
-import { pickInitialLessonId } from "@/features/lms/presentation/lesson-player/lesson-player.derive";
+import {
+  pickInitialLessonId,
+  toTimelineItems,
+} from "@/features/lms/presentation/lesson-player/lesson-player.derive";
 import type {
   LessonPlayerActions,
   LessonPlayerVm,
 } from "@/features/lms/presentation/lesson-player/lesson-player.i-vm";
-import {
-  askQuestionAction,
-  getNoteAction,
-  listQuestionsAction,
-  markLessonCompleteAction,
-  saveNoteAction,
-} from "./actions";
+import { toneForId } from "@/features/lms/presentation/tone";
+import { getLessonAction } from "./actions";
 
 interface Props {
   params: Promise<{ locale: string; tenant: string; courseId: string }>;
 }
 
-export default async function StudentLessonPlayerPage({ params }: Props) {
+/**
+ * `/student/courses/[courseId]` — the course timeline.
+ *
+ * Two reads: the course itself (title + description, which the class-scoped
+ * list row does not carry) and its ordered items. A denial on either collapses
+ * to `not-found` server-side (existence-oracle rule), so the page 404s rather
+ * than hinting the course exists. The timeline degrades independently — a
+ * readable course with an unreadable timeline still renders its header.
+ */
+export default async function StudentCourseTimelinePage({ params }: Props) {
   const { locale, tenant, courseId } = await params;
   const t = await getTranslations("courses");
 
-  // RBAC (incl. reads) — story requirement, applied before the DI call.
   const guard = await requireRole(["student"]);
   if (!guard.ok) {
     return (
@@ -34,35 +43,43 @@ export default async function StudentLessonPlayerPage({ params }: Props) {
     );
   }
 
-  const result = await (await makeGetCourseLessonsUseCase()).execute(courseId);
-  if (!result.ok) {
-    if (result.failure.type === "not-found") notFound();
+  const courseResult = await (await makeGetCourseUseCase()).execute(courseId);
+  if (!courseResult.ok) {
+    if (courseResult.failure.type === "not-found") notFound();
     return (
       <div role="alert" className="p-8 text-center text-edu-error-text text-sm">
-        {t("errors.unknown")}
+        {t(`errors.${courseResult.failure.type}`)}
       </div>
     );
   }
 
-  const { course, chapters } = result.data;
+  const itemsResult = await (await makeListCourseItemsUseCase()).execute(
+    courseId,
+  );
+  const items = itemsResult.ok ? toTimelineItems(itemsResult.data) : [];
 
   const vm: LessonPlayerVm = {
-    courseId: course.id,
-    courseName: course.name,
-    tone: course.tone,
+    courseId,
+    courseName: courseResult.data.title,
+    courseDescription: courseResult.data.description,
     coursesListHref: `/${locale}/t/${tenant}/student/courses`,
-    chapters,
-    initialActiveLessonId: pickInitialLessonId(chapters),
-    errorKey: null,
+    tone: toneForId(courseId),
+    items,
+    initialLessonId: pickInitialLessonId(items),
+    errorKey: itemsResult.ok ? null : itemsResult.failure.type,
   };
 
   const actions: LessonPlayerActions = {
-    markLessonComplete: markLessonCompleteAction,
-    getNote: getNoteAction,
-    saveNote: saveNoteAction,
-    listQuestions: listQuestionsAction,
-    askQuestion: askQuestionAction,
+    // `.bind` (not an inline closure) — a plain local async function passed
+    // from an RSC is not a Server Action and 500s at call time.
+    getLesson: getLessonAction.bind(null, courseId),
   };
 
-  return <LessonPlayer vm={vm} actions={actions} />;
+  return (
+    <LessonPlayer
+      vm={vm}
+      actions={actions}
+      assignmentsHref={`/${locale}/t/${tenant}/student/assignments`}
+    />
+  );
 }

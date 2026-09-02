@@ -2,41 +2,57 @@
 
 import { requireRole } from "@/bootstrap/auth-guard";
 import {
+  makeGetAssignmentDetailUseCase,
   makeListAssignmentsUseCase,
   makeSubmitAssignmentUseCase,
 } from "@/bootstrap/di/lms.di";
+import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
 import type {
-  AssignmentStatusFilter,
-  SubmitAssignmentInput,
-} from "@/features/lms/domain/entities/assignment.entity";
-import type {
+  GetAssignmentDetailResult,
   ListAssignmentsResult,
   SubmitAssignmentResult,
 } from "@/features/lms/presentation/student-assignments/student-assignments-screen.i-vm";
 
-const MOCK_STUDENT_ID = "current-student";
-
-/** Per-tab list fetch for the client screen's non-default tab queries. */
-export async function listAssignmentsAction(
-  tab: AssignmentStatusFilter,
-): Promise<ListAssignmentsResult> {
+/** Client-triggered refetch of the class's assignment list. */
+export async function listAssignmentsAction(): Promise<ListAssignmentsResult> {
   const guard = await requireRole(["student"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  const useCase = await makeListAssignmentsUseCase();
-  const result = await useCase.execute(MOCK_STUDENT_ID, tab);
+
+  const classId = await resolveMyClassId();
+  // No resolvable class → the class-scoped list cannot be requested at all.
+  if (classId === null) return { ok: false, errorKey: "not-found" };
+
+  const result = await (await makeListAssignmentsUseCase()).execute(classId);
   if (!result.ok) return { ok: false, errorKey: result.failure.type };
   return { ok: true, data: result.data };
 }
 
-/** Submit a pending assignment (mock-first). Returns the updated entity. */
+/** Full assignment + the caller's own submission (null = not submitted yet). */
+export async function getAssignmentDetailAction(
+  assignmentId: string,
+): Promise<GetAssignmentDetailResult> {
+  const guard = await requireRole(["student"]);
+  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
+
+  const result = await (await makeGetAssignmentDetailUseCase()).execute(
+    assignmentId,
+  );
+  if (!result.ok) return { ok: false, errorKey: result.failure.type };
+  return { ok: true, data: result.data };
+}
+
+/** Submit work — SINGLE ATTEMPT, and refused outright after `dueAt`. */
 export async function submitAssignmentAction(
   assignmentId: string,
-  input: SubmitAssignmentInput,
+  content: string,
 ): Promise<SubmitAssignmentResult> {
   const guard = await requireRole(["student"]);
   if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-  const useCase = await makeSubmitAssignmentUseCase();
-  const result = await useCase.execute(assignmentId, input);
+
+  const result = await (await makeSubmitAssignmentUseCase()).execute(
+    assignmentId,
+    content,
+  );
   if (!result.ok) return { ok: false, errorKey: result.failure.type };
   return { ok: true, data: result.data };
 }

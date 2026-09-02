@@ -1,50 +1,49 @@
-import type { CourseTone } from "./course.entity";
-
-/** Server-authoritative lifecycle status of an assignment. Overdue is a
- *  CLIENT-derived visual state (see `derive-overdue.ts`), never a server status. */
-export type AssignmentStatus = "pending" | "submitted" | "graded";
-
-/** Filter applied by the 4 tabs; `"all"` is the default (no filter). */
-export type AssignmentStatusFilter = "all" | AssignmentStatus;
-
 /**
- * A single assignment assigned to the student's own class(es). `tone` is the
- * pre-resolved design-system tone (the mapper resolves the DTO's raw hex —
- * the client never receives a hex). `teacherComment === ""` is a valid graded
- * value (empty-comment fallback copy); `null` means not graded yet.
+ * Assignment — `services/lms` `Assignment` / `AssignmentSummary` (US-E24.1).
+ *
+ * There is NO grading model on the wire (grading is BE US-141, unshipped): no
+ * score, no max score, no teacher comment, no attachment. There is also no
+ * per-student status on the assignment itself — whether the caller submitted is
+ * a separate read (`GET /assignments/{id}/submissions/me`).
  */
-export interface AssignmentEntity {
+
+/** BE-computed availability. Same three values as `CourseItemState`, but a
+ *  distinct type: this one is the ASSIGNMENT row's own state, not a tile's. */
+export type AssignmentState = "UPCOMING_HIDDEN" | "OPEN" | "CLOSED";
+
+/** Full assignment — `GET /assignments/{assignmentId}`. */
+export interface Assignment {
   id: string;
+  classId: string;
+  subjectId: string;
+  /** Null when the assignment references no course (pre-US-229 rows). */
+  courseId: string | null;
   title: string;
-  description: string;
-  subject: string;
-  className: string;
-  teacherName: string;
-  /** Pre-resolved semantic tone for the icon box — never a raw hex. */
-  tone: CourseTone;
-  /** ISO deadline timestamp. */
-  dueDate: string;
-  status: AssignmentStatus;
-  /** ISO — present once status !== "pending". */
-  submittedAt: string | null;
-  /** ISO — present once status === "graded". */
-  gradedAt: string | null;
-  score: number | null;
-  maxScore: number | null;
-  /** "" is a valid graded value (empty fallback); null = not graded yet. */
-  teacherComment: string | null;
-  /** Student's submitted attachment filename (metadata only, no bytes). */
-  fileName: string | null;
-  /** Student's submitted free-text answer. */
-  answerText: string | null;
-  /** Teacher's graded-file attachment (mock-download only). */
-  gradedFileName: string | null;
+  instructions: string | null;
+  /** Before this instant the assignment is hidden from students. */
+  startAt: string | null;
+  /** ENFORCED: a submission after it is rejected `409 LMS_ITEM_CLOSED`. */
+  dueAt: string | null;
+  state: AssignmentState;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** Input for a submit action. `overdueConfirmed` records an explicitly-confirmed
- *  late submission (FR-006). File is metadata-only — no bytes (decision 0014). */
-export interface SubmitAssignmentInput {
-  answerText?: string;
-  fileName?: string;
-  overdueConfirmed: boolean;
+/**
+ * Class-scoped list row — `GET /assignments?classId=`. NARROWER than
+ * `Assignment`: the by-class table stores neither `instructions` nor
+ * `createdAt`, and — the operative gap for the student list — it carries NO
+ * `state` and no `startAt`. Deadline framing is therefore the only thing the
+ * list can honestly show; open the assignment for its state.
+ */
+export interface AssignmentSummary {
+  id: string;
+  classId: string;
+  subjectId: string;
+  courseId: string | null;
+  title: string;
+  dueAt: string | null;
+  createdBy: string;
+  updatedAt: string;
 }

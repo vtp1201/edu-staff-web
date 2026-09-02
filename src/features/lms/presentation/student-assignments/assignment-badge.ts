@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, Check, CheckSquare, Clock } from "lucide-react";
+import { AlertTriangle, CalendarOff, Clock } from "lucide-react";
 import type { StatusTone } from "@/components/shared/status-badge";
-import type { AssignmentStatus } from "@/features/lms/domain/entities/assignment.entity";
 import { isOverdue } from "@/features/lms/domain/use-cases/derive-overdue";
 
 const MS_PER_DAY = 86_400_000;
@@ -19,8 +18,7 @@ export interface AssignmentBadgeSpec {
   icon: LucideIcon;
   /** Key under the `assignments` namespace. */
   labelKey:
-    | "card.status.submitted"
-    | "card.status.graded"
+    | "card.daysLeft.noDeadline"
     | "card.daysLeft.dueToday"
     | "card.daysLeft.remaining"
     | "card.daysLeft.overdue";
@@ -29,31 +27,32 @@ export interface AssignmentBadgeSpec {
 }
 
 /**
- * Pure status + deadline → badge descriptor (tone/icon/labelKey). The card is a
- * dumb renderer of this. Color mapping is fixed by the design system:
- * submitted → primary, graded → success; pending: overdue → error,
- * due-today → error, ≤1d → error, ≤3d → warning, >3d → success. Always carries
- * an icon (never color-only, a11y). Uses `isOverdue` (domain) as the single
- * overdue source so the card badge and submit-click gate can't drift.
+ * Deadline → badge descriptor (tone/icon/labelKey). The card is a dumb
+ * renderer of this.
+ *
+ * DEADLINE ONLY since US-E24.1. The old submitted/graded branches are gone:
+ * the class-scoped list row (`AssignmentSummary`) carries neither a per-student
+ * status nor a grade, and grading does not exist on the wire at all (BE
+ * US-141). Deadline framing IS contract-sanctioned — BE states the client
+ * renders lateness from `dueAt` itself.
+ *
+ * Color mapping follows the design system: overdue/due-today/≤1d → error,
+ * ≤3d → warning, >3d → success, no deadline → muted. Always carries an icon
+ * (never color-only, a11y).
  */
 export function assignmentBadge(
-  status: AssignmentStatus,
-  dueDate: string,
+  dueAt: string | null,
   now: Date,
 ): AssignmentBadgeSpec {
-  if (status === "graded") {
+  if (dueAt === null) {
     return {
-      tone: "success",
-      icon: CheckSquare,
-      labelKey: "card.status.graded",
+      tone: "muted",
+      icon: CalendarOff,
+      labelKey: "card.daysLeft.noDeadline",
     };
   }
-  if (status === "submitted") {
-    return { tone: "primary", icon: Check, labelKey: "card.status.submitted" };
-  }
-  // pending
-  if (isOverdue(status, dueDate, now)) {
-    const days = Math.max(1, -utcDayDelta(dueDate, now));
+  if (isOverdue(dueAt, now)) {
+    const days = Math.max(1, -utcDayDelta(dueAt, now));
     return {
       tone: "error",
       icon: AlertTriangle,
@@ -61,7 +60,7 @@ export function assignmentBadge(
       labelValues: { days },
     };
   }
-  const daysLeft = utcDayDelta(dueDate, now);
+  const daysLeft = utcDayDelta(dueAt, now);
   if (daysLeft <= 0) {
     return {
       tone: "error",
