@@ -72,3 +72,18 @@ and expensive to miss.
 Verified clean conventions worth not re-litigating: role-discriminated VM unions
 (`viewerRole` field, absent action = compile error), capability-as-presence for
 affordances, throwing repositories + failure-union mapping by `error.code`.
+
+10. **A large rewrite silently DROPS `import "server-only"`** from a file that had it
+    (US-E24.1: `lms.mock.repository.ts` — `main` had it, the rewritten branch did not).
+    `tsc`/`build`/vitest all stay green because no client actually imports it *yet*, so
+    no gate catches it — only a diff read does. GREP TEST on any story that rewrites
+    `infrastructure/`: `git diff origin/main...HEAD | grep -n '^-import "server-only"'`.
+    Applies to mock repositories too (11/12 in this repo carry it; `feed.mock.repository.ts`
+    is the one legacy exception, not a precedent).
+
+11. **A shared `runCatching`/`isXFailure` type-guard that only checks
+    `typeof err.type === "string"`** (US-E24.1 `lms/domain/use-cases/result.ts`) lets ANY
+    thrown object become a "failure", and that `type` is then handed to the client as
+    `errorKey` and fed straight into `t("errors." + key)` → missing-key render. When the
+    feature already exports an exhaustive `X_FAILURE_TYPES` const array, demand the guard
+    validate against it.

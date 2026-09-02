@@ -10,6 +10,7 @@
 
 - [Placeholder twin of a mounted-gate](gotcha-mounted-gate-placeholder-twin.md) — E08.8: deleting a control behind `mounted ?` must also delete its aria-hidden SSR twin (invisible to all tests)
 - [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus) (+file)
+- [decodeMemberId falls back to sub](gotcha-decode-member-id-sub-fallback.md) — ADR 0074 needs `decodeMemberIdClaim()`; bootstrap/lib helpers take a feature mock seed as a PARAM, never import fixtures
 - [Terminal error ≠ skeleton](gotcha-terminal-error-vs-skeleton.md) — `isLoading || !data → Skeleton` renders forever after a terminal error (+file)
 - [Composite-key point-read + unbacked read](pattern-composite-key-pointread-and-unbacked-read.md) — E18.32: a clustering-column id needs the whole ReportRef tuple (Sheet (+file)
 - [Stale-assertion-only un-mock](pattern-stale-assertion-only-unmock.md) — E18.39: a BE fix can close a gap on a screen with NO force-mock branch (403 was a natural error) ⇒… (+file)
