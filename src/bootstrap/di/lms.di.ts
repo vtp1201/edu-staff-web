@@ -1,86 +1,80 @@
 import "server-only";
 
+import { ensureFreshSession } from "@/bootstrap/di/auth.di";
+import { createServerHttpClient } from "@/bootstrap/lib/http.server";
+import { USE_MOCK } from "@/bootstrap/lib/mock";
+import { resolveMyClassId } from "@/bootstrap/lib/resolve-my-class";
 import type { ILmsRepository } from "@/features/lms/domain/repositories/i-lms.repository";
-import { AskQuestionUseCase } from "@/features/lms/domain/use-cases/ask-question.use-case";
-import { GetCourseLessonsUseCase } from "@/features/lms/domain/use-cases/get-course-lessons.use-case";
-import { GetNoteUseCase } from "@/features/lms/domain/use-cases/get-note.use-case";
+import { GetAssignmentDetailUseCase } from "@/features/lms/domain/use-cases/get-assignment.use-case";
+import { GetCourseUseCase } from "@/features/lms/domain/use-cases/get-course.use-case";
+import { GetLessonUseCase } from "@/features/lms/domain/use-cases/get-lesson.use-case";
 import { ListAssignmentsUseCase } from "@/features/lms/domain/use-cases/list-assignments.use-case";
+import { ListCourseItemsUseCase } from "@/features/lms/domain/use-cases/list-course-items.use-case";
 import { ListCoursesUseCase } from "@/features/lms/domain/use-cases/list-courses.use-case";
-import { ListQuestionsUseCase } from "@/features/lms/domain/use-cases/list-questions.use-case";
-import { MarkLessonCompleteUseCase } from "@/features/lms/domain/use-cases/mark-lesson-complete.use-case";
-import { SaveNoteUseCase } from "@/features/lms/domain/use-cases/save-note.use-case";
 import { SubmitAssignmentUseCase } from "@/features/lms/domain/use-cases/submit-assignment.use-case";
+import { LmsRepository } from "@/features/lms/infrastructure/repositories/lms.repository";
+import { MOCK_CLASS_ID } from "@/features/lms/infrastructure/repositories/mocks/lms.fixtures";
 import { MockLmsRepository } from "@/features/lms/infrastructure/repositories/mocks/lms.mock.repository";
 
 /**
- * LMS student-consumption repository factory (per-request).
+ * `lms` repository factory (per-request) — back on the STANDARD
+ * `USE_MOCK ? Mock : Real` gate as of US-E24.1.
  *
- * **PERMANENTLY mock-first regardless of `USE_MOCK`** (US-E18.60, ADR 0073) —
- * same shape as `grades.di.ts`'s `makeApprovalRepo()` (ADR 0054) and
- * `teaching-plan.di.ts` (US-E18.9).
- *
- * **Reason.** Ground-truthed 2026-08-08 against edu-api `f5ed5a86` + the live
- * stack: the `lms` service is a SCAFFOLD — `services/lms/docs/openapi.yaml`
- * declares only `/health`, and every `/lms/api/v1/*` route (courses, lessons,
- * assignments) 404s from the `lms` service itself, not from Kong. With the old
- * `USE_MOCK ? Mock : Real` branch, real mode degraded the two student screens
- * built on this DI — **Khoá học** (US-E11.6) and **Bài tập** (US-E11.7) — into
- * a permanent error card, because there is no recoverable request shape: the
- * endpoints do not exist. Pinning the mock keeps both screens on stable data
- * until the contract lands.
- *
- * **Removal condition.** BE ships the LMS consumption contract for student
- * courses/lessons/assignments — cross-repo ask **#51**, filed in
- * `docs/reports/2026-08-08-fe-to-be-asks-lms.md`. At that point restore the
- * `USE_MOCK ? Mock : Real` gate (or wire real directly, per the epic's usual
- * un-force-mock pattern) and re-import `LmsRepository` +
- * `createServerHttpClient` here — the real `LmsRepository` class is kept
- * DORMANT, not deleted (ADR 0073 alternative #3), so it is reachable only by
- * removing this pin.
- *
- * See `docs/decisions/0073-force-mock-lms-student-consumption.md` (and the
- * precedent `docs/decisions/0054-grades-wiring-contract-remap.md`).
+ * The permanent force-mock this factory carried since US-E18.60 is GONE: it
+ * existed because `services/lms` was a scaffold whose only route was
+ * `/health`, so a real branch turned the two student screens into a permanent
+ * error card. BE has since shipped the course/lesson/item/assignment/
+ * submission surface and Kong routes it, so the real branch is now the honest
+ * one. See `docs/decisions/0075-adopt-course-items-supersede-0073.md`
+ * (superseding `0073-force-mock-lms-student-consumption.md`).
  *
  * Out of scope: `exam` / `exam-bank` / `lesson-bank` / `lesson-plan` /
- * `question-bank` live in separate `bootstrap/di/*.di.ts` factories that wire
- * the real `core` service and are unaffected.
+ * `question-bank` live in separate `bootstrap/di/*.di.ts` factories wiring the
+ * real `core` service and are unaffected.
  */
 async function makeRepo(): Promise<ILmsRepository> {
-  return new MockLmsRepository();
+  if (USE_MOCK) return new MockLmsRepository();
+  // Proactive refresh (decision 0018) before the request goes out.
+  await ensureFreshSession();
+  return new LmsRepository(await createServerHttpClient());
 }
 
 export async function makeListCoursesUseCase() {
   return new ListCoursesUseCase(await makeRepo());
 }
 
-export async function makeGetCourseLessonsUseCase() {
-  return new GetCourseLessonsUseCase(await makeRepo());
+export async function makeGetCourseUseCase() {
+  return new GetCourseUseCase(await makeRepo());
 }
 
-export async function makeMarkLessonCompleteUseCase() {
-  return new MarkLessonCompleteUseCase(await makeRepo());
+export async function makeListCourseItemsUseCase() {
+  return new ListCourseItemsUseCase(await makeRepo());
 }
 
-export async function makeGetNoteUseCase() {
-  return new GetNoteUseCase(await makeRepo());
-}
-
-export async function makeSaveNoteUseCase() {
-  return new SaveNoteUseCase(await makeRepo());
-}
-
-export async function makeListQuestionsUseCase() {
-  return new ListQuestionsUseCase(await makeRepo());
-}
-
-export async function makeAskQuestionUseCase() {
-  return new AskQuestionUseCase(await makeRepo());
+export async function makeGetLessonUseCase() {
+  return new GetLessonUseCase(await makeRepo());
 }
 
 export async function makeListAssignmentsUseCase() {
   return new ListAssignmentsUseCase(await makeRepo());
 }
 
+export async function makeGetAssignmentDetailUseCase() {
+  return new GetAssignmentDetailUseCase(await makeRepo());
+}
+
 export async function makeSubmitAssignmentUseCase() {
   return new SubmitAssignmentUseCase(await makeRepo());
+}
+
+/**
+ * The signed-in student's own `classId`, for the class-scoped `lms` reads.
+ *
+ * The generic helper lives in `bootstrap/lib` (it composes core's enrollment
+ * read), but the MOCK seed belongs to this feature — so the LMS composition
+ * root, not the helper, supplies `MOCK_CLASS_ID`. Keeps `bootstrap/lib` free
+ * of any feature's fixtures.
+ */
+export async function resolveMyLmsClassId(): Promise<string | null> {
+  return resolveMyClassId(MOCK_CLASS_ID);
 }

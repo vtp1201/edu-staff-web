@@ -94,6 +94,19 @@ export function decodeMemberId(token: string): string | null {
   return typeof memberId === "string" ? memberId : decodeSubClaim(token);
 }
 
+/**
+ * The `memberId` claim with NO `sub` fallback — `null` when the claim is absent.
+ *
+ * Use this wherever the claim's PRESENCE is the guarantee you need (it is what
+ * proves the token is tenant-scoped, decision 0074), e.g. resolving the
+ * caller's own class before a class-scoped read. `decodeMemberId()` keeps the
+ * legacy `sub` fallback for tokens minted before IAM added the claim.
+ */
+export function decodeMemberIdClaim(token: string): string | null {
+  const memberId = decodeJwtClaims(token)?.memberId;
+  return typeof memberId === "string" && memberId !== "" ? memberId : null;
+}
+
 /** Returns the tenant-scoped `tenantId` claim (after switch-tenant) or `null`. */
 export function decodeTenantId(token: string): string | null {
   const tenantId = decodeJwtClaims(token)?.tenantId;

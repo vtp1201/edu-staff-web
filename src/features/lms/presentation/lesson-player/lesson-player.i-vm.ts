@@ -1,117 +1,59 @@
-import type { ChapterEntity } from "@/features/lms/domain/entities/chapter.entity";
 import type {
-  CourseProgress,
-  CourseTone,
-} from "@/features/lms/domain/entities/course.entity";
-import type {
-  LessonContentEntity,
-  LessonTextBlock,
-  LessonType,
-} from "@/features/lms/domain/entities/lesson.entity";
-import type { LessonNoteEntity } from "@/features/lms/domain/entities/lesson-note.entity";
-import type { LessonQuestionEntity } from "@/features/lms/domain/entities/lesson-question.entity";
+  CourseItemState,
+  CourseItemType,
+} from "@/features/lms/domain/entities/course-item.entity";
 import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
+import type { CourseTone } from "../tone";
 
-export interface LessonListItemVm {
+/**
+ * Course detail ViewModel (US-E24.1) — the COURSE TIMELINE, not a lesson tree.
+ *
+ * The pre-US-E24.1 model (chapters → typed lessons with duration + `done`,
+ * plus notes/Q&A/mark-complete) had no wire backing at all and is gone. What
+ * BE actually returns is one ordered list of tiles; a LESSON tile's body is a
+ * separate read, which is why `content` is fetched lazily via a Server Action
+ * rather than shipped with the page.
+ */
+export interface TimelineItemVm {
   id: string;
-  order: number;
+  itemType: CourseItemType;
   title: string;
-  type: LessonType;
-  /** Pre-formatted ("32 phút" / "12 trang") — client never branches to format. */
-  durationLabel: string;
-  done: boolean;
+  /** DOCUMENT only. */
+  description: string | null;
+  /** DOCUMENT only — absolute https link, opened in a new tab. */
+  url: string | null;
+  /** ISO or null (no deadline). */
+  dueAt: string | null;
+  /** BE-COMPUTED — displayed, never recomputed client-side. */
+  state: CourseItemState;
+  /** EXAM only — deep link into core's exam flow; null when unconfigured. */
+  examUrl: string | null;
+  /** EXAM only — null for an open-ended exam. */
+  examDurationMinutes: number | null;
 }
-
-/** Lightweight projection used by ChapterList (no content payload). */
-export interface ChapterVm {
-  id: string;
-  title: string;
-  lessons: LessonListItemVm[];
-  isEmpty: boolean;
-}
-
-/** Discriminated union — LessonBody switches on `type`. */
-export type ActiveLessonVm =
-  | {
-      type: "video";
-      id: string;
-      title: string;
-      chapterTitle: string | null;
-      durationLabel: string;
-      done: boolean;
-    }
-  | {
-      type: "pdf";
-      id: string;
-      title: string;
-      chapterTitle: string | null;
-      durationLabel: string;
-      done: boolean;
-      downloadHref: string;
-    }
-  | {
-      type: "text";
-      id: string;
-      title: string;
-      chapterTitle: string | null;
-      durationLabel: string;
-      done: boolean;
-      blocks: LessonTextBlock[];
-    }
-  | null;
 
 export interface LessonPlayerVm {
   courseId: string;
   courseName: string;
-  tone: CourseTone;
+  /** Full course description (the single-course read carries it). */
+  courseDescription: string;
   /** Breadcrumb "back" link, pre-resolved. */
   coursesListHref: string;
-  /** Full lesson hierarchy (content included) — the client caches this and
-   *  switches lessons without a refetch (mock delivers all content up front). */
-  chapters: ChapterEntity[];
-  /** Server-picked: active → first incomplete → first lesson → null. */
-  initialActiveLessonId: string | null;
+  /** Decorative tone derived from the course id (see `tone.ts`). */
+  tone: CourseTone;
+  /** BE order — the client must not re-sort. */
+  items: TimelineItemVm[];
+  /** Server-picked first readable LESSON tile, or null when there is none. */
+  initialLessonId: string | null;
   errorKey: LmsFailure["type"] | null;
 }
 
-export interface MarkCompleteResult {
-  ok: boolean;
-  data?: { lesson: LessonContentEntity; courseProgress: CourseProgress };
-  errorKey?: LmsFailure["type"];
-}
-
-export interface SaveNoteResult {
-  ok: boolean;
-  data?: LessonNoteEntity;
-  errorKey?: LmsFailure["type"];
-}
-
-export interface AskQuestionResult {
-  ok: boolean;
-  data?: LessonQuestionEntity;
-  errorKey?: LmsFailure["type"];
-}
-
-export interface GetNoteResult {
-  ok: boolean;
-  data?: LessonNoteEntity | null;
-  errorKey?: LmsFailure["type"];
-}
-
-export interface ListQuestionsResult {
-  ok: boolean;
-  data?: LessonQuestionEntity[];
-  errorKey?: LmsFailure["type"];
-}
+/** Server Action result for the lazy lesson-body read (stable key, no i18n). */
+export type GetLessonResult =
+  | { ok: true; data: { id: string; title: string; content: string } }
+  | { ok: false; errorKey: LmsFailure["type"] };
 
 /** Server Action refs — passed as props, never imported by presentation. */
 export interface LessonPlayerActions {
-  markLessonComplete: (lessonId: string) => Promise<MarkCompleteResult>;
-  getNote: (lessonId: string) => Promise<GetNoteResult>;
-  saveNote: (lessonId: string, content: string) => Promise<SaveNoteResult>;
-  listQuestions: (lessonId: string) => Promise<ListQuestionsResult>;
-  askQuestion: (
-    lessonId: string,
-    question: string,
-  ) => Promise<AskQuestionResult>;
+  getLesson: (lessonId: string) => Promise<GetLessonResult>;
 }

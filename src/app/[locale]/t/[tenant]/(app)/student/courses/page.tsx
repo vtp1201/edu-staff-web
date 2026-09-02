@@ -1,49 +1,60 @@
 import { requireRole } from "@/bootstrap/auth-guard";
-import { makeListCoursesUseCase } from "@/bootstrap/di/lms.di";
+import {
+  makeListCoursesUseCase,
+  resolveMyLmsClassId,
+} from "@/bootstrap/di/lms.di";
 import { StudentCoursesScreen } from "@/features/lms/presentation/student-courses/student-courses-screen";
 import type {
   CourseCardVm,
   StudentCoursesScreenVm,
 } from "@/features/lms/presentation/student-courses/student-courses-screen.i-vm";
-
-const MOCK_STUDENT_ID = "current-student";
+import { toneForId } from "@/features/lms/presentation/tone";
 
 interface Props {
   params: Promise<{ locale: string; tenant: string }>;
 }
 
+/**
+ * `/student/courses` — the PUBLISHED courses of the student's own class.
+ *
+ * The `lms` list is class-scoped (`GET /courses?classId=` — `classId` is
+ * mandatory) and the service publishes no self-scope discovery route, so the
+ * class is resolved first from core's enrollment read. An unresolvable class is
+ * its own honest state, never a silent empty list.
+ */
 export default async function StudentCoursesPage({ params }: Props) {
   const { locale, tenant } = await params;
 
-  // RBAC (incl. reads) — story requirement, applied before the DI call.
+  // RBAC (incl. reads) — applied before any DI call.
   const guard = await requireRole(["student"]);
   if (!guard.ok) {
     const vm: StudentCoursesScreenVm = { courses: [], errorKey: "forbidden" };
     return <StudentCoursesScreen {...vm} />;
   }
 
-  let courses: CourseCardVm[] = [];
-  let errorKey: StudentCoursesScreenVm["errorKey"] = null;
-  try {
-    const summaries = await (await makeListCoursesUseCase()).execute(
-      MOCK_STUDENT_ID,
-    );
-    courses = summaries.map((c) => ({
-      id: c.id,
-      name: c.name,
-      teacherName: c.teacherName,
-      tone: c.tone,
-      lessonsDone: c.progress.done,
-      lessonsTotal: c.progress.total,
-      progressPct: c.progress.pct,
-      gradeAvg: c.gradeAvg,
-      status: c.progress.status,
-      href: `/${locale}/t/${tenant}/student/courses/${c.id}`,
-    }));
-  } catch {
-    errorKey = "unknown";
+  const classId = await resolveMyLmsClassId();
+  if (classId === null) {
+    const vm: StudentCoursesScreenVm = { courses: [], errorKey: "no-class" };
+    return <StudentCoursesScreen {...vm} />;
   }
 
-  const vm: StudentCoursesScreenVm = { courses, errorKey };
-  return <StudentCoursesScreen {...vm} />;
+  const result = await (await makeListCoursesUseCase()).execute(classId);
+  if (!result.ok) {
+    const vm: StudentCoursesScreenVm = {
+      courses: [],
+      errorKey: result.failure.type,
+    };
+    return <StudentCoursesScreen {...vm} />;
+  }
+
+  const courses: CourseCardVm[] = result.data.map((c) => ({
+    id: c.id,
+    title: c.title,
+    status: c.status,
+    isDefault: c.isDefault,
+    tone: toneForId(c.id),
+    href: `/${locale}/t/${tenant}/student/courses/${c.id}`,
+  }));
+
+  return <StudentCoursesScreen courses={courses} errorKey={null} />;
 }

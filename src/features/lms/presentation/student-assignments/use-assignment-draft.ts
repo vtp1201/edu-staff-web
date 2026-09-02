@@ -2,37 +2,34 @@
 
 import { useCallback } from "react";
 
-export interface AssignmentDraft {
-  answerText?: string;
-  fileName?: string;
-}
-
 /**
  * localStorage-backed draft persistence for the submit sheet, keyed by
- * assignmentId. Presentation-local ONLY — NOT a repository method, NOT a Server
- * Action, NOT TanStack Query (integration.md INT-117-03: fully client-local, no
- * network). A localStorage quota failure is out of scope (swallowed).
+ * assignmentId. The draft is the submission `content` — the only thing a
+ * submission carries (there is no attachment anywhere in the `lms` contract).
+ *
+ * Presentation-local ONLY — NOT a repository method, NOT a Server Action, NOT
+ * TanStack Query: nothing here touches the network. A localStorage quota
+ * failure is swallowed (out of scope).
  */
 export function useAssignmentDraft(assignmentId: string) {
   const key = `lms.assignment-draft.${assignmentId}`;
 
-  const getDraft = useCallback((): AssignmentDraft | null => {
+  const getDraft = useCallback((): string | null => {
     if (typeof window === "undefined") return null;
     try {
-      const raw = window.localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as AssignmentDraft) : null;
+      return window.localStorage.getItem(key);
     } catch {
       return null;
     }
   }, [key]);
 
   const saveDraft = useCallback(
-    (draft: AssignmentDraft): void => {
+    (content: string): void => {
       if (typeof window === "undefined") return;
       try {
-        window.localStorage.setItem(key, JSON.stringify(draft));
+        window.localStorage.setItem(key, content);
       } catch {
-        // quota / private-mode failure — out of scope (INT-117-03).
+        // quota / private-mode failure — out of scope.
       }
     },
     [key],

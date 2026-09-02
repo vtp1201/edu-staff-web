@@ -1,109 +1,120 @@
 import { describe, expect, it } from "vitest";
-import type { ChapterEntity } from "@/features/lms/domain/entities/chapter.entity";
+import type { CourseItem } from "@/features/lms/domain/entities/course-item.entity";
 import {
-  courseProgressOf,
-  findNextLessonId,
-  patchLessonDone,
   pickInitialLessonId,
-  toActiveLessonVm,
+  toParagraphs,
+  toTimelineItems,
 } from "../lesson-player.derive";
 
-const chapters: ChapterEntity[] = [
-  {
-    id: "ch1",
-    title: "Chương 1",
-    isEmpty: false,
-    lessons: [
-      {
-        id: "l1",
-        chapterId: "ch1",
-        type: "video",
-        order: 1,
-        title: "Bài 1",
-        durationLabel: "32 phút",
-        done: true,
-      },
-      {
-        id: "l3",
-        chapterId: "ch1",
-        type: "pdf",
-        order: 3,
-        title: "Bài 3",
-        durationLabel: "12 trang",
-        done: false,
-        downloadHref: "/x.pdf",
-      },
-      {
-        id: "l4",
-        chapterId: "ch1",
-        type: "text",
-        order: 4,
-        title: "Bài 4",
-        durationLabel: "6 phút đọc",
-        done: false,
-        blocks: [{ heading: "H", paragraphs: ["p"] }],
-      },
-    ],
-  },
-  { id: "ch2", title: "Chương 2", isEmpty: true, lessons: [] },
-];
+function item(over: Partial<CourseItem>): CourseItem {
+  return {
+    id: "i1",
+    courseId: "c1",
+    itemType: "LESSON",
+    refId: "i1",
+    title: "Bài 1",
+    description: null,
+    url: null,
+    position: 0,
+    startAt: null,
+    dueAt: null,
+    state: "OPEN",
+    createdBy: "t1",
+    createdAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-08-01T00:00:00Z",
+    exam: null,
+    ...over,
+  };
+}
 
-describe("lesson-player derivations", () => {
-  it("picks the first incomplete lesson as the initial active id", () => {
-    expect(pickInitialLessonId(chapters)).toBe("l3");
+describe("toTimelineItems", () => {
+  it("keeps BE order verbatim (never re-sorts by position)", () => {
+    const vms = toTimelineItems([
+      item({ id: "b", position: 9 }),
+      item({ id: "a", position: 0 }),
+    ]);
+    expect(vms.map((v) => v.id)).toEqual(["b", "a"]);
   });
 
-  it("returns null initial id when there are no lessons", () => {
-    expect(pickInitialLessonId([chapters[1] as ChapterEntity])).toBeNull();
+  it("flattens only the exam fields a tile can render, and nulls otherwise", () => {
+    const [lesson, exam] = toTimelineItems([
+      item({ id: "l" }),
+      item({
+        id: "e",
+        itemType: "EXAM",
+        exam: {
+          examId: "e",
+          scheduledDate: null,
+          durationMinutes: 45,
+          examUrl: "https://x.test/e",
+        },
+      }),
+    ]);
+    expect(lesson.examUrl).toBeNull();
+    expect(lesson.examDurationMinutes).toBeNull();
+    expect(exam.examUrl).toBe("https://x.test/e");
+    expect(exam.examDurationMinutes).toBe(45);
   });
 
-  it("builds a video ActiveLessonVm carrying the chapter title", () => {
-    const vm = toActiveLessonVm(chapters, "l1");
-    expect(vm).toMatchObject({
-      type: "video",
-      id: "l1",
-      chapterTitle: "Chương 1",
-    });
+  it("passes the BE state through untouched", () => {
+    const [vm] = toTimelineItems([item({ state: "CLOSED", dueAt: null })]);
+    // CLOSED with no dueAt would be impossible to re-derive client-side — which
+    // is exactly why the client must not try.
+    expect(vm.state).toBe("CLOSED");
+  });
+});
+
+describe("pickInitialLessonId", () => {
+  it("picks the first readable LESSON tile", () => {
+    const items = toTimelineItems([
+      item({ id: "d", itemType: "DOCUMENT", refId: null }),
+      item({ id: "l1" }),
+      item({ id: "l2" }),
+    ]);
+    expect(pickInitialLessonId(items)).toBe("l1");
   });
 
-  it("builds a pdf ActiveLessonVm with a downloadHref", () => {
-    const vm = toActiveLessonVm(chapters, "l3");
-    expect(vm?.type).toBe("pdf");
-    if (vm?.type === "pdf") expect(vm.downloadHref).toBe("/x.pdf");
+  it("skips an UPCOMING_HIDDEN lesson (a teacher read can contain one)", () => {
+    const items = toTimelineItems([
+      item({ id: "hidden", state: "UPCOMING_HIDDEN" }),
+      item({ id: "open" }),
+    ]);
+    expect(pickInitialLessonId(items)).toBe("open");
   });
 
-  it("builds a text ActiveLessonVm with blocks", () => {
-    const vm = toActiveLessonVm(chapters, "l4");
-    expect(vm?.type).toBe("text");
-    if (vm?.type === "text") expect(vm.blocks).toHaveLength(1);
+  it("returns null when the timeline holds no lesson at all", () => {
+    const items = toTimelineItems([
+      item({ id: "a", itemType: "ASSIGNMENT" }),
+      item({ id: "e", itemType: "EXAM" }),
+    ]);
+    expect(pickInitialLessonId(items)).toBeNull();
   });
 
-  it("returns null active vm when no lesson is selected", () => {
-    expect(toActiveLessonVm(chapters, null)).toBeNull();
+  it("returns null for an empty timeline", () => {
+    expect(pickInitialLessonId([])).toBeNull();
+  });
+});
+
+describe("toParagraphs", () => {
+  it("splits on blank lines and trims", () => {
+    expect(
+      toParagraphs("Một.\n\n  Hai.  \n\n\nBa.").map((p) => p.text),
+    ).toEqual(["Một.", "Hai.", "Ba."]);
   });
 
-  it("finds the next lesson id and null at the end", () => {
-    expect(findNextLessonId(chapters, "l1")).toBe("l3");
-    expect(findNextLessonId(chapters, "l4")).toBeNull();
+  it("keeps a single-line body as one paragraph", () => {
+    expect(toParagraphs("Chỉ một dòng").map((p) => p.text)).toEqual([
+      "Chỉ một dòng",
+    ]);
   });
 
-  it("computes course progress from the hierarchy", () => {
-    expect(courseProgressOf(chapters)).toEqual({
-      done: 1,
-      total: 3,
-      pct: 33,
-      status: "in-progress",
-    });
+  it("gives repeated paragraph text distinct render keys", () => {
+    const ids = toParagraphs("Giống nhau.\n\nGiống nhau.").map((p) => p.id);
+    expect(new Set(ids).size).toBe(2);
   });
 
-  it("immutably patches a lesson's done flag and recomputes progress", () => {
-    const patched = patchLessonDone(chapters, "l3", true);
-    expect(courseProgressOf(patched)).toMatchObject({
-      done: 2,
-      total: 3,
-      pct: 67,
-    });
-    // original untouched
-    expect(courseProgressOf(chapters).done).toBe(1);
+  it("yields nothing for an empty/whitespace body", () => {
+    expect(toParagraphs("")).toEqual([]);
+    expect(toParagraphs("   \n\n  ")).toEqual([]);
   });
 });

@@ -3,105 +3,260 @@ import "server-only";
 import type { AxiosInstance } from "axios";
 import { LMS_EP } from "@/bootstrap/endpoint/lms.endpoint";
 import type {
-  AssignmentEntity,
-  AssignmentStatusFilter,
-  SubmitAssignmentInput,
+  Assignment,
+  AssignmentSummary,
 } from "../../domain/entities/assignment.entity";
-import type { CourseSummary } from "../../domain/entities/course.entity";
-import type { LessonNoteEntity } from "../../domain/entities/lesson-note.entity";
-import type { LessonQuestionEntity } from "../../domain/entities/lesson-question.entity";
 import type {
-  CourseLessonsData,
+  Course,
+  CourseSummary,
+} from "../../domain/entities/course.entity";
+import type { CourseItem } from "../../domain/entities/course-item.entity";
+import type {
+  Lesson,
+  LessonSummary,
+} from "../../domain/entities/lesson.entity";
+import type { Submission } from "../../domain/entities/submission.entity";
+import type {
+  CreateAssignmentInput,
+  CreateDocumentItemInput,
+  CreateLessonInput,
   ILmsRepository,
-  MarkCompleteData,
+  UpdateCourseItemInput,
 } from "../../domain/repositories/i-lms.repository";
 import type {
-  AssignmentDto,
-  AssignmentsListDto,
+  AssignmentResponseDto,
+  AssignmentSummaryResponseDto,
 } from "../dtos/assignment-response.dto";
-import type { CourseLessonsDto } from "../dtos/course-lessons-response.dto";
-import type { CoursesListDto } from "../dtos/course-response.dto";
+import type { CourseItemResponseDto } from "../dtos/course-item-response.dto";
+import type {
+  CourseResponseDto,
+  CourseSummaryResponseDto,
+} from "../dtos/course-response.dto";
+import type {
+  LessonResponseDto,
+  LessonSummaryResponseDto,
+} from "../dtos/lesson-response.dto";
+import type { SubmissionResponseDto } from "../dtos/submission-response.dto";
 import {
-  mapAssignment,
-  mapCourseLessons,
-  mapCourseSummary,
+  toAssignment,
+  toAssignmentSummary,
+  toCourse,
+  toCourseItem,
+  toCourseSummary,
+  toLesson,
+  toLessonSummary,
+  toSubmission,
 } from "../mappers/lms.mapper";
+import {
+  isSubmissionNotFound,
+  toLmsFailure,
+} from "../mappers/lms-failure.mapper";
 
 /**
- * Real HTTP implementation — wiring-ready against the documented `lms` endpoints.
- * The `lms` service is not shipped yet (decision 0014); while
- * NEXT_PUBLIC_USE_MOCK=true the DI factory selects `MockLmsRepository` instead,
- * so this is not exercised at runtime today. Kept for contract-readiness.
- * The HTTP interceptor unwraps the envelope → repos receive the payload directly.
+ * REAL `lms` repository (US-E24.1, ADR 0075 — supersedes the ADR 0073
+ * force-mock). Talks to the deployed service through Kong; see `LMS_EP` for
+ * why every path carries the double `lms` segment.
+ *
+ * Conventions:
+ * - the HTTP interceptor already unwrapped the envelope, so every call casts
+ *   the payload directly (`as unknown as <Dto>`) — never `.data`;
+ * - none of these endpoints paginate (BE bounds every list by construction:
+ *   200 lessons/course, 500 items/course, 500 assignments/class), so there is
+ *   no `raw: true` + `parseEnvelope` cursor drain anywhere in this file;
+ * - every method throws an `LmsFailure` (see `i-lms.repository.ts`), mapped
+ *   from `error.code` by `toLmsFailure`.
  */
 export class LmsRepository implements ILmsRepository {
   constructor(private readonly http: AxiosInstance) {}
 
-  async listCourses(studentId: string): Promise<CourseSummary[]> {
-    const data = (await this.http.get(LMS_EP.courses(), {
-      params: { studentId },
-    })) as unknown as CoursesListDto;
-    return data.courses.map(mapCourseSummary);
+  /** Single catch boundary: any thrown `ApiError` becomes an `LmsFailure`. */
+  private async call<T>(fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      throw toLmsFailure(err);
+    }
   }
 
-  async getCourseLessons(courseId: string): Promise<CourseLessonsData> {
-    const data = (await this.http.get(
-      LMS_EP.courseLessons(courseId),
-    )) as unknown as CourseLessonsDto;
-    return mapCourseLessons(data);
+  // ── reads ───────────────────────────────────────────────────────────────
+
+  async listCourses(
+    classId: string,
+    subjectId?: string,
+  ): Promise<CourseSummary[]> {
+    return this.call(async () => {
+      const rows = (await this.http.get(LMS_EP.courses, {
+        params: subjectId ? { classId, subjectId } : { classId },
+      })) as unknown as CourseSummaryResponseDto[];
+      return rows.map(toCourseSummary);
+    });
   }
 
-  async markLessonComplete(lessonId: string): Promise<MarkCompleteData> {
-    return (await this.http.put(
-      LMS_EP.completeLesson(lessonId),
-    )) as unknown as MarkCompleteData;
+  async getCourse(courseId: string): Promise<Course> {
+    return this.call(async () =>
+      toCourse(
+        (await this.http.get(
+          LMS_EP.course(courseId),
+        )) as unknown as CourseResponseDto,
+      ),
+    );
   }
 
-  async getNote(lessonId: string): Promise<LessonNoteEntity | null> {
-    return (await this.http.get(
-      LMS_EP.note(lessonId),
-    )) as unknown as LessonNoteEntity | null;
+  async listLessons(courseId: string): Promise<LessonSummary[]> {
+    return this.call(async () => {
+      const rows = (await this.http.get(
+        LMS_EP.lessons(courseId),
+      )) as unknown as LessonSummaryResponseDto[];
+      return rows.map(toLessonSummary);
+    });
   }
 
-  async saveNote(lessonId: string, content: string): Promise<LessonNoteEntity> {
-    return (await this.http.put(LMS_EP.note(lessonId), {
-      content,
-    })) as unknown as LessonNoteEntity;
+  async getLesson(courseId: string, lessonId: string): Promise<Lesson> {
+    return this.call(async () =>
+      toLesson(
+        (await this.http.get(
+          LMS_EP.lesson(courseId, lessonId),
+        )) as unknown as LessonResponseDto,
+      ),
+    );
   }
 
-  async listQuestions(lessonId: string): Promise<LessonQuestionEntity[]> {
-    return (await this.http.get(
-      LMS_EP.questions(lessonId),
-    )) as unknown as LessonQuestionEntity[];
-  }
-
-  async askQuestion(
-    lessonId: string,
-    question: string,
-  ): Promise<LessonQuestionEntity> {
-    return (await this.http.post(LMS_EP.questions(lessonId), {
-      question,
-    })) as unknown as LessonQuestionEntity;
+  async listItems(courseId: string): Promise<CourseItem[]> {
+    return this.call(async () => {
+      const rows = (await this.http.get(
+        LMS_EP.items(courseId),
+      )) as unknown as CourseItemResponseDto[];
+      // BE order is meaningful (position, createdAt, id) — never re-sort here.
+      return rows.map(toCourseItem);
+    });
   }
 
   async listAssignments(
-    studentId: string,
-    statusFilter?: AssignmentStatusFilter,
-  ): Promise<AssignmentEntity[]> {
-    const data = (await this.http.get(
-      LMS_EP.assignments(studentId, statusFilter),
-    )) as unknown as AssignmentsListDto;
-    return data.assignments.map(mapAssignment);
+    classId: string,
+    filter?: { subjectId?: string; courseId?: string },
+  ): Promise<AssignmentSummary[]> {
+    return this.call(async () => {
+      const params: Record<string, string> = { classId };
+      if (filter?.subjectId) params.subjectId = filter.subjectId;
+      if (filter?.courseId) params.courseId = filter.courseId;
+      const rows = (await this.http.get(LMS_EP.assignments, {
+        params,
+      })) as unknown as AssignmentSummaryResponseDto[];
+      return rows.map(toAssignmentSummary);
+    });
   }
+
+  async getAssignment(assignmentId: string): Promise<Assignment> {
+    return this.call(async () =>
+      toAssignment(
+        (await this.http.get(
+          LMS_EP.assignment(assignmentId),
+        )) as unknown as AssignmentResponseDto,
+      ),
+    );
+  }
+
+  /**
+   * `404 LMS_SUBMISSION_NOT_FOUND` is the documented "you have not submitted
+   * yet" answer, so it resolves to `null` — turning it into a failure would
+   * make the normal pre-submit state look like an error to every caller.
+   * Every OTHER 404 (`LMS_ASSIGNMENT_NOT_FOUND` = denied/absent) still throws.
+   */
+  async getMySubmission(assignmentId: string): Promise<Submission | null> {
+    try {
+      return toSubmission(
+        (await this.http.get(
+          LMS_EP.mySubmission(assignmentId),
+        )) as unknown as SubmissionResponseDto,
+      );
+    } catch (err) {
+      if (isSubmissionNotFound(err)) return null;
+      throw toLmsFailure(err);
+    }
+  }
+
+  // ── commands ────────────────────────────────────────────────────────────
 
   async submitAssignment(
     assignmentId: string,
-    input: SubmitAssignmentInput,
-  ): Promise<AssignmentEntity> {
-    const data = (await this.http.post(
-      LMS_EP.submitAssignment(assignmentId),
-      input,
-    )) as unknown as AssignmentDto;
-    return mapAssignment(data);
+    content: string,
+  ): Promise<Submission> {
+    return this.call(async () =>
+      toSubmission(
+        (await this.http.post(LMS_EP.submissions(assignmentId), {
+          content,
+        })) as unknown as SubmissionResponseDto,
+      ),
+    );
+  }
+
+  async createLesson(
+    courseId: string,
+    input: CreateLessonInput,
+  ): Promise<Lesson> {
+    return this.call(async () =>
+      toLesson(
+        (await this.http.post(
+          LMS_EP.lessons(courseId),
+          input,
+        )) as unknown as LessonResponseDto,
+      ),
+    );
+  }
+
+  async createAssignment(input: CreateAssignmentInput): Promise<Assignment> {
+    return this.call(async () =>
+      toAssignment(
+        (await this.http.post(
+          LMS_EP.assignments,
+          input,
+        )) as unknown as AssignmentResponseDto,
+      ),
+    );
+  }
+
+  async addDocumentItem(
+    courseId: string,
+    input: CreateDocumentItemInput,
+  ): Promise<CourseItem> {
+    return this.call(async () =>
+      toCourseItem(
+        (await this.http.post(
+          LMS_EP.itemDocuments(courseId),
+          input,
+        )) as unknown as CourseItemResponseDto,
+      ),
+    );
+  }
+
+  /** The window halves are three-state — an explicit `null` CLEARS one, so the
+   *  patch object is forwarded as-is rather than having its nulls stripped. */
+  async patchItem(
+    courseId: string,
+    itemId: string,
+    patch: UpdateCourseItemInput,
+  ): Promise<CourseItem> {
+    return this.call(async () =>
+      toCourseItem(
+        (await this.http.patch(
+          LMS_EP.item(courseId, itemId),
+          patch,
+        )) as unknown as CourseItemResponseDto,
+      ),
+    );
+  }
+
+  /** PUT — the body IS the complete ordering (`{ itemIds }`); BE renumbers
+   *  densely from 0 and rejects a partial list with `LMS_ITEM_NOT_FOUND`. */
+  async reorderItems(
+    courseId: string,
+    itemIds: string[],
+  ): Promise<CourseItem[]> {
+    return this.call(async () => {
+      const rows = (await this.http.put(LMS_EP.itemsOrder(courseId), {
+        itemIds,
+      })) as unknown as CourseItemResponseDto[];
+      return rows.map(toCourseItem);
+    });
   }
 }

@@ -10,6 +10,7 @@
 
 - [Placeholder twin of a mounted-gate](gotcha-mounted-gate-placeholder-twin.md) — E08.8: deleting a control behind `mounted ?` must also delete its aria-hidden SSR twin (invisible to all tests)
 - [Primitive-level focus return](gotcha-primitive-focus-return.md) — E18.32 review: inside a Radix Content use `useAutoFocusReturn()` (snapshot on onOpenAutoFocus) (+file)
+- [decodeMemberId falls back to sub](gotcha-decode-member-id-sub-fallback.md) — ADR 0074 needs `decodeMemberIdClaim()`; bootstrap/lib helpers take a feature mock seed as a PARAM, never import fixtures
 - [Terminal error ≠ skeleton](gotcha-terminal-error-vs-skeleton.md) — `isLoading || !data → Skeleton` renders forever after a terminal error (+file)
 - [Composite-key point-read + unbacked read](pattern-composite-key-pointread-and-unbacked-read.md) — E18.32: a clustering-column id needs the whole ReportRef tuple (Sheet (+file)
 - [Stale-assertion-only un-mock](pattern-stale-assertion-only-unmock.md) — E18.39: a BE fix can close a gap on a screen with NO force-mock branch (403 was a natural error) ⇒… (+file)
@@ -37,7 +38,7 @@
 - [Mock-first feature wiring](pattern-mock-first-wiring.md) — USE_MOCK toggle in DI factory; module-level mutable seed in mock repo (+file)
 - [Role union record ripple](gotcha-role-record-ripple.md) — extending Role breaks every Record<Role,…>; no edu-role-admin token (reuse primary) (+file)
 - [Route role guard](pattern-route-role-guard.md) — admin/* guard: jwt decodeRoleClaim + pure evaluateAdminAccess + server-only RSC layout redirect (+file)
-- [Storybook vitest runner broken](gotcha-storybook-vitest-runner-broken.md) — vitest:storybook fails env-wide (ERR_REQUIRE_ESM); use plain vitest, author play fns honestly (+file)
+- [Storybook vitest runner](gotcha-storybook-vitest-runner-broken.md) — runner WORKS (162 files/1269 tests, reconfirmed 2026-09-02); stories only run via `--config vitest.storybook.mts` (+Radix Select play idioms)
 - [Client searchParams nav](pattern-client-searchparams-nav.md) — selector screen drives RSC re-fetch via searchParams; optional onSelect override props for… (+file)
 - [Result shape + dynamic i18n errors](gotcha-result-shape-and-dynamic-i18n.md) — Result is {ok,value}/{ok,failure} not .error; dynamic t(`errors.${key}`) needs ALL union keys in… (+file)
 - [Throwing-repo failure idiom](pattern-throwing-repo-failure.md) — when packet repo returns Promise<Entity> (throws Failure), action is catch boundary→errorKey;… (+file)
@@ -118,3 +119,6 @@
 - [Cold-cache 5s timeouts](gotcha-cold-cache-5s-timeouts.md) — editing i18n/endpoint files invalidates the vitest transform cache → fake RSC page-test timeouts;… (+file)
 
 - [Selective design bundle sync](pattern-selective-design-bundle-sync.md) — US-E24.0: never cp -r a designer bundle; EduPortal.html is gitignored; re-validate design-spec.jsonc as JSON
+
+- [Scaffold→live service repoint](pattern-service-scaffold-to-live-repoint.md) — US-E24.1: un-force-mocking a SERVICE = the mock-era domain was fiction; verify the double-segment gateway path first, delete contract-less UI
+- [Tone with no wire source + duplicate i18n copy](gotcha-tone-and-duplicate-i18n-copy.md) — move an invented visual attribute to presentation (deterministic id hash); two keys sharing one string breaks getByText

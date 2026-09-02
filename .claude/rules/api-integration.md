@@ -10,6 +10,7 @@ lý lỗi, TUÂN THEO contract dưới đây.
 | Response standard | `.claude/rules/response-standards.md` |
 | Integration guide | `services/<svc>/docs/INTEGRATION.md` (vd `iam`) |
 | Authoritative contract | `services/<svc>/docs/openapi.yaml` — import vào Bruno |
+| Draft contract (CHƯA deploy) | `services/<svc>/docs/openapi.draft.yaml` — path `x-status: draft`, KHÔNG có thật; chỉ dùng để mock-first theo shape BE công bố (decision `0076`, mirror edu-api ADR 0147) |
 | Error code catalogue | `services/<svc>/docs/ERROR_CODES.md` |
 
 Mỗi service có một `INTEGRATION.md`. **Trước khi wiring một feature với BE, đọc
@@ -24,14 +25,20 @@ Tên service chuẩn theo `edu-api` — **`chat` (gọi nội bộ) map → `soc
 | --- | --- | --- |
 | `iam` | user, member, tenant, auth | auth, tenant, member, profile |
 | `core` | school, class, conduct, academic records | dữ liệu gv/hs/hiệu trưởng, lớp, hạnh kiểm, học bạ |
-| `lms` | dạy học số | bài giảng, assignment, nội dung học |
+| `lms` | dạy học số | khoá học (`course_items` timeline), bài giảng, assignment/submission |
 | `noti` | event fan-out + delivery (email, push) | thông báo/realtime (SSE proxy — decision `0009`) |
 | `social` | messaging + social network | chat/tin nhắn, social feed |
 
 - Một service ↔ một nhóm endpoint; repository KHÔNG gộp nhiều service (ghép
-  cross-service ở tầng use-case/presentation).
-- BE mới có `iam` + `notification`; `core`/`lms`/`social` **chưa tồn tại** →
-  mock-first (decision `0014`) hoặc contract-first (như `0009`) tới khi service lên.
+  cross-service ở tầng `bootstrap/di` / use-case, không nhét vào repository).
+- `iam`, `core`, `noti`, `social` đã live. **`lms` live MỘT PHẦN** (US-E24.1,
+  decision `0075`): course / lesson / course-item / assignment / submission đã
+  deploy và được tiêu thụ thật. **Chú ý path có HAI segment `lms`**: Kong route
+  `/lms/api/v1` (strip) → upstream `http://lms:3004/api/v1`, còn service mount
+  route dưới `/api/v1/lms/...` → qua gateway là `/lms/api/v1/lms/...`.
+- Phần `lms` CHƯA deploy (student completion/progress — BE US-254) nằm ở
+  `openapi.draft.yaml`; muốn build trước thì theo decision `0076`, không tự chế
+  shape (decision `0014` chỉ áp dụng khi BE chưa công bố shape nào).
 
 ## Response envelope (BẮT BUỘC)
 

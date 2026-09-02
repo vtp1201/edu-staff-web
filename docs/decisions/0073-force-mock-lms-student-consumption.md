@@ -4,7 +4,13 @@ Date: 2026-08-08
 
 ## Status
 
-Accepted
+**Superseded by 0075** (2026-09-02, US-E24.1) — ask #51 closed: `services/lms`
+shipped the real course/lesson/course-item/assignment/submission contract, the
+force-mock below is gone and `lms.di.ts` is back on the standard
+`USE_MOCK ? Mock : Real` gate. Kept as the historical record of why the pin
+existed; do NOT treat anything below as current.
+
+Accepted (historical)
 
 ## Context
 

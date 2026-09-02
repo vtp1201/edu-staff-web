@@ -1,22 +1,20 @@
 /**
- * Unit tests — `lms.di.ts` env matrix (US-E18.60, ADR 0073).
+ * Unit tests — `lms.di.ts` env matrix (US-E24.1, ADR 0075).
  *
- * The LMS student-consumption factory is **force-mocked regardless of
- * `NEXT_PUBLIC_USE_MOCK`**: the `lms` BE service is a scaffold (only `/health`
- * exists; every `/lms/api/v1/*` route 404s from the service itself), so a real
- * branch would turn the two student screens (Khoá học US-E11.6, Bài tập
- * US-E11.7) into a permanent error card the moment the app-wide flag flips.
+ * This is the INVERSE of the US-E18.60 suite it replaces. That one proved the
+ * factory could never reach the real repository (the `lms` service was a
+ * scaffold, ADR 0073). BE shipped the contract, so the assertion flips: the
+ * standard `USE_MOCK ? Mock : Real` gate must be back, and the real branch
+ * must actually build an authenticated http client.
  *
- * Every use-case factory is exercised because each calls `makeRepo()`
- * independently — a partial pin would leak one path back to the dead real repo.
- * The `calls` recorder proves `createServerHttpClient` is NEVER reached in
- * either mode (the real branch is unreachable, not merely losing a race).
+ * Every factory is exercised because each calls `makeRepo()` independently — a
+ * partial revert would leave one path pinned to the mock.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ORIGINAL = process.env.NEXT_PUBLIC_USE_MOCK;
 
-/** Ordered record of the server-side side effects the factory would perform. */
+/** Ordered record of the server-side side effects the factory performs. */
 const calls: string[] = [];
 
 beforeEach(() => {
@@ -55,40 +53,58 @@ function repoOf(useCase: object): { constructor: { name: string } } {
   return objects[0];
 }
 
-async function importDiWithEnv(value: string | undefined) {
+async function allUseCases(value: string | undefined) {
   if (value === undefined) delete process.env.NEXT_PUBLIC_USE_MOCK;
   else process.env.NEXT_PUBLIC_USE_MOCK = value;
-  return import("./lms.di");
+  const di = await import("./lms.di");
+  const factories = [
+    di.makeListCoursesUseCase,
+    di.makeGetCourseUseCase,
+    di.makeListCourseItemsUseCase,
+    di.makeGetLessonUseCase,
+    di.makeListAssignmentsUseCase,
+    di.makeGetAssignmentDetailUseCase,
+    di.makeSubmitAssignmentUseCase,
+  ];
+  // SEQUENTIAL on purpose: `calls` is asserted as an ORDERED log, and
+  // `Promise.all` would interleave the refresh/client pairs.
+  const useCases: object[] = [];
+  for (const factory of factories) useCases.push(await factory());
+  return useCases;
 }
 
-async function allUseCases(value: string | undefined) {
-  const di = await importDiWithEnv(value);
-  return Promise.all([
-    di.makeListCoursesUseCase(),
-    di.makeGetCourseLessonsUseCase(),
-    di.makeMarkLessonCompleteUseCase(),
-    di.makeGetNoteUseCase(),
-    di.makeSaveNoteUseCase(),
-    di.makeListQuestionsUseCase(),
-    di.makeAskQuestionUseCase(),
-    di.makeListAssignmentsUseCase(),
-    di.makeSubmitAssignmentUseCase(),
-  ]);
-}
+const FACTORY_COUNT = 7;
 
-describe("lms.di — force-mocked regardless of USE_MOCK (ADR 0073)", () => {
-  for (const value of ["true", "false", undefined] as const) {
-    it(`every factory resolves MockLmsRepository when NEXT_PUBLIC_USE_MOCK=${String(value)}`, async () => {
+describe("lms.di — standard USE_MOCK gate (ADR 0075 supersedes 0073)", () => {
+  it("NEXT_PUBLIC_USE_MOCK=true → every factory resolves MockLmsRepository", async () => {
+    const useCases = await allUseCases("true");
+    expect(useCases).toHaveLength(FACTORY_COUNT);
+    for (const useCase of useCases) {
+      expect(repoOf(useCase).constructor.name).toBe("MockLmsRepository");
+    }
+  });
+
+  it("NEXT_PUBLIC_USE_MOCK=true → never touches the network stack", async () => {
+    await allUseCases("true");
+    expect(calls).toEqual([]);
+  });
+
+  for (const value of ["false", undefined] as const) {
+    it(`NEXT_PUBLIC_USE_MOCK=${String(value)} → every factory resolves the REAL LmsRepository`, async () => {
       const useCases = await allUseCases(value);
-      expect(useCases).toHaveLength(9);
+      expect(useCases).toHaveLength(FACTORY_COUNT);
       for (const useCase of useCases) {
-        expect(repoOf(useCase).constructor.name).toBe("MockLmsRepository");
+        expect(repoOf(useCase).constructor.name).toBe("LmsRepository");
       }
     });
 
-    it(`never creates a server http client when NEXT_PUBLIC_USE_MOCK=${String(value)}`, async () => {
+    it(`NEXT_PUBLIC_USE_MOCK=${String(value)} → refreshes the session BEFORE building the client, once per factory`, async () => {
       await allUseCases(value);
-      expect(calls).toEqual([]);
+      // Proactive refresh must precede the client build on every call
+      // (decision 0018) — a pair per factory, in that order.
+      expect(calls).toEqual(
+        Array.from({ length: FACTORY_COUNT }, () => ["refresh", "http"]).flat(),
+      );
     });
   }
 });

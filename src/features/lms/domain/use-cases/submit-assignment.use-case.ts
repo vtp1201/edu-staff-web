@@ -1,38 +1,17 @@
-import type {
-  AssignmentEntity,
-  SubmitAssignmentInput,
-} from "../entities/assignment.entity";
+import type { Submission } from "../entities/submission.entity";
 import type { ILmsRepository } from "../repositories/i-lms.repository";
-import { type AssignmentResult, asgFail, asgOk } from "./assignment-result";
+import { type Result, runCatching } from "./result";
 
 /**
- * Submits a pending assignment. Maps every repository-thrown error code to an
- * `AssignmentFailure` (integration.md INT-117-02). `file-too-large` is validated
- * client-side before this use-case is ever invoked, so it is not mapped here.
+ * Submit work. SINGLE ATTEMPT — a second call is `already-submitted`; a call
+ * after `dueAt` is `closed` (BE US-228 made the deadline enforcing, which is
+ * why the old client-side "confirm late submission" flow is gone: a late
+ * submit is rejected, not confirmed).
  */
 export class SubmitAssignmentUseCase {
   constructor(private readonly repo: ILmsRepository) {}
 
-  async execute(
-    assignmentId: string,
-    input: SubmitAssignmentInput,
-  ): Promise<AssignmentResult<AssignmentEntity>> {
-    try {
-      return asgOk(await this.repo.submitAssignment(assignmentId, input));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      switch (msg) {
-        case "network-error":
-          return asgFail({ type: "network-error" });
-        case "not-found":
-          return asgFail({ type: "not-found" });
-        case "forbidden":
-          return asgFail({ type: "forbidden" });
-        case "already-submitted":
-          return asgFail({ type: "already-submitted" });
-        default:
-          return asgFail({ type: "unknown" });
-      }
-    }
+  execute(assignmentId: string, content: string): Promise<Result<Submission>> {
+    return runCatching(() => this.repo.submitAssignment(assignmentId, content));
   }
 }

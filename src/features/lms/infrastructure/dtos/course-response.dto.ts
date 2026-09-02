@@ -1,15 +1,31 @@
-/** Wire shape of one enrolled course (camelCase per api-integration.md). */
-export interface CourseDto {
+/** `services/lms` `Course` / `CourseSummary` — camelCase, 1:1 with openapi.yaml. */
+
+export type CourseStatusDto = "DRAFT" | "PUBLISHED";
+
+/** `GET /courses/{courseId}` payload (envelope already unwrapped). */
+export interface CourseResponseDto {
   id: string;
-  name: string;
-  teacherName: string;
-  /** Raw accent color (hex) — mapped to a semantic tone by the mapper. */
-  color: string;
-  lessonsDone: number;
-  lessonsTotal: number;
-  grade: number | null;
+  classId: string;
+  subjectId: string;
+  title: string;
+  description: string;
+  status: CourseStatusDto;
+  isDefault: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
 }
 
-export interface CoursesListDto {
-  courses: CourseDto[];
+/** `GET /courses?classId=` row — NO `description`, NO `createdAt` (by-class table). */
+export interface CourseSummaryResponseDto {
+  id: string;
+  classId: string;
+  subjectId: string;
+  title: string;
+  status: CourseStatusDto;
+  isDefault: boolean;
+  createdBy: string;
+  updatedAt: string;
+  publishedAt: string | null;
 }
