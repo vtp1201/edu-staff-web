@@ -333,4 +333,35 @@ New i18n keys (vi source + en mirror, 6 total): `courses.skeleton.loading`,
 | `NEXT_PUBLIC_USE_MOCK=true bun run build` | green, full route manifest |
 | `NEXT_PUBLIC_USE_MOCK=false bun run build` | green |
 
+## Evidence — fe-lead independent re-verification + design-review gate (2026-09-02)
+
+Re-ran the gate myself on the fix-round commit (`d3f1b2d2`), not just trusting
+the reports: `bunx tsc --noEmit` clean, `bun vitest run` **520 files / 4196
+tests passed**. Confirms both the reviewer's and the fix round's claims.
+
+Design review: pass
+- design-system: conform — `impeccable detect.mjs` run against
+  `src/features/lms/presentation/` and both student route trees
+  (`app/[locale]/t/[tenant]/(app)/student/{courses,assignments}`) → **0
+  findings**. `fe-tech-lead-reviewer` independently confirmed zero raw-color
+  usage and correct `StatusBadge`/token reuse (no forked status styling).
+- a11y: WCAG AA — `fe-accessibility-auditor` initial verdict PASS with 5 minor
+  findings (A11Y-001..005), all fixed and not re-audited in isolation by a
+  second a11y pass (the fixes are small, mechanical, and match the exact
+  prescribed diffs — re-verified by fe-lead by reading the applied diffs
+  directly against each finding's fix recipe, not re-running a full audit).
+- impeccable audit: 0 findings (see above).
+- states: loading (new `courses/loading.tsx` + existing assignments skeleton,
+  now both announced via sr-only `role="status"`), empty (`no-class`, empty
+  course grid, empty assignment list), error (course-not-found, forbidden,
+  network, already-submitted, item-closed, invalid-content — all mapped to
+  distinct i18n copy), success — all covered per Storybook stories
+  (`bun vitest --config vitest.storybook.mts run` 162/162 files green).
+  Responsive/320px not independently re-checked by fe-lead (relies on the
+  shared `Sheet`/`Card`/`Textarea` primitives' existing responsive behavior,
+  unchanged by this story) — flagged as a light gap, not blocking given no
+  new layout primitive was introduced.
+
+Gate verdict: **PASS** — proceeding to `fe-qa-playwright`.
+
 Not pushed (fe-lead handles push/merge); `## Status` intentionally unchanged.
