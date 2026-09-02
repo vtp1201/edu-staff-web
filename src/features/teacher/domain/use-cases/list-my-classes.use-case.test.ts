@@ -13,6 +13,8 @@ const CLASSES: TeacherClass[] = [
     gradeLevel: 10,
     studentCount: 32,
     isHomeroom: true,
+    roles: ["homeroom"],
+    subjects: [],
     academicYearLabel: "2025–2026",
   },
   {
@@ -21,6 +23,8 @@ const CLASSES: TeacherClass[] = [
     gradeLevel: 11,
     studentCount: 28,
     isHomeroom: false,
+    roles: [],
+    subjects: [],
     academicYearLabel: "2025–2026",
   },
 ];
@@ -35,6 +39,7 @@ function makeRepo(
         TeacherClass[]
       >),
     getClassStudents: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+    getHomeroomKpi: vi.fn().mockResolvedValue({ ok: true, data: {} }),
     ...over,
   };
 }

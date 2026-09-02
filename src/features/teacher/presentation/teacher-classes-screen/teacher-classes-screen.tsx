@@ -36,7 +36,7 @@ export function TeacherClassesScreen({
         <ul
           // biome-ignore lint/a11y/noRedundantRoles: VoiceOver drops list semantics when list-style is removed by the grid layout; keep explicit.
           role="list"
-          className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4"
+          className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4"
         >
           {vm.classes.map((cls) => (
             <li key={cls.id}>
@@ -52,7 +52,7 @@ export function TeacherClassesScreen({
 function ClassGridSkeleton() {
   return (
     <div
-      className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4"
+      className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4"
       aria-hidden="true"
     >
       {Array.from({ length: 4 }, (_, i) => i).map((i) => (

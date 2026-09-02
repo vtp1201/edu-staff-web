@@ -27,6 +27,7 @@ function makeRepo(
       .mockResolvedValue({ ok: true, data: STUDENTS } satisfies ClassResult<
         TeacherRosterStudent[]
       >),
+    getHomeroomKpi: vi.fn().mockResolvedValue({ ok: true, data: {} }),
     ...over,
   };
 }
