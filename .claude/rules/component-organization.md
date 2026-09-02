@@ -29,10 +29,18 @@ Trước khi viết một component, hỏi theo thứ tự:
    → Tạm để `src/features/<x>/presentation/<screen>/`. Nhưng **promote ngay** sang
    `components/shared/` khi screen thứ 2 cần — KHÔNG copy sang feature thứ 2.
 
+4. **Composed component dùng ≥2 screen NHƯNG cả hai đều CÙNG một feature**
+   (vd hai screen khác nhau trong `features/teacher/presentation/`, không cross-feature)?
+   → Đặt ở `src/features/<x>/presentation/shared/<name>/` — tier trung gian giữa
+   #2 và #3, tránh nhét vào `components/shared/` khi component còn phụ thuộc domain
+   type của riêng feature đó. Khi có screen thứ 3 ở feature KHÁC cần dùng →
+   **promote tiếp** sang `components/shared/` (không copy).
+
 | Bản chất | Nhà chân lý |
 | --- | --- |
 | Variant/style của 1 primitive (đúng design) | `components/ui/<name>/` (sửa tại chỗ) |
-| Composed, dùng ≥2 screen | `components/shared/<name>/` |
+| Composed, dùng ≥2 screen, cross-feature | `components/shared/<name>/` |
+| Composed, dùng ≥2 screen, cùng 1 feature | `features/<x>/presentation/shared/<name>/` → promote khi feature khác cần |
 | Composed, chỉ 1 screen (tạm) | `features/<x>/presentation/<screen>/` → promote khi share |
 | Shell app (Sidebar/Header/Layout) | `components/layout/` |
 
