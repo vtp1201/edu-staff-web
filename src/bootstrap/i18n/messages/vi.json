@@ -1214,11 +1214,6 @@
       "loading": "Đang tải khoá học..."
     },
     "player": {
-      "breadcrumb": {
-        "navLabel": "Đường dẫn điều hướng",
-        "coursesLink": "Khoá học",
-        "pickLesson": "Chọn bài học"
-      },
       "content": {
         "empty": {
           "title": "Chưa có nội dung",
@@ -1226,27 +1221,61 @@
         },
         "loading": "Đang tải nội dung bài học...",
         "loadError": "Không tải được nội dung bài học."
+      }
+    },
+    "timeline": {
+      "legend": {
+        "upcoming": "Sắp mở",
+        "open": "Đang mở",
+        "closed": "Đã đóng — chỉ xem"
       },
-      "timeline": {
-        "navAriaLabel": "Dòng thời gian khoá học",
-        "empty": "Khoá học này chưa có nội dung nào.",
-        "dueAt": "Hạn: {date}",
-        "noDueAt": "Không có hạn",
-        "openDocument": "Mở tài liệu trong tab mới",
-        "openAssignment": "Mở trang bài tập",
-        "openExam": "Mở bài kiểm tra trong tab mới",
-        "examDuration": "Thời lượng {minutes} phút"
+      "legendLabel": "Chú thích trạng thái",
+      "navLabel": "Dòng thời gian khoá học",
+      "alwaysOpen": "Luôn mở",
+      "weekLabel": "Tuần {start} – {end}",
+      "window": {
+        "range": "{start} → {due}",
+        "from": "Mở từ {start}",
+        "due": "Hạn {due}",
+        "always": "Luôn mở"
+      },
+      "opensAt": "Nội dung sẽ mở lúc {date}.",
+      "opensAtUnknown": "Nội dung này chưa được mở.",
+      "closedReadOnly": "Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.",
+      "empty": "Giáo viên chưa thêm nội dung cho khoá học này.",
+      "emptyTitle": "Chưa có nội dung",
+      "retry": "Thử lại",
+      "header": {
+        "openCount": "{count} mục đang mở"
       },
       "itemType": {
-        "lesson": "Bài học",
+        "lesson": "Bài giảng",
         "assignment": "Bài tập",
         "document": "Tài liệu",
         "exam": "Kiểm tra"
       },
       "itemState": {
         "open": "Đang mở",
-        "closed": "Đã đóng",
-        "upcoming": "Sắp diễn ra"
+        "closed": "Đã đóng — chỉ xem",
+        "upcoming": "Sắp mở"
+      },
+      "itemDetail": {
+        "closedNote": "Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.",
+        "document": {
+          "explainer": "Tài liệu tham khảo do giáo viên đính kèm — mở bằng liên kết ngoài.",
+          "open": "Mở tài liệu trong tab mới",
+          "noLink": "Giáo viên chưa đính kèm liên kết cho tài liệu này."
+        },
+        "exam": {
+          "explainer": "Bấm để chuyển sang màn hình làm bài. Nộp trước khi hết giờ.",
+          "open": "Vào làm bài (mở tab mới)",
+          "noLink": "Chưa có liên kết bài kiểm tra cho mục này.",
+          "duration": "Thời lượng {minutes} phút"
+        },
+        "assignment": {
+          "explainer": "Nộp bài và xem điểm ở trang Bài tập.",
+          "open": "Mở trang bài tập"
+        }
       }
     },
     "a11y": {

@@ -5,30 +5,29 @@ import {
   makeGetCourseUseCase,
   makeListCourseItemsUseCase,
 } from "@/bootstrap/di/lms.di";
-import { LessonPlayer } from "@/features/lms/presentation/lesson-player/lesson-player";
-import {
-  pickInitialLessonId,
-  toTimelineItems,
-} from "@/features/lms/presentation/lesson-player/lesson-player.derive";
+import { summarizeCourse } from "@/features/lms/domain/use-cases/summarize-course";
+import { CourseTimeline } from "@/features/lms/presentation/course-timeline/course-timeline";
+import { toWeekVms } from "@/features/lms/presentation/course-timeline/course-timeline.derive";
 import type {
-  LessonPlayerActions,
-  LessonPlayerVm,
-} from "@/features/lms/presentation/lesson-player/lesson-player.i-vm";
+  CourseTimelineActions,
+  CourseTimelineVm,
+} from "@/features/lms/presentation/course-timeline/course-timeline.i-vm";
 import { toneForId } from "@/features/lms/presentation/tone";
-import { getLessonAction } from "./actions";
+import { getLessonAction, retryListItemsAction } from "./actions";
 
 interface Props {
   params: Promise<{ locale: string; tenant: string; courseId: string }>;
 }
 
 /**
- * `/student/courses/[courseId]` — the course timeline.
+ * `/student/courses/[courseId]` — the course timeline (US-E24.3 layout).
  *
- * Two reads: the course itself (title + description, which the class-scoped
- * list row does not carry) and its ordered items. A denial on either collapses
- * to `not-found` server-side (existence-oracle rule), so the page 404s rather
- * than hinting the course exists. The timeline degrades independently — a
- * readable course with an unreadable timeline still renders its header.
+ * Two reads, issued IN PARALLEL: the course itself (title, which the
+ * class-scoped list row does carry, plus the description) and its ordered
+ * items. A denial on the course collapses to `not-found` server-side
+ * (existence-oracle rule), so the page 404s rather than hinting the course
+ * exists. The timeline degrades independently — a readable course with an
+ * unreadable timeline still renders its header plus a retry banner.
  */
 export default async function StudentCourseTimelinePage({ params }: Props) {
   const { locale, tenant, courseId } = await params;
@@ -43,7 +42,11 @@ export default async function StudentCourseTimelinePage({ params }: Props) {
     );
   }
 
-  const courseResult = await (await makeGetCourseUseCase()).execute(courseId);
+  const [courseResult, itemsResult] = await Promise.all([
+    (await makeGetCourseUseCase()).execute(courseId),
+    (await makeListCourseItemsUseCase()).execute(courseId),
+  ]);
+
   if (!courseResult.ok) {
     if (courseResult.failure.type === "not-found") notFound();
     return (
@@ -53,30 +56,32 @@ export default async function StudentCourseTimelinePage({ params }: Props) {
     );
   }
 
-  const itemsResult = await (await makeListCourseItemsUseCase()).execute(
-    courseId,
-  );
-  const items = itemsResult.ok ? toTimelineItems(itemsResult.data) : [];
+  const items = itemsResult.ok ? itemsResult.data : [];
 
-  const vm: LessonPlayerVm = {
+  const vm: CourseTimelineVm = {
     courseId,
     courseName: courseResult.data.title,
-    courseDescription: courseResult.data.description,
-    coursesListHref: `/${locale}/t/${tenant}/student/courses`,
     tone: toneForId(courseId),
-    items,
-    initialLessonId: pickInitialLessonId(items),
+    // `now` only orders deadlines; `openCount` counts the BE-computed state.
+    openCount: summarizeCourse(items, new Date()).openCount,
+    weeks: toWeekVms(items),
     errorKey: itemsResult.ok ? null : itemsResult.failure.type,
+    mode: "student",
   };
 
-  const actions: LessonPlayerActions = {
+  const actions: CourseTimelineActions = {
     // `.bind` (not an inline closure) — a plain local async function passed
     // from an RSC is not a Server Action and 500s at call time.
     getLesson: getLessonAction.bind(null, courseId),
+    retryListItems: retryListItemsAction.bind(null, courseId),
   };
 
   return (
-    <LessonPlayer
+    <CourseTimeline
+      // Keyed by course: the client root seeds local state from `vm`, so moving
+      // between two courses must REMOUNT it rather than keep the previous
+      // course's rows.
+      key={courseId}
       vm={vm}
       actions={actions}
       assignmentsHref={`/${locale}/t/${tenant}/student/assignments`}

@@ -50,10 +50,10 @@ export function StudentCoursesScreen({
                 openCount: (count) => t("card.openCount", { count }),
                 summaryError: t("card.summaryError"),
                 itemType: {
-                  LESSON: t("player.itemType.lesson"),
-                  ASSIGNMENT: t("player.itemType.assignment"),
-                  DOCUMENT: t("player.itemType.document"),
-                  EXAM: t("player.itemType.exam"),
+                  LESSON: t("timeline.itemType.lesson"),
+                  ASSIGNMENT: t("timeline.itemType.assignment"),
+                  DOCUMENT: t("timeline.itemType.document"),
+                  EXAM: t("timeline.itemType.exam"),
                 },
               }}
             />
