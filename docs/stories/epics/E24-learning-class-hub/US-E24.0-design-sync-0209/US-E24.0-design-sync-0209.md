@@ -42,7 +42,7 @@ baseline mockup trong repo, theo quyết định **selective** (user chốt 02/0
 ## Acceptance Criteria
 
 - `diff -rq ~/Downloads/design_src0209/edu design_src/edu` chỉ còn khác ở: 5 file DR giữ lại,
-  `parent-links.jsx`, `.impeccable`.
+  `parent-links.jsx`, `.impeccable`, `tokens.js` (diff chỉ comment — xem Product Contract).
 - `design_src/EduPortal.html` load được 4 script mới (mở file trong browser không lỗi console
   về component undefined: `ClassHubScreen`, `CourseItemPlayer`, `StudentCoursesV2`,
   `StudentAttendanceScreen`).
