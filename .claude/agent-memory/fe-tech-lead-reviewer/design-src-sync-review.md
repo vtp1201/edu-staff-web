@@ -23,6 +23,12 @@ diff <(sed 's,//.*,,' ~/Downloads/<bundle>/edu/tokens.js) <(sed 's,//.*,,' desig
 Residual trailing-whitespace-only hunks = values byte-identical. Keeping the repo file
 is the right call — a blind full-bundle copy silently reverts decision annotations.
 
+The sed trick FAILS when the hand-merge also **reorders** keys (bundle 0209 v3 put
+`successText`/`tealText`/`mediaSurface` in a different slot). Then prove equality
+semantically instead — `tokens.js` is plain `window.X = {...}`, so eval the part before
+`// Mock data` and compare sorted key=value dumps of `T`, `T_DARK`, `T_LIGHT` and
+`String(applyTheme)` for bundle vs repo. Empty diff = merge is faithful regardless of order.
+
 **`docs/product/design-spec.jsonc` is JSONC** — strip `//` comments outside strings, then
 `json.loads`. Real screen entries live under the top-level `screens` key.
 `--muted-foreground` is NOT in `src/app/tokens.css`; it is a shadcn semantic var in

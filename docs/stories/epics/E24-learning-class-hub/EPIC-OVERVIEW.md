@@ -5,8 +5,10 @@
 > membership, exam metadata projection* (Accepted, implemented 2026-09-01/02).
 > Lưu ý: "ADR 0143" là số ADR **phía edu-api**; FE ADR cao nhất hiện là 0074.
 >
-> Trạng thái: **PLAN — user đã chốt Q-A..Q-H (02/09), chưa slice story vào harness.**
-> Ask BE ở `docs/reports/2026-09-02-fe-to-be-asks-adr0143.md`; prompt design §7 đã gửi/đang gửi.
+> Trạng thái (02/09/2026 tối): **E24.0, E24.1 implemented & merged; E24.0b (bundle v3) đang chạy;
+> E24.2–E24.5 + E24.7–E24.11 đã slice vào harness (`planned`, packet đầy đủ) — sẵn sàng `/fe`.**
+> Ask BE: `docs/reports/2026-09-02-fe-to-be-asks-adr0143.md` (chưa có reply). Design: bundle v3 đã
+> khớp D1–D9 + R1–R3 → §7 chỉ còn giá trị lịch sử.
 
 ## 1. Bối cảnh — cái gì đổi
 
@@ -65,12 +67,33 @@
 | E24.16 Học bạ — parent chọn con | Child selector (aria-pressed) trong `/parent/academic-record` | `features/academic-records` real |
 | — parent-links | Design **xoá** audit trail (DR-023 đã build). **Không regress** — chờ designer xác nhận (Q-G) | — |
 
+## 3b. Runbook cho session sau (bắt đầu code)
+
+1. `git fetch --prune && git log --oneline -3` — xác nhận `main` có merge E24.0b
+   (`chore(design): merge … (US-E24.0b)`); `scripts/bin/harness-cli query matrix | grep US-E24`.
+2. Đọc 2 file: file này + `docs/reports/2026-09-02-be-to-fe-contract-update.md`. Nếu BE đã reply
+   `docs/reports/2026-09-0X-be-to-fe-response*.md` → cập nhật packet bị ảnh hưởng (ask #1 → E24.5,
+   #4 → E24.2, #6/#7 → E24.10, #8/#9 → E24.7/E24.9) TRƯỚC khi chạy.
+3. Chạy **2 worktree song song** (decision 0033), mỗi worktree 1 phiên `/fe`, tuần tự trong nhánh:
+   - Worktree A (student): `/fe US-E24.2` → `US-E24.3` → `US-E24.5` → `US-E24.4`
+   - Worktree B (teacher): `/fe US-E24.7` → `US-E24.8` → `US-E24.9` → `US-E24.11` → `US-E24.10`
+     (E24.10 cuối vì cần `course-timeline` mode prop của E24.3 đã merge).
+   Shared file phải serialize: `nav-config.ts` (chỉ E24.4 đổi), `messages/{vi,en}.json` (mọi US —
+   merge `origin/main` trước khi merge lên main, chạy gate lại).
+4. Prompt gợi ý cho `/fe`: "Chạy US-E24.N theo packet docs/stories/epics/E24-learning-class-hub/
+   US-E24.N-*/…md; mockup design_src/edu/{course-items,course-player,class-hub}.jsx (bundle v3);
+   design-spec entry `<id>`; ground truth BE docs/reports/2026-09-02-be-to-fe-contract-update.md +
+   ../edu-api/services/{lms,core}/docs/openapi.yaml; claim/worktree/merge theo parallel-workflow."
+5. Khi stack local lên: chạy Kong smoke còn treo của E24.1 (`GET /lms/api/v1/lms/courses?classId=`)
+   và ghi vào Evidence của E24.1.
+6. Phase 3 (E24.6, E24.12–E24.16) chưa slice — slice khi Phase 1–2 gần xong.
+
 ## 4. Thứ tự đề xuất & phụ thuộc
 
 ```
-E24.0 ─┐
-E24.1 ─┴─► E24.2 ► E24.3 ► E24.5 ► E24.4      (student, BE ready)
-E24.7 ► E24.8 ► E24.9 ► E24.10 ► E24.11       (teacher; E24.10 cần E24.1)
+E24.0 ✅ ─┐  E24.0b (v3) ─┐
+E24.1 ✅ ─┴──────────────┴─► E24.2 ► E24.3 ► E24.5 ► E24.4        (student, BE ready)
+                             E24.7 ► E24.8 ► E24.9 ► E24.11 ► E24.10  (teacher; E24.10 cần E24.3 merge)
 E24.6, E24.12–16 độc lập, chạy song song worktree (decision 0033)
 ```
 
