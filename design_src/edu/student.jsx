@@ -744,18 +744,19 @@ const ParentScreen = ({ section, lang, pColor }) => {
 };
 
 // ── Main Student Screen ───────────────────────────────────────────────────────
-const StudentScreen = ({ section, lang, primaryColor }) => {
+const StudentScreen = ({ section, lang, primaryColor, onNavigate }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
   const pColor = primaryColor || T.primary;
   const [selectedCourse, setSelectedCourse] = React.useState(null);
+  const [coursesView, setCoursesView] = React.useState('all');
+  const [playerItem, setPlayerItem] = React.useState(null);
   const [currentSection, setCurrentSection] = React.useState(section);
 
-  React.useEffect(() => { setCurrentSection(section); setSelectedCourse(null); }, [section]);
+  React.useEffect(() => { setCurrentSection(section); setSelectedCourse(null); setCoursesView('all'); setPlayerItem(null); }, [section]);
 
   const TITLES = {
     home: { vi: 'Tổng quan', en: 'Overview', sub_vi: 'Chào buổi sáng, Minh Khoa! 👋', sub_en: 'Good morning, Minh Khoa! 👋' },
-    courses: { vi: 'Khoá học của tôi', en: 'My Courses', sub_vi: '6 môn học học kỳ I', sub_en: '6 subjects this semester' },
-    assignments: { vi: 'Bài tập & Nộp bài', en: 'Assignments', sub_vi: '3 bài sắp đến hạn', sub_en: '3 assignments due soon' },
+    courses: { vi: 'Khoá học của tôi', en: 'My Courses', sub_vi: 'Môn học, bài tập và bài kiểm tra — học kỳ II', sub_en: 'Subjects, assignments & exams — semester II' },
     grades: { vi: 'Điểm số', en: 'Grades', sub_vi: 'Học kỳ I – 2025/2026', sub_en: 'Semester I – 2025/2026' },
     schedule: { vi: 'Lịch học', en: 'Schedule' },
     resources: { vi: 'Tài nguyên học liệu', en: 'Learning Resources', sub_vi: `${RESOURCES.length} tài liệu`, sub_en: `${RESOURCES.length} files` },
@@ -763,13 +764,35 @@ const StudentScreen = ({ section, lang, primaryColor }) => {
 
   const info = TITLES[currentSection] || {};
   const title = selectedCourse ? (lang === 'en' ? selectedCourse.nameEn : selectedCourse.name) : t(info.vi, info.en);
-  const subtitle = selectedCourse ? t('Chi tiết khoá học', 'Course Detail') : t(info.sub_vi, info.sub_en);
+  const subtitle = selectedCourse ? (playerItem ? t('Màn hình học tập', 'Learning view') : t('Timeline khoá học', 'Course timeline')) : t(info.sub_vi, info.sub_en);
+  const startExam = () => onNavigate && onNavigate('exam-flow');
+  const openCourse = (c) => { setCoursesView('all'); setSelectedCourse(c); };
 
   const renderContent = () => {
-    if (selectedCourse) return <LessonPlayer course={selectedCourse} lang={lang} t={t} pColor={pColor} onBack={() => setSelectedCourse(null)} />;
+    if (selectedCourse) return playerItem
+      ? <CourseItemPlayer course={selectedCourse} initialItemId={playerItem} lang={lang} t={t} pColor={pColor} onBack={() => setPlayerItem(null)} onStartExam={startExam} />
+      : <CourseTimelinePage course={selectedCourse} lang={lang} t={t} pColor={pColor} mode="student" onBack={() => setSelectedCourse(null)} onStartExam={startExam} onOpenItem={(it) => setPlayerItem(it.id)} />;
     if (currentSection === 'home') return <StudentHome lang={lang} t={t} pColor={pColor} onNavigate={setCurrentSection} onCourseSelect={setSelectedCourse} />;
-    if (currentSection === 'courses') return <StudentCourses lang={lang} t={t} pColor={pColor} onCourseSelect={setSelectedCourse} />;
-    if (currentSection === 'assignments') return <StudentAssignments lang={lang} t={t} pColor={pColor} />;
+    if (currentSection === 'courses') return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[
+            { id: 'all', vi: 'Môn học', en: 'Subjects', icon: 'bookOpen' },
+            { id: 'assignment', vi: 'Bài tập', en: 'Assignments', icon: 'clipboard' },
+            { id: 'exam', vi: 'Bài kiểm tra', en: 'Exams', icon: 'fileText' },
+          ].map(x => (
+            <button key={x.id} onClick={() => setCoursesView(x.id)}
+              style={{ padding: '7px 14px', borderRadius: 99, border: `1.5px solid ${coursesView === x.id ? pColor : T.border}`, background: coursesView === x.id ? pColor : T.card, color: coursesView === x.id ? '#fff' : T.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <Icon name={x.icon} size={13} color={coursesView === x.id ? '#fff' : T.textMuted} strokeWidth={2.2} />
+              {t(x.vi, x.en)}
+            </button>
+          ))}
+        </div>
+        {coursesView === 'all'
+          ? <StudentCoursesV2 lang={lang} t={t} pColor={pColor} onCourseSelect={setSelectedCourse} />
+          : <CrossSubjectList kind={coursesView} lang={lang} t={t} pColor={pColor} onOpenCourse={openCourse} onStartExam={startExam} />}
+      </div>
+    );
     if (currentSection === 'grades') return <StudentGrades lang={lang} t={t} pColor={pColor} />;
     if (currentSection === 'resources') return <StudentResources lang={lang} t={t} pColor={pColor} />;
     // 'schedule' is handled by TimetableViewScreen at the app.jsx level, not here.

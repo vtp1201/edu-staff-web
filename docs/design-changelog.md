@@ -8,6 +8,89 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-09-02 — Design bundle 0209 selective sync into `design_src/` (US-E24.0, epic E24) `[INTERNAL]`
+
+**What changed**: the designer bundle `design_src0209` (its own
+`CHANGELOG.md` covers 28/08 → 02/09/2026) becomes the reference-mockup
+baseline in-repo — but **selectively**, per the user decisions recorded in
+`docs/stories/epics/E24-learning-class-hub/EPIC-OVERVIEW.md` §5 (Q-A, Q-G).
+No `src/` code changed; this is a reference/docs sync only (decision `0021`
+— `design_src/edu/*.jsx` is the canonical mockup mirror, not app code).
+
+- **Added (4 net-new mockups)**: `edu/class-hub.jsx` (`ClassHubScreen` —
+  teacher hub: role-aware class list + class detail shell with Học sinh /
+  Thời khoá biểu / Khoá học online / Chủ nhiệm tabs), `edu/course-items.jsx`
+  (`StudentCoursesV2`, `CourseTimelinePage` in student/teacher/readonly
+  modes, `CrossSubjectList`), `edu/course-player.jsx` (`CourseItemPlayer`,
+  Udemy-style content pane + course-content sidebar),
+  `edu/attendance-portal.jsx` (`StudentAttendanceScreen`,
+  `ParentAttendanceScreen`, `APExcuseRequestDialog`).
+- **Updated in place (8 files)**: `app.jsx` (deep-link `navParam
+  {classId, tab}`, dark mode), `ui.jsx` (sidebar drops
+  notifications/profile, footer help+collapse, 3-tab bell dropdown, avatar
+  dropdown), `teacher.jsx` (click a period → class + tab), `student.jsx`
+  (courses v2), `classops.jsx` (Tổng hợp chuyên cần tab), `messaging.jsx`
+  (Direct+Group merged), `academic-record-view.jsx` (parent child selector),
+  `icons.jsx` (purely additive: `helpCircle`, `moon`, `maximize`). Root
+  `EduPortal.html` (now loads the 4 new scripts), `CHANGELOG.md`,
+  `README.md` overwritten from the bundle.
+- **Deliberately NOT taken from the bundle**:
+  - `edu/tokens.js` — the diff is **comment-only** (all values byte-identical);
+    the repo's comments cite decisions `0040` (errorDark solid fill 8.2:1),
+    `0027` (errorText AA 5.1:1), `0046` (warningText AA tone) and `0013`
+    (never white on warning yellow). Keeping the repo file preserves that
+    decision provenance.
+  - `edu/parent-links.jsx` — the bundle **deletes** the "Lịch sử liên kết"
+    audit-trail section from `PLDetailDialog`, which was authored on purpose
+    in DR-023 / US-E20.3 and is already built in `src/` with BE data behind
+    it. Q-G: keep the current code + mockup and ask the designer whether the
+    removal was intentional (prompt item **D8**, EPIC-OVERVIEW §7). A new DR
+    is required if it turns out to be deliberate.
+  - `edu/{assignments,lesson-plan,question-bank,staff-discipline,student-absences}.jsx`
+    — the 5 uiux-team-authored mockups (DR-020..DR-023). The bundle ships no
+    file with those names, so it neither replaces nor supersedes them; Q-A
+    keeps them untouched.
+  - `tweaks-panel.jsx` — outside the story's file scope, not copied.
+- `docs/product/design-spec.jsonc`: 5 new `screens` entries —
+  `teacher-class-hub`, `student-course-timeline`, `student-course-player`,
+  `student-attendance`, `parent-attendance`. The attendance mockup exports
+  two screens sharing one `APSummary` block, but the parent screen adds a
+  child selector + excuse dialog on a different route/role, so it is split
+  into two entries with the shared block described once and referenced. Each
+  entry records the normative layout read out of the jsx **and** flags its own
+  D1–D9 deviations inline so downstream `/ba` + `/fe` do not build the
+  contract-incorrect parts.
+- `docs/product/screens.md`: 4 new `⬜ planned` rows (Class Hub, Courses v2 +
+  timeline, Course Player, Student Attendance); existing rows annotated in
+  place rather than duplicated — teacher "Classes / Class roster" → Class Hub
+  redesign (US-E24.7/E24.8); student "Courses + lesson player" /
+  "Assignments" / "Exams" → merged into the unified "Khoá học" cross-cutting
+  tab view (US-E24.4, Q-C: permanent redirects, `/exams/[examId]` kept);
+  parent "Attendance" → excuse-request dialog (US-E24.6). New
+  "Design bundle 0209" block in §Ghi chú listing what was and was not taken.
+
+**Refs**: US-E24.0 (`docs/stories/epics/E24-learning-class-hub/US-E24.0-design-sync-0209/`)
+· EPIC-OVERVIEW §5 Q-A (selective sync) / Q-C (assignments+exams merge) /
+Q-E (drop Notes+Q&A) / Q-G (keep parent-links audit trail) · §7 D1–D9
+(design vs shipped BE contract) · edu-api ADR 0143 (course as container:
+course_items) · decisions `0021` (design_src normative), `0044` (handoff
+baseline), `0034` (design-spec re-baseline). **No new ADR and no new token**:
+the bundle hardcodes `#0E9A82`, `#EEF1F6`, `#00806F` outside `tokens.js`, but
+all three already have semantic tokens — `--edu-success-text`, `--muted`,
+`--edu-teal-text` respectively — so the design-spec entries record the mapping
+as a doc note and FE must use the existing tokens.
+
+**Rationale**: E24 is a large multi-story epic (E24.2..E24.16) that builds
+directly off these mockups, so the reference baseline has to land first and
+be honest about *which* parts of it contradict the BE contract shipped on
+02/09. A blind full-bundle copy would have silently reverted two deliberate
+in-repo design decisions (the DR-023 audit trail and the decision-annotated
+`tokens.js` comments) and dropped 5 uiux-authored mockups out of sync with
+their DR packets — hence selective. Deviations are recorded, not fixed:
+the corrected bundle comes back from the designer via the §7 prompt.
+
+---
+
 ## 2026-07-25 — Parent–Student Link Audit Trail extension (DR-023, US-E20.3) `[EXTERNAL]`
 
 **What changed**: a scoped read-only extension of the already-delivered

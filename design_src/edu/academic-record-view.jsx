@@ -71,6 +71,21 @@ const SAR_STUDENT = {
   studentCode: 'NDU-2009-0184',
 };
 
+// Parent role: linked children (khớp AP_CHILDREN ở attendance-portal.jsx)
+const SAR_CHILDREN = [
+  SAR_STUDENT,
+  {
+    id: 'std-002',
+    name: 'Nguyễn Thu Hà',
+    nameEn: 'Nguyen Thu Ha',
+    avatar: 'NH',
+    dob: '02/09/2012',
+    currentClassId: '8B1',
+    currentSchoolYear: '2025-2026',
+    studentCode: 'NDU-2012-0417',
+  },
+];
+
 // One record = one term snapshot. Subject cells use the same 4-column scheme
 // frozen at seal time. `cells` is positional with SAR_COLUMNS.
 const SAR_RECORDS = {
@@ -217,7 +232,10 @@ const AcademicRecordViewScreen = ({ role, lang, primaryColor, onNavigate }) => {
   const accessRole = sarResolveRole(role);
   const isAdmin = accessRole === 'ADMIN';
 
-  const student = SAR_STUDENT;
+  const isParent = accessRole === 'PARENT';
+  const [childIdx, setChildIdx] = React.useState(0);
+  const student = isParent ? SAR_CHILDREN[childIdx] : SAR_STUDENT;
+  const childColors = [pColor, T.success];
   const [activeYear, setActiveYear] = React.useState(
     SAR_YEAR_LIST.find(y => y.current)?.id || SAR_YEAR_LIST[SAR_YEAR_LIST.length - 1].id
   );
@@ -230,7 +248,23 @@ const AcademicRecordViewScreen = ({ role, lang, primaryColor, onNavigate }) => {
     showToast._tid = window.setTimeout(() => setToast(null), 2600);
   };
 
-  const yearData = SAR_RECORDS[activeYear] || {};
+  // Child 2 (mẫu): dắt từ cùng bộ records — lớp khối THCS (→6B1/7B1/8B1), điểm lệch nhẹ
+  const remapClass = (cid) => cid ? cid.replace(/^(\d+)A(\d+)$/, (m, g) => `${Math.max(1, parseInt(g, 10) - 3)}B1`) : cid;
+  const sarChildRecords = (yearId) => {
+    const base = SAR_RECORDS[yearId] || {};
+    if (!isParent || childIdx === 0) return base;
+    const out = {};
+    Object.keys(base).forEach(termId => {
+      const r = base[termId];
+      out[termId] = { ...r, classId: remapClass(r.classId), subjects: (r.subjects || []).map(s => ({ ...s, cells: s.cells.map(v => typeof v === 'number' ? Math.min(10, Math.round((v + 0.5) * 2) / 2) : v) })) };
+    });
+    return out;
+  };
+  const yearList = (isParent && childIdx === 1)
+    ? SAR_YEAR_LIST.map(y => ({ ...y, classId: remapClass(y.classId), grade: y.grade - 3 }))
+    : SAR_YEAR_LIST;
+
+  const yearData = sarChildRecords(activeYear);
 
   const handlePrint = () => {
     // Toggle a body class so the print stylesheet hides app chrome.
@@ -296,12 +330,34 @@ const AcademicRecordViewScreen = ({ role, lang, primaryColor, onNavigate }) => {
           </Button>
         </div>
 
+        {/* Parent: child selector */}
+        {isParent && (
+          <div className="sar-screen-only" style={{ display: 'flex', gap: 12, marginBottom: 18 }}>
+            {SAR_CHILDREN.map((c, i) => (
+              <button key={c.id} onClick={() => setChildIdx(i)}
+                aria-pressed={childIdx === i}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px',
+                  borderRadius: 10, border: `2px solid ${childIdx === i ? childColors[i] : T.border}`,
+                  background: childIdx === i ? childColors[i] + '10' : T.card, cursor: 'pointer',
+                }}>
+                <Avatar initials={c.avatar} color={childColors[i]} size={34} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary }}>{lang === 'en' ? c.nameEn : c.name}</div>
+                  <div style={{ fontSize: 11, color: T.textMuted }}>{t(`Lớp ${c.currentClassId}`, `Class ${c.currentClassId}`)} · {c.studentCode}</div>
+                </div>
+                {childIdx === i && <Icon name="check" size={14} color={childColors[i]} strokeWidth={2.5} style={{ marginLeft: 4 }} />}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Student info header card */}
-        <StudentHeader student={student} t={t} lang={lang} pColor={pColor}
+        <StudentHeader student={student} t={t} lang={lang} pColor={isParent ? childColors[childIdx] : pColor}
           accessRole={accessRole} />
 
         {/* Year tabs */}
-        <YearTabs years={SAR_YEAR_LIST} activeId={activeYear} onChange={setActiveYear}
+        <YearTabs years={yearList} activeId={activeYear} onChange={setActiveYear}
           t={t} lang={lang} pColor={pColor} />
 
         {/* Per-term sections */}

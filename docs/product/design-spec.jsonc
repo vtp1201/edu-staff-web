@@ -4951,6 +4951,436 @@
         "low-attendance weeks flagged by value color AND numeric label, not bar color alone",
         "download action disabled state communicated via disabled attribute, not just opacity"
       ]
+    },
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // E24 — COURSE ITEMS (ADR 0143) + CLASS HUB — design bundle 0209 (US-E24.0)
+    // Source of truth: design_src/edu/{class-hub,course-items,course-player,
+    // attendance-portal}.jsx synced 2026-09-02. These 4 screens are NOT built yet
+    // (screens.md status ⬜ planned) — the entries below are the normative layout
+    // the E24 stories build against.
+    //
+    // RAW HEX IN THE BUNDLE → TOKEN MAPPING (the bundle hardcodes 3 colors outside
+    // design_src/edu/tokens.js; FE must NOT copy them and must NOT add new tokens):
+    //   #0E9A82  → var(--edu-success-text)  (text-edu-success-text)  — success text/icon tone
+    //   #EEF1F6  → var(--muted)             (bg-muted)               — neutral "closed" chip bg
+    //   #00806F  → var(--edu-teal-text)     (text-edu-teal-text)     — document/link text tone
+    // Two further one-off raws, same rule (no new token):
+    //   #FBFCFE  (class-hub daily-log strip) → bg-card + border-t border-border
+    //   #C3CBD9  (closed timeline dot)       → bg-border (decorative; status also has a text label)
+    //   #0f1117  (player letterbox)          → existing var(--edu-media-surface)
+    //
+    // KNOWN DEVIATIONS (EPIC-OVERVIEW.md §7 D1–D9) — the mockup is AHEAD OF / BEHIND
+    // the BE contract in places. Each entry flags its own D-items inline under
+    // "deviations". Do NOT "fix" the jsx here; the corrected bundle lands later.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    // ── Teacher Class Hub — US-E24.7 / E24.8 ──────────────────────────────────
+    "teacher-class-hub": {
+      "route": "/teacher/classes  ·  /teacher/classes/[classId]?tab=students|timetable|course|homeroom",
+      "roles": ["teacher"],
+      "source": "design_src/edu/class-hub.jsx — ClassHubScreen (ChClassList, ChStudentsTab, ChSessionsTab, ChCourseTab, ChHomeroomTab)",
+      "status": "planned — not implemented (US-E24.7 list, US-E24.8 shell, E24.9–E24.11 tabs)",
+      "layout": {
+        "container": "main padding 28px 32px, maxWidth 1200, centered, column gap 18"
+      },
+      // Level 1 — class list. Card per class the teacher touches; role decides accent + KPIs.
+      "classList": {
+        "grid": "repeat(auto-fill, minmax(300px, 1fr)), gap 18",
+        "card": {
+          "background": "var(--card)",
+          "borderRadius": 12,
+          "border": "1px solid var(--border)",
+          "shadow": "shadow-card (0 2px 12px rgba(0,0,0,0.04)); hover 0 8px 28px rgba(0,0,0,0.10) + translateY(-2px)",
+          "accentStripe": "height 6px, full-bleed top — GVCN => var(--edu-role-parent) purple, GVBM => role primary",
+          "padding": "16px 18px 18px, column gap 12"
+        },
+        "roleBadges": {
+          "component": "Badge (shared StatusBadge)",
+          "gvcn": "purple — 'GVCN' / 'Homeroom'",
+          "gvbm": "primary — 'GVBM · <subject>' / 'Subject · <subject>'",
+          "fontSize": 10.5,
+          "note": "both render when the teacher is homeroom AND subject teacher of the same class"
+        },
+        "title": {
+          "fontSize": 18,
+          "fontWeight": 800,
+          "subtitle": "<n> học sinh, 11.5px muted"
+        },
+        "kpiTiles": {
+          "shape": "flex row, wrap, each flex:1 minWidth 110, radius 8, padding 8px 12px, value 15px/800 + label 10.5px muted",
+          "gvbm": [
+            "Bài chờ chấm (pendingGrades) — bg warning-light + text-edu-warning-text when > 0, else bg-muted"
+          ],
+          "gvcn": [
+            "Chuyên cần % (attendance) — bg-muted",
+            "Vi phạm chờ xử lý (pendingViolations) — bg error-light + text-edu-error-text when > 0, else bg-muted"
+          ]
+        },
+        "progress": {
+          "component": "ProgressBar height 5",
+          "label": "Tiết <subject> đã dạy — taught/total",
+          "deviation": "D5 — REMOVE. No BE source for taught/total. Replace with 'Vắng hôm nay' + 'Bài chờ chấm' (draft US-255)."
+        },
+        "cta": "'Mở lớp' + chevronRight, 12px/700, accent color, bottom-right"
+      },
+      // Level 2 — class detail shell
+      "classDetail": {
+        "breadcrumb": "chevronLeft 'Lớp học' → 'Lớp <id>' (12.5px; back button is a real <button>)",
+        "identityHeader": {
+          "reuse": "components/shared/detail-panel-header pattern",
+          "iconBox": "46×46, radius 11, bg = (purple|primary) + '18', icon 'grid' size 20",
+          "title": "Lớp <id> 17px/800 + role badges inline",
+          "meta": "<n> học sinh · Năm học 2025–2026, 12px muted"
+        },
+        "tabs": {
+          "component": "underline tablist, borderBottom 1px var(--border), item padding 11px 16px",
+          "active": "borderBottom 2px primary, color primary, fontWeight 700",
+          "inactive": "color var(--muted-foreground), fontWeight 600",
+          "items": [
+            "students — 'Học sinh' (users)",
+            "sessions — 'Thời khoá biểu' (calendar)  [renamed from 'Tiết học']",
+            "course — 'Khoá học online' (bookOpen)",
+            "homeroom — 'Chủ nhiệm' (shield) — GVCN only"
+          ],
+          "deepLink": "?tab=<id>; default tab = students for GVBM, homeroom for pure GVCN"
+        }
+      },
+      "studentsTab": {
+        "card": "bordered table card, header 14px/700 + 11.5px muted hint row",
+        "columns": {
+          "always": "Học sinh (avatar 28 + name)",
+          "gvbm": ["Miệng", "15'", "1 tiết", "TB <subject>"],
+          "gvcn": ["GPA lớp", "Chuyên cần", "Hạnh kiểm (Badge)"]
+        },
+        "scoreColor": "score >= 8 → text-edu-success-text (bundle #0E9A82); score < 5 → text-edu-error-text; null → muted em-dash '—'",
+        "footerAction": "GVBM only — primary button 'Nhập điểm <subject>' (penLine icon)"
+      },
+      "sessionsTab": {
+        "grid": "minmax(0,1.7fr) / minmax(260px,1fr), gap 18, align start",
+        "dayCard": {
+          "header": "'<Thứ N> · dd/MM' 13px/800; today → border primary+'55', header bg primary-light + 'Hôm nay' badge; holiday → error-text label, no period rows",
+          "periodRow": "Tiết N (46px col) · subject · teacherName · room; own period → bg primary/12 (bundle pColor+'0C'), name 800 + '— tiết của bạn' tag"
+        },
+        "dailyClassLog": {
+          "strip": "bg #FBFCFE → bg-card + border-t border-border; label 11px/800 uppercase tracking .06em",
+          "statusBadge": "pending → 'Chờ BGH duyệt' warning; approved → 'Đã duyệt' success (reuse class-log statusBadgeTones DRAFT/SUBMITTED/APPROVED/REJECTED)",
+          "editing": "GVCN inline textarea (minHeight 56) + Lưu; GVBM sees 'Chỉ GVCN sửa được'",
+          "backing": "core homeroom-entries (already real in features/class-log)"
+        },
+        "asidePrep": {
+          "header": "'Chuẩn bị cho tiết <subject> sắp tới' + next-period meta",
+          "rows": "3 shortcuts — Kế hoạch giảng dạy (scrollText) / Điểm danh (userCheck) / Sổ đầu bài (fileText); icon box 30×30 radius 8 bg primary-light",
+          "footnote": "'Giáo án & tài liệu … không gắn cứng vào tiết dạy.'",
+          "deviation": "D1(c) — REMOVE that footnote. period-preps DO attach materials to a period."
+        },
+        "deviations": [
+          "D1(a) keep the daily homeroom log as designed.",
+          "D1(b) MISSING in the mockup: per-period 'Ghi sổ đầu bài tiết' (period-logs: lessonTitle ≤200 required, remark ≤2000, grade A–D segmented, absentCount 0..200 'tham khảo — không thay điểm danh'; states chưa ghi / đã ghi, no approval) and 'Chuẩn bị tiết' (period-preps: note, 1 lesson plan from KHGD, materials = link list title+URL max 20, NO file upload). Both BE-shipped 02/09. Only the period's GVBM may write; GVCN read-only.",
+          "D1(d) period row must show teacherName from the timetable slot (already available) + an 'Đang diễn ra' label from the bell schedule."
+        ]
+      },
+      "courseTab": {
+        "composition": "renders CourseTimelinePage (see student-course-timeline) with mode='teacher' | 'readonly', hideHeaderBack",
+        "gvcnSubjectPicker": "<select> of subjects; own subject suffixed ' (môn của bạn)'",
+        "readonlyPill": "padding 5px 12px radius 99, bg #EEF1F6 → bg-muted, eye icon, 'Chỉ đọc — khoá học của GV bộ môn khác'",
+        "editableRule": "editable only when the teacher is the GVBM of that subject for that class"
+      },
+      "homeroomTab": {
+        "grid": "repeat(auto-fit, minmax(300px, 1fr)), gap 16, align start",
+        "cards": [
+          "Điểm danh hôm nay — 3 tiles (Có mặt success-text / Có phép warning-text / Vắng error-text) + outline button 'Mở sổ điểm danh'; header badge 'Đã điểm danh'",
+          "Vi phạm chờ xử lý — count badge (error tone), rows student + reason + date, footer outline 'Mở Vi phạm & Hạnh kiểm'",
+          "Đơn xin nghỉ chờ duyệt — count badge (warning tone), row per request, Duyệt (success solid) / Từ chối (outline) pair"
+        ]
+      },
+      "a11y": [
+        "tab bar must be a real role=tablist / role=tab with aria-selected + arrow-key roving focus (bundle uses plain buttons)",
+        "class card is a whole clickable div in the mockup → implement as a card containing a real link/button ('Mở lớp'), not an onClick div",
+        "role badges (GVCN/GVBM) must not be color-only — the text label carries the meaning",
+        "score coloring is paired with the numeric value; the '—' null cell needs an sr-only 'chưa có điểm'"
+      ],
+      "responsive": [
+        "≤768: class grid collapses to 1 column; sessions grid stacks (aside below); students table scrolls horizontally (overflowX auto)",
+        "≤375: KPI tiles wrap to 2 per row; tab bar scrolls horizontally"
+      ]
+    },
+
+    // ── Student course timeline (course_items) — US-E24.2 / E24.3 / E24.4 ─────
+    "student-course-timeline": {
+      "route": "/student/courses  ·  /student/courses/[courseId]  ·  /student/courses?view=assignment|exam",
+      "roles": ["student"],
+      "source": "design_src/edu/course-items.jsx — StudentCoursesV2, CourseTimelinePage, CrossSubjectList (+ TeacherCoursesScreen for the teacher mode)",
+      "status": "planned — not implemented",
+      "model": {
+        "itemTypes": {
+          "lesson": {
+            "icon": "play",
+            "label": "Bài giảng",
+            "color": "primary"
+          },
+          "assignment": {
+            "icon": "clipboard",
+            "label": "Bài tập",
+            "color": "var(--edu-warning-text)"
+          },
+          "exam": {
+            "icon": "fileText",
+            "label": "Kiểm tra",
+            "color": "var(--edu-error-text)"
+          },
+          "document": {
+            "icon": "link",
+            "label": "Tài liệu",
+            "color": "var(--edu-teal)"
+          }
+        },
+        "statuses": {
+          "upcoming": {
+            "label": "Sắp mở",
+            "color": "info",
+            "bg": "info-light"
+          },
+          "open": {
+            "label": "Đang mở",
+            "color": "#0E9A82 → var(--edu-success-text)",
+            "bg": "success-light"
+          },
+          "closed": {
+            "label": "Đã đóng — chỉ xem",
+            "color": "var(--muted-foreground)",
+            "bg": "#EEF1F6 → var(--muted)"
+          }
+        },
+        "statusSource": "BE `state: UPCOMING_HIDDEN|OPEN|CLOSED`. The mockup's ciStatus() recomputes from CI_NOW — DEMO ONLY, never reimplement clock-derived status (EPIC §2).",
+        "windowLabel": "start+due → 'dd/MM HH:mm → dd/MM HH:mm'; start only → 'Mở từ …'; due only → 'Hạn …'; neither → 'Luôn mở'",
+        "weekGrouping": "client-side from startAt (ISO week); startAt=null → 'Luôn mở' group. Label 'Tuần dd/MM – dd/MM'; only prefix 'Tuần 30 · ' when an academic week number exists (D7)."
+      },
+      // 1) /student/courses — course cards
+      "courseCards": {
+        "component": "StudentCoursesV2",
+        "grid": "repeat(auto-fill, minmax(300px, 1fr)), gap 18",
+        "card": "same shell as class-hub card — radius 12, border, shadow-card, hover lift, top stripe height 6 = subject color",
+        "header": "subject name 16px/800 + teacher 11.5px muted; icon box 38×38 radius 10 bg color+'18'",
+        "dueNextBlock": {
+          "content": "label 'Sắp đến hạn' 10px/800 uppercase + item title (ellipsis) + '<typeLabel> · hạn dd/MM HH:mm'",
+          "urgent": "due within 48h → bg warning-light + border warning/55 + warning-text label + clock icon",
+          "empty": "'Không có mục nào sắp đến hạn.' on bg-muted"
+        },
+        "openCount": "dot + '<n> mục đang mở' in success-text tone (#0E9A82)",
+        "removed": "NO progress % and NO average score on the card (explicitly dropped in 0209)"
+      },
+      // 2) /student/courses/[courseId] — single vertical timeline
+      "timeline": {
+        "component": "CourseTimelinePage",
+        "courseHeader": "card padding 16px 20px — icon 44×44 radius 11 bg color+'18', name 16px/800, meta = teacher · '<n> mục đang mở', right-side legend of the 3 status dots",
+        "weekHeader": "11px/800 uppercase tracking .07em label + 1px hairline rule filling the row",
+        "rail": "34px gutter; 2px var(--border) line; node dot 10px with 2px card ring + 1.5px halo — open → success-text, upcoming → info, closed → #C3CBD9 → bg-border",
+        "row": {
+          "card": "radius 10, padding 11px 14px, border var(--border); expanded → bg-muted + border course.color/50",
+          "content": "type chip 32×32 radius 9 bg color+'16' · title 13px/700 · '<typeLabel> · <window>' 11px muted · CiStatusPill right",
+          "upcomingStudent": "opacity .72 + lock icon (EXAM only — see D7)"
+        },
+        "expandedDetail": {
+          "lesson": "primary button 'Xem bài giảng' (play)",
+          "document": "explainer + outline link chip (teal-light bg, #00806F → text-edu-teal-text) showing the URL",
+          "exam": "'Vào làm bài' solid error-text button → exam screen; closed → outline 'Xem lại đề & bài làm'",
+          "assignment": "submitted → success-light row 'Đã nộp bài. · Điểm: x/10 (chỉ nộp 1 lần)'; open → dashed drop zone 'Nộp bài làm của bạn'; closed+unsubmitted → error-text 'Bạn chưa nộp bài này trước hạn.'",
+          "closedNote": "lock icon + 'Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.' on #EEF1F6 → bg-muted",
+          "upcomingNote": "info-light 'Nội dung sẽ mở lúc <dd/MM HH:mm>.'"
+        },
+        "emptyState": "bookOpen 32 + 'Giáo viên chưa thêm nội dung cho khoá học này.' (padding 48px 20px, centered)",
+        "teacherMode": {
+          "dragHandle": "gripVertical icon, HTML5 draggable row, reorder within a week → PUT items/order with the FULL id list",
+          "inlineDateEdit": "'Sửa ngày' → primary-light strip with 2 datetime-local inputs ('Mở lúc' / 'Hạn chót') + 'Để trống = không giới hạn' + Huỷ/Lưu",
+          "addItem": "pill button 'Thêm mục' per week → dropdown lesson/assignment/exam/document (minWidth 170, radius 10, shadow 0 10px 30px)",
+          "examRule": "EXAM start/due NOT editable here (core projection) — disable + surface 409 LMS_EXAM_WINDOW_NOT_EDITABLE; 'Kiểm tra' in the add menu must link to Kho đề instead of creating inline",
+          "readonlyMode": "mode='readonly' — rows are not clickable, no drag, no add (GVCN viewing another subject)"
+        }
+      },
+      // 3) /student/courses?view=assignment|exam — cross-subject filter
+      "crossSubjectList": {
+        "component": "CrossSubjectList",
+        "infoBanner": "info-light row explaining the list filters every assignment/exam across all course timelines, soonest deadline first",
+        "subTabs": "underline tabs Đang mở / Sắp mở / Đã đóng, each with a count pill (active → primary-light bg + primary text)",
+        "sort": "open + closed by due; upcoming by start; closed reversed (most recent first)",
+        "row": "card padding 13px 16px — type chip, title 13.5px/700, subject Badge (course color), window text; urgent (≤48h) → border error/45 + error-text 'còn Nh giờ'; right = CiStatusPill + action",
+        "action": "exam & open & unsubmitted → solid 'Vào làm bài'; otherwise outline 'Xem trong khoá học' → the course timeline",
+        "empty": "type icon 30 + 'Không có mục nào trong nhóm này.'",
+        "routing": "Q-C — /student/assignments and /student/exams permanently redirect here; /student/exams/[examId] stays."
+      },
+      "deviations": [
+        "D7 — for STUDENTS the BE does not return unopened items except EXAM. Only exam rows may render the 'Sắp mở' 🔒 state; every other type is Đang mở / Đã đóng only. Teacher mode still shows all 3.",
+        "D3 — the assignment drop zone ('Chọn tệp & nộp') is ahead of BE: submissions accept TEXT (≤20.000 chars) and/or a LINK, no file upload yet. Build variant (a) text + link; keep the drop zone as a marked future variant.",
+        "Week label — 'Tuần 30 · 20/04 – 26/04' in the mockup; academic week number is not in core yet (ask #5) → fall back to 'Tuần dd/MM – dd/MM'."
+      ],
+      "a11y": [
+        "status pill = colored dot + text label (never color alone) — keep the text",
+        "sub-tabs and the week 'Thêm mục' menu need role=tablist / role=menu semantics + Escape to close",
+        "the timeline rail is decorative → aria-hidden; item order must be conveyed by DOM order, not the rail",
+        "drag-to-reorder needs a keyboard alternative (move up/down) for teacher mode"
+      ],
+      "responsive": [
+        "≤768: cards 1 column; timeline rail gutter shrinks to 24px; row meta wraps",
+        "≤375: type chip + title stack; status pill drops to its own line (already flexWrap)"
+      ]
+    },
+
+    // ── Student course player — US-E24.5 ──────────────────────────────────────
+    "student-course-player": {
+      "route": "/student/courses/[courseId]/items/[itemId]",
+      "roles": ["student"],
+      "source": "design_src/edu/course-player.jsx — CourseItemPlayer (CpVideo, CpDocument, CpAssignment, CpExam, CpLocked)",
+      "status": "planned — not implemented",
+      "layout": {
+        "breadcrumb": "chevronLeft <course name> → <item title>",
+        "grid": "minmax(0, 1.65fr) / minmax(280px, 1fr), gap 18, align start (Udemy-style: content left, course content right)"
+      },
+      "contentPane": {
+        "card": "radius 12, border, shadow-card, overflow hidden",
+        "header": "type chip + title 16px/800 + '<typeLabel> · <window>' 11.5px muted + CiStatusPill",
+        "closedBanner": "lock + 'Đã đóng — chỉ xem để ôn tập.' on #EEF1F6 → bg-muted (lesson/document only; assignment & exam carry their own)",
+        "bodyByType": {
+          "lesson": "CpVideo — 16:9 letterbox on #0f1117 → var(--edu-media-surface), centre play 64px glass circle, bottom scrubber + elapsed/total + settings/maximize icons",
+          "document": "link header row (46×46 teal-light box, '#00806F' → text-edu-teal-text) + solid teal 'Mở liên kết' + bordered preview panel 'Xem trước nội dung'",
+          "assignment": "brief text + attached worksheet row (paperclip, size, 'Tải về') + submit area",
+          "exam": "centred 64px error-light icon box, title, description, solid error-text 'Vào làm bài' (open) / outline 'Xem lại đề & bài làm' (closed) / info pill 'Mở lúc …' (upcoming)",
+          "locked": "CpLocked — centred info-light lock 60px + 'Nội dung sẽ mở lúc … Quay lại sau nhé!'"
+        },
+        "tabs": {
+          "asDesigned": [
+            "about — Tổng quan",
+            "notes — Ghi chú",
+            "qna — Hỏi & Đáp"
+          ],
+          "deviation": "D2 / Q-E — BUILD ONLY 'Tổng quan'. Notes and Q&A have no BE and are not planned; drop the tab bar entirely if only one tab remains."
+        }
+      },
+      "sidebar": {
+        "header": "'Nội dung khoá học' 13px/800 + '<idx+1>/<total>' counter",
+        "scroll": "maxHeight 520, overflowY auto",
+        "weekGroup": "collapsible button row on bg-muted — chevron + week label + item count",
+        "itemRow": {
+          "shape": "padding 10px 14px 10px 12px, icon box 26×26 radius 7 bg typeColor+'14'",
+          "active": "bg course.color+'14', borderLeft 3px course.color, title 700 in course color, trailing play icon",
+          "meta": "typeLabel + '✓ Đã nộp' (success-text) | 'Đã đóng' | 'Mở dd/MM' (info)",
+          "upcoming": "opacity .65 + lock icon replaces the type icon"
+        },
+        "footerNav": "Prev (outline, disabled at start) / 'Mục tiếp theo' (solid course color, flex 1.4)"
+      },
+      "deviations": [
+        "D2 — remove Ghi chú + Hỏi & Đáp tabs (no BE, Q-E).",
+        "D3 — submit area: text (≤20.000 chars) and/or link, single submission with a confirm; the drag-drop file zone is a future variant. Show 'Đã nộp lúc …' after submit; grade/feedback only when present.",
+        "D4 — LESSON content from BE is TEXT (no video). Default to rich-text content; render the 16:9 frame ONLY when the content carries an embeddable link (YouTube/Drive). An empty player must never be the default state."
+      ],
+      "a11y": [
+        "sidebar item list = navigation of the same course; each row is a link/button with an accessible name including the type ('Bài giảng: …')",
+        "Prev/Next buttons use disabled + aria-disabled, never opacity alone",
+        "video chrome is only a mock — real embeds need a title on the iframe and keyboard-reachable controls",
+        "week collapse buttons need aria-expanded + aria-controls"
+      ],
+      "responsive": [
+        "≤1024: grid stacks — content first, 'Nội dung khoá học' below (keep the counter and Prev/Next)",
+        "≤375: header meta wraps under the title; sidebar maxHeight relaxes to auto"
+      ]
+    },
+
+    // ── Student attendance — US-E24.6 ─────────────────────────────────────────
+    // attendance-portal.jsx exports TWO screens sharing one APSummary block.
+    // They are SPLIT into two entries here because the parent screen adds a child
+    // selector + the excuse-request dialog and lives on a different route/role.
+    "student-attendance": {
+      "route": "/student/attendance",
+      "roles": ["student"],
+      "source": "design_src/edu/attendance-portal.jsx — StudentAttendanceScreen (+ shared APSummary)",
+      "status": "planned — not implemented",
+      "layout": {
+        "container": "padding 28px 32px, maxWidth 1200, centered",
+        "pageTitle": "'Chuyên cần của tôi' 22px/800 + subtitle 'Tổng hợp từ điểm danh theo tiết của giáo viên' 13px muted, marginBottom 24"
+      },
+      "summary": {
+        "component": "APSummary — SHARED with parent-attendance; implement once (components/shared or features/attendance presentation, promote on the 2nd caller)",
+        "statCards": {
+          "grid": "repeat(4, 1fr), gap 16",
+          "component": "StatCard (existing shared)",
+          "cards": [
+            "Tỉ lệ chuyên cần — percent icon; iconColor = rate >= 95 ? success : rate >= 90 ? warning : error; value '<rate>%'",
+            "Tiết có mặt — userCheck, success — '<present>/<total>'",
+            "Vắng có phép — fileText, warning — <excused>",
+            "Vắng không phép — alertTriangle, error — <absent>"
+          ]
+        },
+        "grid": "1fr / 1.4fr, gap 20, align start",
+        "byMonth": {
+          "card": "radius 12, border, shadow-card, padding 20",
+          "title": "'Theo tháng' 14px/700 + 'Học kỳ II · 2025–2026' 12px muted",
+          "row": "month label 12.5px/600 + right-aligned '<n>P' (warning) '<n>KP' (error) '<rate>%' + ProgressBar height 6 (success ≥95 / warning ≥90 / error below)",
+          "regulationNote": "info strip on primary/12 with a 1px primary/20 border — 'Theo quy chế, nghỉ quá 45 buổi/năm học (kể cả có phép) sẽ không được lên lớp.'"
+        },
+        "absenceHistory": {
+          "card": "header 'Lịch sử vắng mặt' + Badge '<n> lần'",
+          "row": "34×34 radius 9 status-tinted icon box (absent → alertTriangle, pending → clock, excused → fileText) + date 13px/700 + period ('Cả ngày' | 'Tiết x–y') + subject + reason line; trailing status Badge",
+          "statusTones": {
+            "excused": "Vắng có phép — warning (var(--edu-warning)); text tone must be var(--edu-warning-text)",
+            "absent": "Vắng không phép — error (var(--edu-error)); text tone var(--edu-error-text)",
+            "pending": "Chờ duyệt — primary"
+          },
+          "noReason": "absent with no reason → error-text line 'Chưa có lý do — GVCN đã thông báo phụ huynh'",
+          "empty": "EduEmpty userCheck 'Không có buổi vắng nào'"
+        }
+      },
+      "api": "GET members/{me}/attendance (core) — monthly rollup computed client-side from per-period records",
+      "a11y": [
+        "status is icon + text Badge, never the tint alone",
+        "ProgressBar rows need an accessible value (aria-valuenow / sr-only '<rate>%')",
+        "the 4 StatCards must keep their label as visible text (they already do)"
+      ],
+      "responsive": [
+        "≤1024: stat grid 2×2; byMonth / history stack to 1 column",
+        "≤375: history row meta wraps; badges drop below the date"
+      ]
+    },
+
+    // ── Parent attendance (child view + excuse request) — US-E24.6 ────────────
+    "parent-attendance": {
+      "route": "/parent/attendance",
+      "roles": ["parent"],
+      "source": "design_src/edu/attendance-portal.jsx — ParentAttendanceScreen + APExcuseRequestDialog (shares APSummary with student-attendance)",
+      "status": "partially implemented — /parent/attendance exists; E24.6 adds the excuse-request dialog",
+      "header": {
+        "title": "'Chuyên cần của con' 22px/800 + 'Theo dõi vắng mặt và gửi đơn xin phép nghỉ học'",
+        "primaryAction": "solid primary button 'Xin phép nghỉ học' (plus icon, radius 9, padding 9px 16px)"
+      },
+      "childSelector": {
+        "shape": "row of buttons, gap 12, padding 12px 20px, radius 10",
+        "selected": "2px border child color + bg color+'10'",
+        "content": "Avatar 34 (initials) + name 13px/700 + 'Lớp <class>' 11px muted",
+        "childColors": "index 0 → role primary, index 1 → success (repeat the palette; never invent a raw color)"
+      },
+      "summary": "identical APSummary block as student-attendance, fed with the selected child's months + absences; pending requests are prepended as status='pending' rows",
+      "excuseDialog": {
+        "component": "APExcuseRequestDialog — role=dialog aria-modal, overlay rgba(17,24,39,.45), panel width 460 radius 16",
+        "header": "'Xin phép nghỉ học' 15px/800 + '<child> · Lớp <class>'; icon-only close button needs aria-label 'Đóng'",
+        "fields": [
+          "Ngày nghỉ — <input type=date>",
+          "Phạm vi — segmented Cả ngày / Theo tiết",
+          "Tiết nghỉ — free text, shown only when scope='periods'",
+          "Lý do — textarea rows 3, required (submit disabled while empty)"
+        ],
+        "notice": "warning-light strip 'Đơn sẽ gửi tới GVCN để phê duyệt. Buổi nghỉ được tính \"có phép\" sau khi duyệt.' — text tone var(--edu-warning-text), never white-on-yellow",
+        "footer": "Huỷ (outline) + 'Gửi đơn' (solid primary, send icon, 'Đang gửi...' while pending)",
+        "deviation": "D6 — BE POST conduct/student-leave-requests only takes startDate/endDate: DROP 'Theo tiết' (and the Tiết nghỉ field), ADD a start/end date pair, ADD attachments max 3 files jpg/png/pdf ≤5 MB each (draft US-249)."
+      },
+      "a11y": [
+        "child selector = a real radio group / tablist with the selected state exposed (not just border color)",
+        "dialog needs focus trap + Escape + focus return to 'Xin phép nghỉ học'",
+        "every field has a linked <label>; the disabled submit must explain why (aria-describedby on the reason field)",
+        "labels use uppercase 11.5px muted styling — keep them as real <label> elements, not styled spans"
+      ],
+      "responsive": [
+        "≤768: child selector wraps; dialog width 100% - 40px padding",
+        "≤375: date/scope 2-col grid collapses to 1 column"
+      ]
     }
   },
 
