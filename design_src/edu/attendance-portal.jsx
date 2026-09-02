@@ -214,16 +214,22 @@ const ParentAttendanceScreen = ({ lang, primaryColor }) => {
 // ── Excuse request dialog ────────────────────────────────────────────────────
 const APExcuseRequestDialog = ({ lang, pColor, child, onClose, onSubmit }) => {
   const t = (vi, en) => lang === 'en' ? en : vi;
-  const [date, setDate] = React.useState('2026-05-04');
-  const [scope, setScope] = React.useState('day'); // 'day' | 'periods'
-  const [periods, setPeriods] = React.useState('Tiết 1–2');
+  const [dateFrom, setDateFrom] = React.useState('2026-05-04');
+  const [dateTo, setDateTo] = React.useState('2026-05-04');
+  const [files, setFiles] = React.useState([]);
   const [reason, setReason] = React.useState('');
   const [sending, setSending] = React.useState(false);
+  const fileRef = React.useRef(null);
+
+  const addFiles = (list) => {
+    const ok = Array.from(list).filter(f => /\.(jpe?g|png|pdf)$/i.test(f.name) && f.size <= 5 * 1024 * 1024);
+    setFiles(fs => [...fs, ...ok.map(f => ({ name: f.name, size: (f.size / 1024 / 1024).toFixed(1) + ' MB' }))].slice(0, 3));
+  };
 
   const submit = () => {
     if (!reason.trim()) return;
     setSending(true);
-    setTimeout(() => onSubmit({ date, scope, periods, reason: reason.trim() }), 700);
+    setTimeout(() => onSubmit({ dateFrom, dateTo, files, reason: reason.trim() }), 700);
   };
 
   const inputStyle = { width: '100%', padding: '9px 12px', border: `1.5px solid ${T.border}`, borderRadius: 8, fontSize: 13, fontFamily: 'inherit', color: T.textPrimary, outline: 'none', background: T.bg };
@@ -246,36 +252,42 @@ const APExcuseRequestDialog = ({ lang, pColor, child, onClose, onSubmit }) => {
         <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>
-              <label style={labelStyle}>{t('Ngày nghỉ', 'Absence date')}</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle}
+              <label style={labelStyle}>{t('Nghỉ từ ngày', 'From date')}</label>
+              <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); if (e.target.value > dateTo) setDateTo(e.target.value); }} style={inputStyle}
                 onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
             </div>
             <div>
-              <label style={labelStyle}>{t('Phạm vi', 'Scope')}</label>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {[{ id: 'day', vi: 'Cả ngày', en: 'Full day' }, { id: 'periods', vi: 'Theo tiết', en: 'Periods' }].map(o => (
-                  <button key={o.id} onClick={() => setScope(o.id)} style={{
-                    flex: 1, padding: '9px 0', border: `1.5px solid ${scope === o.id ? pColor : T.border}`, borderRadius: 8,
-                    background: scope === o.id ? pColor + '12' : 'transparent', color: scope === o.id ? pColor : T.textSecondary,
-                    fontSize: 12.5, fontWeight: scope === o.id ? 700 : 500, cursor: 'pointer',
-                  }}>{t(o.vi, o.en)}</button>
-                ))}
-              </div>
+              <label style={labelStyle}>{t('Đến hết ngày', 'To date')}</label>
+              <input type="date" value={dateTo} min={dateFrom} onChange={e => setDateTo(e.target.value)} style={inputStyle}
+                onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
             </div>
           </div>
-          {scope === 'periods' && (
-            <div>
-              <label style={labelStyle}>{t('Tiết nghỉ', 'Periods')}</label>
-              <input value={periods} onChange={e => setPeriods(e.target.value)} placeholder={t('VD: Tiết 1–2', 'e.g. Periods 1–2')} style={inputStyle}
-                onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
-            </div>
-          )}
           <div>
             <label style={labelStyle}>{t('Lý do', 'Reason')}</label>
             <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
               placeholder={t('VD: Cháu bị sốt, gia đình xin phép cho cháu nghỉ...', 'e.g. My child has a fever...')}
               style={{ ...inputStyle, resize: 'vertical' }}
               onFocus={e => e.target.style.borderColor = pColor} onBlur={e => e.target.style.borderColor = T.border} />
+          </div>
+          <div>
+            <label style={labelStyle}>{t('Minh chứng đính kèm', 'Attachments')}</label>
+            {files.map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 11px', border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 6, background: T.bg }}>
+                <Icon name="paperclip" size={12} color={T.textMuted} strokeWidth={2.1} />
+                <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: T.textPrimary, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                <span style={{ fontSize: 11, color: T.textMuted }}>{f.size}</span>
+                <button onClick={() => setFiles(fs => fs.filter((_, j) => j !== i))} aria-label={t('Xoá tệp', 'Remove file')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}><Icon name="x" size={11} color={T.textMuted} strokeWidth={2.4} /></button>
+              </div>
+            ))}
+            {files.length < 3 && (
+              <button onClick={() => fileRef.current && fileRef.current.click()}
+                style={{ width: '100%', padding: '11px 12px', border: `1.5px dashed ${T.border}`, borderRadius: 9, background: 'transparent', color: T.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                <Icon name="upload" size={13} color={T.textMuted} strokeWidth={2} />
+                {t('Thêm tệp (đơn viết tay, giấy khám…)', 'Add file (note, medical slip…)')}
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" multiple style={{ display: 'none' }} onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
+            <div style={{ fontSize: 10.5, color: T.textMuted, marginTop: 5 }}>{t('Tối đa 3 tệp · JPG/PNG/PDF · ≤ 5 MB mỗi tệp', 'Max 3 files · JPG/PNG/PDF · ≤ 5 MB each')}</div>
           </div>
           <div style={{ padding: '10px 12px', background: T.warningLight, border: `1px solid ${T.warning}30`, borderRadius: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <Icon name="info" size={13} color={T.warning} style={{ flexShrink: 0 }} />

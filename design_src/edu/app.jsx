@@ -120,6 +120,7 @@ const App = () => {
   }, []);
 
   const { lang, primaryColor, darkMode } = tweaks;
+  if (window.applyTheme) window.applyTheme(!!darkMode);
   const t = (vi, en) => lang === 'en' ? en : vi;
 
   const handleLogin = (r) => {
@@ -218,7 +219,7 @@ const App = () => {
 
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: T.bg, overflow: 'hidden', filter: darkMode ? 'invert(1) hue-rotate(180deg)' : 'none' }}>
+    <div style={{ display: 'flex', height: '100vh', background: T.bg, overflow: 'hidden' }}>
       <Sidebar
         role={role}
         activeSection={section}

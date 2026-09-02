@@ -280,3 +280,13 @@ Evidence:
 ## Status
 
 - [x] delivered (2026-07-25)
+- **Note (2026-09-02, US-E24.0b):** the reference mockup `design_src/edu/parent-links.jsx`
+  is now **superseded by designer bundle 0209 v3** (R1) — the bundle independently
+  restored `PLAuditTrailSection` in the SAME placement this DR specified (inside
+  `PLDetailDialog`, below the consent section), and additionally models
+  `consent_agreed`/`consent_declined` actions alongside `created`/`unlinked`. This is a
+  mockup-only sync (`design_src/`); the shipped FE code at
+  `src/features/admin/parent-links/**` is unchanged by this note — the design decisions,
+  entity shape, i18n keys, and a11y evidence recorded above in this DR remain the
+  reference for the actual implementation, extended with the two new consent actions
+  if/when the FE team revisits this feature.
