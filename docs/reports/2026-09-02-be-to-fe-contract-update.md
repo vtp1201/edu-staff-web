@@ -3,7 +3,7 @@
 > Không trả lời một file ask cụ thể. Đây là thông báo chủ động từ BE sau đợt
 > làm việc với team mobile (`edu-staff-mobile/docs/product/ask_be_team.md` →
 > `reply_from_be_team.md`), vì phần lớn thay đổi ảnh hưởng cả web.
-> Đối chiếu trên `edu-api` main `0c21be25`.
+> Đối chiếu trên `edu-api` main `af648068`.
 > Toàn bộ endpoint dưới đây đã có trong `services/<svc>/docs/openapi.yaml` +
 > `INTEGRATION.md`, trừ mục §4 (draft).
 >
