@@ -1247,7 +1247,6 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
   const [groupConvos, setGroupConvos] = React.useState(baseGroupConvos);
   const [pinnedByGroup, setPinnedByGroup] = React.useState(GROUP_PINNED_BY_GROUP);
 
-  const [tab, setTab] = React.useState('direct');
   const [activeId, setActiveId] = React.useState(directConvos[0]?.contactId || null);
   const [isGroup, setIsGroup] = React.useState(false);
   const [input, setInput] = React.useState('');
@@ -1425,7 +1424,6 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
     GROUP_MEMBERS_BY_GROUP[newId] = [selfMember, ...otherMembers];
 
     setShowCreateGroup(false);
-    setTab('groups');
     setActiveId(newId);
     setIsGroup(true);
   };
@@ -1560,10 +1558,16 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
                 <span style={{ background: pColor, color: '#fff', borderRadius: 99, fontSize: 11, fontWeight: 800, padding: '1px 7px' }}>{totalUnread}</span>
               )}
             </div>
-            <button onClick={() => setShowNewMsg(true)} title={t('Tin nhắn mới', 'New Message')}
-              style={{ width: 32, height: 32, borderRadius: 9, background: pColor + '15', border: `1px solid ${pColor}30`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="plus" size={15} color={pColor} strokeWidth={2.5} />
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => setShowCreateGroup(true)} title={t('Tạo nhóm mới', 'Create new group')}
+                style={{ width: 32, height: 32, borderRadius: 9, background: T.bg, border: `1px solid ${T.border}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="users" size={14} color={T.textSecondary} strokeWidth={2.2} />
+              </button>
+              <button onClick={() => setShowNewMsg(true)} title={t('Tin nhắn mới', 'New Message')}
+                style={{ width: 32, height: 32, borderRadius: 9, background: pColor + '15', border: `1px solid ${pColor}30`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="plus" size={15} color={pColor} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
           {/* Search */}
           <div style={{ position: 'relative' }}>
@@ -1578,83 +1582,13 @@ const MessagingScreen = ({ role, lang, primaryColor }) => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
-          {[{ id: 'direct', vi: 'Trực tiếp', en: 'Direct' }, { id: 'groups', vi: 'Nhóm', en: 'Groups' }].map(tb => (
-            <button key={tb.id}
-              onClick={() => {
-                setTab(tb.id);
-                if (tb.id === 'direct' && directConvos[0]) { setActiveId(directConvos[0].contactId); setIsGroup(false); }
-                else if (tb.id === 'groups' && groupConvos[0]) { setActiveId(groupConvos[0].groupId); setIsGroup(true); }
-              }}
-              style={{
-                flex: 1, padding: '10px', border: 'none', background: 'transparent', cursor: 'pointer',
-                fontSize: 13, fontWeight: tab === tb.id ? 700 : 500, color: tab === tb.id ? pColor : T.textMuted,
-                borderBottom: `2px solid ${tab === tb.id ? pColor : 'transparent'}`, marginBottom: -1, transition: 'color 0.15s',
-              }}>
-              {t(tb.vi, tb.en)}
-              {tb.id === 'groups' && groupConvos.length > 0 && (
-                <span style={{
-                  marginLeft: 6, fontSize: 10, fontWeight: 800,
-                  background: tab === 'groups' ? pColor + '22' : T.bg,
-                  color: tab === 'groups' ? pColor : T.textMuted,
-                  padding: '1px 6px', borderRadius: 99,
-                }}>{groupConvos.length}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Groups tab sub-header: "+ Tạo nhóm" CTA */}
-        {tab === 'groups' && (
-          <button onClick={() => setShowCreateGroup(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 16px', borderTop: 'none',
-              borderBottom: `1px solid ${T.border}`,
-              background: pColor + '08', color: pColor, cursor: 'pointer',
-              border: 'none', borderBottom: `1px solid ${T.border}`,
-              fontSize: 13, fontWeight: 800, fontFamily: 'inherit',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = pColor + '12'}
-            onMouseLeave={e => e.currentTarget.style.background = pColor + '08'}>
-            <span style={{
-              width: 22, height: 22, borderRadius: 6,
-              background: pColor, color: '#fff',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Icon name="plus" size={12} color="#fff" strokeWidth={2.6} />
-            </span>
-            {t('Tạo nhóm mới', 'Create new group')}
-          </button>
-        )}
-
-        {/* Conversation list */}
+        {/* Conversation list — trực tiếp + nhóm gộp chung một danh sách */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {tab === 'direct' && (
-            filteredDirect.length > 0
-              ? filteredDirect.map(c => <ConvoItem key={c.contactId} id={c.contactId} lastMsg={c.lastMsg} time={c.time} unread={c.unread} isGroupItem={false} />)
-              : <div style={{ padding: 24, textAlign: 'center', color: T.textMuted, fontSize: 13 }}>{t('Không tìm thấy', 'No results')}</div>
+          {filteredDirect.length === 0 && filteredGroups.length === 0 && (
+            <div style={{ padding: 24, textAlign: 'center', color: T.textMuted, fontSize: 13 }}>{t('Không tìm thấy', 'No results')}</div>
           )}
-          {tab === 'groups' && (
-            filteredGroups.length > 0
-              ? filteredGroups.map(c => <ConvoItem key={c.groupId} id={c.groupId} lastMsg={c.preview} sender={c.sender} time={c.time} unread={c.unread} isGroupItem={true} />)
-              : (
-                <div style={{ padding: '32px 24px', textAlign: 'center' }}>
-                  <Icon name="users" size={36} color={T.border} strokeWidth={1.4} />
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.textSecondary, marginTop: 8 }}>
-                    {t('Bạn chưa tham gia nhóm nào.', "You haven't joined any groups yet.")}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 4, marginBottom: 14 }}>
-                    {t('Tạo nhóm mới để cộng tác với đồng nghiệp.', 'Create a new group to collaborate.')}
-                  </div>
-                  <Button variant="primary" icon="plus" onClick={() => setShowCreateGroup(true)} size="sm">
-                    {t('Tạo nhóm mới', 'Create new group')}
-                  </Button>
-                </div>
-              )
-          )}
+          {filteredDirect.map(c => <ConvoItem key={'d-' + c.contactId} id={c.contactId} lastMsg={c.lastMsg} time={c.time} unread={c.unread} isGroupItem={false} />)}
+          {filteredGroups.map(c => <ConvoItem key={'g-' + c.groupId} id={c.groupId} lastMsg={c.preview} sender={c.sender} time={c.time} unread={c.unread} isGroupItem={true} />)}
         </div>
       </div>
 

@@ -207,7 +207,10 @@ const TeacherDashboardHome = ({ lang, t, pColor, onNavigate }) => (
             const STATUS = { done: { color: T.textMuted, bg: T.bg, label: t('Hoàn thành', 'Done') }, live: { color: T.success, bg: T.successLight, label: t('Đang dạy', 'Live') }, upcoming: { color: T.warning, bg: T.warningLight, label: t('Sắp tới', 'Upcoming') } };
             const st = STATUS[s.status];
             return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', background: s.status === 'live' ? T.successLight : 'transparent' }}>
+              <div key={i} onClick={() => onNavigate && onNavigate('classes', { classId: s.class, tab: 'sessions' })}
+                style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 24px', background: s.status === 'live' ? T.successLight : 'transparent', cursor: 'pointer' }}
+                onMouseEnter={e => { if (s.status !== 'live') e.currentTarget.style.background = T.bg; }}
+                onMouseLeave={e => { if (s.status !== 'live') e.currentTarget.style.background = 'transparent'; }}>
                 <div style={{ width: 80, display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 800, color: T.textPrimary, lineHeight: 1.15 }}>
                     {t(`Tiết ${s.period}`, `Period ${s.period}`)}
@@ -241,8 +244,8 @@ const TeacherDashboardHome = ({ lang, t, pColor, onNavigate }) => (
                 <div style={{ fontSize: 12.5, fontWeight: 600, color: T.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.student}</div>
                 <div style={{ fontSize: 11, color: T.textMuted }}>{t(g.type, g.typeEn)} · {g.class}</div>
               </div>
-              <a href="/teacher/grades/enter"
-                onClick={(e) => { if (onNavigate) { e.preventDefault(); onNavigate('grades'); } }}
+              <a href="/teacher/classes"
+                onClick={(e) => { if (onNavigate) { e.preventDefault(); onNavigate('classes', { classId: g.class, tab: 'students' }); } }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   background: pColor, color: '#fff', border: 'none', borderRadius: 6,
@@ -822,7 +825,7 @@ const TeacherStudents = ({ lang, t, pColor }) => (
   </div>
 );
 
-const TeacherScheduleFull = ({ lang, t, pColor }) => {
+const TeacherScheduleFull = ({ lang, t, pColor, onNavigate }) => {
   const days = [t('Thứ 2', 'Mon'), t('Thứ 3', 'Tue'), t('Thứ 4', 'Wed'), t('Thứ 5', 'Thu'), t('Thứ 6', 'Fri'), t('Thứ 7', 'Sat')];
   const slots = ['07:00', '08:30', '10:00', '13:00', '14:30'];
   // Each slot: { cls, room, subject?, conflict? }
@@ -860,12 +863,16 @@ const TeacherScheduleFull = ({ lang, t, pColor }) => {
                   <td key={ci} style={{ padding: 4 }}>
                     {cell ? (
                       <div
+                        onClick={() => onNavigate && onNavigate('classes', { classId: cell.cls, tab: 'sessions' })}
+                        onMouseEnter={e => { if (!cell.conflict) e.currentTarget.style.background = pColor + '28'; }}
+                        onMouseLeave={e => { if (!cell.conflict) e.currentTarget.style.background = pColor + '15'; }}
                         title={cell.conflict
                           ? t('Xung đột lịch dạy — giáo viên đã có lịch tiết này',
                               'Schedule conflict — teacher already has a class this period')
                           : `${cell.cls} · ${cell.subject || ''} · ${cell.room}`}
                         style={{
                           position: 'relative',
+                          cursor: 'pointer',
                           background: cell.conflict ? T.errorLight : pColor + '15',
                           border: `1px solid ${cell.conflict ? T.error + '55' : pColor + '30'}`,
                           borderRadius: 8, padding: '8px 10px',
@@ -1039,7 +1046,7 @@ const TeacherScreen = ({ role, section, onNavigate, lang, primaryColor }) => {
     if (section === 'grades') return <TeacherGrades lang={lang} t={t} pColor={pColor} />;
     if (section === 'classes') return <TeacherClasses lang={lang} t={t} pColor={pColor} />;
     if (section === 'students') return <TeacherStudents lang={lang} t={t} pColor={pColor} />;
-    if (section === 'schedule') return <TeacherScheduleFull lang={lang} t={t} pColor={pColor} />;
+    if (section === 'schedule') return <TeacherScheduleFull lang={lang} t={t} pColor={pColor} onNavigate={onNavigate} />;
     if (typeof EduComingSoon !== 'undefined') return <EduComingSoon title={title} lang={lang} />;
     return (
       <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: 60, textAlign: 'center', color: T.textMuted }}>

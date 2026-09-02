@@ -152,6 +152,7 @@ const AttendanceScreen = ({ lang, primaryColor }) => {
 
   const tabs = [
     { id: 'take', vi: 'Điểm danh', en: 'Take Attendance' },
+    { id: 'summary', vi: 'Tổng hợp chuyên cần', en: 'Summary' },
     { id: 'history', vi: 'Lịch sử', en: 'History' },
   ];
 
@@ -440,6 +441,191 @@ const AttendanceScreen = ({ lang, primaryColor }) => {
             </div>
           </div>
         )}
+
+        {/* Summary tab — tổng hợp chuyên cần theo học sinh */}
+        {activeTab === 'summary' && (
+          <AttendanceSummaryTab lang={lang} pColor={pColor} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Tab 3: Tổng hợp chuyên cần — per-student aggregation over a range ─────────
+const ATT_RANGES = [
+  { id: 'month', vi: 'Tháng 4/2026', en: 'April 2026', totalPeriods: 110 },
+  { id: 'sem',   vi: 'Học kỳ II',   en: 'Semester II', totalPeriods: 430 },
+  { id: 'year',  vi: 'Cả năm',      en: 'Full Year',   totalPeriods: 860 },
+];
+
+// Deterministic mock: derive per-student absence counts from roll number.
+const makeAttSummary = (classId, rangeId) => {
+  const factor = rangeId === 'month' ? 1 : rangeId === 'sem' ? 4 : 8;
+  const range = ATT_RANGES.find(r => r.id === rangeId);
+  return makeStudents(classId).map((s, i) => {
+    const excused = ((i * 7 + 3) % 11 === 0 ? 4 : (i % 5 === 2 ? 1 : 0)) * factor;
+    const absent  = (i % 9 === 3 ? 3 : i % 13 === 7 ? 8 : 0) * factor;
+    const total = range.totalPeriods;
+    const present = total - excused - absent;
+    const rate = Math.round(present / total * 1000) / 10;
+    return { ...s, total, present, excused, absent, rate };
+  });
+};
+
+const AttendanceSummaryTab = ({ lang, pColor }) => {
+  const t = (vi, en) => lang === 'en' ? en : vi;
+  const [cls, setCls] = React.useState('11B2');
+  const [range, setRange] = React.useState('sem');
+  const rows = makeAttSummary(cls, range);
+
+  const classRate = Math.round(rows.reduce((s, r) => s + r.rate, 0) / rows.length * 10) / 10;
+  const totalExcused = rows.reduce((s, r) => s + r.excused, 0);
+  const totalAbsent = rows.reduce((s, r) => s + r.absent, 0);
+  const atRisk = rows.filter(r => r.rate < 90);
+  const warned = rows.filter(r => r.rate >= 90 && r.rate < 95);
+
+  const rowStatus = (r) => r.rate < 90
+    ? { label: t('Nguy cơ', 'At risk'), color: T.error }
+    : r.rate < 95
+      ? { label: t('Cảnh báo', 'Watch'), color: T.warning }
+      : { label: t('Đạt', 'OK'), color: T.success };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Controls */}
+      <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <div>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>{t('Lớp học', 'Class')}</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {ATTENDANCE_CLASSES.map(c => (
+                <button key={c.id} onClick={() => setCls(c.id)}
+                  style={{ padding: '8px 16px', border: `1.5px solid ${cls === c.id ? pColor : T.border}`, borderRadius: 8, background: cls === c.id ? pColor : T.card, color: cls === c.id ? '#fff' : T.textSecondary, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {c.id}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>{t('Phạm vi', 'Range')}</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {ATT_RANGES.map(r => (
+                <button key={r.id} onClick={() => setRange(r.id)}
+                  style={{ padding: '8px 14px', border: `1.5px solid ${range === r.id ? pColor : T.border}`, borderRadius: 8, background: range === r.id ? pColor + '12' : 'transparent', color: range === r.id ? pColor : T.textSecondary, fontSize: 12.5, fontWeight: range === r.id ? 700 : 500, cursor: 'pointer' }}>
+                  {t(r.vi, r.en)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: `1px solid ${T.border}`, borderRadius: 8, background: T.card, color: T.textSecondary, fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+          <Icon name="download" size={13} color={T.textSecondary} />
+          {t('Xuất Excel', 'Export Excel')}
+        </button>
+      </div>
+
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <StatCard icon="percent" iconColor={classRate >= 95 ? T.success : T.warning} label={t('Chuyên cần trung bình lớp', 'Class Avg. Attendance')} value={classRate + '%'} lang={lang} />
+        <StatCard icon="fileText" iconColor={T.warning} label={t('Tổng tiết vắng có phép', 'Total Excused Periods')} value={totalExcused} lang={lang} />
+        <StatCard icon="alertTriangle" iconColor={T.error} label={t('Tổng tiết vắng không phép', 'Total Unexcused Periods')} value={totalAbsent} lang={lang} />
+        <StatCard icon="users" iconColor={atRisk.length ? T.error : T.success} label={t('HS dưới ngưỡng 90%', 'Students Below 90%')} value={atRisk.length} lang={lang} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: 20, alignItems: 'start' }}>
+        {/* Per-student table */}
+        <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>{t('Chuyên cần theo học sinh', 'Per-student Attendance')}</div>
+            <span style={{ fontSize: 12, color: T.textMuted }}>{rows.length} {t('học sinh', 'students')} · {t(ATT_RANGES.find(r => r.id === range).vi, ATT_RANGES.find(r => r.id === range).en)}</span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 660 }}>
+            <thead>
+              <tr style={{ background: T.bg }}>
+                {[t('STT', '#'), t('Học sinh', 'Student'), t('Có mặt', 'Present'), t('Vắng phép', 'Excused'), t('Vắng KP', 'Absent'), t('Tỉ lệ', 'Rate'), ''].map((h, hi) => (
+                  <th key={hi} style={{ padding: '9px 16px', textAlign: hi >= 2 && hi <= 4 ? 'center' : 'left', fontSize: 11.5, fontWeight: 700, color: T.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const st = rowStatus(r);
+                return (
+                  <tr key={r.id} style={{ borderTop: `1px solid ${T.border}` }}
+                    onMouseEnter={e => e.currentTarget.style.background = T.bg}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <td style={{ padding: '9px 16px', fontSize: 12, color: T.textMuted, fontWeight: 600 }}>{r.rollNo}</td>
+                    <td style={{ padding: '9px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar initials={r.initials} color={pColor} size={26} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{r.name}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '9px 16px', textAlign: 'center', fontSize: 12.5, color: T.textSecondary }}>{r.present}/{r.total}</td>
+                    <td style={{ padding: '9px 16px', textAlign: 'center', fontSize: 12.5, fontWeight: r.excused ? 700 : 400, color: r.excused ? T.warning : T.textMuted }}>{r.excused || '—'}</td>
+                    <td style={{ padding: '9px 16px', textAlign: 'center', fontSize: 12.5, fontWeight: r.absent ? 700 : 400, color: r.absent ? T.error : T.textMuted }}>{r.absent || '—'}</td>
+                    <td style={{ padding: '9px 16px', minWidth: 140 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1 }}><ProgressBar value={r.rate} color={st.color} height={5} /></div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: st.color, width: 44, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.rate}%</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '9px 16px' }}><Badge color={st.color}>{st.label}</Badge></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+        </div>
+
+        {/* Alerts panel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary, marginBottom: 12 }}>{t('Cảnh báo chuyên cần', 'Attendance Alerts')}</div>
+            {atRisk.length === 0 && warned.length === 0 && (
+              <div style={{ fontSize: 12.5, color: T.textMuted }}>{t('Không có học sinh nào dưới ngưỡng.', 'No students below threshold.')}</div>
+            )}
+            {atRisk.map(r => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${T.border}` }}>
+                <Avatar initials={r.initials} color={T.error} size={28} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: T.textPrimary }}>{r.name}</div>
+                  <div style={{ fontSize: 11, color: T.error, fontWeight: 600 }}>{r.rate}% · {r.absent} {t('tiết vắng KP', 'unexcused')}</div>
+                </div>
+                <button style={{ padding: '5px 10px', border: `1px solid ${T.error}30`, borderRadius: 7, background: T.errorLight, color: T.error, fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="mail" size={11} color={T.error} />
+                  {t('Báo PH', 'Notify')}
+                </button>
+              </div>
+            ))}
+            {warned.map(r => (
+              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${T.border}` }}>
+                <Avatar initials={r.initials} color={T.warning} size={28} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: T.textPrimary }}>{r.name}</div>
+                  <div style={{ fontSize: 11, color: T.warningText || T.warning, fontWeight: 600 }}>{r.rate}% · {t('theo dõi', 'watch')}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: pColor + '0C', border: `1px solid ${pColor}20`, borderRadius: 10, padding: '12px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: pColor, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{t('Ngưỡng đánh giá', 'Thresholds')}</div>
+            {[
+              { label: t('Đạt', 'OK'), desc: '≥ 95%', color: T.success },
+              { label: t('Cảnh báo', 'Watch'), desc: '90–95%', color: T.warning },
+              { label: t('Nguy cơ', 'At risk'), desc: '< 90%', color: T.error },
+            ].map((x, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: i < 2 ? 5 : 0 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.textSecondary }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: x.color }} />{x.label}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: x.color }}>{x.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
