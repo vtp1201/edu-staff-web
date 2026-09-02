@@ -1200,7 +1200,12 @@
     "card": {
       "statusPublished": "Đã xuất bản",
       "statusDraft": "Bản nháp",
-      "ctaOpen": "Vào khoá học"
+      "ctaOpen": "Vào khoá học",
+      "dueNext": "Sắp đến hạn",
+      "dueLine": "{type} · hạn {date}",
+      "nothingDue": "Không có mục nào sắp đến hạn.",
+      "openCount": "{count} mục đang mở",
+      "summaryError": "Không tải được danh sách mục của khoá học này."
     },
     "empty": {
       "allTab": "Lớp của bạn chưa có khoá học nào."

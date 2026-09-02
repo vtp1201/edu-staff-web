@@ -1200,7 +1200,12 @@
     "card": {
       "statusPublished": "Published",
       "statusDraft": "Draft",
-      "ctaOpen": "Open course"
+      "ctaOpen": "Open course",
+      "dueNext": "Due next",
+      "dueLine": "{type} · due {date}",
+      "nothingDue": "Nothing due soon.",
+      "openCount": "{count} open items",
+      "summaryError": "Couldn't load this course's items."
     },
     "empty": {
       "allTab": "Your class has no courses yet."
