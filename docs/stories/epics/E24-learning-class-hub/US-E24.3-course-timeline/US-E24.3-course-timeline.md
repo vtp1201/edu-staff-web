@@ -125,6 +125,62 @@ sync sang `partially implemented … (US-E24.3, 2 deviations)`.
   `features/grades/.../pending-approval-list.tsx`); no-op khi đã expand vì card lúc đó đã
   là `bg-muted`, nên hover chỉ báo "dòng đang đóng này bấm được".
 
+### fe-tech-lead-reviewer verdict
+
+**Approved.** Layers clean (domain pure, formatter injected; presentation imports no
+infrastructure/DI); component-organization.md compliant (`item-type-chip`/`item-state-pill`
+promoted to `features/lms/presentation/shared/`, `StatusBadge` composed via children slot,
+untouched); ISO-week algorithm traced correct (Monday-start, Thursday decides ISO year,
+UTC-only, no DST slip) against 6 boundary cases; RBAC intact (`requireRole(["student"])` in
+page + both Server Actions); i18n vi/en parity verified (4157/4157 keys after fix round);
+`bun vitest run` 529 files/4245 tests, `bunx tsc --noEmit` clean, `bunx vitest run --config
+vitest.storybook.mts` 161 files/1277 tests — all independently re-run by the reviewer, not
+just self-report. All 9 engineer-reported deviations (shared-folder placement, no-teacher-name,
+dropped opacity, muted legend/type-label colour, visible opens-at text, `useState` over
+`useTransition`, hand-written ISO week, parallel reads, TEMP markers) accepted with reasoning.
+Should-fix items (dead i18n keys, design-spec deviation record, 2 CONSIDER items) closed in
+the fix-round commit `94249e56`.
+
+### fe-accessibility-auditor verdict
+
+**Pass, 2 minor findings** (both closed in the fix-round): A11Y-001 (`aria-controls`/`id`
+pairing missing on the toggle-expand disclosure pattern) and A11Y-002 (row button had no
+hover affordance for sighted mouse users, though keyboard/AT access was already correct).
+No blocking/critical/major finding — visible learning-transfer from US-E24.2's A11Y-001/002/004
+(ring-inset not needed here since no `overflow-hidden` clips the row; colour-only status
+avoided throughout; visible text instead of tooltip-only disclosure for the locked-row
+opens-at line).
+
+### Design-review gate
+
+- design-system: conform — zero raw color in `course-timeline/`+`shared/`; every token
+  resolved against `tokens.css`/`globals.css` `@theme`; 2 documented, justified deviations
+  from `design-spec.jsonc` (see above) rather than silent drift; `design-spec.jsonc` entry
+  status synced to reflect partial implementation.
+- a11y: WCAG AA OK post-fix; keyboard OK (real `userEvent.tab()` proof); reduced-motion N/A
+  (no transition/animation classes in this feature).
+- impeccable audit: per-edit design hook ran on every change across all 3 rounds (domain,
+  rebuild, fix) — 0 anti-patterns flagged each time.
+- states: loading/empty/error/3-weeks/all-closed/upcoming-exam covered in Storybook (11
+  stories); mobile reflow proven at both 320px (`Mobile375` — mislabeled, actually the
+  `mobile1` 320px preset, tracked as a QA follow-up) and a genuine 375px (`Viewport375Real`,
+  added by QA).
+
+### fe-qa-playwright verdict
+
+**Go.** 100% AC coverage (11/11), all with real (non-static) test proof. QA added 3
+Storybook interaction stories closing 2 AC gaps that were previously proximate-only:
+`Viewport375Real` (exact 375px via `page.viewport(375,800)` + `scrollWidth` check) and
+`KeyboardOperability`/`LockedRowRejectsActivation` (real `userEvent.tab()` walk in reading
+order, locked row confirmed unreachable/inert). Zero production defects found. One minor
+housekeeping item flagged (non-blocking): the pre-existing `Mobile375` story uses
+Storybook's `mobile1` viewport preset (320px, not 375px) — mislabeled but not a functional
+gap since 320px is a strict subset of 375px; follow-up rename recommended, not required.
+
+Final commands run (fe-lead, post-QA): `bun vitest run` → 529 files/4245 tests green;
+`bunx vitest run --config vitest.storybook.mts src/features/lms/presentation/course-timeline`
+→ 11/11 green.
+
 ## Implementation Plan
 
 ### 0. Reality check (code read before planning)
