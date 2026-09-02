@@ -416,6 +416,38 @@ describe("TeacherClassRepository — roles/subjects + homeroom KPI (US-E24.7)", 
     ).toBe(false);
   });
 
+  /**
+   * The KPI is a glanceable signal, not an audit total: draining every
+   * violations page (a whole school year) for one number is not worth the
+   * round trips. Assert the CALL COUNT — a result-only assertion still passes
+   * with the drain in place.
+   */
+  it("getHomeroomKpi reads ONE violations page and flags the count as capped", async () => {
+    const get = vi.fn((url: string) => {
+      if (url === VIOLATIONS_URL)
+        return Promise.resolve(
+          listEnvelope(
+            [{ state: "SUBMITTED" }, { state: "APPROVED" }],
+            "cur-2",
+          ),
+        );
+      if (url === LEAVE_URL) return Promise.resolve(listEnvelope([]));
+      return Promise.reject(new Error(`unexpected call ${url}`));
+    });
+
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.getHomeroomKpi("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.openViolations).toBe(1);
+      expect(res.data.openViolationsCapped).toBe(true);
+    }
+    expect(get.mock.calls.filter((c) => c[0] === VIOLATIONS_URL)).toHaveLength(
+      1,
+    );
+  });
+
   it("getHomeroomKpi keeps the surviving field when one sub-call 500s", async () => {
     const get = vi.fn((url: string) =>
       url === VIOLATIONS_URL

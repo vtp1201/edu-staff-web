@@ -86,6 +86,26 @@ describe("toHomeroomKpi (US-E24.7)", () => {
     expect(toHomeroomKpi({}).pendingLeave).toBeUndefined();
   });
 
+  it("marks the count as capped when the violations list had more pages", () => {
+    const kpi = toHomeroomKpi({
+      violations: [{ state: "SUBMITTED" }, { state: "SUBMITTED" }],
+      violationsHasMore: true,
+    });
+    // The repo counts ONE page only, so the real total is >= 2 — the card must
+    // be able to say "2+" instead of asserting an audit-exact 2.
+    expect(kpi.openViolations).toBe(2);
+    expect(kpi.openViolationsCapped).toBe(true);
+  });
+
+  it("leaves the count uncapped when the single page was the whole list", () => {
+    const kpi = toHomeroomKpi({
+      violations: [{ state: "SUBMITTED" }],
+      violationsHasMore: false,
+    });
+    expect(kpi.openViolations).toBe(1);
+    expect(kpi.openViolationsCapped).toBeUndefined();
+  });
+
   it("never flags real fields as demo data", () => {
     const kpi = toHomeroomKpi({
       violations: [{ state: "SUBMITTED" }],

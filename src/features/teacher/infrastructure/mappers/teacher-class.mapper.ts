@@ -28,8 +28,11 @@ export function toTeacherRosterStudent(
 export interface HomeroomKpiSources {
   /** draft US-245 attendance summary (not wired today — see the repository). */
   attendance?: Pick<AttendanceSummaryResponseDto, "rate">;
-  /** Every workflow state of the class's violations (no `state` query param). */
+  /** Every workflow state of the class's violations (no `state` query param).
+   *  ONE capped page, not the drained list. */
   violations?: ViolationStateResponseDto[];
+  /** True when that page was not the whole list → the count is a lower bound. */
+  violationsHasMore?: boolean;
   /** Length of the GVCN leave inbox page (already server-filtered SUBMITTED). */
   pendingLeaveCount?: number;
 }
@@ -49,6 +52,7 @@ export function toHomeroomKpi(
           openViolations: sources.violations.filter(
             (v) => v.state === "SUBMITTED",
           ).length,
+          ...(sources.violationsHasMore ? { openViolationsCapped: true } : {}),
         }
       : {}),
     ...(sources.pendingLeaveCount !== undefined

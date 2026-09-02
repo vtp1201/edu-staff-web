@@ -27,8 +27,13 @@ export interface TeacherClassKpi {
   pendingGrading?: number;
   /** GVCN — attendance ratio in 0..1 (draft US-245 summary). */
   attendanceRate?: number;
-  /** GVCN — violations still in the SUBMITTED state (real conduct endpoint). */
+  /** GVCN — violations still in the SUBMITTED state (real conduct endpoint).
+   *  Counted over ONE page only (see the repository) — when more pages exist,
+   *  `openViolationsCapped` marks this as a lower bound. */
   openViolations?: number;
+  /** True when `openViolations` counted a capped page and the list had more:
+   *  the real number is >= `openViolations`, so the card renders a "+". */
+  openViolationsCapped?: boolean;
   /** GVCN — leave requests in the homeroom inbox (real conduct endpoint,
    *  already server-filtered to SUBMITTED). */
   pendingLeave?: number;

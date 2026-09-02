@@ -6,6 +6,7 @@ import {
 import type {
   TeacherClass,
   TeacherClassKpi,
+  TeacherClassKpiField,
 } from "@/features/teacher/domain/entities/teacher-class.entity";
 import { TeacherClassesScreen } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen";
 import type {
@@ -13,14 +14,7 @@ import type {
   TeacherClassesScreenVM,
 } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
 
-type Labels = Record<
-  | "absentToday"
-  | "pendingGrading"
-  | "attendanceRate"
-  | "openViolations"
-  | "pendingLeave",
-  string
->;
+type Labels = Record<TeacherClassKpiField, string>;
 
 /** `> 0` means "needs your attention" for the alerting tiles; anything else
  *  stays neutral. Resolved here so the tile component is a pure renderer
@@ -29,8 +23,11 @@ function alertTone(value: number, tone: KpiTileVM["tone"]): KpiTileVM["tone"] {
   return value > 0 ? tone : "neutral";
 }
 
-function isDemo(kpi: Partial<TeacherClassKpi>, field: string): boolean {
-  return (kpi.demoFields ?? []).some((f) => f === field);
+function isDemo(
+  kpi: Partial<TeacherClassKpi>,
+  field: TeacherClassKpiField,
+): boolean {
+  return (kpi.demoFields ?? []).includes(field);
 }
 
 /** Builds the ordered tile list for one class. Both role tile-sets render on a
@@ -75,6 +72,9 @@ function toTiles(
     tiles.push({
       key: "openViolations",
       value: kpi.openViolations,
+      // Counted over one capped page (repo) → the real number is >= this, so
+      // the tile reads "N+" instead of asserting an exact total.
+      ...(kpi.openViolationsCapped ? { suffix: "+" } : {}),
       label: labels.openViolations,
       tone: alertTone(kpi.openViolations, "error"),
       isDemo: isDemo(kpi, "openViolations"),
@@ -161,7 +161,6 @@ export default async function TeacherClassesPage() {
       return {
         id: cls.id,
         name: cls.name,
-        gradeLevel: cls.gradeLevel,
         studentCount: cls.studentCount,
         roles: cls.roles,
         subjects: cls.subjects,

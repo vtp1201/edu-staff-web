@@ -32,7 +32,8 @@ export function RoleBadges({
 }: RoleBadgesProps) {
   const t = useTranslations("teacherClasses");
   const subjectLabel = subjects.map((s) => s.name).join(", ");
-  const sizeClass = size === "md" ? "text-xs" : "text-[10.5px]";
+  // 11px = the design-system `caption` floor; never smaller (A11Y-004).
+  const sizeClass = size === "md" ? "text-xs" : "text-[11px]";
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>

@@ -12,7 +12,6 @@ const MATH = [{ id: "sub-math", name: "Toán" }];
 const homeroomAndSubject: TeacherClassVM = {
   id: "cls-10a1",
   name: "10A1",
-  gradeLevel: 10,
   studentCount: 32,
   roles: ["homeroom", "subject"],
   subjects: MATH,
@@ -43,6 +42,7 @@ const homeroomAndSubject: TeacherClassVM = {
       {
         key: "openViolations",
         value: 2,
+        suffix: "+",
         label: card.kpi.openViolations,
         tone: "error",
         isDemo: false,
@@ -63,7 +63,6 @@ const homeroomAndSubject: TeacherClassVM = {
 const subjectOnly: TeacherClassVM = {
   id: "cls-11b2",
   name: "11B2",
-  gradeLevel: 11,
   studentCount: 28,
   roles: ["subject"],
   subjects: MATH,
@@ -92,7 +91,6 @@ const subjectOnly: TeacherClassVM = {
 const noKpi: TeacherClassVM = {
   id: "cls-12c1",
   name: "12C1",
-  gradeLevel: 12,
   studentCount: 30,
   roles: ["subject"],
   subjects: MATH,
@@ -117,6 +115,14 @@ type Story = StoryObj<typeof TeacherClassesScreen>;
 
 export const Loading: Story = {
   args: { vm: { status: "ready", classes: [] }, loading: true },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    // The skeleton is aria-hidden, so the ONLY thing a screen reader gets is
+    // this polite live region (A11Y-002).
+    await expect(c.getByRole("status")).toHaveTextContent(
+      messages.teacherClasses.loadingClasses,
+    );
+  },
 };
 
 export const Empty: Story = {
@@ -147,8 +153,13 @@ export const HomeroomAndSubject: Story = {
     // Numbers are tabular so tiles stay aligned across cards.
     await expect(c.getByText("94%")).toHaveClass("tabular-nums");
 
-    // Draft/mock numbers carry the "demo" pill with its explanatory label.
+    // A capped count reads "2+" — never a fabricated exact total.
+    await expect(c.getByText("2+")).toBeInTheDocument();
+
+    // Draft/mock numbers carry the "demo" pill, whose meaning is spelled out in
+    // TEXT for assistive tech (the short "demo" pill is aria-hidden).
     expect(c.getAllByLabelText(card.kpi.demoLabel).length).toBeGreaterThan(0);
+    expect(c.getAllByText(card.kpi.demoLabel).length).toBeGreaterThan(0);
 
     await expect(
       c.getByRole("link", { name: new RegExp(card.cta) }),

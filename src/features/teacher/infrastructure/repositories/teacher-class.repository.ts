@@ -117,6 +117,12 @@ export class TeacherClassRepository implements ITeacherClassRepository {
    * crash"), so this method resolves `ok: true` with a partial KPI even when
    * every source fails.
    *
+   * The violations list carries EVERY workflow state (no `state` query param),
+   * so "chờ xử lý" is a client-side count — but the KPI is a glanceable signal,
+   * not an audit total, so only the FIRST page is read (US-E24.7 review). When
+   * more pages follow, the count is flagged capped and the card shows "N+"
+   * rather than draining a whole school year of records for one number.
+   *
    * `attendanceRate` (draft US-245,
    * `GET /classes/{id}/attendance/summary?termId=`) is deliberately NOT called:
    * `termId` is a required query param and the web has no term source at all
@@ -129,11 +135,9 @@ export class TeacherClassRepository implements ITeacherClassRepository {
     classId: string,
   ): Promise<ClassResult<Partial<TeacherClassKpi>>> {
     const [violations, leave] = await Promise.allSettled([
-      this.fetchAllPages<ViolationStateResponseDto[]>(
+      this.fetchFirstPage<ViolationStateResponseDto[]>(
         DISCIPLINE_EP.violations,
-        {
-          classId,
-        },
+        { classId },
       ),
       this.fetchAllPages<LeaveRequestStateResponseDto[]>(
         DISCIPLINE_EP.leaveRequests,
@@ -145,7 +149,10 @@ export class TeacherClassRepository implements ITeacherClassRepository {
       ok: true,
       data: toHomeroomKpi({
         ...(violations.status === "fulfilled"
-          ? { violations: violations.value }
+          ? {
+              violations: violations.value.items,
+              violationsHasMore: violations.value.hasMore,
+            }
           : {}),
         ...(leave.status === "fulfilled"
           ? { pendingLeaveCount: leave.value.length }
@@ -166,6 +173,23 @@ export class TeacherClassRepository implements ITeacherClassRepository {
     } catch {
       return new Map<string, string>();
     }
+  }
+
+  /** Read the FIRST page of a cursor-paginated list endpoint, reporting
+   *  whether more pages follow (so a count over it can be marked capped). */
+  private async fetchFirstPage<T extends unknown[]>(
+    url: string,
+    query: Record<string, unknown> = {},
+  ): Promise<{ items: T[number][]; hasMore: boolean }> {
+    const env = (await this.http.get(url, {
+      params: { limit: 100, ...query },
+      raw: true,
+    })) as unknown as ApiEnvelope<T>;
+    const { data: page, pagination } = parseEnvelope(env);
+    return {
+      items: page ?? [],
+      hasMore: pagination?.hasMore ?? pagination?.nextCursor != null,
+    };
   }
 
   /** Drain a cursor-paginated list endpoint into a single array. */

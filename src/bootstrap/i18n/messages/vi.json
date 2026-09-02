@@ -4348,8 +4348,8 @@
       "unauthorized": "Bạn không có quyền xem thông tin này.",
       "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
     },
-    "gradeLevel": "Khối {grade}",
     "homeroomBadge": "GVCN",
+    "loadingClasses": "Đang tải danh sách lớp học...",
     "pageTitle": "Lớp học của tôi",
     "studentPage": {
       "breadcrumbClasses": "Lớp học",
@@ -4374,8 +4374,7 @@
         "transferred": "Đã chuyển"
       },
       "studentListSection": "Danh sách học sinh"
-    },
-    "students": "học sinh"
+    }
   },
   "teacherStudentsRoster": {
     "classFilterAll": "Tất cả lớp",

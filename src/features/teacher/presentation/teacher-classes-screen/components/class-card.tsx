@@ -16,7 +16,7 @@ export function ClassCard({ vm }: { vm: TeacherClassVM }) {
   const isHomeroom = vm.roles.includes("homeroom");
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card motion-safe:transition-shadow hover:shadow-card-hover">
+    <article className="flex h-full flex-col overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
       {/* Decorative accent — the role is always ALSO spelled out in the badges. */}
       <div
         aria-hidden="true"
@@ -62,7 +62,9 @@ export function ClassCard({ vm }: { vm: TeacherClassVM }) {
               isHomeroom
                 ? "text-edu-purple-text"
                 : "text-edu-primary-accessible",
-              "outline-none motion-safe:transition-opacity hover:opacity-80",
+              // Hover cue sits on the CTA alone: the card is NOT clickable, only
+              // this link navigates (A11Y-005).
+              "outline-none motion-safe:transition-colors hover:bg-muted",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
             )}
           >

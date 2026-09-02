@@ -4348,8 +4348,8 @@
       "unauthorized": "You do not have permission to view this.",
       "unknown": "An error occurred. Please try again."
     },
-    "gradeLevel": "Grade {grade}",
     "homeroomBadge": "Homeroom",
+    "loadingClasses": "Loading class list...",
     "pageTitle": "My Classes",
     "studentPage": {
       "breadcrumbClasses": "Classes",
@@ -4374,8 +4374,7 @@
         "transferred": "Transferred"
       },
       "studentListSection": "Student list"
-    },
-    "students": "students"
+    }
   },
   "teacherStudentsRoster": {
     "classFilterAll": "All classes",

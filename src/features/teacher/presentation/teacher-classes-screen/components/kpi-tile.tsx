@@ -39,11 +39,16 @@ export function KpiTile({ value, suffix, label, tone, isDemo }: KpiTileProps) {
             aria-label={t("card.kpi.demoLabel")}
             className="px-1.5 py-0 text-[9.5px] uppercase"
           >
-            {t("card.kpi.demoPill")}
+            {/* The badge renders a plain <span> (role=generic), where an
+                aria-label is not a reliable accessible name — so the meaning is
+                ALSO carried by real text: the short pill is hidden from AT and
+                the full wording is announced instead (A11Y-003). */}
+            <span aria-hidden="true">{t("card.kpi.demoPill")}</span>
+            <span className="sr-only">{t("card.kpi.demoLabel")}</span>
           </StatusBadge>
         )}
       </div>
-      <div className="mt-0.5 text-[10.5px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{label}</div>
     </div>
   );
 }

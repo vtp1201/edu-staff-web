@@ -1,11 +1,15 @@
-import type { ClassRole } from "../../domain/entities/teacher-class.entity";
+import type {
+  ClassRole,
+  TeacherClassKpiField,
+} from "../../domain/entities/teacher-class.entity";
 import type { TeacherClassFailure } from "../../domain/failures/teacher-class.failure";
 
 /** One KPI tile, already tone-resolved by the RSC page — the card and the tile
  *  are pure renderers (no `> 0` branching, no i18n-key mapping in `.tsx`). */
 export interface KpiTileVM {
-  /** Stable React/list + test key, e.g. "absentToday". */
-  key: string;
+  /** Stable React/list + test key — the KPI field this tile renders, so a
+   *  typo is a compile error rather than a silently missing tile. */
+  key: TeacherClassKpiField;
   /** Display-ready number (already percent-scaled where applicable). */
   value: number;
   /** Appended after the value, e.g. "%" for the attendance tile. */
@@ -29,7 +33,6 @@ export interface TeacherClassSubjectVM {
 export interface TeacherClassVM {
   id: string;
   name: string;
-  gradeLevel: number;
   studentCount: number;
   /** A class can be both homeroom and subject — homeroom first (badge order). */
   roles: ClassRole[];
