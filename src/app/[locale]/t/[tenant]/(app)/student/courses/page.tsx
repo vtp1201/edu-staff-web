@@ -1,14 +1,11 @@
 import { requireRole } from "@/bootstrap/auth-guard";
 import {
-  makeListCoursesUseCase,
+  makeListCoursesWithSummaryUseCase,
   resolveMyLmsClassId,
 } from "@/bootstrap/di/lms.di";
+import { toCourseCardVms } from "@/features/lms/presentation/student-courses/student-courses.derive";
 import { StudentCoursesScreen } from "@/features/lms/presentation/student-courses/student-courses-screen";
-import type {
-  CourseCardVm,
-  StudentCoursesScreenVm,
-} from "@/features/lms/presentation/student-courses/student-courses-screen.i-vm";
-import { toneForId } from "@/features/lms/presentation/tone";
+import type { StudentCoursesScreenVm } from "@/features/lms/presentation/student-courses/student-courses-screen.i-vm";
 
 interface Props {
   params: Promise<{ locale: string; tenant: string }>;
@@ -21,6 +18,12 @@ interface Props {
  * mandatory) and the service publishes no self-scope discovery route, so the
  * class is resolved first from core's enrollment read. An unresolvable class is
  * its own honest state, never a silent empty list.
+ *
+ * Each card's "N mục đang mở / sắp đến hạn" summary is composed from one
+ * timeline read PER course (`ListCoursesWithSummaryUseCase`) — `lms` has no
+ * rollup endpoint (ask #4). This is the ONE place the clock is read: `now` is
+ * captured here and threaded down, so the whole grid is judged by a single
+ * instant and no component ever calls `Date.now()`.
  */
 export default async function StudentCoursesPage({ params }: Props) {
   const { locale, tenant } = await params;
@@ -38,7 +41,11 @@ export default async function StudentCoursesPage({ params }: Props) {
     return <StudentCoursesScreen {...vm} />;
   }
 
-  const result = await (await makeListCoursesUseCase()).execute(classId);
+  const now = new Date();
+  const result = await (await makeListCoursesWithSummaryUseCase()).execute(
+    classId,
+    now,
+  );
   if (!result.ok) {
     const vm: StudentCoursesScreenVm = {
       courses: [],
@@ -47,14 +54,11 @@ export default async function StudentCoursesPage({ params }: Props) {
     return <StudentCoursesScreen {...vm} />;
   }
 
-  const courses: CourseCardVm[] = result.data.map((c) => ({
-    id: c.id,
-    title: c.title,
-    status: c.status,
-    isDefault: c.isDefault,
-    tone: toneForId(c.id),
-    href: `/${locale}/t/${tenant}/student/courses/${c.id}`,
-  }));
+  const courses = toCourseCardVms(
+    result.data,
+    now,
+    (courseId) => `/${locale}/t/${tenant}/student/courses/${courseId}`,
+  );
 
   return <StudentCoursesScreen courses={courses} errorKey={null} />;
 }
