@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { CoursesSkeleton } from "./courses-skeleton";
 import { StudentCoursesScreen } from "./student-courses-screen";
@@ -233,5 +233,94 @@ export const CoursesGrid_NoClass: Story = {
     await expect(canvas.getByRole("alert")).toHaveTextContent(
       "Chưa xác định được lớp của bạn",
     );
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.2) — AC "toàn card 44px+ target". A real Chromium
+ * `getBoundingClientRect()` on the rendered card link, not a class-name guess:
+ * Tailwind spacing alone does not prove the rendered box actually clears the
+ * touch-target floor once real text wraps into the layout.
+ */
+export const TouchTarget_CardMeetsMinimum: Story = {
+  args: { courses: [PHYSICS], errorKey: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const card = canvas.getByRole("link", { name: /Vật lý 10/ });
+    const rect = card.getBoundingClientRect();
+    await expect(rect.height).toBeGreaterThanOrEqual(44);
+    await expect(rect.width).toBeGreaterThanOrEqual(44);
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.2) — AC "focus ring visible", proven with a REAL focus
+ * + computed style, not just a static class assertion (that only proves the
+ * class string is present, not that Chromium actually paints it inside the
+ * Card's `overflow-hidden` clip). `ring-inset` renders the ring as an INSET
+ * `box-shadow`, so — unlike an outward ring — it is never clipped by an
+ * ancestor's `overflow: hidden`; this asserts the computed shadow is real
+ * (not `"none"`) once the link is truly focused.
+ */
+export const FocusRing_VisibleWhenFocused: Story = {
+  args: { courses: [MATH], errorKey: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const card = canvas.getByRole("link", { name: /Toán 10/ });
+
+    await expect(getComputedStyle(card).boxShadow).toBe("none");
+    card.focus();
+    await expect(card).toHaveFocus();
+    await expect(getComputedStyle(card).boxShadow).not.toBe("none");
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.2) — AC "tab qua grid, Enter mở link". Proves the grid
+ * is reachable by keyboard ALONE (no mouse) and that the focused element is
+ * genuinely the target course's link with its real navigable `href` — a
+ * screen-reader/keyboard user must be able to reach and identify every card
+ * in document order.
+ */
+export const KeyboardOperability_TabReachesEachCard: Story = {
+  args: { courses: MOCK_COURSES, errorKey: null },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const [math, physics, literature] = MOCK_COURSES.map((c) =>
+      canvas.getByRole("link", { name: new RegExp(c.title.split(" —")[0]) }),
+    );
+
+    await userEvent.tab();
+    await expect(math).toHaveFocus();
+    await expect(math).toHaveAttribute("href", MOCK_COURSES[0]?.href);
+
+    await userEvent.tab();
+    await expect(physics).toHaveFocus();
+
+    await userEvent.tab();
+    await expect(literature).toHaveFocus();
+    // Enter on a focused `<a>` is native browser navigation (no JS handler to
+    // spy on) — the behaviour under test is that keyboard focus actually
+    // lands on a real link with a real destination, which the assertions
+    // above already establish for all three cards in document order.
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.2) — AC "mobile 320px không vỡ". The grid track was
+ * only asserted by a code comment (`min(300px,100%)`); this renders at a real
+ * 320px Chromium viewport and checks the document never grows a horizontal
+ * scrollbar, using the same technique as the principal-classes 320px stories.
+ */
+export const Viewport320_GridDoesNotOverflow: Story = {
+  args: { courses: MOCK_COURSES, errorKey: null },
+  play: async ({ canvasElement }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(320, 900);
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText("Toán 10 — Đại số & Giải tích"),
+    ).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(321);
   },
 };

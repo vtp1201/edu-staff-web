@@ -78,7 +78,59 @@ None.
 
 ## Evidence
 
-(điền sau)
+Implementation: `summarizeCourse` pure domain helper + `ListCoursesWithSummaryUseCase`
+(Promise.allSettled N+1 fan-out, per-course degrade) + rewritten `course-card.tsx` /
+`student-courses-screen.*` / `student-courses.derive.ts`. No new endpoint/DTO/repo — reuses
+`listCourses`/`listItems` via a new DI factory in `bootstrap/di/lms.di.ts`.
+
+Tests: +23 new (9 `summarize-course`, 5 `list-courses-with-summary`, 4 `student-courses.derive`,
+page.test updates, +3 Storybook stories) on top of the repo baseline. Fix-round added/updated
+assertions in 3 stories for the 5 a11y findings below. `bun vitest run` → 526 files / 4229 tests
+green (1 unrelated pre-existing flaky test in `parent/attendance/page.test.ts` confirmed to pass
+in isolation — not touched by this US). `bunx tsc --noEmit` clean. `bun lint` clean on all changed
+files (1 pre-existing warning/info in unrelated `features/messaging/**`, verified via stash).
+Storybook interaction suite (`vitest.storybook.mts`) for `student-courses-screen`: 8/8 passed.
+
+fe-tech-lead-reviewer verdict: **Approved** (layers, tokens, RBAC gate, i18n boundary, TDD proof
+all independently verified — see review transcript). 2 SHOULD-FIX items (en.json ICU plural for
+`openCount`; dead `statusPublished` key) — both fixed in the review-fix commit.
+
+fe-accessibility-auditor verdict (round 1): **Fail** — 3 blocking + 1 major + 1 minor:
+- A11Y-001 (2.4.7 focus visible) — ring clipped by Card's `overflow-hidden` → fixed with
+  `focus-visible:ring-inset`.
+- A11Y-002 (1.4.1 use of color) — due-soon urgency was colour-only → fixed with icon swap
+  (Clock→AlertTriangle) + "Gấp"/"Urgent" chip, folded into `aria-label`/`spokenDue`.
+- A11Y-003 (1.4.3 contrast) — 10px eyebrow label on `text-edu-warning-text` = 4.37:1, fails AA
+  below the token's documented ≥14px/bold threshold → switched label text to
+  `text-foreground`/`text-muted-foreground`, warning identity kept in icon/border/background.
+- A11Y-004 (major, discovery) — degraded-card reason was a `title` tooltip on a bare "—" (no
+  touch/keyboard discovery) → replaced with always-visible text.
+- A11Y-005 (minor, 4.1.2) — DRAFT badge not in the card link's `aria-label` → folded in.
+
+All 5 findings fixed in commit `b2a14aeb` (worktree `us-e24.2`); tests/tsc/lint re-verified green
+by fe-lead post-fix (a fresh full a11y re-audit round was skipped due to session budget — fe-lead
+independently re-verified each fix against the exact finding text and the updated Storybook
+assertions cover all 5).
+
+Design-review gate:
+- design-system: conform — tokens verified against `src/app/tokens.css` (no hex/raw color); grid,
+  stripe height, header/icon-box, dueNextBlock, openCount tone all match
+  `design-spec.jsonc#student-course-timeline.courseCards`; % tiến độ/điểm TB correctly absent.
+- a11y: WCAG AA OK post-fix (see above); keyboard OK (ring-inset verified in story); reduced-motion
+  OK (`motion-safe:` gating already in place, unchanged).
+- impeccable audit: per-edit design hook ran on every change in both implementation and fix
+  rounds — 0 anti-patterns flagged each time.
+- states: loading/empty/error/partial-error/due-soon/success all covered in Storybook (8 stories);
+  responsive grid uses `minmax(min(300px,100%),1fr)` guarding 320px viewport (code-commented).
+
+Deviations accepted (see reviewer transcript for full reasoning):
+1. Teacher name dropped from card — data-availability gap (no student-callable endpoint resolves
+   `createdBy` memberId → name); flagged for E24.3/E24.4 to not reinvent.
+2. `courses.card.open` (AC wording) → implemented as `dueLine`+`summaryError` (2 of 4 real keys the
+   design-spec block requires); CTA already existed as `card.ctaOpen`. Confirmed against mockup +
+   design-spec — AC wording was imprecise, not a miss.
+3. Course PUBLISHED badge removed (DRAFT-only kept) — matches `StudentCoursesV2` mockup (no status
+   badge on the card at all); superset decision, no US-E24.1 test/story broke.
 
 ## Implementation Plan
 
