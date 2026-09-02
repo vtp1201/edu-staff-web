@@ -116,3 +116,5 @@
 - [RBAC-blocked client-side join](pattern-rbac-blocked-clientside-join.md) — E18.54: "resolve it client-side" dies on RBAC not N+1; pick the widest allow-list endpoint, degrade… (+file)
 - [Testing axios interceptors](pattern-testing-axios-interceptors.md) — E01.3: stub `client.defaults.adapter` to capture config (no network, no mock lib); AxiosHeaders dot-access works
 - [Cold-cache 5s timeouts](gotcha-cold-cache-5s-timeouts.md) — editing i18n/endpoint files invalidates the vitest transform cache → fake RSC page-test timeouts;… (+file)
+
+- [Selective design bundle sync](pattern-selective-design-bundle-sync.md) — US-E24.0: never cp -r a designer bundle; EduPortal.html is gitignored; re-validate design-spec.jsonc as JSON

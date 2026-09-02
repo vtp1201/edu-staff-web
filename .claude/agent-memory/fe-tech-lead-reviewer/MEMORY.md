@@ -20,3 +20,4 @@
 - [core academic-record member read](be-core-academic-record-member-read.md) — wire key is `academicYear` (not `...Label`), lazy heal ⇒ legit absence, killed the enrollment fan-out
 - [AxiosHeaders dot access is case-sensitive](axios-header-dot-access.md) — `.Authorization` misses a lowercase header and assignment duplicates it; demand `.has()`
 - [Reviewing a denorm/collaborator-removal story](review-checks-denorm-removal.md) — prove the negative at runtime, grep `main` for old consumers, check TEST_MATRIX for stale proof
+- [design_src bundle sync review](design-src-sync-review.md) — EduPortal.html is gitignored (not a miss); proving comment-only tokens.js diffs; JSONC parsing
