@@ -84,4 +84,34 @@ Backlog item E24.17 (students tab grade columns) — `harness-cli backlog add`.
 
 ## Evidence
 
-(điền sau)
+Implementation (fe-nextjs-engineer, 2026-09-03) — branch `feat/us-e24.8-class-detail-shell`.
+
+| Layer | Proof |
+| --- | --- |
+| Unit | `features/teacher/domain/tab-resolver.test.ts` (9), `class-hub-tabs.test.ts` (4), `use-cases/get-my-class.use-case.test.ts` (4), `shared/class-hub-href.test.ts` (4), `timetable/.../real-weekly-timetable.mapper.test.ts` (+1 `classId` passthrough) |
+| Integration | `teacher/classes/[classId]/page.test.ts` (10 — 4-tab/3-tab, `?tab=homeroom` fallback + body, tab hrefs, roster body/error, placeholders, notFound×2), `[classId]/students/page.test.ts` (2 — 308 target), `teacher/classes/page.test.ts` (card href → hub), `features/teacher/presentation/teacher-dashboard.test.ts` (4 — deep-link tabs + no-classId ⇒ no href), `timetable-grid-class-link.test.tsx` (4) |
+| E2E / Story | `class-hub-screen.stories.tsx` (ShellBothRoles / SubjectOnly / PlaceholderTabs / MobileWrapTabs), `teacher-dashboard-home.stories.tsx` (+ClassHubDeepLinks, +NoClassIdMeansNoLink), `teacher-schedule.stories.tsx` (+TeacherView_ClassHubDeepLink), `teacher-class-students-screen.stories.tsx` (+EmbeddedInClassHub) |
+| Platform | `bunx tsc --noEmit` ✅ · `bun lint` ✅ · `bun vitest run` ✅ 538 files / 4319 tests · `bun vitest run --config vitest.storybook.mts` ✅ 160 files / 1280 tests · `bun run build` ✅ |
+
+Decisions taken while implementing (flagged to `fe-lead`, no ADR judged necessary):
+
+- **i18n namespace** is literally `teacher.classHub.*` (new top-level `teacher`
+  object in `messages/{vi,en}.json`) per this packet's Dependencies line, even
+  though the sibling class screens live under `teacherClasses.*`. Tab label is
+  `Thời khoá biểu` / `Timetable` — no key ever carried the old "Tiết học".
+- **`classId` needed no BE ask**: `SlotResponse.classId` is `required` in
+  `services/core/docs/openapi.yaml`; the by-member mapper already read it (for
+  the `className` lookup) and now also keeps the raw id on `TimetableSlot`.
+- **`ScheduleItem.classId` / `PendingGradeItem.classId` are optional**: the real
+  dashboard repository still returns `[]`, so only the mock seed sets them. A row
+  without an id renders unlinked (no dead links) — asserted in both a unit test
+  and a story.
+- **Class-card CTA now points straight at the hub** (`?tab=students`) instead of
+  the legacy `/students` path, so the primary entry point does not pay a 308 hop;
+  the legacy route remains a permanent alias for existing links/bookmarks.
+- **Arrow-key roving tabindex deliberately not built** (AC marks it optional):
+  tabs are real anchors, so Tab/Enter works natively. Additive if the a11y audit
+  asks for it.
+- **Mock-mode limitation**: the mock teacher-timetable fixtures use class NAMES
+  (`11A2`, `8B1`, …) that have no counterpart id in the mock class list, so mock
+  schedule cells stay unlinked. Real mode links; the story proves the markup.

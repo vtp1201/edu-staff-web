@@ -15,9 +15,18 @@ interface Props {
   vm: TeacherClassStudentsScreenVM;
   /** Storybook-only: render the loading skeleton. */
   loading?: boolean;
+  /** True when embedded in the class-hub shell (US-E24.8), whose own header
+   *  already renders the breadcrumb + class name — rendering this screen's
+   *  breadcrumb there would duplicate it. Default false keeps every existing
+   *  standalone consumer/story unchanged. */
+  hideBreadcrumb?: boolean;
 }
 
-export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
+export function TeacherClassStudentsScreen({
+  vm,
+  loading = false,
+  hideBreadcrumb = false,
+}: Props) {
   const t = useTranslations("teacherClasses.studentPage");
   const tRoot = useTranslations("teacherClasses");
   const [query, setQuery] = useState("");
@@ -47,7 +56,9 @@ export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
 
   return (
     <div className="space-y-4">
-      <Breadcrumb classesHref={vm.classesHref} className={vm.className} />
+      {!hideBreadcrumb && (
+        <Breadcrumb classesHref={vm.classesHref} className={vm.className} />
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>

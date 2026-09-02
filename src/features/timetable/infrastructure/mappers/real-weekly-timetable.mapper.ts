@@ -72,6 +72,9 @@ export function mapMemberWeeklyTimetable(
       teacherName: teacherNameOf(slot.teacherMemberId) ?? slot.teacherMemberId,
       room: slot.room,
       className: classNameOf(slot.classId),
+      // Kept alongside the resolved name (US-E24.8): the class-hub deep link
+      // needs the id, and it must survive a className lookup miss.
+      classId: slot.classId,
     };
   }
   return { classId: identity.classId, className: identity.className, slots };

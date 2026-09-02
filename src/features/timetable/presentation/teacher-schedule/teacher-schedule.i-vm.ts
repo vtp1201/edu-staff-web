@@ -15,4 +15,10 @@ export type TeacherScheduleDataState = TimetableDataState;
 export interface TeacherScheduleScreenProps {
   /** RSC-seeded initial data region (the signed-in teacher's week). */
   initialState: TeacherScheduleDataState;
+  /**
+   * Absolute class-list route (`/<locale>/t/<tenant>/teacher/classes`), resolved
+   * by the RSC page — the client screen knows neither locale nor tenant. Enables
+   * the US-E24.8 per-cell deep link into the class hub.
+   */
+  classHrefBase?: string;
 }

@@ -86,3 +86,27 @@ export const ErrorState: Story = {
     ).toBeInTheDocument();
   },
 };
+
+/**
+ * US-E24.8 — embedded as the class hub's "Học sinh" tab. The shell renders the
+ * breadcrumb + class identity itself, so this screen suppresses its own
+ * breadcrumb (`hideBreadcrumb`) while keeping the roster, search and pagination
+ * untouched. Default (every story above) still renders the breadcrumb.
+ */
+export const EmbeddedInClassHub: Story = {
+  args: { vm: base, hideBreadcrumb: true },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(
+      c.queryByRole("navigation", {
+        name: messages.teacherClasses.breadcrumbLabel,
+      }),
+    ).toBeNull();
+    // The roster itself is unchanged.
+    await expect(
+      c.getByRole("region", {
+        name: messages.teacherClasses.studentPage.studentListSection,
+      }),
+    ).toBeInTheDocument();
+  },
+};

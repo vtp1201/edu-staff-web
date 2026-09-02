@@ -4327,6 +4327,29 @@
       "viewEditButton": "Xem / Sửa"
     }
   },
+  "teacher": {
+    "classHub": {
+      "breadcrumbClasses": "Lớp học",
+      "breadcrumbLabel": "Điều hướng lớp học",
+      "meta": "{count} học sinh · Năm học {year}",
+      "placeholder": {
+        "body": {
+          "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới (US-E24.10).",
+          "homeroom": "Khu vực chủ nhiệm (vi phạm, đơn nghỉ) sẽ có trong bản cập nhật tới (US-E24.11).",
+          "timetable": "Thời khoá biểu của lớp và sổ đầu bài sẽ có trong bản cập nhật tới (US-E24.9)."
+        },
+        "title": "Đang xây dựng"
+      },
+      "tabs": {
+        "course": "Khoá học online",
+        "homeroom": "Chủ nhiệm",
+        "navLabel": "Chuyển mục trong lớp học",
+        "students": "Học sinh",
+        "timetable": "Thời khoá biểu"
+      },
+      "title": "Lớp {className}"
+    }
+  },
   "teacherClasses": {
     "breadcrumbLabel": "Điều hướng lớp học",
     "card": {

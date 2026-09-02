@@ -7,6 +7,7 @@ import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { ITeacherClassRepository } from "@/features/teacher/domain/repositories/i-teacher-class.repository";
 import { GetClassStudentsUseCase } from "@/features/teacher/domain/use-cases/get-class-students.use-case";
 import { GetHomeroomKpiUseCase } from "@/features/teacher/domain/use-cases/get-homeroom-kpi.use-case";
+import { GetMyClassUseCase } from "@/features/teacher/domain/use-cases/get-my-class.use-case";
 import { ListMyClassesUseCase } from "@/features/teacher/domain/use-cases/list-my-classes.use-case";
 import { ListMyStudentsUseCase } from "@/features/teacher/domain/use-cases/list-my-students.use-case";
 import { MockTeacherClassRepository } from "@/features/teacher/infrastructure/repositories/mock-teacher-class.repository";
@@ -42,6 +43,13 @@ export async function makeListMyTeacherClassesUseCase() {
  *  RSC classes page; every field degrades to `undefined` on its own. */
 export async function makeGetHomeroomKpiUseCase() {
   return new GetHomeroomKpiUseCase(await makeRepo());
+}
+
+/** ONE class of the signed-in teacher (US-E24.8 class-hub shell). Scoped to the
+ *  teacher's own list, so "not mine" and "does not exist" are indistinguishable
+ *  — the route turns both into `notFound()`. */
+export async function makeGetMyClassUseCase() {
+  return new GetMyClassUseCase(await makeRepo());
 }
 
 export async function makeGetTeacherClassStudentsUseCase() {

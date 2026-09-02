@@ -29,7 +29,8 @@ export interface TeacherClassSubjectVM {
   name: string;
 }
 
-/** ViewModel for one class card. `studentsHref` is app-relative (rendered as a Link). */
+/** ViewModel for one class card. `studentsHref` is the absolute class-hub link
+ *  (`…/teacher/classes/<id>?tab=students`), resolved by the RSC page. */
 export interface TeacherClassVM {
   id: string;
   name: string;
