@@ -44,6 +44,7 @@ export function StudentCoursesScreen({
                 statusDraft: t("card.statusDraft"),
                 cta: t("card.ctaOpen"),
                 dueNext: t("card.dueNext"),
+                dueSoonBadge: t("card.dueSoonBadge"),
                 dueLine: (type, date) => t("card.dueLine", { type, date }),
                 nothingDue: t("card.nothingDue"),
                 openCount: (count) => t("card.openCount", { count }),

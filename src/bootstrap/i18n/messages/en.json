@@ -1198,13 +1198,13 @@
   "courses": {
     "title": "My courses",
     "card": {
-      "statusPublished": "Published",
       "statusDraft": "Draft",
       "ctaOpen": "Open course",
       "dueNext": "Due next",
+      "dueSoonBadge": "Urgent",
       "dueLine": "{type} · due {date}",
       "nothingDue": "Nothing due soon.",
-      "openCount": "{count} open items",
+      "openCount": "{count, plural, one {# open item} other {# open items}}",
       "summaryError": "Couldn't load this course's items."
     },
     "empty": {

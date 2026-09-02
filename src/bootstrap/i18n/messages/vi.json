@@ -1198,10 +1198,10 @@
   "courses": {
     "title": "Khoá học của tôi",
     "card": {
-      "statusPublished": "Đã xuất bản",
       "statusDraft": "Bản nháp",
       "ctaOpen": "Vào khoá học",
       "dueNext": "Sắp đến hạn",
+      "dueSoonBadge": "Gấp",
       "dueLine": "{type} · hạn {date}",
       "nothingDue": "Không có mục nào sắp đến hạn.",
       "openCount": "{count} mục đang mở",

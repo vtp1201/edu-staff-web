@@ -100,11 +100,25 @@ export const CoursesGrid_Success: Story = {
     // Only the unpublished course is badged (a student's list is otherwise
     // all-PUBLISHED, so a badge on every card would be noise).
     await expect(canvas.getByText("Bản nháp")).toBeInTheDocument();
+    // …and it is spelled into the link's aria-label, which otherwise REPLACES
+    // the whole subtree, so AT would never hear it (A11Y-005, WCAG 4.1.2).
+    await expect(
+      canvas.getByRole("link", { name: /Ngữ văn 10[\s\S]*Bản nháp/ }),
+    ).toBeInTheDocument();
+    // The focus ring is drawn INSIDE the card, which clips overflow — an
+    // outward ring would be invisible (A11Y-001, WCAG 2.4.7).
+    await expect(canvas.getByRole("link", { name: /Toán 10/ })).toHaveClass(
+      "focus-visible:ring-inset",
+    );
+    // A non-urgent deadline shows no urgency chip.
+    await expect(canvas.queryByText("Gấp")).not.toBeInTheDocument();
   },
 };
 
-/** A deadline inside 48h — warning tone AND the "Sắp đến hạn" label, so the
- *  urgency is never carried by colour alone (WCAG 1.4.1). */
+/** A deadline inside 48h. Urgency rides on TWO colour-independent channels —
+ *  the warning-triangle icon and the "Gấp" chip — plus the tone (WCAG 1.4.1),
+ *  and the chip is also inside the link's accessible name. The eyebrow itself
+ *  must NOT use `text-edu-warning-text` (4.37:1 at 10px fails AA, A11Y-003). */
 export const CoursesGrid_DueSoon: Story = {
   args: {
     courses: [
@@ -123,7 +137,18 @@ export const CoursesGrid_DueSoon: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Sắp đến hạn")).toBeInTheDocument();
+    const eyebrow = canvas.getByText("Sắp đến hạn");
+    await expect(eyebrow).toBeInTheDocument();
+    await expect(canvas.getByText("Gấp")).toBeInTheDocument();
+    // The urgency word is in the accessible name too — a screen reader hears
+    // only the link's aria-label, never the tone.
+    await expect(
+      canvas.getByRole("link", { name: /Sắp đến hạn \(Gấp\)/ }),
+    ).toBeInTheDocument();
+    // Contrast: the 10px eyebrow may not use the warning text token.
+    await expect(eyebrow.parentElement).not.toHaveClass(
+      "text-edu-warning-text",
+    );
     await expect(
       canvas.getByText("Bài tập: Phương trình bậc hai"),
     ).toBeInTheDocument();
@@ -146,9 +171,10 @@ export const CoursesGrid_EmptyCourse: Story = {
   },
 };
 
-/** ONE course's timeline read failed. That card degrades to "—" (unknown, not
- *  zero) and keeps its link; its siblings are untouched — a single bad fan-out
- *  leg must never blank the page. */
+/** ONE course's timeline read failed. That card degrades to a VISIBLE reason
+ *  (unknown, not zero) and keeps its link; its siblings are untouched — a single
+ *  bad fan-out leg must never blank the page. The reason is plain text, not a
+ *  `title` tooltip on a dash: tooltips do not exist on touch (A11Y-004). */
 export const CoursesGrid_PartialError: Story = {
   args: {
     courses: [
@@ -164,7 +190,9 @@ export const CoursesGrid_PartialError: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("—")).toBeInTheDocument();
+    await expect(
+      canvas.getByText("Không tải được danh sách mục của khoá học này."),
+    ).toBeInTheDocument();
     await expect(canvas.getByText("4 mục đang mở")).toBeInTheDocument();
     const degraded = canvas.getByRole("link", {
       name: /Vật lý 10[\s\S]*Không tải được danh sách mục/,
