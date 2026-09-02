@@ -271,6 +271,219 @@ describe("TeacherClassRepository (US-E13.1)", () => {
 });
 
 /**
+ * US-E24.7 — role/subject decoration + the GVCN KPI slice.
+ *
+ * `teachingSubjectIds` (BE US-234) is id-only, so the repository drains the
+ * subject catalogue ONCE per list call (never per class) and only when at least
+ * one row actually carries subject ids. The GVCN KPI slice fans out over three
+ * INDEPENDENT sources and degrades per-field: one rejected sub-call must never
+ * fail the card.
+ */
+describe("TeacherClassRepository — roles/subjects + homeroom KPI (US-E24.7)", () => {
+  const SUBJECTS_URL = "/core/api/v1/subjects";
+  const VIOLATIONS_URL = "/core/api/v1/conduct/student-violations";
+  const LEAVE_URL = "/core/api/v1/conduct/student-leave-requests";
+
+  function subjectDto(subjectId: string, name: string) {
+    return {
+      subjectId,
+      tenantId: "t1",
+      name,
+      gradeLevel: 10,
+      status: "ACTIVE",
+    };
+  }
+
+  it("decorates teachingSubjectIds with catalogue names in ONE extra call", async () => {
+    const get = vi.fn((url: string) =>
+      url === SUBJECTS_URL
+        ? Promise.resolve(
+            listEnvelope([
+              subjectDto("sub-math", "Toán"),
+              subjectDto("sub-physics", "Vật lý"),
+            ]),
+          )
+        : Promise.resolve(
+            listEnvelope([
+              classDto({
+                classId: "cls-10a1",
+                homeroomTeacherId: "MEMBER-me",
+                teachingSubjectIds: ["sub-math"],
+              }),
+              classDto({
+                classId: "cls-11b2",
+                teachingSubjectIds: ["sub-math", "sub-physics"],
+              }),
+            ]),
+          ),
+    );
+
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.listMyClasses();
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data[0].roles).toEqual(["homeroom", "subject"]);
+      expect(res.data[0].subjects).toEqual([{ id: "sub-math", name: "Toán" }]);
+      expect(res.data[1].roles).toEqual(["subject"]);
+      expect(res.data[1].subjects.map((s) => s.name)).toEqual([
+        "Toán",
+        "Vật lý",
+      ]);
+    }
+    // classes page + ONE catalogue drain — never one lookup per class.
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get).toHaveBeenCalledWith(SUBJECTS_URL, {
+      params: { limit: 100 },
+      raw: true,
+    });
+  });
+
+  it("skips the catalogue call entirely for a homeroom-only teacher", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValue(
+        listEnvelope([classDto({ homeroomTeacherId: "MEMBER-me" })]),
+      );
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.listMyClasses();
+
+    expect(res.ok && res.data[0].roles).toEqual(["homeroom"]);
+    expect(res.ok && res.data[0].subjects).toEqual([]);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it("degrades to the raw subject id when the catalogue call fails", async () => {
+    const get = vi.fn((url: string) =>
+      url === SUBJECTS_URL
+        ? Promise.reject(apiError("INTERNAL_ERROR", 500))
+        : Promise.resolve(
+            listEnvelope([classDto({ teachingSubjectIds: ["sub-math"] })]),
+          ),
+    );
+    const repo = new TeacherClassRepository(makeHttp(get), null);
+    const res = await repo.listMyClasses();
+
+    expect(res.ok).toBe(true);
+    if (res.ok)
+      expect(res.data[0].subjects).toEqual([
+        { id: "sub-math", name: "sub-math" },
+      ]);
+  });
+
+  it("getHomeroomKpi counts SUBMITTED violations + the GVCN leave inbox", async () => {
+    const get = vi.fn((url: string) => {
+      if (url === VIOLATIONS_URL)
+        return Promise.resolve(
+          listEnvelope([
+            { state: "SUBMITTED" },
+            { state: "APPROVED" },
+            { state: "SUBMITTED" },
+          ]),
+        );
+      if (url === LEAVE_URL)
+        return Promise.resolve(
+          listEnvelope([
+            { requestId: "lr-1", state: "SUBMITTED" },
+            { requestId: "lr-2", state: "SUBMITTED" },
+          ]),
+        );
+      return Promise.reject(new Error(`unexpected call ${url}`));
+    });
+
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.getHomeroomKpi("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.openViolations).toBe(2);
+      expect(res.data.pendingLeave).toBe(2);
+      // draft US-245 has no term source on the web yet → never a live call.
+      expect(res.data.attendanceRate).toBeUndefined();
+      expect(res.data.demoFields).toEqual([]);
+    }
+    expect(get).toHaveBeenCalledWith(VIOLATIONS_URL, {
+      params: { limit: 100, classId: "cls-10a1" },
+      raw: true,
+    });
+    expect(get).toHaveBeenCalledWith(LEAVE_URL, {
+      params: { limit: 100, classId: "cls-10a1" },
+      raw: true,
+    });
+    // No attendance-summary round trip is attempted.
+    expect(
+      get.mock.calls.some((c) => String(c[0]).includes("attendance/summary")),
+    ).toBe(false);
+  });
+
+  /**
+   * The KPI is a glanceable signal, not an audit total: draining every
+   * violations page (a whole school year) for one number is not worth the
+   * round trips. Assert the CALL COUNT — a result-only assertion still passes
+   * with the drain in place.
+   */
+  it("getHomeroomKpi reads ONE violations page and flags the count as capped", async () => {
+    const get = vi.fn((url: string) => {
+      if (url === VIOLATIONS_URL)
+        return Promise.resolve(
+          listEnvelope(
+            [{ state: "SUBMITTED" }, { state: "APPROVED" }],
+            "cur-2",
+          ),
+        );
+      if (url === LEAVE_URL) return Promise.resolve(listEnvelope([]));
+      return Promise.reject(new Error(`unexpected call ${url}`));
+    });
+
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.getHomeroomKpi("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.openViolations).toBe(1);
+      expect(res.data.openViolationsCapped).toBe(true);
+    }
+    expect(get.mock.calls.filter((c) => c[0] === VIOLATIONS_URL)).toHaveLength(
+      1,
+    );
+  });
+
+  it("getHomeroomKpi keeps the surviving field when one sub-call 500s", async () => {
+    const get = vi.fn((url: string) =>
+      url === VIOLATIONS_URL
+        ? Promise.reject(apiError("INTERNAL_ERROR", 500))
+        : Promise.resolve(
+            listEnvelope([{ requestId: "lr-1", state: "SUBMITTED" }]),
+          ),
+    );
+
+    const repo = new TeacherClassRepository(makeHttp(get), "MEMBER-me");
+    const res = await repo.getHomeroomKpi("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.openViolations).toBeUndefined();
+      expect(res.data.pendingLeave).toBe(1);
+    }
+  });
+
+  it("getHomeroomKpi degrades to an empty KPI when every source fails", async () => {
+    const get = vi.fn().mockRejectedValue(apiError("VIOLATION_FORBIDDEN", 403));
+    const res = await new TeacherClassRepository(
+      makeHttp(get),
+      "MEMBER-me",
+    ).getHomeroomKpi("cls-10a1");
+
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.data.openViolations).toBeUndefined();
+      expect(res.data.pendingLeave).toBeUndefined();
+      expect(res.data.attendanceRate).toBeUndefined();
+    }
+  });
+});
+
+/**
  * Regression guard for `{ raw: true }` config placement in `fetchAllPages`. The
  * suites above mock `http.get` to return an envelope directly, so they cannot
  * catch `raw` being nested inside `params` (isRawCall reads `config.raw` at the

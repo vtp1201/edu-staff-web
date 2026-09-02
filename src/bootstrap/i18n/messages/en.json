@@ -4347,13 +4347,23 @@
     }
   },
   "teacherClasses": {
-    "actions": {
-      "attendance": "Attendance",
-      "classLog": "Class Log",
-      "comingSoon": "Coming soon",
-      "viewStudents": "View Students"
-    },
     "breadcrumbLabel": "Class navigation",
+    "card": {
+      "cta": "Open class",
+      "kpi": {
+        "absentToday": "Absent today",
+        "attendanceRate": "Attendance",
+        "demoLabel": "Illustrative data",
+        "demoPill": "demo",
+        "openViolations": "Open violations",
+        "pendingGrading": "To grade",
+        "pendingLeave": "Pending leave"
+      },
+      "roleBadge": {
+        "subject": "Subject · {subject}"
+      },
+      "studentCount": "{count} students"
+    },
     "empty": "You have not been assigned to any class.",
     "errorRetryAction": "Try again",
     "errors": {
@@ -4362,8 +4372,8 @@
       "unauthorized": "You do not have permission to view this.",
       "unknown": "An error occurred. Please try again."
     },
-    "gradeLevel": "Grade {grade}",
     "homeroomBadge": "Homeroom",
+    "loadingClasses": "Loading class list...",
     "pageTitle": "My Classes",
     "studentPage": {
       "breadcrumbClasses": "Classes",
@@ -4388,8 +4398,7 @@
         "transferred": "Transferred"
       },
       "studentListSection": "Student list"
-    },
-    "students": "students"
+    }
   },
   "teacherStudentsRoster": {
     "classFilterAll": "All classes",

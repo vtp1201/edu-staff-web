@@ -4347,13 +4347,23 @@
     }
   },
   "teacherClasses": {
-    "actions": {
-      "attendance": "Điểm danh",
-      "classLog": "Sổ đầu bài",
-      "comingSoon": "Sắp có",
-      "viewStudents": "Xem học sinh"
-    },
     "breadcrumbLabel": "Điều hướng lớp học",
+    "card": {
+      "cta": "Mở lớp",
+      "kpi": {
+        "absentToday": "Vắng hôm nay",
+        "attendanceRate": "Chuyên cần",
+        "demoLabel": "Số liệu minh hoạ",
+        "demoPill": "demo",
+        "openViolations": "Vi phạm chờ xử lý",
+        "pendingGrading": "Bài chờ chấm",
+        "pendingLeave": "Đơn nghỉ chờ"
+      },
+      "roleBadge": {
+        "subject": "GVBM · {subject}"
+      },
+      "studentCount": "{count} học sinh"
+    },
     "empty": "Bạn chưa được phân công lớp nào.",
     "errorRetryAction": "Thử lại",
     "errors": {
@@ -4362,8 +4372,8 @@
       "unauthorized": "Bạn không có quyền xem thông tin này.",
       "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
     },
-    "gradeLevel": "Khối {grade}",
     "homeroomBadge": "GVCN",
+    "loadingClasses": "Đang tải danh sách lớp học...",
     "pageTitle": "Lớp học của tôi",
     "studentPage": {
       "breadcrumbClasses": "Lớp học",
@@ -4388,8 +4398,7 @@
         "transferred": "Đã chuyển"
       },
       "studentListSection": "Danh sách học sinh"
-    },
-    "students": "học sinh"
+    }
   },
   "teacherStudentsRoster": {
     "classFilterAll": "Tất cả lớp",
