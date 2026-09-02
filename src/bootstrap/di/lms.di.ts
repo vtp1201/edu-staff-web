@@ -11,6 +11,7 @@ import { GetLessonUseCase } from "@/features/lms/domain/use-cases/get-lesson.use
 import { ListAssignmentsUseCase } from "@/features/lms/domain/use-cases/list-assignments.use-case";
 import { ListCourseItemsUseCase } from "@/features/lms/domain/use-cases/list-course-items.use-case";
 import { ListCoursesUseCase } from "@/features/lms/domain/use-cases/list-courses.use-case";
+import { ListCoursesWithSummaryUseCase } from "@/features/lms/domain/use-cases/list-courses-with-summary.use-case";
 import { SubmitAssignmentUseCase } from "@/features/lms/domain/use-cases/submit-assignment.use-case";
 import { LmsRepository } from "@/features/lms/infrastructure/repositories/lms.repository";
 import { MOCK_CLASS_ID } from "@/features/lms/infrastructure/repositories/mocks/lms.fixtures";
@@ -41,6 +42,11 @@ async function makeRepo(): Promise<ILmsRepository> {
 
 export async function makeListCoursesUseCase() {
   return new ListCoursesUseCase(await makeRepo());
+}
+
+/** Course list + the per-course timeline summary the cards show (US-E24.2). */
+export async function makeListCoursesWithSummaryUseCase() {
+  return new ListCoursesWithSummaryUseCase(await makeRepo());
 }
 
 export async function makeGetCourseUseCase() {
