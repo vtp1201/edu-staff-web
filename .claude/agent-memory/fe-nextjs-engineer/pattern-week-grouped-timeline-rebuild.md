@@ -42,3 +42,23 @@ Related: [[gotcha-async-transition-stuck-pending]] (retry button uses a plain
 boolean + try/finally), [[pattern-node-env-component-test]] (the mode-guard test
 is `renderToStaticMarkup` + `expect(...).toThrow()`),
 [[gotcha-tone-and-duplicate-i18n-copy]].
+
+## Fix round (review + a11y) — three recurring traps
+
+- **A key-namespace migration (`player.*` → `timeline.*`) leaves dead keys the
+  compiler cannot see.** Typed messages only prove a key EXISTS, never that it
+  is READ. After a rename sweep, grep each surviving old-namespace key for a
+  consumer; also watch for a key whose STRING is now duplicated by the new
+  namespace (`timeline.closedReadOnly` vs `timeline.itemDetail.closedNote`) —
+  delete the unused twin, not the used one.
+- **`aria-expanded` without `aria-controls` is half a contract.** Give the panel
+  `id={`<prefix>-${entity.id}`}` and assert the pairing by resolving it:
+  `getElementById(button.getAttribute("aria-controls"))` in the play function —
+  a role query cannot catch a dangling id.
+- **Don't merge two dot-colour maps just because they mostly agree.** A dot ON a
+  rail (`bg-border`, follows the line) and a dot INSIDE a muted badge
+  (`bg-edu-text-secondary`, would vanish at `bg-border`) solve different
+  legibility problems; keep both maps and comment WHY they diverge.
+- Hover affordance for an expand row: `transition-colors hover:bg-muted/60` —
+  self-cancelling once expanded (the card is already `bg-muted`, and muted over
+  muted blends to itself), so hover only ever means "this collapsed row opens".
