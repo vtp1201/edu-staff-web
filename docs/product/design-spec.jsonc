@@ -5120,7 +5120,12 @@
       "route": "/student/courses  ·  /student/courses/[courseId]  ·  /student/courses?view=assignment|exam",
       "roles": ["student"],
       "source": "design_src/edu/course-items.jsx — StudentCoursesV2, CourseTimelinePage, CrossSubjectList (+ TeacherCoursesScreen for the teacher mode)",
-      "status": "planned — not implemented",
+      // /student/courses = US-E24.2; /student/courses/[courseId] = US-E24.3, which ships 2
+      // documented deviations (packet US-E24.3 §Evidence): upcoming rows drop `opacity .72`
+      // because it pushes muted text under 4.5:1, and an expanded lesson auto-loads its body
+      // instead of a separate "Xem bài giảng" button (TEMP — removed by US-E24.5).
+      // `?view=assignment|exam` (CrossSubjectList) is still pending US-E24.4.
+      "status": "partially implemented — course list (US-E24.2) + course timeline (US-E24.3, 2 deviations); cross-subject view pending US-E24.4",
       "model": {
         "itemTypes": {
           "lesson": {

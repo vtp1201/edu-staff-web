@@ -22,7 +22,7 @@ export interface CourseCardLabels {
   openCount: (count: number) => string;
   /** Shown instead of the count when THIS course's timeline read failed. */
   summaryError: string;
-  /** Item type → human label (reuses `courses.player.itemType.*`). */
+  /** Item type → human label (reuses `courses.timeline.itemType.*`). */
   itemType: Record<CourseItemType, string>;
 }
 

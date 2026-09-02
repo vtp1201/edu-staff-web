@@ -124,3 +124,5 @@
 
 - [Scaffold→live service repoint](pattern-service-scaffold-to-live-repoint.md) — US-E24.1: un-force-mocking a SERVICE = the mock-era domain was fiction; verify the double-segment gateway path first, delete contract-less UI
 - [Tone with no wire source + duplicate i18n copy](gotcha-tone-and-duplicate-i18n-copy.md) — move an invented visual attribute to presentation (deterministic id hash); two keys sharing one string breaks getByText
+- [Week-grouped timeline rebuild](pattern-week-grouped-timeline-rebuild.md) — US-E24.3: domain returns a window RESULT with an injected formatter; ISO week inline; `vi` CLDR = `08-05` + time first; feature-shared tier
+- [Locked row + info token gap](gotcha-locked-row-and-token-gap.md) — an aria-disabled row's reason must be VISIBLE text (title is unreachable); no AA-safe --edu-info text token
