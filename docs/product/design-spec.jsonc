@@ -4970,9 +4970,16 @@
     //   #C3CBD9  (closed timeline dot)       → bg-border (decorative; status also has a text label)
     //   #0f1117  (player letterbox)          → existing var(--edu-media-surface)
     //
-    // KNOWN DEVIATIONS (EPIC-OVERVIEW.md §7 D1–D9) — the mockup is AHEAD OF / BEHIND
-    // the BE contract in places. Each entry flags its own D-items inline under
-    // "deviations". Do NOT "fix" the jsx here; the corrected bundle lands later.
+    // BUNDLE 0209 v3 (2026-09-02, US-E24.0b) — D1–D9 now match the BE contract
+    // (verified against class-hub.jsx/course-items.jsx/course-player.jsx/
+    // attendance-portal.jsx). R2 token map (tokens.js gained successText/
+    // tealText/mediaSurface/chipBg/inputBg + a T_LIGHT/T_DARK/applyTheme block —
+    // NO new runtime CSS token): successText→--edu-success-text, tealText→
+    // --edu-teal-text, mediaSurface→--edu-media-surface, chipBg→--muted (same
+    // as the #EEF1F6 mapping above), inputBg→--background; dark values are
+    // served by the existing `.dark` block in globals.css, not a new file.
+    // Only 4 deviations remain real (BE gaps not yet closed) — see each
+    // entry's "deviations" array; every other D-item is now NORMATIVE layout.
     // ═════════════════════════════════════════════════════════════════════════
 
     // ── Teacher Class Hub — US-E24.7 / E24.8 ──────────────────────────────────
@@ -5010,17 +5017,14 @@
         "kpiTiles": {
           "shape": "flex row, wrap, each flex:1 minWidth 110, radius 8, padding 8px 12px, value 15px/800 + label 10.5px muted",
           "gvbm": [
+            "Vắng hôm nay (absentToday) — bg error-light + text-edu-error-text when > 0, else bg-muted",
             "Bài chờ chấm (pendingGrades) — bg warning-light + text-edu-warning-text when > 0, else bg-muted"
           ],
           "gvcn": [
             "Chuyên cần % (attendance) — bg-muted",
             "Vi phạm chờ xử lý (pendingViolations) — bg error-light + text-edu-error-text when > 0, else bg-muted"
-          ]
-        },
-        "progress": {
-          "component": "ProgressBar height 5",
-          "label": "Tiết <subject> đã dạy — taught/total",
-          "deviation": "D5 — REMOVE. No BE source for taught/total. Replace with 'Vắng hôm nay' + 'Bài chờ chấm' (draft US-255)."
+          ],
+          "note": "D5 (normative, v3) — no progress bar (no BE source for taught/total); 2 tiles for GVBM."
         },
         "cta": "'Mở lớp' + chevronRight, 12px/700, accent color, bottom-right"
       },
@@ -5064,27 +5068,32 @@
         },
         "dailyClassLog": {
           "strip": "bg #FBFCFE → bg-card + border-t border-border; label 11px/800 uppercase tracking .06em",
-          "statusBadge": "pending → 'Chờ BGH duyệt' warning; approved → 'Đã duyệt' success (reuse class-log statusBadgeTones DRAFT/SUBMITTED/APPROVED/REJECTED)",
-          "editing": "GVCN inline textarea (minHeight 56) + Lưu; GVBM sees 'Chỉ GVCN sửa được'",
+          "statusBadge": "4 states (D1(a), normative v3) — draft 'Nháp' (no tint) / pending 'Chờ BGH duyệt' warning / approved 'Đã duyệt' success / returned 'Bị trả lại' error (reuse class-log statusBadgeTones DRAFT/SUBMITTED/APPROVED/REJECTED)",
+          "editing": "GVCN inline textarea (minHeight 56) + Lưu nháp + Gửi duyệt; GVBM sees 'Chỉ GVCN sửa được'",
           "backing": "core homeroom-entries (already real in features/class-log)"
+        },
+        "periodLogForm": {
+          "component": "ChPeriodLogForm — D1(b), normative v3. Per-period 'Ghi sổ đầu bài tiết', GVBM-only write, GVCN read-only across the whole class, NO approval step.",
+          "fields": "Tên bài dạy (required, ≤200, live counter) · Nhận xét tiết học (≤2000, live counter) · Xếp loại tiết (segmented A/B/C/D) · Số HS vắng (number 0–200, helper 'Tham khảo — không thay điểm danh')",
+          "trigger": "period row action 'Ghi sổ đầu bài tiết' / 'Đã ghi sổ tiết' toggle"
+        },
+        "periodPrepForm": {
+          "component": "ChPrepForm — D1(c)/(d), normative v3. 'Chuẩn bị tiết' DOES attach materials to a period (footnote removed).",
+          "fields": "Giáo án (select, from the teacher's own Teaching Plan / KHGD, 1 max) · Ghi chú chuẩn bị (textarea) · Tài liệu — link list title+URL, max 20, NO file upload",
+          "trigger": "period row action 'Chuẩn bị tiết' / 'Đã chuẩn bị' toggle"
         },
         "asidePrep": {
           "header": "'Chuẩn bị cho tiết <subject> sắp tới' + next-period meta",
-          "rows": "3 shortcuts — Kế hoạch giảng dạy (scrollText) / Điểm danh (userCheck) / Sổ đầu bài (fileText); icon box 30×30 radius 8 bg primary-light",
-          "footnote": "'Giáo án & tài liệu … không gắn cứng vào tiết dạy.'",
-          "deviation": "D1(c) — REMOVE that footnote. period-preps DO attach materials to a period."
+          "rows": "3 shortcuts — Kế hoạch giảng dạy (scrollText) / Điểm danh (userCheck) / Sổ đầu bài (fileText); icon box 30×30 radius 8 bg primary-light"
         },
-        "deviations": [
-          "D1(a) keep the daily homeroom log as designed.",
-          "D1(b) MISSING in the mockup: per-period 'Ghi sổ đầu bài tiết' (period-logs: lessonTitle ≤200 required, remark ≤2000, grade A–D segmented, absentCount 0..200 'tham khảo — không thay điểm danh'; states chưa ghi / đã ghi, no approval) and 'Chuẩn bị tiết' (period-preps: note, 1 lesson plan from KHGD, materials = link list title+URL max 20, NO file upload). Both BE-shipped 02/09. Only the period's GVBM may write; GVCN read-only.",
-          "D1(d) period row must show teacherName from the timetable slot (already available) + an 'Đang diễn ra' label from the bell schedule."
-        ]
+        "periodRow": "D1(d), normative v3 — shows teacherName from the timetable slot + an 'Đang diễn ra' label derived from the bell schedule (start/end time on the period)."
       },
       "courseTab": {
         "composition": "renders CourseTimelinePage (see student-course-timeline) with mode='teacher' | 'readonly', hideHeaderBack",
         "gvcnSubjectPicker": "<select> of subjects; own subject suffixed ' (môn của bạn)'",
         "readonlyPill": "padding 5px 12px radius 99, bg #EEF1F6 → bg-muted, eye icon, 'Chỉ đọc — khoá học của GV bộ môn khác'",
-        "editableRule": "editable only when the teacher is the GVBM of that subject for that class"
+        "editableRule": "editable only when the teacher is the GVBM of that subject for that class",
+        "deviation": "STILL REAL (ask #7) — GVCN has no BE-granted write access to another subject's course timeline; readonly is a client-side rule, not a BE-enforced one yet."
       },
       "homeroomTab": {
         "grid": "repeat(auto-fit, minmax(300px, 1fr)), gap 16, align start",
@@ -5194,7 +5203,7 @@
           "dragHandle": "gripVertical icon, HTML5 draggable row, reorder within a week → PUT items/order with the FULL id list",
           "inlineDateEdit": "'Sửa ngày' → primary-light strip with 2 datetime-local inputs ('Mở lúc' / 'Hạn chót') + 'Để trống = không giới hạn' + Huỷ/Lưu",
           "addItem": "pill button 'Thêm mục' per week → dropdown lesson/assignment/exam/document (minWidth 170, radius 10, shadow 0 10px 30px)",
-          "examRule": "EXAM start/due NOT editable here (core projection) — disable + surface 409 LMS_EXAM_WINDOW_NOT_EDITABLE; 'Kiểm tra' in the add menu must link to Kho đề instead of creating inline",
+          "examRule": "EXAM start/due NOT editable here (core projection) — disable + surface 409 LMS_EXAM_WINDOW_NOT_EDITABLE; 'Kiểm tra' in the add menu must link to Kho đề instead of creating inline (STILL REAL, ask #6 — cannot create EXAM from this timeline).",
           "readonlyMode": "mode='readonly' — rows are not clickable, no drag, no add (GVCN viewing another subject)"
         }
       },
@@ -5209,9 +5218,9 @@
         "empty": "type icon 30 + 'Không có mục nào trong nhóm này.'",
         "routing": "Q-C — /student/assignments and /student/exams permanently redirect here; /student/exams/[examId] stays."
       },
+      "visibilityRule": "D7 (normative, v3, matches BE contract) — for STUDENTS the BE does not return unopened items except EXAM. Only exam rows may render the 'Sắp mở' 🔒 state (helper `ciVisibleToStudent`); every other type is Đang mở / Đã đóng only. Teacher mode still shows all 3 states.",
       "deviations": [
-        "D7 — for STUDENTS the BE does not return unopened items except EXAM. Only exam rows may render the 'Sắp mở' 🔒 state; every other type is Đang mở / Đã đóng only. Teacher mode still shows all 3.",
-        "D3 — the assignment drop zone ('Chọn tệp & nộp') is ahead of BE: submissions accept TEXT (≤20.000 chars) and/or a LINK, no file upload yet. Build variant (a) text + link; keep the drop zone as a marked future variant.",
+        "STILL REAL (ask #1) — assignment submission is TEXT (≤20.000 chars, live counter) and/or a LINK only; no file upload. `CiSubmitBox` drop-zone variant is a marked future variant, not buildable yet.",
         "Week label — 'Tuần 30 · 20/04 – 26/04' in the mockup; academic week number is not in core yet (ask #5) → fall back to 'Tuần dd/MM – dd/MM'."
       ],
       "a11y": [
@@ -5247,14 +5256,7 @@
           "exam": "centred 64px error-light icon box, title, description, solid error-text 'Vào làm bài' (open) / outline 'Xem lại đề & bài làm' (closed) / info pill 'Mở lúc …' (upcoming)",
           "locked": "CpLocked — centred info-light lock 60px + 'Nội dung sẽ mở lúc … Quay lại sau nhé!'"
         },
-        "tabs": {
-          "asDesigned": [
-            "about — Tổng quan",
-            "notes — Ghi chú",
-            "qna — Hỏi & Đáp"
-          ],
-          "deviation": "D2 / Q-E — BUILD ONLY 'Tổng quan'. Notes and Q&A have no BE and are not planned; drop the tab bar entirely if only one tab remains."
-        }
+        "tabs": "D2 (normative, v3, matches BE contract) — ONLY 'Tổng quan'; no tab bar at all (Ghi chú / Hỏi & Đáp have no BE and are not planned, per Q-E)."
       },
       "sidebar": {
         "header": "'Nội dung khoá học' 13px/800 + '<idx+1>/<total>' counter",
@@ -5268,10 +5270,11 @@
         },
         "footerNav": "Prev (outline, disabled at start) / 'Mục tiếp theo' (solid course color, flex 1.4)"
       },
+      "submitArea": "D3 (normative, v3, `CiSubmitBox`) — text (≤20.000 chars, live counter) and/or link, single submission gated by an explicit confirm step (edit → confirm → done), 'Đã nộp lúc …' shown after submit.",
+      "lessonContent": "D4 (normative, v3, matches BE contract) — LESSON content from BE is TEXT (no video). Default to rich-text; render the 16:9 frame ONLY when the content carries an embeddable link (YouTube/Drive). An empty player must never be the default state.",
       "deviations": [
-        "D2 — remove Ghi chú + Hỏi & Đáp tabs (no BE, Q-E).",
-        "D3 — submit area: text (≤20.000 chars) and/or link, single submission with a confirm; the drag-drop file zone is a future variant. Show 'Đã nộp lúc …' after submit; grade/feedback only when present.",
-        "D4 — LESSON content from BE is TEXT (no video). Default to rich-text content; render the 16:9 frame ONLY when the content carries an embeddable link (YouTube/Drive). An empty player must never be the default state."
+        "STILL REAL (ask #1) — the drag-drop file submission zone is a future variant; not buildable until BE accepts file uploads.",
+        "STILL REAL (ask #2) — grade/feedback on a submission renders only when the BE returns it; no guaranteed grading turnaround today."
       ],
       "a11y": [
         "sidebar item list = navigation of the same course; each row is a link/button with an accessible name including the type ('Bài giảng: …')",
@@ -5362,14 +5365,12 @@
         "component": "APExcuseRequestDialog — role=dialog aria-modal, overlay rgba(17,24,39,.45), panel width 460 radius 16",
         "header": "'Xin phép nghỉ học' 15px/800 + '<child> · Lớp <class>'; icon-only close button needs aria-label 'Đóng'",
         "fields": [
-          "Ngày nghỉ — <input type=date>",
-          "Phạm vi — segmented Cả ngày / Theo tiết",
-          "Tiết nghỉ — free text, shown only when scope='periods'",
-          "Lý do — textarea rows 3, required (submit disabled while empty)"
+          "D6 (normative, v3, matches BE POST conduct/student-leave-requests) — 'Nghỉ từ ngày' + 'Đến hết ngày' <input type=date> pair (2-col grid; changing from-date clamps to-date's min); NO 'Theo tiết'/'Tiết nghỉ' fields.",
+          "Lý do — textarea rows 3, required (submit disabled while empty)",
+          "Minh chứng đính kèm — attachments, max 3 files, JPG/PNG/PDF ≤ 5 MB each, dashed drop-style 'Thêm tệp' button, remove-by-row (draft US-249)."
         ],
         "notice": "warning-light strip 'Đơn sẽ gửi tới GVCN để phê duyệt. Buổi nghỉ được tính \"có phép\" sau khi duyệt.' — text tone var(--edu-warning-text), never white-on-yellow",
-        "footer": "Huỷ (outline) + 'Gửi đơn' (solid primary, send icon, 'Đang gửi...' while pending)",
-        "deviation": "D6 — BE POST conduct/student-leave-requests only takes startDate/endDate: DROP 'Theo tiết' (and the Tiết nghỉ field), ADD a start/end date pair, ADD attachments max 3 files jpg/png/pdf ≤5 MB each (draft US-249)."
+        "footer": "Huỷ (outline) + 'Gửi đơn' (solid primary, send icon, 'Đang gửi...' while pending)"
       },
       "a11y": [
         "child selector = a real radio group / tablist with the selected state exposed (not just border color)",

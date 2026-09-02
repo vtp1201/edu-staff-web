@@ -16,22 +16,41 @@ window.T = {
   warningText: '#9A6A0F',      // AA text/icon tone warning trên nền sáng — mirror tokens.css, decision 0046
   warningForeground: '#2A3547', // never white on warning yellow (a11y, decision 0013)
   successForeground: '#FFFFFF',
+  successText: '#0E9A82',
   info: '#539BFF',
   infoLight: '#EBF3FE',
   purple: '#7B5EA7',
   purpleLight: '#F0EBF9',
   teal: '#00B8A9',
   tealLight: '#E0F7F5',
+  tealText: '#00806F',
+  mediaSurface: '#0f1117',
   textPrimary: '#2A3547',
   textSecondary: '#5A6A85',
   textMuted: '#8898A9',
   bg: '#F5F7FA',
   card: '#FFFFFF',
   border: '#E5EAF2',
+  chipBg: '#EEF1F6',
+  inputBg: '#FFFFFF',
   sidebarWidth: 260,
   sidebarCollapsedWidth: 72,
   headerHeight: 64,
 };
+
+// Dark theme — bộ token thật (D9), KHÔNG dùng filter invert. Ảnh/avatar/màu môn giữ nguyên.
+window.T_LIGHT = Object.assign({}, window.T);
+window.T_DARK = {
+  bg: '#151B23', card: '#1E2630', border: '#33404E',
+  chipBg: '#2A333E', inputBg: '#161D26',
+  textPrimary: '#EAEFF5', textSecondary: '#B4C0CE', textMuted: '#8494A7',
+  primaryLight: '#28344E', successLight: '#123330', warningLight: '#3A2F16',
+  errorLight: '#3B2620', errorDarkLight: '#43201F', infoLight: '#1D2E47',
+  purpleLight: '#2E2743', tealLight: '#12312F',
+  successText: '#3FD0B3', tealText: '#4FC3B5',
+  warningForeground: '#EAEFF5',
+};
+window.applyTheme = (dark) => Object.assign(window.T, dark ? Object.assign({}, window.T_LIGHT, window.T_DARK) : window.T_LIGHT);
 
 // Mock data
 window.MOCK = {

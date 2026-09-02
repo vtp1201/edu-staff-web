@@ -8,6 +8,59 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-09-02 — Design bundle 0209 **v3** sync (R1–R3 + D1–D9 now match BE) (US-E24.0b, epic E24) `[INTERNAL]`
+
+**What changed**: bundle `design_src0209_v3` = v1 (US-E24.0 above) + D1–D9
+(now matching the BE contract, per `EPIC-OVERVIEW.md` §7) + R1–R3 (verified
+02/09 by `fe-lead`). Same selective-sync method as US-E24.0. No `src/` code
+changed.
+
+- **R1 — Parent–Student Links audit trail restored**: v3 independently brings
+  back `PLAuditTrailSection` inside `PLDetailDialog` (v1 had dropped it, D8 —
+  see US-E24.0's entry above), in the SAME placement DR-023 already specified
+  (below the consent section), and additionally models `consent_agreed`/
+  `consent_declined` actions alongside `created`/`unlinked`. Unlike the v1
+  sync, `edu/parent-links.jsx` **is copied this time** — it replaces the
+  repo's DR-023 mockup. This is mockup-only; shipped FE code at
+  `src/features/admin/parent-links/**` is unchanged (DR-023's entity shape,
+  i18n keys, and a11y evidence remain the implementation reference). See
+  `docs/design-requests/DR-023-parent-link-audit-trail.md` §Status.
+- **R2 — dark-mode tokens**: `tokens.js` gains `successText`, `tealText`,
+  `mediaSurface`, `chipBg`, `inputBg` plus a `T_LIGHT`/`T_DARK`/`applyTheme`
+  block (real dark-theme values, no more invert/hue-rotate filter, D9). Merged
+  BY HAND to keep the repo's decision comments (`0040`/`0027`/`0046`/`0013`);
+  every value is byte-identical to the bundle. All 5 new keys map to EXISTING
+  `tokens.css` vars — `successText`→`--edu-success-text`, `tealText`→
+  `--edu-teal-text`, `mediaSurface`→`--edu-media-surface`, `chipBg`→`--muted`,
+  `inputBg`→`--background`; dark values are served by the repo's existing
+  `.dark` block in `globals.css`. **No new runtime token, no ADR.**
+- **R3**: stale comment "không gắn cứng vào tiết" corrected to "chuẩn bị gắn
+  vào tiết (period-preps)" in `class-hub.jsx` — matches D1(c)/(d) below.
+- **D1–D9 now NORMATIVE** (were "known deviations, chờ bundle sửa" in the
+  US-E24.0 sync) — `docs/product/design-spec.jsonc` E24 entries updated:
+  D1 (class-hub 2 sổ: nhật ký GVCN 4 trạng thái Nháp/Chờ duyệt/Đã duyệt/Bị trả
+  lại + per-period `ChPeriodLogForm`/`ChPrepForm` for GVBM), D2 (course-player
+  — only Tổng quan tab), D3 (`CiSubmitBox` — text ≤20.000 + link + confirm
+  step), D4 (lesson content is text, 16:9 frame only for embeddable links),
+  D5 (class card KPI tiles — `absentToday` + `pendingGrades`, no progress
+  bar), D6 (leave dialog — from/to date pair, ≤3 attachments jpg/png/pdf
+  ≤5MB, no per-period scope), D7 (student timeline — only EXAM rows render
+  'Sắp mở'), D9 (real dark theme, see R2 above).
+- **Only 4 real deviations remain** (genuine BE gaps, not bundle drift): GVCN
+  readonly on another subject's course timeline (ask #7), cannot create EXAM
+  from the timeline — must link to Kho đề (ask #6), assignment submission is
+  text/link only, no file upload (ask #1), submission grade/feedback renders
+  only when the BE returns it (ask #2).
+- **Docs synced**: `docs/product/design-spec.jsonc` (5 E24 entries),
+  `docs/product/screens.md` (bundle-v3 notes + new "Design bundle 0209 v3"
+  block), `docs/design-requests/DR-023-parent-link-audit-trail.md` (§Status
+  superseded note).
+- **Kept unchanged**: the 5 DR-020..022 files (`assignments.jsx`,
+  `lesson-plan.jsx`, `question-bank.jsx`, `staff-discipline.jsx`,
+  `student-absences.jsx`) — the bundle still does not ship them.
+
+---
+
 ## 2026-09-02 — Design bundle 0209 selective sync into `design_src/` (US-E24.0, epic E24) `[INTERNAL]`
 
 **What changed**: the designer bundle `design_src0209` (its own

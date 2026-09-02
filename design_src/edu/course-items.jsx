@@ -17,7 +17,7 @@ const CI_COURSES = [
 const CI_ITEMS = {
   1: [
     { id: 'w30', vi: 'Tuần 30 · 20/04 – 26/04', en: 'Week 30 · Apr 20–26', items: [
-      { id: 'm1', type: 'lesson', vi: 'Bài giảng: Quy tắc tính đạo hàm', en: 'Lecture: Differentiation rules', start: '2026-04-20T07:00', due: null },
+      { id: 'm1', type: 'lesson', vi: 'Bài giảng: Quy tắc tính đạo hàm', en: 'Lecture: Differentiation rules', start: '2026-04-20T07:00', due: null, embed: 'youtube.com/watch?v=…' },
       { id: 'm2', type: 'assignment', vi: 'Bài tập Đạo hàm #11', en: 'Derivatives Homework #11', start: '2026-04-20T07:00', due: '2026-04-24T23:59', submitted: true, grade: 8.5 },
       { id: 'm3', type: 'document', vi: 'Tài liệu: Bảng công thức đạo hàm', en: 'Handout: Derivative formula sheet', start: '2026-04-20T07:00', due: null, link: 'drive.google.com/…' },
     ]},
@@ -84,8 +84,8 @@ const ciStatus = (it) => {
 };
 const ciStatusMeta = (st, t) => (
   st === 'upcoming' ? { label: t('Sắp mở', 'Opens soon'), color: T.info, bg: T.infoLight } :
-  st === 'open'     ? { label: t('Đang mở', 'Open'), color: '#0E9A82', bg: T.successLight } :
-                      { label: t('Đã đóng — chỉ xem', 'Closed — view only'), color: T.textMuted, bg: '#EEF1F6' }
+  st === 'open'     ? { label: t('Đang mở', 'Open'), color: T.successText, bg: T.successLight } :
+                      { label: t('Đã đóng — chỉ xem', 'Closed — view only'), color: T.textMuted, bg: T.chipBg }
 );
 const ciTypeMeta = (type, t) => (
   type === 'lesson'     ? { icon: 'play', label: t('Bài giảng', 'Lesson'), color: T.primary } :
@@ -107,9 +107,11 @@ const ciWindow = (it, t) => {
   return t('Luôn mở', 'Always open');
 };
 const ciFlat = (courseId) => (CI_ITEMS[courseId] || []).flatMap(w => w.items);
+// Học sinh: backend KHÔNG trả về mục chưa mở — trừ KIỂM TRA (vẫn hiện "Sắp mở") (D7)
+const ciVisibleToStudent = (it) => it.type === 'exam' || ciStatus(it) !== 'upcoming';
 // Tóm tắt cho card môn học: mục sắp đến hạn gần nhất + số mục đang mở
 const ciCourseSummary = (courseId) => {
-  const items = ciFlat(courseId);
+  const items = ciFlat(courseId).filter(ciVisibleToStudent);
   const open = items.filter(it => ciStatus(it) === 'open');
   const withDue = items.filter(it => it.due && new Date(it.due) >= CI_NOW && ciStatus(it) !== 'closed')
     .sort((a, b) => new Date(a.due) - new Date(b.due));
@@ -167,8 +169,8 @@ const StudentCoursesV2 = ({ lang, t, pColor, onCourseSelect }) => (
               <div style={{ background: T.bg, borderRadius: 9, padding: '9px 12px', fontSize: 12, color: T.textMuted }}>{t('Không có mục nào sắp đến hạn.', 'Nothing due soon.')}</div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 'auto' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#0E9A82' }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#0E9A82' }}></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: T.successText }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.successText }}></span>
                 {t(`${s.openCount} mục đang mở`, `${s.openCount} open items`)}
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: c.color }}>
@@ -182,10 +184,68 @@ const StudentCoursesV2 = ({ lang, t, pColor, onCourseSelect }) => (
   </div>
 );
 
+// Vùng nộp bài — backend nhận VĂN BẢN (≤20.000 ký tự) và/hoặc LINK, chưa nhận tệp (D3)
+const CiSubmitBox = ({ course, t, compact }) => {
+  const [text, setText] = React.useState('');
+  const [link, setLink] = React.useState('');
+  const [step, setStep] = React.useState('edit'); // edit | confirm | done
+  const can = text.trim().length > 0 || link.trim().length > 0;
+  const inp = { width: '100%', boxSizing: 'border-box', padding: '9px 11px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 12.5, fontFamily: 'inherit', color: T.textPrimary, background: T.inputBg, outline: 'none' };
+  if (step === 'done') return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.successLight, borderRadius: 10, padding: '12px 14px', fontSize: 12.5, color: T.successText, fontWeight: 700, flexWrap: 'wrap' }}>
+      <Icon name="check" size={14} color={T.successText} strokeWidth={2.6} />
+      {t('Đã nộp lúc 09:05 · 27/04/2026.', 'Submitted at 09:05 · 27/04/2026.')}
+      <span style={{ fontWeight: 600, color: T.textMuted }}>{t('Điểm & nhận xét sẽ hiển thị khi giáo viên chấm.', 'Grade & feedback will appear once marked.')}</span>
+    </div>
+  );
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('Nội dung bài làm (văn bản)', 'Your answer (text)')}</span>
+          <span style={{ fontSize: 10.5, color: T.textMuted, fontVariantNumeric: 'tabular-nums' }}>{text.length.toLocaleString('vi-VN')}/20.000</span>
+        </div>
+        <textarea value={text} maxLength={20000} onChange={e => setText(e.target.value)} rows={compact ? 3 : 5}
+          placeholder={t('Gõ bài làm trực tiếp tại đây…', 'Type your answer here…')}
+          style={{ ...inp, resize: 'vertical', lineHeight: 1.55 }}></textarea>
+      </div>
+      <div>
+        <div style={{ fontSize: 10.5, fontWeight: 800, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>{t('Link bài làm (Drive/Docs…)', 'Link to your work (Drive/Docs…)')}</div>
+        <input value={link} onChange={e => setLink(e.target.value)} placeholder="https://drive.google.com/…" style={inp} />
+      </div>
+      {step === 'confirm' ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: T.warningLight, borderRadius: 9, padding: '10px 13px', flexWrap: 'wrap' }}>
+          <Icon name="alertTriangle" size={14} color={T.warningText} strokeWidth={2.2} />
+          <span style={{ flex: 1, minWidth: 160, fontSize: 12, color: T.warningText, fontWeight: 700 }}>{t('Bạn chỉ được nộp MỘT lần duy nhất — sau khi nộp không thể sửa.', 'You can submit only ONCE — no edits after submitting.')}</span>
+          <button onClick={() => setStep('edit')} style={{ padding: '7px 12px', borderRadius: 7, border: `1px solid ${T.border}`, background: T.card, color: T.textSecondary, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xem lại', 'Review')}</button>
+          <button onClick={() => setStep('done')} style={{ padding: '7px 14px', borderRadius: 7, border: 'none', background: course.color, color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Xác nhận nộp', 'Confirm & submit')}</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button disabled={!can} onClick={() => setStep('confirm')}
+            style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: can ? course.color : T.border, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: can ? 'pointer' : 'default', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="check" size={13} color="#fff" strokeWidth={2.4} />{t('Nộp bài', 'Submit')}
+          </button>
+          <span style={{ fontSize: 11, color: T.textMuted }}>{t('Chỉ nộp 1 lần duy nhất · văn bản và/hoặc link', 'One submission only · text and/or link')}</span>
+        </div>
+      )}
+      {!compact && (
+        <div style={{ border: `1.5px dashed ${T.border}`, borderRadius: 10, padding: '11px 14px', opacity: 0.62 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <Icon name="upload" size={13} color={T.textMuted} strokeWidth={2} />
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: T.textSecondary }}>{t('Đính kèm tệp (PDF, ảnh)', 'File attachments (PDF, images)')}</span>
+            <Badge color={T.textMuted} bg={T.chipBg}>{t('Sau khi backend hỗ trợ', 'Once backend supports it')}</Badge>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Chi tiết mục (học sinh, expand trong timeline) ────────────────────────────
 const CiItemDetail = ({ item, course, st, lang, t, onStartExam }) => {
   const closedNote = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#EEF1F6', border: `1px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', fontSize: 12, color: T.textSecondary, fontWeight: 600 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.chipBg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', fontSize: 12, color: T.textSecondary, fontWeight: 600 }}>
       <Icon name="lock" size={13} color={T.textMuted} strokeWidth={2.2} />
       {t('Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.', 'Closed — you can still review the content, but submissions are locked.')}
     </div>
@@ -208,8 +268,8 @@ const CiItemDetail = ({ item, course, st, lang, t, onStartExam }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {st === 'closed' && closedNote}
       <div style={{ fontSize: 12.5, color: T.textSecondary, lineHeight: 1.55 }}>{t('Tài liệu tham khảo do giáo viên đính kèm — mở bằng liên kết ngoài.', 'Reference material attached by the teacher — opens via external link.')}</div>
-      <a href="#" onClick={e => e.preventDefault()} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1.5px solid ${T.teal}55`, background: T.tealLight, color: '#00806F', fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>
-        <Icon name="link" size={13} color="#00806F" strokeWidth={2.2} />{item.link}
+      <a href="#" onClick={e => e.preventDefault()} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1.5px solid ${T.teal}55`, background: T.tealLight, color: T.tealText, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>
+        <Icon name="link" size={13} color={T.tealText} strokeWidth={2.2} />{item.link}
       </a>
     </div>
   );
@@ -231,20 +291,13 @@ const CiItemDetail = ({ item, course, st, lang, t, onStartExam }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {item.submitted ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.successLight, borderRadius: 8, padding: '9px 12px', fontSize: 12, color: '#0E9A82', fontWeight: 700 }}>
-          <Icon name="check" size={13} color="#0E9A82" strokeWidth={2.6} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.successLight, borderRadius: 8, padding: '9px 12px', fontSize: 12, color: T.successText, fontWeight: 700 }}>
+          <Icon name="check" size={13} color={T.successText} strokeWidth={2.6} />
           {t('Đã nộp bài.', 'Submitted.')}{item.grade != null && ` · ${t('Điểm', 'Grade')}: ${item.grade}/10`}
           <span style={{ fontWeight: 600, color: T.textMuted }}>{t('(chỉ nộp 1 lần)', '(single submission)')}</span>
         </div>
       ) : st === 'closed' ? closedNote : (
-        <div style={{ border: `1.5px dashed ${T.border}`, borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <Icon name="upload" size={16} color={T.textMuted} strokeWidth={2} />
-          <div style={{ flex: 1, minWidth: 160 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.textPrimary }}>{t('Nộp bài làm của bạn', 'Submit your work')}</div>
-            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{t('Chỉ được nộp 1 lần duy nhất — kiểm tra kỹ trước khi nộp.', 'One submission only — double-check before submitting.')}</div>
-          </div>
-          <button style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: course.color, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{t('Chọn tệp & nộp', 'Choose file & submit')}</button>
-        </div>
+        <CiSubmitBox course={course} t={t} compact={true} />
       )}
       {st === 'closed' && !item.submitted && (
         <div style={{ fontSize: 12, color: T.errorText, fontWeight: 700 }}>{t('Bạn chưa nộp bài này trước hạn.', 'You did not submit before the deadline.')}</div>
@@ -257,7 +310,7 @@ const CiItemDetail = ({ item, course, st, lang, t, onStartExam }) => {
 const CiRow = ({ item, course, lang, t, mode, expanded, onToggle, onStartExam, onOpenItem, dragProps, onEditDates, isLast }) => {
   const st = ciStatus(item);
   const tm = ciTypeMeta(item.type, t);
-  const dotColor = st === 'open' ? '#0E9A82' : st === 'upcoming' ? T.info : '#C3CBD9';
+  const dotColor = st === 'open' ? T.successText : st === 'upcoming' ? T.info : T.border;
   return (
     <div style={{ display: 'flex', gap: 0, position: 'relative' }} {...(dragProps || {})}>
       {/* timeline rail */}
@@ -313,6 +366,10 @@ const CourseTimelinePage = ({ course, lang, t, pColor, onBack, onStartExam, onOp
 
   const allItems = weeks.flatMap(w => w.items);
   const openCount = allItems.filter(it => ciStatus(it) === 'open').length;
+  // Học sinh không thấy mục chưa mở (trừ Kiểm tra) — giáo viên thấy đủ (D7)
+  const viewWeeks = mode === 'student'
+    ? weeks.map(w => ({ ...w, items: w.items.filter(ciVisibleToStudent) })).filter(w => w.items.length > 0)
+    : weeks;
 
   const moveItem = (wi, from, to) => setWeeks(ws => {
     const next = ws.map(w => ({ ...w, items: [...w.items] }));
@@ -340,7 +397,7 @@ const CourseTimelinePage = ({ course, lang, t, pColor, onBack, onStartExam, onOp
     setEditing(null);
   };
 
-  const inputStyle = { padding: '6px 8px', borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, fontFamily: 'inherit', color: T.textPrimary, background: '#fff', outline: 'none' };
+  const inputStyle = { padding: '6px 8px', borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, fontFamily: 'inherit', color: T.textPrimary, background: T.inputBg, outline: 'none' };
   const legend = [['upcoming'], ['open'], ['closed']];
 
   return (
@@ -377,13 +434,13 @@ const CourseTimelinePage = ({ course, lang, t, pColor, onBack, onStartExam, onOp
 
       {/* Timeline */}
       <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.04)', padding: '6px 18px 18px' }}>
-        {weeks.length === 0 && (
+        {viewWeeks.length === 0 && (
           <div style={{ padding: '48px 20px', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
             <Icon name="bookOpen" size={32} color={T.border} strokeWidth={1.6} />
             <div style={{ marginTop: 10 }}>{t('Giáo viên chưa thêm nội dung cho khoá học này.', 'No content added to this course yet.')}</div>
           </div>
         )}
-        {weeks.map((w, wi) => (
+        {viewWeeks.map((w, wi) => (
           <div key={w.id}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0 6px' }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{lang === 'en' ? w.en : w.vi}</span>
@@ -420,7 +477,7 @@ const CourseTimelinePage = ({ course, lang, t, pColor, onBack, onStartExam, onOp
                     onStartExam={onStartExam}
                     onOpenItem={onOpenItem}
                     onEditDates={() => setEditing({ wi, ii, start: item.start || '', due: item.due || '' })}
-                    isLast={ii === w.items.length - 1 && wi === weeks.length - 1}
+                    isLast={ii === w.items.length - 1 && wi === viewWeeks.length - 1}
                     dragProps={mode === 'teacher' ? {
                       draggable: true,
                       onDragStart: () => { drag.current = { wi, ii }; },
@@ -458,7 +515,7 @@ const CourseTimelinePage = ({ course, lang, t, pColor, onBack, onStartExam, onOp
 // ── 3) Bộ lọc xuyên môn: Bài tập / Bài kiểm tra ───────────────────────────────
 const CrossSubjectList = ({ kind, lang, t, pColor, onOpenCourse, onStartExam }) => {
   const [tab, setTab] = React.useState('open');
-  const rows = CI_COURSES.flatMap(c => ciFlat(c.id).filter(it => it.type === kind).map(it => ({ course: c, item: it, st: ciStatus(it) })));
+  const rows = CI_COURSES.flatMap(c => ciFlat(c.id).filter(it => it.type === kind && ciVisibleToStudent(it)).map(it => ({ course: c, item: it, st: ciStatus(it) })));
   const sortDue = (a, b) => (a.item.due ? new Date(a.item.due) : Infinity) - (b.item.due ? new Date(b.item.due) : Infinity);
   const groups = {
     open: rows.filter(r => r.st === 'open').sort(sortDue),
@@ -467,7 +524,7 @@ const CrossSubjectList = ({ kind, lang, t, pColor, onOpenCourse, onStartExam }) 
   };
   const tabs = [
     { id: 'open', vi: 'Đang mở', en: 'Open' },
-    { id: 'upcoming', vi: 'Sắp mở', en: 'Upcoming' },
+    ...(kind === 'exam' ? [{ id: 'upcoming', vi: 'Sắp mở', en: 'Upcoming' }] : []),
     { id: 'closed', vi: 'Đã đóng', en: 'Closed' },
   ];
   const list = groups[tab];
@@ -508,7 +565,7 @@ const CrossSubjectList = ({ kind, lang, t, pColor, onOpenCourse, onStartExam }) 
                     <span style={{ fontSize: 11.5, color: urgent ? T.errorText : T.textMuted, fontWeight: urgent ? 700 : 500, fontVariantNumeric: 'tabular-nums' }}>
                       {ciWindow(item, t)}{urgent && ` · ${t(`còn ${Math.max(1, Math.round(hrsLeft))} giờ`, `${Math.max(1, Math.round(hrsLeft))}h left`)}`}
                     </span>
-                    {item.submitted && <span style={{ fontSize: 11, fontWeight: 700, color: '#0E9A82' }}>✓ {t('Đã nộp', 'Submitted')}{item.grade != null && ` · ${item.grade}/10`}</span>}
+                    {item.submitted && <span style={{ fontSize: 11, fontWeight: 700, color: T.successText }}>✓ {t('Đã nộp', 'Submitted')}{item.grade != null && ` · ${item.grade}/10`}</span>}
                   </div>
                 </div>
                 <CiStatusPill st={st} t={t} />
@@ -560,4 +617,4 @@ const TeacherCoursesScreen = ({ lang, primaryColor }) => {
   );
 };
 
-Object.assign(window, { CI_COURSES, CI_ITEMS, ciStatus, ciCourseSummary, StudentCoursesV2, CourseTimelinePage, CrossSubjectList, TeacherCoursesScreen });
+Object.assign(window, { CI_COURSES, CI_ITEMS, ciStatus, ciCourseSummary, ciVisibleToStudent, CiSubmitBox, StudentCoursesV2, CourseTimelinePage, CrossSubjectList, TeacherCoursesScreen });
