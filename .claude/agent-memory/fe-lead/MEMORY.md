@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [US-E24.4 cross-subject tabs](project-e24-4-cross-subject-tabs.md) — merged ce45f592; closes E24 student Phase 1; zero-Client-Component tab screen; safe refactor-in-place proof pattern (old test untouched, still green)
 - [US-E24.5 course player](project-e24-5-course-player.md) — merged 03cac7e7; high-risk lane; 3-round adversarial allowlist verification (48+4 bypass cases, zero holes); focus-retargeting a11y class unique to mutation state machines
 - [US-E24.3 course timeline](project-e24-3-course-timeline.md) — merged 24ce9f11; lesson-player REBUILT (not renamed); a11y lessons transferred cleanly (2 minor only); TEMP-code grep discipline for E24.5
 - [US-E24.2 student courses v2](project-e24-2-student-courses-v2.md) — merged 3b7500f8; per-card degrade pattern + 3 a11y blockers (focus-ring-inset, colour-only status, token-outside-envelope) + QA closed 4 static-only AC gaps with real-browser tests
