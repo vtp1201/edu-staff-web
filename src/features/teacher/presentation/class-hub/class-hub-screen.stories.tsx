@@ -8,7 +8,6 @@ import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teac
 import { classHubHref } from "@/shared/class-hub-href";
 import type { ClassHubHeaderVm, ClassHubTabsVm } from "./class-hub.i-vm";
 import { ClassHubScreen } from "./class-hub-screen";
-import { TabPlaceholder } from "./tab-placeholder";
 
 const BASE = "/vi/t/t1/teacher/classes";
 
@@ -162,13 +161,12 @@ export const ShellWithEmbeddedRealRoster: Story = {
   },
 };
 
-/* ── Not-yet-built tab bodies (US-E24.10/11 replace these; `timetable`
-      graduated to a real body in US-E24.9) ───────────────────────────────── */
-export const PlaceholderTabs: Story = {
+/* ── The shell's own tab semantics, independent of any tab body ─────────── */
+export const CourseTabShell: Story = {
   args: {
     header: header(["homeroom", "subject"]),
     tabs: tabs(["homeroom", "subject"], "course"),
-    children: <TabPlaceholder tab="course" />,
+    children: <p>Nội dung tab khoá học</p>,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -176,12 +174,7 @@ export const PlaceholderTabs: Story = {
     expect(active).toHaveAttribute("aria-selected", "true");
     const panel = canvas.getByRole("tabpanel");
     expect(panel).toHaveAttribute("aria-labelledby", "classhub-tab-course");
-    expect(within(panel).getByText("Đang xây dựng")).toBeVisible();
-    expect(
-      within(panel).getByText(
-        messages.teacherClasses.hub.placeholder.body.course,
-      ),
-    ).toBeVisible();
+    expect(within(panel).getByText("Nội dung tab khoá học")).toBeVisible();
     // A11Y-001: only the active tab points at the one rendered panel.
     expect(active).toHaveAttribute("aria-controls", "classhub-panel-course");
     expect(canvas.getByRole("tab", { name: "Học sinh" })).not.toHaveAttribute(
@@ -195,7 +188,7 @@ export const MobileWrapTabs: Story = {
   args: {
     header: header(["homeroom", "subject"]),
     tabs: tabs(["homeroom", "subject"], "course"),
-    children: <TabPlaceholder tab="course" />,
+    children: <p>Nội dung tab khoá học</p>,
   },
   decorators: [
     (Story) => (

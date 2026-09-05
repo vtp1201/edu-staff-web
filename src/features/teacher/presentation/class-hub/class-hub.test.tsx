@@ -8,13 +8,12 @@ import { classHubHref } from "@/shared/class-hub-href";
 import type { ClassHubHeaderVm, ClassHubTabsVm } from "./class-hub.i-vm";
 import { ClassHubHeader } from "./class-hub-header";
 import { ClassHubTabs } from "./class-hub-tabs";
-import { TabPlaceholder } from "./tab-placeholder";
 
 /**
  * US-E24.8 shell — node env, so assertions run on static markup. Covers the AC
  * bits that live in the presentation layer: tab count per role, `aria-selected`
  * on exactly the active tab, real anchors (native Tab/Enter navigation), the
- * homeroom-vs-subject identity tone, and per-tab placeholder copy.
+ * and homeroom-vs-subject identity tone.
  */
 const BASE = "/vi/t/t1/teacher/classes";
 
@@ -143,22 +142,5 @@ describe("ClassHubHeader (US-E24.8)", () => {
     expect(homeroom).toContain("bg-edu-role-parent/18");
     expect(subject).toContain("bg-primary/18");
     expect(homeroom).toMatch(/aria-hidden="true"[\s\S]{0,200}svg/);
-  });
-});
-
-describe("TabPlaceholder (US-E24.8, narrowed by US-E24.9 then US-E24.11)", () => {
-  it("names the tab it stands in for, so E24.10 replaces a distinct body", () => {
-    const course = render(<TabPlaceholder tab="course" />);
-    const body = messages.teacherClasses.hub.placeholder.body;
-    expect(course).toContain(body.course);
-    expect(course).toContain(messages.teacherClasses.hub.placeholder.title);
-    // Copy is user-facing — it must never leak an internal story id.
-    expect(course).not.toMatch(/US-E\d/);
-  });
-
-  it("stands in for `course` ONLY — `timetable` (US-E24.9) and `homeroom` (US-E24.11) shipped real bodies", () => {
-    expect(Object.keys(messages.teacherClasses.hub.placeholder.body)).toEqual([
-      "course",
-    ]);
   });
 });

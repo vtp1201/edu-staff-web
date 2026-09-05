@@ -1303,6 +1303,66 @@
       "network-error": "Lỗi kết nối. Vui lòng thử lại.",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
       "no-class": "Chưa xác định được lớp của bạn. Vui lòng liên hệ giáo viên chủ nhiệm."
+    },
+    "teacher": {
+      "modeBanner": "Chế độ giáo viên — kéo thả để sắp xếp, sửa ngày ngay trên dòng.",
+      "readonlyPill": "Chỉ đọc — khoá học của giáo viên bộ môn khác.",
+      "forbiddenSubject": "Không có quyền xem khoá học môn này.",
+      "noCourse": "Môn này chưa có khoá học nào.",
+      "noSubjects": "Lớp này chưa có môn học nào.",
+      "subjectPicker": {
+        "label": "Chọn môn học",
+        "mine": "{name} (môn của bạn)"
+      },
+      "draftBanner": {
+        "title": "Khoá học chưa xuất bản — học sinh chưa thấy.",
+        "publish": "Xuất bản"
+      },
+      "addMenu": {
+        "label": "Thêm mục",
+        "lesson": "Bài giảng",
+        "assignment": "Bài tập",
+        "document": "Tài liệu",
+        "exam": "Kiểm tra",
+        "examNote": "Bài kiểm tra tạo ở Kho đề, tự xuất hiện trên timeline khi xuất bản."
+      },
+      "editDates": {
+        "label": "Sửa ngày",
+        "opensLabel": "Mở lúc",
+        "dueLabel": "Hạn chót",
+        "blankHint": "Để trống = không giới hạn.",
+        "cancel": "Huỷ",
+        "save": "Lưu"
+      },
+      "reorder": {
+        "up": "Chuyển lên: {title}",
+        "down": "Chuyển xuống: {title}"
+      },
+      "delete": {
+        "label": "Xoá tài liệu: {title}",
+        "confirmTitle": "Xoá tài liệu này?",
+        "confirmBody": "“{title}” sẽ bị xoá khỏi khoá học. Học sinh sẽ không còn thấy mục này.",
+        "confirmLabel": "Xoá tài liệu"
+      },
+      "createDialog": {
+        "lessonTitle": "Thêm bài giảng",
+        "assignmentTitle": "Thêm bài tập",
+        "documentTitle": "Thêm tài liệu",
+        "titleField": "Tiêu đề",
+        "contentField": "Nội dung bài giảng",
+        "descriptionField": "Yêu cầu bài tập",
+        "urlField": "Liên kết tài liệu (https)",
+        "opensField": "Mở lúc",
+        "dueField": "Hạn chót",
+        "cancel": "Huỷ",
+        "save": "Thêm mục"
+      },
+      "errors": {
+        "titleRequired": "Nhập tiêu đề cho mục này.",
+        "contentRequired": "Nhập nội dung bài giảng.",
+        "invalidUrl": "Liên kết phải bắt đầu bằng https:// và có tên miền hợp lệ.",
+        "invalidWindow": "Hạn chót phải sau thời điểm mở."
+      }
     }
   },
   "dashboard": {
@@ -4393,12 +4453,6 @@
     "hub": {
       "breadcrumbClasses": "Lớp học",
       "meta": "{count} học sinh · Năm học {year}",
-      "placeholder": {
-        "body": {
-          "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới."
-        },
-        "title": "Đang xây dựng"
-      },
       "tabs": {
         "course": "Khoá học online",
         "homeroom": "Chủ nhiệm",

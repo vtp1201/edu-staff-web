@@ -30,6 +30,12 @@ const buildHomeroomTabVm = vi.fn();
 vi.mock("./homeroom-vm", () => ({
   buildHomeroomTabVm: (input: unknown) => buildHomeroomTabVm(input),
 }));
+// US-E24.10: the course tab's builder likewise owns its own tests; the ROUTE's
+// job here is to pick it, thread `?subjectId=` through, and bind the actions.
+const buildCourseTabVm = vi.fn();
+vi.mock("./course-vm", () => ({
+  buildCourseTabVm: (input: unknown) => buildCourseTabVm(input),
+}));
 vi.mock("./actions", () => ({
   approveLeaveAction: vi.fn(),
   rejectLeaveAction: vi.fn(),
@@ -40,6 +46,14 @@ vi.mock("./actions", () => ({
   saveDailyEntryAction: vi.fn(),
   submitDailyEntryAction: vi.fn(),
   reviseDailyEntryAction: vi.fn(),
+  listCourseItemsAction: vi.fn(),
+  reorderItemsAction: vi.fn(),
+  patchItemAction: vi.fn(),
+  createLessonAction: vi.fn(),
+  createAssignmentAction: vi.fn(),
+  addDocumentItemAction: vi.fn(),
+  publishCourseAction: vi.fn(),
+  deleteItemAction: vi.fn(),
 }));
 
 function cls(overrides: Partial<TeacherClass> = {}): TeacherClass {
@@ -81,12 +95,14 @@ async function renderPage(
   tab?: string,
   classId = "cls-10a1",
   week?: string,
+  subjectId?: string,
 ): Promise<{ el: Rendered | null; notFound: boolean }> {
   const { default: Page } = await import("./page");
   try {
-    const query: { tab?: string; week?: string } = {};
+    const query: { tab?: string; week?: string; subjectId?: string } = {};
     if (tab !== undefined) query.tab = tab;
     if (week !== undefined) query.week = week;
+    if (subjectId !== undefined) query.subjectId = subjectId;
     const el = (await Page({
       params: Promise.resolve({ locale: "vi", tenant: "t1", classId }),
       searchParams: Promise.resolve(query),
@@ -105,6 +121,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   studentsExec.mockResolvedValue({ ok: true, data: [] });
   buildTimetableTabVm.mockResolvedValue({ classId: "cls-10a1", days: [] });
+  buildCourseTabVm.mockResolvedValue({
+    classId: "cls-10a1",
+    courseId: "co-1",
+    items: [],
+    subjectOptions: [],
+    mode: "teacher",
+  });
   buildHomeroomTabVm.mockResolvedValue({
     classId: "cls-10a1",
     attendance: { ok: true, data: {} },
@@ -267,12 +290,33 @@ describe("ClassHubPage — tab bodies", () => {
     expect(buildHomeroomTabVm).not.toHaveBeenCalled();
   });
 
-  it("`course` is the last not-yet-built tab and renders its own placeholder, fetching NO roster", async () => {
+  it("`?tab=course` renders the real course body and fetches NO roster", async () => {
     classExec.mockResolvedValue({ ok: true, data: cls() });
+
     const { el } = await renderPage("course");
+
     expect(el?.props.tabs.activeTab).toBe("course");
-    expect(el?.props.children.props.tab).toBe("course");
+    // The VM reached the body — the last placeholder is gone.
+    expect(
+      (el?.props.children.props.vm as { courseId?: string } | undefined)
+        ?.courseId,
+    ).toBe("co-1");
     expect(studentsExec).not.toHaveBeenCalled();
+  });
+
+  it("threads `?subjectId=` and the caller's OWN subjects into the course builder", async () => {
+    classExec.mockResolvedValue({ ok: true, data: cls() });
+
+    await renderPage("course", "cls-10a1", undefined, "sub-ly");
+
+    expect(buildCourseTabVm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        classId: "cls-10a1",
+        subjectIdParam: "sub-ly",
+        isHomeroom: true,
+        teacherSubjects: [{ id: "sub-math", name: "Toán" }],
+      }),
+    );
   });
 });
 

@@ -3,6 +3,8 @@ import {
   makeGetMyClassUseCase,
   makeGetTeacherClassStudentsUseCase,
 } from "@/bootstrap/di/teacher-class.di";
+import { TeacherCourseTab } from "@/features/lms/presentation/teacher-course-tab/teacher-course-tab";
+import type { TeacherCourseTabActions } from "@/features/lms/presentation/teacher-course-tab/teacher-course-tab.i-vm";
 import { visibleTabs } from "@/features/teacher/domain/class-hub-tabs";
 import { resolveClassHubTab } from "@/features/teacher/domain/tab-resolver";
 import type {
@@ -12,7 +14,6 @@ import type {
 import { ClassHubScreen } from "@/features/teacher/presentation/class-hub/class-hub-screen";
 import { HomeroomTab } from "@/features/teacher/presentation/class-hub/homeroom-tab/homeroom-tab";
 import type { HomeroomLeaveActions } from "@/features/teacher/presentation/class-hub/homeroom-tab/homeroom-tab.i-vm";
-import { TabPlaceholder } from "@/features/teacher/presentation/class-hub/tab-placeholder";
 import { TimetableTab } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab";
 import type { TimetableTabActions } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab.i-vm";
 import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen";
@@ -21,16 +22,25 @@ import { TeacherClassesScreen } from "@/features/teacher/presentation/teacher-cl
 import type { TeacherClassesScreenVM } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
 import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 import {
+  addDocumentItemAction,
   approveLeaveAction,
+  createAssignmentAction,
+  createLessonAction,
+  deleteItemAction,
   deletePeriodLogAction,
   deletePeriodPrepAction,
+  listCourseItemsAction,
+  patchItemAction,
+  publishCourseAction,
   rejectLeaveAction,
+  reorderItemsAction,
   reviseDailyEntryAction,
   saveDailyEntryAction,
   savePeriodLogAction,
   savePeriodPrepAction,
   submitDailyEntryAction,
 } from "./actions";
+import { buildCourseTabVm } from "./course-vm";
 import { buildHomeroomTabVm } from "./homeroom-vm";
 import { buildTimetableTabVm } from "./timetable-vm";
 
@@ -62,7 +72,11 @@ export default async function ClassHubPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; tenant: string; classId: string }>;
-  searchParams: Promise<{ tab?: string | string[]; week?: string | string[] }>;
+  searchParams: Promise<{
+    tab?: string | string[];
+    week?: string | string[];
+    subjectId?: string | string[];
+  }>;
 }) {
   const [{ locale, tenant, classId }, query] = await Promise.all([
     params,
@@ -107,6 +121,8 @@ export default async function ClassHubPage({
   };
 
   const week = typeof query?.week === "string" ? query.week : undefined;
+  const subjectId =
+    typeof query?.subjectId === "string" ? query.subjectId : undefined;
 
   let body: React.ReactNode;
   if (activeTab === "students") {
@@ -142,7 +158,37 @@ export default async function ClassHubPage({
       />
     );
   } else {
-    body = <TabPlaceholder tab={activeTab} />;
+    const courseVm = await buildCourseTabVm({
+      classId: cls.id,
+      teacherSubjects: cls.subjects,
+      isHomeroom: cls.roles.includes("homeroom"),
+      locale,
+      tenant,
+      subjectIdParam: subjectId,
+    });
+    // `.bind` (not an inline closure) — a local async function handed to a
+    // client component from an RSC is not a Server Action and 500s when called.
+    const courseId = courseVm.courseId ?? "";
+    const courseActions: TeacherCourseTabActions = {
+      listItems: listCourseItemsAction.bind(null, cls.id, courseId),
+      reorderItems: reorderItemsAction.bind(null, cls.id, courseId),
+      patchItem: patchItemAction.bind(null, cls.id, courseId),
+      createLesson: createLessonAction.bind(null, cls.id, courseId),
+      createAssignment: createAssignmentAction.bind(null, cls.id, courseId),
+      addDocumentItem: addDocumentItemAction.bind(null, cls.id, courseId),
+      publishCourse: publishCourseAction.bind(null, cls.id, courseId),
+      deleteItem: deleteItemAction.bind(null, cls.id, courseId),
+    };
+    body = (
+      // Keyed by the course: the client body seeds its cache and its DRAFT
+      // status from these props once, so switching subjects must REMOUNT it
+      // rather than keep the previous course's rows.
+      <TeacherCourseTab
+        key={courseVm.courseId ?? "none"}
+        vm={courseVm}
+        actions={courseActions}
+      />
+    );
   }
 
   return (

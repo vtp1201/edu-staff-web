@@ -51,6 +51,25 @@ export interface WeekVm {
   items: TimelineItemVm[];
 }
 
+/**
+ * The teacher/readonly-only slice of the VM — `undefined` for a student, so a
+ * student-mode VM literal needs no new keys at all (every existing fixture and
+ * story keeps compiling untouched).
+ */
+export interface CourseTimelineTeacherVm {
+  /**
+   * The COMPLETE current ordering, flattened across weeks. Reorder is a
+   * whole-course operation (BE rejects a partial list), so the ordering is
+   * carried once here rather than re-derived from the nested week groups on
+   * every drop.
+   */
+  orderedItemIds: string[];
+  /** Ids whose row may be deleted — DOCUMENT items only (BE 409 otherwise). */
+  deletableItemIds: string[];
+  /** Where the "Kiểm tra" menu entry leads; exams are authored in the bank. */
+  examBankHref: string;
+}
+
 export interface CourseTimelineVm {
   courseId: string;
   courseName: string;
@@ -68,14 +87,53 @@ export interface CourseTimelineVm {
   /** Timeline-read failure ONLY — the course header still renders. */
   errorKey: LmsFailure["type"] | null;
   mode: CourseTimelineMode;
+  /** Present iff `mode !== "student"`. */
+  teacher?: CourseTimelineTeacherVm;
 }
+
+/** One row's window, as the inline editor submits it. `null` = "để trống",
+ *  which CLEARS the boundary rather than leaving it unchanged. */
+export interface ItemWindowInput {
+  startAt: string | null;
+  dueAt: string | null;
+}
+
+/** The kinds a teacher can author from the timeline. EXAM is deliberately
+ *  absent: exams are created in the exam bank and appear here on publish. */
+export type AddItemKind = "lesson" | "assignment" | "document";
 
 /** Server Action result for the "Thử lại" re-read of the timeline. */
 export type RetryListItemsResult =
   | { ok: true; data: { weeks: WeekVm[]; openCount: number } }
   | { ok: false; errorKey: LmsFailure["type"] };
 
-/** Server Action refs — passed as props, never imported by presentation. */
+/** Result of any timeline mutation the teacher branch can fire. Stable failure
+ *  KEYS only — the component translates, the action never does. */
+export type TimelineMutationResult =
+  | { ok: true }
+  | { ok: false; errorKey: LmsFailure["type"] };
+
+/**
+ * Server Action refs — passed as props, never imported by presentation.
+ *
+ * The four mutation fields are optional because ONE action type serves all
+ * three modes: a student VM populates none of them, and the teacher branch is
+ * the only reader. Three per-mode action interfaces threaded through a
+ * discriminated union would be more machinery than three optional fields earn.
+ */
 export interface CourseTimelineActions {
   retryListItems: () => Promise<RetryListItemsResult>;
+  /** The COMPLETE new ordering — never a delta (BE rejects a partial list). */
+  reorderItems?: (orderedIds: string[]) => Promise<TimelineMutationResult>;
+  patchItemWindow?: (
+    itemId: string,
+    input: ItemWindowInput,
+  ) => Promise<TimelineMutationResult>;
+  /** Opens the confirm dialog owned by the tab. Deleting is never optimistic
+   *  and never starts here — this only reports which row was asked about. */
+  requestDeleteItem?: (itemId: string) => void;
+  /** Opens the create dialog OWNED BY THE TAB — the timeline itself never
+   *  renders a dialog, it only reports which kind was chosen and for which
+   *  week (that week's start seeds the new item's `startAt`). */
+  requestAddItem?: (kind: AddItemKind, weekStart: string | null) => void;
 }

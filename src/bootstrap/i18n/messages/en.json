@@ -1303,6 +1303,66 @@
       "network-error": "Connection error. Please try again.",
       "unknown": "Something went wrong. Please try again.",
       "no-class": "We could not determine your class. Please contact your homeroom teacher."
+    },
+    "teacher": {
+      "modeBanner": "Teacher mode — drag to reorder, edit dates inline on a row.",
+      "readonlyPill": "Read-only — this course belongs to another subject teacher.",
+      "forbiddenSubject": "You do not have access to this subject's course.",
+      "noCourse": "This subject has no course yet.",
+      "noSubjects": "This class has no subjects yet.",
+      "subjectPicker": {
+        "label": "Choose a subject",
+        "mine": "{name} (your subject)"
+      },
+      "draftBanner": {
+        "title": "This course is not published — students cannot see it yet.",
+        "publish": "Publish"
+      },
+      "addMenu": {
+        "label": "Add item",
+        "lesson": "Lesson",
+        "assignment": "Assignment",
+        "document": "Document",
+        "exam": "Exam",
+        "examNote": "Exams are created in the Exam bank and appear on the timeline once published."
+      },
+      "editDates": {
+        "label": "Edit dates",
+        "opensLabel": "Opens at",
+        "dueLabel": "Due at",
+        "blankHint": "Leave blank = no limit.",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "reorder": {
+        "up": "Move up: {title}",
+        "down": "Move down: {title}"
+      },
+      "delete": {
+        "label": "Delete document: {title}",
+        "confirmTitle": "Delete this document?",
+        "confirmBody": "“{title}” will be removed from the course. Students will no longer see it.",
+        "confirmLabel": "Delete document"
+      },
+      "createDialog": {
+        "lessonTitle": "Add a lesson",
+        "assignmentTitle": "Add an assignment",
+        "documentTitle": "Add a document",
+        "titleField": "Title",
+        "contentField": "Lesson content",
+        "descriptionField": "Assignment instructions",
+        "urlField": "Document link (https)",
+        "opensField": "Opens at",
+        "dueField": "Due at",
+        "cancel": "Cancel",
+        "save": "Add item"
+      },
+      "errors": {
+        "titleRequired": "Enter a title for this item.",
+        "contentRequired": "Enter the lesson content.",
+        "invalidUrl": "The link must start with https:// and have a valid host.",
+        "invalidWindow": "The due time must be after the opening time."
+      }
     }
   },
   "dashboard": {
@@ -4393,12 +4453,6 @@
     "hub": {
       "breadcrumbClasses": "Classes",
       "meta": "{count} students · AY {year}",
-      "placeholder": {
-        "body": {
-          "course": "The class online course is coming in a later update."
-        },
-        "title": "Under construction"
-      },
       "tabs": {
         "course": "Online course",
         "homeroom": "Homeroom",
