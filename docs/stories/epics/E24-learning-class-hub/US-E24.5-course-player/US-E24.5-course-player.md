@@ -105,7 +105,96 @@ None (không ADR; upload/grade chờ BE).
 
 ## Evidence
 
-(điền sau)
+Implementation: iframe/link allowlist (`embed-source.ts` + `safe-href.ts`, pure, exact-hostname
+Set match, `https:`-only for embeds), 10-file `course-player/` component tree dispatching on
+`ActiveItemVm.kind`, one-way `submitAssignment` flow (`useReducer` state machine —
+idle/ready/confirming/submitting/submitted/error:already-submitted/error:closed/error:network,
+no optimistic update, 409 race re-fetches the real submission server-side), and full removal
+of US-E24.3's TEMP inline-expand code (timeline rows now `Link` straight into the player).
+
+Tests: 73 new in the initial implementation (35 unit — 25 allowlist + 10 URL-extract, 12 RSC
+`page.test.ts`, 9 `actions.test.ts`, 17 Storybook) + fix-round additions (focus-retarget stories,
+locked-row-non-interactive story, single-request-path story) + 4 QA-added independent allowlist
+bypass probes (userinfo-colon ambiguity, WHATWG backslash normalization, DNS trailing dot,
+fullwidth-Unicode IDNA homograph — all correctly blocked/normalized). `bun vitest run` 537
+files/4341 tests green (isolated re-run after the known cold-cache 5s-timeout flake in unrelated
+files, confirmed not caused by this branch). `bunx vitest run --config vitest.storybook.mts` on
+`features/lms` 59/59 green (163 files/1300 full-suite). `bunx tsc --noEmit` clean. `bun lint`
+clean (1 pre-existing unrelated warning in `messaging/message-context-menu.tsx`). `bun run build`
+succeeds (verified by both reviewer and QA independently).
+
+**Security checklist (high-risk lane) — all 9 items independently verified by 3 separate
+agents (engineer self-report → reviewer source-level re-verification + 48 adversarial bypass
+cases → QA 4 additional independent bypass cases), zero unresolved doubt:**
+1. Zero `dangerouslySetInnerHTML` anywhere in the diff (grep-verified 3×).
+2. `embedSourceFor(url)` — exact hostname `Set` match, `https:`-only, credentials rejected,
+   `embedUrl` rebuilt from parsed components (query/fragment dropped). 48 reviewer bypass cases
+   + 4 QA bypass cases, all blocked or safely normalized.
+3. Every `<iframe>` has mandatory `title`, `sandbox="allow-scripts allow-same-origin
+   allow-presentation"` (no top-navigation/forms/popups/modals), `referrerPolicy="no-referrer"`.
+4. Every anchor rendering `url`/`examUrl` has `target="_blank" rel="noopener noreferrer"` (100%
+   grep coverage) + a `safe-href.ts` scheme gate (http/https only) added in the fix round as
+   defense-in-depth beyond React 19's own `javascript:` block.
+5. Submit is a real two-step confirm (`confirming` is a distinct reducer state, no
+   `window.confirm()`); no optimistic update — `submitted` renders only server-returned data.
+6. 409 race re-fetches the real submission via a genuine server read (`GetAssignmentDetailUseCase`)
+   and returns it embedded in the action result — the client never fabricates a "submitted"
+   banner from in-progress textarea content.
+7. 20 000-char client cap confirmed as UX-only (not a validation boundary) — a 20 050-char
+   payload is proven to reach the use-case verbatim in `actions.test.ts`.
+8. RBAC/ownership: `SubmitAssignmentUseCase`/repository call carries no client-supplied
+   identity (only `content`; BE derives the student from the bearer token) — decision `0063`
+   authCtx threading does not apply here (no forgeable identity field exists to gate).
+9. `revalidatePath` fires on both the success path AND the 409-race path, for both the item
+   route and the course-timeline route (fix-round addition — was success-only initially).
+
+fe-tech-lead-reviewer verdict: **Approved** (2 must-fix doc-sync items — `design-spec.jsonc`
+status + this Evidence section — both closed; 3 should-fix — locked sidebar rows made
+non-interactive to match US-E24.3's `LockedRowRejectsActivation` precedent, `safe-href.ts`
+scheme gate added, 409-path `revalidatePath` added; 2 consider — both applied: single-request-
+path made structurally guaranteed, not just call-site-disciplined).
+
+fe-accessibility-auditor verdict: round 1 **Fail** (3 Major + 1 Minor) — A11Y-001 (active
+sidebar row contrast 4.31:1 → `text-foreground` 10.9:1), A11Y-002 (confirm-warning text 4.37:1
+at 12px bold → bumped to `text-sm`, token only clears AA at ≥14px bold per its own tokens.css
+comment), A11Y-003 (keyboard focus silently reverted to `<body>` on every step of the
+irreversible submit flow — fixed with per-block refs + a `useEffect` keyed on reducer status
+that retargets focus into each new block, `tabIndex={-1}` added where needed), A11Y-004
+(dangling `aria-describedby` reference during `confirming`/`submitting` — fixed). All 4 closed
+in the fix-round commit `f11d2413`, verified by real focus-tracking Storybook assertions (not
+static claims) per QA re-verification.
+
+fe-qa-playwright verdict: **Go** (high-risk lane — "if any security doubt is unresolved, verdict
+must be No-Go" standard explicitly met with zero doubt). 100% AC coverage. Independently
+re-verified every security/mutation/focus claim with real `userEvent`-driven, DOM-asserting
+tests rather than trusting code review claims — including the A11Y-003 focus-retarget fix
+(traced red→green by temporarily reverting the fix) and the single-request-path guarantee
+(double-confirm story asserts exactly one Server Action call). Added 4 independent allowlist
+bypass probes. Zero defects found.
+
+Design-review gate:
+- design-system: conform — zero raw color; all contrast fixes verified against `tokens.css`
+  real values; `bg-edu-media-surface`/`text-edu-media-surface-foreground` used correctly for
+  video chrome; `ItemTypeChip`/`ItemStatePill`/`TextContent`/`groupItemsByWeek` reused, not
+  forked; `docs/product/design-spec.jsonc#student-course-player` status synced to "implemented
+  — US-E24.5, with 7 documented deviations" (D-1..D-7, matching the US-E24.3 deviation-record
+  pattern).
+- a11y: WCAG AA OK post-fix (see above); keyboard OK including focus retargeting through the
+  full submit state machine; reduced-motion N/A (no new transition/animation classes).
+- impeccable audit: per-edit design hook ran on every change across all 4 rounds (embed-source,
+  route+bodies+submit, storybook, fix-round) — 0 anti-patterns flagged.
+- states: all 5 item-type bodies + locked + submit's 8 reducer states covered in Storybook;
+  mobile 375 (1 column, 16:9 video preserved) proven via real viewport story.
+
+Deviations recorded in `design-spec.jsonc` (D-1..D-7): no per-row "✓ Đã nộp" in sidebar (no BE
+wire field — same class of gap as E24.2/E24.3's missing teacher-name field); no worksheet
+attachment/download (ask #1, shown as a disabled drop-zone with a reason badge, per D3); no
+video scrubber (impossible over a cross-origin sandboxed iframe — the embedded player owns its
+own controls); locked sidebar rows drop `opacity .65` AND are non-interactive (consistency fix
+with US-E24.3); EXAM description only in "Tổng quan" (avoids duplicate sentences); active
+sidebar title renders in `text-foreground` not course-tone color (WCAG 1.4.3 fix, D-6 — flagged
+as a candidate ADR if design wants brand-tone ink on an on-tint background, not applied without
+one); TEMP-removal landed in the same commit as the new route (not split out, cosmetic only).
 
 ## Implementation Plan
 
