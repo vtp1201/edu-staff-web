@@ -1308,8 +1308,11 @@
       "modeBanner": "Teacher mode — drag to reorder, edit dates inline on a row.",
       "readonlyPill": "Read-only — this course belongs to another subject teacher.",
       "forbiddenSubject": "You do not have access to this subject's course.",
+      "forbiddenSubjectBody": "Only the assigned subject teacher can see this course's content. Pick another subject or contact the subject teacher.",
       "noCourse": "This subject has no course yet.",
+      "noCourseBody": "The subject teacher has not created an online course yet. Content will appear here as soon as the course is created.",
       "noSubjects": "This class has no subjects yet.",
+      "noSubjectsBody": "This class has no subjects assigned, so there is no course to show. Contact a school administrator.",
       "subjectPicker": {
         "label": "Choose a subject",
         "mine": "{name} (your subject)"
@@ -1336,7 +1339,8 @@
       },
       "reorder": {
         "up": "Move up: {title}",
-        "down": "Move down: {title}"
+        "down": "Move down: {title}",
+        "movedTo": "Moved to position {position} of {total}."
       },
       "delete": {
         "label": "Delete document: {title}",

@@ -141,15 +141,18 @@ describe("CourseTimeline — mode branches (US-E24.10)", () => {
     expect(html).not.toContain("Xoá tài liệu: Bài giảng: Đạo hàm");
   });
 
-  it("disables reorder at the edges rather than offering an impossible move", () => {
+  it("marks reorder inert at the edges with aria-disabled, never the native attribute", () => {
     const html = render("teacher", TEACHER_ACTIONS);
     const firstUp = html.indexOf("Chuyển lên: Bài giảng: Đạo hàm");
 
     expect(firstUp).toBeGreaterThan(-1);
-    // `disabled` sits on the same <button> element, just before its aria-label.
-    expect(html.slice(Math.max(0, firstUp - 250), firstUp)).toContain(
-      "disabled",
-    );
+    // Both attributes sit on the same <button>, just before its aria-label.
+    const button = html.slice(Math.max(0, firstUp - 350), firstUp);
+    expect(button).toContain('aria-disabled="true"');
+    // The native attribute would drop the button out of the tab order the
+    // instant the row it moves reaches the top, silently sending focus to
+    // <body> (WCAG 2.4.3).
+    expect(button).not.toContain('disabled=""');
   });
 
   it("mounts the add menu in the EMPTY state too — where it matters most", () => {

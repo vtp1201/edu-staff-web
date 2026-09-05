@@ -53,6 +53,11 @@ export class ClassSubjectsRepository implements IClassSubjectsRepository {
       const seen = new Set<string>();
       const refs: ClassSubjectRef[] = [];
       for (const dto of rows) {
+        // An ARCHIVED offering is a subject this class no longer teaches;
+        // showing it would offer a course BE then refuses to serve. Filtered
+        // BEFORE the dedupe set is touched, so an old ARCHIVED row cannot
+        // shadow the live ACTIVE one for the same subject.
+        if (dto.status !== "ACTIVE") continue;
         if (seen.has(dto.subjectId)) continue;
         seen.add(dto.subjectId);
         refs.push({

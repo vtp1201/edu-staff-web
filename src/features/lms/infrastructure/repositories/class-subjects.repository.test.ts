@@ -97,6 +97,47 @@ describe("ClassSubjectsRepository.listClassSubjects", () => {
     expect(rows).toHaveLength(1);
   });
 
+  it("drops ARCHIVED offerings — an archived subject is not selectable", async () => {
+    // The status field is on the wire for a reason: an ARCHIVED offering is a
+    // subject the class no longer teaches. Listing it would let a GVCN open a
+    // course that BE will refuse (or worse, silently accept a write against a
+    // dead offering).
+    const get = vi.fn(async () =>
+      envelope([
+        row({ status: "ARCHIVED" }),
+        row({
+          classSubjectId: "cs-2",
+          subjectId: "sub-ly",
+          lockedFields: { subjectName: "Vật lý 10" },
+        }),
+      ]),
+    );
+
+    const rows = await new ClassSubjectsRepository(
+      makeHttp(get),
+    ).listClassSubjects("cl-1");
+
+    expect(rows).toEqual([{ subjectId: "sub-ly", subjectName: "Vật lý 10" }]);
+  });
+
+  it("still offers a subject whose ARCHIVED row precedes an ACTIVE one", async () => {
+    // The dedupe set must not be poisoned by the skipped row: a subject
+    // re-offered in a new academic year keeps an old ARCHIVED row alongside
+    // the live one.
+    const get = vi.fn(async () =>
+      envelope([
+        row({ classSubjectId: "cs-old", status: "ARCHIVED" }),
+        row({ classSubjectId: "cs-new" }),
+      ]),
+    );
+
+    const rows = await new ClassSubjectsRepository(
+      makeHttp(get),
+    ).listClassSubjects("cl-1");
+
+    expect(rows).toEqual([{ subjectId: "sub-toan", subjectName: "Toán 10" }]);
+  });
+
   it("falls back to the id when BE sends a blank name (never a blank option)", async () => {
     const get = vi.fn(async () =>
       envelope([row({ lockedFields: { subjectName: "  " } })]),

@@ -163,6 +163,11 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
   const [errorKey, setErrorKey] = useState<LmsFailure["type"] | null>(
     vm.errorKey,
   );
+  // What the live region says after a reorder. A row moving is a purely VISUAL
+  // change: without this, a screen-reader user pressing "Chuyển lên" gets no
+  // confirmation that anything happened, let alone where the item landed
+  // (WCAG 4.1.3).
+  const [reorderMessage, setReorderMessage] = useState("");
 
   const isTeacher = vm.mode === "teacher";
   const orderedIds = vm.teacher?.orderedItemIds ?? [];
@@ -181,7 +186,7 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
   }
 
   /** Both interaction paths end here, with the COMPLETE new ordering. */
-  function reorder(sourceId: string, targetId: string) {
+  async function reorder(sourceId: string, targetId: string) {
     if (!actions.reorderItems || sourceId === targetId) return;
     const from = orderedIds.indexOf(sourceId);
     const to = orderedIds.indexOf(targetId);
@@ -189,8 +194,22 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
     // Dropping ONTO a row means "take its place": coming from above that is
     // after the target, coming from below it is before.
     const position = from < to ? "after" : "before";
-    void actions.reorderItems(
-      buildReorderedItemIds(orderedIds, sourceId, targetId, position),
+    const nextIds = buildReorderedItemIds(
+      orderedIds,
+      sourceId,
+      targetId,
+      position,
+    );
+    const res = await actions.reorderItems(nextIds);
+    // Only a CONFIRMED move is announced. A failure is rolled back and
+    // reported by the owner (toast) — announcing a position here would state
+    // the opposite of what the rows now show.
+    if (!res.ok) return;
+    setReorderMessage(
+      tt("reorder.movedTo", {
+        position: nextIds.indexOf(sourceId) + 1,
+        total: nextIds.length,
+      }),
     );
   }
 
@@ -198,7 +217,7 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
     const index = orderedIds.indexOf(itemId);
     const neighbour = orderedIds[index + delta];
     if (neighbour === undefined) return;
-    reorder(itemId, neighbour);
+    void reorder(itemId, neighbour);
   }
 
   const teacherRowProps = isTeacher
@@ -215,7 +234,7 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
             setDragOverId(null);
           },
           onDropItem: () => {
-            if (dragSourceId) reorder(dragSourceId, item.id);
+            if (dragSourceId) void reorder(dragSourceId, item.id);
             setDragSourceId(null);
             setDragOverId(null);
           },
@@ -279,6 +298,13 @@ function StaffTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
           </Button>
         </div>
       )}
+
+      {/* Mounted unconditionally (never rendered only once there is something
+          to say): a live region injected together with its text is not
+          reliably announced by AT. */}
+      <p aria-live="polite" className="sr-only" role="status">
+        {reorderMessage}
+      </p>
 
       <div className="rounded-[var(--edu-radius-card)] border border-border bg-card px-3 pt-1 pb-4 shadow-card sm:px-5">
         {vm.weeks.length === 0 ? (

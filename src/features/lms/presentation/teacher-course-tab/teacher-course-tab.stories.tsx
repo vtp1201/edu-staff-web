@@ -193,6 +193,46 @@ export const ErrorReorder: Story = {
   },
 };
 
+/**
+ * A11Y-001: a keyboard user moves a row until it hits the top. The button they
+ * are standing on becomes unavailable at that exact moment — with the native
+ * `disabled` attribute the browser would silently throw focus to `<body>`
+ * (WCAG 2.4.3), and nothing would tell a screen-reader user where the row
+ * landed (WCAG 4.1.3). This is the regression guard for both.
+ */
+export const TeacherReorderEdgeKeepsFocus: Story = {
+  args: {
+    actions: actions({
+      // Echoes the requested ordering, unlike the default fixture — the row
+      // has to ACTUALLY reach the top for the edge to be exercised.
+      reorderItems: fn(async (itemIds: string[]) => ({
+        ok: true as const,
+        data: itemIds
+          .map((id) => ITEMS.find((i) => i.id === id))
+          .filter((i): i is CourseItem => i !== undefined),
+      })),
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const up = canvas.getAllByRole("button", { name: /^Chuyển lên:/ })[1];
+    if (!up) throw new Error("no second row to move up");
+    await expect(up).toHaveAttribute("aria-disabled", "false");
+
+    await userEvent.click(up);
+
+    // It reached the top: the control is now inert…
+    await waitFor(() => expect(up).toHaveAttribute("aria-disabled", "true"));
+    // …but focus never left it, and never fell back to the document body.
+    await expect(document.activeElement).not.toBe(document.body);
+    await expect(document.activeElement).toBe(up);
+    // …and the move was announced with the row's new position.
+    await expect(canvas.getByRole("status")).toHaveTextContent(
+      "vị trí 1 trên 2",
+    );
+  },
+};
+
 /** AC: GVCN picks another subject — the picker mounts only with >1 option. */
 export const GvcnSubjectPicker: Story = {
   args: {

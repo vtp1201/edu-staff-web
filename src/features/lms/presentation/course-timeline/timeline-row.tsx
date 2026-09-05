@@ -204,14 +204,23 @@ export function TimelineRow({
           mouse/touch only, so without these buttons the whole feature would be
           unreachable by keyboard (accessibility.md). Both call the exact same
           reorder mutation a drop does. */}
+      {/* `aria-disabled` + a no-op guard, NEVER the native `disabled` attribute:
+          the row that just moved reaches the edge WHILE its own button holds
+          focus, and a natively disabled element is dropped from the tab order
+          instantly — the browser then throws focus back to `<body>` with no
+          warning (WCAG 2.4.3). Keeping the button focusable costs nothing and
+          keeps the keyboard user exactly where they were. */}
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="size-9"
-        disabled={!canMoveUp}
+        className="size-9 aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
+        aria-disabled={!canMoveUp}
         aria-label={tt("reorder.up", { title: item.title })}
-        onClick={onMoveUp}
+        onClick={() => {
+          if (!canMoveUp) return;
+          onMoveUp?.();
+        }}
       >
         <MoveUp className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
       </Button>
@@ -219,10 +228,13 @@ export function TimelineRow({
         type="button"
         variant="ghost"
         size="icon"
-        className="size-9"
-        disabled={!canMoveDown}
+        className="size-9 aria-disabled:opacity-50 aria-disabled:hover:bg-transparent"
+        aria-disabled={!canMoveDown}
         aria-label={tt("reorder.down", { title: item.title })}
-        onClick={onMoveDown}
+        onClick={() => {
+          if (!canMoveDown) return;
+          onMoveDown?.();
+        }}
       >
         <MoveDown className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
       </Button>
@@ -263,8 +275,8 @@ export function TimelineRow({
   ) : null;
 
   return (
-    // eslint-disable-next-line -- drag is an ENHANCEMENT here; the reorder
-    // buttons above are the accessible, keyboard-complete path.
+    // Drag is an ENHANCEMENT here; the reorder buttons above are the
+    // accessible, keyboard-complete path.
     <li
       className="flex gap-0"
       draggable={editable || undefined}

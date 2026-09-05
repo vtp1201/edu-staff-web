@@ -1308,8 +1308,11 @@
       "modeBanner": "Chế độ giáo viên — kéo thả để sắp xếp, sửa ngày ngay trên dòng.",
       "readonlyPill": "Chỉ đọc — khoá học của giáo viên bộ môn khác.",
       "forbiddenSubject": "Không có quyền xem khoá học môn này.",
+      "forbiddenSubjectBody": "Chỉ giáo viên bộ môn được phân công mới xem được nội dung khoá học này. Hãy chọn môn khác hoặc liên hệ giáo viên bộ môn.",
       "noCourse": "Môn này chưa có khoá học nào.",
+      "noCourseBody": "Giáo viên bộ môn chưa tạo khoá học online cho môn này. Nội dung sẽ hiện ở đây ngay khi khoá học được tạo.",
       "noSubjects": "Lớp này chưa có môn học nào.",
+      "noSubjectsBody": "Lớp chưa được phân môn học nên chưa có khoá học nào để xem. Hãy liên hệ quản trị viên nhà trường.",
       "subjectPicker": {
         "label": "Chọn môn học",
         "mine": "{name} (môn của bạn)"
@@ -1336,7 +1339,8 @@
       },
       "reorder": {
         "up": "Chuyển lên: {title}",
-        "down": "Chuyển xuống: {title}"
+        "down": "Chuyển xuống: {title}",
+        "movedTo": "Đã chuyển đến vị trí {position} trên {total}."
       },
       "delete": {
         "label": "Xoá tài liệu: {title}",

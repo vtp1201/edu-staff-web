@@ -555,23 +555,43 @@ export const TeacherKeyboardReorder: Story = {
   },
 };
 
-/** AC: the first row cannot move up and the last cannot move down. */
+/**
+ * AC: the first row cannot move up and the last cannot move down — expressed
+ * with `aria-disabled`, NOT the native attribute, so an edge row's button stays
+ * in the tab order instead of dumping focus on `<body>` (WCAG 2.4.3). Clicking
+ * it is a no-op.
+ */
 export const TeacherReorderEdges: Story = {
   args: {
     vm: TEACHER_VM,
     actions: {
       retryListItems,
-      reorderItems: async () => ({ ok: true }),
+      reorderItems: fn(async () => ({ ok: true as const })),
       patchItemWindow: async () => ({ ok: true }),
       requestAddItem: () => {},
     },
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     const ups = canvas.getAllByRole("button", { name: /^Chuyển lên:/ });
     const downs = canvas.getAllByRole("button", { name: /^Chuyển xuống:/ });
-    await expect(ups[0]).toBeDisabled();
-    await expect(downs[downs.length - 1]).toBeDisabled();
-    await expect(ups[1]).toBeEnabled();
+    const firstUp = ups[0];
+    if (!firstUp) throw new Error("no reorder control rendered");
+
+    await expect(firstUp).toHaveAttribute("aria-disabled", "true");
+    await expect(downs[downs.length - 1]).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await expect(ups[1]).toHaveAttribute("aria-disabled", "false");
+    // Still reachable and still focusable — the whole point of aria-disabled.
+    await expect(firstUp).not.toBeDisabled();
+    firstUp.focus();
+    await expect(document.activeElement).toBe(firstUp);
+
+    // …and inert: the guard swallows the click, so no reorder is attempted.
+    await userEvent.click(firstUp);
+    await expect(args.actions.reorderItems).not.toHaveBeenCalled();
+    await expect(document.activeElement).not.toBe(document.body);
   },
 };

@@ -339,7 +339,16 @@ export function TeacherCourseTab({ vm, actions }: TeacherCourseTabProps) {
                   ? "noSubjects"
                   : "noCourse",
             )}
-            body={tt("readonlyPill")}
+            // The body follows the SAME branch as the title. One shared line
+            // ("chỉ đọc") explained none of the three situations and told a
+            // GVCN nothing about what to do next.
+            body={tt(
+              vm.emptyReason === "forbidden"
+                ? "forbiddenSubjectBody"
+                : vm.emptyReason === "no-subjects"
+                  ? "noSubjectsBody"
+                  : "noCourseBody",
+            )}
             className="py-16"
           />
         </div>
