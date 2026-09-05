@@ -1,4 +1,4 @@
-import { toParagraphs } from "./lesson-player.derive";
+import { toParagraphs } from "./course-timeline.derive";
 
 export interface TextContentProps {
   content: string;
@@ -11,7 +11,7 @@ export interface TextContentProps {
 export function TextContent({ content }: TextContentProps) {
   const paragraphs = toParagraphs(content);
   return (
-    <div className="max-h-[60vh] overflow-y-auto px-7 py-6 text-foreground text-sm leading-relaxed">
+    <div className="max-h-[50vh] overflow-y-auto text-sm leading-relaxed">
       {paragraphs.map((paragraph) => (
         <p
           key={paragraph.id}

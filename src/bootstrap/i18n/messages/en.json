@@ -1214,28 +1214,33 @@
       "loading": "Loading courses..."
     },
     "player": {
-      "breadcrumb": {
-        "navLabel": "Breadcrumb",
-        "coursesLink": "Courses",
-        "pickLesson": "Pick a lesson"
-      },
       "content": {
-        "empty": {
-          "title": "No content yet",
-          "body": "Pick a lesson from the timeline to start."
-        },
         "loading": "Loading lesson content...",
         "loadError": "Could not load the lesson content."
+      }
+    },
+    "timeline": {
+      "legend": {
+        "upcoming": "Opens soon",
+        "open": "Open",
+        "closed": "Closed — view only"
       },
-      "timeline": {
-        "navAriaLabel": "Course timeline",
-        "empty": "This course has no content yet.",
-        "dueAt": "Due: {date}",
-        "noDueAt": "No deadline",
-        "openDocument": "Open the document in a new tab",
-        "openAssignment": "Go to the assignments page",
-        "openExam": "Open the exam in a new tab",
-        "examDuration": "{minutes} minutes"
+      "legendLabel": "Status legend",
+      "alwaysOpen": "Always open",
+      "weekLabel": "Week {start} – {end}",
+      "window": {
+        "range": "{start} → {due}",
+        "from": "Opens {start}",
+        "due": "Due {due}",
+        "always": "Always open"
+      },
+      "opensAt": "Content opens at {date}.",
+      "opensAtUnknown": "This content has not opened yet.",
+      "empty": "The teacher has not added any content to this course yet.",
+      "emptyTitle": "No content yet",
+      "retry": "Try again",
+      "header": {
+        "openCount": "{count, plural, one {# open item} other {# open items}}"
       },
       "itemType": {
         "lesson": "Lesson",
@@ -1245,13 +1250,27 @@
       },
       "itemState": {
         "open": "Open",
-        "closed": "Closed",
-        "upcoming": "Upcoming"
+        "closed": "Closed — view only",
+        "upcoming": "Opens soon"
+      },
+      "itemDetail": {
+        "closedNote": "Closed — you can still review the content, but submissions are locked.",
+        "document": {
+          "explainer": "Reference material attached by the teacher — opens via an external link.",
+          "open": "Open the document in a new tab",
+          "noLink": "The teacher has not attached a link to this document."
+        },
+        "exam": {
+          "explainer": "Opens the exam screen. Submit before time runs out.",
+          "open": "Start exam (opens a new tab)",
+          "noLink": "No exam link has been configured for this item.",
+          "duration": "{minutes} minutes"
+        },
+        "assignment": {
+          "explainer": "Submit your work and see your grade on the Assignments page.",
+          "open": "Go to the assignments page"
+        }
       }
-    },
-    "a11y": {
-      "activeLessonState": "currently viewing",
-      "lessonChanged": "Now viewing lesson: {title}"
     },
     "errors": {
       "not-found": "Course not found.",
