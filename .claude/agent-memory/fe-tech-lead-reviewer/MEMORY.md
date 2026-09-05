@@ -25,3 +25,4 @@
 - [Embed allowlist review bar](embed-allowlist-review.md) — the 4 gates of `embed-source.ts`, 48 verified bypass shapes, and what React 19 does/doesn't block in `href`
 - [Flaky RSC guard tests](flaky-rsc-guard-tests.md) — repo-wide vitest timeouts; reproduce at merge-base before blaming a branch
 - [RSC page.tsx imports DI](rsc-page-imports-di.md) — CLAUDE.md forbids it, 70/90 pages do it; ADR topic, never a per-story finding
+- [Exam id-space mismatch](exam-id-space-mismatch.md) — lms `exam.examId` vs `features/exam` MOCK_STUDENT_ID list; the in-app "Vào làm bài" CTA may 404. Pre-existing, not per-story

@@ -1,120 +1,45 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 /**
- * QA gap-fill (US-E24.1) — `/student/assignments` RSC wiring, end to end.
- * Same rationale as the `courses/page.test.ts` sibling: `bun build` never
- * executes a force-dynamic RSC body, so the "no crash, real shape" claim was
- * unproven. Exercises: forbidden guard, `no-class`, a `forbidden` repository
- * failure, a non-forbidden failure (leaves `assignments` null for client
- * cold-fetch/retry per the page's own comment), and a real
- * `AssignmentSummary[]` success path.
+ * US-E24.4 — "Bài tập" is no longer its own screen: it is the cross-subject
+ * view of `/student/courses`, so this route is now a PERMANENT (308) alias.
+ * 308 rather than 307 because the move is permanent — bookmarks, the old
+ * sidebar link and any crawler should be rewritten (same call as the teacher
+ * roster alias of US-E24.8).
+ *
+ * `redirect()` throws a `NEXT_REDIRECT;<type>;<url>;<status>;` digest
+ * synchronously with no request context, so the RSC can be called directly in
+ * node env and asserted on.
  */
-
-const requireRole = vi.fn();
-const resolveMyLmsClassId = vi.fn();
-const listExec = vi.fn();
-const makeListAssignmentsUseCase = vi.fn(async () => ({ execute: listExec }));
-
-vi.mock("@/bootstrap/auth-guard", () => ({
-  requireRole: (...args: unknown[]) => requireRole(...args),
-}));
-vi.mock("@/bootstrap/di/lms.di", () => ({
-  makeListAssignmentsUseCase: () => makeListAssignmentsUseCase(),
-  resolveMyLmsClassId: () => resolveMyLmsClassId(),
-}));
-vi.mock("./actions", () => ({
-  listAssignmentsAction: vi.fn(),
-  getAssignmentDetailAction: vi.fn(),
-  submitAssignmentAction: vi.fn(),
-}));
-
-async function renderPage() {
-  const { default: Page } = await import("./page");
-  return (await Page()) as unknown as {
-    props: {
-      assignments: unknown[] | null;
-      errorKey: string | null;
-    };
-  };
+function digestOf(err: unknown): string[] {
+  return ((err as { digest?: string } | null)?.digest ?? "").split(";");
 }
 
-beforeEach(() => vi.clearAllMocks());
+async function renderPage(locale = "vi", tenant = "t1") {
+  const { default: Page } = await import("./page");
+  try {
+    await Page({ params: Promise.resolve({ locale, tenant }) });
+    return { redirected: false, url: "", status: "" };
+  } catch (err) {
+    const parts = digestOf(err);
+    return {
+      redirected: parts[0] === "NEXT_REDIRECT",
+      url: parts[2],
+      status: parts[3],
+    };
+  }
+}
 
-describe("StudentAssignmentsPage — RSC wiring (US-E24.1)", () => {
-  it("rejects a non-student with a forbidden VM, never calling DI/class resolver", async () => {
-    requireRole.mockResolvedValue({ ok: false, reason: "wrong-role" });
-    const el = await renderPage();
-    expect(el.props.assignments).toEqual([]);
-    expect(el.props.errorKey).toBe("forbidden");
-    expect(resolveMyLmsClassId).not.toHaveBeenCalled();
-    expect(makeListAssignmentsUseCase).not.toHaveBeenCalled();
+describe("legacy /student/assignments", () => {
+  it("308-redirects to the cross-subject assignment view", async () => {
+    const result = await renderPage();
+    expect(result.redirected).toBe(true);
+    expect(result.url).toBe("/vi/t/t1/student/courses?view=assignment");
+    expect(result.status).toBe("308");
   });
 
-  it("seeds `no-class` when the class cannot be resolved", async () => {
-    requireRole.mockResolvedValue({ ok: true, role: "student" });
-    resolveMyLmsClassId.mockResolvedValue(null);
-    const el = await renderPage();
-    expect(el.props.assignments).toEqual([]);
-    expect(el.props.errorKey).toBe("no-class");
-  });
-
-  it("surfaces a forbidden repository failure as an errorKey (assignments stays null)", async () => {
-    requireRole.mockResolvedValue({ ok: true, role: "student" });
-    resolveMyLmsClassId.mockResolvedValue("cl1");
-    listExec.mockResolvedValue({ ok: false, failure: { type: "forbidden" } });
-    const el = await renderPage();
-    expect(el.props.assignments).toBeNull();
-    expect(el.props.errorKey).toBe("forbidden");
-  });
-
-  it("leaves `assignments` null (not []) on a non-forbidden failure, for client retry", async () => {
-    requireRole.mockResolvedValue({ ok: true, role: "student" });
-    resolveMyLmsClassId.mockResolvedValue("cl1");
-    listExec.mockResolvedValue({
-      ok: false,
-      failure: { type: "network-error" },
-    });
-    const el = await renderPage();
-    expect(el.props.assignments).toBeNull();
-    expect(el.props.errorKey).toBeNull();
-  });
-
-  it("maps a real AssignmentSummary[] end to end without throwing", async () => {
-    requireRole.mockResolvedValue({ ok: true, role: "student" });
-    resolveMyLmsClassId.mockResolvedValue("cl1");
-    listExec.mockResolvedValue({
-      ok: true,
-      data: [
-        {
-          id: "a1",
-          classId: "cl1",
-          subjectId: "s1",
-          courseId: "c1",
-          title: "Bài tập 1",
-          dueAt: "2026-09-10T00:00:00Z",
-          createdBy: "t1",
-          updatedAt: "2026-09-01T00:00:00Z",
-        },
-        {
-          id: "a2",
-          classId: "cl1",
-          subjectId: "s2",
-          courseId: null,
-          title: "Bài tập không hạn",
-          dueAt: null,
-          createdBy: "t1",
-          updatedAt: "2026-09-01T00:00:00Z",
-        },
-      ],
-    });
-
-    const el = await renderPage();
-    expect(el.props.errorKey).toBeNull();
-    expect(el.props.assignments).toHaveLength(2);
-    expect(el.props.assignments?.[1]).toMatchObject({
-      id: "a2",
-      courseId: null,
-      dueAt: null,
-    });
+  it("keeps the caller's locale and tenant (no hardcoded workspace)", async () => {
+    const result = await renderPage("en", "acme");
+    expect(result.url).toBe("/en/t/acme/student/courses?view=assignment");
   });
 });

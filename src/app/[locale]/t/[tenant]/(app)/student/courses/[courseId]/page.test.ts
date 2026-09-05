@@ -26,7 +26,6 @@ vi.mock("@/bootstrap/di/lms.di", () => ({
   makeListCourseItemsUseCase: async () => ({ execute: listItemsExec }),
 }));
 vi.mock("./actions", () => ({
-  getLessonAction: vi.fn(),
   retryListItemsAction: vi.fn(),
 }));
 vi.mock("next-intl/server", () => ({

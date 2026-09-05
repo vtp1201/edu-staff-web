@@ -4,6 +4,7 @@ import {
   Clipboard,
   FileText,
   Link as LinkIcon,
+  Lock,
   type LucideIcon,
   Play,
 } from "lucide-react";
@@ -33,6 +34,14 @@ const ITEM_TYPE_ICON: Record<CourseItemType, LucideIcon> = {
 
 export interface ItemTypeChipProps {
   itemType: CourseItemType;
+  /**
+   * The item has not been released yet (only ever an EXAM on a student read,
+   * D7): the type icon is replaced by a lock. A VARIANT of this chip rather
+   * than a second lock chip somewhere else — the sidebar of the player
+   * (US-E24.5) needs exactly this and nothing more
+   * (component-organization.md).
+   */
+  locked?: boolean;
   className?: string;
 }
 
@@ -48,8 +57,12 @@ export interface ItemTypeChipProps {
  * chip — promoted on day 1 with both consumers already named, not speculatively
  * (component-organization.md, decision 0026).
  */
-export function ItemTypeChip({ itemType, className }: ItemTypeChipProps) {
-  const Icon = ITEM_TYPE_ICON[itemType];
+export function ItemTypeChip({
+  itemType,
+  locked = false,
+  className,
+}: ItemTypeChipProps) {
+  const Icon = locked ? Lock : ITEM_TYPE_ICON[itemType];
   const tone = ITEM_TYPE_TONE[itemType];
 
   return (

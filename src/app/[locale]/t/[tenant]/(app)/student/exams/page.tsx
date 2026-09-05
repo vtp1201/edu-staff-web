@@ -1,16 +1,23 @@
-import { makeListExamsUseCase } from "@/bootstrap/di/exam.di";
-import type { ExamSummary } from "@/features/exam/domain/entities/exam.entity";
-import { ExamListScreen } from "@/features/exam/presentation/exam-list/exam-list";
+import { permanentRedirect } from "next/navigation";
+import { tenantUrl } from "@/bootstrap/tenant";
 
-// Mock student id — in production this comes from the session / JWT (mock-first).
-const MOCK_STUDENT_ID = "current-student";
-
-export default async function StudentExamsPage() {
-  let exams: ExamSummary[] = [];
-  try {
-    exams = await (await makeListExamsUseCase()).execute(MOCK_STUDENT_ID);
-  } catch {
-    exams = [];
-  }
-  return <ExamListScreen exams={exams} />;
+/**
+ * Legacy `/student/exams` — the exam list is now the cross-subject exam view
+ * of `/student/courses` (US-E24.4), sourced from the real `lms` course
+ * timelines instead of the mock-era `MOCK_STUDENT_ID` exam read this page used
+ * to do.
+ *
+ * The DETAIL route `/student/exams/[examId]` is deliberately untouched: it is
+ * where an open exam's CTA lands, and it still resolves the exam through
+ * `makeListExamsUseCase` (core has no single-exam GET).
+ */
+export default async function StudentExamsPage({
+  params,
+}: {
+  params: Promise<{ locale: string; tenant: string }>;
+}) {
+  const { locale, tenant } = await params;
+  permanentRedirect(
+    `/${locale}${tenantUrl(tenant, "/student/courses")}?view=exam`,
+  );
 }

@@ -1,5 +1,7 @@
 # Memory Index
 
+- [URL view+sub, zero client](pattern-url-view-sub-zero-client.md) — US-E24.4: merging 2 screens into `?view=`+`?sub=` needs no Client Component; extract a fan-out by leaving the old test file untouched
+- [aria-label on a span + tab-order](gotcha-aria-label-on-span-and-tab-order.md) — Biome rejects it (move the phrase to the parent link); a new pill row breaks every `userEvent.tab()` story
 - [URL-as-state tab shell](pattern-url-tab-shell-rsc.md) — US-E24.8: role-gated `?tab=` RSC shell (one panel, Link tabs); notFound/permanentRedirect digest strings for node route tests
 - [Capped count + badge accname](pattern-capped-count-and-badge-accname.md) — E24.7 review: cap an unbounded drain to a "N+" lower bound (not a fake 99+); StatusBadge aria-label ≠ accname; auto-fill grid breaks at 320px
 - [Browser-direct BE call](pattern-browser-direct-be-call.md) — E18.59/ADR 0072: public IP-rate-limited endpoint moves to a client fetch; one ApiError adapter reuses the whole mapper
@@ -127,5 +129,8 @@
 - [Tone with no wire source + duplicate i18n copy](gotcha-tone-and-duplicate-i18n-copy.md) — move an invented visual attribute to presentation (deterministic id hash); two keys sharing one string breaks getByText
 - [Week-grouped timeline rebuild](pattern-week-grouped-timeline-rebuild.md) — US-E24.3: domain returns a window RESULT with an injected formatter; ISO week inline; `vi` CLDR = `08-05` + time first; feature-shared tier
 - [Locked row + info token gap](gotcha-locked-row-and-token-gap.md) — an aria-disabled row's reason must be VISIBLE text (title is unreachable); no AA-safe --edu-info text token
+- [Irreversible step machine](pattern-irreversible-step-machine.md) — US-E24.5: swapped-subtree states need focus retarget + tabIndex={-1}; fire the action from an effect on the reducer status (not the click); one locked-row contract per item
+
+- [Small bold text is not large text](gotcha-small-bold-text-not-large-text.md) — a <14px extrabold pill on `bg-edu-primary-light` needs `text-foreground`; `text-edu-primary-accessible` is 4.35:1 (fails)
 
 - [Use-case-level authCtx + shared-map body](pattern-usecase-level-authctx-and-shared-map-body.md) — US-E24.9: 0063 guard at the USE-CASE when BE re-derives the key; delete a hybrid composite when its last force-mock goes; revalidatePath ≠ new props

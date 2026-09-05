@@ -31,3 +31,14 @@ export const Exam: Story = {
     expect(canvasElement.querySelector("[aria-hidden='true']")).not.toBeNull();
   },
 };
+
+/** US-E24.5: the player's sidebar shows an unreleased EXAM with a lock in
+ *  place of the type icon. Still decorative — the row spells "Sắp mở" out. */
+export const LockedExam: Story = {
+  args: { itemType: "EXAM", locked: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.queryByRole("img")).toBeNull();
+    expect(canvasElement.querySelector("[aria-hidden='true']")).not.toBeNull();
+  },
+};

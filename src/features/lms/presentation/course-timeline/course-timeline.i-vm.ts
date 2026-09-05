@@ -70,11 +70,6 @@ export interface CourseTimelineVm {
   mode: CourseTimelineMode;
 }
 
-/** Server Action result for the lazy lesson-body read (stable key, no i18n). */
-export type GetLessonResult =
-  | { ok: true; data: { id: string; title: string; content: string } }
-  | { ok: false; errorKey: LmsFailure["type"] };
-
 /** Server Action result for the "Thử lại" re-read of the timeline. */
 export type RetryListItemsResult =
   | { ok: true; data: { weeks: WeekVm[]; openCount: number } }
@@ -82,6 +77,5 @@ export type RetryListItemsResult =
 
 /** Server Action refs — passed as props, never imported by presentation. */
 export interface CourseTimelineActions {
-  getLesson: (lessonId: string) => Promise<GetLessonResult>;
   retryListItems: () => Promise<RetryListItemsResult>;
 }

@@ -28,7 +28,6 @@ function vm(mode: CourseTimelineMode): CourseTimelineVm {
 }
 
 const actions: CourseTimelineActions = {
-  getLesson: vi.fn(),
   retryListItems: vi.fn(),
 };
 
@@ -42,7 +41,7 @@ describe("CourseTimeline — mode guard", () => {
         <CourseTimeline
           vm={vm(mode)}
           actions={actions}
-          assignmentsHref="/vi/t/demo/student/assignments"
+          itemHrefBase="/vi/t/demo/student/courses/c1/items"
         />,
       ),
     ).toThrow(/not implemented/i);

@@ -1,23 +1,29 @@
 import { useTranslations } from "next-intl";
 import { CourseCard } from "./course-card";
 import { CoursesEmpty } from "./courses-empty";
+import { CrossSubjectList } from "./cross-subject-list";
 import type { StudentCoursesScreenVm } from "./student-courses-screen.i-vm";
+import { ViewSwitcher } from "./view-switcher";
 
 /**
- * `/student/courses` — the class's published courses.
+ * `/student/courses` — the class's published courses, in one of three views
+ * (US-E24.4): the card grid (`?view=all`, default) or the cross-subject
+ * "Bài tập" / "Bài kiểm tra" filter.
  *
- * A plain server-rendered grid since US-E24.1: the three progress tabs
- * ("Tất cả / Đang học / Hoàn thành") were filtering on a client-computed
- * completion status that the `lms` contract does not provide, so they filtered
- * on nothing real and are gone. Progress-aware browsing returns with BE US-254
- * (ADR 0076). No client state remains → no `'use client'`.
+ * A plain server-rendered screen since US-E24.1: the three progress tabs were
+ * filtering on a client-computed completion status the `lms` contract does not
+ * provide, so they filtered on nothing real. The view/sub-tab state that
+ * replaced them lives entirely in the URL — every switch is a `<Link>`, so
+ * back/forward work and there is still no `'use client'` anywhere here.
  *
- * US-E24.2: each card now carries a derived timeline summary ("sắp đến hạn" +
- * "N mục đang mở"). Everything it needs — including whether a deadline is
- * urgent — arrives resolved in the VM, so this stays a pure render.
+ * `/student/assignments` and `/student/exams` are permanent redirects into the
+ * two cross-subject views (US-E24.4); this is the single home of both lists.
  */
 export function StudentCoursesScreen({
+  view,
+  viewHrefFor,
   courses,
+  cross,
   errorKey,
 }: StudentCoursesScreenVm) {
   const t = useTranslations("courses");
@@ -26,10 +32,19 @@ export function StudentCoursesScreen({
     <div className="flex flex-col gap-5">
       <h1 className="font-extrabold text-2xl text-foreground">{t("title")}</h1>
 
+      <ViewSwitcher view={view} hrefFor={viewHrefFor} />
+
       {errorKey ? (
         <p role="alert" className="text-edu-error-text text-sm">
           {t(`errors.${errorKey}`)}
         </p>
+      ) : cross !== null ? (
+        <CrossSubjectList
+          view={cross.view}
+          sub={cross.sub}
+          groups={cross.groups}
+          hrefFor={cross.hrefFor}
+        />
       ) : courses.length === 0 ? (
         <CoursesEmpty title={t("empty.allTab")} />
       ) : (

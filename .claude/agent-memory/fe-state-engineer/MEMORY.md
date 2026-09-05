@@ -5,3 +5,4 @@
 - [Failure union i18n mapping](reference-failure-union-i18n.md) — stable error key → i18n path convention across features
 - [AppShell/QueryClient boundary](project-appshell-queryclient-boundary.md) — AppShell's own JSX is a sibling of ReactQueryProvider; when plain Context is the correct exception to no-global-store
 - [Next Server Action error boundary](reference-nextjs-server-action-error-boundary.md) — actions must return discriminated results not raw-throw ApiError; isRedirectError import path; found violation in switchTenantAction (US-E23.1)
+- [Optimistic update: useState-mirror not useOptimistic](feedback-optimistic-update-no-usestate-mirror.md) — RSC+Server-Action screens (no TanStack) use await-then-upsert local useState (ClassLogScreen/LeaveRequestSheet precedent), not React 19 useOptimistic; lift mirror above sibling surfaces sharing same data (US-E24.9)

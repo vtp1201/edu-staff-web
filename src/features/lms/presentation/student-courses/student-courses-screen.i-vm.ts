@@ -2,6 +2,11 @@ import type { CourseStatus } from "@/features/lms/domain/entities/course.entity"
 import type { CourseItemType } from "@/features/lms/domain/entities/course-item.entity";
 import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
 import type { CourseTone } from "../tone";
+import type {
+  CoursesView,
+  CrossSubjectGroupsVm,
+  CrossSubjectSubTab,
+} from "./cross-subject.i-vm";
 
 /** The soonest still-open deadline of a course, pre-selected server-side. */
 export interface CourseNextDueVm {
@@ -59,8 +64,28 @@ export interface CourseCardVm {
   itemsFailed: boolean;
 }
 
+/** The cross-subject half of the route (`?view=assignment|exam`, US-E24.4). */
+export interface CrossSubjectViewVm {
+  view: "assignment" | "exam";
+  sub: CrossSubjectSubTab;
+  groups: CrossSubjectGroupsVm;
+  /** Route-owned `?sub=` builder (locale/tenant live only at the route). */
+  hrefFor: (sub: CrossSubjectSubTab) => string;
+}
+
 export interface StudentCoursesScreenVm {
+  /**
+   * Which of the three views the URL asked for (US-E24.4). The screen owns all
+   * three so the route keeps returning ONE element: `all` renders the card
+   * grid, the other two render the cross-subject list.
+   */
+  view: CoursesView;
+  /** Route-owned `?view=` builder for the pill row. */
+  viewHrefFor: (view: CoursesView) => string;
+  /** Populated for `view === "all"`; `[]` otherwise. */
   courses: CourseCardVm[];
+  /** Populated for the two cross-subject views; `null` for `all`. */
+  cross: CrossSubjectViewVm | null;
   /** `no-class` = the signed-in student has no resolvable class enrollment, so
    *  the class-scoped list cannot even be requested (see `resolveMyClassId`). */
   errorKey: LmsFailure["type"] | "no-class" | null;

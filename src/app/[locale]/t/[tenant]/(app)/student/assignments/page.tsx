@@ -1,65 +1,22 @@
-import { requireRole } from "@/bootstrap/auth-guard";
-import {
-  makeListAssignmentsUseCase,
-  resolveMyLmsClassId,
-} from "@/bootstrap/di/lms.di";
-import type { AssignmentSummary } from "@/features/lms/domain/entities/assignment.entity";
-import { StudentAssignmentsScreen } from "@/features/lms/presentation/student-assignments/student-assignments-screen";
-import type { StudentAssignmentsScreenVm } from "@/features/lms/presentation/student-assignments/student-assignments-screen.i-vm";
-import {
-  getAssignmentDetailAction,
-  listAssignmentsAction,
-  submitAssignmentAction,
-} from "./actions";
-
-const ACTIONS = {
-  listAssignmentsAction,
-  getAssignmentDetailAction,
-  submitAssignmentAction,
-};
+import { permanentRedirect } from "next/navigation";
+import { tenantUrl } from "@/bootstrap/tenant";
 
 /**
- * `/student/assignments` — the assignments of the student's own class.
+ * Legacy `/student/assignments` (US-E24.1) — the class's assignments are now
+ * the cross-subject view of the courses screen (US-E24.4), which shows every
+ * course's assignments in one deadline-ordered list instead of a parallel
+ * screen fed by a second endpoint.
  *
- * Same class-scoping story as `/student/courses`: `GET /assignments?classId=`
- * requires the class, which core's enrollment read resolves.
+ * `permanentRedirect` (308, not 307) because the move is permanent: the
+ * sidebar entry is gone and existing bookmarks should be rewritten.
  */
-export default async function StudentAssignmentsPage() {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) {
-    const vm: StudentAssignmentsScreenVm = {
-      assignments: [],
-      errorKey: "forbidden",
-    };
-    return <StudentAssignmentsScreen {...vm} actions={ACTIONS} />;
-  }
-
-  const classId = await resolveMyLmsClassId();
-  if (classId === null) {
-    const vm: StudentAssignmentsScreenVm = {
-      assignments: [],
-      errorKey: "no-class",
-    };
-    return <StudentAssignmentsScreen {...vm} actions={ACTIONS} />;
-  }
-
-  let assignments: AssignmentSummary[] | null = null;
-  let errorKey: StudentAssignmentsScreenVm["errorKey"] = null;
-
-  const result = await (await makeListAssignmentsUseCase()).execute(classId);
-  if (result.ok) {
-    assignments = result.data;
-  } else if (result.failure.type === "forbidden") {
-    errorKey = "forbidden";
-  }
-  // Other failures: leave `assignments` null → the client region cold-fetches
-  // and can retry (never a wrong "empty" state).
-
-  return (
-    <StudentAssignmentsScreen
-      assignments={assignments}
-      errorKey={errorKey}
-      actions={ACTIONS}
-    />
+export default async function StudentAssignmentsPage({
+  params,
+}: {
+  params: Promise<{ locale: string; tenant: string }>;
+}) {
+  const { locale, tenant } = await params;
+  permanentRedirect(
+    `/${locale}${tenantUrl(tenant, "/student/courses")}?view=assignment`,
   );
 }
