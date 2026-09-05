@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -221,3 +221,75 @@ and focus return. One component, one canonical home — no new folder.
 | `bun vitest run` | 568 files / 4678 tests passed |
 | `bun vitest run --config vitest.storybook.mts` | 165 files / 1330 tests passed (8 new homeroom-tab stories) |
 | `bun run build` | passed |
+
+### Review + a11y + design-review (post round-1 REVISION REQUIRED)
+
+Commits: 596ec3fb (feat, round 1) + 8b3e6e29 (fix, round 2) + memory notes.
+
+Tech-lead review round 1: **REVISION REQUIRED** — 1 MUST FIX (High severity):
+`assertCanDecideLeave` fail-OPEN when `authCtx` undefined, reached via two
+unguarded legacy Server Actions (`teacher/discipline`, `principal/discipline`)
+that this US turned into real core mutations without threading a context.
+2 SHOULD FIX (missing `*.security.test.ts` per ADR 0063; stale US-E18.14 story
+doc). Round 2: **APPROVED** — `DecideLeaveInput.authCtx` now required, guard
+fail-closed (throw forbidden on missing/invalid context), bare context-free
+factories deleted from `discipline.di.ts` so a caller structurally cannot skip
+auth, both legacy actions thread real `makeLeaveDecisionAuthContext()` (principal
+now correctly gets `forbidden` per ADR 0073 read-only oversight), negative test
+for missing-context added, dedicated `discipline.repository.security.test.ts`
+(235 lines, full role sweep × both methods × both repos, forbidden-beats-not-found),
+US-E18.14 story doc supersession note added.
+
+A11y audit round 1: 1 Critical (focus loss when a list row + its focused button
+unmount after Duyệt/Từ chối succeeds — no code moved focus, WCAG 2.4.3) + 1 Major
+(count badges' `aria-label` on a `<span>` role=generic — same unreliable pattern
+already found once at `kpi-tile.tsx`) + 2 Minor (per-row `isPending` scope, and
+systemic h3-with-no-h2-ancestor across all class-hub tabs — registered backlog
+#7, deferred). Round 2: **CLOSED** — `titleRef`+`tabIndex={-1}` on the card
+heading + `.focus()` in `settle()`'s success branch covers both Approve and
+Reject-via-dialog paths; `use-dialog-return-focus.ts` gained an optional
+`fallbackRef` (additive, verified byte-identical behavior for the other 6
+existing callers) so the dialog path also lands focus correctly when its
+invoker is detached; count badges now `aria-hidden` digit + `sr-only` full
+label (kpi-tile.tsx pattern); per-row `pendingId` replaces the card-wide
+boolean (A11Y-003 closed too, done as cheap). Storybook stories
+`ApproveRemovesRow`/`RejectDialog` assert `heading.toHaveFocus()` directly —
+proof, not just claim.
+
+Design review: pass
+- design-system: conform — tokens-only (StatCard compact variant, StatusBadge
+  reuse, `border-border`/`bg-card`/`shadow-card`), 3-card grid deliberately
+  deviates from the design-spec's bare `auto-fit minmax(300px,1fr)` to
+  `grid-cols-1 sm:[auto-fit,minmax(300px,1fr)]` avoiding the 320px overflow
+  the E24.7 audit already flagged for the identical pattern.
+- a11y: WCAG AA OK post-fix — focus management on row-removal, count badges
+  have reliable accessible names, ≥44px touch targets via Button primitive,
+  ReasonConfirmDialog focus-trap intact (canonical component, promoted not
+  forked per decision 0026).
+- impeccable audit: code-level pass — no anti-pattern tells; card layout is
+  design-spec-prescribed.
+- states: full/attendance-not-taken/empty-all/reject-dialog/error-card/
+  resync-remount covered in Storybook; each of the 3 cards fails/retries
+  independently (`Promise.allSettled`).
+
+Test proof: unit (LeaveDecisionAuthContext + canDecideLeave, fail-closed sweep
+across 5 roles) + integration (dedicated security test file, forge-role sweep
+× 2 methods × 2 repos, forbidden-beats-not-found, DI structural guard proving
+the context-free factories no longer exist) + Storybook interaction (8 stories
+incl. 2 new focus-restoration assertions) — 569 files/4692 unit tests +
+165 files/1330 Storybook tests, all green. `bunx tsc --noEmit`, `bun lint`,
+`bun run build` green. Pre-push gate green on all pushed commits (one
+unrelated pre-existing flake retried successfully, confirmed not caused by
+this branch).
+
+Descoped/deferred:
+- Card 2 (vi phạm chờ xử lý) stays force-mocked — real BE status model
+  (DRAFT/SUBMITTED/APPROVED/REJECTED) has no relation to the shipped mock
+  entity's status axis and the real DTO has no display fields (backlog #4).
+- `/teacher/discipline` + `/principal/discipline` legacy `getLeaveRequests({})`
+  callers refused before HTTP in real mode — pre-existing gap this US surfaces
+  honestly rather than guessing a class (backlog #5, #6 closed as duplicate).
+- Backlog #7: systemic h3-without-h2-ancestor across class-hub tabs, not
+  introduced by this story — flag to next shell-touching story.
+- Backlog #8: principal discipline dashboard still renders approve/reject
+  buttons that always return forbidden in real mode (correct security, UX gap).
