@@ -22,6 +22,19 @@ export interface TimetableSlot {
    *  teacher's schedule cell into the class hub; an absent id renders a plain,
    *  unlinked cell rather than a dead link. */
   classId?: string;
+  /** The slot's CURRENT assigned teacher (wire: `SlotResponse.teacherMemberId`,
+   *  always present on the real responses). US-E24.9 keys the class hub's
+   *  "tiết của bạn" highlight AND every period-log/period-prep write on this id
+   *  — never on `teacherName` (a display string) and never on `sub`
+   *  (decision 0074). Optional because the mock/legacy class-scoped seed has no
+   *  member ids for most slots. */
+  teacherMemberId?: string;
+  /** Bell-schedule start, `"HH:mm"`. NO wire source yet (BE US-244 is still in
+   *  `openapi.draft.yaml`), so the real mapper leaves both times undefined and
+   *  the UI must render the no-time state — see US-E24.9's AC. */
+  startTime?: string;
+  /** Bell-schedule end, `"HH:mm"` — same draft-status caveat as `startTime`. */
+  endTime?: string;
 }
 
 /**

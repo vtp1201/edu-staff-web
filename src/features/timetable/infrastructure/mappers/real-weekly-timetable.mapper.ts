@@ -8,8 +8,9 @@ import type { RealTimetableResponseDto } from "../dtos/real-timetable-response.d
  * Class-scoped real-mode mapper (US-E18.11, signature unchanged in US-E18.26 —
  * the still-real `getByClass` path depends on it). BE US-153 added
  * `subjectName`/`room` to every slot response, so both are read when present;
- * `teacherName` still has no wire source (cross-repo ask #6/#7) and falls back
- * to the raw id, same precedent as US-E18.2's `memberName`. The top-level
+ * `teacherName` now has a wire source (BE US-234) and falls back to the raw
+ * id when core could not resolve it, same precedent as US-E18.2's `memberName`.
+ * US-E24.9 additionally keeps the raw `teacherMemberId` on the slot. The top-level
  * `className` is supplied by the caller (which already resolved this classId);
  * the wire does not carry it.
  */
@@ -26,7 +27,11 @@ export function mapRealWeeklyTimetable(
       subjectId: slot.subjectId,
       subjectName: slot.subjectName ?? slot.subjectId, // id fallback — ask #6/#7
       subjectColorToken: colors.get(slot.subjectId) ?? "muted",
-      teacherName: slot.teacherMemberId, // no wire display name — ask #6/#7
+      teacherName: slot.teacherName ?? slot.teacherMemberId, // id fallback
+      // Kept alongside the resolved name (US-E24.9): the class hub's own-slot
+      // highlight and every period-log/prep write are keyed on the ID, and it
+      // must survive a display-name lookup miss.
+      teacherMemberId: slot.teacherMemberId,
       room: slot.room,
       className: undefined,
     };

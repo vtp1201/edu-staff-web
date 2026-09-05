@@ -28,6 +28,9 @@ export function mapWeeklyTimetable(
             teacherName: slot.teacherName,
             room: slot.room,
             className: slot.className,
+            teacherMemberId: slot.teacherMemberId,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
           }
         : null;
     }

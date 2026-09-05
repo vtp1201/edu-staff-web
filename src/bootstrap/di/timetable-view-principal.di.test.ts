@@ -74,12 +74,13 @@ describe("makeGetMemberTimetableForPrincipalUseCase", () => {
   });
 
   for (const value of [undefined, "false"] as const) {
-    it(`is real (hybrid) when NEXT_PUBLIC_USE_MOCK=${String(value)} — BE US-175 grants MANAGER`, async () => {
+    it(`is the real repository when NEXT_PUBLIC_USE_MOCK=${String(value)} — BE US-175 grants MANAGER`, async () => {
       const { createServerHttpClient } = stubRealEdges();
       const di = await importDiWithEnv(value);
       const useCase = await di.makeGetMemberTimetableForPrincipalUseCase();
+      // US-E24.9 removed the hybrid composite: nothing is force-mocked any more.
       expect(repoOf(useCase).constructor.name).toBe(
-        "HybridWeeklyTimetableRepository",
+        "RealWeeklyTimetableRepository",
       );
       expect(createServerHttpClient).toHaveBeenCalled();
     });

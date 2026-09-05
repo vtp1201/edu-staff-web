@@ -13,6 +13,14 @@ export interface TimetableSlotDto {
   teacherName?: string;
   room?: string;
   className?: string;
+  /** Mock-only member id for the seeded demo teacher (US-E24.9): mock mode has
+   *  no IAM directory, so the class-hub's "tiết của bạn" affordances would
+   *  never light up without a stable id to match the mock auth context. */
+  teacherMemberId?: string;
+  /** Mock-only bell schedule ("HH:mm") — exercises the "Đang diễn ra" /
+   *  time-shown branch that the REAL wire cannot drive yet (US-244 is draft). */
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface WeeklyTimetableResponseDto {

@@ -1,5 +1,5 @@
 /**
- * Integration tests — RealWeeklyTimetableRepository + HybridWeeklyTimetableRepository
+ * Integration tests — RealWeeklyTimetableRepository
  * (US-E18.11, extended by US-E18.26). The `GET /classes` lookup still uses
  * `fetchAllPages` (`raw: true` MUST stay a top-level axios-config sibling of
  * `params` — epic-wide recurring bug, US-E18.19); mocked as the full
@@ -12,10 +12,7 @@ import type { LinkedStudentsResponseDto } from "../dtos/linked-student-item.dto"
 import type { MemberEnrollmentResponseDto } from "../dtos/member-enrollment-response.dto";
 import type { MemberTimetableResponseDto } from "../dtos/member-timetable-response.dto";
 import type { RealTimetableResponseDto } from "../dtos/real-timetable-response.dto";
-import {
-  HybridWeeklyTimetableRepository,
-  RealWeeklyTimetableRepository,
-} from "./real-weekly-timetable.repository";
+import { RealWeeklyTimetableRepository } from "./real-weekly-timetable.repository";
 
 const TERM_ID = "term-1";
 const resolveTermId = vi.fn(async () => ({
@@ -521,44 +518,5 @@ describe("RealWeeklyTimetableRepository — getChildren (linked-students)", () =
       undefined,
       undefined,
     ]);
-  });
-});
-
-describe("HybridWeeklyTimetableRepository", () => {
-  it("routes every wireable operation to the real repo, keeping only getByClass on mock", async () => {
-    const week = { classId: "x", className: "", slots: {} };
-    const real = {
-      getByClass: vi.fn(),
-      getByMember: vi.fn(async () => week),
-      getByTeacher: vi.fn(async () => week),
-      getMyTimetable: vi.fn(async () => week),
-      getChildren: vi.fn(async () => []),
-    };
-    const mock = {
-      getByClass: vi.fn(async () => week),
-      getByMember: vi.fn(),
-      getByTeacher: vi.fn(),
-      getMyTimetable: vi.fn(),
-      getChildren: vi.fn(),
-    };
-    const hybrid = new HybridWeeklyTimetableRepository(real, mock);
-
-    await hybrid.getByTeacher();
-    await hybrid.getMyTimetable();
-    await hybrid.getChildren();
-    await hybrid.getByMember("child-1", "2026-03-02");
-
-    expect(real.getByTeacher).toHaveBeenCalled();
-    expect(real.getMyTimetable).toHaveBeenCalled();
-    expect(real.getChildren).toHaveBeenCalled();
-    expect(real.getByMember).toHaveBeenCalledWith("child-1", "2026-03-02");
-    expect(mock.getByTeacher).not.toHaveBeenCalled();
-    expect(mock.getMyTimetable).not.toHaveBeenCalled();
-    expect(mock.getChildren).not.toHaveBeenCalled();
-    expect(mock.getByMember).not.toHaveBeenCalled();
-
-    await hybrid.getByClass("11A2");
-    expect(mock.getByClass).toHaveBeenCalledWith("11A2", undefined);
-    expect(real.getByClass).not.toHaveBeenCalled();
   });
 });

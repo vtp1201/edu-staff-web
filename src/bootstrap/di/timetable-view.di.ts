@@ -10,21 +10,19 @@ import { resolveCurrentTermContext } from "@/bootstrap/lib/resolve-current-term"
 import type { IWeeklyTimetableRepository } from "@/features/timetable/domain/repositories/i-weekly-timetable.repository";
 import { GetChildListUseCase } from "@/features/timetable/domain/use-cases/get-child-list.use-case";
 import { GetChildTimetableUseCase } from "@/features/timetable/domain/use-cases/get-child-timetable.use-case";
+import { GetClassTimetableUseCase } from "@/features/timetable/domain/use-cases/get-class-timetable.use-case";
 import { GetMemberTimetableUseCase } from "@/features/timetable/domain/use-cases/get-member-timetable.use-case";
 import { GetMyTeachingScheduleUseCase } from "@/features/timetable/domain/use-cases/get-my-teaching-schedule.use-case";
 import { GetMyTimetableUseCase } from "@/features/timetable/domain/use-cases/get-my-timetable.use-case";
 import { MockWeeklyTimetableRepository } from "@/features/timetable/infrastructure/repositories/mocks/weekly-timetable.mock.repository";
-import {
-  HybridWeeklyTimetableRepository,
-  RealWeeklyTimetableRepository,
-} from "@/features/timetable/infrastructure/repositories/real-weekly-timetable.repository";
+import { RealWeeklyTimetableRepository } from "@/features/timetable/infrastructure/repositories/real-weekly-timetable.repository";
 
 /**
- * Hybrid DI composite. US-E18.11 could only wire `getByTeacher` (cross-repo
- * ask #15); US-E18.26 un-mocked the rest against BE US-153/US-148, so
- * `getByMember`/`getMyTimetable`/`getChildren` are real too. Only `getByClass`
- * still routes to mock — and only because nothing calls it (see
- * `HybridWeeklyTimetableRepository`'s doc).
+ * US-E18.11 could only wire `getByTeacher` (cross-repo ask #15); US-E18.26
+ * un-mocked the rest against BE US-153/US-148; US-E24.9 un-mocked the last one,
+ * `getByClass`, by giving it its first caller (the class-hub timetable tab).
+ * With nothing left to force-mock, the hybrid composite is gone and this is now
+ * an ordinary `USE_MOCK ? Mock : Real` factory.
  */
 async function makeRepo(): Promise<IWeeklyTimetableRepository> {
   if (USE_MOCK) return new MockWeeklyTimetableRepository();
@@ -49,15 +47,11 @@ async function makeRepo(): Promise<IWeeklyTimetableRepository> {
     }
     return names;
   };
-  const real = new RealWeeklyTimetableRepository(
+  return new RealWeeklyTimetableRepository(
     http,
     resolveCurrentTermContext,
     currentUserId,
     resolveChildNames,
-  );
-  return new HybridWeeklyTimetableRepository(
-    real,
-    new MockWeeklyTimetableRepository(),
   );
 }
 
@@ -92,4 +86,13 @@ export async function makeGetChildTimetableUseCase() {
  */
 export async function makeGetMemberTimetableForPrincipalUseCase() {
   return new GetMemberTimetableUseCase(await makeRepo());
+}
+
+/**
+ * Class-scoped weekly read (US-E24.9, class-hub timetable tab). First caller of
+ * `getByClass`, which had been contract-correct but force-mocked since
+ * US-E18.11 purely for lack of one.
+ */
+export async function makeGetClassTimetableUseCase() {
+  return new GetClassTimetableUseCase(await makeRepo());
 }

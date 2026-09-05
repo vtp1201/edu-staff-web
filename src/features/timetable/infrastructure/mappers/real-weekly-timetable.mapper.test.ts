@@ -37,6 +37,39 @@ describe("mapRealWeeklyTimetable", () => {
     expect(slot?.room).toBeUndefined();
   });
 
+  it("keeps teacherMemberId on the slot (US-E24.9 — the class hub keys writes on the id)", () => {
+    const vm = mapRealWeeklyTimetable(DTO, "11A2");
+    expect(vm.slots[0]?.[1]?.teacherMemberId).toBe("tch-uuid");
+    expect(vm.slots[4]?.[5]?.teacherMemberId).toBe("tch-2");
+  });
+
+  it("prefers the wire teacherName when core resolved one (BE US-234), keeping the id", () => {
+    const vm = mapRealWeeklyTimetable(
+      {
+        ...DTO,
+        slots: [
+          {
+            day: "MON",
+            period: 1,
+            subjectId: "sub-uuid",
+            teacherMemberId: "tch-uuid",
+            teacherName: "Cô Nguyễn Thị Hương",
+          },
+        ],
+      },
+      "11A2",
+    );
+    const slot = vm.slots[0]?.[1];
+    expect(slot?.teacherName).toBe("Cô Nguyễn Thị Hương");
+    expect(slot?.teacherMemberId).toBe("tch-uuid");
+  });
+
+  it("leaves bell-schedule times undefined (no wire source yet — US-244 is draft)", () => {
+    const vm = mapRealWeeklyTimetable(DTO, "11A2");
+    expect(vm.slots[0]?.[1]?.startTime).toBeUndefined();
+    expect(vm.slots[0]?.[1]?.endTime).toBeUndefined();
+  });
+
   it("colours UUID subjectIds too, one colour each (they used to render grey)", () => {
     const vm = mapRealWeeklyTimetable(DTO, "11A2");
     const a = vm.slots[0]?.[1]?.subjectColorToken;

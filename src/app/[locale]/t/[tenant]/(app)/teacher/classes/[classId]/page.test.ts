@@ -17,6 +17,23 @@ vi.mock("@/bootstrap/di/teacher-class.di", () => ({
   makeGetTeacherClassStudentsUseCase: async () => ({ execute: studentsExec }),
 }));
 
+// US-E24.9: the timetable tab body assembles its own VM from four reads. The
+// builder is exercised by its own tests; here we only prove the ROUTE picks it
+// (and passes `?week=` through) instead of a placeholder.
+const buildTimetableTabVm = vi.fn();
+vi.mock("./timetable-vm", () => ({
+  buildTimetableTabVm: (input: unknown) => buildTimetableTabVm(input),
+}));
+vi.mock("./actions", () => ({
+  savePeriodLogAction: vi.fn(),
+  deletePeriodLogAction: vi.fn(),
+  savePeriodPrepAction: vi.fn(),
+  deletePeriodPrepAction: vi.fn(),
+  saveDailyEntryAction: vi.fn(),
+  submitDailyEntryAction: vi.fn(),
+  reviseDailyEntryAction: vi.fn(),
+}));
+
 function cls(overrides: Partial<TeacherClass> = {}): TeacherClass {
   return {
     id: "cls-10a1",
@@ -55,12 +72,16 @@ interface Rendered {
 async function renderPage(
   tab?: string,
   classId = "cls-10a1",
+  week?: string,
 ): Promise<{ el: Rendered | null; notFound: boolean }> {
   const { default: Page } = await import("./page");
   try {
+    const query: { tab?: string; week?: string } = {};
+    if (tab !== undefined) query.tab = tab;
+    if (week !== undefined) query.week = week;
     const el = (await Page({
       params: Promise.resolve({ locale: "vi", tenant: "t1", classId }),
-      searchParams: Promise.resolve(tab === undefined ? {} : { tab }),
+      searchParams: Promise.resolve(query),
     })) as unknown as Rendered;
     return { el, notFound: false };
   } catch (err) {
@@ -75,6 +96,7 @@ async function renderPage(
 beforeEach(() => {
   vi.clearAllMocks();
   studentsExec.mockResolvedValue({ ok: true, data: [] });
+  buildTimetableTabVm.mockResolvedValue({ classId: "cls-10a1", days: [] });
 });
 
 describe("ClassHubPage — tabs by role (US-E24.8 AC)", () => {
@@ -178,9 +200,33 @@ describe("ClassHubPage — tab bodies", () => {
     expect(vm.errorKey).toBe("network-error");
   });
 
-  it("the three not-yet-built tabs render their own placeholder and fetch NO roster", async () => {
+  it("`?tab=timetable` renders the real timetable body, not a placeholder, and fetches NO roster", async () => {
     classExec.mockResolvedValue({ ok: true, data: cls() });
-    for (const tab of ["timetable", "course", "homeroom"]) {
+    const { el } = await renderPage("timetable", "cls-10a1", "2026-W36");
+
+    expect(el?.props.tabs.activeTab).toBe("timetable");
+    expect(el?.props.children.props.vm).toBeDefined();
+    // The placeholder branch would have passed a `tab` prop instead.
+    expect(el?.props.children.props.tab).toBeUndefined();
+    expect(studentsExec).not.toHaveBeenCalled();
+    expect(buildTimetableTabVm).toHaveBeenCalledWith({
+      classId: "cls-10a1",
+      isHomeroom: true,
+      locale: "vi",
+      tenant: "t1",
+      weekParam: "2026-W36",
+    });
+  });
+
+  it("passes an ABSENT ?week= through as undefined (the builder owns the default)", async () => {
+    classExec.mockResolvedValue({ ok: true, data: cls() });
+    await renderPage("timetable");
+    expect(buildTimetableTabVm.mock.calls[0][0].weekParam).toBeUndefined();
+  });
+
+  it("the two not-yet-built tabs render their own placeholder and fetch NO roster", async () => {
+    classExec.mockResolvedValue({ ok: true, data: cls() });
+    for (const tab of ["course", "homeroom"]) {
       vi.clearAllMocks();
       classExec.mockResolvedValue({ ok: true, data: cls() });
       const { el } = await renderPage(tab);

@@ -4379,8 +4379,7 @@
       "placeholder": {
         "body": {
           "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới.",
-          "homeroom": "Khu vực chủ nhiệm (vi phạm, đơn nghỉ) sẽ có trong bản cập nhật tới.",
-          "timetable": "Thời khoá biểu của lớp và sổ đầu bài sẽ có trong bản cập nhật tới."
+          "homeroom": "Khu vực chủ nhiệm (vi phạm, đơn nghỉ) sẽ có trong bản cập nhật tới."
         },
         "title": "Đang xây dựng"
       },
@@ -4391,7 +4390,118 @@
         "students": "Học sinh",
         "timetable": "Thời khoá biểu"
       },
-      "title": "Lớp {className}"
+      "title": "Lớp {className}",
+      "timetable": {
+        "weekNav": {
+          "prev": "Tuần trước",
+          "next": "Tuần sau",
+          "range": "Tuần {range}"
+        },
+        "today": "Hôm nay",
+        "noPeriods": "Không có tiết",
+        "loadError": "Không tải được thời khoá biểu của lớp. Vui lòng thử lại.",
+        "period": {
+          "label": "Tiết {number}",
+          "live": "Đang diễn ra",
+          "mine": "— tiết của bạn"
+        },
+        "periodLog": {
+          "open": "Ghi sổ đầu bài tiết",
+          "openDone": "Đã ghi sổ tiết",
+          "title": "Sổ đầu bài tiết {number} · {day}",
+          "readOnlyTitle": "Sổ tiết (GVCN chỉ đọc)",
+          "lessonTitle": "Tên bài dạy",
+          "lessonTitlePlaceholder": "VD: Đạo hàm và vi phân (tiết 1)",
+          "remark": "Nhận xét tiết học",
+          "remarkPlaceholder": "Tình hình lớp trong tiết…",
+          "grade": "Xếp loại tiết",
+          "gradeOption": "Xếp loại {grade}",
+          "absentCount": "Số HS vắng",
+          "absentHint": "Tham khảo — không thay điểm danh.",
+          "absentShort": "vắng {count}",
+          "counter": "{current}/{max} ký tự",
+          "save": "Lưu sổ tiết",
+          "saving": "Đang lưu…",
+          "cancel": "Huỷ",
+          "delete": "Xoá sổ tiết",
+          "deleteConfirm": "Xoá nội dung sổ đầu bài của tiết này?"
+        },
+        "periodPrep": {
+          "open": "Chuẩn bị tiết",
+          "openDone": "Đã chuẩn bị",
+          "title": "Chuẩn bị tiết {number} · {day}",
+          "lessonPlan": "Giáo án (từ Kế hoạch giảng dạy của tôi)",
+          "lessonPlanNone": "— Chưa chọn giáo án —",
+          "note": "Ghi chú chuẩn bị",
+          "notePlaceholder": "VD: In phiếu bài tập, chuẩn bị mô phỏng GeoGebra…",
+          "materials": "Tài liệu — link ({count}/{max}, không upload tệp)",
+          "materialTitle": "Tiêu đề tài liệu",
+          "materialUrl": "Đường dẫn tài liệu",
+          "addMaterial": "Thêm tài liệu",
+          "removeMaterial": "Xoá tài liệu {title}",
+          "maxReached": "Đã đạt giới hạn {max} tài liệu.",
+          "save": "Lưu chuẩn bị",
+          "saving": "Đang lưu…",
+          "cancel": "Huỷ",
+          "delete": "Xoá chuẩn bị",
+          "deleteConfirm": "Xoá nội dung chuẩn bị của tiết này?"
+        },
+        "daily": {
+          "title": "Sổ chủ nhiệm (theo ngày)",
+          "write": "Viết sổ",
+          "edit": "Sửa",
+          "summary": "Nhận xét chung về lớp trong ngày",
+          "summaryPlaceholder": "Nhận xét chung về lớp trong ngày…",
+          "notableEvents": "Sự việc đáng chú ý",
+          "saveDraft": "Lưu nháp",
+          "submit": "Gửi BGH duyệt",
+          "revise": "Sửa & gửi lại",
+          "saving": "Đang lưu…",
+          "cancel": "Huỷ",
+          "empty": "Chưa có nội dung cho ngày này.",
+          "rejectedReason": "Lý do trả lại: {reason}",
+          "summaryRequired": "Nhận xét trong ngày là bắt buộc"
+        },
+        "upcoming": {
+          "title": "Tiết sắp tới của tôi",
+          "none": "Không có tiết sắp tới trong tuần này.",
+          "meta": "{subject} · Tiết {number} · {day}",
+          "prep": "Chuẩn bị tiết",
+          "prepared": "đã chuẩn bị",
+          "notPrepared": "chưa chuẩn bị",
+          "log": "Sổ đầu bài tiết",
+          "logged": "đã ghi",
+          "notLogged": "chưa ghi",
+          "footer": "Tài liệu chuẩn bị gắn vào từng tiết.",
+          "shortcuts": {
+            "teachingPlan": "Kế hoạch giảng dạy",
+            "teachingPlanSrc": "Giáo án & tiến độ môn của bạn",
+            "attendance": "Điểm danh",
+            "attendanceSrc": "Điểm danh lớp theo tiết",
+            "classLog": "Sổ đầu bài",
+            "classLogSrc": "Sổ đầu bài toàn lớp"
+          }
+        },
+        "validation": {
+          "lessonTitleRequired": "Tên bài dạy là bắt buộc",
+          "lessonTitleTooLong": "Tên bài dạy tối đa {max} ký tự",
+          "remarkTooLong": "Nhận xét tối đa {max} ký tự",
+          "absentRange": "Số HS vắng phải trong khoảng {min}–{max}",
+          "noteTooLong": "Ghi chú tối đa {max} ký tự",
+          "materialTitleRequired": "Tiêu đề tài liệu là bắt buộc",
+          "materialUrlInvalid": "Đường dẫn phải bắt đầu bằng http:// hoặc https://"
+        },
+        "errors": {
+          "slot-forbidden-or-missing": "Bạn không được phân công tiết này hoặc ngày ngoài học kỳ",
+          "term-mismatch": "Tiết này đã được ghi ở một học kỳ khác nên không thể ghi đè",
+          "too-many-materials": "Chỉ được đính tối đa 20 tài liệu",
+          "lesson-plan-not-owned": "Giáo án đã chọn không thuộc về bạn",
+          "validation": "Nội dung chưa hợp lệ, vui lòng kiểm tra lại",
+          "not-found": "Không tìm thấy nội dung",
+          "network-error": "Lỗi kết nối mạng",
+          "unknown": "Đã xảy ra lỗi không xác định"
+        }
+      }
     },
     "loadingClasses": "Đang tải danh sách lớp học...",
     "pageTitle": "Lớp học của tôi",
