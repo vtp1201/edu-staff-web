@@ -134,3 +134,4 @@
 - [Small bold text is not large text](gotcha-small-bold-text-not-large-text.md) — a <14px extrabold pill on `bg-edu-primary-light` needs `text-foreground`; `text-edu-primary-accessible` is 4.35:1 (fails)
 
 - [Use-case-level authCtx + shared-map body](pattern-usecase-level-authctx-and-shared-map-body.md) — US-E24.9: 0063 guard at the USE-CASE when BE re-derives the key; delete a hybrid composite when its last force-mock goes; revalidatePath ≠ new props
+- [Seeded client body + create-only resource](pattern-seeded-client-body-and-create-only-resource.md) — E24.9 review: key={urlParam} on a useState-seeded body; no UPDATE verb ⇒ "Sửa" is a 409 dead end
