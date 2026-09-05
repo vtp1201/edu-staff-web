@@ -132,7 +132,16 @@ export const PlaceholderTabs: Story = {
     const panel = canvas.getByRole("tabpanel");
     expect(panel).toHaveAttribute("aria-labelledby", "classhub-tab-timetable");
     expect(within(panel).getByText("Đang xây dựng")).toBeVisible();
-    expect(within(panel).getByText(/US-E24\.9/)).toBeVisible();
+    expect(
+      within(panel).getByText(
+        messages.teacherClasses.hub.placeholder.body.timetable,
+      ),
+    ).toBeVisible();
+    // A11Y-001: only the active tab points at the one rendered panel.
+    expect(active).toHaveAttribute("aria-controls", "classhub-panel-timetable");
+    expect(canvas.getByRole("tab", { name: "Học sinh" })).not.toHaveAttribute(
+      "aria-controls",
+    );
   },
 };
 

@@ -40,7 +40,7 @@ export function panelId(tab: ClassHubTab): string {
  * renders just the active body), so there is nothing to show/hide client-side.
  */
 export function ClassHubTabs({ vm }: ClassHubTabsProps) {
-  const t = useTranslations("teacher.classHub.tabs");
+  const t = useTranslations("teacherClasses.hub.tabs");
 
   return (
     <div
@@ -58,11 +58,13 @@ export function ClassHubTabs({ vm }: ClassHubTabsProps) {
             href={href}
             role="tab"
             aria-selected={active}
-            aria-controls={panelId(vm.activeTab)}
+            // Only the active tab has a panel in the DOM (server renders ONE
+            // body) — pointing an inactive tab at it would be a broken reference.
+            aria-controls={active ? panelId(id) : undefined}
             className={cn(
               "-mb-px inline-flex min-h-[44px] items-center gap-1.5 border-b-2 px-4 py-2.5 font-semibold text-[13px] outline-none motion-safe:transition-colors focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary font-bold text-primary"
+                ? "border-primary font-bold text-edu-primary-accessible"
                 : "border-transparent text-edu-text-secondary hover:text-edu-text-primary",
             )}
           >

@@ -62,8 +62,10 @@ describe("ClassHubTabs (US-E24.8)", () => {
     );
     expect((dual.match(/role="tab"/g) ?? []).length).toBe(4);
     expect((subjectOnly.match(/role="tab"/g) ?? []).length).toBe(3);
-    expect(dual).toContain(messages.teacher.classHub.tabs.homeroom);
-    expect(subjectOnly).not.toContain(messages.teacher.classHub.tabs.homeroom);
+    expect(dual).toContain(messages.teacherClasses.hub.tabs.homeroom);
+    expect(subjectOnly).not.toContain(
+      messages.teacherClasses.hub.tabs.homeroom,
+    );
   });
 
   it("AC: the current tab is the ONLY one with aria-selected=true", () => {
@@ -82,12 +84,26 @@ describe("ClassHubTabs (US-E24.8)", () => {
     const html = render(<ClassHubTabs vm={tabsVm(["subject"], "students")} />);
     expect(html).toContain('role="tablist"');
     expect(html).toContain(
-      `aria-label="${messages.teacher.classHub.tabs.navLabel}"`,
+      `aria-label="${messages.teacherClasses.hub.tabs.navLabel}"`,
     );
     expect((html.match(/<a /g) ?? []).length).toBe(3);
     expect(html).toContain(`href="${BASE}/cls-10a1?tab=course"`);
-    // Each tab controls the single rendered panel (server resolves one body).
+    // A11Y-001: only the ACTIVE tab may claim `aria-controls` — its panel is the
+    // only one in the DOM (multi-page tabs, not an SPA toggle), so an inactive
+    // tab would point at a panel that is not its own.
+    expect((html.match(/aria-controls=/g) ?? []).length).toBe(1);
     expect(html).toContain('aria-controls="classhub-panel-students"');
+    const withControls = (html.match(/<a [^>]*aria-controls=[^>]*>/g) ?? [])[0];
+    expect(withControls).toContain('aria-selected="true"');
+  });
+
+  it("A11Y-001: an inactive tab carries NO aria-controls (its panel is not rendered)", () => {
+    const html = render(
+      <ClassHubTabs vm={tabsVm(["homeroom", "subject"], "timetable")} />,
+    );
+    expect((html.match(/aria-controls=/g) ?? []).length).toBe(1);
+    expect(html).toContain('aria-controls="classhub-panel-timetable"');
+    expect(html).not.toContain('aria-controls="classhub-panel-students"');
   });
 
   it("AC (mobile 320px): the strip wraps instead of overflowing", () => {
@@ -135,9 +151,14 @@ describe("TabPlaceholder (US-E24.8)", () => {
     const timetable = render(<TabPlaceholder tab="timetable" />);
     const course = render(<TabPlaceholder tab="course" />);
     const homeroom = render(<TabPlaceholder tab="homeroom" />);
-    expect(timetable).toContain("US-E24.9");
-    expect(course).toContain("US-E24.10");
-    expect(homeroom).toContain("US-E24.11");
-    expect(timetable).toContain(messages.teacher.classHub.placeholder.title);
+    const body = messages.teacherClasses.hub.placeholder.body;
+    expect(timetable).toContain(body.timetable);
+    expect(course).toContain(body.course);
+    expect(homeroom).toContain(body.homeroom);
+    expect(timetable).toContain(messages.teacherClasses.hub.placeholder.title);
+    // Copy is user-facing — it must never leak an internal story id.
+    for (const html of [timetable, course, homeroom]) {
+      expect(html).not.toMatch(/US-E\d/);
+    }
   });
 });

@@ -176,7 +176,7 @@ export default async function TeacherClassesPage({
         ...(tiles.length > 0 ? { kpi: { tiles } } : {}),
         // Straight into the class hub (US-E24.8) — the legacy
         // `/classes/<id>/students` route stays as a 308 alias for old links.
-        studentsHref: classHubHref(base, cls.id, "students"),
+        hubHref: classHubHref(base, cls.id, "students"),
       };
     }),
   };

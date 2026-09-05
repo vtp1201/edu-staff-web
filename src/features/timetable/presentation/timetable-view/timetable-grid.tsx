@@ -260,7 +260,7 @@ function Cell({
           href={href}
           className={cn(
             cellClass,
-            "outline-none motion-safe:transition-shadow hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            "outline-none motion-safe:transition-shadow hover:shadow-card-hover hover:ring-1 hover:ring-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
           )}
         >
           {body}

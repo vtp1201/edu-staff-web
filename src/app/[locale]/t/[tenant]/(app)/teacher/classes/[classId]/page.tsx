@@ -13,6 +13,8 @@ import { ClassHubScreen } from "@/features/teacher/presentation/class-hub/class-
 import { TabPlaceholder } from "@/features/teacher/presentation/class-hub/tab-placeholder";
 import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen";
 import type { TeacherClassStudentsScreenVM } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen.i-vm";
+import { TeacherClassesScreen } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen";
+import type { TeacherClassesScreenVM } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
 import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 
 /**
@@ -33,9 +35,19 @@ export default async function ClassHubPage({
   ]);
 
   const classResult = await (await makeGetMyClassUseCase()).execute(classId);
-  // Existence oracle: "not mine", "doesn't exist" and a failed read all look
-  // the same to the visitor — never leak which class ids exist.
-  if (!classResult.ok) notFound();
+  if (!classResult.ok) {
+    // "not mine" and "doesn't exist" deliberately give the SAME answer — the
+    // page must never be an existence oracle for class ids. A transport/server
+    // failure is a different story: 404-ing it would tell the teacher their
+    // class is gone, so it gets the retryable error surface instead.
+    if (classResult.error.type === "not-found") notFound();
+    const errorVm: TeacherClassesScreenVM = {
+      status: "error",
+      errorKey: classResult.error.type,
+      classes: [],
+    };
+    return <TeacherClassesScreen vm={errorVm} />;
+  }
 
   const cls = classResult.data;
   const activeTab = resolveClassHubTab(cls.roles, query?.tab);
@@ -63,7 +75,7 @@ export default async function ClassHubPage({
     activeTab === "students" ? (
       <TeacherClassStudentsScreen
         vm={await studentsVm(cls.id, cls.name, base)}
-        hideBreadcrumb
+        embedded
       />
     ) : (
       <TabPlaceholder tab={activeTab} />

@@ -23,7 +23,7 @@ const PLACEHOLDER_ICON: Record<PlaceholderTab, LucideIcon> = {
  * per tab so each follow-up story knows exactly which placeholder it replaces.
  */
 export function TabPlaceholder({ tab }: TabPlaceholderProps) {
-  const t = useTranslations("teacher.classHub.placeholder");
+  const t = useTranslations("teacherClasses.hub.placeholder");
   return (
     <div className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
       <EmptyState

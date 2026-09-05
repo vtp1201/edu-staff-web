@@ -203,7 +203,7 @@ describe("TeacherClassesPage (US-E24.7)", () => {
     expect("kpi" in vm.classes[0]).toBe(false);
   });
 
-  it("passes roles/subjects/studentsHref straight through for the 4-card GVCN+GVBM scenario (AC)", async () => {
+  it("passes roles/subjects/hubHref straight through for the 4-card GVCN+GVBM scenario (AC)", async () => {
     listExec.mockResolvedValue({
       ok: true,
       data: [
@@ -240,7 +240,7 @@ describe("TeacherClassesPage (US-E24.7)", () => {
         id: string;
         roles: string[];
         subjects: Array<{ name: string }>;
-        studentsHref: string;
+        hubHref: string;
       }>;
     };
     expect(vm.classes).toHaveLength(4);
@@ -248,7 +248,7 @@ describe("TeacherClassesPage (US-E24.7)", () => {
     expect(vm.classes.slice(1).every((c) => c.roles.length === 1)).toBe(true);
     // US-E24.8: the card opens the class HUB directly (the legacy
     // `/students` route still 308s there, but a card must not need the hop).
-    expect(vm.classes[0].studentsHref).toBe(
+    expect(vm.classes[0].hubHref).toBe(
       "/vi/t/t1/teacher/classes/cls-10a1?tab=students",
     );
   });

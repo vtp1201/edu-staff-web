@@ -19,13 +19,14 @@ export interface ClassHubHeaderProps {
  * route, so it is a `Link` to the class list — same visual, routed interaction.
  */
 export function ClassHubHeader({ vm }: ClassHubHeaderProps) {
-  const t = useTranslations("teacher.classHub");
+  const t = useTranslations("teacherClasses.hub");
+  const tRoot = useTranslations("teacherClasses");
   const isHomeroom = vm.roles.includes("homeroom");
   const title = t("title", { className: vm.className });
 
   return (
     <div className="space-y-4">
-      <nav aria-label={t("breadcrumbLabel")}>
+      <nav aria-label={tRoot("breadcrumbLabel")}>
         <ol className="flex flex-wrap items-center gap-1.5 text-edu-text-secondary text-sm">
           <li>
             <Link

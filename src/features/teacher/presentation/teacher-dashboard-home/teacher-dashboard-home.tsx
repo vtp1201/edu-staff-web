@@ -191,7 +191,7 @@ function ScheduleRowBody({
   return (
     <Link
       href={classHref}
-      className="-mx-2 min-w-0 flex-1 rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+      className="-mx-2 flex min-h-[44px] min-w-0 flex-1 flex-col justify-center rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
     >
       {content}
     </Link>
@@ -275,7 +275,7 @@ function PendingGradeRowBody({
   return (
     <Link
       href={classHref}
-      className="-mx-2 min-w-0 flex-1 rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+      className="-mx-2 flex min-h-[44px] min-w-0 flex-1 flex-col justify-center rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
     >
       {content}
     </Link>

@@ -5,7 +5,8 @@ import type { TeacherClass } from "@/features/teacher/domain/entities/teacher-cl
  * US-E24.8 class-hub shell — the RSC route owns every AC that cannot be seen
  * from a component in isolation: role → tab set, `?tab=` resolution (incl. the
  * forbidden-homeroom fallback), which tab BODY is actually rendered, and the
- * notFound() gate for a class that is not mine.
+ * notFound() gate for a class that is not mine (and only that — a
+ * transport failure must stay distinguishable from "no such class").
  */
 
 const classExec = vi.fn();
@@ -28,6 +29,11 @@ function cls(overrides: Partial<TeacherClass> = {}): TeacherClass {
     academicYearLabel: "2025–2026",
     ...overrides,
   };
+}
+
+interface ErrorVm {
+  status: string;
+  errorKey: string;
 }
 
 interface Rendered {
@@ -115,7 +121,7 @@ describe("ClassHubPage — tabs by role (US-E24.8 AC)", () => {
     const { el } = await renderPage("homeroom");
     expect(el?.props.tabs.activeTab).toBe("students");
     // The roster body rendered — not a homeroom placeholder.
-    expect(el?.props.children.props.hideBreadcrumb).toBe(true);
+    expect(el?.props.children.props.embedded).toBe(true);
     expect(studentsExec).toHaveBeenCalledWith("cls-10a1");
   });
 
@@ -150,7 +156,7 @@ describe("ClassHubPage — tab bodies", () => {
       className: string;
       students: unknown[];
     };
-    expect(el?.props.children.props.hideBreadcrumb).toBe(true);
+    expect(el?.props.children.props.embedded).toBe(true);
     expect(vm.status).toBe("ready");
     expect(vm.className).toBe("10A1");
     expect(vm.students).toHaveLength(1);
@@ -192,12 +198,23 @@ describe("ClassHubPage — existence gate", () => {
     expect(notFound).toBe(true);
   });
 
-  it("a transport failure also collapses to notFound rather than rendering a broken shell", async () => {
+  it("a transport failure is NOT a 404 — it renders the retryable error surface", async () => {
     classExec.mockResolvedValue({
       ok: false,
       error: { type: "network-error" },
     });
-    const { notFound } = await renderPage();
-    expect(notFound).toBe(true);
+    const { el, notFound } = await renderPage();
+    expect(notFound).toBe(false);
+    const vm = (el as unknown as { props: { vm: ErrorVm } }).props.vm;
+    expect(vm.status).toBe("error");
+    expect(vm.errorKey).toBe("network-error");
+  });
+
+  it("an unauthorized read also gets the error surface (never a fake 404)", async () => {
+    classExec.mockResolvedValue({ ok: false, error: { type: "unauthorized" } });
+    const { el, notFound } = await renderPage();
+    expect(notFound).toBe(false);
+    const vm = (el as unknown as { props: { vm: ErrorVm } }).props.vm;
+    expect(vm.errorKey).toBe("unauthorized");
   });
 });
