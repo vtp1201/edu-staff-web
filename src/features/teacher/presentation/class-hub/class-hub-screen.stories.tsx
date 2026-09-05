@@ -4,6 +4,7 @@ import { expect, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { visibleTabs } from "@/features/teacher/domain/class-hub-tabs";
 import type { ClassRole } from "@/features/teacher/domain/entities/teacher-class.entity";
+import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen";
 import { classHubHref } from "@/shared/class-hub-href";
 import type { ClassHubHeaderVm, ClassHubTabsVm } from "./class-hub.i-vm";
 import { ClassHubScreen } from "./class-hub-screen";
@@ -115,6 +116,49 @@ export const SubjectOnly: Story = {
     expect(canvas.queryByRole("tab", { name: "Chủ nhiệm" })).toBeNull();
     expect(canvas.queryByText("GVCN")).toBeNull();
     expect(canvas.getByText("GVBM · Toán")).toBeVisible();
+  },
+};
+
+/* ── AC (A11Y-002): full composition with the REAL embedded roster has
+ * exactly ONE <h1> on the page (the shell's) — the roster's own class-name
+ * heading is demoted to <h2>. `RosterStub` above proves the shell renders
+ * its heading, but a stub can never prove a *second* h1 is absent; this
+ * story mounts the actual `TeacherClassStudentsScreen` to close that gap. */
+export const ShellWithEmbeddedRealRoster: Story = {
+  args: {
+    header: header(["homeroom", "subject"]),
+    tabs: tabs(["homeroom", "subject"], "students"),
+    children: (
+      <TeacherClassStudentsScreen
+        embedded
+        vm={{
+          status: "ready",
+          className: "10A1",
+          classesHref: BASE,
+          students: [
+            {
+              enrollmentId: "enr-1",
+              displayName: "Nguyễn Minh Khoa",
+              studentCode: "stu-1",
+              status: "active",
+            },
+          ],
+        }}
+      />
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Exactly one h1 on the whole composed page — the shell's identity title.
+    const h1s = canvas.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent("Lớp 10A1");
+    // The roster's own class name is present but demoted to h2, not h1.
+    expect(
+      canvas.getByRole("heading", { level: 2, name: "10A1" }),
+    ).toBeVisible();
+    // The roster's own breadcrumb is suppressed (the shell owns navigation).
+    expect(canvas.queryAllByRole("navigation")).toHaveLength(1);
   },
 };
 

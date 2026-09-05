@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -115,3 +115,56 @@ Decisions taken while implementing (flagged to `fe-lead`, no ADR judged necessar
 - **Mock-mode limitation**: the mock teacher-timetable fixtures use class NAMES
   (`11A2`, `8B1`, …) that have no counterpart id in the mock class list, so mock
   schedule cells stay unlinked. Real mode links; the story proves the markup.
+
+Tech-lead review: **APPROVED** (fe-tech-lead-reviewer). Layer boundaries clean
+(RSC page resolves tab server-side, `'use client'` shell takes the server-composed
+body as `children` — no infra/DI import in presentation); `SlotResponse.classId`
+ground-truthed as `required` in edu-api core openapi (no invention); no dead links
+(optional classId omits the Link, never 404s); tokens-only; i18n parity exact.
+SHOULD FIX 1 (transport failure vs 404), 2 (aria-controls), 3 (design-spec status)
++ CONSIDER 4-6 (i18n namespace rename, placeholder copy, VM field rename) all
+applied. CONSIDER 7 (shared/class-hub-href.ts cross-feature import) accepted as-is.
+
+A11y audit (fe-accessibility-auditor): 6 findings — A11Y-001 (Blocking,
+aria-controls wrongly pointed every tab at the active panel), A11Y-002 (Critical,
+duplicate `<h1>` when roster embedded in students tab), A11Y-003 (Major, active
+tab label contrast 4.41:1 < 4.5:1), A11Y-004 (Major, dashboard deep-link rows
+<44px touch target), A11Y-006 (Minor, schedule-cell hover shadow-only). All
+closed in the fix commit. A11Y-005 (optional arrow-key roving tabindex) skipped
+per AC.
+
+Design review: pass
+- design-system: conform — tokens-only (bg-edu-role-parent/18, bg-primary/18 icon
+  box, text-edu-primary-accessible active tab, StatusBadge/RoleBadges reuse from
+  US-E24.7), matches design-spec.jsonc#teacher-class-hub.classDetail (46px icon
+  box radius 11, title 17px/800, underline tablist).
+- a11y: WCAG AA OK post-fix — single `<h1>` per page (roster demotes to `<h2>`
+  when embedded), aria-controls only on the active tab, active-tab contrast
+  ~4.88:1, deep-link rows ≥44px, keyboard Tab/Enter native via real anchors,
+  reduced-motion gated (`motion-safe:`).
+- impeccable audit: code-level pass — no anti-pattern tells (top icon box is
+  design-spec-prescribed, not a side-stripe; no gradient text/glassmorphism/
+  hero-metric template; tab strip is a real underline pattern, not a fabricated
+  SPA toggle).
+- states: shell-both-roles / subject-only / placeholder-tabs / mobile-wrap
+  covered in Storybook; 308 redirect + notFound() + transport-error surface
+  covered by page tests; responsive tabs wrap at mobile (`flex-wrap`).
+
+Test proof: unit (tab resolver every role×param combo, visibleTabs, GetMyClassUseCase
+incl. failure passthrough, href builders, mapper classId passthrough) + integration
+(page tests: tab set/active/body-rendered, redirect 308 digest, notFound,
+transport-error-not-404) + Storybook interaction (shell/placeholder/mobile-wrap,
+deep-link stories) — 539 files / 4323 tests + 160 Storybook files / 1280 tests,
+all green. `bunx tsc --noEmit`, `bun lint`, `bun run build` green. Pre-push gate
+green on all pushed commits (one unrelated pre-existing flake in
+`invitations-screen.stories.tsx`, confirmed not caused by this branch, cleared on
+retry).
+
+Descoped/deferred:
+- Backlog #2 registered (`E24.17` students-tab grade columns, draft US-246) —
+  roster keeps current columns in this shell.
+- Mock-mode schedule cells stay unlinked (mock timetable fixtures use class
+  names with no id counterpart in the mock class list) — real mode links
+  correctly; not a regression, `USE_MOCK` is on globally today.
+- Dashboard deep links are inert on the real path until BE ships today's-schedule/
+  pending-grade data with `classId` (real repo already returned `[]` pre-existing).
