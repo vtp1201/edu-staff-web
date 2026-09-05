@@ -20,6 +20,14 @@ export type LmsFailure =
   | { type: "closed" }
   /** LMS_ITEM_NOT_DOCUMENT — edit/delete addressed at a LESSON/ASSIGNMENT tile. */
   | { type: "not-document" }
+  /** LMS_COURSE_INVALID_STATUS_TRANSITION — publishing an already-PUBLISHED
+   *  course (including the losing side of two concurrent publishes). Publish is
+   *  terminal, so this is a benign race, not a broken request. */
+  | { type: "already-published" }
+  /** LMS_ASSIGNMENT_COURSE_NOT_PUBLISHED — creating an assignment against a
+   *  course that is still DRAFT. The fix is an ACTION the teacher can take
+   *  (publish the course first), so it must not collapse into `unknown`. */
+  | { type: "course-not-published" }
   /** LMS_EXAM_WINDOW_NOT_EDITABLE — an exam's schedule belongs to core. */
   | { type: "exam-window-not-editable" }
   /** LMS_ITEM_INVALID_WINDOW — `dueAt <= startAt`. */
@@ -41,6 +49,8 @@ export const LMS_FAILURE_TYPES = [
   "already-submitted",
   "closed",
   "not-document",
+  "already-published",
+  "course-not-published",
   "exam-window-not-editable",
   "invalid-window",
   "invalid-url",

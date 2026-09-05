@@ -1293,6 +1293,8 @@
       "already-submitted": "Bài tập này đã được nộp.",
       "closed": "Đã quá hạn — mục này không còn nhận bài.",
       "not-document": "Chỉ có thể chỉnh sửa mục tài liệu.",
+      "already-published": "Khoá học đã được xuất bản.",
+      "course-not-published": "Hãy xuất bản khoá học trước khi thêm bài tập.",
       "exam-window-not-editable": "Lịch kiểm tra do module Kiểm tra quản lý, không sửa được tại đây.",
       "invalid-window": "Hạn kết thúc phải sau thời điểm bắt đầu.",
       "invalid-url": "Liên kết phải là địa chỉ https hợp lệ.",

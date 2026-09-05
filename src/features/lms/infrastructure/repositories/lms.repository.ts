@@ -259,4 +259,23 @@ export class LmsRepository implements ILmsRepository {
       return rows.map(toCourseItem);
     });
   }
+
+  /** POST, no body — the transition is the whole request. Returns the course
+   *  in its new state, so the banner never needs a second read. */
+  async publishCourse(courseId: string): Promise<Course> {
+    return this.call(async () =>
+      toCourse(
+        (await this.http.post(
+          LMS_EP.publishCourse(courseId),
+        )) as unknown as CourseResponseDto,
+      ),
+    );
+  }
+
+  /** 204, no body — nothing to map, and nothing to return but the absence. */
+  async deleteItem(courseId: string, itemId: string): Promise<void> {
+    return this.call(async () => {
+      await this.http.delete(LMS_EP.item(courseId, itemId));
+    });
+  }
 }

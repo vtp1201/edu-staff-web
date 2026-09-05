@@ -1293,6 +1293,8 @@
       "already-submitted": "This assignment has already been submitted.",
       "closed": "Past the deadline — this item no longer accepts work.",
       "not-document": "Only document items can be edited.",
+      "already-published": "This course has already been published.",
+      "course-not-published": "Publish the course before adding an assignment.",
       "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
       "invalid-window": "The end time must be after the start time.",
       "invalid-url": "The link must be a valid https address.",
