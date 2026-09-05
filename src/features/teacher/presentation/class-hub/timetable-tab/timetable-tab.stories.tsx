@@ -603,8 +603,14 @@ export const PeriodLogValidationBoundaries: Story = {
     // `maxLength`, so typing past it is a no-op — assert the input is
     // capped (defense-in-depth #1) rather than fighting the DOM to prove
     // defense-in-depth #2 (the zod `.max()`) in a browser test.
+    // `userEvent.type` simulates one keystroke per char — 2010 keystrokes
+    // makes this test flake against the interaction-test timeout under load.
+    // `paste` sets the value in one native input event; the native
+    // `maxLength` cap fires identically either way, so the assertion below
+    // still proves defense-in-depth #1.
     const remarkInput = canvas.getByLabelText(/Nhận xét/);
-    await userEvent.type(remarkInput, "x".repeat(2010));
+    await userEvent.click(remarkInput);
+    await userEvent.paste("x".repeat(2010));
     await expect((remarkInput as HTMLTextAreaElement).value).toHaveLength(2000);
 
     await userEvent.click(canvas.getByRole("button", { name: "Lưu sổ tiết" }));
