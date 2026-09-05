@@ -59,10 +59,11 @@ async function allUseCases(value: string | undefined) {
   const di = await import("./lms.di");
   const factories = [
     di.makeListCoursesUseCase,
+    di.makeListCoursesWithSummaryUseCase,
+    di.makeListCoursesWithItemsUseCase,
     di.makeGetCourseUseCase,
     di.makeListCourseItemsUseCase,
     di.makeGetLessonUseCase,
-    di.makeListAssignmentsUseCase,
     di.makeGetAssignmentDetailUseCase,
     di.makeSubmitAssignmentUseCase,
   ];
@@ -73,7 +74,7 @@ async function allUseCases(value: string | undefined) {
   return useCases;
 }
 
-const FACTORY_COUNT = 7;
+const FACTORY_COUNT = 8;
 
 describe("lms.di — standard USE_MOCK gate (ADR 0075 supersedes 0073)", () => {
   it("NEXT_PUBLIC_USE_MOCK=true → every factory resolves MockLmsRepository", async () => {

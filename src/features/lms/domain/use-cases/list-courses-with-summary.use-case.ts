@@ -1,5 +1,6 @@
 import type { CourseSummary } from "../entities/course.entity";
 import type { ILmsRepository } from "../repositories/i-lms.repository";
+import { fetchCourseTimelines } from "./fetch-course-timelines";
 import { type Result, runCatching } from "./result";
 import { type CourseSummaryStats, summarizeCourse } from "./summarize-course";
 
@@ -14,19 +15,13 @@ export interface CourseWithSummary {
 }
 
 /**
- * The `/student/courses` read (US-E24.2).
+ * The `/student/courses` card-grid read (US-E24.2).
  *
  * `lms` publishes no per-course rollup (FE→BE ask #4), so the "N mục đang mở /
- * sắp đến hạn" figures are composed here: `listCourses` once, then `listItems`
- * for EACH course in parallel. The N+1 is deliberate and temporary — when BE
- * ships the summary the fan-out collapses into a single repository call and
- * nothing above this class changes.
- *
- * Two distinct error levels, on purpose:
- *  - `listCourses` failing ⇒ the whole result is that failure (there is no page
- *    without the list);
- *  - one `listItems` failing ⇒ only that row is marked `itemsFailed`. A single
- *    degraded timeline must never blank out five healthy cards.
+ * sắp đến hạn" figures are composed from one timeline read PER course. That
+ * fan-out — and its two-level degradation rule — lives in
+ * `fetchCourseTimelines` (US-E24.4), shared with the cross-subject filter; all
+ * this use-case adds is the fold into `summarizeCourse`.
  */
 export class ListCoursesWithSummaryUseCase {
   constructor(private readonly repo: ILmsRepository) {}
@@ -37,23 +32,21 @@ export class ListCoursesWithSummaryUseCase {
     subjectId?: string,
   ): Promise<Result<CourseWithSummary[]>> {
     return runCatching(async () => {
-      const courses = await this.repo.listCourses(classId, subjectId);
-
-      const settled = await Promise.allSettled(
-        courses.map((course) => this.repo.listItems(course.id)),
+      const timelines = await fetchCourseTimelines(
+        this.repo,
+        classId,
+        subjectId,
       );
 
-      return courses.map((course, index) => {
-        const outcome = settled[index];
-        if (outcome === undefined || outcome.status === "rejected") {
-          return { course, summary: null, itemsFailed: true };
-        }
-        return {
-          course,
-          summary: summarizeCourse(outcome.value, now),
-          itemsFailed: false,
-        };
-      });
+      return timelines.map(({ course, items, itemsFailed }) =>
+        itemsFailed
+          ? { course, summary: null, itemsFailed: true }
+          : {
+              course,
+              summary: summarizeCourse(items, now),
+              itemsFailed: false,
+            },
+      );
     });
   }
 }

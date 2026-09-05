@@ -8,9 +8,9 @@ import type { ILmsRepository } from "@/features/lms/domain/repositories/i-lms.re
 import { GetAssignmentDetailUseCase } from "@/features/lms/domain/use-cases/get-assignment.use-case";
 import { GetCourseUseCase } from "@/features/lms/domain/use-cases/get-course.use-case";
 import { GetLessonUseCase } from "@/features/lms/domain/use-cases/get-lesson.use-case";
-import { ListAssignmentsUseCase } from "@/features/lms/domain/use-cases/list-assignments.use-case";
 import { ListCourseItemsUseCase } from "@/features/lms/domain/use-cases/list-course-items.use-case";
 import { ListCoursesUseCase } from "@/features/lms/domain/use-cases/list-courses.use-case";
+import { ListCoursesWithItemsUseCase } from "@/features/lms/domain/use-cases/list-courses-with-items.use-case";
 import { ListCoursesWithSummaryUseCase } from "@/features/lms/domain/use-cases/list-courses-with-summary.use-case";
 import { SubmitAssignmentUseCase } from "@/features/lms/domain/use-cases/submit-assignment.use-case";
 import { LmsRepository } from "@/features/lms/infrastructure/repositories/lms.repository";
@@ -49,6 +49,12 @@ export async function makeListCoursesWithSummaryUseCase() {
   return new ListCoursesWithSummaryUseCase(await makeRepo());
 }
 
+/** Course list + every course's RAW timeline — the cross-subject filter
+ *  `/student/courses?view=assignment|exam` (US-E24.4). */
+export async function makeListCoursesWithItemsUseCase() {
+  return new ListCoursesWithItemsUseCase(await makeRepo());
+}
+
 export async function makeGetCourseUseCase() {
   return new GetCourseUseCase(await makeRepo());
 }
@@ -59,10 +65,6 @@ export async function makeListCourseItemsUseCase() {
 
 export async function makeGetLessonUseCase() {
   return new GetLessonUseCase(await makeRepo());
-}
-
-export async function makeListAssignmentsUseCase() {
-  return new ListAssignmentsUseCase(await makeRepo());
 }
 
 export async function makeGetAssignmentDetailUseCase() {

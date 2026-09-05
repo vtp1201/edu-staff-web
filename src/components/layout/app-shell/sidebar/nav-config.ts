@@ -79,13 +79,10 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   student: [
     { href: "/student", labelKey: "overview", icon: BarChart3 },
+    // US-E24.4 — "Bài tập" and "Bài kiểm tra" are no longer sidebar entries:
+    // both are views of the courses screen (`?view=assignment|exam`), and the
+    // old routes permanently redirect there. One nav item, one home.
     { href: "/student/courses", labelKey: "courses", icon: BookOpen },
-    {
-      href: "/student/assignments",
-      labelKey: "assignments",
-      icon: ClipboardList,
-    },
-    { href: "/student/exams", labelKey: "exams", icon: GraduationCap },
     { href: "/student/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/student/conduct", labelKey: "conduct", icon: Scale },
     // US-E08.7 — student views their own class timetable, not a "teaching

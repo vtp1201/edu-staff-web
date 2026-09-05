@@ -2,9 +2,9 @@
 
 import { ExternalLink, Link as LinkIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { hostOf, isSafeHref } from "../shared/safe-href";
 import type { ActiveItemVm } from "./course-player.i-vm";
 import { embedSourceFor } from "./embed-source";
-import { hostOf, isSafeHref } from "./safe-href";
 
 export interface BodyDocumentProps {
   item: Extract<ActiveItemVm, { kind: "document" }>;

@@ -63,6 +63,16 @@ const meta: Meta<typeof StudentCoursesScreen> = {
   title: "Features/LMS/StudentCourses",
   component: StudentCoursesScreen,
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
+  /* The route-owned props every story shares: US-E24.4 made the screen serve
+     three `?view=` views, and the card grid is the default one. */
+  args: {
+    view: "all",
+    viewHrefFor: (view: string) =>
+      view === "all"
+        ? "/vi/t/demo/student/courses"
+        : `/vi/t/demo/student/courses?view=${view}`,
+    cross: null,
+  },
   decorators: [
     (Story) => (
       <NextIntlClientProvider
@@ -289,6 +299,14 @@ export const KeyboardOperability_TabReachesEachCard: Story = {
     const [math, physics, literature] = MOCK_COURSES.map((c) =>
       canvas.getByRole("link", { name: new RegExp(c.title.split(" —")[0]) }),
     );
+
+    // The `?view=` pill row (US-E24.4) precedes the grid in document order —
+    // tab through it first, which also proves the three pills are themselves
+    // keyboard-reachable links rather than click-only affordances.
+    for (const label of ["Môn học", "Bài tập", "Bài kiểm tra"]) {
+      await userEvent.tab();
+      await expect(canvas.getByRole("link", { name: label })).toHaveFocus();
+    }
 
     await userEvent.tab();
     await expect(math).toHaveFocus();
