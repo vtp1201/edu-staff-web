@@ -27,4 +27,14 @@ stories under full-suite load: `principal-classes-screen.stories.tsx`
 (Radix portal timing) and `staff-discipline-screen.stories.tsx`; both pass in
 isolation and are documented as pre-existing in the FE→BE reports.
 
+**Machine load is the second cause, and it does NOT warm away** (US-E24.8 review
+round): with parallel `/fe` sessions running, `uptime` showed load 45–65 and the
+same suite failed 4 → 9 → 28 → 37 tests across consecutive runs, with a DIFFERENT
+file set each time and never a file I had touched. A one-key throwaway edit to
+`vi.json` on an otherwise clean tree reproduced it, which proves innocence without
+guessing. The honest re-verification that fits in the 5s-per-test world is
+`bun vitest run --maxWorkers=2 --testTimeout=30000` → 4323/4323 green; afterwards
+the real lefthook pre-push gate (default settings) passed once load dropped
+below ~25. Retry, never `--no-verify`.
+
 Related: [[gotcha-storybook-baseline-failures-and-dual-dialog]].
