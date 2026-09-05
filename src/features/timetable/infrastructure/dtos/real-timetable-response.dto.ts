@@ -32,6 +32,13 @@ export interface RealSlotResponseDto {
   teacherName?: string;
   /** Optional lesson location (US-153); omitted when unset. */
   room?: string;
+  /** Tenant-local bell-schedule start, `"HH:mm"` (BE US-244) — resolved
+   *  server-side from the tenant's bell schedule so no client lookup table is
+   *  needed. OMITTED when the tenant published no bell entry for this period,
+   *  the same convention as `subjectName`/`teacherName`. */
+  startTime?: string;
+  /** Tenant-local bell-schedule end, `"HH:mm"` — same omission rule. */
+  endTime?: string;
 }
 
 export interface RealTimetableResponseDto {

@@ -227,8 +227,14 @@ export const BothRolesToday: Story = {
     // Someone else's logged period → read-only strip for the GVCN.
     await expect(canvas.getByText("Sổ tiết (GVCN chỉ đọc)")).toBeVisible();
     await expect(canvas.getByText("Điện từ trường (tiết 2)")).toBeVisible();
-    // Daily strip is writable and reflects the aside chips' source of truth.
-    await expect(canvas.getByRole("button", { name: /Sửa/ })).toBeVisible();
+    // Daily strip: the DRAFT is already saved, so the only action is submit —
+    // there is no update endpoint, and the lock is stated in visible text.
+    await expect(
+      canvas.getByRole("button", { name: "Gửi BGH duyệt" }),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: "Sửa" }),
+    ).not.toBeInTheDocument();
     await expect(canvas.getByText("đã chuẩn bị")).toBeVisible();
   },
 };
@@ -462,5 +468,128 @@ export const LivePeriod: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Đang diễn ra")).toBeVisible();
     await expect(canvas.getByText("08:45–09:30")).toBeVisible();
+  },
+};
+
+/**
+ * A DRAFT that is ALREADY SAVED: the only path forward is "Gửi BGH duyệt",
+ * which submits BY ID. Re-opening the editor would route back through create →
+ * 409 `HOMEROOM_ENTRY_ALREADY_EXISTS` (one entry per class per date, no update
+ * endpoint), which is exactly the dead end this story pins shut.
+ */
+export const SavedDraftSubmits: Story = {
+  args: {
+    vm: vm({ isHomeroom: true, homeroomEntries: [entry({ status: "DRAFT" })] }),
+    actions: {
+      ...actions,
+      // Fails loudly if the UI ever routes an existing entry through create.
+      saveDailyEntry: async () => {
+        throw new Error("create must NOT be called for an existing entry");
+      },
+      submitDailyEntry: async (_classId, entryId) => ({
+        ok: true,
+        entry: entry({ entryId, status: "SUBMITTED" }),
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Nháp")).toBeVisible();
+    await expect(
+      canvas.getByText(
+        "Nháp đã lưu — hệ thống chưa hỗ trợ sửa nội dung, bạn chỉ có thể gửi BGH duyệt.",
+      ),
+    ).toBeVisible();
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Gửi BGH duyệt" }),
+    );
+
+    await expect(await canvas.findByText("Chờ duyệt")).toBeVisible();
+    // Submitted work exposes no further action to its author.
+    await expect(
+      canvas.queryByRole("button", { name: "Gửi BGH duyệt" }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * REJECTED → "Sửa & gửi lại" calls the REVISE action (never create), which
+ * returns the entry to DRAFT — from where the submit button reappears.
+ */
+export const RejectedRevisesThenSubmits: Story = {
+  args: {
+    vm: vm({
+      isHomeroom: true,
+      homeroomEntries: [
+        entry({ status: "REJECTED", reason: "Thiếu nhận xét tiết 3" }),
+      ],
+    }),
+    actions: {
+      ...actions,
+      saveDailyEntry: async () => {
+        throw new Error("create must NOT be called for a rejected entry");
+      },
+      reviseDailyEntry: async (_classId, entryId) => ({
+        ok: true,
+        entry: entry({ entryId, status: "DRAFT" }),
+      }),
+      submitDailyEntry: async (_classId, entryId) => ({
+        ok: true,
+        entry: entry({ entryId, status: "SUBMITTED" }),
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Sửa & gửi lại" }),
+    );
+
+    // Back to DRAFT: submit-only, no editor.
+    await expect(
+      await canvas.findByRole("button", { name: "Gửi BGH duyệt" }),
+    ).toBeVisible();
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Gửi BGH duyệt" }),
+    );
+    await expect(await canvas.findByText("Chờ duyệt")).toBeVisible();
+  },
+};
+
+/** No entry yet: the editor IS available, and "Gửi BGH duyệt" does create-then-submit. */
+export const NewEntryCreatesThenSubmits: Story = {
+  args: { vm: vm({ isHomeroom: true }), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Viết sổ/ }));
+    await userEvent.type(
+      canvas.getByLabelText(/Nhận xét chung về lớp trong ngày/),
+      "Lớp trật tự, đủ sĩ số.",
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Gửi BGH duyệt" }),
+    );
+
+    await expect(await canvas.findByText("Chờ duyệt")).toBeVisible();
+  },
+};
+
+/**
+ * A period-log/prep read that FAILED must not masquerade as "chưa ghi": the
+ * next save is a full-replace PUT, so the week carries a non-blocking warning.
+ */
+export const SecondaryReadFailed: Story = {
+  args: {
+    vm: vm({ secondaryErrorKey: "network-error" }),
+    actions,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const notice = await canvas.findByRole("status");
+    await expect(notice).toHaveTextContent("Lỗi kết nối mạng");
+    // Non-blocking: the week itself still renders.
+    await expect(canvas.getByText("Toán")).toBeVisible();
   },
 };

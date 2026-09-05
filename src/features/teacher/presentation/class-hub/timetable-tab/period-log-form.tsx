@@ -223,9 +223,17 @@ export function PeriodLogForm({
           maxLength={MAX_REMARK_LENGTH}
           placeholder={t("remarkPlaceholder")}
           aria-invalid={!!errors.remark}
+          aria-describedby={errors.remark ? `${remarkId}-err` : undefined}
           disabled={isPending}
           {...form.register("remark")}
         />
+        {/* `aria-invalid` alone is a state with no explanation — the reason has
+            to be readable text, linked to the field that owns it. */}
+        {errors.remark?.message && (
+          <p id={`${remarkId}-err`} className="text-edu-error-text text-xs">
+            {errors.remark.message}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -275,7 +283,11 @@ export function PeriodLogForm({
             inputMode="numeric"
             min={MIN_ABSENT_COUNT}
             max={MAX_ABSENT_COUNT}
-            aria-describedby={absentHintId}
+            aria-describedby={
+              errors.absentCount
+                ? `${absentHintId} ${absentId}-err`
+                : absentHintId
+            }
             aria-invalid={!!errors.absentCount}
             disabled={isPending}
             {...form.register("absentCount", { valueAsNumber: true })}
@@ -286,7 +298,7 @@ export function PeriodLogForm({
         </p>
       </div>
       {errors.absentCount?.message && (
-        <p className="text-edu-error-text text-xs">
+        <p id={`${absentId}-err`} className="text-edu-error-text text-xs">
           {errors.absentCount.message}
         </p>
       )}
@@ -313,7 +325,15 @@ export function PeriodLogForm({
         >
           {t("cancel")}
         </Button>
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isPending}
+          // Ties the server-error banner to the control that produced it, so a
+          // screen-reader user re-focusing "Lưu" hears WHY the last save failed
+          // (the banner's own role="alert" only fires once, on insertion).
+          aria-describedby={serverErrorKey ? errorId : undefined}
+        >
           {isPending ? t("saving") : t("save")}
         </Button>
       </div>

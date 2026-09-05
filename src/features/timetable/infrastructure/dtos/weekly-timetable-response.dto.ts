@@ -17,8 +17,10 @@ export interface TimetableSlotDto {
    *  no IAM directory, so the class-hub's "tiết của bạn" affordances would
    *  never light up without a stable id to match the mock auth context. */
   teacherMemberId?: string;
-  /** Mock-only bell schedule ("HH:mm") — exercises the "Đang diễn ra" /
-   *  time-shown branch that the REAL wire cannot drive yet (US-244 is draft). */
+  /** Bell schedule ("HH:mm") on the LEGACY/mock shape. The real wire carries
+   *  the same window on `RealSlotResponseDto` (BE US-244, shipped); this field
+   *  keeps the mock path able to drive the "Đang diễn ra" / time-shown branch
+   *  offline. */
   startTime?: string;
   endTime?: string;
 }

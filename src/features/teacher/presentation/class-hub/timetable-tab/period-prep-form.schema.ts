@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   isValidMaterialUrl,
   MAX_MATERIAL_TITLE_LENGTH,
+  MAX_MATERIAL_URL_LENGTH,
   MAX_MATERIALS,
   MAX_NOTE_LENGTH,
 } from "@/features/period-log/domain/entities/period-prep.entity";
@@ -25,6 +26,7 @@ export function periodPrepSchema(t: {
   noteTooLong: string;
   materialTitleRequired: string;
   materialUrlInvalid: string;
+  materialUrlTooLong: string;
 }) {
   return z.object({
     note: z.string().max(MAX_NOTE_LENGTH, { message: t.noteTooLong }),
@@ -42,6 +44,9 @@ export function periodPrepSchema(t: {
           url: z
             .string()
             .trim()
+            // The BE's own `maxLength` — a 2001-char link is rejected server
+            // side, so it is refused here rather than after a round trip.
+            .max(MAX_MATERIAL_URL_LENGTH, { message: t.materialUrlTooLong })
             .refine(isValidMaterialUrl, { message: t.materialUrlInvalid }),
         }),
       )

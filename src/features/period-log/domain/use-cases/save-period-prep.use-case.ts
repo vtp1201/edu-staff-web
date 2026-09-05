@@ -8,9 +8,9 @@ import { MAX_MATERIALS } from "../entities/period-prep.entity";
 import type { IPeriodLogRepository } from "../repositories/i-period-log.repository";
 import {
   fail,
+  narrowPeriodLogFailure,
   ok,
   type PeriodLogResult,
-  toPeriodLogFailure,
 } from "./period-log.result";
 
 export interface SavePeriodPrepParams {
@@ -56,7 +56,7 @@ export class SavePeriodPrepUseCase {
         ),
       );
     } catch (err) {
-      return fail(toPeriodLogFailure(err));
+      return fail(narrowPeriodLogFailure(err));
     }
   }
 }

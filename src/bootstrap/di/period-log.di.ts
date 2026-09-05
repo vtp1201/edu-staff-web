@@ -3,7 +3,7 @@ import "server-only";
 import { ensureFreshSession } from "@/bootstrap/di/auth.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { createServerHttpClient } from "@/bootstrap/lib/http.server";
-import { decodeMemberId, decodeRoleClaim } from "@/bootstrap/lib/jwt";
+import { decodeMemberIdClaim, decodeRoleClaim } from "@/bootstrap/lib/jwt";
 import { USE_MOCK } from "@/bootstrap/lib/mock";
 import type { PeriodLogAuthContext } from "@/features/period-log/domain/entities/period-log-auth-context.entity";
 import type { IPeriodLogRepository } from "@/features/period-log/domain/repositories/i-period-log.repository";
@@ -34,14 +34,19 @@ async function makeRepo(): Promise<IPeriodLogRepository> {
  * fields come from the httpOnly access token — never from a prop, a form field
  * or a search param.
  *
- * `memberId` uses `decodeMemberId` (decision 0074) because core keys every
- * `*MemberId` — here the slot's `teacherMemberId` — by the tenant-scoped claim.
+ * `memberId` uses `decodeMemberIdClaim` (decision 0074) — the CLAIM ONLY, with
+ * NO `sub` fallback — because core keys every `*MemberId` (here the slot's
+ * `teacherMemberId`) by the tenant-scoped claim, and only the claim's presence
+ * proves the token was scoped to a tenant at all. `decodeMemberId()` would fall
+ * back to `sub`, which on a not-yet-tenant-scoped session can resolve to an id
+ * that accidentally unlocks write affordances — same reason
+ * `bootstrap/lib/resolve-my-class.ts` uses the claim-only reader.
  * An unreadable token yields `""`, which `ownsSlot()` can never match:
  * deny-by-default. `role` defaults to the least-privileged value for the same
  * reason (it is carried for shape parity today; the check itself is the id
  * comparison — see the entity's doc).
  *
- * Mock mode: `decodeMemberId` reads a real claim, which local mock tokens do
+ * Mock mode: `decodeMemberIdClaim` reads a real claim, which local mock tokens do
  * not carry, so it would deny every write in the demo. The seeded demo
  * teacher's id — the SAME constant the mock timetable stamps on her slots — is
  * substituted, and only when `USE_MOCK` is on. In real mode the claim always
@@ -54,7 +59,7 @@ export async function makePeriodLogAuthContext(): Promise<PeriodLogAuthContext> 
   }
   return {
     role: decodeRoleClaim(token) ?? "student",
-    memberId: decodeMemberId(token) ?? "",
+    memberId: decodeMemberIdClaim(token) ?? "",
   };
 }
 

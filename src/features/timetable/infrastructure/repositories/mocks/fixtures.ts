@@ -129,11 +129,11 @@ const CLASS_NAME: Record<string, string> = {
 };
 
 /**
- * Mock bell schedule (US-E24.9). There is NO wire source for period times yet
- * (BE US-244 lives in `openapi.draft.yaml`), so the REAL path leaves them
- * undefined; this seed exists purely so mock mode + Storybook can exercise the
- * "giờ hiển thị" / "Đang diễn ra" branch that the real path cannot drive today.
- * It is a demo timetable, NOT a promise about US-244's eventual shape.
+ * Mock bell schedule (US-E24.9). Real mode reads the tenant's own window from
+ * `SlotResponse.startTime`/`endTime` (BE US-244, shipped); this seed only gives
+ * mock mode + Storybook a deterministic timetable so the "giờ hiển thị" /
+ * "Đang diễn ra" branch is exercisable offline. It is a demo timetable, NOT a
+ * claim about any tenant's real bell schedule.
  */
 export const MOCK_BELL_SCHEDULE: Record<
   number,

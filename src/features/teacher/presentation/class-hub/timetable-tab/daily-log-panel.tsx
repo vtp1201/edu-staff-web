@@ -32,9 +32,25 @@ export interface DailyLogPanelProps {
  * i18n namespace. No forked business logic, no second translation of the same
  * status words.
  *
- * "Lưu nháp" then "Gửi duyệt" is the same two-step sequence `ClassLogScreen`
- * already uses: if the submit half fails, the DRAFT that succeeded is kept and
- * shown, so nothing is lost and the teacher can retry the submit alone.
+ * THREE disjoint states, because core exposes CREATE + SUBMIT + REVISE and no
+ * update endpoint at all (`/homeroom-entries/{entryId}` is GET-only, and a
+ * second create for the same (class, date) is a 409
+ * `HOMEROOM_ENTRY_ALREADY_EXISTS`):
+ *
+ * 1. NO entry yet → the editor, with "Lưu nháp" (create DRAFT) and "Gửi BGH
+ *    duyệt" (create then submit — the same two-step `ClassLogScreen` uses; if
+ *    the submit half fails the DRAFT that succeeded is kept and shown, so
+ *    nothing is lost and the teacher can retry the submit alone).
+ * 2. Entry EXISTS and is DRAFT → submit ONLY (`submitDailyEntry` with the
+ *    entry's id). The content is deliberately not re-openable: routing "Sửa"
+ *    back through create would 409 every time, which is exactly the dead end
+ *    this component shipped with. The lock is stated in VISIBLE text, not
+ *    inferred from a missing button.
+ * 3. Entry REJECTED → "Sửa & gửi lại" calls `reviseDailyEntry`, which returns
+ *    it to DRAFT (state 2), where it can be submitted again. It never touches
+ *    the create path.
+ *
+ * SUBMITTED / APPROVED expose no action at all — the teacher owns neither.
  *
  * Rendered ONLY for the class's GVCN — `DayCard` owns that decision, because
  * core restricts the homeroom-entries list to the homeroom teacher and BGH, so
@@ -67,10 +83,14 @@ export function DailyLogPanel({
   const [isPending, startTransition] = useTransition();
 
   const status = entry?.status;
-  const isDraftable = !entry || status === "DRAFT";
+  /** No saved entry yet — the ONLY state where the editor may be opened. */
+  const isNew = !entry;
+  /** Saved DRAFT: submit-only (no update endpoint exists). */
+  const isSavedDraft = !!entry && status === "DRAFT";
   const canRevise = status === "REJECTED";
 
-  const save = (alsoSubmit: boolean) => {
+  /** State 1 only: create the entry, optionally submitting it straight after. */
+  const create = (alsoSubmit: boolean) => {
     if (summary.trim().length === 0) {
       setShowRequired(true);
       return;
@@ -89,10 +109,8 @@ export function DailyLogPanel({
       }
       // Keep the DRAFT even if the submit half fails — it is real, saved work.
       onSaved(saved.entry);
-      if (!alsoSubmit) {
-        setIsEditing(false);
-        return;
-      }
+      setIsEditing(false);
+      if (!alsoSubmit) return;
       const submitted = await actions.submitDailyEntry(
         classId,
         saved.entry.entryId,
@@ -102,10 +120,24 @@ export function DailyLogPanel({
         return;
       }
       onSaved(submitted.entry);
-      setIsEditing(false);
     });
   };
 
+  /** State 2: submit an ALREADY-SAVED draft by id — never a second create. */
+  const submitSaved = () => {
+    if (!entry) return;
+    setErrorKey(null);
+    startTransition(async () => {
+      const res = await actions.submitDailyEntry(classId, entry.entryId);
+      if (!res.ok) {
+        setErrorKey(res.errorKey);
+        return;
+      }
+      onSaved(res.entry);
+    });
+  };
+
+  /** State 3: send a rejected entry back to DRAFT so it can be re-submitted. */
   const revise = () => {
     if (!entry) return;
     setErrorKey(null);
@@ -116,7 +148,9 @@ export function DailyLogPanel({
         return;
       }
       onSaved(res.entry);
-      setIsEditing(true);
+      // NOT `setIsEditing(true)`: the content still cannot be edited (no update
+      // endpoint) — the entry is now a DRAFT awaiting re-submission.
+      setIsEditing(false);
     });
   };
 
@@ -137,14 +171,14 @@ export function DailyLogPanel({
         )}
         <span className="flex-1" />
         <div className="flex flex-wrap gap-2">
-          {isEditing && isDraftable && (
+          {isNew && isEditing && (
             <>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 disabled={isPending}
-                onClick={() => save(false)}
+                onClick={() => create(false)}
               >
                 {isPending ? t("saving") : t("saveDraft")}
               </Button>
@@ -152,13 +186,13 @@ export function DailyLogPanel({
                 type="button"
                 size="sm"
                 disabled={isPending}
-                onClick={() => save(true)}
+                onClick={() => create(true)}
               >
                 {t("submit")}
               </Button>
             </>
           )}
-          {!isEditing && isDraftable && (
+          {isNew && !isEditing && (
             <Button
               type="button"
               variant="ghost"
@@ -167,7 +201,17 @@ export function DailyLogPanel({
               onClick={() => setIsEditing(true)}
             >
               <PenLine className="size-3.5" aria-hidden="true" />
-              {entry ? t("edit") : t("write")}
+              {t("write")}
+            </Button>
+          )}
+          {isSavedDraft && (
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={submitSaved}
+            >
+              {isPending ? t("saving") : t("submit")}
             </Button>
           )}
           {canRevise && (
@@ -182,6 +226,12 @@ export function DailyLogPanel({
           )}
         </div>
       </div>
+
+      {isSavedDraft && (
+        <p className="mt-2 text-edu-text-secondary text-xs">
+          {t("draftLocked")}
+        </p>
+      )}
 
       {status === "REJECTED" && entry?.reason && (
         <p className="mt-2 rounded-[8px] bg-edu-error/15 px-3 py-2 text-edu-error-text text-xs">
@@ -198,7 +248,7 @@ export function DailyLogPanel({
         </p>
       )}
 
-      {isEditing ? (
+      {isNew && isEditing ? (
         <div className="mt-2 flex flex-col gap-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={summaryId}>

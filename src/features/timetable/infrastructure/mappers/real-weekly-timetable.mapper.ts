@@ -10,7 +10,9 @@ import type { RealTimetableResponseDto } from "../dtos/real-timetable-response.d
  * `subjectName`/`room` to every slot response, so both are read when present;
  * `teacherName` now has a wire source (BE US-234) and falls back to the raw
  * id when core could not resolve it, same precedent as US-E18.2's `memberName`.
- * US-E24.9 additionally keeps the raw `teacherMemberId` on the slot. The top-level
+ * US-E24.9 additionally keeps the raw `teacherMemberId` AND the
+ * bell-schedule `startTime`/`endTime` (BE US-244 — LIVE on `SlotResponse`,
+ * optional per slot) on the slot. The top-level
  * `className` is supplied by the caller (which already resolved this classId);
  * the wire does not carry it.
  */
@@ -33,6 +35,12 @@ export function mapRealWeeklyTimetable(
       // must survive a display-name lookup miss.
       teacherMemberId: slot.teacherMemberId,
       room: slot.room,
+      // Bell-schedule window (BE US-244): passed through verbatim, undefined
+      // when the tenant published none. The class hub's "Đang diễn ra" badge
+      // and its upcoming-period pick BOTH read these — dropping them here
+      // silently disabled all of it in real mode (US-E24.9 review fix).
+      startTime: slot.startTime,
+      endTime: slot.endTime,
       className: undefined,
     };
   }

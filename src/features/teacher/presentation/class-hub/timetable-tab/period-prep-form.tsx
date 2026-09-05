@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  MAX_MATERIAL_URL_LENGTH,
   MAX_NOTE_LENGTH,
   type PeriodPrep,
 } from "@/features/period-log/domain/entities/period-prep.entity";
@@ -80,6 +81,9 @@ export function PeriodPrepForm({
         noteTooLong: tv("noteTooLong", { max: MAX_NOTE_LENGTH }),
         materialTitleRequired: tv("materialTitleRequired"),
         materialUrlInvalid: tv("materialUrlInvalid"),
+        materialUrlTooLong: tv("materialUrlTooLong", {
+          max: MAX_MATERIAL_URL_LENGTH,
+        }),
       }),
     ),
     defaultValues: {

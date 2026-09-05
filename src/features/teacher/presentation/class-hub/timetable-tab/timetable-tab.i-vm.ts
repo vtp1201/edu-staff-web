@@ -158,4 +158,9 @@ export interface TimetableTabVm {
   /** Set when the week's timetable read itself failed: the tab renders ONE
    *  error surface instead of a half-built grid. */
   errorKey?: PeriodLogFailure["type"];
+  /** Set when a SECONDARY read (period logs / preps) failed while the timetable
+   *  itself loaded. The week still renders, but the tab must say so: both
+   *  writes are full-replace PUTs, so treating "unreadable" as "not written
+   *  yet" would let the next save silently overwrite existing work. */
+  secondaryErrorKey?: PeriodLogFailure["type"];
 }

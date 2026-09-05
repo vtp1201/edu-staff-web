@@ -2,9 +2,9 @@ import type { PeriodPrep } from "../entities/period-prep.entity";
 import type { IPeriodLogRepository } from "../repositories/i-period-log.repository";
 import {
   fail,
+  narrowPeriodLogFailure,
   ok,
   type PeriodLogResult,
-  toPeriodLogFailure,
 } from "./period-log.result";
 
 /** The week's saved period preps for one class — same server-filtered read
@@ -20,7 +20,7 @@ export class GetWeekPeriodPrepsUseCase {
     try {
       return ok(await this.repo.listPeriodPreps(classId, from, to));
     } catch (err) {
-      return fail(toPeriodLogFailure(err));
+      return fail(narrowPeriodLogFailure(err));
     }
   }
 }

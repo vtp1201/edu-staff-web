@@ -1,6 +1,6 @@
 import "server-only";
 
-import { makeClassLogRepository } from "@/bootstrap/di/class-log.di";
+import { makeListEntriesUseCase } from "@/bootstrap/di/class-log.di";
 import { makeListMyLessonPlansUseCase } from "@/bootstrap/di/lesson-plan.di";
 import {
   makeGetWeekPeriodLogsUseCase,
@@ -11,6 +11,7 @@ import { makeGetClassTimetableUseCase } from "@/bootstrap/di/timetable-view.di";
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { PeriodLog } from "@/features/period-log/domain/entities/period-log.entity";
 import type { PeriodPrep } from "@/features/period-log/domain/entities/period-prep.entity";
+import type { PeriodLogFailure } from "@/features/period-log/domain/failures/period-log.failure";
 import {
   addWeeks,
   buildWeekDays,
@@ -105,7 +106,7 @@ export async function buildTimetableTabVm({
     },
   };
 
-  const [authCtx, timetable, logs, preps, entries, lessonPlans] =
+  const [authCtx, timetable, logRead, prepRead, entries, lessonPlans] =
     await Promise.all([
       makePeriodLogAuthContext(),
       (await makeGetClassTimetableUseCase()).execute(classId, from),
@@ -117,6 +118,14 @@ export async function buildTimetableTabVm({
       isHomeroom ? readHomeroomEntries(classId, from, to) : [],
       readLessonPlans(),
     ]);
+
+  const logs = logRead.rows;
+  const preps = prepRead.rows;
+  // A failed secondary read is NOT silent: both writes are full-replace PUTs, so
+  // an empty-looking day that is actually "unknown" would let the next save
+  // overwrite work that exists server-side. The week still renders (the
+  // timetable itself is fine) with a non-blocking warning above it.
+  const secondaryErrorKey = logRead.errorKey ?? prepRead.errorKey;
 
   if (!timetable.ok) {
     return {
@@ -187,6 +196,7 @@ export async function buildTimetableTabVm({
     preps,
     homeroomEntries: entries,
     lessonPlans,
+    secondaryErrorKey,
     upcoming: upcoming
       ? {
           date: upcoming.date,
@@ -200,31 +210,45 @@ export async function buildTimetableTabVm({
   };
 }
 
-/** Secondary reads — each degrades to empty on its own, never fails the tab. */
+/**
+ * Secondary reads — each degrades to empty ROWS on its own (the week is still
+ * worth rendering) but REPORTS the failure key, because "no log" and "could not
+ * read the logs" are materially different claims in front of a full-replace
+ * write. The caller surfaces the difference; it is never swallowed.
+ */
+interface SecondaryRead<T> {
+  rows: T[];
+  errorKey?: PeriodLogFailure["type"];
+}
+
 async function readLogs(
   classId: string,
   from: string,
   to: string,
-): Promise<PeriodLog[]> {
+): Promise<SecondaryRead<PeriodLog>> {
   const result = await (await makeGetWeekPeriodLogsUseCase()).execute(
     classId,
     from,
     to,
   );
-  return result.ok ? result.data : [];
+  return result.ok
+    ? { rows: result.data }
+    : { rows: [], errorKey: result.error.type };
 }
 
 async function readPreps(
   classId: string,
   from: string,
   to: string,
-): Promise<PeriodPrep[]> {
+): Promise<SecondaryRead<PeriodPrep>> {
   const result = await (await makeGetWeekPeriodPrepsUseCase()).execute(
     classId,
     from,
     to,
   );
-  return result.ok ? result.data : [];
+  return result.ok
+    ? { rows: result.data }
+    : { rows: [], errorKey: result.error.type };
 }
 
 /**
@@ -240,8 +264,8 @@ async function readHomeroomEntries(
   to: string,
 ): Promise<HomeroomEntry[]> {
   try {
-    const repo = await makeClassLogRepository();
-    const { entries } = await repo.listEntries({
+    const useCase = await makeListEntriesUseCase();
+    const { entries } = await useCase.execute({
       classId,
       fromDate: from,
       toDate: to,

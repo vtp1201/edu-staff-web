@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { PeriodLog } from "@/features/period-log/domain/entities/period-log.entity";
@@ -39,6 +40,8 @@ function indexBy<T>(rows: T[], key: (row: T) => string): Record<string, T> {
  * previous state untouched behind an error banner.
  */
 export function TimetableTabBody({ vm, actions }: TimetableTabBodyProps) {
+  const t = useTranslations("teacherClasses.hub.timetable");
+  const tErrors = useTranslations("teacherClasses.hub.timetable.errors");
   const [logs, setLogs] = useState<Record<string, PeriodLog>>(() =>
     indexBy(vm.logs, (l) => periodKeyOf(l.date, l.periodNumber)),
   );
@@ -89,6 +92,21 @@ export function TimetableTabBody({ vm, actions }: TimetableTabBodyProps) {
         prevHref={vm.prevWeekHref}
         nextHref={vm.nextWeekHref}
       />
+
+      {/* Non-blocking: the timetable itself loaded, so the week stays usable —
+          but a log/prep read that FAILED must not be read as "chưa ghi", since
+          the next save is a full-replace PUT. Announced politely (role=status)
+          rather than as an alert: nothing was lost yet. */}
+      {vm.secondaryErrorKey && (
+        <p
+          role="status"
+          className="rounded-[8px] bg-edu-warning/15 px-3 py-2 text-edu-warning-foreground text-xs"
+        >
+          {t("partialLoadError", {
+            reason: tErrors(vm.secondaryErrorKey),
+          })}
+        </p>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(260px,1fr)]">
         <div className="flex min-w-0 flex-col gap-3">

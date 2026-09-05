@@ -78,7 +78,14 @@ export function addWeeks(monday: Date, delta: number): Date {
 /**
  * Mon–Sat (6 days). Matches `WeeklyTimetable`'s existing `dayIndex 0-5`
  * convention — Sunday has no row anywhere in this app, and core never resolves
- * a weekend slot at all.
+ * a Sunday slot at all.
+ *
+ * Saturday is KEPT deliberately even though core's `SlotResponse.day` enum is
+ * MON–FRI: Vietnamese schools do run Saturday sessions, the homeroom daily log
+ * (`/homeroom-entries`, keyed by DATE, not by a slot) can legitimately exist on
+ * one, and an absent Saturday card would silently hide it. With no periods
+ * resolvable, the card simply renders the explicit "Không có tiết" state — an
+ * honest empty, not a missing day.
  */
 export function buildWeekDays(monday: Date): Date[] {
   return Array.from({ length: 6 }, (_, i) => {

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   MAX_MATERIAL_TITLE_LENGTH,
+  MAX_MATERIAL_URL_LENGTH,
   MAX_MATERIALS,
 } from "@/features/period-log/domain/entities/period-prep.entity";
 import type { PeriodPrepFormValues } from "./period-prep-form.schema";
@@ -30,7 +31,8 @@ export interface MaterialsFieldArrayProps {
  * a11y: the "Thêm" button is DISABLED (not hidden) at the cap, with a visible
  * `role="status"` explanation, so a screen-reader user learns WHY the action
  * stopped; each remove button is icon-only and therefore carries a Vietnamese
- * `aria-label` naming the row it removes.
+ * `aria-label` naming the row it removes BY POSITION ("Xoá tài liệu thứ 3") —
+ * the title field may be blank or duplicated, so it cannot name the row.
  */
 export function MaterialsFieldArray({
   form,
@@ -92,6 +94,7 @@ export function MaterialsFieldArray({
                 id={`${groupId}-url-${index}`}
                 type="url"
                 inputMode="url"
+                maxLength={MAX_MATERIAL_URL_LENGTH}
                 placeholder="https://…"
                 disabled={disabled}
                 aria-invalid={!!errors?.[index]?.url}
@@ -118,7 +121,11 @@ export function MaterialsFieldArray({
               size="icon"
               className="size-11 shrink-0"
               disabled={disabled}
-              aria-label={t("removeMaterial", { title: String(index + 1) })}
+              // The row's POSITION, not its title: the title input can be
+              // empty (a freshly appended row) or duplicated, so the ordinal is
+              // the only stable, unique thing to name — and the copy now says
+              // so ("Xoá tài liệu thứ {position}").
+              aria-label={t("removeMaterial", { position: index + 1 })}
               onClick={() => remove(index)}
             >
               <X className="size-4" aria-hidden="true" />

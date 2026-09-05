@@ -50,9 +50,11 @@ function atTime(day: Date, time: string | undefined): number | null {
 
 /**
  * Is the period happening right now? ALWAYS false when either bell time is
- * missing — there is no wire source for the bell schedule yet (BE US-244 is
- * draft), and the AC is explicit that a period with no time shows neither a
- * clock nor an "Đang diễn ra" badge rather than a guessed one.
+ * missing. The bell schedule DOES have a wire source (BE US-244 —
+ * `SlotResponse.startTime`/`endTime`, resolved server-side), but core OMITS
+ * both when the tenant published no entry for the period, and the AC is
+ * explicit that such a period shows neither a clock nor an "Đang diễn ra"
+ * badge rather than a guessed one.
  */
 export function isPeriodLive(
   slot: Pick<TimetableSlot, "startTime" | "endTime">,

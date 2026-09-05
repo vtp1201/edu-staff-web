@@ -4,9 +4,9 @@ import type { IPeriodLogRepository } from "../repositories/i-period-log.reposito
 import type { DeletePeriodParams } from "./delete-period-log.use-case";
 import {
   fail,
+  narrowPeriodLogFailure,
   ok,
   type PeriodLogResult,
-  toPeriodLogFailure,
 } from "./period-log.result";
 
 /** Xoá chuẩn bị tiết. Same guard-first shape as its period-log twin. */
@@ -29,7 +29,7 @@ export class DeletePeriodPrepUseCase {
       );
       return ok(undefined);
     } catch (err) {
-      return fail(toPeriodLogFailure(err));
+      return fail(narrowPeriodLogFailure(err));
     }
   }
 }

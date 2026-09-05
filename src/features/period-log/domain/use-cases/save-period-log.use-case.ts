@@ -7,9 +7,9 @@ import { ownsSlot } from "../entities/period-log-auth-context.entity";
 import type { IPeriodLogRepository } from "../repositories/i-period-log.repository";
 import {
   fail,
+  narrowPeriodLogFailure,
   ok,
   type PeriodLogResult,
-  toPeriodLogFailure,
 } from "./period-log.result";
 
 export interface SavePeriodLogParams {
@@ -57,7 +57,7 @@ export class SavePeriodLogUseCase {
         ),
       );
     } catch (err) {
-      return fail(toPeriodLogFailure(err));
+      return fail(narrowPeriodLogFailure(err));
     }
   }
 }

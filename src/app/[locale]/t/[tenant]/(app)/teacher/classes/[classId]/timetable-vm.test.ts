@@ -23,7 +23,9 @@ vi.mock("@/bootstrap/di/timetable-view.di", () => ({
   makeGetClassTimetableUseCase: async () => ({ execute: getTimetable }),
 }));
 vi.mock("@/bootstrap/di/class-log.di", () => ({
-  makeClassLogRepository: async () => ({ listEntries }),
+  // The tab reads through the USE-CASE, not the raw repository (app layer never
+  // reaches past `bootstrap/di`'s use-case factories).
+  makeListEntriesUseCase: async () => ({ execute: listEntries }),
 }));
 vi.mock("@/bootstrap/di/lesson-plan.di", () => ({
   makeListMyLessonPlansUseCase: async () => ({ execute: listPlans }),
@@ -166,7 +168,7 @@ describe("buildTimetableTabVm — own-slot highlight (decision 0074)", () => {
   });
 });
 
-describe("buildTimetableTabVm — bell schedule (US-244 not shipped)", () => {
+describe("buildTimetableTabVm — bell schedule (BE US-244, optional per slot)", () => {
   it("shows no time range when the slot carries no bell times", async () => {
     const vm = await build({ weekParam: "2026-W36" });
     expect(vm.days[2].periods[0].timeRangeLabel).toBeUndefined();
@@ -263,6 +265,40 @@ describe("buildTimetableTabVm — failure posture", () => {
     expect(vm.errorKey).toBeUndefined();
     expect(vm.days).toHaveLength(6);
     expect(vm.days[2].periods).toHaveLength(2);
+  });
+
+  it.each([
+    [
+      "logs",
+      () =>
+        listLogs.mockResolvedValue({
+          ok: false,
+          error: { type: "network-error" },
+        }),
+    ],
+    [
+      "preps",
+      () =>
+        listPreps.mockResolvedValue({
+          ok: false,
+          error: { type: "slot-forbidden-or-missing" },
+        }),
+    ],
+  ])("REPORTS a failed %s read instead of passing it off as 'nothing written yet'", async (_name, arrange) => {
+    arrange();
+
+    const vm = await build({ weekParam: "2026-W36" });
+
+    // Both writes are full-replace PUTs: an unreadable week that renders as
+    // an empty one would invite the teacher to overwrite existing work.
+    expect(vm.secondaryErrorKey).toBeDefined();
+    expect(vm.errorKey).toBeUndefined();
+    expect(vm.days).toHaveLength(6);
+  });
+
+  it("says nothing when both secondary reads succeeded", async () => {
+    const vm = await build({ weekParam: "2026-W36" });
+    expect(vm.secondaryErrorKey).toBeUndefined();
   });
 
   it("passes the seeded rows through for the client maps to index", async () => {

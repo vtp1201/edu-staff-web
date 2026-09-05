@@ -97,7 +97,12 @@ export function PeriodRow({
         >
           {vm.subjectName}
           {vm.isMine && (
-            <span className="ml-2 font-bold text-[11px] text-primary">
+            // 11px bold is NOT "large text" (WCAG: ≥14pt bold / ≥18pt), so it
+            // needs the full 4.5:1 — `text-primary` on the row's `bg-primary/5`
+            // is 3.1:1 (A11Y-001). The row already carries the brand colour on
+            // the subject name and the tint; this label carries the MEANING and
+            // must stay readable.
+            <span className="ml-2 font-bold text-[11px] text-edu-text-primary">
               {t("period.mine")}
             </span>
           )}
