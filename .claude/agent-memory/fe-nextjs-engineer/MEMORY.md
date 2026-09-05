@@ -140,3 +140,5 @@
 - [Required authCtx + detached-invoker focus](pattern-required-authctx-and-detached-focus.md) — E24.11 review: optional authCtx + early-return guard = fail-open (delete the context-free factory); dialog that removes its own row needs a returnFocusRef fallback
 
 - [aria-disabled edge control](gotcha-aria-disabled-edge-control.md) — E24.10 review: a control that disables itself while focused must be aria-disabled + no-op guard (native disabled dumps focus to body); test idioms
+- [Third mode on a shared component](pattern-third-mode-on-shared-component.md) — US-E24.10: optional-prop defaults as the regression guard; staff rows are NOT links (no teacher player route); one optimistic mutation only
+- [class-subjects wire shape](gotcha-class-subjects-wire-shape.md) — core `/classes/{id}/subjects` is cursor-paginated with the name under `lockedFields`; a flat DTO type-checks and renders undefined
