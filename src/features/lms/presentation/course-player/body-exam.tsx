@@ -4,8 +4,8 @@ import { Clock, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { isSafeHref } from "../shared/safe-href";
 import type { ActiveItemVm } from "./course-player.i-vm";
-import { isSafeHref } from "./safe-href";
 
 export interface BodyExamProps {
   item: Extract<ActiveItemVm, { kind: "exam" }>;

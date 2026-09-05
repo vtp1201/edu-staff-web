@@ -711,69 +711,6 @@
     "yearLabel": "Academic year",
     "yearLabelPlaceholder": "2024-2025"
   },
-  "assignments": {
-    "page": {
-      "title": "Assignments",
-      "subtitle": "Your class's assignments"
-    },
-    "card": {
-      "dueDate": "Due: {date}",
-      "noDueDate": "No deadline",
-      "daysLeft": {
-        "remaining": "{days} days left",
-        "dueToday": "Due today",
-        "overdue": "{days} days overdue",
-        "noDeadline": "No deadline"
-      },
-      "cta": {
-        "viewDetail": "View details",
-        "openAria": "View assignment details: {title}"
-      }
-    },
-    "empty": {
-      "allTab": "Your class has no assignments yet."
-    },
-    "skeleton": {
-      "loading": "Loading assignments..."
-    },
-    "error": {
-      "title": "Could not load the assignments",
-      "description": "Something went wrong. Please try again.",
-      "retry": "Try again"
-    },
-    "errors": {
-      "not-found": "Assignment not found.",
-      "forbidden": "You do not have access to this assignment.",
-      "already-submitted": "This assignment has already been submitted.",
-      "closed": "Past the deadline — this assignment no longer accepts work.",
-      "not-document": "Only document items can be edited.",
-      "exam-window-not-editable": "The exam schedule is owned by the Exams module and cannot be changed here.",
-      "invalid-window": "The end time must be after the start time.",
-      "invalid-url": "The link must be a valid https address.",
-      "invalid-content": "The submitted work is not valid. Please check it again.",
-      "limit-exceeded": "The maximum number of items has been reached.",
-      "network-error": "Connection error. Please try again.",
-      "unknown": "Something went wrong. Please try again.",
-      "no-class": "We could not determine your class. Please contact your homeroom teacher."
-    },
-    "submit": {
-      "sheetTitle": "Assignment details",
-      "closeAriaLabel": "Close",
-      "detailLoading": "Loading assignment details...",
-      "noInstructions": "The teacher has not written any instructions for this assignment.",
-      "answerLabel": "Your work",
-      "answerPlaceholder": "Type your work here…",
-      "contentTooLong": "Your work cannot exceed {max} characters.",
-      "singleAttemptHelper": "You may submit only once.",
-      "emptyContentHint": "Enter your work to enable submitting.",
-      "submittedAt": "Submitted at {date}",
-      "saveDraftButton": "Save draft",
-      "submitButton": "Submit",
-      "submittingButton": "Submitting…",
-      "draftSavedToast": "Draft saved.",
-      "submitSuccessToast": "Submitted successfully."
-    }
-  },
   "attendance": {
     "actions": {
       "allPresent": "All present",
@@ -1212,6 +1149,34 @@
     },
     "skeleton": {
       "loading": "Loading courses..."
+    },
+    "views": {
+      "navLabel": "View",
+      "all": "Courses",
+      "assignment": "Assignments",
+      "exam": "Exams"
+    },
+    "cross": {
+      "banner": {
+        "assignment": "This list filters every assignment across all course timelines — soonest deadline first.",
+        "exam": "This list filters every exam across all course timelines — soonest deadline first."
+      },
+      "subTabLabel": "Status group",
+      "subTab": {
+        "open": "Open",
+        "upcoming": "Upcoming",
+        "closed": "Closed"
+      },
+      "countAria": "{label}, {count, plural, one {# item} other {# items}}",
+      "empty": "Nothing in this group.",
+      "urgent": "{hours, plural, one {# hour left} other {# hours left}}",
+      "cta": {
+        "start": "Start exam",
+        "startExternal": "Start exam (new tab)",
+        "startAria": "Start exam: {title}",
+        "view": "View in course",
+        "viewAria": "View {title} in course {course}"
+      }
     },
     "player": {
       "breadcrumbLabel": "Breadcrumb",

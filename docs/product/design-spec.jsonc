@@ -5218,10 +5218,12 @@
         "infoBanner": "info-light row explaining the list filters every assignment/exam across all course timelines, soonest deadline first",
         "subTabs": "underline tabs Đang mở / Sắp mở / Đã đóng, each with a count pill (active → primary-light bg + primary text)",
         "sort": "open + closed by due; upcoming by start; closed reversed (most recent first)",
-        "row": "card padding 13px 16px — type chip, title 13.5px/700, subject Badge (course color), window text; urgent (≤48h) → border error/45 + error-text 'còn Nh giờ'; right = CiStatusPill + action",
-        "action": "exam & open & unsubmitted → solid 'Vào làm bài'; otherwise outline 'Xem trong khoá học' → the course timeline",
+        "row": "card padding 13px 16px — type chip, title 13.5px/700, subject Badge (course color; the badge shows the COURSE title — no endpoint a student may call resolves subjectId → a subject name, US-E24.2 gap), window text; urgent (≤48h, decided server-side against one `now`) → border error/45 + warning icon + error-text 'còn N giờ' (three channels, never colour alone); right = CiStatusPill + action. NO '✓ Đã nộp' — see `action`/D-1",
+        "action": "D-1 (normative, US-E24.4) — exam & OPEN → solid 'Vào làm bài'; otherwise outline 'Xem trong khoá học' → the course timeline. The mockup's '& unsubmitted' condition and the row's '✓ Đã nộp' decoration are DROPPED: `CourseItem` carries no per-student submission flag and there is no batched submission read, so honouring them would cost one extra request per row (N courses × M items). Same fact D-1 already accepted for the single-item player (US-E24.5).",
         "empty": "type icon 30 + 'Không có mục nào trong nhóm này.'",
-        "routing": "Q-C — /student/assignments and /student/exams permanently redirect here; /student/exams/[examId] stays."
+        "routing": "Q-C — /student/assignments and /student/exams permanently redirect here (308, US-E24.4); /student/exams/[examId] stays.",
+        "urlState": "US-E24.4 — `?view=all|assignment|exam` + `?sub=open|upcoming|closed` are the ONLY state; every pill/tab is a real <Link> and the server renders just the active group, so there is no Client Component in this screen and back/forward work. `sub=upcoming` on the assignment view falls back to `open` (D7).",
+        "status": "implemented — US-E24.4"
       },
       "visibilityRule": "D7 (normative, v3, matches BE contract) — for STUDENTS the BE does not return unopened items except EXAM. Only exam rows may render the 'Sắp mở' 🔒 state (helper `ciVisibleToStudent`); every other type is Đang mở / Đã đóng only. Teacher mode still shows all 3 states.",
       "deviations": [

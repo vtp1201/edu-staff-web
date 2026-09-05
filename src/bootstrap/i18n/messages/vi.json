@@ -711,69 +711,6 @@
     "yearLabel": "Năm học",
     "yearLabelPlaceholder": "2024-2025"
   },
-  "assignments": {
-    "page": {
-      "title": "Bài tập",
-      "subtitle": "Bài tập của lớp bạn"
-    },
-    "card": {
-      "dueDate": "Hạn nộp: {date}",
-      "noDueDate": "Không có hạn nộp",
-      "daysLeft": {
-        "remaining": "Còn {days} ngày",
-        "dueToday": "Hết hạn hôm nay",
-        "overdue": "Quá hạn {days} ngày",
-        "noDeadline": "Không có hạn"
-      },
-      "cta": {
-        "viewDetail": "Xem chi tiết",
-        "openAria": "Xem chi tiết bài tập: {title}"
-      }
-    },
-    "empty": {
-      "allTab": "Lớp của bạn chưa có bài tập nào."
-    },
-    "skeleton": {
-      "loading": "Đang tải danh sách bài tập..."
-    },
-    "error": {
-      "title": "Không thể tải danh sách bài tập",
-      "description": "Đã có lỗi xảy ra. Vui lòng thử lại.",
-      "retry": "Thử lại"
-    },
-    "errors": {
-      "not-found": "Không tìm thấy bài tập.",
-      "forbidden": "Bạn không có quyền xem bài tập này.",
-      "already-submitted": "Bài tập này đã được nộp.",
-      "closed": "Đã quá hạn nộp — bài tập này không còn nhận bài.",
-      "not-document": "Chỉ có thể chỉnh sửa mục tài liệu.",
-      "exam-window-not-editable": "Lịch kiểm tra do module Kiểm tra quản lý, không sửa được tại đây.",
-      "invalid-window": "Hạn kết thúc phải sau thời điểm bắt đầu.",
-      "invalid-url": "Liên kết phải là địa chỉ https hợp lệ.",
-      "invalid-content": "Nội dung bài làm không hợp lệ. Vui lòng kiểm tra lại.",
-      "limit-exceeded": "Đã đạt giới hạn số mục cho phép.",
-      "network-error": "Lỗi kết nối. Vui lòng thử lại.",
-      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
-      "no-class": "Chưa xác định được lớp của bạn. Vui lòng liên hệ giáo viên chủ nhiệm."
-    },
-    "submit": {
-      "sheetTitle": "Chi tiết bài tập",
-      "closeAriaLabel": "Đóng",
-      "detailLoading": "Đang tải chi tiết bài tập...",
-      "noInstructions": "Giáo viên chưa ghi hướng dẫn cho bài tập này.",
-      "answerLabel": "Nội dung bài làm",
-      "answerPlaceholder": "Nhập nội dung bài làm của bạn…",
-      "contentTooLong": "Nội dung bài làm không được vượt quá {max} ký tự.",
-      "singleAttemptHelper": "Bạn chỉ được nộp bài một lần duy nhất.",
-      "emptyContentHint": "Nhập nội dung bài làm để có thể nộp bài.",
-      "submittedAt": "Đã nộp lúc {date}",
-      "saveDraftButton": "Lưu nháp",
-      "submitButton": "Nộp bài",
-      "submittingButton": "Đang nộp bài…",
-      "draftSavedToast": "Đã lưu nháp.",
-      "submitSuccessToast": "Nộp bài thành công."
-    }
-  },
   "attendance": {
     "actions": {
       "allPresent": "Tất cả có mặt",
@@ -1212,6 +1149,34 @@
     },
     "skeleton": {
       "loading": "Đang tải khoá học..."
+    },
+    "views": {
+      "navLabel": "Chế độ xem",
+      "all": "Môn học",
+      "assignment": "Bài tập",
+      "exam": "Bài kiểm tra"
+    },
+    "cross": {
+      "banner": {
+        "assignment": "Danh sách này lọc mọi bài tập từ timeline của tất cả môn học — bài sắp hết hạn xếp trước.",
+        "exam": "Danh sách này lọc mọi bài kiểm tra từ timeline của tất cả môn học — bài sắp hết hạn xếp trước."
+      },
+      "subTabLabel": "Nhóm trạng thái",
+      "subTab": {
+        "open": "Đang mở",
+        "upcoming": "Sắp mở",
+        "closed": "Đã đóng"
+      },
+      "countAria": "{label}, {count} mục",
+      "empty": "Không có mục nào trong nhóm này.",
+      "urgent": "còn {hours} giờ",
+      "cta": {
+        "start": "Vào làm bài",
+        "startExternal": "Vào làm bài (tab mới)",
+        "startAria": "Vào làm bài: {title}",
+        "view": "Xem trong khoá học",
+        "viewAria": "Xem {title} trong khoá học {course}"
+      }
     },
     "player": {
       "breadcrumbLabel": "Đường dẫn",

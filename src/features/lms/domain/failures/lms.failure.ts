@@ -3,7 +3,7 @@
  * `LmsFailure` + `AssignmentFailure` — one service, one error surface).
  *
  * Stable keys: presentation translates `courses.errors.<type>` /
- * `assignments.errors.<type>`; nothing below this layer ever translates
+ * `courses.errors.<type>`; nothing below this layer ever translates
  * (i18n.md). Each member is produced by mapping a documented UPPER_SNAKE
  * `error.code` (never a message) — see
  * `infrastructure/mappers/lms-failure.mapper.ts` for the code → member table

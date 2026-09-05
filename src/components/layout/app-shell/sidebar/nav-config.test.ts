@@ -73,6 +73,25 @@ describe("NAV_BY_ROLE", () => {
     ).toBe("grades");
   });
 
+  /**
+   * US-E24.4: the student sidebar drops "Bài tập" and "Bài kiểm tra" — both
+   * are now views of the courses screen (`?view=`), and the old routes are
+   * permanent redirects. Asserting the WHOLE list (not just the two absences)
+   * so a re-added entry cannot slip back in unnoticed.
+   */
+  it("gives a student exactly seven nav items, without assignments/exams", () => {
+    expect(NAV_BY_ROLE.student.map((i) => i.href)).toEqual([
+      "/student",
+      "/student/courses",
+      "/student/grades",
+      "/student/conduct",
+      "/student/schedule",
+      "/messages",
+      "/profile",
+    ]);
+    expect(DEFAULT_ROUTE.student).toBe("/student");
+  });
+
   it("includes the role's home dashboard as the first item", () => {
     expect(NAV_BY_ROLE.teacher[0].href).toBe("/teacher");
     expect(NAV_BY_ROLE.principal[0].href).toBe("/principal");
