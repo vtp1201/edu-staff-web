@@ -147,25 +147,21 @@ export async function makeGetLeaveRequestsUseCase() {
   return new GetLeaveRequestsUseCase(await makeLeaveRepo());
 }
 
-/** Legacy multi-class dashboards only (`/teacher/discipline`,
- *  `/principal/discipline`) — they cannot derive a class scope, so they call
- *  `execute()` without an `authCtx`. Class-scoped surfaces MUST use
- *  {@link makeDecideLeaveUseCases} instead. */
-export async function makeApproveLeaveUseCase() {
-  return new ApproveLeaveUseCase(await makeLeaveRepo());
-}
-
-/** See {@link makeApproveLeaveUseCase}. */
-export async function makeRejectLeaveUseCase() {
-  return new RejectLeaveUseCase(await makeLeaveRepo());
-}
-
 /**
- * The class-scoped decision bundle. Returning `{ approve, reject, authCtx }`
- * together is the enforcement mechanism: a Server Action cannot construct the
- * use-case without also holding the context it must thread (same shape as
- * `period-log.di.ts`'s mutation factories). Both use-cases share ONE repository
- * instance, so a single action costs one http client, not two.
+ * The ONLY way to build a leave-decision use-case. Returning
+ * `{ approve, reject, authCtx }` together is the enforcement mechanism: a
+ * Server Action cannot construct the use-case without also holding the context
+ * it must thread (same shape as `period-log.di.ts`'s mutation factories). Both
+ * use-cases share ONE repository instance, so a single action costs one http
+ * client, not two.
+ *
+ * There is deliberately NO bare `makeApproveLeaveUseCase()`/
+ * `makeRejectLeaveUseCase()` any more: the legacy multi-class dashboards used
+ * to call those without an `authCtx`, which (with the then-optional field) let
+ * an irreversible mutation reach core with ZERO front-end authorization —
+ * exactly the "route gate is not a data boundary" hole decision `0063` exists
+ * to close. `makeLeaveDecisionAuthContext()` needs no per-screen `classId`, so
+ * every surface, multi-class dashboards included, can use this bundle.
  */
 export async function makeDecideLeaveUseCases() {
   const [repo, authCtx] = await Promise.all([

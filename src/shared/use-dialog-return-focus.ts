@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { type RefObject, useRef } from "react";
 
 /**
  * Restore focus to the control that opened a CONTROLLED Radix Dialog/Sheet/
@@ -64,7 +64,18 @@ export function useAutoFocusReturn(): {
   };
 }
 
-export function useDialogReturnFocus(open: boolean): (event: Event) => void {
+/**
+ * @param fallbackRef Focus target used when the invoker is DETACHED by the time
+ * the dialog closes — the row that owned the invoking button was removed as a
+ * result of confirming (an inbox that drops a decided request, US-E24.11).
+ * Without it, `focus()` on a detached node is a silent no-op and focus falls to
+ * `<body>` (fails WCAG 2.4.3); pass a `tabIndex={-1}` heading of the surviving
+ * container instead.
+ */
+export function useDialogReturnFocus(
+  open: boolean,
+  fallbackRef?: RefObject<HTMLElement | null>,
+): (event: Event) => void {
   const invokerRef = useRef<HTMLElement | null>(null);
   const prevOpenRef = useRef(false);
   if (open && !prevOpenRef.current && typeof document !== "undefined") {
@@ -76,10 +87,15 @@ export function useDialogReturnFocus(open: boolean): (event: Event) => void {
   prevOpenRef.current = open;
 
   return (event: Event) => {
-    // Radix's default here would focus <body>; override to return to the invoker.
-    if (invokerRef.current) {
+    // Radix's default here would focus <body>; override to return to the
+    // invoker — or, when the invoker no longer exists, to the caller's fallback.
+    const invoker = invokerRef.current;
+    const target = invoker?.isConnected
+      ? invoker
+      : (fallbackRef?.current ?? null);
+    if (target) {
       event.preventDefault();
-      invokerRef.current.focus();
+      target.focus();
     }
   };
 }

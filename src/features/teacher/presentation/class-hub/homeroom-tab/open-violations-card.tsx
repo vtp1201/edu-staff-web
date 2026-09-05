@@ -26,11 +26,15 @@ export function OpenViolationsCard({ vm }: OpenViolationsCardProps) {
     <section className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card">
       <div className="flex items-center justify-between gap-2 border-border border-b px-5 py-3.5">
         <h3 className="font-extrabold text-foreground text-sm">{t("title")}</h3>
-        <StatusBadge
-          tone={vm.count > 0 ? "error" : "muted"}
-          aria-label={t("countLabel", { count: vm.count })}
-        >
-          {vm.count}
+        <StatusBadge tone={vm.count > 0 ? "error" : "muted"}>
+          {/* The badge renders a plain <span> (role=generic), where an
+              aria-label is not a reliable accessible name — so the meaning is
+              ALSO carried by real text: the bare digit is hidden from AT and
+              the full wording is announced instead (A11Y-002). */}
+          <span aria-hidden="true">{vm.count}</span>
+          <span className="sr-only">
+            {t("countLabel", { count: vm.count })}
+          </span>
         </StatusBadge>
       </div>
 

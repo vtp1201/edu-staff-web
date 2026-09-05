@@ -103,8 +103,8 @@ reviewer quyết; mặc định ghi vào packet Evidence + `screens.md`.
   for 14 factories (violations, conduct grades, student self-service, parent
   multi-child). US-E18.14's two categorical blockers still hold for all of them.
 - `makeLeaveRepo()` — an ordinary `USE_MOCK ? Mock : Real` gate (decision `0014`)
-  used by **exactly three**: `makeGetLeaveRequestsUseCase`,
-  `makeApproveLeaveUseCase`, `makeRejectLeaveUseCase`. The GVCN homeroom inbox is
+  used by **exactly three operations**: `makeGetLeaveRequestsUseCase` plus the
+  approve/reject pair inside `makeDecideLeaveUseCases`. The GVCN homeroom inbox is
   the one conduct surface neither blocker reaches — core returns the student ids
   itself (IAM's batch directory resolves the names, so no roster-UUID lookup) and
   the caller is a TEACHER standing in a known `classId` (so no self-scope
@@ -134,7 +134,7 @@ real read lands, only `toViolationsVm` in `homeroom-vm.ts` changes.
 ### Contract deltas (mechanical, no behaviour change for existing callers)
 
 - `approveLeave`/`rejectLeave` now take a `DecideLeaveInput`
-  (`id` + `studentMemberId` + `classId` + optional `authCtx`).
+  (`id` + `studentMemberId` + `classId` + a REQUIRED `authCtx`).
   `studentMemberId` is a REQUIRED query param on both by-id routes — it completes
   core's `(tenantId, studentMemberId)` partition key. Rippled through
   `IDisciplineRepository`, both repositories, both use-cases,
@@ -155,7 +155,22 @@ path yields an EMPTY scope (deny by default); mock mode pins the role to
 Server Action cannot construct the mutation without the context.
 The guard (`assertCanDecideLeave`) runs as the FIRST statement of
 `approveLeave`/`rejectLeave` in BOTH repositories; forge-role tests call the
-repository directly and assert `http.post` was never called.
+repository directly and assert `http.post` was never called
+(`discipline.repository.security.test.ts`).
+
+**Review fix (2026-09-05).** The first cut made `authCtx` OPTIONAL and let a
+missing context skip the check — fail-OPEN — while the two legacy dashboards
+(`/teacher/discipline`, `/principal/discipline`) called a context-free
+`makeApproveLeaveUseCase()`/`makeRejectLeaveUseCase()`. In real mode those two
+Server Actions could therefore decide any leave request with zero front-end
+authorization (only core's 403 stood in the way), which is exactly what
+decision `0063` exists to prevent. Now: `authCtx` is required, a missing one
+throws `forbidden`, the two context-free factories are DELETED, and both legacy
+actions use `makeDecideLeaveUseCases()`. `makeLeaveDecisionAuthContext()` needs
+no per-screen `classId` (it derives the caller's whole homeroom set), so a
+multi-class dashboard can build it fine. Consequence, and it is the CORRECT
+one: a principal on `/principal/discipline` now gets `forbidden` — BGH have
+read-only oversight at MVP (ADR 0073 Follow-Up).
 
 ### decision `0026` (component placement) — deviation from COMPONENT-ARCHITECTURE §6
 

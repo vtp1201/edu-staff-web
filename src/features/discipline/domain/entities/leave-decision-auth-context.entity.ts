@@ -1,3 +1,5 @@
+import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
+
 /**
  * Server-derived authorization context for DECIDING a student leave request
  * (approve / reject) — decision `0063`.
@@ -10,7 +12,7 @@
  */
 export interface LeaveDecisionAuthContext {
   /** App role read from the token claim (`decodeRoleClaim`). */
-  role: string;
+  role: UserRole;
   /** Class ids where this member is the class's CURRENT homeroom teacher. */
   homeroomClassIds: string[];
 }

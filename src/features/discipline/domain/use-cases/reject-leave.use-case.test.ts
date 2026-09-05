@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LeaveRequestEntity } from "../entities/leave-request.entity";
+import type { LeaveDecisionAuthContext } from "../entities/leave-decision-auth-context.entity";
+import type {
+  DecideLeaveInput,
+  LeaveRequestEntity,
+} from "../entities/leave-request.entity";
 import type { IDisciplineRepository } from "../repositories/i-discipline.repository";
 import { RejectLeaveUseCase } from "./reject-leave.use-case";
 
@@ -50,11 +54,14 @@ function makeRepo(
   };
 }
 
-const decide = {
+/** The addressing tuple + the server-derived scope every decision now carries
+ *  (`authCtx` is REQUIRED since the US-E24.11 review — no fail-open path). */
+const decide: DecideLeaveInput = {
   id: "l-1",
   studentMemberId: "s-1",
   classId: "10A1",
-} as const;
+  authCtx: { role: "teacher", homeroomClassIds: ["10A1"] },
+};
 
 describe("RejectLeaveUseCase", () => {
   it("rejects a leave request with a valid reason, forwarding the whole addressing tuple", async () => {
@@ -86,7 +93,10 @@ describe("RejectLeaveUseCase", () => {
   it("passes a server-derived authCtx straight through to the repository (decision 0063)", async () => {
     const rejectLeave = vi.fn().mockResolvedValue(leave);
     const useCase = new RejectLeaveUseCase(makeRepo({ rejectLeave }));
-    const authCtx = { role: "teacher", homeroomClassIds: ["10A1"] };
+    const authCtx: LeaveDecisionAuthContext = {
+      role: "teacher",
+      homeroomClassIds: ["10A1", "10A2"],
+    };
 
     await useCase.execute({
       ...decide,

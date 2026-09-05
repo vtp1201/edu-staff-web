@@ -131,8 +131,10 @@ export const Full: Story = {
     expect(canvas.getByText(t.attendance.present)).toBeInTheDocument();
 
     // Card 2 — the count badge announces itself in words, not just a digit.
+    // The wording is REAL (sr-only) text, not an aria-label on a role=generic
+    // <span>, where a name is prohibited (A11Y-002).
     expect(
-      canvas.getByLabelText(t.violations.countLabel.replace("{count}", "2")),
+      canvas.getByText(t.violations.countLabel.replace("{count}", "2")),
     ).toBeInTheDocument();
 
     // Card 3 — one row per pending request, each button naming its student.
@@ -230,8 +232,13 @@ export const ApproveRemovesRow: Story = {
     // The other request is untouched and the badge counts down.
     expect(canvas.getByText("Trần Bảo Anh")).toBeInTheDocument();
     expect(
-      canvas.getByLabelText(t.leave.countLabel.replace("{count}", "1")),
+      canvas.getByText(t.leave.countLabel.replace("{count}", "1")),
     ).toBeInTheDocument();
+
+    // A11Y: the focused button was just unmounted with its row — focus must
+    // land on the card heading, never fall through to <body> (WCAG 2.4.3).
+    const heading = canvas.getByRole("heading", { name: t.leave.title });
+    await waitFor(() => expect(heading).toHaveFocus());
   },
 };
 
@@ -264,6 +271,18 @@ export const RejectDialog: Story = {
     await waitFor(() => {
       expect(canvas.queryByText("Nguyễn Minh Khoa")).not.toBeInTheDocument();
     });
+
+    // A11Y: the dialog's own focus return points at the (now removed) Từ chối
+    // button, so the card heading is the declared fallback. The query itself
+    // is retried: until the dialog's exit animation finishes, Radix keeps the
+    // rest of the page out of the accessibility tree.
+    await waitFor(
+      () =>
+        expect(
+          canvas.getByRole("heading", { name: t.leave.title }),
+        ).toHaveFocus(),
+      { timeout: 4000 },
+    );
   },
 };
 

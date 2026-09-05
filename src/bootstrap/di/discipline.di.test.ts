@@ -2,8 +2,9 @@
  * Unit tests — `discipline.di.ts` after the PARTIAL un-force-mock (US-E24.11).
  *
  * US-E18.14 force-mocked every factory in this file regardless of `USE_MOCK`.
- * US-E24.11 un-forces EXACTLY THREE — `makeGetLeaveRequestsUseCase`,
- * `makeApproveLeaveUseCase`, `makeRejectLeaveUseCase` — because the GVCN
+ * US-E24.11 un-forces EXACTLY THREE operations — `makeGetLeaveRequestsUseCase`
+ * plus the approve/reject pair inside `makeDecideLeaveUseCases` — because the
+ * GVCN
  * homeroom leave inbox is the one conduct surface neither blocker reaches
  * (no roster UUID needed, no self-scope discovery needed).
  *
@@ -41,19 +42,27 @@ function stubServerSeams(
   opts: {
     token?: string | null;
     classes?: Array<{ id: string; roles: string[] }>;
+    /** Replaces the whole class-list read — a rejected/failed read must yield
+     *  an EMPTY scope. Passed here rather than re-`doMock`ing the same module
+     *  in the test body: a second registration for a path already registered
+     *  by this helper does not reliably win, which made two deny-by-default
+     *  cases order-dependent (one of them failing on the branch). */
+    listMyClasses?: () => Promise<unknown>;
   } = {},
 ) {
   const createServerHttpClient = vi
     .fn()
     .mockResolvedValue({ get: vi.fn(), post: vi.fn() });
   const ensureFreshSession = vi.fn().mockResolvedValue(undefined);
-  const listMyClasses = vi.fn().mockResolvedValue({
-    ok: true,
-    data: opts.classes ?? [
-      { id: "cls-10a1", roles: ["homeroom", "subject"] },
-      { id: "cls-11b2", roles: ["subject"] },
-    ],
-  });
+  const listMyClasses = opts.listMyClasses
+    ? vi.fn(opts.listMyClasses)
+    : vi.fn().mockResolvedValue({
+        ok: true,
+        data: opts.classes ?? [
+          { id: "cls-10a1", roles: ["homeroom", "subject"] },
+          { id: "cls-11b2", roles: ["subject"] },
+        ],
+      });
   vi.doMock("@/bootstrap/lib/http.server", () => ({ createServerHttpClient }));
   vi.doMock("@/bootstrap/di/auth.di", () => ({ ensureFreshSession }));
   vi.doMock("@/bootstrap/lib/auth-token.server", () => ({
@@ -92,16 +101,17 @@ const REAL_MODES = [undefined, "false"] as const;
 
 describe("discipline.di — the THREE un-forced leave factories (US-E24.11)", () => {
   it("mock mode still builds the mock repository", async () => {
+    // The seams are stubbed even in mock mode: `makeDecideLeaveUseCases()`
+    // ALWAYS assembles the auth context (there is no context-free factory any
+    // more), and that reads the token cookie.
+    stubServerSeams();
     const mod = await di("true");
     expect(repoNameOf(await mod.makeGetLeaveRequestsUseCase())).toBe(
       "MockDisciplineRepository",
     );
-    expect(repoNameOf(await mod.makeApproveLeaveUseCase())).toBe(
-      "MockDisciplineRepository",
-    );
-    expect(repoNameOf(await mod.makeRejectLeaveUseCase())).toBe(
-      "MockDisciplineRepository",
-    );
+    const decide = await mod.makeDecideLeaveUseCases();
+    expect(repoNameOf(decide.approve)).toBe("MockDisciplineRepository");
+    expect(repoNameOf(decide.reject)).toBe("MockDisciplineRepository");
   });
 
   for (const mode of REAL_MODES) {
@@ -111,12 +121,9 @@ describe("discipline.di — the THREE un-forced leave factories (US-E24.11)", ()
       expect(repoNameOf(await mod.makeGetLeaveRequestsUseCase())).toBe(
         "DisciplineRepository",
       );
-      expect(repoNameOf(await mod.makeApproveLeaveUseCase())).toBe(
-        "DisciplineRepository",
-      );
-      expect(repoNameOf(await mod.makeRejectLeaveUseCase())).toBe(
-        "DisciplineRepository",
-      );
+      const decide = await mod.makeDecideLeaveUseCases();
+      expect(repoNameOf(decide.approve)).toBe("DisciplineRepository");
+      expect(repoNameOf(decide.reject)).toBe("DisciplineRepository");
     });
   }
 
@@ -181,14 +188,12 @@ describe("makeLeaveDecisionAuthContext — decision 0063 assembly", () => {
   });
 
   it("denies by default when the class list read fails (empty scope, never a wildcard)", async () => {
-    stubServerSeams();
-    vi.doMock("@/bootstrap/di/teacher-class.di", () => ({
-      makeListMyTeacherClassesUseCase: async () => ({
-        execute: vi
-          .fn()
-          .mockResolvedValue({ ok: false, error: { type: "network-error" } }),
+    stubServerSeams({
+      listMyClasses: async () => ({
+        ok: false,
+        error: { type: "network-error" },
       }),
-    }));
+    });
     const mod = await di("false");
 
     expect((await mod.makeLeaveDecisionAuthContext()).homeroomClassIds).toEqual(
@@ -197,12 +202,11 @@ describe("makeLeaveDecisionAuthContext — decision 0063 assembly", () => {
   });
 
   it("denies by default when the class list read throws", async () => {
-    stubServerSeams();
-    vi.doMock("@/bootstrap/di/teacher-class.di", () => ({
-      makeListMyTeacherClassesUseCase: async () => ({
-        execute: vi.fn().mockRejectedValue(new Error("boom")),
-      }),
-    }));
+    stubServerSeams({
+      listMyClasses: async () => {
+        throw new Error("boom");
+      },
+    });
     const mod = await di("false");
 
     expect((await mod.makeLeaveDecisionAuthContext()).homeroomClassIds).toEqual(
@@ -240,6 +244,16 @@ describe("makeLeaveDecisionAuthContext — decision 0063 assembly", () => {
       );
     });
   }
+
+  // The review of US-E24.11 deleted the bare `makeApproveLeaveUseCase()` /
+  // `makeRejectLeaveUseCase()` pair: they built a decision use-case with NO
+  // context, and the (then-optional) `authCtx` made that a fail-OPEN mutation.
+  // This is the structural guard that they stay deleted.
+  it("exposes NO way to build a decision use-case without a context", async () => {
+    const mod = await di("true");
+    expect(mod).not.toHaveProperty("makeApproveLeaveUseCase");
+    expect(mod).not.toHaveProperty("makeRejectLeaveUseCase");
+  });
 
   it("makeDecideLeaveUseCases bundles both use-cases WITH the context, so an action cannot forget it", async () => {
     stubServerSeams();

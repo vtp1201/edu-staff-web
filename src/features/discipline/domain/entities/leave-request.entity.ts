@@ -75,15 +75,18 @@ export interface DecideLeaveInput {
   studentMemberId: string;
   classId: string;
   /**
-   * Server-derived GVCN scope (decision `0063`). Present on every surface that
-   * can resolve the caller's homeroom classes — i.e. the class-scoped homeroom
-   * tab. Absent ONLY on the legacy multi-class discipline dashboards
-   * (`/teacher/discipline`, `/principal/discipline`), which have no `classId`
-   * scope of their own to derive it from; those screens are mock-only anyway
-   * (their list call cannot be formed on the real API — backlog: the
-   * `getLeaveRequests({})` gap), so no real mutation ever skips the check.
+   * Server-derived GVCN scope (decision `0063`) — REQUIRED on every call.
+   *
+   * Assembled ONLY in `bootstrap/di/discipline.di.ts`
+   * (`makeLeaveDecisionAuthContext()`), never from a prop, a form field or a
+   * search param. It is NOT optional: an optional context invites a caller to
+   * omit it, and an omitted context used to mean "skip the check" — a
+   * fail-OPEN hole on an irreversible mutation (found in review of US-E24.11).
+   * Every surface can derive one, including the multi-class dashboards: the
+   * context carries the caller's WHOLE homeroom class set, so no per-screen
+   * `classId` scope is needed to build it.
    */
-  authCtx?: LeaveDecisionAuthContext;
+  authCtx: LeaveDecisionAuthContext;
 }
 
 /**
@@ -97,7 +100,13 @@ export interface DecideLeaveInput {
  * side denied.
  */
 export function assertCanDecideLeave(input: DecideLeaveInput): void {
-  if (input.authCtx === undefined) return;
+  // FAIL-CLOSED. A missing context is not "no opinion", it is "no proof" —
+  // and an untyped caller (a Server Action reached with a hand-made payload,
+  // a JS-only call site) can still hand us `undefined` despite the required
+  // type. Deny before the guard even looks at the scope.
+  if (input.authCtx === undefined || input.authCtx === null) {
+    throw { type: "forbidden" } satisfies DisciplineFailure;
+  }
   if (!canDecideLeave(input.authCtx, input.classId)) {
     throw { type: "forbidden" } satisfies DisciplineFailure;
   }

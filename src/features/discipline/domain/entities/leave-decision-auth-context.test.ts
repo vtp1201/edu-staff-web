@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
 import {
   canDecideLeave,
   type LeaveDecisionAuthContext,
@@ -32,7 +33,17 @@ describe("canDecideLeave", () => {
   });
 
   it("denies every non-teacher role even when the class id matches (BGH have read-only oversight — ADR 0073 Follow-Up)", () => {
-    for (const role of ["principal", "admin", "student", "parent", ""]) {
+    // `""` stands in for an UNREADABLE role claim: the assembler falls back to
+    // a real role, but the predicate must deny junk on its own terms too, so
+    // the cast is deliberate (it cannot occur through the typed path).
+    const roles: UserRole[] = [
+      "principal",
+      "admin",
+      "student",
+      "parent",
+      "" as UserRole,
+    ];
+    for (const role of roles) {
       expect(canDecideLeave(ctx({ role }), "cls-10a1")).toBe(false);
     }
   });

@@ -14,6 +14,7 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
+import type { DecideLeaveInput } from "../../domain/entities/leave-request.entity";
 import type { RecordViolationInput } from "../../domain/entities/violation.entity";
 import { DisciplineRepository, toFailure } from "./discipline.repository";
 import { MockDisciplineRepository } from "./mocks/discipline.mock.repository";
@@ -29,9 +30,24 @@ const recordInput: RecordViolationInput = {
   notifyParent: false,
 };
 
-/** Addressing tuple for a leave decision (US-E24.11). */
-function decide(id: string, studentMemberId: string, classId: string) {
-  return { id, studentMemberId, classId };
+/**
+ * Addressing tuple for a leave decision (US-E24.11) + the server-derived GVCN
+ * scope every decision REQUIRES (decision `0063`). The authorization cases —
+ * forged role, forged scope, missing context — live in the sibling
+ * `discipline.repository.security.test.ts`; here the context is always the
+ * legitimate one so the tests below exercise BEHAVIOUR, not the guard.
+ */
+function decide(
+  id: string,
+  studentMemberId: string,
+  classId: string,
+): DecideLeaveInput {
+  return {
+    id,
+    studentMemberId,
+    classId,
+    authCtx: { role: "teacher", homeroomClassIds: [classId] },
+  };
 }
 
 describe("MockDisciplineRepository", () => {
@@ -85,43 +101,6 @@ describe("MockDisciplineRepository", () => {
     await expect(
       repo.approveLeave(decide("l-2", "s-4", "11B2")),
     ).rejects.toMatchObject({ type: "already-processed" });
-  });
-
-  // decision 0063 — the mock repository is the DURABLE authorization boundary
-  // while the rest of this feature stays mock-first: a forged scope must be
-  // refused before any state change, not merely hidden by the UI.
-  it("approveLeave refuses a forged authCtx (not the GVCN of that class) WITHOUT mutating", async () => {
-    const repo = new MockDisciplineRepository();
-    await expect(
-      repo.approveLeave({
-        ...decide("l-1", "s-30", "11A2"),
-        authCtx: { role: "teacher", homeroomClassIds: ["some-other-class"] },
-      }),
-    ).rejects.toMatchObject({ type: "forbidden" });
-
-    // Still pending — the denial happened before the fixture was touched.
-    const after = await repo.getLeaveRequests({ classId: "11A2" });
-    expect(after.find((l) => l.id === "l-1")?.status).toBe("pending");
-  });
-
-  it("rejectLeave refuses a non-teacher role even when the class id matches", async () => {
-    const repo = new MockDisciplineRepository();
-    await expect(
-      repo.rejectLeave({
-        ...decide("l-4", "s-9", "10A1"),
-        authCtx: { role: "principal", homeroomClassIds: ["10A1"] },
-        reason: "Lý do từ chối hợp lệ",
-      }),
-    ).rejects.toMatchObject({ type: "forbidden" });
-  });
-
-  it("accepts a matching GVCN authCtx", async () => {
-    const repo = new MockDisciplineRepository();
-    const updated = await repo.approveLeave({
-      ...decide("l-1", "s-30", "11A2"),
-      authCtx: { role: "teacher", homeroomClassIds: ["11A2", "x"] },
-    });
-    expect(updated.status).toBe("approved");
   });
 
   it("overrideConductGrade updates grade + flags override", async () => {
@@ -685,41 +664,6 @@ describe("DisciplineRepository (real) — GVCN homeroom leave inbox (US-E24.11)"
     });
     expect(updated.status).toBe("rejected");
     expect(updated.rejectedBy).toBe("Tên gvcn-1");
-  });
-
-  // decision 0063 forge-role proof, straight at the repository — no UI, no
-  // use-case, no network mock needed: the denial must happen BEFORE `http.post`.
-  it("approveLeave with a forged authCtx never reaches the wire", async () => {
-    const http = makeHttp();
-    const repo = new DisciplineRepository(http, resolveNames);
-
-    await expect(
-      repo.approveLeave({
-        id: "req-1",
-        studentMemberId: "stu-1",
-        classId: "cls-10a1",
-        authCtx: { role: "teacher", homeroomClassIds: ["cls-99z9"] },
-      }),
-    ).rejects.toMatchObject({ type: "forbidden" });
-    expect(http.post).not.toHaveBeenCalled();
-  });
-
-  it("rejectLeave with a forged role never reaches the wire", async () => {
-    const http = makeHttp();
-    const repo = new DisciplineRepository(http, resolveNames);
-
-    for (const role of ["principal", "admin", "student", "parent"]) {
-      await expect(
-        repo.rejectLeave({
-          id: "req-1",
-          studentMemberId: "stu-1",
-          classId: "cls-10a1",
-          reason: "Lý do từ chối hợp lệ",
-          authCtx: { role, homeroomClassIds: ["cls-10a1"] },
-        }),
-      ).rejects.toMatchObject({ type: "forbidden" });
-    }
-    expect(http.post).not.toHaveBeenCalled();
   });
 
   it("maps core's own 403 to the SAME forbidden key the local guard throws", async () => {
