@@ -33,6 +33,13 @@ export interface CurrentTermContext {
   termId: string;
   termName: string;
   academicYearLabel: string;
+  /** The active year's UUID (US-E24.9). Distinct from `academicYearLabel`,
+   *  which is a DISPLAY string: core's period-log/period-prep writes require
+   *  the id, because the term's date range is validated against the write date
+   *  before the slot is resolved and the terms table has no
+   *  term-by-id-alone lookup (VULN-232-001). Empty only when no year resolves,
+   *  which the `termId` throw below already rules out. */
+  academicYearId: string;
 }
 
 export async function resolveCurrentTermContext(
@@ -55,6 +62,7 @@ export async function resolveCurrentTermContext(
     termId,
     termName: terms.find((t) => t.id === termId)?.name ?? "",
     academicYearLabel: activeYear?.label ?? "",
+    academicYearId: activeYear?.id ?? "",
   };
 }
 

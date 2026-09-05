@@ -37,6 +37,64 @@ describe("mapRealWeeklyTimetable", () => {
     expect(slot?.room).toBeUndefined();
   });
 
+  it("keeps teacherMemberId on the slot (US-E24.9 — the class hub keys writes on the id)", () => {
+    const vm = mapRealWeeklyTimetable(DTO, "11A2");
+    expect(vm.slots[0]?.[1]?.teacherMemberId).toBe("tch-uuid");
+    expect(vm.slots[4]?.[5]?.teacherMemberId).toBe("tch-2");
+  });
+
+  it("passes the bell-schedule window through when core resolved one (BE US-244)", () => {
+    const vm = mapRealWeeklyTimetable(
+      {
+        ...DTO,
+        slots: [
+          {
+            day: "MON",
+            period: 1,
+            subjectId: "sub-uuid",
+            teacherMemberId: "tch-uuid",
+            startTime: "07:00",
+            endTime: "07:45",
+          },
+        ],
+      },
+      "11A2",
+    );
+
+    const slot = vm.slots[0]?.[1];
+    expect(slot?.startTime).toBe("07:00");
+    expect(slot?.endTime).toBe("07:45");
+  });
+
+  it("leaves both times undefined when the tenant published no bell entry", () => {
+    // The field is OPTIONAL on the wire (omitted, not null) — the no-time state
+    // is legitimate and must not become an empty string or a guessed range.
+    const slot = mapRealWeeklyTimetable(DTO, "11A2").slots[0]?.[1];
+    expect(slot?.startTime).toBeUndefined();
+    expect(slot?.endTime).toBeUndefined();
+  });
+
+  it("prefers the wire teacherName when core resolved one (BE US-234), keeping the id", () => {
+    const vm = mapRealWeeklyTimetable(
+      {
+        ...DTO,
+        slots: [
+          {
+            day: "MON",
+            period: 1,
+            subjectId: "sub-uuid",
+            teacherMemberId: "tch-uuid",
+            teacherName: "Cô Nguyễn Thị Hương",
+          },
+        ],
+      },
+      "11A2",
+    );
+    const slot = vm.slots[0]?.[1];
+    expect(slot?.teacherName).toBe("Cô Nguyễn Thị Hương");
+    expect(slot?.teacherMemberId).toBe("tch-uuid");
+  });
+
   it("colours UUID subjectIds too, one colour each (they used to render grey)", () => {
     const vm = mapRealWeeklyTimetable(DTO, "11A2");
     const a = vm.slots[0]?.[1]?.subjectColorToken;

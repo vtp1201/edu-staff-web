@@ -162,27 +162,28 @@ export const ShellWithEmbeddedRealRoster: Story = {
   },
 };
 
-/* ── Not-yet-built tab bodies (US-E24.9/10/11 replace these) ────────────── */
+/* ── Not-yet-built tab bodies (US-E24.10/11 replace these; `timetable`
+      graduated to a real body in US-E24.9) ───────────────────────────────── */
 export const PlaceholderTabs: Story = {
   args: {
     header: header(["homeroom", "subject"]),
-    tabs: tabs(["homeroom", "subject"], "timetable"),
-    children: <TabPlaceholder tab="timetable" />,
+    tabs: tabs(["homeroom", "subject"], "course"),
+    children: <TabPlaceholder tab="course" />,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const active = canvas.getByRole("tab", { name: "Thời khoá biểu" });
+    const active = canvas.getByRole("tab", { name: "Khoá học online" });
     expect(active).toHaveAttribute("aria-selected", "true");
     const panel = canvas.getByRole("tabpanel");
-    expect(panel).toHaveAttribute("aria-labelledby", "classhub-tab-timetable");
+    expect(panel).toHaveAttribute("aria-labelledby", "classhub-tab-course");
     expect(within(panel).getByText("Đang xây dựng")).toBeVisible();
     expect(
       within(panel).getByText(
-        messages.teacherClasses.hub.placeholder.body.timetable,
+        messages.teacherClasses.hub.placeholder.body.course,
       ),
     ).toBeVisible();
     // A11Y-001: only the active tab points at the one rendered panel.
-    expect(active).toHaveAttribute("aria-controls", "classhub-panel-timetable");
+    expect(active).toHaveAttribute("aria-controls", "classhub-panel-course");
     expect(canvas.getByRole("tab", { name: "Học sinh" })).not.toHaveAttribute(
       "aria-controls",
     );

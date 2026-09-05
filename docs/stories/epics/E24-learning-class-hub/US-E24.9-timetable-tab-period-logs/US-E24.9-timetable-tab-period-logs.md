@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -118,4 +118,83 @@ không, decision 0063 đã phủ.
 
 ## Evidence
 
-(điền sau)
+Commits: 9880bc2d (feat, initial TDD) + f7272c5f (ADR 0063 amendment, fe-lead) +
+f8ed1a5d (fix, review+a11y round).
+
+Tech-lead review round 1: **REVISION REQUIRED** (fe-tech-lead-reviewer, high-risk
+lane). 5 MUST FIX: (1) stale week-nav client state — silent-overwrite risk fixed
+via `key={vm.weekParam}` remount; (2) homeroom "Sửa"/"Gửi duyệt" path unreachable
+against real contract (no update endpoint) — rewritten into 3 disjoint states
+(create/submit-only/revise); (3) authCtx used `decodeMemberId` (sub-fallback) —
+fixed to `decodeMemberIdClaim` (claim-only, ADR 0074); (4) real timetable mapper
+dropped LIVE `startTime`/`endTime` fields — added pass-through; (5) escalate ADR
+0063 compliance claim (client-supplied scope key `assignedTeacherMemberId`, not
+server-derived) — resolved by fe-lead amending
+`docs/decisions/0063-server-derived-auth-context-explicit-param.md` with a "4th
+instance" carve-out (BE is authoritative, FE check is UX-only defense-in-depth).
+4 SHOULD FIX (secondary-read silent-swallow → secondaryErrorKey banner; use
+existing `makeListEntriesUseCase()` not repo directly; add `period-log.di.test.ts`
+proving real mode ignores mock hint; narrow failure-type guard to known union)
++ 4 CONSIDER (rename duplicate export, materials url zod max, aria-describedby
+wiring, Saturday day intentional-documented) all applied in f8ed1a5d.
+
+Tech-lead re-check round 2: **APPROVED**. All 8 MUST/SHOULD FIX verified in code
+(not just claimed) — `weekParam` remount key, 3-state daily-log-panel, claim-only
+memberId decoder, startTime/endTime pass-through ground-truthed against edu-api
+core openapi.yaml SlotResponse (live, not draft), secondaryErrorKey rendered
+(role="status"), di.test.ts proves real-mode-ignores-mock-hint, failure-type
+union validated. Gates green: tsc clean, 562 files/4584 tests, lint clean,
+build green. Two non-blocking CONSIDER items noted for future (exhaustiveness
+comment softening, di.test.ts double-import weakness) — do not block merge.
+
+A11y audit round 1: 1 Blocking (period-row.tsx "— tiết của bạn" text-primary on
+bg-primary/5 ≈3.1:1 contrast fail) + 2 Minor (materials-field-array aria-label
+param misleading; day-card "Hôm nay" borderline contrast — pre-existing system
+pattern, registered as backlog #3, out of this story's scope). All closed in
+f8ed1a5d except backlog #3 (deferred, system-wide). A11y re-check round 2:
+CLOSED — recalculated contrast ≈11.7:1 for the fixed label; materials param
+renamed to `{position}` matching copy.
+
+Design review: pass
+- design-system: conform — tokens-only throughout (bg-primary/5 highlight,
+  text-edu-text-primary, text-edu-error-text, bg-edu-error/15, StatusBadge/
+  class-log STATUS_TONE reuse), matches design-spec.jsonc#teacher-class-hub
+  timetable-tab 2-column layout (minmax(0,1.7fr) minmax(260px,1fr)).
+- a11y: WCAG AA OK post-fix (contrast ≥4.5:1 recalculated on the fixed label;
+  radio A-D has legend/label; textarea labeled; badges color+text; keyboard
+  Tab/Enter native; motion-safe gates).
+- impeccable audit: code-level pass — no anti-pattern tells (no side-stripe,
+  no gradient text, no glassmorphism, no hero-metric template; 2-column layout
+  and inline forms are design-spec-prescribed).
+- states: loading/empty/error/holiday/no-slots/both-roles-today/subject-only/
+  homeroom-only-readonly-period/rejected-daily covered in Storybook (15/15
+  interaction tests); mobile 375 form does not overflow; secondary-read-failed
+  banner state added in fix round.
+
+Test proof: unit (week/next-period selectors incl. year-boundary + fail-closed
+sub≠memberId case, validators, failure-type narrowing) + integration (repo↔mock
+http PUT/DELETE body shape, 422/409/403 error-code mapping ground-truthed
+against ERROR_CODES.md, forge-role authCtx sweep across all 5 roles for every
+mutating op with zero-HTTP-call proof, di.test.ts real-mode-ignores-mock-hint)
++ Storybook interaction (15/15 for the timetable tab, full suite 1319/1320 —
+1 pre-existing unrelated flake in admin/invitations-screen, confirmed passes
+46/46 in isolation) — 562 files/4584 tests all green. `bunx tsc --noEmit`,
+`bun lint`, `bun run build` green. Pre-push gate green on all pushed commits.
+
+Descoped/deferred:
+- Backlog #3 registered (day-card "Hôm nay" contrast, system-wide pattern
+  recurring across multiple screens — design-system ticket, not this story's
+  fault).
+- Bell schedule (startTime/endTime) remains scaffolding for `getByClass`
+  (teacher class-hub timetable) — now wired for real; the BY-MEMBER mapper
+  (`mapMemberWeeklyTimetable`, used by teacher/parent personal schedule views)
+  still drops the same live fields — flagged as a follow-up story candidate,
+  same contract field, different mapper.
+- Homeroom DRAFT entry content cannot be edited anywhere in the product (core
+  has no update endpoint for homeroom-entries) — UI now states this honestly
+  rather than offering a dead edit path; if editing is a real product
+  requirement, it is a BE ask, not an FE gap.
+- `assertHomeroomOf` re-scans `listMyClasses()` per daily action (cheap,
+  correctness-first) — no evidence of a perf problem, accepted as-is.
+- Last-write-wins on concurrent period-log/prep edits (core exposes no
+  `If-Match`/`updatedAt` precondition) — nothing to send client-side, accepted.

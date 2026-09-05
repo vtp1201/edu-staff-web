@@ -93,9 +93,9 @@ function toTimetableViewFailure(err: unknown): TimetableViewFailure {
  * - `getChildren` → `GET /members/{selfId}/linked-students` (BE US-148's
  *   class-enriched shape).
  *
- * `getByClass` is kept (contract-correct, still routed to mock by the hybrid)
- * although nothing in this feature calls it any more — same "kept for the day a
- * direct class-scoped use-case is added" posture as US-E18.11.
+ * `getByClass` is REAL as of US-E24.9 — the class-hub timetable tab
+ * (`GetClassTimetableUseCase`) is the direct class-scoped caller the method had
+ * been kept contract-correct for since US-E18.11.
  */
 export class RealWeeklyTimetableRepository
   implements IWeeklyTimetableRepository
@@ -379,42 +379,13 @@ export class RealWeeklyTimetableRepository
   }
 }
 
-/**
- * Hybrid DI composite. US-E18.11 force-mocked three of four operations
- * (cross-repo ask #15); US-E18.26 un-mocked all of them — only `getByClass`
- * still routes to mock, and only because NOTHING calls it: the parent flow now
- * addresses the child's `memberId` directly. Keeping the composite (rather
- * than dropping to the bare real repo) documents that one remaining
- * asymmetry explicitly and keeps the seam for the day a direct class-scoped
- * use-case is added to this feature.
+/*
+ * `HybridWeeklyTimetableRepository` lived here from US-E18.11 to US-E24.8. Its
+ * whole job was to force ONE operation at a time onto the mock while the rest
+ * went real; US-E18.26 un-mocked all but `getByClass`, and US-E24.9 gave
+ * `getByClass` its first caller (the class-hub timetable tab), leaving the
+ * composite with nothing to force. A pass-through wrapper that wraps nothing is
+ * dead weight, so it was deleted rather than kept "for the seam" — DI composes
+ * the real repository directly now, and the next partially-wireable operation
+ * can reintroduce a composite when it actually has something to route.
  */
-export class HybridWeeklyTimetableRepository
-  implements IWeeklyTimetableRepository
-{
-  constructor(
-    private readonly real: IWeeklyTimetableRepository,
-    private readonly mock: IWeeklyTimetableRepository,
-  ) {}
-
-  /** Force-mock — no caller in this feature; the real implementation is kept
-   *  contract-correct but unexercised (US-E18.26). */
-  getByClass(classId: string, weekStart?: string): Promise<WeeklyTimetable> {
-    return this.mock.getByClass(classId, weekStart);
-  }
-
-  getByMember(memberId: string, weekStart?: string): Promise<WeeklyTimetable> {
-    return this.real.getByMember(memberId, weekStart);
-  }
-
-  getByTeacher(weekStart?: string): Promise<WeeklyTimetable> {
-    return this.real.getByTeacher(weekStart);
-  }
-
-  getMyTimetable(weekStart?: string): Promise<WeeklyTimetable> {
-    return this.real.getMyTimetable(weekStart);
-  }
-
-  getChildren(): Promise<TimetableChild[]> {
-    return this.real.getChildren();
-  }
-}

@@ -128,6 +128,39 @@ const CLASS_NAME: Record<string, string> = {
   "8B1": "8B1",
 };
 
+/**
+ * Mock bell schedule (US-E24.9). Real mode reads the tenant's own window from
+ * `SlotResponse.startTime`/`endTime` (BE US-244, shipped); this seed only gives
+ * mock mode + Storybook a deterministic timetable so the "giờ hiển thị" /
+ * "Đang diễn ra" branch is exercisable offline. It is a demo timetable, NOT a
+ * claim about any tenant's real bell schedule.
+ */
+export const MOCK_BELL_SCHEDULE: Record<
+  number,
+  { start: string; end: string }
+> = {
+  1: { start: "07:00", end: "07:45" },
+  2: { start: "07:50", end: "08:35" },
+  3: { start: "08:45", end: "09:30" },
+  4: { start: "09:35", end: "10:20" },
+  5: { start: "10:25", end: "11:10" },
+  6: { start: "13:00", end: "13:45" },
+  7: { start: "13:50", end: "14:35" },
+  8: { start: "14:45", end: "15:30" },
+  9: { start: "15:35", end: "16:20" },
+  10: { start: "16:25", end: "17:10" },
+};
+
+/**
+ * The one seeded teacher whose slots carry a member id (US-E24.9). Mock mode
+ * has no IAM directory, so without a stable id the class-hub's own-slot
+ * affordances ("tiết của bạn", ghi sổ / chuẩn bị) could never light up locally.
+ * `bootstrap/di/period-log.di.ts` uses the SAME constant for its mock auth
+ * context — one spelling, so the demo cannot drift out of sync.
+ */
+export const MOCK_SLOT_TEACHER_NAME = "Cô Nguyễn Thị Hương";
+export const MOCK_SLOT_TEACHER_MEMBER_ID = "t1";
+
 /** Full 10-period × 6-day grid with explicit nulls for empty slots. */
 function buildDto(classId: string): WeeklyTimetableResponseDto {
   const raw = RAW[classId];
@@ -135,7 +168,18 @@ function buildDto(classId: string): WeeklyTimetableResponseDto {
   for (let day = 0; day < 6; day++) {
     slots[day] = {};
     for (let period = 1; period <= 10; period++) {
-      slots[day][period] = raw[day]?.[period] ?? null;
+      const slot = raw[day]?.[period];
+      slots[day][period] = slot
+        ? {
+            ...slot,
+            teacherMemberId:
+              slot.teacherName === MOCK_SLOT_TEACHER_NAME
+                ? MOCK_SLOT_TEACHER_MEMBER_ID
+                : undefined,
+            startTime: MOCK_BELL_SCHEDULE[period]?.start,
+            endTime: MOCK_BELL_SCHEDULE[period]?.end,
+          }
+        : null;
     }
   }
   return { classId, className: CLASS_NAME[classId] ?? classId, slots };

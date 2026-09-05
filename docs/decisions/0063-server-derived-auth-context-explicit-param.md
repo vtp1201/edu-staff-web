@@ -238,3 +238,51 @@ Tradeoffs:
   status update above.
 - When a 4th feature adopts this pattern, prefer the constructor-injected
   variant (§Decision point 4) over the per-call-param shape.
+
+## 4th instance — US-E24.9 `period-log`/`period-prep`: a genuine divergence, carved out
+
+**US-E24.9** (`features/period-log`) adds a 4th instance with a shape that does
+**not** satisfy this ADR's core guarantee and must not be read as "compliant by
+pattern-matching alone":
+
+- `PeriodLogAuthContext.memberId` is server-derived (from the access-token
+  claim, per decision `0074`) — correct per §Decision point 2. But the field
+  it is compared against, `assignedTeacherMemberId`, is **not** looked up
+  server-side from the record; it arrives as a **Server Action parameter
+  supplied by the client** (the currently-rendered slot's teacher id, passed
+  back from the form). `ownsSlot()` therefore compares one honest value
+  against one the caller controls — a forged `assignedTeacherMemberId` equal
+  to the caller's own `memberId` defeats the guard trivially.
+- This is acceptable **only** because core (edu-api) independently re-resolves
+  the slot's current teacher on every `PUT`/`DELETE` and fuses every
+  authorization failure (wrong teacher, no slot, weekend, MANAGER-read-only)
+  into one `422 PERIOD_LOG_NO_SLOT`/`PERIOD_PREP_NO_SLOT` — the BE is the
+  actual, authoritative, per-record boundary here, not the FE guard. Unlike
+  the three canonical instances above (two of which are the *sole* per-record
+  check because their route groups had no other server-side gate at the time),
+  period-log/prep sits behind a route group that already has an RSC
+  layout guard (`teacher/layout.tsx`) **and** an authoritative BE recheck.
+- **Consequence for the testability contract (§Testability contract above):**
+  the "scope-forging is denied even when identity fields otherwise match" test
+  cannot exist for this shape — forging `assignedTeacherMemberId` to equal
+  `memberId` is exactly the case the FE guard cannot catch by construction.
+  What the story's tests *do* prove (and what this carve-out requires instead):
+  the guard denies whenever `memberId` does not equal whatever
+  `assignedTeacherMemberId` the caller supplied, and an empty/unreadable
+  `memberId` fails closed. This is UX-only defense-in-depth (fail fast, skip a
+  doomed HTTP round-trip, give a clean error), not the security boundary.
+- The security sweep for this instance lives inside
+  `save-period-log.use-case.test.ts` / `save-period-prep.use-case.test.ts` /
+  `actions.test.ts` rather than a dedicated `*.security.test.ts` file. Given
+  the FE check here is advisory rather than the authoritative boundary, a
+  separate security-test-file naming convention is not required for this
+  instance; the tests remain a required forge-role sweep (same rigor,
+  different file organization).
+
+**This is not a defect and is not being asked to change** — server-deriving
+`assignedTeacherMemberId` on every write would cost an extra timetable
+round-trip per mutation for no security benefit, since the BE already re-checks
+authoritatively. It is recorded here so a future reader does not assume every
+instance of this pattern is the sole enforcement boundary; check which side
+(FE or BE) is authoritative before treating an `authCtx` check as proof of
+anything beyond UX.

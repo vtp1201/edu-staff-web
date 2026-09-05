@@ -146,19 +146,23 @@ describe("ClassHubHeader (US-E24.8)", () => {
   });
 });
 
-describe("TabPlaceholder (US-E24.8)", () => {
-  it("names the tab it stands in for, so E24.9/10/11 each replace a distinct body", () => {
-    const timetable = render(<TabPlaceholder tab="timetable" />);
+describe("TabPlaceholder (US-E24.8, narrowed by US-E24.9)", () => {
+  it("names the tab it stands in for, so E24.10/11 each replace a distinct body", () => {
     const course = render(<TabPlaceholder tab="course" />);
     const homeroom = render(<TabPlaceholder tab="homeroom" />);
     const body = messages.teacherClasses.hub.placeholder.body;
-    expect(timetable).toContain(body.timetable);
     expect(course).toContain(body.course);
     expect(homeroom).toContain(body.homeroom);
-    expect(timetable).toContain(messages.teacherClasses.hub.placeholder.title);
+    expect(course).toContain(messages.teacherClasses.hub.placeholder.title);
     // Copy is user-facing — it must never leak an internal story id.
-    for (const html of [timetable, course, homeroom]) {
+    for (const html of [course, homeroom]) {
       expect(html).not.toMatch(/US-E\d/);
     }
+  });
+
+  it("no longer stands in for `timetable` (US-E24.9 shipped the real body)", () => {
+    expect(
+      Object.keys(messages.teacherClasses.hub.placeholder.body),
+    ).not.toContain("timetable");
   });
 });

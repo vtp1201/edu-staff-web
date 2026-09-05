@@ -4394,8 +4394,7 @@
       "placeholder": {
         "body": {
           "course": "The class online course is coming in a later update.",
-          "homeroom": "The homeroom area (violations, leave requests) is coming in a later update.",
-          "timetable": "The class timetable and class log are coming in a later update."
+          "homeroom": "The homeroom area (violations, leave requests) is coming in a later update."
         },
         "title": "Under construction"
       },
@@ -4406,7 +4405,120 @@
         "students": "Students",
         "timetable": "Timetable"
       },
-      "title": "Class {className}"
+      "title": "Class {className}",
+      "timetable": {
+        "weekNav": {
+          "prev": "Previous week",
+          "next": "Next week",
+          "range": "Week {range}"
+        },
+        "today": "Today",
+        "noPeriods": "No periods",
+        "loadError": "Could not load the class timetable. Please try again.",
+        "partialLoadError": "Could not load this week's period logs / preparations ({reason}). Entries you already saved may be missing — reload before overwriting them.",
+        "period": {
+          "label": "Period {number}",
+          "live": "In progress",
+          "mine": "— your period"
+        },
+        "periodLog": {
+          "open": "Log this period",
+          "openDone": "Period logged",
+          "title": "Period {number} log · {day}",
+          "readOnlyTitle": "Period log (homeroom read-only)",
+          "lessonTitle": "Lesson title",
+          "lessonTitlePlaceholder": "e.g. Derivatives & differentials (part 1)",
+          "remark": "Remarks",
+          "remarkPlaceholder": "How the period went…",
+          "grade": "Period rating",
+          "gradeOption": "Rating {grade}",
+          "absentCount": "Absent students",
+          "absentHint": "Reference only — not the attendance record.",
+          "absentShort": "{count} absent",
+          "counter": "{current}/{max} characters",
+          "save": "Save log",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "delete": "Delete log",
+          "deleteConfirm": "Delete this period's log entry?"
+        },
+        "periodPrep": {
+          "open": "Prep this period",
+          "openDone": "Prepared",
+          "title": "Prep for period {number} · {day}",
+          "lessonPlan": "Lesson plan (from my Teaching Plan)",
+          "lessonPlanNone": "— No plan selected —",
+          "note": "Prep note",
+          "notePlaceholder": "e.g. Print worksheets, prepare GeoGebra demo…",
+          "materials": "Materials — links ({count}/{max}, no file upload)",
+          "materialTitle": "Material title",
+          "materialUrl": "Material link",
+          "addMaterial": "Add material",
+          "removeMaterial": "Remove material #{position}",
+          "maxReached": "Reached the limit of {max} materials.",
+          "save": "Save prep",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "delete": "Delete prep",
+          "deleteConfirm": "Delete this period's preparation?"
+        },
+        "daily": {
+          "title": "Homeroom log (daily)",
+          "write": "Write entry",
+          "draftLocked": "Draft saved — its content cannot be edited yet; you can only submit it for approval.",
+          "summary": "Daily remarks about the class",
+          "summaryPlaceholder": "Daily remarks about the class…",
+          "notableEvents": "Notable events",
+          "saveDraft": "Save draft",
+          "submit": "Submit for approval",
+          "revise": "Revise & resubmit",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "empty": "No entry for this day yet.",
+          "rejectedReason": "Returned because: {reason}",
+          "summaryRequired": "Daily remarks are required"
+        },
+        "upcoming": {
+          "title": "My next period",
+          "none": "No upcoming period this week.",
+          "meta": "{subject} · Period {number} · {day}",
+          "prep": "Prep",
+          "prepared": "prepared",
+          "notPrepared": "not prepared",
+          "log": "Period log",
+          "logged": "logged",
+          "notLogged": "not logged",
+          "footer": "Prep materials are attached per period.",
+          "shortcuts": {
+            "teachingPlan": "Teaching plan",
+            "teachingPlanSrc": "Your subject plans & progress",
+            "attendance": "Attendance",
+            "attendanceSrc": "Per-period class attendance",
+            "classLog": "Class log",
+            "classLogSrc": "Whole-class log book"
+          }
+        },
+        "validation": {
+          "lessonTitleRequired": "Lesson title is required",
+          "lessonTitleTooLong": "Lesson title is at most {max} characters",
+          "remarkTooLong": "Remarks are at most {max} characters",
+          "absentRange": "Absent count must be between {min} and {max}",
+          "noteTooLong": "Note is at most {max} characters",
+          "materialTitleRequired": "Material title is required",
+          "materialUrlInvalid": "The link must start with http:// or https://",
+          "materialUrlTooLong": "A link may be at most {max} characters"
+        },
+        "errors": {
+          "slot-forbidden-or-missing": "You are not assigned to this period, or the date falls outside the term",
+          "term-mismatch": "This period was logged under a different term and cannot be overwritten",
+          "too-many-materials": "At most 20 materials can be attached",
+          "lesson-plan-not-owned": "The selected lesson plan is not yours",
+          "validation": "Some content is invalid, please review it",
+          "not-found": "Content not found",
+          "network-error": "Network error",
+          "unknown": "An unexpected error occurred"
+        }
+      }
     },
     "loadingClasses": "Loading class list...",
     "pageTitle": "My Classes",

@@ -10,8 +10,8 @@
  * response, so those are declared here for contract completeness even though
  * this class-scoped path currently has no caller in this feature (`getByClass`
  * is kept but unused — the parent view moved to the by-member endpoint).
- * `teacherName` is still absent everywhere (cross-repo ask #6/#7 — no
- * display-name source), so it stays an id fallback. `day` is the Mon–Fri
+ * `teacherName` SHIPPED with BE US-234 (contract-update §2.3), closing
+ * asks #6/#7: it is read when present and the raw id remains the fallback. `day` is the Mon–Fri
  * string enum, not a number.
  *
  * The wire's `SlotResponse` also carries a per-slot `classId`; it is NOT
@@ -26,8 +26,19 @@ export interface RealSlotResponseDto {
   /** Server-resolved display name (US-153); omitted when unresolvable. */
   subjectName?: string;
   teacherMemberId: string;
+  /** Server-resolved teacher display name (BE US-234, contract-update §2.3);
+   *  omitted when the member could not be resolved — the id stays the
+   *  fallback. */
+  teacherName?: string;
   /** Optional lesson location (US-153); omitted when unset. */
   room?: string;
+  /** Tenant-local bell-schedule start, `"HH:mm"` (BE US-244) — resolved
+   *  server-side from the tenant's bell schedule so no client lookup table is
+   *  needed. OMITTED when the tenant published no bell entry for this period,
+   *  the same convention as `subjectName`/`teacherName`. */
+  startTime?: string;
+  /** Tenant-local bell-schedule end, `"HH:mm"` — same omission rule. */
+  endTime?: string;
 }
 
 export interface RealTimetableResponseDto {

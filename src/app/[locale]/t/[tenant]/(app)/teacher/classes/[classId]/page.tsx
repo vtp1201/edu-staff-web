@@ -11,11 +11,35 @@ import type {
 } from "@/features/teacher/presentation/class-hub/class-hub.i-vm";
 import { ClassHubScreen } from "@/features/teacher/presentation/class-hub/class-hub-screen";
 import { TabPlaceholder } from "@/features/teacher/presentation/class-hub/tab-placeholder";
+import { TimetableTab } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab";
+import type { TimetableTabActions } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab.i-vm";
 import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen";
 import type { TeacherClassStudentsScreenVM } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen.i-vm";
 import { TeacherClassesScreen } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen";
 import type { TeacherClassesScreenVM } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
 import { classHubBase, classHubHref } from "@/shared/class-hub-href";
+import {
+  deletePeriodLogAction,
+  deletePeriodPrepAction,
+  reviseDailyEntryAction,
+  saveDailyEntryAction,
+  savePeriodLogAction,
+  savePeriodPrepAction,
+  submitDailyEntryAction,
+} from "./actions";
+import { buildTimetableTabVm } from "./timetable-vm";
+
+/** The seven Server Action refs, bound once and threaded to the client body as
+ *  ONE prop (each value is a server-action reference, not a closure). */
+const TIMETABLE_ACTIONS: TimetableTabActions = {
+  savePeriodLog: savePeriodLogAction,
+  deletePeriodLog: deletePeriodLogAction,
+  savePeriodPrep: savePeriodPrepAction,
+  deletePeriodPrep: deletePeriodPrepAction,
+  saveDailyEntry: saveDailyEntryAction,
+  submitDailyEntry: submitDailyEntryAction,
+  reviseDailyEntry: reviseDailyEntryAction,
+};
 
 /**
  * Class-hub shell (US-E24.8). `?tab=` IS the state: resolved server-side against
@@ -27,7 +51,7 @@ export default async function ClassHubPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; tenant: string; classId: string }>;
-  searchParams: Promise<{ tab?: string | string[] }>;
+  searchParams: Promise<{ tab?: string | string[]; week?: string | string[] }>;
 }) {
   const [{ locale, tenant, classId }, query] = await Promise.all([
     params,
@@ -71,15 +95,34 @@ export default async function ClassHubPage({
     })),
   };
 
-  const body =
-    activeTab === "students" ? (
+  const week = typeof query?.week === "string" ? query.week : undefined;
+
+  let body: React.ReactNode;
+  if (activeTab === "students") {
+    body = (
       <TeacherClassStudentsScreen
         vm={await studentsVm(cls.id, cls.name, base)}
         embedded
       />
-    ) : (
-      <TabPlaceholder tab={activeTab} />
     );
+  } else if (activeTab === "timetable") {
+    body = (
+      <TimetableTab
+        vm={
+          await buildTimetableTabVm({
+            classId: cls.id,
+            isHomeroom: cls.roles.includes("homeroom"),
+            locale,
+            tenant,
+            weekParam: week,
+          })
+        }
+        actions={TIMETABLE_ACTIONS}
+      />
+    );
+  } else {
+    body = <TabPlaceholder tab={activeTab} />;
+  }
 
   return (
     <ClassHubScreen header={header} tabs={tabs}>
