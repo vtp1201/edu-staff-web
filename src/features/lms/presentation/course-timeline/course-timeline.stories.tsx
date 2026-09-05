@@ -5,7 +5,6 @@ import messages from "@/bootstrap/i18n/messages/vi.json";
 import { CourseTimeline } from "./course-timeline";
 import type {
   CourseTimelineVm,
-  GetLessonResult,
   RetryListItemsResult,
   TimelineItemVm,
   WeekVm,
@@ -98,18 +97,6 @@ const BASE_VM: CourseTimelineVm = {
   mode: "student",
 };
 
-const LESSON_BODIES: Record<string, string> = {
-  "le-1":
-    "Đạo hàm mô tả tốc độ biến thiên tức thời.\n\nQuy tắc tích: (u·v)' = u'v + uv'.",
-  "le-2": "Khảo sát hàm số theo sáu bước.",
-};
-
-const getLesson = async (lessonId: string): Promise<GetLessonResult> => {
-  const content = LESSON_BODIES[lessonId];
-  if (!content) return { ok: false, errorKey: "not-found" };
-  return { ok: true, data: { id: lessonId, title: "", content } };
-};
-
 const retryListItems = async (): Promise<RetryListItemsResult> => ({
   ok: true,
   data: { weeks: WEEKS, openCount: 3 },
@@ -134,8 +121,8 @@ const meta: Meta<typeof CourseTimeline> = {
   ],
   args: {
     vm: BASE_VM,
-    actions: { getLesson, retryListItems },
-    assignmentsHref: "/vi/t/demo/student/assignments",
+    actions: { retryListItems },
+    itemHrefBase: "/vi/t/demo/student/courses/co-toan-10/items",
   },
 };
 export default meta;
@@ -154,33 +141,25 @@ export const ThreeWeeks: Story = {
     await expect(headings[1]?.textContent).toMatch(/^Tuần 20.04 – 26.04$/);
     await expect(headings[2]?.textContent).toMatch(/^Tuần 27.04 – 03.05$/);
     await expect(canvas.getByText("3 mục đang mở")).toBeInTheDocument();
-    // Every row is keyboard-operable in reading order.
-    await expect(
-      canvas.getAllByRole("button", { expanded: false }),
-    ).toHaveLength(4);
+    // Every openable row is a link into the player, in reading order.
+    await expect(canvas.getAllByRole("link")).toHaveLength(4);
   },
 };
 
-/** Clicking an OPEN row expands it inline (TEMP until US-E24.5). */
-export const ExpandRow: Story = {
+/**
+ * US-E24.5: a row is a LINK into `/items/[itemId]`, not an inline expander.
+ * The whole row is one focus target carrying one accessible name.
+ */
+export const RowLinksToPlayer: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const row = canvas.getByRole("button", { name: /Quy tắc tính đạo hàm/ });
-    await userEvent.click(row);
-    await expect(row).toHaveAttribute("aria-expanded", "true");
-    await waitFor(() =>
-      expect(
-        canvas.getByText(/Đạo hàm mô tả tốc độ biến thiên/),
-      ).toBeInTheDocument(),
+    const row = canvas.getByRole("link", { name: /Quy tắc tính đạo hàm/ });
+    await expect(row).toHaveAttribute(
+      "href",
+      "/vi/t/demo/student/courses/co-toan-10/items/le-1",
     );
-
-    // A11Y-001: `aria-expanded` must point at what it expands — the id on the
-    // button's `aria-controls` has to resolve to the panel that just appeared.
-    const panelId = row.getAttribute("aria-controls");
-    await expect(panelId).toBeTruthy();
-    const panel = canvasElement.ownerDocument.getElementById(panelId ?? "");
-    await expect(panel).toBeInTheDocument();
-    await expect(panel).toHaveTextContent(/Đạo hàm mô tả tốc độ biến thiên/);
+    // Nothing expands in place any more.
+    await expect(canvas.queryByRole("button", { expanded: true })).toBeNull();
   },
 };
 
@@ -206,9 +185,13 @@ export const AllClosed: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("0 mục đang mở")).toBeInTheDocument();
     await expect(canvas.getAllByText("Đã đóng — chỉ xem")).not.toHaveLength(0);
-    const row = canvas.getByRole("button", { name: /Quy tắc tính đạo hàm/ });
-    await userEvent.click(row);
-    await expect(row).toHaveAttribute("aria-expanded", "true");
+    // A closed row keeps its link: the player renders it read-only.
+    await expect(
+      canvas.getByRole("link", { name: /Quy tắc tính đạo hàm/ }),
+    ).toHaveAttribute(
+      "href",
+      "/vi/t/demo/student/courses/co-toan-10/items/le-1",
+    );
   },
 };
 
@@ -231,8 +214,8 @@ export const WithUpcomingExam: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const title = canvas.getByText("Kiểm tra 1 tiết — Chương IV & V");
-    // Not a button and not focusable: it cannot be opened by mouse OR keyboard.
-    expect(title.closest("button")).toBeNull();
+    // Not a link and not focusable: it cannot be opened by mouse OR keyboard.
+    expect(title.closest("a")).toBeNull();
     const row = title.closest("[aria-disabled]");
     expect(row).not.toBeNull();
     // The opening time is VISIBLE text, not a hover-only tooltip. (The date
@@ -271,27 +254,6 @@ export const TimelineError: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Thử lại" }));
     await waitFor(() => expect(canvas.queryByRole("alert")).toBeNull());
     await expect(canvas.getByText("3 mục đang mở")).toBeInTheDocument();
-  },
-};
-
-/** The lazy lesson-body read of an expanded row is loading. */
-export const LessonBodyLoading: Story = {
-  args: {
-    actions: {
-      getLesson: () => new Promise<GetLessonResult>(() => {}),
-      retryListItems,
-    },
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole("button", { name: /Quy tắc tính đạo hàm/ }),
-    );
-    await waitFor(() =>
-      expect(
-        canvas.getByText("Đang tải nội dung bài học..."),
-      ).toBeInTheDocument(),
-    );
   },
 };
 
@@ -359,9 +321,9 @@ export const KeyboardOperability: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const rows = canvas.getAllByRole("button", { expanded: false });
+    const rows = canvas.getAllByRole("link");
     // Reading order: "Luôn mở" (doc-1), then week-17 (le-1, as-1), week-18
-    // (le-2) — the locked EXAM row is NOT among these `button`s at all.
+    // (le-2) — the locked EXAM row is NOT among these links at all.
     expect(rows).toHaveLength(4);
 
     // Real Tab walk (not just a DOM-order assertion): focus starts on the
@@ -372,26 +334,12 @@ export const KeyboardOperability: Story = {
       await userEvent.tab();
       await expect(row).toHaveFocus();
     }
-    // One more Tab past the last legitimate row must not focus anything
-    // inside the locked row (it has no tabIndex, so it is skipped entirely).
     await userEvent.tab();
     const lockedRow = canvas
       .getByText("Kiểm tra 1 tiết — Chương IV & V")
       .closest("[aria-disabled]");
     expect(lockedRow).not.toBeNull();
     expect(lockedRow?.contains(document.activeElement)).toBe(false);
-
-    // Enter/Space activation on a focused row (not just a mouse click).
-    await userEvent.keyboard("{Enter}");
-    // Whichever row last received focus before the walk ran out of targets —
-    // re-focus the FIRST row explicitly and drive it by keyboard alone to
-    // keep this assertion unambiguous.
-    rows[0]?.focus();
-    await expect(rows[0]).toHaveFocus();
-    await userEvent.keyboard("{Enter}");
-    await expect(rows[0]).toHaveAttribute("aria-expanded", "true");
-    await userEvent.keyboard(" ");
-    await expect(rows[0]).toHaveAttribute("aria-expanded", "false");
   },
 };
 
@@ -422,16 +370,15 @@ export const LockedRowRejectsActivation: Story = {
     if (!lockedRow) throw new Error("expected a locked row");
 
     await userEvent.click(lockedRow);
-    // No expand panel appeared, and the row never gained `aria-expanded`.
-    expect(lockedRow.getAttribute("aria-expanded")).toBeNull();
-    expect(canvas.queryByText(/Nội dung khoá học/)).toBeNull();
+    // Nothing navigable appeared and the row never became a link.
+    expect(lockedRow.querySelector("a")).toBeNull();
+    expect(canvas.queryByRole("link", { name: /Kiểm tra 1 tiết/ })).toBeNull();
 
     // Force-focus it (an AT user or a broken focus trap could still land
     // here) and try both activation keys — still nothing opens.
     (lockedRow as HTMLElement).focus?.();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard(" ");
-    expect(lockedRow.getAttribute("aria-expanded")).toBeNull();
-    expect(canvas.queryByRole("button", { expanded: true })).toBeNull();
+    expect(canvas.queryByRole("link", { name: /Kiểm tra 1 tiết/ })).toBeNull();
   },
 };

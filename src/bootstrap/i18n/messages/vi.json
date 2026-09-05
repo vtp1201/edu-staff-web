@@ -1214,9 +1214,77 @@
       "loading": "Đang tải khoá học..."
     },
     "player": {
-      "content": {
-        "loading": "Đang tải nội dung bài học...",
-        "loadError": "Không tải được nội dung bài học."
+      "breadcrumbLabel": "Đường dẫn",
+      "overview": {
+        "title": "Tổng quan",
+        "lesson": "Bài giảng dạng văn bản do giáo viên biên soạn; khung video hiện ra khi nội dung có liên kết nhúng được. Đọc hết nội dung trước khi làm bài tập của tuần.",
+        "document": "Tài liệu tham khảo do giáo viên đính kèm — mở bằng liên kết ngoài hoặc đọc bản xem trước bên dưới.",
+        "assignment": "Đọc kỹ yêu cầu rồi nộp bài bằng văn bản và/hoặc liên kết bài làm. Lưu ý: chỉ được nộp MỘT lần duy nhất.",
+        "exam": "Bài kiểm tra có giới hạn thời gian. Bấm nút vào làm bài để chuyển sang màn hình làm bài riêng.",
+        "window": "Khung thời gian: {window}"
+      },
+      "closedBanner": "Đã đóng — chỉ xem để ôn tập.",
+      "lesson": {
+        "contentLabel": "Nội dung bài giảng",
+        "videoTitle": "Video nhúng của bài giảng: {title}",
+        "empty": "Giáo viên chưa soạn nội dung cho bài giảng này."
+      },
+      "document": {
+        "externalLabel": "Liên kết ngoài",
+        "open": "Mở liên kết (tab mới)",
+        "previewLabel": "Xem trước nội dung",
+        "previewTitle": "Bản xem trước của tài liệu: {title}",
+        "noPreview": "Bản xem trước chỉ hiển thị khi liên kết hỗ trợ nhúng (Google Drive, YouTube, GeoGebra…). Nếu không, hãy mở bằng liên kết phía trên.",
+        "noLink": "Giáo viên chưa đính kèm liên kết cho tài liệu này."
+      },
+      "assignment": {
+        "instructionsLabel": "Yêu cầu",
+        "noInstructions": "Giáo viên chưa ghi hướng dẫn cho bài tập này.",
+        "submittedAt": "Đã nộp lúc {date}",
+        "gradePending": "Điểm và nhận xét sẽ hiển thị khi giáo viên chấm.",
+        "closedNotSubmitted": "Bạn chưa nộp bài này trước hạn.",
+        "unavailable": "Chưa thể nộp bài lúc này — hãy thử tải lại trang."
+      },
+      "submit": {
+        "answerLabel": "Nội dung bài làm (văn bản)",
+        "answerPlaceholder": "Gõ bài làm trực tiếp tại đây…",
+        "counter": "{count}/{max} ký tự",
+        "linkLabel": "Liên kết bài làm (Drive/Docs…)",
+        "linkPlaceholder": "https://drive.google.com/…",
+        "linkInvalid": "Liên kết phải bắt đầu bằng http:// hoặc https://.",
+        "hint": "Chỉ nộp 1 lần duy nhất · văn bản và/hoặc liên kết.",
+        "emptyHint": "Nhập nội dung bài làm hoặc liên kết để có thể nộp bài.",
+        "submitButton": "Nộp bài",
+        "confirmWarning": "Bạn chỉ được nộp MỘT lần duy nhất — sau khi nộp không thể sửa.",
+        "confirmButton": "Xác nhận nộp",
+        "reviewButton": "Xem lại",
+        "submitting": "Đang nộp bài…",
+        "retryButton": "Thử lại",
+        "alreadySubmittedToast": "Bài tập này đã được nộp.",
+        "attachmentsLabel": "Đính kèm tệp (PDF, ảnh)",
+        "attachmentsBadge": "Sau khi backend hỗ trợ"
+      },
+      "exam": {
+        "duration": "Thời lượng {minutes} phút",
+        "startExternal": "Vào làm bài (tab mới)",
+        "start": "Vào làm bài",
+        "review": "Xem lại đề & bài làm",
+        "opensAt": "Mở lúc {date}",
+        "noLink": "Chưa có liên kết bài kiểm tra cho mục này."
+      },
+      "locked": {
+        "opensAt": "Nội dung sẽ mở lúc {date}. Quay lại sau nhé!",
+        "opensAtUnknown": "Nội dung này chưa được mở. Quay lại sau nhé!"
+      },
+      "sidebar": {
+        "title": "Nội dung khoá học",
+        "counter": "{index}/{total}",
+        "itemCount": "{count} mục",
+        "current": "Đang xem",
+        "closed": "Đã đóng",
+        "opensAt": "Mở {date}",
+        "prev": "Trước",
+        "next": "Mục tiếp theo"
       }
     },
     "timeline": {
@@ -1252,24 +1320,6 @@
         "open": "Đang mở",
         "closed": "Đã đóng — chỉ xem",
         "upcoming": "Sắp mở"
-      },
-      "itemDetail": {
-        "closedNote": "Đã đóng — bạn vẫn xem được nội dung để ôn tập, nhưng không thể nộp bài nữa.",
-        "document": {
-          "explainer": "Tài liệu tham khảo do giáo viên đính kèm — mở bằng liên kết ngoài.",
-          "open": "Mở tài liệu trong tab mới",
-          "noLink": "Giáo viên chưa đính kèm liên kết cho tài liệu này."
-        },
-        "exam": {
-          "explainer": "Bấm để chuyển sang màn hình làm bài. Nộp trước khi hết giờ.",
-          "open": "Vào làm bài (mở tab mới)",
-          "noLink": "Chưa có liên kết bài kiểm tra cho mục này.",
-          "duration": "Thời lượng {minutes} phút"
-        },
-        "assignment": {
-          "explainer": "Nộp bài và xem điểm ở trang Bài tập.",
-          "open": "Mở trang bài tập"
-        }
       }
     },
     "errors": {
