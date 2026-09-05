@@ -577,6 +577,84 @@ export const NewEntryCreatesThenSubmits: Story = {
 };
 
 /**
+ * QA gap-fill (US-E24.9): the AC asks for client-side ≤200/≤2000/0–200 bounds
+ * on the period-log form. `MaterialsAtCap` already proves the materials-count
+ * cap end-to-end, but nothing exercised the sổ-tiết field bounds themselves —
+ * this drives the real `PeriodLogForm` (via the shared zod schema, no
+ * production code touched) past `remark`'s 2000-char cap and `absentCount`'s
+ * 0–200 range and asserts the exact i18n validation copy renders.
+ */
+export const PeriodLogValidationBoundaries: Story = {
+  args: { vm: vm(), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: "Ghi sổ đầu bài tiết" })[0],
+    );
+    await userEvent.type(canvas.getByLabelText(/Tên bài dạy/), "Bài 1");
+
+    // absentCount out of range (HTML `max` does not block typed input) →
+    // the zod bound must catch it before any action call.
+    const absentInput = canvas.getByLabelText("Số HS vắng");
+    await userEvent.clear(absentInput);
+    await userEvent.type(absentInput, "500");
+
+    // remark past its 2000-char cap: the <textarea> ALSO carries a native
+    // `maxLength`, so typing past it is a no-op — assert the input is
+    // capped (defense-in-depth #1) rather than fighting the DOM to prove
+    // defense-in-depth #2 (the zod `.max()`) in a browser test.
+    const remarkInput = canvas.getByLabelText(/Nhận xét/);
+    await userEvent.type(remarkInput, "x".repeat(2010));
+    await expect((remarkInput as HTMLTextAreaElement).value).toHaveLength(2000);
+
+    await userEvent.click(canvas.getByRole("button", { name: "Lưu sổ tiết" }));
+
+    await expect(
+      await canvas.findByText("Số HS vắng phải trong khoảng 0–200"),
+    ).toBeVisible();
+    // The invalid submit must never reach the action.
+    await expect(
+      canvas.queryByRole("button", { name: /Đã ghi sổ tiết/ }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * QA gap-fill (US-E24.9): `MaterialsAtCap` proves the 20-link cap, but no
+ * story drove an actually-invalid (non-http(s)) material URL through the
+ * real `PeriodPrepForm` — this closes that gap against the shared
+ * `periodPrepSchema` (also unit-tested directly, see
+ * `period-prep-form.schema.test.ts`).
+ */
+export const PeriodPrepInvalidUrlBlocked: Story = {
+  args: { vm: vm(), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: "Chuẩn bị tiết" })[0],
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Thêm tài liệu" }),
+    );
+    await userEvent.type(
+      canvas.getByLabelText("Tiêu đề tài liệu"),
+      "Ghi chú nội bộ",
+    );
+    await userEvent.type(
+      canvas.getByLabelText("Đường dẫn tài liệu"),
+      "ftp://not-http.example.com/x",
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Lưu chuẩn bị" }));
+
+    await expect(
+      await canvas.findByText(
+        "Đường dẫn phải bắt đầu bằng http:// hoặc https://",
+      ),
+    ).toBeVisible();
+  },
+};
+
+/**
  * A period-log/prep read that FAILED must not masquerade as "chưa ghi": the
  * next save is a full-replace PUT, so the week carries a non-blocking warning.
  */
