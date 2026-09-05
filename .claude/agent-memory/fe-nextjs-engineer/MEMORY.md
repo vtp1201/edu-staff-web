@@ -128,3 +128,5 @@
 - [Week-grouped timeline rebuild](pattern-week-grouped-timeline-rebuild.md) — US-E24.3: domain returns a window RESULT with an injected formatter; ISO week inline; `vi` CLDR = `08-05` + time first; feature-shared tier
 - [Locked row + info token gap](gotcha-locked-row-and-token-gap.md) — an aria-disabled row's reason must be VISIBLE text (title is unreachable); no AA-safe --edu-info text token
 - [Irreversible step machine](pattern-irreversible-step-machine.md) — US-E24.5: swapped-subtree states need focus retarget + tabIndex={-1}; fire the action from an effect on the reducer status (not the click); one locked-row contract per item
+
+- [Small bold text is not large text](gotcha-small-bold-text-not-large-text.md) — a <14px extrabold pill on `bg-edu-primary-light` needs `text-foreground`; `text-edu-primary-accessible` is 4.35:1 (fails)

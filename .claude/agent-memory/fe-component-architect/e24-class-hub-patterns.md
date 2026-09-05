@@ -63,3 +63,40 @@ US-E24.8 (`/teacher/classes/[classId]` shell, on top of E24.7):
   (no "Lớp" baked in either). Any VM carrying a class name should stay raw;
   the "Lớp {name}" composition happens via `t()` in the presentational
   component, never pre-formatted in the RSC page.
+
+US-E24.9 (timetable tab: class week + period-log/prep + homeroom daily log):
+- **Existing full-page screen component ≠ reusable inline sub-component.**
+  `features/class-log/presentation/class-log-screen/components/class-log-
+  entry-form.tsx` looked like an obvious reuse candidate for a new inline
+  "daily log strip" inside a day-card, but it renders its OWN back-button +
+  `max-w-2xl` centered card chrome — a screen body, not an embeddable strip.
+  Decision: write a NEW thin feature-local component that binds to the SAME
+  exported Server Actions (`createEntryAction`/`submitEntryAction`/
+  `reviseEntryAction`, imported cross-route) and the SAME status-tone map
+  (`status-tone.ts`), rather than forking the use-case/repo OR fighting the
+  existing component's chrome. Rule of thumb: reuse the *action bindings and
+  status/tone maps* verbatim; a component is only a reuse candidate if it has
+  no opinion about its own page-level chrome (back button, page title).
+- **Two components can look like "the same feature" but need separate
+  components when the STATE MODEL differs**, not just the visual style —
+  confirmed again here for week-nav: `timetable-view/week-nav.tsx` is client
+  `useState` offset-based, this tab's own AC wants `?week=YYYY-Www` URL-driven
+  (server-resolved). Built a second, local `class-timetable-week-nav.tsx`
+  (pure Server Component, two `<Link>`s) instead of extending/forking the
+  existing one — same reasoning as US-E24.8's Link-based tabs vs `WeekNav`'s
+  buttons (see above), now a repeated-twice pattern worth remembering as a
+  general rule: **state-model mismatch (URL-driven vs local useState) is a
+  legitimate reason for a second component**, distinct from a visual variant
+  that should just be a prop.
+- **Per-row/per-slot fan-out state (own/live/logged/prepped) belongs on the
+  row's own VM as pre-computed booleans/entities**, never re-derived inside
+  the presentational row component — the RSC page runs the domain selectors
+  (`isMySlot`, `isPeriodLive`, key-lookup helpers) ONCE and hands the row a
+  flat `PeriodRowVm`. Keeps presentational components at zero business logic
+  even when the fan-out is per-item across a list, not just per-screen.
+- **A row/card's own "which sub-form is open" toggle state stays a local
+  `useState` inside that row**, not lifted to the tab — confirmed as the
+  right call again (mirrors US-E24.8's tab-body-as-children pattern of
+  keeping UI-only state as local as possible); only lift if a cross-row
+  constraint ("only one open at a time") becomes an actual AC — YAGNI until
+  then.
