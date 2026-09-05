@@ -45,11 +45,22 @@ export async function deleteViolationAction(
   }
 }
 
+/**
+ * Legacy multi-class dashboard approve. `studentMemberId` + `classId` complete
+ * core's addressing (US-E24.11); no `authCtx` is threaded because this screen
+ * has no single class scope to derive one from — see `DecideLeaveInput.authCtx`.
+ */
 export async function approveLeaveAction(
   id: string,
+  studentMemberId: string,
+  classId: string,
 ): Promise<{ errorKey?: DisciplineFailure["type"] }> {
   try {
-    await (await makeApproveLeaveUseCase()).execute(id);
+    await (await makeApproveLeaveUseCase()).execute({
+      id,
+      studentMemberId,
+      classId,
+    });
     revalidatePath(PRINCIPAL_PATH, "page");
     return {};
   } catch (err) {
@@ -59,10 +70,17 @@ export async function approveLeaveAction(
 
 export async function rejectLeaveAction(
   id: string,
+  studentMemberId: string,
+  classId: string,
   reason: string,
 ): Promise<{ errorKey?: DisciplineFailure["type"] }> {
   try {
-    await (await makeRejectLeaveUseCase()).execute(id, reason);
+    await (await makeRejectLeaveUseCase()).execute({
+      id,
+      studentMemberId,
+      classId,
+      reason,
+    });
     revalidatePath(PRINCIPAL_PATH, "page");
     return {};
   } catch (err) {

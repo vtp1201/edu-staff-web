@@ -102,6 +102,35 @@ describe("mapClassAttendance", () => {
       { studentId: "s1", studentName: "s1", status: "present" },
     ]);
   });
+
+  // US-E24.11: the roster defaults every unmarked student to `present`, so once
+  // mapped, a day nobody touched is INDISTINGUISHABLE from "everyone present".
+  // `taken` is the only place that distinction survives.
+  describe("taken — was this day actually rolled?", () => {
+    it("is false when the wire carried no records at all", () => {
+      const dto: ClassAttendanceResponseDto = {
+        classId: "c-1",
+        date: "2026-06-07",
+        records: [],
+      };
+      const roster = mapClassAttendance(dto, new Map(), ["s1", "s2"]);
+
+      expect(roster.taken).toBe(false);
+      // …even though the roster is fully populated with `present` rows.
+      expect(roster.records).toHaveLength(2);
+      expect(roster.records.every((r) => r.status === "present")).toBe(true);
+    });
+
+    it("is true as soon as ONE record exists, even if every record says present", () => {
+      const dto: ClassAttendanceResponseDto = {
+        classId: "c-1",
+        date: "2026-06-07",
+        records: [{ studentMemberId: "s1", status: "PRESENT" }],
+      };
+
+      expect(mapClassAttendance(dto, new Map(), ["s1", "s2"]).taken).toBe(true);
+    });
+  });
 });
 
 describe("countStatuses / zeroCounts", () => {

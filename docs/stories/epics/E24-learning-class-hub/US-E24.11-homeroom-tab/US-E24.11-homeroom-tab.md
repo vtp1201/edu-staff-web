@@ -95,4 +95,114 @@ reviewer quyết; mặc định ghi vào packet Evidence + `screens.md`.
 
 ## Evidence
 
-(điền sau)
+### Un-force-mock scope (supersedes the LEAVE branch of US-E18.14 only)
+
+`bootstrap/di/discipline.di.ts` now has TWO repository factories:
+
+- `makeRepo()` — unchanged, returns `MockDisciplineRepository` **unconditionally**
+  for 14 factories (violations, conduct grades, student self-service, parent
+  multi-child). US-E18.14's two categorical blockers still hold for all of them.
+- `makeLeaveRepo()` — an ordinary `USE_MOCK ? Mock : Real` gate (decision `0014`)
+  used by **exactly three**: `makeGetLeaveRequestsUseCase`,
+  `makeApproveLeaveUseCase`, `makeRejectLeaveUseCase`. The GVCN homeroom inbox is
+  the one conduct surface neither blocker reaches — core returns the student ids
+  itself (IAM's batch directory resolves the names, so no roster-UUID lookup) and
+  the caller is a TEACHER standing in a known `classId` (so no self-scope
+  discovery). Proven both ways by `src/bootstrap/di/discipline.di.test.ts`.
+
+`DisciplineRepository` implements those three for real; every other method is
+still the documented blocked stub that throws without touching `http.*`.
+
+### Card-by-card data source
+
+| Card | Source | Status |
+| --- | --- | --- |
+| 1 · Điểm danh hôm nay | `GET /core/api/v1/classes/{id}/attendance?date=` | **real** |
+| 2 · Vi phạm chờ xử lý | `GetViolationsUseCase` | **still mock** (US-E18.14) |
+| 3 · Đơn xin nghỉ chờ duyệt | `GET/POST /core/api/v1/conduct/student-leave-requests` | **real** (this US) |
+
+Card 2 could NOT be un-force-mocked here and this is not a `USE_MOCK` flip:
+`ViolationEntity.status` (`recorded|notified|parent_confirmed`, US-E09.1) has
+zero relation to the real `StudentViolationResponse.state`
+(`DRAFT|SUBMITTED|APPROVED|REJECTED`), and the real DTO carries no display fields
+at all (no `studentName`/`description` author). Redesigning that status axis
+cascades into `violations-tab.tsx`, `conduct-badge.tsx`, `discipline-tones.ts`
+and the parent `ViolationsList` — out of scope for a homeroom-tab story. The card
+filters the mock's `status === "recorded"` as the "chưa xử lý" proxy; when the
+real read lands, only `toViolationsVm` in `homeroom-vm.ts` changes.
+
+### Contract deltas (mechanical, no behaviour change for existing callers)
+
+- `approveLeave`/`rejectLeave` now take a `DecideLeaveInput`
+  (`id` + `studentMemberId` + `classId` + optional `authCtx`).
+  `studentMemberId` is a REQUIRED query param on both by-id routes — it completes
+  core's `(tenantId, studentMemberId)` partition key. Rippled through
+  `IDisciplineRepository`, both repositories, both use-cases,
+  `DisciplineScreenVM`, `leave-tab.tsx`, and the `teacher/discipline` +
+  `principal/discipline` actions.
+- `AttendanceRoster` gained `taken: boolean` (additive): the mapper seeds every
+  unmarked student as `present`, so before this a never-rolled day was
+  indistinguishable from "everyone present".
+
+### decision `0063` (repository-boundary authorization)
+
+`LeaveDecisionAuthContext { role, homeroomClassIds }` is assembled ONLY in
+`makeLeaveDecisionAuthContext()` — role from the token claim, scope from the
+teacher's own class list filtered to `roles.includes("homeroom")`. Every failure
+path yields an EMPTY scope (deny by default); mock mode pins the role to
+`teacher` because `decodeRoleClaim` answers a synthetic `admin` there.
+`makeDecideLeaveUseCases()` returns `{ approve, reject, authCtx }` together, so a
+Server Action cannot construct the mutation without the context.
+The guard (`assertCanDecideLeave`) runs as the FIRST statement of
+`approveLeave`/`rejectLeave` in BOTH repositories; forge-role tests call the
+repository directly and assert `http.post` was never called.
+
+### decision `0026` (component placement) — deviation from COMPONENT-ARCHITECTURE §6
+
+The architecture doc asked to promote `reject-leave-dialog.tsx` into a new
+`components/shared/reject-leave-dialog/`. That would have created a THIRD
+parallel reason-dialog: `components/shared/reason-confirm-dialog/` already exists
+as the canonical home for exactly this pattern (US-E18.44 — its own doc names
+"reject a leave request" as a target, and grade-approval/grade-entry already
+migrated onto it). Done instead: the feature-local dialog was **deleted** and
+both call sites (`leave-tab.tsx`, the new `pending-leave-card.tsx`) point at
+`ReasonConfirmDialog`. Copy (`discipline.leave.rejectDialog.*`) and the ≥10-char
+rule are unchanged; the shared component adds a counter-free `role="alert"` error
+and focus return. One component, one canonical home — no new folder.
+
+### Other deviations
+
+- `HomeroomTab` + the two read-only cards are Client Components, not async RSC.
+  The AC mandates Storybook interaction stories for `attendance-not-taken`,
+  `empty-all` and `error-card`, and the Storybook runner cannot render an async
+  server component. They are data-free presentational leaves; all server work
+  stays in `homeroom-vm.ts` + `page.tsx`, and `actions` arrives as Server Action
+  refs (same shape as `TimetableTabBody`).
+- Grid is `grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]`. The
+  design-spec's bare `auto-fit minmax(300px,1fr)` overflows a 320px viewport,
+  which `accessibility.md` forbids.
+- i18n namespace is `teacherClasses.hub.homeroom.*` (the shipped E24.8/E24.9
+  convention), NOT `teacher.classHub.homeroom.*` as PLAN §5 wrote.
+- `homeroom` left `PlaceholderTab`; the now-dead
+  `teacherClasses.hub.placeholder.body.homeroom` key was removed from vi + en.
+
+### Follow-ups for the backlog
+
+1. Redesign `ViolationEntity`'s status axis against the real BE workflow —
+   prerequisite for un-force-mocking `getViolations` anywhere.
+2. `/teacher/discipline` (and `/principal/discipline`) call
+   `getLeaveRequests({})`. The real endpoint requires EXACTLY ONE of
+   `classId` / `studentMemberId`, so in real mode that call is now refused before
+   any HTTP with the documented `not-found` (it never guesses a class). Those
+   dashboards need to iterate the teacher's homeroom class ids. Pre-existing gap
+   this US surfaces, not one it creates.
+
+### Proof
+
+| Gate | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (0 errors; the 1 pre-existing warning + 1 info are in `features/messaging`) |
+| `bun vitest run` | 568 files / 4678 tests passed |
+| `bun vitest run --config vitest.storybook.mts` | 165 files / 1330 tests passed (8 new homeroom-tab stories) |
+| `bun run build` | passed |

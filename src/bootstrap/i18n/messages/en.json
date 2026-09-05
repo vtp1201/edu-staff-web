@@ -4393,8 +4393,7 @@
       "meta": "{count} students · AY {year}",
       "placeholder": {
         "body": {
-          "course": "The class online course is coming in a later update.",
-          "homeroom": "The homeroom area (violations, leave requests) is coming in a later update."
+          "course": "The class online course is coming in a later update."
         },
         "title": "Under construction"
       },
@@ -4517,6 +4516,43 @@
           "not-found": "Content not found",
           "network-error": "Network error",
           "unknown": "An unexpected error occurred"
+        }
+      },
+      "homeroom": {
+        "attendance": {
+          "title": "Today's attendance",
+          "taken": "Taken",
+          "notTaken": "Not taken",
+          "notTakenHint": "Attendance has not been taken today, so there are no figures yet.",
+          "present": "Present",
+          "excused": "Excused",
+          "absent": "Absent",
+          "openLink": "Open attendance sheet"
+        },
+        "violations": {
+          "title": "Open violations",
+          "countLabel": "{count} violations awaiting action",
+          "empty": "No violations awaiting action.",
+          "openLink": "Open Discipline & Conduct"
+        },
+        "leave": {
+          "title": "Leave requests pending",
+          "countLabel": "{count} requests pending approval",
+          "empty": "No requests pending approval.",
+          "item": "Leave {start} → {end} — {reason}",
+          "approve": "Approve",
+          "reject": "Decline",
+          "approveLabel": "Approve the leave request from {student}",
+          "rejectLabel": "Decline the leave request from {student}",
+          "approved": "Approved the leave request from {student}",
+          "rejected": "Declined the leave request from {student}"
+        },
+        "errors": {
+          "attendance": "Could not load today's attendance",
+          "violations": "Could not load the violations list",
+          "leave": "Could not load leave requests",
+          "body": "The server connection is having trouble. Try reloading this card.",
+          "retry": "Try again"
         }
       }
     },

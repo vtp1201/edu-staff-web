@@ -1,13 +1,17 @@
 "use client";
 
-import { BookOpen, type LucideIcon, Shield } from "lucide-react";
+import { BookOpen, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { ClassHubTab } from "@/features/teacher/domain/class-hub-tabs";
 
 /** The tabs whose real body has not shipped yet. `timetable` left this union in
- *  US-E24.9 (real tab body); `students` never was one. */
-export type PlaceholderTab = Exclude<ClassHubTab, "students" | "timetable">;
+ *  US-E24.9 and `homeroom` in US-E24.11 (real tab bodies); `students` never was
+ *  one. `course` is the last placeholder. */
+export type PlaceholderTab = Exclude<
+  ClassHubTab,
+  "students" | "timetable" | "homeroom"
+>;
 
 export interface TabPlaceholderProps {
   tab: PlaceholderTab;
@@ -15,7 +19,6 @@ export interface TabPlaceholderProps {
 
 const PLACEHOLDER_ICON: Record<PlaceholderTab, LucideIcon> = {
   course: BookOpen,
-  homeroom: Shield,
 };
 
 /**

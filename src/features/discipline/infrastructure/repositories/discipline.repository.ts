@@ -1,15 +1,23 @@
 import "server-only";
 import type { AxiosInstance } from "axios";
-import { errorCodeOf, statusOf } from "@/bootstrap/lib/api-envelope";
+import { DISCIPLINE_EP } from "@/bootstrap/endpoint/discipline.endpoint";
+import {
+  type ApiEnvelope,
+  errorCodeOf,
+  parseEnvelope,
+  statusOf,
+} from "@/bootstrap/lib/api-envelope";
 import type { ChildEntity } from "../../domain/entities/child.entity";
 import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../../domain/entities/conduct-summary.entity";
-import type {
-  LeaveRequestEntity,
-  SubmitChildLeaveRequestInput,
-  SubmitLeaveRequestInput,
+import {
+  assertCanDecideLeave,
+  type DecideLeaveInput,
+  type LeaveRequestEntity,
+  type SubmitChildLeaveRequestInput,
+  type SubmitLeaveRequestInput,
 } from "../../domain/entities/leave-request.entity";
 import type {
   RecordViolationInput,
@@ -17,6 +25,8 @@ import type {
 } from "../../domain/entities/violation.entity";
 import type { DisciplineFailure } from "../../domain/failures/discipline.failure";
 import type { IDisciplineRepository } from "../../domain/repositories/i-discipline.repository";
+import type { StudentLeaveRequestResponseDto } from "../dtos/student-leave-request-response.dto";
+import { toLeaveRequestEntity } from "../mappers/leave-request.mapper";
 
 /**
  * Map a normalised ApiError to the discipline failure union (US-E09.1,
@@ -138,7 +148,19 @@ export function toFailure(err: unknown): DisciplineFailure {
 }
 
 /**
- * Real `core` conduct repository (US-E09.1, remapped US-E18.14).
+ * Real `core` conduct repository (US-E09.1, remapped US-E18.14, PARTIALLY
+ * un-force-mocked US-E24.11).
+ *
+ * **Three methods are real since US-E24.11** — `getLeaveRequests`,
+ * `approveLeave`, `rejectLeave`. The GVCN homeroom inbox
+ * (`GET /student-leave-requests?classId=`) is the one conduct surface both
+ * blockers below miss: it needs no roster UUID (core returns the student ids
+ * itself, and IAM's batch directory resolves the names) and no self-scope
+ * discovery (the caller is a TEACHER who already knows the `classId` of the
+ * class hub they are standing in). `discipline.di.ts` therefore gates ONLY
+ * those three on `USE_MOCK`; every other factory in that file still force-mocks.
+ *
+ * Everything below this line still applies to EVERY OTHER method:
  *
  * **PERMANENTLY mock-first regardless of `USE_MOCK`** — `discipline.di.ts`
  * always constructs `MockDisciplineRepository`. Ground-truthed against
@@ -164,23 +186,26 @@ export function toFailure(err: unknown): DisciplineFailure {
  *    not blocked by the roster gap — is independently blocked.
  *
  * See `docs/stories/epics/E18-be-wiring/US-E18.14-discipline-conduct-wiring/story.md`.
- * Every method below is therefore a permanent blocked stub: it throws the
+ * Every OTHER method is therefore a permanent blocked stub: it throws the
  * documented failure WITHOUT ever calling `http.*` (mirrors
  * `StaffLeaveRepository`, US-E18.8, and `ClassManagementRepository.listTeachers`,
  * US-E18.4). `toFailure` above is kept correct + unit-tested for the day this
  * unblocks; `DISCIPLINE_EP` is remapped to the real paths for the same reason.
  */
 export class DisciplineRepository implements IDisciplineRepository {
-  // Kept for constructor-signature parity with every other repo (callers do
-  // `new DisciplineRepository(http)`), even though every method is a permanent
-  // blocked stub that never touches `http` — see the class doc above.
-  // biome-ignore lint/complexity/noUselessConstructor: signature parity, see comment above.
-  constructor(_http: AxiosInstance) {}
+  constructor(
+    private readonly http: AxiosInstance,
+    /** Batched IAM display-name lookup — core's conduct rows carry no names. */
+    private readonly resolveNames?: (
+      memberIds: string[],
+    ) => Promise<Map<string, string>>,
+  ) {}
 
   /**
-   * The single blocked exit for every method. Throws a documented failure —
-   * `not-found` reads as "this record is not reachable" on every surface — so a
-   * stub can never silently reach the (unwireable) real API. Returns `never`.
+   * The single blocked exit for every unwireable method. Throws a documented
+   * failure — `not-found` reads as "this record is not reachable" on every
+   * surface — so a stub can never silently reach the (unwireable) real API.
+   * Returns `never`.
    */
   private blocked(): never {
     throw { type: "not-found" } satisfies DisciplineFailure;
@@ -218,18 +243,120 @@ export class DisciplineRepository implements IDisciplineRepository {
     return this.blocked();
   }
 
-  async getLeaveRequests(_params: {
+  /* ── REAL since US-E24.11 — GVCN homeroom leave inbox ──────────────────── */
+
+  /**
+   * `GET /student-leave-requests?classId=` — the GVCN homeroom inbox, already
+   * server-filtered to `SUBMITTED` for a teacher caller (no client-side state
+   * filter needed, unlike violations).
+   *
+   * `classId` is NOT optional on the real wire: core requires EXACTLY ONE of
+   * `classId` / `studentMemberId` (`400 LEAVE_REQUEST_INVALID_INPUT`
+   * otherwise). The interface keeps it optional because the legacy multi-class
+   * dashboards call `execute({})`; rather than guessing a class or draining
+   * every class, that call is refused HERE, before any HTTP, with the same
+   * documented `not-found` a blocked stub throws. Fixing those dashboards to
+   * iterate the teacher's own homeroom class ids is a separate, logged
+   * follow-up — this method never guesses on their behalf.
+   */
+  async getLeaveRequests(params: {
     classId?: string;
   }): Promise<LeaveRequestEntity[]> {
-    return this.blocked();
+    if (!params.classId) return this.blocked();
+    try {
+      const dtos = await this.fetchAllPages<StudentLeaveRequestResponseDto>(
+        DISCIPLINE_EP.leaveRequests,
+        { classId: params.classId },
+      );
+      const names = await this.resolveMemberNames(dtos);
+      return dtos.map((dto) => toLeaveRequestEntity(dto, names));
+    } catch (err) {
+      throw toFailure(err);
+    }
   }
 
-  async approveLeave(_id: string): Promise<LeaveRequestEntity> {
-    return this.blocked();
+  async approveLeave(input: DecideLeaveInput): Promise<LeaveRequestEntity> {
+    assertCanDecideLeave(input);
+    return this.decide(
+      DISCIPLINE_EP.approveLeave(input.id),
+      input.studentMemberId,
+      undefined,
+    );
   }
 
-  async rejectLeave(_id: string, _reason: string): Promise<LeaveRequestEntity> {
-    return this.blocked();
+  async rejectLeave(
+    input: DecideLeaveInput & { reason: string },
+  ): Promise<LeaveRequestEntity> {
+    assertCanDecideLeave(input);
+    return this.decide(
+      DISCIPLINE_EP.rejectLeave(input.id),
+      input.studentMemberId,
+      { rejectionReason: input.reason },
+    );
+  }
+
+  /**
+   * The two decision routes are identical apart from the body:
+   * `POST .../{id}/(approve|reject)?studentMemberId=` → the updated record.
+   * `studentMemberId` completes core's `(tenantId, studentMemberId)` partition
+   * key and is a REQUIRED query param, not a filter.
+   */
+  private async decide(
+    url: string,
+    studentMemberId: string,
+    body: { rejectionReason: string } | undefined,
+  ): Promise<LeaveRequestEntity> {
+    try {
+      const dto = (await this.http.post(url, body ?? {}, {
+        params: { studentMemberId },
+      })) as unknown as StudentLeaveRequestResponseDto;
+      const names = await this.resolveMemberNames([dto]);
+      return toLeaveRequestEntity(dto, names);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  /** ONE batched directory call for every member id the rows reference
+   *  (student + submitter + approver together, never three round-trips). A
+   *  failed lookup yields an empty map: the mapper then falls back to the raw
+   *  id, so a missing NAME never costs the GVCN the whole inbox. */
+  private async resolveMemberNames(
+    dtos: StudentLeaveRequestResponseDto[],
+  ): Promise<Map<string, string>> {
+    if (!this.resolveNames || dtos.length === 0) return new Map();
+    const ids = new Set<string>();
+    for (const dto of dtos) {
+      ids.add(dto.studentMemberId);
+      ids.add(dto.submittedByMemberId);
+      if (dto.approverMemberId) ids.add(dto.approverMemberId);
+    }
+    try {
+      return await this.resolveNames([...ids]);
+    } catch {
+      return new Map();
+    }
+  }
+
+  /** Drain a cursor-paginated conduct list into a single array. */
+  private async fetchAllPages<T>(
+    url: string,
+    query: Record<string, unknown>,
+  ): Promise<T[]> {
+    const all: T[] = [];
+    let cursor: string | undefined;
+    do {
+      const env = (await this.http.get(url, {
+        params: { limit: 100, ...query, ...(cursor ? { cursor } : {}) },
+        raw: true,
+      })) as unknown as ApiEnvelope<T[]>;
+      const { data, pagination } = parseEnvelope(env);
+      all.push(...(data ?? []));
+      cursor = pagination?.hasMore
+        ? (pagination.nextCursor ?? undefined)
+        : undefined;
+    } while (cursor);
+    return all;
   }
 
   // --- Student / parent self-service (US-E09.2) ---

@@ -36,6 +36,17 @@ vi.mock("@/bootstrap/di/period-log.di", () => ({
   })),
 }));
 
+const approveLeave = vi.fn();
+const rejectLeave = vi.fn();
+let leaveAuthCtx = { role: "teacher", homeroomClassIds: ["c-1"] };
+vi.mock("@/bootstrap/di/discipline.di", () => ({
+  makeDecideLeaveUseCases: vi.fn(async () => ({
+    approve: { execute: approveLeave },
+    reject: { execute: rejectLeave },
+    authCtx: leaveAuthCtx,
+  })),
+}));
+
 const getMyClass = vi.fn();
 vi.mock("@/bootstrap/di/teacher-class.di", () => ({
   makeGetMyClassUseCase: vi.fn(async () => ({ execute: getMyClass })),
@@ -62,8 +73,10 @@ vi.mock("@/bootstrap/lib/resolve-current-term", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import {
+  approveLeaveAction,
   deletePeriodLogAction,
   deletePeriodPrepAction,
+  rejectLeaveAction,
   reviseDailyEntryAction,
   saveDailyEntryAction,
   savePeriodLogAction,
@@ -82,6 +95,7 @@ const SUBJECT_ONLY_CLASS = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  leaveAuthCtx = { role: "teacher", homeroomClassIds: ["c-1"] };
 });
 
 describe("savePeriodLogAction", () => {
@@ -241,5 +255,95 @@ describe("homeroom daily-entry actions — role gate (forge-role proof)", () => 
       ok: false,
       errorKey: "already-exists",
     });
+  });
+});
+
+/**
+ * US-E24.11 — the two HIGH-RISK leave decisions. Both are irreversible for the
+ * student, so the server-derived `authCtx` (decision 0063) must reach the
+ * use-case on every call, and a failure must come back as a stable KEY the
+ * presentation translates — never as translated copy.
+ */
+describe("approveLeaveAction / rejectLeaveAction (US-E24.11)", () => {
+  const LEAVE = { id: "l-1", studentMemberId: "s-30", classId: "c-1" };
+
+  it("approve threads the SERVER-DERIVED authCtx alongside the whole addressing tuple", async () => {
+    approveLeave.mockResolvedValue({ id: "l-1", status: "approved" });
+
+    const res = await approveLeaveAction("l-1", "s-30", "c-1");
+
+    expect(approveLeave).toHaveBeenCalledWith({
+      ...LEAVE,
+      authCtx: { role: "teacher", homeroomClassIds: ["c-1"] },
+    });
+    expect(res).toEqual({ ok: true });
+  });
+
+  it("reject sends the reason with the same tuple + authCtx", async () => {
+    rejectLeave.mockResolvedValue({ id: "l-1", status: "rejected" });
+
+    const res = await rejectLeaveAction(
+      "l-1",
+      "s-30",
+      "c-1",
+      "Đã nghỉ quá 5 ngày trong tháng",
+    );
+
+    expect(rejectLeave).toHaveBeenCalledWith({
+      ...LEAVE,
+      reason: "Đã nghỉ quá 5 ngày trong tháng",
+      authCtx: { role: "teacher", homeroomClassIds: ["c-1"] },
+    });
+    expect(res).toEqual({ ok: true });
+  });
+
+  it("a thrown DisciplineFailure comes back as a stable errorKey (the action never translates)", async () => {
+    approveLeave.mockRejectedValue({ type: "already-processed" });
+
+    expect(await approveLeaveAction("l-1", "s-30", "c-1")).toEqual({
+      ok: false,
+      errorKey: "already-processed",
+    });
+  });
+
+  it("an unexpected throw degrades to network-error rather than leaking the error object", async () => {
+    rejectLeave.mockRejectedValue(new Error("socket hang up"));
+
+    expect(
+      await rejectLeaveAction("l-1", "s-30", "c-1", "Lý do hợp lệ đủ dài"),
+    ).toEqual({ ok: false, errorKey: "network-error" });
+  });
+
+  it("a forged classId is refused by the repository guard and surfaces as `forbidden`", async () => {
+    // The DI-assembled scope does not contain the class being acted on; the
+    // guard lives at the repository, so the use-case is what rejects.
+    leaveAuthCtx = { role: "teacher", homeroomClassIds: ["some-other-class"] };
+    approveLeave.mockRejectedValue({ type: "forbidden" });
+
+    expect(await approveLeaveAction("l-1", "s-30", "c-1")).toEqual({
+      ok: false,
+      errorKey: "forbidden",
+    });
+  });
+
+  it("never revalidates the route when the decision failed", async () => {
+    const { revalidatePath } = await import("next/cache");
+    approveLeave.mockRejectedValue({ type: "forbidden" });
+
+    await approveLeaveAction("l-1", "s-30", "c-1");
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("revalidates the class-hub route after a successful decision", async () => {
+    const { revalidatePath } = await import("next/cache");
+    approveLeave.mockResolvedValue({ id: "l-1", status: "approved" });
+
+    await approveLeaveAction("l-1", "s-30", "c-1");
+
+    expect(revalidatePath).toHaveBeenCalledWith(
+      "/[locale]/t/[tenant]/(app)/teacher/classes/[classId]",
+      "page",
+    );
   });
 });

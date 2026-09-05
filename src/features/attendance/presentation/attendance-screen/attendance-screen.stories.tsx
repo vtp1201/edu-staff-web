@@ -84,7 +84,7 @@ const classes = [{ id: "c-1", name: "10A1" }];
 export const WithRoster: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
     getHistoryAction,
@@ -155,7 +155,7 @@ export const Empty: Story = {
 export const HistoryTab: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
     getHistoryAction,
@@ -191,7 +191,7 @@ export const HistoryTab: Story = {
 export const HistoryEmpty: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
     getHistoryAction: getHistoryActionEmpty,
@@ -209,7 +209,7 @@ export const HistoryEmpty: Story = {
 export const HistoryError: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
     getHistoryAction: getHistoryActionError,
@@ -231,7 +231,7 @@ export const HistoryError: Story = {
 export const SaveSuccess: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction: fn(async () => ({ ok: true }) as const),
     getHistoryAction,
@@ -267,7 +267,7 @@ export const SaveSuccess: Story = {
 export const SaveError_CorrectionWindowExpired: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction: fn(
       async () =>
@@ -306,7 +306,7 @@ const VIEWPORT_375 = {
 export const Viewport375: Story = {
   args: {
     classes,
-    roster: { classDate, records },
+    roster: { classDate, records, taken: true },
     filters: { classId: "c-1", date: "2026-06-07" },
     saveAction,
     getHistoryAction,
