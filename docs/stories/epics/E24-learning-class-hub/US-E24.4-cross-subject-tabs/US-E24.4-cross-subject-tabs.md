@@ -157,6 +157,75 @@ still resolves an exam through `makeListExamsUseCase` (core has no single-exam G
   them into a screen. Deleting the whole stack was outside this story's
   authorised deletion list.
 
+### fe-tech-lead-reviewer verdict
+
+**Approved.** No blocking findings. Verified independently: layer boundaries clean (zero new
+Client Components — every pill/tab/CTA is a real `<Link>`, URL is the only state); the N+1
+fan-out refactor is genuinely behaviour-preserving (US-E24.2's own test file untouched, still
+green); sort logic (`sort-cross-subject-items.ts`) correct including null/unparseable-date and
+tie-breaking edge cases; `safe-href.ts` promotion from `course-player/` to `presentation/shared/`
+confirmed as a real move (no duplicate copy, no stale import path left behind); redirect pages
+use real `permanentRedirect` (308) tests that parse the digest and assert URL+status, not stubs;
+`/student/exams/[examId]` confirmed untouched and still a live consumer of `makeListExamsUseCase`;
+dead-code deletion (`student-assignments/**`, `exam-list/**`, `assignments.*` i18n) verified
+zero-consumer via repo-wide grep before removal; nav-config test strengthened (asserts the whole
+7-href list), not weakened; ARIA tablist/tab/aria-selected pattern correct, count `aria-label`
+speaks the label not a bare numeral; i18n vi/en parity exact; `docs/product/screens.md` +
+`design-spec.jsonc` synced beyond the Harness Delta ask. 3 CONSIDER items (optional, not
+blocking): add a same-`dueAt` tie-break test, confirm the link-based `role="tab"` keyboard model
+with a11y (done, see below), file a follow-up ticket for the now-unwired
+`ListAssignmentsUseCase`/`listAssignments` repository method (left in place per plan, engineer's
+call accepted).
+
+Three deviations adjudicated, all **ACCEPTED**:
+1. "✓ Đã nộp" dropped entirely, exam CTA decided by `state` alone (zero submission reads) —
+   extends US-E24.5's own D-1 deviation to the list screen; checked the user-facing damage is
+   bounded (assignments always render the safe "Xem trong khoá học"; a completed exam still
+   redirects to its result screen via `/student/exams/[examId]`, not a dead-end retry).
+2. `?sub=` URL param added beyond the AC's `?view=` — strict superset, is what makes the
+   zero-Client-Component design possible, defensively parsed with tested fallbacks.
+3. `ListAssignmentsUseCase` left wired-but-unused rather than deleted — cascading deletion would
+   touch the repository/mapper/integration-test surface outside this story's authorised scope
+   for a real, BE-published endpoint; left for a dedicated cleanup story.
+
+### fe-accessibility-auditor verdict
+
+**Pass-with-minor-findings** (1 Major, 2 Minor advisory). A11Y-001 (WCAG 1.4.3) — active
+sub-tab count pill `text-edu-primary-accessible` on `bg-edu-primary-light` at 10.5px extrabold
+measured 4.35:1, below the 4.5:1 floor for normal text (the size doesn't qualify as "large text").
+Fixed: swapped to `text-foreground` (11.5:1), same fix pattern `StatusBadge` already uses for
+its primary/info/purple/teal tones — commit `9ecbc520`, verified by a Storybook regression
+assertion pinning `not.toHaveClass("text-edu-primary-accessible")`. A11Y-002/A11Y-003 (both
+Minor, advisory only, no code change): `role="tab"` on a real per-view `<Link>` with no
+arrow-key roving-tabindex, and `view-switcher.tsx`'s `<nav>`+`aria-current="page"` instead of a
+tablist — both confirmed as established, already-accepted conventions in this codebase (same
+shape as US-E24.8's `class-hub-tabs.tsx`), not defects in this story.
+
+### fe-qa-playwright verdict
+
+**Go / PASS.** 100% AC coverage confirmed with real tests (not static claims) — redirect status
+codes + URLs, sort ordering with multi-item fixtures, urgent-flag floor/channel checks, ARIA
+tablist/tab role queries via `getByRole` (not `getByText`), `/student/exams/[examId]` regression-
+free, i18n parity, and the A11Y-001 contrast fix all independently re-verified. No test additions
+were needed — existing coverage from the implementation + fix rounds was already sufficient.
+Gate green: `bun vitest run`, `bunx vitest run --config vitest.storybook.mts`, `bunx tsc --noEmit`
+all confirmed directly by QA, including a fresh confirmation that US-E24.2's own test file is
+untouched and green after the fan-out refactor. Zero defects found.
+
+### Design-review gate
+
+- design-system: conform — zero raw color; all tokens verified against `tokens.css`; sub-tab
+  contrast fix applied; `ItemTypeChip`/`ItemStatePill`/`StatusBadge`/`formatItemWindow` reused,
+  not forked; `docs/product/design-spec.jsonc#crossSubjectList` synced to `status: implemented`
+  with the corrected row/action reflecting the D-1-extension deviation.
+- a11y: WCAG AA OK post-fix; keyboard OK (Tab/Enter fully covers real-navigation tab strips per
+  auditor's confirmed precedent); reduced-motion OK (`motion-safe:` only, no new animation).
+- impeccable audit: per-edit design hook ran on every change across both rounds (implementation,
+  contrast fix) — 0 anti-patterns flagged.
+- states: all/assignment-open-urgent/exam-upcoming/closed/empty covered in Storybook (8 new
+  stories on top of US-E24.2's 11); mobile 320/375 + 44px touch targets proven via real viewport
+  stories, matching the pattern established in US-E24.2/E24.3/E24.5.
+
 ## Implementation Plan
 
 ### 0. Code-verified corrections vs packet text
