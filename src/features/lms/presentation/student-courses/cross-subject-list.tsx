@@ -98,8 +98,11 @@ export function CrossSubjectList({
                 aria-hidden="true"
                 className={cn(
                   "min-w-4 rounded-full px-1.5 py-px text-center font-extrabold text-[10.5px] tabular-nums",
+                  // 10.5px extra-bold is NOT "large text", so the tint needs
+                  // a 4.5:1 foreground: #4468E0 on #ECF2FF is only 4.35:1,
+                  // `text-foreground` is 11.5:1 (the StatusBadge pairing).
                   active
-                    ? "bg-edu-primary-light text-edu-primary-accessible"
+                    ? "bg-edu-primary-light text-foreground"
                     : "bg-muted text-edu-text-secondary",
                 )}
               >

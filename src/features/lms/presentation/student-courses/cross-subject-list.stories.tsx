@@ -147,6 +147,13 @@ export const AssignmentOpenUrgent: Story = {
     await expect(canvas.getByLabelText("Đang mở, 2 mục")).toBeInTheDocument();
     await expect(canvas.getByLabelText("Đã đóng, 1 mục")).toBeInTheDocument();
 
+    // A11Y-001 (WCAG 1.4.3): the count pill is 10.5px — not "large text" — so
+    // the active tint must carry a 4.5:1 foreground. #4468E0 on #ECF2FF is
+    // 4.35:1 and must never come back.
+    const activePill = tabs[0].querySelector("span[aria-hidden='true']");
+    await expect(activePill).toHaveClass("text-foreground");
+    await expect(activePill).not.toHaveClass("text-edu-primary-accessible");
+
     // Urgency: literal text + the tinted border, never colour alone.
     await expect(canvas.getByText(/còn 6 giờ/)).toBeInTheDocument();
     const urgentRow = canvas
