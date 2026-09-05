@@ -3,6 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { makeDecideLeaveUseCases } from "@/bootstrap/di/discipline.di";
 import {
+  makeAddDocumentItemUseCase,
+  makeCreateAssignmentUseCase,
+  makeCreateLessonUseCase,
+  makeDeleteItemUseCase,
+  makeGetCourseUseCase,
+  makeListCourseItemsUseCase,
+  makePatchItemUseCase,
+  makePublishCourseUseCase,
+  makeReorderItemsUseCase,
+} from "@/bootstrap/di/lms.di";
+import {
   makeDeletePeriodLogUseCase,
   makeDeletePeriodPrepUseCase,
   makeSavePeriodLogUseCase,
@@ -13,6 +24,17 @@ import { resolveCurrentTermContext } from "@/bootstrap/lib/resolve-current-term"
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { ClassLogFailure } from "@/features/class-log/domain/failures/class-log.failure";
 import type { DisciplineFailure } from "@/features/discipline/domain/failures/discipline.failure";
+import type {
+  Course,
+  CourseStatus,
+} from "@/features/lms/domain/entities/course.entity";
+import type { CourseItem } from "@/features/lms/domain/entities/course-item.entity";
+import type { LmsFailure } from "@/features/lms/domain/failures/lms.failure";
+import type {
+  CreateDocumentItemInput,
+  CreateLessonInput,
+  UpdateCourseItemInput,
+} from "@/features/lms/domain/repositories/i-lms.repository";
 import type {
   PeriodLog,
   SavePeriodLogInput,
@@ -278,4 +300,229 @@ export async function rejectLeaveAction(
   } catch (err) {
     return { ok: false, errorKey: toLeaveErrorKey(err) };
   }
+}
+
+/* ── Tab Khoá học online (US-E24.10, HIGH-RISK) ──────────────────────────── */
+
+export type LmsActionResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; errorKey: LmsFailure["type"] };
+
+/**
+ * Is this course READABLE by the caller here — i.e. does it belong to a class
+ * the caller teaches at all (GVCN or GVBM)?
+ *
+ * The weaker of the two gates on purpose: a GVCN legitimately reads the
+ * timeline of a subject someone else teaches (`mode: "readonly"`). It still
+ * pins the course to the `classId` in the URL, so a valid course id from
+ * ANOTHER class cannot be read through this route.
+ */
+async function assertCourseInMyClass(
+  classId: string,
+  courseId: string,
+): Promise<{ ok: true; course: Course } | { ok: false }> {
+  const [classResult, courseResult] = await Promise.all([
+    (await makeGetMyClassUseCase()).execute(classId),
+    (await makeGetCourseUseCase()).execute(courseId),
+  ]);
+  if (!classResult.ok || !courseResult.ok) return { ok: false };
+  if (courseResult.data.classId !== classId) return { ok: false };
+  return { ok: true, course: courseResult.data };
+}
+
+/**
+ * Is this course's SUBJECT one the caller teaches in this class? The gate every
+ * mutation below runs first (decision `0063`).
+ *
+ * Re-derived server-side on EVERY call from the caller's own class list — never
+ * from a prop, never from the fact that the client rendered a grip handle. A
+ * client that forces `mode: "teacher"` still gets `forbidden` here.
+ *
+ * Defense in depth, not a replacement for BE: `lms` enforces course-level
+ * teaching assignment (`LMS_COURSE_TEACHER_NOT_ASSIGNED`) but has no
+ * GVCN-vs-GVBM distinction yet (epic ask #7). This gate is the finer one, so a
+ * GVCN cannot edit a colleague's course through the tab that lets them READ it.
+ */
+async function assertOwnCourseSubject(
+  classId: string,
+  courseId: string,
+): Promise<{ ok: true; course: Course } | { ok: false }> {
+  const [classResult, courseResult] = await Promise.all([
+    (await makeGetMyClassUseCase()).execute(classId),
+    (await makeGetCourseUseCase()).execute(courseId),
+  ]);
+  if (!classResult.ok || !courseResult.ok) return { ok: false };
+  const course = courseResult.data;
+  if (course.classId !== classId) return { ok: false };
+  const owns = classResult.data.subjects.some((s) => s.id === course.subjectId);
+  return owns ? { ok: true, course } : { ok: false };
+}
+
+/** Re-read the timeline. Serves both the "Thử lại" banner and the client
+ *  cache's own refetch, so there is ONE server read behind both. */
+export async function listCourseItemsAction(
+  classId: string,
+  courseId: string,
+): Promise<LmsActionResult<CourseItem[]>> {
+  if (!(await assertCourseInMyClass(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makeListCourseItemsUseCase()).execute(courseId);
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function reorderItemsAction(
+  classId: string,
+  courseId: string,
+  itemIds: string[],
+): Promise<LmsActionResult<CourseItem[]>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makeReorderItemsUseCase()).execute(
+    courseId,
+    itemIds,
+  );
+  if (result.ok) revalidatePath(CLASS_HUB_PATH, "page");
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function patchItemAction(
+  classId: string,
+  courseId: string,
+  itemId: string,
+  patch: UpdateCourseItemInput,
+): Promise<LmsActionResult<CourseItem>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makePatchItemUseCase()).execute(
+    courseId,
+    itemId,
+    patch,
+  );
+  if (result.ok) revalidatePath(CLASS_HUB_PATH, "page");
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+/**
+ * The three creates all answer with the WHOLE refreshed timeline rather than
+ * the created entity.
+ *
+ * `POST /lessons` and `POST /assignments` return the lesson/assignment — NOT
+ * the timeline tile BE derives from it — so there is nothing tile-shaped to
+ * hand back, and even `addDocumentItem`'s own tile would arrive without
+ * knowing where BE placed it among its siblings. One read-back per create
+ * keeps the client cache authoritative on both count and order.
+ */
+async function itemsAfterWrite(
+  courseId: string,
+): Promise<LmsActionResult<CourseItem[]>> {
+  const items = await (await makeListCourseItemsUseCase()).execute(courseId);
+  return items.ok
+    ? { ok: true, data: items.data }
+    : { ok: false, errorKey: items.failure.type };
+}
+
+export async function createLessonAction(
+  classId: string,
+  courseId: string,
+  input: CreateLessonInput,
+): Promise<LmsActionResult<CourseItem[]>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makeCreateLessonUseCase()).execute(
+    courseId,
+    input,
+  );
+  if (!result.ok) return { ok: false, errorKey: result.failure.type };
+  revalidatePath(CLASS_HUB_PATH, "page");
+  return itemsAfterWrite(courseId);
+}
+
+/**
+ * `classId`/`subjectId` on the assignment body are taken from the GATE's own
+ * course read, never from the client — a caller-supplied pair would be an
+ * authorization input the caller controls.
+ */
+export async function createAssignmentAction(
+  classId: string,
+  courseId: string,
+  input: {
+    title: string;
+    instructions?: string;
+    startAt?: string | null;
+    dueAt?: string | null;
+  },
+): Promise<LmsActionResult<CourseItem[]>> {
+  const gate = await assertOwnCourseSubject(classId, courseId);
+  if (!gate.ok) return { ok: false, errorKey: "forbidden" };
+
+  const result = await (await makeCreateAssignmentUseCase()).execute({
+    classId: gate.course.classId,
+    subjectId: gate.course.subjectId,
+    courseId,
+    ...input,
+  });
+  if (!result.ok) return { ok: false, errorKey: result.failure.type };
+  revalidatePath(CLASS_HUB_PATH, "page");
+  return itemsAfterWrite(courseId);
+}
+
+export async function addDocumentItemAction(
+  classId: string,
+  courseId: string,
+  input: CreateDocumentItemInput,
+): Promise<LmsActionResult<CourseItem[]>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makeAddDocumentItemUseCase()).execute(
+    courseId,
+    input,
+  );
+  if (!result.ok) return { ok: false, errorKey: result.failure.type };
+  revalidatePath(CLASS_HUB_PATH, "page");
+  return itemsAfterWrite(courseId);
+}
+
+/** DRAFT → PUBLISHED. Only the status crosses back: the banner is the one
+ *  thing that changes, and the timeline is untouched by a publish. */
+export async function publishCourseAction(
+  classId: string,
+  courseId: string,
+): Promise<LmsActionResult<CourseStatus>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makePublishCourseUseCase()).execute(courseId);
+  if (result.ok) revalidatePath(CLASS_HUB_PATH, "page");
+  return result.ok
+    ? { ok: true, data: result.data.status }
+    : { ok: false, errorKey: result.failure.type };
+}
+
+export async function deleteItemAction(
+  classId: string,
+  courseId: string,
+  itemId: string,
+): Promise<LmsActionResult<null>> {
+  if (!(await assertOwnCourseSubject(classId, courseId)).ok) {
+    return { ok: false, errorKey: "forbidden" };
+  }
+  const result = await (await makeDeleteItemUseCase()).execute(
+    courseId,
+    itemId,
+  );
+  if (result.ok) revalidatePath(CLASS_HUB_PATH, "page");
+  return result.ok
+    ? { ok: true, data: null }
+    : { ok: false, errorKey: result.failure.type };
 }
