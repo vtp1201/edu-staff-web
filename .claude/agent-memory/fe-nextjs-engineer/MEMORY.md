@@ -1,5 +1,6 @@
 # Memory Index
 
+- [URL-as-state tab shell](pattern-url-tab-shell-rsc.md) — US-E24.8: role-gated `?tab=` RSC shell (one panel, Link tabs); notFound/permanentRedirect digest strings for node route tests
 - [Capped count + badge accname](pattern-capped-count-and-badge-accname.md) — E24.7 review: cap an unbounded drain to a "N+" lower bound (not a fake 99+); StatusBadge aria-label ≠ accname; auto-fill grid breaks at 320px
 - [Browser-direct BE call](pattern-browser-direct-be-call.md) — E18.59/ADR 0072: public IP-rate-limited endpoint moves to a client fetch; one ApiError adapter reuses the whole mapper
 - [Import allowlist + success live region](pattern-import-allowlist-and-success-live-region.md) — E18.59 fix: "no HTTP call" guard must be an exact import ALLOWLIST (axios bypassed the denylist); loading→success needs a persistent sr-only role=status

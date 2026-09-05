@@ -13,6 +13,7 @@ import type {
   KpiTileVM,
   TeacherClassesScreenVM,
 } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
+import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 
 type Labels = Record<TeacherClassKpiField, string>;
 
@@ -117,7 +118,13 @@ async function fetchHomeroomKpis(
   return byClass;
 }
 
-export default async function TeacherClassesPage() {
+export default async function TeacherClassesPage({
+  params,
+}: {
+  params: Promise<{ locale: string; tenant: string }>;
+}) {
+  const { locale, tenant } = await params;
+  const base = classHubBase(locale, tenant);
   const useCase = await makeListMyTeacherClassesUseCase();
   const result = await useCase.execute();
 
@@ -167,7 +174,9 @@ export default async function TeacherClassesPage() {
         // Absent (not an empty array) when nothing resolved — the card then
         // renders no tile container at all (AC: grid must not go lopsided).
         ...(tiles.length > 0 ? { kpi: { tiles } } : {}),
-        studentsHref: `classes/${cls.id}/students`,
+        // Straight into the class hub (US-E24.8) — the legacy
+        // `/classes/<id>/students` route stays as a 308 alias for old links.
+        hubHref: classHubHref(base, cls.id, "students"),
       };
     }),
   };

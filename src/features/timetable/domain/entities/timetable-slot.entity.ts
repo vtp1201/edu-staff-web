@@ -16,6 +16,12 @@ export interface TimetableSlot {
   room?: string;
   /** US-E15.2 (teacher scope) — unused by the class-scope view. */
   className?: string;
+  /** The class this slot belongs to (wire: `SlotResponse.classId`, always
+   *  present on the by-member response). Optional here because the mock/legacy
+   *  class-scoped path carries no per-slot id. US-E24.8 uses it to deep-link a
+   *  teacher's schedule cell into the class hub; an absent id renders a plain,
+   *  unlinked cell rather than a dead link. */
+  classId?: string;
 }
 
 /**

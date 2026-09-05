@@ -144,17 +144,14 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
                   {t(`schedule.${item.sessionKey}`)}
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13.5px] font-bold text-foreground">
-                  {item.subject}
-                </div>
-                <div className="truncate text-[12px] text-edu-text-secondary">
-                  {t("schedule.classRoom", {
-                    className: item.className,
-                    room: item.room,
-                  })}
-                </div>
-              </div>
+              <ScheduleRowBody
+                subject={item.subject}
+                meta={t("schedule.classRoom", {
+                  className: item.className,
+                  room: item.room,
+                })}
+                classHref={item.classHref}
+              />
               <StatusBadge tone={SCHEDULE_TONE[item.status]}>
                 {t(`scheduleStatus.${item.status}`)}
               </StatusBadge>
@@ -163,6 +160,41 @@ function ScheduleCard({ vm }: { vm: TeacherDashboardVM }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Schedule-row main block. When the period carries a class id (US-E24.8) it
+ * becomes a deep link into that class's timetable tab; otherwise it stays plain
+ * text — an unlinked row beats a dead link.
+ */
+function ScheduleRowBody({
+  subject,
+  meta,
+  classHref,
+}: {
+  subject: string;
+  meta: string;
+  classHref?: string;
+}) {
+  const content = (
+    <>
+      <div className="truncate text-[13.5px] font-bold text-foreground">
+        {subject}
+      </div>
+      <div className="truncate text-[12px] text-edu-text-secondary">{meta}</div>
+    </>
+  );
+
+  if (!classHref) return <div className="min-w-0 flex-1">{content}</div>;
+
+  return (
+    <Link
+      href={classHref}
+      className="-mx-2 flex min-h-[44px] min-w-0 flex-1 flex-col justify-center rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {content}
+    </Link>
   );
 }
 
@@ -195,17 +227,14 @@ function PendingGradesCard({ vm }: { vm: TeacherDashboardVM }) {
               >
                 {item.initials}
               </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[12.5px] font-bold text-foreground">
-                  {item.studentName}
-                </div>
-                <div className="truncate text-[11px] text-edu-text-secondary">
-                  {t("pendingGrades.assessmentType", {
-                    type: item.assessmentType,
-                    className: item.className,
-                  })}
-                </div>
-              </div>
+              <PendingGradeRowBody
+                studentName={item.studentName}
+                meta={t("pendingGrades.assessmentType", {
+                  type: item.assessmentType,
+                  className: item.className,
+                })}
+                classHref={item.classHref}
+              />
               <Link
                 href={vm.gradesPath}
                 aria-label={`${t("pendingGrades.enterGrades")} - ${item.studentName}`}
@@ -218,6 +247,38 @@ function PendingGradesCard({ vm }: { vm: TeacherDashboardVM }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/** Pending-grade row main block — deep-links into the class roster tab when the
+ *  task carries a class id (US-E24.8). */
+function PendingGradeRowBody({
+  studentName,
+  meta,
+  classHref,
+}: {
+  studentName: string;
+  meta: string;
+  classHref?: string;
+}) {
+  const content = (
+    <>
+      <div className="truncate text-[12.5px] font-bold text-foreground">
+        {studentName}
+      </div>
+      <div className="truncate text-[11px] text-edu-text-secondary">{meta}</div>
+    </>
+  );
+
+  if (!classHref) return <div className="min-w-0 flex-1">{content}</div>;
+
+  return (
+    <Link
+      href={classHref}
+      className="-mx-2 flex min-h-[44px] min-w-0 flex-1 flex-col justify-center rounded-[var(--edu-radius-btn)] px-2 py-1 outline-none motion-safe:transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {content}
+    </Link>
   );
 }
 

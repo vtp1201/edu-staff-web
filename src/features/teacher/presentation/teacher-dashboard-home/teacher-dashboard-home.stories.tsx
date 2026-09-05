@@ -273,3 +273,70 @@ export const NotificationsDetail: Story = {
     await expect(canvas.getByText("1 giờ trước")).toBeInTheDocument();
   },
 };
+
+/* ── US-E24.8: rows deep-link into the class hub ─────────────────────────── */
+
+const HUB = "/vi/t/t1/teacher/classes";
+
+const deepLinkVm: TeacherDashboardVM = {
+  ...baseVm,
+  scheduleItems: baseVm.scheduleItems.map((item, i) => ({
+    ...item,
+    classHref: `${HUB}/cls-${i + 1}?tab=timetable`,
+  })),
+  pendingGradeItems: baseVm.pendingGradeItems.map((item, i) => ({
+    ...item,
+    classHref: `${HUB}/cls-${i + 1}?tab=students`,
+  })),
+};
+
+/**
+ * A period row opens the class's TIMETABLE tab; a grading task opens its
+ * STUDENTS tab. Rows keep their visible copy — the whole block becomes the
+ * link target (≥44px tall row), so keyboard users reach it with plain Tab.
+ */
+export const ClassHubDeepLinks: Story = {
+  args: { vm: deepLinkVm },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const scheduleSection = canvas
+      .getByText("Lịch dạy hôm nay")
+      .closest("section");
+    if (!scheduleSection) throw new Error("schedule section not found");
+    const scheduleLinks =
+      scheduleSection.querySelectorAll<HTMLAnchorElement>("li a");
+    await expect(scheduleLinks.length).toBe(3);
+    await expect(scheduleLinks[0].getAttribute("href")).toBe(
+      `${HUB}/cls-1?tab=timetable`,
+    );
+    // The row's own copy is the link's accessible name (no icon-only link).
+    await expect(scheduleLinks[0].textContent).toContain("Toán học");
+
+    // "Chờ chấm điểm" is ALSO a stat-card label — scope to the section heading.
+    const gradesSection = canvas
+      .getByRole("heading", { name: "Chờ chấm điểm" })
+      .closest("section");
+    if (!gradesSection) throw new Error("pending-grades section not found");
+    const studentLink = gradesSection.querySelector<HTMLAnchorElement>(
+      "a[href*='tab=students']",
+    );
+    await expect(studentLink).not.toBeNull();
+    await expect(studentLink?.getAttribute("href")).toBe(
+      `${HUB}/cls-1?tab=students`,
+    );
+  },
+};
+
+/** Today's real repository ships no class id → rows stay plain text (no dead
+ *  links). This is the `baseVm` shape, asserted explicitly. */
+export const NoClassIdMeansNoLink: Story = {
+  args: { vm: baseVm },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const scheduleSection = canvas
+      .getByText("Lịch dạy hôm nay")
+      .closest("section");
+    await expect(scheduleSection?.querySelectorAll("li a").length).toBe(0);
+  },
+};

@@ -56,7 +56,7 @@ const homeroomAndSubject: TeacherClassVM = {
       },
     ],
   },
-  studentsHref: "classes/cls-10a1/students",
+  hubHref: "/vi/t/t1/teacher/classes/cls-10a1?tab=students",
 };
 
 /** 11B2 — GVBM only: one badge, the two draft-sourced GVBM tiles. */
@@ -84,7 +84,7 @@ const subjectOnly: TeacherClassVM = {
       },
     ],
   },
-  studentsHref: "classes/cls-11b2/students",
+  hubHref: "/vi/t/t1/teacher/classes/cls-11b2?tab=students",
 };
 
 /** 12C1 — no BE source produced a single KPI number → no tile row at all. */
@@ -94,7 +94,7 @@ const noKpi: TeacherClassVM = {
   studentCount: 30,
   roles: ["subject"],
   subjects: MATH,
-  studentsHref: "classes/cls-12c1/students",
+  hubHref: "/vi/t/t1/teacher/classes/cls-12c1?tab=students",
 };
 
 const meta: Meta<typeof TeacherClassesScreen> = {
@@ -163,7 +163,8 @@ export const HomeroomAndSubject: Story = {
 
     await expect(
       c.getByRole("link", { name: new RegExp(card.cta) }),
-    ).toHaveAttribute("href", "classes/cls-10a1/students");
+      // US-E24.8: the CTA opens the class hub (students tab) directly.
+    ).toHaveAttribute("href", "/vi/t/t1/teacher/classes/cls-10a1?tab=students");
   },
 };
 

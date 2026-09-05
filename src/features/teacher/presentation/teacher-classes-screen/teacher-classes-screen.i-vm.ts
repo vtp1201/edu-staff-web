@@ -29,7 +29,8 @@ export interface TeacherClassSubjectVM {
   name: string;
 }
 
-/** ViewModel for one class card. `studentsHref` is app-relative (rendered as a Link). */
+/** ViewModel for one class card. `hubHref` is the absolute class-hub link
+ *  (`…/teacher/classes/<id>?tab=students`), resolved by the RSC page. */
 export interface TeacherClassVM {
   id: string;
   name: string;
@@ -41,9 +42,9 @@ export interface TeacherClassVM {
   /** ABSENT (not an empty array) when no KPI number is available — the card
    *  then renders no tile container at all, so the grid does not go lopsided. */
   kpi?: { tiles: KpiTileVM[] };
-  /** App-relative route to this class's read-only student roster — still the
-   *  "Mở lớp" target until US-E24.8 ships the `[classId]` shell route. */
-  studentsHref: string;
+  /** App-relative route to this class's hub (US-E24.8) — the "Mở lớp" target,
+   *  landing on the roster tab. */
+  hubHref: string;
 }
 
 export interface TeacherClassesScreenVM {

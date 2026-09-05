@@ -40,3 +40,14 @@ node-env baseline count never changes when you add/edit stories.
 - Don't reuse the Select's own `placeholder` string for a sibling prompt paragraph —
   the placeholder text lives in the trigger too, so `findByText` matches 2 nodes and
   fails. Give the prompt its own i18n key.
+
+**Pre-push storybook stage flakes under load (US-E24.8, 2026-09-03):** the
+`test-storybook` lefthook stage can fail with `Test timed out in 15000ms` on
+stories you never touched (e.g. `sse-disconnect-banner`, `parent-links`,
+`subjects-screen`) — including stories with NO `play` fn. Signal: the stage took
+~600s instead of ~50s (another heavy vitest/next-build was running concurrently).
+Distinguish it from a real break: timeouts scattered across unrelated files +
+zero assertion diffs = flake ⇒ re-run the push when the machine is idle (it
+passed at 256s). An assertion diff (`Expected …/Received …`) is a REAL failure —
+fix it, never retry it away. Also: never run the full storybook suite and
+`bun run build` at the same time.

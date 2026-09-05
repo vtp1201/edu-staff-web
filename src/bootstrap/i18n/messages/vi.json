@@ -4373,6 +4373,26 @@
       "unknown": "Đã có lỗi xảy ra, vui lòng thử lại."
     },
     "homeroomBadge": "GVCN",
+    "hub": {
+      "breadcrumbClasses": "Lớp học",
+      "meta": "{count} học sinh · Năm học {year}",
+      "placeholder": {
+        "body": {
+          "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới.",
+          "homeroom": "Khu vực chủ nhiệm (vi phạm, đơn nghỉ) sẽ có trong bản cập nhật tới.",
+          "timetable": "Thời khoá biểu của lớp và sổ đầu bài sẽ có trong bản cập nhật tới."
+        },
+        "title": "Đang xây dựng"
+      },
+      "tabs": {
+        "course": "Khoá học online",
+        "homeroom": "Chủ nhiệm",
+        "navLabel": "Chuyển mục trong lớp học",
+        "students": "Học sinh",
+        "timetable": "Thời khoá biểu"
+      },
+      "title": "Lớp {className}"
+    },
     "loadingClasses": "Đang tải danh sách lớp học...",
     "pageTitle": "Lớp học của tôi",
     "studentPage": {

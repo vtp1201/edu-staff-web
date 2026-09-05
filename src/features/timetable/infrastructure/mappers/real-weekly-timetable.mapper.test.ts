@@ -114,6 +114,17 @@ describe("mapMemberWeeklyTimetable (US-E18.26 by-member)", () => {
     expect(vm.slots[4]?.[5]?.className).toBeUndefined();
   });
 
+  it("US-E24.8: keeps the per-slot classId even when the className lookup misses — the class-hub deep link must survive an unresolved name", () => {
+    const vm = mapMemberWeeklyTimetable(DTO, classNameOf, {
+      classId: "mem-1",
+      className: "",
+    });
+    expect(vm.slots[0]?.[1]?.classId).toBe("cls-a");
+    // Name unresolved (no "cls-b" in the lookup) but the id is still linkable.
+    expect(vm.slots[4]?.[5]?.className).toBeUndefined();
+    expect(vm.slots[4]?.[5]?.classId).toBe("cls-b");
+  });
+
   it("still falls the teacher display name back to the raw id (ask #6/#7 stands)", () => {
     const vm = mapMemberWeeklyTimetable(DTO, classNameOf, {
       classId: "mem-1",

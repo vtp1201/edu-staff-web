@@ -4373,6 +4373,26 @@
       "unknown": "An error occurred. Please try again."
     },
     "homeroomBadge": "Homeroom",
+    "hub": {
+      "breadcrumbClasses": "Classes",
+      "meta": "{count} students · AY {year}",
+      "placeholder": {
+        "body": {
+          "course": "The class online course is coming in a later update.",
+          "homeroom": "The homeroom area (violations, leave requests) is coming in a later update.",
+          "timetable": "The class timetable and class log are coming in a later update."
+        },
+        "title": "Under construction"
+      },
+      "tabs": {
+        "course": "Online course",
+        "homeroom": "Homeroom",
+        "navLabel": "Class hub sections",
+        "students": "Students",
+        "timetable": "Timetable"
+      },
+      "title": "Class {className}"
+    },
     "loadingClasses": "Loading class list...",
     "pageTitle": "My Classes",
     "studentPage": {

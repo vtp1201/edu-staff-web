@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { TimetableSlot } from "@/features/timetable/domain/entities/timetable-slot.entity";
 import type { WeeklyTimetable } from "@/features/timetable/domain/entities/weekly-timetable.entity";
+import { classHubHref } from "@/shared/class-hub-href";
 import { cn } from "@/shared/utils";
 import { SUBJECT_COLOR_CLASSES } from "./subject-color-tokens";
 import {
@@ -20,6 +22,13 @@ interface TimetableGridProps {
   cellVariant?: CellVariant;
   /** Optional Mon..Sat dates (parent week view) → shows dates + "today" marker. */
   weekDates?: readonly Date[];
+  /**
+   * Absolute class-list route (`/<locale>/t/<tenant>/teacher/classes`) — opt-in.
+   * When present AND `cellVariant === "teacher"`, a slot that carries a
+   * `classId` becomes a deep link into that class's hub (US-E24.8). The
+   * class-scope (student/parent) view never links: the hub is teacher-only.
+   */
+  classHrefBase?: string;
 }
 
 const NUM_DAYS = DAY_KEYS.length;
@@ -40,6 +49,7 @@ export function TimetableGrid({
   timetable,
   cellVariant = "class",
   weekDates,
+  classHrefBase,
 }: TimetableGridProps) {
   const t = useTranslations("timetableView");
 
@@ -116,6 +126,7 @@ export function TimetableGrid({
                 period={period}
                 timetable={timetable}
                 cellVariant={cellVariant}
+                classHrefBase={classHrefBase}
                 recessAfter={period.n === RECESS_AFTER_PERIOD}
                 recessLabel={t("recess")}
               />
@@ -131,12 +142,14 @@ function PeriodRow({
   period,
   timetable,
   cellVariant,
+  classHrefBase,
   recessAfter,
   recessLabel,
 }: {
   period: (typeof PERIODS)[number];
   timetable: WeeklyTimetable;
   cellVariant: CellVariant;
+  classHrefBase?: string;
   recessAfter: boolean;
   recessLabel: string;
 }) {
@@ -160,6 +173,7 @@ function PeriodRow({
             key={dayKey}
             slot={timetable.slots[dayIndex]?.[period.n] ?? null}
             cellVariant={cellVariant}
+            classHrefBase={classHrefBase}
           />
         ))}
       </tr>
@@ -183,9 +197,11 @@ function PeriodRow({
 function Cell({
   slot,
   cellVariant,
+  classHrefBase,
 }: {
   slot: TimetableSlot | null;
   cellVariant: CellVariant;
+  classHrefBase?: string;
 }) {
   const t = useTranslations("timetableView");
   if (!slot) {
@@ -205,30 +221,53 @@ function Cell({
   // cellVariant "class" → teacher line; "teacher" (US-E15.2) → class line.
   const secondary =
     cellVariant === "teacher" ? slot.className : slot.teacherName;
+  // Deep link only where the hub exists (teacher view) and the slot actually
+  // carries a class id — never a link to nowhere (US-E24.8).
+  const href =
+    cellVariant === "teacher" && classHrefBase && slot.classId
+      ? classHubHref(classHrefBase, slot.classId, "timetable")
+      : undefined;
+
+  const body = (
+    <>
+      <div className={cn("font-bold text-xs leading-tight", c.text)}>
+        {slot.subjectName}
+      </div>
+      {secondary && (
+        <div className="mt-0.5 truncate text-[10px] text-edu-text-secondary leading-snug">
+          {secondary}
+        </div>
+      )}
+      {slot.room && (
+        <div className="mt-px text-[10px] text-edu-text-secondary leading-snug tabular-nums">
+          {slot.room}
+        </div>
+      )}
+    </>
+  );
+
+  const cellClass = cn(
+    "block min-h-[76px] rounded-md border border-l-[3px] px-2.5 py-2 text-left",
+    c.bg,
+    c.border,
+    c.accent,
+  );
+
   return (
     <td className="min-w-[120px] p-0 align-top">
-      <div
-        className={cn(
-          "min-h-[76px] rounded-md border border-l-[3px] px-2.5 py-2 text-left",
-          c.bg,
-          c.border,
-          c.accent,
-        )}
-      >
-        <div className={cn("font-bold text-xs leading-tight", c.text)}>
-          {slot.subjectName}
-        </div>
-        {secondary && (
-          <div className="mt-0.5 truncate text-[10px] text-edu-text-secondary leading-snug">
-            {secondary}
-          </div>
-        )}
-        {slot.room && (
-          <div className="mt-px text-[10px] text-edu-text-secondary leading-snug tabular-nums">
-            {slot.room}
-          </div>
-        )}
-      </div>
+      {href ? (
+        <Link
+          href={href}
+          className={cn(
+            cellClass,
+            "outline-none motion-safe:transition-shadow hover:shadow-card-hover hover:ring-1 hover:ring-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+          )}
+        >
+          {body}
+        </Link>
+      ) : (
+        <div className={cellClass}>{body}</div>
+      )}
     </td>
   );
 }

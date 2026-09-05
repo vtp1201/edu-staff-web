@@ -1,4 +1,5 @@
 import { makeGetTeacherDashboardUseCase } from "@/bootstrap/di/teacher-dashboard.di";
+import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 import { TeacherDashboardHomeClient } from "./teacher-dashboard-home/teacher-dashboard-home";
 import type { TeacherDashboardVM } from "./teacher-dashboard-home/teacher-dashboard-home.i-vm";
 
@@ -31,8 +32,19 @@ function initialsOf(name: string): string {
  * RSC wrapper — resolves the use-case server-side, maps the domain result to a
  * ViewModel, and renders the client dashboard. Failure → null stats + empty
  * lists so the client renders its loading/empty states (no throw).
+ *
+ * `locale`/`tenant` come from the route params: the class-hub deep links
+ * (US-E24.8) are absolute, so they cannot be resolved inside the client
+ * component (which knows neither).
  */
-export async function TeacherDashboard() {
+export async function TeacherDashboard({
+  locale,
+  tenant,
+}: {
+  locale: string;
+  tenant: string;
+}) {
+  const base = classHubBase(locale, tenant);
   const useCase = await makeGetTeacherDashboardUseCase();
   const result = await useCase.execute();
 
@@ -51,12 +63,19 @@ export async function TeacherDashboard() {
           className: s.className,
           room: s.room,
           status: s.status,
+          // No classId (today's real repo) ⇒ no href ⇒ the row stays plain text.
+          ...(s.classId
+            ? { classHref: classHubHref(base, s.classId, "timetable") }
+            : {}),
         })),
         pendingGradeItems: result.data.pendingGradeItems.map((g) => ({
           studentName: g.studentName,
           initials: initialsOf(g.studentName),
           assessmentType: g.assessmentType,
           className: g.className,
+          ...(g.classId
+            ? { classHref: classHubHref(base, g.classId, "students") }
+            : {}),
         })),
         notifications: result.data.notifications.map((n) => ({
           icon: n.icon,

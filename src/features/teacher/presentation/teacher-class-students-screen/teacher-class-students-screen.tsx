@@ -15,9 +15,21 @@ interface Props {
   vm: TeacherClassStudentsScreenVM;
   /** Storybook-only: render the loading skeleton. */
   loading?: boolean;
+  /** True when embedded in the class-hub shell (US-E24.8), whose own header
+   *  already renders the breadcrumb + the class name as the page `<h1>`. Embedded
+   *  therefore drops this screen's breadcrumb AND demotes its class-name heading
+   *  to `<h2>` (one `<h1>` per page — WCAG 1.3.1). Default false keeps every
+   *  existing standalone consumer/story unchanged. */
+  embedded?: boolean;
 }
 
-export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
+export function TeacherClassStudentsScreen({
+  vm,
+  loading = false,
+  embedded = false,
+}: Props) {
+  // Same visual treatment either way — only the semantic level changes.
+  const ClassNameHeading = embedded ? "h2" : "h1";
   const t = useTranslations("teacherClasses.studentPage");
   const tRoot = useTranslations("teacherClasses");
   const [query, setQuery] = useState("");
@@ -47,13 +59,15 @@ export function TeacherClassStudentsScreen({ vm, loading = false }: Props) {
 
   return (
     <div className="space-y-4">
-      <Breadcrumb classesHref={vm.classesHref} className={vm.className} />
+      {!embedded && (
+        <Breadcrumb classesHref={vm.classesHref} className={vm.className} />
+      )}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-edu-text-primary">
+          <ClassNameHeading className="text-2xl font-extrabold text-edu-text-primary">
             {vm.className}
-          </h1>
+          </ClassNameHeading>
           <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-edu-text-secondary">
             <Users className="size-3.5" aria-hidden="true" />
             {t("resultCount", { count: vm.students.length })}

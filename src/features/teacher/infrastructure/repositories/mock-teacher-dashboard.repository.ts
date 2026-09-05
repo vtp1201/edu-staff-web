@@ -26,6 +26,7 @@ const SCHEDULE: ScheduleItem[] = [
     period: 1,
     subject: "Toán học",
     className: "10A1",
+    classId: "cls-10a1",
     room: "P.201",
     status: "done",
   },
@@ -33,6 +34,7 @@ const SCHEDULE: ScheduleItem[] = [
     period: 3,
     subject: "Toán học",
     className: "11B2",
+    classId: "cls-11b2",
     room: "P.203",
     status: "live",
   },
@@ -40,6 +42,7 @@ const SCHEDULE: ScheduleItem[] = [
     period: 7,
     subject: "Toán học",
     className: "12C1",
+    classId: "cls-12c1",
     room: "P.205",
     status: "upcoming",
   },
@@ -50,16 +53,19 @@ const PENDING_GRADES: PendingGradeItem[] = [
     studentName: "Nguyễn Văn An",
     assessmentType: "KT 15 phút",
     className: "10A1",
+    classId: "cls-10a1",
   },
   {
     studentName: "Trần Thị Bình",
     assessmentType: "Bài tập về nhà",
     className: "11B2",
+    classId: "cls-11b2",
   },
   {
     studentName: "Lê Hoàng Cường",
     assessmentType: "KT miệng",
     className: "12C1",
+    classId: "cls-12c1",
   },
 ];
 

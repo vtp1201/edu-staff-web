@@ -56,7 +56,7 @@ export function ClassCard({ vm }: { vm: TeacherClassVM }) {
 
         <div className="mt-auto flex justify-end pt-1">
           <Link
-            href={vm.studentsHref}
+            href={vm.hubHref}
             className={cn(
               "inline-flex min-h-[44px] items-center gap-1 rounded-[var(--edu-radius-btn)] px-2 font-bold text-xs",
               isHomeroom

@@ -1,46 +1,18 @@
-import {
-  makeGetTeacherClassStudentsUseCase,
-  makeListMyTeacherClassesUseCase,
-} from "@/bootstrap/di/teacher-class.di";
-import { TeacherClassStudentsScreen } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen";
-import type { TeacherClassStudentsScreenVM } from "@/features/teacher/presentation/teacher-class-students-screen/teacher-class-students-screen.i-vm";
+import { permanentRedirect } from "next/navigation";
+import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 
+/**
+ * Legacy roster route (US-E13.1) — the roster is now the class hub's students
+ * tab (US-E24.8). `permanentRedirect` (308, not 307) because the move is
+ * permanent: existing bookmarks and links should be rewritten.
+ */
 export default async function TeacherClassStudentsPage({
   params,
 }: {
-  params: Promise<{ classId: string }>;
+  params: Promise<{ locale: string; tenant: string; classId: string }>;
 }) {
-  const { classId } = await params;
-
-  // Resolve students + the class name (for the breadcrumb/title) in parallel.
-  const [studentsResult, classesResult] = await Promise.all([
-    (await makeGetTeacherClassStudentsUseCase()).execute(classId),
-    (await makeListMyTeacherClassesUseCase()).execute(),
-  ]);
-
-  const className = classesResult.ok
-    ? (classesResult.data.find((c) => c.id === classId)?.name ?? classId)
-    : classId;
-
-  const vm: TeacherClassStudentsScreenVM = studentsResult.ok
-    ? {
-        status: "ready",
-        className,
-        classesHref: "../..",
-        students: studentsResult.data.map((s) => ({
-          enrollmentId: s.enrollmentId,
-          displayName: s.displayName,
-          studentCode: s.studentMemberId,
-          status: s.status,
-        })),
-      }
-    : {
-        status: "error",
-        errorKey: studentsResult.error.type,
-        className,
-        classesHref: "../..",
-        students: [],
-      };
-
-  return <TeacherClassStudentsScreen vm={vm} />;
+  const { locale, tenant, classId } = await params;
+  permanentRedirect(
+    classHubHref(classHubBase(locale, tenant), classId, "students"),
+  );
 }
