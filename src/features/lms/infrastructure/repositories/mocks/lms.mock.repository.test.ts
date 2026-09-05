@@ -8,6 +8,7 @@ import {
   MOCK_ASSIGNMENTS,
   MOCK_CLASS_ID,
   MOCK_COURSE_ITEMS,
+  MOCK_DRAFT_COURSE_ID,
 } from "./lms.fixtures";
 import { MockLmsRepository } from "./lms.mock.repository";
 
@@ -154,5 +155,45 @@ describe("teacher commands mirror the real conflict codes", () => {
     expect(after.map((i) => i.position)).toEqual(
       reversed.map((_, index) => index),
     );
+  });
+});
+
+describe("publishCourse / deleteItem (US-E24.10)", () => {
+  it("publishes a DRAFT course once and refuses the second call", async () => {
+    const published = await repo.publishCourse(MOCK_DRAFT_COURSE_ID);
+    expect(published.status).toBe("PUBLISHED");
+    expect(published.publishedAt).not.toBeNull();
+
+    await expect(repo.publishCourse(MOCK_DRAFT_COURSE_ID)).rejects.toEqual({
+      type: "already-published",
+    });
+  });
+
+  it("refuses to publish a course that does not exist", async () => {
+    await expect(repo.publishCourse("co-nope")).rejects.toEqual({
+      type: "not-found",
+    });
+  });
+
+  it("deletes a DOCUMENT item and refuses the repeat delete", async () => {
+    const doc = (await repo.listItems("co-toan-10")).find(
+      (i) => i.itemType === "DOCUMENT",
+    );
+    expect(doc).toBeDefined();
+    const id = doc?.id ?? "";
+
+    await repo.deleteItem("co-toan-10", id);
+    expect((await repo.listItems("co-toan-10")).some((i) => i.id === id)).toBe(
+      false,
+    );
+    await expect(repo.deleteItem("co-toan-10", id)).rejects.toEqual({
+      type: "not-found",
+    });
+  });
+
+  it("refuses to delete a LESSON tile", async () => {
+    await expect(repo.deleteItem("co-toan-10", "le-toan-1")).rejects.toEqual({
+      type: "not-document",
+    });
   });
 });

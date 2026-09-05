@@ -98,4 +98,10 @@ export interface ILmsRepository {
   ): Promise<CourseItem>;
   /** `itemIds` is the COMPLETE new ordering — a partial list is `not-found`. */
   reorderItems(courseId: string, itemIds: string[]): Promise<CourseItem[]>;
+  /** `POST .../publish` — DRAFT → PUBLISHED, TERMINAL (there is no unpublish).
+   *  A second call is `already-published` (409), never a silent success. */
+  publishCourse(courseId: string): Promise<Course>;
+  /** `DELETE .../items/{itemId}` — DOCUMENT items ONLY. A LESSON/ASSIGNMENT
+   *  tile is `not-document` (409); a repeat delete is `not-found` (404). */
+  deleteItem(courseId: string, itemId: string): Promise<void>;
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -100,4 +100,89 @@ None.
 
 ## Evidence
 
-(điền sau)
+Commits: 4e66d3c0 (plan/architecture/state) + d9c364bd (domain+infra mutations)
++ b1f86021 (server actions, subject-gated) + b8e7afd1 (teacher/readonly
+course-timeline + class-hub wiring — last TabPlaceholder removed, all 4
+class-hub tabs now real) + ee99675c (storybook) + b741f27e (fix: review+a11y)
++ ec1ad1d7 (memory).
+
+Tech-lead review: **APPROVED** (fe-tech-lead-reviewer, high-risk lane). Regression
+on shared `course-timeline` verified clean — student mode path provably
+untouched (early `mode === "student"` return, every new prop optional with a
+today-preserving default, only assertion removed was the now-obsolete
+"throws for unimplemented teacher/readonly mode" case). Security: `assertOwnCourseSubject`
+runs first in all 7 mutations, scope source (`TeacherClass.subjects` from
+token-scoped `teachingSubjectIds`) verified genuinely trustworthy, not
+cosmetic; forge-role test drives all 7 actions with 2 forge scenarios + a
+forged cross-class courseId, asserting zero use-case calls. BE contract
+ground-truthed against edu-api lms openapi.yaml + ERROR_CODES.md — reorder
+body is complete ordering, patch window three-state, 2 new failure codes
+(`LMS_COURSE_INVALID_STATUS_TRANSITION`→already-published,
+`LMS_ASSIGNMENT_COURSE_NOT_PUBLISHED`→course-not-published) both real. State:
+exactly 1 optimistic mutation (reorder, onMutate/onError rollback), 6 others
+onSuccess-only; keyboard "Lên/Xuống" reuses the identical mutation as
+drag-drop. 1 SHOULD FIX (ARCHIVED class-subjects not filtered from GVCN
+picker) + 1 CONSIDER (dead eslint-disable comment, Biome-only repo) — both
+closed in b741f27e.
+
+A11y audit: 1 Major (WCAG 2.4.3/4.1.3 — native `disabled` on keyboard reorder
+buttons dropped focus to `<body>` when a row hit the list boundary, no live-
+region confirmation) + 2 Minor (empty-state body copy shared across 3 distinct
+reasons; advisory-only `--edu-info` dot below 3:1, pill text already carries
+the info so 1.4.1 is satisfied) — 0 Blocking/Critical. Screen praised as one
+of the most pre-emptively-hardened in the repo (AA-safe token maps, 44px
+touch targets via Button primitive baseline, real Radix DropdownMenu for
+add-item, labeled datetime-local fields, DestructiveConfirmDialog reused not
+forked). A11Y-001 closed: `aria-disabled` + no-op-guard replaces native
+`disabled` (button stays focusable, never drops out of tab order) + new
+sr-only `role="status"` live region announces new position + Storybook test
+asserts `document.activeElement` is not `document.body` after hitting a list
+boundary. A11Y-002 closed: 3 distinct empty-state body i18n keys replace the
+shared `readonlyPill` text. A11Y-003 deferred (design-system token gap, not
+this story's scope).
+
+Design review: pass
+- design-system: conform — tokens-only throughout (verified via raw-color
+  grep on all changed .tsx, zero hits outside an explanatory code comment);
+  StatusBadge/TONE_TEXT_ACCESSIBLE reuse for all state pills; matches
+  design-spec.jsonc teacher-class-hub course tab + student-course-timeline
+  shared contract (mode prop, not a fork).
+- a11y: WCAG AA OK post-fix — keyboard reorder retains focus at list
+  boundaries with sr-only position announcement, add-item menu is real
+  Radix role="menu"/menuitem, datetime-local fields properly labeled with
+  aria-invalid/aria-describedby, EXAM lock is visible text (not title
+  tooltip), 44px touch targets via Button primitive baseline even on
+  visually-compact icon buttons, single h1 (CourseHeader) → h2 (WeekSection)
+  hierarchy preserved.
+- impeccable audit: code-level pass — no anti-pattern tells; 2-column-free
+  timeline layout and inline edit-window disclosure are design-spec-prescribed,
+  not ad-hoc.
+- states: teacher-3-weeks/readonly/draft-course/exam-row-locked/add-menu/
+  error-reorder + keyboard-reorder-boundary all covered in Storybook
+  (23/23 interaction tests on the 2 changed story files, full suite
+  166 files/1342+ tests); mobile 375 does not overflow (flex-wrap control
+  cluster verified).
+
+Test proof: unit (mode resolver role×subject, reorder array builder edge
+cases, window validation three-state) + integration (7 mutation actions ×
+forge-role sweep + BE error-code mapping ground-truthed, class-subjects
+cursor-pagination + ARCHIVED filter) + Storybook interaction (teacher/readonly/
+draft/exam-locked/add-menu/error-reorder/keyboard-boundary-focus-retention) —
+575 files/4798 tests + 166 files/1342+ storybook tests, all green.
+`bunx tsc --noEmit`, `bun lint` (2 pre-existing unrelated warnings in
+messaging, confirmed via `git diff main` = empty on that file), `bun run build`
+all green. Pre-push gate green on all pushed commits.
+
+Descoped/deferred:
+- A11Y-003 (`--edu-info` dot contrast) — design-system token gap, not
+  actionable by a single story; pill text already satisfies 1.4.1.
+- Subject-ownership gate is defense-in-depth, not BE parity — `lms` enforces
+  course-level teaching assignment but has no GVCN-vs-GVBM distinction yet
+  (epic ask #7 still open). Documented plainly so a future reader doesn't
+  mistake it for BE parity.
+- `GET /classes/{id}/subjects` now has a 3rd FE consumer (after E24.7's
+  subject catalogue read and one other) — a 4th consumer should extract a
+  shared read instead of a 4th copy.
+- No new design token, no ADR required — `LmsFailure`'s 2 new members
+  (`already-published`, `course-not-published`) are a type addition, not an
+  architecture change.

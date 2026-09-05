@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { CourseTimeline } from "./course-timeline";
 import type {
@@ -380,5 +380,218 @@ export const LockedRowRejectsActivation: Story = {
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard(" ");
     expect(canvas.queryByRole("link", { name: /Kiểm tra 1 tiết/ })).toBeNull();
+  },
+};
+
+/* ── US-E24.10: the two STAFF modes of the same component ────────────────── */
+
+const TEACHER_VM: CourseTimelineVm = {
+  ...BASE_VM,
+  mode: "teacher",
+  teacher: {
+    orderedItemIds: WEEKS.flatMap((w) => w.items.map((i) => i.id)),
+    deletableItemIds: WEEKS.flatMap((w) =>
+      w.items.filter((i) => i.itemType === "DOCUMENT").map((i) => i.id),
+    ),
+    examBankHref: "/vi/t/demo/teacher/exam-bank",
+  },
+};
+
+/** AC: kéo-thả + Sửa ngày + Thêm mục, on the same three weeks the student sees. */
+export const TeacherThreeWeeks: Story = {
+  args: {
+    vm: TEACHER_VM,
+    actions: {
+      retryListItems,
+      reorderItems: async () => ({ ok: true }),
+      patchItemWindow: async () => ({ ok: true }),
+      requestDeleteItem: () => {},
+      requestAddItem: () => {},
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.courses.teacher.modeBanner),
+    ).toBeVisible();
+    // Same grouping as the student view — only the affordances differ.
+    const headings = canvas.getAllByRole("heading", { level: 2 });
+    await expect(headings[0]?.textContent).toBe("Luôn mở");
+    // A teacher row is not a link: there is no teacher-side player route.
+    await expect(canvas.queryAllByRole("link")).toHaveLength(0);
+    await expect(
+      canvas.getAllByRole("button", { name: /^Chuyển lên:/ }),
+    ).toHaveLength(4);
+    // One "+ Thêm mục" pill per week group.
+    await expect(
+      canvas.getAllByRole("button", { name: "Thêm mục" }),
+    ).toHaveLength(3);
+  },
+};
+
+/** AC: GVCN on someone else's subject — no grip, no chevron, no Sửa ngày/Thêm mục. */
+export const ReadonlyForOtherSubject: Story = {
+  args: {
+    vm: { ...TEACHER_VM, mode: "readonly" },
+    actions: { retryListItems },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(messages.courses.teacher.readonlyPill),
+    ).toBeVisible();
+    await expect(canvas.queryAllByRole("link")).toHaveLength(0);
+    await expect(canvas.queryByRole("button", { name: "Sửa ngày" })).toBeNull();
+    await expect(canvas.queryByRole("button", { name: "Thêm mục" })).toBeNull();
+    await expect(
+      canvas.queryByRole("button", { name: /^Chuyển lên:/ }),
+    ).toBeNull();
+  },
+};
+
+/**
+ * AC: an EXAM's window belongs to core's exam schedule. The refusal is VISIBLE
+ * text, not a hover tooltip, and the control is disabled rather than failing on
+ * submit.
+ */
+export const TeacherExamRowLocked: Story = {
+  args: {
+    vm: {
+      ...TEACHER_VM,
+      weeks: [
+        {
+          key: "2026-W19",
+          weekStart: "2026-05-04",
+          weekEnd: "2026-05-10",
+          items: [EXAM_UPCOMING],
+        },
+      ],
+      teacher: {
+        orderedItemIds: [EXAM_UPCOMING.id],
+        deletableItemIds: [],
+        examBankHref: "/vi/t/demo/teacher/exam-bank",
+      },
+    },
+    actions: {
+      retryListItems,
+      reorderItems: async () => ({ ok: true }),
+      patchItemWindow: async () => ({ ok: true }),
+      requestAddItem: () => {},
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const editButton = canvas.getByRole("button", { name: "Sửa ngày" });
+    await expect(editButton).toBeDisabled();
+    await expect(
+      canvas.getByText(messages.courses.errors["exam-window-not-editable"]),
+    ).toBeVisible();
+    // An EXAM tile has no delete affordance either (BE 409).
+    await expect(
+      canvas.queryByRole("button", { name: /^Xoá tài liệu:/ }),
+    ).toBeNull();
+  },
+};
+
+/** AC: the add menu is a real `menu`/`menuitem`, and "Kiểm tra" navigates. */
+export const TeacherAddMenu: Story = {
+  args: {
+    vm: TEACHER_VM,
+    actions: {
+      retryListItems,
+      reorderItems: async () => ({ ok: true }),
+      patchItemWindow: async () => ({ ok: true }),
+      requestAddItem: () => {},
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const pill = canvas.getAllByRole("button", { name: "Thêm mục" })[0];
+    if (!pill) throw new Error("no add-item pill rendered");
+    await userEvent.click(pill);
+
+    // Radix portals the content, so it is queried from the document body.
+    const menu = await within(document.body).findByRole("menu");
+    const items = within(menu).getAllByRole("menuitem");
+    await expect(items).toHaveLength(4);
+    await expect(items[0]).toHaveTextContent("Bài giảng");
+    // "Kiểm tra" NAVIGATES to the exam bank instead of creating anything
+    // (ask #6). `asChild` merges the anchor INTO the menuitem, so the href sits
+    // on the menuitem itself — which is what keeps it in the roving focus set
+    // rather than being a bare anchor nested inside a menu.
+    const exam = items[3];
+    if (!exam) throw new Error("no exam entry");
+    await expect(exam).toHaveAttribute("href", "/vi/t/demo/teacher/exam-bank");
+    await expect(exam).toHaveTextContent(
+      messages.courses.teacher.addMenu.examNote,
+    );
+  },
+};
+
+/** AC: keyboard reorder sends the COMPLETE new ordering, same as a drop. */
+export const TeacherKeyboardReorder: Story = {
+  args: {
+    vm: TEACHER_VM,
+    actions: {
+      retryListItems,
+      reorderItems: fn(async () => ({ ok: true as const })),
+      patchItemWindow: async () => ({ ok: true }),
+      requestAddItem: () => {},
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const spy = args.actions.reorderItems;
+    const ids = TEACHER_VM.teacher?.orderedItemIds ?? [];
+    const down = canvas.getAllByRole("button", { name: /^Chuyển xuống:/ })[0];
+    if (!down) throw new Error("no reorder control rendered");
+
+    await userEvent.click(down);
+
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    // The COMPLETE ordering, never a delta — a partial list is a BE 404 that
+    // writes nothing. The first two rows are swapped, the rest untouched.
+    await expect(spy).toHaveBeenCalledWith([ids[1], ids[0], ...ids.slice(2)]);
+  },
+};
+
+/**
+ * AC: the first row cannot move up and the last cannot move down — expressed
+ * with `aria-disabled`, NOT the native attribute, so an edge row's button stays
+ * in the tab order instead of dumping focus on `<body>` (WCAG 2.4.3). Clicking
+ * it is a no-op.
+ */
+export const TeacherReorderEdges: Story = {
+  args: {
+    vm: TEACHER_VM,
+    actions: {
+      retryListItems,
+      reorderItems: fn(async () => ({ ok: true as const })),
+      patchItemWindow: async () => ({ ok: true }),
+      requestAddItem: () => {},
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const ups = canvas.getAllByRole("button", { name: /^Chuyển lên:/ });
+    const downs = canvas.getAllByRole("button", { name: /^Chuyển xuống:/ });
+    const firstUp = ups[0];
+    if (!firstUp) throw new Error("no reorder control rendered");
+
+    await expect(firstUp).toHaveAttribute("aria-disabled", "true");
+    await expect(downs[downs.length - 1]).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await expect(ups[1]).toHaveAttribute("aria-disabled", "false");
+    // Still reachable and still focusable — the whole point of aria-disabled.
+    await expect(firstUp).not.toBeDisabled();
+    firstUp.focus();
+    await expect(document.activeElement).toBe(firstUp);
+
+    // …and inert: the guard swallows the click, so no reorder is attempted.
+    await userEvent.click(firstUp);
+    await expect(args.actions.reorderItems).not.toHaveBeenCalled();
+    await expect(document.activeElement).not.toBe(document.body);
   },
 };

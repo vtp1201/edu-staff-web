@@ -138,3 +138,5 @@
 - [Seeded client body + create-only resource](pattern-seeded-client-body-and-create-only-resource.md) — E24.9 review: key={urlParam} on a useState-seeded body; no UPDATE verb ⇒ "Sửa" is a 409 dead end
 
 - [Required authCtx + detached-invoker focus](pattern-required-authctx-and-detached-focus.md) — E24.11 review: optional authCtx + early-return guard = fail-open (delete the context-free factory); dialog that removes its own row needs a returnFocusRef fallback
+
+- [aria-disabled edge control](gotcha-aria-disabled-edge-control.md) — E24.10 review: a control that disables itself while focused must be aria-disabled + no-op guard (native disabled dumps focus to body); test idioms

@@ -53,6 +53,9 @@ function reject(type: LmsFailure["type"]): never {
  */
 const submissions: Submission[] = MOCK_SUBMISSIONS.map((s) => ({ ...s }));
 const items: CourseItem[] = MOCK_COURSE_ITEMS.map((i) => ({ ...i }));
+/** Mutable copy: `publishCourse` flips a status, and the next request must see
+ *  the new one (same reason `items`/`submissions` are copies). */
+const courses: Course[] = MOCK_COURSES.map((c) => ({ ...c }));
 
 export class MockLmsRepository implements ILmsRepository {
   async listCourses(
@@ -64,19 +67,26 @@ export class MockLmsRepository implements ILmsRepository {
     if (classId !== MOCK_CLASS_ID) reject("forbidden");
     return MOCK_COURSE_SUMMARIES.filter(
       (c) => subjectId === undefined || c.subjectId === subjectId,
-    ).map((c) => ({ ...c }));
+    ).map((row) => ({
+      ...row,
+      // Read the LIVE status: a publish made this session must be visible to
+      // the class-scoped list too, not just the single-course read.
+      status: courses.find((c) => c.id === row.id)?.status ?? row.status,
+      publishedAt:
+        courses.find((c) => c.id === row.id)?.publishedAt ?? row.publishedAt,
+    }));
   }
 
   async getCourse(courseId: string): Promise<Course> {
     await mockDelay();
-    const course = MOCK_COURSES.find((c) => c.id === courseId);
+    const course = courses.find((c) => c.id === courseId);
     if (!course) reject("not-found");
     return { ...course };
   }
 
   async listLessons(courseId: string): Promise<LessonSummary[]> {
     await mockDelay();
-    if (!MOCK_COURSES.some((c) => c.id === courseId)) reject("not-found");
+    if (!courses.some((c) => c.id === courseId)) reject("not-found");
     return MOCK_LESSONS.filter((l) => l.courseId === courseId).map((l) => ({
       id: l.id,
       courseId: l.courseId,
@@ -98,7 +108,7 @@ export class MockLmsRepository implements ILmsRepository {
 
   async listItems(courseId: string): Promise<CourseItem[]> {
     await mockDelay();
-    if (!MOCK_COURSES.some((c) => c.id === courseId)) reject("not-found");
+    if (!courses.some((c) => c.id === courseId)) reject("not-found");
     return items
       .filter((i) => i.courseId === courseId)
       .map((i) => ({ ...i, exam: i.exam ? { ...i.exam } : null }));
@@ -175,7 +185,7 @@ export class MockLmsRepository implements ILmsRepository {
     input: CreateLessonInput,
   ): Promise<Lesson> {
     await mockDelay();
-    if (!MOCK_COURSES.some((c) => c.id === courseId)) reject("not-found");
+    if (!courses.some((c) => c.id === courseId)) reject("not-found");
     const now = new Date().toISOString();
     return {
       id: `le-${Date.now()}`,
@@ -214,7 +224,7 @@ export class MockLmsRepository implements ILmsRepository {
     input: CreateDocumentItemInput,
   ): Promise<CourseItem> {
     await mockDelay();
-    if (!MOCK_COURSES.some((c) => c.id === courseId)) reject("not-found");
+    if (!courses.some((c) => c.id === courseId)) reject("not-found");
     if (!input.url.startsWith("https://")) reject("invalid-url");
     if (
       input.startAt &&
@@ -296,5 +306,29 @@ export class MockLmsRepository implements ILmsRepository {
       .map((id) => byId.get(id))
       .filter((i): i is CourseItem => i !== undefined)
       .map((i) => ({ ...i, exam: i.exam ? { ...i.exam } : null }));
+  }
+
+  async publishCourse(courseId: string): Promise<Course> {
+    await mockDelay();
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) reject("not-found");
+    // Terminal transition — a second call is the documented 409, never a
+    // silent success (BE `LMS_COURSE_INVALID_STATUS_TRANSITION`).
+    if (course.status === "PUBLISHED") reject("already-published");
+    course.status = "PUBLISHED";
+    course.publishedAt = new Date().toISOString();
+    course.updatedAt = course.publishedAt;
+    return { ...course };
+  }
+
+  async deleteItem(courseId: string, itemId: string): Promise<void> {
+    await mockDelay();
+    const index = items.findIndex(
+      (i) => i.id === itemId && i.courseId === courseId,
+    );
+    if (index === -1) reject("not-found");
+    const item = items[index];
+    if (item && item.itemType !== "DOCUMENT") reject("not-document");
+    items.splice(index, 1);
   }
 }

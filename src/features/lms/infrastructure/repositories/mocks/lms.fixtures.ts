@@ -2,6 +2,7 @@ import type {
   Assignment,
   AssignmentSummary,
 } from "../../../domain/entities/assignment.entity";
+import type { ClassSubjectRef } from "../../../domain/entities/class-subject-ref.entity";
 import type {
   Course,
   CourseSummary,
@@ -23,6 +24,11 @@ import type { Submission } from "../../../domain/entities/submission.entity";
 /** The class the mock student is enrolled in — also what `resolveMyClassId()`
  *  returns in mock mode, so the two seeds cannot drift apart. */
 export const MOCK_CLASS_ID = "cl-10a1";
+
+/** The one DRAFT course in the seed — the teacher course tab's publish banner
+ *  (US-E24.10) has no other way to be exercised in mock mode. It carries no
+ *  items on purpose: a draft course is what a teacher sees before authoring. */
+export const MOCK_DRAFT_COURSE_ID = "co-hoa-10";
 export const MOCK_STUDENT_USER_ID = "u-student-1";
 
 const TEACHER_ID = "u-teacher-1";
@@ -81,6 +87,19 @@ export const MOCK_COURSES: Course[] = [
     updatedAt: iso(-9),
     publishedAt: iso(-38),
   },
+  {
+    id: MOCK_DRAFT_COURSE_ID,
+    classId: MOCK_CLASS_ID,
+    subjectId: "sub-hoa",
+    title: "Hoá học 10 — Bảng tuần hoàn",
+    description: "",
+    status: "DRAFT",
+    isDefault: true,
+    createdBy: TEACHER_ID,
+    createdAt: iso(-3),
+    updatedAt: iso(-3),
+    publishedAt: null,
+  },
 ];
 
 /** The by-class list projection — narrower on purpose (no description/createdAt). */
@@ -95,6 +114,24 @@ export const MOCK_COURSE_SUMMARIES: CourseSummary[] = MOCK_COURSES.map((c) => ({
   updatedAt: c.updatedAt,
   publishedAt: c.publishedAt,
 }));
+
+/**
+ * The class's curriculum offerings, keyed by class id — the GVCN subject
+ * picker's options (US-E24.10).
+ *
+ * Deliberately WIDER than `MOCK_COURSES`: a real class offers subjects that
+ * have no course yet, and the picker must be able to land on one so the
+ * "no course for this subject" branch is reachable in mock mode.
+ */
+export const MOCK_CLASS_SUBJECTS: Record<string, ClassSubjectRef[]> = {
+  [MOCK_CLASS_ID]: [
+    { subjectId: "sub-toan", subjectName: "Toán" },
+    { subjectId: "sub-ly", subjectName: "Vật lý" },
+    { subjectId: "sub-van", subjectName: "Ngữ văn" },
+    { subjectId: "sub-hoa", subjectName: "Hoá học" },
+    { subjectId: "sub-sinh", subjectName: "Sinh học" },
+  ],
+};
 
 // ── lessons ────────────────────────────────────────────────────────────────
 

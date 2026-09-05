@@ -43,6 +43,11 @@ const CODE_TO_FAILURE: Record<string, LmsFailure["type"]> = {
   LMS_SUBMISSION_ALREADY_SUBMITTED: "already-submitted",
   LMS_ITEM_CLOSED: "closed",
   LMS_ITEM_NOT_DOCUMENT: "not-document",
+  // Publish is terminal: a second call (or the loser of two concurrent ones)
+  // is a benign race, so it gets its own key rather than a generic conflict.
+  LMS_COURSE_INVALID_STATUS_TRANSITION: "already-published",
+  // `POST /assignments` requires a PUBLISHED course (BE US-229) — actionable.
+  LMS_ASSIGNMENT_COURSE_NOT_PUBLISHED: "course-not-published",
   LMS_EXAM_WINDOW_NOT_EDITABLE: "exam-window-not-editable",
   LMS_COURSE_LIMIT_EXCEEDED: "limit-exceeded",
   LMS_LESSON_LIMIT_EXCEEDED: "limit-exceeded",

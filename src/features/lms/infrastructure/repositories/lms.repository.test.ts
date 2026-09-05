@@ -24,6 +24,7 @@ type HttpStub = AxiosInstance & {
   post: ReturnType<typeof vi.fn>;
   put: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
+  delete: ReturnType<typeof vi.fn>;
 };
 
 function makeHttp(overrides: Partial<Record<string, unknown>> = {}): HttpStub {
@@ -32,6 +33,7 @@ function makeHttp(overrides: Partial<Record<string, unknown>> = {}): HttpStub {
     post: vi.fn(),
     put: vi.fn(),
     patch: vi.fn(),
+    delete: vi.fn(),
     ...overrides,
   } as unknown as HttpStub;
 }
@@ -435,5 +437,110 @@ describe("failure fallback", () => {
     await expect(new LmsRepository(http).getCourse("c1")).rejects.toEqual({
       type: "unknown",
     });
+  });
+});
+
+/**
+ * The two mutations US-E24.10 adds to the port. `publishCourse` and
+ * `deleteItem` are the ONLY teacher commands with no prior call site, so their
+ * path/verb/response handling has never been proven at the wire until now.
+ */
+describe("publishCourse / deleteItem (US-E24.10)", () => {
+  const COURSE_DTO = {
+    id: "c1",
+    classId: "cl1",
+    subjectId: "s1",
+    title: "Toán 10",
+    description: "",
+    status: "PUBLISHED" as const,
+    isDefault: true,
+    createdBy: "t1",
+    createdAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-08-02T00:00:00Z",
+    publishedAt: "2026-08-02T00:00:00Z",
+  };
+
+  it("publishCourse POSTs the publish route and returns the PUBLISHED course", async () => {
+    const http = makeHttp({ post: vi.fn(async () => COURSE_DTO) });
+
+    const course = await new LmsRepository(http).publishCourse("c1");
+
+    expect(http.post).toHaveBeenCalledWith(`${BASE}/courses/c1/publish`);
+    expect(course.status).toBe("PUBLISHED");
+    expect(course.publishedAt).toBe("2026-08-02T00:00:00Z");
+  });
+
+  it("publishCourse maps a second publish (409) to `already-published`", async () => {
+    const http = makeHttp({
+      post: vi.fn(async () =>
+        Promise.reject(apiError("LMS_COURSE_INVALID_STATUS_TRANSITION", 409)),
+      ),
+    });
+
+    await expect(new LmsRepository(http).publishCourse("c1")).rejects.toEqual({
+      type: "already-published",
+    });
+  });
+
+  it("publishCourse maps a missing teaching assignment to `forbidden`", async () => {
+    const http = makeHttp({
+      post: vi.fn(async () =>
+        Promise.reject(apiError("LMS_COURSE_TEACHER_NOT_ASSIGNED", 403)),
+      ),
+    });
+
+    await expect(new LmsRepository(http).publishCourse("c1")).rejects.toEqual({
+      type: "forbidden",
+    });
+  });
+
+  it("deleteItem DELETEs the item route and resolves on a 204 with no body", async () => {
+    const http = makeHttp({ delete: vi.fn(async () => undefined) });
+
+    await expect(
+      new LmsRepository(http).deleteItem("c1", "i1"),
+    ).resolves.toBeUndefined();
+    expect(http.delete).toHaveBeenCalledWith(`${BASE}/courses/c1/items/i1`);
+  });
+
+  it("deleteItem maps a LESSON/ASSIGNMENT tile to `not-document`", async () => {
+    const http = makeHttp({
+      delete: vi.fn(async () =>
+        Promise.reject(apiError("LMS_ITEM_NOT_DOCUMENT", 409)),
+      ),
+    });
+
+    await expect(
+      new LmsRepository(http).deleteItem("c1", "i1"),
+    ).rejects.toEqual({ type: "not-document" });
+  });
+
+  it("deleteItem maps a repeat delete (404) to `not-found`", async () => {
+    const http = makeHttp({
+      delete: vi.fn(async () =>
+        Promise.reject(apiError("LMS_ITEM_NOT_FOUND", 404)),
+      ),
+    });
+
+    await expect(
+      new LmsRepository(http).deleteItem("c1", "i1"),
+    ).rejects.toEqual({ type: "not-found" });
+  });
+
+  it("createAssignment on a DRAFT course maps to `course-not-published`", async () => {
+    const http = makeHttp({
+      post: vi.fn(async () =>
+        Promise.reject(apiError("LMS_ASSIGNMENT_COURSE_NOT_PUBLISHED", 409)),
+      ),
+    });
+
+    await expect(
+      new LmsRepository(http).createAssignment({
+        classId: "cl1",
+        subjectId: "s1",
+        courseId: "c1",
+        title: "x",
+      }),
+    ).rejects.toEqual({ type: "course-not-published" });
   });
 });

@@ -1,8 +1,19 @@
 "use client";
 
 import { useWeekLabel } from "../shared/use-week-label";
-import type { WeekVm } from "./course-timeline.i-vm";
-import { TimelineRow } from "./timeline-row";
+import { AddItemMenu } from "../teacher-course-tab/add-item-menu";
+import type {
+  AddItemKind,
+  TimelineItemVm,
+  WeekVm,
+} from "./course-timeline.i-vm";
+import { TimelineRow, type TimelineRowProps } from "./timeline-row";
+
+/** Everything a teacher row needs that the WEEK cannot know — supplied per
+ *  item by the timeline root, which owns the whole-course ordering. */
+export type TeacherRowPropsFor = (
+  item: TimelineItemVm,
+) => Partial<TimelineRowProps>;
 
 export interface WeekSectionProps {
   week: WeekVm;
@@ -10,6 +21,11 @@ export interface WeekSectionProps {
   itemHrefBase: string;
   /** True for the last section, so its final row drops the rail's tail. */
   isLastWeek: boolean;
+  /** NEW (US-E24.10) — omitted entirely for student/read-only, which is what
+   *  keeps today's markup byte-identical for those two modes. */
+  onSelectAddItemKind?: (kind: AddItemKind, weekStart: string | null) => void;
+  examBankHref?: string;
+  teacherRowProps?: TeacherRowPropsFor;
 }
 
 /**
@@ -18,14 +34,22 @@ export interface WeekSectionProps {
  * The academic week NUMBER the design shows ("Tuần 30 · 20/04 – 26/04") is not
  * on any BE contract yet (epic ask #5), so the date-range fallback ships alone
  * rather than inventing a number.
+ *
+ * In teacher mode a "+ Thêm mục" pill closes each group: an item created from
+ * there is suggested that week's start as its `startAt`, which is why the pill
+ * is per week rather than once at the top.
  */
 export function WeekSection({
   week,
   itemHrefBase,
   isLastWeek,
+  onSelectAddItemKind,
+  examBankHref,
+  teacherRowProps,
 }: WeekSectionProps) {
   // Shared with the player's sidebar, which groups the same weeks (US-E24.5).
   const label = useWeekLabel()(week);
+  const hasAddPill = onSelectAddItemKind !== undefined;
 
   return (
     <section aria-label={label}>
@@ -41,10 +65,22 @@ export function WeekSection({
             key={item.id}
             item={item}
             itemHref={`${itemHrefBase}/${item.id}`}
-            isLast={isLastWeek && index === week.items.length - 1}
+            // The rail's tail also has to survive the add pill: with a pill
+            // below, the last row is no longer the visual end of the group.
+            isLast={
+              isLastWeek && index === week.items.length - 1 && !hasAddPill
+            }
+            {...teacherRowProps?.(item)}
           />
         ))}
       </ul>
+      {onSelectAddItemKind && examBankHref !== undefined && (
+        <AddItemMenu
+          weekStart={week.weekStart}
+          onSelectKind={onSelectAddItemKind}
+          examBankHref={examBankHref}
+        />
+      )}
     </section>
   );
 }
