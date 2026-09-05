@@ -22,3 +22,6 @@
 - [Reviewing a denorm/collaborator-removal story](review-checks-denorm-removal.md) — prove the negative at runtime, grep `main` for old consumers, check TEST_MATRIX for stale proof
 - [lms live contract (ADR 0075)](be-lms-live-contract.md) — the DOUBLE `/lms/api/v1/lms/` segment, what the wire does NOT carry, and the core-enrollment classId dependency
 - [design_src bundle sync review](design-src-sync-review.md) — EduPortal.html is gitignored (not a miss); proving comment-only tokens.js diffs; JSONC parsing
+- [Embed allowlist review bar](embed-allowlist-review.md) — the 4 gates of `embed-source.ts`, 48 verified bypass shapes, and what React 19 does/doesn't block in `href`
+- [Flaky RSC guard tests](flaky-rsc-guard-tests.md) — repo-wide vitest timeouts; reproduce at merge-base before blaming a branch
+- [RSC page.tsx imports DI](rsc-page-imports-di.md) — CLAUDE.md forbids it, 70/90 pages do it; ADR topic, never a per-story finding

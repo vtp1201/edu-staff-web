@@ -578,3 +578,14 @@ Confirmed facts (verify before citing if stale):
   - The real repo class is kept DORMANT (never deleted) by ADR precedent — but check whether it is
     actually unit-tested before letting an ADR claim it is; `lms.repository.ts` has NO test file, so
     the un-pin day has zero safety net.
+- **URL-as-state tab shell review (US-E24.8 `class-hub`)** — repo-blessed shape: `?tab=` resolved in the
+  RSC page by a PURE domain resolver (`visibleTabs(roles)` + `resolveClassHubTab`), only the ACTIVE tab
+  body fetched, tab strip = real `next/link` anchors, shell is a `'use client'` composition component
+  taking the already-rendered body as `children`. That children pattern is NOT a layer violation — the
+  client shell imports no infra; check the page, not the shell. Two things to check every time:
+  (a) `role="tab"` anchors usually carry `aria-controls={panelId(activeTab)}` for ALL tabs — inactive
+  tabs then point at a panel that is not theirs (axe passes: the id exists), so demand aria-controls on
+  the active tab only, or nav + `aria-current="page"`;
+  (b) the existence gate `if (!result.ok) notFound()` collapses transport failures into 404 even when the
+  use-case correctly preserved `network-error` — branch on `error.type === "not-found"` and give the rest
+  a real error surface (sibling list page already does).

@@ -6,6 +6,9 @@ export interface ScheduleItemVM {
   className: string;
   room: string;
   status: "done" | "live" | "upcoming";
+  /** Absolute class-hub href (`?tab=timetable`), resolved server-side. Absent
+   *  when the row has no class id — the row then renders unlinked (US-E24.8). */
+  classHref?: string;
 }
 
 export interface PendingGradeVM {
@@ -13,6 +16,8 @@ export interface PendingGradeVM {
   initials: string;
   assessmentType: string;
   className: string;
+  /** Absolute class-hub href (`?tab=students`) — absent ⇒ unlinked row. */
+  classHref?: string;
 }
 
 export interface NotificationVM {

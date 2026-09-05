@@ -34,3 +34,32 @@ class-hub epic (E24.8 class-detail shell reuses them):
   whole card clickable via a div handler (nested-interactive / non-semantic
   target a11y issue).
 - See [[component-placement]] for the general decision tree this applied.
+
+US-E24.8 (`/teacher/classes/[classId]` shell, on top of E24.7):
+- **`'use client'` composition wrapper receiving an RSC subtree as
+  `children`** is the pattern for a route whose active "panel" must be
+  resolved server-side (URL = state, no client fetch) while this repo's
+  layer table still mandates `presentation/` = `'use client'`. The
+  RSC page (`page.tsx`) resolves the tab body first, then passes it as
+  `children` into a thin `'use client'` `*Screen` composition component that
+  does zero fetching itself — reconciles the "container-in-presentation
+  would violate layer rules" tension without inventing an RSC exception.
+  Reuse this shape whenever a story wants "tabs backed by real navigation,
+  not client state" (Link-based `role="tablist"`, `?tab=` query param
+  resolved server-side via a pure domain resolver function).
+- A `hideBreadcrumb?: boolean` (or similar render-mode) flag belongs on the
+  component **Props**, not the `.i-vm.ts` VM — VM is server-assembled *data*,
+  render-mode switches are caller-set flags, same shelf as an existing
+  `loading?: boolean` Storybook-only prop. Don't let ambiguous packet wording
+  ("add to the screen/its VM") push a UI concern into the data contract.
+  Extend the prop as additive/optional so old call sites are unaffected.
+- Per-tab **icon** (or other purely-visual, fixed-per-variant choice) is a
+  local static `Record<Tab, Icon>` lookup inside the presentational tab-strip
+  component, NOT a VM field — matches `KpiTile`'s local `TILE_TONE_CLASS` map
+  convention. VM carries only per-request data (id, href, active state).
+- `TeacherClass.name` on the wire/mock is bare (`"10A1"`), never pre-prefixed
+  with "Lớp " — confirmed by grepping `mock-teacher-class.repository.ts` and
+  `vi.json`'s `teacherClasses.card.studentCount` = `"{count} học sinh"`
+  (no "Lớp" baked in either). Any VM carrying a class name should stay raw;
+  the "Lớp {name}" composition happens via `t()` in the presentational
+  component, never pre-formatted in the RSC page.

@@ -4987,7 +4987,7 @@
       "route": "/teacher/classes  ·  /teacher/classes/[classId]?tab=students|timetable|course|homeroom",
       "roles": ["teacher"],
       "source": "design_src/edu/class-hub.jsx — ClassHubScreen (ChClassList, ChStudentsTab, ChSessionsTab, ChCourseTab, ChHomeroomTab)",
-      "status": "planned — not implemented (US-E24.7 list, US-E24.8 shell, E24.9–E24.11 tabs)",
+      "status": "partially implemented — list + shell shipped (US-E24.7/E24.8); E24.9–E24.11 tabs pending",
       "layout": {
         "container": "main padding 28px 32px, maxWidth 1200, centered, column gap 18"
       },

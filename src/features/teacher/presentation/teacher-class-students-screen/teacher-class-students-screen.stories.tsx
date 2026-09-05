@@ -56,6 +56,10 @@ export const WithStudents: Story = {
   args: { vm: base },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
+    // Standalone page: the class name IS the page heading.
+    await expect(
+      c.getByRole("heading", { level: 1, name: "10A1" }),
+    ).toBeInTheDocument();
     // Page 1 shows 10 of 15 rows.
     await expect(c.getByText("Học sinh 1")).toBeInTheDocument();
     await expect(c.queryByText("Học sinh 11")).not.toBeInTheDocument();
@@ -82,6 +86,36 @@ export const ErrorState: Story = {
     await expect(
       c.getByRole("button", {
         name: messages.teacherClasses.studentPage.errorRetryAction,
+      }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E24.8 — embedded as the class hub's "Học sinh" tab. The shell renders the
+ * breadcrumb + class identity itself, so `embedded` suppresses this screen's own
+ * breadcrumb AND demotes its class-name heading to `<h2>` (the shell owns the
+ * page `<h1>` — one h1 per page, A11Y-002). The roster, search and pagination
+ * are untouched. Default (every story above) stays a standalone page.
+ */
+export const EmbeddedInClassHub: Story = {
+  args: { vm: base, embedded: true },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await expect(
+      c.queryByRole("navigation", {
+        name: messages.teacherClasses.breadcrumbLabel,
+      }),
+    ).toBeNull();
+    // A11Y-002: no second <h1> — the class name becomes an <h2>.
+    await expect(c.queryByRole("heading", { level: 1 })).toBeNull();
+    await expect(
+      c.getByRole("heading", { level: 2, name: "10A1" }),
+    ).toBeInTheDocument();
+    // The roster itself is unchanged.
+    await expect(
+      c.getByRole("region", {
+        name: messages.teacherClasses.studentPage.studentListSection,
       }),
     ).toBeInTheDocument();
   },

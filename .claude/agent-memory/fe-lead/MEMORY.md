@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [US-E24.3 course timeline](project-e24-3-course-timeline.md) — merged 24ce9f11; lesson-player REBUILT (not renamed); a11y lessons transferred cleanly (2 minor only); TEMP-code grep discipline for E24.5
 - [US-E24.2 student courses v2](project-e24-2-student-courses-v2.md) — merged 3b7500f8; per-card degrade pattern + 3 a11y blockers (focus-ring-inset, colour-only status, token-outside-envelope) + QA closed 4 static-only AC gaps with real-browser tests
 - [US-E18.60 + US-E08.8 (LMS force-mock + RoleSwitcher removal)](project-e18-60-e08-8-lms-mock-role-switcher.md) — race-commit recovery live; a 2nd concurrent session independently converged on the same fix, causing an add/add merge conflict; worktree local `main` is stale, diff against `origin/main`
 - [E18 BE-wiring batch 6 (E18.56-59)](project-e18-be-wiring-batch6.md) — 4 US closing asks #47/#48/#32(b')/#49; first FE call issued directly from a Client Component (ADR 0072, invitation redeem/lookup); denylist-vs-allowlist "prove zero calls" test lesson; RBAC widening = FE no-op if branches already separate; CORS preflight gap found only because a call moved client-side

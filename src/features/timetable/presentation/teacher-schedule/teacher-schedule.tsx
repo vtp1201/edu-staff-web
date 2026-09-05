@@ -38,6 +38,7 @@ const ERROR_KEYS: Record<
  */
 export function TeacherScheduleScreen({
   initialState,
+  classHrefBase,
 }: TeacherScheduleScreenProps) {
   const t = useTranslations("timetableView");
   const router = useRouter();
@@ -85,6 +86,7 @@ export function TeacherScheduleScreen({
               <TimetableGrid
                 timetable={initialState.timetable}
                 cellVariant="teacher"
+                classHrefBase={classHrefBase}
               />
               <SubjectLegend subjects={subjectsUsed(initialState.timetable)} />
             </>

@@ -128,3 +128,51 @@ export const TeacherView_Mobile: Story = {
     expect(canvas.getByRole("rowheader", { name: /Tiết 1\b/ })).toBeVisible();
   },
 };
+
+/* ── US-E24.8: a taught period deep-links into that class's hub ──────────── */
+
+const HUB_BASE = "/vi/t/t1/teacher/classes";
+
+/** Real-mode slots carry `classId` (`SlotResponse.classId`); the mock fixture
+ *  seed does not, so this story builds the linked week explicitly. */
+const LINKED_WEEK: WeeklyTimetable = {
+  classId: "mem-1",
+  className: "Cô Nguyễn Thị Hương",
+  slots: {
+    0: {
+      1: {
+        subjectId: "math",
+        subjectName: "Toán",
+        subjectColorToken: "primary",
+        className: "11A2",
+        classId: "cls-11a2",
+        room: "P.302",
+      },
+      2: {
+        subjectId: "civic",
+        subjectName: "GDCD",
+        subjectColorToken: "purple",
+        className: "8B1",
+        room: "P.205",
+      },
+    },
+  },
+};
+
+export const TeacherView_ClassHubDeepLink: Story = {
+  args: {
+    initialState: { status: "success", timetable: LINKED_WEEK },
+    classHrefBase: HUB_BASE,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // A slot WITH a class id is a real anchor into the class hub timetable tab.
+    const link = canvas.getByRole("link", { name: /Toán/ });
+    expect(link).toHaveAttribute("href", `${HUB_BASE}/cls-11a2?tab=timetable`);
+    // The cell keeps its subject-colour tint and gains a visible focus ring.
+    expect(link.className).toMatch(/bg-edu-[a-z-]+\/15/);
+    expect(link.className).toContain("focus-visible:ring-2");
+    // A slot WITHOUT a class id stays unlinked — no dead links.
+    expect(canvas.queryByRole("link", { name: /GDCD/ })).toBeNull();
+  },
+};
