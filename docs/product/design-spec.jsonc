@@ -5245,7 +5245,11 @@
       "route": "/student/courses/[courseId]/items/[itemId]",
       "roles": ["student"],
       "source": "design_src/edu/course-player.jsx — CourseItemPlayer (CpVideo, CpDocument, CpAssignment, CpExam, CpLocked)",
-      "status": "planned — not implemented",
+      // US-E24.5. Built end to end (route + 4 bodies + locked + the one-way
+      // submit flow); ships 7 documented deviations, listed under "deviations"
+      // below — all of them either a BE contract the mockup predates or a
+      // WCAG-AA correction to the mockup's own values.
+      "status": "implemented — US-E24.5, with 7 documented deviations (see `deviations`)",
       "layout": {
         "breadcrumb": "chevronLeft <course name> → <item title>",
         "grid": "minmax(0, 1.65fr) / minmax(280px, 1fr), gap 18, align start (Udemy-style: content left, course content right)"
@@ -5279,12 +5283,21 @@
       "lessonContent": "D4 (normative, v3, matches BE contract) — LESSON content from BE is TEXT (no video). Default to rich-text; render the 16:9 frame ONLY when the content carries an embeddable link (YouTube/Drive). An empty player must never be the default state.",
       "deviations": [
         "STILL REAL (ask #1) — the drag-drop file submission zone is a future variant; not buildable until BE accepts file uploads.",
-        "STILL REAL (ask #2) — grade/feedback on a submission renders only when the BE returns it; no guaranteed grading turnaround today."
+        "STILL REAL (ask #2) — grade/feedback on a submission renders only when the BE returns it; no guaranteed grading turnaround today.",
+
+        // ── Shipped deviations, US-E24.5 ─────────────────────────────────────
+        "D-1 (BE contract) — sidebar `itemRow.meta` drops '✓ Đã nộp'. `CourseItem` carries NO per-student submission flag on the wire, and firing one submission read per assignment to fake it would cost N requests for a decoration. The ACTIVE assignment's submitted state is shown in its own body instead.",
+        "D-2 (BE contract, = ask #1) — `bodyByType.assignment` drops the attached-worksheet row (paperclip + size + 'Tải về'): assignments carry no attachment on the wire. The submit area shows the file-upload affordance DISABLED with the reason spelled out rather than hiding the gap.",
+        "D-3 (BE contract, extends D4) — `bodyByType.lesson` has no scrubber / elapsed-total / settings-maximize chrome. LESSON content is text; when it carries an allowlisted link the 16:9 frame is a THIRD-PARTY iframe (YouTube/Drive/GeoGebra) that owns its own controls — a scrubber we drew over it could not drive it.",
+        "D-4 (a11y + consistency) — `sidebar.itemRow.upcoming` drops `opacity .65`, and a locked row is NOT a link: it renders as a non-interactive `aria-disabled` block, out of the tab order, exactly as `timeline-row.tsx` renders the same item (US-E24.3). Opacity pushes muted meta text under 4.5:1, and one unreleased item must not be a door in one list and a wall in the other. The opening time stays as VISIBLE text ('Mở dd/MM'), so nothing is lost.",
+        "D-5 (no duplication) — `bodyByType.exam` drops the repeated description: it already renders in the pane's 'Tổng quan' block, and printing the same sentence twice on one screen is noise, not emphasis.",
+        "D-6 (a11y, WCAG 1.4.3) — `sidebar.itemRow.active` renders the title in `text-foreground`, not 'in course color'. Brand ink on the active row's `bg-primary/12` tint is 4.31:1 at 12px bold; the 3px accent bar, the bold weight, `aria-current` and an sr-only 'Đang xem' already carry 'current' without colour.",
+        "D-7 (housekeeping) — the TEMP inline lesson body that US-E24.3 left on the timeline (deviation 2 of `student-course-timeline`) is removed in the SAME commit that adds this route, so no build ever has two places rendering a lesson."
       ],
       "a11y": [
         "sidebar item list = navigation of the same course; each row is a link/button with an accessible name including the type ('Bài giảng: …')",
         "Prev/Next buttons use disabled + aria-disabled, never opacity alone",
-        "video chrome is only a mock — real embeds need a title on the iframe and keyboard-reachable controls",
+        "video chrome is only a mock — real embeds need a title on the iframe and keyboard-reachable controls (settled by D-3: the embed is a third-party iframe with a `title`, `sandbox` and `referrerPolicy`; no chrome of ours)",
         "week collapse buttons need aria-expanded + aria-controls"
       ],
       "responsive": [

@@ -1,46 +1,10 @@
 "use server";
 
 import { requireRole } from "@/bootstrap/auth-guard";
-import {
-  makeGetLessonUseCase,
-  makeListCourseItemsUseCase,
-} from "@/bootstrap/di/lms.di";
+import { makeListCourseItemsUseCase } from "@/bootstrap/di/lms.di";
 import { summarizeCourse } from "@/features/lms/domain/use-cases/summarize-course";
 import { toWeekVms } from "@/features/lms/presentation/course-timeline/course-timeline.derive";
-import type {
-  GetLessonResult,
-  RetryListItemsResult,
-} from "@/features/lms/presentation/course-timeline/course-timeline.i-vm";
-
-/**
- * Lazily reads ONE lesson's body. The timeline endpoint (and the lesson LIST
- * endpoint) omit `content` by design, so the body is a separate round trip made
- * when the student opens a lesson tile.
- *
- * `courseId` is bound by the page (the route owns it) so the client cannot ask
- * for a lesson under a course it did not navigate to.
- */
-export async function getLessonAction(
-  courseId: string,
-  lessonId: string,
-): Promise<GetLessonResult> {
-  const guard = await requireRole(["student"]);
-  if (!guard.ok) return { ok: false, errorKey: "forbidden" };
-
-  const result = await (await makeGetLessonUseCase()).execute(
-    courseId,
-    lessonId,
-  );
-  if (!result.ok) return { ok: false, errorKey: result.failure.type };
-  return {
-    ok: true,
-    data: {
-      id: result.data.id,
-      title: result.data.title,
-      content: result.data.content,
-    },
-  };
-}
+import type { RetryListItemsResult } from "@/features/lms/presentation/course-timeline/course-timeline.i-vm";
 
 /**
  * Re-runs the timeline read behind the "Thử lại" button (US-E24.3).

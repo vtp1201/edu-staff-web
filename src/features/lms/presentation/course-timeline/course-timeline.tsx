@@ -17,17 +17,17 @@ import { WeekSection } from "./week-section";
 export interface CourseTimelineProps {
   vm: CourseTimelineVm;
   actions: CourseTimelineActions;
-  /** Pre-resolved route an ASSIGNMENT row hands off to. */
-  assignmentsHref: string;
+  /** `/…/courses/<id>/items` — the base every row links into (US-E24.5). */
+  itemHrefBase: string;
 }
 
 /**
  * `/student/courses/[courseId]` — ONE vertical timeline grouped by week
  * (US-E24.3, design-spec `student-course-timeline.timeline`).
  *
- * The only stateful component in the tree: it owns which row is expanded
- * (shared across siblings — opening one closes the other) and the retry copy of
- * the timeline data. Everything below is presentational.
+ * The only stateful component in the tree: it owns the retry copy of the
+ * timeline data. Everything below is presentational — a row is a plain link
+ * into the course player (US-E24.5), so no row state exists.
  *
  * A failed TIMELINE read degrades independently of the course read: the header
  * still renders, and "Thử lại" re-runs just that read through a Server Action.
@@ -36,7 +36,7 @@ export interface CourseTimelineProps {
 export function CourseTimeline({
   vm,
   actions,
-  assignmentsHref,
+  itemHrefBase,
 }: CourseTimelineProps) {
   if (vm.mode !== "student") {
     // A loud failure beats a half-rendered teacher view: the teacher/read-only
@@ -46,26 +46,17 @@ export function CourseTimeline({
     );
   }
   return (
-    <StudentTimeline
-      vm={vm}
-      actions={actions}
-      assignmentsHref={assignmentsHref}
-    />
+    <StudentTimeline vm={vm} actions={actions} itemHrefBase={itemHrefBase} />
   );
 }
 
-function StudentTimeline({
-  vm,
-  actions,
-  assignmentsHref,
-}: CourseTimelineProps) {
+function StudentTimeline({ vm, actions, itemHrefBase }: CourseTimelineProps) {
   const t = useTranslations("courses");
   const [weeks, setWeeks] = useState<WeekVm[]>(vm.weeks);
   const [openCount, setOpenCount] = useState(vm.openCount);
   const [errorKey, setErrorKey] = useState<LmsFailure["type"] | null>(
     vm.errorKey,
   );
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   // A plain boolean, not `useTransition`: an async transition can leave
   // `isPending` stuck true after a post-await setState, which would freeze the
   // retry button permanently (US-E21.2).
@@ -79,7 +70,6 @@ function StudentTimeline({
         setWeeks(res.data.weeks);
         setOpenCount(res.data.openCount);
         setErrorKey(null);
-        setExpandedItemId(null);
       } else {
         setErrorKey(res.errorKey);
       }
@@ -129,22 +119,15 @@ function StudentTimeline({
             body={t("timeline.empty")}
           />
         ) : (
-          // Not a `<nav>`: every row is a toggle-expand button, not a link to
-          // somewhere else, and each week already exposes its own labelled
-          // `<section>` — a landmark here would only add noise.
+          // Not a `<nav>`: each week already exposes its own labelled
+          // `<section>`, and a second landmark around them would only add
+          // noise for a screen-reader user walking the page.
           <div>
             {weeks.map((week, index) => (
               <WeekSection
                 key={week.key}
                 week={week}
-                expandedItemId={expandedItemId}
-                onToggleExpand={(itemId) =>
-                  setExpandedItemId((current) =>
-                    current === itemId ? null : itemId,
-                  )
-                }
-                getLesson={actions.getLesson}
-                assignmentsHref={assignmentsHref}
+                itemHrefBase={itemHrefBase}
                 isLastWeek={index === weeks.length - 1}
               />
             ))}

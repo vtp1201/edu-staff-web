@@ -1,15 +1,13 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
-import type { CourseTimelineActions, WeekVm } from "./course-timeline.i-vm";
+import { useWeekLabel } from "../shared/use-week-label";
+import type { WeekVm } from "./course-timeline.i-vm";
 import { TimelineRow } from "./timeline-row";
 
 export interface WeekSectionProps {
   week: WeekVm;
-  expandedItemId: string | null;
-  onToggleExpand: (itemId: string) => void;
-  getLesson: CourseTimelineActions["getLesson"];
-  assignmentsHref: string;
+  /** `/…/courses/<id>/items` — each row appends its own id. */
+  itemHrefBase: string;
   /** True for the last section, so its final row drops the rail's tail. */
   isLastWeek: boolean;
 }
@@ -17,39 +15,17 @@ export interface WeekSectionProps {
 /**
  * One week header ("TUẦN 20/04 – 26/04" or "LUÔN MỞ") plus its rows.
  *
- * Week boundaries are date-only strings computed in UTC by the domain, so they
- * are formatted with `timeZone: "UTC"` — otherwise a reader east/west of the
- * server would see the label slip by a day while the grouping did not.
- *
  * The academic week NUMBER the design shows ("Tuần 30 · 20/04 – 26/04") is not
  * on any BE contract yet (epic ask #5), so the date-range fallback ships alone
  * rather than inventing a number.
  */
 export function WeekSection({
   week,
-  expandedItemId,
-  onToggleExpand,
-  getLesson,
-  assignmentsHref,
+  itemHrefBase,
   isLastWeek,
 }: WeekSectionProps) {
-  const t = useTranslations("courses");
-  const format = useFormatter();
-
-  const dayMonth = (iso: string) =>
-    format.dateTime(new Date(`${iso}T00:00:00Z`), {
-      day: "2-digit",
-      month: "2-digit",
-      timeZone: "UTC",
-    });
-
-  const label =
-    week.weekStart && week.weekEnd
-      ? t("timeline.weekLabel", {
-          start: dayMonth(week.weekStart),
-          end: dayMonth(week.weekEnd),
-        })
-      : t("timeline.alwaysOpen");
+  // Shared with the player's sidebar, which groups the same weeks (US-E24.5).
+  const label = useWeekLabel()(week);
 
   return (
     <section aria-label={label}>
@@ -64,10 +40,7 @@ export function WeekSection({
           <TimelineRow
             key={item.id}
             item={item}
-            expanded={expandedItemId === item.id}
-            onToggleExpand={onToggleExpand}
-            getLesson={getLesson}
-            assignmentsHref={assignmentsHref}
+            itemHref={`${itemHrefBase}/${item.id}`}
             isLast={isLastWeek && index === week.items.length - 1}
           />
         ))}

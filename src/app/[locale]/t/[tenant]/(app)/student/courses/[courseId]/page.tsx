@@ -13,7 +13,7 @@ import type {
   CourseTimelineVm,
 } from "@/features/lms/presentation/course-timeline/course-timeline.i-vm";
 import { toneForId } from "@/features/lms/presentation/tone";
-import { getLessonAction, retryListItemsAction } from "./actions";
+import { retryListItemsAction } from "./actions";
 
 interface Props {
   params: Promise<{ locale: string; tenant: string; courseId: string }>;
@@ -72,7 +72,6 @@ export default async function StudentCourseTimelinePage({ params }: Props) {
   const actions: CourseTimelineActions = {
     // `.bind` (not an inline closure) — a plain local async function passed
     // from an RSC is not a Server Action and 500s at call time.
-    getLesson: getLessonAction.bind(null, courseId),
     retryListItems: retryListItemsAction.bind(null, courseId),
   };
 
@@ -84,7 +83,7 @@ export default async function StudentCourseTimelinePage({ params }: Props) {
       key={courseId}
       vm={vm}
       actions={actions}
-      assignmentsHref={`/${locale}/t/${tenant}/student/assignments`}
+      itemHrefBase={`/${locale}/t/${tenant}/student/courses/${courseId}/items`}
     />
   );
 }

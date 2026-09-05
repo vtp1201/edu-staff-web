@@ -1,16 +1,13 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock } from "lucide-react";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { formatItemWindow } from "@/features/lms/domain/use-cases/format-item-window";
 import { cn } from "@/shared/utils";
 import { ItemStatePill } from "../shared/item-state-pill";
 import { ItemTypeChip } from "../shared/item-type-chip";
-import type {
-  CourseTimelineActions,
-  TimelineItemVm,
-} from "./course-timeline.i-vm";
-import { ItemDetail } from "./item-detail";
+import type { TimelineItemVm } from "./course-timeline.i-vm";
 
 /** Rail node colour by BE state (design-spec `…timeline.rail`). Decorative —
  *  the pill next to it carries the same information as text.
@@ -37,10 +34,8 @@ const TYPE_LABEL_KEY = {
 
 export interface TimelineRowProps {
   item: TimelineItemVm;
-  expanded: boolean;
-  onToggleExpand: (itemId: string) => void;
-  getLesson: CourseTimelineActions["getLesson"];
-  assignmentsHref: string;
+  /** Where an openable row navigates: the course player for THIS item. */
+  itemHref: string;
   /** Drops the rail's trailing segment on the very last row of the timeline. */
   isLast: boolean;
 }
@@ -49,8 +44,9 @@ export interface TimelineRowProps {
  * One timeline row: rail node + card (US-E24.3).
  *
  * Interaction contract:
- * - OPEN / CLOSED → a real `<button aria-expanded>`; CLOSED is deliberately
- *   still openable (a student re-reads closed material to revise).
+ * - OPEN / CLOSED → a real `<Link>` to the course player (US-E24.5 replaced
+ *   the temporary inline expand); CLOSED is deliberately still openable (a
+ *   student re-reads closed material to revise).
  * - `locked` (an unreleased item — for a student read only ever an EXAM, D7) →
  *   a non-interactive `aria-disabled` block, out of the tab order, that states
  *   in VISIBLE text when it opens.
@@ -59,17 +55,10 @@ export interface TimelineRowProps {
  * `title` is unreachable on touch and unreliable on keyboard focus, and this is
  * the only place the opening time is communicated (accessibility.md).
  *
- * The expandable detail is a SIBLING of the button, never a child: it contains
- * its own links, and interactive elements must not nest.
+ * The row is ONE focus target with ONE accessible name (its visible title +
+ * type + window + state) — nothing interactive is nested inside it.
  */
-export function TimelineRow({
-  item,
-  expanded,
-  onToggleExpand,
-  getLesson,
-  assignmentsHref,
-  isLast,
-}: TimelineRowProps) {
+export function TimelineRow({ item, itemHref, isLast }: TimelineRowProps) {
   const t = useTranslations("courses");
   const format = useFormatter();
 
@@ -92,10 +81,6 @@ export function TimelineRow({
         : itemWindow.kind === "due"
           ? t("timeline.window.due", { due: itemWindow.dueText })
           : t("timeline.window.always");
-
-  const Chevron = expanded ? ChevronDown : ChevronRight;
-  /** Ties `aria-expanded` to the thing it expands (WCAG 4.1.2 / A11Y-001). */
-  const panelId = `ci-panel-${item.id}`;
 
   const head = (
     <>
@@ -144,12 +129,7 @@ export function TimelineRow({
       </span>
 
       <div className="min-w-0 flex-1 py-1.5">
-        <div
-          className={cn(
-            "rounded-[10px] border",
-            expanded ? "border-primary/50 bg-muted" : "border-border bg-card",
-          )}
-        >
+        <div className="rounded-[10px] border border-border bg-card">
           {item.locked ? (
             <div
               aria-disabled="true"
@@ -175,37 +155,19 @@ export function TimelineRow({
               </p>
             </div>
           ) : (
-            <button
-              type="button"
-              aria-expanded={expanded}
-              aria-controls={panelId}
-              onClick={() => onToggleExpand(item.id)}
-              // `ring-inset`: the card clips its corners and the button fills
-              // it edge to edge, so an outward ring would be cut off.
-              // `hover:bg-muted/60` is a no-op once expanded (the card is
-              // already `bg-muted`, and muted-over-muted blends to itself), so
-              // hover only ever signals "this collapsed row is clickable".
+            <Link
+              href={itemHref}
+              // `ring-inset`: the card clips its corners and the link fills it
+              // edge to edge, so an outward ring would be cut off.
               className="flex w-full flex-wrap items-center gap-2.5 rounded-[10px] px-3.5 py-2.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               {head}
-              <Chevron
+              <ChevronRight
                 className="size-3 shrink-0 text-muted-foreground"
                 strokeWidth={2.4}
                 aria-hidden="true"
               />
-            </button>
-          )}
-
-          {expanded && !item.locked && (
-            // TEMP (US-E24.3): inline expand until US-E24.5 ships the real
-            // /items/[itemId] route — delete this block with `item-detail.tsx`.
-            <div id={panelId} className="border-border border-t px-3.5 py-3">
-              <ItemDetail
-                item={item}
-                getLesson={getLesson}
-                assignmentsHref={assignmentsHref}
-              />
-            </div>
+            </Link>
           )}
         </div>
       </div>
