@@ -114,3 +114,48 @@ describe("embedSourceFor — rejects every bypass attempt", () => {
     expect(source?.embedUrl).toBe("https://www.youtube.com/embed/abc123");
   });
 });
+
+/**
+ * QA independent verification (US-E24.5 gate): three bypass shapes NOT in the
+ * 48-case suite the reviewer wrote, chosen to probe classes of URL-parser
+ * confusion the reviewer's list didn't exercise (userinfo-without-`@`-in-path
+ * ambiguity, WHATWG backslash-as-slash normalisation, and DNS root-label
+ * trailing-dot). None of these turn out to be a real bypass — they're proven
+ * blocked here independently rather than taken on faith.
+ */
+describe("embedSourceFor — QA-added independent bypass probes", () => {
+  it("a colon-delimited userinfo trick still resolves hostname to the REAL (non-allowlisted) host, and is blocked by the userinfo check regardless", () => {
+    // `new URL()` parses "youtube.com:443" as userinfo (user:pass) and
+    // "evil.com" as the actual host — so this is blocked twice over: the
+    // resolved hostname isn't allowlisted, AND userinfo is present.
+    expect(embedSourceFor("https://youtube.com:443@evil.com/x")).toBeNull();
+  });
+
+  it("WHATWG backslash-as-slash normalisation does not smuggle a hostile host past the Set compare", () => {
+    // Some legacy parsers treat `\` as a raw character; the URL spec (and thus
+    // both browsers and Node) normalise it to `/` before host-parsing, so this
+    // resolves to hostname `www.youtube.com.evil.com` (not `www.youtube.com`)
+    // and is correctly rejected by the exact-match Set.
+    expect(embedSourceFor("https:\\\\www.youtube.com.evil.com\\x")).toBeNull();
+  });
+
+  it("a trailing DNS root-label dot is a DIFFERENT string than the allowlist entry and is rejected (fail-safe, not a bypass)", () => {
+    // `youtube.com.` (with the trailing root dot) is a legal, equivalent DNS
+    // name to `youtube.com`, but `url.hostname` preserves the dot, so the
+    // exact-equality Set.has() call refuses it — over-strict, never
+    // over-permissive, which is the correct failure direction for this gate.
+    expect(embedSourceFor("https://youtube.com./watch?v=abc123")).toBeNull();
+  });
+
+  it("a fullwidth Unicode full-stop in the host normalises to the REAL youtube.com host, not a distinct spoofed one", () => {
+    // IDNA/UTS46 host normalisation (applied by `new URL()`, matching browser
+    // behaviour) maps the fullwidth full stop U+FF0E to ASCII `.`, so this
+    // string names the SAME real host as the allowlist entry — accepting it
+    // is correct, not a confusable-domain bypass (it never points anywhere
+    // other than the real youtube.com).
+    expect(embedSourceFor("https://youtube．com/watch?v=abc123")).toEqual({
+      origin: "youtube.com",
+      embedUrl: "https://www.youtube.com/embed/abc123",
+    });
+  });
+});
