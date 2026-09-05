@@ -1,5 +1,7 @@
 # Memory Index
 
+- [URL view+sub, zero client](pattern-url-view-sub-zero-client.md) — US-E24.4: merging 2 screens into `?view=`+`?sub=` needs no Client Component; extract a fan-out by leaving the old test file untouched
+- [aria-label on a span + tab-order](gotcha-aria-label-on-span-and-tab-order.md) — Biome rejects it (move the phrase to the parent link); a new pill row breaks every `userEvent.tab()` story
 - [URL-as-state tab shell](pattern-url-tab-shell-rsc.md) — US-E24.8: role-gated `?tab=` RSC shell (one panel, Link tabs); notFound/permanentRedirect digest strings for node route tests
 - [Capped count + badge accname](pattern-capped-count-and-badge-accname.md) — E24.7 review: cap an unbounded drain to a "N+" lower bound (not a fake 99+); StatusBadge aria-label ≠ accname; auto-fill grid breaks at 320px
 - [Browser-direct BE call](pattern-browser-direct-be-call.md) — E18.59/ADR 0072: public IP-rate-limited endpoint moves to a client fetch; one ApiError adapter reuses the whole mapper
