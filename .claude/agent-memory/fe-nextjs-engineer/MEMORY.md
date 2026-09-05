@@ -127,3 +127,5 @@
 - [Tone with no wire source + duplicate i18n copy](gotcha-tone-and-duplicate-i18n-copy.md) — move an invented visual attribute to presentation (deterministic id hash); two keys sharing one string breaks getByText
 - [Week-grouped timeline rebuild](pattern-week-grouped-timeline-rebuild.md) — US-E24.3: domain returns a window RESULT with an injected formatter; ISO week inline; `vi` CLDR = `08-05` + time first; feature-shared tier
 - [Locked row + info token gap](gotcha-locked-row-and-token-gap.md) — an aria-disabled row's reason must be VISIBLE text (title is unreachable); no AA-safe --edu-info text token
+
+- [Use-case-level authCtx + shared-map body](pattern-usecase-level-authctx-and-shared-map-body.md) — US-E24.9: 0063 guard at the USE-CASE when BE re-derives the key; delete a hybrid composite when its last force-mock goes; revalidatePath ≠ new props
