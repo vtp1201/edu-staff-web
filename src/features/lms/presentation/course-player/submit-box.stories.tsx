@@ -111,10 +111,19 @@ export const ConfirmThenSubmit: Story = {
     await expect(warning).toBeVisible();
     expect(canvas.queryByText(/Đã nộp lúc/)).toBeNull();
     expect(CONFIRM_CALLS).toHaveLength(0);
+    // A11Y-003: the pressed button was replaced by this block, so focus must
+    // have moved INTO it — not silently back to <body>.
+    const confirmBlock = warning.closest('[role="status"]');
+    expect(confirmBlock).not.toBeNull();
+    expect(confirmBlock?.contains(document.activeElement)).toBe(true);
 
-    // "Xem lại" backs out without any request.
+    // "Xem lại" backs out without any request — and hands focus back to the
+    // control that opened the warning.
     await userEvent.click(canvas.getByRole("button", { name: "Xem lại" }));
     expect(canvas.queryByText(/chỉ được nộp MỘT lần duy nhất/)).toBeNull();
+    expect(document.activeElement).toBe(
+      canvas.getByRole("button", { name: /Nộp bài/ }),
+    );
 
     await userEvent.click(canvas.getByRole("button", { name: /Nộp bài/ }));
     await userEvent.click(canvas.getByRole("button", { name: "Xác nhận nộp" }));
@@ -122,6 +131,9 @@ export const ConfirmThenSubmit: Story = {
     await waitFor(() =>
       expect(canvas.getByText(/Đã nộp lúc/)).toBeInTheDocument(),
     );
+    // …and lands on the terminal banner, the only thing left on screen.
+    const banner = canvas.getByText(/Đã nộp lúc/).closest('[role="status"]');
+    expect(banner?.contains(document.activeElement)).toBe(true);
     // Exactly ONE request, carrying text + "\n" + link (BE takes one string).
     expect(CONFIRM_CALLS).toEqual([
       "Bài làm của em\nhttps://drive.google.com/abc",
@@ -189,6 +201,10 @@ export const SubmitClosed: Story = {
       ),
     );
     expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
+    // A11Y-003 on the failure branch: the refusal is where the caret is.
+    expect(canvas.getByRole("alert").contains(document.activeElement)).toBe(
+      true,
+    );
     // The work is preserved so nothing is retyped.
     await expect(canvas.getByLabelText(/Nội dung bài làm/)).toHaveValue(
       "Bài làm",
@@ -275,5 +291,81 @@ export const ClosedNotSubmitted: Story = {
       canvas.getByText("Bạn chưa nộp bài này trước hạn."),
     ).toBeVisible();
     expect(canvas.queryByLabelText(/Nội dung bài làm/)).toBeNull();
+  },
+};
+
+/**
+ * The one-way invariant, proved against a HOSTILE interaction: a student who
+ * double-clicks "Xác nhận nộp" (or hammers Enter) must still submit once.
+ *
+ * The guarantee is structural, not visual — the request is fired by the effect
+ * that watches the reducer's `submitting` status, and a second `start-submit`
+ * from `submitting` is a no-op the reducer refuses.
+ */
+export const DoubleConfirmSendsExactlyOneRequest: Story = {
+  args: {
+    submitAssignment: async (
+      content: string,
+    ): Promise<SubmitAssignmentResult> => {
+      CONFIRM_CALLS.push(content);
+      // Slow enough that a second press lands while the first is in flight.
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      return {
+        ok: true,
+        submission: { content, submittedAt: "2026-04-23T14:14:00.000Z" },
+      };
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    CONFIRM_CALLS.length = 0;
+    await userEvent.type(canvas.getByLabelText(/Nội dung bài làm/), "Bài làm");
+    await userEvent.click(canvas.getByRole("button", { name: /Nộp bài/ }));
+
+    const confirm = canvas.getByRole("button", { name: "Xác nhận nộp" });
+    await userEvent.click(confirm);
+    // The second press of a double-click lands on the node React has already
+    // detached — dispatched natively, because `userEvent` refuses to interact
+    // with an element that is no longer in the layout.
+    confirm.click();
+
+    // While in flight the confirm control is gone entirely, and the progress
+    // line has the focus.
+    await waitFor(() =>
+      expect(canvas.getByText("Đang nộp bài…")).toBeInTheDocument(),
+    );
+    expect(canvas.queryByRole("button", { name: "Xác nhận nộp" })).toBeNull();
+    expect(document.activeElement).toBe(canvas.getByText("Đang nộp bài…"));
+
+    await waitFor(() =>
+      expect(canvas.getByText(/Đã nộp lúc/)).toBeInTheDocument(),
+    );
+    expect(CONFIRM_CALLS).toEqual(["Bài làm"]);
+  },
+};
+
+/** A11Y-004: `aria-describedby` never points at an unmounted element. */
+export const DescribedByStaysResolvable: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const doc = canvasElement.ownerDocument;
+    const textarea = canvas.getByLabelText(/Nội dung bài làm/);
+
+    const idsResolve = () =>
+      (textarea.getAttribute("aria-describedby") ?? "")
+        .split(" ")
+        .filter((id) => id !== "")
+        .every((id) => doc.getElementById(id) !== null);
+
+    // Idle: counter + hint are both on screen.
+    expect(idsResolve()).toBe(true);
+
+    await userEvent.type(textarea, "Bài làm");
+    await userEvent.click(canvas.getByRole("button", { name: /Nộp bài/ }));
+
+    // Confirming: the hint's branch was replaced — the description must have
+    // dropped it rather than dangle.
+    expect(canvas.queryByText(/Chỉ nộp 1 lần duy nhất/)).toBeNull();
+    expect(idsResolve()).toBe(true);
   },
 };

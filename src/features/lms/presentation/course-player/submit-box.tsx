@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Check, RotateCw, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,10 +137,12 @@ export interface SubmitBoxProps {
 /**
  * The one-way submit (US-E24.5, high-risk lane).
  *
- * Two-step by construction: "Nộp bài" only moves local state to `confirming`;
- * the Server Action is called from the confirm step alone. The warning is a
- * real render state (keyboard-reachable, announced through `role="status"`),
- * never `window.confirm()`.
+ * Two-step by construction: "Nộp bài" only moves local state to `confirming`.
+ * Every control here does exactly one thing — dispatch — and the Server Action
+ * is fired by the effect that watches for the reducer granting `submitting`,
+ * so a control the reducer refuses cannot reach the network. The warning is a
+ * real render state (keyboard-reachable, announced through `role="status"`,
+ * and focused on entry), never `window.confirm()`.
  *
  * There is deliberately NO optimistic update: both realistic failures (a 409
  * race, a network error) need the UI to show something different from
@@ -166,27 +168,96 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
   const linkInvalid = state.linkTouched && !isLinkValid(state.link);
   const frozen = state.status === "confirming" || state.status === "submitting";
 
-  async function send() {
-    dispatch({ type: "start-submit" });
-    const result = await onSubmit(composeContent(state.text, state.link));
-    if (result.ok) {
-      dispatch({ type: "succeeded", submission: result.submission });
+  // One focus target per state whose DOM subtree is SWAPPED below.
+  const confirmRef = useRef<HTMLDivElement>(null);
+  const submittingRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const submittedRef = useRef<HTMLDivElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * The request is fired HERE and nowhere else: `submitting` is a state only
+   * the reducer can grant (from `confirming` or `error`), so a button that
+   * dispatches `start-submit` from any other state simply changes nothing and
+   * no request goes out. The invariant "exactly one path reaches the network"
+   * is therefore structural, not a matter of calling the right helper.
+   *
+   * `inFlight` makes it once-per-entry: React re-runs effects on a remount
+   * (StrictMode dev double-invoke), and a duplicate POST on an irreversible
+   * submit is the one bug this screen cannot afford.
+   */
+  const inFlight = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the reducer status ALONE, by design. `text`/`link` are frozen for the whole of `submitting` and re-running on any other dependency would either re-send an irreversible POST or (through the cleanup below) cancel the one in flight.
+  useEffect(() => {
+    if (state.status !== "submitting") {
+      inFlight.current = false;
       return;
     }
-    if (result.errorKey === "already-submitted") {
-      toast.error(t("submit.alreadySubmittedToast"));
-      dispatch({
-        type: "failed",
-        errorKey: "already-submitted",
-        submission: result.submission,
-      });
-      return;
-    }
-    dispatch({ type: "failed", errorKey: result.errorKey, submission: null });
-  }
+    if (inFlight.current) return;
+    inFlight.current = true;
+
+    let cancelled = false;
+    void (async () => {
+      const result = await onSubmit(composeContent(state.text, state.link));
+      if (cancelled) return;
+      if (result.ok) {
+        dispatch({ type: "succeeded", submission: result.submission });
+        return;
+      }
+      if (result.errorKey === "already-submitted") {
+        toast.error(t("submit.alreadySubmittedToast"));
+        dispatch({
+          type: "failed",
+          errorKey: "already-submitted",
+          submission: result.submission,
+        });
+        return;
+      }
+      dispatch({ type: "failed", errorKey: result.errorKey, submission: null });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Deliberately keyed on the STATUS alone: `text`/`link` are frozen for the
+    // whole of `submitting`, and re-running on a keystroke would re-send.
+  }, [state.status]);
+
+  /**
+   * Keyboard focus follows the step (WCAG 2.4.3). Each click here replaces the
+   * subtree the pressed control lived in, so without this the caret silently
+   * falls back to `<body>` — in the middle of a mutation that cannot be undone.
+   * `role="status"`/`"alert"` announces the new block to a screen reader; this
+   * is what puts a keyboard user's cursor there too.
+   *
+   * Only SWAPPED states retarget. `idle → ready` (the student typed something
+   * valid) changes no subtree and must never steal focus from the textarea.
+   */
+  const previousStatus = useRef<Status>(INITIAL.status);
+  useEffect(() => {
+    const from = previousStatus.current;
+    previousStatus.current = state.status;
+    if (from === state.status) return;
+
+    const target =
+      state.status === "confirming"
+        ? confirmRef.current
+        : state.status === "submitting"
+          ? submittingRef.current
+          : state.status === "submitted"
+            ? submittedRef.current
+            : state.status === "error"
+              ? errorRef.current
+              : // Backing out of the warning ("Xem lại") returns the student to
+                // the control that opened it.
+                from === "confirming"
+                ? submitButtonRef.current
+                : null;
+    target?.focus();
+  }, [state.status]);
 
   if (state.status === "submitted" && state.submission) {
-    return <SubmittedBanner submission={state.submission} />;
+    return <SubmittedBanner ref={submittedRef} submission={state.submission} />;
   }
 
   return (
@@ -215,7 +286,9 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
           value={state.text}
           maxLength={MAX_CONTENT_LENGTH}
           disabled={frozen}
-          aria-describedby={`${counterId} ${hintId}`}
+          // The hint lives in the branch that `confirming`/`submitting` replace,
+          // so pointing at it while it is unmounted would be a dangling id.
+          aria-describedby={frozen ? counterId : `${counterId} ${hintId}`}
           placeholder={t("submit.answerPlaceholder")}
           onChange={(event) =>
             dispatch({ type: "edit-text", value: event.target.value })
@@ -253,6 +326,8 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
 
       {state.status === "confirming" ? (
         <div
+          ref={confirmRef}
+          tabIndex={-1}
           role="status"
           className="flex flex-wrap items-center gap-2.5 rounded-[9px] bg-edu-warning-light px-3 py-2.5"
         >
@@ -261,7 +336,11 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
             strokeWidth={2.2}
             aria-hidden="true"
           />
-          <p className="min-w-0 flex-1 basis-40 font-bold text-edu-warning-text text-xs">
+          {/* `--edu-warning-text` on `--edu-warning-light` is 4.37:1 — AA only
+              at large text, i.e. ≥14px bold (tokens.css, ADR 0046). This is the
+              sentence that has to land before an irreversible action, so it
+              gets the size rather than a quieter colour. */}
+          <p className="min-w-0 flex-1 basis-40 font-bold text-edu-warning-text text-sm">
             {t("submit.confirmWarning")}
           </p>
           <Button
@@ -272,13 +351,18 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
           >
             {t("submit.reviewButton")}
           </Button>
-          <Button type="button" size="sm" onClick={() => void send()}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => dispatch({ type: "start-submit" })}
+          >
             {t("submit.confirmButton")}
           </Button>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2.5">
           <Button
+            ref={submitButtonRef}
             type="button"
             disabled={state.status !== "ready"}
             onClick={() => dispatch({ type: "request-confirm" })}
@@ -293,13 +377,20 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
       )}
 
       {state.status === "submitting" && (
-        <p role="status" className="font-semibold text-primary text-xs">
+        <p
+          ref={submittingRef}
+          tabIndex={-1}
+          role="status"
+          className="font-semibold text-primary text-xs"
+        >
           {t("submit.submitting")}
         </p>
       )}
 
       {state.status === "error" && state.errorKey !== null && (
         <div
+          ref={errorRef}
+          tabIndex={-1}
           role="alert"
           className="flex flex-wrap items-center gap-2.5 rounded-[9px] border border-edu-error/40 bg-edu-error-light px-3 py-2.5"
         >
@@ -315,7 +406,7 @@ export function SubmitBox({ assignmentId, onSubmit }: SubmitBoxProps) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => void send()}
+                onClick={() => dispatch({ type: "start-submit" })}
               >
                 <RotateCw strokeWidth={2.2} aria-hidden="true" />
                 {t("submit.retryButton")}

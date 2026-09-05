@@ -57,8 +57,14 @@ export async function submitAssignmentAction(
   }
 
   if (result.failure.type === "already-submitted") {
-    // A race (second tab / stale form). Re-read so the UI can show the REAL
-    // submission instead of the text still sitting in this tab's textarea.
+    // A race (second tab / stale form). The submission EXISTS on the server —
+    // this tab simply lost — so both cached routes are just as stale as on the
+    // success path and must be invalidated the same way.
+    revalidatePath(ITEM_PATH, "page");
+    revalidatePath(COURSE_PATH, "page");
+
+    // Re-read so the UI can show the REAL submission instead of the text still
+    // sitting in this tab's textarea.
     const detail = await (await makeGetAssignmentDetailUseCase()).execute(
       assignmentId,
     );

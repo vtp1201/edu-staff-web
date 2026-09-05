@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { ActiveItemVm } from "./course-player.i-vm";
+import { isSafeHref } from "./safe-href";
 
 export interface BodyExamProps {
   item: Extract<ActiveItemVm, { kind: "exam" }>;
@@ -14,9 +15,11 @@ export interface BodyExamProps {
  * An EXAM tile: an intro block whose CTA follows the BE-computed state.
  *
  * `examUrl` is a deployment-configured deep link into core's exam flow — an
- * EXTERNAL origin, so it opens in a new tab with `rel="noopener noreferrer"`.
- * Without one we fall back to the in-app `/student/exams/[examId]` route
- * (same-origin `<Link>`), and if BE sent neither we say so instead of
+ * EXTERNAL origin, so it opens in a new tab with `rel="noopener noreferrer"`
+ * and only after `isSafeHref` confirms it is http(s) (defence in depth: a
+ * `javascript:` deep link must never reach an `href`, framework version aside).
+ * Without a usable one we fall back to the in-app `/student/exams/[examId]`
+ * route (same-origin `<Link>`), and if BE sent neither we say so instead of
  * rendering a dead button.
  *
  * The CTAs are the `Button` primitive via `asChild` rather than hand-rolled
@@ -29,6 +32,10 @@ export interface BodyExamProps {
 export function BodyExam({ item }: BodyExamProps) {
   const t = useTranslations("courses.player");
   const format = useFormatter();
+  // An unsafe/unparseable deep link degrades to the in-app route below, which
+  // is exactly what "no examUrl" already does.
+  const examUrl =
+    item.examUrl !== null && isSafeHref(item.examUrl) ? item.examUrl : null;
 
   return (
     <div className="flex flex-col items-center gap-3 px-4 py-9 text-center sm:px-5">
@@ -48,9 +55,9 @@ export function BodyExam({ item }: BodyExamProps) {
       )}
 
       {item.state === "OPEN" &&
-        (item.examUrl !== null ? (
+        (examUrl !== null ? (
           <Button asChild variant="destructive">
-            <a href={item.examUrl} target="_blank" rel="noopener noreferrer">
+            <a href={examUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink strokeWidth={2.2} aria-hidden="true" />
               {t("exam.startExternal")}
             </a>

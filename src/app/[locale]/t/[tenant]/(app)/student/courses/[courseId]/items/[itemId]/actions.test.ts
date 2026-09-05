@@ -9,7 +9,8 @@
  *   would hide it.
  * - The 409 race returns the REAL submission (re-read server-side), so the UI
  *   can never print a fabricated "Đã nộp lúc …" from local state.
- * - Both routes that display the submitted state are revalidated.
+ * - Both routes that display the submitted state are revalidated — on the 409
+ *   race too, where the submission is just as real as on the success path.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -124,6 +125,15 @@ describe("submitAssignmentAction", () => {
     const result = await submitAssignmentAction("as-1", "Bài làm ở tab này");
 
     expect(detailExecute).toHaveBeenCalledWith("as-1");
+    // The submission EXISTS server-side — this tab merely lost the race — so
+    // both cached routes are exactly as stale as on the success path.
+    expect(revalidatePath.mock.calls).toEqual([
+      [
+        "/[locale]/t/[tenant]/(app)/student/courses/[courseId]/items/[itemId]",
+        "page",
+      ],
+      ["/[locale]/t/[tenant]/(app)/student/courses/[courseId]", "page"],
+    ]);
     expect(result).toEqual({
       ok: false,
       errorKey: "already-submitted",

@@ -34,10 +34,11 @@ export interface ContentPanelProps {
 /**
  * "Nội dung khoá học" — the course's other items, as NAVIGATION.
  *
- * Every row is a real `<Link>`: opening an item changes the URL and re-renders
- * the page server-side (State & Data Flow §6). There is no client "currently
- * viewing" state, so the breadcrumb, header and body can never disagree with
- * the address bar.
+ * Every RELEASED row is a real `<Link>`: opening an item changes the URL and
+ * re-renders the page server-side (State & Data Flow §6). There is no client
+ * "currently viewing" state, so the breadcrumb, header and body can never
+ * disagree with the address bar. A locked row is not a link at all — see
+ * `ItemRow`.
  *
  * The only local state is which week groups are collapsed — intentionally
  * ephemeral (it resets on navigation) because it carries no meaning worth
@@ -188,10 +189,13 @@ interface ItemRowProps {
 }
 
 /**
- * One navigable row. A locked (unreleased) item stays a link on purpose: its
- * page states WHEN it opens, which is exactly what a student clicking it wants
- * to know — unlike the timeline, where the same click would have expanded an
- * empty body.
+ * One row of the panel.
+ *
+ * A locked (unreleased) item is a NON-INTERACTIVE `aria-disabled` block, out of
+ * the tab order — the same contract `timeline-row.tsx` gives it (US-E24.3): one
+ * unreleased item must not behave like a door in one list and a wall in the
+ * other. The row still states in VISIBLE text when it opens ("Mở dd/MM"), so
+ * removing the link removes no information.
  *
  * "Currently viewing" is carried by `aria-current` for assistive tech AND by a
  * visible left accent + bold title + sr-only word for everyone else — never by
@@ -205,18 +209,8 @@ function ItemRow({
   stateLabel,
   currentLabel,
 }: ItemRowProps) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={cn(
-        // `ring-inset`: the panel clips its corners and rows run edge to edge.
-        "flex min-h-11 items-start gap-2.5 border-l-[3px] py-2.5 pr-3.5 pl-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-        active
-          ? "border-l-primary bg-primary/12"
-          : "border-l-transparent hover:bg-muted/60",
-      )}
-    >
+  const content = (
+    <>
       <ItemTypeChip
         itemType={item.itemType}
         locked={item.locked}
@@ -226,8 +220,12 @@ function ItemRow({
         <span
           className={cn(
             "block text-xs leading-snug",
+            // The active row's tint (`bg-primary/12`) is too light to carry
+            // 12px bold brand-coloured text at 4.5:1 — the accent bar, the
+            // weight and the sr-only word already say "current", so the title
+            // keeps the highest-contrast ink (ADR 0049 reasoning).
             active
-              ? "font-bold text-edu-primary-accessible"
+              ? "font-bold text-foreground"
               : item.state === "CLOSED"
                 ? "font-semibold text-edu-text-secondary"
                 : "font-semibold text-foreground",
@@ -246,6 +244,8 @@ function ItemRow({
           {active && <span className="sr-only">{currentLabel}</span>}
         </span>
       </span>
+      {/* Decorative (the sr-only word carries the meaning), but it keeps the
+          accessible brand ink so it clears 3:1 on the tint anyway. */}
       {active && (
         <Play
           className="mt-1 size-2.5 shrink-0 text-edu-primary-accessible"
@@ -253,6 +253,33 @@ function ItemRow({
           aria-hidden="true"
         />
       )}
+    </>
+  );
+
+  // `ring-inset`: the panel clips its corners and rows run edge to edge.
+  const base =
+    "flex min-h-11 items-start gap-2.5 border-l-[3px] py-2.5 pr-3.5 pl-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset";
+
+  if (item.locked) {
+    return (
+      <div aria-disabled="true" className={cn(base, "border-l-transparent")}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        base,
+        active
+          ? "border-l-primary bg-primary/12"
+          : "border-l-transparent hover:bg-muted/60",
+      )}
+    >
+      {content}
     </Link>
   );
 }

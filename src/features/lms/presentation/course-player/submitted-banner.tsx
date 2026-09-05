@@ -2,10 +2,15 @@
 
 import { Check } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import type { Ref } from "react";
 import type { SubmissionVm } from "./course-player.i-vm";
 
 export interface SubmittedBannerProps {
   submission: SubmissionVm;
+  /** Set by `submit-box.tsx` so it can move keyboard focus here when the box
+   *  it replaced disappears. Unused on the page-load path (nothing to retarget
+   *  — the banner is simply part of the document). */
+  ref?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -16,13 +21,18 @@ export interface SubmittedBannerProps {
  *
  * The grade line is a promise about a capability BE does not have yet (US-141),
  * stated plainly rather than shown as an empty score field.
+ *
+ * `tabIndex={-1}`: programmatically focusable (the submit flow lands here) but
+ * never in the tab order — a static confirmation is not a control.
  */
-export function SubmittedBanner({ submission }: SubmittedBannerProps) {
+export function SubmittedBanner({ submission, ref }: SubmittedBannerProps) {
   const t = useTranslations("courses.player");
   const format = useFormatter();
 
   return (
     <div
+      ref={ref}
+      tabIndex={-1}
       role="status"
       className="flex flex-wrap items-center gap-2 rounded-[10px] bg-edu-success-light px-3.5 py-3 font-bold text-edu-success-text text-xs"
     >

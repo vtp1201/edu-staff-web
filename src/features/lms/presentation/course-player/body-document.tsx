@@ -4,19 +4,10 @@ import { ExternalLink, Link as LinkIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ActiveItemVm } from "./course-player.i-vm";
 import { embedSourceFor } from "./embed-source";
+import { hostOf, isSafeHref } from "./safe-href";
 
 export interface BodyDocumentProps {
   item: Extract<ActiveItemVm, { kind: "document" }>;
-}
-
-/** The link's host, for the meta line. Unparseable → nothing shown (never the
- *  raw string, which could be a whole sentence a teacher typed). */
-function hostOf(url: string): string | null {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -26,11 +17,16 @@ function hostOf(url: string): string | null {
  * The anchor carries `rel="noopener noreferrer"` — the target is a foreign
  * origin chosen by whoever authored the item, so it must never get a handle on
  * `window.opener` nor our URL as a referrer.
+ *
+ * A `url` that is not http(s) (`javascript:`, `data:`, free text) is treated as
+ * NO url at all — same branch as a missing one — rather than rendered as an
+ * anchor and left to React to neutralise (`safe-href.ts`).
  */
 export function BodyDocument({ item }: BodyDocumentProps) {
   const t = useTranslations("courses.player");
-  const embed = item.url === null ? null : embedSourceFor(item.url);
-  const host = item.url === null ? null : hostOf(item.url);
+  const url = item.url !== null && isSafeHref(item.url) ? item.url : null;
+  const embed = url === null ? null : embedSourceFor(url);
+  const host = url === null ? null : hostOf(url);
 
   return (
     <div className="flex flex-col gap-3.5 px-4 py-4 sm:px-5">
@@ -49,9 +45,9 @@ export function BodyDocument({ item }: BodyDocumentProps) {
               : `${t("document.externalLabel")} · ${host}`}
           </p>
         </div>
-        {item.url !== null && (
+        {url !== null && (
           <a
-            href={item.url}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-edu-teal/55 bg-edu-teal-light px-3.5 py-2 font-bold text-edu-teal-text text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
@@ -72,7 +68,7 @@ export function BodyDocument({ item }: BodyDocumentProps) {
         </p>
       )}
 
-      {item.url === null ? (
+      {url === null ? (
         <p className="text-edu-text-secondary text-sm">
           {t("document.noLink")}
         </p>

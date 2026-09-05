@@ -323,3 +323,32 @@ export const Viewport375: Story = {
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(376);
   },
 };
+
+/**
+ * A locked (unreleased) sidebar row is NOT a link — same contract the timeline
+ * gives it (US-E24.3 `LockedRowRejectsActivation`). One unreleased item must
+ * not be a door in one list and a wall in the other.
+ */
+export const LockedSidebarRowIsNotNavigable: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const title = canvas.getByText("Kiểm tra 1 tiết — Chương IV & V");
+    const row = title.closest("[aria-disabled]");
+    expect(row).not.toBeNull();
+    if (!row) throw new Error("expected a locked row");
+
+    // Nothing activatable inside it, and no link points at the locked item.
+    expect(row.querySelector("a")).toBeNull();
+    expect(canvas.queryByRole("link", { name: /Kiểm tra 1 tiết/ })).toBeNull();
+
+    // A real click changes nothing, and it cannot take focus.
+    await userEvent.click(row);
+    expect(row.querySelector("a")).toBeNull();
+    (row as HTMLElement).focus?.();
+    expect(row.contains(document.activeElement)).toBe(false);
+
+    // The opening date is still stated in VISIBLE text — removing the link
+    // removed no information. (The separator is `vi` CLDR's, not ours.)
+    expect(row.textContent).toMatch(/Mở 08.05/);
+  },
+};
