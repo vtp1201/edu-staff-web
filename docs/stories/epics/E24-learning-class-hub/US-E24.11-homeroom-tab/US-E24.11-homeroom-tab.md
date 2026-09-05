@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -95,4 +95,201 @@ reviewer quyết; mặc định ghi vào packet Evidence + `screens.md`.
 
 ## Evidence
 
-(điền sau)
+### Un-force-mock scope (supersedes the LEAVE branch of US-E18.14 only)
+
+`bootstrap/di/discipline.di.ts` now has TWO repository factories:
+
+- `makeRepo()` — unchanged, returns `MockDisciplineRepository` **unconditionally**
+  for 14 factories (violations, conduct grades, student self-service, parent
+  multi-child). US-E18.14's two categorical blockers still hold for all of them.
+- `makeLeaveRepo()` — an ordinary `USE_MOCK ? Mock : Real` gate (decision `0014`)
+  used by **exactly three operations**: `makeGetLeaveRequestsUseCase` plus the
+  approve/reject pair inside `makeDecideLeaveUseCases`. The GVCN homeroom inbox is
+  the one conduct surface neither blocker reaches — core returns the student ids
+  itself (IAM's batch directory resolves the names, so no roster-UUID lookup) and
+  the caller is a TEACHER standing in a known `classId` (so no self-scope
+  discovery). Proven both ways by `src/bootstrap/di/discipline.di.test.ts`.
+
+`DisciplineRepository` implements those three for real; every other method is
+still the documented blocked stub that throws without touching `http.*`.
+
+### Card-by-card data source
+
+| Card | Source | Status |
+| --- | --- | --- |
+| 1 · Điểm danh hôm nay | `GET /core/api/v1/classes/{id}/attendance?date=` | **real** |
+| 2 · Vi phạm chờ xử lý | `GetViolationsUseCase` | **still mock** (US-E18.14) |
+| 3 · Đơn xin nghỉ chờ duyệt | `GET/POST /core/api/v1/conduct/student-leave-requests` | **real** (this US) |
+
+Card 2 could NOT be un-force-mocked here and this is not a `USE_MOCK` flip:
+`ViolationEntity.status` (`recorded|notified|parent_confirmed`, US-E09.1) has
+zero relation to the real `StudentViolationResponse.state`
+(`DRAFT|SUBMITTED|APPROVED|REJECTED`), and the real DTO carries no display fields
+at all (no `studentName`/`description` author). Redesigning that status axis
+cascades into `violations-tab.tsx`, `conduct-badge.tsx`, `discipline-tones.ts`
+and the parent `ViolationsList` — out of scope for a homeroom-tab story. The card
+filters the mock's `status === "recorded"` as the "chưa xử lý" proxy; when the
+real read lands, only `toViolationsVm` in `homeroom-vm.ts` changes.
+
+### Contract deltas (mechanical, no behaviour change for existing callers)
+
+- `approveLeave`/`rejectLeave` now take a `DecideLeaveInput`
+  (`id` + `studentMemberId` + `classId` + a REQUIRED `authCtx`).
+  `studentMemberId` is a REQUIRED query param on both by-id routes — it completes
+  core's `(tenantId, studentMemberId)` partition key. Rippled through
+  `IDisciplineRepository`, both repositories, both use-cases,
+  `DisciplineScreenVM`, `leave-tab.tsx`, and the `teacher/discipline` +
+  `principal/discipline` actions.
+- `AttendanceRoster` gained `taken: boolean` (additive): the mapper seeds every
+  unmarked student as `present`, so before this a never-rolled day was
+  indistinguishable from "everyone present".
+
+### decision `0063` (repository-boundary authorization)
+
+`LeaveDecisionAuthContext { role, homeroomClassIds }` is assembled ONLY in
+`makeLeaveDecisionAuthContext()` — role from the token claim, scope from the
+teacher's own class list filtered to `roles.includes("homeroom")`. Every failure
+path yields an EMPTY scope (deny by default); mock mode pins the role to
+`teacher` because `decodeRoleClaim` answers a synthetic `admin` there.
+`makeDecideLeaveUseCases()` returns `{ approve, reject, authCtx }` together, so a
+Server Action cannot construct the mutation without the context.
+The guard (`assertCanDecideLeave`) runs as the FIRST statement of
+`approveLeave`/`rejectLeave` in BOTH repositories; forge-role tests call the
+repository directly and assert `http.post` was never called
+(`discipline.repository.security.test.ts`).
+
+**Review fix (2026-09-05).** The first cut made `authCtx` OPTIONAL and let a
+missing context skip the check — fail-OPEN — while the two legacy dashboards
+(`/teacher/discipline`, `/principal/discipline`) called a context-free
+`makeApproveLeaveUseCase()`/`makeRejectLeaveUseCase()`. In real mode those two
+Server Actions could therefore decide any leave request with zero front-end
+authorization (only core's 403 stood in the way), which is exactly what
+decision `0063` exists to prevent. Now: `authCtx` is required, a missing one
+throws `forbidden`, the two context-free factories are DELETED, and both legacy
+actions use `makeDecideLeaveUseCases()`. `makeLeaveDecisionAuthContext()` needs
+no per-screen `classId` (it derives the caller's whole homeroom set), so a
+multi-class dashboard can build it fine. Consequence, and it is the CORRECT
+one: a principal on `/principal/discipline` now gets `forbidden` — BGH have
+read-only oversight at MVP (ADR 0073 Follow-Up).
+
+### decision `0026` (component placement) — deviation from COMPONENT-ARCHITECTURE §6
+
+The architecture doc asked to promote `reject-leave-dialog.tsx` into a new
+`components/shared/reject-leave-dialog/`. That would have created a THIRD
+parallel reason-dialog: `components/shared/reason-confirm-dialog/` already exists
+as the canonical home for exactly this pattern (US-E18.44 — its own doc names
+"reject a leave request" as a target, and grade-approval/grade-entry already
+migrated onto it). Done instead: the feature-local dialog was **deleted** and
+both call sites (`leave-tab.tsx`, the new `pending-leave-card.tsx`) point at
+`ReasonConfirmDialog`. Copy (`discipline.leave.rejectDialog.*`) and the ≥10-char
+rule are unchanged; the shared component adds a counter-free `role="alert"` error
+and focus return. One component, one canonical home — no new folder.
+
+### Other deviations
+
+- `HomeroomTab` + the two read-only cards are Client Components, not async RSC.
+  The AC mandates Storybook interaction stories for `attendance-not-taken`,
+  `empty-all` and `error-card`, and the Storybook runner cannot render an async
+  server component. They are data-free presentational leaves; all server work
+  stays in `homeroom-vm.ts` + `page.tsx`, and `actions` arrives as Server Action
+  refs (same shape as `TimetableTabBody`).
+- Grid is `grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]`. The
+  design-spec's bare `auto-fit minmax(300px,1fr)` overflows a 320px viewport,
+  which `accessibility.md` forbids.
+- i18n namespace is `teacherClasses.hub.homeroom.*` (the shipped E24.8/E24.9
+  convention), NOT `teacher.classHub.homeroom.*` as PLAN §5 wrote.
+- `homeroom` left `PlaceholderTab`; the now-dead
+  `teacherClasses.hub.placeholder.body.homeroom` key was removed from vi + en.
+
+### Follow-ups for the backlog
+
+1. Redesign `ViolationEntity`'s status axis against the real BE workflow —
+   prerequisite for un-force-mocking `getViolations` anywhere.
+2. `/teacher/discipline` (and `/principal/discipline`) call
+   `getLeaveRequests({})`. The real endpoint requires EXACTLY ONE of
+   `classId` / `studentMemberId`, so in real mode that call is now refused before
+   any HTTP with the documented `not-found` (it never guesses a class). Those
+   dashboards need to iterate the teacher's homeroom class ids. Pre-existing gap
+   this US surfaces, not one it creates.
+
+### Proof
+
+| Gate | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (0 errors; the 1 pre-existing warning + 1 info are in `features/messaging`) |
+| `bun vitest run` | 568 files / 4678 tests passed |
+| `bun vitest run --config vitest.storybook.mts` | 165 files / 1330 tests passed (8 new homeroom-tab stories) |
+| `bun run build` | passed |
+
+### Review + a11y + design-review (post round-1 REVISION REQUIRED)
+
+Commits: 596ec3fb (feat, round 1) + 8b3e6e29 (fix, round 2) + memory notes.
+
+Tech-lead review round 1: **REVISION REQUIRED** — 1 MUST FIX (High severity):
+`assertCanDecideLeave` fail-OPEN when `authCtx` undefined, reached via two
+unguarded legacy Server Actions (`teacher/discipline`, `principal/discipline`)
+that this US turned into real core mutations without threading a context.
+2 SHOULD FIX (missing `*.security.test.ts` per ADR 0063; stale US-E18.14 story
+doc). Round 2: **APPROVED** — `DecideLeaveInput.authCtx` now required, guard
+fail-closed (throw forbidden on missing/invalid context), bare context-free
+factories deleted from `discipline.di.ts` so a caller structurally cannot skip
+auth, both legacy actions thread real `makeLeaveDecisionAuthContext()` (principal
+now correctly gets `forbidden` per ADR 0073 read-only oversight), negative test
+for missing-context added, dedicated `discipline.repository.security.test.ts`
+(235 lines, full role sweep × both methods × both repos, forbidden-beats-not-found),
+US-E18.14 story doc supersession note added.
+
+A11y audit round 1: 1 Critical (focus loss when a list row + its focused button
+unmount after Duyệt/Từ chối succeeds — no code moved focus, WCAG 2.4.3) + 1 Major
+(count badges' `aria-label` on a `<span>` role=generic — same unreliable pattern
+already found once at `kpi-tile.tsx`) + 2 Minor (per-row `isPending` scope, and
+systemic h3-with-no-h2-ancestor across all class-hub tabs — registered backlog
+#7, deferred). Round 2: **CLOSED** — `titleRef`+`tabIndex={-1}` on the card
+heading + `.focus()` in `settle()`'s success branch covers both Approve and
+Reject-via-dialog paths; `use-dialog-return-focus.ts` gained an optional
+`fallbackRef` (additive, verified byte-identical behavior for the other 6
+existing callers) so the dialog path also lands focus correctly when its
+invoker is detached; count badges now `aria-hidden` digit + `sr-only` full
+label (kpi-tile.tsx pattern); per-row `pendingId` replaces the card-wide
+boolean (A11Y-003 closed too, done as cheap). Storybook stories
+`ApproveRemovesRow`/`RejectDialog` assert `heading.toHaveFocus()` directly —
+proof, not just claim.
+
+Design review: pass
+- design-system: conform — tokens-only (StatCard compact variant, StatusBadge
+  reuse, `border-border`/`bg-card`/`shadow-card`), 3-card grid deliberately
+  deviates from the design-spec's bare `auto-fit minmax(300px,1fr)` to
+  `grid-cols-1 sm:[auto-fit,minmax(300px,1fr)]` avoiding the 320px overflow
+  the E24.7 audit already flagged for the identical pattern.
+- a11y: WCAG AA OK post-fix — focus management on row-removal, count badges
+  have reliable accessible names, ≥44px touch targets via Button primitive,
+  ReasonConfirmDialog focus-trap intact (canonical component, promoted not
+  forked per decision 0026).
+- impeccable audit: code-level pass — no anti-pattern tells; card layout is
+  design-spec-prescribed.
+- states: full/attendance-not-taken/empty-all/reject-dialog/error-card/
+  resync-remount covered in Storybook; each of the 3 cards fails/retries
+  independently (`Promise.allSettled`).
+
+Test proof: unit (LeaveDecisionAuthContext + canDecideLeave, fail-closed sweep
+across 5 roles) + integration (dedicated security test file, forge-role sweep
+× 2 methods × 2 repos, forbidden-beats-not-found, DI structural guard proving
+the context-free factories no longer exist) + Storybook interaction (8 stories
+incl. 2 new focus-restoration assertions) — 569 files/4692 unit tests +
+165 files/1330 Storybook tests, all green. `bunx tsc --noEmit`, `bun lint`,
+`bun run build` green. Pre-push gate green on all pushed commits (one
+unrelated pre-existing flake retried successfully, confirmed not caused by
+this branch).
+
+Descoped/deferred:
+- Card 2 (vi phạm chờ xử lý) stays force-mocked — real BE status model
+  (DRAFT/SUBMITTED/APPROVED/REJECTED) has no relation to the shipped mock
+  entity's status axis and the real DTO has no display fields (backlog #4).
+- `/teacher/discipline` + `/principal/discipline` legacy `getLeaveRequests({})`
+  callers refused before HTTP in real mode — pre-existing gap this US surfaces
+  honestly rather than guessing a class (backlog #5, #6 closed as duplicate).
+- Backlog #7: systemic h3-without-h2-ancestor across class-hub tabs, not
+  introduced by this story — flag to next shell-touching story.
+- Backlog #8: principal discipline dashboard still renders approve/reject
+  buttons that always return forbidden in real mode (correct security, UX gap).

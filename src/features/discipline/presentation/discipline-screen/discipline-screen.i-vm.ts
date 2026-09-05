@@ -30,9 +30,17 @@ export interface DisciplineScreenVM {
     input: RecordViolationInput,
   ) => Promise<DisciplineActionResult>;
   deleteViolationAction: (id: string) => Promise<DisciplineActionResult>;
-  approveLeaveAction: (id: string) => Promise<DisciplineActionResult>;
+  /** `studentMemberId` + `classId` complete core's addressing for the by-id
+   *  decision routes (US-E24.11) — both are read off the row being acted on. */
+  approveLeaveAction: (
+    id: string,
+    studentMemberId: string,
+    classId: string,
+  ) => Promise<DisciplineActionResult>;
   rejectLeaveAction: (
     id: string,
+    studentMemberId: string,
+    classId: string,
     reason: string,
   ) => Promise<DisciplineActionResult>;
   overrideConductGradeAction: (

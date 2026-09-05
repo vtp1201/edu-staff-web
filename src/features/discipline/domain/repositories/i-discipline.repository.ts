@@ -4,6 +4,7 @@ import type {
   ConductSummaryEntity,
 } from "../entities/conduct-summary.entity";
 import type {
+  DecideLeaveInput,
   LeaveRequestEntity,
   SubmitChildLeaveRequestInput,
   SubmitLeaveRequestInput,
@@ -36,8 +37,12 @@ export interface IDisciplineRepository {
     note: string,
   ): Promise<ConductSummaryEntity>;
   getLeaveRequests(params: { classId?: string }): Promise<LeaveRequestEntity[]>;
-  approveLeave(id: string): Promise<LeaveRequestEntity>;
-  rejectLeave(id: string, reason: string): Promise<LeaveRequestEntity>;
+  /** Approve — GVCN of `input.classId` only (decision `0063`). */
+  approveLeave(input: DecideLeaveInput): Promise<LeaveRequestEntity>;
+  /** Reject with a mandatory reason — GVCN of `input.classId` only. */
+  rejectLeave(
+    input: DecideLeaveInput & { reason: string },
+  ): Promise<LeaveRequestEntity>;
 
   // --- Student / parent self-service (US-E09.2) ---
   getMyConductSummary(

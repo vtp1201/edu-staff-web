@@ -4393,8 +4393,7 @@
       "meta": "{count} học sinh · Năm học {year}",
       "placeholder": {
         "body": {
-          "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới.",
-          "homeroom": "Khu vực chủ nhiệm (vi phạm, đơn nghỉ) sẽ có trong bản cập nhật tới."
+          "course": "Khoá học online của lớp sẽ có trong bản cập nhật tới."
         },
         "title": "Đang xây dựng"
       },
@@ -4517,6 +4516,43 @@
           "not-found": "Không tìm thấy nội dung",
           "network-error": "Lỗi kết nối mạng",
           "unknown": "Đã xảy ra lỗi không xác định"
+        }
+      },
+      "homeroom": {
+        "attendance": {
+          "title": "Điểm danh hôm nay",
+          "taken": "Đã điểm danh",
+          "notTaken": "Chưa điểm danh",
+          "notTakenHint": "Chưa điểm danh hôm nay nên chưa có số liệu.",
+          "present": "Có mặt",
+          "excused": "Có phép",
+          "absent": "Vắng",
+          "openLink": "Mở sổ điểm danh"
+        },
+        "violations": {
+          "title": "Vi phạm chờ xử lý",
+          "countLabel": "{count} vi phạm chờ xử lý",
+          "empty": "Không có vi phạm chờ xử lý.",
+          "openLink": "Mở Vi phạm & Hạnh kiểm"
+        },
+        "leave": {
+          "title": "Đơn xin nghỉ chờ duyệt",
+          "countLabel": "{count} đơn chờ duyệt",
+          "empty": "Không có đơn nào chờ duyệt.",
+          "item": "Nghỉ {start} → {end} — {reason}",
+          "approve": "Duyệt",
+          "reject": "Từ chối",
+          "approveLabel": "Duyệt đơn nghỉ của {student}",
+          "rejectLabel": "Từ chối đơn nghỉ của {student}",
+          "approved": "Đã duyệt đơn nghỉ của {student}",
+          "rejected": "Đã từ chối đơn nghỉ của {student}"
+        },
+        "errors": {
+          "attendance": "Không tải được điểm danh hôm nay",
+          "violations": "Không tải được danh sách vi phạm",
+          "leave": "Không tải được đơn xin nghỉ",
+          "body": "Kết nối tới máy chủ đang gặp sự cố. Hãy thử tải lại mục này.",
+          "retry": "Thử lại"
         }
       }
     },

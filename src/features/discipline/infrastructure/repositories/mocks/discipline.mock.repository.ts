@@ -5,10 +5,12 @@ import type {
   ConductGrade,
   ConductSummaryEntity,
 } from "../../../domain/entities/conduct-summary.entity";
-import type {
-  LeaveRequestEntity,
-  SubmitChildLeaveRequestInput,
-  SubmitLeaveRequestInput,
+import {
+  assertCanDecideLeave,
+  type DecideLeaveInput,
+  type LeaveRequestEntity,
+  type SubmitChildLeaveRequestInput,
+  type SubmitLeaveRequestInput,
 } from "../../../domain/entities/leave-request.entity";
 import type {
   RecordViolationInput,
@@ -166,9 +168,12 @@ export class MockDisciplineRepository implements IDisciplineRepository {
     );
   }
 
-  async approveLeave(id: string): Promise<LeaveRequestEntity> {
+  async approveLeave(input: DecideLeaveInput): Promise<LeaveRequestEntity> {
+    // decision 0063: the mock repository is the durable authorization boundary
+    // while this feature is mock-first — the check runs BEFORE any state change.
+    assertCanDecideLeave(input);
     await mockDelay();
-    const req = _leave.find((l) => l.id === id);
+    const req = _leave.find((l) => l.id === input.id);
     if (!req) fail("already-processed");
     if (req.status !== "pending") fail("already-processed");
     req.status = "approved";
@@ -176,14 +181,17 @@ export class MockDisciplineRepository implements IDisciplineRepository {
     return structuredClone(req);
   }
 
-  async rejectLeave(id: string, reason: string): Promise<LeaveRequestEntity> {
+  async rejectLeave(
+    input: DecideLeaveInput & { reason: string },
+  ): Promise<LeaveRequestEntity> {
+    assertCanDecideLeave(input);
     await mockDelay();
-    const req = _leave.find((l) => l.id === id);
+    const req = _leave.find((l) => l.id === input.id);
     if (!req) fail("already-processed");
     if (req.status !== "pending") fail("already-processed");
     req.status = "rejected";
     req.rejectedBy = "Nguyễn Thị Hương";
-    req.rejectionReason = reason;
+    req.rejectionReason = input.reason;
     return structuredClone(req);
   }
 

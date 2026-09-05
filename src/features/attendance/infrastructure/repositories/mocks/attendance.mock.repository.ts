@@ -50,7 +50,9 @@ export class MockAttendanceRepository implements IAttendanceRepository {
       studentName: s.studentName,
       status: deterministicStatus(idx + dateSeed(date)),
     }));
-    return { classDate: { classId, date }, records };
+    // The mock always produces a rolled day — it seeds real per-student
+    // statuses, not the "assume present" fallback the real mapper uses.
+    return { classDate: { classId, date }, records, taken: true };
   }
 
   async saveClassAttendance(

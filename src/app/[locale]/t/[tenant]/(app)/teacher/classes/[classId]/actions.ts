@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { makeDecideLeaveUseCases } from "@/bootstrap/di/discipline.di";
 import {
   makeDeletePeriodLogUseCase,
   makeDeletePeriodPrepUseCase,
@@ -11,6 +12,7 @@ import { makeGetMyClassUseCase } from "@/bootstrap/di/teacher-class.di";
 import { resolveCurrentTermContext } from "@/bootstrap/lib/resolve-current-term";
 import type { HomeroomEntry } from "@/features/class-log/domain/entities/homeroom-entry.entity";
 import type { ClassLogFailure } from "@/features/class-log/domain/failures/class-log.failure";
+import type { DisciplineFailure } from "@/features/discipline/domain/failures/discipline.failure";
 import type {
   PeriodLog,
   SavePeriodLogInput,
@@ -216,4 +218,64 @@ export async function reviseDailyEntryAction(
   const result = await reviseEntryAction(classId, entryId);
   if (result.ok) revalidatePath(CLASS_HUB_PATH, "page");
   return result;
+}
+
+/* ── Đơn xin nghỉ của lớp chủ nhiệm (US-E24.11, HIGH-RISK) ───────────────── */
+
+export type LeaveDecisionActionResult =
+  | { ok: true }
+  | { ok: false; errorKey: DisciplineFailure["type"] };
+
+/** A thrown `DisciplineFailure` keeps its stable key; anything else degrades to
+ *  `network-error` rather than leaking an unmapped error to the client. */
+function toLeaveErrorKey(err: unknown): DisciplineFailure["type"] {
+  if (err && typeof err === "object" && "type" in err) {
+    return (err as DisciplineFailure).type;
+  }
+  return "network-error";
+}
+
+/**
+ * Approve a student leave request from the GVCN homeroom tab.
+ *
+ * `makeDecideLeaveUseCases()` returns the use-case AND the server-derived
+ * `authCtx` together (decision `0063`), so this action physically cannot call
+ * the mutation without threading the scope it must be checked against. The
+ * check itself runs at the repository boundary — a `classId` outside the
+ * caller's homeroom set is refused before any HTTP call.
+ *
+ * Approvals are terminal for the student: there is no un-approve route. The
+ * route is only revalidated when the decision actually landed.
+ */
+export async function approveLeaveAction(
+  id: string,
+  studentMemberId: string,
+  classId: string,
+): Promise<LeaveDecisionActionResult> {
+  const { approve, authCtx } = await makeDecideLeaveUseCases();
+  try {
+    await approve.execute({ id, studentMemberId, classId, authCtx });
+    revalidatePath(CLASS_HUB_PATH, "page");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, errorKey: toLeaveErrorKey(err) };
+  }
+}
+
+/** Reject a student leave request with a mandatory reason. See
+ *  {@link approveLeaveAction} for the authorization shape. */
+export async function rejectLeaveAction(
+  id: string,
+  studentMemberId: string,
+  classId: string,
+  reason: string,
+): Promise<LeaveDecisionActionResult> {
+  const { reject, authCtx } = await makeDecideLeaveUseCases();
+  try {
+    await reject.execute({ id, studentMemberId, classId, reason, authCtx });
+    revalidatePath(CLASS_HUB_PATH, "page");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, errorKey: toLeaveErrorKey(err) };
+  }
 }

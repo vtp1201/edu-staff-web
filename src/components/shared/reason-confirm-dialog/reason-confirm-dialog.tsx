@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { type RefObject, useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,6 +58,12 @@ export interface ReasonConfirmDialogProps {
    * (icon + text, never colour-only). Host owns clearing it on re-open.
    */
   errorMessage?: string | null;
+  /**
+   * Focus target on close when the control that OPENED the dialog no longer
+   * exists — e.g. confirming removed its row from a list. Optional: a dialog
+   * whose invoker survives needs nothing here.
+   */
+  returnFocusRef?: RefObject<HTMLElement | null>;
   onConfirm: (reason: string) => void;
   onOpenChange: (open: boolean) => void;
 }
@@ -96,6 +102,7 @@ export function ReasonConfirmDialog({
   formatCounter,
   isPending = false,
   errorMessage,
+  returnFocusRef,
   onConfirm,
   onOpenChange,
 }: ReasonConfirmDialogProps) {
@@ -105,7 +112,7 @@ export function ReasonConfirmDialog({
   const counterId = useId();
   const [reason, setReason] = useState("");
   const [touched, setTouched] = useState(false);
-  const returnFocus = useDialogReturnFocus(open);
+  const returnFocus = useDialogReturnFocus(open, returnFocusRef);
 
   // Reset on close so re-opening never inherits the previous reason.
   useEffect(() => {

@@ -14,6 +14,7 @@
 import type { AxiosInstance } from "axios";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/bootstrap/lib/api-envelope";
+import type { DecideLeaveInput } from "../../domain/entities/leave-request.entity";
 import type { RecordViolationInput } from "../../domain/entities/violation.entity";
 import { DisciplineRepository, toFailure } from "./discipline.repository";
 import { MockDisciplineRepository } from "./mocks/discipline.mock.repository";
@@ -28,6 +29,26 @@ const recordInput: RecordViolationInput = {
   description: "Đi học muộn",
   notifyParent: false,
 };
+
+/**
+ * Addressing tuple for a leave decision (US-E24.11) + the server-derived GVCN
+ * scope every decision REQUIRES (decision `0063`). The authorization cases —
+ * forged role, forged scope, missing context — live in the sibling
+ * `discipline.repository.security.test.ts`; here the context is always the
+ * legitimate one so the tests below exercise BEHAVIOUR, not the guard.
+ */
+function decide(
+  id: string,
+  studentMemberId: string,
+  classId: string,
+): DecideLeaveInput {
+  return {
+    id,
+    studentMemberId,
+    classId,
+    authCtx: { role: "teacher", homeroomClassIds: [classId] },
+  };
+}
 
 describe("MockDisciplineRepository", () => {
   it("getViolations returns the seeded list", async () => {
@@ -59,14 +80,17 @@ describe("MockDisciplineRepository", () => {
 
   it("approveLeave moves a pending request to approved", async () => {
     const repo = new MockDisciplineRepository();
-    const updated = await repo.approveLeave("l-1");
+    const updated = await repo.approveLeave(decide("l-1", "s-30", "11A2"));
     expect(updated.status).toBe("approved");
     expect(updated.approvedBy).toBeTruthy();
   });
 
   it("rejectLeave moves a pending request to rejected with reason", async () => {
     const repo = new MockDisciplineRepository();
-    const updated = await repo.rejectLeave("l-4", "Lý do từ chối hợp lệ");
+    const updated = await repo.rejectLeave({
+      ...decide("l-4", "s-9", "10A1"),
+      reason: "Lý do từ chối hợp lệ",
+    });
     expect(updated.status).toBe("rejected");
     expect(updated.rejectionReason).toBe("Lý do từ chối hợp lệ");
   });
@@ -74,9 +98,9 @@ describe("MockDisciplineRepository", () => {
   it("approveLeave throws already-processed for a non-pending request", async () => {
     const repo = new MockDisciplineRepository();
     // l-2 is already approved in fixtures.
-    await expect(repo.approveLeave("l-2")).rejects.toMatchObject({
-      type: "already-processed",
-    });
+    await expect(
+      repo.approveLeave(decide("l-2", "s-4", "11B2")),
+    ).rejects.toMatchObject({ type: "already-processed" });
   });
 
   it("overrideConductGrade updates grade + flags override", async () => {
@@ -403,29 +427,6 @@ describe("DisciplineRepository (real) — permanent blocked stubs (US-E18.14)", 
     expect(http.put).not.toHaveBeenCalled();
   });
 
-  it("getLeaveRequests throws without calling http.get", async () => {
-    const http = makeHttp();
-    const repo = new DisciplineRepository(http);
-    await expect(repo.getLeaveRequests({})).rejects.toBeDefined();
-    expect(http.get).not.toHaveBeenCalled();
-  });
-
-  it("approveLeave throws without calling http.post/put", async () => {
-    const http = makeHttp();
-    const repo = new DisciplineRepository(http);
-    await expect(repo.approveLeave("l-1")).rejects.toBeDefined();
-    expect(http.post).not.toHaveBeenCalled();
-    expect(http.put).not.toHaveBeenCalled();
-  });
-
-  it("rejectLeave throws without calling http.post/put", async () => {
-    const http = makeHttp();
-    const repo = new DisciplineRepository(http);
-    await expect(repo.rejectLeave("l-1", "reason")).rejects.toBeDefined();
-    expect(http.post).not.toHaveBeenCalled();
-    expect(http.put).not.toHaveBeenCalled();
-  });
-
   it("getMyConductSummary throws without calling http.get", async () => {
     const http = makeHttp();
     const repo = new DisciplineRepository(http);
@@ -503,5 +504,181 @@ describe("DisciplineRepository (real) — permanent blocked stubs (US-E18.14)", 
       }),
     ).rejects.toBeDefined();
     expect(http.post).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * US-E24.11 — the THREE methods that stopped being blocked stubs. Everything
+ * else in this class is still permanently blocked (asserted above).
+ */
+describe("DisciplineRepository (real) — GVCN homeroom leave inbox (US-E24.11)", () => {
+  const submitted = {
+    requestId: "req-1",
+    studentMemberId: "stu-1",
+    classId: "cls-10a1",
+    startDate: "2026-05-02",
+    endDate: "2026-05-03",
+    reason: "Khám bệnh định kỳ tại bệnh viện",
+    state: "SUBMITTED" as const,
+    submittedByMemberId: "par-1",
+    createdAt: "2026-04-29T08:00:00Z",
+    updatedAt: "2026-04-29T08:00:00Z",
+  };
+
+  function envelope(data: unknown, pagination?: unknown) {
+    return {
+      success: true,
+      data,
+      error: null,
+      meta: {
+        requestId: "r",
+        timestamp: "t",
+        ...(pagination ? { pagination } : {}),
+      },
+    };
+  }
+
+  const resolveNames = async (ids: string[]) =>
+    new Map(ids.map((id) => [id, `Tên ${id}`]));
+
+  it("getLeaveRequests?classId= drains the inbox and maps every row", async () => {
+    const get = vi.fn().mockResolvedValue(envelope([submitted]));
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    const rows = await repo.getLeaveRequests({ classId: "cls-10a1" });
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests",
+    );
+    expect(get.mock.calls[0][1].params).toMatchObject({ classId: "cls-10a1" });
+    // The list endpoint is cursor-paginated → the envelope must be read raw.
+    expect(get.mock.calls[0][1].raw).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("req-1");
+    expect(rows[0].studentName).toBe("Tên stu-1");
+    expect(rows[0].submittedBy).toBe("parent");
+    expect(rows[0].status).toBe("pending");
+  });
+
+  it("getLeaveRequests follows the cursor until the last page", async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce(
+        envelope([submitted], { hasMore: true, nextCursor: "c2" }),
+      )
+      .mockResolvedValueOnce(
+        envelope([{ ...submitted, requestId: "req-2" }], { hasMore: false }),
+      );
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    const rows = await repo.getLeaveRequests({ classId: "cls-10a1" });
+
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(get.mock.calls[1][1].params.cursor).toBe("c2");
+    expect(rows.map((r) => r.id)).toEqual(["req-1", "req-2"]);
+  });
+
+  it("getLeaveRequests WITHOUT a classId is refused before any HTTP call (core requires exactly one of classId/studentMemberId)", async () => {
+    const http = makeHttp();
+    const repo = new DisciplineRepository(http, resolveNames);
+
+    await expect(repo.getLeaveRequests({})).rejects.toMatchObject({
+      type: "not-found",
+    });
+    expect(http.get).not.toHaveBeenCalled();
+  });
+
+  it("getLeaveRequests still returns rows when the name lookup fails (raw ids, never a blank inbox)", async () => {
+    const get = vi.fn().mockResolvedValue(envelope([submitted]));
+    const repo = new DisciplineRepository(makeHttp({ get }), async () => {
+      throw new Error("directory down");
+    });
+
+    const rows = await repo.getLeaveRequests({ classId: "cls-10a1" });
+
+    expect(rows[0].studentName).toBe("stu-1");
+  });
+
+  it("getLeaveRequests maps a core error code to the failure union (never a raw ApiError)", async () => {
+    const get = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_FORBIDDEN", 403));
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    await expect(
+      repo.getLeaveRequests({ classId: "cls-10a1" }),
+    ).rejects.toMatchObject({ type: "forbidden" });
+  });
+
+  it("approveLeave POSTs to /{id}/approve with studentMemberId as a QUERY param", async () => {
+    const post = vi.fn().mockResolvedValue({
+      ...submitted,
+      state: "APPROVED",
+      approverMemberId: "gvcn-1",
+    });
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    const updated = await repo.approveLeave({
+      id: "req-1",
+      studentMemberId: "stu-1",
+      classId: "cls-10a1",
+      authCtx: { role: "teacher", homeroomClassIds: ["cls-10a1"] },
+    });
+
+    expect(post.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests/req-1/approve",
+    );
+    expect(post.mock.calls[0][2]).toEqual({
+      params: { studentMemberId: "stu-1" },
+    });
+    expect(updated.status).toBe("approved");
+    expect(updated.approvedBy).toBe("Tên gvcn-1");
+  });
+
+  it("rejectLeave POSTs { rejectionReason } alongside the studentMemberId query", async () => {
+    const post = vi.fn().mockResolvedValue({
+      ...submitted,
+      state: "REJECTED",
+      approverMemberId: "gvcn-1",
+      rejectionReason: "Đã nghỉ quá 5 ngày trong tháng",
+    });
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    const updated = await repo.rejectLeave({
+      id: "req-1",
+      studentMemberId: "stu-1",
+      classId: "cls-10a1",
+      reason: "Đã nghỉ quá 5 ngày trong tháng",
+      authCtx: { role: "teacher", homeroomClassIds: ["cls-10a1"] },
+    });
+
+    expect(post.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests/req-1/reject",
+    );
+    expect(post.mock.calls[0][1]).toEqual({
+      rejectionReason: "Đã nghỉ quá 5 ngày trong tháng",
+    });
+    expect(post.mock.calls[0][2]).toEqual({
+      params: { studentMemberId: "stu-1" },
+    });
+    expect(updated.status).toBe("rejected");
+    expect(updated.rejectedBy).toBe("Tên gvcn-1");
+  });
+
+  it("maps core's own 403 to the SAME forbidden key the local guard throws", async () => {
+    const post = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_FORBIDDEN", 403));
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    await expect(
+      repo.approveLeave({
+        id: "req-1",
+        studentMemberId: "stu-1",
+        classId: "cls-10a1",
+        authCtx: { role: "teacher", homeroomClassIds: ["cls-10a1"] },
+      }),
+    ).rejects.toMatchObject({ type: "forbidden" });
   });
 });

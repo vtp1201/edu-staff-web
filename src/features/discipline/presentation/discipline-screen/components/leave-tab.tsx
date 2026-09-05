@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ReasonConfirmDialog } from "@/components/shared/reason-confirm-dialog";
 import { StatCard } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,10 @@ import type {
   LeaveRequestEntity,
   LeaveStatus,
 } from "../../../domain/entities/leave-request.entity";
+import { MIN_REJECT_REASON_LENGTH } from "../../../domain/use-cases/reject-leave.use-case";
 import type { DisciplineScreenVM } from "../discipline-screen.i-vm";
 import { LEAVE_STATUS_BAR_CLASS, LEAVE_STATUS_TONE } from "../discipline-tones";
 import { DisciplineAvatar } from "./discipline-avatar";
-import { RejectLeaveDialog } from "./reject-leave-dialog";
 
 const STATUSES: LeaveStatus[] = ["pending", "approved", "rejected"];
 const STATUS_ICON = { pending: Clock, approved: Check, rejected: X } as const;
@@ -57,9 +58,10 @@ export function LeaveTab({
     [list],
   );
 
-  const handleApprove = (id: string) => {
+  const handleApprove = (req: LeaveRequestEntity) => {
+    const id = req.id;
     startTransition(async () => {
-      const res = await vm.approveLeaveAction(id);
+      const res = await vm.approveLeaveAction(id, req.studentId, req.classId);
       if (res.errorKey) {
         toast.error(tErr(res.errorKey));
         return;
@@ -72,9 +74,9 @@ export function LeaveTab({
 
   const handleReject = (reason: string) => {
     if (!rejectTarget) return;
-    const id = rejectTarget.id;
+    const { id, studentId, classId } = rejectTarget;
     startTransition(async () => {
-      const res = await vm.rejectLeaveAction(id, reason);
+      const res = await vm.rejectLeaveAction(id, studentId, classId, reason);
       if (res.errorKey) {
         toast.error(tErr(res.errorKey));
         return;
@@ -193,7 +195,7 @@ export function LeaveTab({
                         aria-label={t("approveLabel", {
                           student: req.studentName,
                         })}
-                        onClick={() => handleApprove(req.id)}
+                        onClick={() => handleApprove(req)}
                       >
                         <Check className="size-3.5" aria-hidden="true" />
                         {t("approve")}
@@ -220,8 +222,22 @@ export function LeaveTab({
         )}
       </div>
 
-      <RejectLeaveDialog
+      {/* Migrated off the feature-local `RejectLeaveDialog` onto the canonical
+          `ReasonConfirmDialog` (decision 0026, US-E24.11) — the same move
+          US-E18.44 made for the grade-revision dialog. Copy, i18n namespace and
+          the ≥10-char rule are unchanged; the shared component additionally
+          gives the field focus-return and a `role="alert"` error. */}
+      <ReasonConfirmDialog
         open={rejectTarget !== null}
+        title={t("rejectDialog.title")}
+        description={t("rejectDialog.description")}
+        reasonLabel={t("rejectDialog.reason")}
+        reasonPlaceholder={t("rejectDialog.reasonPlaceholder")}
+        confirmLabel={t("rejectDialog.confirm")}
+        cancelLabel={t("rejectDialog.cancel")}
+        minLength={MIN_REJECT_REASON_LENGTH}
+        requiredMessage={t("rejectDialog.reasonMinLength")}
+        tooShortMessage={t("rejectDialog.reasonMinLength")}
         isPending={isPending}
         onOpenChange={(open) => {
           if (!open) setRejectTarget(null);

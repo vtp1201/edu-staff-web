@@ -194,8 +194,8 @@ export const PlaceholderTabs: Story = {
 export const MobileWrapTabs: Story = {
   args: {
     header: header(["homeroom", "subject"]),
-    tabs: tabs(["homeroom", "subject"], "homeroom"),
-    children: <TabPlaceholder tab="homeroom" />,
+    tabs: tabs(["homeroom", "subject"], "course"),
+    children: <TabPlaceholder tab="course" />,
   },
   decorators: [
     (Story) => (

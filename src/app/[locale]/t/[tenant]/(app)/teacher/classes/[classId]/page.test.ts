@@ -24,7 +24,15 @@ const buildTimetableTabVm = vi.fn();
 vi.mock("./timetable-vm", () => ({
   buildTimetableTabVm: (input: unknown) => buildTimetableTabVm(input),
 }));
+// US-E24.11: same shape for the homeroom tab — the builder has its own tests;
+// here we only prove the ROUTE picks it (and only for a GVCN).
+const buildHomeroomTabVm = vi.fn();
+vi.mock("./homeroom-vm", () => ({
+  buildHomeroomTabVm: (input: unknown) => buildHomeroomTabVm(input),
+}));
 vi.mock("./actions", () => ({
+  approveLeaveAction: vi.fn(),
+  rejectLeaveAction: vi.fn(),
   savePeriodLogAction: vi.fn(),
   deletePeriodLogAction: vi.fn(),
   savePeriodPrepAction: vi.fn(),
@@ -97,6 +105,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   studentsExec.mockResolvedValue({ ok: true, data: [] });
   buildTimetableTabVm.mockResolvedValue({ classId: "cls-10a1", days: [] });
+  buildHomeroomTabVm.mockResolvedValue({
+    classId: "cls-10a1",
+    attendance: { ok: true, data: {} },
+    violations: { ok: true, data: {} },
+    leave: { ok: true, data: { requests: [] } },
+  });
 });
 
 describe("ClassHubPage — tabs by role (US-E24.8 AC)", () => {
@@ -132,7 +146,9 @@ describe("ClassHubPage — tabs by role (US-E24.8 AC)", () => {
     });
     const { el } = await renderPage();
     expect(el?.props.tabs.activeTab).toBe("homeroom");
-    expect(el?.props.children.props.tab).toBe("homeroom");
+    // …and lands on the REAL body, not a placeholder.
+    expect(el?.props.children.props.vm).toBeDefined();
+    expect(el?.props.children.props.tab).toBeUndefined();
   });
 
   it("AC: ?tab=homeroom on a class I do NOT own falls back to the default tab AND its body", async () => {
@@ -224,16 +240,39 @@ describe("ClassHubPage — tab bodies", () => {
     expect(buildTimetableTabVm.mock.calls[0][0].weekParam).toBeUndefined();
   });
 
-  it("the two not-yet-built tabs render their own placeholder and fetch NO roster", async () => {
+  it("`?tab=homeroom` on a GVCN class renders the real homeroom body with BOTH leave actions bound", async () => {
     classExec.mockResolvedValue({ ok: true, data: cls() });
-    for (const tab of ["course", "homeroom"]) {
-      vi.clearAllMocks();
-      classExec.mockResolvedValue({ ok: true, data: cls() });
-      const { el } = await renderPage(tab);
-      expect(el?.props.tabs.activeTab).toBe(tab);
-      expect(el?.props.children.props.tab).toBe(tab);
-      expect(studentsExec).not.toHaveBeenCalled();
-    }
+    const { el } = await renderPage("homeroom");
+
+    expect(el?.props.tabs.activeTab).toBe("homeroom");
+    expect(buildHomeroomTabVm).toHaveBeenCalledWith({
+      classId: "cls-10a1",
+      locale: "vi",
+      tenant: "t1",
+    });
+    const actions = el?.props.children.props.actions as Record<string, unknown>;
+    expect(Object.keys(actions ?? {})).toEqual(["approveLeave", "rejectLeave"]);
+    expect(el?.props.children.props.tab).toBeUndefined();
+    expect(studentsExec).not.toHaveBeenCalled();
+  });
+
+  it("a GVBM deep-linking `?tab=homeroom` never even BUILDS the homeroom VM", async () => {
+    classExec.mockResolvedValue({
+      ok: true,
+      data: cls({ isHomeroom: false, roles: ["subject"] }),
+    });
+
+    await renderPage("homeroom");
+
+    expect(buildHomeroomTabVm).not.toHaveBeenCalled();
+  });
+
+  it("`course` is the last not-yet-built tab and renders its own placeholder, fetching NO roster", async () => {
+    classExec.mockResolvedValue({ ok: true, data: cls() });
+    const { el } = await renderPage("course");
+    expect(el?.props.tabs.activeTab).toBe("course");
+    expect(el?.props.children.props.tab).toBe("course");
+    expect(studentsExec).not.toHaveBeenCalled();
   });
 });
 

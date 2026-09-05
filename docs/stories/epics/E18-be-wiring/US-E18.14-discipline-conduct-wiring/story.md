@@ -127,6 +127,47 @@ Full matrix:
 | `LEAVE_REQUEST_INVALID_INPUT` | 400 | leave.go |
 | `LEAVE_REQUEST_STUDENT_NOT_ENROLLED` | 403 | leave.go |
 
+## Supersession note (2026-09-05, US-E24.11)
+
+**3 of the 17 repository methods are no longer blocked.** US-E24.11 (GVCN
+homeroom tab on the class hub) un-force-mocked exactly:
+
+| Method | Real route |
+| --- | --- |
+| `getLeaveRequests({ classId })` | `GET /core/api/v1/conduct/student-leave-requests?classId=` |
+| `approveLeave` | `POST /core/api/v1/conduct/student-leave-requests/{id}/approve?studentMemberId=` |
+| `rejectLeave` | `POST /core/api/v1/conduct/student-leave-requests/{id}/reject?studentMemberId=` |
+
+Why neither blocker below applies to those three — and ONLY those three:
+
+1. **Roster-UUID blocker** — core returns `studentMemberId` on every leave row
+   itself, and IAM's batch directory (`makeBatchResolveMembersUseCase`) turns
+   the ids into display names. Nothing has to look a student UUID up from a
+   name.
+2. **Self-scope `classId` blocker** — the caller is a TEACHER standing in a
+   known `classId` (the class hub route param), so no STUDENT/PARENT self-scope
+   discovery is needed. `getLeaveRequests({})` (no `classId`) is still refused
+   before any HTTP call: core requires exactly one of `classId`/
+   `studentMemberId`.
+
+**The other 14 methods are still permanently blocked exactly as written
+below** — `getViolations`, `recordViolation`, `deleteViolation`,
+`getConductSummary`, `overrideConductGrade`, `getMyConductSummary`,
+`getMyViolations`, `getMyLeaveRequests`, `submitLeaveRequest`, `getChildren`,
+`getChildConductSummary`, `getChildViolations`, `getChildLeaveRequests`,
+`submitLeaveForChild`. `discipline.di.ts` therefore has TWO factories:
+`makeRepo()` (still force-mocks regardless of `USE_MOCK`) and `makeLeaveRepo()`
+(an ordinary `USE_MOCK ? Mock : Real` gate). Read "every operation is
+permanently blocked" below as "every operation except the three leave-inbox
+ones".
+
+Authorization for the two decisions is a repository-boundary check
+(decision `0063`): `assertCanDecideLeave` runs FIRST in both repository
+implementations, the context is assembled only in
+`makeLeaveDecisionAuthContext()`, and it is REQUIRED — a missing context is
+denied `forbidden`, never waved through. Proof:
+`src/features/discipline/infrastructure/repositories/discipline.repository.security.test.ts`.
+
 ### Why the whole feature stays mock-first (not a partial/hybrid wiring)
 
 Two independent, categorical blockers — each already flagged once in the

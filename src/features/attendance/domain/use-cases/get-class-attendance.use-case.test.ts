@@ -6,6 +6,7 @@ import { GetClassAttendanceUseCase } from "./get-class-attendance.use-case";
 const fakeRoster: AttendanceRoster = {
   classDate: { classId: "10A1", date: "2026-05-10" },
   records: [],
+  taken: false,
 };
 
 function makeRepo(

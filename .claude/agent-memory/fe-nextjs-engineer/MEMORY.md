@@ -119,6 +119,7 @@
 - [Embedded field → own resource](pattern-embedded-field-to-own-resource.md) — E18.51: real contract exposes a mock-era embedded array as its OWN gated endpoint ⇒ DELETE the… (+file)
 
 - [RBAC-blocked client-side join](pattern-rbac-blocked-clientside-join.md) — E18.54: "resolve it client-side" dies on RBAC not N+1; pick the widest allow-list endpoint, degrade… (+file)
+- [Carve-out un-mock + canonical reason dialog](pattern-carve-out-unmock-and-canonical-dialog.md) — E24.11: un-mock a MINORITY of a force-mocked DI via a 2nd repo factory; reason-confirm-dialog is already the canonical home
 - [Per-card fan-out + server urgency](pattern-per-card-fanout-and-server-urgency.md) — E24.2: allSettled per-CARD degrade (null≠0) + dueSoon flag decided server-side
 - [Testing axios interceptors](pattern-testing-axios-interceptors.md) — E01.3: stub `client.defaults.adapter` to capture config (no network, no mock lib); AxiosHeaders dot-access works
 - [Cold-cache 5s timeouts](gotcha-cold-cache-5s-timeouts.md) — editing i18n/endpoint files invalidates the vitest transform cache → fake RSC page-test timeouts;… (+file)
@@ -135,3 +136,5 @@
 
 - [Use-case-level authCtx + shared-map body](pattern-usecase-level-authctx-and-shared-map-body.md) — US-E24.9: 0063 guard at the USE-CASE when BE re-derives the key; delete a hybrid composite when its last force-mock goes; revalidatePath ≠ new props
 - [Seeded client body + create-only resource](pattern-seeded-client-body-and-create-only-resource.md) — E24.9 review: key={urlParam} on a useState-seeded body; no UPDATE verb ⇒ "Sửa" is a 409 dead end
+
+- [Required authCtx + detached-invoker focus](pattern-required-authctx-and-detached-focus.md) — E24.11 review: optional authCtx + early-return guard = fail-open (delete the context-free factory); dialog that removes its own row needs a returnFocusRef fallback

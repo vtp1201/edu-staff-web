@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LeaveRequestEntity } from "../entities/leave-request.entity";
+import type { LeaveDecisionAuthContext } from "../entities/leave-decision-auth-context.entity";
+import type {
+  DecideLeaveInput,
+  LeaveRequestEntity,
+} from "../entities/leave-request.entity";
 import type { IDisciplineRepository } from "../repositories/i-discipline.repository";
 import { ApproveLeaveUseCase } from "./approve-leave.use-case";
 
@@ -50,15 +54,39 @@ function makeRepo(
   };
 }
 
+/** The addressing tuple + the server-derived scope every decision now carries
+ *  (`authCtx` is REQUIRED since the US-E24.11 review — no fail-open path). */
+const decide: DecideLeaveInput = {
+  id: "l-1",
+  studentMemberId: "s-1",
+  classId: "11A2",
+  authCtx: { role: "teacher", homeroomClassIds: ["11A2"] },
+};
+
 describe("ApproveLeaveUseCase", () => {
-  it("approves a pending leave request", async () => {
+  it("approves a pending leave request, forwarding the whole addressing tuple", async () => {
     const approveLeave = vi.fn().mockResolvedValue(leave);
     const useCase = new ApproveLeaveUseCase(makeRepo({ approveLeave }));
 
-    const res = await useCase.execute("l-1");
+    const res = await useCase.execute(decide);
 
-    expect(approveLeave).toHaveBeenCalledWith("l-1");
+    // `studentMemberId` completes core's partition key — dropping it would
+    // address a route that cannot exist.
+    expect(approveLeave).toHaveBeenCalledWith(decide);
     expect(res.status).toBe("approved");
+  });
+
+  it("passes a server-derived authCtx straight through to the repository (decision 0063 — the check runs at the data boundary)", async () => {
+    const approveLeave = vi.fn().mockResolvedValue(leave);
+    const useCase = new ApproveLeaveUseCase(makeRepo({ approveLeave }));
+    const authCtx: LeaveDecisionAuthContext = {
+      role: "teacher",
+      homeroomClassIds: ["11A2", "11A3"],
+    };
+
+    await useCase.execute({ ...decide, authCtx });
+
+    expect(approveLeave).toHaveBeenCalledWith({ ...decide, authCtx });
   });
 
   it("propagates already-processed failure from the repo", async () => {
@@ -67,7 +95,7 @@ describe("ApproveLeaveUseCase", () => {
       .mockRejectedValue({ type: "already-processed" });
     const useCase = new ApproveLeaveUseCase(makeRepo({ approveLeave }));
 
-    await expect(useCase.execute("l-1")).rejects.toMatchObject({
+    await expect(useCase.execute(decide)).rejects.toMatchObject({
       type: "already-processed",
     });
   });

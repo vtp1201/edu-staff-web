@@ -65,6 +65,8 @@ export function mapClassAttendance(
   const ids = enrolledMemberIds ?? dto.records.map((r) => r.studentMemberId);
   return {
     classDate: { classId: dto.classId, date: dto.date },
+    // The SAVED records — not the seeded rows — decide this (see the entity).
+    taken: dto.records.length > 0,
     records: ids.map((id) => {
       const record = saved.get(id);
       return record

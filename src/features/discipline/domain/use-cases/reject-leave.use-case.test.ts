@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LeaveRequestEntity } from "../entities/leave-request.entity";
+import type { LeaveDecisionAuthContext } from "../entities/leave-decision-auth-context.entity";
+import type {
+  DecideLeaveInput,
+  LeaveRequestEntity,
+} from "../entities/leave-request.entity";
 import type { IDisciplineRepository } from "../repositories/i-discipline.repository";
 import { RejectLeaveUseCase } from "./reject-leave.use-case";
 
@@ -50,17 +54,29 @@ function makeRepo(
   };
 }
 
+/** The addressing tuple + the server-derived scope every decision now carries
+ *  (`authCtx` is REQUIRED since the US-E24.11 review — no fail-open path). */
+const decide: DecideLeaveInput = {
+  id: "l-1",
+  studentMemberId: "s-1",
+  classId: "10A1",
+  authCtx: { role: "teacher", homeroomClassIds: ["10A1"] },
+};
+
 describe("RejectLeaveUseCase", () => {
-  it("rejects a leave request with a valid reason", async () => {
+  it("rejects a leave request with a valid reason, forwarding the whole addressing tuple", async () => {
     const rejectLeave = vi.fn().mockResolvedValue(leave);
     const useCase = new RejectLeaveUseCase(makeRepo({ rejectLeave }));
 
-    const res = await useCase.execute("l-1", "Đã nghỉ quá 5 ngày trong tháng");
+    const res = await useCase.execute({
+      ...decide,
+      reason: "Đã nghỉ quá 5 ngày trong tháng",
+    });
 
-    expect(rejectLeave).toHaveBeenCalledWith(
-      "l-1",
-      "Đã nghỉ quá 5 ngày trong tháng",
-    );
+    expect(rejectLeave).toHaveBeenCalledWith({
+      ...decide,
+      reason: "Đã nghỉ quá 5 ngày trong tháng",
+    });
     expect(res.status).toBe("rejected");
   });
 
@@ -68,10 +84,31 @@ describe("RejectLeaveUseCase", () => {
     const rejectLeave = vi.fn();
     const useCase = new RejectLeaveUseCase(makeRepo({ rejectLeave }));
 
-    await expect(useCase.execute("l-1", "ngắn")).rejects.toMatchObject({
-      type: "missing-reject-reason",
-    });
+    await expect(
+      useCase.execute({ ...decide, reason: "ngắn" }),
+    ).rejects.toMatchObject({ type: "missing-reject-reason" });
     expect(rejectLeave).not.toHaveBeenCalled();
+  });
+
+  it("passes a server-derived authCtx straight through to the repository (decision 0063)", async () => {
+    const rejectLeave = vi.fn().mockResolvedValue(leave);
+    const useCase = new RejectLeaveUseCase(makeRepo({ rejectLeave }));
+    const authCtx: LeaveDecisionAuthContext = {
+      role: "teacher",
+      homeroomClassIds: ["10A1", "10A2"],
+    };
+
+    await useCase.execute({
+      ...decide,
+      reason: "Lý do hợp lệ đủ dài",
+      authCtx,
+    });
+
+    expect(rejectLeave).toHaveBeenCalledWith({
+      ...decide,
+      reason: "Lý do hợp lệ đủ dài",
+      authCtx,
+    });
   });
 
   it("propagates already-processed failure from the repo", async () => {
@@ -81,7 +118,7 @@ describe("RejectLeaveUseCase", () => {
     const useCase = new RejectLeaveUseCase(makeRepo({ rejectLeave }));
 
     await expect(
-      useCase.execute("l-1", "Lý do hợp lệ đủ dài"),
+      useCase.execute({ ...decide, reason: "Lý do hợp lệ đủ dài" }),
     ).rejects.toMatchObject({ type: "already-processed" });
   });
 });

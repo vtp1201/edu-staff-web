@@ -10,6 +10,8 @@ import type {
   ClassHubTabsVm,
 } from "@/features/teacher/presentation/class-hub/class-hub.i-vm";
 import { ClassHubScreen } from "@/features/teacher/presentation/class-hub/class-hub-screen";
+import { HomeroomTab } from "@/features/teacher/presentation/class-hub/homeroom-tab/homeroom-tab";
+import type { HomeroomLeaveActions } from "@/features/teacher/presentation/class-hub/homeroom-tab/homeroom-tab.i-vm";
 import { TabPlaceholder } from "@/features/teacher/presentation/class-hub/tab-placeholder";
 import { TimetableTab } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab";
 import type { TimetableTabActions } from "@/features/teacher/presentation/class-hub/timetable-tab/timetable-tab.i-vm";
@@ -19,14 +21,17 @@ import { TeacherClassesScreen } from "@/features/teacher/presentation/teacher-cl
 import type { TeacherClassesScreenVM } from "@/features/teacher/presentation/teacher-classes-screen/teacher-classes-screen.i-vm";
 import { classHubBase, classHubHref } from "@/shared/class-hub-href";
 import {
+  approveLeaveAction,
   deletePeriodLogAction,
   deletePeriodPrepAction,
+  rejectLeaveAction,
   reviseDailyEntryAction,
   saveDailyEntryAction,
   savePeriodLogAction,
   savePeriodPrepAction,
   submitDailyEntryAction,
 } from "./actions";
+import { buildHomeroomTabVm } from "./homeroom-vm";
 import { buildTimetableTabVm } from "./timetable-vm";
 
 /** The seven Server Action refs, bound once and threaded to the client body as
@@ -39,6 +44,12 @@ const TIMETABLE_ACTIONS: TimetableTabActions = {
   saveDailyEntry: saveDailyEntryAction,
   submitDailyEntry: submitDailyEntryAction,
   reviseDailyEntry: reviseDailyEntryAction,
+};
+
+/** The two leave decisions, bound once (server-action refs, not closures). */
+const HOMEROOM_ACTIONS: HomeroomLeaveActions = {
+  approveLeave: approveLeaveAction,
+  rejectLeave: rejectLeaveAction,
 };
 
 /**
@@ -118,6 +129,16 @@ export default async function ClassHubPage({
           })
         }
         actions={TIMETABLE_ACTIONS}
+      />
+    );
+  } else if (activeTab === "homeroom") {
+    // Reachable only for a GVCN — `resolveClassHubTab` collapses `?tab=homeroom`
+    // to the role default for anyone else, so this branch IS the gate's other
+    // side, not a second check.
+    body = (
+      <HomeroomTab
+        vm={await buildHomeroomTabVm({ classId: cls.id, locale, tenant })}
+        actions={HOMEROOM_ACTIONS}
       />
     );
   } else {
