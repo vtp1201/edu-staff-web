@@ -1,7 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import {
+  expect,
+  fireEvent,
+  fn,
+  userEvent,
+  waitFor,
+  within,
+} from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { CourseItem } from "@/features/lms/domain/entities/course-item.entity";
 import { TeacherCourseTab } from "./teacher-course-tab";
@@ -319,5 +326,57 @@ export const DocumentUrlValidation: Story = {
     await expect(
       fields.getByLabelText(messages.courses.teacher.createDialog.urlField),
     ).toHaveAttribute("aria-invalid", "true");
+  },
+};
+
+/**
+ * QA gap-fill — the other half of the AC ("https:// → gọi thật") had zero
+ * story proof: `DocumentUrlValidation` only ever exercised the `http://`
+ * rejection, so `addDocumentItem` being CALLED with a valid `https://` url
+ * was still an untested claim. Also pins the success side-effect: the dialog
+ * closes and the field error never appears.
+ */
+export const DocumentUrlHttpsSubmits: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: "Thêm mục" })[0] as HTMLElement,
+    );
+    await userEvent.click(
+      await body.findByRole("menuitem", { name: /Tài liệu/ }),
+    );
+
+    const dialog = await body.findByRole("dialog");
+    const fields = within(dialog);
+    await userEvent.type(
+      fields.getByLabelText(messages.courses.teacher.createDialog.titleField),
+      "Đề cương",
+    );
+    // `userEvent.type` occasionally drops the leading keystrokes on a
+    // `type="url"` field in this Chromium runner (a browser input quirk, not
+    // a production bug — reproduced independently of this component);
+    // `fireEvent.change` sets the value in one shot and sidesteps it.
+    fireEvent.change(
+      fields.getByLabelText(messages.courses.teacher.createDialog.urlField),
+      { target: { value: "https://example.edu.vn/de-cuong.pdf" } },
+    );
+    await userEvent.click(
+      fields.getByRole("button", {
+        name: messages.courses.teacher.createDialog.save,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(args.actions.addDocumentItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Đề cương",
+          url: "https://example.edu.vn/de-cuong.pdf",
+        }),
+      ),
+    );
+    // Success closes the dialog — a field error never had a chance to render.
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
   },
 };
