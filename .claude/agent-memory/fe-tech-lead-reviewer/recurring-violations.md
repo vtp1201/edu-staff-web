@@ -87,3 +87,24 @@ affordances, throwing repositories + failure-union mapping by `error.code`.
     `errorKey` and fed straight into `t("errors." + key)` → missing-key render. When the
     feature already exports an exhaustive `X_FAILURE_TYPES` const array, demand the guard
     validate against it.
+
+12. **An optional `authCtx` on a decision/mutation input = a fail-OPEN authorization
+    guard** (US-E24.11 `assertCanDecideLeave`: `if (input.authCtx === undefined) return;`).
+    The optional field exists so LEGACY call sites (older dashboards using a bare
+    `makeXUseCase()`) keep compiling — those call sites are exactly the ones running the
+    irreversible mutation with zero front-end authz. Two-part check on every decision `0063`
+    story: (a) is the `authCtx` field REQUIRED in the input type, and does the guard deny on
+    `undefined`/`null` anyway (an untyped Server-Action payload still gets through types);
+    (b) `grep` for OTHER factories that build the same use-case without a context — the fix
+    is to DELETE the bare factories and return `{ useCase, authCtx }` as one bundle so an
+    action cannot forget it. A DI test asserting `expect(mod).not.toHaveProperty("makeXUseCase")`
+    is the durable regression proof.
+
+13. **A per-story a11y fix that edits a SHARED hook/primitive** (`src/shared/use-dialog-return-focus.ts`)
+    is only safe if the new capability is an OPTIONAL trailing param AND the no-param path
+    is unchanged-or-strictly-better. Read the else-branch: US-E24.11 added
+    `invoker?.isConnected ? invoker : (fallbackRef?.current ?? null)` — old callers with a
+    DETACHED invoker now fall through to Radix's own restore instead of `preventDefault()` +
+    a no-op `focus()` (which dropped focus to `<body>`). That is an improvement, not a
+    regression. Verify by running the FULL suite + `vitest.storybook.mts`, not just the
+    feature's tests — the shared hook has callers in other features.

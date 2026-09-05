@@ -100,3 +100,26 @@ US-E24.9 (timetable tab: class week + period-log/prep + homeroom daily log):
   keeping UI-only state as local as possible); only lift if a cross-row
   constraint ("only one open at a time") becomes an actual AC — YAGNI until
   then.
+
+US-E24.11 (homeroom tab: 3 independent cards, Promise.allSettled):
+- **Per-card error isolation belongs at the tab-container level, not inside
+  each card's VM.** Rather than adding `errorKey?` to every card's VM type,
+  the page maps each `PromiseSettledResult` into a `HomeroomCardResult<T> =
+  {ok:true,data:T} | {ok:false,retryHref}` union; the container switches on
+  `.ok` and renders ONE shared `HomeroomCardError` (feature-local, 3
+  call-sites) instead of the real card. Keeps success-shape VMs pure — no
+  optional error field threaded through N places.
+- **Zero-client-JS card retry**: a plain `<Button asChild><Link href={same
+  tab url}>` re-navigation re-runs the RSC fetch — no client wrapper needed
+  just to give a failed read-only card a "retry" affordance. Only add a
+  client boundary when the card ALSO has real interactivity (mutations).
+- **Promotion copy-check before adding a `title`/`description` prop**: when a
+  2nd screen needs a promoted dialog (`reject-leave-dialog.tsx` → `components/
+  shared/`), check both screens' actual copy needs FIRST — if identical,
+  promote with zero prop widening; only add a variance prop if the 2nd screen
+  genuinely needs different text. Don't pre-emptively generalize.
+- **Inbox-style list cards remove the item on success** (not flip its status
+  in place) when the card's whole purpose is "pending items only" — contrast
+  with a full-history table (`leave-tab.tsx`) that flips status and keeps the
+  row. Same underlying entity/action, different card semantics, deliberate
+  divergence documented at the card's prop-interface, not a copy-paste bug.
