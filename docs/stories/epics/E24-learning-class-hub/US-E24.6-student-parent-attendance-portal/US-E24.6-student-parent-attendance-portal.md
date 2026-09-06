@@ -392,18 +392,78 @@ fully specified above and reuse `StatCard`/`Dialog`/`Textarea` primitives as-is.
 
 ## Evidence
 
-Branch `feat/us-e24.6-student-parent-attendance-portal`, 7 commits, TDD red→green at every step.
+Branch `feat/us-e24.6-student-parent-attendance-portal`, 8 commits (7 implementation + 1 review/a11y
+fix round), TDD red→green at every step.
 
-### Proof commands (all run on the final tree)
+### Proof commands (all run on the final tree, after the fix round)
 
 | Command | Result |
 | --- | --- |
 | `bunx tsc --noEmit` | clean |
-| `bun vitest run` | 584 files / **4919 passed**, 0 failed |
-| `bun vitest run --config vitest.storybook.mts` | 170 files / **1371 passed**, 0 failed |
+| `bun vitest run` | 584 files / **4928 passed**, 0 failed |
+| `bun vitest run --config vitest.storybook.mts` | 170 files / **1373 passed**, 0 failed |
 | `bun lint` | clean for this story (1 pre-existing warning + 1 info in `features/messaging`, untouched) |
 | `bun run build` | ✓ compiled; `ƒ /[locale]/t/[tenant]/student/attendance` present in the route table |
 | Kong smoke of `POST .../{id}/attachments` | **NOT RUN — stack down** (`curl localhost:8080/core/health` → connection refused). The real path is `USE_MOCK`-gated, so local dev is unaffected; the wire contract is proved against `openapi.yaml` by integration tests instead. **Open follow-up for `fe-lead`.** |
+
+### Review + a11y round (fe-tech-lead-reviewer + fe-accessibility-auditor, parallel)
+
+- **fe-tech-lead-reviewer verdict: initially Revision Required → all findings closed.** MUST FIX
+  (attachment-retry re-uploaded already-succeeded files, a data-loss risk on a no-undo mutation) fixed:
+  `uploadAll` now returns the failed files, not a count; retry resends only those. SHOULD FIX #1
+  (`resolveTargetStudent` was a denylist — only the STUDENT branch was overridden, every other role
+  passed its client-supplied `studentMemberId` straight through) converted to a fail-closed allowlist
+  (student→claim, parent→requested child, everything else refused pre-wire, zero HTTP calls — proved by
+  new `it.each` tests for TEACHER/ADMIN/no-role tokens). SHOULD FIX #2 (shared leave-request copy said
+  "≥10 characters" but this dialog's real rule is `minLength: 1`) resolved by adding a dialog-specific
+  `reasonPlaceholderNoMin` key rather than touching the shared key (the 2 legacy screens genuinely do
+  enforce ≥10, confirmed by reading their zod schemas first). Layering, DI carve-out correctness (legacy
+  `/student/conduct` + `/parent/conduct` untouched), tokens-only, i18n parity, and TDD-proof depth were
+  all independently re-verified by the reviewer (`tsc`/`vitest` re-run, not just trusted) — Approved.
+- **fe-accessibility-auditor verdict: PASS with minor (0 blocker/critical, 1 major, 3 minor) → all
+  closed.** A11Y-103 (major: remove-attachment button ~32px, below the 44×44 rule) fixed with a
+  `min-h-[44px] min-w-[44px]` tap target (icon size unchanged). A11Y-104 (file-input hint only wired
+  into `aria-describedby` reactively after a rejection) fixed — the hint is described from the start.
+  A11Y-101 (AttendanceSummary's Mobile story didn't assert no-overflow) — adding the assertion surfaced
+  a REAL defect: the shared `StatCard` needed ~173px min-content but only had ~152px in the 2-up 375px
+  grid, causing horizontal scroll. Fixed with an opt-in, default-off `denseOnMobile` variant on
+  `components/shared/stat-card` (no new token; every class restates the design-spec value at `sm:`),
+  consumed only by `attendance-summary`. A11Y-102 (parent-attendance-screen had no Mobile-viewport
+  story) — added.
+
+### Design-review gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+- **Design-system conformance**: pass. Raw-color/anti-pattern grep across every touched file
+  (`leave-request-dialog.tsx`, `attendance-summary.tsx`, `stat-card.tsx`, `progress-bar.tsx`,
+  `parent-attendance-screen.tsx`, `student-attendance-screen/*`) — the only hex-literal hits are
+  contrast-ratio documentation comments (existing repo convention, decision `0027`), zero raw color in
+  actual class usage; no side-stripe borders, no gradient text, no nested cards, no magic z-index.
+  `ProgressBar`'s width transition confirmed `motion-safe:`-gated (`progress-bar.tsx:68`). Component
+  reuse confirmed (StatCard/StatusBadge/Dialog/Textarea, no forked variants) — already independently
+  verified by `fe-tech-lead-reviewer` (component placement, decision `0026`) and
+  `fe-accessibility-auditor` (contrast, motion, touch target) in the round above; this pass corroborates
+  their findings directly against the diff rather than re-deriving them.
+- **Accessibility**: pass — see the a11y round above, all findings closed.
+- **`/impeccable audit`**: skill's `context.mjs` returned `NO_PRODUCT_MD` — the repo has never run
+  `/impeccable init` (a known, pre-existing gap noted in `.claude/rules/impeccable.md` since story
+  `E07.1`, unrelated to this US and out of scope to fix here). Ran a manual scoped audit instead against
+  the skill's own "Absolute bans" checklist (side-stripe borders, gradient text, glassmorphism,
+  identical-card grids, uppercase eyebrows, numbered-section scaffolding, container overflow) on every
+  touched file — 0 findings. No `critique`/`polish` run (design system is supreme per `.claude/rules/
+  impeccable.md`, and this US extends an already-shipped design-spec entry rather than introducing a new
+  screen concept).
+- **States & responsive**: pass — loading/empty/error/success states covered per the Storybook list
+  above; 320px (student) / 375px (both screens) verified non-overflowing (A11Y-101 fix); dark mode not
+  separately re-verified in this pass (existing token-driven theming, no new hardcoded colors to break
+  it).
+
+```
+Design review: pass
+- design-system: conform (token/typography/component OK)
+- a11y: WCAG AA OK; keyboard OK; reduced-motion OK
+- impeccable audit: manual scoped audit (init prerequisite unmet, pre-existing gap), 0 findings
+- states: loading/empty/error/success OK; responsive 320/375px OK
+```
 
 ### Layers proved
 
