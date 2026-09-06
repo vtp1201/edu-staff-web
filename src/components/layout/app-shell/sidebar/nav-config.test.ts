@@ -79,12 +79,16 @@ describe("NAV_BY_ROLE", () => {
    * permanent redirects. Asserting the WHOLE list (not just the two absences)
    * so a re-added entry cannot slip back in unnoticed.
    */
-  it("gives a student exactly seven nav items, without assignments/exams", () => {
+  it("gives a student exactly eight nav items, without assignments/exams", () => {
     expect(NAV_BY_ROLE.student.map((i) => i.href)).toEqual([
       "/student",
       "/student/courses",
       "/student/grades",
       "/student/conduct",
+      // US-E24.6 — the new `/student/attendance` route. An unlisted route is
+      // an orphan (2026-08-02 dead-link audit), so it gets a nav entry even
+      // though the design's student navMap does not list one.
+      "/student/attendance",
       "/student/schedule",
       "/messages",
       "/profile",
