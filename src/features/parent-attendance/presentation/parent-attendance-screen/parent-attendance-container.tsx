@@ -2,8 +2,13 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import type { SubmitMyLeaveRequestInput } from "@/features/discipline/domain/entities/leave-request.entity";
 import { ParentAttendanceScreen } from "./parent-attendance-screen";
 import type { ParentAttendanceScreenVM } from "./parent-attendance-screen.i-vm";
+import type {
+  RetryLeaveAttachmentsResult,
+  SubmitLeaveRequestResult,
+} from "./submit-leave-request.types";
 
 /**
  * Client wrapper: child + date range are URL state, so switching either is a
@@ -13,8 +18,20 @@ import type { ParentAttendanceScreenVM } from "./parent-attendance-screen.i-vm";
  */
 export function ParentAttendanceContainer({
   vm,
+  onSubmitLeave,
+  onRetryAttachments,
 }: {
   vm: ParentAttendanceScreenVM;
+  /** Server Action refs, passed down from the RSC (never imported here). */
+  onSubmitLeave?: (
+    input: SubmitMyLeaveRequestInput,
+    formData: FormData,
+  ) => Promise<SubmitLeaveRequestResult>;
+  onRetryAttachments?: (
+    requestId: string,
+    studentMemberId: string,
+    formData: FormData,
+  ) => Promise<RetryLeaveAttachmentsResult>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,6 +56,11 @@ export function ParentAttendanceContainer({
         if (Object.keys(patch).length > 0) navigate(patch);
       }}
       onRetry={() => startTransition(() => router.refresh())}
+      onSubmitLeave={onSubmitLeave}
+      onRetryAttachments={onRetryAttachments}
+      // A new request must show up as a "Chờ duyệt" row immediately, so the
+      // RSC re-reads rather than the client patching a list it does not own.
+      onSubmitted={() => startTransition(() => router.refresh())}
     />
   );
 }

@@ -4,6 +4,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import enMessages from "@/bootstrap/i18n/messages/en.json";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ChildSwitcherChild } from "@/components/shared/child-switcher";
+import type { LeaveRequestEntity } from "@/features/discipline/domain/entities/leave-request.entity";
 import type { ChildAttendanceRecord } from "../../domain/entities/child-attendance-record.entity";
 import { ParentAttendanceScreen } from "./parent-attendance-screen";
 import { resolveRangeFromParams } from "./resolve-range";
@@ -29,6 +30,8 @@ const CHILDREN: ChildSwitcherChild[] = [
 ];
 
 const RANGE = { startDate: "2026-08-01", endDate: "2026-08-31" };
+/** Frozen "today" — the dialog's date pickers must not depend on the run date. */
+const TODAY = "2026-09-06";
 
 const RECORDS: ChildAttendanceRecord[] = [
   { date: "2026-08-03", status: "present" },
@@ -59,6 +62,9 @@ export const Populated: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
     onChildSwitch: fn(),
@@ -158,6 +164,9 @@ export const DefaultCurrentMonthRange: Story = {
       activeChildId: "c1",
       range: resolveRangeFromParams({}, new Date().toISOString().slice(0, 10)),
       records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -196,6 +205,9 @@ export const NoLinkedChildren: Story = {
       activeChildId: null,
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -216,6 +228,9 @@ export const EmptyRange: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -241,6 +256,9 @@ export const ErrorForbidden: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "forbidden",
     },
   },
@@ -259,6 +277,9 @@ export const ErrorNetworkRetry: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "network-error",
     },
     onRetry: fn(),
@@ -283,6 +304,9 @@ export const ErrorRangeTooLarge: Story = {
       activeChildId: "c1",
       range: { startDate: "2024-01-01", endDate: "2026-08-31" },
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "date-range-too-large",
     },
   },
@@ -309,6 +333,9 @@ export const ErrorInvalidRange: Story = {
       activeChildId: "c1",
       range: { startDate: "2026-08-31", endDate: "2026-08-01" },
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "invalid-date-range",
     },
   },
@@ -321,5 +348,231 @@ export const ErrorInvalidRange: Story = {
     expect(alert).toHaveAttribute("id", "pa-range-error");
     // range failures are terminal — no retry affordance
     expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
+  },
+};
+
+/* ── US-E24.6 — "Xin phép nghỉ học" ─────────────────────────────────────── */
+
+const mLeave = messages.discipline.studentConduct.leaveRequest;
+const mParent = messages.parentAttendance;
+
+/** A still-SUBMITTED request of the selected child. */
+const PENDING_REQUEST: LeaveRequestEntity = {
+  id: "lr-9",
+  studentId: "c1",
+  studentName: "Nguyễn Minh Khoa",
+  initials: "NK",
+  avatarTone: "primary",
+  classId: "cls-11a2",
+  className: "11A2",
+  submittedBy: "parent",
+  submitterName: "Nguyễn Văn A",
+  reason: "Việc gia đình",
+  startDate: "10/09/2026",
+  endDate: "12/09/2026",
+  dayCount: 3,
+  type: "other",
+  status: "pending",
+  submittedAt: "2026-09-06T02:00:00Z",
+  approvedBy: null,
+  rejectedBy: null,
+  rejectionReason: null,
+};
+
+const leaveArgs = {
+  onChildSwitch: fn(),
+  onRangeChange: fn(),
+  onRetry: fn(),
+  onSubmitted: fn(),
+};
+
+/** AC: the header button opens the dialog and submits the 5-field payload. */
+export const RequestLeaveDialog: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: true as const,
+      requestId: "req-1",
+      total: 0,
+      failedCount: 0,
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    const trigger = canvas.getByRole("button", {
+      name: mParent.requestLeaveButton,
+    });
+    await userEvent.click(trigger);
+
+    const dialog = await body.findByRole("dialog");
+    // The child being requested for is named, not implied.
+    await expect(dialog).toHaveTextContent("Nguyễn Minh Khoa");
+
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+    const [input] = (
+      args.onSubmitLeave as unknown as {
+        mock: { calls: [Record<string, string>, FormData][] };
+      }
+    ).mock.calls[0];
+    // The class is the one read off the attendance rows — never asked of the user.
+    expect(input).toEqual({
+      studentMemberId: "c1",
+      classId: "cls-11a2",
+      startDate: TODAY,
+      endDate: TODAY,
+      reason: "Ốm",
+    });
+    // Success closes the dialog and re-fetches so the pending row appears.
+    await expect(args.onSubmitted).toHaveBeenCalled();
+  },
+};
+
+/**
+ * AC: a partial ATTACHMENT failure must NOT read as a failed submission — the
+ * request exists, so the screen says N/M and offers a files-only retry.
+ */
+export const AttachmentsPartialFailure: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: true as const,
+      requestId: "req-1",
+      total: 2,
+      failedCount: 1,
+    })),
+    onRetryAttachments: fn(async () => ({
+      ok: true as const,
+      total: 2,
+      failedCount: 0,
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    // A live region states exactly how many files failed…
+    const notice = await canvas.findByRole("status");
+    await expect(notice).toHaveTextContent(
+      mParent.submitPartial.replace("{failed}", "1").replace("{total}", "2"),
+    );
+
+    // …and the retry re-uploads to the SAME request (no second submission).
+    await userEvent.click(
+      within(notice).getByRole("button", { name: mParent.retryAttachments }),
+    );
+    await expect(args.onRetryAttachments).toHaveBeenCalledTimes(1);
+    await expect(
+      (args.onRetryAttachments as unknown as { mock: { calls: string[][] } })
+        .mock.calls[0][0],
+    ).toBe("req-1");
+    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+  },
+};
+
+/** A SUBMITTED request shows as the first "Chờ duyệt" row of the history. */
+export const PendingRow: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [PENDING_REQUEST],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const history = within(
+      canvas.getByRole("region", {
+        name: messages.attendanceSummary.historyTitle,
+      }),
+    );
+    const rows = history.getAllByRole("listitem");
+    await expect(rows[0]).toHaveTextContent(
+      messages.attendanceSummary.statusPending,
+    );
+    await expect(rows[0]).toHaveTextContent(PENDING_REQUEST.reason);
+  },
+};
+
+/**
+ * AC/packet Q3: with no attendance row in the range there is no `classId`, so a
+ * request cannot be filed — the button explains itself instead of failing on
+ * submit.
+ */
+export const LeaveUnavailableWithoutClass: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: [],
+      leaveRequests: [],
+      childClassId: null,
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    const trigger = canvas.getByRole("button", {
+      name: mParent.requestLeaveButton,
+    });
+    // aria-disabled, not `disabled`: the explanation must stay reachable by
+    // keyboard, and it is wired through aria-describedby.
+    await expect(trigger).toHaveAttribute("aria-disabled", "true");
+    const describedBy = trigger.getAttribute("aria-describedby") ?? "";
+    await expect(document.getElementById(describedBy)).toHaveTextContent(
+      mParent.requestLeaveUnavailable,
+    );
+
+    await userEvent.click(trigger);
+    await expect(body.queryByRole("dialog")).toBeNull();
+    await expect(args.onSubmitLeave).not.toHaveBeenCalled();
   },
 };

@@ -6,15 +6,24 @@ import {
   CheckCircle2,
   Clock,
   FileCheck2,
+  Plus,
   Users,
   XCircle,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { AttendanceSummaryBlock } from "@/components/shared/attendance-summary";
 import { ChildSwitcher } from "@/components/shared/child-switcher";
 import { EmptyState } from "@/components/shared/empty-state";
+import {
+  LeaveRequestDialog,
+  type LeaveRequestSubmission,
+} from "@/components/shared/leave-request-dialog";
 import { ListError } from "@/components/shared/list-error";
 import { ListSkeleton } from "@/components/shared/list-skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +37,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AttendanceStatus } from "@/features/attendance/domain/entities/attendance-status.entity";
+import { joinAbsenceReasons } from "@/features/attendance/domain/join-absence-reasons";
+import { summarizeAttendance } from "@/features/attendance/domain/summarize-attendance";
+import type { SubmitMyLeaveRequestInput } from "@/features/discipline/domain/entities/leave-request.entity";
+import type { DisciplineFailure } from "@/features/discipline/domain/failures/discipline.failure";
 import {
   ATTENDANCE_STATUS_ORDER,
   ATTENDANCE_STATUS_TONE,
@@ -36,6 +49,10 @@ import {
   parseIsoDate,
 } from "./build-parent-attendance-vm";
 import type { ParentAttendanceScreenVM } from "./parent-attendance-screen.i-vm";
+import type {
+  RetryLeaveAttachmentsResult,
+  SubmitLeaveRequestResult,
+} from "./submit-leave-request.types";
 
 /** Status is never conveyed by colour alone (accessibility.md): icon + label. */
 const STATUS_ICON: Record<AttendanceStatus, LucideIcon> = {
@@ -64,6 +81,19 @@ export interface ParentAttendanceScreenProps {
   onChildSwitch?: (childId: string) => void;
   onRangeChange?: (next: { startDate?: string; endDate?: string }) => void;
   onRetry?: () => void;
+  /** Server Action ref — creates the request, then uploads its files. */
+  onSubmitLeave?: (
+    input: SubmitMyLeaveRequestInput,
+    formData: FormData,
+  ) => Promise<SubmitLeaveRequestResult>;
+  /** Server Action ref — re-uploads files to an EXISTING request. */
+  onRetryAttachments?: (
+    requestId: string,
+    studentMemberId: string,
+    formData: FormData,
+  ) => Promise<RetryLeaveAttachmentsResult>;
+  /** Called after a successful submission so the host can re-fetch. */
+  onSubmitted?: () => void;
 }
 
 export function ParentAttendanceScreen({
@@ -72,10 +102,31 @@ export function ParentAttendanceScreen({
   onChildSwitch,
   onRangeChange,
   onRetry,
+  onSubmitLeave,
+  onRetryAttachments,
+  onSubmitted,
 }: ParentAttendanceScreenProps) {
   const t = useTranslations("parentAttendance");
   const tStatus = useTranslations("attendance.status");
+  const tErrors = useTranslations("discipline.errors");
   const format = useFormatter();
+
+  const requestButtonRef = useRef<HTMLButtonElement>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  // Plain state, NOT `useTransition`: an async transition whose action sets
+  // state after an `await` can leave `isPending` stuck true, freezing the
+  // button (a bug this repo has hit before).
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  /** Set only when the request landed but some of its FILES did not. */
+  const [partialUpload, setPartialUpload] = useState<{
+    requestId: string;
+    studentMemberId: string;
+    files: File[];
+    total: number;
+    failed: number;
+  } | null>(null);
+  const [isRetryingFiles, setIsRetryingFiles] = useState(false);
 
   const hasChildren = vm.childList.length > 0;
   const activeChildId = vm.activeChildId ?? vm.childList[0]?.childId ?? null;
@@ -92,6 +143,90 @@ export function ParentAttendanceScreen({
       : {};
 
   const counts = countByStatus(vm.records);
+  const activeChild = vm.childList.find((c) => c.childId === activeChildId);
+  // Both derivations are the SAME pure functions the student screen uses, so
+  // the two screens can never disagree about a rate or a history row.
+  const { summary, months } = summarizeAttendance(vm.records);
+  const history = joinAbsenceReasons(vm.records, vm.leaveRequests);
+
+  /**
+   * A request needs the child's classId, and the only source is the child's own
+   * attendance rows (packet Q3). An empty range therefore genuinely cannot file
+   * a request — the button is disabled and SAYS SO, rather than failing on
+   * submit.
+   */
+  const canRequestLeave =
+    hasChildren &&
+    activeChildId !== null &&
+    vm.childClassId !== null &&
+    onSubmitLeave !== undefined;
+
+  async function handleSubmitLeave(submission: LeaveRequestSubmission) {
+    if (!onSubmitLeave || !activeChildId || !vm.childClassId) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const formData = new FormData();
+    for (const file of submission.files) formData.append("file", file);
+
+    const result = await onSubmitLeave(
+      {
+        studentMemberId: activeChildId,
+        classId: vm.childClassId,
+        startDate: submission.startDate,
+        endDate: submission.endDate,
+        reason: submission.reason,
+      },
+      formData,
+    );
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      // Stay OPEN on failure: the draft (dates, reason, files) is still there
+      // and closing would make the user retype it.
+      setSubmitError(tErrors(result.errorKey as DisciplineFailure["type"]));
+      return;
+    }
+
+    setDialogOpen(false);
+    if (result.failedCount > 0) {
+      setPartialUpload({
+        requestId: result.requestId,
+        studentMemberId: activeChildId,
+        files: submission.files,
+        total: result.total,
+        failed: result.failedCount,
+      });
+    } else {
+      setPartialUpload(null);
+      toast.success(t("submitSuccess"));
+    }
+    onSubmitted?.();
+  }
+
+  async function handleRetryAttachments() {
+    if (!onRetryAttachments || !partialUpload) return;
+    setIsRetryingFiles(true);
+    const formData = new FormData();
+    for (const file of partialUpload.files) formData.append("file", file);
+    const result = await onRetryAttachments(
+      partialUpload.requestId,
+      partialUpload.studentMemberId,
+      formData,
+    );
+    setIsRetryingFiles(false);
+    if (result.failedCount === 0) {
+      setPartialUpload(null);
+      toast.success(t("attachmentsRetrySuccess"));
+      onSubmitted?.();
+      return;
+    }
+    setPartialUpload({
+      ...partialUpload,
+      total: result.total,
+      failed: result.failedCount,
+    });
+  }
 
   // Both failures are caused by the two date inputs' values, so BOTH get the
   // same invalid + described-by treatment (a11y audit Minor: only
@@ -106,12 +241,86 @@ export function ParentAttendanceScreen({
 
   return (
     <div className="flex flex-col gap-5 p-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-extrabold text-2xl text-foreground">
-          {t("title")}
-        </h1>
-        <p className="text-edu-text-secondary text-sm">{t("subtitle")}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="font-extrabold text-2xl text-foreground">
+            {t("title")}
+          </h1>
+          <p className="text-edu-text-secondary text-sm">{t("subtitle")}</p>
+        </div>
+        {hasChildren && onSubmitLeave ? (
+          <Button
+            ref={requestButtonRef}
+            type="button"
+            // `aria-disabled` rather than `disabled`: the reason it cannot be
+            // used is text the user must be able to reach, and a natively
+            // disabled control is skipped by the keyboard.
+            aria-disabled={!canRequestLeave}
+            aria-describedby={
+              canRequestLeave ? undefined : "pa-leave-unavailable"
+            }
+            onClick={() => {
+              if (canRequestLeave) setDialogOpen(true);
+            }}
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            {t("requestLeaveButton")}
+          </Button>
+        ) : null}
       </header>
+
+      {hasChildren && onSubmitLeave && !canRequestLeave ? (
+        <p
+          id="pa-leave-unavailable"
+          className="rounded-[var(--edu-radius-btn)] bg-edu-warning-light px-3 py-2.5 text-edu-warning-text text-xs leading-relaxed"
+        >
+          {t("requestLeaveUnavailable")}
+        </p>
+      ) : null}
+
+      {partialUpload ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--edu-radius-btn)] bg-edu-warning-light px-3 py-2.5 text-edu-warning-text text-xs"
+        >
+          <span>
+            {t("submitPartial", {
+              failed: partialUpload.failed,
+              total: partialUpload.total,
+            })}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isRetryingFiles}
+            aria-busy={isRetryingFiles}
+            onClick={handleRetryAttachments}
+          >
+            {t("retryAttachments")}
+          </Button>
+        </div>
+      ) : null}
+
+      {onSubmitLeave ? (
+        <LeaveRequestDialog
+          open={dialogOpen}
+          minDate={vm.today}
+          description={
+            activeChild
+              ? `${activeChild.name} · ${activeChild.className}`
+              : undefined
+          }
+          isPending={isSubmitting}
+          errorMessage={submitError}
+          returnFocusRef={requestButtonRef}
+          onSubmit={handleSubmitLeave}
+          onOpenChange={(next) => {
+            setDialogOpen(next);
+            if (!next) setSubmitError(null);
+          }}
+        />
+      ) : null}
 
       {hasChildren && activeChildId ? (
         <ChildSwitcher
@@ -192,6 +401,14 @@ export function ParentAttendanceScreen({
           />
         ) : (
           <>
+            {/* Same block, same numbers, as `/student/attendance` — fed by the
+                records the page ALREADY fetched, so it costs no extra query. */}
+            <AttendanceSummaryBlock
+              summary={summary}
+              months={months}
+              history={history}
+            />
+
             <ul
               aria-label={t("summaryLabel")}
               className="flex flex-wrap items-center gap-2"
