@@ -37,6 +37,16 @@ export type AttendanceSummaryTabProps = {
  * server. The controls render in EVERY state so a teacher who lands on an
  * empty month or a 403 can still pick another range.
  */
+/** Each notice cause gets its OWN copy — see `SummaryNotice`. */
+const NOTICE_KEY: Record<
+  SummaryNotice,
+  "noTerms" | "rangeTooLarge" | "invalidRange"
+> = {
+  "no-terms": "noTerms",
+  "range-too-large": "rangeTooLarge",
+  "invalid-range": "invalidRange",
+};
+
 export function AttendanceSummaryTab({
   vm,
   controls,
@@ -65,7 +75,7 @@ export function AttendanceSummaryTab({
           role="status"
           className="rounded-[var(--edu-radius-card)] border border-border bg-muted px-4 py-3 text-foreground text-sm"
         >
-          {t(notice === "no-terms" ? "noTerms" : "rangeTooLarge")}
+          {t(NOTICE_KEY[notice])}
         </p>
       )}
 

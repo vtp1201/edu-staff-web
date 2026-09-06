@@ -416,4 +416,58 @@ full above, same call as E24.6's plan. Reasoning:
 
 ## Evidence
 
-(chưa có — planned)
+> Status vẫn `in-progress`: `fe-lead` flip `implemented` sau design-review gate + merge.
+> Mọi con số dưới đây là kết quả chạy thật trên branch `feat/us-e24.14-attendance-summary-tab`
+> (worktree `us-e24.14`), sau vòng fix review.
+
+### Commits
+
+`f3d1c3f0` (plan) · `0d6b11bd` (phase 1 domain) · `5f50c635` (phase 2 repo/use-case/DI) ·
+`fbcc6dab` (phase 3–4 UI + URL state + i18n + stories) · `58be14df` (phase 5 design-spec +
+screens.md) · `c0ff7729` (memory) · + commit vòng fix review (mục "Fix round" bên dưới).
+
+### Proof theo tầng
+
+| Tầng | Proof thật |
+| --- | --- |
+| Unit | `summarize-class-attendance.test.ts` (8): counts per-HS, LATE vào `recorded` nhưng ngoài numerator, `recorded=0` → `rate`/`band` `null` + ngoài `meanRate`, bảng biên 95.0 → Đạt / 90.0 → Cảnh báo / 89.9 → Nguy cơ. `resolve-summary-range.test.ts` (24): month/term/year đúng biên với `todayIso` inject (không đọc `Date.now()`), clamp tới hôm nay, `termsOf` chỉ lấy năm active + loại term có ngày không ISO, đúng 366 ngày được chấp nhận / >366 bị từ chối trước mọi wire call, **và (fix round) 2 nguyên nhân invalid tách rời**: `too-large` vs `invalid-selection`. `summarize-class-attendance.use-case.test.ts` (4) với fake `IAttendanceRepository`, không chạm HTTP. |
+| Integration | `attendance.repository.test.ts` (+7): đúng MỘT call range với `startDate`/`endDate`, unwrap envelope, `403 → forbidden`, roster join thiếu tên → fallback ordinal `HS #n`. `attendance.mock.repository.test.ts` (9). `attendance-query-keys.test.ts` (5): key family `attendance-summary` disjoint với `attendance-history`/`history` ⇒ đổi `?range=` không thể refetch/invalidate tab Today/History (AC). |
+| E2E / Story | `attendance-summary-tab.stories.tsx` (11 story): `Full` (4 StatCard, chip theo band scoped theo hàng, caption + `scope="col"`, `progressbar` mang `aria-valuenow`, thứ tự alerts risk→watch, không có "Báo PH"), `NoAlerts`, `SortByRate`, `RangeSwitch`, `NoTerms`, `RangeTooLarge`, **`InvalidRange` (mới)**, `Loading` (đúng 1 live region), `Empty`, `ErrorState`, `ErrorForbidden`, `Viewport375` (page không tràn 375px). **`attendance-summary-container.stories.tsx` (3 story mới, fix round)**: `NoTermsWithTermInUrl`, `FutureMonthInUrl`, `OversizeYearInUrl` — mock `nextjs.navigation.query` để test đúng đường URL→range mà story presentational không chạm tới được. `attendance-screen.stories.tsx` (+ args tab 3) giữ nguyên các story cũ xanh. |
+| Platform | `bunx tsc --noEmit` clean · `bun vitest run` **590 files / 4993 tests xanh** · `bun vitest run --config vitest.storybook.mts` **172 files / 1405 tests xanh** · `bun run build` `✓ Compiled successfully` · `bun lint:fix` clean (còn 1 warning + 1 info có sẵn ở `messaging/message-context-menu.tsx`, không thuộc story này). Chưa curl range 1 HK qua Kong (stack chưa lên) — vẫn là mục Platform còn nợ, không chặn gate FE. |
+| Release | Design-review gate + a11y do `fe-lead` đóng. `fe-accessibility-auditor`: **Pass** (1 minor A11Y-201, đã fix). |
+
+### Fix round (sau review)
+
+`fe-tech-lead-reviewer`: **Revision Required** — không có blocker security/architecture
+(được ghi nhận là một trong những story "additive tab" sạch nhất epic), 3 SHOULD FIX +
+bookkeeping. Đã fix hết:
+
+1. **Notice sai nguyên nhân.** `resolveSummaryRange` trả `{type:"invalid-request"}` cho 4
+   nguyên nhân khác nhau, container gộp tất cả thành copy "vượt quá 366 ngày" ⇒ `?month=2027-01`
+   (tháng tương lai) bị bảo đi "chọn phạm vi ngắn hơn". Fix theo hướng (a): domain trả
+   `InvalidSummaryRange { type:"invalid-request"; reason: "too-large" | "invalid-selection" }`
+   (`type` giữ nguyên nên vẫn là một `AttendanceFailure` hợp lệ) + `isInvalidRange()`;
+   `SummaryNotice` thêm `invalid-range` với key i18n riêng `attendance.summaryTab.invalidRange`
+   (vi + en). Proof: 3 test domain mới + story `InvalidRange` + `FutureMonthInUrl` /
+   `OversizeYearInUrl` (mỗi bên assert copy của mình VÀ assert vắng mặt copy của bên kia).
+2. **`?range=term` khi không đọc được lịch.** Container coerce
+   `effectiveKind = noTermsDegrade ? "month" : rangeKind` sau khi query terms đã settle rỗng,
+   nên segmented luôn có item được chọn và luôn có control phụ; notice `no-terms` vẫn hiện để
+   giải thích việc đổi (không im lặng). Proof: story `NoTermsWithTermInUrl`.
+3. **`initialsOf` trùng 2 file.** Hoist sang `attendance-summary-tab/student-initials.ts`,
+   `summary-table.tsx` + `alerts-panel.tsx` import từ đó (dedupe trong cùng thư mục màn hình,
+   không phải vi phạm decision `0026`).
+4. *(consider)* Bỏ 2 cast `terms[0]?.startDate as string` trong `yearRange` bằng guard
+   `const first = terms[0]; if (!first) return { type: "no-terms" }`.
+
+`fe-accessibility-auditor`: **Pass with 1 minor** — **A11Y-201**: nút sort cột "Tỉ lệ" có
+`min-h-11` nhưng không bảo đảm bề rộng ⇒ thêm `min-w-11 px-1` cho ngang bằng các control khác
+trong tab (≥44×44).
+
+Không đụng (theo yêu cầu review): posture reject-not-truncate cho range >366 ngày (giữ nguyên,
+nhất quán `ListAttendanceHistoryUseCase`) và cách suy ra "hôm nay" theo UTC (convention toàn repo).
+
+### Harness Delta còn nợ
+
+Ask BE: (a) endpoint thông báo PH về chuyên cần (nút "Báo PH" cố ý không render);
+(b) TEACHER đọc `academic-years`/`terms` (hiện fallback month-only khi 403/empty).

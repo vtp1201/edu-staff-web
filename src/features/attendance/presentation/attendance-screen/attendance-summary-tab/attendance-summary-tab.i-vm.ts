@@ -45,5 +45,9 @@ export interface SummaryControlsVM {
 
 /** A neutral, non-error notice shown above the body.
  *  - `no-terms`: the academic calendar is unavailable → month-only.
- *  - `range-too-large`: >366 days, refused client-side before any wire call. */
-export type SummaryNotice = "no-terms" | "range-too-large";
+ *  - `range-too-large`: >366 days, refused client-side before any wire call.
+ *  - `invalid-range`: the selection itself is unusable (a month that has not
+ *    started, a malformed `?month=`, a term with inverted dates). Kept apart
+ *    from `range-too-large` because "shorten the span" is wrong advice for a
+ *    future month — one notice for two causes misled the teacher. */
+export type SummaryNotice = "no-terms" | "range-too-large" | "invalid-range";

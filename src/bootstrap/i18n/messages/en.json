@@ -770,6 +770,7 @@
       "empty": "No attendance recorded in this range",
       "errorDescription": "Could not load this class's attendance figures.",
       "errorTitle": "Failed to load summary",
+      "invalidRange": "The selected date range is not valid. Pick a month that has already started, or another range.",
       "loading": "Loading attendance summary...",
       "meanRate": "Class average attendance",
       "month": "Month",

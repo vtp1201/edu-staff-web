@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isInvalidRange,
   isNoTerms,
   isSummaryRange,
   resolveSummaryRange,
@@ -93,16 +94,18 @@ describe("resolveSummaryRange — month", () => {
     );
   });
 
-  it("rejects a month that has not started yet", () => {
+  it("rejects a month that has not started yet as a SELECTION problem", () => {
+    // Not "too large" — the span is a month. Conflating the two showed the
+    // "over 366 days" copy for a future month (reviewer SHOULD-FIX #1).
     expect(
       resolveSummaryRange("month", "2026-04-17", [], { month: "2026-06" }),
-    ).toEqual({ type: "invalid-request" });
+    ).toEqual({ type: "invalid-request", reason: "invalid-selection" });
   });
 
   it("rejects a malformed month param instead of guessing", () => {
     expect(
       resolveSummaryRange("month", "2026-04-17", [], { month: "abril" }),
-    ).toEqual({ type: "invalid-request" });
+    ).toEqual({ type: "invalid-request", reason: "invalid-selection" });
   });
 });
 
@@ -182,6 +185,7 @@ describe("resolveSummaryRange — year", () => {
     // 2025-01-01 → 2026-06-01 = 517 days.
     expect(resolveSummaryRange("year", "2026-06-01", longYear)).toEqual({
       type: "invalid-request",
+      reason: "too-large",
     });
   });
 
@@ -222,6 +226,7 @@ describe("resolveSummaryRange — year", () => {
     ];
     expect(resolveSummaryRange("term", "2026-06-01", longTerm)).toEqual({
       type: "invalid-request",
+      reason: "too-large",
     });
   });
 });
@@ -231,5 +236,61 @@ describe("resolveSummaryRange — determinism", () => {
     const a = resolveSummaryRange("month", "2026-04-17", YEARS);
     const b = resolveSummaryRange("month", "2026-04-17", YEARS);
     expect(a).toEqual(b);
+  });
+});
+
+describe("resolveSummaryRange — invalid-range reasons are distinguishable", () => {
+  it("tells an over-366-day span apart from an unusable selection", () => {
+    const tooLarge = resolveSummaryRange("year", "2026-06-01", [
+      {
+        isActive: true,
+        terms: [
+          {
+            id: "long",
+            name: "Kỳ dài",
+            startDate: "2025-01-01",
+            endDate: "2026-12-31",
+          },
+        ],
+      },
+    ]);
+    const futureMonth = resolveSummaryRange("month", "2026-04-17", [], {
+      month: "2027-01",
+    });
+
+    expect(isInvalidRange(tooLarge)).toBe(true);
+    expect(isInvalidRange(futureMonth)).toBe(true);
+    // The whole point: the UI can no longer blame "366 days" for a future
+    // month — the two reasons are not equal.
+    expect(isInvalidRange(tooLarge) && tooLarge.reason).toBe("too-large");
+    expect(isInvalidRange(futureMonth) && futureMonth.reason).toBe(
+      "invalid-selection",
+    );
+  });
+
+  it("reports an inverted range as an unusable selection, not an oversize one", () => {
+    const inverted = resolveSummaryRange("term", "2026-03-02", [
+      {
+        isActive: true,
+        terms: [
+          {
+            id: "backwards",
+            name: "Kỳ ngược",
+            startDate: "2026-05-31",
+            endDate: "2026-01-16",
+          },
+        ],
+      },
+    ]);
+    expect(inverted).toEqual({
+      type: "invalid-request",
+      reason: "invalid-selection",
+    });
+  });
+
+  it("narrows away from a usable range", () => {
+    const ok = resolveSummaryRange("month", "2026-04-17", []);
+    expect(isInvalidRange(ok)).toBe(false);
+    expect(isSummaryRange(ok)).toBe(true);
   });
 });

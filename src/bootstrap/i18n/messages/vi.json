@@ -770,6 +770,7 @@
       "empty": "Chưa có điểm danh trong khoảng này",
       "errorDescription": "Không tải được số liệu chuyên cần của lớp.",
       "errorTitle": "Lỗi tải tổng hợp",
+      "invalidRange": "Khoảng thời gian đã chọn không hợp lệ. Hãy chọn một tháng đã bắt đầu hoặc phạm vi khác.",
       "loading": "Đang tải tổng hợp chuyên cần...",
       "meanRate": "Chuyên cần trung bình lớp",
       "month": "Tháng",

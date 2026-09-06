@@ -6,6 +6,7 @@ import { useMemo, useTransition } from "react";
 import type { ClassAttendanceSummary } from "../../../domain/entities/student-attendance-summary.entity";
 import type { AttendanceFailure } from "../../../domain/failures/attendance.failure";
 import {
+  isInvalidRange,
   isNoTerms,
   isSummaryRange,
   resolveSummaryRange,
@@ -87,7 +88,14 @@ export function AttendanceSummaryContainer({
 
   const years = termsQuery.data ?? [];
   const availableTerms = termsOf(years);
-  const outcome = resolveSummaryRange(rangeKind, todayIso, years, {
+  // Once the calendar read has SETTLED with nothing usable, `?range=term`
+  // (a stale link, a back-navigation) can no longer be honoured: the term and
+  // year segments are not rendered, so keeping that kind selected would show a
+  // segmented control with nothing selected and no secondary control — a
+  // broken-looking dead end. Fall back to the one kind that always works.
+  const noTermsDegrade = !termsQuery.isPending && availableTerms.length === 0;
+  const effectiveKind: SummaryRangeKind = noTermsDegrade ? "month" : rangeKind;
+  const outcome = resolveSummaryRange(effectiveKind, todayIso, years, {
     month: monthParam,
     termId: termParam ?? undefined,
   });
@@ -122,7 +130,7 @@ export function AttendanceSummaryContainer({
   }
 
   const controls: SummaryControlsVM = {
-    rangeKind,
+    rangeKind: effectiveKind,
     month: monthParam,
     // Reflect the term the resolver actually applied, so the select never shows
     // a term the numbers were not computed for.
@@ -130,18 +138,19 @@ export function AttendanceSummaryContainer({
     availableTerms: termsQuery.isPending ? null : availableTerms,
   };
 
-  const notice: SummaryNotice | null = isNoTerms(outcome)
-    ? "no-terms"
-    : range === null
-      ? "range-too-large"
-      : null;
+  const notice: SummaryNotice | null = noticeOf({
+    outcome,
+    // The URL asked for a term/year range we had to downgrade: say so, or the
+    // segment silently changing under the teacher looks like a bug.
+    degradedFromTermUrl: noTermsDegrade && rangeKind !== "month",
+  });
 
   return (
     <AttendanceSummaryTab
       vm={buildVm({
         classId,
         range,
-        rangeKind,
+        rangeKind: effectiveKind,
         availableTerms,
         query: {
           isPending: summaryQuery.isPending,
@@ -157,6 +166,26 @@ export function AttendanceSummaryContainer({
       onRetry={() => summaryQuery.refetch()}
     />
   );
+}
+
+/**
+ * One notice per CAUSE. `resolveSummaryRange` distinguishes an over-366-day
+ * span from an unusable selection (a future `?month=`, a malformed one, a term
+ * with inverted dates); collapsing both into "over 366 days" told a teacher who
+ * picked next month to shorten a one-month range.
+ */
+function noticeOf({
+  outcome,
+  degradedFromTermUrl,
+}: {
+  outcome: ReturnType<typeof resolveSummaryRange>;
+  degradedFromTermUrl: boolean;
+}): SummaryNotice | null {
+  if (isNoTerms(outcome) || degradedFromTermUrl) return "no-terms";
+  if (isInvalidRange(outcome)) {
+    return outcome.reason === "too-large" ? "range-too-large" : "invalid-range";
+  }
+  return null;
 }
 
 /** The term the resolver would pick with no explicit selection. */

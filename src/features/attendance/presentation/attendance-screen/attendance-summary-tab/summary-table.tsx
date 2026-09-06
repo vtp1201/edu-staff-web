@@ -21,6 +21,7 @@ import type {
   StudentAttendanceSummary,
 } from "../../../domain/entities/student-attendance-summary.entity";
 import type { SummaryRange } from "../../../domain/resolve-summary-range";
+import { initialsOf } from "./student-initials";
 import { BAND_PROGRESS_COLOR, BAND_TONE } from "./summary-bands";
 
 type Props = {
@@ -29,15 +30,6 @@ type Props = {
 };
 
 type SortMode = "roster" | "rate-asc";
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return parts
-    .slice(-2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 /**
  * Per-student attendance table (design `classops.jsx#AttendanceSummaryTab`).
@@ -117,7 +109,9 @@ export function SummaryTable({ students, range }: Props) {
                   setSort(sort === "rate-asc" ? "roster" : "rate-asc")
                 }
                 aria-label={t("sortByRate")}
-                className="inline-flex min-h-11 items-center gap-1.5 font-medium text-inherit"
+                // A11Y-201: an explicit ≥44×44 target, like every other control in
+                // this tab — `min-h-11` alone left the width to the label.
+                className="inline-flex min-h-11 min-w-11 items-center gap-1.5 px-1 font-medium text-inherit"
               >
                 {tSummary("rate")}
                 <ArrowDownUp className="size-3.5" aria-hidden="true" />

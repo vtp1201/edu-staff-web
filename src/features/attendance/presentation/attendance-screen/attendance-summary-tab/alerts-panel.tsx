@@ -4,20 +4,12 @@ import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/shared/utils";
 import type { StudentAttendanceSummary } from "../../../domain/entities/student-attendance-summary.entity";
+import { initialsOf } from "./student-initials";
 import { BAND_DOT_CLASS, BAND_TEXT_CLASS } from "./summary-bands";
 
 type Props = {
   students: StudentAttendanceSummary[];
 };
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return parts
-    .slice(-2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
 
 /**
  * "Cảnh báo chuyên cần" aside: `risk` students first, then `watch` — the order

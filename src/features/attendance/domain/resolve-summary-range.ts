@@ -45,7 +45,23 @@ export interface NoTerms {
   type: "no-terms";
 }
 
-export type SummaryRangeOutcome = SummaryRange | AttendanceFailure | NoTerms;
+/** Why a range could not be used. The two causes read DIFFERENTLY to the
+ *  teacher — "shorten the span" is useless advice for a month that has not
+ *  started — so the reason travels with the failure instead of being guessed
+ *  at the UI boundary. `type` stays `invalid-request` so the value is still a
+ *  plain {@link AttendanceFailure} for anything that only branches on `type`. */
+export type InvalidRangeReason = "too-large" | "invalid-selection";
+
+export interface InvalidSummaryRange
+  extends Extract<AttendanceFailure, { type: "invalid-request" }> {
+  reason: InvalidRangeReason;
+}
+
+export type SummaryRangeOutcome = SummaryRange | InvalidSummaryRange | NoTerms;
+
+function invalid(reason: InvalidRangeReason): InvalidSummaryRange {
+  return { type: "invalid-request", reason };
+}
 
 export interface SummarySelection {
   /** `YYYY-MM`, when the user picked a month other than the current one. */
@@ -72,6 +88,12 @@ export function isNoTerms(outcome: SummaryRangeOutcome): outcome is NoTerms {
   return "type" in outcome && outcome.type === "no-terms";
 }
 
+export function isInvalidRange(
+  outcome: SummaryRangeOutcome,
+): outcome is InvalidSummaryRange {
+  return "type" in outcome && outcome.type === "invalid-request";
+}
+
 /** The ACTIVE year's terms (the dropdown's options), in wire order. Terms with
  *  unusable dates are dropped rather than offered and then rejected. */
 export function termsOf(years: readonly SummaryYear[]): SummaryTerm[] {
@@ -96,11 +118,11 @@ export function resolveSummaryRange(
         : yearRange(todayIso, years);
 
   if (!isSummaryRange(range)) return range;
-  if (range.endDate < range.startDate) {
-    return { type: "invalid-request" } satisfies AttendanceFailure;
-  }
+  // An inverted range is a broken selection (a term whose dates run
+  // backwards), NOT an oversize one — different cause, different copy.
+  if (range.endDate < range.startDate) return invalid("invalid-selection");
   if (daysInclusive(range.startDate, range.endDate) > MAX_SUMMARY_RANGE_DAYS) {
-    return { type: "invalid-request" } satisfies AttendanceFailure;
+    return invalid("too-large");
   }
   return range;
 }
@@ -110,9 +132,7 @@ export function resolveSummaryRange(
  *  not happened. */
 function monthRange(todayIso: string, month?: string): SummaryRangeOutcome {
   const target = month ?? todayIso.slice(0, 7);
-  if (!ISO_MONTH.test(target)) {
-    return { type: "invalid-request" } satisfies AttendanceFailure;
-  }
+  if (!ISO_MONTH.test(target)) return invalid("invalid-selection");
   const [year, monthNumber] = target.split("-").map(Number) as [number, number];
   // Day 0 of the NEXT month is the last day of this one — no month-length table.
   const lastDay = new Date(Date.UTC(year, monthNumber, 0))
@@ -121,7 +141,7 @@ function monthRange(todayIso: string, month?: string): SummaryRangeOutcome {
   const startDate = `${target}-01`;
   if (startDate > todayIso) {
     // A month that has not begun: refuse rather than send an inverted range.
-    return { type: "invalid-request" } satisfies AttendanceFailure;
+    return invalid("invalid-selection");
   }
   return { startDate, endDate: lastDay < todayIso ? lastDay : todayIso };
 }
@@ -166,15 +186,16 @@ function yearRange(
   years: readonly SummaryYear[],
 ): SummaryRangeOutcome {
   const terms = termsOf(years);
-  if (terms.length === 0) return { type: "no-terms" };
+  const first = terms[0];
+  if (!first) return { type: "no-terms" };
 
   const startDate = terms.reduce(
     (min, term) => (term.startDate < min ? term.startDate : min),
-    terms[0]?.startDate as string,
+    first.startDate,
   );
   const lastEnd = terms.reduce(
     (max, term) => (term.endDate > max ? term.endDate : max),
-    terms[0]?.endDate as string,
+    first.endDate,
   );
   return { startDate, endDate: lastEnd < todayIso ? lastEnd : todayIso };
 }

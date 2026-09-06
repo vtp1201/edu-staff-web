@@ -327,6 +327,24 @@ export const RangeTooLarge: Story = {
   },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/vượt quá 366 ngày/)).toBeInTheDocument();
+    // Never the generic "selection is invalid" copy: the cause is known.
+    await expect(canvas.queryByText(/không hợp lệ/i)).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * An unusable SELECTION (a month that has not started, a malformed `?month=`,
+ * a term with inverted dates) gets its own copy — telling a teacher who picked
+ * next month to "shorten the span" was the bug (review SHOULD-FIX #1).
+ */
+export const InvalidRange: Story = {
+  args: {
+    notice: "invalid-range",
+    vm: { status: "empty", range: { startDate: "", endDate: "" } },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/không hợp lệ/i)).toBeInTheDocument();
+    await expect(canvas.queryByText(/366 ngày/)).not.toBeInTheDocument();
   },
 };
 
