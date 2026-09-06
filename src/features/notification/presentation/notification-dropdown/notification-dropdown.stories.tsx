@@ -109,6 +109,14 @@ export const AllTab: Story = {
         await canvas.findAllByRole("button", { name: /(chưa đọc|đã đọc)$/ }),
       ).toHaveLength(3),
     );
+    // A11Y-005 re-verification (fe-qa-playwright, US-E24.13): the list
+    // container that the mark-read/mark-all mutations rewrite in place must
+    // carry a REAL live region, not merely visual re-render — a screen reader
+    // only announces the optimistic update if this DOM attribute is present
+    // at mount, independent of any click ever happening.
+    const list = await canvas.findByRole("log");
+    await expect(list).toHaveAttribute("aria-live", "polite");
+    await expect(list).toHaveAccessibleName();
   },
 };
 
@@ -257,9 +265,19 @@ export const MarkAllRead: Story = {
     onMarkAllRead: fn(async () => ({})),
   },
   play: async ({ canvas, args }) => {
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Đánh dấu tất cả đã đọc" }),
-    );
+    const markAllButton = canvas.getByRole("button", {
+      name: "Đánh dấu tất cả đã đọc",
+    });
+    // A11Y-007 re-verification (fe-qa-playwright, US-E24.13): measure the REAL
+    // rendered hit area, not the `min-h-11` class name — a `min-h-11` sitting
+    // next to a shrinking flex sibling, or overridden by a later utility, can
+    // still collapse below 44px at runtime. `min-h-11` = 44px at the default
+    // 16px root font size.
+    await expect(
+      markAllButton.getBoundingClientRect().height,
+    ).toBeGreaterThanOrEqual(44);
+
+    await userEvent.click(markAllButton);
     await waitFor(() => expect(args.onMarkAllRead).toHaveBeenCalled());
     await expect(
       await within(document.body).findByText("Đã đánh dấu tất cả là đã đọc"),
