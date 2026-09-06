@@ -3,7 +3,12 @@ import {
   makeListMyHomeroomClassesUseCase,
 } from "@/bootstrap/di/attendance.di";
 import { AttendanceScreen } from "@/features/attendance/presentation/attendance-screen/attendance-screen";
-import { getAttendanceHistoryAction, saveAttendanceAction } from "./actions";
+import {
+  getAttendanceHistoryAction,
+  getAttendanceSummaryAction,
+  getAttendanceTermsAction,
+  saveAttendanceAction,
+} from "./actions";
 
 type SearchParams = Promise<{
   class?: string;
@@ -35,6 +40,8 @@ export default async function AttendancePage({
       filters={{ classId, date }}
       saveAction={saveAttendanceAction}
       getHistoryAction={getAttendanceHistoryAction}
+      getSummaryAction={getAttendanceSummaryAction}
+      getTermsAction={getAttendanceTermsAction}
     />
   );
 }

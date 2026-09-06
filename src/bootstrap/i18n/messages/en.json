@@ -759,8 +759,50 @@
       "rate": "Rate",
       "total": "Total"
     },
+    "summaryTab": {
+      "alertsTitle": "Attendance alerts",
+      "bands": {
+        "ok": "OK",
+        "risk": "At risk",
+        "watch": "Watch"
+      },
+      "belowThreshold": "Students below 90%",
+      "empty": "No attendance recorded in this range",
+      "errorDescription": "Could not load this class's attendance figures.",
+      "errorTitle": "Failed to load summary",
+      "loading": "Loading attendance summary...",
+      "meanRate": "Class average attendance",
+      "month": "Month",
+      "monthLabel": "Pick a month",
+      "noAlerts": "No student is below the threshold.",
+      "noRate": "No attendance recorded yet",
+      "noTerms": "The academic calendar is unavailable, so only the monthly range can be shown.",
+      "rangeLabel": "Range",
+      "rangeTooLarge": "The range is longer than 366 days. Please pick a shorter one.",
+      "rateOf": "Attendance rate for {name}",
+      "retry": "Try again",
+      "sortByRate": "Sort by attendance rate",
+      "statusHeader": "Assessment",
+      "stt": "#",
+      "studentCount": "{count} students",
+      "tableTitle": "Attendance by student",
+      "term": "Term",
+      "termLabel": "Pick a term",
+      "thresholds": {
+        "ok": "≥ 95%",
+        "risk": "< 90%",
+        "watch": "90–95%"
+      },
+      "thresholdsTitle": "Thresholds",
+      "totalAbsent": "Total unexcused days",
+      "totalExcused": "Total excused days",
+      "unexcusedDays": "{count} unexcused days",
+      "watchNote": "watch",
+      "year": "Full year"
+    },
     "tabs": {
       "history": "History",
+      "summary": "Summary",
       "today": "Today"
     },
     "title": "Attendance"

@@ -759,8 +759,50 @@
       "rate": "Tỷ lệ",
       "total": "Sĩ số"
     },
+    "summaryTab": {
+      "alertsTitle": "Cảnh báo chuyên cần",
+      "bands": {
+        "ok": "Đạt",
+        "risk": "Nguy cơ",
+        "watch": "Cảnh báo"
+      },
+      "belowThreshold": "HS dưới ngưỡng 90%",
+      "empty": "Chưa có điểm danh trong khoảng này",
+      "errorDescription": "Không tải được số liệu chuyên cần của lớp.",
+      "errorTitle": "Lỗi tải tổng hợp",
+      "loading": "Đang tải tổng hợp chuyên cần...",
+      "meanRate": "Chuyên cần trung bình lớp",
+      "month": "Tháng",
+      "monthLabel": "Chọn tháng",
+      "noAlerts": "Không có học sinh nào dưới ngưỡng.",
+      "noRate": "Chưa có buổi điểm danh nào",
+      "noTerms": "Chưa đọc được lịch năm học nên chỉ xem được theo tháng.",
+      "rangeLabel": "Phạm vi",
+      "rangeTooLarge": "Khoảng thời gian vượt quá 366 ngày. Hãy chọn phạm vi ngắn hơn.",
+      "rateOf": "Tỉ lệ chuyên cần của {name}",
+      "retry": "Thử lại",
+      "sortByRate": "Sắp xếp theo tỉ lệ chuyên cần",
+      "statusHeader": "Đánh giá",
+      "stt": "STT",
+      "studentCount": "{count} học sinh",
+      "tableTitle": "Chuyên cần theo học sinh",
+      "term": "Học kỳ",
+      "termLabel": "Chọn học kỳ",
+      "thresholds": {
+        "ok": "≥ 95%",
+        "risk": "< 90%",
+        "watch": "90–95%"
+      },
+      "thresholdsTitle": "Ngưỡng đánh giá",
+      "totalAbsent": "Tổng buổi vắng không phép",
+      "totalExcused": "Tổng buổi vắng có phép",
+      "unexcusedDays": "{count} buổi vắng KP",
+      "watchNote": "theo dõi",
+      "year": "Cả năm"
+    },
     "tabs": {
       "history": "Lịch sử",
+      "summary": "Tổng hợp chuyên cần",
       "today": "Hôm nay"
     },
     "title": "Điểm danh"

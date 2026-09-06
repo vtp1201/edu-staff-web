@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import type { AttendanceDaySummary } from "../../domain/entities/attendance-day-summary.entity";
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
 import type { AttendanceRoster } from "../../domain/entities/attendance-roster.entity";
+import type { ClassAttendanceSummary } from "../../domain/entities/student-attendance-summary.entity";
 import { AttendanceScreen } from "./attendance-screen";
 
 const classDate: AttendanceRoster["classDate"] = {
@@ -42,6 +43,14 @@ const getHistoryActionEmpty = () =>
   Promise.resolve({ ok: true, data: [] as AttendanceDaySummary[] } as const);
 const getHistoryActionError = () =>
   Promise.resolve({ ok: false, errorKey: "network-error" } as const);
+// US-E24.14 — the third tab's reads. Wired at the meta level so every existing
+// story keeps its own args untouched while the new tab still mounts.
+const getSummaryAction = () =>
+  Promise.resolve({
+    ok: true as const,
+    data: { students: [], meanRate: null } as ClassAttendanceSummary,
+  });
+const getTermsAction = () => Promise.resolve(null);
 
 function makeQueryClient() {
   return new QueryClient({
@@ -53,6 +62,7 @@ const meta: Meta<typeof AttendanceScreen> = {
   title: "Attendance/AttendanceScreen",
   component: AttendanceScreen,
   parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
+  args: { getSummaryAction, getTermsAction },
   decorators: [
     (Story) => (
       <QueryClientProvider client={makeQueryClient()}>
