@@ -54,24 +54,9 @@ export function countByStatus(
 }
 
 /**
- * `YYYY-MM-DD` → a `Date` at **noon UTC**, or `null` when the value is not a
- * calendar day (bad shape, or an out-of-range day that `Date.UTC` would roll
- * over silently).
- *
- * Deliberately does NOT format: the screen renders it through next-intl's
- * `useFormatter().dateTime(..., { timeZone: "UTC" })`, so a `vi` reader gets
- * `03/08/2026` and an `en` reader `08/03/2026` from the same value (this
- * replaced a hard-coded DD/MM/YYYY that ignored the active locale). Noon UTC
- * keeps the calendar day identical in every real-world timezone.
+ * Re-export of the promoted `parseIsoDate` (US-E24.6 moved it to
+ * `@/shared/parse-iso-date` so `components/shared/attendance-summary` could use
+ * it without importing a feature's presentation folder). Kept here so this
+ * module's existing import sites and its unit test are untouched.
  */
-export function parseIsoDate(isoDate: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
-  if (!match) return null;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day, 12));
-  const rolledOver =
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day;
-  return rolledOver ? null : date;
-}
+export { parseIsoDate } from "@/shared/parse-iso-date";

@@ -765,6 +765,32 @@
     },
     "title": "Điểm danh"
   },
+  "attendanceSummary": {
+    "rateLabel": "Tỉ lệ chuyên cần",
+    "presentLabel": "Buổi có mặt",
+    "excusedLabel": "Vắng có phép",
+    "unexcusedLabel": "Vắng không phép",
+    "unavailableValue": "—",
+    "unavailableHint": "Chưa có dữ liệu",
+    "lateNotice": "Có {count} buổi đi muộn — không tính vào tỉ lệ có mặt.",
+    "byMonthTitle": "Theo tháng",
+    "byMonthSubtitle": "Tổng hợp từ điểm danh theo ngày của GVCN",
+    "monthProgressLabel": "Tỉ lệ chuyên cần {month}",
+    "monthExcused": "{count} có phép",
+    "monthUnexcused": "{count} không phép",
+    "monthRate": "{rate}%",
+    "monthNoRate": "Chưa có dữ liệu",
+    "regulationNote": "Theo quy chế, nghỉ quá 45 buổi/năm học (kể cả có phép) sẽ không được lên lớp.",
+    "historyTitle": "Lịch sử vắng mặt",
+    "historyCount": "{count} lần",
+    "historyEmptyTitle": "Không có buổi vắng nào",
+    "historyEmptyBody": "Chưa ghi nhận buổi vắng nào trong khoảng thời gian này.",
+    "statusExcused": "Vắng có phép",
+    "statusAbsent": "Vắng không phép",
+    "statusPending": "Chờ duyệt",
+    "noReason": "Chưa có lý do — GVCN đã thông báo phụ huynh",
+    "pendingRange": "Từ {startDate} đến hết {endDate}"
+  },
   "auditLog": {
     "title": "Nhật ký kiểm toán",
     "subtitle": "Mọi thay đổi đối với điểm số, học bạ và hạnh kiểm. Chỉ đọc — không thể chỉnh sửa hoặc xoá.",
@@ -1537,11 +1563,27 @@
         "title": "Lịch sử đơn xin nghỉ"
       },
       "leaveRequest": {
+        "attachments": {
+          "label": "Minh chứng đính kèm",
+          "hint": "Tối đa 3 tệp JPG, PNG hoặc PDF, mỗi tệp dưới 5 MB.",
+          "addButton": "Thêm tệp",
+          "selectedTitle": "Tệp đã chọn",
+          "remove": "Bỏ tệp {fileName}",
+          "rejectedTitle": "Không thêm được các tệp sau:",
+          "errorExt": "{fileName}: chỉ nhận tệp JPG, PNG hoặc PDF.",
+          "errorSize": "{fileName}: tệp phải lớn hơn 0 và nhỏ hơn 5 MB.",
+          "errorCount": "{fileName}: đã đủ 3 tệp đính kèm."
+        },
         "button": "Xin nghỉ phép",
+        "cancel": "Huỷ",
         "close": "Đóng",
         "endDate": "Ngày kết thúc *",
+        "notice": "Đơn sẽ gửi tới GVCN để phê duyệt. Buổi nghỉ được tính \"có phép\" sau khi duyệt.",
         "reason": "Lý do *",
+        "reasonCounter": "{count}/{max} ký tự",
         "reasonPlaceholder": "Nhập lý do nghỉ phép (tối thiểu 10 ký tự)...",
+        "reasonRequired": "Vui lòng nhập lý do nghỉ.",
+        "reasonTooLong": "Lý do không được vượt quá {max} ký tự.",
         "startDate": "Ngày bắt đầu *",
         "submit": "Gửi đơn",
         "submitting": "Đang gửi...",
@@ -3093,7 +3135,13 @@
       "date-range-too-large": "Khoảng thời gian không được vượt quá 366 ngày.",
       "network-error": "Không tải được lịch sử điểm danh. Vui lòng thử lại.",
       "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
-    }
+    },
+    "requestLeaveButton": "Xin phép nghỉ học",
+    "requestLeaveUnavailable": "Chưa gửi được đơn xin nghỉ: khoảng thời gian này chưa có buổi điểm danh nào nên hệ thống chưa xác định được lớp của con. Hãy chọn khoảng thời gian có dữ liệu điểm danh.",
+    "submitSuccess": "Đã gửi đơn xin nghỉ tới GVCN.",
+    "submitPartial": "Đơn đã gửi, {failed}/{total} tệp thất bại.",
+    "retryAttachments": "Gửi lại tệp",
+    "attachmentsRetrySuccess": "Đã gửi lại toàn bộ tệp đính kèm."
   },
   "parentLinks": {
     "pageTitle": "Liên kết Phụ huynh – Học sinh",
@@ -4264,6 +4312,21 @@
     "subtitle": "Ghi nhận và theo dõi tình trạng nghỉ học của học sinh theo lớp",
     "title": "Nghỉ học của học sinh",
     "unexcused": "Không phép"
+  },
+  "studentAttendance": {
+    "title": "Chuyên cần của tôi",
+    "subtitle": "Tổng hợp từ điểm danh theo ngày của GVCN",
+    "rangeNotice": "Đang xem từ {startDate} đến {endDate}.",
+    "forbiddenTitle": "Không đọc được thông tin học sinh",
+    "forbiddenBody": "Phiên đăng nhập chưa gắn với hồ sơ học sinh của trường. Hãy đăng xuất và đăng nhập lại, hoặc liên hệ nhà trường.",
+    "retry": "Thử lại",
+    "errors": {
+      "forbidden": "Bạn không có quyền xem chuyên cần của học sinh này.",
+      "invalid-date-range": "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.",
+      "date-range-too-large": "Khoảng thời gian không được vượt quá 366 ngày.",
+      "network-error": "Không tải được dữ liệu chuyên cần. Vui lòng thử lại.",
+      "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại."
+    }
   },
   "subjectCatalogue": {
     "createParentDialog": {
