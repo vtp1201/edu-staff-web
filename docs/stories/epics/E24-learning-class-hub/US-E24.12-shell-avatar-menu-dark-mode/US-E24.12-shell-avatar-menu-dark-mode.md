@@ -489,3 +489,31 @@ tối hơn nhẹ, **không có seam gắt**; không đổi token (ngoài scope).
    lỗi 1.10:1 vừa fix ở `StatusBadge`. Nên chuyển sang dùng `StatusBadge`/`statusToneClass`.
 3. `--edu-warning-foreground` cố ý **không** nhận giá trị dark của `T_DARK` (#EAEFF5): nó còn dùng cho
    chữ trên nền vàng ĐẶC (attendance toggle, course-card pill, email-verify dot) — trắng trên vàng fail AA.
+
+### Design Review Gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+Design review: pass
+- design-system: conform — chỉ token đã khai báo (`--edu-*`/shadcn), không raw color; tái dùng
+  `DropdownMenuCheckboxItem`/`DropdownMenuRadioGroup`/`DropdownMenuRadioItem` có sẵn thay vì tự chế;
+  `StatusBadge`/`StatCard` sửa tại nhà chân lý (`components/shared/`), không fork; role-color accent
+  không đổi. Khớp `docs/product/screens.md` App shell + design-spec `layout.header`/`layout.sidebar`
+  (đã sync ngôn từ dark mode). Copy `shell.header.profile` giữ "Hồ sơ" (không đổi thành "Hồ sơ cá nhân"
+  theo design v3) — deviation nhỏ, chấp nhận (không lệch nghĩa, tránh thêm risk vào 1 branch đã đủ rộng).
+- a11y: WCAG AA OK sau vòng fix — `fe-tech-lead-reviewer` (Revision Required → 2 blocking đã fix,
+  re-verify cùng phiên) + `fe-accessibility-auditor` (PASS, 0 blocking, 3 minor: ring-offset-background
+  đã fix trong vòng review, 2 minor còn lại là follow-up có chủ đích ở trên). Keyboard-operable đầy đủ
+  (regression đã fix + story `LanguageSwitchKeyboard` pin lại); focus ring rõ trên nền dark; touch target
+  ≥44px mobile cho mọi row mới; ARIA Radix giữ nguyên (`menuitemcheckbox`/`menuitemradio` đúng ngữ nghĩa
+  trong menu, đã confirm bởi auditor — không cần override `role="switch"`); reduced-motion không đổi
+  (không animation mới ngoài Radix/shadcn default).
+- impeccable audit: áp dụng thủ công theo checklist (hierarchy/spacing/state/copy) vì scope là
+  restructure menu + token value — không tìm thấy anti-pattern mới ngoài các điểm đã bắt bởi reviewer/
+  auditor ở trên (đã xử lý). Không đổi palette/layout/font ngoài giá trị `.dark` đã chốt theo `T_DARK` v3
+  handoff — không xung đột design system.
+- states: dark mode = state chính của story này — verify bằng chromium screenshot thật (không chỉ
+  Storybook `globals`, đã ghi rõ gotcha ở trên) trên 3 màn D9 (Class Hub, course timeline, Course Player)
+  + shell (sidebar/header/StatCard/StatusBadge mọi tone); loading/empty/error không đổi (story này
+  không chạm data-fetching). Responsive 320/375: menu rows + help link + language switcher đều ≥44px;
+  mobile Sheet sidebar chỉ hiện help link (không collapse) đúng theo AC.
+
+Verdict: **PASS** — đủ điều kiện đóng US, tiến sang `fe-qa-playwright`.
