@@ -388,4 +388,74 @@ chỉ khi phải thêm biến mới; nếu chỉ đổi giá trị biến đã c
 
 ## Evidence
 
-(chưa có — planned)
+### Quyết định phạm vi: KHÔNG cần ADR 0077
+
+Bộ dark token chỉ đổi **giá trị** của biến đã khai báo (`--edu-*`, shadcn vars) trong `.dark` của
+`globals.css`; không có tên biến mới, không đổi `@theme inline`. `T_DARK.chipBg`/`inputBg` map vào
+`--secondary`/`--muted`/`--accent`/`--sidebar-accent` và `--input` đã có (không component nào tiêu thụ
+`--edu-chip-bg`/`--edu-input-bg`). Theo điều kiện của chính packet (§Harness Delta) → ghi Evidence,
+không ADR. `docs/product/design-system.md` §Dark mode đã sync cùng commit.
+
+Hai cặp **giữ nguyên** (KHÔNG lấy theo `T_DARK`): `--edu-error-light`/`--edu-error-text` và
+`--edu-warning-light`/`--edu-warning-text` (US-E21.2/A11Y-001). `T_DARK` override tint nhưng không
+định nghĩa text tone tương ứng — dùng tint của nó sẽ mở lại đúng bug đã fix.
+
+### Đo contrast (WCAG 2.1 relative-luminance, công thức chuẩn WebAIM dùng; tính bằng script trên giá trị hex sau khi đổi)
+
+| Foreground | Background | Ratio | Verdict |
+| --- | --- | --- | --- |
+| `--edu-success-text` #3FD0B3 | `--edu-card` #1E2630 | **7.92:1** | AA/AAA pass |
+| `--edu-success-text` #3FD0B3 | `--edu-success-light` #123330 | **7.06:1** | AA pass |
+| `--edu-teal-text` #4FC3B5 | `--edu-card` #1E2630 | **7.13:1** | AA pass |
+| `--edu-teal-text` #4FC3B5 | `--edu-teal-light` #12312F | **6.51:1** | AA pass |
+| `--edu-warning-text` #FFD699 (giữ) | `--edu-warning-light` #4D3300 (giữ) | **8.57:1** | không đổi, vẫn pass |
+| `--edu-error-text` #FFDAD6 (giữ) | `--edu-error-light` #5C0007 (giữ) | **11.15:1** | không đổi, vẫn pass |
+| `--foreground` #EAEFF5 | `--card` #1E2630 | **13.21:1** | pass |
+| `--foreground` #EAEFF5 | `--background` #151B23 | **14.97:1** | pass |
+| `--foreground` #EAEFF5 | chip `--muted/--accent` #2A333E | **11.06:1** | pass |
+| `--foreground` #EAEFF5 | `--input` #161D26 | **14.67:1** | pass |
+| `--muted-foreground` #B4C0CE | `--card` #1E2630 | **8.27:1** | pass |
+| `--edu-text-muted` #8494A7 | `--card` #1E2630 | **4.93:1** | pass (dù chỉ dùng decorative) |
+| `--foreground` #EAEFF5 | `--edu-info-light` #1D2E47 | **11.84:1** | pass |
+| `--foreground` #EAEFF5 | `--edu-primary-light` #28344E | **10.74:1** | pass |
+
+Cặp error/warning giữ nguyên nên **không bị ảnh hưởng** bởi việc đổi `--card`/`--background`
+(chip tint composite trực tiếp với text tone của nó, không qua nền trang) — đã verify lại bằng số ở trên.
+
+### A11Y fix phát hiện khi soi dark (trong AC "không còn chữ navy lệch")
+
+`StatusBadge` tone `warning` dùng `text-edu-warning-foreground` (#2A3547 — tone cố định cho chữ trên
+nền **vàng đặc**, không có giá trị dark). Trên chip `bg-edu-warning/15` phủ card dark, composite nền
+= #403A2D → **1.10:1 (vô hình)**. Đổi sang `text-edu-text-primary` (theo-theme): light mode **giống hệt**
+(#2A3547, 11.25:1 — zero visual diff), dark mode ~9:1. Cùng cách info/purple/teal đã làm.
+
+### Kiểm tra thị giác (Storybook browser runner, chromium screenshot)
+
+Chụp thật `.dark` (shell: sidebar + header + StatCard + 9 StatusBadge tone + chip
+success/teal/info/primary/error/warning + input + text-secondary; và avatar menu mở, cả light lẫn dark):
+mọi bề mặt tối đúng, không còn chip trắng, chữ đọc được. `--edu-media-surface` (#0F1117, theme-independent,
+ADR 0050) trên nền mới #151B23: tỉ lệ sáng **1.09:1** (trước là 1.00:1 với #0B1020) — nhìn thấy một khối
+tối hơn nhẹ, **không có seam gắt**; không đổi token (ngoài scope).
+
+> ⚠️ Lưu ý cho reviewer: `globals: { theme: "dark" }` (addon-themes) **không được áp dụng** trong
+> `vitest.storybook.mts` (browser runner) — story chỉ dựa vào nó sẽ render LIGHT mà vẫn pass. Vì vậy các
+> story `Dark` dùng `src/test/storybook-dark-decorator.tsx` để tự gắn class `.dark` lên `<html>` (cũng
+> phủ được portal content), và story `Header/Dark` assert `--edu-card === #1e2630`.
+
+### Gate
+
+`bunx tsc --noEmit` clean · `bun lint` clean (chỉ 1 warning + 1 info **có sẵn** ở
+`features/messaging/.../message-context-menu.tsx`, không thuộc story) · `bun vitest run` **576 files /
+4803 tests pass** · `bun vitest --config vitest.storybook.mts run` **166 files / 1356 tests pass** ·
+`NEXT_PUBLIC_USE_MOCK=true bun run build` compiled successfully.
+
+### Follow-up mở (không thuộc scope US này)
+
+1. `--edu-error-dark-light` chưa có giá trị dark → `StatusBadge` tone `error-dark` vẫn là chip sáng
+   trong dark mode. `T_DARK.errorDarkLight` (#43201F) có sẵn nhưng KHÔNG có text tone đi kèm
+   (#B91C1C trên nó ≈2:1) → cần một tone mới ⇒ ADR, để lại cho pass sau.
+2. `features/grades/.../batch-status-badge.tsx` lặp lại `bg-edu-warning/15 text-edu-warning-foreground`
+   inline (đúng dấu hiệu "status chỉ-bằng-class lặp lại" của `component-organization.md`) → dính đúng
+   lỗi 1.10:1 vừa fix ở `StatusBadge`. Nên chuyển sang dùng `StatusBadge`/`statusToneClass`.
+3. `--edu-warning-foreground` cố ý **không** nhận giá trị dark của `T_DARK` (#EAEFF5): nó còn dùng cho
+   chữ trên nền vàng ĐẶC (attendance toggle, course-card pill, email-verify dot) — trắng trên vàng fail AA.
