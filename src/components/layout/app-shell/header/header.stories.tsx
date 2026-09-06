@@ -15,6 +15,7 @@ import type {
   SwitchTenantResult,
   TenantCardViewModel,
 } from "@/components/shared/tenant-card";
+import type { NotificationPage } from "@/features/notification/domain/entities/notification.entity";
 import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Header } from "./header";
 
@@ -451,5 +452,85 @@ export const Dark: Story = {
     );
     const body = within(document.body);
     await expect(await body.findByRole("menu")).toBeInTheDocument();
+  },
+};
+
+// ─── US-E24.13 — bell: dropdown on desktop, plain Link on mobile ─────────────
+
+/**
+ * The preview Server Action ref. Returns an EMPTY page on purpose: this story
+ * proves the trigger/viewport split and the panel's ARIA shell, not its rows —
+ * row rendering, tab filtering and the optimistic mutations are proven in
+ * `notification-dropdown.stories.tsx` against the component directly.
+ */
+const emptyPreview = async (): Promise<NotificationPage> => ({
+  items: [],
+  nextCursor: null,
+  hasMore: false,
+});
+
+const dropdownArgs = {
+  role: "teacher" as const,
+  userName: "Nguyen Van A",
+  tenantId: "tenant-acme",
+  onFetchUnreadCount: async () => ({ count: 2 }),
+  onFetchNotificationsPreview: emptyPreview,
+  onMarkRead: async () => ({}),
+  onMarkAllRead: async () => ({}),
+};
+
+/**
+ * AC (desktop ≥640px): the bell OPENS the panel instead of navigating — so it
+ * must be a `button`, never a `link`, and the panel is a `dialog` (Radix
+ * Popover) containing a REAL tablist. Escape closes it and returns focus to the
+ * bell (WCAG 2.1.2 / 2.4.3) — Radix Popover's own default, no custom wiring.
+ */
+export const BellDropdownDesktop: Story = {
+  args: dropdownArgs,
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    const bell = await canvas.findByRole("button", {
+      name: /Thông báo — 2 thông báo chưa đọc/,
+    });
+    // Not a link: opening a panel must not navigate anywhere.
+    await expect(canvas.queryByRole("link", { name: /Thông báo/ })).toBeNull();
+
+    await userEvent.click(bell);
+    const body = within(document.body);
+    const panel = await body.findByRole("dialog", { name: "Thông báo" });
+    await expect(within(panel).getByRole("tablist")).toBeInTheDocument();
+    await expect(getRouter().push).not.toHaveBeenCalled();
+
+    await userEvent.keyboard("{Escape}");
+    await waitForElementToBeRemoved(() =>
+      body.queryByRole("dialog", { name: "Thông báo" }),
+    );
+    await expect(document.activeElement).toBe(bell);
+  },
+};
+
+/**
+ * AC (mobile <640px): unchanged behaviour — the bell stays a `Link` to the
+ * notifications centre and there is NO popover trigger in the accessibility
+ * tree (the desktop span is `display:none`, so it is genuinely absent, not just
+ * visually hidden).
+ */
+export const BellMobileStaysALink: Story = {
+  args: dropdownArgs,
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const link = await canvas.findByRole("link", { name: /Thông báo/ });
+    await expect(link).toHaveAttribute(
+      "href",
+      expect.stringContaining("/t/tenant-acme/notifications"),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: /Thông báo/ }),
+    ).toBeNull();
+    // Restore the default desktop viewport for the stories that follow.
+    await page.viewport(1280, 900);
   },
 };

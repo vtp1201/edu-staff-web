@@ -10,7 +10,12 @@ import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
 import ReactQueryProvider from "@/bootstrap/lib/react-query-provider";
 import { AppShell } from "@/components/layout/app-shell";
 import { enrichMemberships } from "@/features/tenant/infrastructure/enrich-memberships";
-import { fetchUnreadCountAction } from "./(shared)/notifications/actions";
+import {
+  fetchPageAction,
+  fetchUnreadCountAction,
+  markAllReadAction,
+  markReadAction,
+} from "./(shared)/notifications/actions";
 import { requestEmailVerificationAction } from "./email-verification.actions";
 
 /**
@@ -83,6 +88,13 @@ export default async function AppLayout({
         // entry is not rendered at all (US-E24.12 — no dead link).
         helpHref={process.env.NEXT_PUBLIC_HELP_URL}
         onFetchUnreadCount={fetchUnreadCountAction}
+        // Bell dropdown (US-E24.13). `fetchPageAction` is passed UNWRAPPED:
+        // only a "use server" function can cross into a Client Component, so
+        // the dropdown speaks that action's exact `{ filter, cursor? }` shape
+        // (it already defaults to a page of 8 = the preview size).
+        onFetchNotificationsPreview={fetchPageAction}
+        onMarkRead={markReadAction}
+        onMarkAllRead={markAllReadAction}
       >
         {children}
       </AppShell>

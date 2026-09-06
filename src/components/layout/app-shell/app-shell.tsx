@@ -19,6 +19,10 @@ import type {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { EmailVerifyBanner } from "@/features/auth/presentation/email-verify/email-verify-banner";
 import { EmailVerifyProvider } from "@/features/auth/presentation/email-verify/email-verify-context";
+import type {
+  NotificationFilter,
+  NotificationPage,
+} from "@/features/notification/domain/entities/notification.entity";
 import { Header } from "./header/header";
 import { parseSwitchedParam } from "./parse-switched-param";
 import type { Role } from "./sidebar/nav-config";
@@ -52,6 +56,14 @@ type AppShellProps = {
     tenantId: string,
     role: string,
   ) => Promise<SwitchTenantResult>;
+  // NEW (US-E24.13) — pass-through to <Header>'s bell dropdown; optional, so a
+  // caller that wires none of them keeps today's link-bell behaviour.
+  onFetchNotificationsPreview?: (params: {
+    filter: NotificationFilter;
+    cursor?: string;
+  }) => Promise<NotificationPage | { errorKey: string }>;
+  onMarkRead?: (id: string) => Promise<{ errorKey?: string }>;
+  onMarkAllRead?: () => Promise<{ errorKey?: string }>;
   children: React.ReactNode;
 };
 
@@ -67,6 +79,9 @@ export function AppShell({
   onSwitchTenant,
   onLogout,
   onFetchUnreadCount,
+  onFetchNotificationsPreview,
+  onMarkRead,
+  onMarkAllRead,
   helpHref,
   children,
 }: AppShellProps) {
@@ -139,6 +154,9 @@ export function AppShell({
             tenantId={tenantId}
             onLogout={onLogout}
             onFetchUnreadCount={onFetchUnreadCount}
+            onFetchNotificationsPreview={onFetchNotificationsPreview}
+            onMarkRead={onMarkRead}
+            onMarkAllRead={onMarkAllRead}
             onMenuClick={() => setMobileOpen(true)}
             memberships={memberships}
             currentTenantId={currentTenantId}
