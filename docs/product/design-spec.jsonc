@@ -5316,7 +5316,26 @@
       "route": "/student/attendance",
       "roles": ["student"],
       "source": "design_src/edu/attendance-portal.jsx — StudentAttendanceScreen (+ shared APSummary)",
-      "status": "planned — not implemented",
+      "status": "implemented US-E24.6 — components/shared/attendance-summary/ + features/attendance/presentation/student-attendance-screen/",
+      // ── VOCABULARY DEVIATION (normative, US-E24.6) ─────────────────────
+      // The mockup counts *tiết* (periods) because it predates the BE
+      // contract. core records attendance PER DAY
+      // (`AttendanceStatus = PRESENT|ABSENT|LATE|EXCUSED_ABSENT` on
+      // `GET /members/{id}/attendance`) and publishes no per-period read, so
+      // every count on this screen is a number of *buổi/ngày*:
+      //   - "Tiết có mặt" → "Buổi có mặt"
+      //   - subtitle "…điểm danh theo tiết của giáo viên" →
+      //     "Tổng hợp từ điểm danh theo ngày của GVCN"
+      //   - the absence row's `period` + `subject` fields are OMITTED (no
+      //     source; inventing "Cả ngày"/"Tiết 3–5" would fabricate a fact).
+      // LATE is counted in the rate's DENOMINATOR but never its numerator
+      // (BE US-245); when `lateCount > 0` a line says so explicitly.
+      // A range with zero recorded days renders an em-dash + sr-only
+      // "Chưa có dữ liệu", never `0%`/`NaN`.
+      // RANGE: the current term of the active academic year when readable;
+      // `GET /academic-years` is admin-shaped and may 403 for a STUDENT, in
+      // which case the screen falls back to the last 6 months and STATES the
+      // applied range in the subtitle.
       "layout": {
         "container": "padding 28px 32px, maxWidth 1200, centered",
         "pageTitle": "'Chuyên cần của tôi' 22px/800 + subtitle 'Tổng hợp từ điểm danh theo tiết của giáo viên' 13px muted, marginBottom 24"
