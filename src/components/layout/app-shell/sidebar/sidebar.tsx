@@ -165,9 +165,11 @@ function FooterLink({
     <a
       href={href}
       target="_blank"
-      rel="noopener"
+      rel="noopener noreferrer"
       className={cn(
         "flex items-center gap-3 rounded-[var(--edu-radius-btn)] py-2 text-sm font-medium transition-colors",
+        // 44px touch target on mobile (A11Y-002, repo idiom).
+        "max-[820px]:min-h-11",
         "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         collapsed ? "justify-center px-0" : "px-3",
       )}
@@ -211,6 +213,8 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 rounded-[var(--edu-radius-btn)] py-2 text-sm font-medium transition-colors",
+        // 44px touch target on mobile (A11Y-002, repo idiom).
+        "max-[820px]:min-h-11",
         "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         collapsed ? "justify-center px-0" : "px-3",
         active &&

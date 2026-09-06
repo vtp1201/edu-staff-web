@@ -71,7 +71,9 @@ export const WithHelpLink: Story = {
     });
     await expect(link).toHaveAttribute("href", "https://help.eduportal.vn");
     await expect(link).toHaveAttribute("target", "_blank");
-    await expect(link).toHaveAttribute("rel", "noopener");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    // 44px touch target on mobile (A11Y-002).
+    await expect(link).toHaveClass("max-[820px]:min-h-11");
     // both footer controls present ⇒ they are visually separated
     await expect(
       canvas.getByTestId("sidebar-footer-separator"),

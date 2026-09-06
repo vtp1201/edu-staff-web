@@ -310,7 +310,8 @@ export function Header({
                   // Left-align the icon with the other rows and move the
                   // checked indicator to the trailing edge (design v3 puts the
                   // toggle on the right).
-                  className="pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
+                  // `max-[820px]:min-h-11` → 44px touch target on mobile (repo idiom).
+                  className="pl-2 max-[820px]:min-h-11 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
                   checked={resolvedTheme === "dark"}
                   onCheckedChange={(checked) =>
                     setTheme(checked ? "dark" : "light")

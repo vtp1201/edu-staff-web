@@ -269,18 +269,21 @@ export const MenuOpen: Story = {
     const body = within(document.body);
     const menu = await body.findByRole("menu");
     const order = Array.from(
-      menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"]'),
+      menu.querySelectorAll(
+        '[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]',
+      ),
     ).map((el) => el.textContent);
     await expect(order).toEqual([
       "Đổi trường",
       "Hồ sơ",
       "Chế độ tối",
+      "Tiếng Việt",
+      "English",
       "Đăng xuất",
     ]);
-    // The language row is a real radiogroup, not a menu item.
-    await expect(
-      within(menu).getByRole("radiogroup", { name: "Ngôn ngữ" }),
-    ).toBeInTheDocument();
+    // The language options are menu items themselves (keyboard-reachable),
+    // under the "Ngôn ngữ" label row.
+    await expect(within(menu).getByText("Ngôn ngữ")).toBeInTheDocument();
   },
 };
 
@@ -334,8 +337,11 @@ export const DarkModeToggle: Story = {
 };
 
 /**
- * AC: the current locale is the checked radio; picking the other one replaces
+ * AC: the current locale is the checked option; picking the other one replaces
  * the SAME path with the new locale prefix (no BE call, no client state).
+ *
+ * The options are `role="menuitemradio"` rows of a Radix
+ * `DropdownMenuRadioGroup` — see `LanguageSwitchKeyboard` for why.
  */
 export const LanguageSwitch: Story = {
   args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
@@ -344,14 +350,44 @@ export const LanguageSwitch: Story = {
       await canvas.findByRole("button", { name: "Menu người dùng" }),
     );
     const body = within(document.body);
-    const vi = await body.findByRole("radio", { name: "Tiếng Việt" });
-    const en = await body.findByRole("radio", { name: "English" });
-    await expect(vi).toBeChecked();
-    await expect(en).not.toBeChecked();
+    const vi = await body.findByRole("menuitemradio", { name: "Tiếng Việt" });
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+    await expect(vi).toHaveAttribute("aria-checked", "true");
+    await expect(en).toHaveAttribute("aria-checked", "false");
 
     await userEvent.click(en);
     await waitFor(() => expect(getRouter().replace).toHaveBeenCalled());
     // Story pathname is "/" (App Router mock) → same path, new locale prefix.
+    await expect(getRouter().replace).toHaveBeenCalledWith("/en");
+  },
+};
+
+/**
+ * WCAG 2.1.1 regression guard (US-E24.12 review): the language options used to
+ * be native radios inside a plain `<div role="radiogroup">`, which Radix's menu
+ * content makes keyboard-UNREACHABLE (it blocks Tab and roving-focuses only its
+ * own item collection). As `menuitemradio` rows they join that collection, so
+ * arrow keys reach them and Enter selects.
+ */
+export const LanguageSwitchKeyboard: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    const trigger = await canvas.findByRole("button", {
+      name: "Menu người dùng",
+    });
+    trigger.focus();
+    // Keyboard-only: open the menu, then walk the roving-focus collection.
+    await userEvent.keyboard("{Enter}");
+    const body = within(document.body);
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+
+    for (let i = 0; i < 12 && document.activeElement !== en; i++) {
+      await userEvent.keyboard("{ArrowDown}");
+    }
+    await expect(en).toHaveFocus();
+
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(getRouter().replace).toHaveBeenCalled());
     await expect(getRouter().replace).toHaveBeenCalledWith("/en");
   },
 };
