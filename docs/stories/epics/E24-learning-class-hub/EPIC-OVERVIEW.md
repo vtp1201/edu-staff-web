@@ -5,8 +5,9 @@
 > membership, exam metadata projection* (Accepted, implemented 2026-09-01/02).
 > Lưu ý: "ADR 0143" là số ADR **phía edu-api**; FE ADR cao nhất hiện là 0074.
 >
-> Trạng thái (02/09/2026 tối): **E24.0, E24.1 implemented & merged; E24.0b (bundle v3) đang chạy;
-> E24.2–E24.5 + E24.7–E24.11 đã slice vào harness (`planned`, packet đầy đủ) — sẵn sàng `/fe`.**
+> Trạng thái (06/09/2026): **E24.0, E24.0b, E24.1, E24.2–E24.5, E24.7–E24.11 implemented & merged.
+> Phase 3 (E24.6, E24.12–E24.16) đã slice vào harness (`planned`, packet đầy đủ) — sẵn sàng `/fe`
+> (runbook §3c).**
 > Ask BE: `docs/reports/2026-09-02-fe-to-be-asks-adr0143.md` (chưa có reply). Design: bundle v3 đã
 > khớp D1–D9 + R1–R3 → §7 chỉ còn giá trị lịch sử.
 
@@ -44,7 +45,7 @@
 | **E24.3** Timeline khoá học | `/student/courses/[courseId]` — 1 timeline dọc theo tuần, chip loại, khung thời gian, pill trạng thái (màu + chữ), banner "Đã đóng — chỉ xem"; thay `lesson-player` chapter list | `GET items` | Reuse `StatusBadge` shared |
 | **E24.4** Tab xuyên môn Bài tập / Kiểm tra | `/student/courses?view=assignment|exam`, sub-tab Đang mở/Sắp mở/Đã đóng (dạng gạch chân); **bỏ sidebar** `/student/assignments`, `/student/exams` → redirect vào view tương ứng; giữ `/student/exams/[examId]` (exam flow) | items của mọi course, lọc `itemType` | Q-C |
 | **E24.5** Course Player (Udemy) | `/student/courses/[courseId]/items/[itemId]` — trái: nội dung theo loại; phải: panel "Nội dung khoá học" theo tuần (đang học/✓; 🔒 chỉ EXAM), Prev/Next; **chỉ tab Tổng quan** (Ghi chú/Hỏi&Đáp BE không planned → bỏ) | LESSON `GET lessons/{id}` (content text — **không có video**, ask #3); DOCUMENT `url` + embed allowlist; ASSIGNMENT `POST submissions` (**text only**, ask #1) + `GET submissions/me` (409 already-submitted); EXAM → `examUrl`/`/student/exams/[examId]` | Cần design chỉnh (§7 D2, D3) |
-| **E24.6** Chuyên cần (student) | `/student/attendance` — stat + bar theo tháng + danh sách vắng; parent đã có `/parent/attendance` → thêm dialog "Xin phép nghỉ" (startDate/endDate, không có "theo tiết"; đính kèm theo draft US-249) | `GET members/{me}/attendance`, `POST conduct/student-leave-requests` | Design chỉnh dialog (§7 D6) |
+| **E24.6** Chuyên cần (student) | `/student/attendance` — stat + bar theo tháng + danh sách vắng; parent đã có `/parent/attendance` → thêm dialog "Xin phép nghỉ" (startDate/endDate, không có "theo tiết"; đính kèm US-249 — **đã deployed trong `openapi.yaml`**, không còn draft) | `GET members/{me}/attendance`, `POST conduct/student-leave-requests` (+ `/{id}/attachments` multipart) | D6 normative (v3); packet `US-E24.6-student-parent-attendance-portal/` |
 
 ### Phase 2 — Giáo viên: Class Hub — core đã sẵn, lms teacher-mode sẵn
 
@@ -56,7 +57,7 @@
 | **E24.10** Tab Khoá học online (teacher) | Timeline mode teacher cho course môn mình: kéo-thả (`PUT items/order` — gửi **đủ toàn bộ** itemIds), sửa start/due inline (`PATCH item`; EXAM → disable, 409 `LMS_EXAM_WINDOW_NOT_EDITABLE`), "Thêm mục": Tài liệu → `POST items/documents`; Bài giảng → `POST lessons`; Bài tập → `POST assignments{courseId}`; **Kiểm tra → không tạo ở đây** (projection từ core) → link sang Kho đề/class-exams (ask #6). GVCN xem môn khác readonly (dropdown môn) | courses?classId (teacher thấy course môn khác? ask #7) | Drag-drop: HTML5 native, không thêm lib |
 | **E24.11** Tab Chủ nhiệm (GVCN) | Điểm danh hôm nay (3 số + "Mở sổ điểm danh"), vi phạm chờ xử lý (+link Discipline), đơn xin nghỉ Duyệt/Từ chối (đính kèm ≤3 file — draft US-249) | `GET classes/{id}/attendance?date`, `GET conduct/student-violations`, `student-leave-requests` +approve/reject (real) | Gỡ force-mock leave trong `discipline.di.ts` cho nhánh này |
 
-### Phase 3 — Shell & các delta phụ (mỗi cái 1 US nhỏ, làm sau)
+### Phase 3 — Shell & các delta phụ (đã slice 06/09/2026 — xem §3c; packet là nguồn chân lý, bảng dưới là tóm tắt)
 
 | US | Nội dung | Hiện trạng FE |
 | --- | --- | --- |
@@ -86,7 +87,39 @@
    ../edu-api/services/{lms,core}/docs/openapi.yaml; claim/worktree/merge theo parallel-workflow."
 5. Khi stack local lên: chạy Kong smoke còn treo của E24.1 (`GET /lms/api/v1/lms/courses?classId=`)
    và ghi vào Evidence của E24.1.
-6. Phase 3 (E24.6, E24.12–E24.16) chưa slice — slice khi Phase 1–2 gần xong.
+6. Phase 3 (E24.6, E24.12–E24.16) **đã slice** (06/09/2026, `docs/e24-phase3-slice`) — packet
+   `US-E24.6-student-parent-attendance-portal/`, `US-E24.12-shell-avatar-menu-dark-mode/`,
+   `US-E24.13-bell-dropdown/`, `US-E24.14-attendance-summary-tab/`, `US-E24.15-messaging-merged-list/`,
+   `US-E24.16-academic-record-child-selector/`; chạy theo §3c.
+
+## 3c. Runbook Phase 3 (shell / social / attendance / records)
+
+Phase 1–2 đã merge hết → 6 US Phase 3 độc lập nhau về feature module; chỉ đụng nhau ở **shared
+file**: `components/layout/app-shell/header/header.tsx` (E24.12 + E24.13), `sidebar/nav-config.ts`
+(E24.12 bỏ `profile`; E24.6 thêm student `attendance`), `messages/{vi,en}.json` (mọi US),
+`components/shared/progress-bar/` (E24.6 hoặc E24.14 tạo — ai trước thì tạo, sau reuse).
+
+1. `git fetch --prune && scripts/bin/harness-cli query matrix | grep US-E24` — 6 hàng Phase 3 `planned`.
+2. Đọc packet + phần "Hiện trạng FE" (grep 06/09) — verify lại nhanh vì code có thể đã trôi. Lưu ý contract
+   đã đổi so với bảng §Phase 1: **US-245 (attendance/summary) và US-249 (leave attachments) đã nằm trong
+   `core/docs/openapi.yaml` (deployed), không còn draft** → E24.6 wire thật, chỉ mock nếu Kong smoke 404.
+3. **2 worktree song song** (decision 0033), mỗi worktree 1 phiên `/fe`, tuần tự trong nhánh:
+   - Worktree A (shell/social): `/fe US-E24.12` → `US-E24.13` → `US-E24.15`
+     (E24.13 sau E24.12 vì cùng `header.tsx`; E24.15 độc lập, để cuối để không chồng messages).
+   - Worktree B (attendance/records): `/fe US-E24.6` → `US-E24.14` → `US-E24.16`
+     (E24.6 trước để tạo `attendance-summary`/`progress-bar` shared cho E24.14 reuse).
+   Serialize: `nav-config.ts` — E24.12 (A) và E24.6 (B) cùng sửa → merge `origin/main` trước khi merge
+   lên main, chạy lại gate + `nav-config.test.ts`. `messages/*` — mọi US.
+4. Mỗi packet có mục **[OPEN QUESTION]** (Q1..Q3) với default đã ghi — `/fe` làm theo default, ghi
+   quyết định vào Evidence; chỉ dừng hỏi user khi default không khả thi.
+5. Prompt gợi ý cho `/fe`: "Chạy US-E24.N theo packet docs/stories/epics/E24-learning-class-hub/
+   US-E24.N-*/…md; mockup design_src/edu/{ui,attendance-portal,classops,messaging,academic-record-view}.jsx
+   (bundle v3); design-spec entry tương ứng; ground truth BE ../edu-api/services/{core,notification,
+   social}/docs/openapi.yaml + docs/reports/2026-09-02-be-to-fe-contract-update.md; claim/worktree/merge
+   theo parallel-workflow."
+6. Sau Phase 3: đóng backlog kèm theo (hợp nhất LeaveRequest forms → `leave-request-dialog` shared;
+   `ChildSelector` discipline → `ChildSwitcher` shared; ask BE: notify-PH chuyên cần, TEACHER đọc terms,
+   PARENT đọc enrollment con).
 
 ## 4. Thứ tự đề xuất & phụ thuộc
 
@@ -94,7 +127,8 @@
 E24.0 ✅ ─┐  E24.0b (v3) ─┐
 E24.1 ✅ ─┴──────────────┴─► E24.2 ► E24.3 ► E24.5 ► E24.4        (student, BE ready)
                              E24.7 ► E24.8 ► E24.9 ► E24.11 ► E24.10  (teacher; E24.10 cần E24.3 merge)
-E24.6, E24.12–16 độc lập, chạy song song worktree (decision 0033)
+E24.12 ► E24.13 ► E24.15  (worktree A — shell/social; E24.13 sau E24.12: cùng header.tsx)
+E24.6  ► E24.14 ► E24.16  (worktree B — attendance/records; §3c)
 ```
 
 Song song được: nhánh student (E24.1→E24.5) và nhánh teacher (E24.7→E24.9) chạm
