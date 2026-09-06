@@ -1,7 +1,4 @@
-import type {
-  TermWindow,
-  YearWindow,
-} from "@/features/attendance/domain/entities/academic-window.entity";
+import type { YearWindow } from "@/features/attendance/domain/entities/academic-window.entity";
 import type { AttendanceDateRange } from "@/features/parent-attendance/domain/entities/attendance-date-range.entity";
 
 /**

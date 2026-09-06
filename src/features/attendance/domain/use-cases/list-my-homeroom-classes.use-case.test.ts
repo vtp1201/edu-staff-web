@@ -10,6 +10,7 @@ function makeRepo(
     getClassAttendance: vi.fn(),
     saveClassAttendance: vi.fn(),
     getAttendanceHistory: vi.fn(),
+    getClassAttendanceRange: vi.fn(),
     ...over,
   };
 }

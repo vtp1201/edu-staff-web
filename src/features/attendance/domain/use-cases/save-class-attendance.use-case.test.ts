@@ -11,6 +11,7 @@ function makeRepo(
     getClassAttendance: vi.fn(),
     saveClassAttendance: vi.fn().mockResolvedValue(undefined),
     getAttendanceHistory: vi.fn(),
+    getClassAttendanceRange: vi.fn(),
     ...over,
   };
 }
