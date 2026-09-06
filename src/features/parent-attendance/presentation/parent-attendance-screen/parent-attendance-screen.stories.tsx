@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import enMessages from "@/bootstrap/i18n/messages/en.json";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ChildSwitcherChild } from "@/components/shared/child-switcher";
+import type { LeaveRequestEntity } from "@/features/discipline/domain/entities/leave-request.entity";
 import type { ChildAttendanceRecord } from "../../domain/entities/child-attendance-record.entity";
 import { ParentAttendanceScreen } from "./parent-attendance-screen";
 import { resolveRangeFromParams } from "./resolve-range";
@@ -29,6 +30,8 @@ const CHILDREN: ChildSwitcherChild[] = [
 ];
 
 const RANGE = { startDate: "2026-08-01", endDate: "2026-08-31" };
+/** Frozen "today" — the dialog's date pickers must not depend on the run date. */
+const TODAY = "2026-09-06";
 
 const RECORDS: ChildAttendanceRecord[] = [
   { date: "2026-08-03", status: "present" },
@@ -59,6 +62,9 @@ export const Populated: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
     onChildSwitch: fn(),
@@ -158,6 +164,9 @@ export const DefaultCurrentMonthRange: Story = {
       activeChildId: "c1",
       range: resolveRangeFromParams({}, new Date().toISOString().slice(0, 10)),
       records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -196,6 +205,9 @@ export const NoLinkedChildren: Story = {
       activeChildId: null,
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -216,6 +228,9 @@ export const EmptyRange: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: null,
     },
   },
@@ -241,6 +256,9 @@ export const ErrorForbidden: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "forbidden",
     },
   },
@@ -259,6 +277,9 @@ export const ErrorNetworkRetry: Story = {
       activeChildId: "c1",
       range: RANGE,
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "network-error",
     },
     onRetry: fn(),
@@ -283,6 +304,9 @@ export const ErrorRangeTooLarge: Story = {
       activeChildId: "c1",
       range: { startDate: "2024-01-01", endDate: "2026-08-31" },
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "date-range-too-large",
     },
   },
@@ -309,6 +333,9 @@ export const ErrorInvalidRange: Story = {
       activeChildId: "c1",
       range: { startDate: "2026-08-31", endDate: "2026-08-01" },
       records: [],
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
       error: "invalid-date-range",
     },
   },
@@ -321,5 +348,347 @@ export const ErrorInvalidRange: Story = {
     expect(alert).toHaveAttribute("id", "pa-range-error");
     // range failures are terminal — no retry affordance
     expect(canvas.queryByRole("button", { name: "Thử lại" })).toBeNull();
+  },
+};
+
+/* ── US-E24.6 — "Xin phép nghỉ học" ─────────────────────────────────────── */
+
+const mLeave = messages.discipline.studentConduct.leaveRequest;
+const mLeaveAttach = mLeave.attachments;
+
+/** Seed file, not UI copy. */
+function pngFile(name: string): File {
+  return new File([new Uint8Array(64)], name, { type: "image/png" });
+}
+const mParent = messages.parentAttendance;
+
+/** A still-SUBMITTED request of the selected child. */
+const PENDING_REQUEST: LeaveRequestEntity = {
+  id: "lr-9",
+  studentId: "c1",
+  studentName: "Nguyễn Minh Khoa",
+  initials: "NK",
+  avatarTone: "primary",
+  classId: "cls-11a2",
+  className: "11A2",
+  submittedBy: "parent",
+  submitterName: "Nguyễn Văn A",
+  reason: "Việc gia đình",
+  startDate: "10/09/2026",
+  endDate: "12/09/2026",
+  dayCount: 3,
+  type: "other",
+  status: "pending",
+  submittedAt: "2026-09-06T02:00:00Z",
+  approvedBy: null,
+  rejectedBy: null,
+  rejectionReason: null,
+};
+
+const leaveArgs = {
+  onChildSwitch: fn(),
+  onRangeChange: fn(),
+  onRetry: fn(),
+  onSubmitted: fn(),
+};
+
+/** AC: the header button opens the dialog and submits the 5-field payload. */
+export const RequestLeaveDialog: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: true as const,
+      requestId: "req-1",
+      total: 0,
+      failedFiles: [],
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    const trigger = canvas.getByRole("button", {
+      name: mParent.requestLeaveButton,
+    });
+    await userEvent.click(trigger);
+
+    const dialog = await body.findByRole("dialog");
+    // The child being requested for is named, not implied.
+    await expect(dialog).toHaveTextContent("Nguyễn Minh Khoa");
+
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+    const [input] = (
+      args.onSubmitLeave as unknown as {
+        mock: { calls: [Record<string, string>, FormData][] };
+      }
+    ).mock.calls[0];
+    // The class is the one read off the attendance rows — never asked of the user.
+    expect(input).toEqual({
+      studentMemberId: "c1",
+      classId: "cls-11a2",
+      startDate: TODAY,
+      endDate: TODAY,
+      reason: "Ốm",
+    });
+    // Success closes the dialog and re-fetches so the pending row appears.
+    await expect(args.onSubmitted).toHaveBeenCalled();
+  },
+};
+
+/**
+ * AC: a partial ATTACHMENT failure must NOT read as a failed submission — the
+ * request exists, so the screen says N/M and offers a files-only retry.
+ *
+ * The retry must carry ONLY the file that failed. Re-sending all three against
+ * a request that already holds two would exceed core's 3-attachment cap and the
+ * error could never be cleared — the bug this story previously missed by only
+ * checking the `requestId` argument (tech-lead review, fix round).
+ */
+export const AttachmentsPartialFailure: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: true as const,
+      requestId: "req-1",
+      total: 3,
+      failedFiles: ["b.png"],
+    })),
+    onRetryAttachments: fn(async () => ({
+      ok: true as const,
+      total: 1,
+      failedFiles: [],
+    })),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.upload(body.getByLabelText(mLeaveAttach.label), [
+      pngFile("a.png"),
+      pngFile("b.png"),
+      pngFile("c.png"),
+    ]);
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    // A live region states exactly how many files failed…
+    const notice = await canvas.findByRole("status");
+    await expect(notice).toHaveTextContent(
+      mParent.submitPartial.replace("{failed}", "1").replace("{total}", "3"),
+    );
+
+    // …and the retry re-uploads to the SAME request (no second submission)…
+    await userEvent.click(
+      within(notice).getByRole("button", { name: mParent.retryAttachments }),
+    );
+    await expect(args.onRetryAttachments).toHaveBeenCalledTimes(1);
+    const [requestId, , retryBody] = (
+      args.onRetryAttachments as unknown as {
+        mock: { calls: [string, string, FormData][] };
+      }
+    ).mock.calls[0];
+    await expect(requestId).toBe("req-1");
+    // …carrying ONLY the file the server said it did not store — never the two
+    // that already landed (they would breach core's 3-attachment cap).
+    const retried = retryBody.getAll("file") as File[];
+    await expect(retried).toHaveLength(1);
+    await expect(retried[0].name).toBe("b.png");
+    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+
+    // A clean retry clears the notice entirely.
+    await waitFor(async () => {
+      await expect(canvas.queryByRole("status")).toBeNull();
+    });
+  },
+};
+
+/**
+ * 375px (a11y audit A11Y-102): the new summary block and the header action fit
+ * the mobile viewport — the stat grid is 2-up and nothing overflows sideways.
+ */
+export const Mobile: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [PENDING_REQUEST],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  globals: { viewport: { value: "mobile1" } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Header title + action share the row without pushing it wider than 375px.
+    await expect(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    ).toBeVisible();
+    await expect(canvasElement.scrollWidth).toBeLessThanOrEqual(
+      canvasElement.clientWidth + 1,
+    );
+
+    // The summary block renders its 2×2 stat grid at this width.
+    const grid = canvas
+      .getByText(messages.attendanceSummary.rateLabel)
+      .closest("div.grid");
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain("grid-cols-2");
+  },
+};
+
+/**
+ * The shared `discipline.errors.reason-too-short` copy promises "ít nhất 10 ký
+ * tự" for two legacy mock-only forms that really do enforce ten. core's rule
+ * here is `minLength: 1`, so this dialog reports an empty reason with its own
+ * honest sentence instead (tech-lead review, fix round) — and the dialog stays
+ * OPEN so the draft is not lost.
+ */
+export const SubmitRejectedEmptyReason: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: false as const,
+      errorKey: "reason-too-short" as const,
+    })),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    const alert = await body.findByRole("alert");
+    await expect(alert).toHaveTextContent(mLeave.reasonRequired);
+    await expect(alert).not.toHaveTextContent(
+      messages.discipline.errors["reason-too-short"],
+    );
+    // The draft survives the failure.
+    await expect(body.getByLabelText(mLeave.reason)).toHaveValue("Ốm");
+  },
+};
+
+/** A SUBMITTED request shows as the first "Chờ duyệt" row of the history. */
+export const PendingRow: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [PENDING_REQUEST],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const history = within(
+      canvas.getByRole("region", {
+        name: messages.attendanceSummary.historyTitle,
+      }),
+    );
+    const rows = history.getAllByRole("listitem");
+    await expect(rows[0]).toHaveTextContent(
+      messages.attendanceSummary.statusPending,
+    );
+    await expect(rows[0]).toHaveTextContent(PENDING_REQUEST.reason);
+  },
+};
+
+/**
+ * AC/packet Q3: with no attendance row in the range there is no `classId`, so a
+ * request cannot be filed — the button explains itself instead of failing on
+ * submit.
+ */
+export const LeaveUnavailableWithoutClass: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: [],
+      leaveRequests: [],
+      childClassId: null,
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    const trigger = canvas.getByRole("button", {
+      name: mParent.requestLeaveButton,
+    });
+    // aria-disabled, not `disabled`: the explanation must stay reachable by
+    // keyboard, and it is wired through aria-describedby.
+    await expect(trigger).toHaveAttribute("aria-disabled", "true");
+    const describedBy = trigger.getAttribute("aria-describedby") ?? "";
+    await expect(document.getElementById(describedBy)).toHaveTextContent(
+      mParent.requestLeaveUnavailable,
+    );
+
+    await userEvent.click(trigger);
+    await expect(body.queryByRole("dialog")).toBeNull();
+    await expect(args.onSubmitLeave).not.toHaveBeenCalled();
   },
 };

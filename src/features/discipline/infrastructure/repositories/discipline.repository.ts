@@ -15,9 +15,11 @@ import type {
 import {
   assertCanDecideLeave,
   type DecideLeaveInput,
+  type LeaveAttachmentEntity,
   type LeaveRequestEntity,
   type SubmitChildLeaveRequestInput,
   type SubmitLeaveRequestInput,
+  type SubmitMyLeaveRequestInput,
 } from "../../domain/entities/leave-request.entity";
 import type {
   RecordViolationInput,
@@ -25,7 +27,9 @@ import type {
 } from "../../domain/entities/violation.entity";
 import type { DisciplineFailure } from "../../domain/failures/discipline.failure";
 import type { IDisciplineRepository } from "../../domain/repositories/i-discipline.repository";
+import type { LeaveRequestAttachmentResponseDto } from "../dtos/leave-request-attachment-response.dto";
 import type { StudentLeaveRequestResponseDto } from "../dtos/student-leave-request-response.dto";
+import { toLeaveAttachmentEntity } from "../mappers/leave-attachment.mapper";
 import { toLeaveRequestEntity } from "../mappers/leave-request.mapper";
 
 /**
@@ -107,6 +111,28 @@ export function toFailure(err: unknown): DisciplineFailure {
     // generic role/relationship `forbidden`.
     case "LEAVE_REQUEST_STUDENT_NOT_ENROLLED":
       return { type: "student-not-enrolled" };
+
+    // --- student-leave-request attachments (core US-249, US-E24.6) ---
+    // Three DISTINCT keys because the user's next action differs: pick another
+    // file / remove one first / nothing can be attached any more.
+    case "LEAVE_REQUEST_ATTACHMENT_INVALID_FILE":
+      return { type: "attachment-invalid" };
+    case "LEAVE_REQUEST_ATTACHMENT_LIMIT_EXCEEDED":
+      return { type: "attachment-limit" };
+    case "LEAVE_REQUEST_ATTACHMENT_LOCKED":
+      return { type: "attachment-locked" };
+    // Object storage is unconfigured or transiently unreachable — retryable,
+    // and the request itself already exists, so this is a transport-shaped
+    // failure, not a rejection of the file.
+    case "LEAVE_REQUEST_ATTACHMENT_STORAGE_UNAVAILABLE":
+      return { type: "network-error" };
+  }
+
+  // A server-declared retryable error is transport-shaped whatever its code —
+  // `.claude/rules/api-integration.md`: only `retryable === true` may be
+  // retried, and `network-error` is the only key whose UI offers a retry.
+  if (err instanceof Error && "retryable" in err && err.retryable === true) {
+    return { type: "network-error" };
   }
 
   // --- legacy generic fallbacks (pre-remap mock contract, kept for back-compat) ---
@@ -149,7 +175,16 @@ export function toFailure(err: unknown): DisciplineFailure {
 
 /**
  * Real `core` conduct repository (US-E09.1, remapped US-E18.14, PARTIALLY
- * un-force-mocked US-E24.11).
+ * un-force-mocked US-E24.11 then US-E24.6).
+ *
+ * **Three MORE methods are real since US-E24.6** — `submitMyLeaveRequest`,
+ * `getLeaveRequestsForAttendance`, `uploadLeaveAttachment` (the attendance
+ * portal's self-service leave flow, core US-249). Blocker (1) does not apply:
+ * the caller addresses THEMSELF by the `memberId` claim, or a linked child
+ * whose id the parent already holds. Blocker (2) is closed by
+ * `resolveMyClassId()` (US-E24.1) for a student and by
+ * `ChildAttendanceRecord.classId` for a parent. `discipline.di.ts` gates them
+ * on `USE_MOCK` through `makeSubmitLeaveRepo()`.
  *
  * **Three methods are real since US-E24.11** — `getLeaveRequests`,
  * `approveLeave`, `rejectLeave`. The GVCN homeroom inbox
@@ -312,6 +347,96 @@ export class DisciplineRepository implements IDisciplineRepository {
       })) as unknown as StudentLeaveRequestResponseDto;
       const names = await this.resolveMemberNames([dto]);
       return toLeaveRequestEntity(dto, names);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  /* ── REAL since US-E24.6 — self-service leave (STUDENT / linked PARENT) ── */
+
+  /**
+   * `POST /student-leave-requests` — the real create contract.
+   *
+   * Neither US-E18.14 blocker applies here, which is why this method is real
+   * while `submitLeaveRequest` (the legacy shape) stays a blocked stub:
+   * `studentMemberId` is the caller's OWN `memberId` claim (STUDENT) or a
+   * linked child's id the parent already holds (PARENT) — no roster UUID
+   * lookup — and `classId` now has a discovery path (`resolveMyClassId()` for
+   * a student, the child's own attendance rows for a parent, US-E24.6 Q3).
+   *
+   * SECURITY: this method does not — and must not — decide WHOSE request this
+   * is. It sends what the use-case was given; the caller is responsible for
+   * that id coming from the token claim on the self-submit path, and core
+   * authorises the pair regardless (`403 LEAVE_REQUEST_FORBIDDEN`).
+   */
+  async submitMyLeaveRequest(
+    input: SubmitMyLeaveRequestInput,
+  ): Promise<LeaveRequestEntity> {
+    try {
+      // The body is written out FIELD BY FIELD rather than spread: core's
+      // `CreateStudentLeaveRequestRequest` has exactly five properties, and a
+      // spread would silently forward any extra key a future caller adds.
+      const dto = (await this.http.post(DISCIPLINE_EP.submitLeaveRequest, {
+        studentMemberId: input.studentMemberId,
+        classId: input.classId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        reason: input.reason,
+      })) as unknown as StudentLeaveRequestResponseDto;
+      const names = await this.resolveMemberNames([dto]);
+      return toLeaveRequestEntity(dto, names);
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  /**
+   * `GET /student-leave-requests?studentMemberId=` — ONE student's requests,
+   * used to annotate the absence history. Core requires EXACTLY ONE of
+   * `classId` / `studentMemberId`, so this never sends both.
+   */
+  async getLeaveRequestsForAttendance(
+    studentMemberId: string,
+  ): Promise<LeaveRequestEntity[]> {
+    try {
+      const dtos = await this.fetchAllPages<StudentLeaveRequestResponseDto>(
+        DISCIPLINE_EP.leaveRequests,
+        { studentMemberId },
+      );
+      const names = await this.resolveMemberNames(dtos);
+      return dtos.map((dto) => toLeaveRequestEntity(dto, names));
+    } catch (err) {
+      throw toFailure(err);
+    }
+  }
+
+  /**
+   * `POST /{requestId}/attachments?studentMemberId=` — ONE file per call
+   * (core US-249). The caller loops; batching is not offered by the API.
+   *
+   * `FormData` + an explicit `multipart/form-data` header: the boundary is
+   * filled in by the runtime. `File`/`FormData` are Web-standard globals in the
+   * Node/edge server runtime, so nothing here is browser-only — the file
+   * crosses the client↔server boundary as part of a Server Action's FormData
+   * and is uploaded from the server, never from the browser.
+   */
+  async uploadLeaveAttachment(
+    requestId: string,
+    studentMemberId: string,
+    file: File,
+  ): Promise<LeaveAttachmentEntity> {
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const dto = (await this.http.post(
+        DISCIPLINE_EP.leaveAttachments(requestId),
+        body,
+        {
+          params: { studentMemberId },
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      )) as unknown as LeaveRequestAttachmentResponseDto;
+      return toLeaveAttachmentEntity(dto);
     } catch (err) {
       throw toFailure(err);
     }

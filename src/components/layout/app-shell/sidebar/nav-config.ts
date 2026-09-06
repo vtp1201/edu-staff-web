@@ -82,6 +82,16 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/student/courses", labelKey: "courses", icon: BookOpen },
     { href: "/student/grades", labelKey: "grades", icon: GraduationCap },
     { href: "/student/conduct", labelKey: "conduct", icon: Scale },
+    // US-E24.6 — "Chuyên cần của tôi". Reuses the existing `attendance` key
+    // (teacher/parent already use it) and `ClipboardList`, the icon
+    // `parent.attendance` already carries for the same concept. The design's
+    // student navMap does not list attendance, but an unreachable route is an
+    // orphan (2026-08-02 dead-link audit), so it gets an entry.
+    {
+      href: "/student/attendance",
+      labelKey: "attendance",
+      icon: ClipboardList,
+    },
     // US-E08.7 — student views their own class timetable, not a "teaching
     // schedule"; reuse the existing `timetable` key (already used by admin).
     { href: "/student/schedule", labelKey: "timetable", icon: CalendarDays },

@@ -765,6 +765,32 @@
     },
     "title": "Attendance"
   },
+  "attendanceSummary": {
+    "rateLabel": "Attendance rate",
+    "presentLabel": "Days present",
+    "excusedLabel": "Excused absences",
+    "unexcusedLabel": "Unexcused absences",
+    "unavailableValue": "—",
+    "unavailableHint": "No data yet",
+    "lateNotice": "{count} late arrival(s) — not counted as present.",
+    "byMonthTitle": "By month",
+    "byMonthSubtitle": "Aggregated from the homeroom teacher's daily attendance",
+    "monthProgressLabel": "Attendance rate for {month}",
+    "monthExcused": "{count} excused",
+    "monthUnexcused": "{count} unexcused",
+    "monthRate": "{rate}%",
+    "monthNoRate": "No data yet",
+    "regulationNote": "Per regulation, more than 45 absence days per school year (including excused ones) means no grade promotion.",
+    "historyTitle": "Absence history",
+    "historyCount": "{count} record(s)",
+    "historyEmptyTitle": "No absences",
+    "historyEmptyBody": "No absence has been recorded in this period.",
+    "statusExcused": "Excused",
+    "statusAbsent": "Unexcused",
+    "statusPending": "Pending approval",
+    "noReason": "No reason recorded — the homeroom teacher notified the parent",
+    "pendingRange": "From {startDate} through {endDate}"
+  },
   "auditLog": {
     "title": "Audit log",
     "subtitle": "All changes to grades, transcripts, and conduct. Read-only — cannot be edited or deleted.",
@@ -1458,6 +1484,9 @@
     },
     "errors": {
       "already-processed": "This request has already been processed",
+      "attachment-invalid": "Invalid attachment. Only JPG, PNG or PDF under 5 MB are accepted.",
+      "attachment-limit": "A request may have at most 3 attachments.",
+      "attachment-locked": "This request has been processed, so no more files can be attached.",
       "conflict": "Conflicting operation, please try again",
       "forbidden": "You do not have permission to view this information",
       "invalid-child": "Invalid student",
@@ -1471,6 +1500,7 @@
       "missing-student": "Please enter the student name",
       "network-error": "Connection error, please try again",
       "not-found": "Student information not found",
+      "reason-too-long": "Reason must not exceed 500 characters",
       "reason-too-short": "Reason must be at least 10 characters",
       "same-actor": "You cannot approve a record you created yourself",
       "student-not-enrolled": "This student is not enrolled in this class"
@@ -1533,11 +1563,28 @@
         "title": "Leave Request History"
       },
       "leaveRequest": {
+        "attachments": {
+          "label": "Supporting documents",
+          "hint": "Up to 3 JPG, PNG or PDF files, each under 5 MB.",
+          "addButton": "Add file",
+          "selectedTitle": "Selected files",
+          "remove": "Remove file {fileName}",
+          "rejectedTitle": "These files could not be added:",
+          "errorExt": "{fileName}: only JPG, PNG or PDF files are accepted.",
+          "errorSize": "{fileName}: the file must be larger than 0 and under 5 MB.",
+          "errorCount": "{fileName}: the 3-file limit is already reached."
+        },
         "button": "Request Leave",
+        "cancel": "Cancel",
         "close": "Close",
         "endDate": "End Date *",
+        "notice": "The request goes to the homeroom teacher for approval. The day counts as excused only once approved.",
         "reason": "Reason *",
+        "reasonCounter": "{count}/{max} characters",
         "reasonPlaceholder": "Enter reason for leave (at least 10 characters)...",
+        "reasonPlaceholderNoMin": "Enter the reason for the leave...",
+        "reasonRequired": "Please enter a reason for the leave.",
+        "reasonTooLong": "The reason must not exceed {max} characters.",
         "startDate": "Start Date *",
         "submit": "Submit Request",
         "submitting": "Submitting...",
@@ -3089,7 +3136,13 @@
       "date-range-too-large": "The date range cannot exceed 366 days.",
       "network-error": "Could not load the attendance history. Please try again.",
       "unknown": "Something went wrong. Please try again."
-    }
+    },
+    "requestLeaveButton": "Request leave",
+    "requestLeaveUnavailable": "Leave requests are unavailable: no attendance day was recorded in this period, so the child's class could not be determined. Pick a period that has attendance data.",
+    "submitSuccess": "The leave request was sent to the homeroom teacher.",
+    "submitPartial": "Request sent — {failed} of {total} files failed.",
+    "retryAttachments": "Retry files",
+    "attachmentsRetrySuccess": "All attachments were uploaded."
   },
   "parentLinks": {
     "pageTitle": "Parent–Student Links",
@@ -4264,6 +4317,21 @@
     "subtitle": "Record and track student absence status by class",
     "title": "Student Absences",
     "unexcused": "Unexcused"
+  },
+  "studentAttendance": {
+    "title": "My attendance",
+    "subtitle": "Aggregated from the homeroom teacher's daily attendance",
+    "rangeNotice": "Showing {startDate} to {endDate}.",
+    "forbiddenTitle": "Student profile unavailable",
+    "forbiddenBody": "This session is not linked to a school student profile. Sign out and back in, or contact the school.",
+    "retry": "Try again",
+    "errors": {
+      "forbidden": "You do not have permission to view this student's attendance.",
+      "invalid-date-range": "The end date must be on or after the start date.",
+      "date-range-too-large": "The range must not exceed 366 days.",
+      "network-error": "Could not load attendance data. Please try again.",
+      "unknown": "Something went wrong. Please try again."
+    }
   },
   "subjectCatalogue": {
     "createParentDialog": {

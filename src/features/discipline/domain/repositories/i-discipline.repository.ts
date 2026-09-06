@@ -5,9 +5,11 @@ import type {
 } from "../entities/conduct-summary.entity";
 import type {
   DecideLeaveInput,
+  LeaveAttachmentEntity,
   LeaveRequestEntity,
   SubmitChildLeaveRequestInput,
   SubmitLeaveRequestInput,
+  SubmitMyLeaveRequestInput,
 } from "../entities/leave-request.entity";
 import type {
   RecordViolationInput,
@@ -54,6 +56,39 @@ export interface IDisciplineRepository {
   submitLeaveRequest(
     input: SubmitLeaveRequestInput,
   ): Promise<LeaveRequestEntity>;
+
+  // --- Attendance portal self-service, REAL wire (US-E24.6) ---
+
+  /**
+   * `POST /core/api/v1/conduct/student-leave-requests` — the real contract.
+   * Separate from `submitLeaveRequest` (the legacy force-mocked shape) so a
+   * future edit cannot silently repoint `/student/conduct` at the live wire.
+   */
+  submitMyLeaveRequest(
+    input: SubmitMyLeaveRequestInput,
+  ): Promise<LeaveRequestEntity>;
+
+  /**
+   * `GET /core/api/v1/conduct/student-leave-requests?studentMemberId=` — the
+   * requests of ONE student, for annotating the absence history.
+   *
+   * A DISTINCT interface method rather than a reuse of `getMyLeaveRequests`
+   * (whose implementation is a mock fixture read): keeping them separate is
+   * what stops the two call paths being silently swapped for each other.
+   */
+  getLeaveRequestsForAttendance(
+    studentMemberId: string,
+  ): Promise<LeaveRequestEntity[]>;
+
+  /**
+   * `POST .../{requestId}/attachments?studentMemberId=` — multipart, ONE file
+   * per call (core US-249; ≤3 files, ≤5MB, jpg/png/pdf, only while SUBMITTED).
+   */
+  uploadLeaveAttachment(
+    requestId: string,
+    studentMemberId: string,
+    file: File,
+  ): Promise<LeaveAttachmentEntity>;
 
   // --- Parent multi-child view (US-E09.4) ---
   getChildren(): Promise<ChildEntity[]>;

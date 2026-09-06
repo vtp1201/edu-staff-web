@@ -16,6 +16,7 @@ import { GetChildViolationsUseCase } from "@/features/discipline/domain/use-case
 import { GetChildrenUseCase } from "@/features/discipline/domain/use-cases/get-children.use-case";
 import { GetConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-conduct-summary.use-case";
 import { GetLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-leave-requests.use-case";
+import { GetLeaveRequestsForAttendanceUseCase } from "@/features/discipline/domain/use-cases/get-leave-requests-for-attendance.use-case";
 import { GetMyConductSummaryUseCase } from "@/features/discipline/domain/use-cases/get-my-conduct-summary.use-case";
 import { GetMyLeaveRequestsUseCase } from "@/features/discipline/domain/use-cases/get-my-leave-requests.use-case";
 import { GetMyViolationsUseCase } from "@/features/discipline/domain/use-cases/get-my-violations.use-case";
@@ -25,6 +26,8 @@ import { RecordViolationUseCase } from "@/features/discipline/domain/use-cases/r
 import { RejectLeaveUseCase } from "@/features/discipline/domain/use-cases/reject-leave.use-case";
 import { SubmitChildLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-child-leave-request.use-case";
 import { SubmitLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-leave-request.use-case";
+import { SubmitMyLeaveRequestUseCase } from "@/features/discipline/domain/use-cases/submit-my-leave-request.use-case";
+import { UploadLeaveAttachmentUseCase } from "@/features/discipline/domain/use-cases/upload-leave-attachment.use-case";
 import { DisciplineRepository } from "@/features/discipline/infrastructure/repositories/discipline.repository";
 import { MockDisciplineRepository } from "@/features/discipline/infrastructure/repositories/mocks/discipline.mock.repository";
 
@@ -44,10 +47,11 @@ import { MockDisciplineRepository } from "@/features/discipline/infrastructure/r
  * Forcing mock here guards against the day the app-wide `USE_MOCK` flag flips
  * to `false` and would otherwise silently break all four discipline screens.
  *
- * US-E24.11 carved out the leave-request branch ONLY — see `makeLeaveRepo`. If
- * you are tempted to make this function `USE_MOCK`-conditional too, read the
- * `DisciplineRepository` class doc first: everything routed through here is
- * still a permanent blocked stub.
+ * TWO branches have been carved out since: US-E24.11's GVCN leave inbox
+ * (`makeLeaveRepo`) and US-E24.6's self-service leave + attachments
+ * (`makeSubmitLeaveRepo`). If you are tempted to make this function
+ * `USE_MOCK`-conditional too, read the `DisciplineRepository` class doc first:
+ * everything still routed through here is a permanent blocked stub.
  */
 async function makeRepo(): Promise<IDisciplineRepository> {
   return new MockDisciplineRepository();
@@ -191,6 +195,48 @@ export async function makeGetMyLeaveRequestsUseCase() {
 
 export async function makeSubmitLeaveRequestUseCase() {
   return new SubmitLeaveRequestUseCase(await makeRepo());
+}
+
+/* ── Attendance-portal self-service leave — un-force-mocked by US-E24.6 ──── */
+
+/**
+ * Self-service leave repository factory — the SECOND ordinary
+ * `USE_MOCK ? Mock : Real` gate in this file, alongside `makeLeaveRepo()`
+ * (US-E24.11). `makeRepo()` above is still force-mocked and still serves
+ * everything else.
+ *
+ * Three operations are reachable on the real API through here:
+ * `submitMyLeaveRequest`, `getLeaveRequestsForAttendance`,
+ * `uploadLeaveAttachment`. Neither US-E18.14 blocker applies:
+ *  - no roster UUID lookup — the STUDENT addresses THEMSELF by the `memberId`
+ *    claim (decision `0074`), and a PARENT already holds the linked child's id
+ *    from the roster read the attendance screen performs;
+ *  - no self-scope `classId` discovery gap — `resolveMyClassId()` (US-E24.1)
+ *    answers it for a student, and a parent reads it off the child's own
+ *    attendance rows (`ChildAttendanceRecord.classId`).
+ *
+ * It intentionally does NOT pass a `resolveNames` callback: these three calls
+ * are about the caller's OWN request, so there is no roster of other people's
+ * names to resolve, and the mapper falls back to the id for the one name it
+ * would show. That saves an IAM round-trip per submission.
+ */
+async function makeSubmitLeaveRepo(): Promise<IDisciplineRepository> {
+  if (USE_MOCK) return new MockDisciplineRepository();
+  // decision 0018 — proactive refresh BEFORE the protected core calls.
+  await ensureFreshSession();
+  return new DisciplineRepository(await createServerHttpClient());
+}
+
+export async function makeSubmitMyLeaveRequestUseCase() {
+  return new SubmitMyLeaveRequestUseCase(await makeSubmitLeaveRepo());
+}
+
+export async function makeGetLeaveRequestsForAttendanceUseCase() {
+  return new GetLeaveRequestsForAttendanceUseCase(await makeSubmitLeaveRepo());
+}
+
+export async function makeUploadLeaveAttachmentUseCase() {
+  return new UploadLeaveAttachmentUseCase(await makeSubmitLeaveRepo());
 }
 
 // --- Parent multi-child view (US-E09.4) ---

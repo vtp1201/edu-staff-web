@@ -67,6 +67,22 @@ export function compactToneClass(tone: StatTone | undefined): string {
   }
 }
 
+/**
+ * `denseOnMobile` sizes, BELOW `sm` only. Each pair re-states the design-spec
+ * default from `sm` up, so turning the prop on can never change a card on a
+ * tablet/desktop layout — only the widths where the default card's min-content
+ * (24px side padding + 52px icon + 26px value ≈ 173px) does not fit a 2-up
+ * grid at 375px and pushes the page into a horizontal scroll (a11y A11Y-101).
+ */
+export const STAT_DENSE_MOBILE = {
+  root: "gap-3 px-3 py-4 sm:gap-4 sm:px-6 sm:py-5",
+  /** Wrap rather than ellipsize a label that no longer fits the narrow card. */
+  label: "line-clamp-2 sm:truncate",
+  box: "size-11 sm:size-13",
+  icon: "size-5 sm:size-6",
+  value: "text-[22px] sm:text-[26px]",
+} as const;
+
 type StatCardDefaultProps = {
   variant?: "default";
   label: string;
@@ -80,6 +96,12 @@ type StatCardDefaultProps = {
   tone?: StatTone;
   /** Optional trend chip; `dir` colors it (up=success, down=error). */
   trend?: { dir: "up" | "down"; value: string };
+  /**
+   * Tighten padding, icon and value type BELOW `sm` (see
+   * {@link STAT_DENSE_MOBILE}). For callers that keep a multi-column grid at
+   * 375px, where the default card would overflow the viewport.
+   */
+  denseOnMobile?: boolean;
   className?: string;
 };
 
@@ -124,6 +146,7 @@ function DefaultStatCard({
   icon: Icon,
   tone = "primary",
   trend,
+  denseOnMobile = false,
   className,
 }: StatCardDefaultProps) {
   const t = STAT_TONE[tone];
@@ -131,23 +154,41 @@ function DefaultStatCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 rounded-[var(--edu-radius-card)] border border-border bg-card px-6 py-5 shadow-card",
+        "flex items-center rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card",
+        denseOnMobile ? STAT_DENSE_MOBILE.root : "gap-4 px-6 py-5",
         className,
       )}
     >
       <span
         className={cn(
-          "grid size-13 shrink-0 place-items-center rounded-[var(--edu-radius-card)]",
+          "grid shrink-0 place-items-center rounded-[var(--edu-radius-card)]",
+          denseOnMobile ? STAT_DENSE_MOBILE.box : "size-13",
           t.box,
         )}
       >
-        <Icon className={cn("size-6", t.icon)} aria-hidden="true" />
+        <Icon
+          className={cn(
+            denseOnMobile ? STAT_DENSE_MOBILE.icon : "size-6",
+            t.icon,
+          )}
+          aria-hidden="true"
+        />
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-xs font-medium text-muted-foreground">
+        <div
+          className={cn(
+            "text-xs font-medium text-muted-foreground",
+            denseOnMobile ? STAT_DENSE_MOBILE.label : "truncate",
+          )}
+        >
           {label}
         </div>
-        <div className="text-[26px] font-extrabold leading-tight text-foreground">
+        <div
+          className={cn(
+            "font-extrabold leading-tight text-foreground",
+            denseOnMobile ? STAT_DENSE_MOBILE.value : "text-[26px]",
+          )}
+        >
           {value}
         </div>
       </div>

@@ -61,14 +61,25 @@ describe("MockChildAttendanceRepository", () => {
     expect(a1.map((r) => r.status)).not.toEqual(b.map((r) => r.status));
   });
 
-  it("drops classId — records carry only date + status", async () => {
+  /**
+   * US-E24.6 reversed US-E20.5's "drop classId": the parent's leave-request
+   * dialog reads the child's class off the most recent attendance row (packet
+   * Q3), so the mock must carry the same field the real mapper now passes
+   * through — otherwise the button is dead in mock mode only.
+   */
+  it("carries classId alongside date + status (and nothing else)", async () => {
     const records =
       await new MockChildAttendanceRepository().getChildAttendance(
         "c1",
         AUG_2026,
       );
 
-    expect(Object.keys(records[0]).sort()).toEqual(["date", "status"]);
+    expect(Object.keys(records[0]).sort()).toEqual([
+      "classId",
+      "date",
+      "status",
+    ]);
+    expect(records[0].classId).toBeTruthy();
   });
 
   it("returns an empty list for a weekend-only range", async () => {

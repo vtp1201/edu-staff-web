@@ -47,6 +47,63 @@ export interface SubmitLeaveRequestInput {
 }
 
 /**
+ * Input for the REAL `POST /core/api/v1/conduct/student-leave-requests`
+ * (US-E24.6). A 1:1 mirror of core's `CreateStudentLeaveRequestRequest` —
+ * exactly five fields, nothing else.
+ *
+ * DELIBERATELY A SIBLING of {@link SubmitLeaveRequestInput}, not a replacement.
+ * The legacy shape (`studentId` + `type` + `submittedBy`, no `classId`) is what
+ * `/student/conduct` and `/parent/conduct` still collect, and it is served by a
+ * force-mocked repository (US-E18.14). Mutating it into this shape would break
+ * those two shipped screens, which never gather a `classId`. Consolidating the
+ * three leave forms is a logged follow-up (packet §Harness Delta).
+ *
+ * `type`/`submittedBy` are absent because the real contract has no leave-type
+ * concept and derives the submitter from the token — a client-supplied
+ * submitter identity would be a claim the server must ignore anyway.
+ */
+export interface SubmitMyLeaveRequestInput {
+  /**
+   * The student the request is FOR.
+   *
+   * SECURITY: on the STUDENT self-submit path this MUST be the server-decoded
+   * `memberId` claim (`decodeMemberIdClaim`, decision `0074`) — never a form
+   * field, never a search param. On the PARENT path it is the linked child's
+   * id, which the caller legitimately supplies and core authorises through
+   * `ParentStudentLinkReader`.
+   */
+  studentMemberId: string;
+  /** The student's current class — core needs it to route to the GVCN. */
+  classId: string;
+  /** ISO `YYYY-MM-DD`. */
+  startDate: string;
+  /** ISO `YYYY-MM-DD`, not before `startDate`. */
+  endDate: string;
+  /** 1–500 characters after trimming (core's `minLength`/`maxLength`). */
+  reason: string;
+}
+
+/** One uploaded piece of evidence on a leave request (core US-249). */
+export interface LeaveAttachmentEntity {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  /**
+   * Presigned GET URL, short-lived. EMPTY when {@link unavailable} — never
+   * render an empty href as a working link.
+   */
+  url: string;
+  uploadedAt: string;
+  /**
+   * The file exists but object storage could not sign it on this read. Render
+   * it as temporarily unviewable — hiding it makes a storage outage look like
+   * "no evidence attached" (core DEBT-249-001).
+   */
+  unavailable: boolean;
+}
+
+/**
  * Input for a parent submitting a leave request on behalf of a child (US-E09.4).
  * The childId is passed separately to the repo/use-case; `parentId`/`submittedBy`
  * are NEVER part of the wire body (derived server-side from the session).
