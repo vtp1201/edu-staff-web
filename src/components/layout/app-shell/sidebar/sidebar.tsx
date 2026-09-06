@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, GraduationCap } from "lucide-react";
+import { ChevronLeft, CircleHelp, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/bootstrap/i18n/routing";
 import { tenantUrl } from "@/bootstrap/tenant";
@@ -25,6 +25,12 @@ type SidebarProps = {
   role: Role;
   collapsed?: boolean;
   onToggle?: () => void;
+  /**
+   * External user-guide URL (NEXT_PUBLIC_HELP_URL, threaded from the app
+   * layout). There is no in-app guide page: when unset the entry does NOT
+   * render at all rather than linking nowhere (US-E24.12).
+   */
+  helpHref?: string;
   className?: string;
 };
 
@@ -33,9 +39,11 @@ export function Sidebar({
   role,
   collapsed = false,
   onToggle,
+  helpHref,
   className,
 }: SidebarProps) {
   const t = useTranslations("shell.nav");
+  const tHeader = useTranslations("shell.header");
   const pathname = usePathname();
   const items = NAV_BY_ROLE[role];
   // One winner: the longest href the pathname sits under (a plain prefix test
@@ -94,30 +102,92 @@ export function Sidebar({
           </nav>
         </ScrollArea>
 
-        {onToggle && (
+        {(helpHref || onToggle) && (
           <div className="border-t border-border p-3">
-            <button
-              type="button"
-              onClick={onToggle}
-              aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
-              aria-expanded={!collapsed}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                collapsed && "justify-center px-0",
-              )}
-            >
-              <ChevronLeft
-                className={cn(
-                  "size-4 shrink-0 transition-transform duration-[250ms]",
-                  collapsed && "rotate-180",
-                )}
+            {helpHref && (
+              <FooterLink
+                href={helpHref}
+                label={tHeader("help")}
+                collapsed={collapsed}
               />
-              {!collapsed && <span>{t("collapseSidebar")}</span>}
-            </button>
+            )}
+            {helpHref && onToggle && (
+              <div
+                data-testid="sidebar-footer-separator"
+                className="my-2 h-px bg-border"
+              />
+            )}
+            {onToggle && (
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={
+                  collapsed ? t("expandSidebar") : t("collapseSidebar")
+                }
+                aria-expanded={!collapsed}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-[var(--edu-radius-btn)] px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  collapsed && "justify-center px-0",
+                )}
+              >
+                <ChevronLeft
+                  className={cn(
+                    "size-4 shrink-0 transition-transform duration-[250ms]",
+                    collapsed && "rotate-180",
+                  )}
+                />
+                {!collapsed && <span>{t("collapseSidebar")}</span>}
+              </button>
+            )}
           </div>
         )}
       </aside>
     </div>
+  );
+}
+
+/**
+ * Footer entry that leaves the app (currently only the user guide). Not a
+ * `NavLink`: the target is an absolute external URL, so it is a plain anchor
+ * (no locale/tenant prefixing) opened in a new tab. Collapsed → icon-only with
+ * the same tooltip treatment as the nav items.
+ */
+function FooterLink({
+  href,
+  label,
+  collapsed,
+}: {
+  href: string;
+  label: string;
+  collapsed: boolean;
+}) {
+  const link = (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      className={cn(
+        "flex items-center gap-3 rounded-[var(--edu-radius-btn)] py-2 text-sm font-medium transition-colors",
+        "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        collapsed ? "justify-center px-0" : "px-3",
+      )}
+    >
+      <CircleHelp className="size-4 shrink-0" aria-hidden="true" />
+      {collapsed ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="truncate">{label}</span>
+      )}
+    </a>
+  );
+
+  if (!collapsed) return link;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }
 

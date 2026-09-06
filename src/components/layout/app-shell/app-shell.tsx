@@ -43,6 +43,9 @@ type AppShellProps = {
   currentTenantId?: string;
   /** Server Action: sign out (revoke + clear cookies + redirect). */
   onLogout?: () => Promise<void>;
+  /** External user-guide URL (NEXT_PUBLIC_HELP_URL) — the sidebar footer entry
+   *  renders only when it is set (US-E24.12). */
+  helpHref?: string;
   /** Server Action feeding the header's unread-notification badge. */
   onFetchUnreadCount?: () => Promise<{ count: number } | { errorKey: string }>;
   onSwitchTenant?: (
@@ -64,6 +67,7 @@ export function AppShell({
   onSwitchTenant,
   onLogout,
   onFetchUnreadCount,
+  helpHref,
   children,
 }: AppShellProps) {
   const router = useRouter();
@@ -110,13 +114,21 @@ export function AppShell({
             role={role}
             collapsed={collapsed}
             onToggle={toggle}
+            helpHref={helpHref}
           />
         </div>
 
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="w-[260px] p-0">
             <SheetTitle className="sr-only">EduPortal</SheetTitle>
-            <Sidebar tenantId={tenantId} role={role} className="border-r-0" />
+            {/* Mobile Sheet: nothing to collapse here, so no onToggle — the
+                footer carries the help entry alone. */}
+            <Sidebar
+              tenantId={tenantId}
+              role={role}
+              helpHref={helpHref}
+              className="border-r-0"
+            />
           </SheetContent>
         </Sheet>
 
