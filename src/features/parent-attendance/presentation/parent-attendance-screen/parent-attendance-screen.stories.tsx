@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import enMessages from "@/bootstrap/i18n/messages/en.json";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ChildSwitcherChild } from "@/components/shared/child-switcher";
@@ -354,6 +354,12 @@ export const ErrorInvalidRange: Story = {
 /* ── US-E24.6 — "Xin phép nghỉ học" ─────────────────────────────────────── */
 
 const mLeave = messages.discipline.studentConduct.leaveRequest;
+const mLeaveAttach = mLeave.attachments;
+
+/** Seed file, not UI copy. */
+function pngFile(name: string): File {
+  return new File([new Uint8Array(64)], name, { type: "image/png" });
+}
 const mParent = messages.parentAttendance;
 
 /** A still-SUBMITTED request of the selected child. */
@@ -404,7 +410,7 @@ export const RequestLeaveDialog: Story = {
       ok: true as const,
       requestId: "req-1",
       total: 0,
-      failedCount: 0,
+      failedFiles: [],
     })),
   },
   play: async ({ args, canvasElement }) => {
@@ -447,6 +453,11 @@ export const RequestLeaveDialog: Story = {
 /**
  * AC: a partial ATTACHMENT failure must NOT read as a failed submission — the
  * request exists, so the screen says N/M and offers a files-only retry.
+ *
+ * The retry must carry ONLY the file that failed. Re-sending all three against
+ * a request that already holds two would exceed core's 3-attachment cap and the
+ * error could never be cleared — the bug this story previously missed by only
+ * checking the `requestId` argument (tech-lead review, fix round).
  */
 export const AttachmentsPartialFailure: Story = {
   args: {
@@ -464,16 +475,130 @@ export const AttachmentsPartialFailure: Story = {
     onSubmitLeave: fn(async () => ({
       ok: true as const,
       requestId: "req-1",
-      total: 2,
-      failedCount: 1,
+      total: 3,
+      failedFiles: ["b.png"],
     })),
     onRetryAttachments: fn(async () => ({
       ok: true as const,
-      total: 2,
-      failedCount: 0,
+      total: 1,
+      failedFiles: [],
     })),
   },
   play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+
+    await userEvent.click(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    );
+    await body.findByRole("dialog");
+    await userEvent.type(body.getByLabelText(mLeave.reason), "Ốm");
+    await userEvent.upload(body.getByLabelText(mLeaveAttach.label), [
+      pngFile("a.png"),
+      pngFile("b.png"),
+      pngFile("c.png"),
+    ]);
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(mLeave.submit) }),
+    );
+
+    // A live region states exactly how many files failed…
+    const notice = await canvas.findByRole("status");
+    await expect(notice).toHaveTextContent(
+      mParent.submitPartial.replace("{failed}", "1").replace("{total}", "3"),
+    );
+
+    // …and the retry re-uploads to the SAME request (no second submission)…
+    await userEvent.click(
+      within(notice).getByRole("button", { name: mParent.retryAttachments }),
+    );
+    await expect(args.onRetryAttachments).toHaveBeenCalledTimes(1);
+    const [requestId, , retryBody] = (
+      args.onRetryAttachments as unknown as {
+        mock: { calls: [string, string, FormData][] };
+      }
+    ).mock.calls[0];
+    await expect(requestId).toBe("req-1");
+    // …carrying ONLY the file the server said it did not store — never the two
+    // that already landed (they would breach core's 3-attachment cap).
+    const retried = retryBody.getAll("file") as File[];
+    await expect(retried).toHaveLength(1);
+    await expect(retried[0].name).toBe("b.png");
+    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+
+    // A clean retry clears the notice entirely.
+    await waitFor(async () => {
+      await expect(canvas.queryByRole("status")).toBeNull();
+    });
+  },
+};
+
+/**
+ * 375px (a11y audit A11Y-102): the new summary block and the header action fit
+ * the mobile viewport — the stat grid is 2-up and nothing overflows sideways.
+ */
+export const Mobile: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [PENDING_REQUEST],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(),
+  },
+  globals: { viewport: { value: "mobile1" } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Header title + action share the row without pushing it wider than 375px.
+    await expect(
+      canvas.getByRole("button", { name: mParent.requestLeaveButton }),
+    ).toBeVisible();
+    await expect(canvasElement.scrollWidth).toBeLessThanOrEqual(
+      canvasElement.clientWidth + 1,
+    );
+
+    // The summary block renders its 2×2 stat grid at this width.
+    const grid = canvas
+      .getByText(messages.attendanceSummary.rateLabel)
+      .closest("div.grid");
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain("grid-cols-2");
+  },
+};
+
+/**
+ * The shared `discipline.errors.reason-too-short` copy promises "ít nhất 10 ký
+ * tự" for two legacy mock-only forms that really do enforce ten. core's rule
+ * here is `minLength: 1`, so this dialog reports an empty reason with its own
+ * honest sentence instead (tech-lead review, fix round) — and the dialog stays
+ * OPEN so the draft is not lost.
+ */
+export const SubmitRejectedEmptyReason: Story = {
+  args: {
+    ...leaveArgs,
+    vm: {
+      childList: CHILDREN,
+      activeChildId: "c1",
+      range: RANGE,
+      records: RECORDS,
+      leaveRequests: [],
+      childClassId: "cls-11a2",
+      today: TODAY,
+      error: null,
+    },
+    onSubmitLeave: fn(async () => ({
+      ok: false as const,
+      errorKey: "reason-too-short" as const,
+    })),
+  },
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(document.body);
 
@@ -486,22 +611,13 @@ export const AttachmentsPartialFailure: Story = {
       body.getByRole("button", { name: new RegExp(mLeave.submit) }),
     );
 
-    // A live region states exactly how many files failed…
-    const notice = await canvas.findByRole("status");
-    await expect(notice).toHaveTextContent(
-      mParent.submitPartial.replace("{failed}", "1").replace("{total}", "2"),
+    const alert = await body.findByRole("alert");
+    await expect(alert).toHaveTextContent(mLeave.reasonRequired);
+    await expect(alert).not.toHaveTextContent(
+      messages.discipline.errors["reason-too-short"],
     );
-
-    // …and the retry re-uploads to the SAME request (no second submission).
-    await userEvent.click(
-      within(notice).getByRole("button", { name: mParent.retryAttachments }),
-    );
-    await expect(args.onRetryAttachments).toHaveBeenCalledTimes(1);
-    await expect(
-      (args.onRetryAttachments as unknown as { mock: { calls: string[][] } })
-        .mock.calls[0][0],
-    ).toBe("req-1");
-    await expect(args.onSubmitLeave).toHaveBeenCalledTimes(1);
+    // The draft survives the failure.
+    await expect(body.getByLabelText(mLeave.reason)).toHaveValue("Ốm");
   },
 };
 

@@ -20,10 +20,12 @@ import type {
  * "create with attachments" route (one file per `POST .../attachments`), and a
  * failed FILE must not discard a request the GVCN can already act on. So the
  * request is created first and the files are uploaded after; a partial failure
- * returns `ok: true` with `failedCount`, and the screen offers
- * {@link retryLeaveAttachmentsAction} against the SAME `requestId`.
+ * returns `ok: true` with the NAMES of the files that failed, and the screen
+ * offers {@link retryLeaveAttachmentsAction} for exactly those, against the
+ * SAME `requestId`.
  *
- * SECURITY (whose request is this?):
+ * SECURITY (whose request is this?) — an ALLOWLIST, see
+ * {@link resolveTargetStudent}: only a student or a parent may file at all.
  * - A **STUDENT** caller may only address THEMSELVES. Whatever
  *   `input.studentMemberId` says is discarded and replaced by the token's own
  *   `memberId` claim (decision `0074`); a student with no such claim is refused
@@ -62,8 +64,13 @@ export async function submitLeaveRequestAction(
     return { ok: false, errorKey: toErrorKey(err) };
   }
 
-  const failedCount = await uploadAll(requestId, studentMemberId, files);
-  return { ok: true, requestId, total: files.length, failedCount };
+  const failed = await uploadAll(requestId, studentMemberId, files);
+  return {
+    ok: true,
+    requestId,
+    total: files.length,
+    failedFiles: failed.map((file) => file.name),
+  };
 }
 
 /**
@@ -83,48 +90,70 @@ export async function retryLeaveAttachmentsAction(
     .filter((entry): entry is File => entry instanceof File);
   const target = await resolveTargetStudent(studentMemberId);
   if (!target)
-    return { ok: true, total: files.length, failedCount: files.length };
+    return {
+      ok: true,
+      total: files.length,
+      failedFiles: files.map((file) => file.name),
+    };
 
-  const failedCount = await uploadAll(requestId, target, files);
-  return { ok: true, total: files.length, failedCount };
+  const failed = await uploadAll(requestId, target, files);
+  return {
+    ok: true,
+    total: files.length,
+    failedFiles: failed.map((file) => file.name),
+  };
 }
 
 /**
  * Upload SEQUENTIALLY (core counts attachments server-side and 409s on the 4th,
- * so concurrent uploads could race past the cap) and count the failures instead
- * of aborting: one rejected file must not strand the ones after it.
+ * so concurrent uploads could race past the cap) and COLLECT the files that
+ * failed instead of aborting: one rejected file must not strand the ones after
+ * it.
+ *
+ * It returns the failed FILES, not a count, because the caller has to be able
+ * to re-send exactly those. A count would force the screen to re-send the whole
+ * original list, which — against a request that already holds the successful
+ * ones — walks straight into core's 3-attachment cap.
  */
 async function uploadAll(
   requestId: string,
   studentMemberId: string,
   files: File[],
-): Promise<number> {
-  if (files.length === 0) return 0;
+): Promise<File[]> {
+  if (files.length === 0) return [];
   const useCase = await makeUploadLeaveAttachmentUseCase();
-  let failed = 0;
+  const failed: File[] = [];
   for (const file of files) {
     try {
       await useCase.execute(requestId, studentMemberId, file);
     } catch {
-      failed += 1;
+      failed.push(file);
     }
   }
   return failed;
 }
 
 /**
- * The student this mutation may address. `null` = refuse.
+ * The student this mutation may address. `null` = refuse before any HTTP.
  *
- * Only the STUDENT branch is overridden. A PARENT (or any other role) keeps the
- * requested id because naming the child IS the request; core decides whether
- * the link exists.
+ * An ALLOWLIST, deliberately: only the two roles that legitimately file a leave
+ * request are enumerated, and everything else — teacher, principal, admin, a
+ * token whose role claim is unreadable — is refused. The previous shape was a
+ * denylist (override the STUDENT, pass everyone else through) which fails OPEN:
+ * any non-student token could name any student id it liked, and this is a
+ * no-undo mutation (tech-lead review, fix round).
  */
 async function resolveTargetStudent(requested: string): Promise<string | null> {
   const token = (await getAccessToken()) ?? "";
-  if (decodeRoleClaim(token) !== "student") return requested;
-  // `decodeMemberIdClaim`, not `decodeMemberId`: `sub` is not proof of a
-  // tenant-scoped session (decision 0074).
-  return decodeMemberIdClaim(token);
+  const role = decodeRoleClaim(token);
+  // A student may only ever address THEMSELVES, and `decodeMemberIdClaim` (not
+  // `decodeMemberId`): `sub` is not proof of a tenant-scoped session
+  // (decision 0074).
+  if (role === "student") return decodeMemberIdClaim(token);
+  // A parent legitimately names the linked child — there is no other way to say
+  // WHICH child; core authorises the pair through `ParentStudentLinkReader`.
+  if (role === "parent") return requested;
+  return null;
 }
 
 /** Domain failures arrive as `{ type }`; anything else is a transport problem. */

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { compactToneClass, STAT_TONE, trendColorClass } from "./stat-card";
+import {
+  compactToneClass,
+  STAT_DENSE_MOBILE,
+  STAT_TONE,
+  trendColorClass,
+} from "./stat-card";
 
 /**
  * StatCard variant logic is unit-tested at the pure-helper level (node env),
@@ -64,5 +69,38 @@ describe("StatCard compact tone mapping", () => {
     expect(compactToneClass(undefined)).toBe("text-foreground");
     // tones that exist on StatTone but have no compact mapping fall back too
     expect(compactToneClass("warning")).toBe("text-foreground");
+  });
+});
+
+/**
+ * `denseOnMobile` exists because the 2-up stat grid at 375px gives each card
+ * ~152px while the default card needs ~173px of min-content — the row overflows
+ * and the page scrolls sideways (a11y A11Y-101, caught by the
+ * AttendanceSummaryBlock Mobile story, which is where the no-overflow proof
+ * lives). The invariant asserted here is the OTHER half: it must not change any
+ * existing screen, i.e. every dense value restores the design-spec default from
+ * `sm` up.
+ */
+describe("StatCard denseOnMobile — mobile-only, spec-restoring at sm", () => {
+  it("restores the design-spec padding/gap from sm", () => {
+    expect(STAT_DENSE_MOBILE.root).toContain("sm:gap-4");
+    expect(STAT_DENSE_MOBILE.root).toContain("sm:px-6");
+    expect(STAT_DENSE_MOBILE.root).toContain("sm:py-5");
+  });
+
+  it("wraps the label below sm instead of ellipsizing it, truncating again from sm", () => {
+    expect(STAT_DENSE_MOBILE.label).toBe("line-clamp-2 sm:truncate");
+  });
+
+  it("restores the 52px icon box and 26px stat value from sm", () => {
+    expect(STAT_DENSE_MOBILE.box).toContain("sm:size-13");
+    expect(STAT_DENSE_MOBILE.icon).toContain("sm:size-6");
+    expect(STAT_DENSE_MOBILE.value).toContain("sm:text-[26px]");
+  });
+
+  it("is strictly smaller below sm than the default it replaces", () => {
+    expect(STAT_DENSE_MOBILE.box.startsWith("size-11 ")).toBe(true);
+    expect(STAT_DENSE_MOBILE.icon.startsWith("size-5 ")).toBe(true);
+    expect(STAT_DENSE_MOBILE.value.startsWith("text-[22px] ")).toBe(true);
   });
 });

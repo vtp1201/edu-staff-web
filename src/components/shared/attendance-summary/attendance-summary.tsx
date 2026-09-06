@@ -115,6 +115,7 @@ export function AttendanceSummaryBlock({
       {/* 2×2 at 375px (AC), 4-up from md. */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <StatCard
+          denseOnMobile
           icon={Percent}
           tone={rateTone(summary.rate)}
           label={t("rateLabel")}
@@ -127,6 +128,7 @@ export function AttendanceSummaryBlock({
           }
         />
         <StatCard
+          denseOnMobile
           icon={UserCheck}
           tone="success"
           label={t("presentLabel")}
@@ -139,12 +141,14 @@ export function AttendanceSummaryBlock({
           }
         />
         <StatCard
+          denseOnMobile
           icon={FileText}
           tone="warning"
           label={t("excusedLabel")}
           value={String(summary.excusedCount)}
         />
         <StatCard
+          denseOnMobile
           icon={AlertTriangle}
           tone="error"
           label={t("unexcusedLabel")}

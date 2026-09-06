@@ -465,3 +465,67 @@ Branch `feat/us-e24.6-student-parent-attendance-portal`, 7 commits, TDD red→gr
 - Q1 remains genuinely open: whether a STUDENT may read `GET /academic-years` is untested against a live
   BE. The screen degrades to the 6-month window and states the applied range, so either answer is correct
   behaviour.
+
+## Accessibility Audit (fe-accessibility-auditor, 2026-09-06)
+
+**Verdict: PASS with Minor findings.** No Blocker/Critical. 1 Major (touch target), 3 Minor. Runs in
+parallel with `fe-tech-lead-reviewer`; both required before the design-review gate.
+
+### WCAG 2.1 AA coverage (targeted areas)
+
+| Area | Result | Finding |
+| --- | --- | --- |
+| `ProgressBar` accessible name/value association | PASS — `aria-valuetext` on the `progressbar` itself announces the percent; the outer `sr-only` span is correctly kept OUTSIDE (children of `role="progressbar"` are excluded from its accessible name) but is redundant, not orphaned/broken | — |
+| `ProgressBar` motion gating | PASS — `motion-safe:transition-[width] motion-safe:duration-[600ms]`, consistent with ~30 other usages repo-wide | — |
+| `AttendanceSummaryBlock` status not color-alone | PASS — icon + `StatusBadge` tone + text label; pending vs excused chip classNames asserted distinct in story | — |
+| `AttendanceSummaryBlock` empty/NaN guard | PASS — `UnavailableValue` renders `—` (aria-hidden) + sr-only hint, never `NaN`/`undefined` | — |
+| `AttendanceSummaryBlock` 375px reflow | PARTIAL | A11Y-101 |
+| `/parent/attendance` 375px reflow | FAIL (no coverage) | A11Y-102 |
+| `LeaveRequestDialog` focus trap / Escape / focus-return | PASS — story asserts `document.activeElement === trigger` after Escape, not just dialog-closed | — |
+| `LeaveRequestDialog` reason field `aria-describedby` (counter + error) | PASS | — |
+| `LeaveRequestDialog` attachment rejections as text | PASS — `role="alert"`, plain sentences, never color/border alone | — |
+| `LeaveRequestDialog` submit disabled-state consistency | PASS — real `disabled` is correct here (reason already text-associated via the textarea's `aria-describedby`), consistent with the header CTA's deliberate `aria-disabled` (where no other text carries the reason) | — |
+| Remove-attachment icon button touch target | FAIL | A11Y-103 |
+| File input format/size hint association | PARTIAL | A11Y-104 |
+| Contrast (new token usage) | PASS — no raw color; "45 buổi" strip correctly uses `text-edu-text-secondary`/`bg-primary/8` (informational, not warning) while the dialog's `notice` + parent's warning strips correctly use `bg-edu-warning-light`/`text-edu-warning-text` | — |
+| `<html lang>` / hardcoded copy | PASS — no Vietnamese diacritics found outside comments/i18n; `bunx tsc --noEmit` clean (typed message keys) | — |
+| Forbidden / empty states | PASS — both route through the shared `EmptyState` (`role="status"`, AA-contrast icon, never silent) | — |
+
+### Findings
+
+**A11Y-101 — Minor (WCAG 1.4.10 Reflow)**
+Component: `src/components/shared/attendance-summary/attendance-summary.stories.tsx:169-177`
+Issue: The `Mobile` story only asserts section titles are present; it does not assert no horizontal
+overflow, unlike `student-attendance-screen.stories.tsx:160-178`. As a shared component with 2 independent
+callers, its own story should carry the overflow assertion.
+Fix: add the same `overflowing = [...canvasElement.querySelectorAll("*")].filter(el =>
+el.getBoundingClientRect().right > limit + 1)` assertion used in the student screen's `Mobile` story.
+
+**A11Y-102 — Minor (WCAG 1.4.10 Reflow — coverage gap)**
+Component: `src/features/parent-attendance/presentation/parent-attendance-screen/parent-attendance-screen.stories.tsx`
+Issue: no `mobile1`/375px viewport story exists at all (grep for `Mobile|375|viewport|overflow` returns
+nothing), even though this screen now composes `AttendanceSummaryBlock` + `LeaveRequestDialog` + the
+existing table — the most complex surface in this story, and the one with no 320-375px proof.
+Fix: add a `Mobile` story with the overflow-measurement pattern from `student-attendance-screen.stories.tsx`.
+
+**A11Y-103 — Major (WCAG 2.5.5 Target Size; repo hard rule `accessibility.md` §Target & layout, ≥44×44)**
+Component: `src/components/shared/leave-request-dialog/leave-request-dialog.tsx:264`
+Issue: the per-file remove button is `size-8` (32×32px) — below the repo's hard 44×44 minimum. New
+pattern, no existing precedent elsewhere in `components/shared`.
+Evidence: `className="grid size-8 shrink-0 place-items-center rounded-full text-edu-text-secondary hover:bg-background focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"`
+Fix: `size-8` → `size-11` (keep the inner icon at `size-3.5`).
+
+**A11Y-104 — Minor (WCAG 1.3.1/3.3.2 — info association)**
+Component: `src/components/shared/leave-request-dialog/leave-request-dialog.tsx:230-244`
+Issue: the file input's format/size hint (`tAttach("hint")`) is a plain adjacent `<span>`, not wired via
+`aria-describedby` on `<Input type="file">` — `aria-describedby` there (line 239) is set only once
+`rejected.length > 0`. A screen-reader user tabbing directly to the input hears no constraint before
+picking a file.
+Fix: give the hint span an `id` and always include it in the input's `aria-describedby`, unioning with the
+rejection id when present (mirrors the textarea's `counterId`/`reasonErrorId` pattern two fields above it).
+
+### Quick wins (all < 30 min, sorted by severity)
+1. A11Y-103 (Major) — `size-8` → `size-11` on the remove-attachment button.
+2. A11Y-104 (Minor) — always-on `aria-describedby` for the file input hint.
+3. A11Y-101 (Minor) — add overflow assertion to `attendance-summary.stories.tsx`'s `Mobile` story.
+4. A11Y-102 (Minor) — add a `Mobile` story to `parent-attendance-screen.stories.tsx`.

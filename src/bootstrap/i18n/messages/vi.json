@@ -1582,6 +1582,7 @@
         "reason": "Lý do *",
         "reasonCounter": "{count}/{max} ký tự",
         "reasonPlaceholder": "Nhập lý do nghỉ phép (tối thiểu 10 ký tự)...",
+        "reasonPlaceholderNoMin": "Nhập lý do xin nghỉ...",
         "reasonRequired": "Vui lòng nhập lý do nghỉ.",
         "reasonTooLong": "Lý do không được vượt quá {max} ký tự.",
         "startDate": "Ngày bắt đầu *",

@@ -174,5 +174,30 @@ export const Mobile: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText(m.historyTitle)).toBeInTheDocument();
     await expect(canvas.getByText(m.byMonthTitle)).toBeInTheDocument();
+
+    // a11y A11Y-101: PROVE the claim in the story title. The stat grid is the
+    // 2-column variant at this width and nothing scrolls sideways — a story
+    // that only reads two headings would pass on a broken 4-up row.
+    const grid = canvas.getByText(m.rateLabel).closest("div.grid");
+    await expect(grid).not.toBeNull();
+    await expect(grid?.className).toContain("grid-cols-2");
+    // NOTHING is clipped sideways at 375px — asserted element by element (a
+    // scrollWidth read on the root alone hides a card whose value is cut off).
+    // `sr-only` spans are excluded: being clipped to 1px IS their job.
+    const overflowing = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("*"),
+    )
+      .filter(
+        (el) =>
+          !el.classList.contains("sr-only") &&
+          el.scrollWidth > el.clientWidth + 1,
+      )
+      .map((el) => `${el.tagName}.${el.className}`);
+    await expect(overflowing).toEqual([]);
+
+    // Each stat value is fully rendered (not clipped to an ellipsis).
+    for (const cell of Array.from(grid?.children ?? [])) {
+      await expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth + 1);
+    }
   },
 };

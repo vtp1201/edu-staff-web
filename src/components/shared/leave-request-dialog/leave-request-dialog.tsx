@@ -96,6 +96,7 @@ export function LeaveRequestDialog({
   const counterId = useId();
   const reasonErrorId = useId();
   const fileId = useId();
+  const hintId = useId();
   const rejectedId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const returnFocus = useDialogReturnFocus(open, returnFocusRef);
@@ -197,7 +198,12 @@ export function LeaveRequestDialog({
             rows={3}
             value={reason}
             maxLength={MAX_REASON}
-            placeholder={t("reasonPlaceholder")}
+            // NOT `reasonPlaceholder`: that copy promises "tối thiểu 10 ký
+            // tự", which is the rule of two legacy mock-only forms. core (and
+            // `SubmitMyLeaveRequestUseCase`) enforce `minLength: 1`, so this
+            // dialog gets copy that matches the rule it actually applies
+            // (tech-lead review, fix round).
+            placeholder={t("reasonPlaceholderNoMin")}
             aria-required="true"
             aria-invalid={touched && reasonInvalid}
             aria-describedby={`${counterId} ${reasonInvalid ? reasonErrorId : ""}`.trim()}
@@ -236,10 +242,15 @@ export function LeaveRequestDialog({
             multiple
             accept={ACCEPT}
             disabled={isPending || files.length >= MAX_ATTACHMENTS}
-            aria-describedby={rejected.length > 0 ? rejectedId : undefined}
+            // The constraints (ext / size / count) are described from the
+            // START, not only once a pick has been rejected — a screen-reader
+            // user must hear them BEFORE choosing a file (a11y audit A11Y-104).
+            aria-describedby={
+              rejected.length > 0 ? `${hintId} ${rejectedId}` : hintId
+            }
             onChange={(e) => pickFiles(e.target.files)}
           />
-          <span className="text-muted-foreground text-xs">
+          <span id={hintId} className="text-muted-foreground text-xs">
             {tAttach("hint")}
           </span>
 
@@ -261,7 +272,10 @@ export function LeaveRequestDialog({
                     type="button"
                     aria-label={tAttach("remove", { fileName: file.name })}
                     disabled={isPending}
-                    className="grid size-8 shrink-0 place-items-center rounded-full text-edu-text-secondary hover:bg-background focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                    // 44×44 tappable area (a11y audit A11Y-103) — the icon
+                    // stays 14px, only the hit area grows, so the row height is
+                    // unchanged by the negative margin.
+                    className="-my-1.5 grid min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-edu-text-secondary hover:bg-background focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                     onClick={() =>
                       setFiles((current) => current.filter((f) => f !== file))
                     }

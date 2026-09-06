@@ -9,6 +9,18 @@ import type { DisciplineFailure } from "@/features/discipline/domain/failures/di
  * this repo uses.
  */
 
+/**
+ * Files that did NOT upload, BY NAME — not merely how many.
+ *
+ * A count is not actionable: the screen has to re-send exactly the files that
+ * failed, because core counts attachments server-side and 409s past its 3-file
+ * cap. Re-sending the whole original list after a 1-of-3 failure would push the
+ * request to 5 attachments and make the retry affordance permanently broken
+ * (tech-lead review, fix round). Names are the only handle the client and the
+ * server share, so they are what crosses the boundary.
+ */
+export type FailedAttachmentNames = string[];
+
 /** Outcome of "create the request, then upload its files". */
 export type SubmitLeaveRequestResult =
   | {
@@ -17,11 +29,11 @@ export type SubmitLeaveRequestResult =
       /** Files attempted. `0` when the user attached none. */
       total: number;
       /**
-       * Files that failed. The REQUEST still exists — the screen must say
-       * "đơn đã gửi, N/M tệp thất bại" and offer a files-only retry, never
-       * imply the whole submission failed.
+       * Names of the files that failed. The REQUEST still exists — the screen
+       * must say "đơn đã gửi, N/M tệp thất bại" and offer a retry of THESE
+       * files only, never imply the whole submission failed.
        */
-      failedCount: number;
+      failedFiles: FailedAttachmentNames;
     }
   | { ok: false; errorKey: DisciplineFailure["type"] };
 
@@ -29,5 +41,5 @@ export type SubmitLeaveRequestResult =
 export interface RetryLeaveAttachmentsResult {
   ok: true;
   total: number;
-  failedCount: number;
+  failedFiles: FailedAttachmentNames;
 }

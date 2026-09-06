@@ -67,6 +67,13 @@ export const EmptyReasonBlocksSubmit: Story = {
       .join(" ");
     await expect(explained).toContain(m.reasonRequired);
 
+    // The placeholder must not promise a 10-character minimum the server does
+    // not enforce (tech-lead review, fix round) — core's rule is `minLength: 1`.
+    await expect(reason).toHaveAttribute(
+      "placeholder",
+      m.reasonPlaceholderNoMin,
+    );
+
     const submit = body.getByRole("button", { name: new RegExp(m.submit) });
     await expect(submit).toBeDisabled();
     await expect(args.onSubmit).not.toHaveBeenCalled();
@@ -141,13 +148,36 @@ export const RejectedAttachments: Story = {
     // `accept` does not cover (drag-and-drop, a renamed file).
 
     // The 3 valid files are kept, each removable by an aria-labelled button.
-    await expect(
-      body.getByRole("button", {
-        name: mAttach.remove.replace("{fileName}", "a.png"),
-      }),
-    ).toBeInTheDocument();
+    const remove = body.getByRole("button", {
+      name: mAttach.remove.replace("{fileName}", "a.png"),
+    });
+    await expect(remove).toBeInTheDocument();
+    // a11y A11Y-103: the remove control is a ≥44×44 touch target (the icon
+    // inside it stays small — only the hit area is large). `offsetWidth`, not
+    // `getBoundingClientRect()`: the dialog's zoom-in entrance transform scales
+    // the visual box, so a rect read mid-animation measures ~42 and the
+    // assertion would be about the animation, not the layout.
+    await expect(remove.offsetWidth).toBeGreaterThanOrEqual(44);
+    await expect(remove.offsetHeight).toBeGreaterThanOrEqual(44);
     // Cap reached → the picker itself is disabled.
     await expect(picker).toBeDisabled();
+  },
+};
+
+/**
+ * a11y A11Y-104: the picker is `aria-describedby` its constraints hint from the
+ * START — a screen-reader user hears "max 3 files, JPG/PNG/PDF, <5 MB" BEFORE
+ * choosing, not only after a rejection.
+ */
+export const AttachmentHintDescribedUpfront: Story = {
+  args: baseArgs,
+  play: async () => {
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    const picker = body.getByLabelText(mAttach.label);
+    await expect(body.queryByRole("alert")).toBeNull();
+    await expect(picker).toHaveAccessibleDescription(mAttach.hint);
   },
 };
 

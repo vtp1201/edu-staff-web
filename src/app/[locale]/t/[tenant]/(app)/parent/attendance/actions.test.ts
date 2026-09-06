@@ -121,7 +121,7 @@ describe("submitLeaveRequestAction — the POST body", () => {
       ok: true,
       requestId: "req-9",
       total: 0,
-      failedCount: 0,
+      failedFiles: [],
     });
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe("/core/api/v1/conduct/student-leave-requests");
@@ -188,7 +188,7 @@ describe("submitLeaveRequestAction — attachments", () => {
       ok: true,
       requestId: "req-9",
       total: 2,
-      failedCount: 0,
+      failedFiles: [],
     });
     // create, then one call per file, in order.
     expect(calls.map((c) => c.url)).toEqual([
@@ -229,11 +229,12 @@ describe("submitLeaveRequestAction — attachments", () => {
       formDataWith(["a.pdf", "b.png", "c.png"]),
     );
 
+    // WHICH file failed, not just how many — the screen retries by name.
     expect(result).toEqual({
       ok: true,
       requestId: "req-9",
       total: 3,
-      failedCount: 1,
+      failedFiles: ["b.png"],
     });
   });
 
@@ -252,7 +253,11 @@ describe("submitLeaveRequestAction — attachments", () => {
       formDataWith(["a.pdf", "b.png"]),
     );
 
-    expect(result).toMatchObject({ ok: true, total: 2, failedCount: 1 });
+    expect(result).toMatchObject({
+      ok: true,
+      total: 2,
+      failedFiles: ["a.pdf"],
+    });
     expect(calls).toHaveLength(3);
   });
 });
@@ -268,7 +273,7 @@ describe("retryLeaveAttachmentsAction", () => {
       formDataWith(["a.pdf"]),
     );
 
-    expect(result).toEqual({ ok: true, total: 1, failedCount: 0 });
+    expect(result).toEqual({ ok: true, total: 1, failedFiles: [] });
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toBe(
       "/core/api/v1/conduct/student-leave-requests/req-9/attachments",
@@ -299,7 +304,48 @@ describe("retryLeaveAttachmentsAction", () => {
         "child-1",
         formDataWith(["a.pdf", "b.pdf"]),
       ),
-    ).toEqual({ ok: true, total: 2, failedCount: 2 });
+    ).toEqual({ ok: true, total: 2, failedFiles: ["a.pdf", "b.pdf"] });
+  });
+
+  /**
+   * The whole point of returning NAMES: a retry must re-send ONLY what failed.
+   * Re-sending all three against a request that already holds two would push
+   * core past its 3-attachment cap and the error could never be cleared
+   * (tech-lead review, fix round). This walks the real hand-off — submit,
+   * take `failedFiles`, build the retry body from it — and asserts the second
+   * round POSTs exactly one file.
+   */
+  it("a retry built from `failedFiles` re-sends ONLY the failed file", async () => {
+    const { calls } = stubServer({
+      post: async (call, index) => {
+        if (!call.url.includes("/attachments")) return CREATED;
+        // Only the SECOND file (call index 2) fails on the first round.
+        if (index === 2) throw new Error("storage down");
+        return ATTACHMENT;
+      },
+    });
+    const { retryLeaveAttachmentsAction, submitLeaveRequestAction } =
+      await actions();
+
+    const first = await submitLeaveRequestAction(
+      INPUT,
+      formDataWith(["a.pdf", "b.png", "c.png"]),
+    );
+    if (!first.ok) throw new Error("submission should have succeeded");
+    expect(first.failedFiles).toEqual(["b.png"]);
+
+    calls.length = 0;
+    const retry = await retryLeaveAttachmentsAction(
+      first.requestId,
+      "child-1",
+      formDataWith(first.failedFiles),
+    );
+
+    expect(retry).toEqual({ ok: true, total: 1, failedFiles: [] });
+    expect(calls).toHaveLength(1);
+    expect(((calls[0].body as FormData).get("file") as File).name).toBe(
+      "b.png",
+    );
   });
 });
 
@@ -348,5 +394,41 @@ describe("submitLeaveRequestAction — whose request is this? (security)", () =>
     expect((calls[0].body as { studentMemberId: string }).studentMemberId).toBe(
       "child-1",
     );
+  });
+  /**
+   * FAIL-CLOSED allowlist, not a denylist: only STUDENT (themselves) and PARENT
+   * (a linked child) may file a leave request. A teacher/principal/admin token —
+   * or one whose role claim is unreadable — is refused BEFORE the wire rather
+   * than passing a client-supplied `studentMemberId` straight through
+   * (tech-lead review, fix round).
+   */
+  it.each([
+    ["TEACHER", makeJwt({ memberId: "t-1", role: "TEACHER", tenantId: "t-1" })],
+    ["ADMIN", makeJwt({ memberId: "a-1", role: "ADMIN", tenantId: "t-1" })],
+    ["no role claim", makeJwt({ memberId: "x-1", tenantId: "t-1" })],
+  ])("a %s caller is refused before any HTTP", async (_label, token) => {
+    const { calls } = stubServer({ token });
+    const { submitLeaveRequestAction } = await actions();
+
+    const result = await submitLeaveRequestAction(INPUT, new FormData());
+
+    expect(result).toEqual({ ok: false, errorKey: "forbidden" });
+    expect(calls).toEqual([]);
+  });
+
+  it("a TEACHER caller cannot retry attachments either", async () => {
+    const { calls } = stubServer({
+      token: makeJwt({ memberId: "t-1", role: "TEACHER", tenantId: "t-1" }),
+    });
+    const { retryLeaveAttachmentsAction } = await actions();
+
+    const result = await retryLeaveAttachmentsAction(
+      "req-9",
+      "child-1",
+      formDataWith(["a.pdf"]),
+    );
+
+    expect(result).toEqual({ ok: true, total: 1, failedFiles: ["a.pdf"] });
+    expect(calls).toEqual([]);
   });
 });

@@ -1582,6 +1582,7 @@
         "reason": "Reason *",
         "reasonCounter": "{count}/{max} characters",
         "reasonPlaceholder": "Enter reason for leave (at least 10 characters)...",
+        "reasonPlaceholderNoMin": "Enter the reason for the leave...",
         "reasonRequired": "Please enter a reason for the leave.",
         "reasonTooLong": "The reason must not exceed {max} characters.",
         "startDate": "Start Date *",

@@ -96,6 +96,11 @@ export interface ParentAttendanceScreenProps {
   onSubmitted?: () => void;
 }
 
+/** The subset of `files` the server reported as failed, matched by name. */
+function keepFailed(files: File[], failedNames: string[]): File[] {
+  return files.filter((file) => failedNames.includes(file.name));
+}
+
 export function ParentAttendanceScreen({
   vm,
   isLoading = false,
@@ -109,6 +114,7 @@ export function ParentAttendanceScreen({
   const t = useTranslations("parentAttendance");
   const tStatus = useTranslations("attendance.status");
   const tErrors = useTranslations("discipline.errors");
+  const tLeave = useTranslations("discipline.studentConduct.leaveRequest");
   const format = useFormatter();
 
   const requestButtonRef = useRef<HTMLButtonElement>(null);
@@ -118,13 +124,21 @@ export function ParentAttendanceScreen({
   // button (a bug this repo has hit before).
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  /** Set only when the request landed but some of its FILES did not. */
+  /**
+   * Set only when the request landed but some of its FILES did not.
+   *
+   * `files` holds ONLY the files that failed — never the whole original
+   * selection. core counts attachments server-side and refuses the 4th, so
+   * re-sending the successful ones too would push a 1-of-3 failure to five
+   * attachments and the retry could never succeed (tech-lead review, fix
+   * round). `total` stays the originally attempted count so the "N/M" copy
+   * keeps describing the same submission.
+   */
   const [partialUpload, setPartialUpload] = useState<{
     requestId: string;
     studentMemberId: string;
     files: File[];
     total: number;
-    failed: number;
   } | null>(null);
   const [isRetryingFiles, setIsRetryingFiles] = useState(false);
 
@@ -161,6 +175,19 @@ export function ParentAttendanceScreen({
     vm.childClassId !== null &&
     onSubmitLeave !== undefined;
 
+  /**
+   * `discipline.errors.reason-too-short` says "ít nhất 10 ký tự" because two
+   * legacy mock-only forms really do enforce ten. THIS dialog is wired to core,
+   * whose rule is `minLength: 1`, so an empty reason is reported with the
+   * dialog's own honest copy instead of a number the server does not enforce
+   * (tech-lead review, fix round). The shared key is left alone for its other
+   * two callers.
+   */
+  function errorCopy(errorKey: DisciplineFailure["type"]): string {
+    if (errorKey === "reason-too-short") return tLeave("reasonRequired");
+    return tErrors(errorKey);
+  }
+
   async function handleSubmitLeave(submission: LeaveRequestSubmission) {
     if (!onSubmitLeave || !activeChildId || !vm.childClassId) return;
     setIsSubmitting(true);
@@ -184,18 +211,19 @@ export function ParentAttendanceScreen({
     if (!result.ok) {
       // Stay OPEN on failure: the draft (dates, reason, files) is still there
       // and closing would make the user retype it.
-      setSubmitError(tErrors(result.errorKey as DisciplineFailure["type"]));
+      setSubmitError(errorCopy(result.errorKey as DisciplineFailure["type"]));
       return;
     }
 
     setDialogOpen(false);
-    if (result.failedCount > 0) {
+    if (result.failedFiles.length > 0) {
       setPartialUpload({
         requestId: result.requestId,
         studentMemberId: activeChildId,
-        files: submission.files,
+        // Keep the FILE objects (a name alone cannot be re-uploaded) but only
+        // the ones the server said it did not store.
+        files: keepFailed(submission.files, result.failedFiles),
         total: result.total,
-        failed: result.failedCount,
       });
     } else {
       setPartialUpload(null);
@@ -215,16 +243,16 @@ export function ParentAttendanceScreen({
       formData,
     );
     setIsRetryingFiles(false);
-    if (result.failedCount === 0) {
+    if (result.failedFiles.length === 0) {
       setPartialUpload(null);
       toast.success(t("attachmentsRetrySuccess"));
       onSubmitted?.();
       return;
     }
+    // Narrow again: a retry can succeed partially too.
     setPartialUpload({
       ...partialUpload,
-      total: result.total,
-      failed: result.failedCount,
+      files: keepFailed(partialUpload.files, result.failedFiles),
     });
   }
 
@@ -285,7 +313,7 @@ export function ParentAttendanceScreen({
         >
           <span>
             {t("submitPartial", {
-              failed: partialUpload.failed,
+              failed: partialUpload.files.length,
               total: partialUpload.total,
             })}
           </span>
