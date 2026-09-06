@@ -7,7 +7,7 @@ import {
   GraduationCap,
   Megaphone,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { cn } from "@/shared/utils";
 import type {
   NotificationEntity,
@@ -42,23 +42,26 @@ export const TYPE_COLOR_CLASS: Record<NotificationType, string> = {
   system: "bg-muted text-muted-foreground",
 };
 
-// ─── Relative time helper ───────────────────────────────────────────────────
+// ─── Relative time ──────────────────────────────────────────────────────────
 
-export function relativeTime(ts: string, locale: string): string {
-  try {
-    const diff = Date.now() - new Date(ts).getTime();
-    const minutes = Math.floor(diff / 60_000);
-    if (minutes < 1) return locale === "vi" ? "vừa xong" : "just now";
-    if (minutes < 60)
-      return locale === "vi" ? `${minutes} phút trước` : `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24)
-      return locale === "vi" ? `${hours} giờ trước` : `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return locale === "vi" ? `${days} ngày trước` : `${days}d ago`;
-  } catch {
-    return ts;
-  }
+/**
+ * Relative timestamp for a row, via next-intl's `useFormatter` (US-E24.13
+ * review). The previous hand-rolled helper hardcoded both Vietnamese and
+ * English literals AND was called with a literal `"vi"` at every call site, so
+ * an EN-locale user read "10 phút trước". `Intl.RelativeTimeFormat` under the
+ * ACTIVE locale removes both problems and needs no message keys.
+ *
+ * An unparseable timestamp falls back to the raw string rather than throwing —
+ * `ts` is BE-owned wire data.
+ */
+function useRelativeTime(ts: string): string {
+  const format = useFormatter();
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return ts;
+  // `now` passed EXPLICITLY: next-intl logs an ENVIRONMENT_FALLBACK error when
+  // it has to reach for a global default. Same render-time clock the previous
+  // hand-rolled helper used.
+  return format.relativeTime(date, Date.now());
 }
 
 /**
@@ -106,6 +109,7 @@ export function NotificationRow({
   variant = "full",
 }: NotificationRowProps) {
   const t = useTranslations("notifications");
+  const relative = useRelativeTime(item.ts);
   const compact = variant === "compact";
   const Icon = TYPE_ICON[item.type];
   const colorCls = TYPE_COLOR_CLASS[item.type];
@@ -187,7 +191,7 @@ export function NotificationRow({
               dateTime={item.ts}
               title={item.ts}
             >
-              {relativeTime(item.ts, "vi")}
+              {relative}
             </time>
           )}
         </div>
@@ -197,7 +201,7 @@ export function NotificationRow({
             dateTime={item.ts}
             title={item.ts}
           >
-            {relativeTime(item.ts, "vi")}
+            {relative}
           </time>
         ) : (
           <>

@@ -1,6 +1,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import en from "@/bootstrap/i18n/messages/en.json";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { NotificationEntity } from "../../domain/entities/notification.entity";
 import { NotificationRow } from "./notification-row";
@@ -30,9 +31,15 @@ function makeItem(overrides: Partial<NotificationEntity> = {}) {
   } satisfies NotificationEntity;
 }
 
-function render(props: Parameters<typeof NotificationRow>[0]): string {
+function render(
+  props: Parameters<typeof NotificationRow>[0],
+  locale: "vi" | "en" = "vi",
+): string {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale="vi" messages={messages}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={locale === "vi" ? messages : en}
+    >
       <NotificationRow {...props} />
     </NextIntlClientProvider>,
   );
@@ -100,5 +107,44 @@ describe("NotificationRow — variant='compact' (bell dropdown)", () => {
       expect(html).toContain("Vi phạm kỷ luật mức nhẹ");
       expect(html).toContain("chưa đọc"); // aria-label read-state suffix
     }
+  });
+});
+
+/**
+ * US-E24.13 review — the row's relative timestamp used to come from a
+ * hand-rolled helper with hardcoded vi/en literals, called with a literal
+ * `"vi"` at BOTH call sites, so an EN-locale user read "10 phút trước". It is
+ * now `useFormatter().relativeTime()` under the ACTIVE locale.
+ */
+describe("NotificationRow — relative timestamp follows the active locale", () => {
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60_000).toISOString();
+
+  it("renders Vietnamese under locale vi", () => {
+    for (const variant of ["full", "compact"] as const) {
+      const html = render(
+        { item: makeItem({ ts: tenMinutesAgo }), onMarkRead: noop, variant },
+        "vi",
+      );
+      expect(html).toContain("10 phút trước");
+    }
+  });
+
+  it("renders English under locale en — never Vietnamese", () => {
+    for (const variant of ["full", "compact"] as const) {
+      const html = render(
+        { item: makeItem({ ts: tenMinutesAgo }), onMarkRead: noop, variant },
+        "en",
+      );
+      expect(html).toContain("10 minutes ago");
+      expect(html).not.toContain("phút trước");
+    }
+  });
+
+  it("falls back to the raw wire value for an unparseable timestamp", () => {
+    const html = render({
+      item: makeItem({ ts: "not-a-date" }),
+      onMarkRead: noop,
+    });
+    expect(html).toContain("not-a-date");
   });
 });
