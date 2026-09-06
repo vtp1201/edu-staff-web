@@ -392,4 +392,76 @@ fully specified above and reuse `StatCard`/`Dialog`/`Textarea` primitives as-is.
 
 ## Evidence
 
-(chưa có — planned)
+Branch `feat/us-e24.6-student-parent-attendance-portal`, 7 commits, TDD red→green at every step.
+
+### Proof commands (all run on the final tree)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun vitest run` | 584 files / **4919 passed**, 0 failed |
+| `bun vitest run --config vitest.storybook.mts` | 170 files / **1371 passed**, 0 failed |
+| `bun lint` | clean for this story (1 pre-existing warning + 1 info in `features/messaging`, untouched) |
+| `bun run build` | ✓ compiled; `ƒ /[locale]/t/[tenant]/student/attendance` present in the route table |
+| Kong smoke of `POST .../{id}/attachments` | **NOT RUN — stack down** (`curl localhost:8080/core/health` → connection refused). The real path is `USE_MOCK`-gated, so local dev is unaffected; the wire contract is proved against `openapi.yaml` by integration tests instead. **Open follow-up for `fe-lead`.** |
+
+### Layers proved
+
+- **Unit** — `clampPercent` (7), `summarizeAttendance` (8: LATE out of the numerator/in the denominator,
+  empty→`rate: null`, zero-record months omitted), `joinAbsenceReasons` (13: exact-day + multi-day
+  APPROVED match, SUBMITTED prepend, `DD/MM/YYYY`↔ISO normalisation), `SubmitMyLeaveRequestUseCase` (9),
+  `validateLeaveAttachments` (20), `rateTone`/`monthToDate` (11), `termRangeFor`/`fallbackRange` (9).
+- **Integration** — `discipline.repository.test.ts` +13: the POST body is EXACTLY core's five fields
+  (key-set asserted, no `type`), the multipart `FormData` + `?studentMemberId=` query, the
+  `?studentMemberId=` (never `classId`) list drain, and every attachment error code
+  (`…INVALID_FILE`/`…LIMIT_EXCEEDED`/`…LOCKED`/`…STORAGE_UNAVAILABLE`). `discipline.di.test.ts` +6: the
+  three new factories follow `USE_MOCK`, and `makeGetMyLeaveRequestsUseCase`/`makeSubmitLeaveRequestUseCase`
+  (serving `/student/conduct` + `/parent/conduct`) stay mock-backed in real mode.
+- **Action** — `parent/attendance/actions.test.ts` (11): sequential per-file uploads against the new
+  `requestId`, partial failure → `{ ok: true, total, failedCount }` with the request kept, 403 → `forbidden`
+  with no upload attempted, and the STUDENT-caller override (a client-supplied `studentMemberId` is
+  replaced by the `memberId` claim; no claim ⇒ refused before the wire).
+- **Route** — `student/attendance/page.test.ts` (7): a `sub`-only token yields `forbidden` with an
+  asserted-EMPTY call log; the read addresses the CLAIM's id and never `sub`; a failed leave read still
+  renders the summary; core's 403 surfaces as `status: "error"` not as the identity `forbidden`.
+- **Storybook** — `ProgressBar` (4), `AttendanceSummaryBlock` (4: full / empty-with-em-dash / pending-row /
+  375px), `LeaveRequestDialog` (9: empty-reason-disables-submit + `aria-describedby`, date clamp, rejected
+  attachments as TEXT, pending, server error, Escape→focus-returns-to-trigger, 375px),
+  `StudentAttendanceScreen` (6: full / empty / forbidden / retryable vs terminal error / 320px overflow),
+  `ParentAttendanceScreen` (+4: dialog submit payload, partial-attachment `role="status"` + files-only
+  retry, pending row, `aria-disabled` button with a visible reason when no `classId` exists).
+
+### Decisions taken while implementing
+
+1. **`SubmitLeaveRequestUseCase` was NOT remapped** (packet §DI said "remap"). `/student/conduct` and
+   `/parent/conduct` still submit the legacy shape and never collect a `classId`, so repointing that
+   factory at the real wire would 400 both shipped screens. A parallel narrower surface was added instead
+   (`submitMyLeaveRequest` / `SubmitMyLeaveRequestInput` / `makeSubmitLeaveRepo()`); consolidating the
+   three forms stays the logged backlog item.
+2. **Failure keys reused, not duplicated**: `LEAVE_REQUEST_STUDENT_NOT_ENROLLED` → the EXISTING
+   `student-not-enrolled` and `LEAVE_REQUEST_INVALID_DATE_RANGE` → the existing `invalid-date` (the plan
+   named `not-enrolled`/`invalid-date`; adding a second key for a mapping that already exists would fork
+   the copy). Genuinely new: `reason-too-long`, `attachment-invalid`, `attachment-limit`,
+   `attachment-locked`.
+3. **No `now`/`today` parameter on `summarizeAttendance` or the Server Action.** Nothing in the AC depends
+   on the current date for the rollup, and a Server Action's arguments are ALL client-supplied — a `today`
+   parameter would have let a caller back-date a leave request past the "not in the past" check. The
+   action's tests freeze the system clock instead.
+4. **STUDENT-caller override in the action** (beyond the plan): a STUDENT's `studentMemberId` is forced to
+   the `memberId` claim, so a hand-made payload cannot file a request for a classmate even before core's
+   own check.
+5. **`parseIsoDate` promoted** from `parent-attendance/presentation` to `@/shared/parse-iso-date` (moved,
+   re-exported) — a `components/shared/*` component must not import a feature's presentation folder.
+6. **No `actions.ts` on `/student/attendance`**: the screen has no mutation, and an empty `'use server'`
+   module is dead code.
+
+### Known gaps / follow-ups
+
+- Kong smoke of the create + attachment routes (above).
+- The three leave-request forms (`leave-request-sheet.tsx`, `LeaveRequestForm.tsx`,
+  `components/shared/leave-request-dialog/`) still coexist — consolidation is the packet's Harness Delta item.
+- `LeaveAttachmentEntity` is produced but not yet RENDERED anywhere (no screen lists a request's existing
+  attachments); the upload path is complete, the read-back UI is not in this story's scope.
+- Q1 remains genuinely open: whether a STUDENT may read `GET /academic-years` is untested against a live
+  BE. The screen degrades to the 6-month window and states the applied range, so either answer is correct
+  behaviour.
