@@ -429,6 +429,34 @@ nền **vàng đặc**, không có giá trị dark). Trên chip `bg-edu-warning/
 = #403A2D → **1.10:1 (vô hình)**. Đổi sang `text-edu-text-primary` (theo-theme): light mode **giống hệt**
 (#2A3547, 11.25:1 — zero visual diff), dark mode ~9:1. Cùng cách info/purple/teal đã làm.
 
+### Vòng fix sau review (`fe-tech-lead-reviewer`: Revision Required — 2 blocking)
+
+1. **Language switcher keyboard-unreachable (WCAG 2.1.1, blocking).** Bản đầu render
+   `<div role="radiogroup">` + native radio bên trong `DropdownMenuContent`. Radix chặn Tab và chỉ
+   roving-focus **collection item của chính nó**, nên bàn phím không bao giờ tới được hai radio đó.
+   Rebuild bằng `DropdownMenuRadioGroup` + `DropdownMenuRadioItem` (`role="menuitemradio"` +
+   `aria-checked` sẵn có, tham gia roving focus). `locale-options.ts` + unit test của nó **không đổi**
+   (rule "which one is selected" vẫn pure/testable). Focus ring bổ sung `ring-offset-background`
+   (A11Y-001). Proof: story mới `Header/LanguageSwitchKeyboard` (mở menu bằng Enter → ArrowDown tới
+   "English" → `toHaveFocus()` → Enter → `router.replace("/en")`); `Header/LanguageSwitch` đổi sang
+   `getByRole("menuitemradio")` + `aria-checked`; `Header/MenuOpen` cập nhật thứ tự item.
+2. **`StatCard` tone `warning` dính đúng lỗi 1.10:1 đã fix ở `StatusBadge` (blocking).**
+   `STAT_TONE.warning.icon` là `text-edu-warning-foreground` trên box `bg-edu-warning/15` → trên card
+   dark composite ~1.1:1 (WCAG 1.4.11 cần ≥3:1 cho graphical object). Đổi sang `text-edu-text-primary`
+   (light mode y hệt #2A3547 — zero visual diff; dark ~9:1). `stat-card.test.tsx` sửa assertion; story
+   mới `Shared/StatCard/DarkWarning` assert **computed color** của icon = `rgb(234, 239, 245)`
+   (giá trị dark của `--edu-text-primary`) → fix được chứng minh bằng test thật, không phải bằng mắt.
+3. **Touch target 44px (should-fix).** Row `Chế độ tối` (`DropdownMenuCheckboxItem`, `py-1.5 text-sm`
+   ≈30px) và `FooterLink` "Hướng dẫn sử dụng" ở sidebar (A11Y-002) đều thêm idiom sẵn có
+   `max-[820px]:min-h-11`; các `DropdownMenuRadioItem` ngôn ngữ cũng nhận cùng class. Row profile/logout
+   có sẵn từ trước → ngoài scope. `sidebar.stories.tsx#WithHelpLink` assert class này.
+4. **`rel="noopener"` → `rel="noopener noreferrer"`** cho help link (chống tabnabbing + không rò
+   referrer tenant-scoped sang host ngoài do operator cấu hình); story assert theo.
+5. **Làm rõ claim tenant-switch:** cơ chế "Đổi trường" **không đổi** (`deriveTenantMenu` + controlled
+   menu → `openSwitchDialog` → `TenantSwitchDialog`, focus return qua `menuTriggerRef`) — nhưng KHÔNG
+   phải byte-identical: `DropdownMenuSeparator` **chuyển từ trên xuống dưới** "Đổi trường" (có chủ đích,
+   theo grouping của design v3; reviewer confirm đúng).
+
 ### Kiểm tra thị giác (Storybook browser runner, chromium screenshot)
 
 Chụp thật `.dark` (shell: sidebar + header + StatCard + 9 StatusBadge tone + chip
@@ -446,13 +474,15 @@ tối hơn nhẹ, **không có seam gắt**; không đổi token (ngoài scope).
 
 `bunx tsc --noEmit` clean · `bun lint` clean (chỉ 1 warning + 1 info **có sẵn** ở
 `features/messaging/.../message-context-menu.tsx`, không thuộc story) · `bun vitest run` **576 files /
-4803 tests pass** · `bun vitest --config vitest.storybook.mts run` **166 files / 1356 tests pass** ·
+4803 tests pass** · `bun vitest --config vitest.storybook.mts run` **166 files / 1358 tests pass** ·
 `NEXT_PUBLIC_USE_MOCK=true bun run build` compiled successfully.
+(Số liệu sau vòng fix review; storybook +2 story: `LanguageSwitchKeyboard`, `StatCard/DarkWarning`.)
 
 ### Follow-up mở (không thuộc scope US này)
 
 1. `--edu-error-dark-light` chưa có giá trị dark → `StatusBadge` tone `error-dark` vẫn là chip sáng
-   trong dark mode. `T_DARK.errorDarkLight` (#43201F) có sẵn nhưng KHÔNG có text tone đi kèm
+   trong dark mode (vẫn **pass WCAG 5.30:1**, chỉ lệch tông). Reachable ở màn discipline của
+   teacher/principal/parent (invitation revoked, vi phạm mức nặng). `T_DARK.errorDarkLight` (#43201F) có sẵn nhưng KHÔNG có text tone đi kèm
    (#B91C1C trên nó ≈2:1) → cần một tone mới ⇒ ADR, để lại cho pass sau.
 2. `features/grades/.../batch-status-badge.tsx` lặp lại `bg-edu-warning/15 text-edu-warning-foreground`
    inline (đúng dấu hiệu "status chỉ-bằng-class lặp lại" của `component-organization.md`) → dính đúng
