@@ -17,8 +17,17 @@ export interface NotificationDropdownActions {
     filter: NotificationFilter;
     cursor?: string;
   }) => Promise<NotificationPage | { errorKey: string }>;
-  /** Mark ONE notification read. Absent → rows are not clickable-to-read. */
-  onMarkRead?: (id: string) => Promise<{ errorKey?: string }>;
+  /**
+   * Mark ONE notification read. REQUIRED — unlike `onMarkAllRead` (a
+   * convenience), mark-read IS the panel's row interaction (AC-3: click a row →
+   * it loses its bold + dot and the bell badge drops). An optional prop made
+   * that path fail SILENTLY: `await onMarkRead?.(id)` resolves `undefined`, the
+   * optimistic cache write still fires against no server call, and the badge
+   * snaps back on the next invalidation. Requiring it turns that into a compile
+   * error; the header falls back to its plain link bell when the action is
+   * absent.
+   */
+  onMarkRead: (id: string) => Promise<{ errorKey?: string }>;
   /** Mark all read. Absent → the "Đánh dấu tất cả đã đọc" link is hidden. */
   onMarkAllRead?: () => Promise<{ errorKey?: string }>;
   /** Close the owning Popover (footer link, row navigation). */

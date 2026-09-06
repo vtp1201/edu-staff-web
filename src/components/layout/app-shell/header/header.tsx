@@ -178,6 +178,7 @@ export function Header({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const bellPanelRef = useRef<HTMLDivElement>(null);
   // Theme lives in next-themes (class strategy + localStorage). `resolvedTheme`
   // (not `theme`) so the switch reflects the real applied theme when the user
   // is on "system".
@@ -243,10 +244,13 @@ export function Header({
       ? `${t("notifications")} — ${tNoti("unreadCountAriaLabel", { count: unreadCount })}`
       : t("notifications");
 
-  // The panel needs BOTH the preview action and a tenant (its footer link is
-  // tenant-scoped); missing either → the plain link bell everywhere.
+  // The panel needs the preview action, the mark-read action (the row
+  // interaction IS mark-read — AC-3) and a tenant (its footer link is
+  // tenant-scoped); missing any → the plain link bell everywhere.
   const bellDropdownEnabled =
-    onFetchNotificationsPreview !== undefined && tenantId !== undefined;
+    onFetchNotificationsPreview !== undefined &&
+    onMarkRead !== undefined &&
+    tenantId !== undefined;
 
   const initials = userName
     .split(" ")
@@ -313,6 +317,7 @@ export function Header({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
+                    ref={bellPanelRef}
                     align="end"
                     // Radix Content already carries role="dialog"; it just
                     // needs a name. Escape-close + focus-return to the trigger
@@ -320,6 +325,18 @@ export function Header({
                     // dialog, nothing unmounts underneath it first).
                     aria-label={tNoti("dropdownAriaLabel")}
                     className="w-90 overflow-hidden rounded-[14px] p-0"
+                    onOpenAutoFocus={(event) => {
+                      // AC: "Enter mở → focus vào tablist". Radix's FocusScope
+                      // would otherwise take the first focusable descendant in
+                      // DOM order, which is the "Đánh dấu tất cả đã đọc" button
+                      // whenever there IS something unread — i.e. exactly the
+                      // state the user opens the bell in (WCAG 2.4.3
+                      // predictability).
+                      event.preventDefault();
+                      bellPanelRef.current
+                        ?.querySelector<HTMLElement>('[role="tab"]')
+                        ?.focus();
+                    }}
                   >
                     <NotificationDropdown
                       tenantId={tenantId}
