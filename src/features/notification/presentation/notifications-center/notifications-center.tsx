@@ -32,6 +32,10 @@ const FILTER_TABS: FilterTab[] = [
   { id: "attendance", labelKey: "filterAttendance" },
   { id: "discipline", labelKey: "filterDiscipline" },
   { id: "announcement", labelKey: "filterAnnouncement" },
+  // US-E24.13 (Q1) — same tab as the bell dropdown, same label key
+  // (`type_system`): one string, one key. BE accepts `type=system` but has no
+  // producer yet, so this tab legitimately renders its empty state.
+  { id: "system", labelKey: "type_system" },
 ];
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -190,7 +194,11 @@ export function NotificationsCenterScreen(
             title={
               activeFilter === "unread"
                 ? t("emptyUnreadTitle")
-                : t("emptyAllTitle")
+                : activeFilter === "system"
+                  ? // Distinct from the generic "Chưa có thông báo": nothing is
+                    // wrong, this stream simply has no producer yet.
+                    t("emptySystem")
+                  : t("emptyAllTitle")
             }
             body={
               activeFilter === "unread"

@@ -184,9 +184,13 @@ export function NotificationDropdown({
     <div className="flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3">
-        <p className="font-extrabold text-foreground text-sm">
+        {/* Same string as the dialog's own name (header.tsx passes
+            `dropdownAriaLabel` to PopoverContent) — deliberately ONE key, not a
+            duplicate `panelTitle`. A heading, not a <p>, so screen-reader users
+            can jump to it inside the panel. */}
+        <h2 className="font-extrabold text-foreground text-sm">
           {t("dropdownAriaLabel")}
-        </p>
+        </h2>
         {showMarkAll && (
           <button
             type="button"
