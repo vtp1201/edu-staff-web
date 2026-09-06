@@ -88,6 +88,9 @@ const meta: Meta<typeof NotificationDropdown> = {
     open: true,
     unreadCount: 2,
     onClose: fn(),
+    // Required prop (the row interaction IS mark-read) — stories that assert
+    // the mutation override it with a stateful/failing fixture below.
+    onMarkRead: fn(async () => ({})),
   },
 };
 
@@ -142,6 +145,16 @@ const switchTabsSeen: NotificationFilter[] = [];
 
 export const SwitchTabs: Story = {
   args: { onFetchPreview: previewAction(switchTabsSeen) },
+  // The recorder is module-scope (the action ref must be stable across
+  // renders), so RESET it before every mount: a leftover array from an earlier
+  // execution in the same worker would satisfy `toContain` even if the tab
+  // click never fired.
+  decorators: [
+    (Story) => {
+      switchTabsSeen.length = 0;
+      return <Story />;
+    },
+  ],
   play: async ({ canvas }) => {
     const seen = switchTabsSeen;
     await canvas.findByRole("tab", { name: /Tất cả/ });
@@ -185,6 +198,15 @@ export const KeyboardTabNavigation: Story = {
 const markOneReadStore = { items: ALL_ITEMS.map((n) => ({ ...n })) };
 
 export const MarkOneRead: Story = {
+  // Same reason as SwitchTabs: the store is module-scope and MUTATED by the
+  // story, so it must be re-seeded before the mount (a decorator runs before
+  // the query fires — a reset inside `play` would already be too late).
+  decorators: [
+    (Story) => {
+      markOneReadStore.items = ALL_ITEMS.map((n) => ({ ...n }));
+      return <Story />;
+    },
+  ],
   args: {
     onFetchPreview: async () => page(markOneReadStore.items),
     onMarkRead: fn(async (id: string) => {

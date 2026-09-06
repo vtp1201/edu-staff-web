@@ -15,7 +15,10 @@ import type {
   SwitchTenantResult,
   TenantCardViewModel,
 } from "@/components/shared/tenant-card";
-import type { NotificationPage } from "@/features/notification/domain/entities/notification.entity";
+import type {
+  NotificationEntity,
+  NotificationPage,
+} from "@/features/notification/domain/entities/notification.entity";
 import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Header } from "./header";
 
@@ -503,11 +506,133 @@ export const BellDropdownDesktop: Story = {
     await expect(within(panel).getByRole("tablist")).toBeInTheDocument();
     await expect(getRouter().push).not.toHaveBeenCalled();
 
+    // AC: opening lands focus on the TABLIST. Regression case — this fixture
+    // has unreadCount 2, so "Đánh dấu tất cả đã đọc" exists and is the first
+    // focusable descendant in DOM order; Radix's default FocusScope would take
+    // it instead (US-E24.13 review A11Y-003).
+    await waitFor(() =>
+      expect(within(panel).getByRole("tab", { name: /Tất cả/ })).toHaveFocus(),
+    );
+
+    // The list is a real tabpanel, not a bare <div> — every TabsTrigger carries
+    // aria-controls, so it must resolve (WCAG 4.1.2, review A11Y-002).
+    const panelId = within(panel)
+      .getByRole("tab", { name: /Tất cả/ })
+      .getAttribute("aria-controls");
+    await expect(document.getElementById(panelId ?? "")).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+
     await userEvent.keyboard("{Escape}");
     await waitForElementToBeRemoved(() =>
       body.queryByRole("dialog", { name: "Thông báo" }),
     );
     await expect(document.activeElement).toBe(bell);
+  },
+};
+
+/**
+ * The same focus target with NOTHING unread — the mark-all button is absent
+ * here, so the tablist is already first in DOM order. Pairs with
+ * `BellDropdownDesktop` (which has unread items) to prove the focus target is
+ * the tablist in BOTH states, not an accident of DOM order.
+ */
+export const BellDropdownFocusesTablistWithNoUnread: Story = {
+  args: { ...dropdownArgs, onFetchUnreadCount: async () => ({ count: 0 }) },
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Thông báo" }),
+    );
+    const panel = await within(document.body).findByRole("dialog", {
+      name: "Thông báo",
+    });
+    await expect(
+      within(panel).queryByRole("button", { name: "Đánh dấu tất cả đã đọc" }),
+    ).toBeNull();
+    await waitFor(() =>
+      expect(within(panel).getByRole("tab", { name: /Tất cả/ })).toHaveFocus(),
+    );
+  },
+};
+
+/**
+ * AC-3 end-to-end: marking a row read inside the dropdown drops the BELL's
+ * badge immediately (optimistic), and it stays dropped after the invalidation
+ * refetch. The unit test (`unread-count-cache.test.ts`) only proves the pure
+ * reducer — this story is the only proof that the reducer is actually wired to
+ * the badge the user sees. Both fixtures are stateful so the post-mutation
+ * refetch agrees with the optimistic value instead of snapping back.
+ */
+const badgeStore: { count: number; items: NotificationEntity[] } = {
+  count: 2,
+  items: [],
+};
+
+const badgeItem: NotificationEntity = {
+  id: "n-1",
+  type: "grade",
+  titleKey: "notification_grade_conduct_approved_title",
+  titleParams: {},
+  bodyKey: "notification_grade_conduct_approved_body",
+  bodyParams: {},
+  ts: new Date(Date.now() - 5 * 60_000).toISOString(),
+  read: false,
+};
+
+export const BellBadgeDropsOnMarkRead: Story = {
+  args: {
+    ...dropdownArgs,
+    onFetchUnreadCount: async () => ({ count: badgeStore.count }),
+    onFetchNotificationsPreview: async () => ({
+      items: badgeStore.items,
+      nextCursor: null,
+      hasMore: false,
+    }),
+    onMarkRead: async (id: string) => {
+      badgeStore.items = badgeStore.items.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      );
+      badgeStore.count = Math.max(0, badgeStore.count - 1);
+      return {};
+    },
+  },
+  decorators: [
+    (Story) => {
+      // Re-seed before the mount (a reset inside `play` would land after the
+      // first fetch).
+      badgeStore.count = 2;
+      badgeStore.items = [badgeItem, { ...badgeItem, id: "n-2" }];
+      return <Story />;
+    },
+  ],
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    const bell = await canvas.findByRole("button", {
+      name: /Thông báo — 2 thông báo chưa đọc/,
+    });
+    await userEvent.click(bell);
+    const panel = await within(document.body).findByRole("dialog", {
+      name: "Thông báo",
+    });
+
+    const rows = await within(panel).findAllByRole("button", {
+      name: /chưa đọc$/,
+    });
+    await userEvent.click(rows[0]);
+
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", {
+          name: /Thông báo — 1 thông báo chưa đọc/,
+        }),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
