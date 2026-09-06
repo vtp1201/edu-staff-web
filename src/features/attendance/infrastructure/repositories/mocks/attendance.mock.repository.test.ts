@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { summarizeClassAttendance } from "../../../domain/summarize-class-attendance";
 import { MockAttendanceRepository } from "./attendance.mock.repository";
 
 describe("MockAttendanceRepository", () => {
@@ -60,5 +61,68 @@ describe("MockAttendanceRepository", () => {
       "2026-06-03",
     );
     expect(history).toEqual([]);
+  });
+});
+
+describe("MockAttendanceRepository.getClassAttendanceRange (US-E24.14)", () => {
+  it("returns the whole roster as rows plus school-day records over the range", async () => {
+    const repo = new MockAttendanceRepository();
+
+    const { roster, records } = await repo.getClassAttendanceRange(
+      "10A1",
+      "2026-03-01",
+      "2026-04-30",
+    );
+
+    expect(roster.length).toBeGreaterThan(0);
+    expect(records.length).toBeGreaterThan(0);
+    // Weekends are never marked — core records school days only.
+    for (const record of records) {
+      const weekday = new Date(`${record.date}T00:00:00Z`).getUTCDay();
+      expect(weekday).not.toBe(0);
+      expect(weekday).not.toBe(6);
+      expect(record.date >= "2026-03-01" && record.date <= "2026-04-30").toBe(
+        true,
+      );
+    }
+  });
+
+  it("is deterministic — the same range twice gives the same records", async () => {
+    const repo = new MockAttendanceRepository();
+    const a = await repo.getClassAttendanceRange(
+      "10A1",
+      "2026-03-01",
+      "2026-04-30",
+    );
+    const b = await repo.getClassAttendanceRange(
+      "10A1",
+      "2026-03-01",
+      "2026-04-30",
+    );
+    expect(a).toEqual(b);
+  });
+
+  it("seeds every band plus a never-marked student, so the tab has real states", async () => {
+    const repo = new MockAttendanceRepository();
+    const { roster, records } = await repo.getClassAttendanceRange(
+      "10A1",
+      "2026-03-01",
+      "2026-04-30",
+    );
+    const { students } = summarizeClassAttendance(records, roster);
+
+    const bands = new Set(students.map((s) => s.band));
+    expect(bands).toContain("ok");
+    expect(bands).toContain("watch");
+    expect(bands).toContain("risk");
+    // …and at least one student with no record at all (rate `—`, no chip).
+    expect(students.some((s) => s.recorded === 0)).toBe(true);
+  });
+
+  it("returns an empty result for an unknown class", async () => {
+    const repo = new MockAttendanceRepository();
+    expect(
+      await repo.getClassAttendanceRange("nope", "2026-03-01", "2026-03-31"),
+    ).toEqual({ roster: [], records: [] });
   });
 });

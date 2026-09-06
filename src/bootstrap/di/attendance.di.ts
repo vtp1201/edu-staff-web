@@ -11,6 +11,7 @@ import { GetClassAttendanceUseCase } from "@/features/attendance/domain/use-case
 import { ListAttendanceHistoryUseCase } from "@/features/attendance/domain/use-cases/list-attendance-history.use-case";
 import { ListMyHomeroomClassesUseCase } from "@/features/attendance/domain/use-cases/list-my-homeroom-classes.use-case";
 import { SaveClassAttendanceUseCase } from "@/features/attendance/domain/use-cases/save-class-attendance.use-case";
+import { SummarizeClassAttendanceUseCase } from "@/features/attendance/domain/use-cases/summarize-class-attendance.use-case";
 import { toAttendanceFailure } from "@/features/attendance/infrastructure/mappers/attendance-failure.mapper";
 import { AttendanceRepository } from "@/features/attendance/infrastructure/repositories/attendance.repository";
 import { MockAttendanceRepository } from "@/features/attendance/infrastructure/repositories/mocks/attendance.mock.repository";
@@ -54,4 +55,10 @@ export async function makeSaveAttendanceUseCase() {
 
 export async function makeGetAttendanceHistoryUseCase() {
   return new ListAttendanceHistoryUseCase(await makeRepo());
+}
+
+/** Per-student rollup over a term/year range (US-E24.14) — the SAME repository
+ *  as the day/history reads, a different (un-capped, ≤366-day) projection. */
+export async function makeSummarizeClassAttendanceUseCase() {
+  return new SummarizeClassAttendanceUseCase(await makeRepo());
 }

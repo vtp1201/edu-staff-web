@@ -16,6 +16,7 @@ import { attendanceKeys } from "./attendance-query-keys";
 import { AttendanceRosterTable } from "./attendance-roster-table";
 import type { AttendanceScreenVM } from "./attendance-screen.i-vm";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
+import { AttendanceSummaryContainer } from "./attendance-summary-tab/attendance-summary-container";
 
 type State = {
   records: AttendanceRecord[];
@@ -58,6 +59,8 @@ export function AttendanceScreen({
   filters,
   saveAction,
   getHistoryAction,
+  getSummaryAction,
+  getTermsAction,
 }: AttendanceScreenVM) {
   const t = useTranslations("attendance");
   const tErrors = useTranslations("attendance.errors");
@@ -117,6 +120,7 @@ export function AttendanceScreen({
         <TabsList>
           <TabsTrigger value="today">{t("tabs.today")}</TabsTrigger>
           <TabsTrigger value="history">{t("tabs.history")}</TabsTrigger>
+          <TabsTrigger value="summary">{t("tabs.summary")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="space-y-4">
@@ -169,6 +173,14 @@ export function AttendanceScreen({
           <AttendanceHistoryContainer
             classId={filters.classId}
             getHistoryAction={getHistoryAction}
+          />
+        </TabsContent>
+
+        <TabsContent value="summary">
+          <AttendanceSummaryContainer
+            classId={filters.classId}
+            getSummaryAction={getSummaryAction}
+            getTermsAction={getTermsAction}
           />
         </TabsContent>
       </Tabs>

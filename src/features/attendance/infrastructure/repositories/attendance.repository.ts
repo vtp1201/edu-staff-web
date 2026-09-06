@@ -7,6 +7,7 @@ import type { AttendanceDaySummary } from "../../domain/entities/attendance-day-
 import type { AttendanceRecord } from "../../domain/entities/attendance-record.entity";
 import type { AttendanceRoster } from "../../domain/entities/attendance-roster.entity";
 import type {
+  ClassAttendanceRangeResult,
   ClassSummary,
   IAttendanceRepository,
 } from "../../domain/repositories/i-attendance.repository";
@@ -19,6 +20,7 @@ import type { ClassRosterItemDto } from "../dtos/class-roster-response.dto";
 import {
   aggregateRangeDaySummaries,
   mapClassAttendance,
+  mapStatusFromWire,
   mapStatusToWire,
 } from "../mappers/attendance.mapper";
 
@@ -133,6 +135,62 @@ export class AttendanceRepository implements IAttendanceRepository {
       range.records,
       roster.length,
     );
+  }
+
+  /**
+   * The SAME single range call `getAttendanceHistory` makes (US-E18.47 / BE
+   * US-187), projected per STUDENT instead of per day (US-E24.14): the summary
+   * tab spans a term or a school year, which `getAttendanceHistory`'s 31-day
+   * cap (ADR `0058` §5) exists to forbid. The ≤366-day bound this read does
+   * respect is enforced upstream by `SummarizeClassAttendanceUseCase`, before
+   * the request is made.
+   *
+   * The roster drain runs in parallel and IS part of the answer, not a
+   * by-product: it is the row set (a student with no record in the range still
+   * gets a row) and the source of display names, which core's attendance
+   * records do not carry.
+   */
+  async getClassAttendanceRange(
+    classId: string,
+    from: string,
+    to: string,
+  ): Promise<ClassAttendanceRangeResult> {
+    const [range, rosterDto] = await Promise.all([
+      this.http.get(ATTENDANCE_EP.classAttendance(classId), {
+        params: { startDate: from, endDate: to },
+      }) as Promise<ClassAttendanceRangeResponseDto>,
+      this.fetchAllPages<ClassRosterItemDto>(
+        ATTENDANCE_EP.classStudents(classId),
+      ),
+    ]);
+
+    const nameByMemberId = new Map<string, string | undefined>(
+      rosterDto.map((s) => [s.studentMemberId, s.displayName]),
+    );
+    const missing = rosterDto
+      .filter((s) => !s.displayName?.trim())
+      .map((s) => s.studentMemberId);
+    if (this.resolveNames && missing.length > 0) {
+      for (const [id, name] of await this.resolveNames(missing)) {
+        nameByMemberId.set(id, name);
+      }
+    }
+
+    return {
+      roster: rosterDto.map((s, index) => ({
+        studentId: s.studentMemberId,
+        // Ordinal, never the raw member uuid: "HS #7" reads as "we do not have
+        // this name", a uuid reads as data (same posture as the parent-child
+        // mapper's avatar fallback). It is a data placeholder, not UI copy.
+        name:
+          nameByMemberId.get(s.studentMemberId)?.trim() || `HS #${index + 1}`,
+      })),
+      records: range.records.map((r) => ({
+        studentId: r.studentMemberId,
+        status: mapStatusFromWire(r.status),
+        date: r.date,
+      })),
+    };
   }
 
   /** Drain a cursor-paginated list endpoint into a single array. `raw: true`

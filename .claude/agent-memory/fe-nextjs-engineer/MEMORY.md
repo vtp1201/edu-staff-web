@@ -150,3 +150,5 @@
 - [Theme-fixed foreground token](gotcha-theme-fixed-foreground-token.md) — `--edu-warning-foreground` must stay navy (solid yellow) ⇒ 1.10:1 on a dark tinted chip; absent `--edu-*-light` dark values leak the LIGHT tint
 - [Radix menu roving focus + fixed-token dark bug](gotcha-radix-menu-roving-focus.md) — non-item children of DropdownMenuContent are keyboard-dead; a theme-FIXED foreground on a /15 tint is 1.1:1 in dark
 - [Viewport-split trigger + action-ref identity](pattern-viewport-split-trigger-and-action-ref-identity.md) — US-E24.13: two elements gated by `hidden`/`sm:block` (never matchMedia); assert a Server Action prop by IDENTITY
+- [Additive 3rd tab + type promotion](pattern-additive-tab-and-type-promotion.md) — US-E24.14: sibling repo method (never widen a capped one); promote a presentation type to domain via re-export; two skeletons = two live regions
+- [Failure reason + URL container story](pattern-failure-reason-and-url-story.md) — E24.14 review: one failure type for N causes gives wrong advice (carry a `reason`); test URL drift via `nextjs.navigation.query` container stories

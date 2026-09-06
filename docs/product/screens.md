@@ -59,7 +59,7 @@ Status: ✅ done · 🟡 partial · ⬜ planned · 🎨 design-ready (có design
 | Screen | Route | Feature | Status |
 | --- | --- | --- | --- |
 | Dashboard (TeacherDashboardHome — StatCards + TKB tiet + pending grades) | `(app)/teacher` | `features/teacher/presentation` | ✅ US-E13.4 |
-| Attendance (diem danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ |
+| Attendance (diem danh 3-state) | `(app)/teacher/attendance` | `features/attendance` | ✅ — ✅ US-E24.14 added tab 3 "Tổng hợp chuyên cần" (per-student rollup over `?range=month\|term\|year`, real `GET classes/{id}/attendance?startDate&endDate`; own un-capped repo read + query family, History's 31-day cap untouched; term/year segments degrade away when the admin-shaped academic-calendar read is refused) |
 | Class Log (so dau bai + submit) | `(app)/teacher/class-log` | `features/class-log` | ✅ E13.3 (BE wired US-E18.10) |
 | Discipline (vi pham/hanh kiem/nghi phep) | `(app)/teacher/discipline` | `features/discipline` | ✅ US-E09.1 (BE force-mock — US-E18.14 contract block) |
 | Staff Discipline self-view (staff member's own violations/conduct notes, read-only) | `(app)/teacher/staff-discipline` | `features/staff-discipline` (proposed) | ✅ US-E09.5 (DR-022; BE force-mock) |

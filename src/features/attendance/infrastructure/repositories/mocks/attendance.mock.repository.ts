@@ -7,9 +7,11 @@ import type { AttendanceRoster } from "../../../domain/entities/attendance-roste
 import type { AttendanceStatus } from "../../../domain/entities/attendance-status.entity";
 import type { AttendanceFailure } from "../../../domain/failures/attendance.failure";
 import type {
+  ClassAttendanceRangeResult,
   ClassSummary,
   IAttendanceRepository,
 } from "../../../domain/repositories/i-attendance.repository";
+import type { ClassAttendanceRangeRecord } from "../../../domain/summarize-class-attendance";
 import { countStatuses } from "../../mappers/attendance.mapper";
 import { MOCK_CLASSES, MOCK_STUDENTS_BY_CLASS } from "./fixtures";
 
@@ -25,6 +27,39 @@ function deterministicStatus(seed: number): AttendanceStatus {
 
 function dateSeed(date: string): number {
   return date.split("-").reduce((a, b) => a + Number(b), 0);
+}
+
+/**
+ * Per-student absence cadence for the summary tab's mock range (US-E24.14):
+ * every Nth school day is an absence. The three cadences deliberately land one
+ * student in each threshold band (~80% risk / ~93% watch / ~98% ok) over any
+ * range of a month or more, and student #0 is never marked at all (the
+ * "transferred in late" row that must render `—` with no chip). Without this
+ * spread the mock would show one flat band and the tab's alerts panel,
+ * thresholds card and chip tones would all be untested in dev.
+ */
+const ABSENCE_CADENCE = [5, 12, 60] as const;
+/** Rare enough to stay a garnish; LATE counts as a recorded, non-present day. */
+const LATE_CADENCE = 30;
+
+function isSchoolDay(isoDate: string): boolean {
+  const weekday = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+  return weekday !== 0 && weekday !== 6;
+}
+
+/** `null` = this student has no record for this day. */
+function rangeStatusFor(
+  studentIndex: number,
+  dayIndex: number,
+): AttendanceStatus | null {
+  // One student is never marked in the whole range — see ABSENCE_CADENCE.
+  if (studentIndex === 0) return null;
+  const cadence = ABSENCE_CADENCE[studentIndex % ABSENCE_CADENCE.length] ?? 60;
+  if (dayIndex % cadence === cadence - 1) {
+    return studentIndex % 2 === 0 ? "excusedAbsent" : "absent";
+  }
+  if (dayIndex % LATE_CADENCE === LATE_CADENCE - 1) return "late";
+  return "present";
 }
 
 /**
@@ -66,6 +101,40 @@ export class MockAttendanceRepository implements IAttendanceRepository {
         `[mock] saveClassAttendance ${classId}/${date} count=${records.length} present=${records.filter((r) => r.status === "present").length}`,
       );
     }
+  }
+
+  /**
+   * Un-capped range read for the summary tab (US-E24.14). Records are emitted
+   * per SCHOOL DAY (weekends are never marked, like core) and per student, so
+   * the mock exercises the same "roster is the row set, records are sparse"
+   * contract the real repository answers.
+   */
+  async getClassAttendanceRange(
+    classId: string,
+    from: string,
+    to: string,
+  ): Promise<ClassAttendanceRangeResult> {
+    await mockDelay(250);
+    const students = MOCK_STUDENTS_BY_CLASS[classId];
+    if (!students) return { roster: [], records: [] };
+
+    const schoolDays = enumerateDates(from, to).filter(isSchoolDay);
+    const records: ClassAttendanceRangeRecord[] = [];
+    schoolDays.forEach((date, dayIndex) => {
+      students.forEach((student, studentIndex) => {
+        const status = rangeStatusFor(studentIndex, dayIndex);
+        if (status === null) return;
+        records.push({ studentId: student.studentId, status, date });
+      });
+    });
+
+    return {
+      roster: students.map((s) => ({
+        studentId: s.studentId,
+        name: s.studentName,
+      })),
+      records,
+    };
   }
 
   async getAttendanceHistory(

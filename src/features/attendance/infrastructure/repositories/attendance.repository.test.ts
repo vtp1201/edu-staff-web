@@ -270,3 +270,187 @@ describe("AttendanceRepository — real interceptor pipeline", () => {
     ]);
   });
 });
+
+/**
+ * US-E24.14 — the summary tab's own range read. Deliberately a SIBLING of
+ * `getAttendanceHistory`, not a reuse of it: history is capped at 31 days
+ * (ADR `0058` §5) and rolls up per DAY, while this one spans up to a whole
+ * school year and rolls up per STUDENT. Same route, same params, different
+ * projection.
+ */
+describe("AttendanceRepository.getClassAttendanceRange (US-E24.14)", () => {
+  function rangeHttp(
+    records: Array<{ date: string; studentMemberId: string; status: string }>,
+    roster: Array<{ studentMemberId: string; displayName?: string }> = [
+      { studentMemberId: "s1", displayName: "Nguyễn An" },
+      { studentMemberId: "s2", displayName: "Trần Bình" },
+    ],
+  ) {
+    return vi.fn().mockImplementation((url: string) => {
+      if (url === ATTENDANCE_EP.classStudents("c-1")) {
+        return Promise.resolve(envelope(roster));
+      }
+      if (url === ATTENDANCE_EP.classAttendance("c-1")) {
+        return Promise.resolve({ classId: "c-1", records });
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+  }
+
+  const attendanceCalls = (get: ReturnType<typeof vi.fn>) =>
+    get.mock.calls.filter(
+      ([url]) => url === ATTENDANCE_EP.classAttendance("c-1"),
+    );
+
+  it("costs exactly ONE attendance call with startDate/endDate (no `date`)", async () => {
+    const get = rangeHttp([]);
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    await repo.getClassAttendanceRange("c-1", "2025-09-01", "2026-05-31");
+
+    expect(attendanceCalls(get)).toHaveLength(1);
+    expect(get).toHaveBeenCalledWith(ATTENDANCE_EP.classAttendance("c-1"), {
+      params: { startDate: "2025-09-01", endDate: "2026-05-31" },
+    });
+    const [, config] = attendanceCalls(get)[0];
+    expect(
+      (config as { params: Record<string, unknown> }).params,
+    ).not.toHaveProperty("date");
+  });
+
+  it("maps wire statuses to the domain vocabulary and keeps each record's date", async () => {
+    const get = rangeHttp([
+      { date: "2026-04-01", studentMemberId: "s1", status: "PRESENT" },
+      { date: "2026-04-02", studentMemberId: "s1", status: "EXCUSED_ABSENT" },
+      { date: "2026-04-02", studentMemberId: "s2", status: "LATE" },
+    ]);
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    const { records } = await repo.getClassAttendanceRange(
+      "c-1",
+      "2026-04-01",
+      "2026-04-30",
+    );
+
+    expect(records).toEqual([
+      { studentId: "s1", status: "present", date: "2026-04-01" },
+      { studentId: "s1", status: "excusedAbsent", date: "2026-04-02" },
+      { studentId: "s2", status: "late", date: "2026-04-02" },
+    ]);
+  });
+
+  it("returns the ROSTER as the row set, name-joined, in roster order", async () => {
+    const get = rangeHttp([]);
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    const { roster } = await repo.getClassAttendanceRange(
+      "c-1",
+      "2026-04-01",
+      "2026-04-30",
+    );
+
+    // Every enrolled student is a row even with zero records in the range —
+    // that is what makes a "never marked" student visible as an unranked row.
+    expect(roster).toEqual([
+      { studentId: "s1", name: "Nguyễn An" },
+      { studentId: "s2", name: "Trần Bình" },
+    ]);
+  });
+
+  it("falls back to an ORDINAL label when a roster row carries no name", async () => {
+    const get = rangeHttp(
+      [],
+      [
+        { studentMemberId: "s1", displayName: "Nguyễn An" },
+        { studentMemberId: "s2", displayName: "   " },
+        { studentMemberId: "s3" },
+      ],
+    );
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    const { roster } = await repo.getClassAttendanceRange(
+      "c-1",
+      "2026-04-01",
+      "2026-04-30",
+    );
+
+    // Never the raw member uuid: an ordinal is honest about "no name", a uuid
+    // reads as data (same posture as `parent-child.mapper.ts`).
+    expect(roster.map((r) => r.name)).toEqual(["Nguyễn An", "HS #2", "HS #3"]);
+  });
+
+  it("resolves missing names through the IAM batch lookup when one is wired", async () => {
+    const get = rangeHttp([], [{ studentMemberId: "s1" }]);
+    const resolveNames = vi.fn().mockResolvedValue(new Map([["s1", "Lê Chi"]]));
+    const repo = new AttendanceRepository(
+      makeHttp({ get }),
+      "u-1",
+      resolveNames,
+    );
+
+    const { roster } = await repo.getClassAttendanceRange(
+      "c-1",
+      "2026-04-01",
+      "2026-04-30",
+    );
+
+    expect(resolveNames).toHaveBeenCalledWith(["s1"]);
+    expect(roster).toEqual([{ studentId: "s1", name: "Lê Chi" }]);
+  });
+
+  it("maps ATTENDANCE_FORBIDDEN (403) to the `forbidden` failure", async () => {
+    const get = vi.fn().mockImplementation((url: string) => {
+      if (url === ATTENDANCE_EP.classStudents("c-1")) {
+        return Promise.resolve(envelope([]));
+      }
+      return Promise.reject(
+        new ApiError({
+          code: "ATTENDANCE_FORBIDDEN",
+          message: "n/a",
+          retryable: false,
+          status: 403,
+        }),
+      );
+    });
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    try {
+      await repo.getClassAttendanceRange("c-1", "2026-04-01", "2026-04-30");
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(toAttendanceFailure(err).type).toBe("forbidden");
+    }
+  });
+
+  it("reads the UNWRAPPED range payload through the real success interceptor", async () => {
+    const get = vi.fn(
+      async (url: string, config?: { params?: unknown; raw?: boolean }) =>
+        unwrapResponse({
+          data:
+            url === ATTENDANCE_EP.classStudents("c-1")
+              ? envelope([{ studentMemberId: "s1", displayName: "An" }])
+              : envelope({
+                  classId: "c-1",
+                  records: [
+                    {
+                      date: "2026-04-01",
+                      studentMemberId: "s1",
+                      status: "PRESENT",
+                    },
+                  ],
+                }),
+          config: { url, raw: config?.raw },
+        }),
+    ) as unknown as AxiosInstance["get"];
+    const repo = new AttendanceRepository(makeHttp({ get }), "u-1");
+
+    const { records, roster } = await repo.getClassAttendanceRange(
+      "c-1",
+      "2026-04-01",
+      "2026-04-30",
+    );
+
+    expect(records).toHaveLength(1);
+    expect(roster).toEqual([{ studentId: "s1", name: "An" }]);
+  });
+});
