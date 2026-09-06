@@ -19,7 +19,6 @@ import {
   ScrollText,
   Settings2,
   ShieldAlert,
-  User,
   UserCog,
   Users,
   Users2,
@@ -52,7 +51,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { href: "/teacher/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/teacher/students", labelKey: "students", icon: Users },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
-    { href: "/profile", labelKey: "profile", icon: User },
   ],
   principal: [
     { href: "/principal", labelKey: "dashboard", icon: BarChart3 },
@@ -70,12 +68,11 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     // reject capability lives ONLY here and on /admin/grade-book: /teacher/grades
     // is guarded by a strict `role === "teacher"` layout, so a principal can
     // never render it. Placed with the other academic-record entries, before the
-    // shared /messages + /profile tail.
+    // shared /messages tail.
     { href: "/principal/grade-book", labelKey: "grades", icon: GraduationCap },
     { href: "/principal/schedule", labelKey: "schedule", icon: CalendarDays },
     { href: "/principal/reports", labelKey: "reports", icon: FileText },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
-    { href: "/profile", labelKey: "profile", icon: User },
   ],
   student: [
     { href: "/student", labelKey: "overview", icon: BarChart3 },
@@ -99,7 +96,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     // schedule"; reuse the existing `timetable` key (already used by admin).
     { href: "/student/schedule", labelKey: "timetable", icon: CalendarDays },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
-    { href: "/profile", labelKey: "profile", icon: User },
   ],
   parent: [
     { href: "/parent", labelKey: "overview", icon: BarChart3 },
@@ -112,7 +108,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     // as student; reuse the existing `timetable` key.
     { href: "/parent/schedule", labelKey: "timetable", icon: CalendarDays },
     { href: "/messages", labelKey: "messages", icon: MessageSquare },
-    { href: "/profile", labelKey: "profile", icon: User },
   ],
   admin: [
     { href: "/admin/school-setup", labelKey: "schoolSetup", icon: Settings2 },

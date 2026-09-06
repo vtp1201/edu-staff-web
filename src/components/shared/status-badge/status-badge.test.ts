@@ -27,9 +27,17 @@ describe("StatusBadge tone mapping", () => {
     );
   });
 
-  it("maps tone='warning' to edu-warning-foreground (a11y, never white)", () => {
+  /**
+   * US-E24.12 (dark-token pass): `--edu-warning-foreground` is the fixed navy
+   * tone for text on SOLID yellow — it has no dark-mode value (and must not
+   * get one, solid yellow stays yellow). On the tinted chip over a dark card
+   * it measured 1.10:1 (invisible). `--edu-text-primary` is theme-aware and
+   * IDENTICAL (#2A3547) in light mode, so this is a dark-only fix with zero
+   * light-mode change — and it matches what info/purple/teal already do.
+   */
+  it("maps tone='warning' to text-edu-text-primary (theme-aware, A11Y)", () => {
     expect(statusToneClass("warning")).toBe(
-      "bg-edu-warning/15 text-edu-warning-foreground",
+      "bg-edu-warning/15 text-edu-text-primary",
     );
   });
 

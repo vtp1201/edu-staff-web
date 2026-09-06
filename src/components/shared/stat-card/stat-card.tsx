@@ -23,8 +23,13 @@ export const STAT_TONE: Record<StatTone, { box: string; icon: string }> = {
   primary: { box: "bg-primary/15", icon: "text-primary" },
   // #007A6E on the #13DEB9/15 tint ≈ 4.9:1.
   success: { box: "bg-edu-success/15", icon: "text-edu-success-text" },
-  // #2A3547 on the #FFAE1F/15 tint ≈ 11:1.
-  warning: { box: "bg-edu-warning/15", icon: "text-edu-warning-foreground" },
+  // warning: text-edu-text-primary, NOT text-edu-warning-foreground. The two
+  // are the same navy (#2A3547) in light mode (~11:1 on the tint), but
+  // warning-foreground is the fixed tone for text on SOLID yellow and has no
+  // dark value — on the tinted icon box over a dark card it measured 1.10:1
+  // (US-E24.12, same defect fixed in status-badge.tsx). text-edu-text-primary
+  // follows the theme (~9:1 in dark), like info/purple/teal.
+  warning: { box: "bg-edu-warning/15", icon: "text-edu-text-primary" },
   error: { box: "bg-edu-error/15", icon: "text-edu-error" },
   info: { box: "bg-edu-info/15", icon: "text-edu-info" },
   purple: { box: "bg-edu-purple/15", icon: "text-edu-purple" },

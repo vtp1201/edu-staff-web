@@ -25,7 +25,7 @@ describe("NAV_BY_ROLE", () => {
 
   it("scopes every non-shared href under its role segment", () => {
     // Routes living under the (shared) group — accessible to all roles (US-E10.1).
-    const SHARED_HREFS = new Set(["/profile", "/messages"]);
+    const SHARED_HREFS = new Set(["/messages"]);
     for (const role of ROLES) {
       for (const item of NAV_BY_ROLE[role]) {
         if (SHARED_HREFS.has(item.href)) continue;
@@ -34,11 +34,21 @@ describe("NAV_BY_ROLE", () => {
     }
   });
 
-  it("always exposes the shared profile entry last", () => {
-    // Admin intentionally has no /profile nav item (profile via header) — exclude it.
-    for (const role of ROLES.filter((r) => r !== "admin")) {
+  /**
+   * US-E24.12: `/profile` left the sidebar entirely — it is reachable only
+   * from the header avatar menu ("Hồ sơ"), which every role already has. One
+   * entry point, one home; no role may re-add a duplicate nav item.
+   */
+  it("exposes /profile in no role's nav list", () => {
+    for (const role of ROLES) {
       const items = NAV_BY_ROLE[role];
-      expect(items.at(-1)?.href).toBe("/profile");
+      expect(items.some((i) => i.href === "/profile")).toBe(false);
+    }
+  });
+
+  it("ends every non-admin role's nav list with the shared /messages entry", () => {
+    for (const role of ROLES.filter((r) => r !== "admin")) {
+      expect(NAV_BY_ROLE[role].at(-1)?.href).toBe("/messages");
     }
   });
 
@@ -79,7 +89,7 @@ describe("NAV_BY_ROLE", () => {
    * permanent redirects. Asserting the WHOLE list (not just the two absences)
    * so a re-added entry cannot slip back in unnoticed.
    */
-  it("gives a student exactly eight nav items, without assignments/exams", () => {
+  it("gives a student exactly seven nav items, without assignments/exams/profile", () => {
     expect(NAV_BY_ROLE.student.map((i) => i.href)).toEqual([
       "/student",
       "/student/courses",
@@ -91,7 +101,6 @@ describe("NAV_BY_ROLE", () => {
       "/student/attendance",
       "/student/schedule",
       "/messages",
-      "/profile",
     ]);
     expect(DEFAULT_ROUTE.student).toBe("/student");
   });

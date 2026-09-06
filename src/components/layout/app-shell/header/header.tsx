@@ -6,15 +6,15 @@ import {
   Bell,
   LogOut,
   Menu,
+  Moon,
   Search,
-  Sun,
   User,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@/bootstrap/i18n/routing";
 import { tenantUrl } from "@/bootstrap/tenant";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { StatusTone } from "@/components/shared/status-badge/status-badge";
 import {
@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -39,6 +40,7 @@ import {
 } from "@/features/notification/presentation/notification-keys";
 import type { Role } from "../sidebar/nav-config";
 import { deriveTenantMenu } from "./derive-tenant-menu";
+import { LanguageSwitcher } from "./language-switcher";
 import { NOTIFICATION_BADGE_CLASS } from "./notification-badge";
 
 /** Role → semantic badge tone (design-system.md "Role → màu"). */
@@ -107,6 +109,10 @@ export function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  // Theme lives in next-themes (class strategy + localStorage). `resolvedTheme`
+  // (not `theme`) so the switch reflects the real applied theme when the user
+  // is on "system".
+  const { setTheme, resolvedTheme } = useTheme();
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -222,8 +228,6 @@ export function Header({
               )}
             </Button>
 
-            <ThemeToggle />
-
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -263,7 +267,6 @@ export function Header({
                     </div>
                   </>
                 )}
-                <DropdownMenuSeparator />
                 {canSwitch && (
                   <DropdownMenuItem
                     onSelect={(event) => {
@@ -282,6 +285,10 @@ export function Header({
                     {tSwitch("menuItem")}
                   </DropdownMenuItem>
                 )}
+                {/* Separator sits BELOW "Đổi trường" (design v3): the tenant
+                    block + switch action are one group, the account actions
+                    below are another. */}
+                <DropdownMenuSeparator />
                 {tenantId !== undefined ? (
                   <DropdownMenuItem asChild>
                     <Link href={tenantUrl(tenantId, "/profile")}>
@@ -295,6 +302,27 @@ export function Header({
                     {t("profile")}
                   </DropdownMenuItem>
                 )}
+                {/* Dark mode (US-E24.12) — replaces the standalone header icon.
+                    `onSelect preventDefault` keeps the menu open so the user
+                    sees the theme flip in place; Radix gives the row
+                    `role="menuitemcheckbox"` + `aria-checked`. */}
+                <DropdownMenuCheckboxItem
+                  // Left-align the icon with the other rows and move the
+                  // checked indicator to the trailing edge (design v3 puts the
+                  // toggle on the right).
+                  // `max-[820px]:min-h-11` → 44px touch target on mobile (repo idiom).
+                  className="pl-2 max-[820px]:min-h-11 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
+                  checked={resolvedTheme === "dark"}
+                  onCheckedChange={(checked) =>
+                    setTheme(checked ? "dark" : "light")
+                  }
+                  onSelect={(event) => event.preventDefault()}
+                >
+                  <Moon className="mr-2 size-4" aria-hidden="true" />
+                  {t("darkMode")}
+                </DropdownMenuCheckboxItem>
+                <LanguageSwitcher />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => {
                     // Server Action: revokes the session, clears the httpOnly
@@ -347,9 +375,6 @@ function HeaderPlaceholder({ initials }: { initials: string }) {
         className="relative"
       >
         <Bell className="size-5" />
-      </Button>
-      <Button variant="ghost" size="icon" aria-hidden tabIndex={-1}>
-        <Sun className="size-5" />
       </Button>
       <Button
         variant="ghost"

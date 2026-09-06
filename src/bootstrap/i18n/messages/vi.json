@@ -3738,6 +3738,11 @@
   },
   "shell": {
     "header": {
+      "darkMode": "Chế độ tối",
+      "help": "Hướng dẫn sử dụng",
+      "language": "Ngôn ngữ",
+      "languageEn": "English",
+      "languageVi": "Tiếng Việt",
       "logout": "Đăng xuất",
       "notifications": "Thông báo",
       "profile": "Hồ sơ",
@@ -3766,7 +3771,6 @@
       "messages": "Nhắn tin",
       "moderation": "Kiểm duyệt",
       "overview": "Tổng quan",
-      "profile": "Hồ sơ",
       "reports": "Báo cáo",
       "schedule": "Lịch dạy",
       "schoolSetup": "Thiết lập trường học",

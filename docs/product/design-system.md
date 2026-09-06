@@ -30,10 +30,22 @@ qua color accent. Font **Plus Jakarta Sans**.
     chỉ dùng có chủ đích cho nội dung decorative/không thiết yếu. ADR 0049.
   - Text/icon lỗi trên nền sáng → `--edu-error-text` (#C0392B); `--destructive`
     (#FA896B) chỉ dành cho background (`bg-destructive` + chữ trắng, alpha wash). ADR 0049.
-- **Dark mode**: `.dark` override họ `--edu-*` surface/text (`--edu-card #131A2E`,
-  `--edu-border #232B45`, `--edu-text-primary #E5EAF2`, secondary/muted `#8898A9`,
-  `--edu-error-text` → `--edu-error`) — tái dùng palette dark của shadcn block, không
-  màu mới. Status/role token chưa override (chờ dark-mode pass riêng). ADR 0049.
+- **Dark mode** (US-E24.12 — bộ token thật từ handoff v3 `design_src/edu/tokens.js`
+  `T_DARK`, thay bộ tạm của US-E17.11; chỉ đổi GIÁ TRỊ biến đã có, không biến mới):
+  surface `--edu-bg #151B23`, `--edu-card #1E2630`, `--edu-border #33404E`,
+  chip/hover surface (`--secondary`/`--muted`/`--accent`/`--sidebar-accent`) `#2A333E`
+  (T_DARK `chipBg`), `--input #161D26` (`inputBg`); text `--edu-text-primary #EAEFF5`,
+  `--edu-text-secondary #B4C0CE`, `--edu-text-muted #8494A7`; tint trạng thái
+  `--edu-primary-light #28344E`, `--edu-success-light #123330`, `--edu-info-light
+  #1D2E47`, `--edu-purple-light #2E2743`, `--edu-teal-light #12312F`; text tone
+  `--edu-success-text #3FD0B3` (7.9:1 trên card), `--edu-teal-text #4FC3B5` (7.1:1).
+  **Giữ nguyên** cặp error/warning dark của US-E21.2 (`--edu-error-light #5C0007` /
+  `--edu-error-text #FFDAD6`, `--edu-warning-light #4D3300` / `--edu-warning-text
+  #FFD699`, ≥8.5:1) — `T_DARK` override tint nhưng KHÔNG có text tone tương ứng.
+  `--edu-warning-foreground` (#2A3547) KHÔNG có giá trị dark (chữ trên nền vàng đặc
+  luôn là navy) → chip warning dùng `text-edu-text-primary` (theo-theme), giống
+  info/purple/teal. `--edu-error-dark-light` vẫn chưa có giá trị dark (chip
+  `error-dark` còn sáng ở dark mode — follow-up). ADR 0049 + US-E24.12 Evidence.
 - **Role**: teacher=primary, principal=success, student=warning, parent=purple.
 - **Per-tenant**: override `--edu-primary` (decision `0007`).
 

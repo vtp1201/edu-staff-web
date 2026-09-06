@@ -79,6 +79,9 @@ export default async function AppLayout({
         currentTenantId={tokenTenantId ?? undefined}
         onSwitchTenant={switchTenantAction}
         onLogout={logoutAction}
+        // No in-app user guide exists; when the env var is unset the sidebar
+        // entry is not rendered at all (US-E24.12 — no dead link).
+        helpHref={process.env.NEXT_PUBLIC_HELP_URL}
         onFetchUnreadCount={fetchUnreadCountAction}
       >
         {children}
