@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -424,3 +424,77 @@ New proof added by this story:
 
 Open for review: `dropdownAriaLabel` names both the dialog and its visible `<h2>`
 (one key, one string — deliberately no duplicate `panelTitle`).
+
+### Deviation (signed off by fe-lead): row click behavior
+
+Product Contract line ("Click row: mark-read rồi điều hướng nếu có deep-link... nếu centre chưa có
+deep-link → chỉ mark-read, đóng popover") is not implemented as literally written. Actual behavior:
+clicking a row in the dropdown always **only marks read, panel stays open** — no deep-link navigation,
+even for types the centre DOES deep-link (grade/attendance/discipline). Reasons this is accepted as
+final, not a defect:
+
+1. The centre's deep-links (`notifications-center-container.tsx`) are route-relative (`../grades`) —
+   resolving them correctly from an arbitrary shell-global page (the dropdown can open from ANY route)
+   would need absolute URL resolution, a scope increase not justified for this story.
+2. `fe-tech-lead-reviewer` and `fe-accessibility-auditor` independently concluded closing the popover
+   on every mark-read click would itself be a worse "unexpected context change" (WCAG 3.2) than staying
+   open — a plain click that only toggles read/unread state should not also dismiss the whole panel.
+
+Both reviewers flagged this as a documentation/sign-off item, not a code defect. Confirmed by fe-lead:
+**no code change required**, Product Contract wording is superseded by this note for the dropdown
+specifically (centre's own deep-link behavior is unchanged).
+
+### Vòng fix sau review (`fe-tech-lead-reviewer`: Revision Required — doc/sign-off; `fe-accessibility-auditor`: 3 blocking)
+
+1. **A11Y-002 (blocking, WCAG 4.1.2)** — tabs had no `TabsContent`, dangling `aria-controls`, no
+   `role="tabpanel"`. Fixed: list wrapped in a single `<TabsContent value={filter}>`.
+2. **A11Y-005 (blocking, WCAG 4.1.3)** — optimistic mark-read/mark-all changes were silent to screen
+   readers. Fixed: `role="log" aria-live="polite" aria-label={t("listAriaLabel")}` on the list
+   container, copied from `notifications-center.tsx`.
+3. **A11Y-007 (blocking, accessibility.md 44px rule)** — mark-all-read button was ~16-20px tall. Fixed:
+   `min-h-11` + `px-2 -mx-2` hit-area padding.
+4. **A11Y-003 (should-fix)** — focus-on-open landed on "Đánh dấu đã đọc" (DOM order), not the tablist
+   per AC. Fixed: `onOpenAutoFocus` on `PopoverContent` focuses `[role="tab"]`; proof story
+   `BellDropdownFocusesTablistWithNoUnread` + `BellDropdownDesktop` (unread-present case).
+5. **i-vm/code mismatch** — `onMarkRead` made a **required** prop (not runtime-gated) since mark-read
+   IS the row's primary interaction (AC-3), not a convenience like mark-all. `header.tsx`'s
+   `bellDropdownEnabled` widened accordingly; the real layout always passes it, so no app behavior
+   changes — confirmed by fe-lead as the right call over silently swallowing an absent action.
+6. **Flaky story fixtures** — `switchTabsSeen`/`markOneReadStore` reset in a story-scoped decorator
+   (not module scope, not `play`-time) so a broken tab-click/mark-read can't pass on stale state.
+7. **AC-3 end-to-end proof** — new `BellBadgeDropsOnMarkRead` story: click an unread row inside the
+   opened dropdown, assert the bell's accessible name goes from reflecting 2 unread to 1.
+8. **i18n hard rule** — `notification-row.tsx`'s `relativeTime()` had hardcoded vi/en literals and
+   both call sites passed literal `"vi"` regardless of actual locale (pre-existing, moved verbatim
+   during the promotion — this story doubled its blast radius onto the global shell header). Fixed:
+   `useFormatter().relativeTime()` + `useLocale()` via a `useRelativeTime()` hook.
+
+Merged `origin/main` (US-E24.6, `d55a3e4b`) into the branch — clean, zero file-overlap conflicts.
+Gate re-run AFTER merge: `bunx tsc --noEmit` clean · `bun lint` clean (same 1 pre-existing
+warning+info) · `bun vitest run` 589 files/4956 tests · `bun vitest --config vitest.storybook.mts run`
+171 files/1406 tests · `NEXT_PUBLIC_USE_MOCK=true bun run build` compiled successfully.
+
+### Design Review Gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+Design review: pass
+- design-system: conform — reuses existing `ui/popover`/`ui/tabs` primitives (no new component
+  invented for a tablist-in-a-menu anti-pattern the packet itself flagged), `--edu-*` tokens only,
+  `NotificationRow` promoted (moved, not copied) to `features/notification/presentation/shared/` per
+  decision 0026. Panel dimensions (360px, radius 14, maxHeight 340) match `design_src/edu/ui.jsx`
+  `NotifDropdown`. Compact-row type scale drifts slightly from the mockup (14px vs 12.5px title, 12px
+  vs 11px time) — within tolerance, not a token violation, accepted.
+- a11y: WCAG AA — `fe-accessibility-auditor` 3 blocking findings (tabpanel wiring, live-region
+  announcement, touch target) all fixed and re-verifiable via the proof stories listed above;
+  `role="dialog"` (no `aria-modal`) confirmed correct ARIA APG for a non-modal disclosure containing a
+  tablist; Escape/focus-return via Radix defaults confirmed correct (no cross-primitive handoff needed,
+  unlike the tenant-switch dialog); keyboard tablist navigation (arrow keys, roving tabindex) verified;
+  focus ring visible in light+dark (`--ring` vs dark popover bg ≈3.46:1, clears 3:1 floor); mobile
+  (<640px) keeps the pre-existing Link-bell, verified byte-identical via real viewport story.
+- impeccable audit: manual pass — no anti-pattern beyond what reviewer/auditor already caught (all
+  fixed); no palette/layout/font change, dimensions match handoff.
+- states: loading/error/empty (all 3 tabs incl. system's `emptySystem`) covered in
+  `notification-dropdown.stories.tsx`; responsive — mobile 375 confirmed Link-not-popover, desktop
+  1280 confirmed popover-not-navigate (real `page.viewport()` proofs, not class-name assertions); dark
+  mode inherits US-E24.12 tokens, no regression.
+
+Verdict: **PASS** — proceeding to `fe-qa-playwright`.
