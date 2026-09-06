@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { mapMockNotification } from "../../infrastructure/mappers/notification.mapper";
 import { MOCK_NOTIFICATIONS } from "../../infrastructure/repositories/mocks/fixtures";
@@ -353,5 +353,40 @@ export const UnknownKeyFallback: Story = {
     ).toBeInTheDocument();
     // The raw BE key must never leak into the rendered output.
     await expect(canvas.queryByText(/notification_future_unseen/)).toBeNull();
+  },
+};
+
+// ─── US-E24.13: "Hệ thống" filter (Q1 — same tab as the bell dropdown) ───────
+
+/**
+ * The centre grows the same "Hệ thống" tab the bell dropdown has, reusing the
+ * existing `type_system` label key (one string, one key — no `filterSystem`).
+ * Selecting it asks for `filter="system"` ONLY: the repo maps that to
+ * `type=system` with no `read` param, because BE rejects the two together
+ * (400 NOTIFICATION_FILTER_CONFLICT).
+ *
+ * With today's BE there is no `system` producer, so the honest result is the
+ * dedicated empty copy — a product-accepted state, not an error.
+ */
+export const SystemFilter_Empty: Story = {
+  args: {
+    ...baseProps,
+    activeFilter: "system",
+    items: [],
+    onFilterChange: fn(),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const tab = canvas.getByRole("tab", { name: "Hệ thống" });
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+
+    await userEvent.click(tab);
+    await expect(args.onFilterChange).toHaveBeenCalledWith("system");
+
+    // Its own empty copy — not the generic "Chưa có thông báo".
+    await expect(
+      canvas.getByText("Không có thông báo hệ thống"),
+    ).toBeInTheDocument();
+    await expect(canvas.queryByText("Chưa có thông báo")).toBeNull();
   },
 };

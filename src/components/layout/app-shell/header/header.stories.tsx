@@ -15,6 +15,10 @@ import type {
   SwitchTenantResult,
   TenantCardViewModel,
 } from "@/components/shared/tenant-card";
+import type {
+  NotificationEntity,
+  NotificationPage,
+} from "@/features/notification/domain/entities/notification.entity";
 import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Header } from "./header";
 
@@ -451,5 +455,207 @@ export const Dark: Story = {
     );
     const body = within(document.body);
     await expect(await body.findByRole("menu")).toBeInTheDocument();
+  },
+};
+
+// ─── US-E24.13 — bell: dropdown on desktop, plain Link on mobile ─────────────
+
+/**
+ * The preview Server Action ref. Returns an EMPTY page on purpose: this story
+ * proves the trigger/viewport split and the panel's ARIA shell, not its rows —
+ * row rendering, tab filtering and the optimistic mutations are proven in
+ * `notification-dropdown.stories.tsx` against the component directly.
+ */
+const emptyPreview = async (): Promise<NotificationPage> => ({
+  items: [],
+  nextCursor: null,
+  hasMore: false,
+});
+
+const dropdownArgs = {
+  role: "teacher" as const,
+  userName: "Nguyen Van A",
+  tenantId: "tenant-acme",
+  onFetchUnreadCount: async () => ({ count: 2 }),
+  onFetchNotificationsPreview: emptyPreview,
+  onMarkRead: async () => ({}),
+  onMarkAllRead: async () => ({}),
+};
+
+/**
+ * AC (desktop ≥640px): the bell OPENS the panel instead of navigating — so it
+ * must be a `button`, never a `link`, and the panel is a `dialog` (Radix
+ * Popover) containing a REAL tablist. Escape closes it and returns focus to the
+ * bell (WCAG 2.1.2 / 2.4.3) — Radix Popover's own default, no custom wiring.
+ */
+export const BellDropdownDesktop: Story = {
+  args: dropdownArgs,
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    const bell = await canvas.findByRole("button", {
+      name: /Thông báo — 2 thông báo chưa đọc/,
+    });
+    // Not a link: opening a panel must not navigate anywhere.
+    await expect(canvas.queryByRole("link", { name: /Thông báo/ })).toBeNull();
+
+    await userEvent.click(bell);
+    const body = within(document.body);
+    const panel = await body.findByRole("dialog", { name: "Thông báo" });
+    await expect(within(panel).getByRole("tablist")).toBeInTheDocument();
+    await expect(getRouter().push).not.toHaveBeenCalled();
+
+    // AC: opening lands focus on the TABLIST. Regression case — this fixture
+    // has unreadCount 2, so "Đánh dấu tất cả đã đọc" exists and is the first
+    // focusable descendant in DOM order; Radix's default FocusScope would take
+    // it instead (US-E24.13 review A11Y-003).
+    await waitFor(() =>
+      expect(within(panel).getByRole("tab", { name: /Tất cả/ })).toHaveFocus(),
+    );
+
+    // The list is a real tabpanel, not a bare <div> — every TabsTrigger carries
+    // aria-controls, so it must resolve (WCAG 4.1.2, review A11Y-002).
+    const panelId = within(panel)
+      .getByRole("tab", { name: /Tất cả/ })
+      .getAttribute("aria-controls");
+    await expect(document.getElementById(panelId ?? "")).toHaveAttribute(
+      "role",
+      "tabpanel",
+    );
+
+    await userEvent.keyboard("{Escape}");
+    await waitForElementToBeRemoved(() =>
+      body.queryByRole("dialog", { name: "Thông báo" }),
+    );
+    await expect(document.activeElement).toBe(bell);
+  },
+};
+
+/**
+ * The same focus target with NOTHING unread — the mark-all button is absent
+ * here, so the tablist is already first in DOM order. Pairs with
+ * `BellDropdownDesktop` (which has unread items) to prove the focus target is
+ * the tablist in BOTH states, not an accident of DOM order.
+ */
+export const BellDropdownFocusesTablistWithNoUnread: Story = {
+  args: { ...dropdownArgs, onFetchUnreadCount: async () => ({ count: 0 }) },
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Thông báo" }),
+    );
+    const panel = await within(document.body).findByRole("dialog", {
+      name: "Thông báo",
+    });
+    await expect(
+      within(panel).queryByRole("button", { name: "Đánh dấu tất cả đã đọc" }),
+    ).toBeNull();
+    await waitFor(() =>
+      expect(within(panel).getByRole("tab", { name: /Tất cả/ })).toHaveFocus(),
+    );
+  },
+};
+
+/**
+ * AC-3 end-to-end: marking a row read inside the dropdown drops the BELL's
+ * badge immediately (optimistic), and it stays dropped after the invalidation
+ * refetch. The unit test (`unread-count-cache.test.ts`) only proves the pure
+ * reducer — this story is the only proof that the reducer is actually wired to
+ * the badge the user sees. Both fixtures are stateful so the post-mutation
+ * refetch agrees with the optimistic value instead of snapping back.
+ */
+const badgeStore: { count: number; items: NotificationEntity[] } = {
+  count: 2,
+  items: [],
+};
+
+const badgeItem: NotificationEntity = {
+  id: "n-1",
+  type: "grade",
+  titleKey: "notification_grade_conduct_approved_title",
+  titleParams: {},
+  bodyKey: "notification_grade_conduct_approved_body",
+  bodyParams: {},
+  ts: new Date(Date.now() - 5 * 60_000).toISOString(),
+  read: false,
+};
+
+export const BellBadgeDropsOnMarkRead: Story = {
+  args: {
+    ...dropdownArgs,
+    onFetchUnreadCount: async () => ({ count: badgeStore.count }),
+    onFetchNotificationsPreview: async () => ({
+      items: badgeStore.items,
+      nextCursor: null,
+      hasMore: false,
+    }),
+    onMarkRead: async (id: string) => {
+      badgeStore.items = badgeStore.items.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      );
+      badgeStore.count = Math.max(0, badgeStore.count - 1);
+      return {};
+    },
+  },
+  decorators: [
+    (Story) => {
+      // Re-seed before the mount (a reset inside `play` would land after the
+      // first fetch).
+      badgeStore.count = 2;
+      badgeStore.items = [badgeItem, { ...badgeItem, id: "n-2" }];
+      return <Story />;
+    },
+  ],
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(1280, 900);
+
+    const bell = await canvas.findByRole("button", {
+      name: /Thông báo — 2 thông báo chưa đọc/,
+    });
+    await userEvent.click(bell);
+    const panel = await within(document.body).findByRole("dialog", {
+      name: "Thông báo",
+    });
+
+    const rows = await within(panel).findAllByRole("button", {
+      name: /chưa đọc$/,
+    });
+    await userEvent.click(rows[0]);
+
+    await waitFor(() =>
+      expect(
+        canvas.getByRole("button", {
+          name: /Thông báo — 1 thông báo chưa đọc/,
+        }),
+      ).toBeInTheDocument(),
+    );
+  },
+};
+
+/**
+ * AC (mobile <640px): unchanged behaviour — the bell stays a `Link` to the
+ * notifications centre and there is NO popover trigger in the accessibility
+ * tree (the desktop span is `display:none`, so it is genuinely absent, not just
+ * visually hidden).
+ */
+export const BellMobileStaysALink: Story = {
+  args: dropdownArgs,
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const link = await canvas.findByRole("link", { name: /Thông báo/ });
+    await expect(link).toHaveAttribute(
+      "href",
+      expect.stringContaining("/t/tenant-acme/notifications"),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: /Thông báo/ }),
+    ).toBeNull();
+    // Restore the default desktop viewport for the stories that follow.
+    await page.viewport(1280, 900);
   },
 };

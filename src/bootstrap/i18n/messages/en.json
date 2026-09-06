@@ -3060,8 +3060,10 @@
       "notification_attendance_leave_approved_body": "A leave request has been approved.",
       "unknown": "Open the notification for details."
     },
+    "dropdownAriaLabel": "Notifications",
     "emptyAllBody": "Notifications will appear here when there is new activity.",
     "emptyAllTitle": "No notifications yet",
+    "emptySystem": "No system notifications",
     "emptyUnreadBody": "You have read all your notifications.",
     "emptyUnreadTitle": "All caught up",
     "errorTitle": "Could not load notifications",
@@ -3101,7 +3103,8 @@
     "type_discipline": "Discipline",
     "type_grade": "Grades",
     "type_system": "System",
-    "unreadCountAriaLabel": "{count} unread notifications"
+    "unreadCountAriaLabel": "{count} unread notifications",
+    "viewAll": "View all notifications"
   },
   "parentChildrenOverview": {
     "pageTitle": "My children",

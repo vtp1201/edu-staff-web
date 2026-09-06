@@ -44,6 +44,11 @@ vi.mock("@/app/[locale]/(auth)/select-tenant/actions", () => ({
 }));
 vi.mock("./(shared)/notifications/actions", () => ({
   fetchUnreadCountAction: vi.fn(),
+  // US-E24.13 — the bell dropdown's three action refs, threaded through
+  // AppShell to the header.
+  fetchPageAction: vi.fn(),
+  markReadAction: vi.fn(),
+  markAllReadAction: vi.fn(),
 }));
 vi.mock("./email-verification.actions", () => ({
   requestEmailVerificationAction: vi.fn(),
@@ -62,16 +67,23 @@ vi.mock("@/components/layout/app-shell", () => ({
 // AppShell is nested two levels under the layout's returned element
 // (<ReactQueryProvider><AppShell .../></ReactQueryProvider>) — find it by
 // walking `.props.children` instead of hardcoding a depth.
-function findAppShellElement(node: unknown): { props: { helpHref?: string } } {
+type AppShellProps = {
+  helpHref?: string;
+  onFetchNotificationsPreview?: unknown;
+  onMarkRead?: unknown;
+  onMarkAllRead?: unknown;
+};
+
+function findAppShellElement(node: unknown): { props: AppShellProps } {
   if (!node || typeof node !== "object") {
     throw new Error("AppShell element not found in the layout's output");
   }
   const el = node as {
     type?: unknown;
-    props?: { children?: unknown; helpHref?: string };
+    props?: AppShellProps & { children?: unknown };
   };
   if (el.type === MockAppShell) {
-    return el as { props: { helpHref?: string } };
+    return el as { props: AppShellProps };
   }
   if (el.props?.children) {
     return findAppShellElement(el.props.children);
@@ -107,5 +119,33 @@ describe("(app)/layout.tsx — NEXT_PUBLIC_HELP_URL → AppShell.helpHref wiring
     const result = await renderLayout();
     const shell = findAppShellElement(result);
     expect(shell.props.helpHref).toBeUndefined();
+  });
+});
+
+/**
+ * US-E24.13 — the bell dropdown's three Server Action refs must reach AppShell
+ * as the SAME function objects the actions module exports. A convenience
+ * wrapper (e.g. reshaping `{filter,cursor}` into `{filter,limit}`) would be a
+ * plain closure, and a plain closure cannot cross the server→client boundary —
+ * it fails at runtime, where neither tsc nor the build would catch it. Identity
+ * (`toBe`) is therefore the assertion, not "is a function".
+ */
+describe("(app)/layout.tsx — bell dropdown Server Action refs (US-E24.13)", () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  it("passes fetchPage / markRead / markAllRead through unwrapped", async () => {
+    vi.stubEnv("NEXT_PUBLIC_USE_MOCK", "true");
+    const result = await renderLayout();
+    // Imported AFTER the layout so both resolve to the same module instance.
+    const actions = await import("./(shared)/notifications/actions");
+    const shell = findAppShellElement(result);
+    expect(shell.props.onFetchNotificationsPreview).toBe(
+      actions.fetchPageAction,
+    );
+    expect(shell.props.onMarkRead).toBe(actions.markReadAction);
+    expect(shell.props.onMarkAllRead).toBe(actions.markAllReadAction);
   });
 });

@@ -47,11 +47,23 @@ export interface UnreadCount {
   count: number;
 }
 
-/** Filter applied to the notifications list query. */
+/**
+ * Filter applied to the notifications list query.
+ *
+ * Mutually exclusive by construction (US-E18.37): "all" sends no filter,
+ * "unread" narrows by read state (`read=false`), every other member is a
+ * {@link NotificationType} and narrows by `type=` — the two wire params can
+ * never be combined (400 NOTIFICATION_FILTER_CONFLICT).
+ *
+ * US-E24.13 added "system" for the bell dropdown's third tab. BE accepts
+ * `type=system` but has no producer yet, so it legitimately returns an empty
+ * page — a product-accepted state, not an error.
+ */
 export type NotificationFilter =
   | "all"
   | "unread"
   | "grade"
   | "attendance"
   | "discipline"
-  | "announcement";
+  | "announcement"
+  | "system";

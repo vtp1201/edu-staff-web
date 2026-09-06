@@ -14,8 +14,12 @@ export const NOTIFICATION_EP = {
   /**
    * GET — REAL cursor-paged notification inbox (US-E18.25 / BE US-146).
    * Query params: `type` (grade|attendance|discipline|announcement|system),
-   * `cursor`, `limit` (1–100, default 20). There is NO `unread`/`read` filter
-   * — the "Unread" tab drains client-side (ADR 0066, cross-repo ask #42).
+   * `read` (only `read=false` — `read=true` → 400
+   * NOTIFICATION_READ_FILTER_UNSUPPORTED), `cursor`, `limit` (1–100, default
+   * 20). `type` and `read` are MUTUALLY EXCLUSIVE (400
+   * NOTIFICATION_FILTER_CONFLICT) — `NotificationRepository` maps the single
+   * UI filter union 1:1 so it can never emit both (US-E18.37 replaced the old
+   * client-side "Unread" drain with this server-side `read=false`).
    * Enveloped with `meta.pagination.{nextCursor,hasMore}` → call with
    * `{ raw: true }` + `parseEnvelope()`.
    */
