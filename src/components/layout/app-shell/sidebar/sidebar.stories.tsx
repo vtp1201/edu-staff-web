@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Sidebar } from "./sidebar";
 
 const meta: Meta<typeof Sidebar> = {
@@ -123,4 +124,5 @@ export const CollapsedWithHelpLink: Story = {
 export const Dark: Story = {
   args: { tenantId, role: "teacher", onToggle: () => {} },
   globals: { theme: "dark" },
+  decorators: [withDarkTheme],
 };

@@ -15,6 +15,7 @@ import type {
   SwitchTenantResult,
   TenantCardViewModel,
 } from "@/components/shared/tenant-card";
+import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Header } from "./header";
 
 const meta: Meta<typeof Header> = {
@@ -366,7 +367,15 @@ export const Dark: Story = {
     onSwitchTenant: noopSwitch,
   },
   globals: { theme: "dark" },
+  decorators: [withDarkTheme],
   play: async ({ canvas }) => {
+    // The dark token pass is only real if the .dark block actually wins —
+    // assert the handoff value (T_DARK card) rather than trusting the class.
+    await expect(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--edu-card")
+        .trim(),
+    ).toBe("#1e2630");
     await userEvent.click(
       await canvas.findByRole("button", { name: "Menu người dùng" }),
     );

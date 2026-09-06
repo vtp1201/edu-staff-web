@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ClipboardList, Trophy, Users } from "lucide-react";
+import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { StatCard } from "./stat-card";
 
 const meta = {
@@ -51,4 +52,17 @@ export const Mini: Story = {
     variant: "mini",
     icon: <Trophy className="size-4 text-edu-success" />,
   },
+};
+
+/** US-E24.12 dark-token pass: card surface, value and trend on a dark page. */
+export const Dark: Story = {
+  args: {
+    label: "Điểm TB",
+    value: "8.4",
+    icon: Trophy,
+    tone: "success",
+    trend: { dir: "up", value: "+0.3" },
+  },
+  globals: { theme: "dark" },
+  decorators: [withDarkTheme],
 };

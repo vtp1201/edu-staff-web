@@ -307,6 +307,10 @@ export function Header({
                     sees the theme flip in place; Radix gives the row
                     `role="menuitemcheckbox"` + `aria-checked`. */}
                 <DropdownMenuCheckboxItem
+                  // Left-align the icon with the other rows and move the
+                  // checked indicator to the trailing edge (design v3 puts the
+                  // toggle on the right).
+                  className="pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto"
                   checked={resolvedTheme === "dark"}
                   onCheckedChange={(checked) =>
                     setTheme(checked ? "dark" : "light")
