@@ -119,6 +119,8 @@
 - [Embedded field → own resource](pattern-embedded-field-to-own-resource.md) — E18.51: real contract exposes a mock-era embedded array as its OWN gated endpoint ⇒ DELETE the… (+file)
 
 - [RBAC-blocked client-side join](pattern-rbac-blocked-clientside-join.md) — E18.54: "resolve it client-side" dies on RBAC not N+1; pick the widest allow-list endpoint, degrade… (+file)
+- [Parallel narrow surface un-mock](pattern-parallel-narrow-surface-unmock.md) — US-E24.6: "remap use-case X" is a hypothesis; add a sibling when X's shipped callers lack a required field; no clock param on a Server Action
+- [Storybook viewport/upload/i18n traps](gotcha-storybook-viewport-and-upload-limits.md) — scrollWidth fakes a 320px overflow; `accept` filters userEvent.upload; two keys, one string breaks getByText
 - [Carve-out un-mock + canonical reason dialog](pattern-carve-out-unmock-and-canonical-dialog.md) — E24.11: un-mock a MINORITY of a force-mocked DI via a 2nd repo factory; reason-confirm-dialog is already the canonical home
 - [Per-card fan-out + server urgency](pattern-per-card-fanout-and-server-urgency.md) — E24.2: allSettled per-CARD degrade (null≠0) + dueSoon flag decided server-side
 - [Testing axios interceptors](pattern-testing-axios-interceptors.md) — E01.3: stub `client.defaults.adapter` to capture config (no network, no mock lib); AxiosHeaders dot-access works
