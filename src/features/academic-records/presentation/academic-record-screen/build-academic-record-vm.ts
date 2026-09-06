@@ -19,6 +19,13 @@ export const SELF_MEMBER_ID = "me";
  * see `i-academic-records.repository.ts`), so `year` here only selects which
  * derived group the screen shows.
  *
+ * The PARENT child selector is deliberately NOT assembled here (US-E24.16):
+ * it needs a second, independent read (the linked-children roster) whose
+ * failure must not be able to reach this function's error path, and this
+ * builder is shared by all four role routes. The page settles the two reads
+ * side by side and calls `buildChildSwitcherVM()` — do not thread a childList
+ * parameter through here.
+ *
  * The student route passes {@link SELF_MEMBER_ID}: the real memberId comes from
  * the access-token `sub` claim server-side and is never client-supplied. If it
  * cannot be resolved the screen shows `forbidden` rather than calling the wire
