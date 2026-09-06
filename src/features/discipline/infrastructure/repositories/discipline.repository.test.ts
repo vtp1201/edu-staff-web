@@ -682,3 +682,255 @@ describe("DisciplineRepository (real) — GVCN homeroom leave inbox (US-E24.11)"
     ).rejects.toMatchObject({ type: "forbidden" });
   });
 });
+
+/* ── US-E24.6 — self-submit leave request + attachments (core US-249) ────── */
+
+describe("toFailure — leave request + attachment codes (US-E24.6)", () => {
+  it.each([
+    ["LEAVE_REQUEST_FORBIDDEN", 403, "forbidden"],
+    ["LEAVE_REQUEST_STUDENT_NOT_ENROLLED", 403, "student-not-enrolled"],
+    ["LEAVE_REQUEST_INVALID_DATE_RANGE", 400, "invalid-date"],
+    ["LEAVE_REQUEST_ATTACHMENT_INVALID_FILE", 422, "attachment-invalid"],
+    ["LEAVE_REQUEST_ATTACHMENT_LIMIT_EXCEEDED", 409, "attachment-limit"],
+    ["LEAVE_REQUEST_ATTACHMENT_LOCKED", 409, "attachment-locked"],
+    ["LEAVE_REQUEST_ATTACHMENT_STORAGE_UNAVAILABLE", 503, "network-error"],
+  ])("maps %s (%i) → %s", (code, status, expected) => {
+    expect(toFailure(apiError(code, status)).type).toBe(expected);
+  });
+
+  it("maps ANY retryable error to network-error (only `retryable` may be retried)", () => {
+    const retryable = new ApiError({
+      code: "SOMETHING_TRANSIENT",
+      message: "x",
+      retryable: true,
+      status: 503,
+    });
+    expect(toFailure(retryable).type).toBe("network-error");
+  });
+});
+
+describe("MockDisciplineRepository — US-E24.6 self-service leave", () => {
+  it("submitMyLeaveRequest prepends a pending request readable by studentMemberId", async () => {
+    const repo = new MockDisciplineRepository();
+
+    const created = await repo.submitMyLeaveRequest({
+      studentMemberId: "stu-24-6",
+      classId: "cls-24-6",
+      startDate: "2026-09-10",
+      endDate: "2026-09-12",
+      reason: "Khám sức khoẻ",
+    });
+
+    expect(created.status).toBe("pending");
+    expect(created.classId).toBe("cls-24-6");
+    expect(created.reason).toBe("Khám sức khoẻ");
+    // Mapper-format display dates, like every other leave row.
+    expect(created.startDate).toBe("10/09/2026");
+    expect(created.dayCount).toBe(3);
+
+    const rows = await repo.getLeaveRequestsForAttendance("stu-24-6");
+    expect(rows[0].id).toBe(created.id);
+  });
+
+  it("getLeaveRequestsForAttendance filters to ONE student", async () => {
+    const repo = new MockDisciplineRepository();
+    await repo.submitMyLeaveRequest({
+      studentMemberId: "stu-a",
+      classId: "cls-1",
+      startDate: "2026-09-10",
+      endDate: "2026-09-10",
+      reason: "A",
+    });
+
+    const rows = await repo.getLeaveRequestsForAttendance("stu-a");
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.studentId === "stu-a")).toBe(true);
+  });
+
+  it("uploadLeaveAttachment echoes the file metadata (no fake storage outage)", async () => {
+    const repo = new MockDisciplineRepository();
+    const file = new File([new Uint8Array(1234)], "don-xin-nghi.pdf", {
+      type: "application/pdf",
+    });
+
+    const attachment = await repo.uploadLeaveAttachment("req-1", "stu-a", file);
+
+    expect(attachment.fileName).toBe("don-xin-nghi.pdf");
+    expect(attachment.sizeBytes).toBe(1234);
+    expect(attachment.contentType).toBe("application/pdf");
+    expect(attachment.unavailable).toBe(false);
+  });
+});
+
+describe("DisciplineRepository (real) — US-E24.6 self-submit + attachments", () => {
+  const resolveNames = async (ids: string[]) =>
+    new Map(ids.map((id) => [id, `Tên ${id}`]));
+
+  const created = {
+    requestId: "req-9",
+    studentMemberId: "stu-1",
+    classId: "cls-10a1",
+    startDate: "2026-09-10",
+    endDate: "2026-09-12",
+    reason: "Khám sức khoẻ",
+    state: "SUBMITTED" as const,
+    submittedByMemberId: "stu-1",
+    createdAt: "2026-09-06T08:00:00Z",
+    updatedAt: "2026-09-06T08:00:00Z",
+  };
+
+  const INPUT = {
+    studentMemberId: "stu-1",
+    classId: "cls-10a1",
+    startDate: "2026-09-10",
+    endDate: "2026-09-12",
+    reason: "Khám sức khoẻ",
+  };
+
+  it("submitMyLeaveRequest POSTs EXACTLY core's five fields — no `type`, no submitter", async () => {
+    const post = vi.fn().mockResolvedValue(created);
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    const entity = await repo.submitMyLeaveRequest(INPUT);
+
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests",
+    );
+    const body = post.mock.calls[0][1];
+    expect(Object.keys(body).sort()).toEqual([
+      "classId",
+      "endDate",
+      "reason",
+      "startDate",
+      "studentMemberId",
+    ]);
+    expect(body).toEqual(INPUT);
+    expect(entity.id).toBe("req-9");
+    expect(entity.status).toBe("pending");
+  });
+
+  it("submitMyLeaveRequest maps core's 403 to forbidden", async () => {
+    const post = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_FORBIDDEN", 403));
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    await expect(repo.submitMyLeaveRequest(INPUT)).rejects.toMatchObject({
+      type: "forbidden",
+    });
+  });
+
+  it("submitMyLeaveRequest maps STUDENT_NOT_ENROLLED to its own key", async () => {
+    const post = vi
+      .fn()
+      .mockRejectedValue(apiError("LEAVE_REQUEST_STUDENT_NOT_ENROLLED", 403));
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    await expect(repo.submitMyLeaveRequest(INPUT)).rejects.toMatchObject({
+      type: "student-not-enrolled",
+    });
+  });
+
+  it("getLeaveRequestsForAttendance drains ?studentMemberId= (never classId)", async () => {
+    const get = vi.fn().mockResolvedValue({
+      success: true,
+      data: [created],
+      error: null,
+      meta: { requestId: "r", timestamp: "t" },
+    });
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    const rows = await repo.getLeaveRequestsForAttendance("stu-1");
+
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests",
+    );
+    expect(get.mock.calls[0][1].params).toMatchObject({
+      studentMemberId: "stu-1",
+    });
+    expect(get.mock.calls[0][1].params.classId).toBeUndefined();
+    expect(get.mock.calls[0][1].raw).toBe(true);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe("req-9");
+  });
+
+  it("uploadLeaveAttachment posts multipart FormData with the file + studentMemberId query", async () => {
+    const post = vi.fn().mockResolvedValue({
+      attachmentId: "att-1",
+      fileName: "don.pdf",
+      contentType: "application/pdf",
+      sizeBytes: 1234,
+      url: "https://signed.example/att-1",
+      expiresAt: "2026-09-06T08:15:00Z",
+      uploadedAt: "2026-09-06T08:00:00Z",
+      unavailable: false,
+    });
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+    const file = new File([new Uint8Array(1234)], "don.pdf", {
+      type: "application/pdf",
+    });
+
+    const attachment = await repo.uploadLeaveAttachment("req-9", "stu-1", file);
+
+    expect(post.mock.calls[0][0]).toBe(
+      "/core/api/v1/conduct/student-leave-requests/req-9/attachments",
+    );
+    const body = post.mock.calls[0][1] as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect((body.get("file") as File).name).toBe("don.pdf");
+    expect(post.mock.calls[0][2].params).toEqual({ studentMemberId: "stu-1" });
+    expect(post.mock.calls[0][2].headers["Content-Type"]).toBe(
+      "multipart/form-data",
+    );
+    expect(attachment).toEqual({
+      id: "att-1",
+      fileName: "don.pdf",
+      contentType: "application/pdf",
+      sizeBytes: 1234,
+      url: "https://signed.example/att-1",
+      uploadedAt: "2026-09-06T08:00:00Z",
+      unavailable: false,
+    });
+  });
+
+  it("uploadLeaveAttachment maps the three attachment 4xx codes", async () => {
+    const file = new File([new Uint8Array(1)], "a.pdf");
+    for (const [code, status, expected] of [
+      ["LEAVE_REQUEST_ATTACHMENT_INVALID_FILE", 422, "attachment-invalid"],
+      ["LEAVE_REQUEST_ATTACHMENT_LIMIT_EXCEEDED", 409, "attachment-limit"],
+      ["LEAVE_REQUEST_ATTACHMENT_LOCKED", 409, "attachment-locked"],
+    ] as const) {
+      const post = vi.fn().mockRejectedValue(apiError(code, status));
+      const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+      await expect(
+        repo.uploadLeaveAttachment("req-9", "stu-1", file),
+      ).rejects.toMatchObject({ type: expected });
+    }
+  });
+
+  it("keeps an UNAVAILABLE attachment visible instead of hiding a storage outage", async () => {
+    const post = vi.fn().mockResolvedValue({
+      attachmentId: "att-2",
+      fileName: "anh.png",
+      contentType: "image/png",
+      sizeBytes: 10,
+      url: "",
+      expiresAt: "0001-01-01T00:00:00Z",
+      uploadedAt: "2026-09-06T08:00:00Z",
+      unavailable: true,
+    });
+    const repo = new DisciplineRepository(makeHttp({ post }), resolveNames);
+
+    const attachment = await repo.uploadLeaveAttachment(
+      "req-9",
+      "stu-1",
+      new File([new Uint8Array(10)], "anh.png"),
+    );
+
+    expect(attachment.unavailable).toBe(true);
+    expect(attachment.url).toBe("");
+  });
+});

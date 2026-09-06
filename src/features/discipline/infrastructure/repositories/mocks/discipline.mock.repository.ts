@@ -8,9 +8,11 @@ import type {
 import {
   assertCanDecideLeave,
   type DecideLeaveInput,
+  type LeaveAttachmentEntity,
   type LeaveRequestEntity,
   type SubmitChildLeaveRequestInput,
   type SubmitLeaveRequestInput,
+  type SubmitMyLeaveRequestInput,
 } from "../../../domain/entities/leave-request.entity";
 import type {
   RecordViolationInput,
@@ -247,6 +249,79 @@ export class MockDisciplineRepository implements IDisciplineRepository {
     };
     _leave = [req, ..._leave];
     return structuredClone(req);
+  }
+
+  // --- Attendance portal self-service, US-E24.6 ---
+
+  /**
+   * Mock twin of the REAL create contract. Kept separate from
+   * `submitLeaveRequest` above for the same reason the interface keeps them
+   * separate: the two shapes must never quietly become one.
+   */
+  async submitMyLeaveRequest(
+    input: SubmitMyLeaveRequestInput,
+  ): Promise<LeaveRequestEntity> {
+    await mockDelay();
+    const req: LeaveRequestEntity = {
+      id: genId("l"),
+      studentId: input.studentMemberId,
+      studentName: "Học sinh",
+      initials: "HS",
+      avatarTone: "primary",
+      classId: input.classId,
+      className: input.classId,
+      // The real contract derives the submitter from the token; the mock has
+      // no session, so it records the neutral self-submit value rather than
+      // inventing a parent.
+      submittedBy: "student",
+      submitterName: "Học sinh",
+      reason: input.reason,
+      startDate: formatISODate(input.startDate),
+      endDate: formatISODate(input.endDate),
+      dayCount: dayCountOf(input.startDate, input.endDate),
+      // core has no leave-type concept — same documented invention as the real
+      // mapper (`toLeaveRequestEntity`).
+      type: "other",
+      status: "pending",
+      submittedAt: formatISODate(todayISO()),
+      approvedBy: null,
+      rejectedBy: null,
+      rejectionReason: null,
+    };
+    _leave = [req, ..._leave];
+    return structuredClone(req);
+  }
+
+  async getLeaveRequestsForAttendance(
+    studentMemberId: string,
+  ): Promise<LeaveRequestEntity[]> {
+    await mockDelay();
+    return structuredClone(
+      _leave.filter((l) => l.studentId === studentMemberId),
+    );
+  }
+
+  /**
+   * Echoes the file's own metadata instead of storing anything. It never
+   * fabricates an `unavailable: true` outage: a mock that randomly reports a
+   * storage failure would train the UI against a state the developer cannot
+   * reproduce.
+   */
+  async uploadLeaveAttachment(
+    _requestId: string,
+    _studentMemberId: string,
+    file: File,
+  ): Promise<LeaveAttachmentEntity> {
+    await mockDelay();
+    return {
+      id: genId("att"),
+      fileName: file.name,
+      contentType: file.type,
+      sizeBytes: file.size,
+      url: "",
+      uploadedAt: new Date().toISOString(),
+      unavailable: false,
+    };
   }
 
   // --- Parent multi-child view (US-E09.4) ---

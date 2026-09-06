@@ -4,8 +4,11 @@
  * `edu-api/services/core/internal/conduct/adapter/http/routes.go`. Kong strips
  * the `/core` prefix, so the client path is `/core/api/v1/conduct/...`.
  *
- * **Recorded, not consumed.** The whole discipline feature is permanently
- * mock-first (`discipline.di.ts` force-mocks regardless of `USE_MOCK`) — see
+ * **Mostly recorded, not consumed.** Two branches ARE consumed for real: the
+ * GVCN leave inbox (US-E24.11) and the self-service leave request +
+ * attachments (US-E24.6, `leaveAttachments` below). Everything else in this
+ * file is still recorded-only — the rest of the discipline feature is
+ * permanently mock-first (`discipline.di.ts` force-mocks regardless of `USE_MOCK`) — see
  * `docs/stories/epics/E18-be-wiring/US-E18.14-discipline-conduct-wiring/story.md`.
  * Two categorical blockers compound to make every operation unreachable:
  *   (1) no real student-roster UUID lookup on the web (roster stays mock-first,
@@ -65,6 +68,12 @@ export const DISCIPLINE_EP = {
   // · POST /:id/approve?studentMemberId= · POST /:id/reject?studentMemberId= { rejectionReason }
   leaveRequests: "/core/api/v1/conduct/student-leave-requests",
   submitLeaveRequest: "/core/api/v1/conduct/student-leave-requests",
+  // Evidence upload — multipart, ONE file per call (core US-249, deployed:
+  // it is in `openapi.yaml`, not `openapi.draft.yaml`). `studentMemberId` is a
+  // REQUIRED query param, not a filter: it completes the storage key
+  // ((tenantId, studentMemberId), requestId), same as approve/reject.
+  leaveAttachments: (id: string) =>
+    `/core/api/v1/conduct/student-leave-requests/${id}/attachments`,
   approveLeave: (id: string) =>
     `/core/api/v1/conduct/student-leave-requests/${id}/approve`,
   rejectLeave: (id: string) =>

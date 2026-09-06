@@ -109,7 +109,8 @@ describe("makeGetChildAttendanceUseCase", () => {
       });
       expect(result).toEqual({
         ok: true,
-        data: [{ date: "2026-08-03", status: "present" }],
+        // US-E24.6: the mapper passes `classId` through now.
+        data: [{ date: "2026-08-03", classId: "cls-1", status: "present" }],
       });
     });
 

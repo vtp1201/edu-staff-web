@@ -27,3 +27,6 @@
 - [RSC page.tsx imports DI](rsc-page-imports-di.md) — CLAUDE.md forbids it, 70/90 pages do it; ADR topic, never a per-story finding
 - [Exam id-space mismatch](exam-id-space-mismatch.md) — lms `exam.examId` vs `features/exam` MOCK_STUDENT_ID list; the in-app "Vào làm bài" CTA may 404. Pre-existing, not per-story
 - [Teacher class-hub authz gates](authz-gate-patterns-teacher-class-hub.md) — the 3 gate shapes + why `TeacherClass.subjects` is token-scoped, not class-wide
+- [Radix menu Tab trap](radix-menu-tab-trap.md) — non-menu-item controls inside a DropdownMenu are keyboard-unreachable; pointer-only stories hide it
+- [warning-foreground on a tint = 1.1:1 in dark](warning-foreground-on-tint-dark.md) — repo-wide defect class, ~50 sites; light-mode swap is zero-diff
+- [Two-step mutation review bar](review-checks-multistep-mutation.md) — partial-upload retry must re-send only failed files; role branch must be an allowlist

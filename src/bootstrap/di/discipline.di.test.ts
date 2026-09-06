@@ -142,6 +142,89 @@ describe("discipline.di — the THREE un-forced leave factories (US-E24.11)", ()
   });
 });
 
+/**
+ * US-E24.6 carved out a SECOND branch: the self-service leave request the
+ * attendance portal submits, its by-student read, and the attachment upload
+ * (core US-249). Same reasoning as `makeLeaveRepo` — neither US-E18.14 blocker
+ * applies once `resolveMyClassId()` (US-E24.1) exists and the student addresses
+ * themself by the `memberId` claim.
+ *
+ * The point of these tests is the SEAM: the three new factories follow
+ * `USE_MOCK`, while `makeGetMyLeaveRequestsUseCase` / `makeSubmitLeaveRequestUseCase`
+ * — the ones `/student/conduct` and `/parent/conduct` still call — stay mocked.
+ */
+describe("discipline.di — the THREE self-service leave factories (US-E24.6)", () => {
+  it("mock mode builds the mock repository", async () => {
+    stubServerSeams();
+    const mod = await di("true");
+
+    expect(repoNameOf(await mod.makeSubmitMyLeaveRequestUseCase())).toBe(
+      "MockDisciplineRepository",
+    );
+    expect(
+      repoNameOf(await mod.makeGetLeaveRequestsForAttendanceUseCase()),
+    ).toBe("MockDisciplineRepository");
+    expect(repoNameOf(await mod.makeUploadLeaveAttachmentUseCase())).toBe(
+      "MockDisciplineRepository",
+    );
+  });
+
+  for (const mode of REAL_MODES) {
+    it(`real mode (NEXT_PUBLIC_USE_MOCK=${String(mode)}) builds the REAL repository for all three`, async () => {
+      stubServerSeams();
+      const mod = await di(mode);
+
+      expect(repoNameOf(await mod.makeSubmitMyLeaveRequestUseCase())).toBe(
+        "DisciplineRepository",
+      );
+      expect(
+        repoNameOf(await mod.makeGetLeaveRequestsForAttendanceUseCase()),
+      ).toBe("DisciplineRepository");
+      expect(repoNameOf(await mod.makeUploadLeaveAttachmentUseCase())).toBe(
+        "DisciplineRepository",
+      );
+    });
+  }
+
+  it("refreshes the session before building the real client (decision 0018)", async () => {
+    const { ensureFreshSession } = stubServerSeams();
+    const mod = await di("false");
+
+    await mod.makeSubmitMyLeaveRequestUseCase();
+
+    expect(ensureFreshSession).toHaveBeenCalled();
+  });
+
+  it("never creates a server http client in mock mode", async () => {
+    const { createServerHttpClient } = stubServerSeams();
+    const mod = await di("true");
+
+    await mod.makeSubmitMyLeaveRequestUseCase();
+
+    expect(createServerHttpClient).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The regression this whole carve-out risks: repointing the LEGACY
+   * self-service factories (still serving `/student/conduct` and
+   * `/parent/conduct` on the legacy input shape, which carries no `classId`)
+   * at the real repository would 400 every submission on those two screens.
+   */
+  for (const mode of REAL_MODES) {
+    it(`real mode (NEXT_PUBLIC_USE_MOCK=${String(mode)}) leaves the LEGACY conduct-screen factories on the mock`, async () => {
+      stubServerSeams();
+      const mod = await di(mode);
+
+      expect(repoNameOf(await mod.makeGetMyLeaveRequestsUseCase())).toBe(
+        "MockDisciplineRepository",
+      );
+      expect(repoNameOf(await mod.makeSubmitLeaveRequestUseCase())).toBe(
+        "MockDisciplineRepository",
+      );
+    });
+  }
+});
+
 describe("discipline.di — every OTHER factory is STILL force-mocked (US-E18.14 holds)", () => {
   for (const mode of REAL_MODES) {
     it(`real mode (NEXT_PUBLIC_USE_MOCK=${String(mode)}) still returns the mock repository for the non-leave factories`, async () => {

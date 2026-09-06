@@ -1,5 +1,7 @@
+import { makeGetLeaveRequestsForAttendanceUseCase } from "@/bootstrap/di/discipline.di";
 import { makeGetChildListUseCase } from "@/bootstrap/di/grades.di";
 import { makeGetChildAttendanceUseCase } from "@/bootstrap/di/parent-attendance.di";
+import type { LeaveRequestEntity } from "@/features/discipline/domain/entities/leave-request.entity";
 import type { ChildAttendanceRecord } from "@/features/parent-attendance/domain/entities/child-attendance-record.entity";
 import type { ParentAttendanceFailure } from "@/features/parent-attendance/domain/failures/parent-attendance.failure";
 import { ParentAttendanceContainer } from "@/features/parent-attendance/presentation/parent-attendance-screen/parent-attendance-container";
@@ -8,6 +10,10 @@ import {
   resolveActiveChildId,
   resolveRangeFromParams,
 } from "@/features/parent-attendance/presentation/parent-attendance-screen/resolve-range";
+import {
+  retryLeaveAttachmentsAction,
+  submitLeaveRequestAction,
+} from "./actions";
 
 type SearchParams = Promise<{
   childId?: string;
@@ -34,10 +40,8 @@ export default async function ParentAttendancePage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const range = resolveRangeFromParams(
-    sp,
-    new Date().toISOString().slice(0, 10),
-  );
+  const today = new Date().toISOString().slice(0, 10);
+  const range = resolveRangeFromParams(sp, today);
 
   const childListResult = await (await makeGetChildListUseCase()).execute();
   const childList = childListResult.ok ? childListResult.data : [];
@@ -47,20 +51,28 @@ export default async function ParentAttendancePage({
   );
 
   let records: ChildAttendanceRecord[] = [];
+  let leaveRequests: LeaveRequestEntity[] = [];
   let error: ParentAttendanceFailure["type"] | null = childListResult.ok
     ? null
     : "unknown";
 
   if (activeChildId && !error) {
-    const result = await (await makeGetChildAttendanceUseCase()).execute(
-      activeChildId,
-      range,
-    );
-    if (result.ok) {
-      records = result.data;
+    // `allSettled`, not `all` (US-E24.6): the leave-request read only ANNOTATES
+    // the history, so losing it must cost the reasons, never the whole table.
+    const [attendance, requests] = await Promise.allSettled([
+      (await makeGetChildAttendanceUseCase()).execute(activeChildId, range),
+      (await makeGetLeaveRequestsForAttendanceUseCase()).execute(activeChildId),
+    ]);
+
+    if (attendance.status === "rejected") {
+      error = "unknown";
+    } else if (attendance.value.ok) {
+      records = attendance.value.data;
     } else {
-      error = result.error.type;
+      error = attendance.value.error.type;
     }
+
+    if (requests.status === "fulfilled") leaveRequests = requests.value;
   }
 
   const vm: ParentAttendanceScreenVM = {
@@ -68,8 +80,20 @@ export default async function ParentAttendancePage({
     activeChildId,
     range,
     records,
+    leaveRequests,
+    // Packet Q3: no endpoint lets a PARENT read a child's enrolment, so the
+    // class comes off the MOST RECENT attendance row the screen already has.
+    // Records are sorted ascending by the mapper, hence the last one.
+    childClassId: records.at(-1)?.classId ?? null,
+    today,
     error,
   };
 
-  return <ParentAttendanceContainer vm={vm} />;
+  return (
+    <ParentAttendanceContainer
+      vm={vm}
+      onSubmitLeave={submitLeaveRequestAction}
+      onRetryAttachments={retryLeaveAttachmentsAction}
+    />
+  );
 }
