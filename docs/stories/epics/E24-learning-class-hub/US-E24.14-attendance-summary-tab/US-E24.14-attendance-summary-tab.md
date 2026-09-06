@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -508,5 +508,50 @@ Design review: pass
 - a11y: WCAG AA OK (1 minor closed in fix round); keyboard OK; reduced-motion OK (no new motion)
 - impeccable audit: manual scoped audit (init prerequisite unmet, pre-existing gap), 0 findings
 - states: loading/empty/error/success OK; responsive 320/375px OK; Today/History regression-safe
+```
+
+
+### QA gate (fe-qa-playwright)
+
+**Verdict: GO.** 100% AC coverage independently verified by reading test files, not self-reports.
+Found one genuine gap: AC "đổi lớp giữ range" (part of AC-4) had zero test coverage anywhere — code
+was structurally correct (both `AttendanceFilters.update()` and `AttendanceSummaryContainer.update()`
+build from the same shared `useSearchParams()` string) but nothing proved the composition. Closed
+with a new story `ClassChangePreservesSummaryRange` in `attendance-screen.stories.tsx` — drives the
+real class `<Select>`, asserts the pushed URL retains `range=term`. Also independently re-verified:
+the `>366`-day rejection proves zero wire calls (not just a returned failure value), the differentiated
+`too-large`/`invalid-selection` notices have both positive AND negative assertions in both directions,
+and the no-terms URL-coercion path is genuinely tested. Final re-run after the QA addition:
+`bun vitest run` 590/4993 green (pre-merge), `bun vitest run --config vitest.storybook.mts`
+172/1406 green (pre-merge, +1 from QA's story), `bun run build` clean.
+
+### Post-merge gate rerun (fe-lead, after `git merge origin/main` picking up US-E24.13)
+
+`bunx tsc --noEmit` clean; `bun vitest run` **593 files / 5014 tests** green; `bun vitest run --config
+vitest.storybook.mts` **173 files / 1422 tests** green; `bun run build` compiled successfully. No
+conflicts in the merge (auto-merged `messages/{vi,en}.json` cleanly against US-E24.13's additions).
+
+### Design-review gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+- **Design-system conformance**: pass. Raw-color/anti-pattern grep across every touched file in
+  `attendance-summary-tab/*.tsx` + `attendance-screen.tsx` — zero hits (no hex, no `gray-`/`slate-`,
+  no side-stripe borders, no gradient text). No unguarded new transitions (only `ProgressBar`'s
+  pre-existing `motion-safe:`-gated transition, reused unmodified from US-E24.6). Component reuse
+  confirmed by `fe-tech-lead-reviewer` (no invented primitives).
+- **Accessibility**: pass — `fe-accessibility-auditor` PASS with 1 minor (A11Y-201, closed in fix
+  round). Semantic `<table>` + `<caption>` + `scope="col"`, status never color-alone, zero-record rows
+  read sensibly to a screen reader, segmented control ≥44×44px, keyboard-operable sort with
+  `aria-sort`, forbidden state omits (not disables) retry.
+- **`/impeccable audit`**: same pre-existing `NO_PRODUCT_MD` gap as US-E24.6 (tracked since E07.1, out
+  of scope here). Manual scoped audit against the "Absolute bans" checklist — 0 findings.
+- **States & responsive**: pass — loading/empty/error(forbidden,no-retry)/success covered by
+  Storybook; `Viewport375` genuinely asserts non-overflow via real measurement.
+
+```
+Design review: pass
+- design-system: conform (token/typography/component OK)
+- a11y: WCAG AA OK (1 minor closed); keyboard OK; reduced-motion OK (no new motion)
+- impeccable audit: manual scoped audit (init prerequisite unmet, pre-existing gap), 0 findings
+- states: loading/empty/error/success OK; responsive 375px OK; Today/History regression-safe
 ```
 
