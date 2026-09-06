@@ -113,7 +113,7 @@ export function AttendanceSummaryBlock({
   return (
     <div className={cn("flex flex-col gap-5", className)}>
       {/* 2×2 at 375px (AC), 4-up from md. */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         <StatCard
           icon={Percent}
           tone={rateTone(summary.rate)}
@@ -163,7 +163,7 @@ export function AttendanceSummaryBlock({
       <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr] lg:items-start">
         <section
           aria-labelledby={byMonthId}
-          className="rounded-[var(--edu-radius-card)] border border-border bg-card p-5 shadow-card"
+          className="rounded-[var(--edu-radius-card)] border border-border bg-card p-4 shadow-card sm:p-5"
         >
           <h2 id={byMonthId} className="font-bold text-foreground text-sm">
             {t("byMonthTitle")}
@@ -225,7 +225,7 @@ export function AttendanceSummaryBlock({
           aria-labelledby={historyId}
           className="overflow-hidden rounded-[var(--edu-radius-card)] border border-border bg-card shadow-card"
         >
-          <div className="flex items-center justify-between gap-3 border-border border-b px-5 py-4">
+          <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-4 sm:px-5">
             <h2 id={historyId} className="font-bold text-foreground text-sm">
               {t("historyTitle")}
             </h2>
@@ -256,7 +256,7 @@ export function AttendanceSummaryBlock({
                   <li
                     key={row.key}
                     className={cn(
-                      "flex items-start gap-3 px-5 py-3",
+                      "flex items-start gap-3 px-4 py-3 sm:px-5",
                       index < history.length - 1 && "border-border border-b",
                     )}
                   >
