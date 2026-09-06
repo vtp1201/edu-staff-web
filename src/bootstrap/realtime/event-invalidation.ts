@@ -23,6 +23,11 @@ export function queryKeysFor(event: RealtimeEvent): QueryKey[] {
         ["notifications", "list", "unread"],
         ["notifications", "list", event.payload.type],
         ["notifications", "unread-count"],
+        // US-E24.13 — the bell dropdown preview. A 2-segment PREFIX (not one
+        // entry per filter like the `list` keys above): invalidateQueries
+        // defaults to `exact: false`, so this covers preview("all"),
+        // preview("unread") and preview("system") in one line.
+        ["notifications", "preview"],
       ];
     case "attendance.updated":
       return [

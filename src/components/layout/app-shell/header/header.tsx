@@ -35,6 +35,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type {
+  NotificationFilter,
+  NotificationPage,
+} from "@/features/notification/domain/entities/notification.entity";
+import { NotificationDropdown } from "@/features/notification/presentation/notification-dropdown/notification-dropdown";
+import {
   notificationKeys,
   type UnreadCountCache,
 } from "@/features/notification/presentation/notification-keys";
@@ -59,6 +69,45 @@ function UnreadBadge({ count }: { count: number }) {
     <span aria-hidden="true" className={NOTIFICATION_BADGE_CLASS}>
       {count > 99 ? "99+" : count}
     </span>
+  );
+}
+
+/**
+ * The pre-US-E24.13 bell: a link to the notifications centre (or, with no
+ * tenant, a non-navigating icon). Still the ONLY bell below 640px — the
+ * dropdown panel is a desktop affordance (design v3 draws it at 360px wide,
+ * which would overflow a 375px screen), so mobile keeps navigating to the
+ * full-page centre.
+ */
+function BellLinkButton({
+  tenantId,
+  label,
+  count,
+}: {
+  tenantId?: string;
+  label: string;
+  count: number;
+}) {
+  return (
+    <Button
+      asChild={tenantId !== undefined}
+      variant="ghost"
+      size="icon"
+      aria-label={label}
+      className="relative"
+    >
+      {tenantId !== undefined ? (
+        <Link href={tenantUrl(tenantId, "/notifications")}>
+          <Bell className="size-5" />
+          <UnreadBadge count={count} />
+        </Link>
+      ) : (
+        <>
+          <Bell className="size-5" />
+          <UnreadBadge count={count} />
+        </>
+      )}
+    </Button>
   );
 }
 
@@ -88,6 +137,22 @@ type HeaderProps = {
     tenantId: string,
     role: string,
   ) => Promise<SwitchTenantResult>;
+  // NEW (US-E24.13) — the bell dropdown. All optional: without them the bell
+  // keeps its pre-E24.13 "navigate to the centre" behaviour at EVERY viewport,
+  // so existing callers/stories/tests are unaffected.
+  /**
+   * `fetchPageAction` passed straight through — the param shape is deliberately
+   * identical (`{ filter, cursor? }`), because only a `"use server"` function
+   * can cross the server→client prop boundary (a reshaping closure cannot).
+   */
+  onFetchNotificationsPreview?: (params: {
+    filter: NotificationFilter;
+    cursor?: string;
+  }) => Promise<NotificationPage | { errorKey: string }>;
+  /** `markReadAction` — one notification. */
+  onMarkRead?: (id: string) => Promise<{ errorKey?: string }>;
+  /** `markAllReadAction`. */
+  onMarkAllRead?: () => Promise<{ errorKey?: string }>;
 };
 
 export function Header({
@@ -100,6 +165,9 @@ export function Header({
   memberships = [],
   currentTenantId,
   onSwitchTenant,
+  onFetchNotificationsPreview,
+  onMarkRead,
+  onMarkAllRead,
 }: HeaderProps) {
   const t = useTranslations("shell.header");
   const tNoti = useTranslations("notifications");
@@ -108,7 +176,9 @@ export function Header({
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const bellPanelRef = useRef<HTMLDivElement>(null);
   // Theme lives in next-themes (class strategy + localStorage). `resolvedTheme`
   // (not `theme`) so the switch reflects the real applied theme when the user
   // is on "system".
@@ -169,6 +239,19 @@ export function Header({
     requestAnimationFrame(openWhenMenuGone);
   }
 
+  const bellLabel =
+    unreadCount > 0
+      ? `${t("notifications")} — ${tNoti("unreadCountAriaLabel", { count: unreadCount })}`
+      : t("notifications");
+
+  // The panel needs the preview action, the mark-read action (the row
+  // interaction IS mark-read — AC-3) and a tenant (its footer link is
+  // tenant-scoped); missing any → the plain link bell everywhere.
+  const bellDropdownEnabled =
+    onFetchNotificationsPreview !== undefined &&
+    onMarkRead !== undefined &&
+    tenantId !== undefined;
+
   const initials = userName
     .split(" ")
     .map((p) => p[0])
@@ -204,29 +287,76 @@ export function Header({
       <div className="ml-auto flex items-center gap-2">
         {mounted ? (
           <>
-            <Button
-              asChild={tenantId !== undefined}
-              variant="ghost"
-              size="icon"
-              aria-label={
-                unreadCount > 0
-                  ? `${t("notifications")} — ${tNoti("unreadCountAriaLabel", { count: unreadCount })}`
-                  : t("notifications")
-              }
-              className="relative"
-            >
-              {tenantId !== undefined ? (
-                <Link href={tenantUrl(tenantId, "/notifications")}>
-                  <Bell className="size-5" />
-                  <UnreadBadge count={unreadCount} />
-                </Link>
+            {/* Viewport split (US-E24.13) — CSS only, the header's own idiom
+                (cf. the `md:block` search field, the `lg:hidden` hamburger). A
+                matchMedia hook would need its own mount guard to avoid a
+                hydration mismatch; `hidden` is `display:none`, so the inactive
+                trigger is out of the accessibility tree too, not merely
+                invisible. */}
+            <span className="sm:hidden">
+              <BellLinkButton
+                tenantId={tenantId}
+                label={bellLabel}
+                count={unreadCount}
+              />
+            </span>
+            <span className="hidden sm:block">
+              {bellDropdownEnabled ? (
+                <Popover open={bellOpen} onOpenChange={setBellOpen}>
+                  <PopoverTrigger asChild>
+                    {/* A PLAIN button, never `asChild` a Link: opening the
+                        panel navigates nowhere. */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={bellLabel}
+                      className="relative"
+                    >
+                      <Bell className="size-5" />
+                      <UnreadBadge count={unreadCount} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    ref={bellPanelRef}
+                    align="end"
+                    // Radix Content already carries role="dialog"; it just
+                    // needs a name. Escape-close + focus-return to the trigger
+                    // are the primitive's own defaults (unlike the tenant
+                    // dialog, nothing unmounts underneath it first).
+                    aria-label={tNoti("dropdownAriaLabel")}
+                    className="w-90 overflow-hidden rounded-[14px] p-0"
+                    onOpenAutoFocus={(event) => {
+                      // AC: "Enter mở → focus vào tablist". Radix's FocusScope
+                      // would otherwise take the first focusable descendant in
+                      // DOM order, which is the "Đánh dấu tất cả đã đọc" button
+                      // whenever there IS something unread — i.e. exactly the
+                      // state the user opens the bell in (WCAG 2.4.3
+                      // predictability).
+                      event.preventDefault();
+                      bellPanelRef.current
+                        ?.querySelector<HTMLElement>('[role="tab"]')
+                        ?.focus();
+                    }}
+                  >
+                    <NotificationDropdown
+                      tenantId={tenantId}
+                      open={bellOpen}
+                      unreadCount={unreadCount}
+                      onFetchPreview={onFetchNotificationsPreview}
+                      onMarkRead={onMarkRead}
+                      onMarkAllRead={onMarkAllRead}
+                      onClose={() => setBellOpen(false)}
+                    />
+                  </PopoverContent>
+                </Popover>
               ) : (
-                <>
-                  <Bell className="size-5" />
-                  <UnreadBadge count={unreadCount} />
-                </>
+                <BellLinkButton
+                  tenantId={tenantId}
+                  label={bellLabel}
+                  count={unreadCount}
+                />
               )}
-            </Button>
+            </span>
 
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>

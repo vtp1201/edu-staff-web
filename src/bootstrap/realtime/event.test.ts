@@ -204,6 +204,27 @@ describe("queryKeysFor (taxonomy)", () => {
     expect(keys).toContainEqual(["notifications", "list", "grade"]);
     expect(keys).toContainEqual(["notifications", "unread-count"]);
   });
+
+  // US-E24.13: the bell dropdown's preview cache must refresh on the same
+  // frame. One 2-segment PREFIX entry covers every preview(filter) variant —
+  // useRealtimeEvents invalidates with the default `exact: false`.
+  it("invalidates the bell dropdown preview prefix on notification.new", () => {
+    const e = parseEvent(
+      frame({
+        type: "notification.new",
+        payload: {
+          notificationId: "n-99",
+          type: "grade",
+          titleVi: "Điểm mới",
+          titleEn: "New grade",
+          bodyVi: "Điểm đã cập nhật",
+          bodyEn: "Score updated",
+          ts: "2025-11-20T09:00:00.000Z",
+        },
+      }),
+    ) as RealtimeEvent;
+    expect(queryKeysFor(e)).toContainEqual(["notifications", "preview"]);
+  });
 });
 
 describe("parseEvent — notification.new", () => {

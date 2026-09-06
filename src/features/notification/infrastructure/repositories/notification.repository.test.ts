@@ -476,3 +476,34 @@ describe("NotificationRepository.markAllRead (US-E18.25 batch loop)", () => {
     });
   });
 });
+
+// ─── listNotifications: "system" filter (US-E24.13) ──────────────────────────
+
+/**
+ * US-E24.13 — the bell dropdown adds a third tab ("Hệ thống") backed by the
+ * NEW `"system"` member of `NotificationFilter`. The repository's filter
+ * mapping is generic over the type union, so this suite proves the wire
+ * contract rather than new branching: `type=system` alone, never combined with
+ * `read` (400 NOTIFICATION_FILTER_CONFLICT).
+ */
+describe("NotificationRepository.listNotifications (US-E24.13 system filter)", () => {
+  it("sends type=system as the ONLY filter param — never `read`", async () => {
+    const get = vi.fn().mockResolvedValue(makeEnvelope([]));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    await repo.listNotifications({ filter: "system", limit: 8 });
+
+    expect(get).toHaveBeenCalledTimes(1);
+    const params = get.mock.calls[0]?.[1]?.params as Record<string, unknown>;
+    expect(params.type).toBe("system");
+    expect(params.read).toBeUndefined();
+    expect(params.unread).toBeUndefined();
+    expect(params.limit).toBe(8);
+  });
+
+  it("renders an empty page without erroring when BE has no system producer yet", async () => {
+    const get = vi.fn().mockResolvedValue(makeEnvelope([]));
+    const repo = new NotificationRepository(makeHttp({ get }));
+    const result = await repo.listNotifications({ filter: "system" });
+    expect(result).toEqual({ items: [], nextCursor: null, hasMore: false });
+  });
+});
