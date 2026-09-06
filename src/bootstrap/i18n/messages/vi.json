@@ -3013,8 +3013,10 @@
       "notification_attendance_leave_approved_body": "Đơn xin nghỉ vừa được duyệt.",
       "unknown": "Mở thông báo để xem chi tiết."
     },
+    "dropdownAriaLabel": "Thông báo",
     "emptyAllBody": "Thông báo sẽ xuất hiện ở đây khi có hoạt động mới.",
     "emptyAllTitle": "Chưa có thông báo",
+    "emptySystem": "Không có thông báo hệ thống",
     "emptyUnreadBody": "Bạn đã đọc hết tất cả thông báo.",
     "emptyUnreadTitle": "Tất cả đã đọc",
     "errorTitle": "Không thể tải thông báo",
@@ -3054,7 +3056,8 @@
     "type_discipline": "Kỷ luật",
     "type_grade": "Điểm số",
     "type_system": "Hệ thống",
-    "unreadCountAriaLabel": "{count} thông báo chưa đọc"
+    "unreadCountAriaLabel": "{count} thông báo chưa đọc",
+    "viewAll": "Xem tất cả thông báo"
   },
   "parentChildrenOverview": {
     "pageTitle": "Con của tôi",
