@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Sidebar } from "./sidebar";
@@ -119,6 +119,33 @@ export const CollapsedWithHelpLink: Story = {
     await expect(
       await within(document.body).findByRole("tooltip"),
     ).toHaveTextContent("Hướng dẫn sử dụng");
+  },
+};
+
+/**
+ * Real 375px touch-target proof (QA gap): `WithHelpLink` only checks
+ * `toHaveClass("max-[820px]:min-h-11")`, a class-name check, not a
+ * measurement. Resize the REAL Playwright viewport (no `addon-viewport`
+ * installed, see `detail-panel-header.stories.tsx`) and measure the help
+ * link's `getBoundingClientRect().height` (US-E24.12 AC "≥44px touch trên
+ * mobile").
+ */
+export const MobileTouchTarget: Story = {
+  args: {
+    tenantId,
+    role: "teacher",
+    onToggle: () => {},
+    helpHref: "https://help.eduportal.vn",
+  },
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    const link = await canvas.findByRole("link", {
+      name: "Hướng dẫn sử dụng",
+    });
+    await waitFor(() =>
+      expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(44),
+    );
   },
 };
 

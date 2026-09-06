@@ -392,6 +392,40 @@ export const LanguageSwitchKeyboard: Story = {
   },
 };
 
+/**
+ * Real 375px touch-target proof (QA gap): the existing mobile rows only
+ * assert `toHaveClass("max-[820px]:min-h-11")` — a class-name check, not a
+ * measurement. `@storybook/addon-viewport` isn't installed (repo-wide gap,
+ * see `detail-panel-header.stories.tsx`), so this resizes the REAL Playwright
+ * viewport via `vitest/browser`'s `page.viewport()` before measuring
+ * `getBoundingClientRect().height` on the new dark-mode row and both
+ * language rows (US-E24.12 AC "menu item ≥44px touch trên mobile").
+ */
+export const MobileTouchTargets: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const darkRow = await body.findByRole("menuitemcheckbox", {
+      name: /Chế độ tối/,
+    });
+    const vi = await body.findByRole("menuitemradio", { name: "Tiếng Việt" });
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+    // Radix's open-menu entrance runs a brief scale animation (data-state=open
+    // → animate-in zoom-in-95) — measuring mid-transition undershoots the real
+    // 44px floor by a couple of px. Wait for it to settle before measuring.
+    for (const row of [darkRow, vi, en]) {
+      await waitFor(() =>
+        expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(44),
+      );
+    }
+  },
+};
+
 /** Dark theme rendering of the header chrome (US-E24.12 dark token pass). */
 export const Dark: Story = {
   args: {
