@@ -1,13 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import {
   expect,
   userEvent,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 import type {
   SwitchTenantResult,
   TenantCardViewModel,
@@ -17,6 +20,9 @@ import { Header } from "./header";
 const meta: Meta<typeof Header> = {
   title: "Layout/Header",
   component: Header,
+  // The avatar menu's language switcher owns `useRouter().replace()`
+  // (next-intl navigation → next/navigation) → mount the App Router mock.
+  parameters: { nextjs: { appDirectory: true } },
   decorators: [
     (Story) => {
       document.body.style.pointerEvents = "";
@@ -224,5 +230,147 @@ export const FetchFailZeroNoise: Story = {
     await expect(
       body.queryByRole("menuitem", { name: /Đổi trường/ }),
     ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E24.12 — the standalone theme icon is GONE from the header bar; the whole
+ * theme/language surface lives in the avatar menu now. Guard against it being
+ * re-added next to the bell.
+ */
+export const NoStandaloneThemeIcon: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    ).toBeInTheDocument();
+    // The header bar exposes exactly: mobile nav toggle, bell, avatar.
+    await expect(
+      canvas.queryByRole("button", { name: /theme|giao diện|Chế độ tối/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Menu order (design v3): tenant → Đổi trường → Hồ sơ → Chế độ tối → Ngôn ngữ → Đăng xuất. */
+export const MenuOpen: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    memberships: twoTenants,
+    currentTenantId: "tenant-acme",
+    onSwitchTenant: noopSwitch,
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const menu = await body.findByRole("menu");
+    const order = Array.from(
+      menu.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"]'),
+    ).map((el) => el.textContent);
+    await expect(order).toEqual([
+      "Đổi trường",
+      "Hồ sơ",
+      "Chế độ tối",
+      "Đăng xuất",
+    ]);
+    // The language row is a real radiogroup, not a menu item.
+    await expect(
+      within(menu).getByRole("radiogroup", { name: "Ngôn ngữ" }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * AC: toggling "Chế độ tối" flips `<html class="dark">` and the menu STAYS
+ * open (the user sees the theme change in place). Needs the real next-themes
+ * provider — without it `setTheme` is a no-op.
+ */
+export const DarkModeToggle: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  decorators: [
+    (Story) => (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        storageKey="sb-e24-12-theme"
+      >
+        <Story />
+      </ThemeProvider>
+    ),
+  ],
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const row = await body.findByRole("menuitemcheckbox", {
+      name: /Chế độ tối/,
+    });
+    await expect(row).toHaveAttribute("aria-checked", "false");
+
+    await userEvent.click(row);
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(true),
+    );
+    // menu still open (onSelect preventDefault) — same node, now checked
+    await expect(body.getByRole("menu")).toBeInTheDocument();
+    await expect(
+      body.getByRole("menuitemcheckbox", { name: /Chế độ tối/ }),
+    ).toHaveAttribute("aria-checked", "true");
+
+    // restore so the class does not leak into the next story
+    await userEvent.click(
+      body.getByRole("menuitemcheckbox", { name: /Chế độ tối/ }),
+    );
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(false),
+    );
+  },
+};
+
+/**
+ * AC: the current locale is the checked radio; picking the other one replaces
+ * the SAME path with the new locale prefix (no BE call, no client state).
+ */
+export const LanguageSwitch: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const vi = await body.findByRole("radio", { name: "Tiếng Việt" });
+    const en = await body.findByRole("radio", { name: "English" });
+    await expect(vi).toBeChecked();
+    await expect(en).not.toBeChecked();
+
+    await userEvent.click(en);
+    await waitFor(() => expect(getRouter().replace).toHaveBeenCalled());
+    // Story pathname is "/" (App Router mock) → same path, new locale prefix.
+    await expect(getRouter().replace).toHaveBeenCalledWith("/en");
+  },
+};
+
+/** Dark theme rendering of the header chrome (US-E24.12 dark token pass). */
+export const Dark: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    memberships: twoTenants,
+    currentTenantId: "tenant-acme",
+    onSwitchTenant: noopSwitch,
+  },
+  globals: { theme: "dark" },
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    await expect(await body.findByRole("menu")).toBeInTheDocument();
   },
 };
