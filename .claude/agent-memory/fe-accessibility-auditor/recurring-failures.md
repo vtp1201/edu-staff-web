@@ -29,7 +29,12 @@ Seen in: US-E12.2.
 ## Touch — Icon action buttons 32px (size-8)
 Pattern: Edit/Delete/Save/Cancel icon-only buttons use `size-8` (32×32px) which is below the 44×44px mobile touch target minimum.
 Fix: Add `className="size-8 min-h-[44px] min-w-[44px]"` or wrap with a 44px hit-area using negative margin / padding, or use `size-11` (44px) and constrain the visual icon.
-Seen in: US-E12.2.
+Seen in: US-E12.2, US-E24.6 (leave-request-dialog.tsx remove-attachment button, new component — not grandfathered from any precedent).
+
+## Reflow — Shared component's own Mobile/375px story asserts presence, not overflow
+Pattern: A shared component consumed by ≥2 screens gets ONE `Mobile` story that only checks visible text/labels exist, while a SIBLING screen-level story (a caller) does the real `getBoundingClientRect().right > limit` overflow measurement. The shared component itself — the thing most likely to be reused into a THIRD screen later — ships with no independent overflow proof.
+Fix: give every shared component's own `Mobile` story the same overflow-measurement loop used at the screen level (`[...canvasElement.querySelectorAll("*")].filter(el => el.getBoundingClientRect().right > limit + 1)`), not just a screen that happens to wrap it.
+Seen in: US-E24.6 (`attendance-summary.stories.tsx` Mobile story lacks it; `student-attendance-screen.stories.tsx` Mobile story — the caller — has it). Also flag when a SCREEN has no Mobile/375px story at all despite composing multiple new components (`parent-attendance-screen.stories.tsx` in the same story had zero viewport coverage).
 
 ## Contrast — edu-success as icon color on edu-success background
 Pattern: Check icon `text-edu-success-foreground` (white) inside a `bg-edu-success` circle — 1.72:1, fails 3:1 icon minimum.

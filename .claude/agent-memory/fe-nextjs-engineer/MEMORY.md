@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Retry-by-name + mobile overflow proof](pattern-retry-by-name-and-mobile-overflow-proof.md) — E24.6 fix: partial-upload returns failed NAMES (count re-sends all → hits the cap); per-element no-overflow story found a real StatCard 375px break
 - [URL view+sub, zero client](pattern-url-view-sub-zero-client.md) — US-E24.4: merging 2 screens into `?view=`+`?sub=` needs no Client Component; extract a fan-out by leaving the old test file untouched
 - [aria-label on a span + tab-order](gotcha-aria-label-on-span-and-tab-order.md) — Biome rejects it (move the phrase to the parent link); a new pill row breaks every `userEvent.tab()` story
 - [URL-as-state tab shell](pattern-url-tab-shell-rsc.md) — US-E24.8: role-gated `?tab=` RSC shell (one panel, Link tabs); notFound/permanentRedirect digest strings for node route tests
@@ -145,3 +146,4 @@
 
 - [Storybook dark globals lie](gotcha-storybook-dark-globals-and-visual-audit.md) — `globals:{theme:"dark"}` isn't applied by the vitest runner (dark story renders light, still passes); force `.dark` + `page.screenshot` audit trick
 - [Theme-fixed foreground token](gotcha-theme-fixed-foreground-token.md) — `--edu-warning-foreground` must stay navy (solid yellow) ⇒ 1.10:1 on a dark tinted chip; absent `--edu-*-light` dark values leak the LIGHT tint
+- [Radix menu roving focus + fixed-token dark bug](gotcha-radix-menu-roving-focus.md) — non-item children of DropdownMenuContent are keyboard-dead; a theme-FIXED foreground on a /15 tint is 1.1:1 in dark
