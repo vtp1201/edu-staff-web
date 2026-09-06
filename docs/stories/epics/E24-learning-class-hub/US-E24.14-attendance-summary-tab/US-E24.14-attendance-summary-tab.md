@@ -471,3 +471,42 @@ nhất quán `ListAttendanceHistoryUseCase`) và cách suy ra "hôm nay" theo UT
 
 Ask BE: (a) endpoint thông báo PH về chuyên cần (nút "Báo PH" cố ý không render);
 (b) TEACHER đọc `academic-years`/`terms` (hiện fallback month-only khi 403/empty).
+
+
+### Design-review gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+- **Design-system conformance**: pass. Raw-color/anti-pattern grep across every touched file in
+  `attendance-summary-tab/*.tsx` + `attendance-screen.tsx` — zero hits (no hex, no `gray-`/`slate-`,
+  no side-stripe borders, no gradient text). No unguarded new transitions introduced (grep for
+  `transition` in the new tab returns nothing — `ProgressBar`'s existing `motion-safe:`-gated
+  transition, reused unmodified from US-E24.6, is the only motion in this tab). Component reuse
+  confirmed by `fe-tech-lead-reviewer` (no invented primitives — `ProgressBar`/`StatCard`/
+  `StatusBadge`/`ListError`/`ListSkeleton`/`ToggleGroup`/`Select`/`Table`/`Avatar` all reused as-is).
+- **Accessibility**: pass — `fe-accessibility-auditor` verdict PASS with 1 minor (A11Y-201, sort-button
+  touch-target width) — closed in the fix round (`min-w-11 px-1` added). Semantic `<table>` +
+  `<caption>` + `scope="col"`, status never color-alone (StatusBadge tone + text label), zero-record
+  rows read sensibly to a screen reader (distinct "0" vs "Chưa có buổi điểm danh nào" sr-only text),
+  segmented control ≥44×44px, keyboard-operable sort toggle with `aria-sort`, forbidden state
+  correctly omits (not disables) the retry button. Today/History tabs' existing a11y properties
+  confirmed unaffected (purely additive `TabsTrigger`/`TabsContent`).
+- **`/impeccable audit`**: same pre-existing gap as US-E24.6 (`NO_PRODUCT_MD`, `/impeccable init` never
+  run repo-wide — tracked since E07.1, out of scope here). Manual scoped audit against the skill's
+  "Absolute bans" checklist (side-stripe borders, gradient text, glassmorphism, identical-card grids,
+  uppercase eyebrows, numbered-section scaffolding, container overflow) on every touched file — 0
+  findings. No `critique`/`polish` run — this extends the already-shipped `design-spec.jsonc#screens.attendance`
+  entry with a new `summaryTab` sibling key rather than introducing a new screen concept.
+- **States & responsive**: pass — loading/empty/error(forbidden, no-retry)/success covered by
+  Storybook (`full`/`no-alerts`/`empty`/`error`/`loading`/`no-terms`/`InvalidRange`/`RangeTooLarge`/
+  `NoTermsWithTermInUrl`/`SortByRate`); `Viewport375` story genuinely asserts no horizontal overflow
+  (`getBoundingClientRect().width <= 375`), not a cosmetic snapshot — the exact gap class US-E24.6's
+  A11Y-101/102 found is proactively closed here. Dark mode not separately re-verified (no new
+  hardcoded colors to break existing token-driven theming).
+
+```
+Design review: pass
+- design-system: conform (token/typography/component OK)
+- a11y: WCAG AA OK (1 minor closed in fix round); keyboard OK; reduced-motion OK (no new motion)
+- impeccable audit: manual scoped audit (init prerequisite unmet, pre-existing gap), 0 findings
+- states: loading/empty/error/success OK; responsive 320/375px OK; Today/History regression-safe
+```
+
