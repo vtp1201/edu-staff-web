@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, within } from "storybook/test";
@@ -331,5 +332,51 @@ export const Viewport375: Story = {
       "grid-cols-[repeat(auto-fit,minmax(200px,1fr))]",
     );
     await expect(grid?.className).toContain("gap-4");
+  },
+};
+
+/**
+ * US-E24.14 AC: "đổi lớp giữ range" (changing the class filter preserves the
+ * summary tab's own `?range=`). `AttendanceFilters.update()` and
+ * `AttendanceSummaryContainer.update()` both build their next URL from the
+ * SAME `useSearchParams()` string, so they compose — but that composition had
+ * no test anywhere (neither container's story touches the OTHER's URL param).
+ * Proven end-to-end here by driving the real class `<Select>` and reading the
+ * exact URL `router.push` received.
+ */
+export const ClassChangePreservesSummaryRange: Story = {
+  args: {
+    classes: [
+      { id: "c-1", name: "10A1" },
+      { id: "c-2", name: "10A2" },
+    ],
+    roster: { classDate, records, taken: true },
+    filters: { classId: "c-1", date: "2026-06-07" },
+    saveAction,
+    getHistoryAction,
+  },
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: "/vi/attendance",
+        query: { class: "c-1", date: "2026-06-07", range: "term" },
+      },
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const classSelect = canvas.getByRole("combobox", { name: /lớp/i });
+    await userEvent.click(classSelect);
+    const body = within(document.body);
+    const option = await body.findByRole("option", { name: "10A2" });
+    await userEvent.click(option);
+
+    await expect(getRouter().push).toHaveBeenCalledWith(
+      expect.stringContaining("class=c-2"),
+    );
+    // The whole point: the summary tab's `range=term` survives a class switch
+    // it never touched.
+    const [pushedUrl] = getRouter().push.mock.calls.at(-1) as [string];
+    await expect(pushedUrl).toContain("range=term");
   },
 };
