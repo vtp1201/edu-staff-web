@@ -26,4 +26,11 @@ export type DisciplineFailure =
   | { type: "invalid-transition" }
   | { type: "locked" }
   | { type: "student-not-enrolled" }
+  // US-E24.6 — the self-submit leave request + its attachments (core US-249).
+  // `reason-too-long` is DISTINCT from `reason-too-short` on purpose: "say
+  // something" and "say less than 500 characters" are different instructions.
+  | { type: "reason-too-long" }
+  | { type: "attachment-invalid" }
+  | { type: "attachment-limit" }
+  | { type: "attachment-locked" }
   | { type: "network-error" };

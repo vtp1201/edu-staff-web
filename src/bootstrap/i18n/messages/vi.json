@@ -1458,6 +1458,9 @@
     },
     "errors": {
       "already-processed": "Yêu cầu này đã được xử lý",
+      "attachment-invalid": "Tệp đính kèm không hợp lệ. Chỉ nhận JPG, PNG hoặc PDF dưới 5 MB.",
+      "attachment-limit": "Mỗi đơn chỉ được đính kèm tối đa 3 tệp.",
+      "attachment-locked": "Đơn đã được xử lý nên không thể đính kèm thêm tệp.",
       "conflict": "Thao tác xung đột, vui lòng thử lại",
       "forbidden": "Bạn không có quyền xem thông tin này",
       "invalid-child": "Học sinh không hợp lệ",
@@ -1471,6 +1474,7 @@
       "missing-student": "Vui lòng nhập tên học sinh",
       "network-error": "Lỗi kết nối, vui lòng thử lại",
       "not-found": "Không tìm thấy thông tin học sinh",
+      "reason-too-long": "Lý do không được vượt quá 500 ký tự",
       "reason-too-short": "Lý do phải có ít nhất 10 ký tự",
       "same-actor": "Bạn không thể tự phê duyệt bản ghi do chính mình tạo",
       "student-not-enrolled": "Học sinh không thuộc lớp này"

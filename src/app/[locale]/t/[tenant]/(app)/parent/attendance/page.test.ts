@@ -158,9 +158,11 @@ describe("ParentAttendancePage", () => {
     // US-E18.34: attendance is REAL now — the roster read and the attendance
     // read both come off the wire, mapped into domain casing and sorted.
     expect(vm.error).toBeNull();
+    // US-E24.6: `classId` rides along — the parent's leave-request dialog reads
+    // the child's class off the most recent row (there is no other source).
     expect(vm.records).toEqual([
-      { date: "2026-08-03", status: "present" },
-      { date: "2026-08-04", status: "late" },
+      { date: "2026-08-03", classId: "cls-1", status: "present" },
+      { date: "2026-08-04", classId: "cls-1", status: "late" },
     ]);
   });
 });

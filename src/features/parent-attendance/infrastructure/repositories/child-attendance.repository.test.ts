@@ -70,13 +70,18 @@ describe("ChildAttendanceRepository.getChildAttendance", () => {
     ).getChildAttendance("st-1", RANGE);
 
     // `.data` is NOT read — the interceptor already unwrapped it.
+    // US-E24.6: `classId` passes through now (the parent leave dialog needs it).
     expect(records).toEqual([
-      { date: "2026-08-03", status: "present" },
-      { date: "2026-08-04", status: "late" },
-      { date: "2026-08-05", status: "excusedAbsent" },
-      { date: "2026-08-06", status: "absent" },
+      { date: "2026-08-03", classId: "cls-11a2", status: "present" },
+      { date: "2026-08-04", classId: "cls-11a2", status: "late" },
+      { date: "2026-08-05", classId: "cls-11a2", status: "excusedAbsent" },
+      { date: "2026-08-06", classId: "cls-11a2", status: "absent" },
     ]);
-    expect(Object.keys(records[0]).sort()).toEqual(["date", "status"]);
+    expect(Object.keys(records[0]).sort()).toEqual([
+      "classId",
+      "date",
+      "status",
+    ]);
   });
 
   it("maps an empty range (no school days recorded) to an empty list, not a failure", async () => {

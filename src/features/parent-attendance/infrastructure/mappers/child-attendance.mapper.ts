@@ -3,11 +3,13 @@ import type { ChildAttendanceRecord } from "../../domain/entities/child-attendan
 import type { ChildAttendanceResponseDto } from "../dtos/child-attendance-response.dto";
 
 /**
- * `MemberAttendanceResponse` → domain records. `classId` is intentionally
- * dropped (no UI surface needs it yet; same precedent as `attendance.mapper.ts`
- * dropping `studentCode`) and rows are sorted ascending so the list order never
- * depends on the wire order (the BE documents ascending order, but the mapper
- * does not depend on the server honouring it).
+ * `MemberAttendanceResponse` → domain records. Rows are sorted ascending so the
+ * list order never depends on the wire order (the BE documents ascending order,
+ * but the mapper does not depend on the server honouring it).
+ *
+ * `classId` passes through as of US-E24.6 (it was dropped by US-E20.5) — the
+ * parent's leave-request dialog needs the child's class and has no other way to
+ * learn it. A row without one is left ABSENT, never defaulted to `""`.
  *
  * The UPPER_SNAKE wire enum is translated through `mapStatusFromWire`
  * (US-E18.34) rather than passed through — reusing `features/attendance`'s
@@ -17,6 +19,10 @@ export function toChildAttendanceRecords(
   dto: ChildAttendanceResponseDto,
 ): ChildAttendanceRecord[] {
   return dto.records
-    .map((r) => ({ date: r.date, status: mapStatusFromWire(r.status) }))
+    .map((r) => ({
+      date: r.date,
+      status: mapStatusFromWire(r.status),
+      ...(r.classId ? { classId: r.classId } : {}),
+    }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }

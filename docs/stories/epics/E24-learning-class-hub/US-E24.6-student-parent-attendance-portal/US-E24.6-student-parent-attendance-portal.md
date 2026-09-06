@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+in-progress
 
 ## Lane
 
@@ -155,6 +155,240 @@ Design v3: `design_src/edu/attendance-portal.jsx` → `StudentAttendanceScreen`,
 
 Backlog: hợp nhất `leave-request-sheet.tsx` + `LeaveRequestForm.tsx` vào `LeaveRequestDialog` shared
 (decision 0026). Cập nhật ghi chú "draft US-249" trong EPIC-OVERVIEW §Phase 1 → "deployed".
+
+## Plan (fe-planner, 2026-09-06)
+
+Grounded against current code (not just the packet's grep note):
+`src/bootstrap/di/discipline.di.ts` (`makeLeaveRepo()` carve-out pattern, E24.11),
+`src/features/discipline/domain/{entities/leave-request.entity.ts,repositories/i-discipline.repository.ts}`,
+`src/features/discipline/infrastructure/repositories/{discipline.repository.ts,mocks/discipline.mock.repository.ts}`,
+`src/features/parent-attendance/**` (US-E20.5/E18.34 — `IChildAttendanceRepository.getChildAttendance(memberId, range)`
+already calls the exact `GET /core/api/v1/members/{memberId}/attendance` endpoint the student screen needs),
+`src/features/attendance/domain/entities/attendance-status.entity.ts` (existing cross-feature type-import
+precedent), `src/bootstrap/lib/resolve-my-class.ts` (mirror for a new `resolveMyMemberId` companion isn't
+needed — `decodeMemberIdClaim` is already exported from `bootstrap/lib/jwt.ts` and can be called directly),
+`src/components/layout/app-shell/sidebar/nav-config.ts` (icon `ClipboardList` already used for `parent.attendance`),
+`edu-api/services/core/docs/openapi.yaml` (`CreateStudentLeaveRequestRequest` needs
+`studentMemberId,classId,startDate,endDate,reason`; response is `StudentLeaveRequestResponse` with
+`requestId`/`state: SUBMITTED|APPROVED|REJECTED`; list is `GET ?studentMemberId=` cursor-paginated,
+newest-first; attachment upload is `POST /{id}/attachments?studentMemberId=` one file per call).
+
+**Key design decision — do NOT touch the 2 existing legacy leave-request call sites.**
+`makeGetMyLeaveRequestsUseCase()` / `makeSubmitLeaveRequestUseCase()` (both routed through `makeRepo()`,
+force-mock) are already live on `/student/conduct` and `/parent/conduct`
+(`app/[locale]/t/[tenant]/(app)/{student,parent}/conduct/{page,actions}.tsx`) using the legacy
+`SubmitLeaveRequestInput` shape (`studentId`,`type`,`submittedBy` — no `classId`, no real-wire mapping).
+Repointing those factories to a real repo would break those 2 screens (they never collect `classId`).
+So this US does NOT "remap `SubmitLeaveRequestUseCase` to wire" by mutating the legacy method/type —
+it ADDS a parallel, narrower surface (`submitMyLeaveRequest` / `SubmitMyLeaveRequestInput`,
+`getLeaveRequestsForAttendance` — a second factory over the SAME `GetMyLeaveRequestsUseCase` class,
+just constructed with a different repo) used only by the new attendance screens. `/student/conduct` and
+`/parent/conduct` keep their existing factories → `makeRepo()`, unaffected — this satisfies "cập nhật 2
+form cũ chỉ ở mức compile" by not touching them at all rather than adapting their inputs. Consolidating
+the 3 leave-request forms into `LeaveRequestDialog` stays a backlog follow-up (Harness Delta, unchanged).
+
+### Phase 1 — Shared `ProgressBar` (`components/shared/progress-bar/`)
+- New composed primitive, decision `0026` (design-system.md names it "not yet built"; grep confirmed).
+  Props: `{ value: number; max?: number; color?: string; label?: string; className? }`. Pure function
+  `clampPercent(value, max)` co-located (`progress-bar.utils.ts`) so 0/0 renders 0%, not `NaN`/`Infinity`
+  (AC: "StatCard 0/0 hiển thị '—'" — the StatCard handles the em-dash; ProgressBar only needs the clamp).
+- Track `bg-edu-border` (per design-system.md), fill `transition-[width] duration-[600ms]`,
+  `role="progressbar"` `aria-valuenow`/`aria-valuemin=0`/`aria-valuemax=100` + `<span className="sr-only">`
+  percent text (AC: a11y, `.claude/rules/accessibility.md`).
+- **Test first**: `progress-bar.utils.test.ts` (clamp: negative, `>max`, `max=0`) — red before the
+  component; then `.stories.tsx` (0%, 45%, 100%, with/without label) — interaction test asserts
+  `aria-valuenow`.
+- Done when: unit + story green, no raw color.
+
+### Phase 2 — Domain: entities + pure functions (TDD, no framework deps)
+1. **Extend `ChildAttendanceRecord`** (`features/parent-attendance/domain/entities/child-attendance-record.entity.ts`):
+   add optional `classId?: string` (currently dropped by the mapper's doc comment — now a real consumer
+   exists, so re-add rather than fabricate a second read). Update `toChildAttendanceRecords` mapper +
+   its doc comment + `child-attendance.mapper.test.ts` (assert `classId` now passes through). This is
+   additive (optional field), not a breaking rename — safe for the shipped US-E20.5 callers.
+2. **`features/attendance/domain/entities/attendance-summary.entity.ts`** — `AttendanceSummary` (rate,
+   presentCount, excusedCount, unexcusedCount, lateCount, total) + `MonthlyRollup` (`month: "YYYY-MM"`,
+   presentCount, excusedCount+unexcusedCount as `nP`/`nKP`, rate).
+3. **`summarize-attendance.ts`** (`summarizeAttendance(records: ChildAttendanceRecord[], now = new Date())`)
+   — pure, total + per-month rollup. `rate = present/(present+absent+excusedAbsent+late)` per AC — LATE
+   counted in the denominator but excluded from the numerator (BE US-245 semantics, packet is explicit);
+   months with zero records are omitted (not a zero row). **Test first**
+   (`summarize-attendance.test.ts`): empty records → `total=0`, rate → sentinel the presentation layer
+   renders as "—" (return `null` rate, not `NaN`); LATE-only month excluded from numerator but present in
+   denominator; multi-month split.
+4. **`join-absence-reasons.ts`** (`joinAbsenceReasons(records, leaveRequests: LeaveRequestEntity[])`) —
+   type-only cross-feature import of `LeaveRequestEntity` (same precedent as `AttendanceStatus`'s existing
+   cross-feature import into `parent-attendance`). For each `ABSENT`/`EXCUSED_ABSENT` day, find an
+   `APPROVED` leave request whose `[startDate,endDate]` covers it → `reason` on the row; a `SUBMITTED`
+   request with no matching day yet → synthesize a `pending` history row for its whole range (AC:
+   "hàng pending xuất hiện đầu lịch sử"). **Test first**: exact-day match, multi-day range match,
+   `SUBMITTED` prepend, no-match day → `reason: null`.
+5. **`SubmitMyLeaveRequestInput`** (new type in `discipline/domain/entities/leave-request.entity.ts`,
+   sibling to the legacy `SubmitLeaveRequestInput` — NOT a replacement):
+   `{ studentMemberId: string; classId: string; startDate: string; endDate: string; reason: string }`
+   (matches `CreateStudentLeaveRequestRequest` 1:1 — no `type`/`submittedBy`, server derives submitter).
+   New use-case `SubmitMyLeaveRequestUseCase` (mirrors `SubmitLeaveRequestUseCase`'s validation: reason
+   trimmed length ∈ (0,500], `startDate <= endDate`, `startDate >= today` injectable clock). **Test
+   first**: reason empty/over-500 → `reason-invalid`; `endDate < startDate` → `invalid-date`; happy path
+   delegates to `repo.submitMyLeaveRequest`.
+6. **Attachment validator** — co-located pure fn in the dialog's folder (Phase 4), not domain, since it's
+   generic file-shape validation with no BE dependency beyond the 3 constants (ext allow-list, 5MB, count
+   3): `validateLeaveAttachments(files: File[]): { valid: File[]; rejected: { file: File; reason:
+   "ext"|"size"|"count" }[] }`. Planned here so its test is written before Phase 4's UI.
+
+### Phase 3 — Infrastructure (server-only)
+1. **`IDisciplineRepository`**: add 3 methods — `submitMyLeaveRequest(input: SubmitMyLeaveRequestInput):
+   Promise<LeaveRequestEntity>`; `getLeaveRequestsForAttendance(studentMemberId: string):
+   Promise<LeaveRequestEntity[]>` (thin alias, see below — kept as a DISTINCT interface method rather than
+   reusing `getMyLeaveRequests` so the two call paths can never be silently repointed at each other by a
+   future edit); `uploadLeaveAttachment(requestId: string, studentMemberId: string, file: File):
+   Promise<LeaveAttachmentEntity>`.
+2. **`MockDisciplineRepository`**: implement all 3 against the existing `_leave` fixture array (`state`
+   synthesized as `"pending"`; `getLeaveRequestsForAttendance` filters by `studentId`, identical body to
+   existing `getMyLeaveRequests`); attachment mock returns a fixture entity, no real file storage.
+3. **`DisciplineRepository`** (real): implement all 3 against `DISCIPLINE_EP.submitLeaveRequest` /
+   `.leaveRequests` (`GET ?studentMemberId=`) / a new `DISCIPLINE_EP.leaveAttachments(id)` →
+   `/core/api/v1/conduct/student-leave-requests/${id}/attachments`. Map `state: SUBMITTED→"pending"`,
+   `APPROVED→"approved"`, `REJECTED→"rejected"`; `requestId→id`. New DTOs
+   (`student-leave-request-response.dto.ts`, `leave-request-attachment-response.dto.ts`) + mapper. Upload
+   sends `multipart/form-data` (`file` field) with `studentMemberId` as a query param (AxiosInstance,
+   `FormData` body — Node/edge runtime compatible, no browser-only API).
+4. **Error mapping** (`toFailure`/`throwFailure`, extend the discipline failure union):
+   `LEAVE_REQUEST_FORBIDDEN`→`forbidden`; `LEAVE_REQUEST_STUDENT_NOT_ENROLLED`→`not-enrolled`;
+   `LEAVE_REQUEST_INVALID_DATE_RANGE`→`invalid-date`; 422 `fields[]`→per-field; attachment:
+   `LEAVE_REQUEST_ATTACHMENT_INVALID_FILE`→`attachment-invalid`,
+   `LEAVE_REQUEST_ATTACHMENT_LIMIT_EXCEEDED`→`attachment-limit`,
+   `LEAVE_REQUEST_ATTACHMENT_LOCKED`→`attachment-locked`; 503/`retryable:true`→`network-error`.
+   **Test first**: integration test per code → failure type (mirror `child-attendance.repository.test.ts`'s
+   `throwFailure` table style).
+5. **`bootstrap/endpoint/discipline.endpoint.ts`**: add `leaveAttachments: (id: string) => ...`.
+6. **`bootstrap/di/discipline.di.ts`**: add `makeSubmitLeaveRepo()` — `USE_MOCK ? new
+   MockDisciplineRepository() : (await ensureFreshSession(), new DisciplineRepository(await
+   createServerHttpClient()))` (mirrors `makeLeaveRepo()`'s shape exactly, doc comment cross-references
+   it). Export `makeSubmitMyLeaveRequestUseCase()`, `makeGetLeaveRequestsForAttendanceUseCase()`,
+   `makeUploadLeaveAttachmentUseCase()` — all three built on `makeSubmitLeaveRepo()`. Do **not** touch
+   `makeGetMyLeaveRequestsUseCase()` / `makeSubmitLeaveRequestUseCase()` (still `makeRepo()`, still force-mock,
+   still serving `/student/conduct` + `/parent/conduct` unchanged).
+   **Test first** (extend `discipline.di.test.ts`): `USE_MOCK=false` → `makeSubmitLeaveRepo()` yields the
+   real class; `makeRepo()`-backed factories still yield mock regardless (inverse of E18.14's original
+   assertion, scoped to the new factories only).
+7. **Student self memberId**: no new bootstrap helper needed — `decodeMemberIdClaim` (`bootstrap/lib/jwt.ts`,
+   ADR `0074`) called directly where the RSC page assembles its query (mirrors `resolveMyClassId`'s own
+   internal use of the same decoder). Student's `classId` (for `submitMyLeaveRequest` — student screen has
+   no submit button per AC, so this only matters for a future symmetry check) comes from
+   `resolveMyClassId()` (already exists, US-E24.1).
+8. **Parent's child `classId`** (Q3): read `ChildAttendanceRecord.classId` (Phase 2 step 1) off the most
+   recent record in the already-fetched attendance range — no extra round-trip. If the range has zero
+   records (new student, empty history) → disable the leave-request button with an inline tooltip/notice
+   (documented gap, not a blocking question — routes around Q3 without asking).
+9. **Academic-year range default** (Q1): try `CALENDAR_EP.activeYear`/`terms`; catch 403 → fall back to a
+   client-computed 6-month range `[today-6mo, today]` (`daysInclusive` already caps at 366, well inside),
+   show the applied range in the subtitle. No new endpoint.
+
+### Phase 4 — Presentation + i18n + Storybook
+1. **`components/shared/attendance-summary/`** (`APSummary`) — pure props component: 4×`StatCard` (reused,
+   no changes) in a `grid grid-cols-2 md:grid-cols-4` (375px viewport AC: 2×2), "Theo tháng" card
+   (`ProgressBar` + `nP`/`nKP`/rate% per month + the 45-buổi info strip, `text-edu-warning-text`-toned per
+   design-system contrast rule), "Lịch sử vắng mặt" card (row = date + `StatusBadge` — reuse existing
+   status-tone map, `pending` row gets a distinct `warning` tone + "Chờ duyệt" label). Props only,
+   `getMyAttendance`/`joinAbsenceReasons` outputs feed it from the RSC page — no fetching inside.
+   **Test first**: `.stories.tsx` states — full, empty (AC: "Không có buổi vắng nào" + StatCard "—"),
+   with-pending-row.
+2. **`components/shared/leave-request-dialog/`** (`LeaveRequestDialog`) — shadcn `Dialog` (not `Sheet`,
+   D6). Fields: `startDate`/`endDate` (`type="date"`, `endDate.min = startDate`), `reason` (`Textarea`,
+   `required`, `maxLength=500`, `aria-describedby` counter/error), attachments (`<input type="file"
+   multiple accept=".jpg,.jpeg,.png,.pdf">` + client `validateLeaveAttachments` from Phase 2 step 6,
+   rejected files listed as text errors, not color-only), warning strip, footer Huỷ/`"Gửi đơn"`→`"Đang
+   gửi..."` disabled-while-pending. Radix `Dialog` already gives focus-trap/Escape/focus-return — assert
+   it in the interaction test, don't reimplement. **Test first**: `.stories.tsx` interaction — empty reason
+   keeps submit disabled, focus returns to trigger button on close, 4th file / >5MB / wrong ext rejected
+   with visible text.
+3. **`features/attendance/presentation/student-attendance-screen/**`** — new. `student-attendance-screen.tsx`
+   (client, VM props) + `.i-vm.ts` + `student-attendance-container.tsx` (server, assembles VM from
+   `getMyAttendance`+`getLeaveRequestsForAttendance` via `Promise.allSettled`, `decodeMemberIdClaim` guard:
+   no `memberId` claim → forbidden VM state, no wire call — AC's forge-`sub`-only test). New route
+   `app/[locale]/t/[tenant]/(app)/student/attendance/{page.tsx,actions.ts}` (RSC + thin action file even
+   though no mutation lives here, for symmetry/future).
+4. **Extend `features/parent-attendance/presentation/parent-attendance-screen/**`**: add "Xin phép nghỉ
+   học" header button opening `LeaveRequestDialog`; render `APSummary` above the existing table (same
+   `records` the page already fetches — zero extra query); prepend pending row via `joinAbsenceReasons`
+   against `getLeaveRequestsForAttendance(childId)` (new `Promise.allSettled` branch, matches Design
+   Notes). Reuses existing `ChildSwitcher` + URL range state untouched (US-E20.5).
+5. **Server Action** `submitLeaveRequestAction(input, formData: FormData)` —
+   `app/[locale]/t/[tenant]/(app)/parent/attendance/actions.ts` (new). Step 1: `makeSubmitMyLeaveRequestUseCase()`
+   → `POST` (client-supplied `classId` per Phase 3 step 8, never trusted for the STUDENT path — there is
+   none here — but IS the parent's read-derived fallback, documented as such). Step 2: sequential
+   `makeUploadLeaveAttachmentUseCase()` per file, `Promise.allSettled`-style manual loop (sequential, per
+   spec) — partial failure → return `{ ok: true, requestId, failedCount, total }`, presentation toasts
+   "Đơn đã gửi, N/M tệp thất bại" and offers a retry-attachments affordance (re-invokes step 2 only, same
+   `requestId`). **Test first**: action test asserts body has exactly 5 fields (no `type`), attachment
+   calls use `requestId`+`studentMemberId`, 403→forbidden no-retry, partial file failure → correct N/M.
+6. **`nav-config.ts`**: `{ href: "/student/attendance", labelKey: "attendance", icon: ClipboardList }`
+   after `conduct` in the `student` array (icon precedent: `parent.attendance` already uses `ClipboardList`).
+   **⚠️ Shared-file serialization**: worktree A (E24.12) also edits this file (profile-item removal). Do
+   NOT edit yet — this is the engineer's job at merge time: `git fetch origin && git merge --no-ff
+   origin/main` first, re-read the current `nav-config.ts` + `nav-config.test.ts`, then make this one
+   additive change last, right before the final gate run.
+7. **i18n**: reuse `discipline.studentConduct.leaveRequest.*` verbatim (title/startDate/endDate/reason/
+   submit/submitting/success/close — no new keys for the dialog's existing fields). Add
+   `studentAttendance.*` (title, subtitle, rate/present/excused/unexcused labels, monthly card, history
+   card, empty, forbidden) + extend `parentAttendance.*` (button label, pending-row label) +
+   `attachments.*` (label, notice, count/size/ext error text) in both `vi.json`/`en.json` — **not edited by
+   this plan** (engineer's job); flagged here so the engineer adds both files in the same commit.
+
+### Phase 5 — Design-spec + Harness Delta cleanup (docs only, low risk)
+- `docs/product/design-spec.jsonc#student-attendance`: record the "buổi"/"ngày" vocabulary deviation
+  (already directed by the packet) as an inline note on the entry.
+- `docs/screens.md`: flip Student Attendance row from ⬜ planned to the in-progress/implemented marker
+  used elsewhere once Phase 4 lands.
+- EPIC-OVERVIEW §Phase 1: fix the stale "US-249 draft" note → "deployed" (packet already flags this;
+  purely a doc correction, zero code risk).
+
+## Component + state sketch
+
+```
+student-attendance-screen (RSC container → client VM)
+ └─ APSummary (shared)                     — props: summary, monthlyRollups, historyRows, empty?, forbidden?
+     ├─ StatCard ×4 (existing, unchanged)
+     ├─ ProgressBar (new, Phase 1)          — per-month card
+     └─ history list (row = date + StatusBadge, existing tone map)
+parent-attendance-screen (extends existing)
+ ├─ header button → LeaveRequestDialog (new, Phase 4.2)
+ ├─ APSummary (shared, same data as existing table)
+ └─ existing table (unchanged) + prepended pending row
+```
+
+State classification: server (attendance records, leave requests — RSC `fetch`/use-case, no client cache
+needed since it's a read-heavy low-frequency screen, no TanStack Query required — matches
+`parent-attendance`'s existing RSC-only pattern, no `fe-state-engineer` needed); URL (parent's child id +
+range — already exists, untouched); local-form (dialog's date/reason/files — plain `useState` inside
+`LeaveRequestDialog`, no Zustand). No `fe-component-architect` hand-off needed — component shapes are
+fully specified above and reuse `StatCard`/`Dialog`/`Textarea` primitives as-is.
+
+## Risks, dependencies, open questions
+
+- **[OPEN QUESTION Q1 default]** Resolved inline (Phase 3 step 9): try academic-year read, 403 → 6-month
+  fallback range, shown in subtitle. No blocking.
+- **[OPEN QUESTION Q2 default]** Resolved inline (Phase 4 step 6): add the sidebar item; precedent =
+  2026-08-02 dead-link audit (an orphaned route is worse than an unlisted-but-linked one).
+- **[OPEN QUESTION Q3 default]** Resolved inline (Phase 3 step 8): `classId` from the most recent
+  `ChildAttendanceRecord`; empty-history edge case disables the button with a visible reason, not a silent
+  failure.
+- **BE contract risk**: US-249 (attachments) EPIC-OVERVIEW note says "draft" but `openapi.yaml` (not
+  `.draft.yaml`) already has it — Phase 3 step 3 must `curl` through Kong once the stack is up before
+  wiring the real path; if 404, fall back to ADR `0076` mock-shaped-on-draft posture and flag to `fe-lead`
+  for a story-status footnote (not a blocker, since `USE_MOCK` gate covers local dev either way).
+- **No ADR needed**: no new design token (`ProgressBar`/`APSummary`/`LeaveRequestDialog` all compose
+  existing tokens); no new architecture pattern (mirrors `makeLeaveRepo()` exactly).
+- **a11y risk**: file-input error list must be plain text (not color-only) — explicit AC, covered by
+  Phase 4.2's story test.
+- **Security (NFR)**: student path never accepts a client-supplied `classId` (uses `resolveMyClassId()`
+  server-side only); `submitMyLeaveRequest`'s `studentMemberId` for the STUDENT caller must be the decoded
+  claim, never a form field — flag to `fe-tech-lead-reviewer` as a specific check during Phase 4.5 review
+  (same shape as decision `0063`'s repository-boundary rule, though this is a self-submit not a
+  role-scoped-mutation, so no `authCtx` object is needed — just "never trust the client for whose
+  `studentMemberId` this is" on the STUDENT path; the PARENT path legitimately supplies the linked child's
+  id, checked server-side by BE's `ParentStudentLinkReader`).
 
 ## Evidence
 

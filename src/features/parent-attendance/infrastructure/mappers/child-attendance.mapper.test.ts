@@ -19,14 +19,41 @@ const DTO: ChildAttendanceResponseDto = {
 };
 
 describe("toChildAttendanceRecords", () => {
-  it("keeps date + status and DROPS classId (no UI surface consumes it)", () => {
+  /**
+   * US-E24.6 reversal: `classId` is no longer dropped. A real consumer now
+   * exists — the parent's leave-request dialog must name the child's class in
+   * `POST conduct/student-leave-requests` and there is NO endpoint a PARENT can
+   * call to discover it (ask #15/#22). Passing through a field the wire already
+   * carries beats fabricating a second read (packet Q3).
+   */
+  it("keeps date + status + classId", () => {
     const records = toChildAttendanceRecords(DTO);
 
     expect(records).toEqual([
-      { date: "2026-08-03", status: "present" },
-      { date: "2026-08-04", status: "excusedAbsent" },
+      { date: "2026-08-03", classId: "cls-1", status: "present" },
+      { date: "2026-08-04", classId: "cls-1", status: "excusedAbsent" },
     ]);
     // key-set assertion — toEqual alone would not catch an extra leaked field
+    expect(Object.keys(records[0]).sort()).toEqual([
+      "classId",
+      "date",
+      "status",
+    ]);
+  });
+
+  /** A wire row with no `classId` must not invent one (optional field). */
+  it("omits classId when the wire row carries none", () => {
+    const records = toChildAttendanceRecords({
+      memberId: "c1",
+      records: [
+        {
+          date: "2026-08-03",
+          status: "PRESENT",
+        } as ChildAttendanceResponseDto["records"][number],
+      ],
+    });
+
+    expect(records[0].classId).toBeUndefined();
     expect(Object.keys(records[0]).sort()).toEqual(["date", "status"]);
   });
 

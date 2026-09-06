@@ -24,6 +24,9 @@ function makeRepo(
     getChildViolations: vi.fn(),
     getChildLeaveRequests: vi.fn(),
     submitLeaveForChild: vi.fn(),
+    submitMyLeaveRequest: vi.fn(),
+    getLeaveRequestsForAttendance: vi.fn(),
+    uploadLeaveAttachment: vi.fn(),
     ...over,
   };
 }

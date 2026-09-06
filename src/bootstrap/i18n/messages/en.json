@@ -1458,6 +1458,9 @@
     },
     "errors": {
       "already-processed": "This request has already been processed",
+      "attachment-invalid": "Invalid attachment. Only JPG, PNG or PDF under 5 MB are accepted.",
+      "attachment-limit": "A request may have at most 3 attachments.",
+      "attachment-locked": "This request has been processed, so no more files can be attached.",
       "conflict": "Conflicting operation, please try again",
       "forbidden": "You do not have permission to view this information",
       "invalid-child": "Invalid student",
@@ -1471,6 +1474,7 @@
       "missing-student": "Please enter the student name",
       "network-error": "Connection error, please try again",
       "not-found": "Student information not found",
+      "reason-too-long": "Reason must not exceed 500 characters",
       "reason-too-short": "Reason must be at least 10 characters",
       "same-actor": "You cannot approve a record you created yourself",
       "student-not-enrolled": "This student is not enrolled in this class"
