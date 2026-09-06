@@ -30,3 +30,5 @@
 - [Radix menu Tab trap](radix-menu-tab-trap.md) — non-menu-item controls inside a DropdownMenu are keyboard-unreachable; pointer-only stories hide it
 - [warning-foreground on a tint = 1.1:1 in dark](warning-foreground-on-tint-dark.md) — repo-wide defect class, ~50 sites; light-mode swap is zero-diff
 - [Two-step mutation review bar](review-checks-multistep-mutation.md) — partial-upload retry must re-send only failed files; role branch must be an allowlist
+- [notification relativeTime hardcodes vi](notification-relativetime-hardcoded-locale.md) — EN users see Vietnamese timestamps; moved-not-introduced, flag as follow-up
+- [Storybook module-level fixtures](review-checks-storybook-module-fixtures.md) — accumulating arrays go false-green on re-run; stateful stores fail loud
