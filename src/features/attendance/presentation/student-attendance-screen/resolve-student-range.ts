@@ -1,3 +1,7 @@
+import type {
+  TermWindow,
+  YearWindow,
+} from "@/features/attendance/domain/entities/academic-window.entity";
 import type { AttendanceDateRange } from "@/features/parent-attendance/domain/entities/attendance-date-range.entity";
 
 /**
@@ -14,15 +18,10 @@ import type { AttendanceDateRange } from "@/features/parent-attendance/domain/en
  * `features/admin/calendar`: this module has no business depending on the admin
  * calendar feature, and the two fields it reads are all it needs.
  */
-export interface TermWindow {
-  startDate: string;
-  endDate: string;
-}
-
-export interface YearWindow {
-  isActive: boolean;
-  terms: readonly TermWindow[];
-}
+export type {
+  TermWindow,
+  YearWindow,
+} from "@/features/attendance/domain/entities/academic-window.entity";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
