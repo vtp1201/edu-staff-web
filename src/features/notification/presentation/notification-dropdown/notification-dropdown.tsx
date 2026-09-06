@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Link } from "@/bootstrap/i18n/routing";
 import { tenantUrl } from "@/bootstrap/tenant";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   NotificationFilter,
   NotificationPage,
@@ -102,8 +102,8 @@ export function NotificationDropdown({
   // drop by one IMMEDIATELY (the centre can get away with invalidate-only).
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const result = await onMarkRead?.(id);
-      if (result?.errorKey) throw new Error(result.errorKey);
+      const result = await onMarkRead(id);
+      if (result.errorKey) throw new Error(result.errorKey);
     },
     onMutate: async (id: string) => {
       await queryClient.cancelQueries({ queryKey: previewKey });
@@ -196,7 +196,9 @@ export function NotificationDropdown({
             type="button"
             onClick={() => markAllReadMutation.mutate()}
             disabled={markAllReadMutation.isPending}
-            className="rounded-sm font-bold text-primary text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            // `min-h-11` + the negative-margin padding grow the HIT AREA to the
+            // 44px minimum (accessibility.md) without moving the label a pixel.
+            className="-mx-2 min-h-11 rounded-sm px-2 font-bold text-primary text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           >
             {t("markAllRead")}
           </button>
@@ -237,50 +239,62 @@ export function NotificationDropdown({
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {/* List — MUST be a TabsContent: every TabsTrigger unconditionally
+            carries `aria-controls`, so a plain <div> here leaves that pointing
+            at nothing (WCAG 4.1.2). One `TabsContent value={filter}` is enough
+            because `filter` IS the active value — Radix then owns the id,
+            `role="tabpanel"` and `aria-labelledby` wiring. */}
+        <TabsContent value={filter} className="max-h-[340px] overflow-y-auto">
+          {isLoading && <PreviewSkeleton />}
+
+          {!isLoading && isError && (
+            <p
+              className="px-4 py-7 text-center text-edu-error-text text-xs"
+              role="alert"
+            >
+              {t("errors.network-error")}
+            </p>
+          )}
+
+          {!isLoading && !isError && items.length === 0 && (
+            <p
+              className="px-4 py-7 text-center text-muted-foreground text-xs"
+              role="status"
+            >
+              {emptyTitle}
+            </p>
+          )}
+
+          {!isLoading && !isError && items.length > 0 && (
+            // `role="log" aria-live="polite"` (same as the notifications
+            // centre): an optimistic mark-read / mark-all rewrites these rows in
+            // place, and a silent rewrite is invisible to a screen-reader user
+            // (WCAG 4.1.3). `role="log"` takes an accessible name, so the label
+            // here is supported ARIA — unlike on a generic <div>.
+            <div
+              role="log"
+              aria-live="polite"
+              aria-label={t("listAriaLabel")}
+              className="divide-y divide-border"
+            >
+              {items.map((item) => (
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  variant="compact"
+                  // Mark-read keeps the panel OPEN so the user sees the row lose
+                  // its bold + dot and the badge drop (AC-3). No deep-link
+                  // navigation here: the centre's `../grades` targets are
+                  // relative to the /notifications route and would resolve wrong
+                  // from any other page in the shell.
+                  onMarkRead={(id) => markReadMutation.mutate(id)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
-
-      {/* List */}
-      <div className="max-h-[340px] overflow-y-auto">
-        {isLoading && <PreviewSkeleton />}
-
-        {!isLoading && isError && (
-          <p
-            className="px-4 py-7 text-center text-edu-error-text text-xs"
-            role="alert"
-          >
-            {t("errors.network-error")}
-          </p>
-        )}
-
-        {!isLoading && !isError && items.length === 0 && (
-          <p
-            className="px-4 py-7 text-center text-muted-foreground text-xs"
-            role="status"
-          >
-            {emptyTitle}
-          </p>
-        )}
-
-        {!isLoading && !isError && items.length > 0 && (
-          // The panel's own dialog aria-label ("Thông báo") already names this
-          // region; a second label on a generic div is unsupported ARIA.
-          <div className="divide-y divide-border">
-            {items.map((item) => (
-              <NotificationRow
-                key={item.id}
-                item={item}
-                variant="compact"
-                // Mark-read keeps the panel OPEN so the user sees the row lose
-                // its bold + dot and the badge drop (AC-3). No deep-link
-                // navigation here: the centre's `../grades` targets are
-                // relative to the /notifications route and would resolve wrong
-                // from any other page in the shell.
-                onMarkRead={(id) => markReadMutation.mutate(id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Footer */}
       <Link
