@@ -1,22 +1,29 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { getRouter } from "@storybook/nextjs-vite/navigation.mock";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import {
   expect,
   userEvent,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 import type {
   SwitchTenantResult,
   TenantCardViewModel,
 } from "@/components/shared/tenant-card";
+import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { Header } from "./header";
 
 const meta: Meta<typeof Header> = {
   title: "Layout/Header",
   component: Header,
+  // The avatar menu's language switcher owns `useRouter().replace()`
+  // (next-intl navigation → next/navigation) → mount the App Router mock.
+  parameters: { nextjs: { appDirectory: true } },
   decorators: [
     (Story) => {
       document.body.style.pointerEvents = "";
@@ -224,5 +231,225 @@ export const FetchFailZeroNoise: Story = {
     await expect(
       body.queryByRole("menuitem", { name: /Đổi trường/ }),
     ).not.toBeInTheDocument();
+  },
+};
+
+/**
+ * US-E24.12 — the standalone theme icon is GONE from the header bar; the whole
+ * theme/language surface lives in the avatar menu now. Guard against it being
+ * re-added next to the bell.
+ */
+export const NoStandaloneThemeIcon: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    ).toBeInTheDocument();
+    // The header bar exposes exactly: mobile nav toggle, bell, avatar.
+    await expect(
+      canvas.queryByRole("button", { name: /theme|giao diện|Chế độ tối/i }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Menu order (design v3): tenant → Đổi trường → Hồ sơ → Chế độ tối → Ngôn ngữ → Đăng xuất. */
+export const MenuOpen: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    memberships: twoTenants,
+    currentTenantId: "tenant-acme",
+    onSwitchTenant: noopSwitch,
+  },
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const menu = await body.findByRole("menu");
+    const order = Array.from(
+      menu.querySelectorAll(
+        '[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]',
+      ),
+    ).map((el) => el.textContent);
+    await expect(order).toEqual([
+      "Đổi trường",
+      "Hồ sơ",
+      "Chế độ tối",
+      "Tiếng Việt",
+      "English",
+      "Đăng xuất",
+    ]);
+    // The language options are menu items themselves (keyboard-reachable),
+    // under the "Ngôn ngữ" label row.
+    await expect(within(menu).getByText("Ngôn ngữ")).toBeInTheDocument();
+  },
+};
+
+/**
+ * AC: toggling "Chế độ tối" flips `<html class="dark">` and the menu STAYS
+ * open (the user sees the theme change in place). Needs the real next-themes
+ * provider — without it `setTheme` is a no-op.
+ */
+export const DarkModeToggle: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  decorators: [
+    (Story) => (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        storageKey="sb-e24-12-theme"
+      >
+        <Story />
+      </ThemeProvider>
+    ),
+  ],
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const row = await body.findByRole("menuitemcheckbox", {
+      name: /Chế độ tối/,
+    });
+    await expect(row).toHaveAttribute("aria-checked", "false");
+
+    await userEvent.click(row);
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(true),
+    );
+    // menu still open (onSelect preventDefault) — same node, now checked
+    await expect(body.getByRole("menu")).toBeInTheDocument();
+    await expect(
+      body.getByRole("menuitemcheckbox", { name: /Chế độ tối/ }),
+    ).toHaveAttribute("aria-checked", "true");
+
+    // restore so the class does not leak into the next story
+    await userEvent.click(
+      body.getByRole("menuitemcheckbox", { name: /Chế độ tối/ }),
+    );
+    await waitFor(() =>
+      expect(document.documentElement.classList.contains("dark")).toBe(false),
+    );
+  },
+};
+
+/**
+ * AC: the current locale is the checked option; picking the other one replaces
+ * the SAME path with the new locale prefix (no BE call, no client state).
+ *
+ * The options are `role="menuitemradio"` rows of a Radix
+ * `DropdownMenuRadioGroup` — see `LanguageSwitchKeyboard` for why.
+ */
+export const LanguageSwitch: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const vi = await body.findByRole("menuitemradio", { name: "Tiếng Việt" });
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+    await expect(vi).toHaveAttribute("aria-checked", "true");
+    await expect(en).toHaveAttribute("aria-checked", "false");
+
+    await userEvent.click(en);
+    await waitFor(() => expect(getRouter().replace).toHaveBeenCalled());
+    // Story pathname is "/" (App Router mock) → same path, new locale prefix.
+    await expect(getRouter().replace).toHaveBeenCalledWith("/en");
+  },
+};
+
+/**
+ * WCAG 2.1.1 regression guard (US-E24.12 review): the language options used to
+ * be native radios inside a plain `<div role="radiogroup">`, which Radix's menu
+ * content makes keyboard-UNREACHABLE (it blocks Tab and roving-focuses only its
+ * own item collection). As `menuitemradio` rows they join that collection, so
+ * arrow keys reach them and Enter selects.
+ */
+export const LanguageSwitchKeyboard: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    const trigger = await canvas.findByRole("button", {
+      name: "Menu người dùng",
+    });
+    trigger.focus();
+    // Keyboard-only: open the menu, then walk the roving-focus collection.
+    await userEvent.keyboard("{Enter}");
+    const body = within(document.body);
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+
+    for (let i = 0; i < 12 && document.activeElement !== en; i++) {
+      await userEvent.keyboard("{ArrowDown}");
+    }
+    await expect(en).toHaveFocus();
+
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(getRouter().replace).toHaveBeenCalled());
+    await expect(getRouter().replace).toHaveBeenCalledWith("/en");
+  },
+};
+
+/**
+ * Real 375px touch-target proof (QA gap): the existing mobile rows only
+ * assert `toHaveClass("max-[820px]:min-h-11")` — a class-name check, not a
+ * measurement. `@storybook/addon-viewport` isn't installed (repo-wide gap,
+ * see `detail-panel-header.stories.tsx`), so this resizes the REAL Playwright
+ * viewport via `vitest/browser`'s `page.viewport()` before measuring
+ * `getBoundingClientRect().height` on the new dark-mode row and both
+ * language rows (US-E24.12 AC "menu item ≥44px touch trên mobile").
+ */
+export const MobileTouchTargets: Story = {
+  args: { role: "teacher", userName: "Nguyen Van A", tenantId: "tenant-acme" },
+  play: async ({ canvas }) => {
+    const { page } = await import("vitest/browser");
+    await page.viewport(375, 812);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    const darkRow = await body.findByRole("menuitemcheckbox", {
+      name: /Chế độ tối/,
+    });
+    const vi = await body.findByRole("menuitemradio", { name: "Tiếng Việt" });
+    const en = await body.findByRole("menuitemradio", { name: "English" });
+    // Radix's open-menu entrance runs a brief scale animation (data-state=open
+    // → animate-in zoom-in-95) — measuring mid-transition undershoots the real
+    // 44px floor by a couple of px. Wait for it to settle before measuring.
+    for (const row of [darkRow, vi, en]) {
+      await waitFor(() =>
+        expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(44),
+      );
+    }
+  },
+};
+
+/** Dark theme rendering of the header chrome (US-E24.12 dark token pass). */
+export const Dark: Story = {
+  args: {
+    role: "teacher",
+    userName: "Nguyen Van A",
+    tenantId: "tenant-acme",
+    memberships: twoTenants,
+    currentTenantId: "tenant-acme",
+    onSwitchTenant: noopSwitch,
+  },
+  globals: { theme: "dark" },
+  decorators: [withDarkTheme],
+  play: async ({ canvas }) => {
+    // The dark token pass is only real if the .dark block actually wins —
+    // assert the handoff value (T_DARK card) rather than trusting the class.
+    await expect(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--edu-card")
+        .trim(),
+    ).toBe("#1e2630");
+    await userEvent.click(
+      await canvas.findByRole("button", { name: "Menu người dùng" }),
+    );
+    const body = within(document.body);
+    await expect(await body.findByRole("menu")).toBeInTheDocument();
   },
 };

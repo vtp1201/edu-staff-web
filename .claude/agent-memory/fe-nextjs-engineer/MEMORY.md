@@ -142,3 +142,6 @@
 - [aria-disabled edge control](gotcha-aria-disabled-edge-control.md) — E24.10 review: a control that disables itself while focused must be aria-disabled + no-op guard (native disabled dumps focus to body); test idioms
 - [Third mode on a shared component](pattern-third-mode-on-shared-component.md) — US-E24.10: optional-prop defaults as the regression guard; staff rows are NOT links (no teacher player route); one optimistic mutation only
 - [class-subjects wire shape](gotcha-class-subjects-wire-shape.md) — core `/classes/{id}/subjects` is cursor-paginated with the name under `lockedFields`; a flat DTO type-checks and renders undefined
+
+- [Storybook dark globals lie](gotcha-storybook-dark-globals-and-visual-audit.md) — `globals:{theme:"dark"}` isn't applied by the vitest runner (dark story renders light, still passes); force `.dark` + `page.screenshot` audit trick
+- [Theme-fixed foreground token](gotcha-theme-fixed-foreground-token.md) — `--edu-warning-foreground` must stay navy (solid yellow) ⇒ 1.10:1 on a dark tinted chip; absent `--edu-*-light` dark values leak the LIGHT tint

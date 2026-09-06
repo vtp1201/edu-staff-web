@@ -27,8 +27,12 @@ describe("StatCard default-variant icon tone — WCAG 1.4.11 (A11Y-002)", () => 
   // colouring it with the raw hue is self-on-self: #FFAE1F on #FFF3DD = 1.69:1,
   // #13DEB9 on #DCFAF4 = 1.56:1 — both below the 3:1 floor for graphical
   // objects. Existing darker sibling tokens fix it without a new token.
-  it("warning icon uses text-edu-warning-foreground (#2A3547 = 11.25:1 on the tint)", () => {
-    expect(STAT_TONE.warning.icon).toBe("text-edu-warning-foreground");
+  it("warning icon uses the theme-aware text-edu-text-primary, not the fixed warning-foreground", () => {
+    // Same navy (#2A3547) in light mode (11.25:1 on the tint) but, unlike
+    // --edu-warning-foreground, it has a dark value — the fixed token
+    // composited to 1.10:1 on a dark card (US-E24.12, WCAG 1.4.11).
+    expect(STAT_TONE.warning.icon).toBe("text-edu-text-primary");
+    expect(STAT_TONE.warning.icon).not.toBe("text-edu-warning-foreground");
   });
 
   it("success icon uses text-edu-success-text (#007A6E = 4.75:1 on the tint)", () => {

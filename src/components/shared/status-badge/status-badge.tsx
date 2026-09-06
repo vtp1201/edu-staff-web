@@ -15,8 +15,8 @@ export type StatusTone =
 
 /** Tone → bg (color/15) + text — WCAG-aware per design-system.md §Badge + decision 0027.
  *  success/error text use the AA-compliant dark variants (text-edu-success-text /
- *  text-edu-error-text); warning text uses text-edu-warning-foreground (dark),
- *  never white (a11y rule).
+ *  text-edu-error-text); the vibrant hues (warning/info/purple/teal) use the
+ *  theme-aware text-edu-text-primary, never white on yellow (a11y rule).
  */
 const TONE_CLASS: Record<StatusTone, string> = {
   // primary text on its own tinted bg = 3.65:1 (fails AA, A11Y-001) →
@@ -24,8 +24,12 @@ const TONE_CLASS: Record<StatusTone, string> = {
   primary: "bg-primary/15 text-edu-text-primary",
   // success/error use AA-compliant dark text tokens (decision 0027): 5.4/5.1:1 on tinted bg.
   success: "bg-edu-success/15 text-edu-success-text",
-  // warning-foreground (#2A3547) = ~11:1 on warning tint — a11y rule (never white).
-  warning: "bg-edu-warning/15 text-edu-warning-foreground",
+  // warning: text-edu-text-primary, NOT text-edu-warning-foreground. The two
+  // are the same navy (#2A3547) in light mode (~11:1 on the tint), but
+  // warning-foreground is the fixed tone for text on SOLID yellow and has no
+  // dark value — on the tinted chip over a dark card it measured 1.10:1
+  // (US-E24.12). text-edu-text-primary follows the theme, like info/purple/teal.
+  warning: "bg-edu-warning/15 text-edu-text-primary",
   error: "bg-edu-error/15 text-edu-error-text",
   // Darker error hue for a heavier/terminal state (e.g. revoked invitation,
   // US-E21.1). --edu-error-dark (#b91c1c) on --edu-error-dark-light (#fee2e2)

@@ -3685,6 +3685,11 @@
   },
   "shell": {
     "header": {
+      "darkMode": "Dark mode",
+      "help": "Help",
+      "language": "Language",
+      "languageEn": "English",
+      "languageVi": "Tiếng Việt",
       "logout": "Log out",
       "notifications": "Notifications",
       "profile": "Profile",
@@ -3713,7 +3718,6 @@
       "messages": "Messages",
       "moderation": "Moderation",
       "overview": "Overview",
-      "profile": "Profile",
       "reports": "Reports",
       "schedule": "Schedule",
       "schoolSetup": "School Setup",
