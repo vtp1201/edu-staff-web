@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Info, Printer, Unlock } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { ChildSwitcher } from "@/components/shared/child-switcher";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,13 @@ export interface AcademicRecordScreenProps {
   vm: AcademicRecordScreenVM;
   onYearChange?: (yearId: string) => void;
   onRetry?: () => void;
+  /**
+   * PARENT-only, supplied by the container. A prop rather than a VM field, like
+   * its `onYearChange`/`onRetry` siblings: the VM is server-built data, the
+   * callbacks are router wiring the stories deliberately omit.
+   */
+  onSwitchChild?: (childId: string) => void;
+  isSwitchingChild?: boolean;
 }
 
 const ROLE_TONE: Record<
@@ -144,6 +152,8 @@ export function AcademicRecordScreen({
   vm,
   onYearChange,
   onRetry,
+  onSwitchChild,
+  isSwitchingChild = false,
 }: AcademicRecordScreenProps) {
   const t = useTranslations("academicRecord");
   const { record, error, selectedYearId } = vm;
@@ -157,12 +167,31 @@ export function AcademicRecordScreen({
     </div>
   );
 
+  /**
+   * Rendered in ALL THREE branches below (US-E24.16). The `forbidden` a foreign
+   * `studentId` earns is precisely the state where a parent most needs a way
+   * out — hiding the selector there would strand them on a dead route with only
+   * the browser back button. `undefined` for every non-parent role, and for a
+   * parent with one child or a failed roster read, so those renders are
+   * unchanged.
+   */
+  const switcher = vm.childSwitcher ? (
+    <ChildSwitcher
+      childList={vm.childSwitcher.childList}
+      activeChildId={vm.childSwitcher.activeChildId}
+      onSwitch={(childId) => onSwitchChild?.(childId)}
+      isLoading={isSwitchingChild}
+    />
+  ) : null;
+
   if (error) {
     return (
       <div className="space-y-6">
         {title}
+        {switcher}
         <div
           role="alert"
+          aria-busy={isSwitchingChild || undefined}
           className="flex flex-col items-center gap-3 rounded-xl border border-edu-error/30 bg-edu-error/10 p-8 text-center"
         >
           <AlertTriangle aria-hidden className="size-6 text-edu-error-text" />
@@ -189,7 +218,11 @@ export function AcademicRecordScreen({
     return (
       <div className="space-y-6">
         {title}
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-border border-dashed bg-card p-10 text-center">
+        {switcher}
+        <div
+          aria-busy={isSwitchingChild || undefined}
+          className="flex flex-col items-center gap-2 rounded-xl border border-border border-dashed bg-card p-10 text-center"
+        >
           <p className="font-bold text-foreground">{t(`${emptyKey}.title`)}</p>
           <p className="text-sm text-muted-foreground">
             {t(`${emptyKey}.description`)}
@@ -219,6 +252,8 @@ export function AcademicRecordScreen({
         </Button>
       </div>
 
+      {switcher}
+
       <RecordHeader vm={vm} />
 
       <YearTimeline
@@ -246,6 +281,11 @@ export function AcademicRecordScreen({
         id={`tabpanel-${activeYear.yearId}`}
         role="tabpanel"
         aria-labelledby={`tab-${activeYear.yearId}`}
+        // The record region proper: while a child switch is in flight these
+        // rows still belong to the PREVIOUS child, so they are announced as
+        // stale. Deliberately not on an ancestor of the tablist — the selector
+        // must stay live so the parent can change their mind mid-navigation.
+        aria-busy={isSwitchingChild || undefined}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: ARIA APG tabpanel pattern — the panel is intentionally focusable so Tab from the tablist lands on its content (WAI-ARIA tabs design pattern).
         tabIndex={0}
         className="space-y-8"
