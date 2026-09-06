@@ -3822,8 +3822,118 @@
         "class/date/period selectors",
         "search + filter",
         "summary panel",
-        "history tab"
-      ]
+        "history tab",
+        "summary tab (US-E24.14)"
+      ],
+      // ── Tab 3 "Tổng hợp chuyên cần" — US-E24.14 ───────────────────────────
+      // Source: design_src/edu/classops.jsx — AttendanceSummaryTab (454–630).
+      // Counts are per DAY (buổi), NOT per period (tiết): core records
+      // attendance per class-day (ADR 0058). Copy says "buổi" everywhere.
+      "summaryTab": {
+        "tabKey": "attendance.tabs.summary",
+        "urlState": {
+          "range": "?range=month|term|year (default month)",
+          "month": "?month=YYYY-MM (range=month only)",
+          "term": "?term=<termId> (range=term only)",
+          "note": "?class= stays owned by the shared AttendanceFilters — the class chips of the mockup are NOT redrawn"
+        },
+        "controls": {
+          "card": { "padding": "16px (20px >=sm)" },
+          "segmented": {
+            "component": "ToggleGroup type=single variant=outline",
+            "items": ["Tháng", "Học kỳ", "Cả năm"],
+            "minTouchTarget": 44,
+            "degrade": "Học kỳ + Cả năm are OMITTED (not disabled) when the academic calendar is unreadable; a neutral notice explains why"
+          },
+          "secondary": "month input (range=month) | term Select (range=term) | none (range=year)",
+          "exportExcel": "DEFERRED — not rendered (no BE export endpoint)"
+        },
+        "statCards": {
+          "count": 4,
+          "grid": "2 cols (<lg) / 4 cols (>=lg), gap 16, denseOnMobile",
+          "items": [
+            {
+              "label": "Chuyên cần trung bình lớp",
+              "icon": "percent",
+              "tone": ">=95 success / 90–95 warning / <90 error / null muted",
+              "value": "mean of per-student rates over students with recorded>0; em-dash when none"
+            },
+            {
+              "label": "Tổng buổi vắng có phép",
+              "icon": "fileText",
+              "tone": "warning"
+            },
+            {
+              "label": "Tổng buổi vắng không phép",
+              "icon": "alertTriangle",
+              "tone": "error"
+            },
+            {
+              "label": "HS dưới ngưỡng 90%",
+              "icon": "users",
+              "tone": ">0 error / 0 success"
+            }
+          ]
+        },
+        "layout": {
+          "grid": "minmax(0,1fr) 280px (>=lg); aside stacks below under lg",
+          "gap": 20
+        },
+        "table": {
+          "minWidth": 660,
+          "overflowX": "auto",
+          "caption": "sr-only — title + applied range (a11y)",
+          "columns": [
+            "STT",
+            "Học sinh",
+            "Có mặt",
+            "Vắng phép",
+            "Vắng KP",
+            "Tỉ lệ",
+            "Đánh giá"
+          ],
+          "headerScope": "col",
+          "studentCell": "Avatar initials (size 28) + name 13px/600",
+          "presentCell": "present/recorded",
+          "zeroCount": "em-dash (aria-hidden) + sr-only \"0\" — zero is DATA, not missing data",
+          "rateCell": "ProgressBar (band colour) + %, tabular-nums; em-dash + sr-only reason when recorded=0",
+          "chip": "StatusBadge — Đạt success / Cảnh báo warning / Nguy cơ error; NO chip when band=null",
+          "sort": "default STT (roster order); the Tỉ lệ header is a button toggling ascending-by-rate (client-side, resets on range change). Students with no rate always sort LAST"
+        },
+        "aside": {
+          "width": 280,
+          "alerts": {
+            "title": "Cảnh báo chuyên cần",
+            "order": "risk first, then watch",
+            "empty": "Không có học sinh nào dưới ngưỡng.",
+            "notifyParentButton": "NOT rendered — no BE notify endpoint (ask BE)"
+          },
+          "thresholds": {
+            "title": "Ngưỡng đánh giá",
+            "rows": [
+              { "label": "Đạt", "value": "≥ 95%", "dot": "var(--edu-success)" },
+              {
+                "label": "Cảnh báo",
+                "value": "90–95%",
+                "dot": "var(--edu-warning)"
+              },
+              {
+                "label": "Nguy cơ",
+                "value": "< 90%",
+                "dot": "var(--edu-error)"
+              }
+            ]
+          }
+        },
+        "states": {
+          "loading": "StatCardSkeletonGrid(4, announce=false) + ListSkeleton(inline, 6 rows) — exactly ONE live region",
+          "empty": "Chưa có điểm danh trong khoảng này",
+          "error": "ListError inline-card + retry; forbidden → NO retry control",
+          "noTerms": "month-only segmented + notice",
+          "rangeTooLarge": ">366 days is refused client-side (no wire call) + notice"
+        },
+        "api": "GET /core/api/v1/classes/{classId}/attendance?startDate&endDate (range mode) + the class roster; aggregated per student client-side (LATE counts in recorded, never in the rate numerator)"
+      }
     },
 
     // ═════════════════════════════════════════════════════════════════════════
