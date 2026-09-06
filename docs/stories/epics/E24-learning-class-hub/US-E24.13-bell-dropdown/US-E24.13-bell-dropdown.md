@@ -394,4 +394,33 @@ Sửa comment lỗi thời trong `bootstrap/endpoint/notification.endpoint.ts` (
 
 ## Evidence
 
-(chưa có — planned)
+Implementation complete on `feat/us-e24.13-bell-dropdown` (5 commits, not merged).
+
+| Proof | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (1 pre-existing warning + 1 info in `messaging/message-context-menu.tsx`, untouched) |
+| `bun vitest run` | 580 files / 4823 tests passed |
+| `bun vitest --config vitest.storybook.mts run` | 167 files / 1374 tests passed |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | compiled successfully |
+
+New proof added by this story:
+
+- Unit — `notification.repository.test.ts` (`type=system` alone, never with
+  `read`), `notification-keys.test.ts` (preview key scoping), `unread-count-cache.test.ts`
+  (optimistic reducer keeps the `{count}` shape, never mutates the rollback value),
+  `event.test.ts` (SSE `notification.new` invalidates the `preview` prefix),
+  `layout.help-href.test.ts` (the 3 Server Action refs reach `AppShell` UNWRAPPED —
+  identity assertion, because a reshaping closure fails only at runtime).
+- Storybook — `notification-dropdown.stories.tsx` (13 stories: loading / error /
+  empty / tab-switch→filter param / arrow-key tablist / mark-one optimistic /
+  rollback+toast / mark-all / view-all closes / closed-does-not-fetch),
+  `header.stories.tsx` (`BellDropdownDesktop`: button-not-link, `dialog` +
+  tablist, no navigation, Escape→focus back on the bell; `BellMobileStaysALink`
+  at a real 375px viewport), `notifications-center.stories.tsx`
+  (`SystemFilter_Empty`).
+- Regression — the centre's 13 pre-existing stories stayed green through the
+  `NotificationRow` promotion and the new tab (14 now).
+
+Open for review: `dropdownAriaLabel` names both the dialog and its visible `<h2>`
+(one key, one string — deliberately no duplicate `panelTitle`).
