@@ -184,6 +184,29 @@ export function AcademicRecordScreen({
     />
   ) : null;
 
+  /**
+   * The tablist/tabpanel pairing the shared `ChildSwitcher` expects from its
+   * consumer (same contract `ParentAttendanceScreen` and `GradeBookScreen`
+   * satisfy — the component emits `aria-controls`, the screen owns the panel).
+   *
+   * Emitted only when a tab is actually selected: on a foreign `studentId` no
+   * tab is selected, and ARIA has no panel to show for a tablist with no
+   * selection — labelling the error region with a `tab-*` id that does not
+   * exist would be worse than omitting the pairing.
+   */
+  const activeChildTabId = vm.childSwitcher?.childList.some(
+    (c) => c.childId === vm.childSwitcher?.activeChildId,
+  )
+    ? vm.childSwitcher.activeChildId
+    : null;
+  const childPanelProps = activeChildTabId
+    ? ({
+        role: "tabpanel",
+        id: `tabpanel-${activeChildTabId}`,
+        "aria-labelledby": `tab-${activeChildTabId}`,
+      } as const)
+    : {};
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -220,6 +243,7 @@ export function AcademicRecordScreen({
         {title}
         {switcher}
         <div
+          {...childPanelProps}
           aria-busy={isSwitchingChild || undefined}
           className="flex flex-col items-center gap-2 rounded-xl border border-border border-dashed bg-card p-10 text-center"
         >
@@ -228,6 +252,27 @@ export function AcademicRecordScreen({
             {t(`${emptyKey}.description`)}
           </p>
         </div>
+      </div>
+    );
+  }
+
+  /**
+   * Genuinely NESTED tabs for a parent: the per-CHILD panel wraps the per-YEAR
+   * tablist and its own panel. For every other viewer there is no child tab to
+   * pair with, so the body renders as a bare fragment and their DOM is exactly
+   * what it was before this story — the wrapper is not a `display:contents`
+   * shim either, because that would strip the record's `space-y-6` rhythm (the
+   * spacing utility only reaches DIRECT children).
+   */
+  function RecordBody({ children }: { children: React.ReactNode }) {
+    if (!activeChildTabId) return <>{children}</>;
+    return (
+      <div
+        {...childPanelProps}
+        aria-busy={isSwitchingChild || undefined}
+        className="space-y-6"
+      >
+        {children}
       </div>
     );
   }
@@ -254,46 +299,48 @@ export function AcademicRecordScreen({
 
       {switcher}
 
-      <RecordHeader vm={vm} />
+      <RecordBody>
+        <RecordHeader vm={vm} />
 
-      <YearTimeline
-        years={record.years}
-        activeYearId={activeYear.yearId}
-        onChange={(id) => onYearChange?.(id)}
-      />
+        <YearTimeline
+          years={record.years}
+          activeYearId={activeYear.yearId}
+          onChange={(id) => onYearChange?.(id)}
+        />
 
-      {activeYear.yearId === UNRESOLVED_YEAR_ID && (
+        {activeYear.yearId === UNRESOLVED_YEAR_ID && (
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm"
+          >
+            <Info
+              aria-hidden
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            />
+            <p className="text-muted-foreground">
+              {t("unresolvedYear.description")}
+            </p>
+          </div>
+        )}
+
         <div
-          role="status"
-          className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm"
+          id={`tabpanel-${activeYear.yearId}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeYear.yearId}`}
+          // The record region proper: while a child switch is in flight these
+          // rows still belong to the PREVIOUS child, so they are announced as
+          // stale. Deliberately not on an ancestor of the tablist — the selector
+          // must stay live so the parent can change their mind mid-navigation.
+          aria-busy={isSwitchingChild || undefined}
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: ARIA APG tabpanel pattern — the panel is intentionally focusable so Tab from the tablist lands on its content (WAI-ARIA tabs design pattern).
+          tabIndex={0}
+          className="space-y-8"
         >
-          <Info
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-          />
-          <p className="text-muted-foreground">
-            {t("unresolvedYear.description")}
-          </p>
+          {activeYear.terms.map((term) => (
+            <TermSection key={`${term.classId}-${term.termId}`} term={term} />
+          ))}
         </div>
-      )}
-
-      <div
-        id={`tabpanel-${activeYear.yearId}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${activeYear.yearId}`}
-        // The record region proper: while a child switch is in flight these
-        // rows still belong to the PREVIOUS child, so they are announced as
-        // stale. Deliberately not on an ancestor of the tablist — the selector
-        // must stay live so the parent can change their mind mid-navigation.
-        aria-busy={isSwitchingChild || undefined}
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: ARIA APG tabpanel pattern — the panel is intentionally focusable so Tab from the tablist lands on its content (WAI-ARIA tabs design pattern).
-        tabIndex={0}
-        className="space-y-8"
-      >
-        {activeYear.terms.map((term) => (
-          <TermSection key={`${term.classId}-${term.termId}`} term={term} />
-        ))}
-      </div>
+      </RecordBody>
     </div>
   );
 }
