@@ -2879,7 +2879,8 @@
       "membersAfterCreate": "Sau khi tạo, bạn có thể thêm thành viên vào nhóm.",
       "nameLabel": "Tên nhóm",
       "namePlaceholder": "Nhập tên nhóm...",
-      "nameTooShort": "Tên nhóm cần ít nhất 2 ký tự."
+      "nameTooShort": "Tên nhóm cần ít nhất 2 ký tự.",
+      "srLabel": "Nhóm"
     },
     "groupInfo": {
       "addMembers": "+ Thêm thành viên",

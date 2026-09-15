@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  conversationGroupSuffix,
   conversationItemStateClass,
   conversationPresenceSuffix,
 } from "./conversation-item";
@@ -50,5 +51,42 @@ describe("conversationPresenceSuffix", () => {
   it("group → never announces presence (group avatars show no dot)", () => {
     expect(conversationPresenceSuffix(true, "online", onlineLabel)).toBe("");
     expect(conversationPresenceSuffix(true, "recent", recentLabel)).toBe("");
+  });
+});
+
+/**
+ * US-E24.15 — with the direct/group tablist gone, a group row must be
+ * distinguishable by more than avatar shape (decision `0013`: never shape or
+ * colour alone). Same accname constraint as presence: the row's explicit
+ * `aria-label` replaces "name from content", so the marker is folded into the
+ * label rather than rendered as a nested sr-only span.
+ */
+describe("conversationGroupSuffix", () => {
+  const groupLabel = "Nhóm";
+
+  it("group → announces the group marker suffix", () => {
+    expect(conversationGroupSuffix(true, groupLabel)).toBe(`, ${groupLabel}`);
+  });
+
+  it("direct → no marker", () => {
+    expect(conversationGroupSuffix(false, groupLabel)).toBe("");
+  });
+
+  it("composes with the presence suffix without clobbering it", () => {
+    const presence = conversationPresenceSuffix(
+      false,
+      "online",
+      "đang hoạt động",
+    );
+    const group = conversationGroupSuffix(false, groupLabel);
+    expect(`Mở cuộc trò chuyện với A${group}${presence}`).toBe(
+      "Mở cuộc trò chuyện với A, đang hoạt động",
+    );
+  });
+
+  it("a group row never carries a presence suffix alongside the marker", () => {
+    expect(
+      `${conversationGroupSuffix(true, groupLabel)}${conversationPresenceSuffix(true, "online", "đang hoạt động")}`,
+    ).toBe(", Nhóm");
   });
 });

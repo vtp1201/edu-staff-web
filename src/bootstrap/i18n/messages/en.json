@@ -2879,7 +2879,8 @@
       "membersAfterCreate": "You can add members once the group exists.",
       "nameLabel": "Group name",
       "namePlaceholder": "Enter group name...",
-      "nameTooShort": "The group name needs at least 2 characters."
+      "nameTooShort": "The group name needs at least 2 characters.",
+      "srLabel": "Group"
     },
     "groupInfo": {
       "addMembers": "+ Add members",
