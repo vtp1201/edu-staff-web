@@ -589,3 +589,11 @@ Confirmed facts (verify before citing if stale):
   (b) the existence gate `if (!result.ok) notFound()` collapses transport failures into 404 even when the
   use-case correctly preserved `network-error` — branch on `error.type === "not-found"` and give the rest
   a real error surface (sibling list page already does).
+- **Row-button accessible name = suffix composition (messaging `conversation-item.tsx`)** — rows whose
+  `<button>` carries an explicit `aria-label` CANNOT announce nested `sr-only` spans (ARIA accname
+  replaces "name from content"). The repo's answer is small PURE suffix helpers folded into one
+  template: `${t("openConversation",{name})}${conversationGroupSuffix(...)}${conversationPresenceSuffix(...)}`.
+  When a story adds a new marker there, verify (a) each helper returns `""` on its negative branch so the
+  existing suffix tests stay byte-identical, (b) mutually-exclusive markers really are (group rows must
+  never get a presence suffix, AC-10.6.1.4), and (c) the icon beside the name stays `aria-hidden`.
+  Same pattern = the right place to demand a new marker instead of an sr-only span.

@@ -32,3 +32,5 @@
 - [Two-step mutation review bar](review-checks-multistep-mutation.md) — partial-upload retry must re-send only failed files; role branch must be an allowlist
 - [notification relativeTime hardcodes vi](notification-relativetime-hardcoded-locale.md) — EN users see Vietnamese timestamps; moved-not-introduced, flag as follow-up
 - [Storybook module-level fixtures](review-checks-storybook-module-fixtures.md) — accumulating arrays go false-green on re-run; stateful stores fail loud
+- [ChildSwitcher consumer contract](child-switcher-consumer-contract.md) — tabpanel pairing per branch, repo-wide dangling aria-controls, where the single-child gate lives
+- [Flaky staff-discipline select story](flaky-storybook-staff-discipline-select.md) — full storybook run goes red on an unrelated branch; passes in isolation
