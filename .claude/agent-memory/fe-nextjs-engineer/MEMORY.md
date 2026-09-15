@@ -152,4 +152,5 @@
 - [Viewport-split trigger + action-ref identity](pattern-viewport-split-trigger-and-action-ref-identity.md) — US-E24.13: two elements gated by `hidden`/`sm:block` (never matchMedia); assert a Server Action prop by IDENTITY
 - [Additive 3rd tab + type promotion](pattern-additive-tab-and-type-promotion.md) — US-E24.14: sibling repo method (never widen a capped one); promote a presentation type to domain via re-export; two skeletons = two live regions
 - [Tablist removal + sortable timestamp](pattern-tablist-removal-and-sortable-timestamp.md) — US-E24.15: a display-formatted time isn't sortable; optimistic prepend breaks under a new sort; fold a type marker into the existing aria-label
+- [Conditional tabpanel wrapper](pattern-conditional-tabpanel-wrapper.md) — E24.16 review: module-level wrapper for a role-only ARIA panel (in-render component remounts the subtree); href helpers live in bootstrap/tenant
 - [Failure reason + URL container story](pattern-failure-reason-and-url-story.md) — E24.14 review: one failure type for N causes gives wrong advice (carry a `reason`); test URL drift via `nextjs.navigation.query` container stories

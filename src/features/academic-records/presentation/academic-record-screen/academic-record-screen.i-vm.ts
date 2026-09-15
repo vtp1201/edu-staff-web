@@ -1,3 +1,4 @@
+import type { ChildSwitcherVM } from "@/components/shared/child-switcher";
 import type { AcademicRecord } from "../../domain/entities/academic-record.entity";
 import type { AcademicRecordsFailure } from "../../domain/failures/academic-records.failure";
 
@@ -13,6 +14,15 @@ export interface AcademicRecordScreenVM {
   record: AcademicRecord | null;
   selectedYearId: string | null;
   error: AcademicRecordsFailure["type"] | null;
+  /**
+   * PARENT-only child selector (US-E24.16). `undefined` for every other role,
+   * and also for a parent with fewer than two linked children or whose child
+   * list read failed — one optional check in the screen covers all three, so
+   * the student/teacher/admin routes render byte-identically to before.
+   * Assembled at the RSC page from a second, independent read; see
+   * `build-child-switcher-vm.ts`.
+   */
+  childSwitcher?: ChildSwitcherVM;
 }
 
 /** Maps a viewer role to its roleBadge i18n key suffix (UPPER). */

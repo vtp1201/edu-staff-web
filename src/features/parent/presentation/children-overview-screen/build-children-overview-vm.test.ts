@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LinkedStudentsWithConsents } from "@/features/parent-links/domain/use-cases/get-linked-students-with-consents.use-case";
 import {
-  academicRecordHref,
   buildChildrenOverviewVM,
   ChildrenOverviewQueryError,
   isRetryableErrorKey,
@@ -122,19 +121,5 @@ describe("resolveErrorKey / isRetryableErrorKey", () => {
   it("marks forbidden as NOT retryable (a 403 cannot be fixed by retrying)", () => {
     expect(isRetryableErrorKey("forbidden")).toBe(false);
     expect(isRetryableErrorKey("network-error")).toBe(true);
-  });
-});
-
-describe("academicRecordHref", () => {
-  it("builds the existing child academic-record route under the tenant base", () => {
-    expect(academicRecordHref("/t/acme/parent/children", "st-1")).toBe(
-      "/t/acme/parent/children/st-1/academic-record",
-    );
-  });
-
-  it("encodes a student id that is not URL-safe", () => {
-    expect(academicRecordHref("/t/acme/parent/children", "st 1/2")).toBe(
-      "/t/acme/parent/children/st%201%2F2/academic-record",
-    );
   });
 });
