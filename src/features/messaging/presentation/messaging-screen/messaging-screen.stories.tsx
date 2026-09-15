@@ -267,9 +267,10 @@ export const GroupRowPopulated: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getAllByText("Lớp 11B2 — Toán").length,
-    ).toBeGreaterThanOrEqual(1);
+    // Exactly two surfaces carry the name: the list row and the chat-pane
+    // header (the group is auto-selected). A regression that drops either one
+    // must fail here — so this is `toBe(2)`, not a lower bound.
+    await expect(canvas.getAllByText("Lớp 11B2 — Toán").length).toBe(2);
     // Member-count subtitle via t("chat.members")
     await waitFor(() =>
       expect(canvas.getByText(/thành viên/i)).toBeInTheDocument(),
@@ -937,6 +938,14 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     );
     await waitFor(() =>
       expect(canvas.getAllByText("Nhóm Vật Lý").length).toBeGreaterThan(0),
+    );
+    // ...and it is the FIRST row of the list — the positional guard on
+    // US-E10.4's optimistic prepend (the `lastMessageAt: new Date()` stamp in
+    // `messaging-screen.tsx` exists only to keep this true under the new sort).
+    await waitFor(() =>
+      expect(
+        canvasElement.querySelectorAll<HTMLElement>("ul > li > button")[0],
+      ).toHaveAccessibleName(expect.stringContaining("Nhóm Vật Lý")),
     );
   },
 };
