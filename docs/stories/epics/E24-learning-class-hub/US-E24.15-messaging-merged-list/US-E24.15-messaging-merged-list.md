@@ -2,7 +2,7 @@
 
 ## Status
 
-in-progress
+implemented
 
 ## Lane
 
@@ -428,4 +428,75 @@ None (design-spec messaging list section sync trong commit).
 
 ## Evidence
 
-(chưa có — planned)
+Implementation complete on `feat/us-e24.15-messaging-merged-list` (10 commits, not merged).
+
+| Proof | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun lint` | clean (1 pre-existing warning + 1 info in `message-context-menu.tsx`, untouched) |
+| `bun vitest run` | 594 files / 5029 tests passed |
+| `bun vitest --config vitest.storybook.mts run` | 173 files / 1429 tests passed |
+| `NEXT_PUBLIC_USE_MOCK=true bun run build` | compiled successfully |
+
+Scope exception (fe-lead approved): `ConversationEntity` had no raw sortable timestamp (only a
+display-formatted string) — the AC's "sort by lastMessageAt desc, deterministic" was unsatisfiable
+presentation-layer-only. Added optional `lastMessageAt?: string` to the entity + mapper passthrough
+(wire DTO already had it) + mock fixtures. Confirmed by `fe-tech-lead-reviewer`: touched exactly the
+approved surface, zero repository/use-case/DI/endpoint change.
+
+Key proof:
+- Unit — `conversation-list.sort.ts` comparator (8 cases: determinism, non-mutating, stability on
+  missing-timestamp fallback, unparsable-date safety), `messaging.mapper.test.ts` (lastMessageAt
+  passthrough both directions), `conversation-item.test.ts` (group accessible-name marker mutually
+  exclusive with presence suffix — AC-10.6.1.4).
+- Story — `conversation-list.stories.tsx` (15 states: default sorted mixed list, only-direct,
+  only-groups, search cross-type, loading, error, no-create-permission, viewport-375 measured 44px
+  touch targets, tablist-absence negative assertions), `messaging-screen.stories.tsx` (34 stories incl.
+  `CreateGroup_Optimistic_Prepend` — positional proof the new group lands at row 0 — and
+  `GroupRowPopulated` — exact 2-surface assertion for list row + chat-pane header).
+- a11y — A11Y-101 (WCAG 4.1.3) fixed: `role="status" aria-live="polite"` on the list body, mirroring
+  `attendance-history-tab.tsx`'s existing pattern. Group marker composition verified mutually exclusive
+  with presence suffix (no malformed concatenation possible by construction, not just convention).
+
+Review rounds:
+- `fe-tech-lead-reviewer`: Revision Required (1 blocking — optimistic-prepend positional guard removed
+  by a prior story edit; 3 should-fix — mock fixtures looked like a sort bug, loose assertion count,
+  TEST_MATRIX stale; 3 consider) → **fixed all blocking + should-fix + the 1-line consider (default
+  selection now matches sorted order)**.
+- `fe-accessibility-auditor`: Pass (1 non-blocking A11Y-101) → **fixed**.
+- Both reviewers independently confirmed: scope-exception compliance, comparator purity/determinism,
+  a11y marker correctness, complete tablist removal (no orphaned `aria-controls`, the exact defect
+  class caught on US-E24.13's bell dropdown), i18n parity (vi/en both 3904 keys, zero asymmetry),
+  design-spec sync accuracy, tokens-only styling (`max-[820px]:size-11` is a pre-existing repo idiom,
+  not invented), and the "Tin nhắn mới" button growing 36→44px on mobile is an intentional a11y
+  improvement (shared `ICON_BUTTON_BASE`), flagged forward for design-review awareness — accepted below.
+
+### Design Review Gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+Design review: pass
+- design-system: conform — zero raw colors, all classes semantic tokens already in use elsewhere
+  (`bg-muted`, `border-border`, `text-muted-foreground`, `border-primary/30`, `bg-primary/15`); no new
+  token, no ADR needed; `max-[820px]:size-11` touch-target idiom matches precedent
+  (`invitation-row-actions.tsx`, `sidebar.tsx`, `language-switcher.tsx` from US-E24.12/13). Reuses
+  `CreateGroupModal`/`group-creation-gate.ts` unchanged — only the triggering control moved location,
+  not the gating logic. **Accepted visible change**: "Tin nhắn mới" button grows 36→44px below 820px
+  width (shares `ICON_BUTTON_BASE` with the new "Tạo nhóm mới" button) — intentional a11y improvement,
+  not a regression; desktop appearance unchanged.
+- a11y: WCAG AA — `fe-accessibility-auditor` Pass (A11Y-101 live-region gap fixed); tablist removal
+  verified total (no `role=tab*`/`aria-controls` remnants); group-row accessible differentiator (new,
+  previously absent) folded into existing per-row `aria-label` template, mutually exclusive with
+  presence suffix per AC-10.6.1.4; touch targets ≥44px measured via real viewport-375
+  `getBoundingClientRect()`; focus ring visible light+dark (no regression); keyboard tab order
+  create-group → new-message → search matches DOM order, no `tabIndex` hacks needed; decorative Users
+  icon `aria-hidden` (accessible name lives in `aria-label`), redundant with the pre-existing avatar
+  shape differentiator (decision 0013 "not X alone").
+- impeccable audit: manual pass — no anti-pattern beyond the auditor's one finding (fixed); no
+  palette/layout/font change; the sort-driven default-selection shift (auto-selected row now the
+  visually-top row) is a coherent, arguably-improved behavior, not a design regression.
+- states: loading/error/success (mixed sorted list)/empty (search + absolute-zero, both gated
+  correctly on `canCreateGroup`) all covered in `conversation-list.stories.tsx`; responsive — 320px not
+  explicitly re-tested (only 375px per AC) but no new fixed-width elements introduced; dark mode
+  inherits US-E24.12 tokens, no regression (reviewer confirmed `--ring` identical light/dark).
+
+Verdict: **PASS** — proceeding to `fe-qa-playwright`.
+
