@@ -3,7 +3,7 @@ import type { UserTenantRole } from "@/features/auth/domain/entities/auth-user.e
 import { evaluateTenantAccess } from "./access-guard";
 import { hasTenantMembership, rolesInTenant } from "./membership";
 import { resolveTenant } from "./resolve-tenant";
-import { tenantUrl } from "./tenant-url";
+import { academicRecordHref, tenantUrl } from "./tenant-url";
 
 describe("resolveTenant (shape B: /{locale}/t/{tenantId})", () => {
   it("resolves the tenant id from a valid path", () => {
@@ -50,6 +50,20 @@ describe("tenantUrl", () => {
   it("returns the tenant root when no path is given", () => {
     expect(tenantUrl("tenant-acme")).toBe("/t/tenant-acme");
     expect(tenantUrl("tenant-acme", "/")).toBe("/t/tenant-acme");
+  });
+});
+
+describe("academicRecordHref", () => {
+  it("builds the child academic-record route under the tenant base", () => {
+    expect(academicRecordHref("/t/acme/parent/children", "st-1")).toBe(
+      "/t/acme/parent/children/st-1/academic-record",
+    );
+  });
+
+  it("encodes a student id that is not URL-safe", () => {
+    expect(academicRecordHref("/t/acme/parent/children", "st 1/2")).toBe(
+      "/t/acme/parent/children/st%201%2F2/academic-record",
+    );
   });
 });
 

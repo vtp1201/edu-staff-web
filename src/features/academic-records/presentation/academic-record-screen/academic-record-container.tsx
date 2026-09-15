@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { academicRecordHref } from "@/features/parent/presentation/children-overview-screen/build-children-overview-vm";
+import { academicRecordHref } from "@/bootstrap/tenant";
 import { AcademicRecordScreen } from "./academic-record-screen";
 import type { AcademicRecordScreenVM } from "./academic-record-screen.i-vm";
 
