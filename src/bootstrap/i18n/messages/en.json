@@ -2872,14 +2872,13 @@
     "group": {
       "createButton": "Create group",
       "createTitle": "Create new group",
-      "emptyCreateCta": "Create new group",
       "emptySubtitle": "Create a new group to collaborate.",
-      "emptyTitle": "You haven't joined any groups yet.",
       "memberCount": "{count} members",
       "membersAfterCreate": "You can add members once the group exists.",
       "nameLabel": "Group name",
       "namePlaceholder": "Enter group name...",
-      "nameTooShort": "The group name needs at least 2 characters."
+      "nameTooShort": "The group name needs at least 2 characters.",
+      "srLabel": "Group"
     },
     "groupInfo": {
       "addMembers": "+ Add members",
@@ -2937,16 +2936,11 @@
       "replyingTo": "Replying to {name}"
     },
     "search": {
-      "noGroups": "No groups",
       "noResults": "No results",
       "placeholder": "Search..."
     },
     "skeleton": {
       "loading": "Loading messages..."
-    },
-    "tabs": {
-      "direct": "Direct",
-      "groups": "Groups"
     },
     "title": "Messages",
     "totalUnread": "{count} unread messages",

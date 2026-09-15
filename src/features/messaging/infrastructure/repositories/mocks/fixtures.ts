@@ -57,6 +57,13 @@ export const MOCK_CONTACTS: ContactEntity[] = [
   },
 ];
 
+/**
+ * US-E24.15 — EVERY row carries a raw ISO `lastMessageAt` so mock mode renders
+ * a visibly correct desc sort (a timestamp-less row sinking below an older one
+ * reads as a sort bug at design review). The missing-timestamp fallback is
+ * proved where it belongs instead: `conversation-list.sort.test.ts` +
+ * the `MergedSortedList` story. Reference "today" = 2026-09-15.
+ */
 export const MOCK_CONVERSATIONS: ConversationEntity[] = [
   // Direct conversations
   {
@@ -67,6 +74,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "success",
     lastMessage: "Cô có thể tham dự họp hội đồng lúc 15h hôm nay không?",
     lastMessageTime: "10:15",
+    lastMessageAt: "2026-09-15T10:15:00.000Z",
     unreadCount: 1,
     isOnline: true,
   },
@@ -78,6 +86,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "purple",
     lastMessage: "Vâng, gia đình sẽ nhắc cháu ôn thêm. Cảm ơn cô!",
     lastMessageTime: "14:37",
+    lastMessageAt: "2026-09-15T14:37:00.000Z",
     unreadCount: 0,
     isOnline: true,
   },
@@ -89,6 +98,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "warning",
     lastMessage: "Chị Hoa ơi, mình có thể đổi phòng học không?",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T09:20:00.000Z",
     unreadCount: 2,
     isOnline: true,
   },
@@ -100,6 +110,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "warning",
     lastMessage: "Dạ cô, em hiểu rồi ạ.",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T11:05:00.000Z",
     unreadCount: 0,
     isOnline: false,
   },
@@ -112,6 +123,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "primary",
     lastMessage: "Em áp dụng định lý Lagrange vào nhé...",
     lastMessageTime: "08:15",
+    lastMessageAt: "2026-09-15T08:15:00.000Z",
     unreadCount: 3,
     memberCount: 33,
     lastSenderName: "Cô Hương",
@@ -125,6 +137,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "success",
     lastMessage: "Lớp 10A1: Cô nhắc các em bài tập...",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T16:40:00.000Z",
     unreadCount: 0,
     memberCount: 37,
   },
@@ -136,6 +149,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "warning",
     lastMessage: "Họp tổ thứ 4 tuần này lúc 14h.",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T13:30:00.000Z",
     unreadCount: 1,
     memberCount: 8,
     lastSenderName: "Tổ trưởng",
@@ -149,6 +163,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "purple",
     lastMessage: "Thông báo: Lịch họp hội đồng 15/5",
     lastMessageTime: "2 ngày",
+    lastMessageAt: "2026-09-13T11:00:00.000Z",
     unreadCount: 0,
     memberCount: 42,
   },

@@ -6,10 +6,12 @@ import { useId, useMemo, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import type { MessagingFailure } from "@/features/messaging/domain/failures/messaging.failure";
-import { cn } from "@/shared/utils";
 import { ConversationItem } from "../conversation-item/conversation-item";
+import { sortConversations } from "./conversation-list.sort";
 
-type Tab = "direct" | "groups";
+/** Icon button hit area: 36px desktop, 44px on mobile (repo `max-[820px]` idiom). */
+const ICON_BUTTON_BASE =
+  "flex size-9 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-[820px]:size-11";
 
 export interface ConversationListProps {
   conversations: ConversationEntity[];
@@ -18,10 +20,17 @@ export interface ConversationListProps {
   loadError?: MessagingFailure["type"];
   onSelect: (id: string) => void;
   onNewMessage: () => void;
-  /** Open the create-group modal (Groups tab CTA + empty state, US-E10.4). */
+  /** Open the create-group modal — header icon button, role-gated (US-E10.4). */
   onCreateGroup?: () => void;
 }
 
+/**
+ * US-E24.15 — ONE merged inbox list (direct + group), no tablist. Rows sort by
+ * real last-message time desc (`conversation-list.sort.ts`); search filters
+ * across both types; group rows are marked in their own accessible name
+ * (`conversation-item.tsx`). Group creation moved from a Groups-tab CTA strip to
+ * an icon button in this pane's header.
+ */
 export function ConversationList({
   conversations,
   activeConversationId,
@@ -33,27 +42,23 @@ export function ConversationList({
 }: ConversationListProps) {
   const t = useTranslations("messaging");
   const tErrors = useTranslations("messaging.errors");
-  const [tab, setTab] = useState<Tab>("direct");
   const [search, setSearch] = useState("");
   const searchId = useId();
 
   const filtered = useMemo(() => {
-    const wantGroup = tab === "groups";
     const q = search.trim().toLowerCase();
-    return conversations.filter(
-      (c) =>
-        (c.type === "group") === wantGroup &&
-        (!q || c.name.toLowerCase().includes(q)),
+    return sortConversations(
+      conversations.filter((c) => !q || c.name.toLowerCase().includes(q)),
     );
-  }, [conversations, tab, search]);
+  }, [conversations, search]);
 
   const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
-  const panelId = `${searchId}-panel`;
+  const hasQuery = search.trim().length > 0;
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden border-border border-r bg-card md:w-[300px] md:flex-shrink-0">
       <div className="flex-shrink-0 border-border border-b px-4 pt-4 pb-3">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-base text-foreground">
               {t("title")}
@@ -67,14 +72,30 @@ export function ConversationList({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onNewMessage}
-            aria-label={t("newMessage.button")}
-            className="flex size-9 items-center justify-center rounded-lg border border-primary/30 bg-primary/15 text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
-          </button>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            {onCreateGroup && (
+              <button
+                type="button"
+                onClick={onCreateGroup}
+                aria-label={t("group.createTitle")}
+                className={`${ICON_BUTTON_BASE} border-border bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground`}
+              >
+                <Users
+                  className="size-4"
+                  strokeWidth={2.5}
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onNewMessage}
+              aria-label={t("newMessage.button")}
+              className={`${ICON_BUTTON_BASE} border-primary/30 bg-primary/15 text-primary hover:bg-primary/20`}
+            >
+              <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <div className="relative">
           <Search
@@ -95,38 +116,15 @@ export function ConversationList({
         </div>
       </div>
 
-      <div
-        className="flex flex-shrink-0 border-border border-b"
-        role="tablist"
-        aria-label={t("title")}
-      >
-        {(["direct", "groups"] as const).map((id) => (
-          <button
-            key={id}
-            id={`${searchId}-tab-${id}`}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            aria-controls={panelId}
-            onClick={() => setTab(id)}
-            className={cn(
-              "-mb-px flex-1 border-b-2 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              tab === id
-                ? "border-primary font-bold text-primary"
-                : "border-transparent font-medium text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t(`tabs.${id}`)}
-          </button>
-        ))}
-      </div>
-
-      <div
-        id={panelId}
-        role="tabpanel"
-        aria-labelledby={`${searchId}-tab-${tab}`}
-        className="flex-1 overflow-y-auto"
-      >
+      {/*
+       * A11Y-101 (WCAG 4.1.3): the wrapper persists across
+       * loading/error/list/no-results/empty so a screen-reader announces the
+       * state TRANSITION — typing a query that matches nothing must be
+       * announced, not silently swapped in. Same idiom as
+       * `attendance-history-tab.tsx` (A11Y-103). The error branch keeps its own
+       * `role="alert"` (assertive) — no conflict, it just pre-empts this one.
+       */}
+      <div role="status" aria-live="polite" className="flex-1 overflow-y-auto">
         {loadError ? (
           <div
             role="alert"
@@ -146,61 +144,31 @@ export function ConversationList({
               </li>
             ))}
           </ul>
-        ) : (
-          <>
-            {tab === "groups" && onCreateGroup && (
-              <button
-                type="button"
-                onClick={onCreateGroup}
-                className="flex w-full items-center gap-1.5 bg-primary/8 px-4 py-2.5 text-left font-semibold text-edu-primary-accessible text-sm transition-colors hover:bg-primary/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Plus className="size-4" strokeWidth={2.5} aria-hidden="true" />
-                {t("group.emptyCreateCta")}
-              </button>
-            )}
-            {filtered.length > 0 ? (
-              <ul>
-                {filtered.map((c) => (
-                  <li key={c.id}>
-                    <ConversationItem
-                      conversation={c}
-                      isActive={activeConversationId === c.id}
-                      onSelect={onSelect}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : tab === "groups" && !search.trim() ? (
-              <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
-                <Users
-                  className="size-9 text-border"
-                  strokeWidth={1.5}
-                  aria-hidden="true"
+        ) : filtered.length > 0 ? (
+          <ul>
+            {filtered.map((c) => (
+              <li key={c.id}>
+                <ConversationItem
+                  conversation={c}
+                  isActive={activeConversationId === c.id}
+                  onSelect={onSelect}
                 />
-                <p className="font-bold text-foreground text-sm">
-                  {t("group.emptyTitle")}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {t("group.emptySubtitle")}
-                </p>
-                {onCreateGroup && (
-                  <button
-                    type="button"
-                    onClick={onCreateGroup}
-                    className="mt-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {t("group.emptyCreateCta")}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="px-6 py-6 text-center text-muted-foreground text-sm">
-                {tab === "groups"
-                  ? t("search.noGroups")
-                  : t("search.noResults")}
-              </p>
-            )}
-          </>
+              </li>
+            ))}
+          </ul>
+        ) : hasQuery ? (
+          <p className="px-6 py-6 text-center text-muted-foreground text-sm">
+            {t("search.noResults")}
+          </p>
+        ) : (
+          // Absolute-empty inbox: the right pane already carries the primary
+          // `EmptyMessagingState`; this is only a secondary nudge, and only for
+          // someone who may actually create a group.
+          onCreateGroup && (
+            <p className="px-6 py-6 text-center text-muted-foreground text-sm">
+              {t("group.emptySubtitle")}
+            </p>
+          )
         )}
       </div>
     </div>

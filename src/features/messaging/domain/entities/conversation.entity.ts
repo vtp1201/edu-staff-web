@@ -16,6 +16,12 @@ export type ConversationEntity = {
   color: string;
   lastMessage: string;
   lastMessageTime: string;
+  /**
+   * US-E24.15 — RAW ISO timestamp of the last message, used to sort the merged
+   * inbox. `lastMessageTime` above is a DISPLAY label ("10:15" / "Hôm qua") and
+   * is not sortable. Optional: legacy/mock rows may not carry it.
+   */
+  lastMessageAt?: string;
   unreadCount: number;
   /** Direct only — whether the other participant is online (legacy boolean). */
   isOnline?: boolean;

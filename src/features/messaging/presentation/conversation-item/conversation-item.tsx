@@ -1,5 +1,6 @@
 "use client";
 
+import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PresenceDot } from "@/components/shared/presence-dot";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
@@ -31,6 +32,21 @@ export function conversationPresenceSuffix(
   presenceLabel: string,
 ): string {
   return !isGroup && presence !== "offline" ? `, ${presenceLabel}` : "";
+}
+
+/**
+ * US-E24.15 — the merged inbox has no direct/group tabs any more, so a group
+ * row must be identifiable on its own. Avatar shape/colour alone is invisible
+ * to a screen reader (decision `0013`), and — exactly like the presence suffix
+ * above — a nested sr-only span is swallowed by the row's explicit `aria-label`
+ * (ARIA accname). So the marker is folded into that same label; the inline
+ * `Users` icon stays purely decorative (`aria-hidden`) for sighted users.
+ */
+export function conversationGroupSuffix(
+  isGroup: boolean,
+  groupLabel: string,
+): string {
+  return isGroup ? `, ${groupLabel}` : "";
 }
 
 export interface ConversationItemProps {
@@ -71,6 +87,10 @@ export function ConversationItem({
     presence,
     presenceLabel,
   );
+  const groupAnnouncement = conversationGroupSuffix(
+    isGroup,
+    t("group.srLabel"),
+  );
   const hasUnread = unreadCount > 0;
   const preview =
     isGroup && lastSenderName
@@ -81,7 +101,7 @@ export function ConversationItem({
     <button
       type="button"
       onClick={() => onSelect(id)}
-      aria-label={`${t("openConversation", { name })}${presenceAnnouncement}`}
+      aria-label={`${t("openConversation", { name })}${groupAnnouncement}${presenceAnnouncement}`}
       aria-current={isActive ? "true" : undefined}
       className={cn(
         "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
@@ -106,13 +126,21 @@ export function ConversationItem({
 
       <span className="min-w-0 flex-1">
         <span className="mb-0.5 flex items-center justify-between gap-1">
-          <span
-            className={cn(
-              "truncate text-foreground text-sm",
-              hasUnread ? "font-extrabold" : "font-semibold",
+          <span className="flex min-w-0 items-center gap-1">
+            {isGroup && (
+              <Users
+                aria-hidden="true"
+                className="size-3 flex-shrink-0 text-muted-foreground"
+              />
             )}
-          >
-            {name}
+            <span
+              className={cn(
+                "truncate text-foreground text-sm",
+                hasUnread ? "font-extrabold" : "font-semibold",
+              )}
+            >
+              {name}
+            </span>
           </span>
           <span className="flex-shrink-0 text-muted-foreground text-xs">
             {lastMessageTime}
