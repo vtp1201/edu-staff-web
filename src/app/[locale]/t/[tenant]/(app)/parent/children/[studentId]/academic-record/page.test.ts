@@ -63,7 +63,6 @@ afterEach(() => {
 
 async function renderPage(studentId = "st-1", year?: string) {
   const { default: Page } = await import("./page");
-  // biome-ignore lint/suspicious/noExplicitAny: RSC returns a React element; reading its props is the assertion surface.
   return (await Page({
     params: Promise.resolve({ tenant: "acme", studentId }),
     searchParams: Promise.resolve({ year }),

@@ -32,6 +32,43 @@ export interface AcademicRecordScreenProps {
   isSwitchingChild?: boolean;
 }
 
+type ChildPanelProps = {
+  readonly role: "tabpanel";
+  readonly id: string;
+  readonly "aria-labelledby": string;
+};
+
+/**
+ * Wraps a branch's body in the per-CHILD tabpanel when — and only when — a
+ * child tab is actually selected.
+ *
+ * Module-level ON PURPOSE (US-E24.16 review): declared inside the screen it
+ * would be a NEW component type on every render, so React would unmount and
+ * remount the whole record subtree on each `isSwitchingChild` edge, throwing
+ * away focus and scroll for nothing.
+ *
+ * For every non-parent viewer `panelProps` is `null` and the body renders as a
+ * bare fragment — their DOM is exactly what it was before this story. The
+ * wrapper is not a `display:contents` shim either: that would strip the
+ * record's `space-y-6` rhythm (the utility only reaches DIRECT children).
+ */
+function ChildTabPanel({
+  panelProps,
+  busy,
+  children,
+}: {
+  panelProps: ChildPanelProps | null;
+  busy: boolean;
+  children: React.ReactNode;
+}) {
+  if (!panelProps) return <>{children}</>;
+  return (
+    <div {...panelProps} aria-busy={busy || undefined} className="space-y-6">
+      {children}
+    </div>
+  );
+}
+
 const ROLE_TONE: Record<
   AcademicRecordViewerRole,
   "primary" | "success" | "warning" | "purple"
@@ -199,37 +236,44 @@ export function AcademicRecordScreen({
   )
     ? vm.childSwitcher.activeChildId
     : null;
-  const childPanelProps = activeChildTabId
-    ? ({
+  const childPanelProps: ChildPanelProps | null = activeChildTabId
+    ? {
         role: "tabpanel",
         id: `tabpanel-${activeChildTabId}`,
         "aria-labelledby": `tab-${activeChildTabId}`,
-      } as const)
-    : {};
+      }
+    : null;
 
   if (error) {
     return (
       <div className="space-y-6">
         {title}
         {switcher}
-        <div
-          role="alert"
-          aria-busy={isSwitchingChild || undefined}
-          className="flex flex-col items-center gap-3 rounded-xl border border-edu-error/30 bg-edu-error/10 p-8 text-center"
-        >
-          <AlertTriangle aria-hidden className="size-6 text-edu-error-text" />
-          <div>
-            <p className="font-bold text-edu-error-text">{t("error.title")}</p>
-            <p className="mt-1 text-sm text-foreground">
-              {t(`error.${error}`)}
-            </p>
+        {/* `role="alert"` cannot double as the tabpanel, so when a child tab IS
+            selected the pairing is carried by a wrapping region — otherwise the
+            active tab's `aria-controls` would dangle (US-E24.16 review). */}
+        <ChildTabPanel panelProps={childPanelProps} busy={isSwitchingChild}>
+          <div
+            role="alert"
+            aria-busy={isSwitchingChild || undefined}
+            className="flex flex-col items-center gap-3 rounded-xl border border-edu-error/30 bg-edu-error/10 p-8 text-center"
+          >
+            <AlertTriangle aria-hidden className="size-6 text-edu-error-text" />
+            <div>
+              <p className="font-bold text-edu-error-text">
+                {t("error.title")}
+              </p>
+              <p className="mt-1 text-sm text-foreground">
+                {t(`error.${error}`)}
+              </p>
+            </div>
+            {onRetry && (
+              <Button type="button" variant="outline" onClick={onRetry}>
+                {t("error.retry")}
+              </Button>
+            )}
           </div>
-          {onRetry && (
-            <Button type="button" variant="outline" onClick={onRetry}>
-              {t("error.retry")}
-            </Button>
-          )}
-        </div>
+        </ChildTabPanel>
       </div>
     );
   }
@@ -243,7 +287,7 @@ export function AcademicRecordScreen({
         {title}
         {switcher}
         <div
-          {...childPanelProps}
+          {...(childPanelProps ?? {})}
           aria-busy={isSwitchingChild || undefined}
           className="flex flex-col items-center gap-2 rounded-xl border border-border border-dashed bg-card p-10 text-center"
         >
@@ -252,27 +296,6 @@ export function AcademicRecordScreen({
             {t(`${emptyKey}.description`)}
           </p>
         </div>
-      </div>
-    );
-  }
-
-  /**
-   * Genuinely NESTED tabs for a parent: the per-CHILD panel wraps the per-YEAR
-   * tablist and its own panel. For every other viewer there is no child tab to
-   * pair with, so the body renders as a bare fragment and their DOM is exactly
-   * what it was before this story — the wrapper is not a `display:contents`
-   * shim either, because that would strip the record's `space-y-6` rhythm (the
-   * spacing utility only reaches DIRECT children).
-   */
-  function RecordBody({ children }: { children: React.ReactNode }) {
-    if (!activeChildTabId) return <>{children}</>;
-    return (
-      <div
-        {...childPanelProps}
-        aria-busy={isSwitchingChild || undefined}
-        className="space-y-6"
-      >
-        {children}
       </div>
     );
   }
@@ -299,7 +322,7 @@ export function AcademicRecordScreen({
 
       {switcher}
 
-      <RecordBody>
+      <ChildTabPanel panelProps={childPanelProps} busy={isSwitchingChild}>
         <RecordHeader vm={vm} />
 
         <YearTimeline
@@ -340,7 +363,7 @@ export function AcademicRecordScreen({
             <TermSection key={`${term.classId}-${term.termId}`} term={term} />
           ))}
         </div>
-      </RecordBody>
+      </ChildTabPanel>
     </div>
   );
 }
