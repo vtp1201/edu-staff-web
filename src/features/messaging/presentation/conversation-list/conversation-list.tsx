@@ -116,7 +116,15 @@ export function ConversationList({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/*
+       * A11Y-101 (WCAG 4.1.3): the wrapper persists across
+       * loading/error/list/no-results/empty so a screen-reader announces the
+       * state TRANSITION — typing a query that matches nothing must be
+       * announced, not silently swapped in. Same idiom as
+       * `attendance-history-tab.tsx` (A11Y-103). The error branch keeps its own
+       * `role="alert"` (assertive) — no conflict, it just pre-empts this one.
+       */}
+      <div role="status" aria-live="polite" className="flex-1 overflow-y-auto">
         {loadError ? (
           <div
             role="alert"
