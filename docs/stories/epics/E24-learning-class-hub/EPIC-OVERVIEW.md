@@ -5,9 +5,10 @@
 > membership, exam metadata projection* (Accepted, implemented 2026-09-01/02).
 > Lưu ý: "ADR 0143" là số ADR **phía edu-api**; FE ADR cao nhất hiện là 0074.
 >
-> Trạng thái (06/09/2026): **E24.0, E24.0b, E24.1, E24.2–E24.5, E24.7–E24.11 implemented & merged.
-> Phase 3 (E24.6, E24.12–E24.16) đã slice vào harness (`planned`, packet đầy đủ) — sẵn sàng `/fe`
-> (runbook §3c).**
+> Trạng thái (15/09/2026): **ĐÓNG EPIC — toàn bộ 15 US (E24.0, E24.0b, E24.1, E24.2–E24.16)
+> implemented & merged vào `main`; harness matrix không còn hàng `planned`.** Follow-up còn mở:
+> backlog harness #2–#5, #7–#14 (`harness-cli query backlog`) + ask BE
+> `docs/reports/2026-09-15-fe-to-be-asks-e24-close-out.md`. Runbook §3b/§3c chỉ còn giá trị lịch sử.
 > Ask BE: `docs/reports/2026-09-02-fe-to-be-asks-adr0143.md` (chưa có reply). Design: bundle v3 đã
 > khớp D1–D9 + R1–R3 → §7 chỉ còn giá trị lịch sử.
 
