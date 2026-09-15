@@ -304,4 +304,101 @@ precedent rather than assumed:
 
 ## Evidence
 
-(chưa có — planned)
+Branch `feat/us-e24.16-academic-record-child-selector`, 9 commits (6 implementation + 3 review-fix
+round), TDD red→green at every step.
+
+### Proof commands (final tree, after merge-ready fix round)
+
+| Command | Result |
+| --- | --- |
+| `bunx tsc --noEmit` | clean |
+| `bun vitest run` | 595 files / **5026 passed**, 0 failed (one earlier run showed 10 files/21 tests
+  failing under machine contention with other concurrent worktrees — confirmed pure flake, clean
+  rerun immediately after) |
+| `bun vitest run --config vitest.storybook.mts` | 173 files / **1428 passed**, 0 failed |
+| `bunx biome check` | 0 errors; 1 warning + 1 info, both pre-existing in
+  `features/messaging/presentation/message-context-menu/message-context-menu.tsx`, untouched |
+| `bun run build` | ✓ compiled; `/parent/children/[studentId]/academic-record` unaffected route
+  shape confirmed in the route table |
+
+### Implementation summary
+
+- `build-child-switcher-vm.ts` — new pure builder: `childList.length < 2` → no switcher VM (this
+  IS the "hide when single" rule, resolved at the VM-builder level per the `grade-book-screen`
+  precedent — **`components/shared/child-switcher/child-switcher.tsx` has ZERO edits**, decision
+  `0026` honoured exactly). Foreign/unowned `studentId` → VM still built with no matching active
+  tab (no auto-select, no guess).
+- `page.tsx` (parent academic-record route) — `Promise.allSettled([buildAcademicRecordVM(...),
+  makeGetChildListUseCase().execute()])`, mirroring `/parent/attendance/page.tsx`'s fail-soft
+  pattern; child-list failure (reject OR `ok:false`) → `childSwitcher: undefined`, record still
+  renders, no toast.
+- `academic-record-screen.tsx` — switcher slotted into the header across all 3 states (success/
+  error/empty); `ChildTabPanel` (module-level, not declared in-render) pairs `role="tabpanel"` +
+  `id`/`aria-labelledby` only when a child tab is genuinely active — omitted entirely on a foreign
+  `studentId` to avoid a dangling ARIA reference. `useTransition`/`isSwitchingChild` drives
+  `ChildSwitcher`'s `isLoading` (blocks re-click) + `aria-busy` on the panel region.
+- `onSwitchChild` → `router.push(academicRecordHref(basePath, childId))`, no `?year` carried over
+  (each child's VM resolves its own current year server-side).
+- No i18n keys added — `Common.childSwitcherLabel`/`childOrdinalLabel`/`classPending` (already used
+  by `parent-attendance`/`grade-book`) cover this screen's usage verbatim.
+
+### Review round (fe-tech-lead-reviewer + fe-accessibility-auditor, parallel)
+
+- **fe-tech-lead-reviewer verdict: Revision Required → all closed.** Architecture/reuse/fail-soft/
+  security all PASS on first pass (decision `0026` compliance independently verified via
+  `git diff --stat -- src/components/` = empty). MUST FIX: (1) zero Storybook coverage for the
+  entire new render surface — closed with 6 new stories (`ParentTwoChildrenSwitch`,
+  `ParentSingleChildNoSelector`, `ParentChildListFetchFailed`, `ParentForeignStudentIdNoActiveTab`,
+  `ParentErrorWithActiveChildPanel`, `ParentSwitchingChildBusy`); (2) a dead lint suppression in
+  `page.test.ts` — removed, `bunx biome check` now 0 new warnings. SHOULD FIX: error branch didn't
+  pair the tabpanel on a valid active child (dangling `aria-controls` in the one branch commit
+  `980d645e` missed) — fixed, proven by a temporarily-forced-red test; `RecordBody` was declared
+  inside the render function (remount-on-every-render anti-pattern) — hoisted to module-level
+  `ChildTabPanel`; a cross-feature presentation import (`academicRecordHref` reached into
+  `features/parent/presentation/`) — relocated to `bootstrap/tenant/` next to `tenantUrl`, both call
+  sites updated.
+- **fe-accessibility-auditor verdict: Conditional Pass → closed.** A11Y-001 (Major): the
+  tabpanel/`aria-busy`/no-active-tab ARIA logic was correct in code but had zero executable proof —
+  same root cause as the reviewer's MUST FIX #1, closed by the same 6 stories (each asserts the
+  exact ARIA attribute, not just "renders without crashing"). A11Y-002 (Minor, deferred): `tab-${id}`/
+  `tabpanel-${id}` ID templates in `child-switcher.tsx` and `year-timeline.tsx` are byte-identical
+  and unnamespaced across the two nested tablists — collision is improbable today (childId vs
+  yearId have different shapes) but latent. Deliberately NOT fixed in this US (touches the shared
+  `child-switcher.tsx`, wider blast radius than this story's scope) — tracked below as backlog.
+
+### Design-review gate (fe-lead, `docs/DESIGN_REVIEW.md`)
+
+- **Design-system conformance**: pass. Raw-color/anti-pattern grep across every touched file — zero
+  hits. The only `transition` in the touched files is `year-timeline.tsx`'s pre-existing
+  `transition-colors` (not new to this story, not the kind gated by `prefers-reduced-motion` per
+  repo convention). Component reuse confirmed: `ChildSwitcher` genuinely untouched (verified by
+  diff, not just claimed).
+- **Accessibility**: pass — both the Major and the dangling-ARIA-in-error-branch findings closed
+  with real story-level assertions (`aria-selected`, `aria-controls`, tabpanel `id`/
+  `aria-labelledby` presence AND absence, `aria-busy`, `aria-disabled`). A11Y-002 deliberately
+  deferred (see above) — flagged to Harness Delta, not blocking.
+- **`/impeccable audit`**: same pre-existing `NO_PRODUCT_MD` gap as US-E24.6/E24.14 (tracked since
+  E07.1, out of scope here). Manual scoped audit against the "Absolute bans" checklist — 0 findings.
+- **States & responsive**: pass — success/error/empty/loading + all 5 new child-switcher states
+  (2-children-switch, 1-child-hidden, list-fetch-failed, foreign-studentId, switching-pending)
+  covered by Storybook; non-parent roles (student/teacher/admin) confirmed unaffected (existing 13
+  stories green, unchanged).
+
+```
+Design review: pass
+- design-system: conform (token/typography/component OK, ChildSwitcher untouched)
+- a11y: WCAG AA OK (1 major closed, 1 minor deferred to backlog); keyboard OK; reduced-motion OK
+- impeccable audit: manual scoped audit (init prerequisite unmet, pre-existing gap), 0 findings
+- states: success/error/empty/loading + 5 child-switcher states OK; non-parent-role regression-safe
+```
+
+### Backlog (not blocking this US)
+
+- A11Y-002: namespace `tab-${id}`/`tabpanel-${id}` in `components/shared/child-switcher/
+  child-switcher.tsx` (e.g. `tab-child-${id}`) to remove latent collision risk with
+  `year-timeline.tsx`'s identical template — one-file change, no consumer impact, deferred because
+  it touches a shared component outside this story's scope.
+- Pre-existing (not introduced by this US): the INACTIVE tab's `aria-controls` in `ChildSwitcher`
+  points at a tabpanel id that also doesn't exist until that tab becomes active — same pattern
+  exists in `grade-book-screen`/`parent-attendance-screen` today. Cross-cutting, not a regression
+  from this story; candidate for a future shared-component hardening pass.
