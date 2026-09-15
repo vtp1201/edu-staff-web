@@ -65,3 +65,4 @@
 - [US-E24.10](us-e24.10-qa-patterns.md) — exceptional baseline; found https:// success-half untested; userEvent.type drops chars on type=url
 - [US-E24.6](us-e24.6-qa-patterns.md) — accurate self-report; retry-only-failed-files + fail-closed-allowlist fixes genuinely closed; whole-file i18n parity script; timeout flakes confirmed pre-existing
 - [US-E24.13](us-e24.13-qa-patterns.md) — 5th fully-accurate self-report; live-region-exists + getBoundingClientRect touch-target checks closed via additive edits to engineer's own story file
+- [US-E24.15](us-e24.15-qa-patterns.md) — 6th accurate self-report; real-fixture (not synthetic helper) sort re-verification pattern; live-region node-identity-across-transition check
