@@ -255,15 +255,21 @@ export const DirectTabPopulated: Story = {
   },
 };
 
-/** AC-2: Groups tab — rounded-xl avatar, member-count subtitle, per-sender names in chat */
-export const GroupTabPopulated: Story = {
+/**
+ * AC-2: group conversation — rounded-xl avatar, member-count subtitle,
+ * per-sender names in chat. US-E24.15: no tab to click any more, group rows
+ * sit in the one merged list (so the name renders in BOTH panes).
+ */
+export const GroupRowPopulated: Story = {
   args: {
     initialConversations: CONVERSATIONS.filter((c) => c.type === "group"),
     getMessagesAction: async () => ({ ok: true, value: MESSAGES.g1 ?? [] }),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Lớp 11B2 — Toán")).toBeInTheDocument();
+    await expect(
+      canvas.getAllByText("Lớp 11B2 — Toán").length,
+    ).toBeGreaterThanOrEqual(1);
     // Member-count subtitle via t("chat.members")
     await waitFor(() =>
       expect(canvas.getByText(/thành viên/i)).toBeInTheDocument(),
@@ -907,10 +913,8 @@ export const CreateGroup_Optimistic_Prepend: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
 
-    // The "+ Tạo nhóm" CTA only renders on the "Nhóm" (groups) tab.
-    await userEvent.click(canvas.getByRole("tab", { name: "Nhóm" }));
-
-    // Open the create-group modal via the "+ Tạo nhóm" button in the group tab
+    // US-E24.15: no more tabs — the create-group affordance is an icon button
+    // in the list-pane header, always visible to a permitted viewer.
     const createBtn = await canvas.findByRole("button", {
       name: /tạo nhóm/i,
     });
@@ -1521,7 +1525,8 @@ export const CreateGroup_Hidden_ForStudentOrParent: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("tab", { name: "Nhóm" }));
+    // US-E24.15: the header's create-group icon button is the only affordance,
+    // and it must not render at all for a viewer without the permission.
     await waitFor(() =>
       expect(
         canvas.queryByRole("button", { name: /tạo nhóm/i }),

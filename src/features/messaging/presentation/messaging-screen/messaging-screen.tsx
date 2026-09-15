@@ -387,6 +387,10 @@ export function MessagingScreen({
         color: created.color,
         lastMessage: "",
         lastMessageTime: "",
+        // US-E24.15: the merged list sorts by `lastMessageAt` desc, and a row
+        // without one sorts LAST — so a just-created group needs its real
+        // creation instant to keep the US-E10.4 "appears at the top" behavior.
+        lastMessageAt: new Date().toISOString(),
         unreadCount: 0,
         // US-E18.50: the real 201 echoes no membership, so `members` is empty
         // there. The contract still GUARANTEES the creator is seeded as OWNER,
@@ -524,7 +528,9 @@ export function MessagingScreen({
     setMobilePane("list");
     requestAnimationFrame(() =>
       listPaneRef.current
-        ?.querySelector<HTMLButtonElement>('[role="tab"], button')
+        // US-E24.15: the list pane's tablist is gone — the first button is now
+        // the header's first icon button (create-group or new-message).
+        ?.querySelector<HTMLButtonElement>("button")
         ?.focus(),
     );
   };

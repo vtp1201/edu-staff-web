@@ -2872,9 +2872,7 @@
     "group": {
       "createButton": "Tạo nhóm",
       "createTitle": "Tạo nhóm mới",
-      "emptyCreateCta": "Tạo nhóm mới",
       "emptySubtitle": "Tạo nhóm mới để cộng tác với đồng nghiệp.",
-      "emptyTitle": "Bạn chưa tham gia nhóm nào.",
       "memberCount": "{count} thành viên",
       "membersAfterCreate": "Sau khi tạo, bạn có thể thêm thành viên vào nhóm.",
       "nameLabel": "Tên nhóm",
@@ -2938,16 +2936,11 @@
       "replyingTo": "Đang trả lời {name}"
     },
     "search": {
-      "noGroups": "Không có nhóm",
       "noResults": "Không tìm thấy",
       "placeholder": "Tìm kiếm..."
     },
     "skeleton": {
       "loading": "Đang tải tin nhắn..."
-    },
-    "tabs": {
-      "direct": "Trực tiếp",
-      "groups": "Nhóm"
     },
     "title": "Tin nhắn",
     "totalUnread": "{count} tin nhắn chưa đọc",

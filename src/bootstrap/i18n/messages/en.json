@@ -2872,9 +2872,7 @@
     "group": {
       "createButton": "Create group",
       "createTitle": "Create new group",
-      "emptyCreateCta": "Create new group",
       "emptySubtitle": "Create a new group to collaborate.",
-      "emptyTitle": "You haven't joined any groups yet.",
       "memberCount": "{count} members",
       "membersAfterCreate": "You can add members once the group exists.",
       "nameLabel": "Group name",
@@ -2938,16 +2936,11 @@
       "replyingTo": "Replying to {name}"
     },
     "search": {
-      "noGroups": "No groups",
       "noResults": "No results",
       "placeholder": "Search..."
     },
     "skeleton": {
       "loading": "Loading messages..."
-    },
-    "tabs": {
-      "direct": "Direct",
-      "groups": "Groups"
     },
     "title": "Messages",
     "totalUnread": "{count} unread messages",

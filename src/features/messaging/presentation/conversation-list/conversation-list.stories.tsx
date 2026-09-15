@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ConversationEntity } from "@/features/messaging/domain/entities/conversation.entity";
 import { ConversationList } from "./conversation-list";
@@ -14,6 +14,7 @@ const CONVERSATIONS: ConversationEntity[] = [
     color: "success",
     lastMessage: "Cô có thể tham dự họp hội đồng lúc 15h không?",
     lastMessageTime: "10:15",
+    lastMessageAt: "2026-09-15T10:15:00.000Z",
     unreadCount: 2,
     isOnline: true,
   },
@@ -25,6 +26,7 @@ const CONVERSATIONS: ConversationEntity[] = [
     color: "primary",
     lastMessage: "Em áp dụng định lý Lagrange nhé...",
     lastMessageTime: "08:15",
+    lastMessageAt: "2026-09-15T08:15:00.000Z",
     unreadCount: 3,
     memberCount: 33,
   },
@@ -49,6 +51,7 @@ const meta: Meta<typeof ConversationList> = {
     isLoading: false,
     onSelect: () => {},
     onNewMessage: () => {},
+    onCreateGroup: () => {},
   },
 };
 export default meta;
@@ -67,8 +70,8 @@ export const Loading: Story = {
   },
 };
 
-/** AC-2: Populated direct tab — avatar, name, last message, time, unread badge */
-export const DirectTabPopulated: Story = {
+/** AC-2: Populated row — avatar, name, last message, time, unread badge */
+export const Populated: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("Trần Minh Quân")).toBeInTheDocument();
@@ -171,5 +174,181 @@ export const PresencePendingOrError: Story = {
       within(canvasElement).getByText("Trần Minh Quân"),
     ).toBeInTheDocument();
     await expect(canvasElement.querySelector("[data-presence]")).toBeNull();
+  },
+};
+
+// ── US-E24.15 merged list (direct + group, no tabs) ─────────────────────────
+
+const m = messages.messaging;
+
+const conv = (
+  id: string,
+  type: ConversationEntity["type"],
+  name: string,
+  lastMessageAt?: string,
+): ConversationEntity => ({
+  id,
+  type,
+  name,
+  avatarInitials: id.toUpperCase(),
+  color: type === "group" ? "primary" : "success",
+  lastMessage: "Tin nhắn gần nhất",
+  lastMessageTime: "10:15",
+  lastMessageAt,
+  unreadCount: 0,
+  ...(type === "group" ? { memberCount: 12 } : {}),
+});
+
+/** Deliberately NOT in display order — the list must re-sort them. */
+const MIXED: ConversationEntity[] = [
+  conv("d1", "direct", "Trần Minh Quân", "2026-09-13T09:00:00.000Z"),
+  conv("g1", "group", "Lớp 10A1 — Toán", "2026-09-15T08:00:00.000Z"),
+  conv("d2", "direct", "Lê Thị Hoa", "2026-09-14T08:00:00.000Z"),
+  conv("g2", "group", "Tổ Toán – Tin học"),
+];
+
+const rowNames = (canvasElement: HTMLElement) =>
+  Array.from(
+    canvasElement.querySelectorAll<HTMLElement>("ul > li > button"),
+  ).map((b) => b.getAttribute("aria-label") ?? "");
+
+/**
+ * AC — one merged list: direct + group rows together, no tablist, sorted by
+ * `lastMessageAt` desc with the timestamp-less row last (stable fallback).
+ */
+export const MergedSortedList: Story = {
+  args: { conversations: MIXED },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The tablist is gone for good (AC's explicit DOM-shape assertion).
+    await expect(canvasElement.querySelector('[role="tablist"]')).toBeNull();
+    await expect(canvasElement.querySelector('[role="tab"]')).toBeNull();
+    await expect(canvasElement.querySelector('[role="tabpanel"]')).toBeNull();
+    // Exactly one list holding both types.
+    await expect(canvasElement.querySelectorAll("ul").length).toBe(1);
+    await expect(rowNames(canvasElement)).toEqual([
+      `${m.openConversation.replace("{name}", "Lớp 10A1 — Toán")}, ${m.group.srLabel}`,
+      m.openConversation.replace("{name}", "Lê Thị Hoa"),
+      m.openConversation.replace("{name}", "Trần Minh Quân"),
+      `${m.openConversation.replace("{name}", "Tổ Toán – Tin học")}, ${m.group.srLabel}`,
+    ]);
+    // Header: create-group first, then new-message, then the search field.
+    const focusables = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("button, input"),
+    );
+    await expect(focusables[0]).toHaveAccessibleName(m.group.createTitle);
+    await expect(focusables[1]).toHaveAccessibleName(m.newMessage.button);
+    await expect(focusables[2]).toBe(canvas.getByRole("searchbox"));
+  },
+};
+
+/** Only direct rows → no group marker anywhere in the accessible names. */
+export const OnlyDirect: Story = {
+  args: {
+    conversations: [
+      conv("d1", "direct", "Trần Minh Quân", "2026-09-15T09:00:00.000Z"),
+      conv("d2", "direct", "Lê Thị Hoa", "2026-09-14T08:00:00.000Z"),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const names = rowNames(canvasElement);
+    await expect(names.length).toBe(2);
+    for (const name of names) {
+      await expect(name).not.toContain(m.group.srLabel);
+    }
+  },
+};
+
+/** Only group rows → every row announces the "Nhóm" marker (not shape alone). */
+export const OnlyGroups: Story = {
+  args: {
+    conversations: [
+      conv("g1", "group", "Lớp 10A1 — Toán", "2026-09-15T09:00:00.000Z"),
+      conv("g2", "group", "Tổ Toán – Tin học", "2026-09-14T08:00:00.000Z"),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const names = rowNames(canvasElement);
+    await expect(names.length).toBe(2);
+    for (const name of names) {
+      await expect(name).toContain(m.group.srLabel);
+    }
+  },
+};
+
+/** Search filters across BOTH types; a no-match query shows `search.noResults`. */
+export const SearchCrossType: Story = {
+  args: { conversations: MIXED },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const box = canvas.getByRole("searchbox");
+    await userEvent.type(box, "10A1");
+    await expect(rowNames(canvasElement)).toEqual([
+      `${m.openConversation.replace("{name}", "Lớp 10A1 — Toán")}, ${m.group.srLabel}`,
+    ]);
+    await userEvent.clear(box);
+    await userEvent.type(box, "không tồn tại");
+    await expect(canvas.getByText(m.search.noResults)).toBeInTheDocument();
+  },
+};
+
+/** Zero conversations at all → one reused hint line (no second empty-state UI). */
+export const EmptyWithCreatePermission: Story = {
+  args: { conversations: [] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(m.group.emptySubtitle)).toBeInTheDocument();
+  },
+};
+
+/** `canCreateGroup=false` (no `onCreateGroup`) → exactly ONE header button. */
+export const NoCreatePermission: Story = {
+  args: { conversations: MIXED, onCreateGroup: undefined },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: m.group.createTitle }),
+    ).not.toBeInTheDocument();
+    // Exactly ONE header affordance (row buttons live inside the <ul>).
+    const headerButtons = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("button"),
+    ).filter((b) => !b.closest("ul"));
+    await expect(headerButtons.length).toBe(1);
+    const focusables = Array.from(
+      canvasElement.querySelectorAll<HTMLElement>("button, input"),
+    );
+    await expect(focusables[0]).toHaveAccessibleName(m.newMessage.button);
+    await expect(focusables[1]).toBe(canvas.getByRole("searchbox"));
+    // The empty-state hint is create-permission gated too.
+    await expect(
+      within(canvasElement).queryByText(m.group.emptySubtitle),
+    ).not.toBeInTheDocument();
+  },
+};
+
+const VIEWPORT_375 = {
+  viewports: {
+    mobile375: {
+      name: "Mobile 375",
+      styles: { width: "375px", height: "812px" },
+      type: "mobile" as const,
+    },
+  },
+  defaultViewport: "mobile375",
+};
+
+/** 375px: both header icon buttons keep a ≥44px touch target (measured). */
+export const Viewport375: Story = {
+  args: { conversations: MIXED },
+  parameters: { viewport: VIEWPORT_375 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const name of [m.group.createTitle, m.newMessage.button]) {
+      const rect = canvas.getByRole("button", { name }).getBoundingClientRect();
+      await expect(rect.width).toBeGreaterThanOrEqual(44);
+      await expect(rect.height).toBeGreaterThanOrEqual(44);
+    }
+    const root = canvasElement.firstElementChild as HTMLElement;
+    await expect(root.getBoundingClientRect().width).toBeLessThanOrEqual(375);
   },
 };
