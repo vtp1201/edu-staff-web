@@ -2585,13 +2585,37 @@
       "route": "/messages",
       "layout": "two-pane (convo list + chat window)",
       "features": [
-        "Direct / Groups tabs",
+        // US-E24.15: the Direct/Groups tablist is GONE — one merged list of
+        // direct + group conversations, sorted by last-message time desc
+        // (rows without a raw timestamp keep design order, last).
+        "single merged conversation list (direct + group), sorted by lastMessageAt desc",
         "unread badges",
         "online indicators",
         "typing dots",
         "date dividers"
       ],
       "input": { "enterToSend": true, "attachments": true, "emoji": true },
+
+      // ── List-pane header (US-E24.15) ──────────────────────────────────────
+      // Title + unread pill on the left; two icon buttons on the right, in tab
+      // order: create-group → new-message → search field.
+      "listHeader": {
+        "createGroupButton": {
+          "icon": "users",
+          "i18nKey": "messaging.group.createTitle",
+          "ariaLabelOnly": true,
+          "tone": "bg-muted + border-border + text-muted-foreground",
+          "size": "size-9 (max-[820px]:size-11 → 44px touch target)",
+          "renderedWhen": "canCreateGroup (onCreateGroup provided) — role-gated, US-E10.4"
+        },
+        "newMessageButton": {
+          "icon": "plus",
+          "i18nKey": "messaging.newMessage.button",
+          "ariaLabelOnly": true,
+          "tone": "bg-primary/15 + border-primary/30 + text-primary",
+          "size": "size-9 (max-[820px]:size-11 → 44px touch target)"
+        }
+      },
 
       // ── DR-008 Group-Chat extension ───────────────────────────────────────────
       // Source: design_src/edu/messaging.jsx — MessagingScreen (DR-008 group-chat extension)
@@ -2602,7 +2626,7 @@
         "us": "US-E10.4",
         "source": "design_src/edu/messaging.jsx — MessagingScreen (DR-008 group-chat extension)",
 
-        // ── Group list rows (Groups tab, ConvoItem component) ────────────────
+        // ── Group list rows (merged list, ConvoItem component) ───────────────
         // Lines 1400–1494 in messaging.jsx
         "groupList": {
           "avatarSize": 42,
@@ -2636,37 +2660,28 @@
             "padding": "1px 6px",
             "minWidth": 18
           },
-          // Member-count chip below the last-activity line
-          "memberCountChip": {
-            "display": "inline-flex",
-            "padding": "1px 7px",
-            "borderRadius": 4,
-            "background": "var(--edu-bg)",
-            "fontSize": 10,
-            "fontWeight": 700,
-            "color": "var(--edu-text-muted)",
-            "icon": { "name": "users", "size": 9 }
+          // US-E24.15 doc correction: the member-count chip documented here was
+          // NEVER implemented (stale doc vs runtime — code is truth). What
+          // actually ships is the group MARKER below, required once the
+          // Direct/Groups tabs went away: a row must not be identifiable by
+          // avatar shape alone (decision `0013`).
+          "groupMarker": {
+            "icon": { "name": "users", "size": 12, "ariaHidden": true },
+            "position": "inline, left of the conversation name",
+            "color": "text-muted-foreground",
+            // The row button carries an explicit aria-label (accname replaces
+            // "name from content"), so the marker is folded INTO that label —
+            // a nested sr-only span would never be announced.
+            "accessibleName": "messaging.openConversation + ', ' + messaging.group.srLabel"
           },
           // Active row highlight (same as direct pane)
           "activeRow": {
             "background": "pColor + '16'"
           },
-          // "+ Tạo nhóm" sub-header CTA above list in Groups tab
-          "createCTA": {
-            "background": "pColor + '08'",
-            "backgroundHover": "pColor + '12'",
-            "fontSize": 13,
-            "fontWeight": 800,
-            "color": "pColor",
-            "iconBox": {
-              "size": 22,
-              "borderRadius": 6,
-              "background": "pColor",
-              "iconColor": "#fff",
-              "iconSize": 12
-            },
-            "borderBottom": "1px solid var(--edu-border)"
-          }
+          // The "+ Tạo nhóm" sub-header CTA strip (and the Groups-tab empty
+          // state that repeated it) was REMOVED in US-E24.15 together with the
+          // tablist. Superseded by `messaging.listHeader.createGroupButton`.
+          "createCTA": null
         },
 
         // ── Create-group modal (CreateGroupModal, 2-step) ────────────────────
