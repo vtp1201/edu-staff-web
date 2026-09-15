@@ -58,9 +58,11 @@ export const MOCK_CONTACTS: ContactEntity[] = [
 ];
 
 /**
- * US-E24.15 — rows carry a raw ISO `lastMessageAt` so mock mode/Storybook
- * exercise the real desc sort. `u5` and `g3` intentionally OMIT it to keep the
- * missing-timestamp fallback (stable original order, last) on a live path.
+ * US-E24.15 — EVERY row carries a raw ISO `lastMessageAt` so mock mode renders
+ * a visibly correct desc sort (a timestamp-less row sinking below an older one
+ * reads as a sort bug at design review). The missing-timestamp fallback is
+ * proved where it belongs instead: `conversation-list.sort.test.ts` +
+ * the `MergedSortedList` story. Reference "today" = 2026-09-15.
  */
 export const MOCK_CONVERSATIONS: ConversationEntity[] = [
   // Direct conversations
@@ -108,6 +110,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "warning",
     lastMessage: "Dạ cô, em hiểu rồi ạ.",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T11:05:00.000Z",
     unreadCount: 0,
     isOnline: false,
   },
@@ -146,6 +149,7 @@ export const MOCK_CONVERSATIONS: ConversationEntity[] = [
     color: "warning",
     lastMessage: "Họp tổ thứ 4 tuần này lúc 14h.",
     lastMessageTime: "Hôm qua",
+    lastMessageAt: "2026-09-14T13:30:00.000Z",
     unreadCount: 1,
     memberCount: 8,
     lastSenderName: "Tổ trưởng",

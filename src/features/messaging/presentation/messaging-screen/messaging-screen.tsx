@@ -16,6 +16,7 @@ import type { MessagingFailure } from "@/features/messaging/domain/failures/mess
 import { AddMembersModal } from "../add-members-modal";
 import { ChatWindow } from "../chat-window/chat-window";
 import { ConversationList } from "../conversation-list/conversation-list";
+import { sortConversations } from "../conversation-list/conversation-list.sort";
 import { CreateGroupModal } from "../create-group-modal";
 import { NewConversationModal } from "../new-conversation-modal/new-conversation-modal";
 import { EmptyMessagingState } from "./empty-messaging-state";
@@ -151,8 +152,10 @@ export function MessagingScreen({
     [conversations, presenceRecords],
   );
 
+  // US-E24.15: the list renders SORTED, so the default selection must be the
+  // first SORTED row — otherwise the `aria-current` highlight lands mid-list.
   const [activeId, setActiveId] = useState<string | null>(
-    deepLinkId ?? initialConversations[0]?.id ?? null,
+    deepLinkId ?? sortConversations(initialConversations)[0]?.id ?? null,
   );
   const [mobilePane, setMobilePane] = useState<"list" | "chat">(
     deepLinkId ? "chat" : "list",
