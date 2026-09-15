@@ -352,3 +352,29 @@ export const Viewport375: Story = {
     await expect(root.getBoundingClientRect().width).toBeLessThanOrEqual(375);
   },
 };
+
+/**
+ * QA independent check (A11Y-101, WCAG 4.1.3) — the list body must be a real
+ * `role="status" aria-live="polite"` region so a search-empty/loading state
+ * transition is actually announced, not just visually swapped in. Verify the
+ * DOM attributes directly (not just the visible text), and that it persists
+ * across a state transition (populated → search-empty) rather than being
+ * remounted (a remount would drop the SR announcement).
+ */
+export const LiveRegionAnnouncesStateChange: Story = {
+  args: { conversations: MIXED },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const region = canvasElement.querySelector('[role="status"]');
+    await expect(region).not.toBeNull();
+    await expect(region?.getAttribute("aria-live")).toBe("polite");
+    // Same node reference before/after typing a no-match query — proves the
+    // live region isn't torn down and recreated (which would silently drop
+    // the SR announcement of the transition).
+    const box = canvas.getByRole("searchbox");
+    await userEvent.type(box, "không tồn tại");
+    const regionAfter = canvasElement.querySelector('[role="status"]');
+    await expect(regionAfter).toBe(region);
+    await expect(canvas.getByText(m.search.noResults)).toBeInTheDocument();
+  },
+};
