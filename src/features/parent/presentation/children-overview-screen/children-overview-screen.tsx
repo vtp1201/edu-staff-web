@@ -3,11 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { academicRecordHref } from "@/bootstrap/tenant";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ListError } from "@/components/shared/list-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  academicRecordHref,
   ChildrenOverviewQueryError,
   isRetryableErrorKey,
   resolveErrorKey,

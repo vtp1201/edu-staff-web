@@ -16,4 +16,4 @@ export {
   type NamespaceAccessResult,
   type NamespaceAccessVerdict,
 } from "./role-guard";
-export { tenantUrl } from "./tenant-url";
+export { academicRecordHref, tenantUrl } from "./tenant-url";

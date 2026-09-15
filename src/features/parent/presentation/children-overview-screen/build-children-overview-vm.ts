@@ -61,15 +61,3 @@ export function resolveErrorKey(error: unknown): ChildrenOverviewErrorKey {
 export function isRetryableErrorKey(key: ChildrenOverviewErrorKey): boolean {
   return key === "network-error";
 }
-
-/**
- * Href of the EXISTING per-child academic-record route. `basePath` is the
- * tenant-scoped `/t/{tenant}/parent/children` prefix computed by the RSC page
- * (the client screen has no access to the tenant segment).
- */
-export function academicRecordHref(
-  basePath: string,
-  studentId: string,
-): string {
-  return `${basePath}/${encodeURIComponent(studentId)}/academic-record`;
-}
