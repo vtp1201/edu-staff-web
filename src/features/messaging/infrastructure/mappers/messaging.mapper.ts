@@ -24,6 +24,8 @@ export function toConversationEntity(
     color: dto.color,
     lastMessage: dto.lastMessage,
     lastMessageTime: dto.lastMessageTime,
+    // US-E24.15 — raw sortable ISO passthrough (undefined when absent on wire).
+    lastMessageAt: dto.lastMessageAt,
     unreadCount: dto.unreadCount,
     isOnline: dto.isOnline,
     memberCount: dto.memberCount,
@@ -66,6 +68,9 @@ export function toConversationEntityFromRoom(
     color: roomColorKey(dto.roomId),
     lastMessage: dto.lastMessagePreview ?? "",
     lastMessageTime: formatWireTimestamp(dto.lastMessageAt).time,
+    // US-E24.15 — keep the RAW ISO alongside the display label so the merged
+    // inbox can sort by real last-message time.
+    lastMessageAt: dto.lastMessageAt,
     // US-E18.18 closes ADR 0060 ask #32(a): RoomSummary still has no unread field
     // on the wire, so this seeds to 0; `MessagingRepository.getConversations`
     // best-effort merges the real count from `GET /notifications/unread-counts`.

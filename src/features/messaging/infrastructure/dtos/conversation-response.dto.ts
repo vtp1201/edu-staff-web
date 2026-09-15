@@ -10,6 +10,8 @@ export type ConversationResponseDto = {
   color: string;
   lastMessage: string;
   lastMessageTime: string;
+  /** US-E24.15 — raw ISO last-message time (sortable; display label above). */
+  lastMessageAt?: string;
   unreadCount: number;
   isOnline?: boolean;
   memberCount?: number;

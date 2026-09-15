@@ -215,6 +215,32 @@ describe("messaging.mapper", () => {
     });
   });
 
+  describe("toConversationEntity — lastMessageAt passthrough (US-E24.15)", () => {
+    const base: ConversationResponseDto = {
+      id: "u1",
+      type: "direct",
+      name: "Trần Minh Quân",
+      avatarInitials: "TQ",
+      color: "success",
+      lastMessage: "Chào cô",
+      lastMessageTime: "10:15",
+      unreadCount: 0,
+    };
+
+    it("carries the raw ISO lastMessageAt through unchanged", () => {
+      expect(
+        toConversationEntity({
+          ...base,
+          lastMessageAt: "2026-07-20T10:15:00.000Z",
+        }).lastMessageAt,
+      ).toBe("2026-07-20T10:15:00.000Z");
+    });
+
+    it("leaves lastMessageAt undefined when absent on the wire (no throw)", () => {
+      expect(toConversationEntity(base).lastMessageAt).toBeUndefined();
+    });
+  });
+
   // --- US-E18.17 real `social` room → domain mappers ---
 
   describe("toConversationEntityFromRoom", () => {
@@ -262,6 +288,18 @@ describe("messaging.mapper", () => {
         toConversationEntityFromRoom({ ...base, lastMessagePreview: null })
           .lastMessage,
       ).toBe("");
+    });
+
+    /**
+     * US-E24.15: the merged inbox sorts by real last-message time, so the RAW
+     * ISO `lastMessageAt` must reach the entity — `lastMessageTime` alone is a
+     * DISPLAY label ("10:15" / "Hôm qua") and is not sortable.
+     */
+    it("carries the raw ISO lastMessageAt through (sortable, additive)", () => {
+      const entity = toConversationEntityFromRoom(base);
+      expect(entity.lastMessageAt).toBe("2026-07-20T08:15:00.000Z");
+      // The display label stays a formatted string, not the ISO value.
+      expect(entity.lastMessageTime).not.toBe(entity.lastMessageAt);
     });
   });
 
