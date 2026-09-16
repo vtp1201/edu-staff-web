@@ -108,3 +108,11 @@ affordances, throwing repositories + failure-union mapping by `error.code`.
     a no-op `focus()` (which dropped focus to `<body>`). That is an improvement, not a
     regression. Verify by running the FULL suite + `vitest.storybook.mts`, not just the
     feature's tests — the shared hook has callers in other features.
+
+14. **A story's JSDoc block separated from its story by a helper declaration**
+    (US-E24.18, again US-E24.19 `timetable-tab.stories.tsx`). The engineer writes the
+    `/** … */` explaining the story, then declares a module-scope helper
+    (`function contrastRatio(…)`) between it and `export const MyStory` — so Storybook
+    autodocs attaches the prose to the helper and the story ships undocumented. Cheap
+    fix: hoist the helper ABOVE the doc block. Check on every story file that adds a
+    module-scope helper.

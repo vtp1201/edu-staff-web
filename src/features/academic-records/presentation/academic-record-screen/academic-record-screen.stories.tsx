@@ -473,3 +473,56 @@ export const ParentSwitchingChildBusy: Story = {
     ).toHaveAttribute("aria-disabled", "false");
   },
 };
+
+/**
+ * US-E24.19 (#15) — the YEAR tablist must not emit a dangling `aria-controls`.
+ *
+ * Only the ACTIVE year has a mounted `tabpanel` (the screen renders exactly
+ * one), so an `aria-controls` on an inactive year tab pointed at a DOM id that
+ * exists nowhere — WCAG 4.1.2, the same defect closed for `ChildSwitcher` in
+ * US-E24.18 (#11). Every tab still keeps its own `id`: the panel's
+ * `aria-labelledby` resolves through it. Keyboard roving stays unchanged.
+ */
+export const YearTabsNoDanglingAriaControls: Story = {
+  args: { vm: vm({ role: "student", selectedYearId: "2025-2026" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const years = within(canvas.getByRole("tablist", { name: "Chọn năm học" }));
+    const tabs = years.getAllByRole("tab") as HTMLElement[];
+    await expect(tabs.length).toBeGreaterThan(1);
+
+    const active = tabs.filter(
+      (t) => t.getAttribute("aria-selected") === "true",
+    );
+    await expect(active).toHaveLength(1);
+
+    // (a) the ACTIVE tab's aria-controls resolves to an element really in the DOM
+    const controls = active[0].getAttribute("aria-controls") as string;
+    await expect(controls).toBeTruthy();
+    const panel = canvasElement.ownerDocument.getElementById(controls);
+    await expect(panel).not.toBeNull();
+    await expect(panel).toHaveAttribute("role", "tabpanel");
+    await expect(panel).toHaveAttribute("aria-labelledby", active[0].id);
+    await expect(active[0]).toHaveAttribute("tabindex", "0");
+
+    // (b) every INACTIVE tab has NO aria-controls attribute at all — not an
+    //     empty string, not one pointing at an unmounted panel.
+    for (const tab of tabs.filter((t) => t !== active[0])) {
+      await expect(tab.hasAttribute("aria-controls")).toBe(false);
+      await expect(tab.id).toBeTruthy();
+      await expect(tab).toHaveAttribute("tabindex", "-1");
+    }
+
+    // keyboard roving still moves focus across the whole tablist
+    active[0].focus();
+    const activeIndex = tabs.indexOf(active[0]);
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(tabs[(activeIndex + 1) % tabs.length]).toHaveFocus();
+    await userEvent.keyboard("{Home}");
+    await expect(tabs[0]).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    await expect(tabs[tabs.length - 1]).toHaveFocus();
+    await userEvent.keyboard("{ArrowLeft}");
+    await expect(tabs[tabs.length - 2]).toHaveFocus();
+  },
+};

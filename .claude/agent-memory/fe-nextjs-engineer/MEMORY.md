@@ -157,3 +157,5 @@
 
 - [Dual-role token dark override](gotcha-dual-role-token-dark-override.md) — a token that is both chip TEXT and a solid BG can't take a `.dark` override; use `dark:text-…` at every pairing site, and check the contrast ceiling first
 - [Dead-code triage after un-mock](pattern-dead-code-triage-after-unmock.md) — deleting a mock repo: MOCK_* fixtures go, mapper/DTO contract surface stays with a retention comment
+
+- [Accessible variant fails in dark](gotcha-accessible-variant-fails-in-dark.md) — a darkened `-accessible` token is WORSE on the `.dark` tint; ship `dark:text-…` + a threshold just under the shipped ratio
