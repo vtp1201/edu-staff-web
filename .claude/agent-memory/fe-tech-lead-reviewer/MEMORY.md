@@ -34,3 +34,4 @@
 - [Storybook module-level fixtures](review-checks-storybook-module-fixtures.md) — accumulating arrays go false-green on re-run; stateful stores fail loud
 - [ChildSwitcher consumer contract](child-switcher-consumer-contract.md) — tabpanel pairing per branch, repo-wide dangling aria-controls, where the single-child gate lives
 - [Flaky staff-discipline select story](flaky-storybook-staff-discipline-select.md) — full storybook run goes red on an unrelated branch; passes in isolation
+- [--edu-error-dark dual role](error-dark-dual-role-token.md) — why its dark-mode text fix is per-call-site `dark:text-edu-error-text`, not a token override
