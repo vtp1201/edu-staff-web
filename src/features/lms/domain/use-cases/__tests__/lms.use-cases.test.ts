@@ -19,7 +19,6 @@ import { isOverdue } from "../derive-overdue";
 import { GetAssignmentDetailUseCase } from "../get-assignment.use-case";
 import { GetCourseUseCase } from "../get-course.use-case";
 import { GetLessonUseCase } from "../get-lesson.use-case";
-import { ListAssignmentsUseCase } from "../list-assignments.use-case";
 import { ListCourseItemsUseCase } from "../list-course-items.use-case";
 import { ListCoursesUseCase } from "../list-courses.use-case";
 import { SubmitAssignmentUseCase } from "../submit-assignment.use-case";
@@ -109,7 +108,6 @@ function repoStub(overrides: Partial<ILmsRepository> = {}): ILmsRepository {
     listLessons: notImplemented,
     getLesson: notImplemented,
     listItems: notImplemented,
-    listAssignments: notImplemented,
     getAssignment: notImplemented,
     getMySubmission: notImplemented,
     submitAssignment: notImplemented,
@@ -202,18 +200,6 @@ describe("GetLessonUseCase", () => {
     const getLesson = vi.fn(async () => LESSON);
     await new GetLessonUseCase(repoStub({ getLesson })).execute("c1", "l1");
     expect(getLesson).toHaveBeenCalledWith("c1", "l1");
-  });
-});
-
-describe("ListAssignmentsUseCase", () => {
-  it("passes the optional filter through", async () => {
-    const listAssignments = vi.fn(async () => [ASSIGNMENT_SUMMARY]);
-    const result = await new ListAssignmentsUseCase(
-      repoStub({ listAssignments }),
-    ).execute("cl1", { courseId: "c1" });
-
-    expect(listAssignments).toHaveBeenCalledWith("cl1", { courseId: "c1" });
-    expect(result).toEqual({ ok: true, data: [ASSIGNMENT_SUMMARY] });
   });
 });
 

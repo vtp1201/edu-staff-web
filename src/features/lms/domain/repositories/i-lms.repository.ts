@@ -1,7 +1,4 @@
-import type {
-  Assignment,
-  AssignmentSummary,
-} from "../entities/assignment.entity";
+import type { Assignment } from "../entities/assignment.entity";
 import type { Course, CourseSummary } from "../entities/course.entity";
 import type { CourseItem } from "../entities/course-item.entity";
 import type { Lesson, LessonSummary } from "../entities/lesson.entity";
@@ -73,10 +70,6 @@ export interface ILmsRepository {
   /** The ordered timeline. Server-filtered for a student; never an empty array
    *  as a denial — an unauthorized read is `not-found`. */
   listItems(courseId: string): Promise<CourseItem[]>;
-  listAssignments(
-    classId: string,
-    filter?: { subjectId?: string; courseId?: string },
-  ): Promise<AssignmentSummary[]>;
   getAssignment(assignmentId: string): Promise<Assignment>;
   /** `null` = the caller has not submitted yet (BE 404 LMS_SUBMISSION_NOT_FOUND). */
   getMySubmission(assignmentId: string): Promise<Submission | null>;

@@ -69,13 +69,6 @@ describe("list reads", () => {
       type: "not-found",
     });
   });
-
-  it("assignment list rows carry no state/instructions", async () => {
-    const rows = await repo.listAssignments(MOCK_CLASS_ID);
-    expect(rows.length).toBeGreaterThan(0);
-    expect(rows[0]).not.toHaveProperty("state");
-    expect(rows[0]).not.toHaveProperty("instructions");
-  });
 });
 
 describe("submission single-attempt policy", () => {

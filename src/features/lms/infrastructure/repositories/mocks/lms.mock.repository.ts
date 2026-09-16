@@ -1,10 +1,7 @@
 import "server-only";
 
 import { mockDelay } from "@/bootstrap/lib/mock";
-import type {
-  Assignment,
-  AssignmentSummary,
-} from "../../../domain/entities/assignment.entity";
+import type { Assignment } from "../../../domain/entities/assignment.entity";
 import type {
   Course,
   CourseSummary,
@@ -24,7 +21,6 @@ import type {
   UpdateCourseItemInput,
 } from "../../../domain/repositories/i-lms.repository";
 import {
-  MOCK_ASSIGNMENT_SUMMARIES,
   MOCK_ASSIGNMENTS,
   MOCK_CLASS_ID,
   MOCK_COURSE_ITEMS,
@@ -112,19 +108,6 @@ export class MockLmsRepository implements ILmsRepository {
     return items
       .filter((i) => i.courseId === courseId)
       .map((i) => ({ ...i, exam: i.exam ? { ...i.exam } : null }));
-  }
-
-  async listAssignments(
-    classId: string,
-    filter?: { subjectId?: string; courseId?: string },
-  ): Promise<AssignmentSummary[]> {
-    await mockDelay();
-    if (classId !== MOCK_CLASS_ID) reject("forbidden");
-    return MOCK_ASSIGNMENT_SUMMARIES.filter(
-      (a) =>
-        (filter?.subjectId === undefined || a.subjectId === filter.subjectId) &&
-        (filter?.courseId === undefined || a.courseId === filter.courseId),
-    ).map((a) => ({ ...a }));
   }
 
   async getAssignment(assignmentId: string): Promise<Assignment> {

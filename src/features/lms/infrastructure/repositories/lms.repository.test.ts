@@ -173,23 +173,6 @@ describe("listItems", () => {
   });
 });
 
-describe("listAssignments", () => {
-  it("passes classId, and the optional narrowing filters when present", async () => {
-    const http = makeHttp({ get: vi.fn(async () => []) });
-    const repo = new LmsRepository(http);
-
-    await repo.listAssignments("cl1");
-    expect(http.get).toHaveBeenLastCalledWith(`${BASE}/assignments`, {
-      params: { classId: "cl1" },
-    });
-
-    await repo.listAssignments("cl1", { courseId: "c1", subjectId: "s1" });
-    expect(http.get).toHaveBeenLastCalledWith(`${BASE}/assignments`, {
-      params: { classId: "cl1", subjectId: "s1", courseId: "c1" },
-    });
-  });
-});
-
 describe("getMySubmission", () => {
   const SUB = {
     assignmentId: "a1",

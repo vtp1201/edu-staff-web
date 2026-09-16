@@ -2,10 +2,7 @@ import "server-only";
 
 import type { AxiosInstance } from "axios";
 import { LMS_EP } from "@/bootstrap/endpoint/lms.endpoint";
-import type {
-  Assignment,
-  AssignmentSummary,
-} from "../../domain/entities/assignment.entity";
+import type { Assignment } from "../../domain/entities/assignment.entity";
 import type {
   Course,
   CourseSummary,
@@ -23,10 +20,7 @@ import type {
   ILmsRepository,
   UpdateCourseItemInput,
 } from "../../domain/repositories/i-lms.repository";
-import type {
-  AssignmentResponseDto,
-  AssignmentSummaryResponseDto,
-} from "../dtos/assignment-response.dto";
+import type { AssignmentResponseDto } from "../dtos/assignment-response.dto";
 import type { CourseItemResponseDto } from "../dtos/course-item-response.dto";
 import type {
   CourseResponseDto,
@@ -39,7 +33,6 @@ import type {
 import type { SubmissionResponseDto } from "../dtos/submission-response.dto";
 import {
   toAssignment,
-  toAssignmentSummary,
   toCourse,
   toCourseItem,
   toCourseSummary,
@@ -128,21 +121,6 @@ export class LmsRepository implements ILmsRepository {
       )) as unknown as CourseItemResponseDto[];
       // BE order is meaningful (position, createdAt, id) — never re-sort here.
       return rows.map(toCourseItem);
-    });
-  }
-
-  async listAssignments(
-    classId: string,
-    filter?: { subjectId?: string; courseId?: string },
-  ): Promise<AssignmentSummary[]> {
-    return this.call(async () => {
-      const params: Record<string, string> = { classId };
-      if (filter?.subjectId) params.subjectId = filter.subjectId;
-      if (filter?.courseId) params.courseId = filter.courseId;
-      const rows = (await this.http.get(LMS_EP.assignments, {
-        params,
-      })) as unknown as AssignmentSummaryResponseDto[];
-      return rows.map(toAssignmentSummary);
     });
   }
 
