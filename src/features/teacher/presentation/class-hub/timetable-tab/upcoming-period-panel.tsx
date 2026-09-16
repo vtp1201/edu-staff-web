@@ -145,9 +145,12 @@ export function UpcomingPeriodPanel({
               <span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-edu-primary-light">
                 {/* Accessible token, not `text-primary`: this icon sits on
                     `bg-edu-primary-light`, where 4.35:1 beats the 3.93:1 of
-                    `--edu-primary-dark` (US-E24.19 #3). */}
+                    `--edu-primary-dark` (US-E24.19 #3). In `.dark` the tint
+                    becomes #28344e, where that token drops to 2.54:1 → flip to
+                    `--edu-primary` (#5d87ff) = 3.77:1, over the 3:1 UI-component
+                    floor (same idiom as ADR 0077). */}
                 <row.icon
-                  className="size-4 text-edu-primary-accessible"
+                  className="size-4 text-edu-primary-accessible dark:text-edu-primary"
                   aria-hidden="true"
                 />
               </span>

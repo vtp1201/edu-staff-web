@@ -77,7 +77,12 @@ export function DayCard({
             // (#4570ea): on this header's `bg-edu-primary-light` tint the
             // latter is 3.93:1 — over the 3:1 large-text floor but under AA's
             // 4.5:1; the accessible token is 4.35:1 (US-E24.19 #3).
-            vm.isToday ? "text-edu-primary-accessible" : "text-card-foreground",
+            // `.dark` flips the tint to #28344e, where the accessible token is
+            // only 2.54:1 → override to `--edu-primary` (#5d87ff) = 3.77:1,
+            // back over the 3:1 floor (same idiom as ADR 0077).
+            vm.isToday
+              ? "text-edu-primary-accessible dark:text-edu-primary"
+              : "text-card-foreground",
           )}
         >
           {vm.dayLabel}
