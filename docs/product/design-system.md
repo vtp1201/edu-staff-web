@@ -44,8 +44,12 @@ qua color accent. Font **Plus Jakarta Sans**.
   #FFD699`, ≥8.5:1) — `T_DARK` override tint nhưng KHÔNG có text tone tương ứng.
   `--edu-warning-foreground` (#2A3547) KHÔNG có giá trị dark (chữ trên nền vàng đặc
   luôn là navy) → chip warning dùng `text-edu-text-primary` (theo-theme), giống
-  info/purple/teal. `--edu-error-dark-light` vẫn chưa có giá trị dark (chip
-  `error-dark` còn sáng ở dark mode — follow-up). ADR 0049 + US-E24.12 Evidence.
+  info/purple/teal. `--edu-error-dark-light` đã có giá trị dark `#7A0011` (maroon
+  sâu hơn `--edu-error-light`, vì `error-dark` là mức nặng hơn — ADR 0077,
+  US-E24.18); `--edu-error-dark` (#B91C1C) KHÔNG override trong `.dark` vì nó
+  còn là nền ĐẶC (nút destructive, badge đếm) với chữ trắng — chip `error-dark`
+  dùng override text ở mức class `dark:text-edu-error-text` (#FFDAD6, 8.85:1).
+  ADR 0049 + 0077 + US-E24.12 Evidence.
 - **Role**: teacher=primary, principal=success, student=warning, parent=purple.
 - **Per-tenant**: override `--edu-primary` (decision `0007`).
 

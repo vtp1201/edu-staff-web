@@ -125,7 +125,8 @@ export function DisciplineScreen(vm: DisciplineScreenVM) {
                     "ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 font-extrabold text-[10px]",
                     tab === id
                       ? "bg-primary/15 text-edu-text-primary"
-                      : "bg-edu-error-dark-light text-edu-error-dark",
+                      : // ADR 0077: dark-mode text pair for the #7A0011 tint.
+                        "bg-edu-error-dark-light text-edu-error-dark dark:text-edu-error-text",
                   )}
                 >
                   {badge}

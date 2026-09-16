@@ -47,6 +47,21 @@ describe("StatusBadge tone mapping", () => {
     );
   });
 
+  /**
+   * ADR 0077 (US-E24.18): `--edu-error-dark-light` gained a `.dark` value
+   * (#7A0011). `--edu-error-dark` (#B91C1C) can NEVER reach 4.5:1 on ANY dark
+   * background (3.25:1 against pure black is its ceiling), and it cannot be
+   * overridden inside `.dark` because it is also a SOLID background (destructive
+   * button, notification count badge) with white foreground. So the chip carries
+   * a dark-mode-only text override: `dark:text-edu-error-text` (#FFDAD6) =
+   * 8.85:1 on the new tint. Light mode is unchanged (5.30:1).
+   */
+  it("maps tone='error-dark' to the dark-mode-safe pair (ADR 0077)", () => {
+    expect(statusToneClass("error-dark")).toBe(
+      "bg-edu-error-dark-light text-edu-error-dark dark:text-edu-error-text",
+    );
+  });
+
   // info/teal/purple vibrant hues fail AA on their own tinted bg (A11Y-001/002).
   // text-edu-text-primary (#2A3547) = 11.5:1 — guaranteed AA pass.
   it("maps tone='info' to text-edu-text-primary (AA fix, A11Y-001)", () => {
