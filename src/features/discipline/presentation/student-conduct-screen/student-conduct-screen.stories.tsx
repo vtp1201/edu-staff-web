@@ -116,7 +116,14 @@ export const ParentView: Story = {
   },
 };
 
-/** Leave request sheet opens and enforces the 10-char reason minimum (AC-4, AC-9). */
+/**
+ * The leave CTA opens the canonical `LeaveRequestDialog` (AC-4, AC-9).
+ *
+ * US-E24.20 (backlog #12) replaced the bespoke Sheet form with the shared
+ * dialog: no leave-TYPE control (core has no such concept), no attachment
+ * picker (no upload use-case on this path), and submit is blocked while the
+ * reason is EMPTY instead of by a bespoke 10-character rule.
+ */
 export const LeaveRequestForm: Story = {
   args: baseVm,
   play: async ({ canvasElement }) => {
@@ -124,18 +131,22 @@ export const LeaveRequestForm: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: "Xin nghỉ phép" }),
     );
-    const sheet = within(await within(document.body).findByRole("dialog"));
+    const dialog = within(await within(document.body).findByRole("dialog"));
     // Labels are linked to inputs (a11y).
-    await expect(sheet.getByLabelText(/Ngày bắt đầu/)).toBeInTheDocument();
-    await expect(sheet.getByLabelText(/Lý do/)).toBeInTheDocument();
-    // Submitting a too-short reason surfaces the validation message.
-    await userEvent.type(sheet.getByLabelText(/Lý do/), "Ốm");
-    await userEvent.click(sheet.getByRole("button", { name: "Gửi đơn" }));
-    await waitFor(() =>
-      expect(
-        sheet.getByText("Lý do phải có ít nhất 10 ký tự"),
-      ).toBeInTheDocument(),
-    );
+    await expect(dialog.getByLabelText(/Ngày bắt đầu/)).toBeInTheDocument();
+    await expect(dialog.getByLabelText(/Lý do/)).toBeInTheDocument();
+    // No leave-type select, no attachment picker.
+    await expect(dialog.queryByRole("combobox")).toBeNull();
+    await expect(dialog.queryByText("Loại nghỉ *")).toBeNull();
+    await expect(document.body.querySelector('input[type="file"]')).toBeNull();
+    // Empty reason blocks submit and says why.
+    const submit = dialog.getByRole("button", { name: /Gửi đơn/ });
+    await expect(submit).toBeDisabled();
+    await expect(
+      dialog.getByText("Vui lòng nhập lý do nghỉ."),
+    ).toBeInTheDocument();
+    await userEvent.type(dialog.getByLabelText(/Lý do/), "Ốm");
+    await waitFor(() => expect(submit).toBeEnabled());
   },
 };
 

@@ -203,6 +203,33 @@ export const SubmitsWithAttachments: Story = {
   },
 };
 
+/**
+ * `showAttachments={false}` — the whole evidence block is GONE (label, input
+ * and hint), and the submission still carries an empty `files` array
+ * (US-E24.20, backlog #12). The two self-service submit paths have no
+ * attachment-upload use-case wired, so offering the picker there would be a
+ * present-but-dead control that silently drops the picked files.
+ */
+export const WithoutAttachments: Story = {
+  args: { ...baseArgs, showAttachments: false },
+  play: async ({ args }) => {
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    await expect(body.queryByLabelText(mAttach.label)).toBeNull();
+    await expect(body.queryByText(mAttach.hint)).toBeNull();
+    await expect(document.body.querySelector('input[type="file"]')).toBeNull();
+
+    // The rest of the dialog is unchanged and still submits.
+    await userEvent.type(body.getByLabelText(m.reason), "Con bị ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(m.submit) }),
+    );
+    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
+    await expect(args.onSubmit.mock.calls[0][0].files).toEqual([]);
+  },
+};
+
 /** Pending → both actions disabled, submit `aria-busy` with the "Đang gửi..." copy. */
 export const Pending: Story = {
   args: { ...baseArgs, isPending: true },

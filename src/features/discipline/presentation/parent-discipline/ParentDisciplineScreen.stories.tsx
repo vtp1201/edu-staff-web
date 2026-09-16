@@ -215,26 +215,26 @@ export const ParentDisciplineScreen_MultiChild: Story = {
   },
 };
 
-/** Switching child closes the open form and swaps data (AC-02-03..05). */
+/** Switching child closes the open dialog and swaps data (AC-02-03..05). */
 export const ParentDisciplineScreen_ChildSwitch_FormReset: Story = {
   args: baseVm,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    // Open the form on c1.
+    const body = within(document.body);
+    // Open the dialog on c1 — the background is inert while it is open.
     await userEvent.click(
       canvas.getByRole("button", { name: "Xin nghỉ phép" }),
     );
-    await expect(
-      canvas.getByRole("heading", { name: "Gửi đơn xin nghỉ" }),
-    ).toBeInTheDocument();
-    // Switch to c2.
+    await expect(await body.findByRole("dialog")).toBeInTheDocument();
+    await expect(canvas.queryAllByRole("tab")).toHaveLength(0);
+
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
+
+    // Switch to c2 — still no dialog, and the draft did not survive.
     const tabs = canvas.getAllByRole("tab");
     await userEvent.click(tabs[1]);
-    await waitFor(() =>
-      expect(
-        canvas.queryByRole("heading", { name: "Gửi đơn xin nghỉ" }),
-      ).toBeNull(),
-    );
+    await expect(body.queryByRole("dialog")).toBeNull();
     // c2 data: excellent grade + score 94.
     await waitFor(() => expect(canvas.getByText("94")).toBeInTheDocument());
     await expect(canvas.getByText("Tốt")).toBeInTheDocument();
@@ -256,7 +256,7 @@ export const ParentDisciplineScreen_EmptyViolations: Story = {
   },
 };
 
-/** Valid leave submission closes the form, shows success banner, and prepends a pending entry (AC-01-03/04). */
+/** Valid leave submission closes the dialog, shows success banner, and prepends a pending entry (AC-01-03/04). */
 export const ParentDisciplineScreen_LeaveForm_Valid: Story = {
   args: {
     ...baseVm,
@@ -264,18 +264,16 @@ export const ParentDisciplineScreen_LeaveForm_Valid: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(document.body);
     await userEvent.click(
       canvas.getByRole("button", { name: "Xin nghỉ phép" }),
     );
-    const reason = canvas.getByLabelText("Lý do *");
+    await body.findByRole("dialog");
+    const reason = body.getByLabelText("Lý do *");
     await userEvent.type(reason, "Con bị ốm cần nghỉ ở nhà điều trị");
-    await userEvent.click(canvas.getByRole("button", { name: "Gửi đơn" }));
-    // Form closes after submit.
-    await waitFor(() =>
-      expect(
-        canvas.queryByRole("heading", { name: "Gửi đơn xin nghỉ" }),
-      ).toBeNull(),
-    );
+    await userEvent.click(body.getByRole("button", { name: /Gửi đơn/ }));
+    // Dialog closes after submit.
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
     // Success banner mentions the GVCN (DEF-E09.4-002 assertion).
     await expect(canvas.getByText(/Nguyễn Thị Hương/)).toBeInTheDocument();
     // Optimistic pending entry prepended to history list (DEF-E09.4-002 gap fix).
@@ -285,7 +283,12 @@ export const ParentDisciplineScreen_LeaveForm_Valid: Story = {
   },
 };
 
-/** Validation: short reason blocks submit with an inline error (AC-03). */
+/**
+ * Validation (AC-03), US-E24.20 shape: the canonical dialog blocks submit while
+ * the reason is EMPTY and says why — the old bespoke 10-character client rule is
+ * gone (core enforces `minLength: 1`; a too-short reason now surfaces through
+ * the server `errorMessage` path like every other failure).
+ */
 export const ParentDisciplineScreen_LeaveForm_Validation: Story = {
   args: {
     ...baseVm,
@@ -293,21 +296,21 @@ export const ParentDisciplineScreen_LeaveForm_Validation: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(document.body);
     await userEvent.click(
       canvas.getByRole("button", { name: "Xin nghỉ phép" }),
     );
-    const reason = canvas.getByLabelText("Lý do *");
-    await userEvent.type(reason, "Ốm");
-    await userEvent.click(canvas.getByRole("button", { name: "Gửi đơn" }));
-    // Reason error visible; form still open.
-    await waitFor(() =>
-      expect(
-        canvas.getByText("Lý do phải có ít nhất 10 ký tự"),
-      ).toBeInTheDocument(),
-    );
+    await body.findByRole("dialog");
+    await expect(body.getByRole("button", { name: /Gửi đơn/ })).toBeDisabled();
     await expect(
-      canvas.getByRole("heading", { name: "Gửi đơn xin nghỉ" }),
+      body.getByText("Vui lòng nhập lý do nghỉ."),
     ).toBeInTheDocument();
+    // Typing anything non-empty unblocks it; the dialog stays open.
+    await userEvent.type(body.getByLabelText("Lý do *"), "Ốm");
+    await waitFor(() =>
+      expect(body.getByRole("button", { name: /Gửi đơn/ })).toBeEnabled(),
+    );
+    await expect(body.getByRole("dialog")).toBeInTheDocument();
   },
 };
 
@@ -385,33 +388,37 @@ export const ParentDisciplineScreen_ErrorState: Story = {
   },
 };
 
-/** Past startDate shows inline validation error "Ngày nghỉ phải từ hôm nay trở đi" (AC-03, DEF-E09.4-003). */
-export const ParentDisciplineScreen_LeaveForm_PastDate: Story = {
+/**
+ * A back-dated request is unreachable (AC-03, DEF-E09.4-003): the canonical
+ * dialog puts TODAY on both date inputs' `min`, so the picker never offers a
+ * past day. US-E24.20 also removed the leave-TYPE control and the attachment
+ * picker from this path — asserted here so neither silently comes back.
+ */
+export const ParentDisciplineScreen_LeaveForm_NoPastDate_NoType: Story = {
   args: {
     ...baseVm,
     childList: [CHILDREN[0]],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const body = within(document.body);
     await userEvent.click(
       canvas.getByRole("button", { name: "Xin nghỉ phép" }),
     );
-    // Enter a past date for startDate (2020-01-01 is safely in the past).
-    const startDateInput = canvas.getByLabelText("Ngày bắt đầu *");
-    await userEvent.clear(startDateInput);
-    await userEvent.type(startDateInput, "2020-01-01");
-    const reason = canvas.getByLabelText("Lý do *");
-    await userEvent.type(reason, "Con bị ốm cần nghỉ ở nhà điều trị");
-    await userEvent.click(canvas.getByRole("button", { name: "Gửi đơn" }));
-    // Past-date validation error visible; form stays open.
-    await waitFor(() =>
-      expect(
-        canvas.getByText("Ngày nghỉ phải từ hôm nay trở đi"),
-      ).toBeInTheDocument(),
+    await body.findByRole("dialog");
+
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    await expect(body.getByLabelText("Ngày bắt đầu *")).toHaveAttribute(
+      "min",
+      iso,
     );
-    await expect(
-      canvas.getByRole("heading", { name: "Gửi đơn xin nghỉ" }),
-    ).toBeInTheDocument();
+
+    // No leave-type select (core has no such concept) …
+    await expect(body.queryByRole("combobox")).toBeNull();
+    await expect(body.queryByText("Loại nghỉ *")).toBeNull();
+    // … and no attachment picker (no upload use-case on this path).
+    await expect(document.body.querySelector('input[type="file"]')).toBeNull();
   },
 };
 
