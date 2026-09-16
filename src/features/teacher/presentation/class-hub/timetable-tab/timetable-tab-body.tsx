@@ -41,6 +41,7 @@ function indexBy<T>(rows: T[], key: (row: T) => string): Record<string, T> {
  */
 export function TimetableTabBody({ vm, actions }: TimetableTabBodyProps) {
   const t = useTranslations("teacherClasses.hub.timetable");
+  const tTabs = useTranslations("teacherClasses.hub.tabs");
   const tErrors = useTranslations("teacherClasses.hub.timetable.errors");
   const [logs, setLogs] = useState<Record<string, PeriodLog>>(() =>
     indexBy(vm.logs, (l) => periodKeyOf(l.date, l.periodNumber)),
@@ -87,6 +88,10 @@ export function TimetableTabBody({ vm, actions }: TimetableTabBodyProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Heading hierarchy (US-E24.18 #7): the shell owns the only <h1>; the
+          day cards / upcoming panel below are <h3>. Visually hidden — the tab
+          strip already shows this exact label. */}
+      <h2 className="sr-only">{tTabs("timetable")}</h2>
       <ClassTimetableWeekNav
         weekRangeLabel={vm.weekRangeLabel}
         prevHref={vm.prevWeekHref}

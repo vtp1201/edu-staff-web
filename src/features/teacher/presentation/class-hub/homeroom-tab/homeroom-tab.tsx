@@ -54,53 +54,61 @@ function leaveSignature(vm: HomeroomTabVm): string {
  */
 export function HomeroomTab({ vm, actions }: HomeroomTabProps) {
   const t = useTranslations("teacherClasses.hub.homeroom.errors");
+  const tTabs = useTranslations("teacherClasses.hub.tabs");
 
   // design-spec `homeroomTab.grid`: auto-fit minmax(300px, 1fr). Held back to a
   // single column below `sm` — a 300px track cannot fit a 320px viewport's
   // content box, and an overflowing grid is a hard a11y break (accessibility.md
   // "không vỡ ở 320px").
   return (
-    <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
-      {vm.attendance.ok ? (
-        <AttendanceTodayCard vm={vm.attendance.data} />
-      ) : (
-        <HomeroomCardError
-          icon={CalendarX}
-          title={t("attendance")}
-          body={t("body")}
-          retryLabel={t("retry")}
-          retryHref={vm.attendance.retryHref}
-        />
-      )}
+    <>
+      {/* Heading hierarchy (US-E24.18 #7): the shell owns the only <h1>; the
+          cards below are <h3>. Without this the panel skipped h1→h3 (WCAG
+          1.3.1/2.4.6). Visually hidden — the tab strip already shows this exact
+          label, so a visible heading would be a redundant duplicate. */}
+      <h2 className="sr-only">{tTabs("homeroom")}</h2>
+      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+        {vm.attendance.ok ? (
+          <AttendanceTodayCard vm={vm.attendance.data} />
+        ) : (
+          <HomeroomCardError
+            icon={CalendarX}
+            title={t("attendance")}
+            body={t("body")}
+            retryLabel={t("retry")}
+            retryHref={vm.attendance.retryHref}
+          />
+        )}
 
-      {vm.violations.ok ? (
-        <OpenViolationsCard vm={vm.violations.data} />
-      ) : (
-        <HomeroomCardError
-          icon={ShieldAlert}
-          title={t("violations")}
-          body={t("body")}
-          retryLabel={t("retry")}
-          retryHref={vm.violations.retryHref}
-        />
-      )}
+        {vm.violations.ok ? (
+          <OpenViolationsCard vm={vm.violations.data} />
+        ) : (
+          <HomeroomCardError
+            icon={ShieldAlert}
+            title={t("violations")}
+            body={t("body")}
+            retryLabel={t("retry")}
+            retryHref={vm.violations.retryHref}
+          />
+        )}
 
-      {vm.leave.ok ? (
-        <PendingLeaveCard
-          key={leaveSignature(vm)}
-          vm={vm.leave.data}
-          classId={vm.classId}
-          actions={actions}
-        />
-      ) : (
-        <HomeroomCardError
-          icon={CalendarX}
-          title={t("leave")}
-          body={t("body")}
-          retryLabel={t("retry")}
-          retryHref={vm.leave.retryHref}
-        />
-      )}
-    </div>
+        {vm.leave.ok ? (
+          <PendingLeaveCard
+            key={leaveSignature(vm)}
+            vm={vm.leave.data}
+            classId={vm.classId}
+            actions={actions}
+          />
+        ) : (
+          <HomeroomCardError
+            icon={CalendarX}
+            title={t("leave")}
+            body={t("body")}
+            retryLabel={t("retry")}
+            retryHref={vm.leave.retryHref}
+          />
+        )}
+      </div>
+    </>
   );
 }
