@@ -1,5 +1,6 @@
 # FE Lead Memory Index
 
+- [US-E24.18 backlog batch 4](project-e24-18-backlog-batch4.md) — merged 15d99c8e; dual-role token can't get one `.dark {}` override (class-level override reusing sibling token instead); ADR amended post-implementation to match real contrast math; opt-in `idPrefix` deviation recorded not silently closed; sibling defect routed to new backlog item, not scope-crept
 - [US-E24.4 cross-subject tabs](project-e24-4-cross-subject-tabs.md) — merged ce45f592; closes E24 student Phase 1; zero-Client-Component tab screen; safe refactor-in-place proof pattern (old test untouched, still green)
 - [US-E24.5 course player](project-e24-5-course-player.md) — merged 03cac7e7; high-risk lane; 3-round adversarial allowlist verification (48+4 bypass cases, zero holes); focus-retargeting a11y class unique to mutation state machines
 - [US-E24.3 course timeline](project-e24-3-course-timeline.md) — merged 24ce9f11; lesson-player REBUILT (not renamed); a11y lessons transferred cleanly (2 minor only); TEMP-code grep discipline for E24.5
