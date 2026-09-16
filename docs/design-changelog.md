@@ -8,6 +8,29 @@ change is dev-facing docs only or touches user-visible product surface.
 
 ---
 
+## 2026-09-17 — `leaveRequestForm` design-spec synced to the canonical dialog (US-E24.20, epic E24) `[INTERNAL]`
+
+**What changed**: the `leaveRequestForm` entry in `docs/product/design-spec.jsonc`
+(student-conduct / parent-discipline section) described an inline panel with a
+leave-TYPE select and a `minLength: 10` reason — none of which the shipped UI has
+since US-E24.20 consolidated both legacy forms onto
+`components/shared/leave-request-dialog`. The entry now records: a modal Dialog
+trigger; no `type` field (the key `discipline.studentConduct.leaveRequest.type`
+was deleted with the control — core has no such concept); `reason` client
+validation = non-empty + ≤500 chars (the ≥10 rule is noted as SERVER-side only
+for these two legacy submit paths); and the `startDate` rule as both the `min`
+attribute AND the submit predicate (DEF-E09.4-003, restored in the same fix
+round — `min` is not enforced because submit is a plain button, not a form
+submit). `submitLabel`/`successToast`/`formReset` unchanged.
+
+**Refs**: US-E24.20 (backlog batch 6, tech-lead fix round). No new ADR, no new
+token — doc catching up to code.
+
+**Rationale**: a normative per-screen spec that contradicts the shipped UI and
+cites a deleted i18n key mis-directs every downstream `/ba` → `/fe` read.
+
+---
+
 ## 2026-09-02 — Design bundle 0209 **v3** sync (R1–R3 + D1–D9 now match BE) (US-E24.0b, epic E24) `[INTERNAL]`
 
 **What changed**: bundle `design_src0209_v3` = v1 (US-E24.0 above) + D1–D9

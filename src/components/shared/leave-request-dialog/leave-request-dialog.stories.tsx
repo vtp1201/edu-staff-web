@@ -114,6 +114,45 @@ export const StartDateClampsEndDate: Story = {
 };
 
 /**
+ * A back-dated start date is blocked CLIENT side (DEF-E09.4-003).
+ *
+ * The `min` attribute alone is NOT a guard: the submit control is a plain
+ * button, not a form submit, so the browser never runs constraint validation
+ * and a typed-in past day would otherwise reach the server. The date can only
+ * be TYPED (the picker respects `min`), which is exactly what this exercises.
+ */
+export const PastStartDateBlocksSubmit: Story = {
+  args: baseArgs,
+  play: async () => {
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    // A valid reason first, so `reasonInvalid` is not what disables submit.
+    await userEvent.type(body.getByLabelText(m.reason), "Khám bệnh định kỳ");
+    const submit = body.getByRole("button", { name: m.submit });
+    await waitFor(async () => {
+      await expect(submit).toBeEnabled();
+    });
+
+    const start = body.getByLabelText(m.startDate) as HTMLInputElement;
+    await userEvent.clear(start);
+    await userEvent.type(start, "2026-09-05"); // one day before `minDate`
+
+    await waitFor(async () => {
+      await expect(start.value).toBe("2026-09-05");
+      await expect(submit).toBeDisabled();
+    });
+
+    // Back to today → submittable again.
+    await userEvent.clear(start);
+    await userEvent.type(start, TODAY);
+    await waitFor(async () => {
+      await expect(submit).toBeEnabled();
+    });
+  },
+};
+
+/**
  * AC: the 4th file / an oversized file / a wrong extension are refused CLIENT
  * side with a visible TEXT reason (not colour alone).
  */

@@ -409,10 +409,27 @@ export const ParentDisciplineScreen_LeaveForm_NoPastDate_NoType: Story = {
 
     const today = new Date();
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    await expect(body.getByLabelText("Ngày bắt đầu *")).toHaveAttribute(
-      "min",
-      iso,
-    );
+    const start = body.getByLabelText("Ngày bắt đầu *") as HTMLInputElement;
+    await expect(start).toHaveAttribute("min", iso);
+
+    // `min` alone is not enforced (the submit control is a plain button, not a
+    // form submit) — a TYPED past day must disable submit, with a reason filled
+    // in so that is not what blocks it.
+    await userEvent.type(body.getByLabelText("Lý do *"), "Khám bệnh định kỳ");
+    const submit = body.getByRole("button", { name: "Gửi đơn" });
+    await waitFor(async () => {
+      await expect(submit).toBeEnabled();
+    });
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pastIso = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+    await userEvent.clear(start);
+    await userEvent.type(start, pastIso);
+    await waitFor(async () => {
+      await expect(start.value).toBe(pastIso);
+      await expect(submit).toBeDisabled();
+    });
 
     // No leave-type select (core has no such concept) …
     await expect(body.queryByRole("combobox")).toBeNull();

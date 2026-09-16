@@ -359,7 +359,18 @@ export function LeaveRequestDialog({
           </Button>
           <Button
             type="button"
-            disabled={reasonInvalid || isPending || endDate < startDate}
+            // `min` on `<input type="date">` is NOT enforced here — this button
+            // is a plain button, not a form submit, so the browser never runs
+            // constraint validation. A typed-in back-dated start must therefore
+            // be blocked in the predicate (DEF-E09.4-003, kept through the
+            // US-E24.20 consolidation) — the server rejects it too, but the user
+            // should not have to round-trip to learn that.
+            disabled={
+              reasonInvalid ||
+              isPending ||
+              endDate < startDate ||
+              startDate < minDate
+            }
             aria-busy={isPending}
             onClick={() =>
               onSubmit({
