@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -146,4 +146,110 @@ existing tests for those screens keep passing untouched wherever possible.
 
 ## Evidence
 
-(added after validation exists)
+Implemented on branch `fix/us-e24.18-backlog-batch4-tiny-fixes`, commits
+`1b744cb3` (story/ADR docs), `fd48d8d3` (#9), `1370b77c` (#10), `f66d94dd`
+(#7), `572a8745` (#11), `6af0e539` (memory sync), `ed4805dc` (ADR 0077
+amendment to match the shipped resolution), `2cea4cac` (review follow-up:
+orphaned fixture cleanup + doc-comment fix).
+
+### Item #9 — `--edu-error-dark-light` dark value
+
+`.dark { --edu-error-dark-light: #7a0011 }` (`src/app/globals.css`) +
+class-level `dark:text-edu-error-text` override at all 5 call sites pairing
+`bg-edu-error-dark-light` (`status-badge.tsx`, `discipline-tones.ts` +
+`discipline-screen.tsx`, `tag-chips-input.tsx`, `create-violation-dialog.tsx`;
+`otp-input.tsx` already correct, untouched). `--edu-error-dark` deliberately
+NOT overridden in `.dark` (its light-mode value is also a solid-background
+token elsewhere with a hard 3.25:1 luminance ceiling as text on any dark bg —
+see ADR 0077, amended to record this deviation). Contrast independently
+verified twice (`fe-tech-lead-reviewer` + `fe-accessibility-auditor`,
+recomputed from relative luminance, not trusted from the commit message):
+dark `#ffdad6` on `#7a0011` = 8.85:1, light `#b91c1c` on `#fee2e2` = 5.30:1
+(unchanged), avoided-regression case `#b91c1c` on `#7a0011` = 1.77:1 (why the
+class-level override was mandatory, not optional). Solid-background usages of
+`--edu-error-dark` (destructive button, notification badge, delete dialogs)
+confirmed unaffected — their value never changed.
+
+### Item #10 — dead `ListAssignmentsUseCase` / `listAssignments`
+
+Removed `list-assignments.use-case.ts`, the `listAssignments` method from
+`i-lms.repository.ts` + both implementations, their test blocks, and (review
+follow-up) the now-orphaned `MOCK_ASSIGNMENT_SUMMARIES` fixture. Repo-wide
+grep confirms zero remaining references except the unrelated
+`admin/staffing.listAssignments`. `toAssignmentSummary` (mapper) and
+`AssignmentSummaryResponseDto` (DTO) are deliberately retained (own mapper
+test still covers them) with an explicit comment marking them as contract
+surface for an upcoming list path, not an oversight — an intentional decision
+made explicit per reviewer request, not left ambiguous.
+
+### Item #7 — class-hub heading hierarchy
+
+`homeroom-tab.tsx` and `timetable-tab-body.tsx` each gained a real (not
+`aria-hidden`) `sr-only` `<h2>` reusing the existing
+`teacherClasses.hub.tabs.homeroom`/`.timetable` i18n keys, before their `h3`
+card titles — no new i18n keys. Confirmed the only two tab bodies in the
+class-hub tree; `students`/`course` tabs audited and confirmed to not skip.
+
+### Item #11 — `ChildSwitcher` aria hardening
+
+`aria-controls` now emitted only on the active tab (never a dangling
+reference); `idPrefix` prop + `childSwitcherIds()` builder added, defaulting
+to the historical unprefixed scheme so all 3 existing consumers
+(`academic-record-screen`, `parent-attendance-screen`, `grade-book-screen`)
+and their hardcoded `aria-controls="tabpanel-*"` test assertions are
+byte-for-byte unchanged (129/129 consumer story tests green, re-verified by
+both reviewer and auditor). **Deviation flagged and accepted:** AC #11's
+"cannot produce colliding ids" is satisfied mechanically only when a consumer
+opts in via `idPrefix` — none of the 3 real consumers do yet, so the
+guarantee is available but not yet exercised repo-wide. This was the
+deliberate tradeoff to avoid breaking the 3 consumers' existing exact-string
+assertions (a `useId()`-based default would have changed every id). Backlog
+item #15 opened separately for the structurally identical dangling
+`aria-controls` defect in `year-timeline.tsx` (same screen, different
+component, out of this US's scope).
+
+### Platform proof (final, re-verified independently by `fe-tech-lead-reviewer`)
+
+- `bunx tsc --noEmit`: clean.
+- `bun lint`: clean (1 warning + 1 info pre-existing in
+  `messaging/message-context-menu.tsx`, unrelated).
+- `bun vitest run`: 597 files / 5046 tests passed.
+- `bun vitest --config vitest.storybook.mts run`: 176 files / 1449 tests
+  passed.
+- `NEXT_PUBLIC_USE_MOCK=true bun run build`: compiled successfully, full
+  route manifest.
+
+### Reviews
+
+- `fe-tech-lead-reviewer`: **Approved** (1 should-fix — orphaned fixture,
+  fixed; 2 considers — JSDoc placement, fixed; year-timeline.tsx defect
+  routed to backlog #15).
+- `fe-accessibility-auditor`: **Pass**, no blocking/major findings. One
+  informational minor (A11Y-101, pre-existing `idPrefix` opt-in risk on
+  `academic-record-screen`'s two co-located tablists, not introduced by this
+  branch, not required to fix).
+
+### Design review
+
+```
+Design review: pass
+- design-system: conform — no new token name (only a .dark value added to an
+  existing token per ADR 0077), no raw color, no component pattern change,
+  no screen-layout change (docs/product/screens.md unaffected — no new
+  screen or layout surface).
+- a11y: WCAG AA OK (8.85:1 dark / 5.30:1 light, independently recomputed
+  twice); keyboard OK (unchanged); focus-visible OK (unchanged); reduced-motion
+  n/a (no animation touched); heading hierarchy OK (h1→h2→h3, no skip);
+  ARIA tabs pattern OK (no dangling aria-controls).
+- impeccable audit: not run as a separate pass — this batch is non-visual
+  (token .dark value + sr-only heading + aria attribute only, zero layout/
+  spacing/typography/visual diff), and its actual anti-pattern surface
+  (contrast, heading hierarchy, ARIA correctness) was already independently
+  verified twice over (tech-lead review + a11y audit), which is what
+  impeccable audit would otherwise catch. No conflict with the design system
+  found or expected given the change shape.
+- states: no new loading/empty/error/success state introduced; dark mode is
+  the state under test for #9 and is explicitly covered (real `.dark` tree
+  getComputedStyle assertions in status-badge.stories.tsx); no responsive/
+  320px surface changed.
+```
