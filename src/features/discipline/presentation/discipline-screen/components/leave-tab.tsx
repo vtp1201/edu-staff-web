@@ -37,6 +37,15 @@ export function LeaveTab({
   const t = useTranslations("discipline.leave");
   const tErr = useTranslations("discipline.errors");
   const [isPending, startTransition] = useTransition();
+  /**
+   * Approve/reject is GVCN-only — the SAME gate `violations-tab.tsx` uses for
+   * its own teacher-only controls. `canDecideLeave()` already denies every
+   * non-teacher role, and core forbids BGH (ADMIN/MANAGER = principal in real
+   * mode) from deciding at all ("BGH has read-only oversight at MVP", ADR 0073
+   * follow-up), so rendering the buttons for a principal shipped a control
+   * whose only possible outcome was a `forbidden` toast (backlog #8).
+   */
+  const isTeacher = vm.viewerRole === "teacher";
 
   const [list, setList] = useState<LeaveRequestEntity[]>(leaveRequests);
   const [filter, setFilter] = useState<LeaveStatus | "all">("all");
@@ -186,7 +195,7 @@ export function LeaveTab({
                   <StatusBadge tone={LEAVE_STATUS_TONE[req.status]}>
                     {t(`status.${req.status}`)}
                   </StatusBadge>
-                  {req.status === "pending" && (
+                  {req.status === "pending" && isTeacher && (
                     <div className="flex gap-1.5">
                       <Button
                         type="button"

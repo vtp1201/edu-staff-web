@@ -348,6 +348,27 @@ export const LeaveTab_WithPending: Story = {
   },
 };
 
+/**
+ * Principal view of the leave tab — approve/reject are NOT rendered (backlog
+ * #8, US-E24.20). `canDecideLeave()` already denies any non-teacher role AND
+ * core forbids BGH from deciding (ADR 0073 follow-up), so the buttons were a
+ * present-but-dead control. Same gate idiom as `ViolationsTab_Principal_NoDeleteButton`.
+ */
+export const LeaveTab_Principal_NoDecisionButtons: Story = {
+  args: { ...baseVm, viewerRole: "principal", initialTab: "leave" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The pending row itself still renders (read-only oversight).
+    await expect(canvas.getAllByText("Chờ duyệt").length).toBeGreaterThan(0);
+    await expect(
+      canvas.queryAllByRole("button", { name: /Duyệt đơn nghỉ của/ }),
+    ).toHaveLength(0);
+    await expect(
+      canvas.queryAllByRole("button", { name: /Từ chối đơn nghỉ của/ }),
+    ).toHaveLength(0);
+  },
+};
+
 /** Leave tab opens the reject dialog and enforces the 10-char minimum reason (AC-6). */
 export const LeaveTab_Reject: Story = {
   args: { ...baseVm, initialTab: "leave" },
