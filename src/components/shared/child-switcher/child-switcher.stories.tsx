@@ -4,7 +4,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import { toParentChildren } from "@/features/grades/infrastructure/mappers/parent-child.mapper";
 import { MOCK_VIEWER_CHILDREN } from "@/features/grades/infrastructure/repositories/mocks/grade-book-fixtures";
-import { ChildSwitcher } from "./child-switcher";
+import { ChildSwitcher, childSwitcherIds } from "./child-switcher";
 
 const meta: Meta<typeof ChildSwitcher> = {
   title: "Shared/ChildSwitcher",
@@ -165,5 +165,115 @@ export const ParentView_RealMode_ResolvedNames: Story = {
 
     await userEvent.click(degraded);
     expect(args.onSwitch).toHaveBeenCalledWith("st-2");
+  },
+};
+
+/* ── US-E24.18 (#11): no dangling `aria-controls`, and id namespacing ───── */
+
+/**
+ * A11Y-002 (US-E24.16 review, deferred → closed here): every consumer mounts
+ * exactly ONE tabpanel — the ACTIVE child's. The switcher used to emit
+ * `aria-controls="tabpanel-<childId>"` on EVERY tab, so every inactive tab
+ * referenced an id that exists nowhere in the DOM (WCAG 4.1.2 / ARIA tabs
+ * pattern). `aria-controls` is optional per-tab, so the inactive tabs simply
+ * omit it; the active tab keeps its pairing with the real panel.
+ */
+export const AriaControlsNeverDangles: Story = {
+  args: {
+    childList: MOCK_VIEWER_CHILDREN,
+    activeChildId: "c1",
+    onSwitch: fn(),
+  },
+  render: (args) => (
+    <div>
+      <ChildSwitcher {...args} />
+      {/* The consumer contract: exactly one panel, for the ACTIVE child. */}
+      <div
+        role="tabpanel"
+        id={`tabpanel-${args.activeChildId}`}
+        aria-labelledby={`tab-${args.activeChildId}`}
+      >
+        Bảng điểm
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const [active, inactive] = canvas.getAllByRole("tab");
+
+    await expect(active).toHaveAttribute("aria-selected", "true");
+    // Active tab: the pairing still resolves to a REAL element.
+    const controls = active.getAttribute("aria-controls");
+    await expect(controls).toBe("tabpanel-c1");
+    await expect(
+      canvasElement.ownerDocument.getElementById(controls as string),
+    ).not.toBeNull();
+
+    // Inactive tab: no attribute at all — never a reference to a missing id.
+    await expect(inactive).not.toHaveAttribute("aria-controls");
+
+    // Belt and braces: NOTHING in the tree points at a nonexistent id.
+    for (const tab of canvas.getAllByRole("tab")) {
+      const ref = tab.getAttribute("aria-controls");
+      if (ref !== null) {
+        await expect(
+          canvasElement.ownerDocument.getElementById(ref),
+        ).not.toBeNull();
+      }
+    }
+  },
+};
+
+/**
+ * Two switchers on one page: without `idPrefix` both would emit
+ * `id="tab-c1"` and `id="child-switcher-label"`. With distinct prefixes every
+ * id is unique, and each active tab still points at its OWN panel.
+ */
+export const TwoInstancesNamespacedIds: Story = {
+  args: {
+    childList: MOCK_VIEWER_CHILDREN,
+    activeChildId: "c1",
+    onSwitch: fn(),
+  },
+  render: (args) => (
+    <div>
+      <ChildSwitcher {...args} idPrefix="left-" />
+      <div
+        role="tabpanel"
+        id={childSwitcherIds("left-").panel("c1")}
+        aria-labelledby={childSwitcherIds("left-").tab("c1")}
+      >
+        Trái
+      </div>
+      <ChildSwitcher {...args} activeChildId="c2" idPrefix="right-" />
+      <div
+        role="tabpanel"
+        id={childSwitcherIds("right-").panel("c2")}
+        aria-labelledby={childSwitcherIds("right-").tab("c2")}
+      >
+        Phải
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument;
+    const tabs = within(canvasElement).getAllByRole("tab");
+    const ids = tabs.map((t) => t.id);
+    await expect(new Set(ids).size).toBe(ids.length);
+    await expect(ids).toEqual([
+      "left-tab-c1",
+      "left-tab-c2",
+      "right-tab-c1",
+      "right-tab-c2",
+    ]);
+
+    // Exactly one `aria-controls` per instance, each resolving to its own panel.
+    const refs = tabs
+      .map((t) => t.getAttribute("aria-controls"))
+      .filter((r): r is string => r !== null);
+    await expect(refs).toEqual(["left-tabpanel-c1", "right-tabpanel-c2"]);
+    for (const ref of refs) {
+      await expect(doc.getElementById(ref)).not.toBeNull();
+    }
   },
 };

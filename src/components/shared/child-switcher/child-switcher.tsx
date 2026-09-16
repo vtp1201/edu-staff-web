@@ -8,6 +8,31 @@ import type { ChildColor, ChildSwitcherVM } from "./child-switcher.i-vm";
 interface ChildSwitcherProps extends ChildSwitcherVM {
   onSwitch: (childId: string) => void;
   isLoading?: boolean;
+  /**
+   * Namespace for every DOM id this component emits (US-E24.18 #11). Defaults
+   * to `""`, i.e. the historical `tab-<childId>` / `tabpanel-<childId>` /
+   * `child-switcher-label` scheme, so existing consumers need no change.
+   *
+   * A page rendering ≥2 `ChildSwitcher` instances MUST pass a DISTINCT
+   * `idPrefix` to each — otherwise both emit the same ids and `aria-labelledby`
+   * / `aria-controls` resolve to whichever came first in the document.
+   * When you pass one, build the panel's id with `childSwitcherIds(prefix)`
+   * rather than re-deriving the string.
+   */
+  idPrefix?: string;
+}
+
+/**
+ * The single source of the ids this component emits — exported so a consumer
+ * builds its tabpanel id from the SAME function the tab uses, instead of
+ * duplicating the template literal.
+ */
+export function childSwitcherIds(idPrefix = "") {
+  return {
+    label: `${idPrefix}child-switcher-label`,
+    tab: (childId: string) => `${idPrefix}tab-${childId}`,
+    panel: (childId: string) => `${idPrefix}tabpanel-${childId}`,
+  };
 }
 
 /** Maps design-token color name → CSS variable string (avatar background). */
@@ -33,11 +58,13 @@ export function ChildSwitcher({
   activeChildId,
   onSwitch,
   isLoading = false,
+  idPrefix = "",
 }: ChildSwitcherProps) {
   // Shared UI atom → shared namespace: a `components/shared/` component cannot
   // own a feature namespace (`gradeBook`), so the label lives in `Common`.
   const t = useTranslations("Common");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const ids = childSwitcherIds(idPrefix);
 
   function handleKeyDown(e: KeyboardEvent<HTMLButtonElement>, idx: number) {
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
@@ -58,14 +85,14 @@ export function ChildSwitcher({
   return (
     <div className="rounded-[12px] border border-border bg-card p-4">
       <p
-        id="child-switcher-label"
+        id={ids.label}
         className="mb-3 font-bold text-edu-text-secondary text-xs uppercase tracking-wider"
       >
         {t("childSwitcherLabel")}
       </p>
       <div
         role="tablist"
-        aria-labelledby="child-switcher-label"
+        aria-labelledby={ids.label}
         className="flex flex-wrap gap-2"
       >
         {childList.map((child, idx) => {
@@ -79,8 +106,14 @@ export function ChildSwitcher({
               }}
               role="tab"
               aria-selected={isActive}
-              aria-controls={`tabpanel-${child.childId}`}
-              id={`tab-${child.childId}`}
+              // Only the ACTIVE child has a panel in the DOM — every consumer
+              // mounts exactly one. Emitting `aria-controls` on the inactive
+              // tabs pointed at ids that exist nowhere (WCAG 4.1.2, A11Y-002 of
+              // the US-E24.16 review); `aria-controls` is optional per tab, a
+              // dangling one is not. `id` stays on EVERY tab — the panel's
+              // `aria-labelledby` needs it.
+              aria-controls={isActive ? ids.panel(child.childId) : undefined}
+              id={ids.tab(child.childId)}
               tabIndex={isActive ? 0 : -1}
               type="button"
               aria-disabled={isLoading && !isActive}
