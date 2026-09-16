@@ -149,6 +149,8 @@ export function toAssignment(dto: AssignmentResponseDto): Assignment {
 }
 
 /** No `state`, no `instructions` — the by-class row genuinely has neither. */
+// Retained deliberately as contract surface for an upcoming list-assignments
+// path (no production caller today) — not a leftover oversight.
 export function toAssignmentSummary(
   dto: AssignmentSummaryResponseDto,
 ): AssignmentSummary {

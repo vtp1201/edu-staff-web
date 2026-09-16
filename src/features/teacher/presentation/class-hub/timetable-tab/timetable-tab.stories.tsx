@@ -204,8 +204,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** GVBM + GVCN on "today": own slots carry both actions, the daily strip is
- *  editable, and another teacher's logged period is readable but not writable. */
 /**
  * US-E24.18 (#7): heading hierarchy. The shell owns the `<h1>`; this tab body
  * used to start at `<h3>` (day cards / upcoming panel) — a level skip. It now
@@ -225,6 +223,8 @@ export const HeadingHierarchy: Story = {
   },
 };
 
+/** GVBM + GVCN on "today": own slots carry both actions, the daily strip is
+ *  editable, and another teacher's logged period is readable but not writable. */
 export const BothRolesToday: Story = {
   args: {
     vm: vm({

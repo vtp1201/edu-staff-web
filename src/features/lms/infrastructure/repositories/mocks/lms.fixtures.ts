@@ -1,7 +1,4 @@
-import type {
-  Assignment,
-  AssignmentSummary,
-} from "../../../domain/entities/assignment.entity";
+import type { Assignment } from "../../../domain/entities/assignment.entity";
 import type { ClassSubjectRef } from "../../../domain/entities/class-subject-ref.entity";
 import type {
   Course,
@@ -452,19 +449,6 @@ export const MOCK_ASSIGNMENTS: Assignment[] = [
     updatedAt: iso(-9),
   },
 ];
-
-/** By-class list projection — no `instructions`, no `state`, no `createdAt`. */
-export const MOCK_ASSIGNMENT_SUMMARIES: AssignmentSummary[] =
-  MOCK_ASSIGNMENTS.map((a) => ({
-    id: a.id,
-    classId: a.classId,
-    subjectId: a.subjectId,
-    courseId: a.courseId,
-    title: a.title,
-    dueAt: a.dueAt,
-    createdBy: a.createdBy,
-    updatedAt: a.updatedAt,
-  }));
 
 // ── submissions ────────────────────────────────────────────────────────────
 
