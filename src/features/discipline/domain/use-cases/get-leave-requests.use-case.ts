@@ -4,7 +4,10 @@ import type { IDisciplineRepository } from "../repositories/i-discipline.reposit
 export class GetLeaveRequestsUseCase {
   constructor(private readonly repo: IDisciplineRepository) {}
 
-  async execute(params: { classId?: string }): Promise<LeaveRequestEntity[]> {
+  async execute(params: {
+    classId?: string;
+    className?: string;
+  }): Promise<LeaveRequestEntity[]> {
     return this.repo.getLeaveRequests(params);
   }
 }

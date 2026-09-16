@@ -163,10 +163,22 @@ export class MockDisciplineRepository implements IDisciplineRepository {
 
   async getLeaveRequests(params: {
     classId?: string;
+    /** Accepted for interface parity; the mock fixtures already carry a
+     *  `className`, so there is nothing to stamp — but it IS the only key the
+     *  two id spaces share, see below. */
+    className?: string;
   }): Promise<LeaveRequestEntity[]> {
     await mockDelay();
+    if (!params.classId && !params.className) return [..._leave];
+    // The multi-class dashboards fan this call out over REAL class ids, whose
+    // mock id spaces (`cls-10a1…` for teacher, `c-10a1…` for principal) do NOT
+    // intersect the leave fixtures' ids (seeded with the class NAME). The class
+    // NAMES do overlap, so match on either key — this is the one seam that sees
+    // both spaces, so it is fixed here rather than in any of the three mocks.
     return _leave.filter(
-      (l) => !params.classId || l.classId === params.classId,
+      (l) =>
+        (params.classId !== undefined && l.classId === params.classId) ||
+        (params.className !== undefined && l.className === params.className),
     );
   }
 

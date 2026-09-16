@@ -48,6 +48,18 @@ export interface LeaveRequestDialogProps {
    */
   minDate: string;
   isPending?: boolean;
+  /**
+   * Show the evidence/attachment picker. Default `true` — the parent
+   * attendance portal (US-E24.6) uploads real files through a wired
+   * `uploadLeaveAttachment` path.
+   *
+   * `false` for the two self-service submit paths (student conduct, parent
+   * discipline — US-E24.20): neither has an attachment-upload use-case wired,
+   * so a picker there would silently drop whatever the user chose — the exact
+   * present-but-dead control ADR `0067` forbids. In that mode `onSubmit`
+   * always receives `files: []`.
+   */
+  showAttachments?: boolean;
   /** Already-translated server-failure copy, shown as an inline `role="alert"`. */
   errorMessage?: string | null;
   /** Focus target on close when the invoking control no longer exists. */
@@ -81,6 +93,7 @@ export function LeaveRequestDialog({
   description,
   minDate,
   isPending = false,
+  showAttachments = true,
   errorMessage,
   returnFocusRef,
   onSubmit,
@@ -233,87 +246,89 @@ export function LeaveRequestDialog({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <Label htmlFor={fileId}>{tAttach("label")}</Label>
-          <Input
-            ref={fileInputRef}
-            id={fileId}
-            type="file"
-            multiple
-            accept={ACCEPT}
-            disabled={isPending || files.length >= MAX_ATTACHMENTS}
-            // The constraints (ext / size / count) are described from the
-            // START, not only once a pick has been rejected — a screen-reader
-            // user must hear them BEFORE choosing a file (a11y audit A11Y-104).
-            aria-describedby={
-              rejected.length > 0 ? `${hintId} ${rejectedId}` : hintId
-            }
-            onChange={(e) => pickFiles(e.target.files)}
-          />
-          <span id={hintId} className="text-muted-foreground text-xs">
-            {tAttach("hint")}
-          </span>
+        {showAttachments ? (
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor={fileId}>{tAttach("label")}</Label>
+            <Input
+              ref={fileInputRef}
+              id={fileId}
+              type="file"
+              multiple
+              accept={ACCEPT}
+              disabled={isPending || files.length >= MAX_ATTACHMENTS}
+              // The constraints (ext / size / count) are described from the
+              // START, not only once a pick has been rejected — a screen-reader
+              // user must hear them BEFORE choosing a file (a11y audit A11Y-104).
+              aria-describedby={
+                rejected.length > 0 ? `${hintId} ${rejectedId}` : hintId
+              }
+              onChange={(e) => pickFiles(e.target.files)}
+            />
+            <span id={hintId} className="text-muted-foreground text-xs">
+              {tAttach("hint")}
+            </span>
 
-          {files.length > 0 ? (
-            <ul className="mt-1 flex flex-col gap-1">
-              {files.map((file) => (
-                <li
-                  key={`${file.name}-${file.size}-${file.lastModified}`}
-                  className="flex items-center gap-2 rounded-[var(--edu-radius-btn)] bg-muted px-2.5 py-1.5 text-xs"
-                >
-                  <Paperclip
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0 text-edu-text-secondary"
-                  />
-                  <span className="min-w-0 flex-1 truncate text-foreground">
-                    {file.name}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={tAttach("remove", { fileName: file.name })}
-                    disabled={isPending}
-                    // 44×44 tappable area (a11y audit A11Y-103) — the icon
-                    // stays 14px, only the hit area grows, so the row height is
-                    // unchanged by the negative margin.
-                    className="-my-1.5 grid min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-edu-text-secondary hover:bg-background focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-                    onClick={() =>
-                      setFiles((current) => current.filter((f) => f !== file))
-                    }
-                  >
-                    <X aria-hidden="true" className="size-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {/* Rejections are TEXT (icon + sentence), never a red border alone. */}
-          {rejected.length > 0 ? (
-            <div
-              id={rejectedId}
-              role="alert"
-              className="mt-1 flex flex-col gap-1"
-            >
-              <p className="font-semibold text-edu-error-text text-xs">
-                {tAttach("rejectedTitle")}
-              </p>
-              <ul className="flex flex-col gap-0.5">
-                {rejected.map((r) => (
+            {files.length > 0 ? (
+              <ul className="mt-1 flex flex-col gap-1">
+                {files.map((file) => (
                   <li
-                    key={`${r.name}-${r.reason}`}
-                    className="text-edu-error-text text-xs"
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    className="flex items-center gap-2 rounded-[var(--edu-radius-btn)] bg-muted px-2.5 py-1.5 text-xs"
                   >
-                    {r.reason === "ext"
-                      ? tAttach("errorExt", { fileName: r.name })
-                      : r.reason === "size"
-                        ? tAttach("errorSize", { fileName: r.name })
-                        : tAttach("errorCount", { fileName: r.name })}
+                    <Paperclip
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-edu-text-secondary"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-foreground">
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={tAttach("remove", { fileName: file.name })}
+                      disabled={isPending}
+                      // 44×44 tappable area (a11y audit A11Y-103) — the icon
+                      // stays 14px, only the hit area grows, so the row height is
+                      // unchanged by the negative margin.
+                      className="-my-1.5 grid min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-edu-text-secondary hover:bg-background focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                      onClick={() =>
+                        setFiles((current) => current.filter((f) => f !== file))
+                      }
+                    >
+                      <X aria-hidden="true" className="size-3.5" />
+                    </button>
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+
+            {/* Rejections are TEXT (icon + sentence), never a red border alone. */}
+            {rejected.length > 0 ? (
+              <div
+                id={rejectedId}
+                role="alert"
+                className="mt-1 flex flex-col gap-1"
+              >
+                <p className="font-semibold text-edu-error-text text-xs">
+                  {tAttach("rejectedTitle")}
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {rejected.map((r) => (
+                    <li
+                      key={`${r.name}-${r.reason}`}
+                      className="text-edu-error-text text-xs"
+                    >
+                      {r.reason === "ext"
+                        ? tAttach("errorExt", { fileName: r.name })
+                        : r.reason === "size"
+                          ? tAttach("errorSize", { fileName: r.name })
+                          : tAttach("errorCount", { fileName: r.name })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <p className="flex items-start gap-2 rounded-[var(--edu-radius-btn)] bg-edu-warning-light px-3 py-2.5 text-edu-warning-text text-xs leading-relaxed">
           <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
@@ -344,10 +359,26 @@ export function LeaveRequestDialog({
           </Button>
           <Button
             type="button"
-            disabled={reasonInvalid || isPending || endDate < startDate}
+            // `min` on `<input type="date">` is NOT enforced here — this button
+            // is a plain button, not a form submit, so the browser never runs
+            // constraint validation. A typed-in back-dated start must therefore
+            // be blocked in the predicate (DEF-E09.4-003, kept through the
+            // US-E24.20 consolidation) — the server rejects it too, but the user
+            // should not have to round-trip to learn that.
+            disabled={
+              reasonInvalid ||
+              isPending ||
+              endDate < startDate ||
+              startDate < minDate
+            }
             aria-busy={isPending}
             onClick={() =>
-              onSubmit({ startDate, endDate, reason: trimmed, files })
+              onSubmit({
+                startDate,
+                endDate,
+                reason: trimmed,
+                files: showAttachments ? files : [],
+              })
             }
           >
             <Send aria-hidden="true" className="size-4" />

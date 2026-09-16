@@ -579,6 +579,29 @@ describe("DisciplineRepository (real) — GVCN homeroom leave inbox (US-E24.11)"
     expect(rows.map((r) => r.id)).toEqual(["req-1", "req-2"]);
   });
 
+  it("getLeaveRequests stamps the supplied className onto every row (the wire carries no class label)", async () => {
+    const get = vi.fn().mockResolvedValue(envelope([submitted]));
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    const rows = await repo.getLeaveRequests({
+      classId: "cls-10a1",
+      className: "10A1",
+    });
+
+    expect(rows[0].className).toBe("10A1");
+    // `className` is a display passthrough, never a query param.
+    expect(get.mock.calls[0][1].params.className).toBeUndefined();
+  });
+
+  it("getLeaveRequests leaves className blank when the caller does not supply one", async () => {
+    const get = vi.fn().mockResolvedValue(envelope([submitted]));
+    const repo = new DisciplineRepository(makeHttp({ get }), resolveNames);
+
+    const rows = await repo.getLeaveRequests({ classId: "cls-10a1" });
+
+    expect(rows[0].className).toBe("");
+  });
+
   it("getLeaveRequests WITHOUT a classId is refused before any HTTP call (core requires exactly one of classId/studentMemberId)", async () => {
     const http = makeHttp();
     const repo = new DisciplineRepository(http, resolveNames);

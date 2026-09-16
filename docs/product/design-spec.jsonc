@@ -3754,31 +3754,32 @@
           }
         },
 
+        // US-E24.20: this form is no longer bespoke — the student-conduct and
+        // parent-discipline submit paths both render the canonical
+        // `components/shared/leave-request-dialog` (modal Dialog). The leave
+        // TYPE control was removed with its i18n key (core has no such
+        // concept) and the attachment picker is hidden on these two paths
+        // (`showAttachments: false` — no upload use-case wired, ADR 0067).
         "leaveRequestForm": {
-          "trigger": "Nộp đơn nghỉ cho con button — opens inline panel (not modal)",
+          "component": "components/shared/leave-request-dialog",
+          "trigger": "Xin nghỉ phép button — opens a modal Dialog (Radix, portal; background inert)",
           "fields": [
             {
               "id": "startDate",
               "type": "date",
-              "validation": "≥ today",
+              "validation": "≥ today — `min` attribute AND the submit predicate (a typed past day disables submit, DEF-E09.4-003)",
               "i18nKey": "discipline.studentConduct.leaveRequest.startDate"
             },
             {
               "id": "endDate",
               "type": "date",
-              "validation": "≥ startDate",
+              "validation": "≥ startDate — moving startDate past it drags endDate along",
               "i18nKey": "discipline.studentConduct.leaveRequest.endDate"
-            },
-            {
-              "id": "type",
-              "type": "select",
-              "options": ["medical", "event", "personal", "other"],
-              "i18nKey": "discipline.studentConduct.leaveRequest.type"
             },
             {
               "id": "reason",
               "type": "textarea",
-              "minLength": 10,
+              "validation": "client: non-empty (trimmed) + ≤ 500 chars with a live counter. Server: these two legacy submit paths still enforce ≥ 10 chars (MIN_REASON_LENGTH) and surface it as a failure key — do NOT restate it as a client rule, the dialog does not apply it",
               "i18nKey": "discipline.studentConduct.leaveRequest.reason"
             }
           ],

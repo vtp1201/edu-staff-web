@@ -114,6 +114,45 @@ export const StartDateClampsEndDate: Story = {
 };
 
 /**
+ * A back-dated start date is blocked CLIENT side (DEF-E09.4-003).
+ *
+ * The `min` attribute alone is NOT a guard: the submit control is a plain
+ * button, not a form submit, so the browser never runs constraint validation
+ * and a typed-in past day would otherwise reach the server. The date can only
+ * be TYPED (the picker respects `min`), which is exactly what this exercises.
+ */
+export const PastStartDateBlocksSubmit: Story = {
+  args: baseArgs,
+  play: async () => {
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    // A valid reason first, so `reasonInvalid` is not what disables submit.
+    await userEvent.type(body.getByLabelText(m.reason), "Khám bệnh định kỳ");
+    const submit = body.getByRole("button", { name: m.submit });
+    await waitFor(async () => {
+      await expect(submit).toBeEnabled();
+    });
+
+    const start = body.getByLabelText(m.startDate) as HTMLInputElement;
+    await userEvent.clear(start);
+    await userEvent.type(start, "2026-09-05"); // one day before `minDate`
+
+    await waitFor(async () => {
+      await expect(start.value).toBe("2026-09-05");
+      await expect(submit).toBeDisabled();
+    });
+
+    // Back to today → submittable again.
+    await userEvent.clear(start);
+    await userEvent.type(start, TODAY);
+    await waitFor(async () => {
+      await expect(submit).toBeEnabled();
+    });
+  },
+};
+
+/**
  * AC: the 4th file / an oversized file / a wrong extension are refused CLIENT
  * side with a visible TEXT reason (not colour alone).
  */
@@ -200,6 +239,33 @@ export const SubmitsWithAttachments: Story = {
     const submission = args.onSubmit.mock.calls[0][0];
     await expect(submission.files).toHaveLength(1);
     await expect(submission.files[0].name).toBe("don.pdf");
+  },
+};
+
+/**
+ * `showAttachments={false}` — the whole evidence block is GONE (label, input
+ * and hint), and the submission still carries an empty `files` array
+ * (US-E24.20, backlog #12). The two self-service submit paths have no
+ * attachment-upload use-case wired, so offering the picker there would be a
+ * present-but-dead control that silently drops the picked files.
+ */
+export const WithoutAttachments: Story = {
+  args: { ...baseArgs, showAttachments: false },
+  play: async ({ args }) => {
+    const body = within(document.body);
+    await body.findByRole("dialog");
+
+    await expect(body.queryByLabelText(mAttach.label)).toBeNull();
+    await expect(body.queryByText(mAttach.hint)).toBeNull();
+    await expect(document.body.querySelector('input[type="file"]')).toBeNull();
+
+    // The rest of the dialog is unchanged and still submits.
+    await userEvent.type(body.getByLabelText(m.reason), "Con bị ốm");
+    await userEvent.click(
+      body.getByRole("button", { name: new RegExp(m.submit) }),
+    );
+    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
+    await expect(args.onSubmit.mock.calls[0][0].files).toEqual([]);
   },
 };
 

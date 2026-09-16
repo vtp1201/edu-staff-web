@@ -11,7 +11,7 @@ import type {
 } from "../../domain/entities/leave-request.entity";
 import { ConductSummaryCard } from "./components/conduct-summary-card";
 import { LeaveHistoryList } from "./components/leave-history-list";
-import { LeaveRequestSheet } from "./components/leave-request-sheet";
+import { LeaveRequestTrigger } from "./components/leave-request-trigger";
 import { MyViolationsList } from "./components/my-violations-list";
 import type { StudentConductScreenVM } from "./student-conduct-screen.i-vm";
 
@@ -108,7 +108,7 @@ export function StudentConductScreen(props: StudentConductScreenVM) {
           )}
         </div>
         {!isLoading && !loadErrorKey && (
-          <LeaveRequestSheet
+          <LeaveRequestTrigger
             studentId={studentId}
             submittedBy={viewerRole}
             submitAction={submitLeaveRequestAction}

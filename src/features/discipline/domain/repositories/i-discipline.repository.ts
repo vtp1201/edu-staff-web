@@ -38,7 +38,19 @@ export interface IDisciplineRepository {
     grade: ConductGrade,
     note: string,
   ): Promise<ConductSummaryEntity>;
-  getLeaveRequests(params: { classId?: string }): Promise<LeaveRequestEntity[]>;
+  /**
+   * The homeroom/oversight leave inbox for ONE class.
+   *
+   * `className` is a pure DISPLAY passthrough (never a query param): the wire
+   * carries no class label, and the multi-class dashboards that fan this call
+   * out per class DO render one per row. The caller already knows the name of
+   * the class it is asking about, so it stamps it rather than the repository
+   * re-deriving (and risking a stale second) value.
+   */
+  getLeaveRequests(params: {
+    classId?: string;
+    className?: string;
+  }): Promise<LeaveRequestEntity[]>;
   /** Approve — GVCN of `input.classId` only (decision `0063`). */
   approveLeave(input: DecideLeaveInput): Promise<LeaveRequestEntity>;
   /** Reject with a mandatory reason — GVCN of `input.classId` only. */

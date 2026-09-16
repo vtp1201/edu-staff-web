@@ -2,14 +2,16 @@
 
 import { CalendarPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   LeaveRequestDialog,
   type LeaveRequestSubmission,
 } from "@/components/shared/leave-request-dialog";
 import { Button } from "@/components/ui/button";
-import type { SubmitChildLeaveRequestInput } from "../../../domain/entities/leave-request.entity";
+import type { SubmitLeaveRequestInput } from "../../../domain/entities/leave-request.entity";
 import type { DisciplineFailure } from "../../../domain/failures/discipline.failure";
+import type { StudentConductActionResult } from "../student-conduct-screen.i-vm";
 
 /** Local date ISO "YYYY-MM-DD" (no timezone shift) — the dialog's earliest
  *  selectable day (core refuses a back-dated request). */
@@ -22,36 +24,28 @@ function todayISO(): string {
 }
 
 /**
- * Parent "xin nghỉ cho con" CTA (US-E09.4), consolidated onto the canonical
- * `LeaveRequestDialog` in US-E24.20 (backlog #12).
+ * Student / parent self-service "xin nghỉ phép" CTA (US-E09.2), consolidated
+ * onto the canonical `LeaveRequestDialog` in US-E24.20 (backlog #12) — hence
+ * the rename from `leave-request-sheet.tsx`: it is a Dialog now, not a Sheet.
  *
- * It used to be a bespoke inline react-hook-form/zod card — one of three
- * parallel leave forms with three different field sets. The canonical dialog
- * is the one whose field set matches core's `CreateStudentLeaveRequestRequest`,
- * so the duplicates were deleted rather than kept in sync.
- *
- * Two consequences, both deliberate:
- * - No leave-TYPE control. core has no student leave-type concept; the real
- *   read mapper already fabricates `"other"` for every row
- *   (`leave-request.mapper.ts`), so this write path adopts the same convention
- *   instead of collecting a value nothing can store.
- * - No attachment picker (`showAttachments={false}`): `submitChildLeaveRequest`
- *   has no attachment-upload use-case wired.
- *
- * `parentId`/`submittedBy` are NEVER sent — the server derives them.
+ * No leave-TYPE control (core has no such concept — the real read mapper
+ * fabricates `"other"` for every row, so this write path uses the same
+ * convention) and no attachment picker (`showAttachments={false}` — this
+ * submit path has no attachment-upload use-case wired).
  */
-export function LeaveRequestForm({
-  childId,
+export function LeaveRequestTrigger({
+  studentId,
+  submittedBy,
   submitAction,
   onSubmitted,
 }: {
-  childId: string;
+  studentId: string;
+  submittedBy: "student" | "parent";
   submitAction: (
-    childId: string,
-    input: SubmitChildLeaveRequestInput,
-  ) => Promise<{ errorKey?: DisciplineFailure["type"] }>;
-  /** Called with the submitted input on success (for optimistic update + banner). */
-  onSubmitted: (input: SubmitChildLeaveRequestInput) => void;
+    input: SubmitLeaveRequestInput,
+  ) => Promise<StudentConductActionResult>;
+  /** Called with the submitted input on success so the parent can optimistically update. */
+  onSubmitted?: (input: SubmitLeaveRequestInput) => void;
 }) {
   const t = useTranslations("discipline.studentConduct.leaveRequest");
   const tErr = useTranslations("discipline.errors");
@@ -62,33 +56,28 @@ export function LeaveRequestForm({
   const [isPending, startTransition] = useTransition();
   const ctaRef = useRef<HTMLButtonElement>(null);
 
-  // Close + clear when the active child changes (AC-02-04). The screen also
-  // remounts this component per child; this keeps the rule local to it.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on childId change only
-  useEffect(() => {
-    setOpen(false);
-    setServerErrorKey(null);
-  }, [childId]);
-
   const handleSubmit = ({
     startDate,
     endDate,
     reason,
   }: LeaveRequestSubmission) => {
     setServerErrorKey(null);
-    const input: SubmitChildLeaveRequestInput = {
+    const input: SubmitLeaveRequestInput = {
+      studentId,
       startDate,
       endDate,
       type: "other",
       reason,
+      submittedBy,
     };
     startTransition(async () => {
-      const res = await submitAction(childId, input);
+      const res = await submitAction(input);
       if (res.errorKey) {
         setServerErrorKey(res.errorKey);
         return;
       }
-      onSubmitted(input);
+      toast.success(t("success"));
+      onSubmitted?.(input);
       setOpen(false);
     });
   };
