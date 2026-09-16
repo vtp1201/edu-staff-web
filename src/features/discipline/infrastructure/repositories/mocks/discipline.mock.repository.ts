@@ -163,6 +163,9 @@ export class MockDisciplineRepository implements IDisciplineRepository {
 
   async getLeaveRequests(params: {
     classId?: string;
+    /** Accepted for interface parity; the mock fixtures already carry a
+     *  `className`, so there is nothing to stamp. */
+    className?: string;
   }): Promise<LeaveRequestEntity[]> {
     await mockDelay();
     return _leave.filter(

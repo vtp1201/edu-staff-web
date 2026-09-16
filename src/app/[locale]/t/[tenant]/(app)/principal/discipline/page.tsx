@@ -3,6 +3,8 @@ import {
   makeGetLeaveRequestsUseCase,
   makeGetViolationsUseCase,
 } from "@/bootstrap/di/discipline.di";
+import { makePrincipalClassesRepository } from "@/bootstrap/di/principal-classes.di";
+import { resolveCurrentAcademicYear } from "@/bootstrap/lib/resolve-current-term";
 import type { ConductSummaryEntity } from "@/features/discipline/domain/entities/conduct-summary.entity";
 import type { LeaveRequestEntity } from "@/features/discipline/domain/entities/leave-request.entity";
 import type { ViolationEntity } from "@/features/discipline/domain/entities/violation.entity";
@@ -33,16 +35,16 @@ export default async function PrincipalDisciplinePage({
 
   let violations: ViolationEntity[] = [];
   let conductSummary: ConductSummaryEntity[] = [];
-  let leaveRequests: LeaveRequestEntity[] = [];
   try {
-    [violations, conductSummary, leaveRequests] = await Promise.all([
+    [violations, conductSummary] = await Promise.all([
       (await makeGetViolationsUseCase()).execute({ semester }),
       (await makeGetConductSummaryUseCase()).execute({ semester }),
-      (await makeGetLeaveRequestsUseCase()).execute({}),
     ]);
   } catch {
     // Soft-fail to empty states.
   }
+
+  const leaveRequests = await loadTenantLeaveRequests();
 
   const availableClasses = Array.from(
     new Set([
@@ -68,4 +70,61 @@ export default async function PrincipalDisciplinePage({
       overrideConductGradeAction={overrideConductGradeAction}
     />
   );
+}
+
+const CLASS_PAGE_SIZE = 100;
+
+/**
+ * The BGH oversight leave list, fanned out over every class in the tenant
+ * (backlog #5, US-E24.20).
+ *
+ * `getLeaveRequests({})` used to be called here, but core requires EXACTLY ONE
+ * of `classId` / `studentMemberId` — there is no tenant-wide query on the wire
+ * — so the real repository refused the call and this tab silently rendered
+ * empty. Core's BGH branch (`ListByClass`) has no homeroom restriction and
+ * returns every state, so the fan-out set is the whole class list, read from
+ * the already-wired principal class repository (US-E13.8/US-E18.30) and
+ * drained across its cursor pages.
+ *
+ * Accepted cost (documented in the story packet, not silently shipped): one
+ * round-trip per class. No bulk `classIds=` endpoint exists to do better.
+ *
+ * Every failure degrades to an empty list rather than crashing the route: no
+ * active academic year (same precedent as `(app)/principal/classes`), a failed
+ * class list, or a single class's leave read failing (settled per class).
+ */
+async function loadTenantLeaveRequests(): Promise<LeaveRequestEntity[]> {
+  let academicYear: string;
+  try {
+    academicYear = await resolveCurrentAcademicYear();
+  } catch {
+    return [];
+  }
+
+  const repo = await makePrincipalClassesRepository();
+  const classes: { id: string; name: string }[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = await repo.listClasses({
+      academicYear,
+      limit: CLASS_PAGE_SIZE,
+      ...(cursor ? { cursor } : {}),
+    });
+    if (!result.ok) return [];
+    classes.push(...result.value.data);
+    cursor = result.value.hasMore
+      ? (result.value.nextCursor ?? undefined)
+      : undefined;
+  } while (cursor);
+
+  if (classes.length === 0) return [];
+
+  const useCase = await makeGetLeaveRequestsUseCase();
+  const settled = await Promise.allSettled(
+    classes.map((cls) =>
+      useCase.execute({ classId: cls.id, className: cls.name }),
+    ),
+  );
+
+  return settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }

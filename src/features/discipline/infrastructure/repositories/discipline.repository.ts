@@ -290,12 +290,17 @@ export class DisciplineRepository implements IDisciplineRepository {
    * otherwise). The interface keeps it optional because the legacy multi-class
    * dashboards call `execute({})`; rather than guessing a class or draining
    * every class, that call is refused HERE, before any HTTP, with the same
-   * documented `not-found` a blocked stub throws. Fixing those dashboards to
-   * iterate the teacher's own homeroom class ids is a separate, logged
-   * follow-up — this method never guesses on their behalf.
+   * documented `not-found` a blocked stub throws. The multi-class dashboards
+   * were fixed in US-E24.20 (backlog #5) to fan this call out over their own
+   * known class-id list — this method still never guesses on their behalf.
+   *
+   * `className` is a DISPLAY passthrough for those fan-out callers (the wire
+   * carries no class label and those screens render one per row). It is never
+   * sent as a query param.
    */
   async getLeaveRequests(params: {
     classId?: string;
+    className?: string;
   }): Promise<LeaveRequestEntity[]> {
     if (!params.classId) return this.blocked();
     try {
@@ -304,7 +309,9 @@ export class DisciplineRepository implements IDisciplineRepository {
         { classId: params.classId },
       );
       const names = await this.resolveMemberNames(dtos);
-      return dtos.map((dto) => toLeaveRequestEntity(dto, names));
+      return dtos.map((dto) =>
+        toLeaveRequestEntity(dto, names, params.className),
+      );
     } catch (err) {
       throw toFailure(err);
     }
