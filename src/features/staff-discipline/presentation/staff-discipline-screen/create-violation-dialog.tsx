@@ -60,8 +60,9 @@ const SEVERITY_CHECKED_CLASS: Record<StaffViolationSeverity, string> = {
     "data-[state=checked]:bg-edu-warning/15 data-[state=checked]:text-edu-warning-foreground",
   MODERATE:
     "data-[state=checked]:bg-edu-error/15 data-[state=checked]:text-edu-error-text",
+  // ADR 0077: dark-mode text pair for the #7A0011 tint.
   SEVERE:
-    "data-[state=checked]:bg-edu-error-dark-light data-[state=checked]:text-edu-error-dark",
+    "data-[state=checked]:bg-edu-error-dark-light data-[state=checked]:text-edu-error-dark dark:data-[state=checked]:text-edu-error-text",
 };
 
 export interface CreateViolationDialogProps {

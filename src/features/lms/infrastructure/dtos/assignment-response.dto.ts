@@ -16,6 +16,8 @@ export interface AssignmentResponseDto {
 }
 
 /** List row — NO `instructions`, NO `createdAt`, and notably NO `state`. */
+// Retained deliberately as contract surface for an upcoming list-assignments
+// path (no production caller today) — not a leftover oversight.
 export interface AssignmentSummaryResponseDto {
   id: string;
   classId: string;

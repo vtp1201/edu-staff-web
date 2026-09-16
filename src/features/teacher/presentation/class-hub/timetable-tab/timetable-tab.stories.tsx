@@ -204,6 +204,25 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/**
+ * US-E24.18 (#7): heading hierarchy. The shell owns the `<h1>`; this tab body
+ * used to start at `<h3>` (day cards / upcoming panel) — a level skip. It now
+ * opens with a visually-hidden `<h2>` naming the section, before any `<h3>`.
+ */
+export const HeadingHierarchy: Story = {
+  args: { vm: vm({ isHomeroom: true }), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const h2 = canvas.getByRole("heading", { level: 2 });
+    await expect(h2).toHaveTextContent(
+      messages.teacherClasses.hub.tabs.timetable,
+    );
+    const headings = canvas.getAllByRole("heading");
+    await expect(headings[0]).toBe(h2);
+    await expect(headings.slice(1).every((h) => h.tagName === "H3")).toBe(true);
+  },
+};
+
 /** GVBM + GVCN on "today": own slots carry both actions, the daily strip is
  *  editable, and another teacher's logged period is readable but not writable. */
 export const BothRolesToday: Story = {

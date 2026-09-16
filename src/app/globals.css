@@ -200,6 +200,21 @@
   --edu-error-text: #ffdad6;
   --edu-warning-light: #4d3300;
   --edu-warning-text: #ffd699;
+  /* ADR 0077 (US-E24.18): `--edu-error-dark-light` was the one tonal-chip tint
+     ADR 0049 missed, so the `error-dark` chip (StatusBadge tone `error-dark`,
+     "Nặng" severity, revoked invitation) kept leaking its light-mode #FEE2E2
+     and rendered light-pink on a dark card. #7A0011 is a deeper maroon than
+     `--edu-error-light` (#5C0007) above — `error-dark` is the MORE severe
+     state, so it carries more weight against the card (1.33:1 vs the card's
+     #1E2630, where the regular error tint sits at 1.06:1).
+     `--edu-error-dark` itself is deliberately NOT overridden here: (a) #B91C1C
+     cannot reach AA on ANY dark background (3.25:1 against pure black is its
+     mathematical ceiling), and (b) it doubles as a SOLID background (destructive
+     button, notification count badge) with white foreground, which a lighter
+     dark-mode value would break. The chip pairings therefore carry a
+     dark-mode-only TEXT override at the class level — `dark:text-edu-error-text`
+     (#FFDAD6) = 8.85:1 on #7A0011 (WCAG relative luminance). */
+  --edu-error-dark-light: #7a0011;
   --card: #1e2630;
   --card-foreground: #eaeff5;
   --popover: #1e2630;

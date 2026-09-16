@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, within } from "storybook/test";
 import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import { StatusBadge } from "./status-badge";
 
@@ -56,4 +57,17 @@ export const DarkAllTones: Story = {
       <StatusBadge tone="muted">Đã xong</StatusBadge>
     </div>
   ),
+  /**
+   * ADR 0077 (US-E24.18): the `error-dark` chip was the last tint without a
+   * dark-mode value — it rendered light-pink (#FEE2E2) on a dark card. It now
+   * resolves to the dark maroon #7A0011 with #FFDAD6 text (8.85:1, WCAG AA).
+   */
+  play: async ({ canvasElement }) => {
+    const chip = await within(canvasElement).findByText("Đã thu hồi");
+    const style = getComputedStyle(chip);
+    // #7a0011 — the .dark value of --edu-error-dark-light.
+    await expect(style.backgroundColor).toBe("rgb(122, 0, 17)");
+    // #ffdad6 — the .dark value of --edu-error-text (dark:text-edu-error-text).
+    await expect(style.color).toBe("rgb(255, 218, 214)");
+  },
 };

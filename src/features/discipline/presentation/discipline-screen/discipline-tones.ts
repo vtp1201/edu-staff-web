@@ -24,9 +24,11 @@ export const SEVERITY_BAR_CLASS: Record<ViolationSeverity, string> = {
   high: "bg-edu-error-dark",
 };
 
-/** Bespoke high-severity badge class (edu-error-dark token, ADR 0040). */
+/** Bespoke high-severity badge class (edu-error-dark token, ADR 0040).
+ *  `dark:text-edu-error-text` pairs with the dark #7A0011 tint (ADR 0077) —
+ *  #B91C1C cannot reach AA on it and stays the solid-background tone. */
 export const HIGH_SEVERITY_BADGE_CLASS =
-  "bg-edu-error-dark-light text-edu-error-dark";
+  "bg-edu-error-dark-light text-edu-error-dark dark:text-edu-error-text";
 
 export const VIOLATION_STATUS_TONE: Record<ViolationStatus, StatusTone> = {
   recorded: "primary",

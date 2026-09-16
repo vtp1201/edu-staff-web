@@ -7,10 +7,16 @@ metadata:
 
 `components/shared/child-switcher/child-switcher.tsx` (canonical parent child selector).
 
-- It emits `aria-controls={"tabpanel-"+childId}` on **every** tab, but consumers only ever own
-  ONE panel (the active child's). So inactive tabs always reference a non-existent id — repo-wide
-  in `grade-book-screen`, `parent-attendance-screen`, `academic-record-screen`. Cross-cutting
-  a11y nit → route to fe-lead, never block a single story for it.
+- **Fixed in US-E24.18 (#11)**: `aria-controls` is now emitted ONLY on the ACTIVE tab (inactive
+  tabs omit the attribute entirely), and all emitted ids come from the exported
+  `childSwitcherIds(idPrefix)` builder. `idPrefix` defaults to `""` = the historical
+  `tab-<childId>`/`tabpanel-<childId>`/`child-switcher-label` scheme byte-for-byte, so the 3
+  consumers and their hardcoded assertions were untouched. Two instances on one page still
+  collide unless a caller passes distinct prefixes — the namespace is opt-in, by design.
+- **Still dangling elsewhere**: `academic-records/.../year-timeline.tsx` emits
+  `aria-controls={"tabpanel-"+yearId}` on EVERY year tab while `academic-record-screen.tsx` mounts
+  only the ACTIVE year's panel — same defect class, NOT fixed by #11 (scoped to child-switcher).
+  Route to backlog, don't block a story for it.
 - **Consumer owns the panel**: `panelProps = active ? { role:"tabpanel", id:"tabpanel-<id>",
   "aria-labelledby":"tab-<id>" } : {}`. When reviewing a new consumer, check the panel props are
   applied in EVERY render branch that also renders the switcher (error/empty/success) — an

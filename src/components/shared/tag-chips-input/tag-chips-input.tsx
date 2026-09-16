@@ -149,7 +149,8 @@ export function TagChipsInput({
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-bold text-[11.5px]",
                 invalid
-                  ? "border border-edu-error-dark/40 bg-edu-error-dark-light text-edu-error-dark"
+                  ? // ADR 0077: dark-mode text pair for the #7A0011 tint.
+                    "border border-edu-error-dark/40 bg-edu-error-dark-light text-edu-error-dark dark:text-edu-error-text"
                   : "bg-primary/12 text-primary",
               )}
             >

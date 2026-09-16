@@ -1,4 +1,4 @@
-export { ChildSwitcher } from "./child-switcher";
+export { ChildSwitcher, childSwitcherIds } from "./child-switcher";
 export type {
   ChildColor,
   ChildSwitcherChild,

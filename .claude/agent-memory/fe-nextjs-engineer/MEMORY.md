@@ -154,3 +154,6 @@
 - [Tablist removal + sortable timestamp](pattern-tablist-removal-and-sortable-timestamp.md) — US-E24.15: a display-formatted time isn't sortable; optimistic prepend breaks under a new sort; fold a type marker into the existing aria-label
 - [Conditional tabpanel wrapper](pattern-conditional-tabpanel-wrapper.md) — E24.16 review: module-level wrapper for a role-only ARIA panel (in-render component remounts the subtree); href helpers live in bootstrap/tenant
 - [Failure reason + URL container story](pattern-failure-reason-and-url-story.md) — E24.14 review: one failure type for N causes gives wrong advice (carry a `reason`); test URL drift via `nextjs.navigation.query` container stories
+
+- [Dual-role token dark override](gotcha-dual-role-token-dark-override.md) — a token that is both chip TEXT and a solid BG can't take a `.dark` override; use `dark:text-…` at every pairing site, and check the contrast ceiling first
+- [Dead-code triage after un-mock](pattern-dead-code-triage-after-unmock.md) — deleting a mock repo: MOCK_* fixtures go, mapper/DTO contract surface stays with a retention comment

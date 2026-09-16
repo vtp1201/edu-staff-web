@@ -32,9 +32,14 @@ const TONE_CLASS: Record<StatusTone, string> = {
   warning: "bg-edu-warning/15 text-edu-text-primary",
   error: "bg-edu-error/15 text-edu-error-text",
   // Darker error hue for a heavier/terminal state (e.g. revoked invitation,
-  // US-E21.1). --edu-error-dark (#b91c1c) on --edu-error-dark-light (#fee2e2)
-  // tint = AA-compliant; tokens already exist (no ADR).
-  "error-dark": "bg-edu-error-dark-light text-edu-error-dark",
+  // US-E21.1). Light mode: --edu-error-dark (#b91c1c) on --edu-error-dark-light
+  // (#fee2e2) = 5.30:1. Dark mode (ADR 0077): the tint is now #7A0011 and
+  // #b91c1c can never reach AA on it (nor on any dark bg — 3.25:1 on black is
+  // its ceiling), while --edu-error-dark must keep its value for the SOLID
+  // usages (destructive button, count badge) → dark-mode-only text override to
+  // --edu-error-text (#FFDAD6) = 8.85:1. Same tokens, no new token name.
+  "error-dark":
+    "bg-edu-error-dark-light text-edu-error-dark dark:text-edu-error-text",
   // info/teal/purple vibrant hues fail AA on their own tinted bg (A11Y-001/002).
   // text-edu-text-primary (#2A3547) = 11.5:1 on any light tint — guaranteed AA.
   info: "bg-edu-info/15 text-edu-text-primary",

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { childSwitcherIds } from "./child-switcher";
 
 /**
  * Pure-logic unit tests for the ChildSwitcher keyboard handler.
@@ -93,5 +94,39 @@ describe("ChildSwitcher keyboard handler", () => {
     const id = activateGuard("Enter", { childId: "c1" }, "c2", true);
     if (id !== undefined) onSwitch(id);
     expect(onSwitch).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * US-E24.18 (#11) — id namespacing.
+ *
+ * Every id the switcher emits used to be a page-global literal
+ * (`tab-<childId>`, `tabpanel-<childId>`, `child-switcher-label`), so two
+ * instances on one page would emit duplicate ids (and `academic-record-screen`
+ * already renders a SECOND `tab-*`/`tabpanel-*` tablist for school years).
+ * `idPrefix` namespaces all three; the default reproduces today's exact scheme
+ * byte-for-byte, which is why no existing consumer/test had to change.
+ */
+describe("ChildSwitcher id namespace", () => {
+  it("defaults to the historical unprefixed scheme", () => {
+    const ids = childSwitcherIds();
+    expect(ids.tab("c1")).toBe("tab-c1");
+    expect(ids.panel("c1")).toBe("tabpanel-c1");
+    expect(ids.label).toBe("child-switcher-label");
+  });
+
+  it("namespaces every id when a prefix is given", () => {
+    const ids = childSwitcherIds("grades-");
+    expect(ids.tab("c1")).toBe("grades-tab-c1");
+    expect(ids.panel("c1")).toBe("grades-tabpanel-c1");
+    expect(ids.label).toBe("grades-child-switcher-label");
+  });
+
+  it("two prefixes can never collide on the same child", () => {
+    const a = childSwitcherIds("a-");
+    const b = childSwitcherIds("b-");
+    expect(a.tab("c1")).not.toBe(b.tab("c1"));
+    expect(a.panel("c1")).not.toBe(b.panel("c1"));
+    expect(a.label).not.toBe(b.label);
   });
 });

@@ -119,6 +119,27 @@ type Story = StoryObj<typeof meta>;
 
 const t = messages.teacherClasses.hub.homeroom;
 
+/**
+ * US-E24.18 (#7): the class-hub shell renders the only `<h1>`, then each tab
+ * body used to jump straight to its `<h3>` card titles — a heading-level skip
+ * (WCAG 1.3.1 / 2.4.6). The tab body now opens with a visually-hidden `<h2>`
+ * naming the section (the same copy the tab strip shows visibly, so nothing is
+ * duplicated on screen), BEFORE any card heading.
+ */
+export const HeadingHierarchy: Story = {
+  args: { vm: vm(), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const h2 = canvas.getByRole("heading", { level: 2 });
+    expect(h2).toHaveTextContent(messages.teacherClasses.hub.tabs.homeroom);
+
+    // Order matters: the h2 must PRECEDE every h3, not merely exist.
+    const headings = canvas.getAllByRole("heading");
+    expect(headings[0]).toBe(h2);
+    expect(headings.slice(1).every((h) => h.tagName === "H3")).toBe(true);
+  },
+};
+
 /* ── AC: all three cards populated ───────────────────────────────────────── */
 export const Full: Story = {
   args: { vm: vm(), actions },
