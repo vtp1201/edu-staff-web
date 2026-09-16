@@ -143,7 +143,13 @@ export function UpcomingPeriodPanel({
               className="flex items-start gap-2.5 px-4 py-3 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-edu-primary-light">
-                <row.icon className="size-4 text-primary" aria-hidden="true" />
+                {/* Accessible token, not `text-primary`: this icon sits on
+                    `bg-edu-primary-light`, where 4.35:1 beats the 3.93:1 of
+                    `--edu-primary-dark` (US-E24.19 #3). */}
+                <row.icon
+                  className="size-4 text-edu-primary-accessible"
+                  aria-hidden="true"
+                />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold text-card-foreground text-sm">

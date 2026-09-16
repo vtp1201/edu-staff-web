@@ -696,3 +696,65 @@ export const SecondaryReadFailed: Story = {
     await expect(canvas.getByText("Toán")).toBeVisible();
   },
 };
+
+/**
+ * US-E24.19 (#3) — contrast on the two `bg-edu-primary-light` surfaces.
+ *
+ * Both carry the WCAG 3:1 floor: the "today" day header is bold 14px (large
+ * text) and the shortcut swatch icon is a non-text UI component. They used
+ * `text-primary`, which resolves to `--edu-primary-dark` (#4570ea) — 3.93:1 on
+ * `--edu-primary-light` (#ecf2ff), i.e. over 3:1 but under AA's 4.5:1. They now
+ * use `--edu-primary-accessible` (#4468e0) = 4.35:1, the token already
+ * established for this exact pairing.
+ *
+ * Proven from the RESOLVED colours in real Chromium (not class names), with the
+ * ratio recomputed here, so a future token edit that regressed either pairing
+ * fails this story instead of silently passing.
+ */
+function contrastRatio(a: string, b: string): number {
+  const lum = (rgb: string) => {
+    const [r, g, bl] = (rgb.match(/\d+/g) ?? []).map(Number);
+    const ch = (c: number) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(bl);
+  };
+  const [x, y] = [lum(a), lum(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+export const PrimaryLightContrast: Story = {
+  args: { vm: vm(), actions },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const ACCESSIBLE = "rgb(68, 104, 224)"; // --edu-primary-accessible #4468e0
+    const LIGHT_BG = "rgb(236, 242, 255)"; // --edu-primary-light #ecf2ff
+
+    // (1) today's day-card header, on the tinted header strip
+    const header = canvas.getByRole("heading", {
+      level: 3,
+      name: "Thứ Hai · 31/08",
+    });
+    const headerBg = getComputedStyle(
+      header.parentElement as Element,
+    ).backgroundColor;
+    await expect(headerBg).toBe(LIGHT_BG);
+    await expect(getComputedStyle(header).color).toBe(ACCESSIBLE);
+    await expect(
+      contrastRatio(getComputedStyle(header).color, headerBg),
+    ).toBeGreaterThanOrEqual(3);
+
+    // (2) the upcoming-panel shortcut icon, inside its tinted swatch
+    const swatch = canvas
+      .getByRole("link", { name: /Kế hoạch giảng dạy/ })
+      .querySelector("span") as HTMLElement;
+    const swatchBg = getComputedStyle(swatch).backgroundColor;
+    await expect(swatchBg).toBe(LIGHT_BG);
+    const icon = swatch.querySelector("svg") as Element;
+    await expect(getComputedStyle(icon).color).toBe(ACCESSIBLE);
+    await expect(
+      contrastRatio(getComputedStyle(icon).color, swatchBg),
+    ).toBeGreaterThanOrEqual(3);
+  },
+};

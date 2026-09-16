@@ -73,7 +73,11 @@ export function DayCard({
         <h3
           className={cn(
             "font-extrabold text-sm",
-            vm.isToday ? "text-primary" : "text-card-foreground",
+            // `text-edu-primary-accessible` (#4468e0), not `text-primary`
+            // (#4570ea): on this header's `bg-edu-primary-light` tint the
+            // latter is 3.93:1 — over the 3:1 large-text floor but under AA's
+            // 4.5:1; the accessible token is 4.35:1 (US-E24.19 #3).
+            vm.isToday ? "text-edu-primary-accessible" : "text-card-foreground",
           )}
         >
           {vm.dayLabel}
