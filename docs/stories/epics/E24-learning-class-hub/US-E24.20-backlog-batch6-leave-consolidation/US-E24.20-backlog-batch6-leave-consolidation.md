@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -270,22 +270,126 @@ unilaterally — filed as a note in Harness Delta below, not implemented here.
 
 ## Harness Delta
 
-- Backlog #5, #8, #12 closed via `harness-cli backlog close` once implemented
-  + proven.
-- `docs/TEST_MATRIX.md` — new row for US-E24.20, `planned` → `implemented`.
-- No ADR expected (no new token, no architecture/auth decision — #8 reflects
-  an existing BE rule in the UI, it does not create one). Will register one
-  only if the engineer/reviewer surfaces a genuine design-system or
-  architecture decision during implementation.
-- Note (not a new backlog item, a documented risk): `principal/discipline`'s
-  leave-tab fan-out cost scales with tenant class count (N HTTP round-trips,
-  no bulk endpoint exists). Acceptable for MVP; a bulk
-  `GET /student-leave-requests?classIds=` (or a tenant-wide BGH variant with
-  no `classId` at all, mirroring the `listByStudent` BGH branch which already
-  drops the per-student restriction) would remove this — logged here as a
-  candidate cross-repo ask if it proves slow in practice, NOT filed as a
-  backlog item pre-emptively (no evidence yet that it is actually slow).
+- Backlog #5, #8, #12 closed via `harness-cli backlog close`, each outcome
+  note recording the ground-truth (edu-api Go source citations) that confirmed
+  the premise and the exact fix shape.
+- `docs/TEST_MATRIX.md` — US-E24.20 row promoted `planned` → `implemented`,
+  full proof counts recorded.
+- No ADR registered — no new/changed design-system token; #8 reflects an
+  EXISTING BE authorization rule in the UI (ground-truthed against
+  `approve_student_leave_request.go`/`reject_student_leave_request.go`), it
+  does not create a new architecture/auth decision.
+- Note (not a new backlog item, a documented risk, unchanged from the original
+  plan): `principal/discipline`'s leave-tab fan-out cost scales with tenant
+  class count (N HTTP round-trips, no bulk endpoint exists). Acceptable for
+  MVP; a bulk `GET /student-leave-requests?classIds=` (or a tenant-wide BGH
+  variant with no `classId` at all, mirroring the `listByStudent` BGH branch
+  which already drops the per-student restriction) would remove this — logged
+  here as a candidate cross-repo ask if it proves slow in practice, NOT filed
+  as a backlog item pre-emptively (no evidence yet that it is actually slow).
+- New backlog item filed: **#17** — `teacher/discipline/page.tsx` and
+  `principal/discipline/page.tsx` build `availableClasses` from the union of
+  `violations[].classId` / `conductSummary[].classId` (permanently mock-first,
+  name-shaped ids) and `leaveRequests[].classId` (now real core class ids
+  after this fix) — the filter list can mix two id spaces in real mode.
+  Pre-existing since US-E24.11, invisible in mock mode (all three align
+  there), surfaced (not created) by this story's reviewer. Logged, not
+  absorbed — out of scope for this story's 3 named items.
+- `docs/product/design-spec.jsonc`'s `leaveRequestForm` entry synced to match
+  the shipped `LeaveRequestDialog`-based UI (was describing an inline panel +
+  a `type` select citing a since-deleted i18n key) — `docs/design-changelog.md`
+  entry added same branch (fix round, see Evidence below).
 
 ## Evidence
+
+Implemented on branch `fix/us-e24.20-backlog-batch6-leave-consolidation`,
+commits (in order): `a06c9d6a` (#8 gate), `39b1d2f6` (#5 fan-out), `b1fe5197`
+(#12 consolidation), `e8db7956` (fix round — mock-mode regression fixed,
+design-spec synced, past-date guard added).
+
+**Fix round (post first review — 2 must-fix + 1 should-fix, all addressed
+same round):**
+1. Mock mode regression: the fan-out's real class ids (`cls-10a1`, `c-10a1`,
+   …) didn't match `MockDisciplineRepository`'s leave fixtures (keyed by class
+   NAME, e.g. `"10A1"`) — both leave tabs silently rendered empty under
+   `NEXT_PUBLIC_USE_MOCK=true`, contradicting this packet's original "mock
+   mode unaffected" claim. Fixed by matching on `classId === params.classId ||
+   className === params.className` in the mock repository ONLY (real
+   repository, fixtures, and the two class mocks untouched) — proven with a
+   dedicated 5-test file (`discipline.mock.repository.test.ts`),
+   red-then-green (measured 0→1 rows at runtime for both the teacher-shaped
+   and principal-shaped id before/after).
+2. `docs/product/design-spec.jsonc`'s `leaveRequestForm` entry synced (modal
+   Dialog trigger, `type` field removed, `reason` validation documented as
+   client non-empty/≤500 with the server ≥10 rule noted separately as
+   server-only) + `docs/design-changelog.md` entry added.
+3. `LeaveRequestDialog`'s submit-disabled predicate gained `|| startDate <
+   minDate` (the `min` HTML attribute alone doesn't block a plain-button
+   submit outside a `<form>`) — benefits all 3 consumers including the
+   untouched `parent-attendance-screen.tsx`. Proven by stories that TYPE a
+   past date and assert `disabled`, not merely the attribute.
+
+**Design review (`docs/DESIGN_REVIEW.md`):**
+- design-system: conform — zero raw color/non-token classes introduced
+  (grep-confirmed by reviewer); `LeaveRequestDialog` extended via an additive
+  optional prop, not forked; `component-organization.md` followed exactly (2
+  feature-local duplicates deleted, canonical component extended, honest
+  rename of `leave-request-sheet.tsx` → `leave-request-trigger.tsx`, export
+  renamed too, zero remaining references to the old name).
+- a11y: `fe-accessibility-auditor` **Pass**, 0 findings — button removal
+  leaves no orphaned `aria-describedby`/label references, status badge
+  remains a non-color-only indicator; both Dialog-conversion call sites
+  (inline card → Dialog, Sheet → Dialog) verified for focus-trap, focus
+  RETURN to the triggering CTA on both success and cancel/Escape paths, Radix
+  background inertness, and unbroken Escape-to-close.
+- impeccable audit: `node .claude/skills/impeccable/scripts/detector/cli/main.mjs`
+  against all 5 changed presentation files (`leave-tab.tsx`,
+  `leave-request-dialog.tsx`, `LeaveRequestForm.tsx`, `leave-request-trigger.tsx`,
+  `student-conduct-screen.tsx`) — **0 findings**.
+- states: no new visual state introduced beyond the button-removal/dialog
+  conversion already covered above; existing empty/error/loading stories for
+  both discipline pages re-verified unbroken by QA; no 320px regression
+  possible (only structural change to `leave-tab.tsx` is wrapping existing
+  buttons in a conditional — removing elements cannot introduce overflow).
+
+**Proof (final, all green):**
+- Unit/Integration: `discipline.repository.test.ts` (className is a
+  display-only passthrough, never sent on the wire), `discipline.mock.repository.test.ts`
+  (5 — teacher-shaped id, principal-shaped id, fixture-id-only, no-params
+  returns everything, true-miss → `[]`), `teacher/discipline/page.test.ts`
+  (5 — homeroom-only filter, use-case instance built ONCE and reused across
+  the fan-out, `Promise.allSettled` per-class degrade, zero-homeroom → no
+  call made), `principal/discipline/page.test.ts` (4 — multi-page cursor
+  drain, fan-out returns rows from MULTIPLE distinct classes — the
+  highest-risk claim, independently re-verified by both reviewer and QA — one
+  rejected class's fetch doesn't blank another's row, academic-year/class-list
+  failure both degrade to `[]`).
+- E2E/Story: `discipline-screen.stories.tsx#LeaveTab_Principal_NoDecisionButtons`
+  (zero approve/reject for principal, row still renders read-only);
+  `LeaveTab_WithPending`/`LeaveTab_Reject` (teacher path regression-free);
+  `leave-request-dialog.stories.tsx#WithoutAttachments` +
+  `#PastStartDateBlocksSubmit` (types a past date, asserts disabled — not just
+  the `min` attribute); `ParentDisciplineScreen.stories.tsx`'s leave-form
+  stories (no type field, past-date-blocks-submit, success banner unchanged);
+  `student-conduct-screen.stories.tsx#LeaveRequestForm_SubmitSuccess` — added
+  by `fe-qa-playwright` after finding the story never mounted `<Toaster/>`,
+  making the existing success-toast AC unprovable; now proven (submit →
+  dialog closes → exact toast text asserted → optimistic history entry
+  appears).
+- Platform: `bunx tsc --noEmit` clean; `bun lint` clean (2 pre-existing
+  findings in unrelated files, confirmed via `git stash` diff); `bun vitest
+  run` 600 files/5062 tests; `bun vitest --config vitest.storybook.mts run`
+  176 files/1456 tests; `NEXT_PUBLIC_USE_MOCK=true bun run build` clean.
+
+`fe-tech-lead-reviewer`: initial **Revision Required** (2 must-fix — mock-mode
+empty-tab regression, stale design-spec entry citing a deleted i18n key; 1
+should-fix — client past-date guard — all 3 fixed same round, independently
+re-verified) → **Approved**.
+
+`fe-accessibility-auditor`: **Pass**, 0 findings.
+
+`fe-qa-playwright`: **Go** — independently re-verified every AC via the actual
+test assertions (not commit messages), found and closed 1 genuine coverage
+gap (missing `<Toaster/>` in a story).
 
 (Filled in after implementation — branch `fix/us-e24.20-backlog-batch6-leave-consolidation`.)

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { NextIntlClientProvider } from "next-intl";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
+import { Toaster } from "@/components/ui/sonner";
 import {
   MOCK_MY_CONDUCT,
   MOCK_MY_LEAVE_REQUESTS,
@@ -37,6 +38,7 @@ const meta: Meta<typeof StudentConductScreen> = {
     (Story) => (
       <NextIntlClientProvider locale="vi" messages={messages}>
         <Story />
+        <Toaster />
       </NextIntlClientProvider>
     ),
   ],
@@ -147,6 +149,43 @@ export const LeaveRequestForm: Story = {
     ).toBeInTheDocument();
     await userEvent.type(dialog.getByLabelText(/Lý do/), "Ốm");
     await waitFor(() => expect(submit).toBeEnabled());
+  },
+};
+
+/**
+ * A successful submit closes the dialog, shows the EXISTING `t("success")`
+ * toast, and prepends an optimistic pending entry — all unchanged by the
+ * US-E24.20 dialog swap (AC #12). Regression guard: `LeaveRequestForm` above
+ * only proves the dialog OPENS correctly; it never completes a submission, so
+ * this was untested until now.
+ */
+export const LeaveRequestForm_SubmitSuccess: Story = {
+  args: baseVm,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(document.body);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Xin nghỉ phép" }),
+    );
+    const dialog = within(await body.findByRole("dialog"));
+    await userEvent.type(
+      dialog.getByLabelText(/Lý do/),
+      "Khám bệnh định kỳ tại bệnh viện",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: /Gửi đơn/ }));
+
+    // Dialog closes on success.
+    await waitFor(() => expect(body.queryByRole("dialog")).toBeNull());
+    // The existing success toast still fires, unchanged.
+    await expect(
+      await body.findByText("Đã gửi đơn thành công!"),
+    ).toBeInTheDocument();
+    // Optimistic pending entry prepended to the history list.
+    await waitFor(() =>
+      expect(
+        canvas.getByText("Khám bệnh định kỳ tại bệnh viện"),
+      ).toBeInTheDocument(),
+    );
   },
 };
 
