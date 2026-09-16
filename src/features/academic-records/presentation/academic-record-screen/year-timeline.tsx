@@ -60,7 +60,14 @@ export function YearTimeline({
             type="button"
             role="tab"
             id={`tab-${year.yearId}`}
-            aria-controls={`tabpanel-${year.yearId}`}
+            // Only the ACTIVE year has a panel in the DOM — the screen mounts
+            // exactly one (`tabpanel-${activeYear.yearId}`). Emitting
+            // `aria-controls` on the inactive tabs pointed at ids that exist
+            // nowhere (WCAG 4.1.2, US-E24.19 #15 — the same defect closed for
+            // `ChildSwitcher` in US-E24.18 #11); `aria-controls` is optional per
+            // tab, a dangling one is not. `id` stays on EVERY tab — the panel's
+            // `aria-labelledby` needs it.
+            aria-controls={active ? `tabpanel-${year.yearId}` : undefined}
             aria-selected={active}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(year.yearId)}
