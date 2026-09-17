@@ -37,3 +37,4 @@
 - [--edu-error-dark dual role](error-dark-dual-role-token.md) — why its dark-mode text fix is per-call-site `dark:text-edu-error-text`, not a token override
 - [text-primary resolves to --edu-primary-dark](text-primary-resolves-to-primary-dark.md) — #4570ea not #5d87ff; tokens.css `--color-primary` is dead under `@theme inline`; dark-tint numbers
 - [Mock class-id space mismatch](mock-class-id-space-mismatch.md) — fan-out over class ids goes EMPTY in mock mode; 3 non-intersecting id spaces
+- [Contrast-story alpha-tint trap](contrast-story-alpha-tint-trap.md) — bg-primary/10 makes the contrastRatio helper vacuous (oklab string); measured tint numbers

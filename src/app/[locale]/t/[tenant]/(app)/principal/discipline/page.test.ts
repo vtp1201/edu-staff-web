@@ -47,7 +47,10 @@ function page(
 async function renderPage() {
   const { default: Page } = await import("./page");
   return (await Page({ searchParams: Promise.resolve({ tab: "leave" }) })) as {
-    props: { leaveRequests: { id: string; className: string }[] };
+    props: {
+      leaveRequests: { id: string; className: string }[];
+      availableClasses: string[];
+    };
   };
 }
 
@@ -125,5 +128,48 @@ describe("PrincipalDisciplinePage — leave fan-out", () => {
 
     expect(el.props.leaveRequests).toEqual([]);
     expect(getLeave).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Backlog #17: same id-space mixing bug as the teacher page — see
+ * `teacher/discipline/page.test.ts`'s equivalent describe block for the full
+ * rationale. `availableClasses` must never surface a classId that only
+ * exists because a real leave-request fan-out touched it.
+ */
+describe("PrincipalDisciplinePage — availableClasses id-space (backlog #17)", () => {
+  it("never includes a classId that only exists on a leave request", async () => {
+    getViolations.mockResolvedValue([
+      { id: "v1", classId: "10A1" },
+    ] as unknown as never[]);
+    getConduct.mockResolvedValue([
+      { id: "s1", classId: "11B2" },
+    ] as unknown as never[]);
+    listClasses.mockResolvedValue(
+      page([{ id: "real-class-uuid", name: "10A1" }]),
+    );
+    getLeave.mockResolvedValue([
+      { id: "r1", classId: "real-class-uuid", className: "10A1" },
+    ]);
+
+    const el = await renderPage();
+
+    expect(el.props.availableClasses).toEqual(["10A1", "11B2"]);
+    expect(el.props.availableClasses).not.toContain("real-class-uuid");
+  });
+
+  it("is the union of violations + conductSummary classIds only, sorted", async () => {
+    getViolations.mockResolvedValue([
+      { id: "v1", classId: "11B2" },
+      { id: "v2", classId: "10A1" },
+    ] as unknown as never[]);
+    getConduct.mockResolvedValue([
+      { id: "s1", classId: "10A1" },
+    ] as unknown as never[]);
+    listClasses.mockResolvedValue(page([]));
+
+    const el = await renderPage();
+
+    expect(el.props.availableClasses).toEqual(["10A1", "11B2"]);
   });
 });

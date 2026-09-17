@@ -45,11 +45,21 @@ export default async function TeacherDisciplinePage({
 
   const leaveRequests = await loadHomeroomLeaveRequests();
 
+  // Backlog #17: `leaveRequests` classIds are core's real class UUIDs
+  // (fanned out over the caller's real class set since US-E24.20/#5), while
+  // `violations`/`conductSummary` are still force-mocked (#4, BE-blocked) and
+  // live in the mock repository's name-like id space. Neither
+  // `violations-tab.tsx` (filter dropdown + new-violation form default
+  // `classId`) nor `conduct-tab.tsx` (filter dropdown) — the only two
+  // consumers of `availableClasses` — ever see a leave request; `leave-tab.tsx`
+  // does not read `availableClasses` at all. Unioning the real leave classIds
+  // in only added dead filter entries and could poison the new-violation
+  // form's default `classId` with an id the mock violations repository has no
+  // record of. Scope only the mock id space its actual consumers operate in.
   const availableClasses = Array.from(
     new Set([
       ...violations.map((v) => v.classId),
       ...conductSummary.map((c) => c.classId),
-      ...leaveRequests.map((l) => l.classId),
     ]),
   ).sort();
 

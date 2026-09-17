@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { expect, fn, userEvent, within } from "storybook/test";
 import messages from "@/bootstrap/i18n/messages/vi.json";
 import type { ChildSwitcherChild } from "@/components/shared/child-switcher";
+import { withDarkTheme } from "@/test/storybook-dark-decorator";
 import type { AcademicRecord } from "../../domain/entities/academic-record.entity";
 import { buildAcademicRecord } from "../../domain/use-cases/build-academic-record";
 import { mapAcademicRecordRow } from "../../infrastructure/mappers/academic-record.mapper";
@@ -524,5 +525,83 @@ export const YearTabsNoDanglingAriaControls: Story = {
     await expect(tabs[tabs.length - 1]).toHaveFocus();
     await userEvent.keyboard("{ArrowLeft}");
     await expect(tabs[tabs.length - 2]).toHaveFocus();
+  },
+};
+
+/**
+ * Harness backlog #16 — `year-timeline.tsx`'s active-tab label + current-year
+ * badge, both flagged during the US-E24.19 review as siblings of #3.
+ *
+ * (1) Active-tab label (`text-sm font-bold`, 14px bold ⇒ WCAG large/bold text,
+ * floor 3:1) on `bg-primary/10`: independently re-measured (tech-lead review,
+ * this story's round 1) at ~3.9-4.3:1 light / ~4.2-4.8:1 dark for the shipped
+ * `text-edu-primary-accessible`/`dark:text-edu-primary` colour — already over
+ * the 3:1 floor even PRE-fix (~3.1-3.6:1), so this was NOT an actual violation
+ * as filed (same premise shape as #3's correction), swapped anyway as a
+ * margin improvement.
+ *
+ * (2) Current-year badge (`text-[11px] font-semibold`, small text, floor
+ * 4.5:1) on `bg-primary/15`: pre-fix `text-primary` measured ~2.7-3.3:1 — a
+ * GENUINE AA failure. `text-edu-primary-accessible` (item 1's fix) only
+ * reaches ~3.4-3.6:1 here, still short of 4.5:1 — the correct fix is
+ * `text-edu-text-primary` (#2A3547/#eaeff5 dark), the same fix
+ * `status-badge.tsx` already applies for its `tone="primary"` (A11Y-001):
+ * measured ~8.5-11.6:1, comfortably clearing AA in both themes.
+ *
+ * Proof shape: these are alpha-blended tints (`bg-primary/10`/`/15`,
+ * Tailwind v4 `color-mix(...)`, computed as an `oklab(... / <alpha>)` string
+ * in real Chromium, NOT a solid `rgb()`) — unlike the opaque
+ * `bg-edu-primary-light` pairing `timetable-tab.stories.tsx#PrimaryLightContrast`
+ * proves, an in-story WCAG-ratio recompute would either misparse that string
+ * or need the exact composited-over-ancestor colour reproduced by hand, which
+ * would only re-encode the same numbers already independently verified
+ * offline (see above) without adding any regression protection a plain
+ * colour-equality check doesn't already give. So this story asserts the
+ * resolved `color` exactly instead: it was confirmed RED pre-fix (both
+ * surfaces render the OLD `text-primary` colour, `rgb(69, 112, 234)`, in both
+ * themes) and now asserts the shipped, independently-measured-AA colour — a
+ * real regression guard against a future edit reverting either swap.
+ *
+ * Dark mode covered by {@link YearTimelineContrastDark}.
+ */
+export const YearTimelineContrast: Story = {
+  args: { vm: vm({ role: "student", selectedYearId: "2025-2026" }) },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const ACCESSIBLE = "rgb(68, 104, 224)"; // --edu-primary-accessible #4468e0
+    const TEXT_PRIMARY = "rgb(42, 53, 71)"; // --edu-text-primary #2a3547
+
+    // "2025-2026" is both the ACTIVE tab and the CURRENT year in the fixture.
+    const tab = canvas.getByRole("tab", { name: /2025-2026/ });
+    const label = within(tab).getByText("2025-2026");
+    await expect(getComputedStyle(label).color).toBe(ACCESSIBLE);
+
+    const badge = within(tab).getByText("Năm hiện tại");
+    await expect(getComputedStyle(badge).color).toBe(TEXT_PRIMARY);
+  },
+};
+
+/**
+ * Backlog #16 — same two surfaces, dark mode. `--edu-primary-accessible`
+ * degrades badly in `.dark` (same reasoning as #3's dark addendum), so the
+ * active-tab label carries `dark:text-edu-primary` instead. The badge's
+ * `text-edu-text-primary` needs no dark override — `--edu-text-primary` is
+ * already theme-aware (#eaeff5 in `.dark`).
+ */
+export const YearTimelineContrastDark: Story = {
+  args: { vm: vm({ role: "student", selectedYearId: "2025-2026" }) },
+  globals: { theme: "dark" },
+  decorators: [withDarkTheme],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const PRIMARY = "rgb(93, 135, 255)"; // --edu-primary #5d87ff
+    const TEXT_PRIMARY_DARK = "rgb(234, 239, 245)"; // .dark --edu-text-primary #eaeff5
+
+    const tab = canvas.getByRole("tab", { name: /2025-2026/ });
+    const label = within(tab).getByText("2025-2026");
+    await expect(getComputedStyle(label).color).toBe(PRIMARY);
+
+    const badge = within(tab).getByText("Năm hiện tại");
+    await expect(getComputedStyle(badge).color).toBe(TEXT_PRIMARY_DARK);
   },
 };

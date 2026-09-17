@@ -144,14 +144,6 @@ export const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
 };
 
-export const DEFAULT_ROUTE: Record<Role, string> = {
-  teacher: "/teacher",
-  principal: "/principal",
-  student: "/student",
-  parent: "/parent",
-  admin: "/admin/school-setup",
-};
-
 export const ROLE_LABEL_KEY: Record<
   Role,
   keyof (typeof messages)["shell"]["roles"]

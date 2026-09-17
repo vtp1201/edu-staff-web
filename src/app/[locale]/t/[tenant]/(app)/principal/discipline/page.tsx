@@ -46,11 +46,17 @@ export default async function PrincipalDisciplinePage({
 
   const leaveRequests = await loadTenantLeaveRequests();
 
+  // Backlog #17: same id-space mixing bug as the teacher page — see the
+  // sibling comment in `teacher/discipline/page.tsx` for the full rationale.
+  // `leaveRequests` classIds are core's real class UUIDs; `violations`/
+  // `conductSummary` are still force-mocked (#4, BE-blocked) and live in a
+  // disjoint mock id space. `availableClasses`'s only two consumers
+  // (`violations-tab.tsx`, `conduct-tab.tsx`) both operate in the mock id
+  // space only — `leave-tab.tsx` never reads `availableClasses`.
   const availableClasses = Array.from(
     new Set([
       ...violations.map((v) => v.classId),
       ...conductSummary.map((c) => c.classId),
-      ...leaveRequests.map((l) => l.classId),
     ]),
   ).sort();
 

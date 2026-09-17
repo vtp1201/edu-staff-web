@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import { evaluateAccess } from "@/bootstrap/auth-guard";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { decodeRoleClaim, decodeTenantId } from "@/bootstrap/lib/jwt";
-import { tenantUrl } from "@/bootstrap/tenant";
-import { DEFAULT_ROUTE } from "@/components/layout/app-shell/sidebar/nav-config";
+import { DEFAULT_ROUTE, tenantUrl } from "@/bootstrap/tenant";
 
 /**
  * Principal-only route guard scoped to `(app)/principal/reports/*` (FR-001 /
