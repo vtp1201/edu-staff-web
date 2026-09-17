@@ -2,6 +2,7 @@ export {
   evaluateTenantAccess,
   type TenantAccessVerdict,
 } from "./access-guard";
+export { DEFAULT_ROUTE } from "./default-route";
 export { hasTenantMembership, rolesInTenant } from "./membership";
 export {
   type ResolvedTenant,

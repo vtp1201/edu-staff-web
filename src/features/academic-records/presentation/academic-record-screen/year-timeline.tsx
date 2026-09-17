@@ -84,7 +84,16 @@ export function YearTimeline({
               <span
                 className={cn(
                   "text-sm font-bold",
-                  active ? "text-primary" : "text-foreground",
+                  // Harness backlog #16 (sibling of US-E24.19 #3): computed
+                  // ~3.65:1 light / ~3.52:1 dark on the `bg-primary/10` active
+                  // background — already over the 3:1 large-bold-text floor,
+                  // not an actual violation, but swapped to the established
+                  // accessible pairing anyway as a margin improvement (same
+                  // idiom as #3: `text-edu-primary-accessible` light,
+                  // `dark:text-edu-primary` dark).
+                  active
+                    ? "text-edu-primary-accessible dark:text-edu-primary"
+                    : "text-foreground",
                 )}
               >
                 {/* `null` = the classId → academic-year join did not resolve
@@ -92,7 +101,17 @@ export function YearTimeline({
                 {year.yearLabel ?? t("yearTimeline.unresolvedLabel")}
               </span>
               {year.isCurrent && (
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                <span
+                  // Harness backlog #16: 11px text is SMALL text (floor
+                  // 4.5:1) — computed ~3.66:1 light / ~2.94:1 dark with
+                  // `text-primary`, a genuine AA failure.
+                  // `text-edu-primary-accessible` only reaches ~4.05:1 here,
+                  // still short of 4.5:1; `text-edu-text-primary` is the fix
+                  // `status-badge.tsx` already established for exactly this
+                  // shape (tone="primary", A11Y-001) — 11.5:1+ on any light
+                  // tint, and already theme-aware (no dark: needed).
+                  className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-edu-text-primary"
+                >
                   {t("yearTimeline.currentBadge")}
                 </span>
               )}

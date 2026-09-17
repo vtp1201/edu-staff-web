@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_ROUTE } from "@/bootstrap/tenant";
 import {
   activeNavHref,
-  DEFAULT_ROUTE,
   NAV_BY_ROLE,
   ROLE_LABEL_KEY,
   type Role,

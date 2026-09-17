@@ -41,7 +41,10 @@ function leaveRow(id: string, classId: string, className: string) {
 async function renderPage() {
   const { default: Page } = await import("./page");
   return (await Page({ searchParams: Promise.resolve({ tab: "leave" }) })) as {
-    props: { leaveRequests: { id: string; className: string }[] };
+    props: {
+      leaveRequests: { id: string; className: string }[];
+      availableClasses: string[];
+    };
   };
 }
 
@@ -126,5 +129,52 @@ describe("TeacherDisciplinePage — leave fan-out", () => {
 
     expect(el.props.leaveRequests).toEqual([]);
     expect(getLeave).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Backlog #17: `availableClasses` used to union `violations` + `conductSummary`
+ * classIds (mock id-space, e.g. "10A1") with `leaveRequests` classIds (real
+ * core class UUIDs since US-E24.20/#5). `leave-tab.tsx` never reads
+ * `vm.availableClasses` — only `violations-tab.tsx` (filter dropdown + the
+ * new-violation form's default `classId`) and `conduct-tab.tsx` (filter
+ * dropdown) do, and both operate exclusively in the mock id-space. A real
+ * leave-only classId polluting `availableClasses` is dead weight for the
+ * dropdowns and can corrupt the new-violation form's default `classId`
+ * (`classes[0]`) with an id the mock violations repository has no record of.
+ */
+describe("TeacherDisciplinePage — availableClasses id-space (backlog #17)", () => {
+  it("never includes a classId that only exists on a leave request", async () => {
+    getViolations.mockResolvedValue([
+      { id: "v1", classId: "10A1" },
+    ] as unknown as never[]);
+    getConduct.mockResolvedValue([
+      { id: "s1", classId: "11B2" },
+    ] as unknown as never[]);
+    listMyClasses.mockResolvedValue({
+      ok: true,
+      data: [teacherClass("real-class-uuid", "10A1", ["homeroom"])],
+    });
+    getLeave.mockResolvedValue([leaveRow("r1", "real-class-uuid", "10A1")]);
+
+    const el = await renderPage();
+
+    expect(el.props.availableClasses).toEqual(["10A1", "11B2"]);
+    expect(el.props.availableClasses).not.toContain("real-class-uuid");
+  });
+
+  it("is the union of violations + conductSummary classIds only, sorted", async () => {
+    getViolations.mockResolvedValue([
+      { id: "v1", classId: "11B2" },
+      { id: "v2", classId: "10A1" },
+    ] as unknown as never[]);
+    getConduct.mockResolvedValue([
+      { id: "s1", classId: "10A1" },
+    ] as unknown as never[]);
+    listMyClasses.mockResolvedValue({ ok: true, data: [] });
+
+    const el = await renderPage();
+
+    expect(el.props.availableClasses).toEqual(["10A1", "11B2"]);
   });
 });

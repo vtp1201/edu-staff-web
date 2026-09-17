@@ -7,8 +7,7 @@ import {
 } from "@/bootstrap/di/discipline.di";
 import { getAccessToken } from "@/bootstrap/lib/auth-token.server";
 import { decodeRoleClaim } from "@/bootstrap/lib/jwt";
-import { tenantUrl } from "@/bootstrap/tenant";
-import { DEFAULT_ROUTE } from "@/components/layout/app-shell/sidebar/nav-config";
+import { DEFAULT_ROUTE, tenantUrl } from "@/bootstrap/tenant";
 import type { ChildEntity } from "@/features/discipline/domain/entities/child.entity";
 import type { ConductSummaryEntity } from "@/features/discipline/domain/entities/conduct-summary.entity";
 import type { LeaveRequestEntity } from "@/features/discipline/domain/entities/leave-request.entity";

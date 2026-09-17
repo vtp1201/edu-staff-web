@@ -4,14 +4,19 @@
  * wired in each role namespace's `layout.tsx` (RSC): `admin`, `principal`,
  * `teacher`, `student`, `parent`.
  *
+ * `DEFAULT_ROUTE` now lives in `./default-route.ts` (backlog #1) — it used to
+ * be imported from `components/layout/app-shell/sidebar/nav-config.ts`, a
+ * layer-direction violation (`bootstrap/` importing `components/`) tracked
+ * since US-E12.8's validation.
+ *
  * `evaluateNamespaceAccess` is the single generic implementation — every
  * namespace layout calls it with its own `requiredRole`, deny-by-default
  * (role !== requiredRole → redirected, never rendered). `evaluateAdminAccess`
  * is kept as a thin, behavior-identical wrapper so existing call sites/tests
  * (US-E12.8) do not need to change.
  */
-import { DEFAULT_ROUTE } from "@/components/layout/app-shell/sidebar/nav-config";
 import type { UserRole } from "@/features/auth/domain/entities/auth-user.entity";
+import { DEFAULT_ROUTE } from "./default-route";
 import { tenantUrl } from "./tenant-url";
 
 export type NamespaceAccessVerdict =
